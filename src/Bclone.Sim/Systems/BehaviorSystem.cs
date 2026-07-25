@@ -53,6 +53,20 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // Abandon a foraging trip the moment the season turns.
+        //
+        // The season is checked in Decide(), but a villager already walking to the
+        // patch never returns there, so without this they forage straight through
+        // winter — and the life log reports "Foraging stops" and then a gather on
+        // the very next line. A log that contradicts itself is worse than no log.
+        if (!FoodSource.IsGatherable(world.Clock.Season) && IsForaging(villager.State))
+        {
+            villager.ActionTicksRemaining = 0;
+            villager.State = VillagerState.TravelingHome;
+            Travel(world, villager, world.Home, VillagerState.Idle);
+            return;
+        }
+
         // Otherwise finish whatever is underway before reconsidering. Without this,
         // a villager could re-decide mid-gather every tick and never finish anything.
         if (villager.ActionTicksRemaining > 0)
@@ -79,6 +93,9 @@ public sealed class BehaviorSystem : ISimSystem
 
         Decide(world, villager);
     }
+
+    private static bool IsForaging(VillagerState state) =>
+        state is VillagerState.TravelingToFood or VillagerState.Gathering;
 
     /// <summary>
     /// Eat if hungry enough and there is food. Returns true if a meal was taken,
@@ -201,8 +218,14 @@ public sealed class BehaviorSystem : ISimSystem
             case VillagerState.Gathering:
                 world.Stockpile.Add(world.FoodSource.YieldPerGather);
                 villager.TotalGathers++;
+                villager.GathersThisSeason++;
 
-                world.Narrate(
+                // Individual gathers are DEBUG, not life log. A fifty-year life is
+                // some six hundred foraging trips, and narrating each one buries the
+                // handful of lines that actually tell the story — the seasons
+                // turning, the winters surviving, the death. ClockSystem sums them
+                // up per season instead.
+                world.Log(LogLevel.Debug, "behavior",
                     $"Gathered {world.FoodSource.YieldPerGather} food " +
                     $"({world.Stockpile.Food} stored) — {world.Clock}.");
 

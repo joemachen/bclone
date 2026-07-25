@@ -235,6 +235,30 @@ Joe set the target: **a full life plays out in 9–12 minutes of real time.** Ev
 - **Lifespan variance:** small seeded spread (see table), drawn once at birth from the sim RNG.
 - **Calendar is derived, not stored.** Day/season/year are a pure function of `tick` and config (`SimClock.FromTick`). Less mutable state means fewer places determinism can break, and the calendar can never drift out of sync with the tick.
 
+### ⚠ Open finding — the middle of the life is flat (2026-07-25)
+
+The sim works, the tests are green, and the two death arcs read completely differently. But the years in between do not. Once the villager reaches equilibrium in Year 2, **every subsequent year is byte-identical** until they die:
+
+```
+Spring of Year 11 — Agnes foraged 4 times. 40 food stored.
+Summer of Year 11 — Agnes foraged 4 times. 60 food stored.
+Fall of Year 11 — Agnes foraged 2 times. 55 food stored.
+Winter came to Year 11. Foraging stops. 55 food stored.
+Agnes survived winter 11 (15 food left). Spring of Year 12 begins.
+```
+
+…repeated forty-eight times. The death lands; the life does not.
+
+**This is not a bug** — it is the honest consequence of a deterministic villager with fixed thresholds and no varying pressure. Every source of year-to-year variation (climate drift, soil depletion, disease, resource exhaustion) is explicitly deferred to `DESIGN.md §2.3` and Phase 1+.
+
+**But it puts the Success Test (§9) at risk**, and that test is the phase gate. Three ways forward, for Joe to choose:
+
+1. **Accept it.** Phase 0's job is to prove the spine, and the spine works. Drama arrives with the systems designed to provide it. Risk: the gate is subjective, and "it means something" may simply not be true yet.
+2. **Give ageing mechanical weight.** Ageing is *in* Phase 0 scope, but currently does nothing except trigger death — which is a hollow reading of "generational time is the core loop" (non-negotiable 5). If vigour declined with age (slower travel, or more food needed), the life would gain a shape: strong middle years, a visibly harder old age, then death. Smallest change that makes the middle mean something, and it serves a non-negotiable rather than importing a deferred pillar.
+3. **Pull one systemic pressure forward** — most likely climate drift, so winters vary in severity. Effective, but it imports a Phase 1 pillar into the gate phase and breaks the build-order discipline in `DESIGN.md §4`.
+
+**Recommendation: option 2**, then re-run the Success Test. It is in scope, it is small, and it fixes the flatness at its actual cause rather than papering over it with noise.
+
 ### Still open (carry into Phase 1)
 
 - **Childhood.** The villager is able-bodied from age 0, which is obviously wrong — a toddler does not forage. Phase 0 has no childhood mechanics by design (out of scope, §3), and with a single villager there is nobody to depend on. Dependency and age-gated capability belong with households in Phase 1. **Flagged rather than silently shipped.**

@@ -187,22 +187,21 @@ public sealed class Phase0SimTests
             loop.StepOnce();
         }
 
-        // A gather already underway when winter arrives still finishes — she is
-        // standing at the patch with berries in hand. Allow exactly that one, then
-        // nothing more.
+        // Not one single gather. A trip already underway is abandoned the moment
+        // the season turns — otherwise the life log announces "Foraging stops" and
+        // then reports a gather on the next line.
         int gathersAtWinterStart = loop.World.Villager.TotalGathers;
-        int peak = loop.World.Stockpile.Food;
+        int atWinterStart = loop.World.Stockpile.Food;
 
         while (loop.World.Clock.IsWinter)
         {
             loop.StepOnce();
-            peak = Math.Max(peak, loop.World.Stockpile.Food);
+            Assert.True(loop.World.Stockpile.Food <= atWinterStart,
+                $"Store grew during winter at tick {loop.World.Tick}.");
         }
 
-        int gathersDuringWinter = loop.World.Villager.TotalGathers - gathersAtWinterStart;
-        Assert.True(gathersDuringWinter <= 1,
-            $"Foraged {gathersDuringWinter} times during winter; at most one in-progress gather may finish.");
-        Assert.True(loop.World.Stockpile.Food < peak, "Winter should drain the store.");
+        Assert.Equal(gathersAtWinterStart, loop.World.Villager.TotalGathers);
+        Assert.True(loop.World.Stockpile.Food < atWinterStart, "Winter should drain the store.");
     }
 
     [Fact]

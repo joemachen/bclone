@@ -139,7 +139,7 @@ Each phase should ship in a playable, legible state before the next begins.
 
 > Update this section as work proceeds. Keep it honest — it's how we both know where we are.
 
-**Current phase:** Scaffold complete — **awaiting go-ahead for Phase 0**
+**Current phase:** Phase 0 built and playable — **awaiting Joe's Success Test watch-through** (branch `phase/0-vertical-slice`)
 
 **Done:**
 - Tech stack resolved: C# (.NET 8) + Godot 4, sim as a Godot-free class library (D1).
@@ -154,13 +154,16 @@ Each phase should ship in a playable, legible state before the next begins.
 - Build-time determinism enforcement via banned-API analyzer (verified firing).
 - CI (`ci.yml`) building + testing on every push; `release.yml` moved to `.github/workflows/` and filled in for Godot.
 
+- **Phase 0 sim**: clock/seasons, hunger, foraging behaviour, starvation and old-age death, life log. 131 tests green.
+- **Phase 0 view**: `src/Bclone.Game` Godot 4.7.1 shell — clock, villager state, hunger bar, stockpile, scrolling life log, speed controls. Verified running.
+- Pacing resolved: a full life runs 9.2–11.6 minutes (see spec §11).
+
 **In progress:**
-- (nothing — checkpoint before Phase 0)
+- **Phase 0 Success Test** — subjective, and it is the gate. Needs Joe to watch a life and say whether it means anything. Green tests do not settle this.
 
 **Next up:**
-- **Phase 0 vertical slice** (`specs/phase-0-vertical-slice.md`): one villager, one resource loop. Gate — must pass its Success Test before Phase 1.
-- Godot view project (`src/Bclone.Game`) — deferred to Phase 0, since the tick loop is headless.
-- Tune `ticks_per_day` / `target_ticks_per_second` against the meditative-pace non-negotiable.
+- Resolve the **flat-middle finding** (`specs/phase-0-vertical-slice.md §11`): years 2–50 are identical, so the death lands but the life does not. Recommendation is to give ageing mechanical weight; Joe's call.
+- Then Phase 1: multiple agents + households + smart labour (§2.2).
 
 ---
 
@@ -174,4 +177,8 @@ Each phase should ship in a playable, legible state before the next begins.
 - **D4 · 2026-07-25 · Playback speed scales tick *count*, never tick *size*.** Pause/1×/2×/4× change how many ticks run per real second; a tick is always identical. Scaling a delta into the sim would make each speed a different simulation and destroy reproducibility. Tested by `PlaybackSpeed_DoesNotAffectState`.
 - **D5 · 2026-07-25 · System execution order is part of the determinism contract.** Systems run single-threaded in registration order, snapshotted at construction; reordering them is a behavioural change, not a tidy-up.
 - **D6 · 2026-07-25 · The driver accumulates time in whole nanoseconds, not floats.** The natural `while (acc >= secondsPerTick) acc -= secondsPerTick;` loop loses ticks to binary rounding (2.5s at 10 ticks/s yields 24, not 25) and the error compounds every frame, so the game clock drifts behind real time. Found by the test suite during implementation; guarded by `WholeSecondDeltas_YieldExactTickCounts`.
+- **D8 · 2026-07-25 · The life log is the `INFO` view of the sim log, not a separate system.** Same sink, same tick-stamping, same ordering — so the story the player reads and the log an engineer debugs from are one artifact, and they can never disagree.
+- **D9 · 2026-07-25 · Individual gathers are `DEBUG`; the life log summarises per season.** A fifty-year life is ~600 foraging trips, and narrating each one buries the handful of lines that carry the story. "Spring of Year 3 — foraged 4 times" is a season; 600 receipts is a spreadsheet, which is the thing this game is defined against (§1.4).
+- **D10 · 2026-07-25 · Eating preempts any action.** A round trip to the food source is longer than the gap between meals, so finish-your-action-first made the villager starve mid-gather beside a full store. A survival game may kill you for bad decisions, never for a scheduling artifact.
+- **D11 · 2026-07-25 · The Godot project lives in `src/Bclone.Game`, not the repo root.** A root Godot project globs `**/*.cs` into one assembly, which would swallow `Bclone.Sim` and the xunit tests into the game build and destroy the engine-free separation D1 exists to protect.
 - **D7 · 2026-07-25 · Determinism tests must carry anti-vacuity guards.** A determinism test that cannot fail stays green forever and buys false confidence, so the suite includes tests asserting that different seeds *do* diverge and that the state hash *does* change with state. Verified by mutation: neutering `StateHash` turns 7 tests red.

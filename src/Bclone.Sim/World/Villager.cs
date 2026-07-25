@@ -82,6 +82,10 @@ public sealed class Villager
     /// <summary>Lifetime count of completed gathers, for the epitaph.</summary>
     public int TotalGathers { get; set; }
 
+    /// <summary>Gathers since the season turned. Reset by <c>ClockSystem</c> after
+    /// it summarises the season into the life log.</summary>
+    public int GathersThisSeason { get; set; }
+
     /// <summary>Plain-language description of the current action, for the UI.</summary>
     public string DescribeState()
     {

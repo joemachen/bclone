@@ -109,6 +109,53 @@ public sealed class Phase0ScenarioTests
         Assert.InRange(minutes, 9.0, 12.0);
     }
 
+    [Fact]
+    public void TheLifeLogNeverContradictsItself()
+    {
+        // "Winter came ... Foraging stops." must never be followed by a foraging
+        // line. The log is the deliverable; a log that argues with itself fails the
+        // phase no matter what the sim underneath is doing.
+        var (loop, sink) = Phase0Fixtures.Build(Phase0Fixtures.Plenty);
+        Phase0Fixtures.RunUntilDeath(loop);
+
+        IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
+        bool foragingStopped = false;
+
+        foreach (string line in log)
+        {
+            if (line.Contains("Foraging stops", StringComparison.Ordinal))
+            {
+                foragingStopped = true;
+                continue;
+            }
+
+            if (line.Contains("survived winter", StringComparison.Ordinal))
+            {
+                foragingStopped = false;
+                continue;
+            }
+
+            Assert.False(
+                foragingStopped && line.Contains("foraged", StringComparison.OrdinalIgnoreCase),
+                $"Life log claims foraging stopped, then reports: {line}");
+        }
+    }
+
+    [Fact]
+    public void TheLifeLogIsShortEnoughToRead()
+    {
+        // A life should read as a story, not a receipt. Six hundred lines of
+        // "Gathered 15 food" is a spreadsheet with extra steps — exactly what the
+        // design says this game is not (DESIGN.md §1.4).
+        var (loop, sink) = Phase0Fixtures.Build(Phase0Fixtures.Plenty);
+        Phase0Fixtures.RunUntilDeath(loop);
+
+        IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
+
+        _output.WriteLine($"{log.Count} life-log entries for a {loop.World.Villager.AgeYears}-year life.");
+        Assert.InRange(log.Count, 50, 300);
+    }
+
     /// <summary>
     /// Not an assertion — a window onto the actual story. Run with
     /// <c>dotnet test --logger "console;verbosity=detailed"</c> to read a life.

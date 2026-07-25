@@ -34,21 +34,32 @@ public sealed class ClockSystem : ISimSystem
             return;
         }
 
-        // A season turned. Winter is the one that matters, so it gets its own line
-        // with the stockpile in it — that number is the whole story of the winter
-        // about to happen.
+        Villager living = world.Villager;
+
+        // Sum the season's foraging into one line. Six hundred individual gather
+        // entries across a life is a receipt; "foraged 12 times" is a season.
+        if (living.Alive && living.GathersThisSeason > 0)
+        {
+            world.Narrate(
+                $"{previous.Season} of Year {previous.Year} — {living.Name} foraged " +
+                $"{living.GathersThisSeason} times. {world.Stockpile.Food} food stored.");
+        }
+
+        living.GathersThisSeason = 0;
+
+        // Winter is the one that matters, so it gets its own line with the stockpile
+        // in it — that number is the whole story of the winter about to happen.
         if (current.IsWinter)
         {
             world.Narrate(
                 $"Winter came to Year {current.Year}. Foraging stops. {world.Stockpile.Food} food stored.");
         }
-        else if (previous.IsWinter)
+        else if (previous.IsWinter && living.Alive)
         {
-            Villager villager = world.Villager;
-            villager.WintersSurvived++;
+            living.WintersSurvived++;
 
             world.Narrate(
-                $"{villager.Name} survived winter {villager.WintersSurvived} " +
+                $"{living.Name} survived winter {living.WintersSurvived} " +
                 $"({world.Stockpile.Food} food left). {current.Season} of Year {current.Year} begins.");
         }
     }
