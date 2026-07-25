@@ -1,5 +1,6 @@
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
+using Bclone.Sim.Logging;
 using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
@@ -165,6 +166,33 @@ public sealed class Phase0ScenarioTests
 
         _output.WriteLine($"{log.Count} life-log entries for a {loop.World.Villager.AgeYears}-year life.");
         Assert.InRange(log.Count, 50, 300);
+    }
+
+    [Fact]
+    public void ACleanPlaythroughLogsNoErrorsOrWarnings()
+    {
+        // Definition of Done item 5 (METHODOLOGY.md §3): no new errors in the log
+        // during a clean playthrough. Asserted rather than eyeballed, and across
+        // both arcs — a starvation run exercises different code than a full life.
+        foreach (SimConfig config in new[] { Phase0Fixtures.Plenty, Phase0Fixtures.Scarcity })
+        {
+            var sink = new InMemoryLogSink(LogLevel.Trace);
+            SimLoop loop = SimFactory.CreatePhase0(config, sink);
+            Phase0Fixtures.RunUntilDeath(loop);
+            loop.Step(1_000);   // and well past the death, too
+
+            var bad = new List<LogEntry>();
+            foreach (LogEntry entry in sink.Entries)
+            {
+                if (entry.Level >= LogLevel.Warn)
+                {
+                    bad.Add(entry);
+                }
+            }
+
+            Assert.True(bad.Count == 0,
+                $"Clean playthrough logged {bad.Count} warning(s)/error(s), first: {(bad.Count > 0 ? bad[0].ToString() : "-")}");
+        }
     }
 
     /// <summary>
