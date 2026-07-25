@@ -40,9 +40,15 @@ public sealed class ClockSystem : ISimSystem
         // entries across a life is a receipt; "foraged 12 times" is a season.
         if (living.Alive && living.GathersThisSeason > 0)
         {
+            // The trip count is where declining vigour becomes visible: the same
+            // season's food costs four trips at thirty and seven at fifty.
+            string effort = living.Stage == VigourStage.Prime
+                ? string.Empty
+                : $" (vigour {living.Vigour}%)";
+
             world.Narrate(
                 $"{previous.Season} of Year {previous.Year} — {living.Name} foraged " +
-                $"{living.GathersThisSeason} times. {world.Stockpile.Food} food stored.");
+                $"{living.GathersThisSeason} times{effort}. {world.Stockpile.Food} food stored.");
         }
 
         living.GathersThisSeason = 0;

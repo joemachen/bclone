@@ -37,6 +37,7 @@ public partial class Main : Control
     private Label _nameLabel = null!;
     private Label _actionLabel = null!;
     private Label _foodLabel = null!;
+    private Label _vigourLabel = null!;
     private Label _hungerLabel = null!;
     private ProgressBar _hungerBar = null!;
     private Label _speedLabel = null!;
@@ -130,6 +131,14 @@ public partial class Main : Control
         _actionLabel.Text = villager.DescribeState();
 
         _foodLabel.Text = $"{world.Stockpile.Food} food stored";
+
+        // Vigour is only worth showing once it starts to matter — a permanent
+        // "100%" is noise, and the point is that the player notices the turn.
+        _vigourLabel.Visible = villager.Alive && villager.Stage != VigourStage.Prime;
+        _vigourLabel.Text = villager.Stage == VigourStage.Frail
+            ? $"Vigour {villager.Vigour}% — frail; every trip brings back less"
+            : $"Vigour {villager.Vigour}% — past her strongest years";
+        _vigourLabel.Modulate = villager.Stage == VigourStage.Frail ? Colors.IndianRed : Colors.Goldenrod;
 
         int hungerPercent = config.HungerMax == 0 ? 0 : villager.Hunger * 100 / config.HungerMax;
         _hungerBar.Value = hungerPercent;
@@ -246,6 +255,10 @@ public partial class Main : Control
 
         _foodLabel = Body("");
         column.AddChild(_foodLabel);
+
+        _vigourLabel = Body("");
+        _vigourLabel.Visible = false;
+        column.AddChild(_vigourLabel);
 
         _epitaph = Heading("");
         _epitaph.Visible = false;

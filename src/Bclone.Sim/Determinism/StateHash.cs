@@ -55,6 +55,9 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.WintersSurvived);
         hash = MixUInt32(hash, (uint)villager.TotalGathers);
         hash = MixUInt32(hash, (uint)villager.LifespanYears);
+        hash = MixUInt32(hash, (uint)villager.Vigour);
+        hash = MixByte(hash, (byte)villager.Stage);
+        hash = MixUInt32(hash, (uint)villager.GathersThisSeason);
 
         hash = MixUInt32(hash, (uint)world.Stockpile.Food);
         hash = MixUInt32(hash, (uint)world.Stockpile.LifetimeGathered);

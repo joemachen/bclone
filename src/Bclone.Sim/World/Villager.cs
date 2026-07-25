@@ -49,6 +49,17 @@ public sealed class Villager
     /// <summary>Years lived. Advances on the new-year boundary.</summary>
     public int AgeYears { get; set; }
 
+    /// <summary>
+    /// Physical capability, 0–100. Full through the prime years, then declining
+    /// with age. Scales how much a foraging trip actually brings home, which is
+    /// what turns ageing from a countdown into something you can watch happen.
+    /// </summary>
+    public int Vigour { get; set; } = 100;
+
+    /// <summary>Which band <see cref="Vigour"/> currently falls in. Stored so the
+    /// life log narrates each turn once, not every tick.</summary>
+    public VigourStage Stage { get; set; } = VigourStage.Prime;
+
     /// <summary>0 = full, rising to <c>hunger_max</c>.</summary>
     public int Hunger { get; set; }
 

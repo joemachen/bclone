@@ -84,7 +84,7 @@ public sealed record SimConfig
 
     /// <summary>Food added by one completed gather.</summary>
     [JsonPropertyName("gather_yield")]
-    public int GatherYield { get; init; } = 15;
+    public int GatherYield { get; init; } = 24;
 
     /// <summary>Ticks spent gathering once at the source.</summary>
     [JsonPropertyName("gather_ticks")]
@@ -117,6 +117,25 @@ public sealed record SimConfig
     // ---------------------------------------------------------------
     //  Life
     // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Age up to which the villager works at full strength. After this, vigour
+    /// declines linearly toward <see cref="VigourMinPercent"/> at death.
+    /// </summary>
+    [JsonPropertyName("vigour_full_until_age")]
+    public int VigourFullUntilAge { get; init; } = 30;
+
+    /// <summary>
+    /// Vigour floor, as a percentage, reached in the final year of life.
+    /// </summary>
+    /// <remarks>
+    /// Tuned so an old villager visibly struggles — many more foraging trips for
+    /// the same food — without tipping into starvation. Old age must stay the
+    /// normal ending, or the two death arcs stop reading differently, which is
+    /// the whole point of the phase.
+    /// </remarks>
+    [JsonPropertyName("vigour_min_percent")]
+    public int VigourMinPercent { get; init; } = 55;
 
     /// <summary>Median lifespan in years.</summary>
     [JsonPropertyName("lifespan_years_base")]
@@ -216,6 +235,16 @@ public sealed record SimConfig
         if (StockpileTarget <= 0)
         {
             throw new SimConfigException($"stockpile_target must be greater than zero (got {StockpileTarget}).");
+        }
+
+        if (VigourFullUntilAge < 0)
+        {
+            throw new SimConfigException($"vigour_full_until_age cannot be negative (got {VigourFullUntilAge}).");
+        }
+
+        if (VigourMinPercent is <= 0 or > 100)
+        {
+            throw new SimConfigException($"vigour_min_percent must be in 1..100 (got {VigourMinPercent}).");
         }
 
         if (LifespanYearsBase <= 0)

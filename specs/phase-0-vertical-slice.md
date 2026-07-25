@@ -235,6 +235,26 @@ Joe set the target: **a full life plays out in 9–12 minutes of real time.** Ev
 - **Lifespan variance:** small seeded spread (see table), drawn once at birth from the sim RNG.
 - **Calendar is derived, not stored.** Day/season/year are a pure function of `tick` and config (`SimClock.FromTick`). Less mutable state means fewer places determinism can break, and the calendar can never drift out of sync with the tick.
 
+### ✅ Resolved 2026-07-25 — ageing now carries mechanical weight
+
+Joe chose option 2 below. Vigour is full until 30, then declines linearly to 55% in the final year, and it **scales what a foraging trip brings home**. Ageing is no longer a countdown to an event; it is something the player watches happen.
+
+The arc, from the shipped seed:
+
+```
+Spring of Year 1  — Agnes foraged 4 times. 61 food stored.
+Spring of Year 50 — Agnes foraged 4 times (vigour 58%). 40 food stored.
+```
+
+Same effort, two-thirds the result. Food remaining after winter drifts down across the final decade (29 → 19 → 16), and the life log narrates the two turns once each — "past her strongest years", then "has grown frail". Average foraging trips per season rise from 2.10 in youth to 3.39 in old age.
+
+Tuning constraint worth remembering: **old age must stay the normal ending.** If decline is steep enough to cause starvation, the two death arcs stop reading differently and the phase loses its point. `AgeingDoesNotTurnOldAgeIntoStarvation` runs 25 seeds and asserts every one dies of old age.
+
+Childhood frailty was considered and rejected — see "Still open" below.
+
+<details>
+<summary>Original finding (kept for the reasoning)</summary>
+
 ### ⚠ Open finding — the middle of the life is flat (2026-07-25)
 
 The sim works, the tests are green, and the two death arcs read completely differently. But the years in between do not. Once the villager reaches equilibrium in Year 2, **every subsequent year is byte-identical** until they die:
@@ -258,6 +278,8 @@ Agnes survived winter 11 (15 food left). Spring of Year 12 begins.
 3. **Pull one systemic pressure forward** — most likely climate drift, so winters vary in severity. Effective, but it imports a Phase 1 pillar into the gate phase and breaks the build-order discipline in `DESIGN.md §4`.
 
 **Recommendation: option 2**, then re-run the Success Test. It is in scope, it is small, and it fixes the flatness at its actual cause rather than papering over it with noise.
+
+</details>
 
 ### Still open (carry into Phase 1)
 

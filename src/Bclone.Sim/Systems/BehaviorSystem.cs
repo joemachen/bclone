@@ -216,7 +216,17 @@ public sealed class BehaviorSystem : ISimSystem
         switch (villager.State)
         {
             case VillagerState.Gathering:
-                world.Stockpile.Add(world.FoodSource.YieldPerGather);
+                // Vigour scales what a trip actually brings home. This is where
+                // ageing stops being a countdown and starts being something the
+                // player can watch: the same year's work yields less, so the
+                // seasonal trip count climbs and the winter margin thins.
+                int yield = world.FoodSource.YieldPerGather * villager.Vigour / 100;
+                if (yield < 1)
+                {
+                    yield = 1;
+                }
+
+                world.Stockpile.Add(yield);
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
 

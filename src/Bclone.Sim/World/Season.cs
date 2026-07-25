@@ -20,6 +20,22 @@ public enum VillagerState
     Dead,
 }
 
+/// <summary>
+/// Coarse bands of physical decline, used to narrate the turn of a life once
+/// rather than every tick.
+/// </summary>
+public enum VigourStage
+{
+    /// <summary>Working at full strength.</summary>
+    Prime = 0,
+
+    /// <summary>Past their peak — the same work takes more trips.</summary>
+    Slowing = 1,
+
+    /// <summary>Visibly failing. Every winter is now a question.</summary>
+    Frail = 2,
+}
+
 /// <summary>How a villager's life ended.</summary>
 public enum CauseOfDeath
 {

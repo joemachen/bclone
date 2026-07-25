@@ -161,9 +161,10 @@ Each phase should ship in a playable, legible state before the next begins.
 **In progress:**
 - **Phase 0 Success Test** — subjective, and it is the gate. Needs Joe to watch a life and say whether it means anything. Green tests do not settle this.
 
+- **Ageing with mechanical weight** (D12): declining vigour scales foraging yield, so a life now has a shape — easy middle years, a visibly tightening old age, then death. Resolves the flat-middle finding. 146 tests green.
+
 **Next up:**
-- Resolve the **flat-middle finding** (`specs/phase-0-vertical-slice.md §11`): years 2–50 are identical, so the death lands but the life does not. Recommendation is to give ageing mechanical weight; Joe's call.
-- Then Phase 1: multiple agents + households + smart labour (§2.2).
+- Phase 1: multiple agents + households + smart labour (§2.2) — once the Success Test passes.
 
 ---
 
@@ -181,4 +182,6 @@ Each phase should ship in a playable, legible state before the next begins.
 - **D9 · 2026-07-25 · Individual gathers are `DEBUG`; the life log summarises per season.** A fifty-year life is ~600 foraging trips, and narrating each one buries the handful of lines that carry the story. "Spring of Year 3 — foraged 4 times" is a season; 600 receipts is a spreadsheet, which is the thing this game is defined against (§1.4).
 - **D10 · 2026-07-25 · Eating preempts any action.** A round trip to the food source is longer than the gap between meals, so finish-your-action-first made the villager starve mid-gather beside a full store. A survival game may kill you for bad decisions, never for a scheduling artifact.
 - **D11 · 2026-07-25 · The Godot project lives in `src/Bclone.Game`, not the repo root.** A root Godot project globs `**/*.cs` into one assembly, which would swallow `Bclone.Sim` and the xunit tests into the game build and destroy the engine-free separation D1 exists to protect.
+- **D12 · 2026-07-25 · Ageing carries mechanical weight: vigour declines with age and scales foraging yield.** Ageing that only triggers a death event is a hollow reading of "generational time is the core loop" (§1.5) — it made every year of a life identical, so the death landed but the life did not. Vigour is full until 30, then declines to 55% in the final year. Tuning constraint: decline must make old age *hard*, never fatal, or the starvation and old-age arcs stop reading differently and Phase 0 loses its point.
+- **D13 · 2026-07-25 · No childhood frailty in Phase 0.** A frail child is the honest mirror of a frail elder, but with one villager and nobody to depend on it is just an unsurvivable opening. Dependency and age-gated capability belong with households in Phase 1.
 - **D7 · 2026-07-25 · Determinism tests must carry anti-vacuity guards.** A determinism test that cannot fail stays green forever and buys false confidence, so the suite includes tests asserting that different seeds *do* diverge and that the state hash *does* change with state. Verified by mutation: neutering `StateHash` turns 7 tests red.

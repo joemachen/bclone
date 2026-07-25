@@ -22,9 +22,10 @@ public static class SimFactory
     public static IReadOnlyList<ISimSystem> CreatePhase0Systems() => new ISimSystem[]
     {
         new ClockSystem(),      // 1. advance the calendar, narrate season/year turns
-        new NeedsSystem(),      // 2. hunger rises
-        new BehaviorSystem(),   // 3. decide and act
-        new MortalitySystem(),  // 4. starvation or old age
+        new AgeingSystem(),     // 2. age becomes declining vigour
+        new NeedsSystem(),      // 3. hunger rises
+        new BehaviorSystem(),   // 4. decide and act
+        new MortalitySystem(),  // 5. starvation or old age
     };
 
     /// <summary>Create a world and loop wired with the Phase 0 systems.</summary>

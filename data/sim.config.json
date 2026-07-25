@@ -46,7 +46,10 @@
   // A round trip is 5 out + 3 gathering + 5 back = 13 ticks for
   // 15 food, against ~150 food eaten per year. That leaves a real
   // surplus but not a free one — a lazy autumn still bites.
-  "gather_yield": 15,
+  // Yield at FULL vigour. An ageing villager brings back proportionally
+  // less (see vigour_min_percent), so this needs enough headroom that a
+  // frail elder can still just about keep up.
+  "gather_yield": 24,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
@@ -59,6 +62,15 @@
   "home_y": 0,
   "food_source_x": 5,
   "food_source_y": 0,
+
+  // ---- Ageing ------------------------------------------------
+  // Full strength until 30, then a straight decline to 55% in the
+  // final year. This is the only source of year-to-year variation in
+  // Phase 0, and it is what gives a life a shape: easy middle years
+  // with time to rest, then a long tightening where the same food
+  // costs more and more walking.
+  "vigour_full_until_age": 30,
+  "vigour_min_percent": 55,
 
   // ---- Life --------------------------------------------------
   // 52 +/- 6 years => 46-58 years => 9.2-11.6 minutes of real
