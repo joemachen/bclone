@@ -223,9 +223,19 @@ Joe set the target: **a full life plays out in 9–12 minutes of real time.** Ev
 |---|---|---|
 | `ticks_per_day` | **4** | A day is four beats — enough granularity to see an action take time, few enough that days pass readably. |
 | `days_per_season` | **15** | 60 ticks per season, 240 per year. Long enough for winter to bite, short enough that a year reads as one breath. |
-| `target_ticks_per_second` | **20** | 240 ticks/year ÷ 20 = **12 s per in-game year**. |
-| `lifespan_years_base` | **52** | 52 × 12 s ≈ 10.4 min — the middle of the window. |
-| `lifespan_years_variance` | **±6** | Range 46–58 years ⇒ **9.2–11.6 min**. Lands inside 9–12 for every seeded outcome, and a little spread stops old-age death landing on a suspiciously round number. |
+| `target_ticks_per_second` | **10** | 240 ticks/year ÷ 10 = **24 s per in-game year**. Halved from 20 after watching it — at the old rate the seasons went by faster than they could be read. |
+| `lifespan_years_base` | **52** | 52 × 24 s ≈ 21 min at 1x, ≈ 10.4 min at 2x — the middle of the window. |
+| `lifespan_years_variance` | **±6** | Range 46–58 years ⇒ **9.2–11.6 min at 2x**. Lands inside 9–12 for every seeded outcome, and a little spread stops old-age death landing on a suspiciously round number. |
+
+**The 9–12 minute window now lives at 2x, not 1x.** Halving the base rate moved it there, and that is the intended shape of the speed ladder rather than an accident:
+
+| Speed | A full life | What it is for |
+|---|---|---|
+| 1x | ~20 min | Study speed — watch a single season closely. |
+| **2x** | **~10 min** | **The watching speed.** A whole life in one sitting, seasons still readable. |
+| 4x | ~5 min | Skip gear — jump ahead when you do not need to read every season. |
+
+Encoded as `Phase0Fixtures.WatchingSpeed`, so the constraint is tested rather than remembered.
 
 **Hunger cadence is the legibility lever.** `hunger_per_tick = 10` against `hunger_max = 100` with an eat threshold of 80 means the villager eats **every two days** — a rhythm a person can read off the screen without arithmetic. It also gives ~30 meals a year, so winter (60 ticks ≈ 7–8 meals ≈ 38 food) demands a real stockpile rather than a token one. That is what makes the winter drain visible as a sawtooth in the food counter: climbing through spring/summer/fall, falling through winter.
 

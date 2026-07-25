@@ -15,8 +15,8 @@
 
   // ---- Calendar ----------------------------------------------
   // 4 ticks/day x 15 days x 4 seasons = 240 ticks per year.
-  // At 20 ticks/sec that is 12 real seconds per in-game year,
-  // so a ~52-year life plays out in about 10 minutes.
+  // At 10 ticks/sec that is 24 real seconds per in-game year, so a
+  // ~52-year life is about 21 minutes at 1x and 10 at 2x.
   // See specs/phase-0-vertical-slice.md §11 for the derivation.
   "ticks_per_day": 4,
   "days_per_season": 15,
@@ -25,7 +25,10 @@
   // These control how fast the world is drawn, not what happens
   // in it. Changing them must not change sim outcomes; there is a
   // test that proves it (PlaybackSpeed_DoesNotAffectState).
-  "target_ticks_per_second": 20.0,
+  // Halved from 20 after watching it: at the old rate the seasons
+  // went by faster than they could be read, even on 1x. Playback
+  // only - this cannot change what happens in the sim.
+  "target_ticks_per_second": 10.0,
   "max_ticks_per_frame": 250,
 
   // ---- Needs -------------------------------------------------

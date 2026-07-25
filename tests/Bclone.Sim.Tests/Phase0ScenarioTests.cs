@@ -81,13 +81,15 @@ public sealed class Phase0ScenarioTests
         var (loop, _) = Phase0Fixtures.Build(config);
 
         int ticks = Phase0Fixtures.RunUntilDeath(loop);
-        double minutes = ticks / config.TargetTicksPerSecond / 60.0;
+        double watching = Phase0Fixtures.RealMinutes(ticks, config, Phase0Fixtures.WatchingSpeed);
 
         _output.WriteLine(
-            $"{loop.World.Villager.Name} lived {loop.World.Villager.AgeYears} years " +
-            $"({ticks} ticks = {minutes:F1} min at {config.TargetTicksPerSecond} ticks/s).");
+            $"{loop.World.Villager.Name} lived {loop.World.Villager.AgeYears} years — {ticks} ticks. " +
+            $"1x: {Phase0Fixtures.RealMinutes(ticks, config, 1.0):F1} min · " +
+            $"2x: {watching:F1} min · " +
+            $"4x: {Phase0Fixtures.RealMinutes(ticks, config, 4.0):F1} min.");
 
-        Assert.InRange(minutes, 9.0, 12.0);
+        Assert.InRange(watching, 9.0, 12.0);
     }
 
     [Theory]
@@ -103,7 +105,7 @@ public sealed class Phase0ScenarioTests
         var (loop, _) = Phase0Fixtures.Build(config, seed);
 
         int ticks = Phase0Fixtures.RunUntilDeath(loop);
-        double minutes = ticks / config.TargetTicksPerSecond / 60.0;
+        double minutes = Phase0Fixtures.RealMinutes(ticks, config, Phase0Fixtures.WatchingSpeed);
 
         Assert.Equal(CauseOfDeath.OldAge, loop.World.Villager.CauseOfDeath);
         Assert.InRange(minutes, 9.0, 12.0);

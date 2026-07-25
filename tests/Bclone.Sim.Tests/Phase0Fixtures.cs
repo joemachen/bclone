@@ -13,7 +13,7 @@ public static class Phase0Fixtures
         Seed = 12345UL,
         TicksPerDay = 4,
         DaysPerSeason = 15,
-        TargetTicksPerSecond = 20.0,
+        TargetTicksPerSecond = 10.0,
         HungerPerTick = 10,
         HungerMax = 100,
         EatThreshold = 80,
@@ -41,6 +41,21 @@ public static class Phase0Fixtures
         FoodSourceX = 12,
         StockpileTarget = 60,
     };
+
+    /// <summary>
+    /// The speed a life is meant to be <em>watched</em> at.
+    /// </summary>
+    /// <remarks>
+    /// Joe's constraint is that a full life runs 9–12 minutes. After the base tick
+    /// rate was halved (the seasons went by faster than they could be read), that
+    /// window lands at 2x rather than 1x — so 1x is now the study speed, 2x is the
+    /// watching speed, and 4x is the skip gear.
+    /// </remarks>
+    public const double WatchingSpeed = 2.0;
+
+    /// <summary>Real minutes a run of <paramref name="ticks"/> takes at a given speed.</summary>
+    public static double RealMinutes(int ticks, SimConfig config, double speedMultiplier) =>
+        ticks / (config.TargetTicksPerSecond * speedMultiplier) / 60.0;
 
     public static (SimLoop Loop, InMemoryLogSink Log) Build(SimConfig config, ulong? seed = null)
     {
