@@ -1,0 +1,48 @@
+; ============================================================
+;  Banned APIs for Bclone.Sim — determinism enforcement.
+;  See specs/tick-loop.md §6 for the reasoning behind each ban.
+;
+;  Format: <DocumentationId>;<message shown in the build error>
+;  Violations surface as RS0030, which TreatWarningsAsErrors
+;  promotes to a hard build failure.
+; ============================================================
+
+; ---- Non-deterministic randomness --------------------------
+T:System.Random;System.Random's algorithm has changed across .NET versions. Use Bclone.Sim.Determinism.DeterministicRandom.
+M:System.Guid.NewGuid;Guid.NewGuid() is non-deterministic. Derive IDs from seeded sim state instead.
+
+; ---- Wall-clock time ---------------------------------------
+; Sim logic measures time in ticks, never in seconds. The only
+; component allowed to know about real time is FixedTimestepDriver,
+; and it receives the delta as a parameter rather than reading it.
+P:System.DateTime.Now;Wall-clock time must never influence sim logic. Use SimWorld.Tick.
+P:System.DateTime.UtcNow;Wall-clock time must never influence sim logic. Use SimWorld.Tick.
+P:System.DateTimeOffset.Now;Wall-clock time must never influence sim logic. Use SimWorld.Tick.
+P:System.DateTimeOffset.UtcNow;Wall-clock time must never influence sim logic. Use SimWorld.Tick.
+P:System.Environment.TickCount;Wall-clock time must never influence sim logic. Use SimWorld.Tick.
+P:System.Environment.TickCount64;Wall-clock time must never influence sim logic. Use SimWorld.Tick.
+T:System.Diagnostics.Stopwatch;Wall-clock time must never influence sim logic. Use SimWorld.Tick.
+
+; ---- Non-deterministic execution ---------------------------
+T:System.Threading.Tasks.Parallel;Sim execution is single-threaded and ordered. Parallel interleaving is non-deterministic.
+T:System.Threading.Tasks.Task;Sim execution is single-threaded and ordered.
+
+; ============================================================
+;  NOT enforceable here — these remain review + test discipline:
+;
+;   * Iterating Dictionary<,> / HashSet<> in sim logic.
+;     .NET guarantees no iteration order, and randomizes string
+;     hashing per process. Lookup is fine; ITERATION is the hazard,
+;     and the analyzer cannot tell the two apart. Use arrays,
+;     SortedDictionary, or iterate a sorted key list.
+;
+;   * LINQ in sim hot paths (hides allocation and ordering
+;     assumptions). Banning System.Linq outright is too blunt —
+;     it is legitimate in tests and tooling.
+;
+;   * Floats in sim STATE (Decision #2: integer-only for now,
+;     fixed-point Q32.32 when fractional math is genuinely needed).
+;     Note that FixedTimestepDriver deliberately uses doubles —
+;     it lives outside the sim and only decides HOW MANY ticks
+;     to run, never what happens inside one.
+; ============================================================

@@ -1,0 +1,41 @@
+name: CI
+
+# Build + full test suite on every push and PR (METHODOLOGY.md §6).
+# `main` must stay green. The determinism test runs as part of this;
+# a failure here is a P0 bug.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # Bclone.Sim is deliberately engine-free, so CI needs no Godot install
+    # and no Windows runner to prove the simulation is correct. That keeps
+    # the feedback loop fast. Godot only enters at release time.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore bclone.sln
+
+      - name: Build
+        # TreatWarningsAsErrors is on (Directory.Build.props), and the
+        # banned-API analyzer runs here too — so a determinism-rule
+        # violation fails the build rather than reaching main.
+        run: dotnet build bclone.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test bclone.sln --configuration Release --no-build --verbosity normal

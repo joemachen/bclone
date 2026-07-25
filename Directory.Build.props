@@ -1,0 +1,23 @@
+<Project>
+
+  <!-- Shared settings for every project in the solution.
+       Keeps the individual .csproj files small and stops the
+       determinism-critical flags from drifting apart. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- A warning in sim code is usually a determinism smell.
+         Fail the build rather than let it scroll past. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Deterministic compilation: identical sources produce identical
+         binaries. Unrelated to sim determinism, but the same spirit. -->
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+</Project>

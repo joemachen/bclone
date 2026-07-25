@@ -1,0 +1,56 @@
+# =============================================================
+#  .gitignore — bclone
+#  Stack: C# / .NET 8 + Godot 4 (DESIGN.md §7, decision D1).
+#  The Rust/Bevy section has been removed now that the stack
+#  is settled.
+# =============================================================
+
+# ---- Dev tooling / logs (from run.bat, test.bat) ----
+logs/
+*.log
+
+# ---- OS cruft ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Editors / IDEs ----
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*~
+
+# =============================================================
+#  C# / .NET / Godot 4
+# =============================================================
+# Godot
+.godot/
+.import/
+export.cfg
+*.translation
+# NOTE: export_presets.cfg is deliberately NOT ignored. The release
+# workflow exports the "Windows Desktop" preset from a clean checkout,
+# so the preset definition has to be in the repo or the build fails.
+# (Safe for a desktop-only game — it carries no signing secrets. If a
+# mobile preset with a keystore password is ever added, revisit this.)
+# .NET / C#
+bin/
+obj/
+*.user
+*.userprefs
+mono_crash.*
+# Godot export output
+build/
+dist/
+
+# =============================================================
+#  Build / release artifacts
+# =============================================================
+*.exe
+*.pdb
+*.zip
+release/
+artifacts/

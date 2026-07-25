@@ -1,0 +1,61 @@
+name: Release (Windows .exe)
+
+# Tag-gated: this workflow stays DORMANT until you push a version tag
+# like v1.0.0. That push is your "v1 moment". Nothing runs before then.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # needed to create the GitHub Release
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Never ship a release that cannot pass its own determinism test.
+      - name: Run tests
+        run: dotnet test bclone.sln --configuration Release
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0        # keep pinned; bump deliberately
+          use-dotnet: true
+
+      # Godot needs its export templates and a one-time import pass before
+      # a headless export will succeed.
+      - name: Import project
+        run: godot --headless --path src/Bclone.Game --import
+
+      - name: Export Windows build
+        run: |
+          mkdir dist
+          godot --headless --path src/Bclone.Game --export-release "Windows Desktop" ../../dist/bclone.exe
+
+      - name: Package
+        run: Compress-Archive -Path dist\* -DestinationPath bclone-${{ github.ref_name }}-windows.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bclone-${{ github.ref_name }}-windows.zip
+          body_path: CHANGELOG.md   # or a script that extracts just this version's section
+          draft: false
+          prerelease: false
+
+# ------------------------------------------------------------------
+#  NOTE: the Godot steps above are written but UNVERIFIED — the view
+#  project (src/Bclone.Game) does not exist yet and arrives with
+#  Phase 0. Expect to adjust the export preset name and paths the
+#  first time this actually runs, which is not before v1.0.0.
+# ------------------------------------------------------------------

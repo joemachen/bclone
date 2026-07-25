@@ -1,0 +1,16 @@
+# Normalize line endings so the repo stays consistent between the Windows
+# dev machine and the Linux CI runner.
+
+* text=auto
+
+# Windows batch files must keep CRLF — some shells choke on LF in .bat.
+*.bat text eol=crlf
+
+# Keep these LF regardless of platform.
+*.sh      text eol=lf
+*.yml     text eol=lf
+*.cs      text eol=lf
+*.csproj  text eol=lf
+*.props   text eol=lf
+*.json    text eol=lf
+*.md      text eol=lf

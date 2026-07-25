@@ -1,0 +1,35 @@
+{
+  // ============================================================
+  //  bclone — simulation config
+  //
+  //  Data-driven from day one (DESIGN.md §3): no tunable lives in
+  //  code. Comments and trailing commas are permitted here —
+  //  System.Text.Json is configured to allow both, so this file
+  //  stays readable for modders without adding a dependency.
+  // ============================================================
+
+  // Seed for the whole run. Same seed + same config + same tick
+  // count => byte-identical history. This is the determinism
+  // contract (specs/tick-loop.md §1).
+  "seed": 12345,
+
+  // How many ticks make up one in-game day. A tick is the atomic
+  // sim unit; this is the only thing that gives it a "duration".
+  // Phase 0 will tune this against the meditative-pace
+  // non-negotiable (specs/phase-0-vertical-slice.md §11).
+  "ticks_per_day": 4,
+
+  // ---- Playback only — NEVER read by sim logic ---------------
+  // These control how fast the world is drawn, not what happens
+  // in it. Changing them must not change sim outcomes; there is a
+  // test that proves it (PlaybackSpeed_DoesNotAffectState).
+
+  // Ticks per real-world second at 1x speed.
+  "target_ticks_per_second": 10.0,
+
+  // Spiral-of-death guard: the most ticks the driver will run for
+  // a single frame. If a frame stalls (breakpoint, window drag),
+  // the backlog is dropped with a WARN rather than the sim trying
+  // to catch up forever and falling further behind.
+  "max_ticks_per_frame": 250
+}
