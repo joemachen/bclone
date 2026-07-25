@@ -377,14 +377,14 @@ public sealed class Phase0SimTests
         Villager villager = loop.World.Villager;
 
         Assert.Equal("Agnes", villager.Name);
-        Assert.Equal(50, villager.LifespanYears);
-        Assert.Equal(50, villager.AgeYears);
+        Assert.Equal(45, villager.LifespanYears);
+        Assert.Equal(45, villager.AgeYears);
         Assert.Equal(CauseOfDeath.OldAge, villager.CauseOfDeath);
-        Assert.Equal(12_001, ticks);
-        Assert.Equal(50, villager.WintersSurvived);
+        Assert.Equal(10_801, ticks);
+        Assert.Equal(45, villager.WintersSurvived);
 
         IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
         Assert.Equal("Agnes begins. Spring, Year 1, no food stored.", log[0]);
-        Assert.Contains("died of old age at 50", log[^1], StringComparison.Ordinal);
+        Assert.Contains("died of old age at 45", log[^1], StringComparison.Ordinal);
     }
 }

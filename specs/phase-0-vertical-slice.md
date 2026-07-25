@@ -223,19 +223,23 @@ Joe set the target: **a full life plays out in 9–12 minutes of real time.** Ev
 |---|---|---|
 | `ticks_per_day` | **4** | A day is four beats — enough granularity to see an action take time, few enough that days pass readably. |
 | `days_per_season` | **15** | 60 ticks per season, 240 per year. Long enough for winter to bite, short enough that a year reads as one breath. |
-| `target_ticks_per_second` | **10** | 240 ticks/year ÷ 10 = **24 s per in-game year**. Halved from 20 after watching it — at the old rate the seasons went by faster than they could be read. |
-| `lifespan_years_base` | **52** | 52 × 24 s ≈ 21 min at 1x, ≈ 10.4 min at 2x — the middle of the window. |
-| `lifespan_years_variance` | **±6** | Range 46–58 years ⇒ **9.2–11.6 min at 2x**. Lands inside 9–12 for every seeded outcome, and a little spread stops old-age death landing on a suspiciously round number. |
+| `target_ticks_per_second` | **1** | 240 ticks/year ÷ (1 × 4) = **60 s per in-game year at 4×**, the stated requirement. Was 20, then 10 — both still ran the seasons past faster than they could be read. |
+| `lifespan_years_base` | **45** | Middle of the requested 40–50 year band. |
+| `lifespan_years_variance` | **±5** | Range **40–50 years** exactly, and a little spread stops old-age death landing on a suspiciously round number. |
 
-**The 9–12 minute window now lives at 2x, not 1x.** Halving the base rate moved it there, and that is the intended shape of the speed ladder rather than an accident:
+**The constraints are now stated in in-game terms, not real minutes.** Joe's requirement is *one in-game year = 60 real seconds at 4×*, with a 40–50 year lifespan. Real-world duration is what falls out of that, and it is long:
 
-| Speed | A full life | What it is for |
+| Speed | Per in-game year | A full life |
 |---|---|---|
-| 1x | ~20 min | Study speed — watch a single season closely. |
-| **2x** | **~10 min** | **The watching speed.** A whole life in one sitting, seasons still readable. |
-| 4x | ~5 min | Skip gear — jump ahead when you do not need to read every season. |
+| 1× | 240 s | ~3 hours |
+| 2× | 120 s | ~1.5 hours |
+| **4×** | **60 s** | **~45 min** |
 
-Encoded as `Phase0Fixtures.WatchingSpeed`, so the constraint is tested rather than remembered.
+4× is therefore the **default watching speed**, not a skip gear — the slower settings are for studying a particular season. Encoded as `Phase0Fixtures.WatchingSpeed` and `TargetSecondsPerYearAtWatchingSpeed`, so both constraints are tested rather than remembered.
+
+> **Supersedes** the earlier "a full life should take 9–12 minutes" target. That was set before watching one; at that pace the seasons went by faster than they could be read, which is the opposite of the meditative-pace non-negotiable.
+
+**Tick granularity note:** at 1 tick/second the sim advances in visible steps. Harmless for Phase 0's text UI, but once villagers are drawn moving on a map, the renderer must interpolate using `FixedTimestepDriver.Alpha` — which already exists for exactly this reason — or movement will visibly stutter. The alternative, if that proves insufficient, is to raise `ticks_per_day` and `target_ticks_per_second` together (the ratio is what sets the pace), which would mean retuning the whole per-tick economy.
 
 **Hunger cadence is the legibility lever.** `hunger_per_tick = 10` against `hunger_max = 100` with an eat threshold of 80 means the villager eats **every two days** — a rhythm a person can read off the screen without arithmetic. It also gives ~30 meals a year, so winter (60 ticks ≈ 7–8 meals ≈ 38 food) demands a real stockpile rather than a token one. That is what makes the winter drain visible as a sawtooth in the food counter: climbing through spring/summer/fall, falling through winter.
 

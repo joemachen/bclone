@@ -15,8 +15,8 @@
 
   // ---- Calendar ----------------------------------------------
   // 4 ticks/day x 15 days x 4 seasons = 240 ticks per year.
-  // At 10 ticks/sec that is 24 real seconds per in-game year, so a
-  // ~52-year life is about 21 minutes at 1x and 10 at 2x.
+  // At 1 tick/sec that is 240 real seconds per in-game year at 1x,
+  // and 60 seconds at 4x - the pace Joe asked for.
   // See specs/phase-0-vertical-slice.md §11 for the derivation.
   "ticks_per_day": 4,
   "days_per_season": 15,
@@ -25,10 +25,10 @@
   // These control how fast the world is drawn, not what happens
   // in it. Changing them must not change sim outcomes; there is a
   // test that proves it (PlaybackSpeed_DoesNotAffectState).
-  // Halved from 20 after watching it: at the old rate the seasons
-  // went by faster than they could be read, even on 1x. Playback
-  // only - this cannot change what happens in the sim.
-  "target_ticks_per_second": 10.0,
+  // Set so that ONE IN-GAME YEAR TAKES 60 REAL SECONDS AT 4x, which
+  // is the intended watching speed. 240 ticks/year / (1.0 * 4) = 60s.
+  // Playback only - this cannot change what happens in the sim.
+  "target_ticks_per_second": 1.0,
   "max_ticks_per_frame": 250,
 
   // ---- Needs -------------------------------------------------
@@ -76,10 +76,10 @@
   "vigour_min_percent": 55,
 
   // ---- Life --------------------------------------------------
-  // 52 +/- 6 years => 46-58 years => 9.2-11.6 minutes of real
-  // time for a full life.
-  "lifespan_years_base": 52,
-  "lifespan_years_variance": 6,
+  // 45 +/- 5 => 40-50 year lives. At 60s per year on 4x, that is a
+  // 40-50 minute life: long enough to be a life rather than a demo.
+  "lifespan_years_base": 45,
+  "lifespan_years_variance": 5,
 
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",

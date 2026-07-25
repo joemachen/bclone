@@ -102,11 +102,11 @@ public sealed class AgeingTests
 
             int year = ExtractYear(line);
             int trips = ExtractTrips(line);
-            if (year <= 20)
+            if (year <= 15)
             {
                 youngSeasons.Add(trips);
             }
-            else if (year >= 45)
+            else if (year >= 35)
             {
                 oldSeasons.Add(trips);
             }
@@ -173,8 +173,8 @@ public sealed class AgeingTests
         var (loop, sink) = Phase0Fixtures.Build(Config);
         Phase0Fixtures.RunUntilDeath(loop);
 
-        List<string> young = SeasonLinesForYear(sink, 10);
-        List<string> old = SeasonLinesForYear(sink, 48);
+        List<string> young = SeasonLinesForYear(sink, 8);
+        List<string> old = SeasonLinesForYear(sink, 42);
 
         Assert.NotEmpty(young);
         Assert.NotEmpty(old);

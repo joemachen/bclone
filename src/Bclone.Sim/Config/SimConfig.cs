@@ -30,7 +30,7 @@ public sealed record SimConfig
     /// never read this.
     /// </summary>
     [JsonPropertyName("target_ticks_per_second")]
-    public double TargetTicksPerSecond { get; init; } = 10.0;
+    public double TargetTicksPerSecond { get; init; } = 1.0;
 
     /// <summary>
     /// Spiral-of-death guard: most ticks the driver will run for one frame.
@@ -139,14 +139,14 @@ public sealed record SimConfig
 
     /// <summary>Median lifespan in years.</summary>
     [JsonPropertyName("lifespan_years_base")]
-    public int LifespanYearsBase { get; init; } = 52;
+    public int LifespanYearsBase { get; init; } = 45;
 
     /// <summary>
     /// Seeded spread around <see cref="LifespanYearsBase"/>, drawn once at birth.
     /// A little variance stops old age landing on a suspiciously round number.
     /// </summary>
     [JsonPropertyName("lifespan_years_variance")]
-    public int LifespanYearsVariance { get; init; } = 6;
+    public int LifespanYearsVariance { get; init; } = 5;
 
     /// <summary>
     /// Names to draw from. A villager is "Mabel", never "Villager_01" — the

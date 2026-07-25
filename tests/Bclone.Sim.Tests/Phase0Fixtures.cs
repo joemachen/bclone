@@ -13,7 +13,7 @@ public static class Phase0Fixtures
         Seed = 12345UL,
         TicksPerDay = 4,
         DaysPerSeason = 15,
-        TargetTicksPerSecond = 10.0,
+        TargetTicksPerSecond = 1.0,
         HungerPerTick = 10,
         HungerMax = 100,
         EatThreshold = 80,
@@ -27,8 +27,8 @@ public static class Phase0Fixtures
         FoodSourceX = 5,
         VigourFullUntilAge = 30,
         VigourMinPercent = 55,
-        LifespanYearsBase = 52,
-        LifespanYearsVariance = 6,
+        LifespanYearsBase = 45,
+        LifespanYearsVariance = 5,
     };
 
     /// <summary>
@@ -43,15 +43,22 @@ public static class Phase0Fixtures
     };
 
     /// <summary>
-    /// The speed a life is meant to be <em>watched</em> at.
+    /// The speed the game is meant to be watched at.
     /// </summary>
     /// <remarks>
-    /// Joe's constraint is that a full life runs 9–12 minutes. After the base tick
-    /// rate was halved (the seasons went by faster than they could be read), that
-    /// window lands at 2x rather than 1x — so 1x is now the study speed, 2x is the
-    /// watching speed, and 4x is the skip gear.
+    /// Joe's pacing constraint is stated at this speed: <b>one in-game year takes
+    /// 60 real seconds at 4x</b>, with a lifespan of 40–50 years. So 4x is the
+    /// default watching speed, and the slower settings are for studying a
+    /// particular season rather than for normal play.
     /// </remarks>
-    public const double WatchingSpeed = 2.0;
+    public const double WatchingSpeed = 4.0;
+
+    /// <summary>Target real seconds per in-game year at <see cref="WatchingSpeed"/>.</summary>
+    public const double TargetSecondsPerYearAtWatchingSpeed = 60.0;
+
+    /// <summary>Real seconds one in-game year takes at a given speed.</summary>
+    public static double SecondsPerYear(SimConfig config, double speedMultiplier) =>
+        config.TicksPerYear / (config.TargetTicksPerSecond * speedMultiplier);
 
     /// <summary>Real minutes a run of <paramref name="ticks"/> takes at a given speed.</summary>
     public static double RealMinutes(int ticks, SimConfig config, double speedMultiplier) =>

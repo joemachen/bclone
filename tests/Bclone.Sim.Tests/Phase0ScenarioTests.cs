@@ -73,23 +73,35 @@ public sealed class Phase0ScenarioTests
     }
 
     [Fact]
-    public void LifeSpansTheIntendedRealTimeWindow()
+    public void AYearTakesSixtySecondsAtTheWatchingSpeed()
     {
-        // Joe's constraint: a life should take 9-12 minutes to watch.
-        // This is a design requirement, so it gets a test rather than a comment.
+        // Joe's pacing constraint, stated directly. Design requirements get tests
+        // rather than comments, because a comment cannot fail.
+        SimConfig config = Phase0Fixtures.Plenty;
+        double seconds = Phase0Fixtures.SecondsPerYear(config, Phase0Fixtures.WatchingSpeed);
+
+        _output.WriteLine(
+            $"{config.TicksPerYear} ticks/year at {config.TargetTicksPerSecond} ticks/s — " +
+            $"1x: {Phase0Fixtures.SecondsPerYear(config, 1.0):F0}s/yr · " +
+            $"4x: {seconds:F0}s/yr.");
+
+        Assert.Equal(Phase0Fixtures.TargetSecondsPerYearAtWatchingSpeed, seconds, precision: 6);
+    }
+
+    [Fact]
+    public void ALifeSpansFortyToFiftyYears()
+    {
         SimConfig config = Phase0Fixtures.Plenty;
         var (loop, _) = Phase0Fixtures.Build(config);
 
         int ticks = Phase0Fixtures.RunUntilDeath(loop);
-        double watching = Phase0Fixtures.RealMinutes(ticks, config, Phase0Fixtures.WatchingSpeed);
+        Villager villager = loop.World.Villager;
 
         _output.WriteLine(
-            $"{loop.World.Villager.Name} lived {loop.World.Villager.AgeYears} years — {ticks} ticks. " +
-            $"1x: {Phase0Fixtures.RealMinutes(ticks, config, 1.0):F1} min · " +
-            $"2x: {watching:F1} min · " +
-            $"4x: {Phase0Fixtures.RealMinutes(ticks, config, 4.0):F1} min.");
+            $"{villager.Name} lived {villager.AgeYears} years — {ticks} ticks = " +
+            $"{Phase0Fixtures.RealMinutes(ticks, config, Phase0Fixtures.WatchingSpeed):F1} min at 4x.");
 
-        Assert.InRange(watching, 9.0, 12.0);
+        Assert.InRange(villager.AgeYears, 40, 50);
     }
 
     [Theory]
@@ -98,17 +110,14 @@ public sealed class Phase0ScenarioTests
     [InlineData(99UL)]
     [InlineData(4242UL)]
     [InlineData(777777UL)]
-    public void EverySeed_ProducesAFullLifeInTheWindow(ulong seed)
+    public void EverySeed_ProducesAFullLifeInTheBand(ulong seed)
     {
-        // Lifespan variance must not push any seeded outcome outside the window.
-        SimConfig config = Phase0Fixtures.Plenty;
-        var (loop, _) = Phase0Fixtures.Build(config, seed);
+        var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Plenty, seed);
+        Phase0Fixtures.RunUntilDeath(loop);
 
-        int ticks = Phase0Fixtures.RunUntilDeath(loop);
-        double minutes = Phase0Fixtures.RealMinutes(ticks, config, Phase0Fixtures.WatchingSpeed);
-
+        // Lifespan variance must not push any seeded outcome outside the band.
         Assert.Equal(CauseOfDeath.OldAge, loop.World.Villager.CauseOfDeath);
-        Assert.InRange(minutes, 9.0, 12.0);
+        Assert.InRange(loop.World.Villager.AgeYears, 40, 50);
     }
 
     [Fact]
