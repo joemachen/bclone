@@ -283,18 +283,27 @@ public sealed class Phase0SimTests
     [Fact]
     public void TheDead_StopActingEntirely()
     {
-        var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Scarcity);
+        var (loop, sink) = Phase0Fixtures.Build(Phase0Fixtures.Scarcity);
         Phase0Fixtures.RunUntilDeath(loop);
 
         ulong hashAtDeath = StateHash.Compute(loop.World);
         int foodAtDeath = loop.World.Stockpile.Food;
         GridPos posAtDeath = loop.World.Villager.Position;
 
-        loop.Step(500);
+        int ageAtDeath = loop.World.Villager.AgeYears;
+        int logAtDeath = Phase0Fixtures.LifeLog(sink).Count;
+
+        loop.Step(2_000);
 
         Assert.Equal(VillagerState.Dead, loop.World.Villager.State);
         Assert.Equal(foodAtDeath, loop.World.Stockpile.Food);
         Assert.Equal(posAtDeath, loop.World.Villager.Position);
+
+        // The clock keeps turning, but the story is over: no more ageing, and no
+        // more narration. Otherwise the log announces winters to an empty house and
+        // the age on screen drifts past the age in the epitaph.
+        Assert.Equal(ageAtDeath, loop.World.Villager.AgeYears);
+        Assert.Equal(logAtDeath, Phase0Fixtures.LifeLog(sink).Count);
 
         // Only the tick and clock advance after death, so the hash must change —
         // but nothing about the villager may.

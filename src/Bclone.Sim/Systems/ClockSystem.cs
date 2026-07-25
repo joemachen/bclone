@@ -22,6 +22,15 @@ public sealed class ClockSystem : ISimSystem
             return;
         }
 
+        // The calendar keeps turning after a death — the tick counter is still the
+        // sim's clock — but the villager's story is over. Without this, the log goes
+        // on announcing winters to an empty house and the age counter keeps rising,
+        // so the header reads "died at 57" beside an epitaph saying "lived 50 years".
+        if (!world.Villager.Alive)
+        {
+            return;
+        }
+
         SimClock current = world.Clock;
         SimClock previous = SimClock.FromTick(world.Tick - 1UL, world.Config);
 
