@@ -213,9 +213,29 @@ If that subjective test fails, the phase is not done — regardless of green tes
 
 ---
 
-## 11. Open questions (resolve during the phase; log decisions to `DESIGN.md §7`)
+## 11. Open questions
 
-- Real-time tick rate for playback (how many ticks/sec feels "meditative"?) — tune against the pace non-negotiable.
-- Starvation boundary semantics (`>` vs `>=`) — pick one, test it, note it.
-- Lifespan variance: fixed vs. small seeded spread — a little spread makes the old-age death feel more natural.
-- Exact `ticks_per_day` / `days_per_season` so a full life spans a satisfying number of years without dragging.
+### Resolved 2026-07-25 — pacing (derived from "a life should take 9–12 minutes")
+
+Joe set the target: **a full life plays out in 9–12 minutes of real time.** Everything else falls out of that.
+
+| Value | Setting | Reasoning |
+|---|---|---|
+| `ticks_per_day` | **4** | A day is four beats — enough granularity to see an action take time, few enough that days pass readably. |
+| `days_per_season` | **15** | 60 ticks per season, 240 per year. Long enough for winter to bite, short enough that a year reads as one breath. |
+| `target_ticks_per_second` | **20** | 240 ticks/year ÷ 20 = **12 s per in-game year**. |
+| `lifespan_years_base` | **52** | 52 × 12 s ≈ 10.4 min — the middle of the window. |
+| `lifespan_years_variance` | **±6** | Range 46–58 years ⇒ **9.2–11.6 min**. Lands inside 9–12 for every seeded outcome, and a little spread stops old-age death landing on a suspiciously round number. |
+
+**Hunger cadence is the legibility lever.** `hunger_per_tick = 10` against `hunger_max = 100` with an eat threshold of 80 means the villager eats **every two days** — a rhythm a person can read off the screen without arithmetic. It also gives ~30 meals a year, so winter (60 ticks ≈ 7–8 meals ≈ 38 food) demands a real stockpile rather than a token one. That is what makes the winter drain visible as a sawtooth in the food counter: climbing through spring/summer/fall, falling through winter.
+
+### Resolved 2026-07-25 — other open questions
+
+- **Starvation boundary:** `>=`. Death fires when the villager has been at `hunger_max` for `starvation_ticks` or more — 24 ticks, i.e. **six days at maximum hunger**. Chosen over `>` so the boundary is inclusive and easy to state in the log ("went hungry six days").
+- **Lifespan variance:** small seeded spread (see table), drawn once at birth from the sim RNG.
+- **Calendar is derived, not stored.** Day/season/year are a pure function of `tick` and config (`SimClock.FromTick`). Less mutable state means fewer places determinism can break, and the calendar can never drift out of sync with the tick.
+
+### Still open (carry into Phase 1)
+
+- **Childhood.** The villager is able-bodied from age 0, which is obviously wrong — a toddler does not forage. Phase 0 has no childhood mechanics by design (out of scope, §3), and with a single villager there is nobody to depend on. Dependency and age-gated capability belong with households in Phase 1. **Flagged rather than silently shipped.**
+- **Stockpile is always accessible**, not stored at a location. Keeps Phase 0 from producing a "starved two tiles from home" death that would read as unfair rather than instructive. Revisit when granaries arrive.

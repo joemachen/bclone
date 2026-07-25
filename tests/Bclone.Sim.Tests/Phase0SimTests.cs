@@ -1,0 +1,382 @@
+using Bclone.Sim.Config;
+using Bclone.Sim.Core;
+using Bclone.Sim.Determinism;
+using Bclone.Sim.World;
+using Xunit;
+
+namespace Bclone.Sim.Tests;
+
+/// <summary>Unit tests for the Phase 0 sim rules (spec §8).</summary>
+public sealed class Phase0SimTests
+{
+    private static SimConfig Config => Phase0Fixtures.Plenty;
+
+    // ---------------------------------------------------------------
+    //  Clock
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void Clock_StartsOnDayOneOfSpringYearOne()
+    {
+        SimClock clock = SimClock.FromTick(0UL, Config);
+
+        Assert.Equal(1, clock.DayOfSeason);
+        Assert.Equal(Season.Spring, clock.Season);
+        Assert.Equal(1, clock.Year);
+    }
+
+    [Fact]
+    public void Clock_RollsOverTicksIntoDays()
+    {
+        // 4 ticks per day, so tick 4 is day 2.
+        Assert.Equal(1, SimClock.FromTick(3UL, Config).DayOfSeason);
+        Assert.Equal(2, SimClock.FromTick(4UL, Config).DayOfSeason);
+    }
+
+    [Theory]
+    [InlineData(0, Season.Spring)]
+    [InlineData(60, Season.Summer)]   // 15 days x 4 ticks
+    [InlineData(120, Season.Fall)]
+    [InlineData(180, Season.Winter)]
+    [InlineData(240, Season.Spring)]  // next year
+    public void Clock_RollsOverDaysIntoSeasons(int tick, Season expected)
+    {
+        Assert.Equal(expected, SimClock.FromTick((ulong)tick, Config).Season);
+    }
+
+    [Fact]
+    public void Clock_RollsOverSeasonsIntoYears()
+    {
+        Assert.Equal(1, SimClock.FromTick(239UL, Config).Year);
+        Assert.Equal(2, SimClock.FromTick(240UL, Config).Year);
+        Assert.Equal(3, SimClock.FromTick(480UL, Config).Year);
+    }
+
+    [Fact]
+    public void Clock_IsAPureFunctionOfTheTick()
+    {
+        // Derived, not accumulated — so it cannot drift out of sync with the tick
+        // no matter how the sim got there.
+        for (ulong tick = 0; tick < 2_000; tick++)
+        {
+            Assert.Equal(SimClock.FromTick(tick, Config), SimClock.FromTick(tick, Config));
+        }
+    }
+
+    [Fact]
+    public void VillagerAges_OnTheYearBoundary()
+    {
+        // Year 1 is 240 ticks. Systems run for tick N and then the counter
+        // increments, so the tick that first *computes* Year 2 is the 241st step.
+        var (loop, _) = Phase0Fixtures.Build(Config);
+
+        loop.Step(240);
+        Assert.Equal(0, loop.World.Villager.AgeYears);
+
+        loop.StepOnce();
+        Assert.Equal(1, loop.World.Villager.AgeYears);
+        Assert.Equal(2, loop.World.Clock.Year);
+    }
+
+    // ---------------------------------------------------------------
+    //  Hunger
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void Hunger_AccruesPerTickAndClampsAtMax()
+    {
+        // Meals priced out of reach, so nothing interferes with the climb.
+        SimConfig config = Config with { FoodPerMeal = 999 };
+        var (loop, _) = Phase0Fixtures.Build(config);
+
+        loop.StepOnce();
+        Assert.Equal(config.HungerPerTick, loop.World.Villager.Hunger);
+
+        loop.Step(100);
+        Assert.Equal(config.HungerMax, loop.World.Villager.Hunger);
+    }
+
+    [Fact]
+    public void Eating_ConsumesStockpileAndReducesHunger()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Config);
+        SimWorld world = loop.World;
+
+        // Run until the first meal is taken.
+        int foodBefore = 0;
+        for (int i = 0; i < 500; i++)
+        {
+            foodBefore = world.Stockpile.Food;
+            loop.StepOnce();
+            if (world.Villager.JustAte)
+            {
+                break;
+            }
+        }
+
+        Assert.True(world.Villager.JustAte, "Expected the villager to eat within 500 ticks.");
+        Assert.Equal(foodBefore - Config.FoodPerMeal, world.Stockpile.Food);
+        Assert.True(world.Villager.Hunger < Config.EatThreshold);
+    }
+
+    [Fact]
+    public void Eating_IsBlockedWhenTheStoreIsEmpty()
+    {
+        // Nothing to gather anywhere, so the store stays empty and hunger maxes out.
+        SimConfig config = Config with { GatherYield = 1, FoodPerMeal = 999 };
+        var (loop, _) = Phase0Fixtures.Build(config);
+
+        loop.Step(50);
+
+        Assert.Equal(config.HungerMax, loop.World.Villager.Hunger);
+        Assert.False(loop.World.Villager.JustAte);
+    }
+
+    [Fact]
+    public void Eating_PreemptsAnActionRatherThanWaitingForIt()
+    {
+        // The bug this guards: a round trip to the berry patch is longer than the
+        // gap between meals, so a villager who cannot interrupt starves with a full
+        // larder. Hunger must never reach max while food is in store.
+        var (loop, _) = Phase0Fixtures.Build(Config);
+
+        for (int i = 0; i < 5_000; i++)
+        {
+            loop.StepOnce();
+
+            if (loop.World.Stockpile.Food >= Config.FoodPerMeal)
+            {
+                Assert.True(
+                    loop.World.Villager.Hunger < Config.HungerMax,
+                    $"Hunger hit max at tick {loop.World.Tick} with " +
+                    $"{loop.World.Stockpile.Food} food in store.");
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------
+    //  Gathering
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void Gathering_AddsYieldAfterGatherTicks()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Config);
+
+        for (int i = 0; i < 100; i++)
+        {
+            loop.StepOnce();
+            if (loop.World.Stockpile.Food > 0)
+            {
+                break;
+            }
+        }
+
+        Assert.Equal(Config.GatherYield, loop.World.Stockpile.Food);
+        Assert.Equal(1, loop.World.Villager.TotalGathers);
+    }
+
+    [Fact]
+    public void Gathering_IsImpossibleInWinter()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Config);
+
+        // Run to the start of winter, then note the store and watch it only fall.
+        while (!loop.World.Clock.IsWinter)
+        {
+            loop.StepOnce();
+        }
+
+        // A gather already underway when winter arrives still finishes — she is
+        // standing at the patch with berries in hand. Allow exactly that one, then
+        // nothing more.
+        int gathersAtWinterStart = loop.World.Villager.TotalGathers;
+        int peak = loop.World.Stockpile.Food;
+
+        while (loop.World.Clock.IsWinter)
+        {
+            loop.StepOnce();
+            peak = Math.Max(peak, loop.World.Stockpile.Food);
+        }
+
+        int gathersDuringWinter = loop.World.Villager.TotalGathers - gathersAtWinterStart;
+        Assert.True(gathersDuringWinter <= 1,
+            $"Foraged {gathersDuringWinter} times during winter; at most one in-progress gather may finish.");
+        Assert.True(loop.World.Stockpile.Food < peak, "Winter should drain the store.");
+    }
+
+    [Fact]
+    public void Gathering_StopsAtTheStockpileTarget()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Config);
+        loop.Step(2_000);
+
+        // A gather can overshoot the target by one yield, but never more —
+        // otherwise the villager is hoarding instead of resting.
+        Assert.True(
+            loop.World.Stockpile.Food <= Config.StockpileTarget + Config.GatherYield,
+            $"Stockpile ran away to {loop.World.Stockpile.Food}.");
+    }
+
+    [Fact]
+    public void Stockpile_NeverGoesNegative()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Scarcity);
+
+        for (int i = 0; i < 20_000; i++)
+        {
+            loop.StepOnce();
+            Assert.True(loop.World.Stockpile.Food >= 0);
+        }
+    }
+
+    // ---------------------------------------------------------------
+    //  Death
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void Starvation_FiresAtTheThresholdNotBefore()
+    {
+        // Boundary is >= (spec §11). With no food, hunger maxes at tick 10, and
+        // death lands starvation_ticks later.
+        SimConfig config = Config with { GatherYield = 1, FoodPerMeal = 999, StarvationTicks = 24 };
+        var (loop, _) = Phase0Fixtures.Build(config);
+
+        while (loop.World.Villager.TicksAtMaxHunger < config.StarvationTicks - 1)
+        {
+            loop.StepOnce();
+        }
+
+        Assert.True(loop.World.Villager.Alive, "Died one tick early.");
+
+        loop.StepOnce();
+        Assert.False(loop.World.Villager.Alive);
+        Assert.Equal(CauseOfDeath.Starvation, loop.World.Villager.CauseOfDeath);
+    }
+
+    [Fact]
+    public void OldAge_FiresAtTheDrawnLifespan()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Config);
+        int lifespan = loop.World.Villager.LifespanYears;
+
+        Phase0Fixtures.RunUntilDeath(loop);
+
+        Assert.Equal(CauseOfDeath.OldAge, loop.World.Villager.CauseOfDeath);
+        Assert.Equal(lifespan, loop.World.Villager.AgeYears);
+    }
+
+    [Fact]
+    public void LifespanVariance_StaysInTheConfiguredBand()
+    {
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            var (loop, _) = Phase0Fixtures.Build(Config, seed);
+            int lifespan = loop.World.Villager.LifespanYears;
+
+            Assert.InRange(
+                lifespan,
+                Config.LifespanYearsBase - Config.LifespanYearsVariance,
+                Config.LifespanYearsBase + Config.LifespanYearsVariance);
+        }
+    }
+
+    [Fact]
+    public void TheDead_StopActingEntirely()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Scarcity);
+        Phase0Fixtures.RunUntilDeath(loop);
+
+        ulong hashAtDeath = StateHash.Compute(loop.World);
+        int foodAtDeath = loop.World.Stockpile.Food;
+        GridPos posAtDeath = loop.World.Villager.Position;
+
+        loop.Step(500);
+
+        Assert.Equal(VillagerState.Dead, loop.World.Villager.State);
+        Assert.Equal(foodAtDeath, loop.World.Stockpile.Food);
+        Assert.Equal(posAtDeath, loop.World.Villager.Position);
+
+        // Only the tick and clock advance after death, so the hash must change —
+        // but nothing about the villager may.
+        Assert.NotEqual(hashAtDeath, StateHash.Compute(loop.World));
+    }
+
+    [Fact]
+    public void DeathIsRecordedWithATick()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Scarcity);
+        Phase0Fixtures.RunUntilDeath(loop);
+
+        Assert.NotNull(loop.World.Villager.DiedAtTick);
+        Assert.True(loop.World.Villager.DiedAtTick <= loop.World.Tick);
+    }
+
+    // ---------------------------------------------------------------
+    //  Movement
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void ManhattanDistance_IsIntegerOnly()
+    {
+        Assert.Equal(5, new GridPos(0, 0).ManhattanDistanceTo(new GridPos(5, 0)));
+        Assert.Equal(7, new GridPos(0, 0).ManhattanDistanceTo(new GridPos(3, 4)));
+        Assert.Equal(7, new GridPos(3, 4).ManhattanDistanceTo(new GridPos(0, 0)));
+    }
+
+    [Fact]
+    public void StepToward_ClosesDistanceByExactlyOne()
+    {
+        var pos = new GridPos(0, 0);
+        var target = new GridPos(3, 2);
+
+        int distance = pos.ManhattanDistanceTo(target);
+        while (pos != target)
+        {
+            pos = pos.StepToward(target);
+            Assert.Equal(--distance, pos.ManhattanDistanceTo(target));
+        }
+
+        Assert.Equal(target, pos.StepToward(target));
+    }
+
+    [Fact]
+    public void Villager_StaysWithinTheirWorld()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Config);
+
+        for (int i = 0; i < 3_000; i++)
+        {
+            loop.StepOnce();
+            int x = loop.World.Villager.Position.X;
+            Assert.InRange(x, Config.HomeX, Config.FoodSourceX);
+        }
+    }
+
+    // ---------------------------------------------------------------
+    //  Golden replay (spec §8)
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void GoldenReplay_ASeededLifeIsReproducible()
+    {
+        // Locks the shipped tuning against silent behavioural drift. If this fails
+        // after an intentional balance change, re-read the life log, confirm the new
+        // story is the one you wanted, then update these numbers deliberately.
+        var (loop, sink) = Phase0Fixtures.Build(Config, seed: 12345UL);
+        int ticks = Phase0Fixtures.RunUntilDeath(loop);
+
+        Villager villager = loop.World.Villager;
+
+        Assert.Equal("Agnes", villager.Name);
+        Assert.Equal(50, villager.LifespanYears);
+        Assert.Equal(50, villager.AgeYears);
+        Assert.Equal(CauseOfDeath.OldAge, villager.CauseOfDeath);
+        Assert.Equal(12_001, ticks);
+        Assert.Equal(50, villager.WintersSurvived);
+
+        IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
+        Assert.Equal("Agnes begins. Spring, Year 1, no food stored.", log[0]);
+        Assert.Contains("died of old age at 50", log[^1], StringComparison.Ordinal);
+    }
+}

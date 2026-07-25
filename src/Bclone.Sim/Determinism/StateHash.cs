@@ -1,4 +1,5 @@
 using Bclone.Sim.Core;
+using Bclone.Sim.World;
 
 namespace Bclone.Sim.Determinism;
 
@@ -39,7 +40,24 @@ public static class StateHash
         hash = MixUInt64(hash, world.Rng.State);
         hash = MixUInt64(hash, world.Rng.Inc);
 
-        // Phase 0 appends villager, clock, and stockpile state here.
+        // ---- Phase 0 state ----
+        Villager villager = world.Villager;
+        hash = MixUInt32(hash, (uint)villager.AgeYears);
+        hash = MixUInt32(hash, (uint)villager.Hunger);
+        hash = MixUInt32(hash, (uint)villager.TicksAtMaxHunger);
+        hash = MixByte(hash, (byte)villager.State);
+        hash = MixUInt32(hash, (uint)villager.Position.X);
+        hash = MixUInt32(hash, (uint)villager.Position.Y);
+        hash = MixUInt32(hash, (uint)villager.ActionTicksRemaining);
+        hash = MixByte(hash, villager.Alive ? (byte)1 : (byte)0);
+        hash = MixByte(hash, (byte)villager.CauseOfDeath);
+        hash = MixUInt64(hash, villager.DiedAtTick ?? ulong.MaxValue);
+        hash = MixUInt32(hash, (uint)villager.WintersSurvived);
+        hash = MixUInt32(hash, (uint)villager.TotalGathers);
+        hash = MixUInt32(hash, (uint)villager.LifespanYears);
+
+        hash = MixUInt32(hash, (uint)world.Stockpile.Food);
+        hash = MixUInt32(hash, (uint)world.Stockpile.LifetimeGathered);
 
         return hash;
     }

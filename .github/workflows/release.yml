@@ -29,7 +29,7 @@ jobs:
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
         with:
-          version: 4.3.0        # keep pinned; bump deliberately
+          version: 4.7.1        # keep pinned; bump deliberately (match your local editor)
           use-dotnet: true
 
       # Godot needs its export templates and a one-time import pass before
