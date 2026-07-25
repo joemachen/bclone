@@ -1,0 +1,32 @@
+<Project Sdk="Godot.NET.Sdk/4.7.1">
+
+  <!-- ============================================================
+       Bclone.Game — the Godot view shell.
+
+       Draws the simulation and takes input. It READS sim state and
+       must never write to it (DESIGN.md §3). All game logic lives in
+       Bclone.Sim, which knows nothing about Godot.
+
+       Deliberately NOT part of bclone.sln: CI builds and tests the
+       simulation without needing the engine, which keeps the feedback
+       loop fast and proves the sim really is engine-free. Godot builds
+       this project itself.
+       ============================================================ -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Bclone.Game</RootNamespace>
+
+    <!-- Godot's source generators emit code we do not control, so the
+         warnings-as-errors rule from Directory.Build.props is relaxed
+         here. It still applies to Bclone.Sim, where it matters. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bclone.Sim\Bclone.Sim.csproj" />
+  </ItemGroup>
+
+</Project>

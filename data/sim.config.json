@@ -13,23 +13,76 @@
   // contract (specs/tick-loop.md §1).
   "seed": 12345,
 
-  // How many ticks make up one in-game day. A tick is the atomic
-  // sim unit; this is the only thing that gives it a "duration".
-  // Phase 0 will tune this against the meditative-pace
-  // non-negotiable (specs/phase-0-vertical-slice.md §11).
+  // ---- Calendar ----------------------------------------------
+  // 4 ticks/day x 15 days x 4 seasons = 240 ticks per year.
+  // At 1 tick/sec that is 240 real seconds per in-game year at 1x,
+  // and 60 seconds at 4x - the pace Joe asked for.
+  // See specs/phase-0-vertical-slice.md §11 for the derivation.
   "ticks_per_day": 4,
+  "days_per_season": 15,
 
   // ---- Playback only — NEVER read by sim logic ---------------
   // These control how fast the world is drawn, not what happens
   // in it. Changing them must not change sim outcomes; there is a
   // test that proves it (PlaybackSpeed_DoesNotAffectState).
+  // Set so that ONE IN-GAME YEAR TAKES 60 REAL SECONDS AT 4x, which
+  // is the intended watching speed. 240 ticks/year / (1.0 * 4) = 60s.
+  // Playback only - this cannot change what happens in the sim.
+  "target_ticks_per_second": 1.0,
+  "max_ticks_per_frame": 250,
 
-  // Ticks per real-world second at 1x speed.
-  "target_ticks_per_second": 10.0,
+  // ---- Needs -------------------------------------------------
+  // Hunger fills in 10 ticks and the villager eats at 80, so they
+  // eat roughly every 2 days. That cadence is chosen to be READ
+  // rather than calculated — you should be able to watch it.
+  "hunger_per_tick": 10,
+  "hunger_max": 100,
+  "eat_threshold": 80,
+  "eat_reduces_hunger": 80,
+  "food_per_meal": 5,
 
-  // Spiral-of-death guard: the most ticks the driver will run for
-  // a single frame. If a frame stalls (breakpoint, window drag),
-  // the backlog is dropped with a WARN rather than the sim trying
-  // to catch up forever and falling further behind.
-  "max_ticks_per_frame": 250
+  // 24 ticks = 6 days at maximum hunger before death. Boundary
+  // is >= (decided in spec §11).
+  "starvation_ticks": 24,
+
+  // ---- Foraging ----------------------------------------------
+  // A round trip is 5 out + 3 gathering + 5 back = 13 ticks for
+  // 15 food, against ~150 food eaten per year. That leaves a real
+  // surplus but not a free one — a lazy autumn still bites.
+  // Yield at FULL vigour. An ageing villager brings back proportionally
+  // less (see vigour_min_percent), so this needs enough headroom that a
+  // frail elder can still just about keep up.
+  "gather_yield": 24,
+  "gather_ticks": 3,
+  "travel_ticks_per_unit": 1,
+
+  // Stop foraging at this level and rest. Winter costs about 38
+  // food, so 60 clears it with a margin the player can watch
+  // shrink.
+  "stockpile_target": 60,
+
+  "home_x": 0,
+  "home_y": 0,
+  "food_source_x": 5,
+  "food_source_y": 0,
+
+  // ---- Ageing ------------------------------------------------
+  // Full strength until 30, then a straight decline to 55% in the
+  // final year. This is the only source of year-to-year variation in
+  // Phase 0, and it is what gives a life a shape: easy middle years
+  // with time to rest, then a long tightening where the same food
+  // costs more and more walking.
+  "vigour_full_until_age": 30,
+  "vigour_min_percent": 55,
+
+  // ---- Life --------------------------------------------------
+  // 45 +/- 5 => 40-50 year lives. At 60s per year on 4x, that is a
+  // 40-50 minute life: long enough to be a life rather than a demo.
+  "lifespan_years_base": 45,
+  "lifespan_years_variance": 5,
+
+  "villager_names": [
+    "Mabel", "Otto", "Bess", "Silas",
+    "Agnes", "Wendell", "Hattie", "Amos",
+  ],
 }

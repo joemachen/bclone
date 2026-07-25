@@ -1,6 +1,6 @@
 # Spec: Phase 0 — Vertical Slice (one villager, one resource loop)
 
-> Status: **not started** · Owner: Joe + Claude Code · Phase gate: **yes** (must pass before any Phase 1 work)
+> Status: **✅ COMPLETE — Success Test passed 2026-07-25 (Joe)** · Owner: Joe + Claude Code · Phase gate: **passed**
 > Format per `METHODOLOGY.md §2`. This is a living doc — update it if reality diverges.
 
 ---
@@ -186,13 +186,14 @@ The life log should share the same backing as the structured logger from `METHOD
 
 ## 9. Definition of Done
 
-Standard DoD (`METHODOLOGY.md §3`):
-1. This spec is written and current.
-2. Unit tests written and passing.
-3. Determinism test green.
-4. Manual QA checklist passed (see §10).
-5. No new errors in the log during a clean playthrough.
-6. `DESIGN.md` Progress Tracker (§6) + Decisions Log (§7) updated.
+Standard DoD (`METHODOLOGY.md §3`) — **all met 2026-07-25**:
+1. ✅ This spec is written and current.
+2. ✅ Unit tests written and passing (148).
+3. ✅ Determinism test green, with anti-vacuity guards proving it can fail.
+4. ✅ Manual QA checklist passed (§10) — Joe, watching at 4×.
+5. ✅ No new errors in the log during a clean playthrough — asserted by
+   `ACleanPlaythroughLogsNoErrorsOrWarnings` across both arcs.
+6. ✅ `DESIGN.md` Progress Tracker (§6) + Decisions Log (§7) updated.
 
 **Plus the phase Success Test (the gate):**
 > A person watches the villager live and die, and it *means something*. They can read the life log afterward and understand — without guessing — exactly why this villager lived as long as they did and died the way they did. A death of old age after a long life feels different from starving in the second winter, and the log makes the difference plain.
@@ -213,9 +214,90 @@ If that subjective test fails, the phase is not done — regardless of green tes
 
 ---
 
-## 11. Open questions (resolve during the phase; log decisions to `DESIGN.md §7`)
+## 11. Open questions
 
-- Real-time tick rate for playback (how many ticks/sec feels "meditative"?) — tune against the pace non-negotiable.
-- Starvation boundary semantics (`>` vs `>=`) — pick one, test it, note it.
-- Lifespan variance: fixed vs. small seeded spread — a little spread makes the old-age death feel more natural.
-- Exact `ticks_per_day` / `days_per_season` so a full life spans a satisfying number of years without dragging.
+### Resolved 2026-07-25 — pacing (derived from "a life should take 9–12 minutes")
+
+Joe set the target: **a full life plays out in 9–12 minutes of real time.** Everything else falls out of that.
+
+| Value | Setting | Reasoning |
+|---|---|---|
+| `ticks_per_day` | **4** | A day is four beats — enough granularity to see an action take time, few enough that days pass readably. |
+| `days_per_season` | **15** | 60 ticks per season, 240 per year. Long enough for winter to bite, short enough that a year reads as one breath. |
+| `target_ticks_per_second` | **1** | 240 ticks/year ÷ (1 × 4) = **60 s per in-game year at 4×**, the stated requirement. Was 20, then 10 — both still ran the seasons past faster than they could be read. |
+| `lifespan_years_base` | **45** | Middle of the requested 40–50 year band. |
+| `lifespan_years_variance` | **±5** | Range **40–50 years** exactly, and a little spread stops old-age death landing on a suspiciously round number. |
+
+**The constraints are now stated in in-game terms, not real minutes.** Joe's requirement is *one in-game year = 60 real seconds at 4×*, with a 40–50 year lifespan. Real-world duration is what falls out of that, and it is long:
+
+| Speed | Per in-game year | A full life |
+|---|---|---|
+| 1× | 240 s | ~3 hours |
+| 2× | 120 s | ~1.5 hours |
+| **4×** | **60 s** | **~45 min** |
+| 10× | 24 s | ~18 min |
+
+4× is therefore the **default watching speed**, not a skip gear — the slower settings are for studying a particular season. Encoded as `Phase0Fixtures.WatchingSpeed` and `TargetSecondsPerYearAtWatchingSpeed`, so both constraints are tested rather than remembered.
+
+> **Supersedes** the earlier "a full life should take 9–12 minutes" target. That was set before watching one; at that pace the seasons went by faster than they could be read, which is the opposite of the meditative-pace non-negotiable.
+
+**Tick granularity note:** at 1 tick/second the sim advances in visible steps. Harmless for Phase 0's text UI, but once villagers are drawn moving on a map, the renderer must interpolate using `FixedTimestepDriver.Alpha` — which already exists for exactly this reason — or movement will visibly stutter. The alternative, if that proves insufficient, is to raise `ticks_per_day` and `target_ticks_per_second` together (the ratio is what sets the pace), which would mean retuning the whole per-tick economy.
+
+**Hunger cadence is the legibility lever.** `hunger_per_tick = 10` against `hunger_max = 100` with an eat threshold of 80 means the villager eats **every two days** — a rhythm a person can read off the screen without arithmetic. It also gives ~30 meals a year, so winter (60 ticks ≈ 7–8 meals ≈ 38 food) demands a real stockpile rather than a token one. That is what makes the winter drain visible as a sawtooth in the food counter: climbing through spring/summer/fall, falling through winter.
+
+### Resolved 2026-07-25 — other open questions
+
+- **Starvation boundary:** `>=`. Death fires when the villager has been at `hunger_max` for `starvation_ticks` or more — 24 ticks, i.e. **six days at maximum hunger**. Chosen over `>` so the boundary is inclusive and easy to state in the log ("went hungry six days").
+- **Lifespan variance:** small seeded spread (see table), drawn once at birth from the sim RNG.
+- **Calendar is derived, not stored.** Day/season/year are a pure function of `tick` and config (`SimClock.FromTick`). Less mutable state means fewer places determinism can break, and the calendar can never drift out of sync with the tick.
+
+### ✅ Resolved 2026-07-25 — ageing now carries mechanical weight
+
+Joe chose option 2 below. Vigour is full until 30, then declines linearly to 55% in the final year, and it **scales what a foraging trip brings home**. Ageing is no longer a countdown to an event; it is something the player watches happen.
+
+The arc, from the shipped seed:
+
+```
+Spring of Year 1  — Agnes foraged 4 times. 61 food stored.
+Spring of Year 50 — Agnes foraged 4 times (vigour 58%). 40 food stored.
+```
+
+Same effort, two-thirds the result. Food remaining after winter drifts down across the final decade (29 → 19 → 16), and the life log narrates the two turns once each — "past her strongest years", then "has grown frail". Average foraging trips per season rise from 2.10 in youth to 3.39 in old age.
+
+Tuning constraint worth remembering: **old age must stay the normal ending.** If decline is steep enough to cause starvation, the two death arcs stop reading differently and the phase loses its point. `AgeingDoesNotTurnOldAgeIntoStarvation` runs 25 seeds and asserts every one dies of old age.
+
+Childhood frailty was considered and rejected — see "Still open" below.
+
+<details>
+<summary>Original finding (kept for the reasoning)</summary>
+
+### ⚠ Open finding — the middle of the life is flat (2026-07-25)
+
+The sim works, the tests are green, and the two death arcs read completely differently. But the years in between do not. Once the villager reaches equilibrium in Year 2, **every subsequent year is byte-identical** until they die:
+
+```
+Spring of Year 11 — Agnes foraged 4 times. 40 food stored.
+Summer of Year 11 — Agnes foraged 4 times. 60 food stored.
+Fall of Year 11 — Agnes foraged 2 times. 55 food stored.
+Winter came to Year 11. Foraging stops. 55 food stored.
+Agnes survived winter 11 (15 food left). Spring of Year 12 begins.
+```
+
+…repeated forty-eight times. The death lands; the life does not.
+
+**This is not a bug** — it is the honest consequence of a deterministic villager with fixed thresholds and no varying pressure. Every source of year-to-year variation (climate drift, soil depletion, disease, resource exhaustion) is explicitly deferred to `DESIGN.md §2.3` and Phase 1+.
+
+**But it puts the Success Test (§9) at risk**, and that test is the phase gate. Three ways forward, for Joe to choose:
+
+1. **Accept it.** Phase 0's job is to prove the spine, and the spine works. Drama arrives with the systems designed to provide it. Risk: the gate is subjective, and "it means something" may simply not be true yet.
+2. **Give ageing mechanical weight.** Ageing is *in* Phase 0 scope, but currently does nothing except trigger death — which is a hollow reading of "generational time is the core loop" (non-negotiable 5). If vigour declined with age (slower travel, or more food needed), the life would gain a shape: strong middle years, a visibly harder old age, then death. Smallest change that makes the middle mean something, and it serves a non-negotiable rather than importing a deferred pillar.
+3. **Pull one systemic pressure forward** — most likely climate drift, so winters vary in severity. Effective, but it imports a Phase 1 pillar into the gate phase and breaks the build-order discipline in `DESIGN.md §4`.
+
+**Recommendation: option 2**, then re-run the Success Test. It is in scope, it is small, and it fixes the flatness at its actual cause rather than papering over it with noise.
+
+</details>
+
+### Still open (carry into Phase 1)
+
+- **Childhood.** The villager is able-bodied from age 0, which is obviously wrong — a toddler does not forage. Phase 0 has no childhood mechanics by design (out of scope, §3), and with a single villager there is nobody to depend on. Dependency and age-gated capability belong with households in Phase 1. **Flagged rather than silently shipped.**
+- **Stockpile is always accessible**, not stored at a location. Keeps Phase 0 from producing a "starved two tiles from home" death that would read as unfair rather than instructive. Revisit when granaries arrive.

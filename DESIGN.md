@@ -139,7 +139,9 @@ Each phase should ship in a playable, legible state before the next begins.
 
 > Update this section as work proceeds. Keep it honest — it's how we both know where we are.
 
-**Current phase:** Scaffold complete — **awaiting go-ahead for Phase 0**
+**Current phase:** **Phase 1 — multiple agents + households + smart labour (§2.2)**
+
+**Phase 0: ✅ COMPLETE.** Success Test passed 2026-07-25 — the gate is cleared, so Phase 1 work may begin.
 
 **Done:**
 - Tech stack resolved: C# (.NET 8) + Godot 4, sim as a Godot-free class library (D1).
@@ -154,13 +156,20 @@ Each phase should ship in a playable, legible state before the next begins.
 - Build-time determinism enforcement via banned-API analyzer (verified firing).
 - CI (`ci.yml`) building + testing on every push; `release.yml` moved to `.github/workflows/` and filled in for Godot.
 
+- **Phase 0 sim**: clock/seasons, hunger, foraging behaviour, starvation and old-age death, life log. 131 tests green.
+- **Phase 0 view**: `src/Bclone.Game` Godot 4.7.1 shell — clock, villager state, hunger bar, stockpile, scrolling life log, speed controls. Verified running.
+- Pacing resolved: a full life runs 9.2–11.6 minutes (see spec §11).
+
+- **Ageing with mechanical weight** (D12): declining vigour scales foraging yield, so a life has a shape — easy middle years, a visibly tightening old age, then death. Resolved the flat-middle finding.
+- **Phase 0 Success Test passed** (Joe, watching at 4×). All six Definition-of-Done items met; 148 tests green.
+- Final pacing: one in-game year = 60 real seconds at 4×, lifespan 40–50 years. Speeds: pause / 1× / 2× / 4× / 10×.
+
 **In progress:**
-- (nothing — checkpoint before Phase 0)
+- **Phase 1 spec** (`specs/phase-1-households-and-labour.md`) — spec before code, per METHODOLOGY §2.
 
 **Next up:**
-- **Phase 0 vertical slice** (`specs/phase-0-vertical-slice.md`): one villager, one resource loop. Gate — must pass its Success Test before Phase 1.
-- Godot view project (`src/Bclone.Game`) — deferred to Phase 0, since the tick loop is headless.
-- Tune `ticks_per_day` / `target_ticks_per_second` against the meditative-pace non-negotiable.
+- Phase 1 implementation: multiple villagers, households, and the smart-labour system (§2.2) — no manual building assignment, ever.
+- Childhood and dependency, deferred from Phase 0, finally has somewhere to live.
 
 ---
 
@@ -174,4 +183,10 @@ Each phase should ship in a playable, legible state before the next begins.
 - **D4 · 2026-07-25 · Playback speed scales tick *count*, never tick *size*.** Pause/1×/2×/4× change how many ticks run per real second; a tick is always identical. Scaling a delta into the sim would make each speed a different simulation and destroy reproducibility. Tested by `PlaybackSpeed_DoesNotAffectState`.
 - **D5 · 2026-07-25 · System execution order is part of the determinism contract.** Systems run single-threaded in registration order, snapshotted at construction; reordering them is a behavioural change, not a tidy-up.
 - **D6 · 2026-07-25 · The driver accumulates time in whole nanoseconds, not floats.** The natural `while (acc >= secondsPerTick) acc -= secondsPerTick;` loop loses ticks to binary rounding (2.5s at 10 ticks/s yields 24, not 25) and the error compounds every frame, so the game clock drifts behind real time. Found by the test suite during implementation; guarded by `WholeSecondDeltas_YieldExactTickCounts`.
+- **D8 · 2026-07-25 · The life log is the `INFO` view of the sim log, not a separate system.** Same sink, same tick-stamping, same ordering — so the story the player reads and the log an engineer debugs from are one artifact, and they can never disagree.
+- **D9 · 2026-07-25 · Individual gathers are `DEBUG`; the life log summarises per season.** A fifty-year life is ~600 foraging trips, and narrating each one buries the handful of lines that carry the story. "Spring of Year 3 — foraged 4 times" is a season; 600 receipts is a spreadsheet, which is the thing this game is defined against (§1.4).
+- **D10 · 2026-07-25 · Eating preempts any action.** A round trip to the food source is longer than the gap between meals, so finish-your-action-first made the villager starve mid-gather beside a full store. A survival game may kill you for bad decisions, never for a scheduling artifact.
+- **D11 · 2026-07-25 · The Godot project lives in `src/Bclone.Game`, not the repo root.** A root Godot project globs `**/*.cs` into one assembly, which would swallow `Bclone.Sim` and the xunit tests into the game build and destroy the engine-free separation D1 exists to protect.
+- **D12 · 2026-07-25 · Ageing carries mechanical weight: vigour declines with age and scales foraging yield.** Ageing that only triggers a death event is a hollow reading of "generational time is the core loop" (§1.5) — it made every year of a life identical, so the death landed but the life did not. Vigour is full until 30, then declines to 55% in the final year. Tuning constraint: decline must make old age *hard*, never fatal, or the starvation and old-age arcs stop reading differently and Phase 0 loses its point.
+- **D13 · 2026-07-25 · No childhood frailty in Phase 0.** A frail child is the honest mirror of a frail elder, but with one villager and nobody to depend on it is just an unsurvivable opening. Dependency and age-gated capability belong with households in Phase 1.
 - **D7 · 2026-07-25 · Determinism tests must carry anti-vacuity guards.** A determinism test that cannot fail stays green forever and buys false confidence, so the suite includes tests asserting that different seeds *do* diverge and that the state hash *does* change with state. Verified by mutation: neutering `StateHash` turns 7 tests red.

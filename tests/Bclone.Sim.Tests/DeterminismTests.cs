@@ -159,8 +159,9 @@ public sealed class DeterminismTests
     [Fact]
     public void PlaybackSpeed_DoesNotAffectState()
     {
-        // A run at 4x must produce exactly the same history as a run at 1x.
-        // This is the payoff of scaling tick COUNT rather than tick SIZE.
+        // Every speed offered in the UI must produce exactly the same history.
+        // This is the payoff of scaling tick COUNT rather than tick SIZE, and it
+        // is why a new speed button is a config change rather than a risk.
         var config = Config;
 
         ulong RunAtSpeed(double speed)
@@ -184,7 +185,11 @@ public sealed class DeterminismTests
             return StateHash.Compute(loop.World);
         }
 
-        Assert.Equal(RunAtSpeed(1.0), RunAtSpeed(4.0));
+        // The speeds the UI actually exposes: 1x, 2x, 4x, 10x.
+        ulong expected = RunAtSpeed(1.0);
+        Assert.Equal(expected, RunAtSpeed(2.0));
+        Assert.Equal(expected, RunAtSpeed(4.0));
+        Assert.Equal(expected, RunAtSpeed(10.0));
     }
 
     [Fact]
