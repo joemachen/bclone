@@ -1,6 +1,6 @@
 # Spec: Phase 0 — Vertical Slice (one villager, one resource loop)
 
-> Status: **not started** · Owner: Joe + Claude Code · Phase gate: **yes** (must pass before any Phase 1 work)
+> Status: **✅ COMPLETE — Success Test passed 2026-07-25 (Joe)** · Owner: Joe + Claude Code · Phase gate: **passed**
 > Format per `METHODOLOGY.md §2`. This is a living doc — update it if reality diverges.
 
 ---
@@ -186,13 +186,14 @@ The life log should share the same backing as the structured logger from `METHOD
 
 ## 9. Definition of Done
 
-Standard DoD (`METHODOLOGY.md §3`):
-1. This spec is written and current.
-2. Unit tests written and passing.
-3. Determinism test green.
-4. Manual QA checklist passed (see §10).
-5. No new errors in the log during a clean playthrough.
-6. `DESIGN.md` Progress Tracker (§6) + Decisions Log (§7) updated.
+Standard DoD (`METHODOLOGY.md §3`) — **all met 2026-07-25**:
+1. ✅ This spec is written and current.
+2. ✅ Unit tests written and passing (148).
+3. ✅ Determinism test green, with anti-vacuity guards proving it can fail.
+4. ✅ Manual QA checklist passed (§10) — Joe, watching at 4×.
+5. ✅ No new errors in the log during a clean playthrough — asserted by
+   `ACleanPlaythroughLogsNoErrorsOrWarnings` across both arcs.
+6. ✅ `DESIGN.md` Progress Tracker (§6) + Decisions Log (§7) updated.
 
 **Plus the phase Success Test (the gate):**
 > A person watches the villager live and die, and it *means something*. They can read the life log afterward and understand — without guessing — exactly why this villager lived as long as they did and died the way they did. A death of old age after a long life feels different from starving in the second winter, and the log makes the difference plain.

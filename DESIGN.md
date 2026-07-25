@@ -139,7 +139,9 @@ Each phase should ship in a playable, legible state before the next begins.
 
 > Update this section as work proceeds. Keep it honest — it's how we both know where we are.
 
-**Current phase:** Phase 0 built and playable — **awaiting Joe's Success Test watch-through** (branch `phase/0-vertical-slice`)
+**Current phase:** **Phase 1 — multiple agents + households + smart labour (§2.2)**
+
+**Phase 0: ✅ COMPLETE.** Success Test passed 2026-07-25 — the gate is cleared, so Phase 1 work may begin.
 
 **Done:**
 - Tech stack resolved: C# (.NET 8) + Godot 4, sim as a Godot-free class library (D1).
@@ -158,13 +160,16 @@ Each phase should ship in a playable, legible state before the next begins.
 - **Phase 0 view**: `src/Bclone.Game` Godot 4.7.1 shell — clock, villager state, hunger bar, stockpile, scrolling life log, speed controls. Verified running.
 - Pacing resolved: a full life runs 9.2–11.6 minutes (see spec §11).
 
-**In progress:**
-- **Phase 0 Success Test** — subjective, and it is the gate. Needs Joe to watch a life and say whether it means anything. Green tests do not settle this.
+- **Ageing with mechanical weight** (D12): declining vigour scales foraging yield, so a life has a shape — easy middle years, a visibly tightening old age, then death. Resolved the flat-middle finding.
+- **Phase 0 Success Test passed** (Joe, watching at 4×). All six Definition-of-Done items met; 148 tests green.
+- Final pacing: one in-game year = 60 real seconds at 4×, lifespan 40–50 years. Speeds: pause / 1× / 2× / 4× / 10×.
 
-- **Ageing with mechanical weight** (D12): declining vigour scales foraging yield, so a life now has a shape — easy middle years, a visibly tightening old age, then death. Resolves the flat-middle finding. 146 tests green.
+**In progress:**
+- **Phase 1 spec** (`specs/phase-1-households-and-labour.md`) — spec before code, per METHODOLOGY §2.
 
 **Next up:**
-- Phase 1: multiple agents + households + smart labour (§2.2) — once the Success Test passes.
+- Phase 1 implementation: multiple villagers, households, and the smart-labour system (§2.2) — no manual building assignment, ever.
+- Childhood and dependency, deferred from Phase 0, finally has somewhere to live.
 
 ---
 
