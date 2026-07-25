@@ -234,6 +234,7 @@ Joe set the target: **a full life plays out in 9–12 minutes of real time.** Ev
 | 1× | 240 s | ~3 hours |
 | 2× | 120 s | ~1.5 hours |
 | **4×** | **60 s** | **~45 min** |
+| 10× | 24 s | ~18 min |
 
 4× is therefore the **default watching speed**, not a skip gear — the slower settings are for studying a particular season. Encoded as `Phase0Fixtures.WatchingSpeed` and `TargetSecondsPerYearAtWatchingSpeed`, so both constraints are tested rather than remembered.
 

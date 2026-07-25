@@ -93,6 +93,9 @@ public partial class Main : Control
             case Key.Key3:
                 SetSpeed(4.0);
                 break;
+            case Key.Key4:
+                SetSpeed(10.0);
+                break;
         }
     }
 
@@ -288,11 +291,12 @@ public partial class Main : Control
         controls.AddChild(SpeedButton("1x", 1.0));
         controls.AddChild(SpeedButton("2x", 2.0));
         controls.AddChild(SpeedButton("4x", 4.0));
+        controls.AddChild(SpeedButton("10x", 10.0));
 
         _speedLabel = Body(string.Empty);
         controls.AddChild(_speedLabel);
 
-        controls.AddChild(Muted("   (space to pause · 1 / 2 / 3 for speed)"));
+        controls.AddChild(Muted("   (space to pause · 1 / 2 / 3 / 4 for speed)"));
 
         UpdateSpeedLabel();
     }
