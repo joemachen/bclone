@@ -137,9 +137,10 @@ Standard DoD (`METHODOLOGY.md §3`), plus the phase's own gate:
 
 ---
 
-## 9. Open questions (for Joe)
+## 9. Resolved (Joe, 2026-07-25)
 
-1. **Starting population and growth.** Begin with ~4 adults (two couples) and let it grow, or a wider founding group? Growth rate matters for pace — a village that doubles every decade outruns legibility fast.
-2. **Household food vs. village food.** Per-household stores create real inequality stories, but also a fairness problem: does a starving household get help automatically, or does the player watch it fail? *(Recommendation: per-household stores with an explicit, visible sharing policy — inequality you can see and act on is a story; inequality you cannot is just cruelty.)*
-3. **How many job kinds to start with?** *(Recommendation: exactly two — forager and woodcutter. Two is the minimum that makes "which job" a real decision, and it keeps the first labour system small enough to debug.)*
-4. **Does the player set labour policy at all in Phase 1**, or does it stay fully automatic until there is something meaningful to tune? *(Recommendation: fully automatic first. Add policy levers once we can see what actually needs steering.)*
+1. **Starting population:** **~4 adults, growing outward.** Two couples founding a settlement. Growth is watched carefully against legibility — a village that doubles every decade outruns readability fast, and readability is this phase's deliverable.
+2. **Food:** **per-household stores with a visible sharing policy.** One household can starve while another thrives; the player can see it and act on it. Inequality you can see is a story, inequality you cannot is just cruelty.
+   - **Forward-looking:** distribution eventually becomes *diegetic* rather than a policy slider — a **manned market or food stall** that redistributes food and goods evenly within its catchment. That is the right long-term shape because it makes distribution a *building someone works at*, which is exactly the §2.2 pattern. Recorded as D14; **not built in Phase 1.** The Phase 1 sharing policy is the placeholder it eventually replaces.
+3. **Job kinds:** exactly **two — forager and woodcutter.** The minimum that makes "which job" a real decision, and small enough to debug.
+4. **Labour policy:** **fully automatic** in Phase 1. Levers get added once we can see what actually needs steering.
