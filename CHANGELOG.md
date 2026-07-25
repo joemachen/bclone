@@ -45,6 +45,14 @@ Categories (only include the ones you use): **Added**, **Changed**,
 - Build-time determinism enforcement: banned-API analyzer rejecting
   `System.Random`, wall-clock types, and thread-based parallelism in the sim.
 - `ci.yml` — build + full test suite on every push and PR.
+- **Phase 0 vertical slice**: one villager, one resource loop. Seasons with winter
+  as the pressure, hunger, foraging behaviour, starvation and old-age death, and a
+  narrative life log.
+- **Ageing carries mechanical weight**: vigour is full until 30 then declines to
+  55% in the final year, scaling what a foraging trip brings home. A life now has
+  a shape — easy middle years, a visibly tightening old age, then death.
+- Godot 4.7.1 view shell (`src/Bclone.Game`): clock, villager state, hunger bar,
+  vigour, stockpile, scrolling life log, and pause/1x/2x/4x speed controls.
 
 ### Changed
 - `release.yml` moved from the repo root to `.github/workflows/`, where the
