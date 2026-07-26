@@ -271,13 +271,18 @@ public partial class Main : Control
 
     private void BuildUi()
     {
-        var root = new MarginContainer { AnchorRight = 1, AnchorBottom = 1 };
+        var root = new MarginContainer();
         foreach (string side in new[] { "margin_left", "margin_top", "margin_right", "margin_bottom" })
         {
             root.AddThemeConstantOverride(side, 20);
         }
 
         AddChild(root);
+
+        // Anchors have to be APPLIED, not just assigned. Setting AnchorRight/Bottom
+        // alone left this container sized to its own content, so it grew past the
+        // bottom of the window and took the time controls with it - twice.
+        root.SetAnchorsPreset(LayoutPreset.FullRect);
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 10);
@@ -291,6 +296,13 @@ public partial class Main : Control
 
         _seedLabel = Muted($"seed {_loop.World.Seed}   ·   config: {_configSource}");
         column.AddChild(_seedLabel);
+
+        // Time controls sit at the TOP, under the header. Belt and braces after two
+        // failed attempts to pin them at the bottom: nothing below them in the
+        // layout can push them off screen if there is nothing below them.
+        var controls = new HBoxContainer { CustomMinimumSize = new Vector2(0, 34) };
+        controls.AddThemeConstantOverride("separation", 10);
+        column.AddChild(controls);
 
         column.AddChild(new HSeparator());
 
@@ -341,17 +353,6 @@ public partial class Main : Control
             CustomMinimumSize = new Vector2(0, 120),
         };
         detailColumn.AddChild(_villageLog);
-
-        // Pinned: ShrinkEnd plus a minimum height means the time controls keep their
-        // space no matter how much the map and log want. They were being pushed off
-        // the bottom of the window entirely.
-        var controls = new HBoxContainer
-        {
-            SizeFlagsVertical = SizeFlags.ShrinkEnd,
-            CustomMinimumSize = new Vector2(0, 36),
-        };
-        controls.AddThemeConstantOverride("separation", 10);
-        column.AddChild(controls);
 
         controls.AddChild(SpeedButton("Pause", 0.0));
         controls.AddChild(SpeedButton("1x", 1.0));
