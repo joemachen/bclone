@@ -116,6 +116,7 @@ The whole game, shrunk to a single soul. **Gather food → eat → survive a win
 2. Environment/seasons depth + biomes (2.5)
 3. Desire-path roads (2.6) — needs the shared cost field in place
 4. Skill growth + apprenticeship/knowledge transfer (2.1)
+   - **Carries a Phase 1 debt: make time-on-task personal (D28).** Vigour and skill should change *how long* a job takes, not only how much it yields. Villagers currently move in perfect lockstep — measured at 99.9% — because nothing distinguishes two people with the same home and the same job. Deliberately scheduled here rather than in Phase 1, because it is a §2.1 change and it forces the food economy to be re-derived.
 5. Knowledge-based tech tree (2.7) — depends on 2.1
 6. Systemic pressure: soil, resource exhaustion, climate drift, disease (2.3)
 7. Living region + trade economy (2.4)
@@ -135,7 +136,8 @@ Each phase should ship in a playable, legible state before the next begins.
 - [x] **Determinism strategy for floats** ✅ Resolved 2026-07-25 → **integer-only sim state; fixed-point `Fixed` (Q32.32) introduced when a system genuinely needs fractional math.** See D2.
 - [x] **Data file format** for content/modding ✅ Resolved 2026-07-25 → **JSON** via `System.Text.Json`, comments and trailing commas allowed. See D3.
 - [ ] **Trample/decay tuning values** (thresholds, decay rate, discount cap) — will need iteration in Phase 3.
-- [ ] **How villagers stop moving in lockstep.** Joe watched the village at 4× and saw people travelling as duos and trios rather than as individuals. **Measured, and it is near-total:** two adults of the same household holding the same job are on the same tile **99.9%** of ticks, with identical hunger 100% of the time and doing the same thing 99.9% of the time (30-year run, shipped config).
+- [x] **How villagers stop moving in lockstep.** ✅ Resolved 2026-07-26 → **make time-on-task personal; deferred to Phase 4 with the skill pillar.** See D28. Kept below for the measurement and the reasoning.
+  - Joe watched the village at 4× and saw people travelling as duos and trios rather than as individuals. **Measured, and it is near-total:** two adults of the same household holding the same job are on the same tile **99.9%** of ticks, with identical hunger 100% of the time and doing the same thing 99.9% of the time (30-year run, shipped config).
   - **It will not resolve by itself, and that is the important part.** This is not missing variability, it is *symmetry*: they start from the same home tile, walk to the same site by the same fixed `StepToward` rule, gather for a constant `gather_ticks`, and gain hunger at a uniform rate — so they even stop to eat on the same tick. Two founders in a household run the same deterministic program on the same inputs for their entire lives; the only thing that ever separates them is which one dies first.
   - Nor do the planned systems fix it incidentally. Desire paths (§2.6) share one cost field, so they *increase* synchrony. Vigour scales yield but not time, so a frail elder still walks in step with a young adult. Multiple workplaces (D19) help only when capacity or proximity happens to split a household.
   - **The candidates**, roughly in order of how diegetic they are:
@@ -151,9 +153,11 @@ Each phase should ship in a playable, legible state before the next begins.
 
 > Update this section as work proceeds. Keep it honest — it's how we both know where we are.
 
-**Current phase:** **Phase 1 — multiple agents + households + smart labour (§2.2)**
+**Current phase:** **Phase 1 complete — next up is Phase 2, environment/seasons depth + biomes (§2.5)**, unless the build order gets re-ordered (§4 invites that).
 
-**Phase 0: ✅ COMPLETE.** Success Test passed 2026-07-25 — the gate is cleared, so Phase 1 work may begin.
+**Phase 0: ✅ COMPLETE.** Success Test passed 2026-07-25.
+
+**Phase 1: ✅ COMPLETE.** Success Test passed 2026-07-26 (Joe, watching at 4×) — *"they do stay legible"*. All six Definition-of-Done items met; 250 tests green. Passed conditional on D28 (make time-on-task personal) being addressed in Phase 4, which is recorded in the build order.
 
 **Done:**
 - Tech stack resolved: C# (.NET 8) + Godot 4, sim as a Godot-free class library (D1).
@@ -179,13 +183,14 @@ Each phase should ship in a playable, legible state before the next begins.
 - **Village labour allocation shipped** (`specs/labour-allocation.md`, D21–D25). The blocking item is done: labour demand is split into a *local capacity* per workplace and a *village quota* per job kind, matched by a single deterministic cost-first pass, reshuffled yearly (D20). Several forage sites, spread the way the homes are. 246 tests green.
 - **Definition of Done met:** `forager_catchment_tiles` lowered from 12 to **10**, where no home reaches every workplace — and the village still runs 150 years, ending at **24 alive in 34 households** from the founding four. Catchment binds for the first time.
 
-**In progress:**
-- **Phase 1 spec** (`specs/phase-1-households-and-labour.md`) — spec before code, per METHODOLOGY §2.
-
 - **A map you can read** (D26, D27). A 120×80 valley with a real camera — WASD pan, wheel zoom about the cursor, clamped to the bounds. People standing on the same tile are fanned apart so a household reads as a household. One control cycles how much explanation is drawn: off, the selected villager, or everyone.
+- **Phase 1 Success Test passed**, and the phase's QA checklist written down in its spec so it is repeatable rather than remembered. A clean 150-year playthrough logging no warnings or errors is now a test (`CleanPlaythroughTests`) rather than a manual promise nobody kept.
+
+**In progress:**
+- Nothing. Phase 1 is closed and awaiting merge to `main`.
 
 **Next up:**
-- **Phase 1 Success Test — Joe's call.** Everything in the phase is built and the map fixes are in; what remains is watching it and deciding whether twelve villagers stay as legible as one.
+- **Merge Phase 1 to `main`** (METHODOLOGY §1 — a phase ends with a merge once its DoD is met). Phase 0 went via PR #1; this should too.
 - **Wood as winter fuel and as tools** (D17). Also the fix for a measured oddity: houses are wood's *only* consumer, so a village with a full woodpile correctly staffs nobody at the tree stand, and "trees don't stop in winter" is currently a rule with almost nothing to bite on.
 - **Seeded map generation** (D18) — and it now has a concrete job to do beyond variety: homes are placed on a fixed spiral that knows nothing about where the work is, which is what stops catchment being tightened below ten (see the spec's §8).
 - More workplace kinds (D19) — fishing, gathering and hunting huts, then secondary processing.
@@ -206,6 +211,7 @@ Each phase should ship in a playable, legible state before the next begins.
 - **D9 · 2026-07-25 · Individual gathers are `DEBUG`; the life log summarises per season.** A fifty-year life is ~600 foraging trips, and narrating each one buries the handful of lines that carry the story. "Spring of Year 3 — foraged 4 times" is a season; 600 receipts is a spreadsheet, which is the thing this game is defined against (§1.4).
 - **D10 · 2026-07-25 · Eating preempts any action.** A round trip to the food source is longer than the gap between meals, so finish-your-action-first made the villager starve mid-gather beside a full store. A survival game may kill you for bad decisions, never for a scheduling artifact.
 - **D11 · 2026-07-25 · The Godot project lives in `src/Bclone.Game`, not the repo root.** A root Godot project globs `**/*.cs` into one assembly, which would swallow `Bclone.Sim` and the xunit tests into the game build and destroy the engine-free separation D1 exists to protect.
+- **D28 · 2026-07-26 · Time-on-task becomes personal — but in Phase 4, with the skill pillar.** Joe's call: vigour, and later skill (§2.1), should change *how long* a job takes and not only how much it yields. That is the fix for villagers moving in lockstep (measured at 99.9% — see §5), and it is the most diegetic of the options because it makes ageing something you watch rather than read: an old villager would not just bring back less, they would be *out longer*, deepening D12. **Deferred deliberately**, for two reasons. It is a §2.1 change and METHODOLOGY §1 forbids building pillars in parallel; and it forces `VillageEconomy` to re-derive trips-per-year from a worst-case round trip, which would reopen a food economy that has only just been stabilised — on a phase that has just passed its Success Test. The cheap stopgap, if the duos start to grate first, is a seeded per-villager rhythm drawn once at birth; that treats the symptom, and it can be pulled forward on its own.
 - **D27 · 2026-07-26 · No camera rotation until the view has depth.** Joe asked for middle-mouse rotate alongside pan and zoom, and it was deferred once it was clear what it would actually do: the view is flat top-down, so rotating it spins the map like paper on a table rather than orbiting it the way *Banished* does. That is a different feature, and building it now would mean building it twice. Middle mouse is deliberately left unbound so the binding is free when the view gains an angle.
 - **D26 · 2026-07-26 · The world has bounds — a 120×80 valley — and the map has a camera.** The view used to auto-fit every workplace each frame, which was survivable with one berry patch and became useless with seven: the settlement rendered as a smudge three tiles across in the middle of an empty panel, and the villagers, all standing on the same few tiles, drew as one dot per house. So framing became something you do rather than something that happens: WASD pans, the wheel zooms about the cursor, and both stop at the valley's edge. **Bounds live in `SimConfig`, not in the view**, because seeded map generation (D18) will generate terrain into exactly this rectangle — at which point it stops being a drawing hint and becomes world state. Wide rather than square, for the river valley in §2.5.
   - **Corollary: people on the same tile are fanned apart on a small ring**, by rank within the tile, so four adults resting at one house read as four people. View-only; sim positions never move. This is the phase's Success Test in miniature — "watching twelve villagers is still legible" cannot be answered if twelve villagers draw as three dots.

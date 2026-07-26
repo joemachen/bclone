@@ -1,6 +1,6 @@
 # Spec: Phase 1 — Households & Smart Labour
 
-> Status: **draft — awaiting Joe's review before implementation** · Owner: Joe + Claude Code
+> Status: **✅ complete — Success Test passed (Joe, 2026-07-26)** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Living doc — update it if reality diverges.
 
 ---
@@ -91,12 +91,23 @@ Workplace
     Id             : int
     Kind           : from data file
     Position       : GridPos
-    LabourDemand   : int                             // how many worker-ticks wanted
+    Capacity       : int                             // how many hands fit HERE
     CatchmentRadius: int                             // in shared-cost units, not tiles
+
+LabourQuota                                          // how many the VILLAGE wants
+    Foragers       : int                             // derived from mouths
+    Woodcutters    : int                             // derived from houses wanted
 
 TravelCostField
     Cost(from, to) : int                             // THE shared source of truth (§2.6)
 ```
+
+**Note:** the sketch above originally gave `Workplace` a `LabourDemand` — one field
+carrying both "how many fit here" and "how many does the village need". That conflation
+is what `specs/labour-allocation.md §3` is a record of: four different values of it,
+each of which broke the village a different way. Local capacity and the village quota
+are now two separate things, which is the single most important structural change the
+phase made.
 
 **Note:** food moves from a single global stockpile to **per-household** stores. That is what makes one household starving while another thrives possible — and it is the seed of the inequality stories the design wants.
 
@@ -134,6 +145,29 @@ Everything from Phase 0 stays green, plus:
 Standard DoD (`METHODOLOGY.md §3`), plus the phase's own gate:
 
 > **Success test:** watching twelve villagers is still *legible*. The player can click any one of them and understand why they are doing what they are doing, and the village's division of labour makes sense without the player having assigned anybody. If it reads as an ant farm — busy, opaque, and unaccountable — the phase has failed regardless of green tests.
+
+### ✅ Success Test PASSED — Joe, 2026-07-26
+
+Watched at 4×. Verdict: **they stay legible.** Passed conditional on the lockstep finding below being addressed later, which Joe accepted as Phase 4 work.
+
+The test could not be run until the map was fixed, and that is worth recording because it was very nearly missed: the sim was correct and the *view* made it unreadable. Seven workplaces rendered as green dots while six villagers drew as one dot per house, stacked on the same tile. "Watching twelve villagers is still legible" is unanswerable when you cannot see one. Fixed by D26 — a camera, valley bounds, and fanning co-located people apart.
+
+**Found by watching, not by testing:** villagers travel as duos and trios. Measured afterwards at **99.9%** — two adults of the same household holding the same job share a tile essentially always, with identical hunger 100% of the time. It is symmetry rather than missing variability, it will not resolve on its own, and the fix is to make time-on-task personal (D28). Deferred to Phase 4 with the skill pillar. Recorded in `DESIGN.md §5`.
+
+### QA checklist (per `METHODOLOGY.md §3`)
+
+The list this phase was actually walked through, written down so it is repeatable rather than remembered:
+
+| Check | Result |
+|---|---|
+| Every villager on screen is individually visible and distinguishable | ✅ after D26 |
+| Clicking any villager gives a straight answer to "why this job?" naming place, distance, and the runner-up | ✅ |
+| A villager with no work names the constraint that excluded them — quota, capacity, or catchment | ✅ |
+| Nobody was assigned by the player, and no UI affords it | ✅ (asserted by a reflection test too) |
+| The village log reads as a story, not a receipt roll | ✅ |
+| The pace stays meditative at 4× — growth does not demand more clicking | ✅ |
+| A clean 150-year playthrough logs no warnings or errors | ✅ `CleanPlaythroughTests` |
+| Determinism test green | ✅ |
 
 ---
 
@@ -212,9 +246,21 @@ Probably both: (1) so catchment can bind, (2) so winter can bite.
 
 </details>
 
-### ⚠ Attempted and reverted — multiple forage sites need a village-level labour cap (2026-07-26)
+### ✅ Resolved — multiple forage sites, and the village-level allocator (2026-07-26)
 
-Multiple forage sites were built and reverted the same session. **Stashed, not lost** (`git stash` on this branch). The mechanics were straightforward; the labour allocation is not, and it is worth writing down before trying again.
+Specified in `specs/labour-allocation.md` and shipped. `Workplace.LabourDemand` became `Workplace.Capacity` — a local fact — and the village-level question moved to `LabourQuota`, matched by a single deterministic cost-first pass that is re-run from scratch once a year (D20). The stash referred to below has been dropped; everything worth keeping from it landed, and the one part that did not was the even-split rule it is a record of.
+
+**The catchment radius binds for the first time**, at 10 tiles down from 12 — no home reaches every workplace — and the village runs 150 years from the founding four to 24 alive in 34 households. That was the phase's open question and it is closed.
+
+Two findings from getting there are worth carrying forward:
+
+- **Spreading the food sources was not enough; they had to be spread *the way the homes are*.** The first layout put every extra site at the map's edges, which left the middle of the village competing for the one original patch — so tightening catchment did not restrict outlying households, it left *central* ones idle beside a full patch and they starved. Recorded as D24.
+- **Below ten tiles the village still dies, and the cause is not food.** Homes are placed on a fixed spiral that knows nothing about where the work is, so at a tight radius one or two homes end up with nothing in reach and are doomed the day they are built. That is seeded map generation's problem (D18), and a layout guard test now fails the build if it regresses first.
+
+<details>
+<summary>The finding this resolved (kept for the reasoning)</summary>
+
+Multiple forage sites were built and reverted the same session. The mechanics were straightforward; the labour allocation is not, and it is worth writing down before trying again.
 
 **What worked:** a data-driven list of sites, one `Workplace` each, named by direction ("the western thicket") rather than numbered, villagers travelling to *their* assigned site rather than a single global patch, and the economy budgeting for distance to the **nearest** site rather than the first.
 
@@ -227,9 +273,11 @@ Multiple forage sites were built and reverted the same session. **Stashed, not l
 
 **Note on process:** three attempts at labour demand in one session, each breaking something a test caught. The pattern is that demand is a *global* allocation problem being solved with *local* rules. Next attempt should start from the allocation, not from the workplace.
 
-### ⚠ Known limit — one food source does not scale forever
+</details>
 
-Past roughly 100 households the village outgrows its single berry patch: the outer ring is beyond the derived horizon and the population oscillates again. That is expected and is exactly what multiple workplaces plus catchment are for. Not a blocker for the labour system — it *is* the labour system's problem.
+### ✅ Resolved — one food source does not scale forever
+
+Past roughly 100 households the village outgrew its single berry patch. There are six forage sites now, spread around the settlement, and the economy is derived from the worst walk any home in a village this size has to make rather than from one patch. Superseded by the allocator above.
 
 <details>
 <summary>Earlier framing (kept for the reasoning)</summary>
