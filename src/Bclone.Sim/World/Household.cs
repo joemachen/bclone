@@ -25,6 +25,63 @@ public sealed class Household
 
     public required GridPos HomePosition { get; init; }
 
+    /// <summary>
+    /// Where the nth household is built.
+    /// </summary>
+    /// <remarks>
+    /// A compact grid, not a line. Placing each new home one spacing further out
+    /// than the last meant the ninth household sat nineteen tiles from the food
+    /// source against the first household's five — a round trip three times as long,
+    /// on the same number of working hours. Those families simply could not feed
+    /// themselves, and the village died of its own sprawl.
+    /// <para>
+    /// This is the catchment problem from DESIGN.md §2.2 showing up in the economy
+    /// before the labour system exists to name it: distance to work is not flavour,
+    /// it is whether you eat.
+    /// </para>
+    /// </remarks>
+    public static GridPos PlacementFor(int index, int originX, int originY, int spacing)
+    {
+        // Walk a square spiral outward so homes stay clustered around the origin.
+        int ring = 0;
+        while ((2 * ring + 1) * (2 * ring + 1) <= index)
+        {
+            ring++;
+        }
+
+        int withinRing = index - ((2 * ring - 1) * (2 * ring - 1));
+        int side = ring == 0 ? 1 : 2 * ring;
+
+        int dx, dy;
+        if (ring == 0)
+        {
+            dx = 0;
+            dy = 0;
+        }
+        else if (withinRing < side)
+        {
+            dx = ring;
+            dy = -ring + 1 + withinRing;
+        }
+        else if (withinRing < 2 * side)
+        {
+            dx = ring - 1 - (withinRing - side);
+            dy = ring;
+        }
+        else if (withinRing < 3 * side)
+        {
+            dx = -ring;
+            dy = ring - 1 - (withinRing - 2 * side);
+        }
+        else
+        {
+            dx = -ring + 1 + (withinRing - 3 * side);
+            dy = -ring;
+        }
+
+        return new GridPos(originX + (dx * spacing), originY + (dy * spacing));
+    }
+
     /// <summary>In-game year of the household's most recent birth. Zero if never.</summary>
     public int LastBirthYear { get; set; }
 

@@ -111,7 +111,7 @@ public sealed class SimWorld
 
         for (int h = 0; h < config.StartingHouseholds; h++)
         {
-            var home = new GridPos(config.HomeX + (h * config.HouseholdSpacing), config.HomeY);
+            GridPos home = Household.PlacementFor(h, config.HomeX, config.HomeY, config.HouseholdSpacing);
 
             var household = new Household
             {

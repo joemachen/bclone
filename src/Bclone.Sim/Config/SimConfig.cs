@@ -145,6 +145,28 @@ public sealed record SimConfig
     public int LeaveHomeAge { get; init; } = 18;
 
     /// <summary>
+    /// How many households the economy is derived to support.
+    /// </summary>
+    /// <remarks>
+    /// The furthest home in a village this size sets the worst-case round trip, and
+    /// therefore the yield the whole economy needs. Deriving from the first
+    /// household instead made every outlying family unable to feed itself.
+    /// </remarks>
+    [JsonPropertyName("economy_horizon_households")]
+    public int EconomyHorizonHouseholds { get; init; } = 12;
+
+    /// <summary>
+    /// Winter store as a percentage of one member's winter need.
+    /// </summary>
+    /// <remarks>
+    /// Above 100 because surviving winter exactly is not surviving winter — the
+    /// shock that actually kills a household is a worker dying or ageing out
+    /// part-way through it. The margin is what absorbs that.
+    /// </remarks>
+    [JsonPropertyName("winter_buffer_percent")]
+    public int WinterBufferPercent { get; init; } = 260;
+
+    /// <summary>
     /// A household is considered in need below this percentage of its food target.
     /// </summary>
     [JsonPropertyName("sharing_need_percent")]
@@ -376,6 +398,18 @@ public sealed record SimConfig
         if (VillagerNames is null || VillagerNames.Count == 0)
         {
             throw new SimConfigException("villager_names must contain at least one name.");
+        }
+
+        if (EconomyHorizonHouseholds <= 0)
+        {
+            throw new SimConfigException(
+                $"economy_horizon_households must be greater than zero (got {EconomyHorizonHouseholds}).");
+        }
+
+        if (WinterBufferPercent < 100)
+        {
+            throw new SimConfigException(
+                $"winter_buffer_percent must be at least 100 (got {WinterBufferPercent}).");
         }
 
         if (SharingNeedPercent is < 0 or > 100)

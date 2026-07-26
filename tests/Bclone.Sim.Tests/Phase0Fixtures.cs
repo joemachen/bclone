@@ -17,6 +17,10 @@ public static class Phase0Fixtures
         AdultsPerHousehold = 1,
         FounderAge = 0,
 
+        // A village of one never sprawls, so its economy is derived for exactly
+        // one home rather than budgeting for a settlement it will never build.
+        EconomyHorizonHouseholds = 1,
+
         // Phase 0's villager is able-bodied from birth. Its spec says so
         // explicitly and flags it as the known oddity that childhood would fix
         // once households existed - so this encodes the documented Phase 0 world

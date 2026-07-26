@@ -147,7 +147,29 @@ Design notes worth keeping:
 - **Only a *couple* has children**, not any two fertile adults. Otherwise siblings breed in the parental home and the village grows without ever forming a household, hiding the problem this solves.
 - **The dowry is not flavour.** A new household starting on an empty larder gets wiped out by its first winter before anyone has foraged anything — a death with no decision behind it, which the legibility non-negotiable rules out.
 
-### ⚠ Still open — the village boom-busts (2026-07-25, improved not solved)
+### ✅ Resolved — the economy is now derived, and the village sustains itself
+
+**Before:** peak population ~18, extinct by year 91, every run.
+**After:** population 8 → 171 over 180 years, food stores climbing throughout.
+
+The fix was to stop tuning and state a target instead. `VillageEconomy` says it in one line:
+
+> **A single adult at their weakest — minimum vigour, no partner — must be able to feed themselves and two children.**
+
+That is not an arbitrary number: it is the widowed-parent case the diagnostics showed was killing nearly every household. `gather_yield` and `stockpile_target` are now *computed* from it rather than guessed, and tests assert the config still meets the target — so a future change to hunger, travel, or vigour that breaks it fails the build rather than the village.
+
+**The bug this exposed was invisible and lethal.** New homes were placed in an ever-lengthening line, so the ninth household sat nineteen tiles from the berry patch against the first household's five — a round trip three times as long on the same working hours. Those families could not feed themselves and the village died of its own sprawl. Two changes: homes now cluster in a square spiral, and the economy budgets for the **furthest** home a village of `economy_horizon_households` will build, not the first.
+
+That is the catchment problem from `DESIGN.md §2.2` arriving early, before the labour system exists to name it. **Distance to work is not flavour — it is whether you eat.** Good sign for the pillar; the labour system now has a real constraint to solve rather than a cosmetic one.
+
+### ⚠ Known limit — one food source does not scale forever
+
+Past roughly 100 households the village outgrows its single berry patch: the outer ring is beyond the derived horizon and the population oscillates again. That is expected and is exactly what multiple workplaces plus catchment are for. Not a blocker for the labour system — it *is* the labour system's problem.
+
+<details>
+<summary>Earlier framing (kept for the reasoning)</summary>
+
+### The village boom-busts (improved, not solved)
 
 Measured rather than guessed at. A diagnostic run over 126 years gave the causes in order:
 
@@ -167,6 +189,8 @@ Three fixes, each aimed at a measured cause:
 **Next hypothesis, untested:** this is a *synchronisation* problem, not a supply one. Couples form in waves, so their children arrive in waves, so a whole cohort of dependants hits at once and a whole cohort of workers ages out at once. Worth checking whether staggering `birth_interval_years` per household, or making birth depend on a rolling food trend rather than an instantaneous threshold, damps the oscillation.
 
 **Recommendation: do not build the labour system on top of this yet.** A labour system measured against a village that boom-busts will be tuned to the wrong problem.
+
+</details>
 
 <details>
 <summary>Earlier framing of this finding</summary>

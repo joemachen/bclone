@@ -237,9 +237,8 @@ public sealed class HouseholdSystem : ISimSystem
         Household oldHome = world.HouseholdOf(a);
         Household partnerHome = world.HouseholdOf(b);
 
-        var home = new GridPos(
-            config.HomeX + (world.Households.Count * config.HouseholdSpacing),
-            config.HomeY);
+        GridPos home = Household.PlacementFor(
+            world.Households.Count, config.HomeX, config.HomeY, config.HouseholdSpacing);
 
         var household = new Household
         {

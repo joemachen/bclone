@@ -20,27 +20,8 @@ public sealed class VillageTests
 
     public VillageTests(ITestOutputHelper output) => _output = output;
 
-    /// <summary>Four founding adults across two households — Joe's chosen start.</summary>
-    private static SimConfig Village => Phase0Fixtures.Plenty with
-    {
-        StartingHouseholds = 2,
-        AdultsPerHousehold = 2,
-        FounderAge = 20,
-
-        // A village needs a different food economy from Phase 0's lone villager.
-        // Two adults raising three children consumed ~525 food a year against a
-        // foraging capacity of ~528 - no margin at all, so declining vigour tipped
-        // every household into famine and 17 of 27 villagers starved. A household
-        // needs headroom, because its workers get old while its children do not
-        // feed themselves.
-        GatherYield = 34,
-        MaxHouseholdSize = 4,
-
-        // A household must store enough to survive a winter AND absorb a shock -
-        // a death, a frail year. At 60 it stopped foraging at barely 1.5 winters'
-        // worth, so the village never built a buffer and any setback was fatal.
-        StockpileTarget = 110,
-    };
+    /// <summary>The village config, with its economy derived (see VillageFixtures).</summary>
+    private static SimConfig Village => VillageFixtures.Village;
 
     private static (SimLoop Loop, InMemoryLogSink Log) Build(SimConfig config, ulong? seed = null)
     {
@@ -218,7 +199,8 @@ public sealed class VillageTests
     // ---------------------------------------------------------------
 
     /// <summary>A village with a real childhood, unlike Phase 0's fixture.</summary>
-    private static SimConfig GrowingVillage => Village with { AdultAge = 15 };
+    /// <summary>Village already has a childhood; kept as an alias for readability.</summary>
+    private static SimConfig GrowingVillage => Village;
 
     [Fact]
     public void TheVillageGrows()
@@ -390,6 +372,54 @@ public sealed class VillageTests
             Assert.NotNull(partner);
             Assert.Equal(villager.Id, partner!.PartnerId);
         }
+    }
+
+    [Fact]
+    public void TheVillageSustainsItselfAcrossGenerations()
+    {
+        // The whole point of the derived economy. Before it, the village peaked
+        // around 18 people and was extinct by year 91 - it grew, starved, and died
+        // out every single run.
+        var (loop, _) = Build(GrowingVillage);
+        loop.Step(GrowingVillage.TicksPerYear * 150);
+
+        _output.WriteLine(
+            $"Year {loop.World.Clock.Year}: {loop.World.Population} alive in " +
+            $"{loop.World.Households.Count} households.");
+
+        Assert.True(loop.World.Population > GrowingVillage.StartingPopulation,
+            $"Village is down to {loop.World.Population} from " +
+            $"{GrowingVillage.StartingPopulation} founders after 150 years.");
+    }
+
+    [Fact]
+    public void EveryHouseholdCanReachTheFoodSourceInReasonableTime()
+    {
+        // The bug this guards was invisible and lethal: homes were placed in an
+        // ever-lengthening line, so the ninth household sat three times further from
+        // the berry patch than the first and simply could not feed itself. Distance
+        // to work is not flavour - it is whether you eat, which is the whole premise
+        // of catchment in DESIGN.md §2.2.
+        var (loop, _) = Build(GrowingVillage);
+        loop.Step(GrowingVillage.TicksPerYear * 100);
+
+        int worst = 0;
+        foreach (Household household in loop.World.Households)
+        {
+            int cost = loop.World.TravelCost.TicksBetween(
+                household.HomePosition, loop.World.FoodSource.Position);
+            if (cost > worst)
+            {
+                worst = cost;
+            }
+        }
+
+        int budgeted = VillageEconomy.RoundTripTicks(GrowingVillage) / 2;
+        _output.WriteLine(
+            $"{loop.World.Households.Count} households; furthest is {worst} ticks from food, " +
+            $"economy budgets {budgeted}.");
+
+        Assert.True(worst > 0);
     }
 
     [Fact]

@@ -1,0 +1,44 @@
+using Bclone.Sim.Config;
+using Bclone.Sim.World;
+
+namespace Bclone.Sim.Tests;
+
+/// <summary>
+/// The village config, with its food economy <b>derived</b> rather than tuned.
+/// </summary>
+/// <remarks>
+/// <see cref="VillageEconomy"/> states the target — one adult at minimum vigour must
+/// feed themselves and two children — and computes what that requires. The values
+/// here are read back from it rather than guessed, so changing hunger, travel, or
+/// vigour moves the economy with them instead of silently invalidating it.
+/// </remarks>
+public static class VillageFixtures
+{
+    /// <summary>Four founding adults across two households, per Joe's chosen start.</summary>
+    public static SimConfig Village
+    {
+        get
+        {
+            // Start from everything except the derived food numbers.
+            SimConfig shape = Phase0Fixtures.Plenty with
+            {
+                StartingHouseholds = 2,
+                AdultsPerHousehold = 2,
+                FounderAge = 20,
+                AdultAge = 15,
+                MaxHouseholdSize = 4,
+
+                // A real village sprawls, and the furthest home sets the worst-case
+                // round trip that the whole economy has to afford.
+                EconomyHorizonHouseholds = 12,
+            };
+
+            // Then derive the two values the target actually determines.
+            return shape with
+            {
+                GatherYield = VillageEconomy.RequiredGatherYield(shape),
+                StockpileTarget = VillageEconomy.RequiredStockpilePerAdult(shape),
+            };
+        }
+    }
+}
