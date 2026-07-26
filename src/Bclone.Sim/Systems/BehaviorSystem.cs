@@ -112,18 +112,19 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool TryEat(SimWorld world, Villager villager)
     {
         SimConfig config = world.Config;
+        int mealCost = MealCostFor(villager, config);
 
-        if (villager.Hunger < config.EatThreshold || world.HouseholdOf(villager).Stockpile.Food < config.FoodPerMeal)
+        if (villager.Hunger < config.EatThreshold || world.HouseholdOf(villager).Stockpile.Food < mealCost)
         {
             return false;
         }
 
-        if (!world.HouseholdOf(villager).Stockpile.TryTake(config.FoodPerMeal))
+        if (!world.HouseholdOf(villager).Stockpile.TryTake(mealCost))
         {
             // Unreachable given the check above; if it ever fires, something else
             // is mutating the stockpile and we want to know loudly.
             world.Log(LogLevel.Error, "behavior",
-                $"{villager.Name} tried to eat {config.FoodPerMeal} food but only " +
+                $"{villager.Name} tried to eat {mealCost} food but only " +
                 $"{world.HouseholdOf(villager).Stockpile.Food} was available. This is a bug.");
             return false;
         }
@@ -139,14 +140,33 @@ public sealed class BehaviorSystem : ISimSystem
         return true;
     }
 
+    /// <summary>
+    /// Food one meal costs. Children eat a smaller portion — see
+    /// <see cref="SimConfig.ChildFoodSharePercent"/>.
+    /// </summary>
+    public static int MealCostFor(Villager villager, SimConfig config)
+    {
+        if (villager.LifeStage != LifeStage.Child)
+        {
+            return config.FoodPerMeal;
+        }
+
+        int cost = config.FoodPerMeal * config.ChildFoodSharePercent / 100;
+        return cost < 1 ? 1 : cost;
+    }
+
     private static void Decide(SimWorld world, Villager villager)
     {
         SimConfig config = world.Config;
 
         // Eating was already handled by TryEat before anything got here.
-        // Forage — but only if there is anything to forage.
-        bool needsFood = world.HouseholdOf(villager).Stockpile.Food < config.StockpileTarget;
-        bool canForage = FoodSource.IsGatherable(world.Clock.Season);
+        // Forage — but only if there is anything to forage, and only if this
+        // villager is old enough to work. A child eats from the household store and
+        // gives nothing back; that dependency is the whole reason childhood needed
+        // households to exist first (D13).
+        Household household = world.HouseholdOf(villager);
+        bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household);
+        bool canForage = villager.CanWork && FoodSource.IsGatherable(world.Clock.Season);
 
         if (needsFood && canForage)
         {

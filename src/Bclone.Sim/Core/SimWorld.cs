@@ -172,6 +172,36 @@ public sealed class SimWorld
             $"Villager {villager.Id} ({villager.Name}) belongs to household {villager.HouseholdId}, which does not exist.");
     }
 
+    /// <summary>Living members of a household.</summary>
+    public int LivingMembersOf(Household household)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+
+        int count = 0;
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager villager = Villagers[i];
+            if (villager.Alive && villager.HouseholdId == household.Id)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Food a household aims to have stored before it stops foraging and rests.
+    /// </summary>
+    /// <remarks>
+    /// Scales with the number of mouths. A fixed target was tuned for Phase 0's
+    /// single villager, and left a four-person household permanently one bad season
+    /// from empty — perpetually foraging, never building a surplus, and therefore
+    /// never having children. A household stores enough for <em>everyone in it</em>.
+    /// </remarks>
+    public int TargetFoodFor(Household household) =>
+        Config.StockpileTarget * Math.Max(1, LivingMembersOf(household));
+
     /// <summary>Where a villager lives and returns to.</summary>
     public GridPos HomeOf(Villager villager) => HouseholdOf(villager).HomePosition;
 

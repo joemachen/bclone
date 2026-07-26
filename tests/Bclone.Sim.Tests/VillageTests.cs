@@ -2,6 +2,7 @@ using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
 using Bclone.Sim.Logging;
+using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
@@ -181,6 +182,161 @@ public sealed class VillageTests
         loop.World.Households[^1].Stockpile.Add(1);
 
         Assert.NotEqual(before, StateHash.Compute(loop.World));
+    }
+
+    // ---------------------------------------------------------------
+    //  Births and childhood
+    // ---------------------------------------------------------------
+
+    /// <summary>A village with a real childhood, unlike Phase 0's fixture.</summary>
+    private static SimConfig GrowingVillage => Village with { AdultAge = 15 };
+
+    [Fact]
+    public void TheVillageGrows()
+    {
+        var (loop, _) = Build(GrowingVillage);
+        int founding = loop.World.Villagers.Count;
+
+        loop.Step(30_000);
+
+        _output.WriteLine(
+            $"Year {loop.World.Clock.Year}: {loop.World.Population} alive of " +
+            $"{loop.World.Villagers.Count} ever born, in {loop.World.Households.Count} households.");
+
+        Assert.True(loop.World.Villagers.Count > founding,
+            "Four adults with full larders should have produced children.");
+    }
+
+    [Fact]
+    public void ChildrenAreBornIntoTheirParentsHousehold()
+    {
+        var (loop, _) = Build(GrowingVillage);
+        loop.Step(30_000);
+
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            Household household = loop.World.HouseholdOf(villager);
+            Assert.Contains(villager.Id, household.MemberIds);
+        }
+    }
+
+    [Fact]
+    public void ChildrenDoNotWork()
+    {
+        // The dependency that made childhood need households in the first place
+        // (D13): a child eats from the store and gives nothing back.
+        var (loop, _) = Build(GrowingVillage);
+
+        for (int i = 0; i < 30_000; i++)
+        {
+            loop.StepOnce();
+
+            foreach (Villager villager in loop.World.Villagers)
+            {
+                if (villager.Alive && villager.LifeStage == LifeStage.Child)
+                {
+                    Assert.False(
+                        villager.State is VillagerState.Gathering or VillagerState.TravelingToFood,
+                        $"{villager.Name} is {villager.AgeYears} and foraging at tick {loop.World.Tick}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void AChildBornInTheVillageGrowsUpAndWorks()
+    {
+        // 30 in-game years: long enough for a child born in year 2 to reach
+        // adulthood, short enough that they have not yet died of old age.
+        var (loop, _) = Build(GrowingVillage);
+        loop.Step(GrowingVillage.TicksPerYear * 30);
+
+        Villager? homegrown = null;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (villager.BirthYear > 0 && villager.AgeYears >= GrowingVillage.AdultAge)
+            {
+                homegrown = villager;
+                break;
+            }
+        }
+
+        Assert.NotNull(homegrown);
+        Assert.NotEqual(LifeStage.Child, homegrown!.LifeStage);
+        Assert.True(homegrown.CanWork);
+    }
+
+    [Fact]
+    public void AHungryHouseholdDoesNotHaveChildren()
+    {
+        // A village that breeds into a famine is not telling a story, it is
+        // oscillating - and the deaths would not trace back to any decision.
+        var (loop, _) = Build(GrowingVillage with { BirthFoodThreshold = 10_000 });
+        int founding = loop.World.Villagers.Count;
+
+        loop.Step(30_000);
+
+        Assert.Equal(founding, loop.World.Villagers.Count);
+    }
+
+    [Fact]
+    public void VillagerIdsAreNeverReused()
+    {
+        // The dead keep their ids, so the log stays honest about who was who.
+        var (loop, _) = Build(GrowingVillage);
+        loop.Step(30_000);
+
+        var seen = new HashSet<int>();
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            Assert.True(seen.Add(villager.Id), $"Id {villager.Id} was reused.");
+        }
+    }
+
+    [Fact]
+    public void BirthsAreDeterministic()
+    {
+        var (a, logA) = Build(GrowingVillage);
+        var (b, logB) = Build(GrowingVillage);
+
+        a.Step(30_000);
+        b.Step(30_000);
+
+        Assert.Equal(a.World.Villagers.Count, b.World.Villagers.Count);
+        Assert.Equal(StateHash.Compute(a.World), StateHash.Compute(b.World));
+        Assert.Equal(logA.Entries, logB.Entries);
+    }
+
+    [Fact]
+    public void GrownChildrenCannotYetFoundNewHouseholds()
+    {
+        // KNOWN GAP, asserted so it cannot be forgotten. Children stay in the
+        // household they were born into for life, so once every house hits
+        // max_household_size the village stops growing entirely and dies out with
+        // its last generation. Household formation is the missing piece; this test
+        // should be inverted when it lands.
+        var (loop, _) = Build(GrowingVillage);
+        int foundingHouseholds = loop.World.Households.Count;
+
+        loop.Step(30_000);
+
+        Assert.Equal(foundingHouseholds, loop.World.Households.Count);
+        Assert.Equal(0, loop.World.Population);
+    }
+
+    [Fact]
+    public void NobodyStarvesInTheVillage()
+    {
+        // The village dies out, but not of hunger - every death is old age. Worth
+        // pinning down, because "the village collapsed" looked like famine and was
+        // not, and the wrong diagnosis would have sent the tuning the wrong way.
+        var (loop, _) = Build(GrowingVillage);
+        loop.Step(30_000);
+
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            Assert.NotEqual(CauseOfDeath.Starvation, villager.CauseOfDeath);
+        }
     }
 
     [Fact]

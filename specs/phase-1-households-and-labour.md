@@ -137,6 +137,24 @@ Standard DoD (`METHODOLOGY.md §3`), plus the phase's own gate:
 
 ---
 
+## 8b. ⚠ Open finding — grown children never leave home (2026-07-25)
+
+Births work, and the village grows from 4 to 10 people over its first decade. Then it stops dead and dies out with its last generation.
+
+**The cause is not famine.** Every single death across 126 years is old age; nobody starves. That matters, because "the village collapsed" looks like a food problem and tuning it as one would have sent the whole economy the wrong way. The actual cause: a child stays in the household it was born into for life, so once every house hits `max_household_size` there is nowhere to put another child and births stop permanently. Household count never moves off its founding value.
+
+**The missing piece is household formation** — a grown adult leaving to found a new home, presumably pairing with someone from another household. That is the mechanism that turns "4 adults growing outward" into an actual village, and it is squarely inside this phase's scope.
+
+Two things it will need care on:
+- **Determinism.** Pairing is a matching problem across households, and every tie needs an explicit, ordered rule (§4b).
+- **Legibility.** "Why did Bess move out and marry into the Fletchers?" has to have a one-sentence answer, exactly like job assignment does.
+
+Pinned by `GrownChildrenCannotYetFoundNewHouseholds`, which asserts the current broken behaviour so it cannot be quietly forgotten. **Invert that test when the feature lands.**
+
+Also fixed on the way here: the stockpile target was a flat number tuned for Phase 0's single villager, which left a four-person household permanently one bad season from empty. It now scales per member. And children eat a smaller portion than adults (`child_food_share_percent`), because at full adult rations two workers cannot feed a household of four.
+
+---
+
 ## 9. Resolved (Joe, 2026-07-25)
 
 1. **Starting population:** **~4 adults, growing outward.** Two couples founding a settlement. Growth is watched carefully against legibility — a village that doubles every decade outruns readability fast, and readability is this phase's deliverable.

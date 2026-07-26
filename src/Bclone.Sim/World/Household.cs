@@ -25,6 +25,9 @@ public sealed class Household
 
     public required GridPos HomePosition { get; init; }
 
+    /// <summary>In-game year of the household's most recent birth. Zero if never.</summary>
+    public int LastBirthYear { get; set; }
+
     /// <summary>This household's food. Not the village's.</summary>
     public Stockpile Stockpile { get; } = new();
 

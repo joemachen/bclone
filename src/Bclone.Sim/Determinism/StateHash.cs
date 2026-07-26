@@ -56,6 +56,7 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)household.Id);
             hash = MixUInt32(hash, (uint)household.Stockpile.Food);
             hash = MixUInt32(hash, (uint)household.Stockpile.LifetimeGathered);
+            hash = MixUInt32(hash, (uint)household.LastBirthYear);
 
             hash = MixUInt32(hash, (uint)household.MemberIds.Count);
             for (int m = 0; m < household.MemberIds.Count; m++)
@@ -88,6 +89,7 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.Vigour);
         hash = MixByte(hash, (byte)villager.Stage);
         hash = MixUInt32(hash, (uint)villager.GathersThisSeason);
+        hash = MixUInt32(hash, (uint)villager.BirthYear);
         return hash;
     }
 

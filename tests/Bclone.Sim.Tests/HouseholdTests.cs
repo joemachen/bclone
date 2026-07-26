@@ -7,7 +7,11 @@ namespace Bclone.Sim.Tests;
 
 public sealed class HouseholdTests
 {
-    private static SimConfig Config => Phase0Fixtures.Plenty;
+    /// <summary>
+    /// A config that actually has a childhood. Phase 0's fixture is able-bodied
+    /// from birth by design, so it is the wrong yardstick for life stages.
+    /// </summary>
+    private static SimConfig Config => Phase0Fixtures.Plenty with { AdultAge = 15 };
 
     private static Household NewHousehold() => new()
     {
@@ -131,21 +135,21 @@ public sealed class HouseholdTests
     }
 
     [Fact]
-    public void LifeStageIsTrackedThroughAWholeLife()
+    public void ALifePassesThroughEveryStageInOrder()
     {
-        var (loop, _) = Phase0Fixtures.Build(Config);
-        var seen = new HashSet<LifeStage>();
+        var seen = new List<LifeStage>();
 
-        while (loop.World.Villager.Alive)
+        for (int age = 0; age <= 45; age++)
         {
-            seen.Add(loop.World.Villager.LifeStage);
-            loop.StepOnce();
+            LifeStage stage = AgeingSystem.StageForAge(
+                age, AgeingSystem.ComputeVigour(age, 45, Config), Config);
+
+            if (seen.Count == 0 || seen[^1] != stage)
+            {
+                seen.Add(stage);
+            }
         }
 
-        // Phase 0's lone villager is not gated on this yet — the gate arrives with
-        // households, which is what a child depends on.
-        Assert.Contains(LifeStage.Child, seen);
-        Assert.Contains(LifeStage.Adult, seen);
-        Assert.Contains(LifeStage.Elder, seen);
+        Assert.Equal(new[] { LifeStage.Child, LifeStage.Adult, LifeStage.Elder }, seen);
     }
 }

@@ -17,6 +17,12 @@ public static class Phase0Fixtures
         AdultsPerHousehold = 1,
         FounderAge = 0,
 
+        // Phase 0's villager is able-bodied from birth. Its spec says so
+        // explicitly and flags it as the known oddity that childhood would fix
+        // once households existed - so this encodes the documented Phase 0 world
+        // rather than quietly exempting it from the Phase 1 rule.
+        AdultAge = 0,
+
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,

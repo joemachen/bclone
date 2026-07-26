@@ -94,7 +94,9 @@ public sealed record SimConfig
     [JsonPropertyName("travel_ticks_per_unit")]
     public int TravelTicksPerUnit { get; init; } = 1;
 
-    /// <summary>Stockpile level at which the villager stops foraging and rests.</summary>
+    /// <summary>
+    /// Food a household stores <b>per member</b> before it stops foraging and rests.
+    /// </summary>
     [JsonPropertyName("stockpile_target")]
     public int StockpileTarget { get; init; } = 60;
 
@@ -117,6 +119,45 @@ public sealed record SimConfig
     // ---------------------------------------------------------------
     //  Life
     // ---------------------------------------------------------------
+
+    /// <summary>
+    /// What a child eats, as a percentage of an adult's meal.
+    /// </summary>
+    /// <remarks>
+    /// A child eating a full adult portion is not just wrong, it is fatal: two
+    /// working adults cannot feed a household of four at full rations, so the
+    /// village grew, starved, and died out every time. Children eat less because
+    /// they are smaller — and that is what makes raising them survivable.
+    /// </remarks>
+    [JsonPropertyName("child_food_share_percent")]
+    public int ChildFoodSharePercent { get; init; } = 50;
+
+    /// <summary>Youngest age at which a villager can become a parent.</summary>
+    [JsonPropertyName("fertility_min_age")]
+    public int FertilityMinAge { get; init; } = 18;
+
+    /// <summary>Oldest age at which a villager can become a parent.</summary>
+    [JsonPropertyName("fertility_max_age")]
+    public int FertilityMaxAge { get; init; } = 40;
+
+    /// <summary>Years a household waits between children.</summary>
+    [JsonPropertyName("birth_interval_years")]
+    public int BirthIntervalYears { get; init; } = 4;
+
+    /// <summary>
+    /// Food a household must have stored before it will have a child.
+    /// </summary>
+    /// <remarks>
+    /// A village that breeds into a famine is not telling a story, it is just
+    /// oscillating. Requiring a surplus first makes population growth a
+    /// <em>consequence</em> of a good decade rather than a background process.
+    /// </remarks>
+    [JsonPropertyName("birth_food_threshold")]
+    public int BirthFoodThreshold { get; init; } = 45;
+
+    /// <summary>Most people one household will hold before it stops growing.</summary>
+    [JsonPropertyName("max_household_size")]
+    public int MaxHouseholdSize { get; init; } = 5;
 
     /// <summary>Households the village is founded with.</summary>
     /// <remarks>
@@ -299,6 +340,33 @@ public sealed record SimConfig
         if (VillagerNames is null || VillagerNames.Count == 0)
         {
             throw new SimConfigException("villager_names must contain at least one name.");
+        }
+
+        if (ChildFoodSharePercent is <= 0 or > 100)
+        {
+            throw new SimConfigException(
+                $"child_food_share_percent must be in 1..100 (got {ChildFoodSharePercent}).");
+        }
+
+        if (FertilityMinAge < 0 || FertilityMaxAge < FertilityMinAge)
+        {
+            throw new SimConfigException(
+                $"fertility ages must satisfy 0 <= min ({FertilityMinAge}) <= max ({FertilityMaxAge}).");
+        }
+
+        if (BirthIntervalYears <= 0)
+        {
+            throw new SimConfigException($"birth_interval_years must be greater than zero (got {BirthIntervalYears}).");
+        }
+
+        if (BirthFoodThreshold < 0)
+        {
+            throw new SimConfigException($"birth_food_threshold cannot be negative (got {BirthFoodThreshold}).");
+        }
+
+        if (MaxHouseholdSize <= 0)
+        {
+            throw new SimConfigException($"max_household_size must be greater than zero (got {MaxHouseholdSize}).");
         }
 
         if (StartingHouseholds <= 0)
