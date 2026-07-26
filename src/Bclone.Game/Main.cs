@@ -40,6 +40,7 @@ public partial class Main : Control
     private ItemList _roster = null!;
     private RichTextLabel _inspector = null!;
     private RichTextLabel _villageLog = null!;
+    private VillageMap _map = null!;
 
     private int _renderedLogEntries;
     private int _selectedVillagerId;
@@ -111,6 +112,10 @@ public partial class Main : Control
         RefreshRoster(world);
         RefreshInspector(world);
         AppendNewLogLines();
+
+        // Alpha is the fraction of a tick elapsed, so villagers glide between tiles
+        // instead of teleporting once a second.
+        _map.Present(world, _driver.Alpha, _selectedVillagerId);
     }
 
     private void RefreshRoster(SimWorld world)
@@ -288,6 +293,14 @@ public partial class Main : Control
         column.AddChild(_seedLabel);
 
         column.AddChild(new HSeparator());
+
+        // The village itself, drawn. Everything else is here to explain it.
+        _map = new VillageMap
+        {
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 300),
+        };
+        column.AddChild(_map);
 
         // Roster on the left, the person you clicked on the right.
         var middle = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
