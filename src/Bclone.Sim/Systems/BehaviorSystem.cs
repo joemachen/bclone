@@ -94,6 +94,10 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(world, villager, world.FoodSource.Position, VillagerState.Gathering);
                 return;
 
+            case VillagerState.TravelingToTrees:
+                Travel(world, villager, world.TreeStand.Position, VillagerState.Cutting);
+                return;
+
             case VillagerState.TravelingHome:
                 Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
                 return;
@@ -104,6 +108,9 @@ public sealed class BehaviorSystem : ISimSystem
 
     private static bool IsForaging(VillagerState state) =>
         state is VillagerState.TravelingToFood or VillagerState.Gathering;
+
+    // Cutting is deliberately NOT included here. Berries stop in winter; trees do
+    // not, so a woodcutter keeps working when a forager cannot.
 
     /// <summary>
     /// Eat if hungry enough and there is food. Returns true if a meal was taken,
@@ -188,6 +195,25 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // Timber. Cuttable year-round, unlike berries, so a woodcutter still has
+        // something to do in winter - which is part of why the job is worth holding.
+        bool holdsCuttingJob = world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Woodcutter;
+        if (villager.CanWork && holdsCuttingJob)
+        {
+            if (villager.Position == world.TreeStand.Position)
+            {
+                villager.State = VillagerState.Cutting;
+                villager.ActionTicksRemaining = config.CutTicks;
+            }
+            else
+            {
+                villager.State = VillagerState.TravelingToTrees;
+                Travel(world, villager, world.TreeStand.Position, VillagerState.Cutting);
+            }
+
+            return;
+        }
+
         // Rest — at home if not already there.
         if (villager.Position != world.HomeOf(villager))
         {
@@ -234,6 +260,13 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival == VillagerState.Cutting)
+        {
+            villager.State = VillagerState.Cutting;
+            villager.ActionTicksRemaining = world.Config.CutTicks;
+            return;
+        }
+
         villager.State = onArrival == VillagerState.Idle ? VillagerState.Resting : onArrival;
     }
 
@@ -272,6 +305,19 @@ public sealed class BehaviorSystem : ISimSystem
                     $"Gathered {world.FoodSource.YieldPerGather} food " +
                     $"({world.HouseholdOf(villager).Stockpile.Food} stored) — {world.Clock}.");
 
+                villager.State = VillagerState.TravelingHome;
+                return;
+
+            case VillagerState.Cutting:
+                // Vigour scales timber the same way it scales berries: an ageing
+                // woodcutter brings back less for the same day's walk.
+                int wood = world.TreeStand.YieldPerCut * villager.Vigour / 100;
+                if (wood < 1)
+                {
+                    wood = 1;
+                }
+
+                world.HouseholdOf(villager).Stockpile.AddWood(wood);
                 villager.State = VillagerState.TravelingHome;
                 return;
 

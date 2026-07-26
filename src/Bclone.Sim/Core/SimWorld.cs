@@ -73,6 +73,9 @@ public sealed class SimWorld
     /// <summary>The berry patch.</summary>
     public FoodSource FoodSource { get; }
 
+    /// <summary>The stand of trees.</summary>
+    public TreeStand TreeStand { get; }
+
     /// <summary>Every workplace, ordered by id.</summary>
     public List<Workplace> Workplaces { get; } = new();
 
@@ -110,6 +113,12 @@ public sealed class SimWorld
             YieldPerGather = config.GatherYield,
         };
 
+        TreeStand = new TreeStand
+        {
+            Position = new GridPos(config.TreeStandX, config.TreeStandY),
+            YieldPerCut = config.CutYield,
+        };
+
         FoundVillage(config);
 
         // One berry patch for now. Multiple workplaces and a second job kind arrive
@@ -121,6 +130,18 @@ public sealed class SimWorld
             Name = "the berry patch",
             Position = FoodSource.Position,
             LabourDemand = config.ForagerDemand,
+            CatchmentRadius = TravelCostField.TilesToCost(config.ForagerCatchmentTiles),
+        });
+
+        // Workplace id 2, so the berry patch fills first. A village short of hands
+        // feeds itself before it builds - and that ordering is the whole policy.
+        Workplaces.Add(new Workplace
+        {
+            Id = 2,
+            Kind = JobKind.Woodcutter,
+            Name = "the tree stand",
+            Position = TreeStand.Position,
+            LabourDemand = config.WoodcutterDemand,
             CatchmentRadius = TravelCostField.TilesToCost(config.ForagerCatchmentTiles),
         });
     }

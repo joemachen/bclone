@@ -160,6 +160,8 @@ public sealed class Villager
             VillagerState.TravelingToFood => "walking to the berry patch",
             VillagerState.Gathering => "gathering berries",
             VillagerState.TravelingHome => "walking home",
+            VillagerState.TravelingToTrees => "walking to the tree stand",
+            VillagerState.Cutting => "cutting timber",
             VillagerState.Resting => "resting at home",
             VillagerState.Dead => "dead",
             _ => State.ToString(),

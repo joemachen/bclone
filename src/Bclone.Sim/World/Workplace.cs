@@ -38,8 +38,11 @@ public sealed class Workplace
 
     public required GridPos Position { get; init; }
 
-    /// <summary>How many workers this place wants.</summary>
-    public required int LabourDemand { get; init; }
+    /// <summary>
+    /// How many workers this place wants. <b>Recomputed each season</b> for places
+    /// whose demand depends on the village, like feeding it.
+    /// </summary>
+    public int LabourDemand { get; set; }
 
     /// <summary>How far it is reasonable to travel here, in travel-cost units.</summary>
     public required int CatchmentRadius { get; init; }

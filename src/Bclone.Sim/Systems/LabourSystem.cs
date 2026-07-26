@@ -49,8 +49,86 @@ public sealed class LabourSystem : ISimSystem
             return;
         }
 
+        UpdateLabourDemand(world);
         ReleaseUnfitWorkers(world);
         FillOpenPositions(world);
+    }
+
+    /// <summary>
+    /// The berry patch wants as many hands as the village needs fed — no more.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is what "labour demand" in DESIGN.md §2.2 actually means, and without it
+    /// the whole idea collapses in one direction or the other. A fixed generous
+    /// demand sent every villager to the patch, so nobody ever cut timber and the
+    /// second job was decorative. A fixed small demand left two foragers trying to
+    /// feed twenty and the village starved.
+    /// </para>
+    /// <para>
+    /// Derived from the economy's own stated target: one adult supports themselves
+    /// plus <see cref="VillageEconomy.RequiredDependants"/> others at worst. So the
+    /// hands needed are population divided by that, rounded up, with one spare for
+    /// the season a forager dies. Everyone left over is genuinely spare — and
+    /// <em>that</em> is who cuts timber.
+    /// </para>
+    /// </remarks>
+    private static void UpdateLabourDemand(SimWorld world)
+    {
+        // Count able hands, not mouths. Sizing the patch at "population / 3" looked
+        // right on paper - it is exactly the economy's stated target - but food is
+        // stored per HOUSEHOLD while labour is assigned village-wide, so a household
+        // with no forager in it produces nothing and waits on seasonal sharing. The
+        // village starved with a mathematically sufficient number of foragers.
+        //
+        // So: the patch wants every hand the village can spare, and what it spares
+        // is a quarter of the workforce for timber. That keeps every household
+        // productive and still makes "forage or cut?" a real allocation.
+        int hands = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (world.Villagers[i].CanWork)
+            {
+                hands++;
+            }
+        }
+
+        int reserved = hands / 4;
+        if (reserved > world.Config.WoodcutterDemand)
+        {
+            reserved = world.Config.WoodcutterDemand;
+        }
+
+        int needed = hands - reserved;
+        int mouths = world.Population;
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Kind != JobKind.Forager)
+            {
+                continue;
+            }
+
+            // Never below one: a village with anyone left in it needs feeding.
+            workplace.LabourDemand = needed < 1 ? 1 : needed;
+
+            // Shed anyone now surplus to requirements, highest id first, so the
+            // longest-standing claim keeps the job.
+            while (workplace.WorkerIds.Count > workplace.LabourDemand)
+            {
+                int surplusId = workplace.WorkerIds[^1];
+                workplace.WorkerIds.RemoveAt(workplace.WorkerIds.Count - 1);
+
+                Villager? villager = world.FindVillager(surplusId);
+                if (villager is not null)
+                {
+                    villager.WorkplaceId = 0;
+                    villager.JobReason =
+                        $"No work: {workplace.Name} has enough hands for {mouths} mouths.";
+                }
+            }
+        }
     }
 
     /// <summary>

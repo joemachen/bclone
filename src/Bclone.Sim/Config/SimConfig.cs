@@ -144,14 +144,60 @@ public sealed record SimConfig
     [JsonPropertyName("leave_home_age")]
     public int LeaveHomeAge { get; init; } = 18;
 
-    /// <summary>Workers the berry patch wants.</summary>
+    /// <summary>Where timber is cut.</summary>
+    [JsonPropertyName("tree_stand_x")]
+    public int TreeStandX { get; init; } = -4;
+
+    /// <summary>Where timber is cut.</summary>
+    [JsonPropertyName("tree_stand_y")]
+    public int TreeStandY { get; init; } = 2;
+
+    /// <summary>Wood one completed cut brings home.</summary>
+    [JsonPropertyName("cut_yield")]
+    public int CutYield { get; init; } = 12;
+
+    /// <summary>Ticks spent cutting once at the stand.</summary>
+    [JsonPropertyName("cut_ticks")]
+    public int CutTicks { get; init; } = 4;
+
+    /// <summary>Workers the tree stand wants.</summary>
     /// <remarks>
-    /// Generous for now, because foraging is the only job and a village that cannot
-    /// staff it starves. It becomes a real constraint once there is a second thing
-    /// worth doing.
+    /// Small on purpose. Foraging is survival and timber is growth, so the patch
+    /// fills first (it has the lower workplace id) and the stand takes what is left
+    /// over. That ordering IS the policy - a village short of hands feeds itself
+    /// before it builds.
     /// </remarks>
+    [JsonPropertyName("woodcutter_demand")]
+    public int WoodcutterDemand { get; init; } = 3;
+
+    /// <summary>
+    /// Wood a couple needs before they can build a home. <b>Zero for now — see
+    /// remarks.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The mechanic works and is tested, but it is <b>disabled by default</b> because
+    /// it cannot pay off until labour demand is dynamic. With a fixed
+    /// <c>forager_demand</c> of 200, every villager goes to the berry patch (the
+    /// lower workplace id) and nobody ever cuts timber — so gating houses on wood
+    /// simply stops the village growing and kills it.
+    /// </para>
+    /// <para>
+    /// The fix is for the patch to want only as many foragers as the village needs
+    /// fed, letting the rest spill to the tree stand. That is what "labour demand"
+    /// in DESIGN.md §2.2 actually means, and it is the prerequisite for this. Set
+    /// this above zero once that lands.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("wood_per_house")]
+    public int WoodPerHouse { get; init; }
+
+    /// <summary>
+    /// Starting demand at the berry patch. <b>Recomputed every season</b> from the
+    /// number of mouths to feed — see <c>LabourSystem.UpdateLabourDemand</c>.
+    /// </summary>
     [JsonPropertyName("forager_demand")]
-    public int ForagerDemand { get; init; } = 200;
+    public int ForagerDemand { get; init; } = 4;
 
     /// <summary>
     /// How far, in tiles, it is reasonable to travel to forage.
@@ -419,6 +465,26 @@ public sealed record SimConfig
         if (VillagerNames is null || VillagerNames.Count == 0)
         {
             throw new SimConfigException("villager_names must contain at least one name.");
+        }
+
+        if (CutYield <= 0)
+        {
+            throw new SimConfigException($"cut_yield must be greater than zero (got {CutYield}).");
+        }
+
+        if (CutTicks <= 0)
+        {
+            throw new SimConfigException($"cut_ticks must be greater than zero (got {CutTicks}).");
+        }
+
+        if (WoodcutterDemand <= 0)
+        {
+            throw new SimConfigException($"woodcutter_demand must be greater than zero (got {WoodcutterDemand}).");
+        }
+
+        if (WoodPerHouse < 0)
+        {
+            throw new SimConfigException($"wood_per_house cannot be negative (got {WoodPerHouse}).");
         }
 
         if (ForagerDemand <= 0)

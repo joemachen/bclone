@@ -16,6 +16,8 @@ public enum VillagerState
     TravelingToFood,
     Gathering,
     TravelingHome,
+    TravelingToTrees,
+    Cutting,
     Resting,
     Dead,
 }

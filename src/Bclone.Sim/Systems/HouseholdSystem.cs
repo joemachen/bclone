@@ -201,7 +201,15 @@ public sealed class HouseholdSystem : ISimSystem
                 continue;
             }
 
-            Pair(world, seeker, partner, config);
+            // A home has to be BUILT. Until the two families between them have the
+            // timber, the couple waits - which is what makes cutting wood matter,
+            // and ties how fast the village spreads to how it spends its labour.
+            if (!TryTakeBuildingTimber(world, seeker, partner, config, out int timber))
+            {
+                continue;
+            }
+
+            Pair(world, seeker, partner, config, timber);
         }
     }
 
@@ -232,7 +240,44 @@ public sealed class HouseholdSystem : ISimSystem
         return null;
     }
 
-    private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config)
+    /// <summary>
+    /// Draw the timber for a new house from both parent households, or take nothing.
+    /// </summary>
+    /// <remarks>
+    /// All-or-nothing on purpose: half-taken timber would leave both families poorer
+    /// with no house to show for it, and the couple would try again next year and
+    /// pay twice.
+    /// </remarks>
+    private static bool TryTakeBuildingTimber(
+        SimWorld world, Villager a, Villager b, SimConfig config, out int taken)
+    {
+        taken = 0;
+        if (config.WoodPerHouse == 0)
+        {
+            return true;
+        }
+
+        Household homeA = world.HouseholdOf(a);
+        Household homeB = world.HouseholdOf(b);
+
+        if (homeA.Stockpile.Wood + homeB.Stockpile.Wood < config.WoodPerHouse)
+        {
+            return false;
+        }
+
+        int fromA = homeA.Stockpile.Wood < config.WoodPerHouse ? homeA.Stockpile.Wood : config.WoodPerHouse;
+        int fromB = config.WoodPerHouse - fromA;
+
+        if (!homeA.Stockpile.TryTakeWood(fromA) || !homeB.Stockpile.TryTakeWood(fromB))
+        {
+            return false;
+        }
+
+        taken = fromA + fromB;
+        return true;
+    }
+
+    private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config, int timber)
     {
         Household oldHome = world.HouseholdOf(a);
         Household partnerHome = world.HouseholdOf(b);
@@ -264,8 +309,8 @@ public sealed class HouseholdSystem : ISimSystem
 
         world.Narrate(
             $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
-            $"made a home of their own - the {household.Name} household, {world.Clock.SeasonAndYear()}. " +
-            $"They left with {dowry} food between them.");
+            $"built a home of their own - the {household.Name} household, {world.Clock.SeasonAndYear()}. " +
+            $"{timber} timber and {dowry} food between them.");
     }
 
     /// <summary>
