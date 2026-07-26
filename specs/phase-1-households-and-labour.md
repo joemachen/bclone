@@ -162,6 +162,33 @@ That is not an arbitrary number: it is the widowed-parent case the diagnostics s
 
 That is the catchment problem from `DESIGN.md §2.2` arriving early, before the labour system exists to name it. **Distance to work is not flavour — it is whether you eat.** Good sign for the pillar; the labour system now has a real constraint to solve rather than a cosmetic one.
 
+### ⚠ Open finding — the village survives only because both pressure systems are inert (2026-07-26)
+
+Found by drawing the map, not by testing. Two things were visible immediately and neither was caught by 228 green tests:
+
+**Catchment does nothing.** `forager_catchment_tiles` is **40** while the whole village spans about ten tiles. The "nobody walks across the map for one log" guard — the centre of §2.2 — is effectively infinite. `NobodyWalksAcrossTheMapForOneLog` passes only because it overrides the radius to 6; at shipped values the pillar's central rule is decorative.
+
+**Winter does not bite.** Six villagers sitting on 507 food; winter took the stores from 440 to a scratch. The economy derivation was sound but its target too generous — solving for "a frail widowed parent survives" produced a village that is never hungry.
+
+**And here is the part that matters.** Turning either one on kills the village, *independently*:
+
+| catchment | winter buffer | 150-year village |
+|---|---|---|
+| 9 | 150% | dies |
+| 9 | 260% | dies |
+| 20 | 150% | dies |
+
+So the settlement is not robust-and-unpressured, it is **fragile and unpressured**. It survives precisely because nothing is pushing on it. The derived economy sits at break-even by construction — one frail adult supports exactly themselves plus two — so there is no slack for a longer walk or a thinner larder.
+
+**This is a design problem, not a tuning one, and it should not be tuned.** Two candidate answers:
+
+1. **Multiple food sources.** A binding catchment is only survivable if a distant household has something nearby to work. This is the same conclusion the "one food source does not scale" limit reached from the other direction, which is a good sign it is the real answer.
+2. **Raise the economy target above break-even** — state that a frail adult must support themselves plus *three*, buying slack for pressure to eat into.
+
+Probably both: (1) so catchment can bind, (2) so winter can bite.
+
+**Reverted to catchment 40 / buffer 260 for now**, because a working village with the pressure switched off is more useful than a dead one with it on — and because guessing at values here would repeat exactly the tune-by-iteration mistake the derived economy was built to end.
+
 ### ⚠ Known limit — one food source does not scale forever
 
 Past roughly 100 households the village outgrows its single berry patch: the outer ring is beyond the derived horizon and the population oscillates again. That is expected and is exactly what multiple workplaces plus catchment are for. Not a blocker for the labour system — it *is* the labour system's problem.

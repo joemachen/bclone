@@ -298,7 +298,8 @@ public partial class Main : Control
         _map = new VillageMap
         {
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 300),
+            SizeFlagsStretchRatio = 1.4f,
+            CustomMinimumSize = new Vector2(0, 200),
         };
         column.AddChild(_map);
 
@@ -307,7 +308,7 @@ public partial class Main : Control
         middle.AddThemeConstantOverride("separation", 18);
         column.AddChild(middle);
 
-        var rosterColumn = new VBoxContainer { CustomMinimumSize = new Vector2(360, 0) };
+        var rosterColumn = new VBoxContainer { CustomMinimumSize = new Vector2(320, 0) };
         rosterColumn.AddChild(Muted("The village"));
         middle.AddChild(rosterColumn);
 
@@ -319,11 +320,15 @@ public partial class Main : Control
         detailColumn.AddChild(Muted("Who they are, and why"));
         middle.AddChild(detailColumn);
 
+        // ScrollActive so a long reason scrolls rather than being cut off by the log
+        // beneath it. The one panel whose job is explaining a decision must never
+        // truncate the explanation.
         _inspector = new RichTextLabel
         {
             BbcodeEnabled = false,
+            ScrollActive = true,
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 200),
+            CustomMinimumSize = new Vector2(0, 150),
         };
         detailColumn.AddChild(_inspector);
 
@@ -333,11 +338,18 @@ public partial class Main : Control
             ScrollFollowing = true,
             BbcodeEnabled = false,
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 220),
+            CustomMinimumSize = new Vector2(0, 120),
         };
         detailColumn.AddChild(_villageLog);
 
-        var controls = new HBoxContainer();
+        // Pinned: ShrinkEnd plus a minimum height means the time controls keep their
+        // space no matter how much the map and log want. They were being pushed off
+        // the bottom of the window entirely.
+        var controls = new HBoxContainer
+        {
+            SizeFlagsVertical = SizeFlags.ShrinkEnd,
+            CustomMinimumSize = new Vector2(0, 36),
+        };
         controls.AddThemeConstantOverride("separation", 10);
         column.AddChild(controls);
 

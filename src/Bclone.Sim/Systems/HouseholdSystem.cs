@@ -359,7 +359,7 @@ public sealed class HouseholdSystem : ISimSystem
 
         // Draw order is part of the seed contract: name, then lifespan. Same order
         // as founding, so there is one rule rather than two.
-        string name = config.VillagerNames[(int)world.Rng.NextUInt((uint)config.VillagerNames.Count)];
+        string name = world.DrawUnusedName();
 
         int lifespan = config.LifespanYearsBase;
         if (config.LifespanYearsVariance > 0)

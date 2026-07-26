@@ -172,7 +172,7 @@ public sealed class SimWorld
 
             for (int a = 0; a < config.AdultsPerHousehold; a++)
             {
-                string name = config.VillagerNames[(int)Rng.NextUInt((uint)config.VillagerNames.Count)];
+                string name = DrawUnusedName();
 
                 int lifespan = config.LifespanYearsBase;
                 if (config.LifespanYearsVariance > 0)
@@ -228,6 +228,54 @@ public sealed class SimWorld
                 b.PartnerId = a.Id;
             }
         }
+    }
+
+    /// <summary>
+    /// Draw a name nobody in the village is already using.
+    /// </summary>
+    /// <remarks>
+    /// Two villagers called Bess is a small thing that undercuts a large one: this
+    /// game is defined against fungible labour units (§1.4), and you cannot tell a
+    /// story about someone whose name is not theirs. Drawing with replacement from a
+    /// short list produced twins-by-accident within two years.
+    /// <para>
+    /// Deterministic: pick an index from the seeded RNG, then walk forward to the
+    /// first unused name. Walking is a fixed rule, so the same seed still yields the
+    /// same village. If every name is taken, reuse is allowed rather than failing -
+    /// a repeated name is a blemish, a crash is a bug.
+    /// </para>
+    /// </remarks>
+    internal string DrawUnusedName()
+    {
+        IReadOnlyList<string> pool = Config.VillagerNames;
+        int start = (int)Rng.NextUInt((uint)pool.Count);
+
+        for (int offset = 0; offset < pool.Count; offset++)
+        {
+            string candidate = pool[(start + offset) % pool.Count];
+            if (!IsNameInUse(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return pool[start];
+    }
+
+    private bool IsNameInUse(string name)
+    {
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            // Only the living hold a name. The dead keep theirs in the log, but a
+            // grandchild may carry it again - which is how families actually work.
+            if (Villagers[i].Alive
+                && string.Equals(Villagers[i].Name, name, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Look up a villager by id, or null if there is no such person.</summary>
