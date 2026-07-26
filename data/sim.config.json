@@ -13,6 +13,22 @@
   // contract (specs/tick-loop.md §1).
   "seed": 12345,
 
+  // ---- The village ------------------------------------------
+  // Four founding adults in two households, growing outward.
+  "starting_households": 2,
+  "adults_per_household": 2,
+  "founder_age": 20,
+  "household_spacing": 3,
+  "adult_age": 15,
+  "leave_home_age": 18,
+  "max_household_size": 4,
+
+  // Homes cluster in a spiral rather than a line, and the economy is
+  // derived for the FURTHEST home a village this size will build - the
+  // first version budgeted for household #1 and let every outlying
+  // family starve.
+  "economy_horizon_households": 12,
+
   // ---- Calendar ----------------------------------------------
   // 4 ticks/day x 15 days x 4 seasons = 240 ticks per year.
   // At 1 tick/sec that is 240 real seconds per in-game year at 1x,
@@ -49,17 +65,19 @@
   // A round trip is 5 out + 3 gathering + 5 back = 13 ticks for
   // 15 food, against ~150 food eaten per year. That leaves a real
   // surplus but not a free one — a lazy autumn still bites.
-  // Yield at FULL vigour. An ageing villager brings back proportionally
-  // less (see vigour_min_percent), so this needs enough headroom that a
-  // frail elder can still just about keep up.
-  "gather_yield": 24,
+  // DERIVED, not chosen. VillageEconomy states the target - one adult at
+  // minimum vigour, with no partner, must feed themselves and two
+  // children - and computes the yield it requires. A test asserts this
+  // file still meets it, so editing hunger or travel without redoing
+  // this fails the build rather than the village.
+  "gather_yield": 55,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
-  // Stop foraging at this level and rest. Winter costs about 38
-  // food, so 60 clears it with a margin the player can watch
-  // shrink.
-  "stockpile_target": 60,
+  // Also DERIVED: enough to carry one member through a foraging-less
+  // winter, plus the margin that absorbs a worker dying part-way
+  // through one. Per member, not per household.
+  "stockpile_target": 96,
 
   "home_x": 0,
   "home_y": 0,

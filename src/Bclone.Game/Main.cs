@@ -2,25 +2,26 @@ using System.Collections.Generic;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Logging;
+using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Godot;
 
 namespace Bclone.Game;
 
 /// <summary>
-/// The Phase 0 view: watch one villager live and die, and be able to read why.
+/// The Phase 1 view: watch a village, and be able to ask any villager why.
 /// </summary>
 /// <remarks>
 /// <para>
-/// This class <b>reads</b> sim state and never writes it (DESIGN.md §3). The only
-/// thing it does to the simulation is decide how many ticks to run, via
-/// <see cref="FixedTimestepDriver"/>.
+/// Reads sim state, never writes it (DESIGN.md §3). The only thing it does to the
+/// simulation is decide how many ticks to run.
 /// </para>
 /// <para>
-/// The UI is built in code rather than authored as a scene tree. For a panel of
-/// labels that all change every tick, a hand-edited .tscn is mostly a liability —
-/// the layout is easier to read as thirty lines of C# than as a diff of node
-/// properties, and it cannot drift out of sync with the fields it displays.
+/// The layout is built around the phase's Success Test — <em>watching twelve
+/// villagers is still legible</em>. So the roster is always visible and one click
+/// gives a full account of a person: what they are doing, why they hold that job,
+/// who they live with. The reason strings exist in the sim either way; this is where
+/// they become legibility for a player rather than a test assertion.
 /// </para>
 /// </remarks>
 public partial class Main : Control
@@ -33,19 +34,15 @@ public partial class Main : Control
     private string _configSource = string.Empty;
 
     private Label _clockLabel = null!;
+    private Label _villageLabel = null!;
     private Label _seedLabel = null!;
-    private Label _nameLabel = null!;
-    private Label _actionLabel = null!;
-    private Label _foodLabel = null!;
-    private Label _vigourLabel = null!;
-    private Label _hungerLabel = null!;
-    private ProgressBar _hungerBar = null!;
     private Label _speedLabel = null!;
-    private RichTextLabel _lifeLog = null!;
-    private Label _epitaph = null!;
+    private ItemList _roster = null!;
+    private RichTextLabel _inspector = null!;
+    private RichTextLabel _villageLog = null!;
 
     private int _renderedLogEntries;
-    private bool _deathAnnounced;
+    private int _selectedVillagerId;
 
     public override void _Ready()
     {
@@ -61,8 +58,7 @@ public partial class Main : Control
 
     public override void _Process(double delta)
     {
-        // The single wall-clock read in the entire program. Everything downstream
-        // of here counts in ticks.
+        // The single wall-clock read in the entire program.
         int ticks = _driver.Advance(delta, _loop.World.Tick);
         if (ticks > 0)
         {
@@ -81,39 +77,23 @@ public partial class Main : Control
 
         switch (key.Keycode)
         {
-            case Key.Space:
-                SetSpeed(_driver.IsPaused ? 1.0 : 0.0);
-                break;
-            case Key.Key1:
-                SetSpeed(1.0);
-                break;
-            case Key.Key2:
-                SetSpeed(2.0);
-                break;
-            case Key.Key3:
-                SetSpeed(4.0);
-                break;
-            case Key.Key4:
-                SetSpeed(10.0);
-                break;
+            case Key.Space: SetSpeed(_driver.IsPaused ? 1.0 : 0.0); break;
+            case Key.Key1: SetSpeed(1.0); break;
+            case Key.Key2: SetSpeed(2.0); break;
+            case Key.Key3: SetSpeed(4.0); break;
+            case Key.Key4: SetSpeed(10.0); break;
         }
     }
 
     /// <summary>
-    /// Change playback speed.
+    /// Change playback speed — ticks per real second, never the size of a tick
+    /// (decision D4).
     /// </summary>
-    /// <remarks>
-    /// This scales how many ticks run per real second — never how big a tick is.
-    /// A run at 4x has exactly the same history as a run at 1x (decision D4).
-    /// </remarks>
     private void SetSpeed(double multiplier)
     {
         _driver.SpeedMultiplier = multiplier;
-        UpdateSpeedLabel();
-    }
-
-    private void UpdateSpeedLabel() =>
         _speedLabel.Text = _driver.IsPaused ? "PAUSED" : $"{_driver.SpeedMultiplier:0.#}x";
+    }
 
     // ---------------------------------------------------------------
     //  Rendering
@@ -122,88 +102,162 @@ public partial class Main : Control
     private void Refresh()
     {
         SimWorld world = _loop.World;
-        Villager villager = world.Villager;
-        SimConfig config = world.Config;
 
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
+        _villageLabel.Text =
+            $"{world.Population} villagers · {LivingHouseholds(world)} households · " +
+            $"{TotalFood(world)} food stored";
 
-        _nameLabel.Text = villager.Alive
-            ? $"{villager.Name}, age {villager.AgeYears}"
-            : $"{villager.Name}, died at {villager.AgeYears}";
-
-        _actionLabel.Text = villager.DescribeState();
-
-        _foodLabel.Text = $"{world.Stockpile.Food} food stored";
-
-        // Vigour is only worth showing once it starts to matter — a permanent
-        // "100%" is noise, and the point is that the player notices the turn.
-        _vigourLabel.Visible = villager.Alive && villager.Stage != VigourStage.Prime;
-        _vigourLabel.Text = villager.Stage == VigourStage.Frail
-            ? $"Vigour {villager.Vigour}% — frail; every trip brings back less"
-            : $"Vigour {villager.Vigour}% — past her strongest years";
-        _vigourLabel.Modulate = villager.Stage == VigourStage.Frail ? Colors.IndianRed : Colors.Goldenrod;
-
-        int hungerPercent = config.HungerMax == 0 ? 0 : villager.Hunger * 100 / config.HungerMax;
-        _hungerBar.Value = hungerPercent;
-        _hungerLabel.Text = villager.Alive ? $"Hunger {hungerPercent}%" : "—";
-
-        // Colour is a hint, never the only signal — the number is always there too.
-        _hungerBar.Modulate = hungerPercent >= 100 ? Colors.OrangeRed
-            : hungerPercent >= 80 ? Colors.Goldenrod
-            : Colors.ForestGreen;
-
+        RefreshRoster(world);
+        RefreshInspector(world);
         AppendNewLogLines();
+    }
 
-        if (!villager.Alive && !_deathAnnounced)
+    private void RefreshRoster(SimWorld world)
+    {
+        // Rebuilt each frame rather than diffed. A village is tens of people, not
+        // thousands, and a rebuilt list cannot drift out of sync with the sim —
+        // which matters more here than the handful of allocations.
+        int previousSelection = _selectedVillagerId;
+        _roster.Clear();
+
+        for (int i = 0; i < world.Villagers.Count; i++)
         {
-            _deathAnnounced = true;
-            _epitaph.Visible = true;
-            _epitaph.Text = villager.CauseOfDeath == CauseOfDeath.OldAge
-                ? $"{villager.Name} lived {villager.AgeYears} years and survived " +
-                  $"{villager.WintersSurvived} winters."
-                : $"{villager.Name} starved in year {world.Clock.Year}, aged {villager.AgeYears}, " +
-                  $"after {villager.WintersSurvived} winters.";
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            string stage = villager.LifeStage switch
+            {
+                LifeStage.Child => "child",
+                LifeStage.Elder => "elder",
+                _ => "adult",
+            };
+
+            string work = villager.HasJob ? "working" : "no work";
+            int index = _roster.AddItem($"{villager.Name}, {villager.AgeYears} ({stage}) — {work}");
+            _roster.SetItemMetadata(index, villager.Id);
+
+            if (villager.Id == previousSelection)
+            {
+                _roster.Select(index);
+            }
         }
     }
 
-    /// <summary>
-    /// Append only entries we have not drawn yet.
-    /// </summary>
-    /// <remarks>
-    /// Rebuilding the whole log every frame would be O(life) per frame and would
-    /// reset the player's scroll position, which matters — the log is meant to be
-    /// read back through, not just watched.
-    /// </remarks>
+    private void RefreshInspector(SimWorld world)
+    {
+        Villager? villager = world.FindVillager(_selectedVillagerId);
+        if (villager is null)
+        {
+            _inspector.Text = "Select a villager to see what they are doing, and why.";
+            return;
+        }
+
+        Household household = world.HouseholdOf(villager);
+        Workplace? workplace = world.FindWorkplace(villager.WorkplaceId);
+
+        int hungerPercent = world.Config.HungerMax == 0
+            ? 0
+            : villager.Hunger * 100 / world.Config.HungerMax;
+
+        var lines = new List<string>
+        {
+            $"{villager.Name}, aged {villager.AgeYears}",
+            villager.Alive ? $"Currently: {villager.DescribeState()}" : "Dead.",
+            $"Household: the {household.Name} household ({household.Stockpile.Food} food stored)",
+            $"Hunger: {hungerPercent}%",
+        };
+
+        if (villager.Stage != VigourStage.Prime)
+        {
+            lines.Add(villager.Stage == VigourStage.Frail
+                ? $"Vigour: {villager.Vigour}% — frail; every trip brings back less"
+                : $"Vigour: {villager.Vigour}% — past their strongest years");
+        }
+
+        if (villager.IsPaired)
+        {
+            Villager? partner = world.FindVillager(villager.PartnerId);
+            if (partner is not null)
+            {
+                lines.Add($"Partner: {partner.Name}");
+            }
+        }
+
+        lines.Add(string.Empty);
+        lines.Add(workplace is null ? "Work: none" : $"Work: {workplace.Name}");
+
+        // The phase's actual deliverable: a straight answer to "why this job?".
+        if (!string.IsNullOrWhiteSpace(villager.JobReason))
+        {
+            lines.Add($"Why: {villager.JobReason}");
+        }
+
+        _inspector.Text = string.Join("\n", lines);
+    }
+
+    private void OnVillagerSelected(long index)
+    {
+        Variant metadata = _roster.GetItemMetadata((int)index);
+        _selectedVillagerId = metadata.AsInt32();
+        RefreshInspector(_loop.World);
+    }
+
+    /// <summary>Append only entries not yet drawn; rebuilding would reset scroll.</summary>
     private void AppendNewLogLines()
     {
         IReadOnlyList<LogEntry> entries = _sink.Entries;
 
         for (int i = _renderedLogEntries; i < entries.Count; i++)
         {
-            LogEntry entry = entries[i];
-            if (entry.Subsystem != "life")
+            if (entries[i].Subsystem == "life")
             {
-                continue;
+                _villageLog.AppendText($"{entries[i].Message}\n");
             }
-
-            _lifeLog.AppendText($"{entry.Message}\n");
         }
 
         _renderedLogEntries = entries.Count;
 
-        // Keep the buffer bounded; a full life is several hundred lines.
-        if (_lifeLog.GetLineCount() > MaxLogLines * 2)
+        if (_villageLog.GetLineCount() > MaxLogLines * 2)
         {
-            _lifeLog.Clear();
-            _lifeLog.AppendText("(earlier entries trimmed)\n");
+            _villageLog.Clear();
+            _villageLog.AppendText("(earlier entries trimmed)\n");
             for (int i = entries.Count - MaxLogLines; i < entries.Count; i++)
             {
                 if (i >= 0 && entries[i].Subsystem == "life")
                 {
-                    _lifeLog.AppendText($"{entries[i].Message}\n");
+                    _villageLog.AppendText($"{entries[i].Message}\n");
                 }
             }
         }
+    }
+
+    private static int LivingHouseholds(SimWorld world)
+    {
+        int count = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            if (world.LivingMembersOf(world.Households[i]) > 0)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static int TotalFood(SimWorld world)
+    {
+        int total = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            total += world.Households[i].Stockpile.Food;
+        }
+
+        return total;
     }
 
     // ---------------------------------------------------------------
@@ -213,76 +267,63 @@ public partial class Main : Control
     private void BuildUi()
     {
         var root = new MarginContainer { AnchorRight = 1, AnchorBottom = 1 };
-        root.AddThemeConstantOverride("margin_left", 24);
-        root.AddThemeConstantOverride("margin_top", 20);
-        root.AddThemeConstantOverride("margin_right", 24);
-        root.AddThemeConstantOverride("margin_bottom", 20);
+        foreach (string side in new[] { "margin_left", "margin_top", "margin_right", "margin_bottom" })
+        {
+            root.AddThemeConstantOverride(side, 20);
+        }
+
         AddChild(root);
 
         var column = new VBoxContainer();
-        column.AddThemeConstantOverride("separation", 14);
+        column.AddThemeConstantOverride("separation", 10);
         root.AddChild(column);
 
-        // ---- Header: where we are in time -------------------------
-        _clockLabel = Heading("");
+        _clockLabel = Heading(string.Empty);
         column.AddChild(_clockLabel);
+
+        _villageLabel = Body(string.Empty);
+        column.AddChild(_villageLabel);
 
         _seedLabel = Muted($"seed {_loop.World.Seed}   ·   config: {_configSource}");
         column.AddChild(_seedLabel);
 
         column.AddChild(new HSeparator());
 
-        // ---- The villager ----------------------------------------
-        _nameLabel = Heading("");
-        column.AddChild(_nameLabel);
+        // Roster on the left, the person you clicked on the right.
+        var middle = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
+        middle.AddThemeConstantOverride("separation", 18);
+        column.AddChild(middle);
 
-        _actionLabel = Body("");
-        column.AddChild(_actionLabel);
+        var rosterColumn = new VBoxContainer { CustomMinimumSize = new Vector2(360, 0) };
+        rosterColumn.AddChild(Muted("The village"));
+        middle.AddChild(rosterColumn);
 
-        var hungerRow = new HBoxContainer();
-        hungerRow.AddThemeConstantOverride("separation", 12);
-        column.AddChild(hungerRow);
+        _roster = new ItemList { SizeFlagsVertical = SizeFlags.ExpandFill };
+        _roster.ItemSelected += OnVillagerSelected;
+        rosterColumn.AddChild(_roster);
 
-        _hungerLabel = Body("");
-        _hungerLabel.CustomMinimumSize = new Vector2(120, 0);
-        hungerRow.AddChild(_hungerLabel);
+        var detailColumn = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        detailColumn.AddChild(Muted("Who they are, and why"));
+        middle.AddChild(detailColumn);
 
-        _hungerBar = new ProgressBar
+        _inspector = new RichTextLabel
         {
-            MinValue = 0,
-            MaxValue = 100,
-            ShowPercentage = false,
-            CustomMinimumSize = new Vector2(260, 18),
+            BbcodeEnabled = false,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 200),
         };
-        hungerRow.AddChild(_hungerBar);
+        detailColumn.AddChild(_inspector);
 
-        _foodLabel = Body("");
-        column.AddChild(_foodLabel);
-
-        _vigourLabel = Body("");
-        _vigourLabel.Visible = false;
-        column.AddChild(_vigourLabel);
-
-        _epitaph = Heading("");
-        _epitaph.Visible = false;
-        _epitaph.Modulate = Colors.Gold;
-        column.AddChild(_epitaph);
-
-        column.AddChild(new HSeparator());
-
-        // ---- Life log: the actual deliverable ---------------------
-        column.AddChild(Muted("Life log"));
-
-        _lifeLog = new RichTextLabel
+        detailColumn.AddChild(Muted("Village log"));
+        _villageLog = new RichTextLabel
         {
             ScrollFollowing = true,
             BbcodeEnabled = false,
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 360),
+            CustomMinimumSize = new Vector2(0, 220),
         };
-        column.AddChild(_lifeLog);
+        detailColumn.AddChild(_villageLog);
 
-        // ---- Playback controls ------------------------------------
         var controls = new HBoxContainer();
         controls.AddThemeConstantOverride("separation", 10);
         column.AddChild(controls);
@@ -295,10 +336,9 @@ public partial class Main : Control
 
         _speedLabel = Body(string.Empty);
         controls.AddChild(_speedLabel);
-
         controls.AddChild(Muted("   (space to pause · 1 / 2 / 3 / 4 for speed)"));
 
-        UpdateSpeedLabel();
+        SetSpeed(1.0);
     }
 
     private Button SpeedButton(string text, double multiplier)

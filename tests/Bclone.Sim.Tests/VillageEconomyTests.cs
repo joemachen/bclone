@@ -128,6 +128,44 @@ public sealed class VillageEconomyTests
     }
 
     [Fact]
+    public void TheShippedConfigFileMeetsTheTarget()
+    {
+        // The fixtures deriving correctly is not much use if the file the game
+        // actually loads has drifted. This is the one that guards the real village.
+        string path = Path.Combine(RepoRoot(), "data", "sim.config.json");
+        SimConfig shipped = SimConfigLoader.LoadFromFile(path);
+
+        _output.WriteLine(VillageEconomy.Describe(shipped));
+
+        Assert.True(
+            VillageEconomy.DependantsSupportedAtWorst(shipped) >= VillageEconomy.RequiredDependants,
+            $"data/sim.config.json supports only " +
+            $"{VillageEconomy.DependantsSupportedAtWorst(shipped)} dependants; " +
+            $"gather_yield should be at least {VillageEconomy.RequiredGatherYield(shipped)}.");
+
+        Assert.True(
+            shipped.StockpileTarget >= VillageEconomy.RequiredStockpilePerAdult(shipped),
+            $"stockpile_target is {shipped.StockpileTarget}, needs " +
+            $"{VillageEconomy.RequiredStockpilePerAdult(shipped)}.");
+    }
+
+    private static string RepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "DESIGN.md")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException("Could not locate repo root.");
+    }
+
+    [Fact]
     public void Phase0SVillageOfOneAlsoMeetsTheTarget()
     {
         // Phase 0 has no children, so its economy only has to feed one adult — but
