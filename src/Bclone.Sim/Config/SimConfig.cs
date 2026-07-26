@@ -119,6 +119,16 @@ public sealed record SimConfig
     // ---------------------------------------------------------------
 
     /// <summary>
+    /// Age at which a child becomes an adult and can take work.
+    /// </summary>
+    /// <remarks>
+    /// Below this a villager eats from the household store and contributes nothing —
+    /// which is exactly why childhood needs households to exist first (D13).
+    /// </remarks>
+    [JsonPropertyName("adult_age")]
+    public int AdultAge { get; init; } = 15;
+
+    /// <summary>
     /// Age up to which the villager works at full strength. After this, vigour
     /// declines linearly toward <see cref="VigourMinPercent"/> at death.
     /// </summary>

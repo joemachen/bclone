@@ -36,6 +36,26 @@ public enum VigourStage
     Frail = 2,
 }
 
+/// <summary>
+/// What a villager is capable of, derived from age.
+/// </summary>
+/// <remarks>
+/// Childhood exists from Phase 1 rather than Phase 0 because it only makes sense
+/// once there is a household to depend on — a frail child alone is just an
+/// unsurvivable opening (decision D13).
+/// </remarks>
+public enum LifeStage
+{
+    /// <summary>Too young to work. Eats from the household store and gives nothing back.</summary>
+    Child = 0,
+
+    /// <summary>Working age.</summary>
+    Adult = 1,
+
+    /// <summary>Still working, but visibly declining — see <see cref="VigourStage"/>.</summary>
+    Elder = 2,
+}
+
 /// <summary>How a villager's life ended.</summary>
 public enum CauseOfDeath
 {

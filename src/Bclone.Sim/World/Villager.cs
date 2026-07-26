@@ -46,6 +46,17 @@ public sealed class Villager
     /// <summary>The year they would die of old age, drawn once at birth.</summary>
     public required int LifespanYears { get; init; }
 
+    /// <summary>Which household they belong to — where they live and whose food they eat.</summary>
+    public int HouseholdId { get; set; }
+
+    /// <summary>
+    /// What they are capable of, derived from age each tick by <c>AgeingSystem</c>.
+    /// </summary>
+    public LifeStage LifeStage { get; set; } = LifeStage.Adult;
+
+    /// <summary>True when they are old enough to do a day's work.</summary>
+    public bool CanWork => Alive && LifeStage != LifeStage.Child;
+
     /// <summary>Years lived. Advances on the new-year boundary.</summary>
     public int AgeYears { get; set; }
 

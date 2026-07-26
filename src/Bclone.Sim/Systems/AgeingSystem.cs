@@ -48,6 +48,7 @@ public sealed class AgeingSystem : ISimSystem
         }
 
         villager.Vigour = ComputeVigour(villager.AgeYears, villager.LifespanYears, world.Config);
+        villager.LifeStage = StageForAge(villager.AgeYears, villager.Vigour, world.Config);
 
         VigourStage stage = StageFor(villager.Vigour);
         if (stage == villager.Stage)
@@ -105,6 +106,27 @@ public sealed class AgeingSystem : ISimSystem
 
         // Multiply before dividing so the integer division truncates once, at the end.
         return 100 - ((100 - floor) * yearsIntoDecline / declineYears);
+    }
+
+    /// <summary>
+    /// Life stage from age and vigour.
+    /// </summary>
+    /// <remarks>
+    /// Childhood is an age gate; elderhood is a <em>vigour</em> gate rather than a
+    /// second age threshold, so "elder" means the same thing as the frailty the
+    /// player can already see on screen. Two separate definitions of old would be
+    /// two things to keep in sync and one more way for the UI to contradict itself.
+    /// </remarks>
+    public static LifeStage StageForAge(int ageYears, int vigour, SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        if (ageYears < config.AdultAge)
+        {
+            return LifeStage.Child;
+        }
+
+        return StageFor(vigour) == VigourStage.Frail ? LifeStage.Elder : LifeStage.Adult;
     }
 
     /// <summary>Which band a vigour value falls in.</summary>
