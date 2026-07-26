@@ -279,10 +279,12 @@ public partial class Main : Control
 
         AddChild(root);
 
-        // Anchors have to be APPLIED, not just assigned. Setting AnchorRight/Bottom
-        // alone left this container sized to its own content, so it grew past the
-        // bottom of the window and took the time controls with it - twice.
-        root.SetAnchorsPreset(LayoutPreset.FullRect);
+        // Anchors AND offsets. SetAnchorsPreset alone moves the anchors but leaves the
+        // offsets, so the container still sized itself to its content - which first
+        // pushed the time controls off the bottom of the window, and then left the
+        // whole UI huddled in the top-left corner. This is the call that does both.
+        SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        root.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 10);
@@ -312,6 +314,10 @@ public partial class Main : Control
             SizeFlagsVertical = SizeFlags.ExpandFill,
             SizeFlagsStretchRatio = 1.4f,
             CustomMinimumSize = new Vector2(0, 200),
+
+            // Without this the catchment rings - which are far larger than the map
+            // panel - draw straight across the rest of the window.
+            ClipContents = true,
         };
         column.AddChild(_map);
 

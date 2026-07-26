@@ -113,8 +113,17 @@ public partial class VillageMap : Control
 
             // Catchment as a faint ring: this is the "does not walk across the map"
             // rule made visible rather than merely enforced.
+            //
+            // Only drawn when the ring actually fits the panel. A catchment far wider
+            // than the village produces an arc bigger than the window, which reads as
+            // a stray line across the UI rather than as a boundary - and a boundary
+            // you cannot see the shape of tells you nothing anyway.
             float radiusTiles = workplace.CatchmentRadius / (float)TravelCostField.BaseTileCost;
-            DrawArc(centre, radiusTiles * scale, 0f, Mathf.Tau, 64, colour with { A = 0.15f }, 1f);
+            float radiusPixels = radiusTiles * scale;
+            if (radiusPixels <= Mathf.Max(Size.X, Size.Y))
+            {
+                DrawArc(centre, radiusPixels, 0f, Mathf.Tau, 64, colour with { A = 0.18f }, 1f);
+            }
 
             DrawCircle(centre, Mathf.Max(5f, scale * 0.45f), colour);
         }
