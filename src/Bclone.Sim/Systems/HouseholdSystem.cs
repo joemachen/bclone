@@ -40,6 +40,10 @@ public sealed class HouseholdSystem : ISimSystem
 
         int year = world.Clock.Year;
 
+        // Formation first: a couple who move out this year get their own house
+        // before anyone considers having children in it.
+        FormNewHouseholds(world, config, year);
+
         // Snapshot the count: newborns are appended, and a baby must not be
         // considered for parenthood on the tick it is born.
         int householdCount = world.Households.Count;
@@ -48,6 +52,154 @@ public sealed class HouseholdSystem : ISimSystem
         {
             TryBirth(world, world.Households[i], config, year);
         }
+    }
+
+    /// <summary>
+    /// Grown, unpaired adults pair off across households and found new homes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Without this the village suffocates: children never leave the house they were
+    /// born in, every household fills to <c>max_household_size</c>, births stop
+    /// permanently, and the settlement dies out with its last generation. That is
+    /// not famine - it is a village with nowhere to put the next child.
+    /// </para>
+    /// <para>
+    /// <b>Matching is fully ordered.</b> Candidates are visited in villager-id order,
+    /// and each takes the lowest-id eligible partner. No scoring, no randomness, and
+    /// no "whoever comes first" - a matching problem is exactly where a tie resolved
+    /// by iteration order turns into a desync (spec 4b). It also means the answer to
+    /// "why those two?" is one sentence, which the pairing is narrated with.
+    /// </para>
+    /// <para>
+    /// Partners must come from <em>different</em> households, which is the closest
+    /// thing to an incest rule this model can express: everyone in a house is either
+    /// a parent or a sibling.
+    /// </para>
+    /// </remarks>
+    private static void FormNewHouseholds(SimWorld world, SimConfig config, int year)
+    {
+        // Snapshot: a villager who pairs this year must not also be considered as
+        // someone else's partner later in the same pass.
+        int count = world.Villagers.Count;
+
+        for (int i = 0; i < count; i++)
+        {
+            Villager seeker = world.Villagers[i];
+            if (!IsSeekingAHome(seeker, config))
+            {
+                continue;
+            }
+
+            Villager? partner = FindPartner(world, seeker, config, count);
+            if (partner is null)
+            {
+                continue;
+            }
+
+            Pair(world, seeker, partner, config);
+        }
+    }
+
+    private static bool IsSeekingAHome(Villager villager, SimConfig config) =>
+        villager.Alive
+        && !villager.IsPaired
+        && villager.LifeStage != LifeStage.Child
+        && villager.AgeYears >= config.LeaveHomeAge;
+
+    /// <summary>Lowest-id eligible partner from a different household.</summary>
+    private static Villager? FindPartner(SimWorld world, Villager seeker, SimConfig config, int count)
+    {
+        for (int j = 0; j < count; j++)
+        {
+            Villager candidate = world.Villagers[j];
+
+            if (candidate.Id == seeker.Id || candidate.HouseholdId == seeker.HouseholdId)
+            {
+                continue;
+            }
+
+            if (IsSeekingAHome(candidate, config))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config)
+    {
+        Household oldHome = world.HouseholdOf(a);
+        Household partnerHome = world.HouseholdOf(b);
+
+        var home = new GridPos(
+            config.HomeX + (world.Households.Count * config.HouseholdSpacing),
+            config.HomeY);
+
+        var household = new Household
+        {
+            Id = NextHouseholdId(world),
+            Name = config.HouseholdNames[world.Households.Count % config.HouseholdNames.Count],
+            HomePosition = home,
+        };
+
+        // Each family sends their child off with a share of the larder. Without it a
+        // new household starts on empty and can be wiped out by its first winter
+        // before anyone has foraged a thing - a death with no decision behind it,
+        // which is exactly what the legibility non-negotiable rules out.
+        int dowry = TakeDowry(oldHome, config) + TakeDowry(partnerHome, config);
+
+        MoveIn(world, a, household, home);
+        MoveIn(world, b, household, home);
+
+        a.PartnerId = b.Id;
+        b.PartnerId = a.Id;
+
+        household.Stockpile.Add(dowry);
+        world.Households.Add(household);
+
+        world.Narrate(
+            $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
+            $"made a home of their own - the {household.Name} household, {world.Clock.SeasonAndYear()}. " +
+            $"They left with {dowry} food between them.");
+    }
+
+    /// <summary>
+    /// Food a parent household gives a departing child, capped so a generous family
+    /// cannot starve itself sending someone away.
+    /// </summary>
+    private static int TakeDowry(Household from, SimConfig config)
+    {
+        int share = from.Stockpile.Food * config.DowryPercent / 100;
+        if (share > config.StockpileTarget)
+        {
+            share = config.StockpileTarget;
+        }
+
+        return from.Stockpile.TryTake(share) ? share : 0;
+    }
+
+    private static void MoveIn(SimWorld world, Villager villager, Household household, GridPos home)
+    {
+        world.HouseholdOf(villager).RemoveMember(villager.Id);
+        villager.HouseholdId = household.Id;
+        villager.Position = home;
+        household.AddMember(villager.Id);
+    }
+
+    private static int NextHouseholdId(SimWorld world)
+    {
+        int max = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            if (world.Households[i].Id > max)
+            {
+                max = world.Households[i].Id;
+            }
+        }
+
+        return max + 1;
     }
 
     private static void TryBirth(SimWorld world, Household household, SimConfig config, int year)
@@ -114,42 +266,44 @@ public sealed class HouseholdSystem : ISimSystem
             return false;
         }
 
-        return CountFertileAdults(world, household, config) >= 2;
+        return HasFertileCouple(world, household, config);
     }
 
-    private static int CountFertileAdults(SimWorld world, Household household, SimConfig config)
+    /// <summary>
+    /// Whether the household contains a fertile <em>couple</em> - two partners, not
+    /// merely two adults.
+    /// </summary>
+    /// <remarks>
+    /// Counting any two fertile adults would let siblings breed in the parental home,
+    /// and would let the village grow without ever forming a new household - which
+    /// hides the very problem household formation exists to solve.
+    /// </remarks>
+    private static bool HasFertileCouple(SimWorld world, Household household, SimConfig config)
     {
-        int fertile = 0;
-
         for (int i = 0; i < household.MemberIds.Count; i++)
         {
-            Villager? member = FindVillager(world, household.MemberIds[i]);
-            if (member is null || !member.Alive)
+            Villager? member = world.FindVillager(household.MemberIds[i]);
+            if (member is null || !IsFertile(member, config) || !member.IsPaired)
             {
                 continue;
             }
 
-            if (member.AgeYears >= config.FertilityMinAge && member.AgeYears <= config.FertilityMaxAge)
+            Villager? partner = world.FindVillager(member.PartnerId);
+            if (partner is not null
+                && partner.HouseholdId == household.Id
+                && IsFertile(partner, config))
             {
-                fertile++;
+                return true;
             }
         }
 
-        return fertile;
+        return false;
     }
 
-    private static Villager? FindVillager(SimWorld world, int id)
-    {
-        for (int i = 0; i < world.Villagers.Count; i++)
-        {
-            if (world.Villagers[i].Id == id)
-            {
-                return world.Villagers[i];
-            }
-        }
-
-        return null;
-    }
+    private static bool IsFertile(Villager villager, SimConfig config) =>
+        villager.Alive
+        && villager.AgeYears >= config.FertilityMinAge
+        && villager.AgeYears <= config.FertilityMaxAge;
 
     /// <summary>Ids are never reused, so the dead keep theirs and the log stays honest.</summary>
     private static int NextVillagerId(SimWorld world)

@@ -153,6 +153,45 @@ public sealed class SimWorld
 
             Households.Add(household);
         }
+
+        PairFounders(config);
+    }
+
+    /// <summary>
+    /// Founding adults arrive as couples, two to a household.
+    /// </summary>
+    /// <remarks>
+    /// Otherwise the founders are all unpaired and immediately walk out of their own
+    /// homes looking for partners, which is a strange way to found a settlement.
+    /// </remarks>
+    private void PairFounders(SimConfig config)
+    {
+        for (int h = 0; h < Households.Count; h++)
+        {
+            IReadOnlyList<int> members = Households[h].MemberIds;
+
+            for (int i = 0; i + 1 < members.Count; i += 2)
+            {
+                Villager a = Villagers[members[i] - 1];
+                Villager b = Villagers[members[i + 1] - 1];
+                a.PartnerId = b.Id;
+                b.PartnerId = a.Id;
+            }
+        }
+    }
+
+    /// <summary>Look up a villager by id, or null if there is no such person.</summary>
+    public Villager? FindVillager(int id)
+    {
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            if (Villagers[i].Id == id)
+            {
+                return Villagers[i];
+            }
+        }
+
+        return null;
     }
 
     /// <summary>The household a villager belongs to.</summary>

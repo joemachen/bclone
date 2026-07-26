@@ -50,6 +50,19 @@ public sealed class Villager
     public int HouseholdId { get; set; }
 
     /// <summary>
+    /// The villager they founded a household with, or 0 if unpaired.
+    /// </summary>
+    /// <remarks>
+    /// Only a couple has children, which is what stops siblings breeding in the
+    /// parental home and forces the village to actually form new households in
+    /// order to grow.
+    /// </remarks>
+    public int PartnerId { get; set; }
+
+    /// <summary>True once they have a partner.</summary>
+    public bool IsPaired => PartnerId != 0;
+
+    /// <summary>
     /// What they are capable of, derived from age each tick by <c>AgeingSystem</c>.
     /// </summary>
     public LifeStage LifeStage { get; set; } = LifeStage.Adult;

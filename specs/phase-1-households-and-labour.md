@@ -137,7 +137,26 @@ Standard DoD (`METHODOLOGY.md §3`), plus the phase's own gate:
 
 ---
 
-## 8b. ⚠ Open finding — grown children never leave home (2026-07-25)
+## 8b. ✅ Resolved — household formation (2026-07-25)
+
+Grown, unpaired adults now pair off **across** households and found new homes, carrying a dowry from both parents' larders. The village went from 2 households / 10 people ever born to **8 households / 27 ever born**.
+
+Design notes worth keeping:
+- **Matching is fully ordered** — candidates visited in villager-id order, each taking the lowest-id eligible partner. No scoring, no randomness. A matching problem is exactly where a tie resolved by iteration order becomes a desync (§4b), and it means "why those two?" has a one-sentence answer.
+- **Partners must come from different households** — the closest thing to an incest rule this model can express, since everyone in a house is a parent or a sibling.
+- **Only a *couple* has children**, not any two fertile adults. Otherwise siblings breed in the parental home and the village grows without ever forming a household, hiding the problem this solves.
+- **The dowry is not flavour.** A new household starting on an empty larder gets wiped out by its first winter before anyone has foraged anything — a death with no decision behind it, which the legibility non-negotiable rules out.
+
+### ⚠ Still open — the village does not yet sustain itself
+
+It grows and spreads, but at year 126 the population is **zero**. Growth outruns the food supply eventually and the settlement dies out. This needs diagnosis before the labour system goes in — a labour system for a village that cannot survive is measuring the wrong thing.
+
+Worth checking first, in order: whether new households are formed faster than they can be fed; whether `max_household_size` plus `birth_food_threshold` allow a stable population at all; and whether foraging capacity per adult simply caps out below replacement.
+
+<details>
+<summary>Original finding (kept for the reasoning)</summary>
+
+## Grown children never leave home
 
 Births work, and the village grows from 4 to 10 people over its first decade. Then it stops dead and dies out with its last generation.
 
@@ -150,6 +169,8 @@ Two things it will need care on:
 - **Legibility.** "Why did Bess move out and marry into the Fletchers?" has to have a one-sentence answer, exactly like job assignment does.
 
 Pinned by `GrownChildrenCannotYetFoundNewHouseholds`, which asserts the current broken behaviour so it cannot be quietly forgotten. **Invert that test when the feature lands.**
+
+</details>
 
 Also fixed on the way here: the stockpile target was a flat number tuned for Phase 0's single villager, which left a four-person household permanently one bad season from empty. It now scales per member. And children eat a smaller portion than adults (`child_food_share_percent`), because at full adult rations two workers cannot feed a household of four.
 

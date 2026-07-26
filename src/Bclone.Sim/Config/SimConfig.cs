@@ -132,6 +132,25 @@ public sealed record SimConfig
     [JsonPropertyName("child_food_share_percent")]
     public int ChildFoodSharePercent { get; init; } = 50;
 
+    /// <summary>
+    /// Age at which an unpaired adult starts looking for a partner and a home of
+    /// their own.
+    /// </summary>
+    /// <remarks>
+    /// Without household formation the village suffocates: children stay in their
+    /// birth household forever, every house fills to max_household_size, births
+    /// stop, and the settlement dies out with its last generation.
+    /// </remarks>
+    [JsonPropertyName("leave_home_age")]
+    public int LeaveHomeAge { get; init; } = 18;
+
+    /// <summary>
+    /// Share of a parent household's larder that leaves with a departing child, as
+    /// a percentage.
+    /// </summary>
+    [JsonPropertyName("dowry_percent")]
+    public int DowryPercent { get; init; } = 25;
+
     /// <summary>Youngest age at which a villager can become a parent.</summary>
     [JsonPropertyName("fertility_min_age")]
     public int FertilityMinAge { get; init; } = 18;
@@ -340,6 +359,16 @@ public sealed record SimConfig
         if (VillagerNames is null || VillagerNames.Count == 0)
         {
             throw new SimConfigException("villager_names must contain at least one name.");
+        }
+
+        if (DowryPercent is < 0 or > 100)
+        {
+            throw new SimConfigException($"dowry_percent must be in 0..100 (got {DowryPercent}).");
+        }
+
+        if (LeaveHomeAge < 0)
+        {
+            throw new SimConfigException($"leave_home_age cannot be negative (got {LeaveHomeAge}).");
         }
 
         if (ChildFoodSharePercent is <= 0 or > 100)

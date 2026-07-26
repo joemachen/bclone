@@ -308,34 +308,58 @@ public sealed class VillageTests
     }
 
     [Fact]
-    public void GrownChildrenCannotYetFoundNewHouseholds()
+    public void GrownChildrenFoundNewHouseholds()
     {
-        // KNOWN GAP, asserted so it cannot be forgotten. Children stay in the
-        // household they were born into for life, so once every house hits
-        // max_household_size the village stops growing entirely and dies out with
-        // its last generation. Household formation is the missing piece; this test
-        // should be inverted when it lands.
+        // Was the pinned known gap: children used to stay in their birth household
+        // for life, so once every house filled the village stopped growing and died
+        // out with its last generation. Now inverted - the village spreads.
         var (loop, _) = Build(GrowingVillage);
         int foundingHouseholds = loop.World.Households.Count;
 
         loop.Step(30_000);
 
-        Assert.Equal(foundingHouseholds, loop.World.Households.Count);
-        Assert.Equal(0, loop.World.Population);
+        Assert.True(loop.World.Households.Count > foundingHouseholds,
+            $"Village still has {loop.World.Households.Count} households.");
     }
 
     [Fact]
-    public void NobodyStarvesInTheVillage()
+    public void CouplesLeaveHomeWithFoodToStartOn()
     {
-        // The village dies out, but not of hunger - every death is old age. Worth
-        // pinning down, because "the village collapsed" looked like famine and was
-        // not, and the wrong diagnosis would have sent the tuning the wrong way.
+        // A new household on an empty larder can be wiped out by its first winter
+        // before anyone has foraged anything - a death with no decision behind it.
+        var (loop, _) = Build(GrowingVillage);
+        loop.Step(30_000);
+
+        // Every household beyond the founding pair was formed by a couple moving
+        // out, and each was given a share of both parents' stores.
+        Assert.True(loop.World.Households.Count > 2);
+        for (int i = 2; i < loop.World.Households.Count; i++)
+        {
+            Assert.True(loop.World.Households[i].Stockpile.LifetimeGathered > 0,
+                $"Household {loop.World.Households[i].Name} started with nothing.");
+        }
+    }
+
+    [Fact]
+    public void PartnersComeFromDifferentHouseholds()
+    {
+        // The closest thing to an incest rule this model can express: everyone in a
+        // house is either a parent or a sibling. Checked at the moment of pairing,
+        // which is when they still lived apart - so this checks the invariant that
+        // survives it: nobody is partnered with someone they were born beside.
         var (loop, _) = Build(GrowingVillage);
         loop.Step(30_000);
 
         foreach (Villager villager in loop.World.Villagers)
         {
-            Assert.NotEqual(CauseOfDeath.Starvation, villager.CauseOfDeath);
+            if (!villager.IsPaired)
+            {
+                continue;
+            }
+
+            Villager? partner = loop.World.FindVillager(villager.PartnerId);
+            Assert.NotNull(partner);
+            Assert.Equal(villager.Id, partner!.PartnerId);
         }
     }
 

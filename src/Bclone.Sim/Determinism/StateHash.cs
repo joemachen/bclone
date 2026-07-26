@@ -90,6 +90,7 @@ public static class StateHash
         hash = MixByte(hash, (byte)villager.Stage);
         hash = MixUInt32(hash, (uint)villager.GathersThisSeason);
         hash = MixUInt32(hash, (uint)villager.BirthYear);
+        hash = MixUInt32(hash, (uint)villager.PartnerId);
         return hash;
     }
 
