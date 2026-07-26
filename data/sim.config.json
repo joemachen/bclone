@@ -167,9 +167,11 @@
   "cut_ticks": 4,
   "tree_stand_capacity": 3,
 
-  // A home has to be built. The village spreads only as fast as it
-  // can cut timber, which is what makes "forage or cut?" matter.
-  "wood_per_house": 30,
+  // A home has to be built, out of LOGS. Wood is two resources now
+  // (D29): a logger fells logs, a woodcutter turns logs into firewood,
+  // and firewood is what a household burns in winter. Logs build; only
+  // firewood heats. Drawn from the whole village, parents first.
+  "logs_per_house": 30,
 
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",

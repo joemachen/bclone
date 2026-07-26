@@ -249,10 +249,10 @@ public readonly record struct LabourQuota
         int stored = 0;
         for (int h = 0; h < world.Households.Count; h++)
         {
-            stored += world.Households[h].Stockpile.Wood;
+            stored += world.Households[h].Stockpile.Logs;
         }
 
-        int shortfall = (housesWanted * world.Config.WoodPerHouse) - stored;
+        int shortfall = (housesWanted * world.Config.LogsPerHouse) - stored;
         if (shortfall <= 0)
         {
             return 0;

@@ -183,7 +183,7 @@ public sealed class LabourAllocationTests
         foreach (Household household in loop.World.Households)
         {
             household.Stockpile.Add(loop.World.TargetFoodFor(household) * 10);
-            household.Stockpile.AddWood(Config.WoodPerHouse * 10);
+            household.Stockpile.AddLogs(Config.LogsPerHouse * 10);
         }
 
         Assert.False(LabourQuota.VillageIsShortOfFood(loop.World));

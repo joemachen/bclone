@@ -275,7 +275,7 @@ public sealed class HouseholdSystem : ISimSystem
         SimWorld world, Villager a, Villager b, SimConfig config, out int taken)
     {
         taken = 0;
-        if (config.WoodPerHouse == 0)
+        if (config.LogsPerHouse == 0)
         {
             return true;
         }
@@ -283,17 +283,17 @@ public sealed class HouseholdSystem : ISimSystem
         Household homeA = world.HouseholdOf(a);
         Household homeB = world.HouseholdOf(b);
 
-        if (TotalWood(world) < config.WoodPerHouse)
+        if (TotalWood(world) < config.LogsPerHouse)
         {
             return false;
         }
 
         // Parents first, then everyone else in household-id order, so who paid for a
         // house is a fixed fact rather than an artifact of iteration.
-        taken += TakeUpTo(homeA, config.WoodPerHouse - taken);
-        taken += TakeUpTo(homeB, config.WoodPerHouse - taken);
+        taken += TakeUpTo(homeA, config.LogsPerHouse - taken);
+        taken += TakeUpTo(homeB, config.LogsPerHouse - taken);
 
-        for (int i = 0; i < world.Households.Count && taken < config.WoodPerHouse; i++)
+        for (int i = 0; i < world.Households.Count && taken < config.LogsPerHouse; i++)
         {
             Household other = world.Households[i];
             if (other.Id == homeA.Id || other.Id == homeB.Id)
@@ -301,10 +301,10 @@ public sealed class HouseholdSystem : ISimSystem
                 continue;
             }
 
-            taken += TakeUpTo(other, config.WoodPerHouse - taken);
+            taken += TakeUpTo(other, config.LogsPerHouse - taken);
         }
 
-        return taken >= config.WoodPerHouse;
+        return taken >= config.LogsPerHouse;
     }
 
     private static int TakeUpTo(Household household, int wanted)
@@ -314,8 +314,8 @@ public sealed class HouseholdSystem : ISimSystem
             return 0;
         }
 
-        int available = household.Stockpile.Wood < wanted ? household.Stockpile.Wood : wanted;
-        return household.Stockpile.TryTakeWood(available) ? available : 0;
+        int available = household.Stockpile.Logs < wanted ? household.Stockpile.Logs : wanted;
+        return household.Stockpile.TryTakeLogs(available) ? available : 0;
     }
 
     /// <summary>Every stick of timber the village has between it.</summary>
@@ -324,7 +324,7 @@ public sealed class HouseholdSystem : ISimSystem
         int total = 0;
         for (int i = 0; i < world.Households.Count; i++)
         {
-            total += world.Households[i].Stockpile.Wood;
+            total += world.Households[i].Stockpile.Logs;
         }
 
         return total;

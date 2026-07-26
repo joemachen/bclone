@@ -80,7 +80,7 @@ public sealed class WoodTests
         int wood = 0;
         foreach (Household household in loop.World.Households)
         {
-            wood += household.Stockpile.LifetimeWoodCut;
+            wood += household.Stockpile.LifetimeLogsFelled;
         }
 
         _output.WriteLine($"{wood} wood cut in three years");
@@ -109,7 +109,7 @@ public sealed class WoodTests
 
         foreach (Household household in loop.World.Households)
         {
-            household.Stockpile.TryTakeWood(household.Stockpile.Wood);
+            household.Stockpile.TryTakeLogs(household.Stockpile.Logs);
         }
 
         int before = TotalLifetimeWood(loop.World);
@@ -141,7 +141,7 @@ public sealed class WoodTests
             loop.StepOnce();
             foreach (Household household in loop.World.Households)
             {
-                Assert.True(household.Stockpile.Wood >= 0);
+                Assert.True(household.Stockpile.Logs >= 0);
             }
         }
     }
@@ -160,25 +160,65 @@ public sealed class WoodTests
     }
 
     [Fact]
-    public void TheHashCoversWood()
+    public void TheHashCoversLogs()
     {
-        // Anti-vacuity: a hash blind to wood would let timber desync silently.
+        // Anti-vacuity: a hash blind to logs would let timber desync silently.
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Households[0].Stockpile.AddWood(1);
+        loop.World.Households[0].Stockpile.AddLogs(1);
 
         Assert.NotEqual(before, StateHash.Compute(loop.World));
+    }
+
+    [Fact]
+    public void TheHashCoversFirewood()
+    {
+        // Firewood is a separate resource from logs (D29), so it needs its own guard.
+        // Splitting one hashed field into two is exactly where a field quietly stops
+        // being covered — the hash still changes when logs change, and nobody notices
+        // the other half was never mixed in.
+        SimLoop loop = Build(Config);
+        loop.Step(Config.TicksPerYear);
+
+        ulong before = StateHash.Compute(loop.World);
+        loop.World.Households[0].Stockpile.AddFirewood(1);
+
+        Assert.NotEqual(before, StateHash.Compute(loop.World));
+    }
+
+    [Fact]
+    public void LogsAndFirewoodAreGenuinelyDifferentResources()
+    {
+        // Guards against the split being cosmetic — one backing field with two names
+        // would pass every other test in this file.
+        SimLoop loop = Build(Config);
+        Stockpile store = loop.World.Households[0].Stockpile;
+
+        store.AddLogs(10);
+        store.AddFirewood(3);
+
+        Assert.Equal(10, store.Logs);
+        Assert.Equal(3, store.Firewood);
+
+        Assert.True(store.TryTakeLogs(10));
+        Assert.Equal(0, store.Logs);
+        Assert.Equal(3, store.Firewood);
+
+        // Spending logs must not spend firewood, and the woodcutter's conversion in
+        // slice 2 is the ONLY thing that should ever turn one into the other.
+        Assert.False(store.TryTakeFirewood(4));
+        Assert.Equal(3, store.Firewood);
     }
 
     [Fact]
     public void HousingCanBeGatedOnTimber()
     {
         // The mechanic works; it is disabled by default because it cannot pay off
-        // until labour demand is dynamic (see SimConfig.WoodPerHouse). This proves
+        // until labour demand is dynamic (see SimConfig.LogsPerHouse). This proves
         // the gate itself holds, so turning it on later is a config change.
-        SimLoop loop = Build(Config with { WoodPerHouse = 1_000_000 });
+        SimLoop loop = Build(Config with { LogsPerHouse = 1_000_000 });
         int founding = loop.World.Households.Count;
 
         loop.Step(30_000);
@@ -214,8 +254,8 @@ public sealed class WoodTests
         // homes cost timber, but still spread. A gate that stops growth dead is the
         // failure this spent a whole iteration on; a gate that changes nothing is
         // decorative.
-        SimLoop gated = Build(Config with { WoodPerHouse = 30 });
-        SimLoop free = Build(Config with { WoodPerHouse = 0 });
+        SimLoop gated = Build(Config with { LogsPerHouse = 30 });
+        SimLoop free = Build(Config with { LogsPerHouse = 0 });
 
         gated.Step(Config.TicksPerYear * 120);
         free.Step(Config.TicksPerYear * 120);
@@ -265,7 +305,7 @@ public sealed class WoodTests
         int total = 0;
         for (int i = 0; i < world.Households.Count; i++)
         {
-            total += world.Households[i].Stockpile.LifetimeWoodCut;
+            total += world.Households[i].Stockpile.LifetimeLogsFelled;
         }
 
         return total;

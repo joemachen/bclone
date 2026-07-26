@@ -363,7 +363,7 @@ public sealed class BehaviorSystem : ISimSystem
                     wood = 1;
                 }
 
-                world.HouseholdOf(villager).Stockpile.AddWood(wood);
+                world.HouseholdOf(villager).Stockpile.AddLogs(wood);
                 villager.State = VillagerState.TravelingHome;
                 return;
 

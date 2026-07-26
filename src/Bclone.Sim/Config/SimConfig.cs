@@ -260,8 +260,8 @@ public sealed record SimConfig
     /// gate quietly stopped the village growing at all.
     /// </para>
     /// </remarks>
-    [JsonPropertyName("wood_per_house")]
-    public int WoodPerHouse { get; init; } = 30;
+    [JsonPropertyName("logs_per_house")]
+    public int LogsPerHouse { get; init; } = 30;
 
     /// <summary>How many people can work one forage site at once.</summary>
     /// <remarks>
@@ -594,9 +594,9 @@ public sealed record SimConfig
             throw new SimConfigException($"tree_stand_capacity must be greater than zero (got {TreeStandCapacity}).");
         }
 
-        if (WoodPerHouse < 0)
+        if (LogsPerHouse < 0)
         {
-            throw new SimConfigException($"wood_per_house cannot be negative (got {WoodPerHouse}).");
+            throw new SimConfigException($"logs_per_house cannot be negative (got {LogsPerHouse}).");
         }
 
         if (ForageSiteCapacity <= 0)
