@@ -147,11 +147,37 @@ Design notes worth keeping:
 - **Only a *couple* has children**, not any two fertile adults. Otherwise siblings breed in the parental home and the village grows without ever forming a household, hiding the problem this solves.
 - **The dowry is not flavour.** A new household starting on an empty larder gets wiped out by its first winter before anyone has foraged anything — a death with no decision behind it, which the legibility non-negotiable rules out.
 
-### ⚠ Still open — the village does not yet sustain itself
+### ⚠ Still open — the village boom-busts (2026-07-25, improved not solved)
+
+Measured rather than guessed at. A diagnostic run over 126 years gave the causes in order:
+
+**1. Starvation, not old age.** 17 of 27 deaths were starvation. The earlier reading that "nobody starves" was true *before* household formation and stopped being true after it.
+
+**2. Widowed parents.** When one parent dies, the survivor feeds the children alone on declining vigour. One worker cannot support a house that two built. This is a genuinely good story, but it was happening to almost everyone.
+
+**3. Food existed while people starved.** Village stores sat at 170–290 while households died. The food was in the wrong houses.
+
+Three fixes, each aimed at a measured cause:
+- **Food sharing between households** — the policy D14 promised alongside per-household stores and I had not built. Givers keep `sharing_keep_percent` of their own target first, so generosity can never push a giver into need.
+- **Sharing runs seasonally, not annually.** A household empties inside one winter; a yearly check arrived months after the funerals.
+- **A real winter buffer.** `stockpile_target` 60 → 110 per person. At 60 a household stopped foraging at barely 1.5 winters' worth, so the village never built a buffer and any shock was fatal. Also `gather_yield` 34 and `max_household_size` 4 — two adults raising three children had *no* margin at all.
+
+**Result: better, not fixed.** Peak population 10 → 18, and the village now builds a real surplus (1364 food at its peak against 425 before). But it still collapses, now around year 66: nine children born in one cluster, then a crash.
+
+**Next hypothesis, untested:** this is a *synchronisation* problem, not a supply one. Couples form in waves, so their children arrive in waves, so a whole cohort of dependants hits at once and a whole cohort of workers ages out at once. Worth checking whether staggering `birth_interval_years` per household, or making birth depend on a rolling food trend rather than an instantaneous threshold, damps the oscillation.
+
+**Recommendation: do not build the labour system on top of this yet.** A labour system measured against a village that boom-busts will be tuned to the wrong problem.
+
+<details>
+<summary>Earlier framing of this finding</summary>
+
+### The village does not yet sustain itself
 
 It grows and spreads, but at year 126 the population is **zero**. Growth outruns the food supply eventually and the settlement dies out. This needs diagnosis before the labour system goes in — a labour system for a village that cannot survive is measuring the wrong thing.
 
 Worth checking first, in order: whether new households are formed faster than they can be fed; whether `max_household_size` plus `birth_food_threshold` allow a stable population at all; and whether foraging capacity per adult simply caps out below replacement.
+
+</details>
 
 <details>
 <summary>Original finding (kept for the reasoning)</summary>

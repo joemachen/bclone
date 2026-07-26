@@ -145,6 +145,23 @@ public sealed record SimConfig
     public int LeaveHomeAge { get; init; } = 18;
 
     /// <summary>
+    /// A household is considered in need below this percentage of its food target.
+    /// </summary>
+    [JsonPropertyName("sharing_need_percent")]
+    public int SharingNeedPercent { get; init; } = 50;
+
+    /// <summary>
+    /// A household keeps at least this percentage of its own target before giving
+    /// anything away.
+    /// </summary>
+    /// <remarks>
+    /// Set above <see cref="SharingNeedPercent"/> so generosity can never push a
+    /// giver into the state it is trying to relieve.
+    /// </remarks>
+    [JsonPropertyName("sharing_keep_percent")]
+    public int SharingKeepPercent { get; init; } = 80;
+
+    /// <summary>
     /// Share of a parent household's larder that leaves with a departing child, as
     /// a percentage.
     /// </summary>
@@ -359,6 +376,18 @@ public sealed record SimConfig
         if (VillagerNames is null || VillagerNames.Count == 0)
         {
             throw new SimConfigException("villager_names must contain at least one name.");
+        }
+
+        if (SharingNeedPercent is < 0 or > 100)
+        {
+            throw new SimConfigException($"sharing_need_percent must be in 0..100 (got {SharingNeedPercent}).");
+        }
+
+        if (SharingKeepPercent < SharingNeedPercent || SharingKeepPercent > 100)
+        {
+            throw new SimConfigException(
+                $"sharing_keep_percent must be between sharing_need_percent ({SharingNeedPercent}) and 100 " +
+                $"(got {SharingKeepPercent}) - otherwise giving pushes the giver into need.");
         }
 
         if (DowryPercent is < 0 or > 100)

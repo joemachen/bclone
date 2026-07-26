@@ -26,6 +26,20 @@ public sealed class VillageTests
         StartingHouseholds = 2,
         AdultsPerHousehold = 2,
         FounderAge = 20,
+
+        // A village needs a different food economy from Phase 0's lone villager.
+        // Two adults raising three children consumed ~525 food a year against a
+        // foraging capacity of ~528 - no margin at all, so declining vigour tipped
+        // every household into famine and 17 of 27 villagers starved. A household
+        // needs headroom, because its workers get old while its children do not
+        // feed themselves.
+        GatherYield = 34,
+        MaxHouseholdSize = 4,
+
+        // A household must store enough to survive a winter AND absorb a shock -
+        // a death, a frail year. At 60 it stopped foraging at barely 1.5 winters'
+        // worth, so the village never built a buffer and any setback was fatal.
+        StockpileTarget = 110,
     };
 
     private static (SimLoop Loop, InMemoryLogSink Log) Build(SimConfig config, ulong? seed = null)
@@ -61,10 +75,25 @@ public sealed class VillageTests
         var (loop, _) = Build(Village);
 
         loop.Step(10);
-        Assert.All(loop.World.Villagers, v => Assert.Equal(20, v.AgeYears));
+        Assert.All(Founders(loop), v => Assert.Equal(20, v.AgeYears));
 
         loop.Step(240);   // one full year
-        Assert.All(loop.World.Villagers, v => Assert.Equal(21, v.AgeYears));
+        Assert.All(Founders(loop), v => Assert.Equal(21, v.AgeYears));
+    }
+
+    /// <summary>The founding adults, excluding anyone born in the village since.</summary>
+    private static List<Villager> Founders(SimLoop loop)
+    {
+        var founders = new List<Villager>();
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (villager.BirthYear <= 0)
+            {
+                founders.Add(villager);
+            }
+        }
+
+        return founders;
     }
 
     [Fact]
