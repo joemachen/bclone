@@ -40,8 +40,38 @@ public static class StateHash
         hash = MixUInt64(hash, world.Rng.State);
         hash = MixUInt64(hash, world.Rng.Inc);
 
-        // ---- Phase 0 state ----
-        Villager villager = world.Villager;
+        // ---- Village ----
+        // Every villager and every household, in id order. A hash that covered only
+        // the first villager would let the rest of the village desync in silence.
+        hash = MixUInt32(hash, (uint)world.Villagers.Count);
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            hash = MixVillager(hash, world.Villagers[i]);
+        }
+
+        hash = MixUInt32(hash, (uint)world.Households.Count);
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            hash = MixUInt32(hash, (uint)household.Id);
+            hash = MixUInt32(hash, (uint)household.Stockpile.Food);
+            hash = MixUInt32(hash, (uint)household.Stockpile.LifetimeGathered);
+
+            hash = MixUInt32(hash, (uint)household.MemberIds.Count);
+            for (int m = 0; m < household.MemberIds.Count; m++)
+            {
+                hash = MixUInt32(hash, (uint)household.MemberIds[m]);
+            }
+        }
+
+        return hash;
+    }
+
+    private static ulong MixVillager(ulong hash, Villager villager)
+    {
+        hash = MixUInt32(hash, (uint)villager.Id);
+        hash = MixUInt32(hash, (uint)villager.HouseholdId);
+        hash = MixByte(hash, (byte)villager.LifeStage);
         hash = MixUInt32(hash, (uint)villager.AgeYears);
         hash = MixUInt32(hash, (uint)villager.Hunger);
         hash = MixUInt32(hash, (uint)villager.TicksAtMaxHunger);
@@ -58,10 +88,6 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.Vigour);
         hash = MixByte(hash, (byte)villager.Stage);
         hash = MixUInt32(hash, (uint)villager.GathersThisSeason);
-
-        hash = MixUInt32(hash, (uint)world.Stockpile.Food);
-        hash = MixUInt32(hash, (uint)world.Stockpile.LifetimeGathered);
-
         return hash;
     }
 

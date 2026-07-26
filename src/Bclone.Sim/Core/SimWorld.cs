@@ -50,11 +50,25 @@ public sealed class SimWorld
     /// </remarks>
     public SimClock Clock => SimClock.FromTick(Tick, Config);
 
-    /// <summary>The one villager this whole phase is about.</summary>
-    public Villager Villager { get; }
+    /// <summary>
+    /// Everyone in the village, ordered by id and never reordered.
+    /// </summary>
+    /// <remarks>
+    /// A stable ordered list, deliberately not a dictionary. .NET guarantees no
+    /// iteration order for <c>Dictionary</c>, and with N villagers competing for M
+    /// jobs, iteration order decides who picks first — which would make the whole
+    /// village non-deterministic (spec §4b).
+    /// </remarks>
+    public List<Villager> Villagers { get; } = new();
 
-    /// <summary>Their food store.</summary>
-    public Stockpile Stockpile { get; } = new();
+    /// <summary>Every household, ordered by id.</summary>
+    public List<Household> Households { get; } = new();
+
+    /// <summary>
+    /// The shared travel-cost field. One instance, for everything that asks
+    /// "how far is that" (DESIGN.md §2.6).
+    /// </summary>
+    public TravelCostField TravelCost { get; }
 
     /// <summary>The berry patch.</summary>
     public FoodSource FoodSource { get; }
@@ -71,34 +85,129 @@ public sealed class SimWorld
         Rng = new DeterministicRandom(seed);
         Tick = 0UL;
 
+        TravelCost = new TravelCostField(config.TravelTicksPerUnit);
+
         FoodSource = new FoodSource
         {
             Position = new GridPos(config.FoodSourceX, config.FoodSourceY),
             YieldPerGather = config.GatherYield,
         };
 
-        // Draw order matters: name then lifespan, always. Reordering these two
-        // draws changes every subsequent value in the stream, which would silently
-        // invalidate saved seeds and golden tests.
-        string name = config.VillagerNames[(int)Rng.NextUInt((uint)config.VillagerNames.Count)];
-
-        int lifespan = config.LifespanYearsBase;
-        if (config.LifespanYearsVariance > 0)
-        {
-            lifespan += Rng.NextInt(-config.LifespanYearsVariance, config.LifespanYearsVariance + 1);
-        }
-
-        Villager = new Villager
-        {
-            Id = 1,
-            Name = name,
-            LifespanYears = lifespan,
-            Position = new GridPos(config.HomeX, config.HomeY),
-        };
+        FoundVillage(config);
     }
 
-    /// <summary>Where the villager lives and returns to.</summary>
-    public GridPos Home => new(Config.HomeX, Config.HomeY);
+    /// <summary>
+    /// Create the founding households and their adults.
+    /// </summary>
+    /// <remarks>
+    /// Draw order is part of the seed contract: for each villager, <b>name then
+    /// lifespan, always</b>, and households in id order. Reordering any of it shifts
+    /// every subsequent value in the stream, silently invalidating saved seeds and
+    /// every golden test.
+    /// </remarks>
+    private void FoundVillage(SimConfig config)
+    {
+        int nextVillagerId = 1;
+
+        for (int h = 0; h < config.StartingHouseholds; h++)
+        {
+            var home = new GridPos(config.HomeX + (h * config.HouseholdSpacing), config.HomeY);
+
+            var household = new Household
+            {
+                Id = h + 1,
+                Name = config.HouseholdNames[h % config.HouseholdNames.Count],
+                HomePosition = home,
+            };
+
+            for (int a = 0; a < config.AdultsPerHousehold; a++)
+            {
+                string name = config.VillagerNames[(int)Rng.NextUInt((uint)config.VillagerNames.Count)];
+
+                int lifespan = config.LifespanYearsBase;
+                if (config.LifespanYearsVariance > 0)
+                {
+                    lifespan += Rng.NextInt(-config.LifespanYearsVariance, config.LifespanYearsVariance + 1);
+                }
+
+                var villager = new Villager
+                {
+                    Id = nextVillagerId++,
+                    Name = name,
+                    LifespanYears = lifespan,
+                    Position = home,
+                    HouseholdId = household.Id,
+
+                    // Year 1 is the first year, so someone aged N at founding was
+                    // born in year 1-N. Deriving it this way means ClockSystem's
+                    // per-tick recalculation reproduces the founding age rather
+                    // than resetting every founder to zero on the first tick.
+                    BirthYear = 1 - config.FounderAge,
+                    AgeYears = config.FounderAge,
+                    LifeStage = LifeStage.Adult,
+                };
+
+                household.AddMember(villager.Id);
+                Villagers.Add(villager);
+            }
+
+            Households.Add(household);
+        }
+    }
+
+    /// <summary>The household a villager belongs to.</summary>
+    public Household HouseholdOf(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (Households[i].Id == villager.HouseholdId)
+            {
+                return Households[i];
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Villager {villager.Id} ({villager.Name}) belongs to household {villager.HouseholdId}, which does not exist.");
+    }
+
+    /// <summary>Where a villager lives and returns to.</summary>
+    public GridPos HomeOf(Villager villager) => HouseholdOf(villager).HomePosition;
+
+    /// <summary>Living villagers. Convenience for narration and the UI.</summary>
+    public int Population
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < Villagers.Count; i++)
+            {
+                if (Villagers[i].Alive)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    // ---------------------------------------------------------------
+    //  Single-founder shorthand
+    // ---------------------------------------------------------------
+    // Phase 0 is not a special mode — it is the 1 household x 1 adult case. These
+    // accessors let the Phase 0 tests keep saying what they mean without pretending
+    // the world still holds one villager.
+
+    /// <summary>The first villager. Meaningful when the village has exactly one.</summary>
+    public Villager Villager => Villagers[0];
+
+    /// <summary>The first household's store.</summary>
+    public Stockpile Stockpile => Households[0].Stockpile;
+
+    /// <summary>The first household's home position.</summary>
+    public GridPos Home => Households[0].HomePosition;
 
     /// <summary>
     /// Create a world.
@@ -118,7 +227,18 @@ public sealed class SimWorld
         var world = new SimWorld(config, logger ?? NullSimLogger.Instance, seed);
 
         world.Log(LogLevel.Debug, "sim", $"World created (seed={seed}).");
-        world.Narrate($"{world.Villager.Name} begins. {world.Clock.SeasonAndYear()}, no food stored.");
+
+        if (world.Villagers.Count == 1)
+        {
+            world.Narrate($"{world.Villager.Name} begins. {world.Clock.SeasonAndYear()}, no food stored.");
+        }
+        else
+        {
+            world.Narrate(
+                $"{world.Villagers.Count} exiles arrive in {world.Households.Count} households. " +
+                $"{world.Clock.SeasonAndYear()}, no food stored.");
+        }
+
         return world;
     }
 

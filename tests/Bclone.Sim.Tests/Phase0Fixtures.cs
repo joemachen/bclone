@@ -11,6 +11,12 @@ public static class Phase0Fixtures
     public static SimConfig Plenty => new()
     {
         Seed = 12345UL,
+
+        // Phase 0 is not a special mode - it is the village of one, born at zero.
+        StartingHouseholds = 1,
+        AdultsPerHousehold = 1,
+        FounderAge = 0,
+
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,

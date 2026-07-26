@@ -118,6 +118,34 @@ public sealed record SimConfig
     //  Life
     // ---------------------------------------------------------------
 
+    /// <summary>Households the village is founded with.</summary>
+    /// <remarks>
+    /// Phase 0's lone villager is simply the <c>1 household × 1 adult</c> case rather
+    /// than a special mode — which is what keeps the Phase 0 tests meaningful instead
+    /// of grandfathered.
+    /// </remarks>
+    [JsonPropertyName("starting_households")]
+    public int StartingHouseholds { get; init; } = 2;
+
+    /// <summary>Founding adults in each starting household.</summary>
+    [JsonPropertyName("adults_per_household")]
+    public int AdultsPerHousehold { get; init; } = 2;
+
+    /// <summary>Tiles between neighbouring founding homes.</summary>
+    [JsonPropertyName("household_spacing")]
+    public int HouseholdSpacing { get; init; } = 3;
+
+    /// <summary>Family names for founding households.</summary>
+    [JsonPropertyName("household_names")]
+    public IReadOnlyList<string> HouseholdNames { get; init; } = new[]
+    {
+        "Thatcher", "Fletcher", "Cooper", "Mason", "Weaver", "Chandler",
+    };
+
+    /// <summary>Age founding adults start at.</summary>
+    [JsonPropertyName("founder_age")]
+    public int FounderAge { get; init; } = 20;
+
     /// <summary>
     /// Age at which a child becomes an adult and can take work.
     /// </summary>
@@ -272,7 +300,36 @@ public sealed record SimConfig
         {
             throw new SimConfigException("villager_names must contain at least one name.");
         }
+
+        if (StartingHouseholds <= 0)
+        {
+            throw new SimConfigException($"starting_households must be greater than zero (got {StartingHouseholds}).");
+        }
+
+        if (AdultsPerHousehold <= 0)
+        {
+            throw new SimConfigException($"adults_per_household must be greater than zero (got {AdultsPerHousehold}).");
+        }
+
+        if (HouseholdSpacing <= 0)
+        {
+            throw new SimConfigException($"household_spacing must be greater than zero (got {HouseholdSpacing}).");
+        }
+
+        if (HouseholdNames is null || HouseholdNames.Count == 0)
+        {
+            throw new SimConfigException("household_names must contain at least one name.");
+        }
+
+        if (FounderAge < 0)
+        {
+            throw new SimConfigException($"founder_age cannot be negative (got {FounderAge}).");
+        }
     }
+
+    /// <summary>Founding population. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int StartingPopulation => StartingHouseholds * AdultsPerHousehold;
 
     /// <summary>Ticks in one in-game year. Derived, not configured.</summary>
     [JsonIgnore]

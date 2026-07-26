@@ -41,7 +41,14 @@ public sealed class AgeingSystem : ISimSystem
 
     public void Execute(SimWorld world)
     {
-        Villager villager = world.Villager;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            AgeOne(world, world.Villagers[i]);
+        }
+    }
+
+    private static void AgeOne(SimWorld world, Villager villager)
+    {
         if (!villager.Alive)
         {
             return;

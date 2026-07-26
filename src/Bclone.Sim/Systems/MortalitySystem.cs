@@ -26,7 +26,14 @@ public sealed class MortalitySystem : ISimSystem
 
     public void Execute(SimWorld world)
     {
-        Villager villager = world.Villager;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            CheckOne(world, world.Villagers[i]);
+        }
+    }
+
+    private static void CheckOne(SimWorld world, Villager villager)
+    {
         if (!villager.Alive)
         {
             return;
@@ -60,7 +67,7 @@ public sealed class MortalitySystem : ISimSystem
             CauseOfDeath.OldAge =>
                 $"{villager.Name} died of old age at {villager.AgeYears}, " +
                 $"having survived {villager.WintersSurvived} winters and gathered " +
-                $"{world.Stockpile.LifetimeGathered} food across a full life.",
+                $"{world.HouseholdOf(villager).Stockpile.LifetimeGathered} food across a full life.",
 
             CauseOfDeath.Starvation =>
                 $"{villager.Name} starved to death at {villager.AgeYears}, " +

@@ -57,6 +57,12 @@ public sealed class Villager
     /// <summary>True when they are old enough to do a day's work.</summary>
     public bool CanWork => Alive && LifeStage != LifeStage.Child;
 
+    /// <summary>
+    /// The in-game year they were born. Zero for founders, who arrive already grown
+    /// and whose age therefore tracks the calendar directly.
+    /// </summary>
+    public int BirthYear { get; init; }
+
     /// <summary>Years lived. Advances on the new-year boundary.</summary>
     public int AgeYears { get; set; }
 

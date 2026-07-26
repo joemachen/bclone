@@ -31,7 +31,15 @@ public sealed class BehaviorSystem : ISimSystem
 
     public void Execute(SimWorld world)
     {
-        Villager villager = world.Villager;
+        // Always in id order — see spec §4b.
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            ActOne(world, world.Villagers[i]);
+        }
+    }
+
+    private static void ActOne(SimWorld world, Villager villager)
+    {
         villager.JustAte = false;
 
         if (!villager.Alive)
@@ -63,7 +71,7 @@ public sealed class BehaviorSystem : ISimSystem
         {
             villager.ActionTicksRemaining = 0;
             villager.State = VillagerState.TravelingHome;
-            Travel(world, villager, world.Home, VillagerState.Idle);
+            Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
             return;
         }
 
@@ -87,7 +95,7 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.TravelingHome:
-                Travel(world, villager, world.Home, VillagerState.Idle);
+                Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
                 return;
         }
 
@@ -105,18 +113,18 @@ public sealed class BehaviorSystem : ISimSystem
     {
         SimConfig config = world.Config;
 
-        if (villager.Hunger < config.EatThreshold || world.Stockpile.Food < config.FoodPerMeal)
+        if (villager.Hunger < config.EatThreshold || world.HouseholdOf(villager).Stockpile.Food < config.FoodPerMeal)
         {
             return false;
         }
 
-        if (!world.Stockpile.TryTake(config.FoodPerMeal))
+        if (!world.HouseholdOf(villager).Stockpile.TryTake(config.FoodPerMeal))
         {
             // Unreachable given the check above; if it ever fires, something else
             // is mutating the stockpile and we want to know loudly.
             world.Log(LogLevel.Error, "behavior",
                 $"{villager.Name} tried to eat {config.FoodPerMeal} food but only " +
-                $"{world.Stockpile.Food} was available. This is a bug.");
+                $"{world.HouseholdOf(villager).Stockpile.Food} was available. This is a bug.");
             return false;
         }
 
@@ -137,7 +145,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         // Eating was already handled by TryEat before anything got here.
         // Forage — but only if there is anything to forage.
-        bool needsFood = world.Stockpile.Food < config.StockpileTarget;
+        bool needsFood = world.HouseholdOf(villager).Stockpile.Food < config.StockpileTarget;
         bool canForage = FoodSource.IsGatherable(world.Clock.Season);
 
         if (needsFood && canForage)
@@ -156,10 +164,10 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         // Rest — at home if not already there.
-        if (villager.Position != world.Home)
+        if (villager.Position != world.HomeOf(villager))
         {
             villager.State = VillagerState.TravelingHome;
-            Travel(world, villager, world.Home, VillagerState.Idle);
+            Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
             return;
         }
 
@@ -226,7 +234,7 @@ public sealed class BehaviorSystem : ISimSystem
                     yield = 1;
                 }
 
-                world.Stockpile.Add(yield);
+                world.HouseholdOf(villager).Stockpile.Add(yield);
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
 
@@ -237,7 +245,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // up per season instead.
                 world.Log(LogLevel.Debug, "behavior",
                     $"Gathered {world.FoodSource.YieldPerGather} food " +
-                    $"({world.Stockpile.Food} stored) — {world.Clock}.");
+                    $"({world.HouseholdOf(villager).Stockpile.Food} stored) — {world.Clock}.");
 
                 villager.State = VillagerState.TravelingHome;
                 return;

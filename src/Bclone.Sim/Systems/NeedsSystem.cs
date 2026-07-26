@@ -20,13 +20,22 @@ public sealed class NeedsSystem : ISimSystem
 
     public void Execute(SimWorld world)
     {
-        Villager villager = world.Villager;
+        SimConfig config = world.Config;
+
+        // Always in id order — see spec §4b.
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            UpdateOne(world, world.Villagers[i], config);
+        }
+    }
+
+    private static void UpdateOne(SimWorld world, Villager villager, SimConfig config)
+    {
         if (!villager.Alive)
         {
             return;
         }
 
-        SimConfig config = world.Config;
         bool wasAtMax = villager.Hunger >= config.HungerMax;
 
         villager.Hunger += config.HungerPerTick;
@@ -43,7 +52,7 @@ public sealed class NeedsSystem : ISimSystem
             // Hitting maximum hunger with food in store is not a story beat — it is
             // a bug, and saying "nothing left to eat" while sitting on sixty food
             // would be the log lying to the player.
-            if (!wasAtMax && world.Stockpile.Food < config.FoodPerMeal)
+            if (!wasAtMax && world.HouseholdOf(villager).Stockpile.Food < config.FoodPerMeal)
             {
                 world.Narrate(
                     $"{villager.Name} has nothing left to eat — {world.Clock.SeasonAndYear()}.");
