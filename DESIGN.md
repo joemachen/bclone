@@ -135,6 +135,15 @@ Each phase should ship in a playable, legible state before the next begins.
 - [x] **Determinism strategy for floats** ✅ Resolved 2026-07-25 → **integer-only sim state; fixed-point `Fixed` (Q32.32) introduced when a system genuinely needs fractional math.** See D2.
 - [x] **Data file format** for content/modding ✅ Resolved 2026-07-25 → **JSON** via `System.Text.Json`, comments and trailing commas allowed. See D3.
 - [ ] **Trample/decay tuning values** (thresholds, decay rate, discount cap) — will need iteration in Phase 3.
+- [ ] **How villagers stop moving in lockstep.** Joe watched the village at 4× and saw people travelling as duos and trios rather than as individuals. **Measured, and it is near-total:** two adults of the same household holding the same job are on the same tile **99.9%** of ticks, with identical hunger 100% of the time and doing the same thing 99.9% of the time (30-year run, shipped config).
+  - **It will not resolve by itself, and that is the important part.** This is not missing variability, it is *symmetry*: they start from the same home tile, walk to the same site by the same fixed `StepToward` rule, gather for a constant `gather_ticks`, and gain hunger at a uniform rate — so they even stop to eat on the same tick. Two founders in a household run the same deterministic program on the same inputs for their entire lives; the only thing that ever separates them is which one dies first.
+  - Nor do the planned systems fix it incidentally. Desire paths (§2.6) share one cost field, so they *increase* synchrony. Vigour scales yield but not time, so a frail elder still walks in step with a young adult. Multiple workplaces (D19) help only when capacity or proximity happens to split a household.
+  - **The candidates**, roughly in order of how diegetic they are:
+    1. **Time-on-task becomes personal** — let vigour, and later skill (§2.1), scale *how long* a job takes as well as how much it yields. Most diegetic, does double duty for the skill pillar, and deepens D12: an old villager would not just bring back less, they would be out longer. Cost: `VillageEconomy` derives trips-per-year from a fixed round trip, so the derivation has to move to the worst case.
+    2. **A seeded personal rhythm** — each villager gets a small offset, drawn once at birth from the seeded stream, before they set off. Cheap, deterministic, and true to life; people do not all get up at the same moment. Treats the symptom rather than the cause.
+    3. **View-only stagger** — cheapest, changes nothing real. They would still arrive and leave together.
+  - *Recommendation: (1), with (2) as a stopgap if the lockstep grates before the skill pillar lands.*
+- [ ] **Fan-out variability on the map (view only).** Joe's note: people grouped on a tile currently sit on a perfect ring at a fixed radius, which reads as arranged rather than gathered. Vary both the radius and the angle a little — deterministically, from villager id — so a crowded tile looks like a crowd. Small, and purely cosmetic.
 
 ---
 
