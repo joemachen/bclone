@@ -73,6 +73,23 @@ public sealed class SimWorld
     /// <summary>The berry patch.</summary>
     public FoodSource FoodSource { get; }
 
+    /// <summary>Every workplace, ordered by id.</summary>
+    public List<Workplace> Workplaces { get; } = new();
+
+    /// <summary>Look up a workplace by id, or null.</summary>
+    public Workplace? FindWorkplace(int id)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Id == id)
+            {
+                return Workplaces[i];
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>Seed this run was created with — shown in the UI so a run that
     /// produced an interesting life can be reproduced exactly.</summary>
     public ulong Seed { get; }
@@ -94,6 +111,18 @@ public sealed class SimWorld
         };
 
         FoundVillage(config);
+
+        // One berry patch for now. Multiple workplaces and a second job kind arrive
+        // with a use for their output - see the spec.
+        Workplaces.Add(new Workplace
+        {
+            Id = 1,
+            Kind = JobKind.Forager,
+            Name = "the berry patch",
+            Position = FoodSource.Position,
+            LabourDemand = config.ForagerDemand,
+            CatchmentRadius = TravelCostField.TilesToCost(config.ForagerCatchmentTiles),
+        });
     }
 
     /// <summary>

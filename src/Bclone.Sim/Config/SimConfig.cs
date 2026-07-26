@@ -144,6 +144,27 @@ public sealed record SimConfig
     [JsonPropertyName("leave_home_age")]
     public int LeaveHomeAge { get; init; } = 18;
 
+    /// <summary>Workers the berry patch wants.</summary>
+    /// <remarks>
+    /// Generous for now, because foraging is the only job and a village that cannot
+    /// staff it starves. It becomes a real constraint once there is a second thing
+    /// worth doing.
+    /// </remarks>
+    [JsonPropertyName("forager_demand")]
+    public int ForagerDemand { get; init; } = 200;
+
+    /// <summary>
+    /// How far, in tiles, it is reasonable to travel to forage.
+    /// </summary>
+    /// <remarks>
+    /// This is the "villager who walks across the map for one log" guard from
+    /// DESIGN.md §2.2. Stored in tiles for readability and converted to travel cost,
+    /// because catchment is measured in cost - that is what lets a worn path widen a
+    /// workplace's reach later without catchment knowing roads exist.
+    /// </remarks>
+    [JsonPropertyName("forager_catchment_tiles")]
+    public int ForagerCatchmentTiles { get; init; } = 40;
+
     /// <summary>
     /// How many households the economy is derived to support.
     /// </summary>
@@ -398,6 +419,17 @@ public sealed record SimConfig
         if (VillagerNames is null || VillagerNames.Count == 0)
         {
             throw new SimConfigException("villager_names must contain at least one name.");
+        }
+
+        if (ForagerDemand <= 0)
+        {
+            throw new SimConfigException($"forager_demand must be greater than zero (got {ForagerDemand}).");
+        }
+
+        if (ForagerCatchmentTiles <= 0)
+        {
+            throw new SimConfigException(
+                $"forager_catchment_tiles must be greater than zero (got {ForagerCatchmentTiles}).");
         }
 
         if (EconomyHorizonHouseholds <= 0)

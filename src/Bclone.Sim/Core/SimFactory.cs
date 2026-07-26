@@ -25,8 +25,9 @@ public static class SimFactory
         new AgeingSystem(),     // 2. age becomes declining vigour and life stage
         new HouseholdSystem(),  // 3. households grow
         new NeedsSystem(),      // 4. hunger rises
-        new BehaviorSystem(),   // 5. decide and act
-        new MortalitySystem(),  // 6. starvation or old age
+        new LabourSystem(),     // 5. villagers take work themselves
+        new BehaviorSystem(),   // 6. decide and act
+        new MortalitySystem(),  // 7. starvation or old age
     };
 
     /// <summary>Create a world and loop wired with the Phase 0 systems.</summary>

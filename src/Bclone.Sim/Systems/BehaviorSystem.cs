@@ -166,7 +166,12 @@ public sealed class BehaviorSystem : ISimSystem
         // households to exist first (D13).
         Household household = world.HouseholdOf(villager);
         bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household);
-        bool canForage = villager.CanWork && FoodSource.IsGatherable(world.Clock.Season);
+        // Foraging is now a JOB, not something anyone wanders off and does. Held via
+        // LabourSystem, which decides who works where and records why.
+        bool holdsForagingJob = world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Forager;
+        bool canForage = villager.CanWork
+            && holdsForagingJob
+            && FoodSource.IsGatherable(world.Clock.Season);
 
         if (needsFood && canForage)
         {

@@ -70,6 +70,25 @@ public sealed class Villager
     /// <summary>True when they are old enough to do a day's work.</summary>
     public bool CanWork => Alive && LifeStage != LifeStage.Child;
 
+    /// <summary>Workplace they currently hold a job at, or 0 for none.</summary>
+    public int WorkplaceId { get; set; }
+
+    /// <summary>
+    /// Plain-language reason they hold this job, naming the runner-up where there
+    /// was one.
+    /// </summary>
+    /// <remarks>
+    /// The phase's actual deliverable. With one villager, "why is she doing that" was
+    /// self-evident; with twenty simultaneous decisions it is not, and an opaque
+    /// simulation is precisely the failure DESIGN.md §2.2 warns against. Every
+    /// assignment must be explainable in one sentence, which is only possible because
+    /// the assignment rule is a ranked list rather than a weighted score.
+    /// </remarks>
+    public string JobReason { get; set; } = string.Empty;
+
+    /// <summary>True when they hold a job.</summary>
+    public bool HasJob => WorkplaceId != 0;
+
     /// <summary>
     /// The in-game year they were born. Zero for founders, who arrive already grown
     /// and whose age therefore tracks the calendar directly.

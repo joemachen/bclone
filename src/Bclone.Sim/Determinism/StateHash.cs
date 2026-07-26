@@ -65,6 +65,18 @@ public static class StateHash
             }
         }
 
+        hash = MixUInt32(hash, (uint)world.Workplaces.Count);
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            hash = MixUInt32(hash, (uint)workplace.Id);
+            hash = MixUInt32(hash, (uint)workplace.WorkerIds.Count);
+            for (int k = 0; k < workplace.WorkerIds.Count; k++)
+            {
+                hash = MixUInt32(hash, (uint)workplace.WorkerIds[k]);
+            }
+        }
+
         return hash;
     }
 
@@ -91,6 +103,7 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.GathersThisSeason);
         hash = MixUInt32(hash, (uint)villager.BirthYear);
         hash = MixUInt32(hash, (uint)villager.PartnerId);
+        hash = MixUInt32(hash, (uint)villager.WorkplaceId);
         return hash;
     }
 
