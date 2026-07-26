@@ -212,6 +212,21 @@ Probably both: (1) so catchment can bind, (2) so winter can bite.
 
 </details>
 
+### ⚠ Attempted and reverted — multiple forage sites need a village-level labour cap (2026-07-26)
+
+Multiple forage sites were built and reverted the same session. **Stashed, not lost** (`git stash` on this branch). The mechanics were straightforward; the labour allocation is not, and it is worth writing down before trying again.
+
+**What worked:** a data-driven list of sites, one `Workplace` each, named by direction ("the western thicket") rather than numbered, villagers travelling to *their* assigned site rather than a single global patch, and the economy budgeting for distance to the **nearest** site rather than the first.
+
+**What did not:** how much labour each site should want.
+
+- **Duplicating demand onto every site** — each wanting the whole workforce — meant four sites had room for four villages. The sites absorbed everyone, nobody reached the tree stand, and timber stopped.
+- **Splitting demand evenly across sites** was worse. It *forces* villagers to distant sites instead of letting proximity sort them: with one position per site, the nearest-home rule fills the close patch with one person and sends the next villager across the valley. Households starved beside a patch they were not allowed to work.
+
+**The shape of the right answer:** per-site demand should stay generous, so proximity decides who works where, with the constraint applied at the **village level** — total foragers capped at what the village needs fed, shedding the furthest-travelling surplus rather than the highest-id one. That is a different mechanism from anything currently in `LabourSystem`, which only reasons per-workplace.
+
+**Note on process:** three attempts at labour demand in one session, each breaking something a test caught. The pattern is that demand is a *global* allocation problem being solved with *local* rules. Next attempt should start from the allocation, not from the workplace.
+
 ### ⚠ Known limit — one food source does not scale forever
 
 Past roughly 100 households the village outgrows its single berry patch: the outer ring is beyond the derived horizon and the population oscillates again. That is expected and is exactly what multiple workplaces plus catchment are for. Not a blocker for the labour system — it *is* the labour system's problem.
