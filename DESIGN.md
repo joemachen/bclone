@@ -168,6 +168,7 @@ Each phase should ship in a playable, legible state before the next begins.
 - Final pacing: one in-game year = 60 real seconds at 4×, lifespan 40–50 years. Speeds: pause / 1× / 2× / 4× / 10×.
 
 **In progress:**
+- **`specs/labour-allocation.md`** — spec for the village-level labour allocator, written before code after three improvised attempts each broke the village. It is what blocks catchment from ever binding, and catchment is the heart of §2.2.
 - **Phase 1 spec** (`specs/phase-1-households-and-labour.md`) — spec before code, per METHODOLOGY §2.
 
 **Next up:**
