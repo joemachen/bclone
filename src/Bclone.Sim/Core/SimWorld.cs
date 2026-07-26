@@ -121,28 +121,49 @@ public sealed class SimWorld
 
         FoundVillage(config);
 
-        // One berry patch for now. Multiple workplaces and a second job kind arrive
-        // with a use for their output - see the spec.
+        int catchment = TravelCostField.TilesToCost(config.ForagerCatchmentTiles);
+        int nextWorkplaceId = 1;
+
         Workplaces.Add(new Workplace
         {
-            Id = 1,
+            Id = nextWorkplaceId++,
             Kind = JobKind.Forager,
             Name = "the berry patch",
             Position = FoodSource.Position,
-            LabourDemand = config.ForagerDemand,
-            CatchmentRadius = TravelCostField.TilesToCost(config.ForagerCatchmentTiles),
+            Capacity = config.ForageSiteCapacity,
+            CatchmentRadius = catchment,
         });
 
-        // Workplace id 2, so the berry patch fills first. A village short of hands
-        // feeds itself before it builds - and that ordering is the whole policy.
+        // Several sites, spread around the valley, so an outlying household has
+        // somewhere near enough to work. This is what a binding catchment needs in
+        // order to be survivable rather than merely cruel (D19).
+        for (int i = 0; i < config.ExtraForageSites.Count; i++)
+        {
+            SitePosition site = config.ExtraForageSites[i];
+            var position = new GridPos(site.X, site.Y);
+
+            Workplaces.Add(new Workplace
+            {
+                Id = nextWorkplaceId++,
+                Kind = JobKind.Forager,
+                Name = DescribeDirection(position),
+                Position = position,
+                Capacity = config.ForageSiteCapacity,
+                CatchmentRadius = catchment,
+            });
+        }
+
+        // Last id, so that where ids break a tie the food comes first. The real
+        // "feed yourself before you build" rule is the quota, not the ordering -
+        // see LabourQuota - but there is no reason for the two to disagree.
         Workplaces.Add(new Workplace
         {
-            Id = 2,
+            Id = nextWorkplaceId++,
             Kind = JobKind.Woodcutter,
             Name = "the tree stand",
             Position = TreeStand.Position,
-            LabourDemand = config.WoodcutterDemand,
-            CatchmentRadius = TravelCostField.TilesToCost(config.ForagerCatchmentTiles),
+            Capacity = config.TreeStandCapacity,
+            CatchmentRadius = catchment,
         });
     }
 
@@ -276,6 +297,27 @@ public sealed class SimWorld
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// A place name from a direction, so the log reads as somewhere real.
+    /// </summary>
+    /// <remarks>
+    /// "The western thicket" is a place; "Forage Site 3" is a row in a table. The
+    /// same reason villagers are called Mabel (§1.4) applies to where they work — and
+    /// it matters more here, because these names end up inside the sentence that
+    /// explains why someone walks the way they do.
+    /// </remarks>
+    private static string DescribeDirection(GridPos position)
+    {
+        string northSouth = position.Y < 0 ? "northern" : position.Y > 0 ? "southern" : string.Empty;
+        string eastWest = position.X < 0 ? "western" : position.X > 0 ? "eastern" : string.Empty;
+
+        string where = string.IsNullOrEmpty(northSouth)
+            ? eastWest
+            : string.IsNullOrEmpty(eastWest) ? northSouth : $"{northSouth} {eastWest}";
+
+        return string.IsNullOrEmpty(where) ? "the near thicket" : $"the {where} thicket";
     }
 
     /// <summary>Look up a villager by id, or null if there is no such person.</summary>

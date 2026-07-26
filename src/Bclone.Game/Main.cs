@@ -171,7 +171,7 @@ public partial class Main : Control
         var lines = new List<string>
         {
             $"{villager.Name}, aged {villager.AgeYears}",
-            villager.Alive ? $"Currently: {villager.DescribeState()}" : "Dead.",
+            villager.Alive ? $"Currently: {villager.DescribeState(workplace?.Name)}" : "Dead.",
             $"Household: the {household.Name} household ({household.Stockpile.Food} food stored)",
             $"Hunger: {hungerPercent}%",
         };

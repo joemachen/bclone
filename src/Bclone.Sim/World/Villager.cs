@@ -146,21 +146,31 @@ public sealed class Villager
     /// it summarises the season into the life log.</summary>
     public int GathersThisSeason { get; set; }
 
-    /// <summary>Plain-language description of the current action, for the UI.</summary>
-    public string DescribeState()
+    /// <summary>
+    /// Plain-language description of the current action, for the UI.
+    /// </summary>
+    /// <param name="workplaceName">
+    /// Where they work, if anywhere — so the line names the actual place. There are
+    /// several forage sites now, and "walking to the berry patch" was simply untrue
+    /// for most of the village. A UI line that contradicts the map is worse than a
+    /// vague one.
+    /// </param>
+    public string DescribeState(string? workplaceName = null)
     {
         if (JustAte && Alive)
         {
             return "stopping to eat";
         }
 
+        string where = string.IsNullOrEmpty(workplaceName) ? "work" : workplaceName;
+
         return State switch
         {
             VillagerState.Idle => "standing idle",
-            VillagerState.TravelingToFood => "walking to the berry patch",
+            VillagerState.TravelingToFood => $"walking to {where}",
             VillagerState.Gathering => "gathering berries",
             VillagerState.TravelingHome => "walking home",
-            VillagerState.TravelingToTrees => "walking to the tree stand",
+            VillagerState.TravelingToTrees => $"walking to {where}",
             VillagerState.Cutting => "cutting timber",
             VillagerState.Resting => "resting at home",
             VillagerState.Dead => "dead",

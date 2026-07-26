@@ -32,34 +32,50 @@ public sealed class WoodTests
     [Fact]
     public void SpareWorkersTakeTheTreeStand()
     {
-        // The patch reserves a quarter of the workforce, so someone always cuts.
+        // The village keeps a woodpile, so the stand is worked whenever the store is
+        // below what the next home will cost — which is most of the time. Sampled per
+        // season rather than per year: a year boundary is the one instant where the
+        // last reshuffle's cutting is finished and the next has not been decided.
         SimLoop loop = Build(Config);
-        loop.Step(Config.TicksPerSeason);
 
-        Workplace stand = loop.World.Workplaces[1];
-        _output.WriteLine($"{stand.WorkerIds.Count} at {stand.Name}");
+        int mostAtOnce = 0;
+        for (int season = 0; season < 40 * 4; season++)
+        {
+            loop.Step(Config.TicksPerSeason);
+            Workplace stand = FindStand(loop.World);
+            mostAtOnce = System.Math.Max(mostAtOnce, stand.WorkerIds.Count);
+            Assert.Equal(JobKind.Woodcutter, stand.Kind);
+        }
 
-        Assert.Equal(JobKind.Woodcutter, stand.Kind);
-        Assert.NotEmpty(stand.WorkerIds);
+        _output.WriteLine($"most at the stand at once, over 40 years: {mostAtOnce}");
+        Assert.True(mostAtOnce > 0, "Nobody ever took work at the tree stand.");
     }
 
     [Fact]
-    public void TheBerryPatchFillsBeforeTheTreeStand()
+    public void TheVillageFeedsItselfBeforeItBuilds()
     {
-        // The policy, such as it is: a village short of hands feeds itself before it
-        // builds. Expressed as workplace id order rather than a priority field.
+        // The policy, in one sentence. It used to be expressed as workplace id order,
+        // which only worked while there was one place to forage; it is now the
+        // village-level quota, which is where a village-level rule belongs.
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerSeason);
 
-        Assert.True(loop.World.Workplaces[0].IsFullyStaffed,
-            "The patch should be full before anyone cuts timber.");
+        LabourQuota quota = LabourQuota.For(loop.World);
+        int foraging = CountWorking(loop.World, JobKind.Forager);
+
+        _output.WriteLine($"{quota} — {foraging} actually foraging");
+
+        Assert.True(foraging >= System.Math.Min(quota.ForagersToFeedEveryone, quota.Hands),
+            "Someone cut timber while the village was short of foragers.");
     }
 
     [Fact]
     public void WoodcuttersActuallyProduceWood()
     {
+        // Long enough for the founders' children to grow up and want homes, which is
+        // what the village cuts timber FOR.
         SimLoop loop = Build(Config);
-        loop.Step(Config.TicksPerYear * 3);
+        loop.Step(Config.TicksPerYear * 40);
 
         int wood = 0;
         foreach (Household household in loop.World.Households)
@@ -75,15 +91,25 @@ public sealed class WoodTests
     public void TimberIsCutInWinterWhenBerriesCannotBeGathered()
     {
         // The reason the job is worth holding: trees do not stop in winter.
+        //
+        // The village has to be GIVEN a reason to want timber first. Wood currently
+        // buys exactly one thing — houses — so a village with a full woodpile quite
+        // correctly staffs nobody at the stand, and simply running for sixty years
+        // and hoping a refill lands in winter tests the weather rather than the rule.
+        // So: empty the woodpile on the eve of winter, and watch what the village
+        // does about it. (When wood also becomes fuel and tools under D17, the demand
+        // will be continuous and this set-up stops being necessary.)
         SimLoop loop = Build(Config);
-
-        // Run a few years first: labour is assigned seasonally, so the very first
-        // winter can arrive before anyone holds a job at all.
-        loop.Step(Config.TicksPerYear * 3);
+        loop.Step(Config.TicksPerYear * 5);
 
         while (!loop.World.Clock.IsWinter)
         {
             loop.StepOnce();
+        }
+
+        foreach (Household household in loop.World.Households)
+        {
+            household.Stockpile.TryTakeWood(household.Stockpile.Wood);
         }
 
         int before = TotalLifetimeWood(loop.World);
@@ -92,8 +118,9 @@ public sealed class WoodTests
             loop.StepOnce();
         }
 
+        _output.WriteLine($"Wood cut over the winter: {TotalLifetimeWood(loop.World) - before}.");
         Assert.True(TotalLifetimeWood(loop.World) > before,
-            "Timber should still be cut through winter.");
+            "Berries stop in winter and trees do not, so the village should have cut timber.");
     }
 
     [Fact]
@@ -202,6 +229,35 @@ public sealed class WoodTests
         Assert.True(gated.World.Population > 0, "Timber cost killed the village.");
         Assert.True(gated.World.Households.Count <= free.World.Households.Count,
             "Timber cost should not make the village build FASTER.");
+    }
+
+    /// <summary>The tree stand, found by kind. Its index moves as forage sites are
+    /// added, and an index-based lookup silently tested the wrong workplace.</summary>
+    private static Workplace FindStand(SimWorld world)
+    {
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.Workplaces[i].Kind == JobKind.Woodcutter)
+            {
+                return world.Workplaces[i];
+            }
+        }
+
+        throw new System.InvalidOperationException("No tree stand in the village.");
+    }
+
+    private static int CountWorking(SimWorld world, JobKind kind)
+    {
+        int count = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.Workplaces[i].Kind == kind)
+            {
+                count += world.Workplaces[i].WorkerIds.Count;
+            }
+        }
+
+        return count;
     }
 
     private static int TotalLifetimeWood(SimWorld world)

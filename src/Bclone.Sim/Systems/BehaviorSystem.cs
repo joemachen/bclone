@@ -69,9 +69,19 @@ public sealed class BehaviorSystem : ISimSystem
         // the very next line. A log that contradicts itself is worse than no log.
         if (!FoodSource.IsGatherable(world.Clock.Season) && IsForaging(villager.State))
         {
-            villager.ActionTicksRemaining = 0;
-            villager.State = VillagerState.TravelingHome;
-            Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
+            GoHome(world, villager);
+            return;
+        }
+
+        // Abandon an errand for a job you no longer hold.
+        //
+        // The village shares out its work again once a year (D20), and that can move
+        // someone who is already half-way to the old site. Without this they walk on
+        // and work it anyway — which is wrong, and, worse, contradicts the sentence
+        // the game just told the player about where they work.
+        if (IsOnAWorkErrand(villager.State) && !HoldsTheJobFor(world, villager))
+        {
+            GoHome(world, villager);
             return;
         }
 
@@ -91,11 +101,15 @@ public sealed class BehaviorSystem : ISimSystem
         switch (villager.State)
         {
             case VillagerState.TravelingToFood:
-                Travel(world, villager, world.FoodSource.Position, VillagerState.Gathering);
+                // THEIR site, not the one global patch. With several forage sites
+                // this is the difference between catchment meaning something and the
+                // whole village trooping to the same thicket regardless of where
+                // they live.
+                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Gathering);
                 return;
 
             case VillagerState.TravelingToTrees:
-                Travel(world, villager, world.TreeStand.Position, VillagerState.Cutting);
+                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Cutting);
                 return;
 
             case VillagerState.TravelingHome:
@@ -108,6 +122,37 @@ public sealed class BehaviorSystem : ISimSystem
 
     private static bool IsForaging(VillagerState state) =>
         state is VillagerState.TravelingToFood or VillagerState.Gathering;
+
+    private static bool IsCutting(VillagerState state) =>
+        state is VillagerState.TravelingToTrees or VillagerState.Cutting;
+
+    private static bool IsOnAWorkErrand(VillagerState state) =>
+        IsForaging(state) || IsCutting(state);
+
+    /// <summary>The workplace this villager holds a job at, or null.</summary>
+    private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
+        world.FindWorkplace(villager.WorkplaceId);
+
+    /// <summary>Whether the job they hold matches the errand they are on.</summary>
+    private static bool HoldsTheJobFor(SimWorld world, Villager villager)
+    {
+        Workplace? job = WorkplaceOf(world, villager);
+        if (job is null)
+        {
+            return false;
+        }
+
+        return IsForaging(villager.State)
+            ? job.Kind == JobKind.Forager
+            : job.Kind == JobKind.Woodcutter;
+    }
+
+    private static void GoHome(SimWorld world, Villager villager)
+    {
+        villager.ActionTicksRemaining = 0;
+        villager.State = VillagerState.TravelingHome;
+        Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
+    }
 
     // Cutting is deliberately NOT included here. Berries stop in winter; trees do
     // not, so a woodcutter keeps working when a forager cannot.
@@ -173,23 +218,25 @@ public sealed class BehaviorSystem : ISimSystem
         // households to exist first (D13).
         Household household = world.HouseholdOf(villager);
         bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household);
-        // Foraging is now a JOB, not something anyone wanders off and does. Held via
-        // LabourSystem, which decides who works where and records why.
-        bool holdsForagingJob = world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Forager;
+
+        // Foraging is a JOB, not something anyone wanders off and does. Held via
+        // LabourSystem, which decides who works where and records why - and, since
+        // there are several forage sites now, WHICH ONE.
+        Workplace? job = WorkplaceOf(world, villager);
         bool canForage = villager.CanWork
-            && holdsForagingJob
+            && job?.Kind == JobKind.Forager
             && FoodSource.IsGatherable(world.Clock.Season);
 
         if (needsFood && canForage)
         {
-            if (villager.Position == world.FoodSource.Position)
+            if (villager.Position == job!.Position)
             {
                 BeginGathering(villager, config);
             }
             else
             {
                 villager.State = VillagerState.TravelingToFood;
-                Travel(world, villager, world.FoodSource.Position, VillagerState.Gathering);
+                Travel(world, villager, job.Position, VillagerState.Gathering);
             }
 
             return;
@@ -197,10 +244,9 @@ public sealed class BehaviorSystem : ISimSystem
 
         // Timber. Cuttable year-round, unlike berries, so a woodcutter still has
         // something to do in winter - which is part of why the job is worth holding.
-        bool holdsCuttingJob = world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Woodcutter;
-        if (villager.CanWork && holdsCuttingJob)
+        if (villager.CanWork && job?.Kind == JobKind.Woodcutter)
         {
-            if (villager.Position == world.TreeStand.Position)
+            if (villager.Position == job.Position)
             {
                 villager.State = VillagerState.Cutting;
                 villager.ActionTicksRemaining = config.CutTicks;
@@ -208,7 +254,7 @@ public sealed class BehaviorSystem : ISimSystem
             else
             {
                 villager.State = VillagerState.TravelingToTrees;
-                Travel(world, villager, world.TreeStand.Position, VillagerState.Cutting);
+                Travel(world, villager, job.Position, VillagerState.Cutting);
             }
 
             return;

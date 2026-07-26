@@ -62,15 +62,19 @@
   "starvation_ticks": 24,
 
   // ---- Foraging ----------------------------------------------
-  // A round trip is 5 out + 3 gathering + 5 back = 13 ticks for
-  // 15 food, against ~150 food eaten per year. That leaves a real
-  // surplus but not a free one — a lazy autumn still bites.
   // DERIVED, not chosen. VillageEconomy states the target - one adult at
-  // minimum vigour, with no partner, must feed themselves and two
+  // minimum vigour, with no partner, must feed themselves and three
   // children - and computes the yield it requires. A test asserts this
   // file still meets it, so editing hunger or travel without redoing
   // this fails the build rather than the village.
-  "gather_yield": 67,
+  //
+  // The budget is the WORST walk in a village this size: for every home
+  // it will plausibly build, how far is that home's own nearest site,
+  // and which home has it worst. Both halves are load-bearing - deriving
+  // from the first home starved the outskirts, and deriving from the
+  // last home (which happens to sit beside a thicket) assumed everybody
+  // had a one-tile commute and starved the whole village.
+  "gather_yield": 60,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
@@ -83,6 +87,45 @@
   "home_y": 0,
   "food_source_x": 5,
   "food_source_y": 0,
+
+  // More than one place to forage (decision D19). This is structural,
+  // not scenery: a catchment radius that actually BINDS kills outlying
+  // households when there is only one food source, because those
+  // families have nothing within reach to work. Spread sites are the
+  // prerequisite for the catchment rule in DESIGN.md §2.2 constraining
+  // anything at all.
+  //
+  // A ring around the homes, plus two further out. Putting them all at
+  // the edges left every home near the middle competing for the one
+  // original berry patch, so tightening catchment just left people idle
+  // beside a full patch and their households starved.
+  //
+  // These become generator output once the map is seeded (D18).
+  "extra_forage_sites": [
+    { "x": -6, "y":  0 },
+    { "x":  0, "y":  6 },
+    { "x":  0, "y": -6 },
+    { "x": -7, "y": -6 },
+    { "x":  7, "y":  7 },
+  ],
+
+  // How many hands fit at one patch, and how far it is reasonable to
+  // walk to work. Capacity is a LOCAL fact about a place; how many
+  // foragers the village needs is a village-level question and lives in
+  // LabourQuota. Conflating the two is what specs/labour-allocation.md
+  // §3 is a record of.
+  //
+  // Ten tiles, lowered from twelve now the sites are spread properly:
+  // at twelve a home in the middle could reach nearly everything, so the
+  // rule constrained nothing.
+  "forage_site_capacity": 4,
+  "forager_catchment_tiles": 10,
+
+  // The village shares out all its work again once a year, so people
+  // drift toward the jobs nearest where they live (decision D20).
+  // Seasonal churn would make the stated reason for holding a job go
+  // stale before anyone read it.
+  "labour_reshuffle_years": 1,
 
   // ---- Ageing ------------------------------------------------
   // Full strength until 30, then a straight decline to 55% in the
@@ -101,13 +144,14 @@
 
   // ---- Timber (decision D17) ---------------------------------
   // Cuttable year-round, unlike berries, so a woodcutter still works
-  // in winter. The berry patch sizes itself to the workforce and
-  // spares a quarter of it for the stand.
+  // in winter. Nobody is spared for the stand while a household in the
+  // village is going hungry - the village feeds itself before it
+  // builds, and that is the whole labour policy in one sentence.
   "tree_stand_x": -4,
   "tree_stand_y": 2,
   "cut_yield": 12,
   "cut_ticks": 4,
-  "woodcutter_demand": 3,
+  "tree_stand_capacity": 3,
 
   // A home has to be built. The village spreads only as fast as it
   // can cut timber, which is what makes "forage or cut?" matter.

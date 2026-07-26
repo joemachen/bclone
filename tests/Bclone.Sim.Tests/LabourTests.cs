@@ -118,16 +118,16 @@ public sealed class LabourTests
     }
 
     [Fact]
-    public void AWorkplaceNeverExceedsItsLabourDemand()
+    public void AWorkplaceNeverExceedsItsCapacity()
     {
-        SimLoop loop = Build(Config with { ForagerDemand = 3 });
+        SimLoop loop = Build(Config with { ForageSiteCapacity = 3 });
         loop.Step(30_000);
 
         foreach (Workplace workplace in loop.World.Workplaces)
         {
-            Assert.True(workplace.WorkerIds.Count <= workplace.LabourDemand,
-                $"{workplace.Name} has {workplace.WorkerIds.Count} workers for " +
-                $"{workplace.LabourDemand} positions.");
+            Assert.True(workplace.WorkerIds.Count <= workplace.Capacity,
+                $"{workplace.Name} has {workplace.WorkerIds.Count} workers and room for " +
+                $"{workplace.Capacity}.");
         }
     }
 
@@ -250,8 +250,8 @@ public sealed class LabourTests
         // same villager must win it every single run, or the village desyncs.
         for (int attempt = 0; attempt < 5; attempt++)
         {
-            SimLoop a = Build(Config with { ForagerDemand = 1 });
-            SimLoop b = Build(Config with { ForagerDemand = 1 });
+            SimLoop a = Build(Config with { ForageSiteCapacity = 1 });
+            SimLoop b = Build(Config with { ForageSiteCapacity = 1 });
 
             a.Step(Config.TicksPerSeason);
             b.Step(Config.TicksPerSeason);

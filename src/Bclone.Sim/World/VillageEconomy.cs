@@ -82,15 +82,56 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        // Budget for the furthest home the village will plausibly build, not the
-        // first one. Deriving the economy from household #1 made every outlying
-        // family a rounding error that starved.
-        var source = new GridPos(config.FoodSourceX, config.FoodSourceY);
-        GridPos furthest = Household.PlacementFor(
-            config.EconomyHorizonHouseholds, config.HomeX, config.HomeY, config.HouseholdSpacing);
+        // Budget for the worst walk anyone in a village this size has to make: for
+        // every home the village will plausibly build, how far is that home's OWN
+        // nearest site, and which home has it worst.
+        //
+        // Both halves matter, and getting either wrong kills the village in a way
+        // that took a long run to see. Budgeting for household #1 made every outlying
+        // family a rounding error that starved. Budgeting for the LAST home's nearest
+        // site was worse in the other direction - that home happens to sit one tile
+        // from a thicket, so the economy was derived as though everybody had a
+        // one-tile commute, and the yield it produced fed nobody.
+        int worst = 0;
+        for (int i = 0; i <= config.EconomyHorizonHouseholds; i++)
+        {
+            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
+            int distance = NearestForageDistance(config, home);
+            if (distance > worst)
+            {
+                worst = distance;
+            }
+        }
 
-        int travel = furthest.ManhattanDistanceTo(source) * config.TravelTicksPerUnit;
+        int travel = worst * config.TravelTicksPerUnit;
         return (travel * 2) + config.GatherTicks;
+    }
+
+    /// <summary>Distance from a home to the <em>nearest</em> forage site.</summary>
+    /// <remarks>
+    /// Nearest, not first. Several sites exist precisely so that an outlying household
+    /// has a short walk to one of them (D19), and an economy budgeting for the far
+    /// patch would throw that away — it would derive a yield generous enough that
+    /// catchment could never bind without the village getting rich, which is the
+    /// opposite of what the sites are for.
+    /// </remarks>
+    public static int NearestForageDistance(SimConfig config, GridPos from)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int nearest = from.ManhattanDistanceTo(new GridPos(config.FoodSourceX, config.FoodSourceY));
+
+        for (int i = 0; i < config.ExtraForageSites.Count; i++)
+        {
+            SitePosition site = config.ExtraForageSites[i];
+            int distance = from.ManhattanDistanceTo(new GridPos(site.X, site.Y));
+            if (distance < nearest)
+            {
+                nearest = distance;
+            }
+        }
+
+        return nearest;
     }
 
     /// <summary>
@@ -107,6 +148,53 @@ public static class VillageEconomy
         int available = gatherableTicks - ticksLostToMeals;
 
         return available <= 0 ? 0 : available / RoundTripTicks(config);
+    }
+
+    /// <summary>Ticks for one round trip to the tree stand and back, including cutting.</summary>
+    /// <remarks>Same worst-home budget as foraging, so the two kinds of work are
+    /// costed on the same basis rather than one being quietly cheaper.</remarks>
+    public static int CutRoundTripTicks(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        var stand = new GridPos(config.TreeStandX, config.TreeStandY);
+
+        int worst = 0;
+        for (int i = 0; i <= config.EconomyHorizonHouseholds; i++)
+        {
+            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
+            int distance = home.ManhattanDistanceTo(stand);
+            if (distance > worst)
+            {
+                worst = distance;
+            }
+        }
+
+        return (worst * config.TravelTicksPerUnit * 2) + config.CutTicks;
+    }
+
+    /// <summary>
+    /// Cutting trips one worker completes in a year.
+    /// </summary>
+    /// <remarks>
+    /// <b>All four seasons</b>, unlike foraging. Trees do not stop in winter, and that
+    /// asymmetry is most of why the job is worth holding.
+    /// </remarks>
+    public static int CutTripsPerYear(SimConfig config)
+    {
+        int available = config.TicksPerYear - MealsPerYear(config);
+        int trip = CutRoundTripTicks(config);
+
+        return available <= 0 || trip <= 0 ? 0 : available / trip;
+    }
+
+    /// <summary>Timber one worker brings home in a year, at their weakest.</summary>
+    public static int WoodCutPerYearAtWorst(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int wood = CutTripsPerYear(config) * config.CutYield * config.VigourMinPercent / 100;
+        return wood < 1 ? 1 : wood;
     }
 
     /// <summary>Food one adult gathers in a year at a given vigour.</summary>

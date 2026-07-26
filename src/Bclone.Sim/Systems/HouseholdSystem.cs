@@ -213,7 +213,17 @@ public sealed class HouseholdSystem : ISimSystem
         }
     }
 
-    private static bool IsSeekingAHome(Villager villager, SimConfig config) =>
+    /// <summary>
+    /// A grown, unpaired villager who wants a partner and a home of their own.
+    /// </summary>
+    /// <remarks>
+    /// Public because it is also what the village counts when deciding whether it
+    /// needs anyone cutting timber (see <see cref="LabourQuota"/>). One definition of
+    /// "waiting for a house", used both by the thing that builds houses and the thing
+    /// that staffs the work of building them — two definitions would eventually
+    /// disagree, and the village would cut wood for people who were not waiting.
+    /// </remarks>
+    public static bool IsSeekingAHome(Villager villager, SimConfig config) =>
         villager.Alive
         && !villager.IsPaired
         && villager.LifeStage != LifeStage.Child
@@ -241,12 +251,25 @@ public sealed class HouseholdSystem : ISimSystem
     }
 
     /// <summary>
-    /// Draw the timber for a new house from both parent households, or take nothing.
+    /// Draw the timber for a new house — the two parent households first, then the
+    /// rest of the village — or take nothing.
     /// </summary>
     /// <remarks>
-    /// All-or-nothing on purpose: half-taken timber would leave both families poorer
-    /// with no house to show for it, and the couple would try again next year and
-    /// pay twice.
+    /// <para>
+    /// All-or-nothing on purpose: half-taken timber would leave the givers poorer with
+    /// no house to show for it, and the couple would try again next year and pay
+    /// twice.
+    /// </para>
+    /// <para>
+    /// <b>The village makes up the difference, and it has to.</b> Drawing from the two
+    /// parent households alone looked right — the families provide for their children
+    /// — but timber is cut by whoever lives nearest the stand, who is very often
+    /// nobody's parent. So the village would cut wood year after year, pile it in the
+    /// woodcutter's own house where it could not be spent, and no home would ever get
+    /// built. Every settlement stalled at a handful of houses and aged out without a
+    /// single villager starving. Raising a house is communal work; the store it comes
+    /// out of is the village's.
+    /// </para>
     /// </remarks>
     private static bool TryTakeBuildingTimber(
         SimWorld world, Villager a, Villager b, SimConfig config, out int taken)
@@ -260,21 +283,51 @@ public sealed class HouseholdSystem : ISimSystem
         Household homeA = world.HouseholdOf(a);
         Household homeB = world.HouseholdOf(b);
 
-        if (homeA.Stockpile.Wood + homeB.Stockpile.Wood < config.WoodPerHouse)
+        if (TotalWood(world) < config.WoodPerHouse)
         {
             return false;
         }
 
-        int fromA = homeA.Stockpile.Wood < config.WoodPerHouse ? homeA.Stockpile.Wood : config.WoodPerHouse;
-        int fromB = config.WoodPerHouse - fromA;
+        // Parents first, then everyone else in household-id order, so who paid for a
+        // house is a fixed fact rather than an artifact of iteration.
+        taken += TakeUpTo(homeA, config.WoodPerHouse - taken);
+        taken += TakeUpTo(homeB, config.WoodPerHouse - taken);
 
-        if (!homeA.Stockpile.TryTakeWood(fromA) || !homeB.Stockpile.TryTakeWood(fromB))
+        for (int i = 0; i < world.Households.Count && taken < config.WoodPerHouse; i++)
         {
-            return false;
+            Household other = world.Households[i];
+            if (other.Id == homeA.Id || other.Id == homeB.Id)
+            {
+                continue;
+            }
+
+            taken += TakeUpTo(other, config.WoodPerHouse - taken);
         }
 
-        taken = fromA + fromB;
-        return true;
+        return taken >= config.WoodPerHouse;
+    }
+
+    private static int TakeUpTo(Household household, int wanted)
+    {
+        if (wanted <= 0)
+        {
+            return 0;
+        }
+
+        int available = household.Stockpile.Wood < wanted ? household.Stockpile.Wood : wanted;
+        return household.Stockpile.TryTakeWood(available) ? available : 0;
+    }
+
+    /// <summary>Every stick of timber the village has between it.</summary>
+    private static int TotalWood(SimWorld world)
+    {
+        int total = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            total += world.Households[i].Stockpile.Wood;
+        }
+
+        return total;
     }
 
     private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config, int timber)

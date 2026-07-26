@@ -39,10 +39,25 @@ public sealed class Workplace
     public required GridPos Position { get; init; }
 
     /// <summary>
-    /// How many workers this place wants. <b>Recomputed each season</b> for places
-    /// whose demand depends on the village, like feeding it.
+    /// How many people can physically work here at once. <b>A local fact about the
+    /// place</b>, fixed for its lifetime.
     /// </summary>
-    public int LabourDemand { get; set; }
+    /// <remarks>
+    /// <para>
+    /// This used to be called <c>LabourDemand</c> and carried village-level meaning —
+    /// it was recomputed every season from the population, so one berry patch's field
+    /// had to express "how many foragers does the whole village need?". That is a
+    /// global constraint written into a local variable, and
+    /// <c>specs/labour-allocation.md §3</c> records the four different values of it
+    /// that each broke the village in a different way.
+    /// </para>
+    /// <para>
+    /// The village-level question now lives in <see cref="LabourQuota"/>, where it can
+    /// actually be answered. This field went back to meaning the only thing a single
+    /// site can honestly know: how many hands fit.
+    /// </para>
+    /// </remarks>
+    public required int Capacity { get; init; }
 
     /// <summary>How far it is reasonable to travel here, in travel-cost units.</summary>
     public required int CatchmentRadius { get; init; }
@@ -50,9 +65,9 @@ public sealed class Workplace
     /// <summary>Villagers currently holding a job here, in id order.</summary>
     public List<int> WorkerIds { get; } = new();
 
-    /// <summary>True when nobody else is wanted.</summary>
-    public bool IsFullyStaffed => WorkerIds.Count >= LabourDemand;
+    /// <summary>True when there is no room for anyone else.</summary>
+    public bool IsFull => WorkerIds.Count >= Capacity;
 
-    /// <summary>Workers still wanted.</summary>
-    public int OpenPositions => LabourDemand - WorkerIds.Count;
+    /// <summary>Room still going spare.</summary>
+    public int OpenPositions => Capacity - WorkerIds.Count;
 }

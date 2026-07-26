@@ -116,6 +116,42 @@ public sealed record SimConfig
     [JsonPropertyName("food_source_y")]
     public int FoodSourceY { get; init; }
 
+    /// <summary>
+    /// Further forage sites, beyond the first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Not content dressing. The measured finding was that a <em>binding</em>
+    /// catchment radius starves outlying households when there is only one food
+    /// source — no amount of economic slack helps, because those families have
+    /// nothing within reach to work. Several sources spread around the valley are the
+    /// prerequisite for §2.2's catchment rule constraining anything at all (D19).
+    /// </para>
+    /// <para>
+    /// <b>A ring around the homes, plus two further out.</b> The first attempt put all
+    /// three sites out at the edges, which left every home near the middle of the
+    /// village competing for the one original berry patch — so tightening catchment
+    /// simply left people idle beside a full patch, and their households starved. A
+    /// site in each direction at roughly the width of the settlement means every home
+    /// has somewhere close; the two distant ones are what a growing village spreads
+    /// toward. Measured: with these positions the village survives a catchment of 10
+    /// tiles, against 12 for the edge-only layout.
+    /// </para>
+    /// <para>
+    /// These become generator output once the map is seeded (D18); the literal
+    /// coordinates are the placeholder.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("extra_forage_sites")]
+    public IReadOnlyList<SitePosition> ExtraForageSites { get; init; } = new[]
+    {
+        new SitePosition { X = -6, Y = 0 },
+        new SitePosition { X = 0, Y = 6 },
+        new SitePosition { X = 0, Y = -6 },
+        new SitePosition { X = -7, Y = -6 },
+        new SitePosition { X = 7, Y = 7 },
+    };
+
     // ---------------------------------------------------------------
     //  Life
     // ---------------------------------------------------------------
@@ -160,15 +196,14 @@ public sealed record SimConfig
     [JsonPropertyName("cut_ticks")]
     public int CutTicks { get; init; } = 4;
 
-    /// <summary>Workers the tree stand wants.</summary>
+    /// <summary>How many people can work one tree stand at once.</summary>
     /// <remarks>
-    /// Small on purpose. Foraging is survival and timber is growth, so the patch
-    /// fills first (it has the lower workplace id) and the stand takes what is left
-    /// over. That ordering IS the policy - a village short of hands feeds itself
-    /// before it builds.
+    /// A local fact about the place, not a statement about the village. What the
+    /// village needs cut is decided by <c>LabourQuota</c>, which will happily leave
+    /// this capacity unfilled in a year when there are barely enough hands to eat.
     /// </remarks>
-    [JsonPropertyName("woodcutter_demand")]
-    public int WoodcutterDemand { get; init; } = 3;
+    [JsonPropertyName("tree_stand_capacity")]
+    public int TreeStandCapacity { get; init; } = 3;
 
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
@@ -186,12 +221,42 @@ public sealed record SimConfig
     [JsonPropertyName("wood_per_house")]
     public int WoodPerHouse { get; init; } = 30;
 
+    /// <summary>How many people can work one forage site at once.</summary>
+    /// <remarks>
+    /// <para>
+    /// A patch of berries only has so many berries within arm's reach. This is the
+    /// reason a growing village eventually has to find more sites rather than
+    /// crowding the one it started beside — and, since it is a local number, the
+    /// reason it can be said in one sentence when someone is turned away.
+    /// </para>
+    /// <para>
+    /// It is emphatically <em>not</em> "how many foragers the village needs". That
+    /// question is village-level and is answered by <c>LabourQuota</c>; putting it
+    /// here is the mistake <c>specs/labour-allocation.md §3</c> is a record of.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("forage_site_capacity")]
+    public int ForageSiteCapacity { get; init; } = 4;
+
     /// <summary>
-    /// Starting demand at the berry patch. <b>Recomputed every season</b> from the
-    /// number of mouths to feed — see <c>LabourSystem.UpdateLabourDemand</c>.
+    /// Years between the village sharing out its work again from scratch.
     /// </summary>
-    [JsonPropertyName("forager_demand")]
-    public int ForagerDemand { get; init; } = 4;
+    /// <remarks>
+    /// <para>
+    /// Joe's call, following <em>Banished</em> (D20): rather than pinning people in
+    /// place with rules, the village periodically re-runs the whole allocation, so
+    /// workers drift toward the jobs nearest where they live. A household whose
+    /// forager died, or a couple who built a house on the far side of the valley,
+    /// gets corrected by the next reshuffle instead of needing a special case.
+    /// </para>
+    /// <para>
+    /// Once a year, not once a season. A seasonal reshuffle churns jobs fast enough
+    /// that the stated reason for holding one goes stale before the player reads it,
+    /// and a reshuffle that cannot explain itself is worse than no reshuffle.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("labour_reshuffle_years")]
+    public int LabourReshuffleYears { get; init; } = 1;
 
     /// <summary>
     /// How far, in tiles, it is reasonable to travel to forage.
@@ -202,8 +267,16 @@ public sealed record SimConfig
     /// because catchment is measured in cost - that is what lets a worn path widen a
     /// workplace's reach later without catchment knowing roads exist.
     /// </remarks>
+    /// <remarks>
+    /// Ten, lowered from twelve once the forage sites were spread properly. At twelve
+    /// a home in the middle of the village could reach very nearly everything, so the
+    /// rule constrained almost nothing; at ten no home reaches every workplace and
+    /// outlying households really are restricted to what is near them. Lower than ten
+    /// still kills the village, and the cause is timber rather than food — see
+    /// <c>specs/labour-allocation.md §8</c>.
+    /// </remarks>
     [JsonPropertyName("forager_catchment_tiles")]
-    public int ForagerCatchmentTiles { get; init; } = 12;
+    public int ForagerCatchmentTiles { get; init; } = 10;
 
     /// <summary>
     /// How many households the economy is derived to support.
@@ -474,9 +547,9 @@ public sealed record SimConfig
             throw new SimConfigException($"cut_ticks must be greater than zero (got {CutTicks}).");
         }
 
-        if (WoodcutterDemand <= 0)
+        if (TreeStandCapacity <= 0)
         {
-            throw new SimConfigException($"woodcutter_demand must be greater than zero (got {WoodcutterDemand}).");
+            throw new SimConfigException($"tree_stand_capacity must be greater than zero (got {TreeStandCapacity}).");
         }
 
         if (WoodPerHouse < 0)
@@ -484,9 +557,21 @@ public sealed record SimConfig
             throw new SimConfigException($"wood_per_house cannot be negative (got {WoodPerHouse}).");
         }
 
-        if (ForagerDemand <= 0)
+        if (ForageSiteCapacity <= 0)
         {
-            throw new SimConfigException($"forager_demand must be greater than zero (got {ForagerDemand}).");
+            throw new SimConfigException(
+                $"forage_site_capacity must be greater than zero (got {ForageSiteCapacity}).");
+        }
+
+        if (LabourReshuffleYears <= 0)
+        {
+            throw new SimConfigException(
+                $"labour_reshuffle_years must be greater than zero (got {LabourReshuffleYears}).");
+        }
+
+        if (ExtraForageSites is null)
+        {
+            throw new SimConfigException("extra_forage_sites must be a list, even if an empty one.");
         }
 
         if (ForagerCatchmentTiles <= 0)

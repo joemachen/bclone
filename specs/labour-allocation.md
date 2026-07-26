@@ -1,7 +1,8 @@
 # Spec: Village Labour Allocation
 
-> Status: **draft — awaiting Joe's review before implementation** · Owner: Joe + Claude Code
+> Status: **implemented** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Written *after* three failed improvised attempts (see §3) — that is the reason it exists.
+> **Updated after implementation.** Four things in the original draft turned out to be wrong when measured; each is marked **[revised]** below with what happened. The spec is a living document (`METHODOLOGY.md §2`), and the point of writing it first was to make these findings legible rather than to be right the first time.
 
 ---
 
@@ -48,14 +49,37 @@ Recorded because all three looked correct when written, and each was caught only
 
 ### 4a. Quotas
 
-Derived, not tuned — the same discipline as `VillageEconomy` (decision D16):
+Derived, not tuned — the same discipline as `VillageEconomy` (decision D16).
+
+Foragers first: **a village short of hands feeds itself before it builds.** That priority is the whole policy, and it is one sentence, which is the test of whether it is legible.
+
+**[revised]** The draft wrote it as:
 
 ```
-foragersNeeded  = ceil(mouths / VillageEconomy.RequiredDependants)   // hands to feed everyone
+foragersNeeded    = ceil(mouths / VillageEconomy.RequiredDependants)   // a CEILING on foragers
 woodcuttersWanted = remaining able hands, capped by total stand capacity
 ```
 
-Foragers first: **a village short of hands feeds itself before it builds.** That priority is the whole policy, and it is one sentence, which is the test of whether it is legible.
+Both lines were wrong, in opposite directions, and both were caught by running the village rather than by reading the code.
+
+**The forager line was a ceiling; it needed to be a floor.** A ceiling leaves able adults idle, and food is stored *per household* (D14) — so an idle adult is not a spare resource, they are a household producing nothing and living on its neighbours' charity. That is attempt #2 in the table above: "mathematically sufficient and still fatal". So the number is now the **minimum** staffed before anyone is spared for timber, and everyone left over forages.
+
+**The woodcutter line was wildly over-provisioned.** "Every hand food does not need" put *two of four* founding adults on the tree stand — and both of them were the whole of household one, which had no food stored and no forager in it. One woodcutter produces enough timber for several houses a year; wood is simply much cheaper than food, and the quota had no way of knowing that until it was asked **what the wood is for**. So timber is now derived the same way foraging is — from demand:
+
+```
+foragersToFeedEveryone = ceil(mouths / VillageEconomy.RequiredDependants)   // a FLOOR
+housesWanted           = ceil(couples waiting for a home / 2) + 1           // +1 = keep a woodpile
+woodcuttersWanted      = ceil((housesWanted * woodPerHouse - stored) / woodOneCutterBringsPerYear)
+                         capped by spare hands and by stand capacity,
+                         and zero while the village is short of food AND there is food to gather
+foragers               = every remaining hand
+```
+
+Three details in that are load-bearing, and each cost a run to find:
+
+- **`+ 1`, the woodpile.** Cutting only what the couples in front of you need turns timber from a job into an errand: a hand goes to the stand at the new year, cuts thirty logs by midspring, and is taken off again. Keeping enough for the *next* home as well means somebody is usually at the stand — and it is what any village that has been through a winter would actually do. Without it the village grew at roughly half the rate.
+- **The food gate lifts in winter.** Pulling woodcutters back onto the berries when the larder dips is not caution in winter, it is waste: there is nothing out there to pick, so those hands simply stood idle. Trees do not stop in winter, and this is the rule that lets the village act on it (D17).
+- **The food gate is measured village-wide, not per household.** "Is any household below its sharing floor?" is true almost all the time — households dip below and are topped back up every season, by design — so gating on it meant no timber was ever cut, no houses were built, no new households formed, and the village aged out and died *without a single villager starving*. Every death was old age, which is exactly what a village that stops having children looks like.
 
 ### 4b. The matching pass
 
@@ -73,6 +97,10 @@ for each candidate in order:
     skip if that JobKind's quota is exhausted
     assign, and record the reason
 ```
+
+**[revised] One pass per job kind, the kind the village needs fewest of first.** A single global pass over every workplace at once — as written above — has a bug the draft did not anticipate. A village of ten hands wants nine foragers and one woodcutter. Sorted purely by cost, every villager near the tree stand takes an even nearer berry patch first, and the single timber job falls to whoever is left at the end — who is by construction the most remote person in the village, and often cannot reach the stand at all. So the job went unfilled, no timber was cut, and the settlement aged out. It failed hardest exactly when catchment was tight, which is to say exactly where the pillar is supposed to work.
+
+Filling the scarce work first hands it to whoever genuinely lives nearest, and it costs food nothing: the quota has *already* decided that timber only gets hands the village can spare from eating. It is also the more explainable of the two — *"Elias cuts timber because he lives nearest the stand"* beats *"Elias cuts timber because he was the last one left."*
 
 **Why greedy-nearest-first rather than optimal:** a global optimum (min total travel) would need Hungarian-style matching, and its output cannot be explained one villager at a time — "you work here because it minimised a village-wide sum" fails non-negotiable 1. Greedy-nearest is explainable in a sentence and is what a person would actually do.
 
@@ -111,19 +139,30 @@ A villager with no work must always be able to say **which constraint** excluded
 
 ## 7. Testing
 
+All of these live in `tests/Bclone.Sim.Tests/LabourAllocationTests.cs` and are green.
+
 - **Nobody is sent past a nearer opening.** The failure mode of the even-split attempt, asserted directly.
-- **Quotas are respected**: total foragers never exceeds what the village needs fed.
-- **Local capacity is respected**: no site exceeds its own `LabourDemand`.
-- **Foragers are staffed before woodcutters** when hands are short.
+- **Quotas are respected**: the village never spares more hands for timber than it has beyond feeding everyone. **[revised]** — the draft said "total foragers never exceeds what the village needs fed", which stopped being the rule when the forager quota became a floor. The quota's real bite is on the timber side.
+- **Local capacity is respected**: no site exceeds its own `Capacity`. **[revised]** — `Workplace.LabourDemand` was renamed `Capacity`, because leaving the old name on a field whose meaning had changed is precisely how §3 happened.
+- **Foragers are staffed before woodcutters** when hands are short — and **nobody cuts timber the village has no use for**, which is the same rule from the other end.
 - **Catchment still binds**: no assignment outside a workplace's radius.
 - **Shedding takes the furthest first** — asserted, since "highest id" is the tempting shortcut.
 - **Determinism**: same seed ⇒ identical assignments and identical reason strings, over a full village and 150 years.
-- **Every villager can name the constraint that excluded them.**
+- **Every villager can name the constraint that excluded them** — plus one test per constraint (catchment, capacity), so the three sentences cannot silently collapse into one.
+- **A reshuffle run twice in a row changes nothing** — D20 requires the pass be re-runnable from scratch; a from-scratch run that did not reproduce itself would churn jobs for no reason.
+- **A job change says what it changed from**, and the village narrates the reshuffle it just did.
+- **Every home the village will build has a forage site within reach** — a layout guard asserted against the map rather than a run, so moving a site fails the build instead of failing the village a century later.
 - **The village survives with catchment genuinely binding** — the thing none of the three previous attempts achieved, and the real acceptance test.
 
 ## 8. Definition of Done
 
-Standard DoD (`METHODOLOGY.md §3`), plus: **`forager_catchment_tiles` can be lowered to a value that visibly binds — outlying households restricted to their nearest site — and the village still sustains itself for 150 years.** Until that holds, the allocator has not solved the problem it exists to solve.
+Standard DoD (`METHODOLOGY.md §3`), plus: **`forager_catchment_tiles` can be lowered to a value that visibly binds — outlying households restricted to their nearest site — and the village still sustains itself for 150 years.**
+
+**Met.** Shipped at **10 tiles, down from 12**, and no home reaches every workplace at that radius. Measured over 150 years from the founding four: **24 alive in 34 households**.
+
+Getting there needed one thing the draft did not foresee. The original forage-site layout put every extra site out at the edges of the map, which left every home near the middle of the village competing for the one original berry patch — so tightening catchment did not restrict outlying households, it left *central* ones idle beside a full patch, and they starved. The sites are now a ring at roughly the width of the settlement plus two further out. That is D19's argument applied one level down: it is not enough to have several food sources, they have to be *spread the way the homes are*.
+
+**What is still fragile, and it is not the allocator.** Below ten tiles the village survives but one or two homes on the placement spiral end up with nothing in reach at all, and those households are doomed from the day they are built. The fix is not a labour rule — it is that homes are currently placed on a fixed spiral with no knowledge of where the work is. Seeded map generation (D18) is where that gets solved properly, and the layout guard test above is what will catch it if it regresses first.
 
 ---
 
@@ -138,4 +177,10 @@ Standard DoD (`METHODOLOGY.md §3`), plus: **`forager_catchment_tiles` can be lo
    **Two things to get right:**
    - **Reshuffle cadence.** Every season is probably too often (jobs would churn and the reason strings would go stale); once a year is likely right, and it should be a config value.
    - **Churn must be legible.** A villager whose job changes needs a reason saying so — *"moved to the western thicket, 2 tiles from home, closer than the berry patch at 6"* — or the player sees people inexplicably swapping jobs. **A reshuffle that cannot explain itself is worse than no reshuffle.**
+
+   **Built as specified**, with one addition the draft did not call for: **a seasonal pass that only fills vacancies.** The annual reshuffle is what moves people *closer*; the seasonal pass is what stops someone sitting idle beside an opening in the meantime. It is needed because food is stored per household — a child coming of age, a forager dying, or a couple building a house all leave a household with nobody working, and a household cannot wait until next spring. It never moves anyone who already has a job, so the reason they were given for holding it stays true until the next reshuffle.
+
+   Cadence is `labour_reshuffle_years`, default 1.
 2. **Should distance to work be visible on the map as a line?** Cheap, and would make a misallocation obvious at a glance rather than requiring a click. *(Recommendation: yes, for the selected villager only — a line from home to work. Every villager would be spaghetti.)*
+
+   **Still open — Joe's call.** Not built. The reason string on the selected villager already names the place and the distance, so this is a legibility upgrade rather than a gap.
