@@ -129,5 +129,13 @@ Standard DoD (`METHODOLOGY.md §3`), plus: **`forager_catchment_tiles` can be lo
 
 ## 9. Open questions (for Joe)
 
-1. **Should a villager prefer their household's needs over the village's?** Right now food is per-household but labour is village-wide, and that mismatch has already caused one starvation bug (§3, attempt 2). Options: leave it and let the sharing policy cover it; or bias assignment so each household keeps at least one forager. *(Recommendation: bias it — one forager per household as a floor before the general pass. It matches how the food is actually stored, and "someone in every house brings food home" is a sentence.)*
+1. **Resolved (Joe, 2026-07-26): no forced forager per household.** Instead, the *Banished* pattern — **the village reshuffles periodically, drifting workers toward jobs near where they live.**
+
+   This is better than the floor I proposed, for a reason worth stating: a hard "one forager per house" rule is a constraint the player would have to be told about, whereas a reshuffle is a *behaviour they can watch happen*. It also handles the case the floor does not — a household whose forager dies, or who moves house, gets corrected by the next reshuffle rather than needing a special rule.
+
+   **Implication for the design:** the allocator must be **re-runnable from scratch**, not incremental. Each reshuffle discards existing assignments and re-runs the matching pass, so improved proximity is found naturally rather than requiring anyone to notice it. Cost-first ordering (§4b) already does the work — a villager who moved closer to a site will out-rank a distant incumbent on the next pass.
+
+   **Two things to get right:**
+   - **Reshuffle cadence.** Every season is probably too often (jobs would churn and the reason strings would go stale); once a year is likely right, and it should be a config value.
+   - **Churn must be legible.** A villager whose job changes needs a reason saying so — *"moved to the western thicket, 2 tiles from home, closer than the berry patch at 6"* — or the player sees people inexplicably swapping jobs. **A reshuffle that cannot explain itself is worse than no reshuffle.**
 2. **Should distance to work be visible on the map as a line?** Cheap, and would make a misallocation obvious at a glance rather than requiring a click. *(Recommendation: yes, for the selected villager only — a line from home to work. Every villager would be spaghetti.)*
