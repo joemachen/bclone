@@ -170,27 +170,21 @@ public sealed record SimConfig
     [JsonPropertyName("woodcutter_demand")]
     public int WoodcutterDemand { get; init; } = 3;
 
-    /// <summary>
-    /// Wood a couple needs before they can build a home. <b>Zero for now — see
-    /// remarks.</b>
-    /// </summary>
+    /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
     /// <para>
-    /// The mechanic works and is tested, but it is <b>disabled by default</b> because
-    /// it cannot pay off until labour demand is dynamic. With a fixed
-    /// <c>forager_demand</c> of 200, every villager goes to the berry patch (the
-    /// lower workplace id) and nobody ever cuts timber — so gating houses on wood
-    /// simply stops the village growing and kills it.
+    /// This is what makes timber matter: the village spreads only as fast as it can
+    /// build, so how it spends its labour decides how it grows. Drawn from both
+    /// parent households, all-or-nothing, like the food dowry.
     /// </para>
     /// <para>
-    /// The fix is for the patch to want only as many foragers as the village needs
-    /// fed, letting the rest spill to the tree stand. That is what "labour demand"
-    /// in DESIGN.md §2.2 actually means, and it is the prerequisite for this. Set
-    /// this above zero once that lands.
+    /// Switched on only after dynamic labour demand landed. Before that, a fixed
+    /// forager demand sent everyone to the berry patch, nobody cut timber, and this
+    /// gate quietly stopped the village growing at all.
     /// </para>
     /// </remarks>
     [JsonPropertyName("wood_per_house")]
-    public int WoodPerHouse { get; init; }
+    public int WoodPerHouse { get; init; } = 30;
 
     /// <summary>
     /// Starting demand at the berry patch. <b>Recomputed every season</b> from the

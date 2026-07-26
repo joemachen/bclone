@@ -180,6 +180,30 @@ public sealed class WoodTests
         Assert.True(TotalLifetimeWood(loop.World) > 0);
     }
 
+    [Fact]
+    public void TimberGatesGrowthWithoutStoppingIt()
+    {
+        // The point of switching the gate on: the village should spread SLOWER when
+        // homes cost timber, but still spread. A gate that stops growth dead is the
+        // failure this spent a whole iteration on; a gate that changes nothing is
+        // decorative.
+        SimLoop gated = Build(Config with { WoodPerHouse = 30 });
+        SimLoop free = Build(Config with { WoodPerHouse = 0 });
+
+        gated.Step(Config.TicksPerYear * 120);
+        free.Step(Config.TicksPerYear * 120);
+
+        _output.WriteLine(
+            $"gated: {gated.World.Households.Count} houses, {gated.World.Population} alive · " +
+            $"free: {free.World.Households.Count} houses, {free.World.Population} alive");
+
+        Assert.True(gated.World.Households.Count > Config.StartingHouseholds,
+            "Timber cost stopped the village building at all.");
+        Assert.True(gated.World.Population > 0, "Timber cost killed the village.");
+        Assert.True(gated.World.Households.Count <= free.World.Households.Count,
+            "Timber cost should not make the village build FASTER.");
+    }
+
     private static int TotalLifetimeWood(SimWorld world)
     {
         int total = 0;

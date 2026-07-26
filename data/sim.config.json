@@ -99,6 +99,20 @@
   "lifespan_years_base": 45,
   "lifespan_years_variance": 5,
 
+  // ---- Timber (decision D17) ---------------------------------
+  // Cuttable year-round, unlike berries, so a woodcutter still works
+  // in winter. The berry patch sizes itself to the workforce and
+  // spares a quarter of it for the stand.
+  "tree_stand_x": -4,
+  "tree_stand_y": 2,
+  "cut_yield": 12,
+  "cut_ticks": 4,
+  "woodcutter_demand": 3,
+
+  // A home has to be built. The village spreads only as fast as it
+  // can cut timber, which is what makes "forage or cut?" matter.
+  "wood_per_house": 30,
+
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",
     "Agnes", "Wendell", "Hattie", "Amos",
