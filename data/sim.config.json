@@ -83,6 +83,20 @@
   // through one. Per member, not per household.
   "stockpile_target": 67,
 
+  // ---- The valley --------------------------------------------
+  // Wide rather than square: the terrain DESIGN.md §2.5 describes is
+  // a river valley, and the river runs along it rather than across.
+  //
+  // Nothing in the sim reads these yet - they bound the camera and give
+  // the drawn ground an edge, so a mostly-empty map reads as a valley
+  // with room to grow rather than as a bug. They live here because the
+  // MAP GENERATOR will need them (D18): terrain, water, forest stands
+  // and forage sites all get generated into these bounds from the run's
+  // seed, at which point this stops being a drawing hint and becomes
+  // world state.
+  "map_width": 120,
+  "map_height": 80,
+
   "home_x": 0,
   "home_y": 0,
   "food_source_x": 5,

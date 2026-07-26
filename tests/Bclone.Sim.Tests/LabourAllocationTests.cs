@@ -566,6 +566,46 @@ public sealed class LabourAllocationTests
         }
     }
 
+    [Fact]
+    public void TheValleyContainsEveryWorkplaceAndEveryHomeTheVillageWillBuild()
+    {
+        // The valley bounds the camera and gives the drawn ground an edge. Nothing in
+        // the sim reads them yet, so nothing in the sim would notice a site or a home
+        // placed outside — it would simply be invisible, and a villager would walk off
+        // the map to work at it.
+        //
+        // Homes are placed on an unbounded spiral. At 150 years the village reaches
+        // about nine tiles out, well inside; clamping placement to the valley belongs
+        // with seeded map generation (D18), and this is what will catch it if the
+        // village outgrows the map first.
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+
+        foreach (Workplace workplace in loop.World.Workplaces)
+        {
+            AssertInsideTheValley(config, workplace.Position, workplace.Name);
+        }
+
+        for (int i = 0; i < 200; i++)
+        {
+            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
+            AssertInsideTheValley(config, home, $"home #{i}");
+        }
+
+        _output.WriteLine(
+            $"valley {config.MapWidth}x{config.MapHeight}: " +
+            $"x {config.MapMinX}..{config.MapMaxX}, y {config.MapMinY}..{config.MapMaxY}");
+    }
+
+    private static void AssertInsideTheValley(SimConfig config, GridPos position, string what)
+    {
+        Assert.True(
+            position.X >= config.MapMinX && position.X <= config.MapMaxX
+            && position.Y >= config.MapMinY && position.Y <= config.MapMaxY,
+            $"{what} at {position} is outside the valley " +
+            $"({config.MapMinX}..{config.MapMaxX}, {config.MapMinY}..{config.MapMaxY}).");
+    }
+
     // ---------------------------------------------------------------
 
     private static int CountWorking(SimWorld world, JobKind kind)

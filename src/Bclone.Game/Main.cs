@@ -42,8 +42,11 @@ public partial class Main : Control
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
 
+    private Button _detailButton = null!;
+
     private int _renderedLogEntries;
     private int _selectedVillagerId;
+    private MapDetail _detail = MapDetail.Selected;
 
     public override void _Ready()
     {
@@ -83,7 +86,30 @@ public partial class Main : Control
             case Key.Key2: SetSpeed(2.0); break;
             case Key.Key3: SetSpeed(4.0); break;
             case Key.Key4: SetSpeed(10.0); break;
+            case Key.Tab: CycleDetail(); break;
+            case Key.Home: _map.CentreOnTheVillage(); break;
         }
+    }
+
+    /// <summary>
+    /// Cycle how much explanation the map draws: nothing, the selected villager, or
+    /// everybody.
+    /// </summary>
+    private void CycleDetail()
+    {
+        _detail = _detail switch
+        {
+            MapDetail.Off => MapDetail.Selected,
+            MapDetail.Selected => MapDetail.All,
+            _ => MapDetail.Off,
+        };
+
+        _detailButton.Text = _detail switch
+        {
+            MapDetail.Off => "Routes: off",
+            MapDetail.Selected => "Routes: selected",
+            _ => "Routes: all",
+        };
     }
 
     /// <summary>
@@ -115,7 +141,7 @@ public partial class Main : Control
 
         // Alpha is the fraction of a tick elapsed, so villagers glide between tiles
         // instead of teleporting once a second.
-        _map.Present(world, _driver.Alpha, _selectedVillagerId);
+        _map.Present(world, _driver.Alpha, _selectedVillagerId, _detail);
     }
 
     private void RefreshRoster(SimWorld world)
@@ -308,12 +334,14 @@ public partial class Main : Control
 
         column.AddChild(new HSeparator());
 
-        // The village itself, drawn. Everything else is here to explain it.
+        // The village itself, drawn. Everything else is here to explain it — so it
+        // gets the largest share of the window, and the panels below keep only their
+        // minimums.
         _map = new VillageMap
         {
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            SizeFlagsStretchRatio = 1.4f,
-            CustomMinimumSize = new Vector2(0, 200),
+            SizeFlagsStretchRatio = 2.2f,
+            CustomMinimumSize = new Vector2(0, 320),
 
             // Without this the catchment rings - which are far larger than the map
             // panel - draw straight across the rest of the window.
@@ -368,9 +396,28 @@ public partial class Main : Control
 
         _speedLabel = Body(string.Empty);
         controls.AddChild(_speedLabel);
-        controls.AddChild(Muted("   (space to pause · 1 / 2 / 3 / 4 for speed)"));
+
+        controls.AddChild(new VSeparator());
+
+        _detailButton = new Button { CustomMinimumSize = new Vector2(140, 0) };
+        _detailButton.Pressed += CycleDetail;
+        controls.AddChild(_detailButton);
+
+        // With a valley this size and free panning, getting lost is easy and a way
+        // back is not optional.
+        var recentre = new Button { Text = "Centre on village" };
+        recentre.Pressed += () => _map.CentreOnTheVillage();
+        controls.AddChild(recentre);
+
+        controls.AddChild(Muted(
+            "   (space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · home recentre)"));
 
         SetSpeed(1.0);
+
+        // Start on Selected, and set the button's label from the same switch that the
+        // key binding uses — two places writing that text would eventually disagree.
+        _detail = MapDetail.Off;
+        CycleDetail();
     }
 
     private Button SpeedButton(string text, double multiplier)

@@ -100,6 +100,48 @@ public sealed record SimConfig
     [JsonPropertyName("stockpile_target")]
     public int StockpileTarget { get; init; } = 60;
 
+    // ---------------------------------------------------------------
+    //  The valley
+    // ---------------------------------------------------------------
+
+    /// <summary>Width of the world, in tiles, centred on the origin.</summary>
+    /// <remarks>
+    /// <para>
+    /// Wide rather than square, because the terrain DESIGN.md §2.5 describes is a
+    /// river valley — and the river runs along it, not across it.
+    /// </para>
+    /// <para>
+    /// Nothing in the simulation reads this yet: it bounds the camera and gives the
+    /// drawn ground an edge, so a mostly-empty map reads as <em>a valley with room to
+    /// grow</em> rather than as a bug. It lives in sim config rather than view config
+    /// because <b>the map generator will need it</b> (D18) — terrain, water, forest
+    /// stands and forage sites all get generated into these bounds from the run's
+    /// seed, at which point this stops being a drawing hint and becomes world state.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("map_width")]
+    public int MapWidth { get; init; } = 120;
+
+    /// <summary>Height of the world, in tiles, centred on the origin.</summary>
+    [JsonPropertyName("map_height")]
+    public int MapHeight { get; init; } = 80;
+
+    /// <summary>Westmost tile of the valley. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int MapMinX => -(MapWidth / 2);
+
+    /// <summary>Eastmost tile of the valley. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int MapMaxX => MapWidth - (MapWidth / 2) - 1;
+
+    /// <summary>Northmost tile of the valley. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int MapMinY => -(MapHeight / 2);
+
+    /// <summary>Southmost tile of the valley. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int MapMaxY => MapHeight - (MapHeight / 2) - 1;
+
     /// <summary>Where the villager starts and returns to.</summary>
     [JsonPropertyName("home_x")]
     public int HomeX { get; init; }
@@ -572,6 +614,12 @@ public sealed record SimConfig
         if (ExtraForageSites is null)
         {
             throw new SimConfigException("extra_forage_sites must be a list, even if an empty one.");
+        }
+
+        if (MapWidth <= 0 || MapHeight <= 0)
+        {
+            throw new SimConfigException(
+                $"map_width and map_height must both be greater than zero (got {MapWidth}x{MapHeight}).");
         }
 
         if (ForagerCatchmentTiles <= 0)
