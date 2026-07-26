@@ -7,6 +7,9 @@
 ; This project is the RENDERER ONLY. All simulation lives in
 ; ../Bclone.Sim, which has no Godot reference and is tested headlessly.
 ; Nothing in here may mutate sim state (DESIGN.md §3).
+;
+; The editor rewrites this file and will delete the note above if it
+; gets the chance — put it back.
 
 config_version=5
 
@@ -15,12 +18,8 @@ config_version=5
 config/name="bclone"
 config/description="A generational village-builder. Phase 0: one villager, one resource loop."
 run/main_scene="res://Main.tscn"
-config/features=PackedStringArray("4.7", "Forward Plus")
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
-
-[dotnet]
-
-project/assembly_name="Bclone.Game"
 
 [display]
 
@@ -28,6 +27,10 @@ window/size/viewport_width=1280
 window/size/viewport_height=800
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[dotnet]
+
+project/assembly_name="Bclone.Game"
 
 [physics]
 

@@ -9,7 +9,7 @@ namespace Bclone.Sim.Systems;
 /// <remarks>
 /// The clock itself is derived (<see cref="SimClock.FromTick"/>), so this system's
 /// real job is <em>detecting transitions</em> — the season turning, the year turning,
-/// the villager growing a year older. Those are the beats the life log is built from.
+/// villagers growing a year older. Those are the beats the life log is built from.
 /// </remarks>
 public sealed class ClockSystem : ISimSystem
 {
@@ -22,60 +22,113 @@ public sealed class ClockSystem : ISimSystem
             return;
         }
 
-        // The calendar keeps turning after a death — the tick counter is still the
-        // sim's clock — but the villager's story is over. Without this, the log goes
-        // on announcing winters to an empty house and the age counter keeps rising,
-        // so the header reads "died at 57" beside an epitaph saying "lived 50 years".
-        if (!world.Villager.Alive)
-        {
-            return;
-        }
-
         SimClock current = world.Clock;
         SimClock previous = SimClock.FromTick(world.Tick - 1UL, world.Config);
 
-        // Kept in sync every tick rather than only on the year boundary, so age can
+        // Age everyone every tick rather than only on the year boundary, so age can
         // never disagree with the year on screen. Born in Year 1 at age 0.
-        world.Villager.AgeYears = current.Year - 1;
+        int foragedThisSeason = 0;
+        int livingCount = 0;
 
-        if (current.Season == previous.Season)
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            livingCount++;
+            villager.AgeYears = current.Year - villager.BirthYear;
+
+            foragedThisSeason += villager.GathersThisSeason;
+        }
+
+        if (livingCount == 0 || current.Season == previous.Season)
         {
             return;
         }
 
-        Villager living = world.Villager;
+        NarrateSeasonTurn(world, current, previous, foragedThisSeason);
 
-        // Sum the season's foraging into one line. Six hundred individual gather
-        // entries across a life is a receipt; "foraged 12 times" is a season.
-        if (living.Alive && living.GathersThisSeason > 0)
+        for (int i = 0; i < world.Villagers.Count; i++)
         {
-            // The trip count is where declining vigour becomes visible: the same
-            // season's food costs four trips at thirty and seven at fifty.
-            string effort = living.Stage == VigourStage.Prime
-                ? string.Empty
-                : $" (vigour {living.Vigour}%)";
+            world.Villagers[i].GathersThisSeason = 0;
+        }
+    }
 
-            world.Narrate(
-                $"{previous.Season} of Year {previous.Year} — {living.Name} foraged " +
-                $"{living.GathersThisSeason} times{effort}. {world.Stockpile.Food} food stored.");
+    private static void NarrateSeasonTurn(SimWorld world, SimClock current, SimClock previous, int foraged)
+    {
+        int stored = TotalStored(world);
+
+        // A season's foraging in one line. Six hundred individual gather entries
+        // across a life is a receipt; "foraged 12 times" is a season.
+        if (foraged > 0)
+        {
+            world.Narrate(BuildForagingLine(world, previous, foraged, stored));
         }
 
-        living.GathersThisSeason = 0;
-
-        // Winter is the one that matters, so it gets its own line with the stockpile
-        // in it — that number is the whole story of the winter about to happen.
+        // Winter is the one that matters, so it gets its own line with the stores in
+        // it — that number is the whole story of the winter about to happen.
         if (current.IsWinter)
         {
-            world.Narrate(
-                $"Winter came to Year {current.Year}. Foraging stops. {world.Stockpile.Food} food stored.");
+            world.Narrate($"Winter came to Year {current.Year}. Foraging stops. {stored} food stored.");
+            return;
         }
-        else if (previous.IsWinter && living.Alive)
-        {
-            living.WintersSurvived++;
 
-            world.Narrate(
-                $"{living.Name} survived winter {living.WintersSurvived} " +
-                $"({world.Stockpile.Food} food left). {current.Season} of Year {current.Year} begins.");
+        if (!previous.IsWinter)
+        {
+            return;
         }
+
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (world.Villagers[i].Alive)
+            {
+                world.Villagers[i].WintersSurvived++;
+            }
+        }
+
+        if (world.Villagers.Count == 1)
+        {
+            Villager only = world.Villagers[0];
+            world.Narrate(
+                $"{only.Name} survived winter {only.WintersSurvived} " +
+                $"({stored} food left). {current.Season} of Year {current.Year} begins.");
+        }
+        else
+        {
+            world.Narrate(
+                $"The village came through winter with {stored} food left — " +
+                $"{world.Population} alive. {current.Season} of Year {current.Year} begins.");
+        }
+    }
+
+    private static string BuildForagingLine(SimWorld world, SimClock previous, int foraged, int stored)
+    {
+        if (world.Villagers.Count == 1)
+        {
+            Villager only = world.Villagers[0];
+
+            // The trip count is where declining vigour becomes visible: the same
+            // season's food costs four trips at thirty and seven at fifty.
+            string effort = only.Stage == VigourStage.Prime ? string.Empty : $" (vigour {only.Vigour}%)";
+            return $"{previous.Season} of Year {previous.Year} — {only.Name} foraged {foraged} times{effort}. " +
+                   $"{stored} food stored.";
+        }
+
+        return $"{previous.Season} of Year {previous.Year} — the village foraged {foraged} times. " +
+               $"{stored} food stored.";
+    }
+
+    private static int TotalStored(SimWorld world)
+    {
+        int total = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            total += world.Households[i].Stockpile.Food;
+        }
+
+        return total;
     }
 }

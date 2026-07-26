@@ -46,6 +46,55 @@ public sealed class Villager
     /// <summary>The year they would die of old age, drawn once at birth.</summary>
     public required int LifespanYears { get; init; }
 
+    /// <summary>Which household they belong to — where they live and whose food they eat.</summary>
+    public int HouseholdId { get; set; }
+
+    /// <summary>
+    /// The villager they founded a household with, or 0 if unpaired.
+    /// </summary>
+    /// <remarks>
+    /// Only a couple has children, which is what stops siblings breeding in the
+    /// parental home and forces the village to actually form new households in
+    /// order to grow.
+    /// </remarks>
+    public int PartnerId { get; set; }
+
+    /// <summary>True once they have a partner.</summary>
+    public bool IsPaired => PartnerId != 0;
+
+    /// <summary>
+    /// What they are capable of, derived from age each tick by <c>AgeingSystem</c>.
+    /// </summary>
+    public LifeStage LifeStage { get; set; } = LifeStage.Adult;
+
+    /// <summary>True when they are old enough to do a day's work.</summary>
+    public bool CanWork => Alive && LifeStage != LifeStage.Child;
+
+    /// <summary>Workplace they currently hold a job at, or 0 for none.</summary>
+    public int WorkplaceId { get; set; }
+
+    /// <summary>
+    /// Plain-language reason they hold this job, naming the runner-up where there
+    /// was one.
+    /// </summary>
+    /// <remarks>
+    /// The phase's actual deliverable. With one villager, "why is she doing that" was
+    /// self-evident; with twenty simultaneous decisions it is not, and an opaque
+    /// simulation is precisely the failure DESIGN.md §2.2 warns against. Every
+    /// assignment must be explainable in one sentence, which is only possible because
+    /// the assignment rule is a ranked list rather than a weighted score.
+    /// </remarks>
+    public string JobReason { get; set; } = string.Empty;
+
+    /// <summary>True when they hold a job.</summary>
+    public bool HasJob => WorkplaceId != 0;
+
+    /// <summary>
+    /// The in-game year they were born. Zero for founders, who arrive already grown
+    /// and whose age therefore tracks the calendar directly.
+    /// </summary>
+    public int BirthYear { get; init; }
+
     /// <summary>Years lived. Advances on the new-year boundary.</summary>
     public int AgeYears { get; set; }
 
@@ -97,20 +146,32 @@ public sealed class Villager
     /// it summarises the season into the life log.</summary>
     public int GathersThisSeason { get; set; }
 
-    /// <summary>Plain-language description of the current action, for the UI.</summary>
-    public string DescribeState()
+    /// <summary>
+    /// Plain-language description of the current action, for the UI.
+    /// </summary>
+    /// <param name="workplaceName">
+    /// Where they work, if anywhere — so the line names the actual place. There are
+    /// several forage sites now, and "walking to the berry patch" was simply untrue
+    /// for most of the village. A UI line that contradicts the map is worse than a
+    /// vague one.
+    /// </param>
+    public string DescribeState(string? workplaceName = null)
     {
         if (JustAte && Alive)
         {
             return "stopping to eat";
         }
 
+        string where = string.IsNullOrEmpty(workplaceName) ? "work" : workplaceName;
+
         return State switch
         {
             VillagerState.Idle => "standing idle",
-            VillagerState.TravelingToFood => "walking to the berry patch",
+            VillagerState.TravelingToFood => $"walking to {where}",
             VillagerState.Gathering => "gathering berries",
             VillagerState.TravelingHome => "walking home",
+            VillagerState.TravelingToTrees => $"walking to {where}",
+            VillagerState.Cutting => "cutting timber",
             VillagerState.Resting => "resting at home",
             VillagerState.Dead => "dead",
             _ => State.ToString(),

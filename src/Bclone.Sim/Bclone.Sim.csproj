@@ -26,4 +26,15 @@
     <AdditionalFiles Include="BannedSymbols.txt" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The labour allocator is internal on purpose: there must be no way for the
+         game shell to assign a worker (DESIGN.md D15), and a reflection test asserts
+         the absence of that public API. Tests still need to drive it directly - a
+         quota shrinking, or a worker being shed - so the test assembly, and only the
+         test assembly, can see inside. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Bclone.Sim.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>

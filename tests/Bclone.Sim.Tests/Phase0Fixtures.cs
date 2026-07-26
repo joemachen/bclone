@@ -11,6 +11,22 @@ public static class Phase0Fixtures
     public static SimConfig Plenty => new()
     {
         Seed = 12345UL,
+
+        // Phase 0 is not a special mode - it is the village of one, born at zero.
+        StartingHouseholds = 1,
+        AdultsPerHousehold = 1,
+        FounderAge = 0,
+
+        // A village of one never sprawls, so its economy is derived for exactly
+        // one home rather than budgeting for a settlement it will never build.
+        EconomyHorizonHouseholds = 1,
+
+        // Phase 0's villager is able-bodied from birth. Its spec says so
+        // explicitly and flags it as the known oddity that childhood would fix
+        // once households existed - so this encodes the documented Phase 0 world
+        // rather than quietly exempting it from the Phase 1 rule.
+        AdultAge = 0,
+
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,
@@ -20,7 +36,7 @@ public static class Phase0Fixtures
         EatReducesHunger = 80,
         FoodPerMeal = 5,
         StarvationTicks = 24,
-        GatherYield = 24,
+        GatherYield = 28,
         GatherTicks = 3,
         TravelTicksPerUnit = 1,
         StockpileTarget = 60,
