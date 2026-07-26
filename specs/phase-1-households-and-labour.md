@@ -162,7 +162,28 @@ That is not an arbitrary number: it is the widowed-parent case the diagnostics s
 
 That is the catchment problem from `DESIGN.md §2.2` arriving early, before the labour system exists to name it. **Distance to work is not flavour — it is whether you eat.** Good sign for the pillar; the labour system now has a real constraint to solve rather than a cosmetic one.
 
-### ⚠ Open finding — the village survives only because both pressure systems are inert (2026-07-26)
+### ✅ Partly resolved — winter now bites; catchment still needs more workplaces
+
+Raising the economy target from "one frail adult supports two dependants" to **three** bought the slack that pressure eats into. The third dependant is not a mouth to feed — it is margin. Re-running the pressure matrix:
+
+| catchment | winter buffer | before target=3 | after |
+|---|---|---|---|
+| 9 tiles | 150% | dies | **dies** |
+| 9 tiles | 260% | dies | **dies** |
+| 20 tiles | 150% | dies | **survives** |
+| 12 tiles | 180% | — | **survives** |
+
+That separates the two problems cleanly, which is the useful part:
+
+- **Winter pressure was a slack problem.** Fixed. The buffer is down from 260% to 180% and shipped, so a winter now takes a real bite out of the stores rather than scratching them.
+- **Catchment at 9 tiles is not a slack problem at all.** No amount of margin helps, because an outlying household simply has *nothing within reach to work*. A binding catchment needs somewhere else to work — which is answer (1), multiple food sources, arriving at the same conclusion from a third direction now.
+
+**Shipped: catchment 12 tiles, winter buffer 180%.** Both pressures are on and the village lives. Catchment at 12 is only just binding against a village spanning ten tiles, so it is honest to say it constrains lightly rather than properly — that waits for more workplaces.
+
+<details>
+<summary>The finding this resolved (kept for the reasoning)</summary>
+
+### The village survives only because both pressure systems are inert
 
 Found by drawing the map, not by testing. Two things were visible immediately and neither was caught by 228 green tests:
 
@@ -188,6 +209,8 @@ So the settlement is not robust-and-unpressured, it is **fragile and unpressured
 Probably both: (1) so catchment can bind, (2) so winter can bite.
 
 **Reverted to catchment 40 / buffer 260 for now**, because a working village with the pressure switched off is more useful than a dead one with it on — and because guessing at values here would repeat exactly the tune-by-iteration mistake the derived economy was built to end.
+
+</details>
 
 ### ⚠ Known limit — one food source does not scale forever
 

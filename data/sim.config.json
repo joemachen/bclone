@@ -70,14 +70,14 @@
   // children - and computes the yield it requires. A test asserts this
   // file still meets it, so editing hunger or travel without redoing
   // this fails the build rather than the village.
-  "gather_yield": 55,
+  "gather_yield": 67,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
   // Also DERIVED: enough to carry one member through a foraging-less
   // winter, plus the margin that absorbs a worker dying part-way
   // through one. Per member, not per household.
-  "stockpile_target": 96,
+  "stockpile_target": 67,
 
   "home_x": 0,
   "home_y": 0,

@@ -36,7 +36,7 @@ public static class Phase0Fixtures
         EatReducesHunger = 80,
         FoodPerMeal = 5,
         StarvationTicks = 24,
-        GatherYield = 24,
+        GatherYield = 28,
         GatherTicks = 3,
         TravelTicksPerUnit = 1,
         StockpileTarget = 60,

@@ -203,7 +203,7 @@ public sealed record SimConfig
     /// workplace's reach later without catchment knowing roads exist.
     /// </remarks>
     [JsonPropertyName("forager_catchment_tiles")]
-    public int ForagerCatchmentTiles { get; init; } = 40;
+    public int ForagerCatchmentTiles { get; init; } = 12;
 
     /// <summary>
     /// How many households the economy is derived to support.
@@ -225,7 +225,7 @@ public sealed record SimConfig
     /// part-way through it. The margin is what absorbs that.
     /// </remarks>
     [JsonPropertyName("winter_buffer_percent")]
-    public int WinterBufferPercent { get; init; } = 260;
+    public int WinterBufferPercent { get; init; } = 180;
 
     /// <summary>
     /// A household is considered in need below this percentage of its food target.

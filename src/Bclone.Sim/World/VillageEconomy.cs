@@ -37,10 +37,21 @@ public static class VillageEconomy
     /// Children one weakest-case adult must be able to support on top of themselves.
     /// </summary>
     /// <remarks>
-    /// Two, so a widowed parent can carry a household of three through the years
-    /// before the eldest child reaches working age.
+    /// <para>
+    /// <b>Three, not two.</b> Two was the bare widowed-parent case — a survivor
+    /// carrying a household of three — and solving for exactly that produced a
+    /// village sitting at break-even by construction. It survived only while nothing
+    /// pushed on it: switching on a real catchment or a thinner winter store killed
+    /// it, each independently.
+    /// </para>
+    /// <para>
+    /// So the target is deliberately set <em>above</em> the bare case. The third
+    /// dependant is not a mouth anyone has to feed — it is the slack that pressure
+    /// eats into. A village with no margin cannot have systems that push on it, and
+    /// systems that push are the entire point of §2.3.
+    /// </para>
     /// </remarks>
-    public const int RequiredDependants = 2;
+    public const int RequiredDependants = 3;
 
     /// <summary>Ticks between meals: hunger climbs to the eat threshold, then resets.</summary>
     public static int MealIntervalTicks(SimConfig config)
