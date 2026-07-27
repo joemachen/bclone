@@ -138,16 +138,10 @@ public readonly record struct LabourQuota
             }
         }
 
-        int toFeedEveryone = CeilingDivide(mouths, VillageEconomy.RequiredDependants);
+        int toFeedEveryone = CeilingDivide(mouths, VillageEconomy.MouthsFedByOneAdult(world.Config));
         if (toFeedEveryone < 1)
         {
             toFeedEveryone = 1;
-        }
-
-        int spareForTimber = hands - toFeedEveryone;
-        if (spareForTimber < 0)
-        {
-            spareForTimber = 0;
         }
 
         // THE CHAIN, WORKED BACKWARDS (D29). Homes need heating, so the village wants
@@ -156,7 +150,8 @@ public readonly record struct LabourQuota
         // than each workplace guessing at its own, which is the same lesson the
         // forager quota is a record of, one link further along.
         int woodcutters = WoodcuttersWanted(world);
-        int loggers = LoggersWanted(world) + LoggersToFeedTheHuts(world, woodcutters);
+        int loggersForHuts = LoggersToFeedTheHuts(world, woodcutters);
+        int loggersForHouses = LoggersWanted(world);
 
         // Nobody is spared for building while the village as a whole is short of
         // food. Counting spare hands is not enough on its own: hands are spare only
@@ -177,30 +172,68 @@ public readonly record struct LabourQuota
         // stood idle. Trees do not stop in winter — that asymmetry is most of why the
         // job is worth holding (D17), and this is the rule that lets the village act
         // on it.
+        // A village that is genuinely short of food puts every hand on it — and this
+        // gate has to cover the fuel chain too, not just the building half.
+        //
+        // Measured, twice, in opposite directions. Exempting fuel from the gate meant
+        // the founding village put two of its four adults on firewood with an empty
+        // larder and starved. Leaving fuel funded only from what was left AFTER the
+        // food floor meant the woodpile drained a little every year until four
+        // households froze in one winter, with a full larder and a yard full of logs.
+        //
+        // So: while there is food to gather and the village is short of it, everyone
+        // gathers. Otherwise heating is a floor alongside eating, and only building is
+        // funded from the leftovers. Winter is exempt because there is nothing out
+        // there to pick — the larder always dips then, and pulling the woodcutters
+        // onto empty berry patches is how the village froze.
         if (FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world))
         {
-            loggers = 0;
             woodcutters = 0;
+            loggersForHuts = 0;
+            loggersForHouses = 0;
         }
 
-        loggers = Cap(loggers, TotalCapacityFor(world, JobKind.Logger));
-        woodcutters = Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter));
-
-        // Splitting comes before felling when hands are short.
+        // ---- Survival first, in the order things kill you -------------
         //
-        // This is the failure mode unique to a processing chain, and it is worth being
-        // explicit about: a village that staffs only the stand ends up freezing in a
-        // yard full of logs. Firewood is what actually keeps anyone alive, so the hut
-        // gets first claim on whatever food can spare — and the logs it eats are
-        // already in store from last year, which is exactly what the woodpile is for.
-        woodcutters = Cap(woodcutters, spareForTimber);
-        loggers = Cap(loggers, spareForTimber - woodcutters);
+        // Firewood is a SURVIVAL resource now, not a surplus one, and treating it as
+        // spare-hands work was fatal. Measured: the village funded timber out of
+        // whatever was left after feeding everyone, the feeding floor took four hands
+        // in five, and so the woodpile drained a little every year until the fourth
+        // decade, when four households froze in a single winter with a full larder and
+        // a yard full of logs. Nothing was wrong with the chain; it was never staffed.
+        //
+        // So heating is a floor alongside eating, and only house-building is funded
+        // from what is left. Food comes first of the two because hunger kills in six
+        // days and cold in ten — if the village can only afford one, it should buy the
+        // one that kills soonest.
+        int free = hands;
 
-        // Everyone not on timber forages. Berries keep, and a hand that gathers
-        // nothing still eats.
-        int foragers = hands - loggers - woodcutters;
+        int foragers = Take(ref free, toFeedEveryone);
+        woodcutters = Take(ref free, Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter)));
+        int loggers = Take(ref free, Cap(loggersForHuts, TotalCapacityFor(world, JobKind.Logger)));
+
+        // Only now the discretionary half: logs for the homes the village wants to
+        // build. This is the one that yields when times are hard.
+        loggers += Take(ref free, Cap(loggersForHouses, TotalCapacityFor(world, JobKind.Logger) - loggers));
+
+        // Everyone still spare forages. Berries keep, and a hand that gathers nothing
+        // still eats.
+        foragers += free;
 
         return new LabourQuota(hands, mouths, toFeedEveryone, foragers, loggers, woodcutters);
+    }
+
+    /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
+    private static int Take(ref int free, int wanted)
+    {
+        int taken = wanted > free ? free : wanted;
+        if (taken < 0)
+        {
+            taken = 0;
+        }
+
+        free -= taken;
+        return taken;
     }
 
     private static int Cap(int wanted, int ceiling)
@@ -319,7 +352,7 @@ public readonly record struct LabourQuota
             }
         }
 
-        int needed = homes * VillageEconomy.FirewoodPerHouseholdPerWinter(world.Config);
+        int needed = homes * VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config);
         int shortfall = needed - stored;
         if (shortfall <= 0)
         {

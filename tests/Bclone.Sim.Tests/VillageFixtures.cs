@@ -31,6 +31,10 @@ public static class VillageFixtures
                 // A real village sprawls, and the furthest home sets the worst-case
                 // round trip that the whole economy has to afford.
                 EconomyHorizonHouseholds = 12,
+
+                // Fuel back ON for the village: households to heat, and a labour
+                // system for firewood to compete inside (D17, D29).
+                FirewoodPerWinterDay = 1,
             };
 
             // Then derive the values the targets actually determine — food first,

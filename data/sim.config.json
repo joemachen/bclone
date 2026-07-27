@@ -203,6 +203,13 @@
   // player decision (DESIGN.md §2.3).
   "firewood_per_winter_day": 1,
 
+  // Longer than starvation_ticks on purpose: firewood comes from a
+  // two-step chain and food from a one-step one, so the village needs
+  // time to notice and put hands back on the hut. A cold snap that
+  // killed as fast as famine would give nobody a chance to respond,
+  // which is the difference between pressure and a coin flip.
+  "freezing_ticks": 40,
+
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",
     "Agnes", "Wendell", "Hattie", "Amos",

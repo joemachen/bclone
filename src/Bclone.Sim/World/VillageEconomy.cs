@@ -215,6 +215,32 @@ public static class VillageEconomy
         return config.FirewoodPerWinterDay * config.DaysPerSeason;
     }
 
+    /// <summary>
+    /// Firewood a household aims to have stacked — a winter's burn plus a margin.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The same margin the food store carries</b>
+    /// (<see cref="SimConfig.WinterBufferPercent"/>), and for a sharper reason. A
+    /// village that only wants woodcutters once its firewood has run low finds out too
+    /// late: the shortfall appears in the middle of winter, the labour pass that could
+    /// answer it runs once a season, and freezing takes ten days. Measured, the village
+    /// reached eleven people and then froze to death in its third decade, every run.
+    /// </para>
+    /// <para>
+    /// Aiming a winter <em>and a bit</em> ahead means the store is refilled in autumn,
+    /// while there is still time to do something about it. This is the fuel version of
+    /// what the food target already does — and the reason it is stated as a target
+    /// rather than tuned is D16.
+    /// </para>
+    /// </remarks>
+    public static int FirewoodStoreWantedPerHousehold(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return FirewoodPerHouseholdPerWinter(config) * config.WinterBufferPercent / 100;
+    }
+
     /// <summary>Ticks for one round trip to the woodcutter's hut and back.</summary>
     public static int FirewoodRoundTripTicks(SimConfig config)
     {
@@ -282,7 +308,7 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int firewoodNeeded = households * FirewoodPerHouseholdPerWinter(config);
+        int firewoodNeeded = households * FirewoodStoreWantedPerHousehold(config);
         int woodcutters = CeilingDivide(firewoodNeeded, FirewoodMadePerYearAtWorst(config));
 
         int logsNeeded = woodcutters * LogsConsumedPerYearAtWorst(config);
@@ -314,7 +340,7 @@ public static class VillageEconomy
 
         int mouths = households * config.MaxHouseholdSize;
         int hands = households * config.AdultsPerHousehold;
-        int spare = hands - CeilingDivide(mouths, RequiredDependants);
+        int spare = hands - CeilingDivide(mouths, MouthsFedByOneAdult(config));
 
         return spare < 0 ? 0 : spare;
     }
@@ -376,6 +402,60 @@ public static class VillageEconomy
     /// <summary>Food one adult gathers in a year at their weakest.</summary>
     public static int FoodGatheredPerYearAtWorst(SimConfig config) =>
         FoodGatheredPerYear(config, config.VigourMinPercent);
+
+    /// <summary>Vigour of an ordinary working adult, rather than the weakest one.</summary>
+    public static int TypicalVigourPercent(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return (config.VigourMinPercent + 100) / 2;
+    }
+
+    /// <summary>
+    /// Mouths one ordinary adult can keep fed — themselves, plus dependants.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Not the same question as <see cref="RequiredDependants"/>, and conflating
+    /// the two was a real bug that hid for two phases.</b> That constant asks what the
+    /// <em>weakest</em> adult must be able to carry, and it is exactly right for
+    /// deriving <see cref="RequiredGatherYield"/> — a yield has to work in the worst
+    /// case or the worst case kills someone.
+    /// </para>
+    /// <para>
+    /// But the same number was also being used to decide <em>how many hands to put on
+    /// food</em>, and there it is badly wrong: it assumes the entire village is
+    /// simultaneously at its weakest. It never is. The result was a settlement that
+    /// spent every hand it had gathering food it did not need — larders in the
+    /// hundreds — while there was nobody left to do anything else. That was invisible
+    /// while timber was optional. It became fatal the moment firewood was survival
+    /// work: four adults feeding ten mouths had a floor of exactly four, so the fuel
+    /// chain could never be staffed at all, and the village froze with full stores.
+    /// </para>
+    /// <para>
+    /// So the labour floor uses an ordinary worker. The worst case has not been
+    /// forgotten — it is carried by <see cref="RequiredStockpilePerAdult"/>'s winter
+    /// buffer, which is the right place for it: a margin in the <em>store</em> rather
+    /// than a permanent tax on the <em>workforce</em>.
+    /// </para>
+    /// </remarks>
+    public static int MouthsFedByOneAdult(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int surplus = FoodGatheredPerYear(config, TypicalVigourPercent(config)) - AdultFoodPerYear(config);
+        int childFood = ChildFoodPerYear(config);
+
+        int dependants = surplus <= 0 || childFood <= 0 ? 0 : surplus / childFood;
+
+        // Never below the weakest-case target: the floor may be optimistic about
+        // vigour, but it must never claim an adult feeds fewer mouths than the yield
+        // was derived to guarantee.
+        int mouths = 1 + dependants;
+        int guaranteed = 1 + RequiredDependants;
+
+        return mouths < guaranteed ? guaranteed : mouths;
+    }
 
     /// <summary>
     /// Children a weakest-case adult can support after feeding themselves.

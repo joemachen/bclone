@@ -75,4 +75,15 @@ public enum CauseOfDeath
 
     /// <summary>Lived a full life. The good arc.</summary>
     OldAge,
+
+    /// <summary>
+    /// Froze. The household ran out of firewood in winter (D29).
+    /// </summary>
+    /// <remarks>
+    /// Phase 0 refused a second death system on the grounds that winter's danger
+    /// should be food and nothing else. Reversing that is deliberate, and the
+    /// condition attached to the reversal is that a death must never be <em>ambiguous</em>
+    /// between this and <see cref="Starvation"/> — see <c>MortalitySystem</c>.
+    /// </remarks>
+    Cold,
 }

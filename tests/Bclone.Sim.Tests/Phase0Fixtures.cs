@@ -27,6 +27,14 @@ public static class Phase0Fixtures
         // rather than quietly exempting it from the Phase 1 rule.
         AdultAge = 0,
 
+        // No fuel. Phase 0's spec rules warmth out by name — "winter's danger is food
+        // scarcity only; do not add a second overlapping death system" — and a lone
+        // villager who has to both feed themselves and keep a fire lit is exactly the
+        // double jeopardy it refused. Firewood arrives with households to heat and a
+        // labour system for it to compete inside (D17, D29); this fixture is the world
+        // the Phase 0 spec describes, and it stays that way.
+        FirewoodPerWinterDay = 0,
+
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,

@@ -19,6 +19,13 @@ namespace Bclone.Sim.Systems;
 /// the better reading of that life — a villager who reaches their last year and is
 /// also hungry died old, not starving.
 /// </para>
+/// <para>
+/// <b>Cold and hunger must never be ambiguous</b> (D17). That is the condition Phase 0
+/// attached to ever allowing a second death system, and it is the one thing here that
+/// is not merely tidy. Where both counters have crossed, the death names whichever is
+/// <em>further past</em> its threshold and reports the other in the same breath, so the
+/// player is never left inferring which one actually did it.
+/// </para>
 /// </remarks>
 public sealed class MortalitySystem : ISimSystem
 {
@@ -48,10 +55,26 @@ public sealed class MortalitySystem : ISimSystem
         }
 
         // Boundary is >=, decided in spec §11.
-        if (villager.TicksAtMaxHunger >= config.StarvationTicks)
+        bool starving = villager.TicksAtMaxHunger >= config.StarvationTicks;
+        bool freezing = villager.TicksCold >= config.FreezingTicks;
+
+        if (!starving && !freezing)
         {
-            Kill(world, villager, CauseOfDeath.Starvation);
+            return;
         }
+
+        // Whichever counter is further past its own threshold, measured as a share of
+        // it so the two are comparable despite counting to different numbers. A tie
+        // goes to hunger: it is the older system, and "they starved, and were also
+        // cold" is the more ordinary reading of a bad winter.
+        //
+        // Deliberately NOT "whichever system ran first this tick" — that would make
+        // the cause of death a fact about the tick order rather than about the
+        // villager, which is exactly the ambiguity D17 forbids.
+        int hungerOverrun = starving ? villager.TicksAtMaxHunger * 100 / config.StarvationTicks : 0;
+        int coldOverrun = freezing ? villager.TicksCold * 100 / config.FreezingTicks : 0;
+
+        Kill(world, villager, coldOverrun > hungerOverrun ? CauseOfDeath.Cold : CauseOfDeath.Starvation);
     }
 
     private static void Kill(SimWorld world, Villager villager, CauseOfDeath cause)
@@ -71,11 +94,49 @@ public sealed class MortalitySystem : ISimSystem
 
             CauseOfDeath.Starvation =>
                 $"{villager.Name} starved to death at {villager.AgeYears}, " +
-                $"{world.Clock}. They had survived {villager.WintersSurvived} winters.",
+                $"{world.Clock}. They had survived {villager.WintersSurvived} winters." +
+                AndAlso(world, villager, CauseOfDeath.Starvation),
+
+            CauseOfDeath.Cold =>
+                $"{villager.Name} froze to death at {villager.AgeYears}, {world.Clock}. " +
+                $"The {world.HouseholdOf(villager).Name} household had been without firewood " +
+                $"for {villager.TicksCold / world.Config.TicksPerDay} days. " +
+                $"They had survived {villager.WintersSurvived} winters." +
+                AndAlso(world, villager, CauseOfDeath.Cold),
 
             _ => $"{villager.Name} died.",
         };
 
         world.Narrate(epitaph);
+    }
+
+    /// <summary>
+    /// Name the other affliction, when there was one.
+    /// </summary>
+    /// <remarks>
+    /// The other half of the promise D17 extracted in exchange for allowing a second
+    /// death system. Saying "she froze" when she was also starving is true but
+    /// misleading, and a player who acts on it fixes the wrong thing. So the epitaph
+    /// reports both and is explicit about which one won.
+    /// </remarks>
+    private static string AndAlso(SimWorld world, Villager villager, CauseOfDeath cause)
+    {
+        SimConfig config = world.Config;
+
+        if (cause == CauseOfDeath.Cold && villager.TicksAtMaxHunger > 0)
+        {
+            return villager.TicksAtMaxHunger >= config.StarvationTicks
+                ? " They were starving as well; the cold got there first."
+                : " They were going hungry too, but it was the cold that killed them.";
+        }
+
+        if (cause == CauseOfDeath.Starvation && villager.TicksCold > 0)
+        {
+            return villager.TicksCold >= config.FreezingTicks
+                ? " Their home was unheated as well; hunger got there first."
+                : " Their home was cold too, but it was hunger that killed them.";
+        }
+
+        return string.Empty;
     }
 }

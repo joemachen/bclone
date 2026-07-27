@@ -295,6 +295,20 @@ public sealed record SimConfig
     [JsonPropertyName("firewood_per_winter_day")]
     public int FirewoodPerWinterDay { get; init; } = 1;
 
+    /// <summary>
+    /// Consecutive ticks in an unheated home before someone freezes.
+    /// </summary>
+    /// <remarks>
+    /// Longer than <see cref="StarvationTicks"/> on purpose. Firewood is made by a
+    /// two-step chain and hunger by a one-step one, so a household can be short of
+    /// fuel for reasons further away from anything it controls — and the village
+    /// needs time to notice and put hands back on the hut. A cold snap that killed as
+    /// fast as famine would give nobody a chance to respond, which is the difference
+    /// between pressure and a coin flip.
+    /// </remarks>
+    [JsonPropertyName("freezing_ticks")]
+    public int FreezingTicks { get; init; } = 40;
+
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
     /// <para>
@@ -659,6 +673,11 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"firewood_per_winter_day cannot be negative (got {FirewoodPerWinterDay}).");
+        }
+
+        if (FreezingTicks <= 0)
+        {
+            throw new SimConfigException($"freezing_ticks must be greater than zero (got {FreezingTicks}).");
         }
 
         if (LogsPerHouse < 0)

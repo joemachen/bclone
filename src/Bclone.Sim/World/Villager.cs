@@ -132,6 +132,18 @@ public sealed class Villager
     /// <summary>Consecutive ticks spent at maximum hunger. Starvation counts from here.</summary>
     public int TicksAtMaxHunger { get; set; }
 
+    /// <summary>
+    /// Consecutive ticks spent in an unheated home in winter. Freezing counts from
+    /// here, exactly as starvation counts from <see cref="TicksAtMaxHunger"/>.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately the same shape as the hunger counter rather than a cleverer one.
+    /// Cold is meant to read as <em>parallel</em> to hunger — a second way the same
+    /// kind of neglect kills you — and two mechanics that behave alike are two the
+    /// player only has to learn once.
+    /// </remarks>
+    public int TicksCold { get; set; }
+
     public VillagerState State { get; set; } = VillagerState.Idle;
 
     public GridPos Position { get; set; }
