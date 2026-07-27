@@ -136,7 +136,7 @@ public sealed class HearthSystem : ISimSystem
                     continue;
                 }
 
-                needy.Stockpile.AddFirewood(gift);
+                needy.Stockpile.Receive(0, 0, gift);
                 need -= gift;
             }
         }

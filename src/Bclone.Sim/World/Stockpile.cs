@@ -69,6 +69,32 @@ public sealed class Stockpile
         LifetimeGathered += amount;
     }
 
+    /// <summary>
+    /// Take in goods that somebody else produced — a gift, or a delivery.
+    /// </summary>
+    /// <remarks>
+    /// <b>Deliberately not <see cref="Add"/>.</b> The lifetime counters mean "this
+    /// household produced this much", and routing shared goods through <c>Add</c> made
+    /// them mean "this much passed through the door" instead. Every transfer was
+    /// counted as fresh production by the receiver on top of the giver, so the totals
+    /// inflated with every gift — the village appeared to consume more logs than it
+    /// had ever felled, which is how this was found. It also quietly inflated the
+    /// figure in a villager's epitaph, which is worse: that number is a claim about a
+    /// life.
+    /// </remarks>
+    public void Receive(int food, int logs, int firewood)
+    {
+        if (food < 0 || logs < 0 || firewood < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(food), $"Cannot receive negative goods ({food}, {logs}, {firewood}).");
+        }
+
+        Food += food;
+        Logs += logs;
+        Firewood += firewood;
+    }
+
     public void AddLogs(int amount)
     {
         if (amount < 0)

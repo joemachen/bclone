@@ -123,7 +123,7 @@ public sealed class HouseholdSystem : ISimSystem
                     continue;
                 }
 
-                needy.Stockpile.Add(gift);
+                needy.Stockpile.Receive(gift, 0, 0);
                 need -= gift;
 
                 world.Narrate(
@@ -201,9 +201,27 @@ public sealed class HouseholdSystem : ISimSystem
                 continue;
             }
 
-            // A home has to be BUILT. Until the two families between them have the
-            // timber, the couple waits - which is what makes cutting wood matter,
-            // and ties how fast the village spreads to how it spends its labour.
+            // An empty house is a house. A couple moves into one that has outlived its
+            // family rather than felling thirty logs to raise another beside it.
+            //
+            // Measured, and it was killing the village at about year 125: the
+            // settlement held steady at eleven people but had built FIFTEEN houses,
+            // and every one of them cost logs that firewood needed. The log pile grew
+            // to a thousand, then drained to nothing, and once there were no logs
+            // there was no firewood and people froze. A village standing among its own
+            // empty houses while it fells more trees to build another is not a hard
+            // decision, it is an absurdity.
+            Household? standingEmpty = FindAnEmptyHome(world);
+            if (standingEmpty is not null)
+            {
+                MoveInTogether(world, seeker, partner, standingEmpty, config, timber: 0);
+                continue;
+            }
+
+            // Otherwise a home has to be BUILT. Until the two families between them
+            // have the timber, the couple waits - which is what makes cutting wood
+            // matter, and ties how fast the village spreads to how it spends its
+            // labour.
             if (!TryTakeBuildingTimber(world, seeker, partner, config, out int timber))
             {
                 continue;
@@ -330,11 +348,25 @@ public sealed class HouseholdSystem : ISimSystem
         return total;
     }
 
+    /// <summary>The lowest-id house nobody lives in any more, or null.</summary>
+    /// <remarks>Lowest id, so which house a couple takes is a fact about the village
+    /// rather than about iteration — and it means the oldest empty home fills first,
+    /// which is also how a village would actually do it.</remarks>
+    private static Household? FindAnEmptyHome(SimWorld world)
+    {
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            if (world.LivingMembersOf(world.Households[i]) == 0)
+            {
+                return world.Households[i];
+            }
+        }
+
+        return null;
+    }
+
     private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config, int timber)
     {
-        Household oldHome = world.HouseholdOf(a);
-        Household partnerHome = world.HouseholdOf(b);
-
         GridPos home = Household.PlacementFor(
             world.Households.Count, config.HomeX, config.HomeY, config.HouseholdSpacing);
 
@@ -344,6 +376,17 @@ public sealed class HouseholdSystem : ISimSystem
             Name = config.HouseholdNames[world.Households.Count % config.HouseholdNames.Count],
             HomePosition = home,
         };
+
+        world.Households.Add(household);
+        MoveInTogether(world, a, b, household, config, timber);
+    }
+
+    private static void MoveInTogether(
+        SimWorld world, Villager a, Villager b, Household household, SimConfig config, int timber)
+    {
+        Household oldHome = world.HouseholdOf(a);
+        Household partnerHome = world.HouseholdOf(b);
+        GridPos home = household.HomePosition;
 
         // Each family sends their child off with a share of the larder. Without it a
         // new household starts on empty and can be wiped out by its first winter
@@ -357,13 +400,16 @@ public sealed class HouseholdSystem : ISimSystem
         a.PartnerId = b.Id;
         b.PartnerId = a.Id;
 
-        household.Stockpile.Add(dowry);
-        world.Households.Add(household);
+        // A dowry is goods changing hands, not goods produced.
+        household.Stockpile.Receive(dowry, 0, 0);
 
-        world.Narrate(
-            $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
-            $"built a home of their own - the {household.Name} household, {world.Clock.SeasonAndYear()}. " +
-            $"{timber} timber and {dowry} food between them.");
+        world.Narrate(timber > 0
+            ? $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
+              $"built a home of their own - the {household.Name} household, " +
+              $"{world.Clock.SeasonAndYear()}. {timber} timber and {dowry} food between them."
+            : $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
+              $"took over the empty {household.Name} house - {world.Clock.SeasonAndYear()}. " +
+              $"{dowry} food between them, and no trees felled for it.");
     }
 
     /// <summary>
