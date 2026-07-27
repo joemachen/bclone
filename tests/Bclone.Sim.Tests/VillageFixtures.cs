@@ -26,7 +26,7 @@ public static class VillageFixtures
                 AdultsPerHousehold = 2,
                 FounderAge = 20,
                 AdultAge = 15,
-                MaxHouseholdSize = 4,
+                MaxHouseholdSize = 7,
 
                 // A real village sprawls, and the furthest home sets the worst-case
                 // round trip that the whole economy has to afford.

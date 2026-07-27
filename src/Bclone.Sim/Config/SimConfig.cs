@@ -444,12 +444,28 @@ public sealed record SimConfig
     /// Food a household must have stored before it will have a child.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A village that breeds into a famine is not telling a story, it is just
     /// oscillating. Requiring a surplus first makes population growth a
     /// <em>consequence</em> of a good decade rather than a background process.
+    /// </para>
+    /// <para>
+    /// <b>A percentage of the household's own target, not a flat number — and the
+    /// comment above was describing behaviour the code did not have.</b> It used to be
+    /// an absolute 45 while the food target scales with members, so a household of
+    /// seven with a target of 462 would have a child at 45: a tenth of a full larder,
+    /// which is not "a surplus" by any reading. The village grew to fifty, outran what
+    /// the valley could feed, and sixty-one people starved on the way back down.
+    /// </para>
+    /// <para>
+    /// Scaling it is what makes population <em>self-limiting</em>: as the village
+    /// approaches what its forage sites can support, households stop reaching their
+    /// targets, and births slow before anyone starves rather than after. That is the
+    /// difference between a stable settlement and a boom-bust one (D31).
+    /// </para>
     /// </remarks>
-    [JsonPropertyName("birth_food_threshold")]
-    public int BirthFoodThreshold { get; init; } = 45;
+    [JsonPropertyName("birth_food_percent")]
+    public int BirthFoodPercent { get; init; } = 80;
 
     /// <summary>Most people one household will hold before it stops growing.</summary>
     [JsonPropertyName("max_household_size")]
@@ -765,9 +781,9 @@ public sealed record SimConfig
             throw new SimConfigException($"birth_interval_years must be greater than zero (got {BirthIntervalYears}).");
         }
 
-        if (BirthFoodThreshold < 0)
+        if (BirthFoodPercent < 0)
         {
-            throw new SimConfigException($"birth_food_threshold cannot be negative (got {BirthFoodThreshold}).");
+            throw new SimConfigException($"birth_food_percent cannot be negative (got {BirthFoodPercent}).");
         }
 
         if (MaxHouseholdSize <= 0)

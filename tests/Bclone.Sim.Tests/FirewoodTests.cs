@@ -208,6 +208,56 @@ public sealed class FirewoodTests
     }
 
     [Fact]
+    public void TheVillageHoldsAStableSizeForACenturyAndAHalfWithFuelOn()
+    {
+        // THE acceptance test for D17/D29, and D31 is what it is measuring: a stable
+        // size, not growth. Failure stays possible — people do starve here — but a
+        // baseline that dies can only mean the constants are wrong while there is no
+        // player to blame for it.
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+
+        int lowestAfterSettling = int.MaxValue;
+        for (int year = 1; year <= 150; year++)
+        {
+            loop.Step(config.TicksPerYear);
+
+            // Ignore the founding decades: four people growing into a village is not
+            // yet the steady state this is about.
+            if (year >= 40)
+            {
+                lowestAfterSettling = System.Math.Min(lowestAfterSettling, loop.World.Population);
+            }
+        }
+
+        int froze = 0, starved = 0, aged = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            switch (villager.CauseOfDeath)
+            {
+                case CauseOfDeath.Cold: froze++; break;
+                case CauseOfDeath.Starvation: starved++; break;
+                case CauseOfDeath.OldAge: aged++; break;
+            }
+        }
+
+        _output.WriteLine(
+            $"Year 150: {loop.World.Population} alive, never below {lowestAfterSettling} after year 40. " +
+            $"Deaths: {froze} froze, {starved} starved, {aged} of old age, " +
+            $"{loop.World.Villagers.Count} ever born.");
+
+        Assert.True(lowestAfterSettling >= config.StartingPopulation,
+            $"The village dropped to {lowestAfterSettling} — below the four it was founded with.");
+
+        // Most people should die of old age. A village where the usual way to go is
+        // freezing or starving has stopped being a settlement under pressure and
+        // become a disaster, and the generational arc D12 exists for flattens out.
+        Assert.True(aged > froze + starved,
+            $"Only {aged} of {froze + starved + aged} deaths were old age; the pressure systems " +
+            "have stopped being pressure and become the normal way to die.");
+    }
+
+    [Fact]
     public void FirewoodProductionIsDeterministic()
     {
         SimConfig config = Config;

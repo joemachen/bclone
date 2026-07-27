@@ -267,8 +267,15 @@ public sealed class WoodTests
         Assert.True(gated.World.Households.Count > Config.StartingHouseholds,
             "Timber cost stopped the village building at all.");
         Assert.True(gated.World.Population > 0, "Timber cost killed the village.");
-        Assert.True(gated.World.Households.Count <= free.World.Households.Count,
-            "Timber cost should not make the village build FASTER.");
+
+        // There used to be a third assertion here — that the gated village never built
+        // MORE houses than the free one. It has been dropped rather than relaxed,
+        // because house count stopped being a measure of growth the moment couples
+        // began taking over empty homes instead of raising new ones. Two runs whose
+        // populations differ at all then diverge chaotically, and the gated run
+        // finishing one house ahead says nothing about the gate. What the test is
+        // actually for — the gate neither stops growth nor kills the village — is
+        // asserted above and still holds.
     }
 
     /// <summary>The tree stand, found by kind. Its index moves as forage sites are

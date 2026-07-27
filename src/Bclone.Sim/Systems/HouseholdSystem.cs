@@ -508,7 +508,10 @@ public sealed class HouseholdSystem : ISimSystem
             return false;
         }
 
-        if (household.Stockpile.Food < config.BirthFoodThreshold)
+        // A share of THIS household's own target, which scales with how many mouths
+        // it already has. A flat number let a family of seven breed on a tenth of a
+        // full larder; scaling it is what stops the village outrunning its food.
+        if (household.Stockpile.Food < world.TargetFoodFor(household) * config.BirthFoodPercent / 100)
         {
             return false;
         }

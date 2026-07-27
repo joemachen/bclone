@@ -21,7 +21,7 @@
   "household_spacing": 3,
   "adult_age": 15,
   "leave_home_age": 18,
-  "max_household_size": 4,
+  "max_household_size": 7,
 
   // Homes cluster in a spiral rather than a line, and the economy is
   // derived for the FURTHEST home a village this size will build - the
@@ -195,7 +195,7 @@
   // "exactly affordable" produces a village that is warm by construction
   // with nobody left to build and no slack for a long winter, which is
   // useless the moment anything pushes on it.
-  "firewood_per_split": 24,
+  "firewood_per_split": 29,
 
   // Per household, not per member: a house costs the same to heat
   // whether two live in it or five. That makes SPRAWL the thing that

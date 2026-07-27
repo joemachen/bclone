@@ -282,7 +282,7 @@ public sealed class VillageTests
     {
         // A village that breeds into a famine is not telling a story, it is
         // oscillating - and the deaths would not trace back to any decision.
-        var (loop, _) = Build(GrowingVillage with { BirthFoodThreshold = 10_000 });
+        var (loop, _) = Build(GrowingVillage with { BirthFoodPercent = 100_000 });
         int founding = loop.World.Villagers.Count;
 
         loop.Step(30_000);
