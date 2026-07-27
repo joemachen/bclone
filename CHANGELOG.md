@@ -86,6 +86,29 @@ Categories (only include the ones you use): **Added**, **Changed**,
 - `CleanPlaythroughTests` — a 150-year run asserting the log carries no warnings
   or errors, turning Definition-of-Done item 5 from a manual check into a test.
 
+- **Phase 2 — wood as fuel, and goods that live somewhere.**
+- **Wood is two resources, and the first processing chain** (`specs/wood-fuel-and-tools.md`,
+  D17/D29): a **logger** fells **logs** at the tree stand, a **woodcutter** turns logs
+  into **firewood** at a hut. Logs build; only firewood burns. The woodcutter is the
+  first workplace that can stand idle for want of an *input* rather than a worker, so
+  it says which of the two is stopping it — the shape every later chain inherits.
+- **Winter kills on a second axis.** Firewood burns per household per day of winter,
+  and running out is fatal (`CauseOfDeath.Cold`). `freezing_ticks` is deliberately
+  longer than `starvation_ticks`: fuel comes from a two-step chain, so the village
+  needs time to notice and put hands back on the hut. An epitaph names which of cold
+  and hunger killed someone **and reports the other**, which is the legibility
+  condition D17 attached to reversing Phase 0's ban on a second death system.
+- **Goods live in buildings** (`specs/storage-and-distribution.md`, D30/D32): a
+  **granary** for food, a **storage shed** for materials, small buffers at the
+  workplaces that made them, and a working larder in every home so meals stay
+  instant (D10). Goods move only by trips people make — producers carry their
+  loads, households fetch — and `carry_capacity` limits an armful, which is what
+  makes distance to the granary a real cost rather than a formality.
+- `StateHash.MixStore` — one shared way to hash a store, so a store on a new kind of
+  building cannot be silently left out of the determinism fingerprint. Stores went
+  from one-per-household to one per household, workplace and building in a single
+  slice, and one missed would have desynced in silence. Anti-vacuity guarded (D7).
+
 ### Changed
 - `release.yml` moved from the repo root to `.github/workflows/`, where the
   README and METHODOLOGY already said it lived, and its Godot/C# build steps
@@ -107,6 +130,22 @@ Categories (only include the ones you use): **Added**, **Changed**,
   size has to make**, rather than from the first home or from a single patch.
 - A new house is paid for by the **whole village**, the two parent households
   first, rather than by the parents alone.
+- **The village is tested for a *stable size*, not for growth** (D31). A test
+  asserting the population grows was quietly asserting the wrong thing: failure has
+  to stay possible. Measured over 150 years the village holds between 19 and 28 for
+  a century, with old age the usual way to go — fifty-four deaths against six from
+  starvation and none from cold.
+- `max_household_size` 4 → 7. Four meant two parents and two children: bare
+  replacement, before anyone dies young.
+
+### Removed
+- **The two sharing policies, and the two village-wide sweeps** — `ShareFood`
+  (seasonal), `ShareFirewood` (daily), `SimWorld.TryTakeLogsFromTheVillage`, and
+  `TryTakeBuildingTimber`'s village-wide sweep. All four existed because there was
+  nowhere to put things, and all four moved goods by a rule the world enforced from
+  nowhere. Each is now a building somebody walks to. D14 named them placeholders the
+  day they were written; `specs/storage-and-distribution.md §6` made deleting all
+  four the condition for the work counting as done.
 
 ### Fixed
 - **Villagers were invisible on the map.** People standing on the same tile drew
@@ -118,6 +157,24 @@ Categories (only include the ones you use): **Added**, **Changed**,
   in an empty panel.
 - The village log no longer claims everyone is "walking to the berry patch" when
   there are six patches and they are walking to a different one.
+- **Births required almost nothing.** `birth_food_threshold` was an absolute 45
+  while a household's food target scales with its members, so a family of seven
+  with a target of 462 had a child at a tenth of a full larder — the cause of the
+  boom-bust. As a percentage of the household's own target it is self-limiting:
+  as the village approaches what its sites can feed, households stop reaching
+  their targets and births slow *before* anyone starves rather than after.
+- **`LabourQuota` counted goods in households** after goods had moved into
+  buildings, so every household read zero and the village believed it had no
+  timber at all. It spent a century cutting wood it already had, finishing with
+  5000 firewood and six people ever born. (The recurring shape: code that still
+  reads state from where it used to live.)
+- **Foragers stopped the moment their own larder was full**, so the granary never
+  filled and the household with no forager starved beside neighbours resting on
+  300 food. There are two reasons to work now — my family is short, or the village
+  is — which is the whole argument for a granary.
+- **The fuel quota was a thermostat that switched on after the house was cold.**
+  Including the annual burn makes it proportional, so the store settles in a band
+  above target instead of oscillating through it.
 
 ---
 

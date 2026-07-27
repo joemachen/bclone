@@ -201,6 +201,15 @@
   // whether two live in it or five. That makes SPRAWL the thing that
   // costs rather than population - a pressure that traces back to a
   // player decision (DESIGN.md §2.3).
+  "firewood_per_winter_day": 1,
+
+  // Longer than starvation_ticks on purpose: firewood comes from a
+  // two-step chain and food from a one-step one, so the village needs
+  // time to notice and put hands back on the hut. A cold snap that
+  // killed as fast as famine would give nobody a chance to respond,
+  // which is the difference between pressure and a coin flip.
+  "freezing_ticks": 40,
+
   // ---- Storage (D30, D32) ------------------------------------
   // Two buildings, not one. Food spoils and timber does not, and one
   // undifferentiated village pile would delete the per-household
@@ -218,14 +227,12 @@
   "storage_shed_x": -2,
   "storage_shed_y": 0,
 
-  "firewood_per_winter_day": 1,
-
-  // Longer than starvation_ticks on purpose: firewood comes from a
-  // two-step chain and food from a one-step one, so the village needs
-  // time to notice and put hands back on the hut. A cold snap that
-  // killed as fast as famine would give nobody a chance to respond,
-  // which is the difference between pressure and a coin flip.
-  "freezing_ticks": 40,
+  // What one person can carry in one trip. This is the whole reason a
+  // fetch is a journey rather than a teleport with extra steps: an
+  // armful at a time is what makes the distance to the granary cost
+  // something, which is where D32 said the interesting inequality would
+  // live. Raise it far enough and storage becomes bookkeeping again.
+  "carry_capacity": 40,
 
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",
