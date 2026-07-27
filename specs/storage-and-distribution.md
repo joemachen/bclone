@@ -163,11 +163,14 @@ Bigger than the fuel chain, and that one taught the lesson: slices, each green b
 2. **Where do the shed, granary and market come from?** There is still no building placement — the player has no agency at all — so for now they exist from the founding, like the tree stand. Found the village with a granary and a shed; the market arrives as a later slice. All three become placeable when placement lands, **and that is the moment this system starts paying the player back**: where you put the granary is the first decision in the game that storage makes interesting.
 3. **Should one store hold everything?** ✅ **Resolved (Joe, 2026-07-27): no — a granary for food, a shed for materials.** See §4. Better than the middle option this spec was going to propose, because it keeps D14's inequality *and* improves what it is made of.
 
-### Still open, raised by the answers
+### Resolved by the answers
 
-5. **What is granary capacity derived *from*?** It cannot be picked, per D16. See §12.3 — it is derived from the population a granary can carry through winter, which makes it a **stated population ceiling** rather than a number. That is a real design commitment and it is worth Joe reading it as one: *how big can my village get* becomes *how much granary have you built*.
+5. **What is granary capacity derived *from*?** ✅ **Resolved — see §12.3 and D33.** It cannot be picked, per D16. It is derived from the population a granary can carry through winter, which makes it a **stated population ceiling** rather than a number: *how big can my village get* becomes *how much granary have you built*.
 
-4. **Does food in a granary spoil?** A granary that keeps food perfectly forever is a bank, and a village with a bank has solved winter permanently — which would undo most of what §2.5 is for. Spoilage is the obvious counterweight and it is also the reason granaries are a *building* rather than a heap. **Not proposed for this spec** — it is a Phase 2 environment question, not a storage one — but it is worth naming now, because if it lands later it changes what the food economy is derived against, and that derivation should not have to be redone twice.
+4. **Does food in a granary spoil?** ✅ **Resolved (Joe, 2026-07-27): no. Cut from the plan — see D37.** *"It's not fun."*
+   - Spoilage is a tax that arrives as a number going down for no decision the player took. It punishes the well-run town exactly as hard as the badly-run one, makes the granary feel like a leaking bucket rather than an achievement, and adds a chore to a game whose second non-negotiable is *reduce babysitting*. It fails §1.2 and §1.1 together.
+   - **The danger it was proposed against is real and is already handled.** A granary that keeps food forever is a bank, and a village with a bank has permanently solved winter. But **capacity (slice 5) bounds the granary**, so there is no unlimited bank available: the village cannot stockpile its way out of winter, because the building will not hold it. The pressure survives and now comes from *how much you have built*, which is the more legible source and the one the player can act on.
+   - **Consequence to respect:** granary capacity is now the only thing standing between the village and an infinite winter buffer. It should not be quietly relaxed to fix an unrelated squeeze.
 
 ---
 

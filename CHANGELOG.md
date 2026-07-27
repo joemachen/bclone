@@ -166,6 +166,13 @@ Categories (only include the ones you use): **Added**, **Changed**,
   replacement, before anyone dies young.
 
 ### Removed
+- **Spoilage, from the plan** (D37). Joe's call — *"it's not fun."* It was a tax that
+  arrives as a number going down for no decision the player took, punishing a well-run
+  town as hard as a careless one, and it added a chore to a game whose second
+  non-negotiable is *reduce babysitting*. The danger it was proposed against — a
+  granary that never rots is a bank, and a village with a bank has permanently solved
+  winter — is already answered by storage **capacity**: there is no unlimited bank to
+  have, because the building will not hold it.
 - **The two sharing policies, and the two village-wide sweeps** — `ShareFood`
   (seasonal), `ShareFirewood` (daily), `SimWorld.TryTakeLogsFromTheVillage`, and
   `TryTakeBuildingTimber`'s village-wide sweep. All four existed because there was

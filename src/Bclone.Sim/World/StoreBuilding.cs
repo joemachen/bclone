@@ -42,10 +42,16 @@ public enum StoreKind
 /// (§2.2) and desire paths (§2.6) rather than sitting off to one side.
 /// </para>
 /// <para>
-/// It is also the honest division. Food spoils and timber does not, which is why no
-/// village has ever kept them in the same shed — and why <em>spoilage</em> is named in
-/// D32 as the counterweight that stops a granary being a bank that solves winter
-/// permanently. Not built here; it belongs with Phase 2's environment work.
+/// It is also the honest division: no village has ever kept its food and its timber in
+/// the same shed, because one of them rots.
+/// </para>
+/// <para>
+/// <b>The sim does not model that rot, deliberately</b> (D37). Spoilage was proposed as
+/// the counterweight that stops a granary being a bank which permanently solves winter,
+/// and it was cut — it is a tax the player takes no decision about, and it punishes a
+/// well-run town as hard as a careless one. <see cref="Stockpile.Capacity"/> answers the
+/// same danger better: there is no unlimited bank to have, because the building will not
+/// hold it.
 /// </para>
 /// </remarks>
 public sealed class StoreBuilding
