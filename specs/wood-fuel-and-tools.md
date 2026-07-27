@@ -1,7 +1,21 @@
 # Spec: Wood as Fuel — logs, firewood, and the first processing chain
 
-> Status: **agreed — Joe's answers folded in 2026-07-26** · Owner: Joe + Claude Code
-> Format per `METHODOLOGY.md §2`. Implements decision **D17**, extended by **D29**.
+> Status: **built — acceptance test passing** · Owner: Joe + Claude Code
+> Format per `METHODOLOGY.md §2`. Implements decision **D17**, extended by **D29** and **D31**.
+
+---
+
+## 0. What building it taught us
+
+Five findings, each measured rather than reasoned. They are at the top because four of them were bugs in code that predated this spec, and the fifth changed what the acceptance test is for.
+
+1. **Burning could not ship without sharing.** A woodcutter carries firewood home, so the whole village's fuel sat in whichever house they lived in and the first winter killed the other founding household with eighty-one firewood next door. Slices 4 and 5 merged. **This is the same bug as D25** (logs piling in the logger's house), which is now twice — and it is the argument for D30.
+2. **Fuel is survival work, not surplus work.** Funding it from what was left after the food floor meant the woodpile drained a little every year until four households froze in one winter, with full larders and a yard full of logs. Heating is a floor alongside eating now; only building is discretionary.
+3. **The feeding floor was calibrated for the worst case and applied as the average case.** `RequiredDependants` is what the *weakest* adult must carry — right for deriving `gather_yield`, wrong for deciding how many hands to put on food, because it assumes the whole village is simultaneously at its weakest. It never is. The village spent every hand it had on food it did not need; invisible while timber was optional, fatal once firewood was survival work.
+4. **Lifetime counters were counting gifts as production.** Shared goods and dowries went through `Stockpile.Add`, which increments the lifetime totals, so every transfer was counted as fresh production by the receiver *on top of* the giver. Surfaced as the village appearing to consume more logs than it had ever felled. It had also been quietly inflating the food figure in villagers' epitaphs, which is worse — that number is a claim about a life.
+5. **`birth_food_threshold` was an absolute number against a target that scales.** A household of seven with a food target of 462 would have a child at 45 — a tenth of a full larder — while the comment above it claimed births required "a full-ish larder". This was the boom-bust: the village grew to fifty, outran what the valley could feed, and fifty-six people starved on the way back down. Scaling it to a percentage of the household's own target is what makes population self-limiting.
+
+**Result, measured over 150 years:** population holds between 19 and 28 for a century; 54 deaths of old age, 6 of starvation, 0 of cold. Failure stays possible — people starve — but old age is the usual way to go, which is the test (D31).
 
 ---
 
