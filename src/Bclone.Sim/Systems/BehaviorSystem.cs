@@ -117,7 +117,12 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.HaulingToStore:
-                Travel(world, villager, world.StorageShed.Position, VillagerState.HaulingToStore);
+                Travel(world, villager, StoreForTheLoad(world, villager).Position, VillagerState.HaulingToStore);
+                return;
+
+            case VillagerState.FetchingFromStore:
+                Travel(world, villager, PlanFetch(world, villager)?.Position ?? world.HomeOf(villager),
+                    VillagerState.FetchingFromStore);
                 return;
 
             case VillagerState.TravelingHome:
@@ -168,6 +173,56 @@ public sealed class BehaviorSystem : ISimSystem
     /// <summary>Whether the job they hold matches the errand they are on.</summary>
     private static bool HoldsTheJobFor(SimWorld world, Villager villager) =>
         WorkplaceOf(world, villager)?.Kind == ErrandKind(villager.State);
+
+    /// <summary>Where a load in someone's arms is going.</summary>
+    /// <remarks>
+    /// Decided by what they are carrying rather than remembered on the villager: food
+    /// goes to the granary, materials to the shed, and there is no third answer to get
+    /// out of step (D32).
+    /// </remarks>
+    private static StoreBuilding StoreForTheLoad(SimWorld world, Villager villager) =>
+        villager.CarriedFood > 0 ? world.Granary : world.StorageShed;
+
+    /// <summary>
+    /// The store worth walking to, or null if no trip would achieve anything.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>"Short of it" and "a store has it" have to be one decision, not two.</b>
+    /// Splitting them killed a founding household in the first winter: they were short
+    /// of food <em>and</em> firewood, the granary was picked because food comes first,
+    /// the granary was empty — so they walked there and back for ten days and froze
+    /// with a hundred and sixteen firewood sitting in the shed.
+    /// </para>
+    /// <para>
+    /// Food before firewood where both are available, because hunger kills in six days
+    /// and cold in ten.
+    /// </para>
+    /// </remarks>
+    private static StoreBuilding? PlanFetch(SimWorld world, Villager villager)
+    {
+        Household household = world.HouseholdOf(villager);
+        SimConfig config = world.Config;
+
+        int foodFloor = world.TargetFoodFor(household) * config.SharingNeedPercent / 100;
+        if (household.Stockpile.Food < foodFloor && world.Granary.Store.Food > 0)
+        {
+            return world.Granary;
+        }
+
+        // Firewood only matters where it is burned, so there is no point hauling fuel
+        // about in spring instead of building the food store that gets them through
+        // the winter they would be hauling it for.
+        if (FoodSource.IsGatherable(world.Clock.Season) && world.Clock.Season != Season.Fall)
+        {
+            return null;
+        }
+
+        int firewoodFloor = VillageEconomy.FirewoodStoreWantedPerHousehold(config);
+        return household.Stockpile.Firewood < firewoodFloor && world.StorageShed.Store.Firewood > 0
+            ? world.StorageShed
+            : null;
+    }
 
     private static void GoHome(SimWorld world, Villager villager)
     {
@@ -239,7 +294,30 @@ public sealed class BehaviorSystem : ISimSystem
         // gives nothing back; that dependency is the whole reason childhood needed
         // households to exist first (D13).
         Household household = world.HouseholdOf(villager);
-        bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household);
+        // Two reasons to go out: my family is short, or the village is. Without the
+        // second, a forager stops the moment their own larder is full, the granary
+        // never fills, and a household with nobody foraging starves beside neighbours
+        // who are resting on three hundred food.
+        bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household)
+            || world.Granary.Store.Food < world.TargetFoodForTheGranary();
+
+        // FETCH — before work, because a household with an empty larder has a more
+        // pressing errand than its job.
+        //
+        // This is what replaced the two sharing policies (D30). Those moved goods
+        // between houses by a rule the world enforced from nowhere; this is a person
+        // walking to a building and carrying an armful back, which is the whole claim
+        // D14 makes about distribution being work rather than a slider.
+        //
+        // It is also where D32's inequality actually lives: a household far from the
+        // granary, or with nobody spare to send, eats worse than one beside it.
+        StoreBuilding? errand = villager.CanWork ? PlanFetch(world, villager) : null;
+        if (errand is not null)
+        {
+            villager.State = VillagerState.FetchingFromStore;
+            Travel(world, villager, errand.Position, VillagerState.FetchingFromStore);
+            return;
+        }
 
         // Foraging is a JOB, not something anyone wanders off and does. Held via
         // LabourSystem, which decides who works where and records why - and, since
@@ -351,6 +429,86 @@ public sealed class BehaviorSystem : ISimSystem
         }
     }
 
+    /// <summary>
+    /// Take what the household is short of, up to what one person can carry.
+    /// </summary>
+    /// <remarks>
+    /// The load limit is what stops a fetch being a teleport with extra steps: one
+    /// trip brings back one armful, so a household far from the granary genuinely
+    /// eats worse than one beside it. That is the inequality D32 is built on, and it
+    /// only exists if a trip has a size.
+    /// </remarks>
+    private static void CollectFromStore(SimWorld world, Villager villager)
+    {
+        Household household = world.HouseholdOf(villager);
+        SimConfig config = world.Config;
+        int load = config.CarryCapacity;
+
+        // Whatever store they are actually standing at, rather than a plan made
+        // before they set off — the village may have changed while they walked.
+        StoreBuilding? target = null;
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            if (world.StoreBuildings[i].Position == villager.Position)
+            {
+                target = world.StoreBuildings[i];
+            }
+        }
+
+        if (target is null)
+        {
+            return;
+        }
+
+        if (target.Kind == StoreKind.Granary)
+        {
+            int wanted = world.TargetFoodFor(household) - household.Stockpile.Food;
+            int take = Smallest(wanted, load, target.Store.Food);
+            if (take > 0 && target.Store.TryTake(take))
+            {
+                villager.CarriedFood += take;
+            }
+
+            return;
+        }
+
+        int firewoodWanted =
+            VillageEconomy.FirewoodStoreWantedPerHousehold(config) - household.Stockpile.Firewood;
+        int firewood = Smallest(firewoodWanted, load, target.Store.Firewood);
+        if (firewood > 0 && target.Store.TryTakeFirewood(firewood))
+        {
+            villager.CarriedFirewood += firewood;
+        }
+    }
+
+    private static int Smallest(int a, int b, int c)
+    {
+        int smallest = a < b ? a : b;
+        return smallest < c ? smallest : c;
+    }
+
+    /// <summary>Put down whatever they are carrying, into their own household's store.</summary>
+    private static void UnloadAtHome(SimWorld world, Villager villager)
+    {
+        if (!villager.IsCarrying)
+        {
+            return;
+        }
+
+        Stockpile larder = world.HouseholdOf(villager).Stockpile;
+
+        // Received, not produced — the lifetime counters mean "this household made
+        // this much", and a fetch is goods changing hands (see Stockpile.Receive).
+        // Food carried straight back from a gather IS production, though, so that
+        // one is added rather than received.
+        larder.Receive(0, villager.CarriedLogs, villager.CarriedFirewood);
+        larder.Add(villager.CarriedFood);
+
+        villager.CarriedFood = 0;
+        villager.CarriedLogs = 0;
+        villager.CarriedFirewood = 0;
+    }
+
     private static void ArriveAt(SimWorld world, Villager villager, VillagerState onArrival)
     {
         if (onArrival == VillagerState.Gathering)
@@ -363,12 +521,21 @@ public sealed class BehaviorSystem : ISimSystem
         {
             // The load goes into the building, and only then does it exist anywhere
             // the village can spend it. This is the moment goods stopped teleporting.
-            Stockpile shed = world.StorageShed.Store;
-            shed.AddLogs(villager.CarriedLogs);
-            shed.AddFirewood(villager.CarriedFirewood);
+            Stockpile store = StoreForTheLoad(world, villager).Store;
+            store.Add(villager.CarriedFood);
+            store.AddLogs(villager.CarriedLogs);
+            store.AddFirewood(villager.CarriedFirewood);
+            villager.CarriedFood = 0;
             villager.CarriedLogs = 0;
             villager.CarriedFirewood = 0;
 
+            villager.State = VillagerState.TravelingHome;
+            return;
+        }
+
+        if (onArrival == VillagerState.FetchingFromStore)
+        {
+            CollectFromStore(world, villager);
             villager.State = VillagerState.TravelingHome;
             return;
         }
@@ -387,6 +554,9 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // Home. Anything in their arms goes into the larder — a gather brought back
+        // directly, or an armful fetched from the granary.
+        UnloadAtHome(world, villager);
         villager.State = onArrival == VillagerState.Idle ? VillagerState.Resting : onArrival;
     }
 
@@ -412,9 +582,21 @@ public sealed class BehaviorSystem : ISimSystem
                     yield = 1;
                 }
 
-                world.HouseholdOf(villager).Stockpile.Add(yield);
+                // Their own larder first, the granary with the rest.
+                //
+                // A forager brings the day's food home if home needs it, and takes it
+                // to the granary if it does not. That keeps the working case working —
+                // a household with a forager in it feeds itself directly, no round
+                // trip through a building — while surplus ends up somewhere the whole
+                // village can draw on. It is also just what a person would do.
+                villager.CarriedFood += yield;
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
+
+                Household home = world.HouseholdOf(villager);
+                bool homeNeedsIt = home.Stockpile.Food < world.TargetFoodFor(home);
+
+                villager.State = homeNeedsIt ? VillagerState.TravelingHome : VillagerState.HaulingToStore;
 
                 // Individual gathers are DEBUG, not life log. A fifty-year life is
                 // some six hundred foraging trips, and narrating each one buries the
@@ -422,10 +604,8 @@ public sealed class BehaviorSystem : ISimSystem
                 // turning, the winters surviving, the death. ClockSystem sums them
                 // up per season instead.
                 world.Log(LogLevel.Debug, "behavior",
-                    $"Gathered {world.FoodSource.YieldPerGather} food " +
-                    $"({world.HouseholdOf(villager).Stockpile.Food} stored) — {world.Clock}.");
-
-                villager.State = VillagerState.TravelingHome;
+                    $"Gathered {yield} food, bound for " +
+                    $"{(homeNeedsIt ? "home" : world.Granary.Name)} — {world.Clock}.");
                 return;
 
             case VillagerState.Cutting:

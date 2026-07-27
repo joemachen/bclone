@@ -326,6 +326,15 @@ public sealed record SimConfig
     [JsonPropertyName("firewood_per_winter_day")]
     public int FirewoodPerWinterDay { get; init; } = 1;
 
+    /// <summary>How much of anything one villager can carry in one trip.</summary>
+    /// <remarks>
+    /// What stops a fetch being a teleport with extra steps (D30). One trip brings
+    /// back one armful, so a household far from the granary genuinely eats worse than
+    /// one beside it — which is where D32 says the interesting inequality lives.
+    /// </remarks>
+    [JsonPropertyName("carry_capacity")]
+    public int CarryCapacity { get; init; } = 40;
+
     /// <summary>
     /// Consecutive ticks in an unheated home before someone freezes.
     /// </summary>

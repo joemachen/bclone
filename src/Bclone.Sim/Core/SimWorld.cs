@@ -542,6 +542,23 @@ public sealed class SimWorld
     public int TargetFoodFor(Household household) =>
         Config.StockpileTarget * Math.Max(1, LivingMembersOf(household));
 
+    /// <summary>
+    /// Food the village wants in the granary — a winter's store for everyone.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is what makes a village store mean anything.</b> A forager who stops
+    /// the moment their own larder is full produces no surplus, so the granary stays
+    /// empty, so a household with nobody foraging has nothing to fetch and starves
+    /// beside neighbours who are resting. That is what happened the first time this
+    /// ran: the founding woodcutters starved in year one while the other house sat on
+    /// three hundred food and its foragers put their feet up.
+    /// <para>
+    /// So there are two reasons to keep working: my family is short, or the village
+    /// is. The second one is the entire argument for having a granary.
+    /// </para>
+    /// </remarks>
+    public int TargetFoodForTheGranary() => Config.StockpileTarget * Population;
+
     /// <summary>Where a villager lives and returns to.</summary>
     public GridPos HomeOf(Villager villager) => HouseholdOf(villager).HomePosition;
 

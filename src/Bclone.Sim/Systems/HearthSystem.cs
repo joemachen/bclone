@@ -60,67 +60,10 @@ public sealed class HearthSystem : ISimSystem
 
         if (world.Tick % (ulong)config.TicksPerDay == 0UL)
         {
-            ShareFirewood(world, config);
             BurnADaysFirewood(world, config);
         }
 
         ChillTheUnheated(world, config);
-    }
-
-    /// <summary>
-    /// Firewood is issued from the shed to the homes that need it, every day of winter.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Burning could not ship without this, and finding that out cost a run.</b>
-    /// A woodcutter carries their firewood home, so with sharing switched off the
-    /// entire village's fuel sits in whichever house the woodcutter happens to live
-    /// in. The first winter killed both members of the other founding household while
-    /// eighty-one firewood sat next door. That is not a pressure the player can
-    /// respond to, it is a lottery on where one worker was born — and it is the same
-    /// shape as D25, where logs piled up in the logger's house and no home was ever
-    /// built.
-    /// </para>
-    /// <para>
-    /// <b>Daily, where food sharing is seasonal.</b> The cadences differ because the
-    /// resources do: most households gather their own food, so sharing it is an
-    /// occasional correction. Firewood is made by one or two specialists <em>for
-    /// everybody</em>, so it has to flow continuously or it never reaches anyone.
-    /// Freezing takes ten days and a season is fifteen; a seasonal top-up would
-    /// arrive after the funeral.
-    /// </para>
-    /// <para>
-    /// Like the food policy, this is <b>a placeholder for a building</b> — the market
-    /// D14 describes distributes goods as well as food, and should delete both.
-    /// </para>
-    /// </remarks>
-    private static void ShareFirewood(SimWorld world, SimConfig config)
-    {
-        int target = VillageEconomy.FirewoodStoreWantedPerHousehold(config);
-        Stockpile shed = world.StorageShed.Store;
-
-        // Households in id order, so who is served first when the shed runs low is a
-        // fact about the village rather than about iteration.
-        for (int i = 0; i < world.Households.Count; i++)
-        {
-            Household household = world.Households[i];
-            if (world.LivingMembersOf(household) == 0)
-            {
-                continue;
-            }
-
-            int wanted = target - household.Stockpile.Firewood;
-            if (wanted <= 0)
-            {
-                continue;
-            }
-
-            int given = shed.Firewood < wanted ? shed.Firewood : wanted;
-            if (given > 0 && shed.TryTakeFirewood(given))
-            {
-                household.Stockpile.Receive(0, 0, given);
-            }
-        }
     }
 
     /// <summary>Winter only, for now. Shoulder seasons are a config change away.</summary>

@@ -36,14 +36,6 @@ public sealed class HouseholdSystem : ISimSystem
             return;
         }
 
-        // Neighbours help every season. Annually was far too coarse - a household
-        // can go from full to empty inside a single winter, so the yearly check
-        // arrived months after the funerals.
-        if (world.Tick % (ulong)config.TicksPerSeason == 0UL)
-        {
-            ShareFood(world, config);
-        }
-
         // Births and household formation resolve only on a year boundary - a
         // household does not reconsider four times a day, and it keeps the log to
         // one line per event.
@@ -66,96 +58,6 @@ public sealed class HouseholdSystem : ISimSystem
         {
             TryBirth(world, world.Households[i], config, year);
         }
-    }
-
-    /// <summary>
-    /// Households with a surplus give to households that are short.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This is the sharing policy decision D14 promised alongside per-household
-    /// stores, and without it the village dies of a specific and repeatable cause: a
-    /// parent dies, and the widowed survivor has to feed the children alone on
-    /// declining vigour. One worker cannot support a house that two built. Thirteen
-    /// of twenty-four villagers starved that way while their neighbours had food.
-    /// </para>
-    /// <para>
-    /// <b>This is a placeholder for a building.</b> The intended form is a manned
-    /// market or food stall that redistributes within its catchment — distribution
-    /// as a job someone does, not a rule the world enforces from nowhere (D14,
-    /// DESIGN.md §2.2). Keeping it deliberately simple here makes it easy to delete
-    /// when the market arrives.
-    /// </para>
-    /// <para>
-    /// Givers and receivers are both walked in household-id order, and each transfer
-    /// is capped by what the giver can spare — so no household is ever pushed into
-    /// need by its own generosity, and the order of transfers is fixed.
-    /// </para>
-    /// </remarks>
-    private static void ShareFood(SimWorld world, SimConfig config)
-    {
-        for (int r = 0; r < world.Households.Count; r++)
-        {
-            Household needy = world.Households[r];
-            int need = ShortfallOf(world, needy, config);
-            if (need <= 0)
-            {
-                continue;
-            }
-
-            for (int g = 0; g < world.Households.Count && need > 0; g++)
-            {
-                Household giver = world.Households[g];
-                if (giver.Id == needy.Id)
-                {
-                    continue;
-                }
-
-                int spare = SurplusOf(world, giver, config);
-                if (spare <= 0)
-                {
-                    continue;
-                }
-
-                int gift = spare < need ? spare : need;
-                if (!giver.Stockpile.TryTake(gift))
-                {
-                    continue;
-                }
-
-                needy.Stockpile.Receive(gift, 0, 0);
-                need -= gift;
-
-                world.Narrate(
-                    $"The {giver.Name} household shared {gift} food with the {needy.Name} household " +
-                    $"— {world.Clock.SeasonAndYear()}.");
-            }
-        }
-    }
-
-    /// <summary>How far below a survivable store a household is.</summary>
-    private static int ShortfallOf(SimWorld world, Household household, SimConfig config)
-    {
-        if (world.LivingMembersOf(household) == 0)
-        {
-            return 0;
-        }
-
-        int floor = world.TargetFoodFor(household) * config.SharingNeedPercent / 100;
-        return floor - household.Stockpile.Food;
-    }
-
-    /// <summary>What a household can give away without going short itself.</summary>
-    private static int SurplusOf(SimWorld world, Household household, SimConfig config)
-    {
-        if (world.LivingMembersOf(household) == 0)
-        {
-            // A house whose family has died keeps nothing back.
-            return household.Stockpile.Food;
-        }
-
-        int keep = world.TargetFoodFor(household) * config.SharingKeepPercent / 100;
-        return household.Stockpile.Food - keep;
     }
 
     /// <summary>

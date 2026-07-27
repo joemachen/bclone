@@ -29,6 +29,9 @@ public enum VillagerState
 
     /// <summary>Hauling a load to a store building (D30).</summary>
     HaulingToStore,
+
+    /// <summary>Walking to a store to collect what the household is short of (D30).</summary>
+    FetchingFromStore,
 }
 
 /// <summary>
