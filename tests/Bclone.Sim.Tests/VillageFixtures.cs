@@ -30,7 +30,7 @@ public static class VillageFixtures
 
                 // A real village sprawls, and the furthest home sets the worst-case
                 // round trip that the whole economy has to afford.
-                EconomyHorizonHouseholds = 12,
+                EconomyHorizonHouseholds = 20,
 
                 // Fuel back ON for the village: households to heat, and a labour
                 // system for firewood to compete inside (D17, D29).
@@ -45,9 +45,19 @@ public static class VillageFixtures
                 StockpileTarget = VillageEconomy.RequiredStockpilePerAdult(shape),
             };
 
-            return fed with
+            SimConfig fuelled = fed with
             {
                 FirewoodPerSplit = VillageEconomy.RequiredFirewoodPerSplit(fed),
+            };
+
+            // And the buildings have to be big enough for the village the rest of
+            // this is budgeted for. Deriving the yields but not the CAPACITIES left
+            // the village physically unable to make enough firewood, however many
+            // hands were free.
+            return fuelled with
+            {
+                WoodcutterHutCapacity = VillageEconomy.RequiredWoodcutterSeats(fuelled),
+                TreeStandCapacity = VillageEconomy.RequiredTreeStandSeats(fuelled),
             };
         }
     }

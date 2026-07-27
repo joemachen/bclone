@@ -374,6 +374,44 @@ public sealed class HouseholdSystem : ISimSystem
             return false;
         }
 
+        // AND the village as a whole has to be in surplus, not just this family.
+        //
+        // The granary broke the household gate without anyone noticing. Before it, a
+        // larder reflected what that family could actually produce, so gating births
+        // on it made growth self-limiting: households stopped having children before
+        // they starved. With a granary, every larder is topped up from the village
+        // store, so the gate reads "comfortable" right up until the moment the store
+        // runs dry. Measured: the village bred to ninety-two, outran what its forage
+        // sites could produce, and thirty-three people starved on the way back down.
+        //
+        // So the question moved to where the answer now lives. A village with a shared
+        // store can only afford a child if the STORE can afford one.
+        if (world.Granary.Store.Food < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
+        {
+            return false;
+        }
+
+        // AND a winter's fuel, on the same terms.
+        //
+        // Every constraint in this sim has, in turn, been the one the village grew
+        // until it hit and then died on: the forage sites, the log pile, the food
+        // economy. Each was fixed and the settlement simply grew to the next one.
+        // Food is the only one that ever SELF-LIMITED, because births are gated on it
+        // — so the village stopped having children before it starved rather than
+        // after.
+        //
+        // Fuel had no such brake. The village grew to forty-eight people, outran what
+        // the woodcutter's hut was derived to heat, and sixty-seven of them froze.
+        // Gating births on firewood too gives cold the same brake hunger already has,
+        // and it is the more diegetic rule of the two: you do not have a child you
+        // cannot keep warm.
+        int firewoodWanted =
+            VillageEconomy.FirewoodStoreWantedPerHousehold(config) * config.BirthFoodPercent / 100;
+        if (config.FirewoodPerWinterDay > 0 && household.Stockpile.Firewood < firewoodWanted)
+        {
+            return false;
+        }
+
         return HasFertileCouple(world, household, config);
     }
 

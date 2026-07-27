@@ -257,7 +257,8 @@ public sealed class LabourAllocationTests
             mouths: world.Population,
             foragersToFeedEveryone: 1,
             foragers: foraging - 1,
-            loggers: CountWorking(world, JobKind.Logger), woodcutters: 0);
+            loggers: CountWorking(world, JobKind.Logger),
+            woodcutters: CountWorking(world, JobKind.Woodcutter));
 
         System.Collections.Generic.List<int> shed = LabourAllocator.ShedSurplus(world, quota);
 

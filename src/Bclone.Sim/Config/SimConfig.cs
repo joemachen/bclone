@@ -431,7 +431,7 @@ public sealed record SimConfig
     /// household instead made every outlying family unable to feed itself.
     /// </remarks>
     [JsonPropertyName("economy_horizon_households")]
-    public int EconomyHorizonHouseholds { get; init; } = 12;
+    public int EconomyHorizonHouseholds { get; init; } = 20;
 
     /// <summary>
     /// Winter store as a percentage of one member's winter need.

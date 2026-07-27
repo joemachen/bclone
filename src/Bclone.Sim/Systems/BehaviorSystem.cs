@@ -204,7 +204,14 @@ public sealed class BehaviorSystem : ISimSystem
         Household household = world.HouseholdOf(villager);
         SimConfig config = world.Config;
 
-        int foodFloor = world.TargetFoodFor(household) * config.SharingNeedPercent / 100;
+        // Topped up when the larder DIPS, not when it is nearly empty.
+        //
+        // The sharing floor (50%) was the obvious threshold and it strangled the
+        // village: food piles up in the granary, households sit at two-thirds of
+        // target, and births are gated on the larder — so the settlement ran for a
+        // century with seven hundred food in store and almost no children. Keeping
+        // homes near their target is what a village with a granary is FOR.
+        int foodFloor = world.TargetFoodFor(household) * config.SharingKeepPercent / 100;
         if (household.Stockpile.Food < foodFloor && world.Granary.Store.Food > 0)
         {
             return world.Granary;
@@ -243,7 +250,27 @@ public sealed class BehaviorSystem : ISimSystem
         SimConfig config = world.Config;
         int mealCost = MealCostFor(villager, config);
 
-        if (villager.Hunger < config.EatThreshold || world.HouseholdOf(villager).Stockpile.Food < mealCost)
+        if (villager.Hunger < config.EatThreshold)
+        {
+            return false;
+        }
+
+        // Eat out of your own arms first.
+        //
+        // Obvious once seen, and it was a real regression the moment goods started
+        // being carried (D30): a villager walked home from the patch with an armful
+        // of food and hunger at maximum, and did not eat, because the meal check runs
+        // before they get through the door. Nobody starves holding dinner. This is
+        // D10's rule — never kill someone for a scheduling artifact — applied to a
+        // scheduling artifact that did not exist when D10 was written.
+        if (villager.CarriedFood >= mealCost)
+        {
+            villager.CarriedFood -= mealCost;
+            Feed(villager, config);
+            return true;
+        }
+
+        if (world.HouseholdOf(villager).Stockpile.Food < mealCost)
         {
             return false;
         }
@@ -258,6 +285,13 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
+        Feed(villager, config);
+        return true;
+    }
+
+    /// <summary>Apply the effect of a meal, wherever it came from.</summary>
+    private static void Feed(Villager villager, SimConfig config)
+    {
         villager.Hunger -= config.EatReducesHunger;
         if (villager.Hunger < 0)
         {
@@ -266,7 +300,6 @@ public sealed class BehaviorSystem : ISimSystem
 
         villager.TicksAtMaxHunger = 0;
         villager.JustAte = true;
-        return true;
     }
 
     /// <summary>

@@ -300,15 +300,17 @@ public readonly record struct LabourQuota
         // through a winter would actually do.
         int housesWanted = CeilingDivide(waiting, 2) + 1;
 
-        // Timber already standing in the village, wherever it is stored. Raising a
-        // house draws on the whole settlement (see HouseholdSystem), so every stick
-        // counts — and a village that already has the wood should put its hands back
-        // on the berries rather than cutting more of what it cannot spend.
-        int stored = 0;
-        for (int h = 0; h < world.Households.Count; h++)
-        {
-            stored += world.Households[h].Stockpile.Logs;
-        }
+        // Timber standing ANYWHERE in the village — the shed, a workplace buffer, or
+        // in somebody's arms on the way there.
+        //
+        // Counting only household piles was right until goods moved into buildings
+        // (D30), and then silently wrong: logs go to the shed now, so every household
+        // read zero, the village believed it had no timber at all, and it put half its
+        // hands on the tree stand forever. It finished a century with five thousand
+        // firewood, six people ever born, and nobody left alive — no starvation, no
+        // cold, just a settlement that spent its whole life cutting wood it already
+        // had instead of raising children.
+        int stored = world.TotalLogs();
 
         int shortfall = (housesWanted * world.Config.LogsPerHouse) - stored;
         if (shortfall <= 0)
@@ -338,21 +340,35 @@ public readonly record struct LabourQuota
     {
         ArgumentNullException.ThrowIfNull(world);
 
-        int homes = 0;
-        int stored = 0;
+        // Firewood anywhere in the village, for the same reason as the logs above.
+        int stored = world.TotalFirewood();
 
+        int homes = 0;
         for (int i = 0; i < world.Households.Count; i++)
         {
-            Household household = world.Households[i];
-            stored += household.Stockpile.Firewood;
-
-            if (world.LivingMembersOf(household) > 0)
+            if (world.LivingMembersOf(world.Households[i]) > 0)
             {
                 homes++;
             }
         }
 
-        int needed = homes * VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config);
+        // The store the village wants, PLUS what it is about to burn this year.
+        //
+        // Asking only "are we below the target?" is a thermostat that switches on
+        // after the house is already cold. The store sits exactly at target, the quota
+        // reads no shortfall and staffs nobody, winter burns through it, and the hut
+        // is staffed again a season after people started freezing. Measured across
+        // several runs: the village held twenty-five people with its firewood exactly
+        // at target and no buffer at all, and then a single winter took twenty-eight
+        // of them.
+        //
+        // Including the annual burn makes it a proportional control rather than a
+        // switch: at target the village keeps one hand making firewood, the store
+        // drifts up by the difference, and once it is a winter clear the quota falls
+        // back to nobody. It settles into a band above the target instead of
+        // oscillating through it — which is what a woodpile IS.
+        int annualBurn = homes * VillageEconomy.FirewoodPerHouseholdPerWinter(world.Config);
+        int needed = (homes * VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config)) + annualBurn;
         int shortfall = needed - stored;
         if (shortfall <= 0)
         {
@@ -395,7 +411,6 @@ public readonly record struct LabourQuota
     {
         ArgumentNullException.ThrowIfNull(world);
 
-        int stored = 0;
         int target = 0;
 
         for (int i = 0; i < world.Households.Count; i++)
@@ -406,11 +421,13 @@ public readonly record struct LabourQuota
                 continue;
             }
 
-            stored += household.Stockpile.Food;
             target += world.TargetFoodFor(household);
         }
 
-        return stored < target * world.Config.SharingNeedPercent / 100;
+        // Food anywhere, granary included. A village with a full granary is not short
+        // of food, however thin the individual larders happen to be at this instant —
+        // and reading only the larders would send everyone foraging past a full store.
+        return world.TotalFood() < target * world.Config.SharingNeedPercent / 100;
     }
 
     /// <summary>Every seat at every workplace of one kind.</summary>

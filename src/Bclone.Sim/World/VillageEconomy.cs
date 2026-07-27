@@ -396,6 +396,49 @@ public static class VillageEconomy
             "budgeted for it. Either fuel is too expensive or the food economy leaves too little over.");
     }
 
+    /// <summary>
+    /// Seats a woodcutter's hut needs, for the village the economy is derived for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Capacity has to be derived too, and forgetting that cost a long run.</b>
+    /// Raising the economy horizon re-derived every <em>yield</em> — how much a trip
+    /// brings back, how much a batch makes — but left the buildings' capacities at
+    /// the hand-picked threes they were given when a village was a dozen people. One
+    /// hut holding three woodcutters heats about fifteen households; the village
+    /// reached twenty-five, could not physically make more firewood however many
+    /// hands were free, and thirty-six people froze.
+    /// </para>
+    /// <para>
+    /// That is a real pressure and one day it should be the player's to answer, by
+    /// building a second hut. Until building placement exists there is no answer
+    /// available, so the founding capacity has to be large enough for the village the
+    /// rest of the economy is budgeted for.
+    /// </para>
+    /// </remarks>
+    public static int RequiredWoodcutterSeats(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int households = config.EconomyHorizonHouseholds;
+        int firewood = households * (FirewoodStoreWantedPerHousehold(config)
+            + FirewoodPerHouseholdPerWinter(config));
+
+        return CeilingDivide(firewood, FirewoodMadePerYearAtWorst(config));
+    }
+
+    /// <summary>Seats a tree stand needs, to keep those huts in logs and homes built.</summary>
+    public static int RequiredTreeStandSeats(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int logs = RequiredWoodcutterSeats(config) * LogsConsumedPerYearAtWorst(config);
+        int forHuts = CeilingDivide(logs, WoodCutPerYearAtWorst(config));
+
+        // Plus a hand for building, or the village heats itself and never grows.
+        return forHuts + 1;
+    }
+
     /// <summary>Hands the village may spend on staying warm — see
     /// <see cref="FuelMayCostThisShareOfSpareHands"/>.</summary>
     public static int FuelBudgetInHands(SimConfig config, int households) =>
