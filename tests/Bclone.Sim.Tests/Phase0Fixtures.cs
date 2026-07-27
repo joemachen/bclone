@@ -48,7 +48,21 @@ public static class Phase0Fixtures
         GatherTicks = 3,
         TravelTicksPerUnit = 1,
         StockpileTarget = 60,
-        FoodSourceX = 5,
+
+        // Phase 0's world, expressed as generator rules now that the valley is
+        // generated (D18): ONE patch, five tiles out, and nothing random about it.
+        //
+        // Zero jitter and no river on purpose. Phase 0 is the vertical slice whose
+        // whole point is that you can read why one villager lived or died, and a
+        // fixture that moved the berries a tile each seed would put noise in the one
+        // place the project most needs none. The village fixture is where varied
+        // valleys get exercised.
+        ForageSiteCount = 1,
+        ForageSiteRingTiles = 5,
+        SiteJitterTiles = 0,
+        FoundingJitterTiles = 0,
+        RiverWidthTiles = 0,
+
         VigourFullUntilAge = 30,
         VigourMinPercent = 55,
         LifespanYearsBase = 45,
@@ -62,7 +76,7 @@ public static class Phase0Fixtures
     public static SimConfig Scarcity => Plenty with
     {
         GatherYield = 3,
-        FoodSourceX = 12,
+        ForageSiteRingTiles = 12,
         StockpileTarget = 60,
     };
 

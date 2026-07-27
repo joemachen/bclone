@@ -129,7 +129,23 @@ public sealed class HouseholdSystem : ISimSystem
                 continue;
             }
 
-            Pair(world, seeker, partner, config, timber);
+            try
+            {
+                Pair(world, seeker, partner, config, timber);
+            }
+            catch (Household.NoRoomToBuildException noRoom)
+            {
+                // The valley is full within reach of work. A real constraint and a
+                // legible one — but the timber is already out of the shed, so it goes
+                // back rather than evaporating. Goods conservation is not negotiable
+                // just because the code took an unusual branch.
+                world.StorageShed.Store.ReceiveLogs(timber);
+
+                world.Log(Logging.LogLevel.Info, "household",
+                    $"{seeker.Name} and {partner.Name} have nowhere to build: {noRoom.Message} " +
+                    "They stay where they are.");
+                continue;
+            }
         }
     }
 
@@ -225,8 +241,10 @@ public sealed class HouseholdSystem : ISimSystem
 
     private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config, int timber)
     {
-        GridPos home = Household.PlacementFor(
-            world.Households.Count, config.HomeX, config.HomeY, config.HouseholdSpacing);
+        // Chosen with regard to where the work is, rather than the next spot on a
+        // spiral (see Household.ChooseSite). This is what makes a generated valley
+        // habitable by construction instead of by a lucky ring radius.
+        GridPos home = Household.ChooseSite(world, world.Map.FoundingSite);
 
         var household = new Household
         {

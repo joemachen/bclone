@@ -150,49 +150,12 @@ public sealed record SimConfig
     [JsonPropertyName("home_y")]
     public int HomeY { get; init; }
 
-    /// <summary>Where food is foraged.</summary>
-    [JsonPropertyName("food_source_x")]
-    public int FoodSourceX { get; init; } = 5;
-
-    /// <summary>Where food is foraged.</summary>
-    [JsonPropertyName("food_source_y")]
-    public int FoodSourceY { get; init; }
-
-    /// <summary>
-    /// Further forage sites, beyond the first.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Not content dressing. The measured finding was that a <em>binding</em>
-    /// catchment radius starves outlying households when there is only one food
-    /// source — no amount of economic slack helps, because those families have
-    /// nothing within reach to work. Several sources spread around the valley are the
-    /// prerequisite for §2.2's catchment rule constraining anything at all (D19).
-    /// </para>
-    /// <para>
-    /// <b>A ring around the homes, plus two further out.</b> The first attempt put all
-    /// three sites out at the edges, which left every home near the middle of the
-    /// village competing for the one original berry patch — so tightening catchment
-    /// simply left people idle beside a full patch, and their households starved. A
-    /// site in each direction at roughly the width of the settlement means every home
-    /// has somewhere close; the two distant ones are what a growing village spreads
-    /// toward. Measured: with these positions the village survives a catchment of 10
-    /// tiles, against 12 for the edge-only layout.
-    /// </para>
-    /// <para>
-    /// These become generator output once the map is seeded (D18); the literal
-    /// coordinates are the placeholder.
-    /// </para>
-    /// </remarks>
-    [JsonPropertyName("extra_forage_sites")]
-    public IReadOnlyList<SitePosition> ExtraForageSites { get; init; } = new[]
-    {
-        new SitePosition { X = -6, Y = 0 },
-        new SitePosition { X = 0, Y = 6 },
-        new SitePosition { X = 0, Y = -6 },
-        new SitePosition { X = -7, Y = -6 },
-        new SitePosition { X = 7, Y = 7 },
-    };
+    // food_source_x/y and extra_forage_sites used to live here, as literal
+    // coordinates, and the remark on them said "these become generator output once the
+    // map is seeded (D18)". They have. Deleted rather than left in place, because a
+    // config key nobody reads is a trap: a modder edits it, nothing happens, and there
+    // is no way to tell from the file that it is decoration. The rules that replaced
+    // them are forage_site_count / forage_site_ring_tiles / site_jitter_tiles.
 
     // ---------------------------------------------------------------
     //  Life
@@ -222,13 +185,8 @@ public sealed record SimConfig
     [JsonPropertyName("leave_home_age")]
     public int LeaveHomeAge { get; init; } = 18;
 
-    /// <summary>Where timber is cut.</summary>
-    [JsonPropertyName("tree_stand_x")]
-    public int TreeStandX { get; init; } = -4;
-
-    /// <summary>Where timber is cut.</summary>
-    [JsonPropertyName("tree_stand_y")]
-    public int TreeStandY { get; init; } = 2;
+    // tree_stand_x/y likewise became generator output (D18) — see tree_stand_count
+    // and tree_stand_ring_tiles.
 
     /// <summary>Wood one completed cut brings home.</summary>
     [JsonPropertyName("cut_yield")]
@@ -896,9 +854,25 @@ public sealed record SimConfig
                 $"labour_reshuffle_years must be greater than zero (got {LabourReshuffleYears}).");
         }
 
-        if (ExtraForageSites is null)
+        if (ForageSiteCount <= 0)
         {
-            throw new SimConfigException("extra_forage_sites must be a list, even if an empty one.");
+            throw new SimConfigException(
+                $"forage_site_count must be at least one (got {ForageSiteCount}) — a valley with " +
+                "nowhere to forage cannot be lived in.");
+        }
+
+        if (TreeStandCount <= 0)
+        {
+            throw new SimConfigException(
+                $"tree_stand_count must be at least one (got {TreeStandCount}) — nothing could be " +
+                "built without timber.");
+        }
+
+        if (ForageSiteRingTiles <= 0 || SiteJitterTiles < 0)
+        {
+            throw new SimConfigException(
+                $"forage_site_ring_tiles must be positive and site_jitter_tiles non-negative " +
+                $"(got {ForageSiteRingTiles}, {SiteJitterTiles}).");
         }
 
         if (MapWidth <= 0 || MapHeight <= 0)

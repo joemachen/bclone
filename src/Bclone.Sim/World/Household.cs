@@ -40,6 +40,143 @@ public sealed class Household
     /// it is whether you eat.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Where to build the next home — near the work, and near the store.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This replaces a square spiral that knew nothing about where the work was</b>,
+    /// and that ignorance is what made a generated valley uninhabitable. Hand-placed
+    /// coordinates hid it for two phases, because the sites had been positioned around
+    /// the spiral by hand until it worked; generate the sites instead and the spiral
+    /// simply has a new set of them to ignore. Measured: the worst home landed exactly
+    /// at the economy's budget with no margin, and the village starved out at year 200
+    /// with a full granary. Tightening the ring made it <em>worse</em>, which is what
+    /// finally said the problem was structural (`specs/seeded-map-generation.md §12`).
+    /// </para>
+    /// <para>
+    /// <b>The rule is the two trips a household actually makes</b>: out to work, and
+    /// over to the store. A site is scored on the sum of those, so a home sits between
+    /// its livelihood and its larder rather than optimising one and paying for it
+    /// daily with the other. That is one sentence a player can be told, which is the
+    /// §2.2 test, and it is the same shape as every other decision here — a ranked
+    /// list of plain conditions rather than a weighting nobody can explain (D15).
+    /// </para>
+    /// <para>
+    /// <b>The distance to work is a hard bound, not part of the score.</b> The economy
+    /// is derived from it (<see cref="VillageEconomy.MaxHomeToWorkTiles"/>), so a home
+    /// built beyond it is a family the village cannot feed — and letting the scorer
+    /// trade that away for a shorter walk to the granary is exactly how a settlement
+    /// ends up with an outlying house that quietly starves.
+    /// </para>
+    /// </remarks>
+    public static GridPos ChooseSite(Core.SimWorld world, GridPos villageCentre)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        Config.SimConfig config = world.Config;
+        int reach = VillageEconomy.MaxHomeToWorkTiles(config);
+        int search = VillageEconomy.MaxHomeToVillageTiles(config);
+
+        GridPos best = default;
+        int bestScore = int.MaxValue;
+        bool found = false;
+
+        // A fixed scan order, so an exact tie always resolves the same way. An
+        // unordered tie between two equally good sites is a desync waiting to happen.
+        for (int dy = -search; dy <= search; dy++)
+        {
+            for (int dx = -search; dx <= search; dx++)
+            {
+                var candidate = new GridPos(villageCentre.X + dx, villageCentre.Y + dy);
+
+                if (!world.Map.Contains(candidate)
+                    || world.Map.TerrainAt(candidate) == Terrain.Water
+                    || IsTaken(world, candidate))
+                {
+                    continue;
+                }
+
+                int toWork = NearestWorkDistance(world, candidate);
+                if (toWork > reach)
+                {
+                    continue;
+                }
+
+                int score = toWork + candidate.ManhattanDistanceTo(world.Granary.Position);
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = candidate;
+                    found = true;
+                }
+            }
+        }
+
+        if (found)
+        {
+            return best;
+        }
+
+        // Nowhere left within reach of work. A real and legible constraint — the
+        // valley is full — and the caller decides what to do about it rather than a
+        // home being dropped somewhere unsurvivable to keep the code tidy.
+        throw new NoRoomToBuildException(
+            $"No free ground within {reach} tiles of work and {search} of the village centre.");
+    }
+
+    /// <summary>Distance to the nearest place a household could work.</summary>
+    private static int NearestWorkDistance(Core.SimWorld world, GridPos from)
+    {
+        int nearest = int.MaxValue;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Kind != JobKind.Forager)
+            {
+                continue;
+            }
+
+            int distance = from.ManhattanDistanceTo(workplace.Position);
+            if (distance < nearest)
+            {
+                nearest = distance;
+            }
+        }
+
+        return nearest;
+    }
+
+    /// <summary>Whether something already stands here.</summary>
+    private static bool IsTaken(Core.SimWorld world, GridPos position)
+    {
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            if (world.Households[i].HomePosition == position)
+            {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.Workplaces[i].Position == position)
+            {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            if (world.StoreBuildings[i].Position == position)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static GridPos PlacementFor(int index, int originX, int originY, int spacing)
     {
         // Walk a square spiral outward so homes stay clustered around the origin.
@@ -114,6 +251,21 @@ public sealed class Household
     }
 
     public bool RemoveMember(int villagerId) => _memberIds.Remove(villagerId);
+
+    /// <summary>Thrown when the valley has no room left within reach of work.</summary>
+    /// <remarks>
+    /// A real constraint rather than an error: a village can genuinely fill its valley.
+    /// It is an exception rather than a null so that a caller has to decide what it
+    /// means — a couple that cannot build stays at home — instead of a bad site being
+    /// returned quietly and a family starving on it (METHODOLOGY §4).
+    /// </remarks>
+    public sealed class NoRoomToBuildException : InvalidOperationException
+    {
+        public NoRoomToBuildException(string message)
+            : base(message)
+        {
+        }
+    }
 
     /// <summary>True when nobody lives here any more — a house that outlived its family.</summary>
     public bool IsEmpty => _memberIds.Count == 0;

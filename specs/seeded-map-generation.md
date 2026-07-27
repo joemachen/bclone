@@ -165,4 +165,22 @@ Zero margin — and the collapse is the classic shape: **people starve with 1,74
 
 **The structural cause is the one §1.3 of this spec already named and slice 1 did not touch: homes are still placed on a blind square spiral.** `Household.PlacementFor` walks outward from the founding site knowing nothing about where the forage sites are, so a generated valley just gives that spiral a new set of sites to ignore. Hand-placed coordinates hid it, because the sites had been positioned around the spiral by hand until it worked.
 
-**So slice 1 is not done.** It needs the other half: **new households choose where to build with regard to the work.** That is what makes a generated valley habitable by construction rather than by a lucky radius, and it is the same claim §2.2 makes about catchment — distance to work is not flavour, it is whether you eat. It is also the prerequisite for tightening `forager_catchment_tiles` below ten, which `specs/labour-allocation.md §8` has wanted since Phase 1.
+**So slice 1 was not done.** It needed the other half: **new households choose where to build with regard to the work.** That is what makes a generated valley habitable by construction rather than by a lucky radius, and it is the same claim §2.2 makes about catchment — distance to work is not flavour, it is whether you eat.
+
+### 12.1 ✅ Resolved — homes are placed, not spiralled
+
+`Household.ChooseSite` replaced the spiral. The rule is **the two trips a household actually makes**: out to work, and over to the store. A site is scored on the sum of those, so a home sits between its livelihood and its larder rather than optimising one and paying daily with the other — one sentence a player can be told, which is the §2.2 test.
+
+**The distance to work is a hard bound rather than part of the score.** `VillageEconomy.MaxHomeToWorkTiles` states it, `ChooseSite` refuses to build beyond it, and the economy is derived from it. That inverts what the derivation used to be: it scanned where a spiral *happened* to drop twenty homes and took the worst, so the budget was whatever the layout gave it. **Now the budget is a promise the village keeps rather than a measurement it discovers**, which is what lets one economy serve every seed.
+
+A couple with nowhere left to build stays where they are and the village says so — a legible constraint (the valley is full), not an error, and the timber goes back in the shed rather than evaporating.
+
+**Result: 291 tests green, and every one of twelve seeds holds a village for 200 years.** The economy re-derived to `gather_yield` 86 and `firewood_per_split` 141.
+
+### 12.2 A bug it flushed out on the way
+
+With one full berry patch and a tree stand the village wanted nobody at, three idle villagers were told *"the village has all the hands it needs — 4 foraging"* while exactly one of them was foraging. The refusal reported the *nearest* reachable workplace, and the stand happened to be a tile closer than the full patch. It now reports the nearest place that is **full and still wanted** — the one the player can act on by building another — and falls back to "enough hands" only when no such place exists. A sentence that contradicts itself in its own second clause is non-negotiable 1 failing.
+
+### 12.3 Noted for slice 2
+
+On some seeds the river runs straight through the settlement. Harmless today, since nothing reads water — and **exactly the case the generator will have to guarantee against** once it is impassable and before bridges exist (§10.1).

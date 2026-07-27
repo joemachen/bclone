@@ -198,12 +198,13 @@ Each phase should ship in a playable, legible state before the next begins.
 
 - **The manned market** (D36; spec slice 4, the last one). `JobKind.Marketer` — the first job that produces nothing. Traders deliver from the stores to households below target and, crucially, are **the only thing that can reach a dead family's larder**: goods stranded in empty houses fall by 98%. Fetching is untouched, so the village survives the market being switched off, and there is a 300-year test that proves it. **`specs/storage-and-distribution.md` is complete and D30 is closed.** 281 tests green.
 
+- **The valley is generated** (D18, slice 1 of 3; `specs/seeded-map-generation.md`). Terrain, a wandering river, forest stands, forage sites and the founding site all come from the run's own seed in a fixed draw order, and the map is in the state hash — so quoting one number reproduces a whole run, world included. The literal coordinates left the config and became **rules** (how many sites, how far out, how wide the river) rather than outcomes. **Homes stopped being spiralled and started being placed**, scored on the two trips a household actually makes — out to work and over to the store — with distance-to-work a hard bound the economy is derived from. Economy re-derived: `gather_yield` 60 → 86, `firewood_per_split` 36 → 141. Twelve seeds each hold a village for 200 years. 291 tests green.
+
 **In progress:**
 - Nothing.
 
 **Next up** *(in order — Joe's call, 2026-07-27)*:
-1. **Seeded map generation** (D18), `specs/seeded-map-generation.md` — **slice 1 of 3**: the generator, with water as terrain nothing reads yet. Beyond variety it has a concrete job: homes sit on a fixed spiral that knows nothing about where the work is, which is what stops catchment being tightened below ten (`specs/labour-allocation.md §8`).
-2. **Real pathfinding**, with water impassable (D40) — map-gen slice 2, and its own spec. The travel-cost field is Manhattan distance today; this is what makes the river mean anything. Expect `VillageEconomy` to be re-derived, since a path round water is longer than a straight line.
+1. **Real pathfinding**, with water impassable (D40) — map-gen slice 2, and its own spec. The travel-cost field is Manhattan distance today; this is what makes the river mean anything. Expect `VillageEconomy` to be re-derived, since a path round water is longer than a straight line.
 3. **Building placement** — **confirmed in.** Storage and buildings become player decisions. It is what turns granary capacity from a config line into a choice, what makes the market's position — currently worth only 6% off a fetch trip — actually matter, and what D35's cemetery is waiting for. Also the moment D38's multi-instance seam has to be fixed. Wants its own spec.
 4. **Bridges** (D40) — the technology, then the building. Needs both the tech tree (§2.7) and placement, so it lands after them.
 5. **Environment/seasons depth + biomes** (§2.5) — the phase's headline. **Spoilage is not part of it** (D37, cut).

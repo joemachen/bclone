@@ -82,28 +82,22 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        // Budget for the worst walk anyone in a village this size has to make: for
-        // every home the village will plausibly build, how far is that home's OWN
-        // nearest site, and which home has it worst.
+        // Budget for the worst walk the village will ever ASK anyone to make — which
+        // is now a promise rather than a measurement (see MaxHomeToWorkTiles).
         //
-        // Both halves matter, and getting either wrong kills the village in a way
-        // that took a long run to see. Budgeting for household #1 made every outlying
-        // family a rounding error that starved. Budgeting for the LAST home's nearest
-        // site was worse in the other direction - that home happens to sit one tile
-        // from a thicket, so the economy was derived as though everybody had a
-        // one-tile commute, and the yield it produced fed nobody.
-        int worst = 0;
-        for (int i = 0; i <= config.EconomyHorizonHouseholds; i++)
-        {
-            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
-            int distance = NearestForageDistance(config, home);
-            if (distance > worst)
-            {
-                worst = distance;
-            }
-        }
-
-        int travel = worst * config.TravelTicksPerUnit;
+        // This used to scan where a square spiral happened to drop twenty homes and
+        // take the worst of them, and both ways of getting that wrong killed a village
+        // before. Budgeting for household #1 made every outlying family a rounding
+        // error that starved. Budgeting for the LAST home's nearest site was worse the
+        // other way: that home happened to sit one tile from a thicket, so the economy
+        // was derived as though everybody had a one-tile commute and the yield it
+        // produced fed nobody.
+        //
+        // Both were symptoms of the same thing — the economy taking whatever the
+        // layout gave it. Household.ChooseSite now refuses to build further out than
+        // this, so the budget is something the village keeps rather than something it
+        // discovers.
+        int travel = MaxHomeToWorkTiles(config) * config.TravelTicksPerUnit;
         return (travel * 2) + config.GatherTicks;
     }
 
@@ -151,6 +145,51 @@ public static class VillageEconomy
         return nearest + (config.SiteJitterTiles * 2);
     }
 
+    // ---------------------------------------------------------------
+    //  What placement guarantees, and what the economy is derived from
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The furthest a home may ever be from its work.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is a guarantee, not an observation, and that inversion is the point.</b>
+    /// The economy used to be derived by scanning where a square spiral <em>happened</em>
+    /// to put twenty homes and taking the worst — so the budget was whatever the layout
+    /// gave it, and a generated valley could hand it a layout it could not afford.
+    /// Now <see cref="Household.ChooseSite"/> refuses to build beyond this distance, so
+    /// the budget holds by construction and the derivation has something firm to stand
+    /// on.
+    /// </para>
+    /// <para>
+    /// Stated as: <b>a home is never further from work than the sites are from the
+    /// middle of the valley</b> — the ring radius, plus the worst the jitter can add.
+    /// A village that cannot honour that has run out of valley, which is a legible
+    /// thing to be told.
+    /// </para>
+    /// </remarks>
+    public static int MaxHomeToWorkTiles(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return config.ForageSiteRingTiles + (config.SiteJitterTiles * 2);
+    }
+
+    /// <summary>How far a home may sit from the middle of the village.</summary>
+    /// <remarks>
+    /// The other half of the bound. Without it a household could chase a distant site
+    /// out to the valley's edge and then spend its life walking back to the granary —
+    /// which is the same mistake in the other direction, and D32 says the interesting
+    /// inequality is distance to the store.
+    /// </remarks>
+    public static int MaxHomeToVillageTiles(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return config.ForageSiteRingTiles + (config.SiteJitterTiles * 2);
+    }
+
     /// <summary>
     /// Foraging trips one adult can complete in a year.
     /// </summary>
@@ -192,17 +231,13 @@ public static class VillageEconomy
         // called this out as the thing that must be re-derived rather than patched —
         // trips per year is what the whole timber economy is built on, and quietly
         // leaving a leg out of it is exactly the D16 mistake.
-        int worst = 0;
-        for (int i = 0; i <= config.EconomyHorizonHouseholds; i++)
-        {
-            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
-            int distance = home.ManhattanDistanceTo(stand) + stand.ManhattanDistanceTo(shed)
-                + shed.ManhattanDistanceTo(home);
-            if (distance > worst)
-            {
-                worst = distance;
-            }
-        }
+        // Same basis as the forage budget: the furthest a home is allowed to be, not
+        // wherever a spiral happened to put one.
+        int fromVillage = MaxHomeToVillageTiles(config);
+        var worstHome = new GridPos(fromVillage, 0);
+
+        int worst = worstHome.ManhattanDistanceTo(stand) + stand.ManhattanDistanceTo(shed)
+            + shed.ManhattanDistanceTo(worstHome);
 
         return (worst * config.TravelTicksPerUnit) + config.CutTicks;
     }
@@ -282,16 +317,9 @@ public static class VillageEconomy
 
         var hut = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY);
 
-        int worst = 0;
-        for (int i = 0; i <= config.EconomyHorizonHouseholds; i++)
-        {
-            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
-            int distance = home.ManhattanDistanceTo(hut);
-            if (distance > worst)
-            {
-                worst = distance;
-            }
-        }
+        // The furthest home the village will build, walking to the hut and back.
+        var worstHome = new GridPos(MaxHomeToVillageTiles(config), 0);
+        int worst = worstHome.ManhattanDistanceTo(hut);
 
         return (worst * config.TravelTicksPerUnit * 2) + config.SplitTicks;
     }

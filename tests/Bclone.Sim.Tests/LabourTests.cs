@@ -196,7 +196,13 @@ public sealed class LabourTests
         Villager worker = loop.World.Villagers[0];
         _output.WriteLine($"{worker.Name}: {worker.JobReason}");
 
-        Assert.Contains("berry patch", worker.JobReason, StringComparison.OrdinalIgnoreCase);
+        // The place they ACTUALLY hold, not "the berry patch" by name. The valley is
+        // generated now (D18), so which of several thickets is nearest to villager
+        // zero is a property of the seed — and a test that pinned the name was
+        // asserting the map rather than the sentence.
+        Workplace? held = loop.World.FindWorkplace(worker.WorkplaceId);
+        Assert.NotNull(held);
+        Assert.Contains(held!.Name, worker.JobReason, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("tiles", worker.JobReason, StringComparison.OrdinalIgnoreCase);
     }
 

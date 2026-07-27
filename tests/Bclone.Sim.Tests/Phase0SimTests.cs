@@ -363,13 +363,21 @@ public sealed class Phase0SimTests
     [Fact]
     public void Villager_StaysWithinTheirWorld()
     {
+        // Between home and work, read from the WORLD rather than from config. The
+        // valley is generated now (D18), so home_x and food_source_x no longer say
+        // where anything is — this test used to be checking two numbers that had
+        // stopped being about the map.
         var (loop, _) = Phase0Fixtures.Build(Config);
+
+        int homeX = loop.World.Households[0].HomePosition.X;
+        int workX = loop.World.FoodSource.Position.X;
+        int low = System.Math.Min(homeX, workX);
+        int high = System.Math.Max(homeX, workX);
 
         for (int i = 0; i < 3_000; i++)
         {
             loop.StepOnce();
-            int x = loop.World.Villager.Position.X;
-            Assert.InRange(x, Config.HomeX, Config.FoodSourceX);
+            Assert.InRange(loop.World.Villager.Position.X, low, high);
         }
     }
 

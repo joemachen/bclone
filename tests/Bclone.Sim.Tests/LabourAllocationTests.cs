@@ -327,12 +327,21 @@ public sealed class LabourAllocationTests
         // Posed directly rather than hoped for: one seat at the single patch, four
         // founders. Three of them have nowhere to fit from the very first tick, so
         // the message cannot be missed by a village that happened not to grow.
+        // One patch with room for one pair of hands, so somebody has to be turned
+        // away. Asked of the GENERATOR now — extra_forage_sites was a list of literal
+        // coordinates and stopped being read when the valley became generated (D18).
         SimConfig config = Config with
         {
-            ExtraForageSites = System.Array.Empty<SitePosition>(),
+            ForageSiteCount = 1,
             ForageSiteCapacity = 1,
+            TreeStandCount = 1,
             TreeStandCapacity = 1,
             WoodcutterHutCapacity = 1,
+
+            // No market either, so the only work anyone can reach is the one full
+            // patch. Otherwise a villager's refusal explains the market instead, which
+            // is a true sentence about the wrong building.
+            MarketCapacity = 0,
         };
         SimLoop loop = Build(config);
         loop.StepOnce();
@@ -346,6 +355,11 @@ public sealed class LabourAllocationTests
                 found = $"{villager.Name}: {villager.JobReason}";
                 break;
             }
+        }
+
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            _output.WriteLine($"  {villager.Name}: job {villager.WorkplaceId} — {villager.JobReason}");
         }
 
         _output.WriteLine(found ?? "(nobody was turned away for want of room)");

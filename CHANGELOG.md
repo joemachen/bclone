@@ -112,6 +112,28 @@ Categories (only include the ones you use): **Added**, **Changed**,
   at what the buildings support instead of overshooting and falling back. Measured over
   200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
   across goods, not per good: a shed packed with logs has nowhere to stack firewood.
+- **The valley is generated from the run's seed** (D18) — terrain, a wandering river,
+  forest stands, forage sites and the founding site, drawn in a fixed order from the
+  same seeded stream as everything else, and covered by the state hash. **Quoting one
+  number now reproduces an entire run, world included.** The literal coordinates left
+  `sim.config.json` and became *rules* — how many sites, how far out, how wide the
+  river — so a modder controls a valley rather than a layout. A golden map hash makes
+  a reordered draw fail the build, since that would silently invalidate every seed
+  anyone had written down.
+  - **Generation is bounded rather than checked**: sites are drawn within radii the
+    economy already reads, so the distance budget holds by construction instead of by
+    a reject-and-redraw loop. One economy serves every seed, which is what makes a
+    shared seed comparable.
+  - **Water is generated but nothing reads it yet**, deliberately. Making the river
+    impassable needs real pathfinding in the travel-cost field — the field that decides
+    who eats — so it is its own slice, and crossing it will need a bridge (D40).
+- **Homes are placed, not spiralled.** `Household.ChooseSite` scores a site on the two
+  trips a household actually makes — out to work, and over to the store — with the
+  distance to work a hard bound rather than part of the score. `Household.PlacementFor`
+  walked a square spiral that knew nothing about where the work was, which hand-placed
+  coordinates had hidden for two phases: the sites had been positioned around that
+  spiral by hand until it worked, so generating them just gave the spiral a new set to
+  ignore. The village starved out at year 200 with a full granary until this landed.
 - **The manned market** (D14, D36) — `JobKind.Marketer`, and the first job in the game
   that **produces nothing**: a marketer only ever moves what already exists. Several
   traders work it. They deliver from the stores to households below their target, and
@@ -231,6 +253,22 @@ Categories (only include the ones you use): **Added**, **Changed**,
   in a neighbour's home is not supply. The comment justifying it cited a sharing policy
   that storage slice 3 had already deleted. Demand is now counted per home and supply
   is the shed alone.
+
+- **A refusal that contradicted itself.** With one full berry patch and a tree stand
+  the village wanted nobody at, three idle villagers were told *"the village has all the
+  hands it needs — 4 foraging"* while exactly one of them was foraging: the reason
+  reported the *nearest* reachable workplace, and the stand happened to be a tile
+  closer than the full patch. It now reports the nearest place that is **full and still
+  wanted** — the one the player can act on by building another.
+- **The economy derived itself from wherever a spiral happened to put twenty homes.**
+  It is now derived from a bound the village *keeps* (`MaxHomeToWorkTiles`), which is
+  what lets one economy serve every generated seed.
+
+### Removed (dead config)
+- `food_source_x`/`_y`, `extra_forage_sites`, `tree_stand_x`/`_y` — all became generator
+  output (D18). Deleted rather than left in place: a config key nobody reads is a trap,
+  because a modder edits it, nothing happens, and the file gives no hint that it is
+  decoration.
 
 ### Changed (tests)
 - **The acceptance run watches 300 years, not 150, and asserts the village is still

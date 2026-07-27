@@ -415,6 +415,19 @@ internal static class LabourAllocator
             // stand merely had no quota — technically not all full, so they were told
             // the village had enough hands, when what they actually needed was another
             // patch nearby. The nearest opening is the one worth acting on.
+            //
+            // But "nearest" alone is not enough either, and the second version of this
+            // produced a sentence that contradicted itself: with one full berry patch
+            // and a tree stand the village wanted nobody at, the stand happened to be
+            // a tile closer, so three idle villagers were told "the village has all
+            // the hands it needs — 4 foraging", while exactly one of them was
+            // foraging. The village wanted four and had room for one.
+            //
+            // So: report the nearest place that is FULL AND STILL WANTED, because that
+            // is the one the player can act on by building another. Only when no such
+            // place exists does "we have enough hands" become the true answer.
+            reachable = NearestFullAndWanted(world, villager, quota) ?? reachable;
+
             villager.JobReason = reachable.IsFull
                 ? $"No work: {reachable.Name} is full — it has its {reachable.Capacity} " +
                   $"{(reachable.Capacity == 1 ? "hand" : "hands")}, and it is the nearest place " +
@@ -614,6 +627,35 @@ internal static class LabourAllocator
             {
                 best = workplace;
                 cost = candidate;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// The nearest reachable workplace that is full <em>and</em> whose kind the village
+    /// still wants more of — the refusal a player can actually do something about.
+    /// </summary>
+    private static Workplace? NearestFullAndWanted(
+        SimWorld world, Villager villager, LabourQuota quota)
+    {
+        Workplace? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (!workplace.IsFull || CountHolding(world, workplace.Kind) >= quota.For(workplace.Kind))
+            {
+                continue;
+            }
+
+            int candidate = CostBetween(world, villager, workplace);
+            if (candidate <= workplace.CatchmentRadius && candidate < bestCost)
+            {
+                best = workplace;
+                bestCost = candidate;
             }
         }
 

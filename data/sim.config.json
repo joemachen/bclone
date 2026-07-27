@@ -100,31 +100,58 @@
   "map_width": 120,
   "map_height": 80,
 
+  // Where the village is founded, as an OFFSET from the spot the map
+  // generator chose for it (D18). It used to be an absolute coordinate;
+  // the valley is generated now, so the settlement is wherever the
+  // generator put it and every building hangs off this.
   "home_x": 0,
   "home_y": 0,
-  "food_source_x": 5,
-  "food_source_y": 0,
 
-  // More than one place to forage (decision D19). This is structural,
-  // not scenery: a catchment radius that actually BINDS kills outlying
-  // households when there is only one food source, because those
-  // families have nothing within reach to work. Spread sites are the
-  // prerequisite for the catchment rule in DESIGN.md §2.2 constraining
-  // anything at all.
+  // ---- The valley, generated (D18) ---------------------------
+  // These replaced the literal coordinates the world used to be typed
+  // in as. A modder controls the RULES of a valley - how many sites,
+  // how far out, how wide the river - rather than the outcome, which
+  // is the honest data-driven form once the world is generated.
   //
-  // A ring around the homes, plus two further out. Putting them all at
-  // the edges left every home near the middle competing for the one
-  // original berry patch, so tightening catchment just left people idle
-  // beside a full patch and their households starved.
-  //
-  // These become generator output once the map is seeded (D18).
-  "extra_forage_sites": [
-    { "x": -6, "y":  0 },
-    { "x":  0, "y":  6 },
-    { "x":  0, "y": -6 },
-    { "x": -7, "y": -6 },
-    { "x":  7, "y":  7 },
-  ],
+  // Several places to forage is structural, not scenery (D19): a
+  // catchment radius that actually BINDS kills outlying households when
+  // there is only one food source, because those families have nothing
+  // within reach to work. And they have to be SPREAD (D24) - the first
+  // hand-placed attempt put them all out at the edges, which left every
+  // home near the middle competing for the one original patch, so
+  // tightening catchment just left people idle beside a full patch and
+  // their households starved. The generator guarantees the spread by
+  // construction: evenly spaced slots with jitter, never free angles.
+  "forage_site_count": 6,
+  "forage_site_ring_tiles": 5,
+  "tree_stand_count": 2,
+  "tree_stand_ring_tiles": 4,
+  "tree_stand_radius_tiles": 3,
+
+  // EVERY TILE OF THIS IS PAID FOR BY THE WHOLE ECONOMY. The food
+  // budget assumes the worst case - a site jittered directly away from
+  // the home that needs it, costing twice this in Manhattan distance -
+  // so generosity here makes every villager in every valley work
+  // harder, including on the seeds where the sites land close. One tile
+  // buys visibly different valleys; two pushed the required gather
+  // yield up by two thirds.
+  "site_jitter_tiles": 1,
+  "founding_jitter_tiles": 2,
+
+  // Water is generated but NOTHING READS IT YET, and that sequencing is
+  // deliberate (D40). Making the river impassable means real
+  // pathfinding in the travel-cost field - the field that decides
+  // labour catchment, market errands and the economy's distance budget
+  // - so it is its own slice. Crossing water will need a bridge, which
+  // is a technology first and a building second.
+  "river_width_tiles": 2,
+
+  // Reserved for soil depletion (DESIGN.md §2.3). Generated and hashed,
+  // read by nothing - it is here so that when depletion lands it does
+  // not have to change the generator's DRAW ORDER, which would
+  // invalidate every seed anyone had written down.
+  "soil_quality_min": 40,
+  "soil_quality_max": 200,
 
   // How many hands fit at one patch, and how far it is reasonable to
   // walk to work. Capacity is a LOCAL fact about a place; how many
@@ -164,8 +191,8 @@
   // in winter. Nobody is spared for the stand while a household in the
   // village is going hungry - the village feeds itself before it
   // builds, and that is the whole labour policy in one sentence.
-  "tree_stand_x": -4,
-  "tree_stand_y": 2,
+  // Where the stands are is generator output now - see
+  // tree_stand_count and tree_stand_ring_tiles above.
   "cut_yield": 12,
   "cut_ticks": 4,
   "tree_stand_capacity": 3,
