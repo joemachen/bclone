@@ -74,7 +74,10 @@
   // from the first home starved the outskirts, and deriving from the
   // last home (which happens to sit beside a thicket) assumed everybody
   // had a one-tile commute and starved the whole village.
-  "gather_yield": 60,
+  // Re-derived when the valley became generated (D18): the canonical ring of sites
+  // plus the worst jitter the generator may add is a longer walk than the
+  // hand-placed layout was, so a trip has to bring back more. 60 -> 86.
+  "gather_yield": 86,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
@@ -195,7 +198,10 @@
   // "exactly affordable" produces a village that is warm by construction
   // with nobody left to build and no slack for a long winter, which is
   // useless the moment anything pushes on it.
-  "firewood_per_split": 36,
+  // Also re-derived for the generated valley: the stand sits on its own ring now and
+  // the haul to the shed is costed against it, so fewer trips fit in a year and each
+  // batch has to be bigger to heat the same homes. 36 -> 141.
+  "firewood_per_split": 141,
 
   // Per household, not per member: a house costs the same to heat
   // whether two live in it or five. That makes SPRAWL the thing that

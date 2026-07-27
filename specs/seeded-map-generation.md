@@ -148,3 +148,21 @@ The fuel chain and storage both taught the same lesson: slices, each green befor
 3. **Bridges** — the technology, then the building. Needs the tech tree (§2.7) and placement, so it lands after both. Until then the generator's guarantee from §10.1 is what keeps the village viable.
 
 **Slice 1 is what this spec covers.** Slices 2 and 3 get their own specs; they are recorded here so the shape of the whole is visible.
+
+---
+
+## 12. Measured while building slice 1 (2026-07-27) — homes are the missing half
+
+The generator works, is deterministic, and is in the state hash. The economy was re-derived for the new geometry (`gather_yield` 60 → 86, `firewood_per_split` 36 → 141). **But the village now holds a stable size for about 200 years and then dies**, against 300 before, and the measurement says why.
+
+```
+worst home -> nearest forage site: 10 tiles;  economy budgets 10
+```
+
+Zero margin — and the collapse is the classic shape: **people starve with 1,745 food in the granary and 2,269 in the homes**, households dying whole rather than the village thinning evenly.
+
+**Tuning the ring radius does not fix it, and the way it fails is the diagnosis.** Tightening the ring from 5 tiles to 4 made the worst home *further* from its nearest site (12 tiles, not 10), because pulling the sites inward leaves the outlying homes with nothing near them. The relationship is not monotonic, so there is no radius that is simply "right" — which is the signal that this is structural rather than a number.
+
+**The structural cause is the one §1.3 of this spec already named and slice 1 did not touch: homes are still placed on a blind square spiral.** `Household.PlacementFor` walks outward from the founding site knowing nothing about where the forage sites are, so a generated valley just gives that spiral a new set of sites to ignore. Hand-placed coordinates hid it, because the sites had been positioned around the spiral by hand until it worked.
+
+**So slice 1 is not done.** It needs the other half: **new households choose where to build with regard to the work.** That is what makes a generated valley habitable by construction rather than by a lucky radius, and it is the same claim §2.2 makes about catchment — distance to work is not flavour, it is whether you eat. It is also the prerequisite for tightening `forager_catchment_tiles` below ten, which `specs/labour-allocation.md §8` has wanted since Phase 1.

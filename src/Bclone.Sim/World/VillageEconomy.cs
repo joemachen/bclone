@@ -119,19 +119,36 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int nearest = from.ManhattanDistanceTo(new GridPos(config.FoodSourceX, config.FoodSourceY));
+        // Against the CANONICAL valley — the jitter-free ring — plus the worst jitter
+        // the generator is allowed to add (D18).
+        //
+        // This is what keeps ONE economy for every seed. Deriving from the actual
+        // generated sites would make gather_yield a property of the seed, so two runs
+        // would have different physics and a shared seed would stop being comparable.
+        // Budgeting against the canonical layout and paying for the worst jitter up
+        // front means every valley the generator can produce fits inside the economy
+        // by construction — no reject-and-redraw, and no seed quietly unsurvivable.
+        List<GridPos> sites = MapGenerator.CanonicalForageSites(config);
 
-        for (int i = 0; i < config.ExtraForageSites.Count; i++)
+        int nearest = int.MaxValue;
+        for (int i = 0; i < sites.Count; i++)
         {
-            SitePosition site = config.ExtraForageSites[i];
-            int distance = from.ManhattanDistanceTo(new GridPos(site.X, site.Y));
+            int distance = from.ManhattanDistanceTo(sites[i]);
             if (distance < nearest)
             {
                 nearest = distance;
             }
         }
 
-        return nearest;
+        if (nearest == int.MaxValue)
+        {
+            throw new InvalidOperationException(
+                "The valley has no forage sites at all; no economy can be derived for it.");
+        }
+
+        // Jitter can only ever move a site further from a given home by this much, so
+        // paying for it here is the conservative reading.
+        return nearest + (config.SiteJitterTiles * 2);
     }
 
     /// <summary>
@@ -157,7 +174,15 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        var stand = new GridPos(config.TreeStandX, config.TreeStandY);
+        // The canonical stand, furthest-out slot, plus worst-case jitter — same basis
+        // as the forage budget above, so neither kind of work is quietly cheaper.
+        List<GridPos> stands = MapGenerator.CanonicalTreeStands(config);
+        GridPos stand = stands.Count > 0
+            ? stands[stands.Count - 1]
+            : new GridPos(config.TreeStandRingTiles, 0);
+        stand = new GridPos(
+            stand.X + config.SiteJitterTiles, stand.Y + config.SiteJitterTiles);
+
         var shed = new GridPos(config.StorageShedX, config.StorageShedY);
 
         // Home to the stand, the stand to the SHED, and the shed home again.

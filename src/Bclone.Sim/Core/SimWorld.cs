@@ -70,6 +70,16 @@ public sealed class SimWorld
     /// </summary>
     public TravelCostField TravelCost { get; }
 
+    /// <summary>
+    /// The valley, generated from this run's seed (D18).
+    /// </summary>
+    /// <remarks>
+    /// Immutable once generated, so it is world state without being world <em>change</em>
+    /// — the hash covers it once and it can never drift. When terrain becomes mutable
+    /// (a felled stand, a paved road) that stops being true and this needs revisiting.
+    /// </remarks>
+    public GeneratedMap Map { get; }
+
     /// <summary>The berry patch.</summary>
     public FoodSource FoodSource { get; }
 
@@ -250,46 +260,50 @@ public sealed class SimWorld
 
         TravelCost = new TravelCostField(config.TravelTicksPerUnit);
 
+        // THE WORLD IS GENERATED FIRST, and from the run's own seeded stream (D18).
+        //
+        // Before anything else draws, because draw order is the seed contract: the
+        // map, then the villagers' names and lifespans. Generating later — or from a
+        // second RNG — would mean the seed no longer reproduced the world, which is
+        // the entire point of tying worldgen to the sim's seed rather than its own.
+        Map = MapGenerator.Generate(config, Rng);
+
+        // Everything the village builds hangs off the founding site the generator
+        // chose. The config keys that used to hold absolute coordinates are now
+        // OFFSETS from it, so a valley can be generated anywhere inside the bounds and
+        // the settlement still assembles itself correctly around the spot.
+        GridPos origin = Map.FoundingSite;
+
         FoodSource = new FoodSource
         {
-            Position = new GridPos(config.FoodSourceX, config.FoodSourceY),
+            Position = Map.ForageSites[0],
             YieldPerGather = config.GatherYield,
         };
 
         TreeStand = new TreeStand
         {
-            Position = new GridPos(config.TreeStandX, config.TreeStandY),
+            Position = Map.TreeStands[0],
             YieldPerCut = config.CutYield,
         };
 
-        FoundVillage(config);
+        FoundVillage(config, origin);
 
         int catchment = TravelCostField.TilesToCost(config.ForagerCatchmentTiles);
         int nextWorkplaceId = 1;
 
-        Workplaces.Add(new Workplace
-        {
-            Id = nextWorkplaceId++,
-            Kind = JobKind.Forager,
-            Name = "the berry patch",
-            Position = FoodSource.Position,
-            Capacity = config.ForageSiteCapacity,
-            CatchmentRadius = catchment,
-        });
-
         // Several sites, spread around the valley, so an outlying household has
         // somewhere near enough to work. This is what a binding catchment needs in
-        // order to be survivable rather than merely cruel (D19).
-        for (int i = 0; i < config.ExtraForageSites.Count; i++)
+        // order to be survivable rather than merely cruel (D19) — and the generator
+        // guarantees the spread by construction rather than hoping for it (D24).
+        for (int i = 0; i < Map.ForageSites.Count; i++)
         {
-            SitePosition site = config.ExtraForageSites[i];
-            var position = new GridPos(site.X, site.Y);
+            GridPos position = Map.ForageSites[i];
 
             Workplaces.Add(new Workplace
             {
                 Id = nextWorkplaceId++,
                 Kind = JobKind.Forager,
-                Name = DescribeDirection(position),
+                Name = i == 0 ? "the berry patch" : DescribeDirection(position, origin),
                 Position = position,
                 Capacity = config.ForageSiteCapacity,
                 CatchmentRadius = catchment,
@@ -299,15 +313,18 @@ public sealed class SimWorld
         // Last ids, so that where ids break a tie the food comes first. The real
         // "feed yourself before you build" rule is the quota, not the ordering -
         // see LabourQuota - but there is no reason for the two to disagree.
-        Workplaces.Add(new Workplace
+        for (int i = 0; i < Map.TreeStands.Count; i++)
         {
-            Id = nextWorkplaceId++,
-            Kind = JobKind.Logger,
-            Name = "the tree stand",
-            Position = TreeStand.Position,
-            Capacity = config.TreeStandCapacity,
-            CatchmentRadius = catchment,
-        });
+            Workplaces.Add(new Workplace
+            {
+                Id = nextWorkplaceId++,
+                Kind = JobKind.Logger,
+                Name = i == 0 ? "the tree stand" : DescribeDirection(Map.TreeStands[i], origin),
+                Position = Map.TreeStands[i],
+                Capacity = config.TreeStandCapacity,
+                CatchmentRadius = catchment,
+            });
+        }
 
         // The first workplace that consumes an input rather than only producing one
         // (D29). Logs in, firewood out - and it can stand idle for want of logs,
@@ -317,7 +334,7 @@ public sealed class SimWorld
             Id = nextWorkplaceId++,
             Kind = JobKind.Woodcutter,
             Name = "the woodcutter's hut",
-            Position = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY),
+            Position = Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY),
             Capacity = config.WoodcutterHutCapacity,
             CatchmentRadius = catchment,
         });
@@ -339,7 +356,7 @@ public sealed class SimWorld
             Id = 1,
             Kind = StoreKind.Granary,
             Name = "the granary",
-            Position = new GridPos(config.GranaryX, config.GranaryY),
+            Position = Offset(origin, config.GranaryX, config.GranaryY),
             Store = new Stockpile { Capacity = VillageEconomy.GranaryCapacity(config) },
         });
 
@@ -348,7 +365,7 @@ public sealed class SimWorld
             Id = 2,
             Kind = StoreKind.Shed,
             Name = "the storage shed",
-            Position = new GridPos(config.StorageShedX, config.StorageShedY),
+            Position = Offset(origin, config.StorageShedX, config.StorageShedY),
             Store = new Stockpile { Capacity = VillageEconomy.ShedCapacity(config) },
         });
 
@@ -359,7 +376,7 @@ public sealed class SimWorld
         // They are separate types today. Merging them into the single Building the
         // spec's §4 describes is the right end state and is not this slice's job; the
         // seam is recorded there rather than left to be rediscovered.
-        var market = new GridPos(config.MarketX, config.MarketY);
+        var market = Offset(origin, config.MarketX, config.MarketY);
 
         StoreBuildings.Add(new StoreBuilding
         {
@@ -397,13 +414,16 @@ public sealed class SimWorld
     /// every subsequent value in the stream, silently invalidating saved seeds and
     /// every golden test.
     /// </remarks>
-    private void FoundVillage(SimConfig config)
+    private void FoundVillage(SimConfig config, GridPos origin)
     {
         int nextVillagerId = 1;
 
         for (int h = 0; h < config.StartingHouseholds; h++)
         {
-            GridPos home = Household.PlacementFor(h, config.HomeX, config.HomeY, config.HouseholdSpacing);
+            // Around the founding site the generator chose, not around the world
+            // origin. home_x and home_y are an offset now.
+            GridPos home = Household.PlacementFor(
+                h, origin.X + config.HomeX, origin.Y + config.HomeY, config.HouseholdSpacing);
 
             var household = new Household
             {
@@ -529,8 +549,17 @@ public sealed class SimWorld
     /// it matters more here, because these names end up inside the sentence that
     /// explains why someone walks the way they do.
     /// </remarks>
-    private static string DescribeDirection(GridPos position)
+    /// <summary>A building's spot, given as an offset from where the village was founded.</summary>
+    private static GridPos Offset(GridPos origin, int dx, int dy) =>
+        new(origin.X + dx, origin.Y + dy);
+
+    private static string DescribeDirection(GridPos position, GridPos origin)
     {
+        // Relative to the village, not to the world origin — "the northern thicket"
+        // has to mean north of the people saying it, and once the valley is generated
+        // the settlement is no longer at (0,0).
+        position = new GridPos(position.X - origin.X, position.Y - origin.Y);
+
         string northSouth = position.Y < 0 ? "northern" : position.Y > 0 ? "southern" : string.Empty;
         string eastWest = position.X < 0 ? "western" : position.X > 0 ? "eastern" : string.Empty;
 

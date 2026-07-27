@@ -40,6 +40,16 @@ public static class StateHash
         hash = MixUInt64(hash, world.Rng.State);
         hash = MixUInt64(hash, world.Rng.Inc);
 
+        // ---- The valley ----
+        // The map is immutable once generated, so this can never drift mid-run — but
+        // it absolutely must be here, because two runs on the same seed that generated
+        // DIFFERENT worlds would otherwise agree on the hash right up until somebody
+        // walked somewhere. It is also what makes the golden map test possible: a
+        // known seed hashes to a known valley, so a refactor that reorders the
+        // generator's draws fails the build instead of silently invalidating every
+        // seed anyone has written down.
+        hash = MixMap(hash, world.Map);
+
         // ---- Village ----
         // Every villager and every household, in id order. A hash that covered only
         // the first villager would let the rest of the village desync in silence.
@@ -105,6 +115,44 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)store.Logs);
         hash = MixUInt32(hash, (uint)store.Firewood);
         return hash;
+    }
+
+    /// <summary>Fingerprint a generated valley — terrain, soil, and everything on it.</summary>
+    public static ulong MixMap(ulong hash, GeneratedMap map)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+
+        hash = MixUInt32(hash, (uint)map.Width);
+        hash = MixUInt32(hash, (uint)map.Height);
+        hash = MixUInt32(hash, (uint)map.MinX);
+        hash = MixUInt32(hash, (uint)map.MinY);
+
+        for (int i = 0; i < map.Tiles.Count; i++)
+        {
+            hash = MixByte(hash, (byte)map.Tiles[i]);
+        }
+
+        for (int i = 0; i < map.Soil.Count; i++)
+        {
+            hash = MixByte(hash, map.Soil[i]);
+        }
+
+        hash = MixUInt32(hash, (uint)map.ForageSites.Count);
+        for (int i = 0; i < map.ForageSites.Count; i++)
+        {
+            hash = MixUInt32(hash, (uint)map.ForageSites[i].X);
+            hash = MixUInt32(hash, (uint)map.ForageSites[i].Y);
+        }
+
+        hash = MixUInt32(hash, (uint)map.TreeStands.Count);
+        for (int i = 0; i < map.TreeStands.Count; i++)
+        {
+            hash = MixUInt32(hash, (uint)map.TreeStands[i].X);
+            hash = MixUInt32(hash, (uint)map.TreeStands[i].Y);
+        }
+
+        hash = MixUInt32(hash, (uint)map.FoundingSite.X);
+        return MixUInt32(hash, (uint)map.FoundingSite.Y);
     }
 
     private static ulong MixVillager(ulong hash, Villager villager)

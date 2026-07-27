@@ -433,6 +433,88 @@ public sealed record SimConfig
     [JsonPropertyName("forage_site_capacity")]
     public int ForageSiteCapacity { get; init; } = 4;
 
+    // ---------------------------------------------------------------
+    //  Map generation (D18) — rules, not outcomes
+    // ---------------------------------------------------------------
+
+    /// <summary>How many forage sites the valley gets.</summary>
+    /// <remarks>
+    /// These replaced the literal coordinates the world used to be typed in as. A
+    /// modder controls the <em>rules</em> of a valley — how many sites, how far out,
+    /// how wide the river — rather than the outcome, which is the honest data-driven
+    /// form once the world is generated.
+    /// </remarks>
+    [JsonPropertyName("forage_site_count")]
+    public int ForageSiteCount { get; init; } = 6;
+
+    /// <summary>
+    /// How far out the ring of forage sites sits, in tiles.
+    /// </summary>
+    /// <remarks>
+    /// <b>The economy reads this, which is why generation is bounded rather than
+    /// checked.</b> <see cref="World.VillageEconomy"/> derives the food economy from how
+    /// far the worst-placed home is from its nearest site, so a generator free to put
+    /// sites anywhere would make the food economy a property of the seed. Drawing
+    /// within a stated radius keeps one economy for every seed — which is what makes a
+    /// shared seed comparable — and the distance budget then holds by construction
+    /// rather than by a reject-and-redraw loop.
+    /// </remarks>
+    [JsonPropertyName("forage_site_ring_tiles")]
+    public int ForageSiteRingTiles { get; init; } = 5;
+
+    /// <summary>
+    /// How far a site or stand may wander off its slot. What makes one valley differ
+    /// from another.
+    /// </summary>
+    /// <remarks>
+    /// <b>Every tile of this is paid for up front by the whole economy.</b> The food
+    /// budget assumes the worst case — a site jittered directly away from the home that
+    /// needs it, which costs twice this in Manhattan distance — so generosity here
+    /// makes every villager in every valley work harder, including on the seeds where
+    /// the sites happen to land close. One tile buys visibly different valleys; two
+    /// pushed the required gather yield up by two thirds.
+    /// </remarks>
+    [JsonPropertyName("site_jitter_tiles")]
+    public int SiteJitterTiles { get; init; } = 1;
+
+    /// <summary>How many stands of trees the valley gets.</summary>
+    [JsonPropertyName("tree_stand_count")]
+    public int TreeStandCount { get; init; } = 2;
+
+    /// <summary>How far out the tree stands sit.</summary>
+    [JsonPropertyName("tree_stand_ring_tiles")]
+    public int TreeStandRingTiles { get; init; } = 4;
+
+    /// <summary>How big a patch of forest a stand paints.</summary>
+    [JsonPropertyName("tree_stand_radius_tiles")]
+    public int TreeStandRadiusTiles { get; init; } = 3;
+
+    /// <summary>How far the founding site may sit from the middle of the ring.</summary>
+    /// <remarks>
+    /// Small on purpose. The economy's distance budget assumes a village inside the
+    /// ring of sites rather than off to one side of it, so this is the one piece of
+    /// jitter that has to stay modest.
+    /// </remarks>
+    [JsonPropertyName("founding_jitter_tiles")]
+    public int FoundingJitterTiles { get; init; } = 2;
+
+    /// <summary>How wide the river runs.</summary>
+    /// <remarks>
+    /// Zero generates no river at all, which is a supported valley and a useful
+    /// control in tests. Water is generated but nothing reads it yet — see
+    /// <see cref="World.Terrain"/> for why that sequencing is deliberate (D40).
+    /// </remarks>
+    [JsonPropertyName("river_width_tiles")]
+    public int RiverWidthTiles { get; init; } = 2;
+
+    /// <summary>Poorest ground the generator will produce, 0–255. Reserved for §2.3.</summary>
+    [JsonPropertyName("soil_quality_min")]
+    public int SoilQualityMin { get; init; } = 40;
+
+    /// <summary>Best ground the generator will produce, 0–255. Reserved for §2.3.</summary>
+    [JsonPropertyName("soil_quality_max")]
+    public int SoilQualityMax { get; init; } = 200;
+
     /// <summary>
     /// Years between the village sharing out its work again from scratch.
     /// </summary>
