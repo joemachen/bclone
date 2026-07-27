@@ -340,36 +340,66 @@ public readonly record struct LabourQuota
     {
         ArgumentNullException.ThrowIfNull(world);
 
-        // Firewood anywhere in the village, for the same reason as the logs above.
-        int stored = world.TotalFirewood();
-
+        // ---- Demand is per home; supply is the shed, and only the shed ----
+        //
+        // This used to compare two village-wide totals: all the firewood anywhere,
+        // against what every home together wanted. The stated reason was that "the
+        // sharing policy moves it around anyway" — and that policy was deleted by
+        // storage slice 3, so the justification went with it and the reading did not.
+        //
+        // <b>A household can only fetch firewood from the SHED.</b> Firewood stacked in
+        // somebody else's home is not supply; there is no errand that reaches it. Adding
+        // it in let a surplus in one house cancel a shortage in another, and the village
+        // believed itself stocked. Measured: it froze to extinction over four years with
+        // a hundred and eighty firewood sitting in homes, an empty shed, and the quota
+        // reading 191 against a need of 210 — so it staffed one woodcutter for a village
+        // that needed every hand it had. The right stuff in the wrong place, which is
+        // the shape nearly every goods bug here has had.
+        //
+        // So the two halves are asked separately, and the direction matters:
+        //   demand — what homes are short of, counted per home so surpluses never
+        //            cancel shortages, plus the winter the village is about to burn;
+        //   supply — what is in the shed, because that is what a fetch can reach.
+        //
+        // Cutting MORE firewood is only the answer when the shed cannot cover the
+        // demand. If it can, the wood already exists and what those homes need is a
+        // trip, not a woodcutter — and staffing one anyway is not harmless: the shed
+        // holds logs and firewood in the same room, so firewood nobody needs crowds
+        // out the logs the village builds with. Measured that too, in the other
+        // direction: the shed packed to six hundred firewood, logs could not be
+        // deposited, no house was ever raised again and the village dwindled to three
+        // people without a single soul freezing.
+        int demand = 0;
         int homes = 0;
         for (int i = 0; i < world.Households.Count; i++)
         {
-            if (world.LivingMembersOf(world.Households[i]) > 0)
+            Household household = world.Households[i];
+            if (world.LivingMembersOf(household) == 0)
             {
-                homes++;
+                continue;
+            }
+
+            homes++;
+
+            int wanted = VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config);
+            int missing = wanted - household.Stockpile.Firewood;
+            if (missing > 0)
+            {
+                demand += missing;
             }
         }
 
-        // The store the village wants, PLUS what it is about to burn this year.
-        //
-        // Asking only "are we below the target?" is a thermostat that switches on
-        // after the house is already cold. The store sits exactly at target, the quota
-        // reads no shortfall and staffs nobody, winter burns through it, and the hut
-        // is staffed again a season after people started freezing. Measured across
-        // several runs: the village held twenty-five people with its firewood exactly
-        // at target and no buffer at all, and then a single winter took twenty-eight
-        // of them.
-        //
-        // Including the annual burn makes it a proportional control rather than a
-        // switch: at target the village keeps one hand making firewood, the store
-        // drifts up by the difference, and once it is a winter clear the quota falls
-        // back to nobody. It settles into a band above the target instead of
-        // oscillating through it — which is what a woodpile IS.
-        int annualBurn = homes * VillageEconomy.FirewoodPerHouseholdPerWinter(world.Config);
-        int needed = (homes * VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config)) + annualBurn;
-        int shortfall = needed - stored;
+        // Plus the winter about to be burned. Asking only "is anyone below target?" is
+        // a thermostat that switches on after the house is already cold: every store
+        // sits exactly at target, the quota reads no shortfall and staffs nobody,
+        // winter burns through it, and the hut is staffed again a season after people
+        // started freezing. Measured across several runs — the village held twenty-five
+        // people with its firewood exactly at target and no buffer, and one winter took
+        // twenty-eight of them. Including the burn makes this proportional control
+        // rather than a switch, which is what a woodpile IS.
+        demand += homes * VillageEconomy.FirewoodPerHouseholdPerWinter(world.Config);
+
+        int shortfall = demand - world.StorageShed.Store.Firewood;
         if (shortfall <= 0)
         {
             return 0;

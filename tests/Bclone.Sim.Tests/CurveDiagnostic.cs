@@ -14,48 +14,35 @@ public sealed class CurveDiagnostic
 
     public CurveDiagnostic(ITestOutputHelper output) => _output = output;
 
-    [Fact]
-    public void WhyNoFirewood()
+    /// <summary>
+    /// feeds=100000 makes the granary effectively unbounded, which is the pre-slice-5
+    /// behaviour — the control. Does the village that "holds a stable size" actually
+    /// hold it, or is 150 years just a short enough window to miss the decline?
+    /// </summary>
+    [Theory]
+    [InlineData(100000)]
+    [InlineData(60)]
+    public void ThreeHundredYears(int feeds)
     {
-        SimConfig config = VillageFixtures.Village;
+        SimConfig config = VillageFixtures.Village with { GranaryFeedsPeople = feeds };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
 
-        _output.WriteLine($"per-household: store wanted {VillageEconomy.FirewoodStoreWantedPerHousehold(config)}, "
-            + $"winter burn {VillageEconomy.FirewoodPerHouseholdPerWinter(config)}; "
-            + $"one woodcutter makes {VillageEconomy.FirewoodMadePerYearAtWorst(config)}/yr");
-        _output.WriteLine("year pop  hh occupied perHouse | totalFw  needed  wants | shedFw homeFw | cold");
-
-        for (int year = 1; year <= 110; year++)
+        var line = new System.Text.StringBuilder();
+        for (int year = 1; year <= 300; year++)
         {
             loop.Step(config.TicksPerYear);
-            SimWorld w = loop.World;
-
-            int occupied = 0;
-            foreach (Household h in w.Households)
-            {
-                if (w.LivingMembersOf(h) > 0) occupied++;
-            }
-
-            int homeFw = 0;
-            foreach (Household h in w.Households) homeFw += h.Stockpile.Firewood;
-
-            int needed = (occupied * VillageEconomy.FirewoodStoreWantedPerHousehold(config))
-                + (occupied * VillageEconomy.FirewoodPerHouseholdPerWinter(config));
-
-            int cold = 0;
-            foreach (Villager v in w.Villagers)
-            {
-                if (v.CauseOfDeath == CauseOfDeath.Cold) cold++;
-            }
-
-            if (year % 10 == 0 || (year >= 90 && year <= 105))
-            {
-                _output.WriteLine(
-                    $"{year,4} {w.Population,3} {w.Households.Count,3} {occupied,8} " +
-                    $"{(occupied == 0 ? 0 : w.Population * 10 / occupied) / 10.0,8:F1} | " +
-                    $"{w.TotalFirewood(),7} {needed,7} {LabourQuota.WoodcuttersWanted(w),6} | " +
-                    $"{w.StorageShed.Store.Firewood,6} {homeFw,6} | {cold,4}");
-            }
+            if (year % 20 == 0) line.Append($"{loop.World.Population,4}");
         }
+
+        int starv = 0, cold = 0, aged = 0;
+        foreach (Villager v in loop.World.Villagers)
+        {
+            if (v.CauseOfDeath == CauseOfDeath.Starvation) starv++;
+            if (v.CauseOfDeath == CauseOfDeath.Cold) cold++;
+            if (v.CauseOfDeath == CauseOfDeath.OldAge) aged++;
+        }
+
+        _output.WriteLine($"RESULT feeds={feeds,6} every 20y:{line} | final {loop.World.Population} "
+            + $"| starved {starv}, froze {cold}, old age {aged}");
     }
 }
