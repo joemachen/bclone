@@ -104,6 +104,14 @@ Categories (only include the ones you use): **Added**, **Changed**,
   instant (D10). Goods move only by trips people make — producers carry their
   loads, households fetch — and `carry_capacity` limits an armful, which is what
   makes distance to the granary a real cost rather than a formality.
+- **Storage has a capacity, and the granary is what decides how big the village gets**
+  (D33). A granary holds a winter's store for `granary_feeds_people`; the quantity and
+  the resulting **population ceiling** are both derived from that one stated number
+  rather than typed in. Births are gated on the granary holding a share of what
+  everyone alive would want, so capping the building caps the settlement — growth stops
+  at what the buildings support instead of overshooting and falling back. Measured over
+  200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
+  across goods, not per good: a shed packed with logs has nowhere to stack firewood.
 - `StateHash.MixStore` — one shared way to hash a store, so a store on a new kind of
   building cannot be silently left out of the determinism fingerprint. Stores went
   from one-per-household to one per household, workplace and building in a single
@@ -175,6 +183,37 @@ Categories (only include the ones you use): **Added**, **Changed**,
 - **The fuel quota was a thermostat that switched on after the house was cold.**
   Including the annual burn makes it proportional, so the store settles in a band
   above target instead of oscillating through it.
+- **THE DEAD WERE TAKING UP ROOM IN THE HOUSE** (D34) — and this is what had been
+  killing every village since Phase 1. A household's member list keeps everyone who
+  ever lived there (`RemoveMember` runs when somebody moves out, never when somebody
+  dies), and the birth check read its length as "how many live here". A household that
+  had seen `max_household_size` people pass through it was permanently barred from
+  having another child, with a young couple in it and every other condition met.
+  Households ratcheted one way into sterility and **every settlement died out around
+  year 180**, whatever its food, fuel or storage were doing. Every other occupancy
+  question in the sim already asked `LivingMembersOf`; this was the one place that did
+  not.
+- **`TargetFoodForTheGranary` was answering two questions.** "Could we feed another
+  mouth through a winter?" has to stay unbounded — that is what makes the ceiling — but
+  "should anyone go out and work today?" was reading the same number, and above the
+  ceiling it is unreachable by construction, so the answer was permanently yes. Every
+  hand stayed on the berry patches forever and nobody was spared for the woodcutter's
+  hut. Split into `FoodTheGranaryHasRoomFor`; the same mistake D21 is a record of.
+- **The fuel quota counted firewood nobody could reach.** It compared all the firewood
+  anywhere against what every home wanted, so a surplus in one house cancelled a
+  shortage in another — but a household can only fetch from the shed, and wood stacked
+  in a neighbour's home is not supply. The comment justifying it cited a sharing policy
+  that storage slice 3 had already deleted. Demand is now counted per home and supply
+  is the shed alone.
+
+### Changed (tests)
+- **The acceptance run watches 300 years, not 150, and asserts the village is still
+  standing at the end.** The old window stopped one generation before the collapse
+  completed: at year 150 the village was at twenty-three and falling, which satisfied
+  "never dropped below the founding four" and read as the tail of a population wave
+  rather than the middle of an extinction. It also now asserts a *band* rather than
+  mere survival, since holding a stable size is what D31 actually asks for. 150 had
+  never been chosen against anything.
 
 ---
 

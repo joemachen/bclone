@@ -117,6 +117,133 @@ public sealed class StorageTests
         }
     }
 
+    // ---------------------------------------------------------------
+    //  Slice 5 — capacity as a binding constraint
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void NoStoreEverExceedsItsOwnCapacity()
+    {
+        // The flat assertion from the spec's §8. Checked every tick rather than at the
+        // end, because a store that overflows and is drained again would look innocent
+        // in a final snapshot.
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+
+        for (int i = 0; i < config.TicksPerYear * 60; i++)
+        {
+            loop.StepOnce();
+
+            foreach (StoreBuilding building in loop.World.StoreBuildings)
+            {
+                Assert.True(building.Store.Held <= building.Store.Capacity,
+                    $"{building.Name} holds {building.Store.Held} of {building.Store.Capacity} " +
+                    $"at tick {loop.World.Tick}.");
+            }
+        }
+    }
+
+    [Fact]
+    public void AFullStoreRefusesGoodsRatherThanSwallowingThem()
+    {
+        // Conservation, at the one place capacity could break it. A store that took
+        // goods it had no room for would destroy them silently, and the total only
+        // ever falls — which is the direction nobody notices.
+        var store = new Stockpile { Capacity = 10 };
+
+        Assert.Equal(6, store.Add(6));
+        Assert.Equal(4, store.AddLogs(9));      // only four would fit
+        Assert.Equal(0, store.AddFirewood(1));  // and now nothing does
+
+        Assert.True(store.IsFull);
+        Assert.Equal(10, store.Held);
+        Assert.Equal(6, store.Food);
+        Assert.Equal(4, store.Logs);
+        Assert.Equal(0, store.Firewood);
+    }
+
+    [Fact]
+    public void CapacityCountsEveryKindOfGoodsTogether()
+    {
+        // Total, not per good — a shed packed with logs has nowhere to stack firewood.
+        // A per-good cap would be three shelves that never compete, which is
+        // bookkeeping wearing a constraint's clothes.
+        var store = new Stockpile { Capacity = 10 };
+        store.AddLogs(10);
+
+        Assert.Equal(0, store.AddFirewood(5));
+        Assert.Equal(0, store.Add(5));
+    }
+
+    [Fact]
+    public void TheGranaryIsWhatDecidesHowBigTheVillageGets()
+    {
+        // The number slice 5 exists to create, and it must be a CONSEQUENCE rather
+        // than a setting (D16). Deriving it from the granary is what makes "how big
+        // can my village get" answerable by pointing at a building.
+        SimConfig config = Config;
+
+        int ceiling = VillageEconomy.PopulationCeiling(config);
+        _output.WriteLine(
+            $"granary feeds {config.GranaryFeedsPeople}, holds " +
+            $"{VillageEconomy.GranaryCapacity(config)}, ceiling {ceiling} people.");
+
+        // A bigger granary must mean a bigger village, or capacity is decoration.
+        SimConfig larger = config with { GranaryFeedsPeople = config.GranaryFeedsPeople * 2 };
+        Assert.True(VillageEconomy.PopulationCeiling(larger) > ceiling);
+
+        // And the ceiling sits ABOVE what the granary comfortably feeds, by exactly
+        // the slack in the birth gate — a village keeps having children until its
+        // store is short of what everyone alive would want.
+        Assert.True(ceiling >= config.GranaryFeedsPeople,
+            $"Ceiling {ceiling} is below the {config.GranaryFeedsPeople} the granary feeds.");
+    }
+
+    [Fact]
+    public void CapacityIsWhatHoldsThePopulationFlat()
+    {
+        // The claim slice 5 was taken ahead of the market to test, asserted rather
+        // than left in a spec: a bounded granary makes growth stop at what the
+        // buildings support, instead of overshooting them and falling back.
+        //
+        // Measured over 200 years — the unbounded village swings between 24 and 86,
+        // the shipped one between 24 and 35.
+        SimConfig bounded = Config;
+        SimConfig unbounded = bounded with { GranaryFeedsPeople = 100_000 };
+
+        (int Low, int High) boundedBand = Band(bounded);
+        (int Low, int High) unboundedBand = Band(unbounded);
+
+        _output.WriteLine(
+            $"bounded {boundedBand.Low}-{boundedBand.High}, unbounded {unboundedBand.Low}-{unboundedBand.High}");
+
+        Assert.True(
+            boundedBand.High - boundedBand.Low < unboundedBand.High - unboundedBand.Low,
+            $"A bounded granary swung {boundedBand.High - boundedBand.Low} against the unbounded " +
+            $"village's {unboundedBand.High - unboundedBand.Low}. Capacity is not regulating anything.");
+    }
+
+    /// <summary>Population band after the founding decades, over 200 years.</summary>
+    private static (int Low, int High) Band(SimConfig config)
+    {
+        SimLoop loop = Build(config);
+        int low = int.MaxValue, high = 0;
+
+        for (int year = 1; year <= 200; year++)
+        {
+            loop.Step(config.TicksPerYear);
+            if (year < 40)
+            {
+                continue;
+            }
+
+            low = Math.Min(low, loop.World.Population);
+            high = Math.Max(high, loop.World.Population);
+        }
+
+        return (low, high);
+    }
+
     [Fact]
     public void StoresDoNotSitOnTopOfSomethingElse()
     {

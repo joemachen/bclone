@@ -148,8 +148,8 @@ Bigger than the fuel chain, and that one taught the lesson: slices, each green b
 1. ~~**`Store` as a thing buildings have.**~~ ✅ Done — households and workplaces both got one; no behaviour change.
 2. ~~**The storage shed**, and producers depositing to it.~~ ✅ Done — both village-wide sweeps deleted.
 3. ~~**Fetching**, with the larder target and the refusal reasons.~~ ✅ Done — both sharing policies deleted; food economy re-derived.
-5. **Capacity** as a binding constraint. ← **taken next, ahead of the market (Joe, 2026-07-27)**
-4. **The market**, manned, stocking itself from the shed.
+5. ~~**Capacity** as a binding constraint.~~ ✅ Done — taken ahead of the market on Joe's call. See §13; it flattens the curve, and it flushed out D34.
+4. **The market**, manned, stocking itself from the shed. ← **next, and the last slice**
 
 **Why 5 before 4.** The flows are proven, which was the stated precondition, and the open question that matters more is the shape of the population curve (§12). Joe's reading: a flat line means growth stopping at what the buildings support, instead of overshooting them and falling back. Capacity is the only brake in this spec that could do that, so it gets measured first. The market shortens fetch trips, which is valuable but does not regulate anything.
 
@@ -211,3 +211,37 @@ so the brake stops being a gate the village passes through for 65 years and beco
 **The honest risk, recorded before building it:** this makes granary capacity the village's population ceiling, which is a hard stop and there is no placement yet, so the player cannot answer it by building a second granary. Until placement lands the answer is a config value, which means **the pressure is real but the response to it is not** — the same gap `RequiredWoodcutterSeats` already documents. If measurement shows the ceiling is a cliff rather than a settling point, that is a finding, not a tuning problem.
 
 **If capacity flattens the curve, the wave is still there and still worth fixing** — a proportional birth gate is the real answer, and it belongs with D28's re-derivation rather than here.
+
+---
+
+## 13. What actually happened (measured after building it, 2026-07-27)
+
+§12 was written before the code and got half of it right. Recorded honestly, because the half it got wrong is the more useful half.
+
+### 13.1 Right: capacity flattens the curve, and by the predicted mechanism
+
+Population band after the founding decades, over 200 years:
+
+| `granary_feeds_people` | band | spread |
+|---|---|---|
+| unbounded (pre-slice-5) | 24–86 | 62 |
+| 60 | 49–63 | 14 |
+| **30 (shipped)** | **24–35** | **11** |
+
+Growth stops at what the buildings support instead of overshooting them. That is exactly Joe's reading, and it is now asserted rather than observed (`CapacityIsWhatHoldsThePopulationFlat`).
+
+### 13.2 Wrong: the wave was not a control problem
+
+§12 diagnosed a bang-bang birth gate with a 15-year lag and concluded that a **proportional** gate was the real fix. That diagnosis was wrong, and it was wrong in an instructive way: it is a plausible mechanism, it predicts the observed shape, and it is the same mechanism that genuinely did break the fuel quota. It was reasoning from a pattern rather than from a measurement.
+
+The measurement, when it was finally taken — per household, per year, *which condition refused this birth* — said something else entirely. **The dead were never removed from their household's member list, and the birth check read the list's length as "how many live here".** A household that had seen seven people pass through it could never have another child. Households ratcheted one way into sterility, and every village died out around year 180 regardless of food, fuel or storage. See D34.
+
+With that one line fixed, the threshold birth gate is fine. No proportional control was needed. The village holds a flat band for 300 years.
+
+### 13.3 The lesson worth keeping
+
+**The 150-year window was the reason this survived two phases.** The collapse completed at about year 180; at year 150 the village was at twenty-three and falling, which reads as the tail of a wave rather than the middle of an extinction. The acceptance test asserted "never dropped below the founding four" and that was *true*, right up until it wasn't.
+
+An assertion about a window is not an assertion about a system. Every long-run test here should be asked what it would do if the run continued.
+
+And the standing rule earned another entry: **measure, do not pattern-match.** §12's story was coherent, cited a real precedent in this codebase, and was wrong. The measurement took twenty minutes.

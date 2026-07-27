@@ -356,7 +356,25 @@ public sealed class HouseholdSystem : ISimSystem
     /// </remarks>
     public static bool IsReadyForAChild(SimWorld world, Household household, SimConfig config, int year)
     {
-        if (household.MemberIds.Count >= config.MaxHouseholdSize)
+        // ROOM IN THE HOUSE MEANS LIVING PEOPLE UNDER THE ROOF.
+        //
+        // This read MemberIds.Count, which is everyone who has EVER belonged to this
+        // household: RemoveMember is called when somebody moves out and never when
+        // somebody dies, so the dead stay on the list forever. A household that had
+        // seen seven people pass through it was therefore permanently barred from
+        // having another child — even with a young couple in it and every other
+        // condition met, and even once all seven were in the ground.
+        //
+        // That is what was killing every village. Households ratchet one way into
+        // sterility as their dead accumulate, so a settlement always dies out about a
+        // century in, whatever its food or fuel is doing — measured extinct by year
+        // 180 in every configuration, including with storage capacity switched off.
+        // It reads as a slow demographic decline, which is why it survived so long:
+        // it looks exactly like the population wave it happens to coincide with.
+        //
+        // Every other occupancy question in the sim already asks LivingMembersOf. This
+        // was the one place that did not.
+        if (world.LivingMembersOf(household) >= config.MaxHouseholdSize)
         {
             return false;
         }

@@ -234,6 +234,23 @@
   // live. Raise it far enough and storage becomes bookkeeping again.
   "carry_capacity": 40,
 
+  // HOW BIG THE VILLAGE CAN GET, stated as a fact about a building (D33).
+  //
+  // A granary holds a winter's store for this many people; VillageEconomy
+  // derives the quantity from it, and derives the population ceiling from
+  // that. Births are gated on the granary holding a share of what everyone
+  // alive would want, so once the village outgrows what the building can
+  // hold, it stops growing. That is the whole mechanism, and it is what
+  // makes the population hold a flat line instead of overshooting and
+  // falling back: measured over 200 years, 24-35 people here against
+  // 24-86 with the cap removed.
+  //
+  // A number about the BUILDING, like how many hands fit at a berry patch -
+  // which is why it is here rather than derived. What is NOT typed in is the
+  // consequence. When placement lands, the player answers this by building a
+  // second granary; until then it is this line.
+  "granary_feeds_people": 30,
+
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",
     "Agnes", "Wendell", "Hattie", "Amos",

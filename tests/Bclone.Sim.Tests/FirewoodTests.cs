@@ -199,26 +199,47 @@ public sealed class FirewoodTests
         throw new System.InvalidOperationException("Could not find the repo root.");
     }
 
+    /// <summary>How long the acceptance run watches the village for.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Three hundred years, and the number is load-bearing.</b> This test ran for
+    /// 150 and passed for weeks over a village that was dying: the population peaked
+    /// near seventy around year 105, was down to twenty-three and still falling when
+    /// the test stopped looking, and hit <em>zero</em> around year 180. The window
+    /// ended one generation before the collapse finished.
+    /// </para>
+    /// <para>
+    /// 150 was never chosen against anything — it was picked before anyone knew where
+    /// the cliff was. 300 is two full collapse-and-recovery cycles at this lifespan,
+    /// which is enough for a one-way decline to show itself as one.
+    /// </para>
+    /// </remarks>
+    private const int AcceptanceYears = 300;
+
+    /// <summary>Founding decades to ignore — four people growing into a village is not
+    /// yet the steady state this is about.</summary>
+    private const int SettledFromYear = 40;
+
     [Fact]
-    public void TheVillageHoldsAStableSizeForACenturyAndAHalfWithFuelOn()
+    public void TheVillageHoldsAStableSizeForThreeCenturiesWithFuelOn()
     {
-        // THE acceptance test for D17/D29, and D31 is what it is measuring: a stable
-        // size, not growth. Failure stays possible — people do starve here — but a
-        // baseline that dies can only mean the constants are wrong while there is no
-        // player to blame for it.
+        // THE acceptance test for D17/D29/D30, and D31 is what it is measuring: a
+        // stable size, not growth. Failure stays possible — people do starve here —
+        // but a baseline that dies can only mean the constants are wrong while there
+        // is no player to blame for it.
         SimConfig config = VillageFixtures.Village;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
 
         int lowestAfterSettling = int.MaxValue;
-        for (int year = 1; year <= 150; year++)
+        int highestAfterSettling = 0;
+        for (int year = 1; year <= AcceptanceYears; year++)
         {
             loop.Step(config.TicksPerYear);
 
-            // Ignore the founding decades: four people growing into a village is not
-            // yet the steady state this is about.
-            if (year >= 40)
+            if (year >= SettledFromYear)
             {
                 lowestAfterSettling = System.Math.Min(lowestAfterSettling, loop.World.Population);
+                highestAfterSettling = System.Math.Max(highestAfterSettling, loop.World.Population);
             }
         }
 
@@ -234,12 +255,33 @@ public sealed class FirewoodTests
         }
 
         _output.WriteLine(
-            $"Year 150: {loop.World.Population} alive, never below {lowestAfterSettling} after year 40. " +
+            $"Year {AcceptanceYears}: {loop.World.Population} alive; after year {SettledFromYear} the " +
+            $"village stayed between {lowestAfterSettling} and {highestAfterSettling}. " +
             $"Deaths: {froze} froze, {starved} starved, {aged} of old age, " +
             $"{loop.World.Villagers.Count} ever born.");
 
         Assert.True(lowestAfterSettling >= config.StartingPopulation,
-            $"The village dropped to {lowestAfterSettling} — below the four it was founded with.");
+            $"The village dropped to {lowestAfterSettling} — below the {config.StartingPopulation} " +
+            "it was founded with.");
+
+        // AND IT IS STILL THERE AT THE END. The assertion above is about the whole
+        // run, but it was satisfied for 150 years by a village in the middle of dying
+        // — it had not yet fallen below four, and it was going to.
+        Assert.True(loop.World.Population >= config.StartingPopulation,
+            $"The village finished at {loop.World.Population}. Surviving the window is not the " +
+            "same as being stable; this is the assertion the 150-year run was missing.");
+
+        // A STABLE SIZE, which is what D31 actually asks for, rather than merely a
+        // surviving one. A village that swings between twenty and eighty and back is
+        // not holding a size, it is oscillating — and the wide swing is the shape a
+        // village has when nothing bounds its growth except running out.
+        //
+        // Threefold is deliberately loose: the shipped village measures 24 to 35, a
+        // spread of 1.5. What it excludes is the unbounded case, which measured 24 to
+        // 86 — a spread of 3.6 — over this same window.
+        Assert.True(highestAfterSettling <= lowestAfterSettling * 3,
+            $"The village swung between {lowestAfterSettling} and {highestAfterSettling}. That is a " +
+            "population wave, not a stable size.");
 
         // Most people should die of old age. A village where the usual way to go is
         // freezing or starving has stopped being a settlement under pressure and
@@ -247,6 +289,48 @@ public sealed class FirewoodTests
         Assert.True(aged > froze + starved,
             $"Only {aged} of {froze + starved + aged} deaths were old age; the pressure systems " +
             "have stopped being pressure and become the normal way to die.");
+    }
+
+    [Fact]
+    public void TheDeadDoNotTakeUpRoomInTheHOUSE()
+    {
+        // The regression guard for what was killing every village. A household's
+        // MemberIds keeps everyone who has EVER lived there — RemoveMember is called
+        // when somebody moves out, never when somebody dies — so reading it as "how
+        // many live here" barred any household that had seen max_household_size people
+        // from ever having another child. Households ratcheted one way into sterility
+        // and every settlement died out about a century in, whatever its food was
+        // doing.
+        //
+        // Posed directly rather than waiting 150 years for it: a household with one
+        // living couple and a long list of dead predecessors must still be able to
+        // have a child.
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        loop.Step(config.TicksPerYear * 120);
+
+        Household? withDead = null;
+        foreach (Household household in loop.World.Households)
+        {
+            int living = loop.World.LivingMembersOf(household);
+            if (living > 0 && household.MemberIds.Count >= config.MaxHouseholdSize
+                && living < config.MaxHouseholdSize)
+            {
+                withDead = household;
+                break;
+            }
+        }
+
+        Assert.True(withDead is not null,
+            "No household has outlived enough of its own members to test this — the fixture has " +
+            "stopped exercising the case, which makes this guard vacuous (D7).");
+
+        _output.WriteLine(
+            $"{withDead!.Name}: {loop.World.LivingMembersOf(withDead)} living of " +
+            $"{withDead.MemberIds.Count} ever, max household size {config.MaxHouseholdSize}.");
+
+        Assert.True(loop.World.LivingMembersOf(withDead) < config.MaxHouseholdSize,
+            "Precondition: this household should have room for another soul.");
     }
 
     [Fact]
