@@ -173,6 +173,36 @@
   // firewood heats. Drawn from the whole village, parents first.
   "logs_per_house": 30,
 
+  // ---- Firewood (decision D29) -------------------------------
+  // The first workplace that CONSUMES an input rather than only
+  // producing one. It can stand idle for want of logs, which is a state
+  // no other workplace can be in - so a woodcutter with an empty yard
+  // says so rather than mysteriously going home.
+  //
+  // Near the homes rather than near the stand: logs are drawn
+  // village-wide, so the only distance that costs anything is the
+  // woodcutter's daily walk from home.
+  "woodcutter_hut_x": -2,
+  "woodcutter_hut_y": 1,
+  "woodcutter_hut_capacity": 3,
+  "logs_per_split": 6,
+  "split_ticks": 4,
+
+  // DERIVED, like gather_yield. The stated target: heating every home
+  // through winter must cost no more than HALF the hands the village can
+  // spare once everyone is fed. The half is the margin, and it is the
+  // same argument D16 makes about the third dependant - solving for
+  // "exactly affordable" produces a village that is warm by construction
+  // with nobody left to build and no slack for a long winter, which is
+  // useless the moment anything pushes on it.
+  "firewood_per_split": 24,
+
+  // Per household, not per member: a house costs the same to heat
+  // whether two live in it or five. That makes SPRAWL the thing that
+  // costs rather than population - a pressure that traces back to a
+  // player decision (DESIGN.md §2.3).
+  "firewood_per_winter_day": 1,
+
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",
     "Agnes", "Wendell", "Hattie", "Amos",

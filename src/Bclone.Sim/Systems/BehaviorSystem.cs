@@ -112,6 +112,10 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Cutting);
                 return;
 
+            case VillagerState.TravelingToHut:
+                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.MakingFirewood);
+                return;
+
             case VillagerState.TravelingHome:
                 Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
                 return;
@@ -126,26 +130,40 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsCutting(VillagerState state) =>
         state is VillagerState.TravelingToTrees or VillagerState.Cutting;
 
+    private static bool IsSplitting(VillagerState state) =>
+        state is VillagerState.TravelingToHut or VillagerState.MakingFirewood;
+
     private static bool IsOnAWorkErrand(VillagerState state) =>
-        IsForaging(state) || IsCutting(state);
+        IsForaging(state) || IsCutting(state) || IsSplitting(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
         world.FindWorkplace(villager.WorkplaceId);
 
-    /// <summary>Whether the job they hold matches the errand they are on.</summary>
-    private static bool HoldsTheJobFor(SimWorld world, Villager villager)
+    /// <summary>The kind of job an errand implies, so state and job can be compared.</summary>
+    /// <remarks>
+    /// A lookup rather than a two-branch conditional, because there are three kinds
+    /// now and there will be more (D19). A conditional that reads "foraging, else
+    /// assume timber" is correct only while there are exactly two.
+    /// </remarks>
+    private static JobKind? ErrandKind(VillagerState state)
     {
-        Workplace? job = WorkplaceOf(world, villager);
-        if (job is null)
+        if (IsForaging(state))
         {
-            return false;
+            return JobKind.Forager;
         }
 
-        return IsForaging(villager.State)
-            ? job.Kind == JobKind.Forager
-            : job.Kind == JobKind.Woodcutter;
+        if (IsCutting(state))
+        {
+            return JobKind.Logger;
+        }
+
+        return IsSplitting(state) ? JobKind.Woodcutter : null;
     }
+
+    /// <summary>Whether the job they hold matches the errand they are on.</summary>
+    private static bool HoldsTheJobFor(SimWorld world, Villager villager) =>
+        WorkplaceOf(world, villager)?.Kind == ErrandKind(villager.State);
 
     private static void GoHome(SimWorld world, Villager villager)
     {
@@ -242,9 +260,40 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        // Timber. Cuttable year-round, unlike berries, so a woodcutter still has
-        // something to do in winter - which is part of why the job is worth holding.
+        // Splitting logs into firewood. The one job that can be blocked by something
+        // other than the season or the worker: no logs in the village, no work at the
+        // hut (D29). Checked here rather than on arrival so nobody walks over to find
+        // the yard empty.
         if (villager.CanWork && job?.Kind == JobKind.Woodcutter)
+        {
+            if (world.TotalLogs() < config.LogsPerSplit)
+            {
+                villager.WorkNote =
+                    $"Nothing to split — the village has no logs felled, and {job.Name} needs " +
+                    $"{config.LogsPerSplit} for a batch.";
+                GoHome(world, villager);
+                return;
+            }
+
+            villager.WorkNote = string.Empty;
+
+            if (villager.Position == job.Position)
+            {
+                villager.State = VillagerState.MakingFirewood;
+                villager.ActionTicksRemaining = config.SplitTicks;
+            }
+            else
+            {
+                villager.State = VillagerState.TravelingToHut;
+                Travel(world, villager, job.Position, VillagerState.MakingFirewood);
+            }
+
+            return;
+        }
+
+        // Timber. Fellable year-round, unlike berries, so a logger still has
+        // something to do in winter - which is part of why the job is worth holding.
+        if (villager.CanWork && job?.Kind == JobKind.Logger)
         {
             if (villager.Position == job.Position)
             {
@@ -306,6 +355,13 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival == VillagerState.MakingFirewood)
+        {
+            villager.State = VillagerState.MakingFirewood;
+            villager.ActionTicksRemaining = world.Config.SplitTicks;
+            return;
+        }
+
         if (onArrival == VillagerState.Cutting)
         {
             villager.State = VillagerState.Cutting;
@@ -364,6 +420,29 @@ public sealed class BehaviorSystem : ISimSystem
                 }
 
                 world.HouseholdOf(villager).Stockpile.AddLogs(wood);
+                villager.State = VillagerState.TravelingHome;
+                return;
+
+            case VillagerState.MakingFirewood:
+                // Logs come from the whole village; the firewood goes home with the
+                // woodcutter. That asymmetry is the point (D29) — logs are a shared
+                // material, firewood is burned in a particular hearth, and the
+                // sharing policy is what moves it between them.
+                if (!world.TryTakeLogsFromTheVillage(world.Config.LogsPerSplit))
+                {
+                    // The yard emptied while they were working. Not an error: another
+                    // woodcutter, or a house being raised, got there first.
+                    villager.State = VillagerState.TravelingHome;
+                    return;
+                }
+
+                int firewood = world.Config.FirewoodPerSplit * villager.Vigour / 100;
+                if (firewood < 1)
+                {
+                    firewood = 1;
+                }
+
+                world.HouseholdOf(villager).Stockpile.AddFirewood(firewood);
                 villager.State = VillagerState.TravelingHome;
                 return;
 

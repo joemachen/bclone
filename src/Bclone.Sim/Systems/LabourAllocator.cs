@@ -137,7 +137,7 @@ internal static class LabourAllocator
     /// <para>
     /// One global cost-sorted pass over every workplace at once was the spec's design
     /// (§4b) and it has a bug the spec did not anticipate. A village of ten hands
-    /// wants nine foragers and one woodcutter. Sorted purely by cost, every villager
+    /// wants nine foragers and one logger. Sorted purely by cost, every villager
     /// near the tree stand takes an even nearer berry patch first, and the single
     /// timber job falls to whoever is left over at the end — who is by construction
     /// the most remote person in the village, and often cannot reach the stand at all.
@@ -409,9 +409,16 @@ internal static class LabourAllocator
                 continue;
             }
 
-            villager.JobReason = EveryReachablePlaceIsFull(world, villager)
-                ? $"No work: every workplace within reach is full — {reachable.Name} has its " +
-                  $"{reachable.Capacity} hands."
+            // Reported against the NEAREST place they could reach, not against the
+            // village as a whole. Asking "is every reachable workplace full?" gave the
+            // wrong answer whenever the patch on their doorstep was full and a distant
+            // stand merely had no quota — technically not all full, so they were told
+            // the village had enough hands, when what they actually needed was another
+            // patch nearby. The nearest opening is the one worth acting on.
+            villager.JobReason = reachable.IsFull
+                ? $"No work: {reachable.Name} is full — it has its {reachable.Capacity} " +
+                  $"{(reachable.Capacity == 1 ? "hand" : "hands")}, and it is the nearest place " +
+                  $"within reach of home."
                 : $"No work: the village has all the hands it needs on the work that matters " +
                   $"— {quota}";
         }
@@ -575,7 +582,8 @@ internal static class LabourAllocator
     // ---------------------------------------------------------------
 
     /// <summary>Job kinds, in the order the village cares about them.</summary>
-    private static readonly JobKind[] KindsInOrder = { JobKind.Forager, JobKind.Woodcutter };
+    private static readonly JobKind[] KindsInOrder =
+        { JobKind.Forager, JobKind.Logger, JobKind.Woodcutter };
 
     private static int CountHolding(SimWorld world, JobKind kind)
     {
@@ -630,20 +638,6 @@ internal static class LabourAllocator
         return best;
     }
 
-    private static bool EveryReachablePlaceIsFull(SimWorld world, Villager villager)
-    {
-        for (int i = 0; i < world.Workplaces.Count; i++)
-        {
-            Workplace workplace = world.Workplaces[i];
-            if (CostBetween(world, villager, workplace) <= workplace.CatchmentRadius && !workplace.IsFull)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private static int IndexOf(SimWorld world, Villager villager)
     {
         for (int i = 0; i < world.Villagers.Count; i++)
@@ -674,7 +668,13 @@ internal static class LabourAllocator
 
     private static int Tiles(int cost) => cost / TravelCostField.BaseTileCost;
 
-    private static string Plural(JobKind kind) => kind == JobKind.Forager ? "foragers" : "woodcutters";
+    private static string Plural(JobKind kind) => kind switch
+    {
+        JobKind.Forager => "foragers",
+        JobKind.Logger => "loggers",
+        JobKind.Woodcutter => "woodcutters",
+        _ => "workers",
+    };
 
     /// <summary>Place names read "the berry patch"; sometimes one has to start a sentence.</summary>
     private static string Capitalise(string text) =>

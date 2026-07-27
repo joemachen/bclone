@@ -153,18 +153,74 @@ public sealed class SimWorld
             });
         }
 
-        // Last id, so that where ids break a tie the food comes first. The real
+        // Last ids, so that where ids break a tie the food comes first. The real
         // "feed yourself before you build" rule is the quota, not the ordering -
         // see LabourQuota - but there is no reason for the two to disagree.
         Workplaces.Add(new Workplace
         {
             Id = nextWorkplaceId++,
-            Kind = JobKind.Woodcutter,
+            Kind = JobKind.Logger,
             Name = "the tree stand",
             Position = TreeStand.Position,
             Capacity = config.TreeStandCapacity,
             CatchmentRadius = catchment,
         });
+
+        // The first workplace that consumes an input rather than only producing one
+        // (D29). Logs in, firewood out - and it can stand idle for want of logs,
+        // which is a state no other workplace can be in.
+        Workplaces.Add(new Workplace
+        {
+            Id = nextWorkplaceId++,
+            Kind = JobKind.Woodcutter,
+            Name = "the woodcutter's hut",
+            Position = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY),
+            Capacity = config.WoodcutterHutCapacity,
+            CatchmentRadius = catchment,
+        });
+    }
+
+    /// <summary>Logs held across the whole village.</summary>
+    /// <remarks>
+    /// Logs are stored per household but spent village-wide — building already works
+    /// that way (D25), and the woodcutter's hut draws on the same pool. Firewood
+    /// deliberately does not: it is burned at home, so it has to be held at home.
+    /// </remarks>
+    public int TotalLogs()
+    {
+        int total = 0;
+        for (int i = 0; i < Households.Count; i++)
+        {
+            total += Households[i].Stockpile.Logs;
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// Take logs from the village, nearest household first by id order.
+    /// </summary>
+    /// <remarks>All or nothing: a half-taken batch would leave the village poorer with
+    /// no firewood to show for it, the same reasoning as the building draw.</remarks>
+    internal bool TryTakeLogsFromTheVillage(int amount)
+    {
+        if (amount <= 0 || TotalLogs() < amount)
+        {
+            return false;
+        }
+
+        int remaining = amount;
+        for (int i = 0; i < Households.Count && remaining > 0; i++)
+        {
+            Stockpile store = Households[i].Stockpile;
+            int take = store.Logs < remaining ? store.Logs : remaining;
+            if (take > 0 && store.TryTakeLogs(take))
+            {
+                remaining -= take;
+            }
+        }
+
+        return remaining == 0;
     }
 
     /// <summary>

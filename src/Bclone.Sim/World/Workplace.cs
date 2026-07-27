@@ -1,13 +1,24 @@
 namespace Bclone.Sim.World;
 
 /// <summary>Kinds of work. Data-driven content lands here in a later pass.</summary>
+/// <remarks>
+/// <b>On the names:</b> a <see cref="Logger"/> fells trees and a
+/// <see cref="Woodcutter"/> splits the logs into firewood (D29). That follows
+/// <em>Banished</em>, and it cuts against everyday usage — colloquially a woodcutter
+/// is the one with the axe in the forest. The split is deliberate: they are two
+/// different jobs in two different places, and the chain between them is the first
+/// secondary processing in the game.
+/// </remarks>
 public enum JobKind
 {
     /// <summary>Gather food from a wild source.</summary>
     Forager = 0,
 
-    /// <summary>Cut timber from a stand of trees.</summary>
-    Woodcutter = 1,
+    /// <summary>Fell trees at a stand, producing logs.</summary>
+    Logger = 1,
+
+    /// <summary>Split logs into firewood at a hut. Consumes an input (D29).</summary>
+    Woodcutter = 2,
 }
 
 /// <summary>

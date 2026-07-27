@@ -198,9 +198,18 @@ public partial class Main : Control
         {
             $"{villager.Name}, aged {villager.AgeYears}",
             villager.Alive ? $"Currently: {villager.DescribeState(workplace?.Name)}" : "Dead.",
-            $"Household: the {household.Name} household ({household.Stockpile.Food} food stored)",
+            $"Household: the {household.Name} household ({household.Stockpile.Food} food, " +
+                $"{household.Stockpile.Firewood} firewood, {household.Stockpile.Logs} logs)",
             $"Hunger: {hungerPercent}%",
         };
+
+        // Why someone with a job is sitting at home. Before the woodcutter's hut this
+        // never had an interesting answer; now a manned building can be idle for want
+        // of logs, and that has to be readable (D29).
+        if (!string.IsNullOrWhiteSpace(villager.WorkNote))
+        {
+            lines.Add(villager.WorkNote);
+        }
 
         if (villager.Stage != VigourStage.Prime)
         {

@@ -33,11 +33,17 @@ public static class VillageFixtures
                 EconomyHorizonHouseholds = 12,
             };
 
-            // Then derive the two values the target actually determines.
-            return shape with
+            // Then derive the values the targets actually determine — food first,
+            // then fuel, which depends on what the food target leaves spare.
+            SimConfig fed = shape with
             {
                 GatherYield = VillageEconomy.RequiredGatherYield(shape),
                 StockpileTarget = VillageEconomy.RequiredStockpilePerAdult(shape),
+            };
+
+            return fed with
+            {
+                FirewoodPerSplit = VillageEconomy.RequiredFirewoodPerSplit(fed),
             };
         }
     }

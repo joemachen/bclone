@@ -107,7 +107,7 @@ public sealed class LabourAllocationTests
             loop.StepOnce();
 
             LabourQuota quota = LabourQuota.For(loop.World);
-            int cutting = CountWorking(loop.World, JobKind.Woodcutter);
+            int cutting = CountWorking(loop.World, JobKind.Logger);
             int sparable = System.Math.Max(0, quota.Hands - quota.ForagersToFeedEveryone);
 
             Assert.True(cutting <= sparable,
@@ -130,7 +130,7 @@ public sealed class LabourAllocationTests
 
         // A village founded with an empty larder has no spare hands by definition.
         Assert.True(LabourQuota.VillageIsShortOfFood(loop.World));
-        Assert.Equal(0, quota.Woodcutters);
+        Assert.Equal(0, quota.Loggers);
         Assert.Equal(quota.Hands, quota.Foragers);
     }
 
@@ -156,7 +156,7 @@ public sealed class LabourAllocationTests
             }
 
             quota = LabourQuota.For(loop.World);
-            if (quota.Woodcutters > 0)
+            if (quota.Loggers > 0)
             {
                 _output.WriteLine($"{loop.World.Clock.SeasonAndYear()}: {quota}");
                 break;
@@ -164,8 +164,8 @@ public sealed class LabourAllocationTests
         }
 
         Assert.False(LabourQuota.VillageIsShortOfFood(loop.World));
-        Assert.True(quota.Woodcutters > 0, "A fed village with couples waiting should build.");
-        Assert.Equal(quota.Hands, quota.Foragers + quota.Woodcutters);
+        Assert.True(quota.Loggers > 0, "A fed village with couples waiting should build.");
+        Assert.Equal(quota.Hands, quota.Foragers + quota.Loggers + quota.Woodcutters);
     }
 
     [Fact]
@@ -187,7 +187,7 @@ public sealed class LabourAllocationTests
         }
 
         Assert.False(LabourQuota.VillageIsShortOfFood(loop.World));
-        Assert.Equal(0, LabourQuota.WoodcuttersWanted(loop.World));
+        Assert.Equal(0, LabourQuota.LoggersWanted(loop.World));
     }
 
     // ---------------------------------------------------------------
@@ -257,7 +257,7 @@ public sealed class LabourAllocationTests
             mouths: world.Population,
             foragersToFeedEveryone: 1,
             foragers: foraging - 1,
-            woodcutters: CountWorking(world, JobKind.Woodcutter));
+            loggers: CountWorking(world, JobKind.Logger), woodcutters: 0);
 
         System.Collections.Generic.List<int> shed = LabourAllocator.ShedSurplus(world, quota);
 
@@ -316,23 +316,28 @@ public sealed class LabourAllocationTests
     {
         // One seat per site and a village that outgrows them: the refusal has to say
         // "you need another site", not "no".
-        SimConfig config = Config with { ForageSiteCapacity = 1, TreeStandCapacity = 1 };
+        //
+        // Posed directly rather than hoped for: one seat at the single patch, four
+        // founders. Three of them have nowhere to fit from the very first tick, so
+        // the message cannot be missed by a village that happened not to grow.
+        SimConfig config = Config with
+        {
+            ExtraForageSites = System.Array.Empty<SitePosition>(),
+            ForageSiteCapacity = 1,
+            TreeStandCapacity = 1,
+            WoodcutterHutCapacity = 1,
+        };
         SimLoop loop = Build(config);
+        loop.StepOnce();
 
         string? found = null;
-        for (int year = 0; year < 60 && found is null; year++)
+        foreach (Villager villager in loop.World.Villagers)
         {
-            loop.Step(config.TicksPerYear);
-            loop.StepOnce();
-
-            foreach (Villager villager in loop.World.Villagers)
+            if (villager.CanWork && !villager.HasJob
+                && villager.JobReason.Contains("is full", System.StringComparison.Ordinal))
             {
-                if (villager.CanWork && !villager.HasJob
-                    && villager.JobReason.Contains("is full", System.StringComparison.Ordinal))
-                {
-                    found = $"Year {year + 1} — {villager.Name}: {villager.JobReason}";
-                    break;
-                }
+                found = $"{villager.Name}: {villager.JobReason}";
+                break;
             }
         }
 

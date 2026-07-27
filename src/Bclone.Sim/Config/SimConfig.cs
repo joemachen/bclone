@@ -247,6 +247,54 @@ public sealed record SimConfig
     [JsonPropertyName("tree_stand_capacity")]
     public int TreeStandCapacity { get; init; } = 3;
 
+    // ---------------------------------------------------------------
+    //  Firewood (D29) — the woodcutter's hut
+    // ---------------------------------------------------------------
+
+    /// <summary>Where logs are split into firewood.</summary>
+    /// <remarks>
+    /// Near the homes rather than near the stand. Logs are drawn village-wide, so the
+    /// only distance that costs anything is the woodcutter's daily walk from home.
+    /// </remarks>
+    [JsonPropertyName("woodcutter_hut_x")]
+    public int WoodcutterHutX { get; init; } = -2;
+
+    /// <summary>Where logs are split into firewood.</summary>
+    [JsonPropertyName("woodcutter_hut_y")]
+    public int WoodcutterHutY { get; init; } = 1;
+
+    /// <summary>How many people can work one woodcutter's hut at once.</summary>
+    [JsonPropertyName("woodcutter_hut_capacity")]
+    public int WoodcutterHutCapacity { get; init; } = 3;
+
+    /// <summary>Logs consumed by one splitting job.</summary>
+    /// <remarks>
+    /// The first workplace in the game that <b>consumes an input</b> (D29). It can be
+    /// idle for want of logs rather than for want of a worker, which is a state the
+    /// player has to be able to read — see the no-logs refusal in
+    /// <c>LabourAllocator</c>.
+    /// </remarks>
+    [JsonPropertyName("logs_per_split")]
+    public int LogsPerSplit { get; init; } = 6;
+
+    /// <summary>Firewood produced by one splitting job.</summary>
+    [JsonPropertyName("firewood_per_split")]
+    public int FirewoodPerSplit { get; init; } = 12;
+
+    /// <summary>Ticks spent splitting once at the hut.</summary>
+    [JsonPropertyName("split_ticks")]
+    public int SplitTicks { get; init; } = 4;
+
+    /// <summary>Firewood one household burns per day of winter.</summary>
+    /// <remarks>
+    /// Per household, not per member — a house costs the same to heat whether two
+    /// live in it or five. Winter only, for legibility: fuel that trickles all year
+    /// is a background tax, whereas fuel demanded exactly when foraging stops is a
+    /// season with teeth.
+    /// </remarks>
+    [JsonPropertyName("firewood_per_winter_day")]
+    public int FirewoodPerWinterDay { get; init; } = 1;
+
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
     /// <para>
@@ -592,6 +640,25 @@ public sealed record SimConfig
         if (TreeStandCapacity <= 0)
         {
             throw new SimConfigException($"tree_stand_capacity must be greater than zero (got {TreeStandCapacity}).");
+        }
+
+        if (WoodcutterHutCapacity <= 0)
+        {
+            throw new SimConfigException(
+                $"woodcutter_hut_capacity must be greater than zero (got {WoodcutterHutCapacity}).");
+        }
+
+        if (LogsPerSplit <= 0 || FirewoodPerSplit <= 0 || SplitTicks <= 0)
+        {
+            throw new SimConfigException(
+                $"logs_per_split, firewood_per_split and split_ticks must all be greater than zero " +
+                $"(got {LogsPerSplit}, {FirewoodPerSplit}, {SplitTicks}).");
+        }
+
+        if (FirewoodPerWinterDay < 0)
+        {
+            throw new SimConfigException(
+                $"firewood_per_winter_day cannot be negative (got {FirewoodPerWinterDay}).");
         }
 
         if (LogsPerHouse < 0)

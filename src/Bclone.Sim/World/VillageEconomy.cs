@@ -188,7 +188,7 @@ public static class VillageEconomy
         return available <= 0 || trip <= 0 ? 0 : available / trip;
     }
 
-    /// <summary>Timber one worker brings home in a year, at their weakest.</summary>
+    /// <summary>Logs one worker brings home in a year, at their weakest.</summary>
     public static int WoodCutPerYearAtWorst(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
@@ -196,6 +196,178 @@ public static class VillageEconomy
         int wood = CutTripsPerYear(config) * config.CutYield * config.VigourMinPercent / 100;
         return wood < 1 ? 1 : wood;
     }
+
+    // ---------------------------------------------------------------
+    //  Firewood (D29) — the processed half
+    // ---------------------------------------------------------------
+
+    /// <summary>Firewood one household burns to get through one winter.</summary>
+    /// <remarks>
+    /// Per <em>household</em>, not per member: a house costs the same to heat whether
+    /// two people live in it or five. That is what makes sprawl the thing that costs,
+    /// rather than population — a pressure that traces back to a player decision
+    /// (§2.3) instead of merely punishing growth.
+    /// </remarks>
+    public static int FirewoodPerHouseholdPerWinter(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return config.FirewoodPerWinterDay * config.DaysPerSeason;
+    }
+
+    /// <summary>Ticks for one round trip to the woodcutter's hut and back.</summary>
+    public static int FirewoodRoundTripTicks(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        var hut = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY);
+
+        int worst = 0;
+        for (int i = 0; i <= config.EconomyHorizonHouseholds; i++)
+        {
+            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
+            int distance = home.ManhattanDistanceTo(hut);
+            if (distance > worst)
+            {
+                worst = distance;
+            }
+        }
+
+        return (worst * config.TravelTicksPerUnit * 2) + config.SplitTicks;
+    }
+
+    /// <summary>Firewood one woodcutter makes in a year, at their weakest.</summary>
+    /// <remarks>Year-round work, like felling — a hut does not care what season it is.</remarks>
+    public static int FirewoodMadePerYearAtWorst(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int available = config.TicksPerYear - MealsPerYear(config);
+        int trip = FirewoodRoundTripTicks(config);
+        int trips = available <= 0 || trip <= 0 ? 0 : available / trip;
+
+        int firewood = trips * config.FirewoodPerSplit * config.VigourMinPercent / 100;
+        return firewood < 1 ? 1 : firewood;
+    }
+
+    /// <summary>Logs one woodcutter consumes in a year, at their weakest.</summary>
+    public static int LogsConsumedPerYearAtWorst(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int perFirewood = config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit;
+        return FirewoodMadePerYearAtWorst(config) * config.LogsPerSplit / perFirewood;
+    }
+
+    /// <summary>
+    /// Whether a village of <see cref="SimConfig.EconomyHorizonHouseholds"/> homes can
+    /// keep itself warm with the hands it has left after feeding itself.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The stated target for fuel, in the same shape as the food target above:
+    /// </para>
+    /// <para>
+    /// <b>After feeding everyone, the hands the village can spare must be enough to
+    /// heat every home through winter — and still leave someone to build.</b>
+    /// </para>
+    /// <para>
+    /// Asserted by a test rather than hoped for. Phase 0 rejected warmth outright as
+    /// "a second overlapping death system", and the honest reading of that fear is
+    /// exactly this arithmetic: if heating the village costs more hands than it has
+    /// spare, then cold is not a pressure, it is a slow extinction with extra steps.
+    /// </para>
+    /// </remarks>
+    public static int HandsNeededForFuel(SimConfig config, int households)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int firewoodNeeded = households * FirewoodPerHouseholdPerWinter(config);
+        int woodcutters = CeilingDivide(firewoodNeeded, FirewoodMadePerYearAtWorst(config));
+
+        int logsNeeded = woodcutters * LogsConsumedPerYearAtWorst(config);
+        int loggers = CeilingDivide(logsNeeded, WoodCutPerYearAtWorst(config));
+
+        return woodcutters + loggers;
+    }
+
+    /// <summary>
+    /// Share of the village's spare hands that heating it is allowed to cost.
+    /// </summary>
+    /// <remarks>
+    /// <b>Half, and the margin is the point</b> — the same argument
+    /// <see cref="RequiredDependants"/> makes about the third dependant. Solving for
+    /// "fuel costs exactly what the village can spare" produces a settlement that is
+    /// warm by construction and has nothing left over: nobody to build with, and no
+    /// slack for the winter that runs long. D16 records what that looks like — a
+    /// village that survives only while nothing pushes on it, which is useless when
+    /// pushing on it is the entire point of §2.3.
+    /// </remarks>
+    public const int FuelMayCostThisShareOfSpareHands = 2;
+
+    /// <summary>
+    /// Hands a village of this many households can spare once everyone is fed.
+    /// </summary>
+    public static int SpareHandsAt(SimConfig config, int households)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int mouths = households * config.MaxHouseholdSize;
+        int hands = households * config.AdultsPerHousehold;
+        int spare = hands - CeilingDivide(mouths, RequiredDependants);
+
+        return spare < 0 ? 0 : spare;
+    }
+
+    /// <summary>
+    /// The smallest <c>firewood_per_split</c> that meets the fuel target.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The fuel counterpart of <see cref="RequiredGatherYield"/>, and it exists for
+    /// exactly the same reason: rather than guessing a batch size and finding out
+    /// thirty in-game years later that heating the village costs more hands than it
+    /// has, ask what the stated target <em>requires</em>.
+    /// </para>
+    /// <para>
+    /// Solved by search rather than algebra because there are two ceilings in the
+    /// chain — woodcutters rounded up, then the loggers who feed them rounded up
+    /// again — and inverting that in closed form would be clever in the bad way.
+    /// A handful of integer iterations at start-up is not worth being clever about.
+    /// </para>
+    /// </remarks>
+    public static int RequiredFirewoodPerSplit(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int households = config.EconomyHorizonHouseholds;
+        int budget = FuelBudgetInHands(config, households);
+
+        // A generous ceiling on the search: one batch covering a whole village's
+        // winter is certainly enough, and if even that fails the config is broken in
+        // a way a bigger number will not fix.
+        int ceiling = (households * FirewoodPerHouseholdPerWinter(config)) + 1;
+
+        for (int perSplit = 1; perSplit <= ceiling; perSplit++)
+        {
+            if (HandsNeededForFuel(config with { FirewoodPerSplit = perSplit }, households) <= budget)
+            {
+                return perSplit;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"No batch size lets {households} households heat themselves within the {budget} hands " +
+            "budgeted for it. Either fuel is too expensive or the food economy leaves too little over.");
+    }
+
+    /// <summary>Hands the village may spend on staying warm — see
+    /// <see cref="FuelMayCostThisShareOfSpareHands"/>.</summary>
+    public static int FuelBudgetInHands(SimConfig config, int households) =>
+        SpareHandsAt(config, households) / FuelMayCostThisShareOfSpareHands;
+
+    private static int CeilingDivide(int numerator, int denominator) =>
+        denominator <= 0 ? 0 : (numerator + denominator - 1) / denominator;
 
     /// <summary>Food one adult gathers in a year at a given vigour.</summary>
     public static int FoodGatheredPerYear(SimConfig config, int vigourPercent) =>

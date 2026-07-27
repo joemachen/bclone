@@ -90,6 +90,23 @@ public sealed class Villager
     public bool HasJob => WorkplaceId != 0;
 
     /// <summary>
+    /// Why someone who holds a job is not doing it today, or empty when they are.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="JobReason"/> answers "why this job?", which is a question about the
+    /// allocator. This answers "so why are you sitting at home?", which is a different
+    /// question and, before the woodcutter's hut, never had an interesting answer — a
+    /// forager rests in winter and everyone knows why.
+    /// <para>
+    /// The hut changed that: it is the first workplace that can be idle for want of an
+    /// <em>input</em> rather than a worker or a season (D29). A manned building doing
+    /// nothing, with no explanation, is exactly the opaque simulation §2.2 warns
+    /// against — so it says so.
+    /// </para>
+    /// </remarks>
+    public string WorkNote { get; set; } = string.Empty;
+
+    /// <summary>
     /// The in-game year they were born. Zero for founders, who arrive already grown
     /// and whose age therefore tracks the calendar directly.
     /// </summary>
@@ -171,7 +188,9 @@ public sealed class Villager
             VillagerState.Gathering => "gathering berries",
             VillagerState.TravelingHome => "walking home",
             VillagerState.TravelingToTrees => $"walking to {where}",
-            VillagerState.Cutting => "cutting timber",
+            VillagerState.Cutting => "felling trees",
+            VillagerState.TravelingToHut => $"walking to {where}",
+            VillagerState.MakingFirewood => "splitting logs into firewood",
             VillagerState.Resting => "resting at home",
             VillagerState.Dead => "dead",
             _ => State.ToString(),

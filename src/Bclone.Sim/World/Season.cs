@@ -20,6 +20,12 @@ public enum VillagerState
     Cutting,
     Resting,
     Dead,
+
+    /// <summary>Walking to the woodcutter's hut.</summary>
+    TravelingToHut,
+
+    /// <summary>Splitting logs into firewood at the hut (D29).</summary>
+    MakingFirewood,
 }
 
 /// <summary>

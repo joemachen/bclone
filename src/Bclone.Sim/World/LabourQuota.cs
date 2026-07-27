@@ -32,12 +32,14 @@ public readonly record struct LabourQuota
     /// currently produce — "what happens when the village suddenly wants one fewer
     /// forager?" is otherwise only reachable by killing the right person.
     /// </remarks>
-    internal LabourQuota(int hands, int mouths, int foragersToFeedEveryone, int foragers, int woodcutters)
+    internal LabourQuota(
+        int hands, int mouths, int foragersToFeedEveryone, int foragers, int loggers, int woodcutters)
     {
         Hands = hands;
         Mouths = mouths;
         ForagersToFeedEveryone = foragersToFeedEveryone;
         Foragers = foragers;
+        Loggers = loggers;
         Woodcutters = woodcutters;
     }
 
@@ -61,13 +63,17 @@ public readonly record struct LabourQuota
     /// <summary>Hands the village wants foraging.</summary>
     public int Foragers { get; }
 
-    /// <summary>Hands the village wants cutting timber.</summary>
+    /// <summary>Hands the village wants felling trees.</summary>
+    public int Loggers { get; }
+
+    /// <summary>Hands the village wants splitting logs into firewood.</summary>
     public int Woodcutters { get; }
 
     /// <summary>The quota for one kind of work.</summary>
     public int For(JobKind kind) => kind switch
     {
         JobKind.Forager => Foragers,
+        JobKind.Logger => Loggers,
         JobKind.Woodcutter => Woodcutters,
         _ => 0,
     };
@@ -144,7 +150,13 @@ public readonly record struct LabourQuota
             spareForTimber = 0;
         }
 
+        // THE CHAIN, WORKED BACKWARDS (D29). Homes need heating, so the village wants
+        // woodcutters; woodcutters eat logs, so it wants loggers — for the firewood
+        // as well as for the houses. Demand propagates back down the chain rather
+        // than each workplace guessing at its own, which is the same lesson the
+        // forager quota is a record of, one link further along.
         int woodcutters = WoodcuttersWanted(world);
+        int loggers = LoggersWanted(world) + LoggersToFeedTheHuts(world, woodcutters);
 
         // Nobody is spared for building while the village as a whole is short of
         // food. Counting spare hands is not enough on its own: hands are spare only
@@ -159,7 +171,7 @@ public readonly record struct LabourQuota
         // deaths were all old age, which is exactly what a village that stops having
         // children looks like.
         //
-        // AND ONLY WHILE THERE IS FOOD TO GATHER. Pulling the woodcutters back onto
+        // AND ONLY WHILE THERE IS FOOD TO GATHER. Pulling the loggers back onto
         // the berries in winter is not caution, it is waste: the larder always dips
         // in winter, and there is nothing out there to pick, so those hands simply
         // stood idle. Trees do not stop in winter — that asymmetry is most of why the
@@ -167,29 +179,42 @@ public readonly record struct LabourQuota
         // on it.
         if (FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world))
         {
+            loggers = 0;
             woodcutters = 0;
         }
 
-        if (woodcutters > spareForTimber)
-        {
-            woodcutters = spareForTimber;
-        }
+        loggers = Cap(loggers, TotalCapacityFor(world, JobKind.Logger));
+        woodcutters = Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter));
 
-        int standCapacity = TotalCapacityFor(world, JobKind.Woodcutter);
-        if (woodcutters > standCapacity)
-        {
-            woodcutters = standCapacity;
-        }
+        // Splitting comes before felling when hands are short.
+        //
+        // This is the failure mode unique to a processing chain, and it is worth being
+        // explicit about: a village that staffs only the stand ends up freezing in a
+        // yard full of logs. Firewood is what actually keeps anyone alive, so the hut
+        // gets first claim on whatever food can spare — and the logs it eats are
+        // already in store from last year, which is exactly what the woodpile is for.
+        woodcutters = Cap(woodcutters, spareForTimber);
+        loggers = Cap(loggers, spareForTimber - woodcutters);
 
-        // Everyone not cutting timber forages. Berries keep, and a hand that gathers
+        // Everyone not on timber forages. Berries keep, and a hand that gathers
         // nothing still eats.
-        int foragers = hands - woodcutters;
+        int foragers = hands - loggers - woodcutters;
 
-        return new LabourQuota(hands, mouths, toFeedEveryone, foragers, woodcutters);
+        return new LabourQuota(hands, mouths, toFeedEveryone, foragers, loggers, woodcutters);
+    }
+
+    private static int Cap(int wanted, int ceiling)
+    {
+        if (ceiling < 0)
+        {
+            ceiling = 0;
+        }
+
+        return wanted > ceiling ? ceiling : wanted;
     }
 
     /// <summary>
-    /// How many woodcutters the village has a use for.
+    /// How many loggers the village has a use for.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -202,7 +227,7 @@ public readonly record struct LabourQuota
     /// <para>
     /// Deriving it mattered more than expected. The first version simply spared every
     /// hand not needed for food, which for a founding village of four adults meant
-    /// <em>two woodcutters</em> — and one cutter produces enough timber for several
+    /// <em>two loggers</em> — and one cutter produces enough timber for several
     /// houses a year, so the village was putting half its labour into a resource it
     /// could not spend while the other half tried to feed everyone. It oscillated for
     /// a century and died. Wood is simply much cheaper than food, and the quota had no
@@ -214,7 +239,7 @@ public readonly record struct LabourQuota
     /// of the question stays the same; only the demand side grows.
     /// </para>
     /// </remarks>
-    public static int WoodcuttersWanted(SimWorld world)
+    public static int LoggersWanted(SimWorld world)
     {
         ArgumentNullException.ThrowIfNull(world);
 
@@ -259,6 +284,68 @@ public readonly record struct LabourQuota
         }
 
         return CeilingDivide(shortfall, VillageEconomy.WoodCutPerYearAtWorst(world.Config));
+    }
+
+    /// <summary>
+    /// How many woodcutters the village has a use for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Asked the same way as every other quota: what is this work <em>for</em>? For
+    /// firewood the answer is winter — every occupied home has to be heated through
+    /// it, less whatever is already stacked against the wall.
+    /// </para>
+    /// <para>
+    /// Measured against the <b>whole village's</b> firewood, not each household's,
+    /// because the sharing policy moves it around anyway. A per-household reading
+    /// would staff the hut for a family that is about to be given fuel by a neighbour.
+    /// </para>
+    /// </remarks>
+    public static int WoodcuttersWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int homes = 0;
+        int stored = 0;
+
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            stored += household.Stockpile.Firewood;
+
+            if (world.LivingMembersOf(household) > 0)
+            {
+                homes++;
+            }
+        }
+
+        int needed = homes * VillageEconomy.FirewoodPerHouseholdPerWinter(world.Config);
+        int shortfall = needed - stored;
+        if (shortfall <= 0)
+        {
+            return 0;
+        }
+
+        return CeilingDivide(shortfall, VillageEconomy.FirewoodMadePerYearAtWorst(world.Config));
+    }
+
+    /// <summary>
+    /// Extra loggers needed to keep the huts in logs.
+    /// </summary>
+    /// <remarks>
+    /// The back-propagation step. Without it the village staffs its huts, burns
+    /// through the woodpile that was cut for houses, and then both stop — the chain
+    /// starving in the middle, which is the failure mode processing introduces.
+    /// </remarks>
+    private static int LoggersToFeedTheHuts(SimWorld world, int woodcutters)
+    {
+        if (woodcutters <= 0)
+        {
+            return 0;
+        }
+
+        int logsEaten = woodcutters * VillageEconomy.LogsConsumedPerYearAtWorst(world.Config);
+        return CeilingDivide(logsEaten, VillageEconomy.WoodCutPerYearAtWorst(world.Config));
     }
 
     /// <summary>
@@ -317,5 +404,5 @@ public readonly record struct LabourQuota
     /// <summary>A one-line summary, for logs and for the sentence shown to the player.</summary>
     public override string ToString() =>
         $"{Hands} hands for {Mouths} mouths: {Foragers} foraging " +
-        $"(at least {ForagersToFeedEveryone} to feed everyone), {Woodcutters} cutting.";
+        $"(at least {ForagersToFeedEveryone} to feed everyone), {Loggers} cutting.";
 }
