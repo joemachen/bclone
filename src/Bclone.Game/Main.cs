@@ -133,7 +133,9 @@ public partial class Main : Control
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
         _villageLabel.Text =
             $"{world.Population} villagers · {LivingHouseholds(world)} households · " +
-            $"{TotalFood(world)} food stored";
+            $"{TotalFood(world)} food · {world.Granary.Store.Food} in the granary · " +
+            $"{world.StorageShed.Store.Logs} logs and {world.StorageShed.Store.Firewood} " +
+            $"firewood in the shed";
 
         RefreshRoster(world);
         RefreshInspector(world);

@@ -54,6 +54,8 @@ public partial class VillageMap : Control
     private static readonly Color ValleyEdge = new("#485453");
     private static readonly Color GridLine = new("#343d3d");
     private static readonly Color HomeColour = new("#b98a52");
+    private static readonly Color GranaryColour = new("#d8c56a");
+    private static readonly Color ShedColour = new("#8a7a63");
     private static readonly Color BerryColour = new("#5aa04a");
     private static readonly Color TreeColour = new("#2f6b3a");
     private static readonly Color AdultColour = new("#e8e2d4");
@@ -338,8 +340,36 @@ public partial class VillageMap : Control
         // the things that move must never be hidden behind the things that do not.
         DrawRoutes();
         DrawWorkplaces();
+        DrawStores();
         DrawHomes();
         DrawVillagers();
+    }
+
+    /// <summary>
+    /// The granary and the materials shed.
+    /// </summary>
+    /// <remarks>
+    /// Drawn as squares like homes, because they are the same sort of thing — a place
+    /// that holds goods — and a different shape would imply a distinction that is not
+    /// there. Distinguished by colour, and outlined so a store never reads as just
+    /// another house: "why is nobody fetching food?" has to be answerable by looking.
+    /// </remarks>
+    private void DrawStores()
+    {
+        SimWorld world = _world!;
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding building = world.StoreBuildings[i];
+
+            Vector2 centre = ToScreen(building.Position);
+            float size = Mathf.Max(8f, _pixelsPerTile * 0.8f);
+            var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+            Color colour = building.Kind == StoreKind.Granary ? GranaryColour : ShedColour;
+            DrawRect(rect, colour with { A = 0.85f });
+            DrawRect(rect, colour, filled: false, width: 2f);
+        }
     }
 
     private void DrawValley()

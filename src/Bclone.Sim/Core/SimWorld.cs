@@ -79,6 +79,35 @@ public sealed class SimWorld
     /// <summary>Every workplace, ordered by id.</summary>
     public List<Workplace> Workplaces { get; } = new();
 
+    /// <summary>
+    /// Buildings that exist to hold things — the granary and the materials shed.
+    /// </summary>
+    /// <remarks>
+    /// Ordered by id and never reordered, for the same reason the villagers are: this
+    /// list decides which store a producer walks to when two are equally close, and a
+    /// tie resolved by iteration order is a desync waiting to happen.
+    /// </remarks>
+    public List<StoreBuilding> StoreBuildings { get; } = new();
+
+    /// <summary>The village's food store.</summary>
+    public StoreBuilding Granary => FindStore(StoreKind.Granary);
+
+    /// <summary>The village's materials store.</summary>
+    public StoreBuilding StorageShed => FindStore(StoreKind.Shed);
+
+    private StoreBuilding FindStore(StoreKind kind)
+    {
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Kind == kind)
+            {
+                return StoreBuildings[i];
+            }
+        }
+
+        throw new InvalidOperationException($"The village has no {kind}.");
+    }
+
     /// <summary>Look up a workplace by id, or null.</summary>
     public Workplace? FindWorkplace(int id)
     {
@@ -177,6 +206,28 @@ public sealed class SimWorld
             Position = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY),
             Capacity = config.WoodcutterHutCapacity,
             CatchmentRadius = catchment,
+        });
+
+        // Somewhere to put things (D30). Two buildings rather than one, because food
+        // and materials are different problems - see StoreBuilding and D32.
+        //
+        // They exist from the founding for now. There is no building placement yet,
+        // so the player has no way to put one anywhere; when placement lands, WHERE
+        // the granary goes becomes the first decision storage makes interesting.
+        StoreBuildings.Add(new StoreBuilding
+        {
+            Id = 1,
+            Kind = StoreKind.Granary,
+            Name = "the granary",
+            Position = new GridPos(config.GranaryX, config.GranaryY),
+        });
+
+        StoreBuildings.Add(new StoreBuilding
+        {
+            Id = 2,
+            Kind = StoreKind.Shed,
+            Name = "the storage shed",
+            Position = new GridPos(config.StorageShedX, config.StorageShedY),
         });
     }
 

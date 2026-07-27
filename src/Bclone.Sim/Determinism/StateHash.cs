@@ -79,8 +79,31 @@ public static class StateHash
             {
                 hash = MixUInt32(hash, (uint)workplace.WorkerIds[k]);
             }
+
+            hash = MixStore(hash, workplace.Store);
         }
 
+        // ---- Storage buildings (D30) ----
+        hash = MixUInt32(hash, (uint)world.StoreBuildings.Count);
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            hash = MixUInt32(hash, (uint)world.StoreBuildings[i].Id);
+            hash = MixStore(hash, world.StoreBuildings[i].Store);
+        }
+
+        return hash;
+    }
+
+    /// <summary>Mix the contents of one store.</summary>
+    /// <remarks>
+    /// Shared by every place that holds things, so a store added to a new kind of
+    /// building cannot be left out of the hash by being written in a different style.
+    /// </remarks>
+    private static ulong MixStore(ulong hash, Stockpile store)
+    {
+        hash = MixUInt32(hash, (uint)store.Food);
+        hash = MixUInt32(hash, (uint)store.Logs);
+        hash = MixUInt32(hash, (uint)store.Firewood);
         return hash;
     }
 

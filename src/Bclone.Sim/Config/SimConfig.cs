@@ -285,6 +285,37 @@ public sealed record SimConfig
     [JsonPropertyName("split_ticks")]
     public int SplitTicks { get; init; } = 4;
 
+    // ---------------------------------------------------------------
+    //  Storage (D30, D32)
+    // ---------------------------------------------------------------
+
+    /// <summary>Where the village's food is kept.</summary>
+    /// <remarks>
+    /// Near the homes. A granary is a building people walk to several times a season,
+    /// so its position is the difference between a short errand and a long one — and
+    /// once building placement exists, choosing that position is the first decision in
+    /// the game that storage makes interesting.
+    /// </remarks>
+    [JsonPropertyName("granary_x")]
+    public int GranaryX { get; init; } = 1;
+
+    /// <summary>Where the village's food is kept.</summary>
+    [JsonPropertyName("granary_y")]
+    public int GranaryY { get; init; } = -1;
+
+    /// <summary>Where materials are kept — logs, firewood, and later stone and cloth.</summary>
+    /// <remarks>
+    /// Separate from the granary on purpose (D32): food spoils and timber does not,
+    /// and one undifferentiated pile would delete the per-household inequality D14
+    /// exists to create.
+    /// </remarks>
+    [JsonPropertyName("storage_shed_x")]
+    public int StorageShedX { get; init; } = -1;
+
+    /// <summary>Where materials are kept.</summary>
+    [JsonPropertyName("storage_shed_y")]
+    public int StorageShedY { get; init; } = -2;
+
     /// <summary>Firewood one household burns per day of winter.</summary>
     /// <remarks>
     /// Per household, not per member — a house costs the same to heat whether two

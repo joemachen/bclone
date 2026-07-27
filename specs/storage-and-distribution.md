@@ -1,7 +1,9 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **draft — awaiting Joe's review before implementation** · Owner: Joe + Claude Code
-> Format per `METHODOLOGY.md §2`. Implements decision **D30**; delivers the building half of **D14**.
+> Status: **agreed — Joe's answers folded in 2026-07-27** · Owner: Joe + Claude Code
+> Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
+
+**Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the shed that holds manufacturing materials (§4).
 
 ---
 
@@ -69,9 +71,18 @@ Building            (new — a workplace, a home, a shed and a market are all on
 |---|---|---|
 | Home | a working larder: food, firewood | D10 — meals and the hearth must be instant |
 | Woodcutter's hut | a little firewood | Joe's call: a buffer at the place of production, not the whole stock |
-| Tree stand | a little logs | same shape; the felled pile beside the stumps |
-| Storage shed | bulk everything — stone, logs, lumber, cloth, firewood | the general store, and the overflow every producer runs to |
+| Tree stand | a few logs | same shape; the felled pile beside the stumps |
+| **Granary** | food, and only food | Joe's call (D32) |
+| **Storage shed** | materials — logs, firewood, stone, lumber, cloth | the general store, and the overflow every producer runs to |
 | Market | food and firewood, near the homes | shortens the fetch; D14's building |
+
+### Why food gets its own building
+
+Joe's call, and it resolves a tension this spec was going to have to face (§11.3 as drafted). One undifferentiated pile would have quietly deleted the inequality D14 exists to create — *"one family starving beside a thriving neighbour"* is the story per-household food was introduced for, and a single village-wide store makes it unexpressible.
+
+Two buildings keeps it, and **changes what inequality is made of, for the better.** It stops being about whose larder it is — an accident of which house a forager was born in — and becomes about **distance and hands**: a household far from the granary, or one with nobody spare to send, eats worse than its neighbours. That is spatial, watchable, and it ties straight into catchment (§2.2) and desire paths (§2.6) rather than sitting off to one side. A story about a family on the wrong end of the valley is a better story than one about a family with the wrong surname.
+
+It is also the honest division. A granary and a woodpile are different buildings in every village that ever existed, for the obvious reason: food spoils, rots, and gets eaten by things, and timber does not.
 
 **Capacity is what makes this a system rather than bookkeeping.** A full shed means a producer has somewhere to stop, which is a pressure the player answers by building another one — and it is the first thing in the game that a *placement* decision could improve, which matters for when placement lands.
 
@@ -144,6 +155,10 @@ Bigger than the fuel chain, and that one taught the lesson: slices, each green b
 
 ## 11. Open questions (for Joe)
 
-1. **Fetch or deliver?** *(Recommendation: fetch — see §3. It keeps the market valuable rather than mandatory and never starves a village because one job went unstaffed.)*
-2. **Where do the shed and market come from?** There is still no building placement — the player has no agency at all — so for now they must exist from the founding, like the tree stand. *(Recommendation: found the village with one shed; the market arrives as a second slice. Both become placeable when placement lands, and that is when this system starts paying the player back.)*
-3. **Should the shed hold food?** Letting it means a village can bank a real surplus and survive a bad year, which is good. It also means the per-household inequality D14 exists to create gets softened — one big pile is one big pile. *(No recommendation. This is the one that decides whether "one family starving beside a thriving neighbour" survives contact with storage, and it is a design question about what stories the game wants, not an engineering one.)*
+1. **Fetch or deliver?** ✅ **Resolved (Joe, 2026-07-27): fetch.** A household below its larder target sends someone to the nearest store holding what they need; the market exists to make that trip short rather than to make it possible. Keeps the market valuable rather than mandatory, and never starves a village because one job went unstaffed.
+2. **Where do the shed, granary and market come from?** There is still no building placement — the player has no agency at all — so for now they exist from the founding, like the tree stand. Found the village with a granary and a shed; the market arrives as a later slice. All three become placeable when placement lands, **and that is the moment this system starts paying the player back**: where you put the granary is the first decision in the game that storage makes interesting.
+3. **Should one store hold everything?** ✅ **Resolved (Joe, 2026-07-27): no — a granary for food, a shed for materials.** See §4. Better than the middle option this spec was going to propose, because it keeps D14's inequality *and* improves what it is made of.
+
+### Still open, raised by the answers
+
+4. **Does food in a granary spoil?** A granary that keeps food perfectly forever is a bank, and a village with a bank has solved winter permanently — which would undo most of what §2.5 is for. Spoilage is the obvious counterweight and it is also the reason granaries are a *building* rather than a heap. **Not proposed for this spec** — it is a Phase 2 environment question, not a storage one — but it is worth naming now, because if it lands later it changes what the food economy is derived against, and that derivation should not have to be redone twice.

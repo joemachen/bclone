@@ -1,13 +1,24 @@
 namespace Bclone.Sim.World;
 
 /// <summary>
-/// The villager's food store.
+/// Goods held somewhere — a home's larder, a workshop's buffer, a granary, a shed.
 /// </summary>
 /// <remarks>
-/// Always accessible rather than sited at a location (spec §11). A Phase 0 death
-/// caused by starving two tiles from a full larder would read as a bug, not a
-/// lesson — and legibility is the deliverable here. Granaries with a real
-/// location arrive with households.
+/// <para>
+/// <b>A store belongs to a place, not to a family</b> (D30). Everything held a
+/// stockpile of its own before that, which is why every goods bug so far has had the
+/// same shape: the right stuff in the wrong house. Logs piled up where the logger
+/// lived and no home was ever built (D25); firewood piled up where the woodcutter
+/// lived and the household next door froze beside it (D29). Both were patched
+/// locally, twice, because there was nowhere to put things.
+/// </para>
+/// <para>
+/// A home's store is still special in one way, and it is not negotiable: <b>a meal
+/// must be takeable where the villager is standing</b>. Phase 0 killed a villager who
+/// starved mid-gather beside a full larder, and decided that a survival game may kill
+/// you for bad decisions but never for a scheduling artifact (D10). So homes keep a
+/// working larder, and the only question storage answers is how it gets refilled.
+/// </para>
 /// </remarks>
 public sealed class Stockpile
 {

@@ -201,6 +201,23 @@
   // whether two live in it or five. That makes SPRAWL the thing that
   // costs rather than population - a pressure that traces back to a
   // player decision (DESIGN.md §2.3).
+  // ---- Storage (D30, D32) ------------------------------------
+  // Two buildings, not one. Food spoils and timber does not, and one
+  // undifferentiated village pile would delete the per-household
+  // inequality D14 exists to create - "one family starving beside a
+  // thriving neighbour" is the story per-household food was introduced
+  // for. Keeping them apart changes what inequality is MADE of: not
+  // whose larder it is, but who is near the granary and who has hands
+  // to send.
+  //
+  // Both sit near the homes and exist from the founding. When building
+  // placement lands, WHERE the granary goes becomes the first decision
+  // in the game that storage makes interesting.
+  "granary_x": 1,
+  "granary_y": -1,
+  "storage_shed_x": -1,
+  "storage_shed_y": -2,
+
   "firewood_per_winter_day": 1,
 
   // Longer than starvation_ticks on purpose: firewood comes from a
