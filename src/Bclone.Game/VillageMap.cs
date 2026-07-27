@@ -58,6 +58,23 @@ public partial class VillageMap : Control
     private static readonly Color ShedColour = new("#8a7a63");
     private static readonly Color BerryColour = new("#5aa04a");
     private static readonly Color TreeColour = new("#2f6b3a");
+
+    /// <summary>The generated river (D18).</summary>
+    /// <remarks>
+    /// Deliberately the most distinct colour on the map. Water is about to become the
+    /// one thing a villager cannot walk over (D40), so it needs to read as an obstacle
+    /// at a glance and long before a bridge exists to argue with it.
+    /// </remarks>
+    private static readonly Color WaterColour = new("#2f5f7a");
+
+    /// <summary>Generated woodland. Quieter than the tree stand that stands in it.</summary>
+    private static readonly Color ForestColour = new("#2a3d2c");
+
+    /// <summary>The woodcutter's hut — a workplace, not a stand of trees.</summary>
+    private static readonly Color HutColour = new("#9a6b3f");
+
+    /// <summary>The market (D14), which is both a workplace and a store.</summary>
+    private static readonly Color MarketColour = new("#c98f4a");
     private static readonly Color AdultColour = new("#e8e2d4");
     private static readonly Color ChildColour = new("#8fc7e8");
     private static readonly Color ElderColour = new("#d9a05b");
@@ -366,7 +383,12 @@ public partial class VillageMap : Control
             float size = Mathf.Max(8f, _pixelsPerTile * 0.8f);
             var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
 
-            Color colour = building.Kind == StoreKind.Granary ? GranaryColour : ShedColour;
+            Color colour = building.Kind switch
+            {
+                StoreKind.Granary => GranaryColour,
+                StoreKind.Shed => ShedColour,
+                _ => MarketColour,
+            };
             DrawRect(rect, colour with { A = 0.85f });
             DrawRect(rect, colour, filled: false, width: 2f);
         }
@@ -383,13 +405,6 @@ public partial class VillageMap : Control
         var valley = new Rect2(topLeft, bottomRight - topLeft);
 
         DrawRect(valley, Ground);
-        DrawRect(valley, ValleyEdge, filled: false, width: 2f);
-
-        // Only worth drawing while tiles are big enough to read.
-        if (_pixelsPerTile < 6f)
-        {
-            return;
-        }
 
         // Clipped to what is actually on screen: at full zoom-in a loop over 120
         // columns is mostly wasted, and at full zoom-out it is 120 lines a pixel apart.
@@ -400,6 +415,20 @@ public partial class VillageMap : Control
         int maxX = Mathf.Min(config.MapMaxX + 1, Mathf.CeilToInt(last.X));
         int minY = Mathf.Max(config.MapMinY, Mathf.FloorToInt(first.Y));
         int maxY = Mathf.Min(config.MapMaxY + 1, Mathf.CeilToInt(last.Y));
+
+        // THE GENERATED TERRAIN (D18). Drawn under everything else, because it is the
+        // ground the rest of the village stands on — and because without it a
+        // generated valley is invisible, which makes "is this seed worth playing?"
+        // a question nobody can answer by looking.
+        DrawTerrain(minX, maxX, minY, maxY);
+
+        DrawRect(valley, ValleyEdge, filled: false, width: 2f);
+
+        // Only worth drawing the grid while tiles are big enough to read.
+        if (_pixelsPerTile < 6f)
+        {
+            return;
+        }
 
         for (int x = minX; x <= maxX; x++)
         {
@@ -417,6 +446,45 @@ public partial class VillageMap : Control
                 ToScreen(new Vector2(maxX - 0.5f, y - 0.5f)),
                 GridLine,
                 1f);
+        }
+    }
+
+    /// <summary>
+    /// The river and the woods, as generated from the run's seed (D18).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One filled rect per non-grass tile, clipped to the visible window. Grass is
+    /// skipped rather than drawn, because it is already the valley's base colour and
+    /// filling ninety per cent of the screen with rectangles of the colour underneath
+    /// them is a lot of work to change nothing.
+    /// </para>
+    /// <para>
+    /// A tile is drawn a hair over one tile wide. At fractional zoom, exactly-one-tile
+    /// rects leave seams between neighbours where the rounding falls differently, and
+    /// a river with gaps in it reads as a bug rather than as a river.
+    /// </para>
+    /// </remarks>
+    private void DrawTerrain(int minX, int maxX, int minY, int maxY)
+    {
+        GeneratedMap map = _world!.Map;
+        float size = _pixelsPerTile * 1.02f;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                Terrain terrain = map.TerrainAt(tile);
+                if (terrain == Terrain.Grass)
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, terrain == Terrain.Water ? WaterColour : ForestColour);
+            }
         }
     }
 
@@ -632,7 +700,19 @@ public partial class VillageMap : Control
     private bool InScope(int villagerId) =>
         _detail == MapDetail.All || (_detail == MapDetail.Selected && villagerId == _selectedVillagerId);
 
-    private static Color ColourOf(JobKind kind) => kind == JobKind.Forager ? BerryColour : TreeColour;
+    /// <remarks>
+    /// A switch rather than "forager, else assume trees". That shortcut was correct
+    /// while there were two kinds of work; with four it drew the woodcutter's hut and
+    /// the market as tree stands, so the map claimed the village had woodland it did
+    /// not have.
+    /// </remarks>
+    private static Color ColourOf(JobKind kind) => kind switch
+    {
+        JobKind.Forager => BerryColour,
+        JobKind.Logger => TreeColour,
+        JobKind.Woodcutter => HutColour,
+        _ => MarketColour,
+    };
 
     /// <summary>Forget interpolation state for the dead, so ids can never be confused
     /// and the dictionary does not grow for the whole run.</summary>
