@@ -116,6 +116,10 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.MakingFirewood);
                 return;
 
+            case VillagerState.HaulingToStore:
+                Travel(world, villager, world.StorageShed.Position, VillagerState.HaulingToStore);
+                return;
+
             case VillagerState.TravelingHome:
                 Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
                 return;
@@ -266,10 +270,10 @@ public sealed class BehaviorSystem : ISimSystem
         // the yard empty.
         if (villager.CanWork && job?.Kind == JobKind.Woodcutter)
         {
-            if (world.TotalLogs() < config.LogsPerSplit)
+            if (world.StorageShed.Store.Logs < config.LogsPerSplit)
             {
                 villager.WorkNote =
-                    $"Nothing to split — the village has no logs felled, and {job.Name} needs " +
+                    $"Nothing to split — {world.StorageShed.Name} has no logs, and {job.Name} needs " +
                     $"{config.LogsPerSplit} for a batch.";
                 GoHome(world, villager);
                 return;
@@ -355,6 +359,20 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival == VillagerState.HaulingToStore)
+        {
+            // The load goes into the building, and only then does it exist anywhere
+            // the village can spend it. This is the moment goods stopped teleporting.
+            Stockpile shed = world.StorageShed.Store;
+            shed.AddLogs(villager.CarriedLogs);
+            shed.AddFirewood(villager.CarriedFirewood);
+            villager.CarriedLogs = 0;
+            villager.CarriedFirewood = 0;
+
+            villager.State = VillagerState.TravelingHome;
+            return;
+        }
+
         if (onArrival == VillagerState.MakingFirewood)
         {
             villager.State = VillagerState.MakingFirewood;
@@ -419,16 +437,21 @@ public sealed class BehaviorSystem : ISimSystem
                     wood = 1;
                 }
 
-                world.HouseholdOf(villager).Stockpile.AddLogs(wood);
-                villager.State = VillagerState.TravelingHome;
+                // Picked up, not banked. The logs go to the shed on the way home,
+                // which is what makes them the village's rather than this family's.
+                villager.CarriedLogs += wood;
+                villager.State = VillagerState.HaulingToStore;
+                Travel(world, villager, world.StorageShed.Position, VillagerState.HaulingToStore);
                 return;
 
             case VillagerState.MakingFirewood:
-                // Logs come from the whole village; the firewood goes home with the
-                // woodcutter. That asymmetry is the point (D29) — logs are a shared
-                // material, firewood is burned in a particular hearth, and the
-                // sharing policy is what moves it between them.
-                if (!world.TryTakeLogsFromTheVillage(world.Config.LogsPerSplit))
+                // Logs come out of the SHED, which stands beside the hut — a woodyard.
+                // That adjacency is the whole reason this is not a teleport, and a
+                // test asserts the two buildings stay neighbours.
+                //
+                // It replaces a sweep across every household's private pile, which was
+                // a shed in all but name and could not be seen, sited or reasoned about.
+                if (!world.StorageShed.Store.TryTakeLogs(world.Config.LogsPerSplit))
                 {
                     // The yard emptied while they were working. Not an error: another
                     // woodcutter, or a house being raised, got there first.
@@ -442,7 +465,11 @@ public sealed class BehaviorSystem : ISimSystem
                     firewood = 1;
                 }
 
-                world.HouseholdOf(villager).Stockpile.AddFirewood(firewood);
+                // Straight into the shed beside them, rather than home with the
+                // woodcutter. Carrying the village's whole fuel supply back to one
+                // house is what froze the household next door (D29), and the daily
+                // sharing policy only existed to undo it.
+                world.StorageShed.Store.AddFirewood(firewood);
                 villager.State = VillagerState.TravelingHome;
                 return;
 

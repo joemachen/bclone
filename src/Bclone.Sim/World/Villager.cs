@@ -148,6 +148,32 @@ public sealed class Villager
 
     public GridPos Position { get; set; }
 
+    /// <summary>Logs in their arms right now, between the stumps and the shed.</summary>
+    /// <remarks>
+    /// <para>
+    /// Goods used to teleport: a logger finished a cut and the timber appeared in
+    /// their household's larder from wherever they were standing. That is what let
+    /// logs pile up in the logger's own house where nobody could spend them (D25),
+    /// and it is why "the village's logs" had to be faked with a sweep across every
+    /// household.
+    /// </para>
+    /// <para>
+    /// Carrying makes the haul a real leg of a real trip, which is the point of D30 —
+    /// and it is what gives §2.6's desire paths something to be about, because a route
+    /// walked with a load is traffic.
+    /// </para>
+    /// </remarks>
+    public int CarriedLogs { get; set; }
+
+    /// <summary>Firewood in their arms.</summary>
+    public int CarriedFirewood { get; set; }
+
+    /// <summary>Food in their arms — used once fetching lands.</summary>
+    public int CarriedFood { get; set; }
+
+    /// <summary>True when they are hauling anything at all.</summary>
+    public bool IsCarrying => CarriedLogs > 0 || CarriedFirewood > 0 || CarriedFood > 0;
+
     /// <summary>Ticks left in the current timed action (gathering, travel delay).</summary>
     public int ActionTicksRemaining { get; set; }
 

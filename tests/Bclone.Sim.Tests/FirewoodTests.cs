@@ -34,11 +34,7 @@ public sealed class FirewoodTests
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear * 20);
 
-        int firewood = 0;
-        foreach (Household household in loop.World.Households)
-        {
-            firewood += household.Stockpile.LifetimeFirewoodCut;
-        }
+        int firewood = loop.World.LifetimeFirewoodCut();
 
         _output.WriteLine($"{firewood} firewood cut in twenty years");
         Assert.True(firewood > 0, "Nobody ever split a log.");
@@ -52,13 +48,8 @@ public sealed class FirewoodTests
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear * 20);
 
-        int logsFelled = 0;
-        int firewoodMade = 0;
-        foreach (Household household in loop.World.Households)
-        {
-            logsFelled += household.Stockpile.LifetimeLogsFelled;
-            firewoodMade += household.Stockpile.LifetimeFirewoodCut;
-        }
+        int logsFelled = loop.World.LifetimeLogsFelled();
+        int firewoodMade = loop.World.LifetimeFirewoodCut();
 
         int logsSpentOnFirewood = firewoodMade / Config.FirewoodPerSplit * Config.LogsPerSplit;
         _output.WriteLine(
@@ -87,6 +78,7 @@ public sealed class FirewoodTests
             foreach (Household household in loop.World.Households)
             {
                 household.Stockpile.TryTakeLogs(household.Stockpile.Logs);
+                loop.World.StorageShed.Store.TryTakeLogs(loop.World.StorageShed.Store.Logs);
             }
 
             foreach (Villager villager in loop.World.Villagers)
@@ -130,9 +122,9 @@ public sealed class FirewoodTests
             }
 
             checkedSeasons++;
-            Assert.True(quota.Loggers > 0 || loop.World.TotalLogs() >= config.LogsPerSplit,
+            Assert.True(quota.Loggers > 0 || loop.World.StorageShed.Store.Logs >= config.LogsPerSplit,
                 $"Season {season}: the village wants {quota.Woodcutters} woodcutters but no " +
-                $"loggers, and only {loop.World.TotalLogs()} logs in store — {quota}");
+                $"loggers, and only {loop.World.StorageShed.Store.Logs} logs in store — {quota}");
         }
 
         _output.WriteLine($"{checkedSeasons} seasons where the village wanted firewood made");
@@ -267,12 +259,7 @@ public sealed class FirewoodTests
         a.Step(config.TicksPerYear * 40);
         b.Step(config.TicksPerYear * 40);
 
-        for (int i = 0; i < a.World.Households.Count; i++)
-        {
-            Assert.Equal(
-                a.World.Households[i].Stockpile.LifetimeFirewoodCut,
-                b.World.Households[i].Stockpile.LifetimeFirewoodCut);
-        }
+        Assert.Equal(a.World.LifetimeFirewoodCut(), b.World.LifetimeFirewoodCut());
 
         for (int i = 0; i < a.World.Villagers.Count; i++)
         {

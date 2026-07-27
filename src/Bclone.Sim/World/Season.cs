@@ -26,6 +26,9 @@ public enum VillagerState
 
     /// <summary>Splitting logs into firewood at the hut (D29).</summary>
     MakingFirewood,
+
+    /// <summary>Hauling a load to a store building (D30).</summary>
+    HaulingToStore,
 }
 
 /// <summary>

@@ -77,11 +77,7 @@ public sealed class WoodTests
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear * 40);
 
-        int wood = 0;
-        foreach (Household household in loop.World.Households)
-        {
-            wood += household.Stockpile.LifetimeLogsFelled;
-        }
+        int wood = loop.World.LifetimeLogsFelled();
 
         _output.WriteLine($"{wood} wood cut in three years");
         Assert.True(wood > 0, "Nobody cut any timber.");
@@ -309,12 +305,6 @@ public sealed class WoodTests
 
     private static int TotalLifetimeWood(SimWorld world)
     {
-        int total = 0;
-        for (int i = 0; i < world.Households.Count; i++)
-        {
-            total += world.Households[i].Stockpile.LifetimeLogsFelled;
-        }
-
-        return total;
+        return world.LifetimeLogsFelled();
     }
 }

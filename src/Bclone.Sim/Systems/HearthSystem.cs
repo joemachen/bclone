@@ -68,7 +68,7 @@ public sealed class HearthSystem : ISimSystem
     }
 
     /// <summary>
-    /// Firewood moves to the homes that need it, every day of winter.
+    /// Firewood is issued from the shed to the homes that need it, every day of winter.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -97,47 +97,28 @@ public sealed class HearthSystem : ISimSystem
     private static void ShareFirewood(SimWorld world, SimConfig config)
     {
         int target = VillageEconomy.FirewoodStoreWantedPerHousehold(config);
-        int floor = target * config.SharingNeedPercent / 100;
-        int keep = target * config.SharingKeepPercent / 100;
+        Stockpile shed = world.StorageShed.Store;
 
-        // Receivers and givers both walked in household-id order, so who helped whom
-        // is a fact about the village rather than about iteration.
-        for (int r = 0; r < world.Households.Count; r++)
+        // Households in id order, so who is served first when the shed runs low is a
+        // fact about the village rather than about iteration.
+        for (int i = 0; i < world.Households.Count; i++)
         {
-            Household needy = world.Households[r];
-            if (world.LivingMembersOf(needy) == 0)
+            Household household = world.Households[i];
+            if (world.LivingMembersOf(household) == 0)
             {
                 continue;
             }
 
-            int need = floor - needy.Stockpile.Firewood;
-
-            for (int g = 0; g < world.Households.Count && need > 0; g++)
+            int wanted = target - household.Stockpile.Firewood;
+            if (wanted <= 0)
             {
-                Household giver = world.Households[g];
-                if (giver.Id == needy.Id)
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                // A house with nobody left in it keeps nothing back.
-                int spare = world.LivingMembersOf(giver) == 0
-                    ? giver.Stockpile.Firewood
-                    : giver.Stockpile.Firewood - keep;
-
-                if (spare <= 0)
-                {
-                    continue;
-                }
-
-                int gift = spare < need ? spare : need;
-                if (!giver.Stockpile.TryTakeFirewood(gift))
-                {
-                    continue;
-                }
-
-                needy.Stockpile.Receive(0, 0, gift);
-                need -= gift;
+            int given = shed.Firewood < wanted ? shed.Firewood : wanted;
+            if (given > 0 && shed.TryTakeFirewood(given))
+            {
+                household.Stockpile.Receive(0, 0, given);
             }
         }
     }

@@ -310,11 +310,11 @@ public sealed record SimConfig
     /// exists to create.
     /// </remarks>
     [JsonPropertyName("storage_shed_x")]
-    public int StorageShedX { get; init; } = -1;
+    public int StorageShedX { get; init; } = -2;
 
     /// <summary>Where materials are kept.</summary>
     [JsonPropertyName("storage_shed_y")]
-    public int StorageShedY { get; init; } = -2;
+    public int StorageShedY { get; init; }
 
     /// <summary>Firewood one household burns per day of winter.</summary>
     /// <remarks>

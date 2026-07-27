@@ -215,8 +215,8 @@
   // in the game that storage makes interesting.
   "granary_x": 1,
   "granary_y": -1,
-  "storage_shed_x": -1,
-  "storage_shed_y": -2,
+  "storage_shed_x": -2,
+  "storage_shed_y": 0,
 
   "firewood_per_winter_day": 1,
 

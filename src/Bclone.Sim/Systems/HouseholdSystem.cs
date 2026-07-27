@@ -222,7 +222,7 @@ public sealed class HouseholdSystem : ISimSystem
             // have the timber, the couple waits - which is what makes cutting wood
             // matter, and ties how fast the village spreads to how it spends its
             // labour.
-            if (!TryTakeBuildingTimber(world, seeker, partner, config, out int timber))
+            if (!TryTakeBuildingTimber(world, config, out int timber))
             {
                 continue;
             }
@@ -269,28 +269,25 @@ public sealed class HouseholdSystem : ISimSystem
     }
 
     /// <summary>
-    /// Draw the timber for a new house — the two parent households first, then the
-    /// rest of the village — or take nothing.
+    /// Draw the timber for a new house out of the village's shed, or take nothing.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// All-or-nothing on purpose: half-taken timber would leave the givers poorer with
+    /// All-or-nothing on purpose: half-taken timber would leave the shed poorer with
     /// no house to show for it, and the couple would try again next year and pay
     /// twice.
     /// </para>
     /// <para>
-    /// <b>The village makes up the difference, and it has to.</b> Drawing from the two
-    /// parent households alone looked right — the families provide for their children
-    /// — but timber is cut by whoever lives nearest the stand, who is very often
-    /// nobody's parent. So the village would cut wood year after year, pile it in the
-    /// woodcutter's own house where it could not be spent, and no home would ever get
-    /// built. Every settlement stalled at a handful of houses and aged out without a
-    /// single villager starving. Raising a house is communal work; the store it comes
-    /// out of is the village's.
+    /// <b>This used to be a sweep across every household's private pile</b>, added
+    /// because timber is cut by whoever lives nearest the stand — very often nobody's
+    /// parent — so drawing only from the two parent households meant the village cut
+    /// wood year after year, piled it where it could not be spent, and never built
+    /// anything (D25). The sweep was a shed in all but name: a village-wide store that
+    /// could not be seen, sited, or reasoned about. Now it is a building, and this is
+    /// one line.
     /// </para>
     /// </remarks>
-    private static bool TryTakeBuildingTimber(
-        SimWorld world, Villager a, Villager b, SimConfig config, out int taken)
+    private static bool TryTakeBuildingTimber(SimWorld world, SimConfig config, out int taken)
     {
         taken = 0;
         if (config.LogsPerHouse == 0)
@@ -298,54 +295,13 @@ public sealed class HouseholdSystem : ISimSystem
             return true;
         }
 
-        Household homeA = world.HouseholdOf(a);
-        Household homeB = world.HouseholdOf(b);
-
-        if (TotalWood(world) < config.LogsPerHouse)
+        if (!world.StorageShed.Store.TryTakeLogs(config.LogsPerHouse))
         {
             return false;
         }
 
-        // Parents first, then everyone else in household-id order, so who paid for a
-        // house is a fixed fact rather than an artifact of iteration.
-        taken += TakeUpTo(homeA, config.LogsPerHouse - taken);
-        taken += TakeUpTo(homeB, config.LogsPerHouse - taken);
-
-        for (int i = 0; i < world.Households.Count && taken < config.LogsPerHouse; i++)
-        {
-            Household other = world.Households[i];
-            if (other.Id == homeA.Id || other.Id == homeB.Id)
-            {
-                continue;
-            }
-
-            taken += TakeUpTo(other, config.LogsPerHouse - taken);
-        }
-
-        return taken >= config.LogsPerHouse;
-    }
-
-    private static int TakeUpTo(Household household, int wanted)
-    {
-        if (wanted <= 0)
-        {
-            return 0;
-        }
-
-        int available = household.Stockpile.Logs < wanted ? household.Stockpile.Logs : wanted;
-        return household.Stockpile.TryTakeLogs(available) ? available : 0;
-    }
-
-    /// <summary>Every stick of timber the village has between it.</summary>
-    private static int TotalWood(SimWorld world)
-    {
-        int total = 0;
-        for (int i = 0; i < world.Households.Count; i++)
-        {
-            total += world.Households[i].Stockpile.Logs;
-        }
-
-        return total;
+        taken = config.LogsPerHouse;
+        return true;
     }
 
     /// <summary>The lowest-id house nobody lives in any more, or null.</summary>

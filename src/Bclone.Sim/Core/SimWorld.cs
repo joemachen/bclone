@@ -108,6 +108,103 @@ public sealed class SimWorld
         throw new InvalidOperationException($"The village has no {kind}.");
     }
 
+    /// <summary>
+    /// Walk every store in the world — homes, workplaces and buildings.
+    /// </summary>
+    /// <remarks>
+    /// Goods live in several kinds of place now (D30), so "how much does the village
+    /// have?" stopped being a loop over households. One place to ask it means a store
+    /// added to a new kind of building is counted by everything that already asks,
+    /// rather than being quietly missed by half of them.
+    /// </remarks>
+    public IEnumerable<Stockpile> AllStores()
+    {
+        for (int i = 0; i < Households.Count; i++)
+        {
+            yield return Households[i].Stockpile;
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            yield return Workplaces[i].Store;
+        }
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            yield return StoreBuildings[i].Store;
+        }
+    }
+
+    /// <summary>Food held anywhere in the village.</summary>
+    public int TotalFood()
+    {
+        int total = 0;
+        foreach (Stockpile store in AllStores())
+        {
+            total += store.Food;
+        }
+
+        return total;
+    }
+
+    /// <summary>Logs held anywhere in the village, plus any in someone's arms.</summary>
+    public int TotalLogs()
+    {
+        int total = 0;
+        foreach (Stockpile store in AllStores())
+        {
+            total += store.Logs;
+        }
+
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            total += Villagers[i].CarriedLogs;
+        }
+
+        return total;
+    }
+
+    /// <summary>Firewood held anywhere in the village, plus any in someone's arms.</summary>
+    public int TotalFirewood()
+    {
+        int total = 0;
+        foreach (Stockpile store in AllStores())
+        {
+            total += store.Firewood;
+        }
+
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            total += Villagers[i].CarriedFirewood;
+        }
+
+        return total;
+    }
+
+    /// <summary>Logs ever felled, wherever they ended up.</summary>
+    public int LifetimeLogsFelled()
+    {
+        int total = 0;
+        foreach (Stockpile store in AllStores())
+        {
+            total += store.LifetimeLogsFelled;
+        }
+
+        return total;
+    }
+
+    /// <summary>Firewood ever split, wherever it ended up.</summary>
+    public int LifetimeFirewoodCut()
+    {
+        int total = 0;
+        foreach (Stockpile store in AllStores())
+        {
+            total += store.LifetimeFirewoodCut;
+        }
+
+        return total;
+    }
+
     /// <summary>Look up a workplace by id, or null.</summary>
     public Workplace? FindWorkplace(int id)
     {
@@ -229,49 +326,6 @@ public sealed class SimWorld
             Name = "the storage shed",
             Position = new GridPos(config.StorageShedX, config.StorageShedY),
         });
-    }
-
-    /// <summary>Logs held across the whole village.</summary>
-    /// <remarks>
-    /// Logs are stored per household but spent village-wide — building already works
-    /// that way (D25), and the woodcutter's hut draws on the same pool. Firewood
-    /// deliberately does not: it is burned at home, so it has to be held at home.
-    /// </remarks>
-    public int TotalLogs()
-    {
-        int total = 0;
-        for (int i = 0; i < Households.Count; i++)
-        {
-            total += Households[i].Stockpile.Logs;
-        }
-
-        return total;
-    }
-
-    /// <summary>
-    /// Take logs from the village, nearest household first by id order.
-    /// </summary>
-    /// <remarks>All or nothing: a half-taken batch would leave the village poorer with
-    /// no firewood to show for it, the same reasoning as the building draw.</remarks>
-    internal bool TryTakeLogsFromTheVillage(int amount)
-    {
-        if (amount <= 0 || TotalLogs() < amount)
-        {
-            return false;
-        }
-
-        int remaining = amount;
-        for (int i = 0; i < Households.Count && remaining > 0; i++)
-        {
-            Stockpile store = Households[i].Stockpile;
-            int take = store.Logs < remaining ? store.Logs : remaining;
-            if (take > 0 && store.TryTakeLogs(take))
-            {
-                remaining -= take;
-            }
-        }
-
-        return remaining == 0;
     }
 
     /// <summary>

@@ -158,19 +158,28 @@ public static class VillageEconomy
         ArgumentNullException.ThrowIfNull(config);
 
         var stand = new GridPos(config.TreeStandX, config.TreeStandY);
+        var shed = new GridPos(config.StorageShedX, config.StorageShedY);
 
+        // Home to the stand, the stand to the SHED, and the shed home again.
+        //
+        // The middle leg is new (D30) and it is not a rounding error: a logger no
+        // longer banks timber where they stand, they carry it to a building. The spec
+        // called this out as the thing that must be re-derived rather than patched —
+        // trips per year is what the whole timber economy is built on, and quietly
+        // leaving a leg out of it is exactly the D16 mistake.
         int worst = 0;
         for (int i = 0; i <= config.EconomyHorizonHouseholds; i++)
         {
             GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
-            int distance = home.ManhattanDistanceTo(stand);
+            int distance = home.ManhattanDistanceTo(stand) + stand.ManhattanDistanceTo(shed)
+                + shed.ManhattanDistanceTo(home);
             if (distance > worst)
             {
                 worst = distance;
             }
         }
 
-        return (worst * config.TravelTicksPerUnit * 2) + config.CutTicks;
+        return (worst * config.TravelTicksPerUnit) + config.CutTicks;
     }
 
     /// <summary>
