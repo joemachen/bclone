@@ -174,6 +174,30 @@ public sealed class Villager
     /// <summary>True when they are hauling anything at all.</summary>
     public bool IsCarrying => CarriedLogs > 0 || CarriedFirewood > 0 || CarriedFood > 0;
 
+    /// <summary>
+    /// The household a marketer's current errand concerns. Zero when none.
+    /// </summary>
+    /// <remarks>
+    /// Held on the villager rather than recomputed, because a marketer's leg has to
+    /// finish where it was aimed: re-deciding every tick would let them change their
+    /// mind halfway and wander between two equally needy homes forever. It is the same
+    /// reason <see cref="ActionTicksRemaining"/> exists.
+    /// </remarks>
+    public int ErrandHouseholdId { get; set; }
+
+    /// <summary>Where a marketer is walking to pick their load up.</summary>
+    /// <remarks>
+    /// Remembered rather than recomputed each tick, and that is not an optimisation.
+    /// The cheapest pickup is judged from where the villager is <em>standing</em>, so a
+    /// marketer who re-decides while walking watches the answer change under them with
+    /// every step and can shuttle between two sources forever without reaching either.
+    /// A destination has to outlive the walk to it.
+    /// </remarks>
+    public int ErrandX { get; set; }
+
+    /// <summary>Where a marketer is walking to pick their load up.</summary>
+    public int ErrandY { get; set; }
+
     /// <summary>Ticks left in the current timed action (gathering, travel delay).</summary>
     public int ActionTicksRemaining { get; set; }
 

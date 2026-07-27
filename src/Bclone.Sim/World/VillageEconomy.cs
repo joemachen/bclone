@@ -659,6 +659,23 @@ public static class VillageEconomy
         return firewood + logs;
     }
 
+    /// <summary>
+    /// How much the market holds, across food and firewood together.
+    /// </summary>
+    /// <remarks>
+    /// <b>Stated target: enough that a household's errand is usually satisfied at the
+    /// market rather than at the granary</b>, and no more. Scaled by the village the
+    /// economy is budgeted for, so a growing settlement does not quietly turn its
+    /// market into the real store — which would re-centralise everything D30 just
+    /// spread out, and put the walking back.
+    /// </remarks>
+    public static int MarketCapacity(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return config.MarketStockPerHousehold * config.EconomyHorizonHouseholds;
+    }
+
     /// <summary>A one-line summary for logs and tests.</summary>
     public static string Describe(SimConfig config) =>
         $"adult eats {AdultFoodPerYear(config)}/yr, child {ChildFoodPerYear(config)}/yr; " +

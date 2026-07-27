@@ -95,6 +95,23 @@ public sealed class SimWorld
     /// <summary>The village's materials store.</summary>
     public StoreBuilding StorageShed => FindStore(StoreKind.Shed);
 
+    /// <summary>The market — food and firewood, kept where the people are (D14).</summary>
+    public StoreBuilding Market => FindStore(StoreKind.Market);
+
+    /// <summary>Look up a household by id, or null if it has been dissolved.</summary>
+    public Household? FindHousehold(int id)
+    {
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (Households[i].Id == id)
+            {
+                return Households[i];
+            }
+        }
+
+        return null;
+    }
+
     private StoreBuilding FindStore(StoreKind kind)
     {
         for (int i = 0; i < StoreBuildings.Count; i++)
@@ -334,6 +351,41 @@ public sealed class SimWorld
             Position = new GridPos(config.StorageShedX, config.StorageShedY),
             Store = new Stockpile { Capacity = VillageEconomy.ShedCapacity(config) },
         });
+
+        // The market (D14) — the one store that is also a workplace, because its
+        // contents arrive by somebody's work rather than by producers dropping things
+        // off. Two entries at one position: a store, and a place to work.
+        //
+        // They are separate types today. Merging them into the single Building the
+        // spec's §4 describes is the right end state and is not this slice's job; the
+        // seam is recorded there rather than left to be rediscovered.
+        var market = new GridPos(config.MarketX, config.MarketY);
+
+        StoreBuildings.Add(new StoreBuilding
+        {
+            Id = 3,
+            Kind = StoreKind.Market,
+            Name = "the market",
+            Position = market,
+            Store = new Stockpile { Capacity = VillageEconomy.MarketCapacity(config) },
+        });
+
+        // Capacity zero means no market at all rather than a market nobody can work
+        // at, so that "switch the market off" is a state the village genuinely runs in
+        // (spec §14.4) rather than one that merely produces a permanently empty
+        // building for the allocator to keep considering.
+        if (config.MarketCapacity > 0)
+        {
+            Workplaces.Add(new Workplace
+            {
+                Id = nextWorkplaceId++,
+                Kind = JobKind.Marketer,
+                Name = "the market",
+                Position = market,
+                Capacity = config.MarketCapacity,
+                CatchmentRadius = catchment,
+            });
+        }
     }
 
     /// <summary>

@@ -8,6 +8,18 @@ public enum StoreKind
 
     /// <summary>Materials — logs, firewood, and the stone, lumber and cloth to come.</summary>
     Shed = 1,
+
+    /// <summary>
+    /// The market — food and firewood, kept near the homes (D14).
+    /// </summary>
+    /// <remarks>
+    /// The one store that is also a <see cref="Workplace"/>, because it is the one
+    /// whose contents arrive by somebody's work rather than by producers dropping
+    /// things off. It holds both kinds deliberately: the point is to be the short trip
+    /// for whatever a household is short of, and sending them to the granary for one
+    /// and the shed for the other would put the walking back.
+    /// </remarks>
+    Market = 2,
 }
 
 /// <summary>
@@ -65,6 +77,7 @@ public sealed class StoreBuilding
     {
         StoreKind.Granary => goods == Goods.Food,
         StoreKind.Shed => goods is Goods.Logs or Goods.Firewood,
+        StoreKind.Market => goods is Goods.Food or Goods.Firewood,
         _ => false,
     };
 }

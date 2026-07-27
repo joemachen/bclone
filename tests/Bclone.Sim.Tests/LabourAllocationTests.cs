@@ -258,7 +258,13 @@ public sealed class LabourAllocationTests
             foragersToFeedEveryone: 1,
             foragers: foraging - 1,
             loggers: CountWorking(world, JobKind.Logger),
-            woodcutters: CountWorking(world, JobKind.Woodcutter));
+            woodcutters: CountWorking(world, JobKind.Woodcutter),
+
+            // Every other kind is asked for exactly what the village already has, so
+            // the forager is the only surplus and this test stays about the one thing
+            // it is named for. Omitting the marketers made the quota ask for none and
+            // shed the lot alongside the forager.
+            marketers: CountWorking(world, JobKind.Marketer));
 
         System.Collections.Generic.List<int> shed = LabourAllocator.ShedSurplus(world, quota);
 

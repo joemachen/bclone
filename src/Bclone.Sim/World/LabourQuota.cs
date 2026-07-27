@@ -33,7 +33,13 @@ public readonly record struct LabourQuota
     /// forager?" is otherwise only reachable by killing the right person.
     /// </remarks>
     internal LabourQuota(
-        int hands, int mouths, int foragersToFeedEveryone, int foragers, int loggers, int woodcutters)
+        int hands,
+        int mouths,
+        int foragersToFeedEveryone,
+        int foragers,
+        int loggers,
+        int woodcutters,
+        int marketers = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -41,6 +47,7 @@ public readonly record struct LabourQuota
         Foragers = foragers;
         Loggers = loggers;
         Woodcutters = woodcutters;
+        Marketers = marketers;
     }
 
     /// <summary>Villagers able to do a day's work.</summary>
@@ -69,12 +76,16 @@ public readonly record struct LabourQuota
     /// <summary>Hands the village wants splitting logs into firewood.</summary>
     public int Woodcutters { get; }
 
+    /// <summary>Hands the village wants working the market (D14).</summary>
+    public int Marketers { get; }
+
     /// <summary>The quota for one kind of work.</summary>
     public int For(JobKind kind) => kind switch
     {
         JobKind.Forager => Foragers,
         JobKind.Logger => Loggers,
         JobKind.Woodcutter => Woodcutters,
+        JobKind.Marketer => Marketers,
         _ => 0,
     };
 
@@ -152,6 +163,7 @@ public readonly record struct LabourQuota
         int woodcutters = WoodcuttersWanted(world);
         int loggersForHuts = LoggersToFeedTheHuts(world, woodcutters);
         int loggersForHouses = LoggersWanted(world);
+        int marketersWanted = MarketersWanted(world);
 
         // Nobody is spared for building while the village as a whole is short of
         // food. Counting spare hands is not enough on its own: hands are spare only
@@ -186,11 +198,19 @@ public readonly record struct LabourQuota
         // funded from the leftovers. Winter is exempt because there is nothing out
         // there to pick — the larder always dips then, and pulling the woodcutters
         // onto empty berry patches is how the village froze.
+        //
+        // The market yields to this too, and most readily of anything: a marketer
+        // produces nothing, so a village that is genuinely short of food and has
+        // somewhere to gather it cannot afford to have anyone shuffling what it
+        // already owns. This is §4a's one-sentence policy — a village short of hands
+        // feeds itself before it builds — and a trader is further from feeding people
+        // than a logger is.
         if (FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world))
         {
             woodcutters = 0;
             loggersForHuts = 0;
             loggersForHouses = 0;
+            marketersWanted = 0;
         }
 
         // ---- Survival first, in the order things kill you -------------
@@ -216,11 +236,20 @@ public readonly record struct LabourQuota
         // build. This is the one that yields when times are hard.
         loggers += Take(ref free, Cap(loggersForHouses, TotalCapacityFor(world, JobKind.Logger) - loggers));
 
+        // And the market, last of all, out of hands nobody else needs (D14).
+        //
+        // Deliberately the LOWEST priority of every job, which is the mechanical form
+        // of the promise in spec §14.4: a marketer moves goods that already exist, so
+        // a village that cannot spare anyone loses convenience rather than lives.
+        // Funding it any higher would make the market the cliff that fetching was
+        // designed to avoid.
+        int marketers = Take(ref free, Cap(marketersWanted, TotalCapacityFor(world, JobKind.Marketer)));
+
         // Everyone still spare forages. Berries keep, and a hand that gathers nothing
         // still eats.
         foragers += free;
 
-        return new LabourQuota(hands, mouths, toFeedEveryone, foragers, loggers, woodcutters);
+        return new LabourQuota(hands, mouths, toFeedEveryone, foragers, loggers, woodcutters, marketers);
     }
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
@@ -425,6 +454,59 @@ public readonly record struct LabourQuota
 
         int logsEaten = woodcutters * VillageEconomy.LogsConsumedPerYearAtWorst(world.Config);
         return CeilingDivide(logsEaten, VillageEconomy.WoodCutPerYearAtWorst(world.Config));
+    }
+
+    /// <summary>
+    /// Hands the village wants working the market.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Stated as a count of errands, not a share of the population:</b> one hand per
+    /// household whose goods are in the wrong place — either short of what it needs, or
+    /// holding what it does not. That is literally the work available, so a village
+    /// where everything is already where it should be staffs nobody, and one recovering
+    /// from a bad winter staffs as many as it can spare.
+    /// </para>
+    /// <para>
+    /// A house whose family has died counts, and is most of why this exists: its larder
+    /// is stranded, and the marketer is the only one who can reach it (D34, spec §14.3).
+    /// </para>
+    /// </remarks>
+    public static int MarketersWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int errands = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            bool occupied = world.LivingMembersOf(household) > 0;
+
+            if (!occupied)
+            {
+                // A house with nobody in it and goods still on the shelf. Only a
+                // marketer can reach it (D34).
+                if (household.Stockpile.Food + household.Stockpile.Firewood > 0)
+                {
+                    errands++;
+                }
+
+                continue;
+            }
+
+            // Or a family short of something. Counted as SHORT rather than "not
+            // exactly at target", because a household is above target every time its
+            // forager walks in and treating that as work to do had marketers stripping
+            // families the moment they got ahead.
+            if (household.Stockpile.Food < world.TargetFoodFor(household)
+                || household.Stockpile.Firewood
+                    < VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config))
+            {
+                errands++;
+            }
+        }
+
+        return errands;
     }
 
     /// <summary>

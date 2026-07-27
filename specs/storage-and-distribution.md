@@ -149,7 +149,9 @@ Bigger than the fuel chain, and that one taught the lesson: slices, each green b
 2. ~~**The storage shed**, and producers depositing to it.~~ ✅ Done — both village-wide sweeps deleted.
 3. ~~**Fetching**, with the larder target and the refusal reasons.~~ ✅ Done — both sharing policies deleted; food economy re-derived.
 5. ~~**Capacity** as a binding constraint.~~ ✅ Done — taken ahead of the market on Joe's call. See §13; it flattens the curve, and it flushed out D34.
-4. **The market**, manned, stocking itself from the shed. ← **next, and the last slice**
+4. ~~**The market**, manned.~~ ✅ Done — and it does more than this line said: it delivers, and it unsticks stranded goods. See §14.
+
+**All five slices are done. D30 is closed.**
 
 **Why 5 before 4.** The flows are proven, which was the stated precondition, and the open question that matters more is the shape of the population curve (§12). Joe's reading: a flat line means growth stopping at what the buildings support, instead of overshooting them and falling back. Capacity is the only brake in this spec that could do that, so it gets measured first. The market shortens fetch trips, which is valuable but does not regulate anything.
 
@@ -211,6 +213,71 @@ so the brake stops being a gate the village passes through for 65 years and beco
 **The honest risk, recorded before building it:** this makes granary capacity the village's population ceiling, which is a hard stop and there is no placement yet, so the player cannot answer it by building a second granary. Until placement lands the answer is a config value, which means **the pressure is real but the response to it is not** — the same gap `RequiredWoodcutterSeats` already documents. If measurement shows the ceiling is a cliff rather than a settling point, that is a finding, not a tuning problem.
 
 **If capacity flattens the curve, the wave is still there and still worth fixing** — a proportional birth gate is the real answer, and it belongs with D28's re-derivation rather than here.
+
+---
+
+## 14. The market (slice 4) — Joe's answers, 2026-07-27
+
+The last slice of D30, and the building half of D14. Joe settled the three things this spec had left vague.
+
+### 14.1 What Joe asked for
+
+1. **More than one worker.** The market is a workplace with a real capacity, not a one-person post.
+2. **It solves stranded goods.** Firewood in a dead family's home, a larder nobody is left to eat from — the market is what unsticks them. This is the answer to the last thing D34 left behind.
+3. **A marketer's trip works in both directions.** *"Take things to a home and pick up food from a granary on the trip back if the distances make sense."*
+
+### 14.2 The rule for "if the distances make sense"
+
+Stated rather than tuned, and it needs no threshold: **a marketer never walks empty-handed.** Every leg is chosen cost-first from wherever they are standing right now — the same principle the labour allocator already uses (D15, D23), reading the same travel-cost field (§2.6).
+
+So the loop is not *market → home → market*. It is:
+
+> pick up what somebody needs → carry it to them → from **there**, pick up whatever most needs moving next → carry that.
+
+"Pick up food from the granary on the way back" falls out of this rather than being a special case: after delivering to a home near the granary, the granary is simply the cheapest next stop. No magic number decides whether a detour is worth it, because there is no detour — there is only the next-cheapest useful leg. That also makes it explainable in one sentence, which is the §2.2 test.
+
+### 14.3 Both directions
+
+A marketer moves goods two ways, and the second is what solves stranded goods:
+
+- **Out:** from a store to a household below its target — the delivery.
+- **In:** from a household holding more than it needs, or with nobody left living in it, back to a store.
+
+The "in" direction is the whole of Joe's point 2. A house whose family has died is not a special case in the code; it is simply a household whose need is zero and whose store is not.
+
+### 14.4 What must NOT change
+
+**Fetching stays exactly as it is.** §3 rejected delivery-instead-of-fetch because an unmanned market means nobody eats — *"a cliff, not a gradient, and one the founding village falls off immediately."* That argument still holds. Delivery is **additive**: a market with nobody in it means no deliveries and no unsticking, never a household that cannot eat. The founding village has no marketer and must be entirely unaffected.
+
+This is the acceptance test for the slice, and it is a stronger claim than "the market works": **switch the market off and the village must survive exactly as it does today.**
+
+### 14.5 Shape
+
+- `JobKind.Marketer`, `market_capacity` in config — more than one seat, per Joe.
+- The market is **both** a `StoreBuilding` (a third `StoreKind`, accepting food and firewood, near the homes) **and** a `Workplace` at the same position. Those are separate types today; merging them into the spec's §4 single `Building` is the right end state but not this slice's job. Recorded as a known seam.
+- Households fetch from the market as well as the granary and shed, nearest-first — which is what makes a stocked market shorten the trip rather than just move it.
+
+### 14.7 What it measured (built 2026-07-27)
+
+| | with a market | without | change |
+|---|---|---|---|
+| Goods stranded in empty homes (goods-years, 200y) | **1,618** | 81,846 | **−98%** |
+| Household fetch-steps (100y) | 24,310 | 25,909 | −6% |
+
+**Joe's second requirement is decisively met**: stranded goods essentially stop existing. The fetch-shortening is real but modest, and honestly so — the market is a couple of tiles from the granary in the shipped layout, so there is not much walk to save. **That number is a placement question, not a market question**, and it is exactly what §11.2 predicted would become interesting when the player can put the building somewhere.
+
+**Two things this got wrong on the way, both recorded because they were expensive:**
+
+1. **Recovering "surplus" from living households wrecked the village.** The obvious generalisation of "collect goods a household does not need" was to take anything above target. But a home is above target every time its forager walks in the door, so marketers stripped families the moment they got ahead and the families fetched it straight back — pure churn, and the granary stopped filling, so the birth gate never opened and the settlement died out at **five people**. Recovery is now *only* from houses with nobody living in them. **A trader moves what nobody is using, not what somebody has just earned.**
+2. **A marketer who re-decides mid-walk never arrives.** Legs are chosen cost-first from where the villager is standing (§14.2), so re-planning every tick makes the answer change under them with every step — they shuttled between two sources forever and completed nothing. It showed up as stranded goods getting *worse* with a market than without. A destination has to outlive the walk to it.
+
+### 14.6 How it is tested
+
+- **The village survives with the market switched off**, identically to today (§14.4).
+- **A dead family's larder does not stay stranded** — the case D34 left behind.
+- **The market shortens fetch trips**: total household travel measurably falls against a run with no marketer, or the building is decoration (spec §8).
+- **A marketer never walks an empty leg** — asserted directly, since it is the whole of §14.2.
+- **Goods conservation** across every new movement, and **determinism** over 300 years.
 
 ---
 

@@ -112,6 +112,25 @@ Categories (only include the ones you use): **Added**, **Changed**,
   at what the buildings support instead of overshooting and falling back. Measured over
   200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
   across goods, not per good: a shed packed with logs has nowhere to stack firewood.
+- **The manned market** (D14, D36) — `JobKind.Marketer`, and the first job in the game
+  that **produces nothing**: a marketer only ever moves what already exists. Several
+  traders work it. They deliver from the stores to households below their target, and
+  they are the only thing in the village that can reach a **dead family's larder** —
+  goods stranded in empty houses fall by **98%** (1,618 goods-years against 81,846
+  without a market). Fetch trips shorten by 6%, which is modest and honest: the shipped
+  market stands a couple of tiles from the granary, so that number is a *placement*
+  question rather than a market one.
+  - **"If the distances make sense" needed no threshold.** A marketer never walks
+    empty-handed and every leg is chosen cost-first from wherever they are standing, so
+    "pick up food from the granary on the way back" falls out rather than being a
+    special case — after a delivery near the granary, the granary is simply the
+    cheapest next stop.
+  - **The market is the lowest-priority job in the village and yields first.** Fetching
+    is untouched, so an unstaffed market means longer walks and stranded goods, never a
+    household that cannot eat — asserted by a 300-year run with the market switched off.
+- `StateHash` now covers **what is in someone's arms** and a marketer's errand. Carried
+  goods are the goods that exist between two buildings, and the hash had never read
+  them: a village could have desynced by exactly the amount somebody was holding.
 - `StateHash.MixStore` — one shared way to hash a store, so a store on a new kind of
   building cannot be silently left out of the determinism fingerprint. Stores went
   from one-per-household to one per household, workplace and building in a single

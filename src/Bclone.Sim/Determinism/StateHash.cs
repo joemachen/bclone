@@ -132,6 +132,18 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.BirthYear);
         hash = MixUInt32(hash, (uint)villager.PartnerId);
         hash = MixUInt32(hash, (uint)villager.WorkplaceId);
+
+        // What is in their arms, which this had been missing. Carried goods are as much
+        // sim state as anything in a store — they are the goods that exist between two
+        // buildings — and a village could have desynced in exactly the amount somebody
+        // was holding without the determinism test noticing. Appended at the end, per
+        // the note at the top of this file.
+        hash = MixUInt32(hash, (uint)villager.CarriedFood);
+        hash = MixUInt32(hash, (uint)villager.CarriedLogs);
+        hash = MixUInt32(hash, (uint)villager.CarriedFirewood);
+        hash = MixUInt32(hash, (uint)villager.ErrandHouseholdId);
+        hash = MixUInt32(hash, (uint)villager.ErrandX);
+        hash = MixUInt32(hash, (uint)villager.ErrandY);
         return hash;
     }
 

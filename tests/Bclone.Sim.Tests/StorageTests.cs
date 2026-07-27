@@ -255,6 +255,16 @@ public sealed class StorageTests
         {
             foreach (Workplace workplace in world.Workplaces)
             {
+                // The market is deliberately both — a store and a place to work at it
+                // (D14). Those are two types today only because merging them into the
+                // spec's single Building is a bigger change than the market slice; the
+                // exemption is the seam, and it is named in spec §14.5 rather than
+                // left to be rediscovered here.
+                if (building.Kind == StoreKind.Market && workplace.Kind == JobKind.Marketer)
+                {
+                    continue;
+                }
+
                 Assert.NotEqual(workplace.Position, building.Position);
             }
 

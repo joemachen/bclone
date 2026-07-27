@@ -251,6 +251,28 @@
   // second granary; until then it is this line.
   "granary_feeds_people": 30,
 
+  // ---- The market (D14, D36) ---------------------------------
+  // Among the homes, which is the whole of its value: it is the
+  // short walk. The one building that is both a store and a
+  // workplace, because its contents arrive by somebody's work
+  // rather than by producers dropping things off.
+  "market_x": 2,
+  "market_y": 1,
+
+  // More than one trader - a market is a place several people work.
+  // ZERO SWITCHES IT OFF, and that is a supported state with a test
+  // on it: households still fetch for themselves, so an unstaffed
+  // market means longer walks and stranded goods, never a family
+  // that cannot eat. The moment that stops being true, the market
+  // has become the cliff fetching was designed to avoid.
+  "market_capacity": 2,
+
+  // What the market keeps on hand, per household the village is
+  // budgeted for. A market is a short trip, not a second granary -
+  // sized flat it would become the real store as the village grew,
+  // re-centralising everything storage just spread out.
+  "market_stock_per_household": 40,
+
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",
     "Agnes", "Wendell", "Hattie", "Amos",

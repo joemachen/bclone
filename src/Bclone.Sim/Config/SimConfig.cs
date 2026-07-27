@@ -354,6 +354,38 @@ public sealed record SimConfig
     [JsonPropertyName("granary_feeds_people")]
     public int GranaryFeedsPeople { get; init; } = 30;
 
+    /// <summary>Where the market stands — among the homes, which is its whole value.</summary>
+    [JsonPropertyName("market_x")]
+    public int MarketX { get; init; } = 2;
+
+    /// <summary>Where the market stands.</summary>
+    [JsonPropertyName("market_y")]
+    public int MarketY { get; init; } = 1;
+
+    /// <summary>
+    /// How many traders the market has room for. <b>Zero switches the market off.</b>
+    /// </summary>
+    /// <remarks>
+    /// More than one, per Joe — a market is a place several people work, not a
+    /// one-person post. Zero is a supported value and there is a test that runs the
+    /// whole village on it: distribution by hand must stay something the settlement can
+    /// live without, because the moment it cannot, an unstaffed market becomes a cliff
+    /// the founding village falls off (spec §3, §14.4).
+    /// </remarks>
+    [JsonPropertyName("market_capacity")]
+    public int MarketCapacity { get; init; } = 2;
+
+    /// <summary>Goods the market keeps on hand, per household it serves.</summary>
+    /// <remarks>
+    /// A market is a short trip, not a second granary — it holds enough that a
+    /// household's errand is usually satisfied there, and no more. Sized per household
+    /// rather than flat so it does not become the village's real store as the
+    /// settlement grows, which would quietly re-centralise everything storage just
+    /// spread out.
+    /// </remarks>
+    [JsonPropertyName("market_stock_per_household")]
+    public int MarketStockPerHousehold { get; init; } = 40;
+
     /// <summary>
     /// Consecutive ticks in an unheated home before someone freezes.
     /// </summary>

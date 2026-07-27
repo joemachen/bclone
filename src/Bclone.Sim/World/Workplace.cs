@@ -19,6 +19,26 @@ public enum JobKind
 
     /// <summary>Split logs into firewood at a hut. Consumes an input (D29).</summary>
     Woodcutter = 2,
+
+    /// <summary>
+    /// Move goods between the stores and the homes — the market's trade (D14).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The first job that <b>produces nothing</b>. A forager makes food appear and a
+    /// woodcutter turns one good into another; a marketer only ever moves what already
+    /// exists. That is the point — D14's claim is that distribution is work somebody
+    /// does rather than a policy slider, and a job with no yield is what that claim
+    /// looks like in code.
+    /// </para>
+    /// <para>
+    /// It is also the only job that can be <em>switched off with no one dying</em>, and
+    /// that is a deliberate property rather than an accident. Households still fetch
+    /// for themselves (spec §3), so an unstaffed market means longer walks and stranded
+    /// goods, never a household that cannot eat.
+    /// </para>
+    /// </remarks>
+    Marketer = 3,
 }
 
 /// <summary>
