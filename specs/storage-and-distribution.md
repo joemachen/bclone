@@ -145,11 +145,13 @@ Standard DoD (`METHODOLOGY.md §3`), plus:
 
 Bigger than the fuel chain, and that one taught the lesson: slices, each green before the next.
 
-1. **`Store` as a thing buildings have.** Households and workplaces both get one; no behaviour change.
-2. **The storage shed**, and producers depositing to it instead of carrying goods home. Deletes the two village-wide sweeps.
-3. **Fetching**, with the larder target and the refusal reasons. Deletes both sharing policies. **Re-derive the food economy here.**
+1. ~~**`Store` as a thing buildings have.**~~ ✅ Done — households and workplaces both got one; no behaviour change.
+2. ~~**The storage shed**, and producers depositing to it.~~ ✅ Done — both village-wide sweeps deleted.
+3. ~~**Fetching**, with the larder target and the refusal reasons.~~ ✅ Done — both sharing policies deleted; food economy re-derived.
+5. **Capacity** as a binding constraint. ← **taken next, ahead of the market (Joe, 2026-07-27)**
 4. **The market**, manned, stocking itself from the shed.
-5. **Capacity** as a binding constraint, once the flows are proven.
+
+**Why 5 before 4.** The flows are proven, which was the stated precondition, and the open question that matters more is the shape of the population curve (§12). Joe's reading: a flat line means growth stopping at what the buildings support, instead of overshooting them and falling back. Capacity is the only brake in this spec that could do that, so it gets measured first. The market shortens fetch trips, which is valuable but does not regulate anything.
 
 ---
 
@@ -161,4 +163,51 @@ Bigger than the fuel chain, and that one taught the lesson: slices, each green b
 
 ### Still open, raised by the answers
 
+5. **What is granary capacity derived *from*?** It cannot be picked, per D16. See §12.3 — it is derived from the population a granary can carry through winter, which makes it a **stated population ceiling** rather than a number. That is a real design commitment and it is worth Joe reading it as one: *how big can my village get* becomes *how much granary have you built*.
+
 4. **Does food in a granary spoil?** A granary that keeps food perfectly forever is a bank, and a village with a bank has solved winter permanently — which would undo most of what §2.5 is for. Spoilage is the obvious counterweight and it is also the reason granaries are a *building* rather than a heap. **Not proposed for this spec** — it is a Phase 2 environment question, not a storage one — but it is worth naming now, because if it lands later it changes what the food economy is derived against, and that derivation should not have to be redone twice.
+
+---
+
+## 12. What the population curve actually is (measured 2026-07-27, before slice 5)
+
+Measured rather than guessed, because the standing lesson is that guessing the cause has been wrong every time. Shipped village config, seed as configured, 150 years.
+
+### 12.1 The curve
+
+| Year | 40 | 60 | 80 | 90 | **105** | 120 | 135 | 150 |
+|---|---|---|---|---|---|---|---|---|
+| Population | 20 | 32 | 54 | 63 | **68** | 64 | 41 | 23 |
+| Births / 5y | 3 | 7 | 10 | 10 | **15** | 6 | 3 | 0 |
+| Deaths / 5y | 0 | 1 | 2 | 3 | 10 | 7 | 11 | 9 |
+| Children alive | 11 | 15 | 22 | 26 | 25 | 17 | 11 | **3** |
+
+**It is a demographic wave, not a resource failure.** At year 150 the village is down to 23 people and is holding **1,247 food in the granary and 1,723 in the homes** — roughly 130 per head against a target of 67. It is dying rich. Deaths peak (17 per 5 years) exactly **20 years after** births peak, and the survivors are old: 20 adults to 3 children.
+
+### 12.2 Why — and it is a control problem, not an economy one
+
+Births are gated on a **threshold**: the granary must hold 80% of `stockpile_target × population`. Measured against that gate, the granary sits between 82% and 105% for almost the whole run and dips below only three times in 150 years (75%, 78%, 73% — years 105, 115, 135).
+
+So the gate works, and it is the thing that stops growth. The problem is its *shape*:
+
+- It is **bang-bang** — fully open or fully shut, nothing in between.
+- The village's response to it lags by **~15 years**, the time from a birth to a working adult.
+- Lives are **40–50 years**, so a cohort born together dies together.
+
+A threshold controller with a 15-year lag on a 45-year system oscillates. It cannot do anything else. The village grows unchecked for 65 years because the gate is open the whole time, hits the gate at 68, and then the cohort that unchecked growth produced ages out all at once.
+
+**This is a shape the project has already met once.** The commit that stabilised fuel says it outright: *"the fuel quota was a thermostat that switched on after the house was cold. Including the annual burn makes it proportional."* Same bug, different system.
+
+### 12.3 What capacity does about it, and what it does not
+
+Capacity does **not** address the lag, and it is not the cause of the wave. What it does is change *when* the brake engages. `TargetFoodForTheGranary()` grows linearly with population and is unbounded; a granary with a finite capacity `C` can never satisfy it above
+
+> **population ceiling = C ÷ (stockpile_target × birth_food_percent)**
+
+so the brake stops being a gate the village passes through for 65 years and becomes a **ceiling it arrives at and stays under**. That should flatten the curve, and for the reason Joe gave: growth stops at what the buildings support instead of overshooting them first.
+
+**Derivation (D16 — stated target, not a number):** *a granary holds the food its village needs to get through one winter, with the same margin the household stockpile target carries.* Capacity follows from the population served; the ceiling above follows from capacity. Neither is typed in.
+
+**The honest risk, recorded before building it:** this makes granary capacity the village's population ceiling, which is a hard stop and there is no placement yet, so the player cannot answer it by building a second granary. Until placement lands the answer is a config value, which means **the pressure is real but the response to it is not** — the same gap `RequiredWoodcutterSeats` already documents. If measurement shows the ceiling is a cliff rather than a settling point, that is a finding, not a tuning problem.
+
+**If capacity flattens the curve, the wave is still there and still worth fixing** — a proportional birth gate is the real answer, and it belongs with D28's re-derivation rather than here.

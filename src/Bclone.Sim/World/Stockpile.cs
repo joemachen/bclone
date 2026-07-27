@@ -22,6 +22,42 @@ namespace Bclone.Sim.World;
 /// </remarks>
 public sealed class Stockpile
 {
+    /// <summary>
+    /// How much this store can hold in total, across every kind of goods.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Total, not per good</b>, because it is physical room: a shed packed with logs
+    /// has nowhere to stack firewood, and being made to choose is the interesting part.
+    /// A per-good cap would be three independent shelves that never compete, which is
+    /// bookkeeping wearing a constraint's clothes.
+    /// </para>
+    /// <para>
+    /// Unlimited by default, and that default is deliberate. A home larder and a
+    /// workplace buffer are <em>not</em> capped in this slice — the granary and the shed
+    /// are what the pressure is about (spec §5, slice 5), and giving every store a
+    /// number invites four made-up numbers instead of one derived one. Home larders get
+    /// their cap with the market, where a short fetch is the answer to a small larder.
+    /// </para>
+    /// </remarks>
+    public int Capacity { get; init; } = int.MaxValue;
+
+    /// <summary>Everything held here, of every kind. What <see cref="Capacity"/> limits.</summary>
+    public int Held => Food + Logs + Firewood;
+
+    /// <summary>Room left. Zero when full; never negative.</summary>
+    public int FreeSpace
+    {
+        get
+        {
+            int free = Capacity - Held;
+            return free < 0 ? 0 : free;
+        }
+    }
+
+    /// <summary>Whether this store has no room for anything more.</summary>
+    public bool IsFull => FreeSpace == 0;
+
     /// <summary>Food on hand. Never negative — asserted, not hoped.</summary>
     public int Food { get; private set; }
 
@@ -69,15 +105,27 @@ public sealed class Stockpile
     /// <summary>Total firewood ever cut.</summary>
     public int LifetimeFirewoodCut { get; private set; }
 
-    public void Add(int amount)
+    /// <summary>
+    /// Put food in, up to what will fit. Returns how much was <em>actually</em> taken.
+    /// </summary>
+    /// <remarks>
+    /// <b>The return value is the whole point and it must not be ignored.</b> A store
+    /// with a capacity can refuse, and goods that a store refused are still in
+    /// somebody's arms — dropping them on the floor would break the conservation
+    /// guarantee (spec §8) in exactly the direction that is hardest to notice, since
+    /// the total only ever falls. Callers deposit what fits and keep the rest.
+    /// </remarks>
+    public int Add(int amount)
     {
         if (amount < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot add negative food ({amount}).");
         }
 
-        Food += amount;
-        LifetimeGathered += amount;
+        int accepted = amount < FreeSpace ? amount : FreeSpace;
+        Food += accepted;
+        LifetimeGathered += accepted;
+        return accepted;
     }
 
     /// <summary>
@@ -93,7 +141,13 @@ public sealed class Stockpile
     /// figure in a villager's epitaph, which is worse: that number is a claim about a
     /// life.
     /// </remarks>
-    public void Receive(int food, int logs, int firewood)
+    /// <remarks>
+    /// Where capacity binds, goods are taken in the order they are named — food, then
+    /// logs, then firewood. Fixed rather than clever, because a store deciding for
+    /// itself which of someone's goods to prefer is exactly the kind of hidden rule
+    /// non-negotiable 1 is against. Returns the total accepted.
+    /// </remarks>
+    public int Receive(int food, int logs, int firewood)
     {
         if (food < 0 || logs < 0 || firewood < 0)
         {
@@ -101,20 +155,55 @@ public sealed class Stockpile
                 nameof(food), $"Cannot receive negative goods ({food}, {logs}, {firewood}).");
         }
 
-        Food += food;
-        Logs += logs;
-        Firewood += firewood;
+        return ReceiveFood(food) + ReceiveLogs(logs) + ReceiveFirewood(firewood);
     }
 
-    public void AddLogs(int amount)
+    /// <summary>Take in food somebody else produced. Returns how much fitted.</summary>
+    public int ReceiveFood(int amount)
+    {
+        int accepted = Clamp(amount, nameof(amount));
+        Food += accepted;
+        return accepted;
+    }
+
+    /// <summary>Take in logs somebody else produced. Returns how much fitted.</summary>
+    public int ReceiveLogs(int amount)
+    {
+        int accepted = Clamp(amount, nameof(amount));
+        Logs += accepted;
+        return accepted;
+    }
+
+    /// <summary>Take in firewood somebody else produced. Returns how much fitted.</summary>
+    public int ReceiveFirewood(int amount)
+    {
+        int accepted = Clamp(amount, nameof(amount));
+        Firewood += accepted;
+        return accepted;
+    }
+
+    private int Clamp(int amount, string parameterName)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(parameterName, $"Cannot receive negative goods ({amount}).");
+        }
+
+        return amount < FreeSpace ? amount : FreeSpace;
+    }
+
+    /// <summary>Put felled logs in, up to what will fit. Returns how much was taken.</summary>
+    public int AddLogs(int amount)
     {
         if (amount < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot add negative logs ({amount}).");
         }
 
-        Logs += amount;
-        LifetimeLogsFelled += amount;
+        int accepted = amount < FreeSpace ? amount : FreeSpace;
+        Logs += accepted;
+        LifetimeLogsFelled += accepted;
+        return accepted;
     }
 
     /// <summary>Take logs if there are enough, changing nothing otherwise.</summary>
@@ -134,15 +223,18 @@ public sealed class Stockpile
         return true;
     }
 
-    public void AddFirewood(int amount)
+    /// <summary>Put split firewood in, up to what will fit. Returns how much was taken.</summary>
+    public int AddFirewood(int amount)
     {
         if (amount < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot add negative firewood ({amount}).");
         }
 
-        Firewood += amount;
-        LifetimeFirewoodCut += amount;
+        int accepted = amount < FreeSpace ? amount : FreeSpace;
+        Firewood += accepted;
+        LifetimeFirewoodCut += accepted;
+        return accepted;
     }
 
     /// <summary>Take firewood if there is enough, changing nothing otherwise.</summary>

@@ -311,12 +311,19 @@ public sealed class SimWorld
         // They exist from the founding for now. There is no building placement yet,
         // so the player has no way to put one anywhere; when placement lands, WHERE
         // the granary goes becomes the first decision storage makes interesting.
+        //
+        // Both hold a DERIVED amount, not a chosen one (D16). The granary's is the
+        // village's real ceiling: births are gated on it holding a share of what
+        // everyone alive would want, so capping it caps the village. See
+        // VillageEconomy.PopulationCeiling, and the spec's §12 for why that is the
+        // shape the population curve needed.
         StoreBuildings.Add(new StoreBuilding
         {
             Id = 1,
             Kind = StoreKind.Granary,
             Name = "the granary",
             Position = new GridPos(config.GranaryX, config.GranaryY),
+            Store = new Stockpile { Capacity = VillageEconomy.GranaryCapacity(config) },
         });
 
         StoreBuildings.Add(new StoreBuilding
@@ -325,6 +332,7 @@ public sealed class SimWorld
             Kind = StoreKind.Shed,
             Name = "the storage shed",
             Position = new GridPos(config.StorageShedX, config.StorageShedY),
+            Store = new Stockpile { Capacity = VillageEconomy.ShedCapacity(config) },
         });
     }
 
@@ -557,7 +565,45 @@ public sealed class SimWorld
     /// is. The second one is the entire argument for having a granary.
     /// </para>
     /// </remarks>
+    /// <para>
+    /// <b>Deliberately unbounded, and that is what makes it a ceiling.</b> It is the
+    /// birth gate's question — <em>could this village feed another mouth through a
+    /// winter?</em> — so it has to keep asking for a winter's store for everyone alive,
+    /// even once that is more than the granary could physically hold. When it exceeds
+    /// what the building holds, the gate shuts and the village stops growing at the
+    /// size its buildings support (<see cref="VillageEconomy.PopulationCeiling"/>).
+    /// </para>
+    /// <para>
+    /// <b>Do not use it to decide whether anyone should go out and work.</b> That is a
+    /// different question and it lives in <see cref="FoodTheGranaryHasRoomFor"/>.
+    /// Answering both with this one number killed the village outright: above the
+    /// ceiling the target is unreachable by construction, so "does the village want
+    /// more food?" was permanently yes, every hand stayed on the berry patches
+    /// forever, nobody was ever spared for the woodcutter's hut, and a settlement of
+    /// thirty froze to extinction in its twelfth decade with a full granary and a
+    /// woodpile it never split. Two questions, one field — the same mistake D21 is a
+    /// record of.
+    /// </para>
+    /// </remarks>
     public int TargetFoodForTheGranary() => Config.StockpileTarget * Population;
+
+    /// <summary>
+    /// Food worth gathering for the granary — the target, or what fits, whichever is
+    /// less.
+    /// </summary>
+    /// <remarks>
+    /// The work question, as against the birth question above. <b>A village cannot want
+    /// more food than it has somewhere to put</b>, and a forager standing at a full
+    /// granary should go and do something else — which is exactly the pressure capacity
+    /// was added to create (spec §4: "a full shed means a producer has somewhere to
+    /// stop").
+    /// </remarks>
+    public int FoodTheGranaryHasRoomFor()
+    {
+        int wanted = TargetFoodForTheGranary();
+        int capacity = Granary.Store.Capacity;
+        return wanted < capacity ? wanted : capacity;
+    }
 
     /// <summary>Where a villager lives and returns to.</summary>
     public GridPos HomeOf(Villager villager) => HouseholdOf(villager).HomePosition;

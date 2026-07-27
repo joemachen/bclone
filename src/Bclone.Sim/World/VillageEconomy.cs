@@ -566,6 +566,99 @@ public static class VillageEconomy
         return winterFood * config.WinterBufferPercent / 100;
     }
 
+    // ---------------------------------------------------------------
+    //  Storage capacity (D30/D32, spec slice 5)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// How much food one granary holds.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The stated target: a granary holds a full winter's store for the village it
+    /// is built to feed</b> — <see cref="RequiredStockpilePerAdult"/> per head, for
+    /// <see cref="SimConfig.GranaryFeedsPeople"/> heads. Derived, per D16, so that
+    /// changing hunger or the winter margin moves the building with them instead of
+    /// quietly invalidating it.
+    /// </para>
+    /// <para>
+    /// <b>How many people a granary is built for is content, not economy.</b> It is a
+    /// fact about the building — the same kind of number as how many hands fit at a
+    /// berry patch — so it lives in the config where a modder can change it. What must
+    /// not be typed in is the *consequence*, which is
+    /// <see cref="PopulationCeiling"/>.
+    /// </para>
+    /// </remarks>
+    public static int GranaryCapacity(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return RequiredStockpilePerAdult(config) * config.GranaryFeedsPeople;
+    }
+
+    /// <summary>
+    /// The population at which the granary stops the village growing.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the number slice 5 exists to create, and it is a consequence rather
+    /// than a setting.</b> Births are gated on the granary holding
+    /// <see cref="SimConfig.BirthFoodPercent"/> of <c>stockpile_target × population</c>
+    /// — a demand that grows with the village and has, until now, been unbounded. Give
+    /// the granary a ceiling and the demand meets it at a fixed population, so growth
+    /// stops at <em>what the buildings support</em> rather than overshooting them and
+    /// falling back (spec §12).
+    /// </para>
+    /// <para>
+    /// Note it comes out <em>above</em> <see cref="SimConfig.GranaryFeedsPeople"/>, by
+    /// exactly the slack in the birth gate: a village will keep having children until
+    /// its store is 80% of what everyone alive would want, which is a larger village
+    /// than the granary comfortably feeds. That is the intended reading — a granary
+    /// built for thirty supports a village that runs a little hungrier than thirty.
+    /// </para>
+    /// </remarks>
+    public static int PopulationCeiling(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int perHead = RequiredStockpilePerAdult(config) * config.BirthFoodPercent / 100;
+        return perHead <= 0 ? int.MaxValue : GranaryCapacity(config) / perHead;
+    }
+
+    /// <summary>
+    /// How much one storage shed holds, across logs and firewood together.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The stated target: a shed holds the village's winter fuel, and the logs
+    /// waiting to become it.</b> Sized for
+    /// <see cref="SimConfig.EconomyHorizonHouseholds"/> — the same village the rest of
+    /// the economy is budgeted for — because a shed too small to hold a winter's
+    /// firewood does not create pressure, it freezes people.
+    /// </para>
+    /// <para>
+    /// Deliberately more generous than the granary, and the asymmetry is the design.
+    /// Food is what regulates the village (births are gated on it), so the granary is
+    /// where a ceiling <em>should</em> bind. The shed binding as well would mean two
+    /// constraints fighting for the same job, and the player could not tell which one
+    /// was stopping them — which is non-negotiable 1 failing.
+    /// </para>
+    /// </remarks>
+    public static int ShedCapacity(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int households = config.EconomyHorizonHouseholds;
+        int firewood = households * FirewoodStoreWantedPerHousehold(config);
+
+        // Plus the logs to make that firewood, and enough to raise a house without
+        // having to empty the woodpile first.
+        int logs = (households * FirewoodStoreWantedPerHousehold(config) * config.LogsPerSplit
+            / (config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit)) + config.LogsPerHouse;
+
+        return firewood + logs;
+    }
+
     /// <summary>A one-line summary for logs and tests.</summary>
     public static string Describe(SimConfig config) =>
         $"adult eats {AdultFoodPerYear(config)}/yr, child {ChildFoodPerYear(config)}/yr; " +

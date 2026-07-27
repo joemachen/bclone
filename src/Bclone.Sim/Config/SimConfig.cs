@@ -335,6 +335,25 @@ public sealed record SimConfig
     [JsonPropertyName("carry_capacity")]
     public int CarryCapacity { get; init; } = 40;
 
+    /// <summary>How many people one granary is built to carry through a winter.</summary>
+    /// <remarks>
+    /// <para>
+    /// A fact about the <em>building</em>, like how many hands fit at a berry patch —
+    /// which is why it lives here rather than being derived. What it implies is not a
+    /// setting: <see cref="World.VillageEconomy.GranaryCapacity"/> turns it into a
+    /// quantity of food, and <see cref="World.VillageEconomy.PopulationCeiling"/> turns
+    /// that into the size the village stops growing at.
+    /// </para>
+    /// <para>
+    /// <b>This is the number that answers "how big can my village get".</b> Once
+    /// building placement exists the answer becomes "build another granary"; until then
+    /// it is this, which is a pressure with no player response available yet — the same
+    /// gap <see cref="World.VillageEconomy.RequiredWoodcutterSeats"/> already carries.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("granary_feeds_people")]
+    public int GranaryFeedsPeople { get; init; } = 30;
+
     /// <summary>
     /// Consecutive ticks in an unheated home before someone freezes.
     /// </summary>
@@ -716,6 +735,16 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"woodcutter_hut_capacity must be greater than zero (got {WoodcutterHutCapacity}).");
+        }
+
+        if (GranaryFeedsPeople < StartingPopulation)
+        {
+            // A granary too small for the village it is founded with is not a pressure,
+            // it is an execution: the birth gate would be shut from tick one and the
+            // founders would age out having had no children at all.
+            throw new SimConfigException(
+                $"granary_feeds_people ({GranaryFeedsPeople}) is below the {StartingPopulation} " +
+                "founders — the village could never grow at all.");
         }
 
         if (LogsPerSplit <= 0 || FirewoodPerSplit <= 0 || SplitTicks <= 0)

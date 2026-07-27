@@ -47,8 +47,13 @@ public sealed class StoreBuilding
 
     public required GridPos Position { get; init; }
 
-    /// <summary>Goods held here.</summary>
-    public Stockpile Store { get; } = new();
+    /// <summary>Goods held here, and how much of them will fit.</summary>
+    /// <remarks>
+    /// The capacity is set when the building is founded, from
+    /// <see cref="VillageEconomy.GranaryCapacity"/> or
+    /// <see cref="VillageEconomy.ShedCapacity"/> — never typed in.
+    /// </remarks>
+    public Stockpile Store { get; init; } = new();
 
     /// <summary>Whether this building will hold a given kind of goods.</summary>
     /// <remarks>
