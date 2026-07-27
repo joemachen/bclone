@@ -1,6 +1,6 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
-> Status: **draft — open questions for Joe in §10** · Owner: Joe + Claude Code
+> Status: **agreed — Joe's answers folded in 2026-07-27; slice 1 of 3 (see §11)** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decision **D18**.
 
 ---
@@ -39,9 +39,9 @@ This is the part that will break if it is not designed for, and it is the same s
 | | How | Cost |
 |---|---|---|
 | **Derive per world** | Run the generator first, then derive the economy from the map it produced. | The economy stops being a property of the config and becomes a property of the run. Every test fixture that reads a derived constant has to build a world first. Harder to reason about: two seeds have genuinely different physics. |
-| **Generate to a budget** *(recommended)* | The generator is given the distance budget the economy is derived for, and **must produce a valley that fits inside it**. Reject and redraw otherwise. | The generator can fail, so it needs a bounded retry and a loud error if it cannot. |
+| **Generate to a budget** ✅ **chosen (Joe, 2026-07-27)** | The generator is given the distance budget the economy is derived for, and **must produce a valley that fits inside it**. Reject and redraw otherwise. | The generator can fail, so it needs a bounded retry and a loud error if it cannot. |
 
-**Recommendation: generate to a budget.** It keeps one economy for all seeds, which is what makes a shared seed comparable and keeps `VillageEconomy`'s stated targets meaningful. More importantly it turns *"is this map survivable?"* into a **property test across many seeds** rather than a hope — which is exactly the guarantee a generated world needs and a hand-placed one never did.
+**Chosen: generate to a budget.** It keeps one economy for all seeds, which is what makes a shared seed comparable and keeps `VillageEconomy`'s stated targets meaningful. More importantly it turns *"is this map survivable?"* into a **property test across many seeds** rather than a hope — which is exactly the guarantee a generated world needs and a hand-placed one never did.
 
 The budget is not a new number: it is `VillageEconomy.RoundTripTicks` and its siblings, which already exist and are already asserted.
 
@@ -118,31 +118,33 @@ Standard DoD (`METHODOLOGY.md §3`), plus:
 
 ---
 
-## 10. Open questions (for Joe)
+## 10. Questions — all resolved (Joe, 2026-07-27)
 
-### 10.1 Does water block movement, or is it scenery for now?
+### 10.1 Does water block movement? ✅ **Yes — and crossing it is a technology (D40).**
 
-The load-bearing one, because it decides whether this touches the shared cost field (§2.6).
+Water is impassable. **The village learns to build bridges — wood first, stone as a later upgrade — and then builds one.**
 
-- **Scenery** — the river is drawn, and villagers walk over it. Cheap, honest as a first step, and the river becomes real later.
-- **Impassable** *(recommended)* — water costs infinity in the one shared `TravelCostField`, so a route has to go round. This is what makes terrain *dictate viability* rather than decorate it, it is the first real test of the shared-cost-field decision, and it is what gives desire paths something worth wearing a groove toward (a ford, a bridge). **Cost:** the generator must guarantee no home is cut off from its work, which is a real constraint on generation, and the cost field stops being a straight-line calculation.
+This is the best fit for the design the project has found: it lands on four pillars at once. Terrain *dictates viability* (§2.5) instead of decorating it. The tech tree attaches to something you can point at on the map (§2.7). Desire paths get a genuine funnel (§2.6), because every crossing on that side of the river runs through one tile. And it is a placement decision whose value the player can see before committing. A river you can stroll across is scenery; a river you must go **round** until you can afford not to is the map arguing with you.
 
-*Recommendation: impassable.* A river you can stroll across is not an environment with teeth, and doing it later means re-deriving every distance in the economy a second time.
+**Two consequences, both real:**
 
-### 10.2 Does the generator choose where the village starts, or does the player?
+- **This needs actual pathfinding, and that is its own slice.** `TravelCostField.Cost` is Manhattan distance and `GridPos.StepToward` walks straight; neither knows terrain exists. The field is read by labour catchment, market errands and the economy's distance budget — the things that decide who eats — and §2.6 will later layer trample costs onto it. See §11.
+- **Until bridges exist the generator must not cut the village off from its work.** A constraint on generation, not a hope, and it folds naturally into the budget in §3.
 
-Joe has just confirmed **building placement is in**, which changes this. Options: the generator picks a good founding site (as today, invisibly); or it picks a few candidate valleys and the player chooses where to settle.
+### 10.2 Who chooses the founding site? ✅ **The generator, for now.** Revisit when placement lands; choosing where to settle is a real decision but it belongs with the placement UI rather than blocking worldgen.
 
-*Recommendation: generator picks it for now*, and revisit when placement lands — choosing a starting site is a real decision but it belongs with the placement UI rather than blocking worldgen.
+### 10.3 One archetype or several biomes? ✅ **One valley archetype**, built so a second can be added without restructuring. Three shallow biomes are worse than one properly habitable valley.
 
-### 10.3 One valley archetype, or several biomes?
+### 10.4 May a seed change the difficulty? ✅ **All seeds survivable, none equally comfortable.** Vary how much slack the valley gives, never whether it can be lived in — so failure stays attributable to the player, which is the whole of non-negotiable 1, while a seed is still worth talking about.
 
-§2.5 names "river valley vs. highland vs. coast". That is a much bigger piece of work and each archetype needs its own economy sanity-checking.
+---
 
-*Recommendation: one archetype now*, built so a second can be added without restructuring. Shipping three shallow biomes is worse than one that is properly habitable.
+## 11. Sequencing
 
-### 10.4 How much should the map vary the *difficulty*?
+The fuel chain and storage both taught the same lesson: slices, each green before the next. Two hard things here — generation and pathfinding — and they must not land together, or they fail together and neither can be diagnosed.
 
-If every seed is equally survivable, seeds are cosmetic. If they are not, some runs are unwinnable through no fault of the player, which §1.1 hates.
+1. **The generator, with water as terrain that nothing reads yet.** Terrain, river, stands, forage sites, founding site, all drawn from the seed in a fixed order and generated to the economy's budget (§3). Positions leave config. Golden map hash. **The village behaves exactly as it does today** — this slice is judged on determinism and on the property test across seeds, not on new behaviour.
+2. **Real pathfinding in `TravelCostField`**, with water impassable. The slice that makes the river mean something. Expect the economy's distance budget to move: a path *round* water is longer than a straight line, and `VillageEconomy` must be re-derived rather than patched (D16). Watch the cost of the query itself — catchment and market errands call it constantly, so this will need precomputation rather than a search per call.
+3. **Bridges** — the technology, then the building. Needs the tech tree (§2.7) and placement, so it lands after both. Until then the generator's guarantee from §10.1 is what keeps the village viable.
 
-*Recommendation: all seeds survivable, but not equally comfortable* — vary how much slack the valley gives, never whether it can be lived in. That keeps failure attributable to the player, which is the whole of non-negotiable 1, while still making a seed worth talking about.
+**Slice 1 is what this spec covers.** Slices 2 and 3 get their own specs; they are recorded here so the shape of the whole is visible.
