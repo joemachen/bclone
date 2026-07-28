@@ -71,6 +71,7 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 ## 6. CI / GitHub Actions
 
 - **On every push & PR:** build + run the full test suite (including the determinism test). `main` must stay green.
+- **The Godot view is built separately, and it must be.** `Bclone.Game` is deliberately not in `bclone.sln` (D11 — a root Godot project globs `**/*.cs` and would swallow the sim and the tests into the game build). The cost is that `dotnet build bclone.sln` does **not** compile the view, so CI has its own step for it. Found the hard way: a build menu was written, wired up and never appeared, because nothing had compiled it and the assembly Godot ran was a day old. **If you are checking a view change by running the game, build `src/Bclone.Game/Bclone.Game.csproj` explicitly first** — a green solution build says nothing about it.
 - **On version tag (`v*`):** `.github/workflows/release.yml` builds a **Windows `.exe`**, packages it, and attaches it to a GitHub Release with the changelog section as the body.
 - The release workflow is **tag-gated**, so it stays dormant until you push your first `v1.0.0` tag. **Its build steps are placeholders until the stack is chosen** — fill in the Godot export command or `cargo build --release` at that point (comments in the file show both).
 
