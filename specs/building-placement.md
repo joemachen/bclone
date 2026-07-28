@@ -169,7 +169,7 @@ Joe extends the same brush to **which forest to cut** and **where to plant trees
 
 Demolition is how a player corrects a mistake, and it returns some of the materials. **A demolished store should be able to strand its contents** — that is a consequence worth having, and it is the same lesson D34 taught about a dead family's larder.
 
-> **One word needed from Joe.** The answer given was *"demolish and/or move"*, which reads as yes to both, but move is a materially bigger system than demolish: relocating a building means moving its stores, its workers, and any errand already in flight toward it. **Cheap alternative: express "move" as demolish-then-place**, which costs the materials the demolition did not return and requires no new machinery. That may be all "move" needs to mean. Assumed for now; say if you want a true move.
+✅ **Demolish only. No moving (Joe, 2026-07-28).** A building comes down and a new one goes up; relocation is not a separate verb. That keeps a real system out of the game for the price of some materials, and it means a badly-sited granary costs the player something to correct — which is the right amount of consequence for a decision the game warned them about.
 
 ### 11.4 Free-form placement, or fenced? ✅ **Free-form, with warnings (Joe, 2026-07-28).**
 
@@ -263,7 +263,10 @@ That is not a delay so much as the right order: the harvest brush is what *creat
 
 Small and green before the next, as with the fuel chain and storage. Each is a thing you could stop after.
 
-**1. The singleton seam (§4).** No player-facing change; the village still founds itself exactly as it does today. Granaries, sheds and markets become plural everywhere: *"is there food?"* across all of them, *"where do I deposit?"* the nearest with room, and `PopulationCeiling` derived from **total** capacity. **Worth shipping even if everything after it stalled**, because the singleton assumption is a live bug the moment anything creates a second store.
+**1. ~~The singleton seam (§4).~~ ✅ Done 2026-07-28.** No player-facing change: the village founds itself and behaves exactly as it did, and a test asserts the plural helpers give the same answers as the old singular ones on a one-store village. What changed is that a *second* store would no longer be ignored.
+   - `SimWorld.Granary`/`.StorageShed`/`.Market` were **deleted rather than kept alongside** the plural API, so the compiler enumerated all fifteen call sites and each got a decision rather than a rename. `AnyStoreOf(kind)` remains for naming and tests, deliberately awkward to call.
+   - The decisions: *"is there food?"* → **all** granaries. *"Where do I deposit?"* → **nearest with room**, by travel cost, skipping unreachable ones (a granary across the river is not a long walk, it is no walk at all). *"Can we build a house?"* → drawn from **every** shed, a little from each, since a house is paid for by the whole village (D25). *"How big can the village get?"* → `CeilingForCapacity`, from **total** granary capacity, so a bigger granary unlocked through the tech tree raises it the same way a second ordinary one does (D39).
+   - The woodcutter's refusal changed with it. *"The storage shed has no logs"* was unverifiable once more than one shed could exist — **which** shed? — so it now says no shed within reach of the hut has a batch.
 
 **2. Placing a building.** Granary, shed, market, woodcutter's hut. Construction sites, materials hauled from the shed, a `Builder` job that competes and yields first. Free-form with warnings; demolition returns some materials. **This is where D33 finally pays: build a second granary, watch the village grow past its old ceiling.** The clearest cause and effect the game has offered anybody.
 

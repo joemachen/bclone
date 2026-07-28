@@ -99,14 +99,91 @@ public sealed class SimWorld
     /// </remarks>
     public List<StoreBuilding> StoreBuildings { get; } = new();
 
-    /// <summary>The village's food store.</summary>
-    public StoreBuilding Granary => FindStore(StoreKind.Granary);
+    // ---------------------------------------------------------------
+    //  Stores, in the plural (D38)
+    // ---------------------------------------------------------------
+    //
+    // There used to be a Granary, a StorageShed and a Market here, each returning
+    // the FIRST building of its kind. Thirteen call sites read them, and every one
+    // was correct only while the village had exactly one of each — so the moment
+    // placement let a player build a second granary, it would have been silently
+    // ignored by, among other things, the gate that decides whether anyone is born.
+    //
+    // They are deleted rather than kept alongside these, deliberately: each of those
+    // call sites needed a DECISION, not a rename — is this question about the whole
+    // village, or about the nearest building? Leaving a singular accessor in place
+    // would have let the ones nobody re-read keep the old answer.
 
-    /// <summary>The village's materials store.</summary>
-    public StoreBuilding StorageShed => FindStore(StoreKind.Shed);
+    /// <summary>Total food across every granary in the village.</summary>
+    public int FoodInGranaries() => TotalIn(StoreKind.Granary, static store => store.Food);
 
-    /// <summary>The market — food and firewood, kept where the people are (D14).</summary>
-    public StoreBuilding Market => FindStore(StoreKind.Market);
+    /// <summary>Total logs across every shed.</summary>
+    public int LogsInSheds() => TotalIn(StoreKind.Shed, static store => store.Logs);
+
+    /// <summary>Total firewood across every shed — what a household can actually fetch.</summary>
+    public int FirewoodInSheds() => TotalIn(StoreKind.Shed, static store => store.Firewood);
+
+    /// <summary>How much food the village's granaries can hold between them.</summary>
+    public int GranaryCapacity() => TotalIn(StoreKind.Granary, static store => store.Capacity);
+
+    private int TotalIn(StoreKind kind, Func<Stockpile, int> read)
+    {
+        int total = 0;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Kind == kind)
+            {
+                total += read(StoreBuildings[i].Store);
+            }
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// The nearest store of a kind that satisfies <paramref name="usable"/>, or null.
+    /// </summary>
+    /// <remarks>
+    /// <b>Nearest by travel cost, not by list order</b>, so a village with two granaries
+    /// sends people to the one they can actually get to — which is the whole point of
+    /// being allowed to build a second. Unreachable stores are skipped: with water
+    /// impassable (D40) a granary on the far bank is not a long walk, it is no walk at
+    /// all. Ties go to the lower id so two runs never disagree.
+    /// </remarks>
+    public StoreBuilding? NearestStore(GridPos from, StoreKind kind, Func<StoreBuilding, bool> usable)
+    {
+        ArgumentNullException.ThrowIfNull(usable);
+
+        StoreBuilding? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = StoreBuildings[i];
+            if (store.Kind != kind || !usable(store))
+            {
+                continue;
+            }
+
+            int cost = TravelCost.Cost(from, store.Position);
+            if (cost != TravelCostField.Unreachable && cost < bestCost)
+            {
+                bestCost = cost;
+                best = store;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>Any store of this kind, for naming things and for tests. Never for logic.</summary>
+    /// <remarks>
+    /// Deliberately awkward to call. If a piece of logic wants "the granary" it almost
+    /// certainly wants either <see cref="FoodInGranaries"/> or
+    /// <see cref="NearestStore"/>, and this is here so that the few places that really
+    /// do just need a name have to say so.
+    /// </remarks>
+    public StoreBuilding AnyStoreOf(StoreKind kind) => FindStore(kind);
 
     /// <summary>Look up a household by id, or null if it has been dissolved.</summary>
     public Household? FindHousehold(int id)
@@ -783,8 +860,11 @@ public sealed class SimWorld
     /// </remarks>
     public int FoodTheGranaryHasRoomFor()
     {
+        // Across every granary the village has built (D38). Reading one building's
+        // capacity here would have meant a second granary added room the foragers
+        // never knew to fill.
         int wanted = TargetFoodForTheGranary();
-        int capacity = Granary.Store.Capacity;
+        int capacity = GranaryCapacity();
         return wanted < capacity ? wanted : capacity;
     }
 

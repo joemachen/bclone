@@ -104,7 +104,16 @@ public sealed class Household
                     continue;
                 }
 
-                int score = toWork + candidate.ManhattanDistanceTo(world.Granary.Position);
+                // Nearest granary, not "the" granary — a home wants to be near a place
+                // it can fetch food from, and with several the right one is whichever
+                // is closest to this spot.
+                int toStore = NearestStoreDistance(world, candidate, StoreKind.Granary);
+                if (toStore == int.MaxValue)
+                {
+                    continue;
+                }
+
+                int score = toWork + toStore;
 
                 // TIES GO TO THE TILE NEAREST THE VILLAGE.
                 //
@@ -139,6 +148,28 @@ public sealed class Household
         // home being dropped somewhere unsurvivable to keep the code tidy.
         throw new NoRoomToBuildException(
             $"No free ground within {reach} tiles of work and {search} of the village centre.");
+    }
+
+    /// <summary>Distance to the nearest store of a kind, or <c>int.MaxValue</c>.</summary>
+    private static int NearestStoreDistance(Core.SimWorld world, GridPos from, StoreKind kind)
+    {
+        int nearest = int.MaxValue;
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (store.Kind != kind)
+            {
+                continue;
+            }
+
+            int distance = from.ManhattanDistanceTo(store.Position);
+            if (distance < nearest)
+            {
+                nearest = distance;
+            }
+        }
+
+        return nearest;
     }
 
     /// <summary>Distance to the nearest place a household could work.</summary>

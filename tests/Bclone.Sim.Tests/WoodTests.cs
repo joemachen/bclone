@@ -106,8 +106,8 @@ public sealed class WoodTests
         // Empty the SHED, not the houses — logs live in a building now (D30), so
         // emptying household piles leaves the village its whole woodpile and no
         // reason to fell anything.
-        loop.World.StorageShed.Store.TryTakeLogs(loop.World.StorageShed.Store.Logs);
-        loop.World.StorageShed.Store.TryTakeFirewood(loop.World.StorageShed.Store.Firewood);
+        loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTakeLogs(loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs);
+        loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTakeFirewood(loop.World.AnyStoreOf(StoreKind.Shed).Store.Firewood);
 
         int before = TotalLifetimeWood(loop.World);
         while (loop.World.Clock.IsWinter)

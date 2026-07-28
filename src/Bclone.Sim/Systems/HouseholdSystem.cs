@@ -139,7 +139,11 @@ public sealed class HouseholdSystem : ISimSystem
                 // legible one — but the timber is already out of the shed, so it goes
                 // back rather than evaporating. Goods conservation is not negotiable
                 // just because the code took an unusual branch.
-                world.StorageShed.Store.ReceiveLogs(timber);
+                // Back to the nearest shed with room for it. Conservation is not
+                // negotiable just because the code took an unusual branch.
+                StoreBuilding? shed = world.NearestStore(
+                    seeker.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+                shed?.Store.ReceiveLogs(timber);
 
                 world.Log(Logging.LogLevel.Info, "household",
                     $"{seeker.Name} and {partner.Name} have nowhere to build: {noRoom.Message} " +
@@ -213,13 +217,33 @@ public sealed class HouseholdSystem : ISimSystem
             return true;
         }
 
-        if (!world.StorageShed.Store.TryTakeLogs(config.LogsPerHouse))
+        // Drawn from EVERY shed, a little from each if need be. A house is paid for by
+        // the whole village (D25), so which building the logs happen to sit in should
+        // not decide whether it can be built — and with several sheds, insisting on
+        // one would have stalled a village that had the timber twice over.
+        if (world.LogsInSheds() < config.LogsPerHouse)
         {
             return false;
         }
 
-        taken = config.LogsPerHouse;
-        return true;
+        int remaining = config.LogsPerHouse;
+        for (int i = 0; i < world.StoreBuildings.Count && remaining > 0; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (store.Kind != StoreKind.Shed)
+            {
+                continue;
+            }
+
+            int fromHere = Math.Min(remaining, store.Store.Logs);
+            if (fromHere > 0 && store.Store.TryTakeLogs(fromHere))
+            {
+                remaining -= fromHere;
+            }
+        }
+
+        taken = config.LogsPerHouse - remaining;
+        return remaining == 0;
     }
 
     /// <summary>The lowest-id house nobody lives in any more, or null.</summary>
@@ -422,7 +446,11 @@ public sealed class HouseholdSystem : ISimSystem
         //
         // So the question moved to where the answer now lives. A village with a shared
         // store can only afford a child if the STORE can afford one.
-        if (world.Granary.Store.Food < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
+        // Every granary the village has (D38) — and this is THE call site that made the
+        // singleton seam worth fixing before placement shipped. A second granary the
+        // birth gate could not see would have been a building the player paid for that
+        // did nothing at all.
+        if (world.FoodInGranaries() < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
         {
             return false;
         }

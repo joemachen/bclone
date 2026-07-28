@@ -428,7 +428,11 @@ public readonly record struct LabourQuota
         // rather than a switch, which is what a woodpile IS.
         demand += homes * VillageEconomy.FirewoodPerHouseholdPerWinter(world.Config);
 
-        int shortfall = demand - world.StorageShed.Store.Firewood;
+        // Across every shed (D38): a household can fetch from any of them, so all of
+        // them are supply. Reading one would have had the village cutting wood it
+        // already had the moment somebody built a second shed — the same shape as the
+        // bug where this counted firewood stranded in homes.
+        int shortfall = demand - world.FirewoodInSheds();
         if (shortfall <= 0)
         {
             return 0;

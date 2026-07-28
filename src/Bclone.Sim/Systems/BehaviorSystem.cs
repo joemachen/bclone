@@ -224,8 +224,27 @@ public sealed class BehaviorSystem : ISimSystem
             }
         }
 
-        return villager.CarriedFood > 0 ? world.Granary : world.StorageShed;
+        // A producer takes their load to the nearest building OF THE RIGHT KIND, which
+        // with one of each is exactly what it did before.
+        //
+        // Kind still matters, and that is the half worth keeping: a forager's harvest
+        // goes to a GRANARY rather than to whatever store is closest, because the birth
+        // gate reads granaries. Letting the day's gathering land in the market would
+        // make the village's population ceiling depend on where somebody was standing.
+        StoreKind wanted = villager.CarriedFood > 0 ? StoreKind.Granary : StoreKind.Shed;
+
+        return world.NearestStore(villager.Position, wanted, static store => !store.Store.IsFull)
+            ?? world.AnyStoreOf(wanted);
     }
+
+    /// <summary>The nearest shed holding a full batch of logs, or null.</summary>
+    /// <remarks>
+    /// Asked from the HUT rather than from the woodcutter, because the walk that
+    /// matters is the one between the yard and the work — that adjacency is what makes
+    /// splitting a job rather than a teleport (D30).
+    /// </remarks>
+    private static StoreBuilding? NearestShedWithLogs(SimWorld world, GridPos hut, int batch) =>
+        world.NearestStore(hut, StoreKind.Shed, store => store.Store.Logs >= batch);
 
     /// <summary>The nearest store that will take this good and has room, or null.</summary>
     private static StoreBuilding? NearestStoreAccepting(SimWorld world, GridPos from, Goods goods)
@@ -602,7 +621,7 @@ public sealed class BehaviorSystem : ISimSystem
         // every hand on the berry patches and froze the village to death (see
         // SimWorld.TargetFoodForTheGranary).
         bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household)
-            || world.Granary.Store.Food < world.FoodTheGranaryHasRoomFor();
+            || world.FoodInGranaries() < world.FoodTheGranaryHasRoomFor();
 
         // FETCH — before work, because a household with an empty larder has a more
         // pressing errand than its job.
@@ -660,11 +679,15 @@ public sealed class BehaviorSystem : ISimSystem
         // the yard empty.
         if (villager.CanWork && job?.Kind == JobKind.Woodcutter)
         {
-            if (world.StorageShed.Store.Logs < config.LogsPerSplit)
+            // The nearest shed that actually has a batch in it. Naming THAT shed rather
+            // than "the shed" is the point of the refusal: with more than one, "the
+            // shed has no logs" would be a sentence the player could not check.
+            StoreBuilding? yard = NearestShedWithLogs(world, job.Position, config.LogsPerSplit);
+            if (yard is null)
             {
                 villager.WorkNote =
-                    $"Nothing to split — {world.StorageShed.Name} has no logs, and {job.Name} needs " +
-                    $"{config.LogsPerSplit} for a batch.";
+                    $"Nothing to split — no shed within reach of {job.Name} has the " +
+                    $"{config.LogsPerSplit} logs a batch needs.";
                 GoHome(world, villager);
                 return;
             }
@@ -1055,7 +1078,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // up per season instead.
                 world.Log(LogLevel.Debug, "behavior",
                     $"Gathered {yield} food, bound for " +
-                    $"{(homeNeedsIt ? "home" : world.Granary.Name)} — {world.Clock}.");
+                    $"{(homeNeedsIt ? "home" : StoreForTheLoad(world, villager).Name)} — {world.Clock}.");
                 return;
 
             case VillagerState.Cutting:
@@ -1071,7 +1094,8 @@ public sealed class BehaviorSystem : ISimSystem
                 // which is what makes them the village's rather than this family's.
                 villager.CarriedLogs += wood;
                 villager.State = VillagerState.HaulingToStore;
-                Travel(world, villager, world.StorageShed.Position, VillagerState.HaulingToStore);
+                Travel(world, villager, StoreForTheLoad(world, villager).Position,
+                    VillagerState.HaulingToStore);
                 return;
 
             case VillagerState.MakingFirewood:
@@ -1081,7 +1105,10 @@ public sealed class BehaviorSystem : ISimSystem
                 //
                 // It replaces a sweep across every household's private pile, which was
                 // a shed in all but name and could not be seen, sited or reasoned about.
-                if (!world.StorageShed.Store.TryTakeLogs(world.Config.LogsPerSplit))
+                StoreBuilding? woodyard = NearestShedWithLogs(
+                    world, villager.Position, world.Config.LogsPerSplit);
+
+                if (woodyard is null || !woodyard.Store.TryTakeLogs(world.Config.LogsPerSplit))
                 {
                     // The yard emptied while they were working. Not an error: another
                     // woodcutter, or a house being raised, got there first.
@@ -1099,7 +1126,16 @@ public sealed class BehaviorSystem : ISimSystem
                 // woodcutter. Carrying the village's whole fuel supply back to one
                 // house is what froze the household next door (D29), and the daily
                 // sharing policy only existed to undo it.
-                world.StorageShed.Store.AddFirewood(firewood);
+                //
+                // Back into the shed the logs came out of where there is room, so a
+                // woodyard stays one place rather than becoming a two-shed shuffle.
+                StoreBuilding wall = woodyard.Store.IsFull
+                    ? world.NearestStore(
+                        villager.Position, StoreKind.Shed, static store => !store.Store.IsFull)
+                        ?? woodyard
+                    : woodyard;
+
+                wall.Store.AddFirewood(firewood);
                 villager.State = VillagerState.TravelingHome;
                 return;
 

@@ -38,9 +38,9 @@ public sealed class StorageTests
             _output.WriteLine($"{building.Id} {building.Name} at {building.Position}");
         }
 
-        Assert.Equal(StoreKind.Granary, world.Granary.Kind);
-        Assert.Equal(StoreKind.Shed, world.StorageShed.Kind);
-        Assert.NotEqual(world.Granary.Position, world.StorageShed.Position);
+        Assert.Equal(StoreKind.Granary, world.AnyStoreOf(StoreKind.Granary).Kind);
+        Assert.Equal(StoreKind.Shed, world.AnyStoreOf(StoreKind.Shed).Kind);
+        Assert.NotEqual(world.AnyStoreOf(StoreKind.Granary).Position, world.AnyStoreOf(StoreKind.Shed).Position);
     }
 
     [Fact]
@@ -51,13 +51,13 @@ public sealed class StorageTests
         // have to genuinely disagree about what they will hold.
         SimWorld world = Build(Config).World;
 
-        Assert.True(world.Granary.Accepts(Goods.Food));
-        Assert.False(world.Granary.Accepts(Goods.Logs));
-        Assert.False(world.Granary.Accepts(Goods.Firewood));
+        Assert.True(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Food));
+        Assert.False(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Logs));
+        Assert.False(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Firewood));
 
-        Assert.False(world.StorageShed.Accepts(Goods.Food));
-        Assert.True(world.StorageShed.Accepts(Goods.Logs));
-        Assert.True(world.StorageShed.Accepts(Goods.Firewood));
+        Assert.False(world.AnyStoreOf(StoreKind.Shed).Accepts(Goods.Food));
+        Assert.True(world.AnyStoreOf(StoreKind.Shed).Accepts(Goods.Logs));
+        Assert.True(world.AnyStoreOf(StoreKind.Shed).Accepts(Goods.Firewood));
     }
 
     [Fact]
@@ -87,11 +87,11 @@ public sealed class StorageTests
         loop.Step(Config.TicksPerYear);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Granary.Store.Add(1);
+        loop.World.AnyStoreOf(StoreKind.Granary).Store.Add(1);
         ulong afterGranary = StateHash.Compute(loop.World);
         Assert.NotEqual(before, afterGranary);
 
-        loop.World.StorageShed.Store.AddLogs(1);
+        loop.World.AnyStoreOf(StoreKind.Shed).Store.AddLogs(1);
         ulong afterShed = StateHash.Compute(loop.World);
         Assert.NotEqual(afterGranary, afterShed);
 

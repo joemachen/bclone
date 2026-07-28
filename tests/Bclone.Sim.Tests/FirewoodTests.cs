@@ -78,7 +78,7 @@ public sealed class FirewoodTests
             foreach (Household household in loop.World.Households)
             {
                 household.Stockpile.TryTakeLogs(household.Stockpile.Logs);
-                loop.World.StorageShed.Store.TryTakeLogs(loop.World.StorageShed.Store.Logs);
+                loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTakeLogs(loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs);
             }
 
             foreach (Villager villager in loop.World.Villagers)
@@ -94,7 +94,13 @@ public sealed class FirewoodTests
 
         _output.WriteLine(note ?? "(no woodcutter ever explained an idle day)");
         Assert.NotNull(note);
-        Assert.Contains("no logs", note, System.StringComparison.OrdinalIgnoreCase);
+
+        // The refusal names logs and says how many a batch needs. It used to read "the
+        // storage shed has no logs"; with more than one shed possible (D38) that
+        // sentence would have been unverifiable by the player — WHICH shed? — so it now
+        // says no shed within reach has them.
+        Assert.Contains("logs", note, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("batch", note, System.StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -122,9 +128,9 @@ public sealed class FirewoodTests
             }
 
             checkedSeasons++;
-            Assert.True(quota.Loggers > 0 || loop.World.StorageShed.Store.Logs >= config.LogsPerSplit,
+            Assert.True(quota.Loggers > 0 || loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs >= config.LogsPerSplit,
                 $"Season {season}: the village wants {quota.Woodcutters} woodcutters but no " +
-                $"loggers, and only {loop.World.StorageShed.Store.Logs} logs in store — {quota}");
+                $"loggers, and only {loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs} logs in store — {quota}");
         }
 
         _output.WriteLine($"{checkedSeasons} seasons where the village wanted firewood made");

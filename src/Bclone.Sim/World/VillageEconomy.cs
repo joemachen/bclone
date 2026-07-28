@@ -670,13 +670,40 @@ public static class VillageEconomy
     /// built for thirty supports a village that runs a little hungrier than thirty.
     /// </para>
     /// </remarks>
+    /// <para>
+    /// <b>Per granary.</b> For the ceiling an actual village lives under, ask
+    /// <see cref="CeilingFor(int)"/> with how many granaries it has built — that is the
+    /// number placement is about, and the reason the singleton seam had to be closed
+    /// before a player could build a second one (D38).
+    /// </para>
+    /// </remarks>
     public static int PopulationCeiling(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int perHead = RequiredStockpilePerAdult(config) * config.BirthFoodPercent / 100;
+        int perHead = PerHeadDemand(config);
         return perHead <= 0 ? int.MaxValue : GranaryCapacity(config) / perHead;
     }
+
+    /// <summary>
+    /// The population a given amount of granary supports — the number placement moves.
+    /// </summary>
+    /// <remarks>
+    /// Takes total capacity rather than a count of buildings, so a larger granary
+    /// unlocked through the tech tree raises the ceiling the same way a second ordinary
+    /// one does (D39: the winter buffer is priced, not capped).
+    /// </remarks>
+    public static int CeilingForCapacity(SimConfig config, int totalGranaryCapacity)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int perHead = PerHeadDemand(config);
+        return perHead <= 0 ? int.MaxValue : totalGranaryCapacity / perHead;
+    }
+
+    /// <summary>Food the birth gate demands per living villager.</summary>
+    private static int PerHeadDemand(SimConfig config) =>
+        RequiredStockpilePerAdult(config) * config.BirthFoodPercent / 100;
 
     /// <summary>
     /// How much one storage shed holds, across logs and firewood together.

@@ -112,6 +112,25 @@ Categories (only include the ones you use): **Added**, **Changed**,
   at what the buildings support instead of overshooting and falling back. Measured over
   200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
   across goods, not per good: a shed packed with logs has nowhere to stack firewood.
+- **A village may have more than one of a store** (D38; placement slice 1). No
+  player-facing change — the village still founds itself with one of each, and a test
+  asserts the new plural helpers give exactly the answers the old singular ones did.
+  What changed is that a **second** granary, shed or market would no longer be silently
+  ignored, which it would have been the day placement shipped.
+  - `SimWorld.Granary`/`.StorageShed`/`.Market` were **deleted** rather than kept
+    alongside the plural API, so the compiler enumerated all fifteen call sites and each
+    one got a decision rather than a rename. The worst of them was the birth gate: a
+    second granary it could not see would have been a building the player paid for that
+    did nothing, and "the village stopped growing for no stated reason" is the least
+    debuggable symptom there is.
+  - *"Is there food?"* now means **all** granaries; *"where do I deposit?"* means the
+    **nearest with room**, skipping any that cannot be reached; *"can we build a house?"*
+    draws from **every** shed, since a house is paid for by the whole village (D25); and
+    the population ceiling derives from **total** granary capacity, so a larger granary
+    unlocked through the tech tree raises it exactly as a second ordinary one does.
+  - The woodcutter's refusal changed with it — *"the storage shed has no logs"* was
+    unverifiable once there could be more than one shed, so it now names the batch and
+    says no shed within reach of the hut has it.
 - **Water is impassable, and routes go round it** (D40, D41) — the change that makes the
   generated river mean something. Catchment, market errands, household placement and the
   economy's distance budget all inherited it for free, because they have always shared

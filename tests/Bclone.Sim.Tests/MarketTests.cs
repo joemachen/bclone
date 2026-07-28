@@ -32,10 +32,10 @@ public sealed class MarketTests
     {
         SimWorld world = Build(Config).World;
 
-        Assert.Equal(StoreKind.Market, world.Market.Kind);
-        Assert.True(world.Market.Accepts(Goods.Food));
-        Assert.True(world.Market.Accepts(Goods.Firewood));
-        Assert.False(world.Market.Accepts(Goods.Logs));
+        Assert.Equal(StoreKind.Market, world.AnyStoreOf(StoreKind.Market).Kind);
+        Assert.True(world.AnyStoreOf(StoreKind.Market).Accepts(Goods.Food));
+        Assert.True(world.AnyStoreOf(StoreKind.Market).Accepts(Goods.Firewood));
+        Assert.False(world.AnyStoreOf(StoreKind.Market).Accepts(Goods.Logs));
 
         Workplace? stall = null;
         foreach (Workplace workplace in world.Workplaces)
@@ -47,7 +47,7 @@ public sealed class MarketTests
         }
 
         Assert.NotNull(stall);
-        Assert.Equal(world.Market.Position, stall!.Position);
+        Assert.Equal(world.AnyStoreOf(StoreKind.Market).Position, stall!.Position);
 
         // More than one worker, per Joe. A market is a place several people work, not
         // a one-person post.
@@ -280,7 +280,7 @@ public sealed class MarketTests
         b.Step(config.TicksPerYear * 150);
 
         Assert.Equal(StateHash.Compute(a.World), StateHash.Compute(b.World));
-        Assert.Equal(a.World.Market.Store.Food, b.World.Market.Store.Food);
+        Assert.Equal(a.World.AnyStoreOf(StoreKind.Market).Store.Food, b.World.AnyStoreOf(StoreKind.Market).Store.Food);
     }
 
     [Fact]
