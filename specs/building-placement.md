@@ -47,6 +47,8 @@ That is not automatically wrong — *"a village that dies should die because of 
 
 **Recommendation: warn and allow.** It is the only option that lets the player learn the rule by seeing it, and it keeps the economy's derivation honest by making the bound *visible* rather than secret.
 
+> **✅ Superseded for homes by §11.1 (Joe, 2026-07-28), and for the better.** Homes are not placed individually at all — the player paints a residential *zone* and the village builds inside it. So `MaxHomeToWorkTiles` stays a guarantee the sim keeps (`ChooseSite` simply picks the best spot **within the zone**), and the warning happens **once, when the zone is painted**, instead of on every house. The table above still governs the buildings the player does place directly.
+
 ---
 
 ## 4. The D38 seam, which must be fixed first
@@ -72,7 +74,7 @@ That is not automatically wrong — *"a village that dies should die because of 
 |---|---|---|
 | Granary, storage shed, market | **Yes**, many | The D33/D36 payoff |
 | Woodcutter's hut | **Yes**, many | Its position is a real trade-off — near the shed for logs, near homes for the worker |
-| Homes | **Open** — see §11.1 | The big question |
+| Homes | **Not placed — zoned.** See §11.1, §12 | The player paints a residential area; the village builds inside it as needed |
 | Forage sites, tree stands | **No** | They are terrain. You find them, you do not put them there |
 | Bridges | Later (D40) | Needs the tech tree |
 | Cemetery | Later (D35) | Needs this system first |
@@ -141,15 +143,21 @@ Standard DoD (`METHODOLOGY.md §3`), plus:
 
 ## 11. Open questions (for Joe)
 
-### 11.1 Does the player place homes, or do villagers keep choosing?
+### 11.1 Does the player place homes? ✅ **Resolved (Joe, 2026-07-28): the player paints a ZONE, and the village builds inside it.**
 
-**The big one**, because it decides whether this system is calm or busy.
+The *Foundation* model, and it is better than either option I offered. **The player paints a residential area with a brush; villagers build individual homes inside it, positioned and oriented by the sim, and only when a home is actually needed.** No need, no houses. When the village needs more room than the painted area allows, **the player is prompted to paint another one.**
 
-- **Villagers keep choosing** *(recommended)*. `Household.ChooseSite` already does it well, and it keeps `MaxHomeToWorkTiles` a real guarantee, so the economy stays derived rather than hoped-for. The player shapes *where* homes go indirectly, by placing the work and the stores they cluster around — which is a more interesting decision than clicking twenty houses, and it is §2.2's philosophy applied to building: you set conditions, people respond.
-- **Player places homes** — the Banished model, and it is what most players will expect. But it is the main click-farm risk (§8), and it hands away the bound §3 is about.
-- **Both**: villagers choose by default, the player may override or reserve a site.
+Joe extends the same brush to **which forest to cut** and **where to plant trees**. See §12 — that is a bigger idea than a control scheme and it deserves its own section.
 
-*Recommendation: villagers keep choosing, for now.* It is much less work, it preserves a guarantee the economy leans on, and it can be revisited once the rest of placement is real. **But it cuts against player expectation, so it is your call rather than mine.**
+**Why this is the right answer and not just a nicer one:**
+
+- **It kills the click-farm without taking the decision away.** Paint once, get twenty houses over fifty years. That is §1.2 satisfied by design rather than by restraint.
+- **It keeps `MaxHomeToWorkTiles` a real guarantee**, which is what §3 was worried about. `Household.ChooseSite` survives intact — it is simply *constrained to the zone* instead of the whole valley. The sim still picks the best spot it can; the player decides the neighbourhood.
+- **It moves the warning to a far better moment.** §3 recommended warn-and-allow on each building, which meant repeating a warning the player would learn to click past. Now the check happens **once, when the zone is painted**: *"homes here would be 14 tiles from the nearest work; the village budgets 7."* One considered decision, warned once, rather than a nag per house.
+- **The prompt is a legibility win.** *"The village needs somewhere to build"* is the game telling the player a decision is due, rather than expecting them to notice. That is §1.2 again — reduce babysitting, do not add it.
+- **It is the same philosophy as §2.2.** The player sets conditions; people respond. Painting a residential zone is exactly the shape of "workplaces have a catchment and villagers take jobs by proximity" — you shape the field, you do not command the agents.
+
+**What it changes in this spec:** §3's whole table is superseded for homes. The bound survives, the warning moves to the zone, and "the player can doom a family by clicking" becomes "the player can paint a bad neighbourhood and be told so at the time".
 
 ### 11.2 Does construction take labour and time, or is it instant?
 
@@ -166,3 +174,54 @@ Free-form anywhere in the valley invites buildings nobody can use. *Recommendati
 ### 11.5 What does the *first* playable version need?
 
 If this is too big for one slice, the smallest version that is genuinely worth playing is: **§4's seam, plus placeable granaries and sheds, materials hauled and built by hand.** That alone delivers D33 — build another granary, grow past your ceiling — which is the clearest cause-and-effect the game has ever offered the player.
+
+---
+
+## 12. Zones — the brush, and what it turns out to be for
+
+Joe's answer to §11.1 named three brushes: **residential**, **which forest to cut**, and **where to plant trees**. They are one mechanic, and together they are more than a placement convenience.
+
+### 12.1 The pattern
+
+> **The player paints intent over an area. The village acts on it when, and only when, it has a reason to.**
+
+That is the same contract as everything else here: the player sets conditions, agents respond, and the response is legible because the conditions are visible on the map. A residential zone with no housing shortage produces nothing, and that is not the brush failing — it is the brush working.
+
+### 12.2 The three, and why the forestry pair is the interesting one
+
+| Zone | The village does | Because |
+|---|---|---|
+| **Residential** | Builds a home inside it when a couple needs one and the timber exists | §11.1 |
+| **Harvest** | Fells trees **here** rather than at an abstract "tree stand" | Makes forestry spatial |
+| **Plant** | Plants trees here when there are hands to spare | The payoff of managed forestry |
+
+**The harvest brush replaces a placeholder nobody had noticed was one.** `JobKind.Logger` currently works at "the tree stand" — a workplace with an inexhaustible supply, standing in a forest the generator draws but which nothing consumes. With a harvest zone, a logger fells *the forest tiles you designated*, and the forest recedes. Which means:
+
+- **Forest becomes a resource with a location and a quantity**, not a workplace with infinite yield. That is §2.3's *"resource radii exhausting and forcing expansion"* made real, and it is currently the pillar with the least behind it.
+- **Deforestation becomes visible on the map** — the clearest possible example of §2.3's *"every escalating problem should be back-traceable to something the player did."* You can see the bald patch you made.
+
+**And the planting brush is the answer to it**, which is what makes the pair a system rather than a chore. It is also already promised: DESIGN.md §2.7 names *"log a forest for two generations → managed forestry"* as its example of **unlock by doing**. Planting is what that node unlocks. **The tech tree gets its first concrete node from this**, and it arrives from the direction §2.7 says it should — out of how the town has lived, not from a menu.
+
+### 12.3 What this costs, and the one that matters
+
+**Terrain becomes mutable**, and D41 predicted exactly this:
+
+> *"Cached with no invalidation protocol, deliberately, because `GeneratedMap` is immutable… When terrain becomes mutable — a felled stand, a paved road, a bridge — that stops being true and the cache needs a way to be dropped."*
+
+Felling a forest tile does not change what is *walkable*, so travel costs survive — but only by luck, and planting or bridges will not be so kind. **The flow-field cache needs an invalidation path before the first mutable tile ships**, and it should be built when terrain first changes rather than the first time somebody notices a stale route.
+
+Also:
+
+- `GeneratedMap` currently exposes terrain read-only and is hashed wholesale. Mutable terrain must stay in the state hash and must not become a per-tick hashing cost.
+- **Zones are player intent and therefore sim state** — saved, hashed, and part of the determinism contract.
+- Tree growth needs a rate, which is a new kind of clock: slow enough that a cleared valley is a generational mistake, fast enough that planting is worth doing. That is a §1.5 question — generational time as the core loop — and it should be derived from a stated target, not picked (D16).
+
+### 12.4 Sequencing note
+
+**The residential brush is the small one and should come first**, because it is needed for placement to be playable at all and it changes no terrain. **The forestry pair is a separate slice** — it wants mutable terrain, cache invalidation, a growth rate, and it reaches into §2.3 and §2.7. Doing them together would be two hard things landing at once, which this project has now learned about twice.
+
+### 12.5 Open, and worth Joe's answer before the forestry slice
+
+1. **Does an unpainted forest get cut at all?** Either the harvest brush is the *only* way to fell (maximal control, but a village with no zone painted quietly stops building) or there is a default. *Recommendation: a village with no harvest zone cuts nothing, and is prompted* — same as residential. Consistent, and it makes the brush meaningful rather than advisory.
+2. **Do trees regrow on their own, or only where planted?** *Recommendation: slow natural regrowth plus faster deliberate planting.* Pure planting makes an early mistake unrecoverable; pure regrowth makes the planting brush pointless.
+3. **Is planting gated behind the managed-forestry unlock, or available from the start?** *Recommendation: gated* — it is the concrete node §2.7 has been waiting for, and it gives the tech tree something to be about that the player will actually feel.
