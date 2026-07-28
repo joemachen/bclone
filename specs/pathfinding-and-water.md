@@ -163,6 +163,26 @@ Founding homes now go through `Household.ChooseSite`, the same rule every later 
 - **"A one-tile catchment reaches nobody"** was true only while homes were spiralled without regard to work. Now a home can legitimately sit beside a patch. The test was rewritten to assert the stronger invariant it was really about: *nobody ever holds a job outside their catchment*.
 - **`CouplesLeaveHomeWithFoodToStartOn` was checking the wrong field.** It asserted `LifetimeGathered > 0` a century in — but a dowry moves through `Stockpile.Receive`, which deliberately does *not* touch that counter, because goods changing hands are not production. So it was really asserting "has foraged at some point since", and it failed the first time a household happened to be founded near the end of the run. It now checks the larder **at the tick of formation**, which is the only moment the claim is about.
 
-### 12.3 Cost
+### 12.3 The river is impassable and it does not yet matter — and that is structural
+
+Joe, looking at a run: *"the villagers have no need to walk around the river at this point. nothing they need is on the other side."* Correct, and it is not a quirk of that seed — **I built it that way without noticing.**
+
+Three things push the village away from the water, and they compound:
+
+1. **Forage sites are drawn on a small ring** around the world origin (`forage_site_ring_tiles` = 5), so all the work is clustered in one place.
+2. **The founding site is chosen as the land mass holding the most work** (§12.1) — which, by construction, is the side of the river with nearly everything on it.
+3. **Homes are then placed near that work** (`ChooseSite`), so the settlement contracts further inward.
+
+The result is a village that always forms in the middle of its own resources, with the river out at the periphery. **Water is impassable, correctly and provably, and nothing ever needs to cross it.** D40's whole argument — *"a river you must go round until you can afford not to is the map arguing with you"* — is not happening. The river is scenery again; it is just *enforced* scenery now.
+
+**This is not fixed by making the terrain harsher.** The connectivity guarantee in §6 exists so that no seed is unplayable, and it is doing its job. The problem is that the guarantee and the pressure are the same knob: any valley where the river genuinely divides the resources is a valley the generator currently refuses to found a village in.
+
+**What would actually create the tension** — recorded so it is not rediscovered:
+
+- **Spread the resources wider than the settlement**, so a village *starts* self-sufficient but has to reach across the water to grow. That is the shape the pressure wants: not "you are cut off", which is unplayable, but "the good land is over there".
+- **Which means the founding-site rule should ask for enough work, not the most work.** "Most" always picks the safe side; "enough to start" allows a valley where expansion means crossing.
+- Both of these are **worth doing at the same time as bridges** (D40 slice 3), because a river you must cross with nothing to cross it with is just a wall. Until then, the honest description of what shipped is: *water is impassable, the machinery is right, and the map does not yet use it.*
+
+### 12.4 Cost
 
 The suite went from ~25s to ~2m. Most of that is the new property tests (60-year runs across 20 seeds), not the fields themselves. Worth watching rather than acting on; if it grows again, the first thing to try is fewer seeds in the sweeps rather than a cleverer search.

@@ -205,11 +205,13 @@ Each phase should ship in a playable, legible state before the next begins.
 **In progress:**
 - Nothing.
 
-**Next up** *(in order — Joe's call, 2026-07-27)*: The travel-cost field is Manhattan distance today; this is what makes the river mean anything. Expect `VillageEconomy` to be re-derived, since a path round water is longer than a straight line.
-3. **Building placement** — **confirmed in.** Storage and buildings become player decisions. It is what turns granary capacity from a config line into a choice, what makes the market's position — currently worth only 6% off a fetch trip — actually matter, and what D35's cemetery is waiting for. Also the moment D38's multi-instance seam has to be fixed. Wants its own spec.
-4. **Bridges** (D40) — the technology, then the building. Needs both the tech tree (§2.7) and placement, so it lands after them.
-5. **Environment/seasons depth + biomes** (§2.5) — the phase's headline. **Spoilage is not part of it** (D37, cut).
-6. More workplace kinds (D19) — now with a named roadmap: farming, herdsmen and butchering, gathering, fishing, then bread, wine and beer (D39).
+**Next up** *(in order — Joe's call)*:
+1. **Building placement** — **spec drafted and awaiting Joe: `specs/building-placement.md §11`.** The first system where the player acts. It turns granary capacity (D33) from a config line into a choice, makes the market's position matter (currently worth only 6% off a fetch trip), and is what D35's cemetery and D40's bridges are both waiting on. **It has to start by fixing D38's singleton seam**: `Granary`/`StorageShed`/`Market` each return the *first* of their kind across 13 call sites, and `PopulationCeiling` derives from one granary — so a second granary would be silently ignored by the very gate that decides whether anyone is born.
+   - **The open question that shapes the rest: does the player place homes, or do villagers keep choosing?** Villagers choosing keeps `MaxHomeToWorkTiles` a guarantee the economy can be derived against; the player placing is what most players will expect, and is the main click-farm risk against §1.2.
+2. **Make the river matter** — `specs/pathfinding-and-water.md §12.3`. Water is impassable and provably so, but the generator steers every village onto the side of the valley with all the work on it, so nothing ever needs to cross. Wants resources spread wider than the settlement and a founding rule that asks for *enough* work rather than the *most*. Belongs with bridges, since a river you must cross with no way to cross it is just a wall.
+3. **Bridges** (D40) — the technology, then the building. Needs the tech tree (§2.7) and placement.
+4. **Environment/seasons depth + biomes** (§2.5) — the phase's headline. **Spoilage is not part of it** (D37, cut).
+5. More workplace kinds (D19) — now with a named roadmap: farming, herdsmen and butchering, gathering, fishing, then bread, wine and beer (D39).
 
 **Parked, with a stated reason:**
 - **Tools** (D17) — waiting on a workshop to make them at.
