@@ -936,6 +936,15 @@ public sealed class BehaviorSystem : ISimSystem
     /// eats worse than one beside it. That is the inequality D32 is built on, and it
     /// only exists if a trip has a size.
     /// </remarks>
+    /// <summary>Collecting, exposed so a test can pose the case directly.</summary>
+    /// <remarks>
+    /// A seam rather than a public API: what a household picks up at a store is worth
+    /// asserting on its own, because getting it wrong starves a village quietly and
+    /// takes a hundred years of simulation to show up in an acceptance test.
+    /// </remarks>
+    internal static void CollectForTest(SimWorld world, Villager villager) =>
+        CollectFromStore(world, villager);
+
     private static void CollectFromStore(SimWorld world, Villager villager)
     {
         Household household = world.HouseholdOf(villager);
@@ -958,21 +967,28 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (target.Kind == StoreKind.Granary)
+        // WHAT THEY CAME FOR AND WHAT THIS PLACE HAS — not what kind of building it is.
+        //
+        // This used to read "granary? take food; anything else? take firewood", which
+        // was right while only a granary held food. The market holds both (D14), and
+        // PlanFetch sends people to the NEAREST store with what they need — so a
+        // household nearer the market than the granary walked over for food and came
+        // home with firewood, every time, and starved with the granary full. Joe
+        // watched it happen: "people seem to not be able to find anything to eat."
+        //
+        // Food first where both are short, for the same reason PlanFetch prefers it:
+        // hunger kills in six days and cold in ten.
+        int foodShort = world.TargetFoodFor(household) - household.Stockpile.Food;
+        int food = Smallest(foodShort, load, target.Store.Food);
+        if (food > 0 && target.Store.TryTake(food))
         {
-            int wanted = world.TargetFoodFor(household) - household.Stockpile.Food;
-            int take = Smallest(wanted, load, target.Store.Food);
-            if (take > 0 && target.Store.TryTake(take))
-            {
-                villager.CarriedFood += take;
-            }
-
+            villager.CarriedFood += food;
             return;
         }
 
-        int firewoodWanted =
+        int firewoodShort =
             VillageEconomy.FirewoodStoreWantedPerHousehold(config) - household.Stockpile.Firewood;
-        int firewood = Smallest(firewoodWanted, load, target.Store.Firewood);
+        int firewood = Smallest(firewoodShort, load, target.Store.Firewood);
         if (firewood > 0 && target.Store.TryTakeFirewood(firewood))
         {
             villager.CarriedFirewood += firewood;

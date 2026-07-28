@@ -247,6 +247,43 @@ public sealed class MarketTests
     }
 
     [Fact]
+    public void AHouseholdFetchingFoodFromTheMarketComesHomeWithFood()
+    {
+        // The regression that shipped and was caught by Joe watching a village, not by
+        // a test: "people seem to not be able to find anything to eat."
+        //
+        // CollectFromStore branched on the BUILDING KIND — granary, take food; anything
+        // else, take firewood. That was right while only the granary held food. The
+        // market holds both, and PlanFetch sends a household to the NEAREST store with
+        // what it needs, so a home closer to the market than the granary walked over
+        // for food and came back with firewood. Every trip. Forever. It starved with
+        // the granary full, which is the exact failure D30 exists to prevent.
+        SimConfig config = Config;
+        SimWorld world = Build(config).World;
+
+        Household household = world.Households[0];
+        household.Stockpile.TryTake(household.Stockpile.Food);
+
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+        market.Store.Add(200);
+        market.Store.AddFirewood(200);
+
+        // Put somebody at the market's door with an empty larder behind them.
+        Villager villager = world.FindVillager(household.MemberIds[0])!;
+        villager.Position = market.Position;
+        villager.CarriedFood = 0;
+        villager.CarriedFirewood = 0;
+
+        Bclone.Sim.Systems.BehaviorSystem.CollectForTest(world, villager);
+
+        _output.WriteLine(
+            $"came away with {villager.CarriedFood} food and {villager.CarriedFirewood} firewood.");
+
+        Assert.True(villager.CarriedFood > 0,
+            "They went to the market for food and did not pick any up.");
+    }
+
+    [Fact]
     public void TheMarketMovesGoodsWithoutCreatingThem()
     {
         // Conservation across the new movements. A marketer produces nothing, so every

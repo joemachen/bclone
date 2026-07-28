@@ -258,7 +258,19 @@ public readonly record struct LabourQuota
         // through a hard winter is a better outcome than a finished one nobody lived to
         // use. It is also what makes marking six buildings at once a real decision
         // rather than six purchases — they compete with the berry patch.
-        int builders = Take(ref free, Cap(buildersWanted, TotalCapacityFor(world, JobKind.Builder)));
+        //
+        // AND IT MAY NEVER TAKE MORE THAN HALF THE HANDS THAT ARE LEFT. Without that
+        // cap, "how many builders does the village want?" answers with every seat at
+        // every site the player has marked — mark four buildings and the answer is
+        // twelve, which is the whole settlement. Food production drops to its bare
+        // floor for as long as the work lasts, and the village dies with the buildings
+        // finished. Measured: four buildings marked in year 15, two granaries and two
+        // sheds standing, nobody alive a century later.
+        //
+        // Half is the same margin FuelBudgetInHands uses and for the same reason: the
+        // floor is what the village must not fall below, not what it should live on.
+        int buildersAfforded = Math.Min(buildersWanted, free / 2);
+        int builders = Take(ref free, Cap(buildersAfforded, TotalCapacityFor(world, JobKind.Builder)));
 
         int marketers = Take(ref free, Cap(marketersWanted, TotalCapacityFor(world, JobKind.Marketer)));
 
