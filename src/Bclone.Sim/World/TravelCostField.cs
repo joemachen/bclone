@@ -27,8 +27,23 @@ public sealed class TravelCostField
     public const int BaseTileCost = 10;
 
     private readonly int _ticksPerBaseTile;
+    private readonly GeneratedMap? _map;
 
-    public TravelCostField(int ticksPerBaseTile = 1)
+    /// <summary>
+    /// One flow field per destination, built on first ask and kept forever.
+    /// </summary>
+    /// <remarks>
+    /// <b>Cached without any invalidation protocol, because terrain never changes.</b>
+    /// <see cref="GeneratedMap"/> is immutable once generated, so a field computed for
+    /// a destination is correct for the rest of the run — there is no stale-cache case
+    /// to get wrong, which removes the most likely home for the "code reading state
+    /// from where it used to live" bug this project keeps meeting. If terrain ever
+    /// becomes mutable — a felled stand, a paved road, a bridge (D40) — this comment
+    /// stops being true and the cache needs a way to be dropped.
+    /// </remarks>
+    private readonly Dictionary<GridPos, TerrainCostField> _fields = new();
+
+    public TravelCostField(int ticksPerBaseTile = 1, GeneratedMap? map = null)
     {
         if (ticksPerBaseTile < 1)
         {
@@ -37,16 +52,58 @@ public sealed class TravelCostField
         }
 
         _ticksPerBaseTile = ticksPerBaseTile;
+        _map = map;
     }
 
     /// <summary>
-    /// Travel cost between two points, in cost units.
+    /// Travel cost between two points, in cost units — round the water, not through it.
     /// </summary>
     /// <remarks>
-    /// Manhattan distance rather than straight-line: a square root would put a float
-    /// in the middle of arithmetic that decides who takes which job.
+    /// <para>
+    /// Manhattan distance rather than straight-line: a square root would put a float in
+    /// the middle of arithmetic that decides who takes which job. With a map, the walk
+    /// is a real path over the terrain and water is impassable (D40); without one it
+    /// falls back to plain distance, which is what the pure unit tests measure and what
+    /// a valley with no river amounts to anyway.
+    /// </para>
+    /// <para>
+    /// <b>Unreachable comes back as <see cref="Unreachable"/>, not as a big number.</b>
+    /// A sentinel that takes part in arithmetic silently wins nearest-thing searches
+    /// and sends villagers on errands they can never finish.
+    /// </para>
     /// </remarks>
-    public int Cost(GridPos from, GridPos to) => from.ManhattanDistanceTo(to) * BaseTileCost;
+    public int Cost(GridPos from, GridPos to) =>
+        _map is null
+            ? from.ManhattanDistanceTo(to) * BaseTileCost
+            : FieldTo(to).CostFrom(from);
+
+    /// <summary>No walk gets there — across the river, or off the map.</summary>
+    public const int Unreachable = TerrainCostField.Unreachable;
+
+    /// <summary>Whether any route exists at all.</summary>
+    public bool CanReach(GridPos from, GridPos to) => Cost(from, to) != Unreachable;
+
+    /// <summary>
+    /// One step from <paramref name="from"/> toward <paramref name="to"/>.
+    /// </summary>
+    /// <remarks>
+    /// The movement half of the same field, and it must come from the same place as
+    /// the cost or the two will disagree — a villager walking a straight line while
+    /// the economy budgets for a path round the water is the worst of both.
+    /// </remarks>
+    public GridPos StepToward(GridPos from, GridPos to) =>
+        _map is null ? from.StepToward(to) : FieldTo(to).StepFrom(from);
+
+    private TerrainCostField FieldTo(GridPos destination)
+    {
+        if (!_fields.TryGetValue(destination, out TerrainCostField? field))
+        {
+            field = TerrainCostField.Build(_map!, destination, BaseTileCost);
+            _fields[destination] = field;
+        }
+
+        return field;
+    }
 
     /// <summary>Ticks it takes to travel a given cost.</summary>
     public int TicksForCost(int cost)
@@ -54,6 +111,13 @@ public sealed class TravelCostField
         if (cost < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(cost), $"Cost cannot be negative (got {cost}).");
+        }
+
+        // Kept whole rather than scaled into a number of ticks. Multiplying
+        // int.MaxValue by anything is the overflow this sentinel exists to avoid.
+        if (cost == Unreachable)
+        {
+            return Unreachable;
         }
 
         // Integer division truncates, so a sub-tile remainder is free. Rounding up

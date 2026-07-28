@@ -204,6 +204,155 @@ public sealed class MapGenerationTests
         }
     }
 
+    // ---------------------------------------------------------------
+    //  Water you have to go round — specs/pathfinding-and-water.md (D40)
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void NobodyEverStandsOnWater()
+    {
+        // The regression this whole slice exists to prevent, asserted every tick
+        // rather than inferred from the village surviving.
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL);
+
+        for (int i = 0; i < config.TicksPerYear * 60; i++)
+        {
+            loop.StepOnce();
+
+            foreach (Villager villager in loop.World.Villagers)
+            {
+                if (!villager.Alive)
+                {
+                    continue;
+                }
+
+                Assert.NotEqual(Terrain.Water, loop.World.Map.TerrainAt(villager.Position));
+            }
+        }
+    }
+
+    [Fact]
+    public void NothingIsEverBuiltOnWater()
+    {
+        // Homes, workplaces and stores alike. A building in the river is unreachable
+        // by construction (TerrainCostField refuses to serve one), so this failing
+        // would show up later as a village that mysteriously cannot make firewood —
+        // which is exactly how it did show up on seed 1.
+        SimConfig config = Config;
+
+        for (ulong seed = 1; seed <= 20; seed++)
+        {
+            SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+            loop.Step(config.TicksPerYear * 60);
+            SimWorld world = loop.World;
+
+            foreach (Workplace workplace in world.Workplaces)
+            {
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(workplace.Position));
+            }
+
+            foreach (StoreBuilding store in world.StoreBuildings)
+            {
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(store.Position));
+            }
+
+            foreach (Household household in world.Households)
+            {
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(household.HomePosition));
+            }
+        }
+    }
+
+    [Fact]
+    public void EveryVillageCanReachItsOwnBuildings()
+    {
+        // §6 of the pathfinding spec: until bridges exist (D40) the generator owes the
+        // village a valley it can live in. A shed on the far bank is as useless as one
+        // under water, and the difference is invisible on the map.
+        SimConfig config = Config;
+
+        for (ulong seed = 1; seed <= 20; seed++)
+        {
+            SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+            GridPos home = world.Households[0].HomePosition;
+
+            foreach (StoreBuilding store in world.StoreBuildings)
+            {
+                Assert.True(world.TravelCost.CanReach(home, store.Position),
+                    $"Seed {seed}: {store.Name} is cut off from the village.");
+            }
+
+            int reachableForage = 0;
+            foreach (Workplace workplace in world.Workplaces)
+            {
+                if (workplace.Kind == JobKind.Forager
+                    && world.TravelCost.CanReach(home, workplace.Position))
+                {
+                    reachableForage++;
+                }
+            }
+
+            Assert.True(reachableForage > 0, $"Seed {seed}: no forage site is reachable at all.");
+        }
+    }
+
+    [Fact]
+    public void AWalkAcrossTheRiverIsLongerThanTheStraightLine()
+    {
+        // And the anti-vacuity twin below it — without that, a field that quietly
+        // returned Manhattan distance everywhere would pass this happily.
+        SimConfig config = Config;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
+
+        GridPos from = world.Households[0].HomePosition;
+        int detoured = 0;
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            int path = world.TravelCost.Cost(from, workplace.Position);
+            if (path == TravelCostField.Unreachable)
+            {
+                detoured++;
+                continue;
+            }
+
+            int straight = from.ManhattanDistanceTo(workplace.Position) * TravelCostField.BaseTileCost;
+            Assert.True(path >= straight, "A path cannot be shorter than the straight line.");
+
+            if (path > straight)
+            {
+                detoured++;
+            }
+        }
+
+        _output.WriteLine($"{detoured} of {world.Workplaces.Count} places cost more than the crow flies.");
+        Assert.True(detoured > 0,
+            "Every route on this seed was a straight line, so the river is costing nothing — " +
+            "either the terrain is not being read, or this seed has no water in the way.");
+    }
+
+    [Fact]
+    public void WithNoRiverEveryCostIsTheStraightLine()
+    {
+        // The anti-vacuity twin (D7). If the field were broken in the other direction —
+        // always going the long way round, or always reporting unreachable — the test
+        // above would still pass. This pins the other end: with nothing in the way, a
+        // real path and plain distance must agree exactly.
+        SimConfig config = Config with { RiverWidthTiles = 0 };
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
+
+        GridPos from = world.Households[0].HomePosition;
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            int path = world.TravelCost.Cost(from, workplace.Position);
+            int straight = from.ManhattanDistanceTo(workplace.Position) * TravelCostField.BaseTileCost;
+
+            Assert.Equal(straight, path);
+        }
+    }
+
     [Fact]
     public void AreTheseValleysWorthPlayingTwice()
     {

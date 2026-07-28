@@ -363,21 +363,24 @@ public sealed class Phase0SimTests
     [Fact]
     public void Villager_StaysWithinTheirWorld()
     {
-        // Between home and work, read from the WORLD rather than from config. The
-        // valley is generated now (D18), so home_x and food_source_x no longer say
-        // where anything is — this test used to be checking two numbers that had
-        // stopped being about the map.
+        // Inside the valley, which is what "their world" means and what the villager
+        // must never leave. It used to assert they stayed between home and the berry
+        // patch, which was true when those were the only two places anyone went —
+        // there is a granary and a shed to walk to now, and both are on the other side
+        // of home.
         var (loop, _) = Phase0Fixtures.Build(Config);
-
-        int homeX = loop.World.Households[0].HomePosition.X;
-        int workX = loop.World.FoodSource.Position.X;
-        int low = System.Math.Min(homeX, workX);
-        int high = System.Math.Max(homeX, workX);
+        SimConfig config = Config;
 
         for (int i = 0; i < 3_000; i++)
         {
             loop.StepOnce();
-            Assert.InRange(loop.World.Villager.Position.X, low, high);
+            GridPos where = loop.World.Villager.Position;
+
+            Assert.InRange(where.X, config.MapMinX, config.MapMaxX);
+            Assert.InRange(where.Y, config.MapMinY, config.MapMaxY);
+
+            // And never on the water (D40), which is the stronger claim.
+            Assert.NotEqual(Terrain.Water, loop.World.Map.TerrainAt(where));
         }
     }
 

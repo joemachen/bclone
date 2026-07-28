@@ -338,17 +338,35 @@ public sealed class VillageTests
     {
         // A new household on an empty larder can be wiped out by its first winter
         // before anyone has foraged anything - a death with no decision behind it.
+        //
+        // CHECKED AT THE MOMENT OF FORMATION, which is the only moment the claim is
+        // about. This used to run for a century and then assert that every household
+        // had a non-zero LIFETIME GATHERED — a field a dowry deliberately does not
+        // touch, because Stockpile.Receive exists precisely so that goods changing
+        // hands are not counted as production. So it was really asserting "has foraged
+        // at some point since", which is a different and much weaker thing, and it
+        // failed the day a household happened to be founded near the end of the run.
         var (loop, _) = Build(GrowingVillage);
-        loop.Step(30_000);
 
-        // Every household beyond the founding pair was formed by a couple moving
-        // out, and each was given a share of both parents' stores.
-        Assert.True(loop.World.Households.Count > 2);
-        for (int i = 2; i < loop.World.Households.Count; i++)
+        int known = loop.World.Households.Count;
+        int watched = 0;
+
+        for (int tick = 0; tick < 30_000; tick++)
         {
-            Assert.True(loop.World.Households[i].Stockpile.LifetimeGathered > 0,
-                $"Household {loop.World.Households[i].Name} started with nothing.");
+            loop.StepOnce();
+
+            while (loop.World.Households.Count > known)
+            {
+                Household fresh = loop.World.Households[known];
+                Assert.True(fresh.Stockpile.Food > 0,
+                    $"The {fresh.Name} household was founded on an empty larder at tick {tick}.");
+                known++;
+                watched++;
+            }
         }
+
+        _output.WriteLine($"{watched} households founded, every one of them with food in hand.");
+        Assert.True(watched > 0, "No household was ever founded, so this guard is vacuous (D7).");
     }
 
     [Fact]

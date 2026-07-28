@@ -112,6 +112,23 @@ Categories (only include the ones you use): **Added**, **Changed**,
   at what the buildings support instead of overshooting and falling back. Measured over
   200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
   across goods, not per good: a shed packed with logs has nowhere to stack firewood.
+- **Water is impassable, and routes go round it** (D40, D41) — the change that makes the
+  generated river mean something. Catchment, market errands, household placement and the
+  economy's distance budget all inherited it for free, because they have always shared
+  one cost field (§2.6).
+  - Implemented as a **Dijkstra flow field per building** rather than a path search per
+    call, which works because of a property of this game: *every travel query has a
+    building at one end*. One field answers both questions an agent has — how far, and
+    which way to step — as array lookups, with no stored routes and nothing to
+    invalidate. Ties break by tile order rather than by a priority queue, because a
+    heap's internal shuffling would make two runs of one seed take different equally
+    short routes and diverge the state hash.
+  - **Unreachable is a distinct answer, not a large number.** A sentinel that takes part
+    in arithmetic silently wins nearest-thing searches and sends villagers on errands
+    they can never finish.
+  - The generator now owes the village **a valley it can live in**: the founding site is
+    chosen as the land mass holding the most work, and every building is placed on
+    ground that is *reachable*, not merely dry.
 - **The valley is generated from the run's seed** (D18) — terrain, a wandering river,
   forest stands, forage sites and the founding site, drawn in a fixed order from the
   same seeded stream as everything else, and covered by the state hash. **Quoting one
@@ -254,6 +271,19 @@ Categories (only include the ones you use): **Added**, **Changed**,
   that storage slice 3 had already deleted. Demand is now counted per home and supply
   is the shed alone.
 
+- **The village's own buildings could be founded in the river.** They were placed at
+  fixed offsets from the founding site with no terrain check, so on one seed the shed
+  and the woodcutter's hut both came down in the water: no logs could be stored, no
+  firewood made, and all four founders froze in the first winter. Nothing in the log
+  said "your shed is in the river" — it said they were cold.
+- **Founding homes were still spiralled** while every home built afterwards was placed
+  with regard to the work. They now go through the same rule, so the founders cannot be
+  handed a start their own descendants would never choose.
+- **`CouplesLeaveHomeWithFoodToStartOn` was checking the wrong field** — `LifetimeGathered`,
+  which a dowry deliberately does not touch, since `Stockpile.Receive` exists precisely
+  so goods changing hands are not counted as production. It was really asserting "has
+  foraged at some point since", and failed the first time a household was founded near
+  the end of the run. It now checks the larder at the tick of formation.
 - **A refusal that contradicted itself.** With one full berry patch and a tree stand
   the village wanted nobody at, three idle villagers were told *"the village has all the
   hands it needs — 4 foraging"* while exactly one of them was foraging: the reason

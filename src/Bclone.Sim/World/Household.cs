@@ -80,6 +80,7 @@ public sealed class Household
 
         GridPos best = default;
         int bestScore = int.MaxValue;
+        int bestFromVillage = int.MaxValue;
         bool found = false;
 
         // A fixed scan order, so an exact tie always resolves the same way. An
@@ -104,9 +105,24 @@ public sealed class Household
                 }
 
                 int score = toWork + candidate.ManhattanDistanceTo(world.Granary.Position);
-                if (score < bestScore)
+
+                // TIES GO TO THE TILE NEAREST THE VILLAGE.
+                //
+                // The score is a sum of two distances, so every tile on a shortest
+                // path between the work and the granary scores identically — which is
+                // most of the plausible sites. Left to "whichever the scan reached
+                // first" the winner is real but arbitrary, and it pushed homes out to
+                // whichever end of that path the loop happened to start from.
+                //
+                // Breaking toward the centre keeps the settlement compact, which is
+                // what a village actually does, and it is what makes the market and
+                // the granary worth standing where they stand.
+                int fromVillage = candidate.ManhattanDistanceTo(villageCentre);
+
+                if (score < bestScore || (score == bestScore && fromVillage < bestFromVillage))
                 {
                     bestScore = score;
+                    bestFromVillage = fromVillage;
                     best = candidate;
                     found = true;
                 }

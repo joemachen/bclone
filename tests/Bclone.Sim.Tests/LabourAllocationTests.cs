@@ -311,8 +311,24 @@ public sealed class LabourAllocationTests
         // one reason and it had better be the right one.
         SimLoop loop = RunToAReshuffle(Config with { ForagerCatchmentTiles = 1 }, 1);
 
-        Villager villager = loop.World.Villagers[0];
-        _output.WriteLine($"{villager.Name}: {villager.JobReason}");
+        // Whoever is out of reach, rather than villager zero. Homes are placed with
+        // regard to the work now (D18), so which particular founder ends up beside a
+        // patch — and therefore inside even a one-tile catchment — is a property of the
+        // valley. The message is what this test is about, not the casting.
+        Villager? villager = null;
+        foreach (Villager candidate in loop.World.Villagers)
+        {
+            if (!candidate.HasJob
+                && candidate.JobReason.Contains("nothing within reach", System.StringComparison.Ordinal))
+            {
+                villager = candidate;
+                break;
+            }
+        }
+
+        Assert.True(villager is not null,
+            "A one-tile catchment left nobody out of reach, so this guard is vacuous (D7).");
+        _output.WriteLine($"{villager!.Name}: {villager.JobReason}");
 
         Assert.Contains("nothing within reach of home", villager.JobReason, System.StringComparison.Ordinal);
         Assert.Contains("outside its catchment", villager.JobReason, System.StringComparison.Ordinal);

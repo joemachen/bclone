@@ -154,15 +154,41 @@ public sealed class LabourTests
     [Fact]
     public void AVillagerTooFarAwayTakesNoWork()
     {
-        // A catchment of one tile reaches nobody: every home is further than that
-        // from the berry patch.
-        SimLoop loop = Build(Config with { ForagerCatchmentTiles = 1 });
-        loop.Step(Config.TicksPerSeason * 2);
+        // A catchment of one tile reaches almost nobody — but not literally nobody any
+        // more, and that change is the point. Homes are now placed with regard to the
+        // work (D18), so one of them can end up right beside a patch and legitimately
+        // reach it across a one-tile catchment. The old assertion, "every villager is
+        // jobless", was true only while homes were dropped on a spiral that ignored
+        // where the work was.
+        //
+        // So this asserts the invariant that actually matters and is stronger: nobody
+        // EVER holds a job outside their catchment. That is the rule §2.2 is about —
+        // no villager walks across the map for one log — and it cannot be satisfied by
+        // accident of layout.
+        SimConfig config = Config with { ForagerCatchmentTiles = 1 };
+        SimLoop loop = Build(config);
+        loop.Step(config.TicksPerSeason * 2);
 
+        int refused = 0;
         foreach (Villager villager in loop.World.Villagers)
         {
-            Assert.False(villager.HasJob);
+            if (!villager.HasJob)
+            {
+                refused++;
+                continue;
+            }
+
+            Workplace held = loop.World.FindWorkplace(villager.WorkplaceId)!;
+            int cost = loop.World.TravelCost.Cost(
+                loop.World.HomeOf(villager), held.Position);
+
+            Assert.True(cost <= held.CatchmentRadius,
+                $"{villager.Name} holds {held.Name} at {cost} against a reach of " +
+                $"{held.CatchmentRadius}.");
         }
+
+        _output.WriteLine($"{refused} of {loop.World.Villagers.Count} turned away by a one-tile reach.");
+        Assert.True(refused > 0, "A one-tile catchment turned nobody away, so it constrained nothing.");
     }
 
     // ---------------------------------------------------------------

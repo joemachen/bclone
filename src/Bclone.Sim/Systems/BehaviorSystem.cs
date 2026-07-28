@@ -724,7 +724,22 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        villager.Position = villager.Position.StepToward(target);
+        // Through the shared cost field, so the step a villager takes and the distance
+        // the economy budgeted for come from the same place. Straight-line stepping
+        // would walk them over the river while every other system believed they went
+        // round it — the worst of both, and invisible until somebody starved on a
+        // journey the sim had priced differently from the one they made.
+        GridPos next = world.TravelCost.StepToward(villager.Position, target);
+        if (next == villager.Position)
+        {
+            // Nowhere to go: the target is across water with no way round. Not an
+            // error — a real state a village can be in before it can build bridges —
+            // so they go home rather than pressing against the bank forever.
+            GoHome(world, villager);
+            return;
+        }
+
+        villager.Position = next;
 
         // travel_ticks_per_unit > 1 means each step costs extra ticks; the step is
         // already applied, so the remainder is the extra waiting.

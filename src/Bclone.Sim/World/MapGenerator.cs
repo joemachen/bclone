@@ -74,21 +74,43 @@ public static class MapGenerator
             forageSites.Add(ClampInside(site, config));
         }
 
+        // Berries do not grow in the river. Nudged out rather than redrawn, and that
+        // is deliberate: a redraw would consume a variable number of random values,
+        // making the draw COUNT depend on the terrain — which is exactly the hidden
+        // coupling that stops a seed reproducing its world.
+        for (int i = 0; i < forageSites.Count; i++)
+        {
+            forageSites[i] = NudgeOutOfWater(terrain, forageSites[i], width, height, minX, minY);
+        }
+
+        for (int i = 0; i < standCentres.Count; i++)
+        {
+            standCentres[i] = NudgeOutOfWater(terrain, standCentres[i], width, height, minX, minY);
+        }
+
         // ---- 4. The founding site ----------------------------------
         // Where the first homes and the village's buildings go. Kept near the middle
         // of the ring of sites, because the economy's distance budget is derived from
         // a village that sits inside that ring rather than off to one side.
-        GridPos founding = ClampInside(
+        GridPos wanted = ClampInside(
             new GridPos(
                 DrawJitter(rng, config.FoundingJitterTiles),
                 DrawJitter(rng, config.FoundingJitterTiles)),
             config);
 
-        // The village cannot be founded in the river. Nudging is deliberate rather
-        // than redrawing: a redraw would consume a variable number of values and make
-        // the draw count depend on the terrain, which is exactly the kind of hidden
-        // coupling that makes a seed stop reproducing.
-        founding = NudgeOutOfWater(terrain, founding, width, height, minX, minY);
+        // AND ON THE SAME SIDE OF THE RIVER AS ITS WORK.
+        //
+        // Not being IN the water is not enough, which is what the first version
+        // assumed. Water is impassable (D40), so a settlement founded on the far bank
+        // from every berry patch is a village that starves in its first year without
+        // anybody having made a decision — measured, on seed 1, where the river runs
+        // straight through where the village wanted to be: peak population zero.
+        //
+        // Until bridges exist the generator owes the village a valley it can live in
+        // (spec §6), so the founding site moves to the reachable side rather than the
+        // map being redrawn. Costs no random draws, so the seed contract is untouched.
+        GridPos founding = ChooseFoundingSite(
+            terrain, wanted, forageSites, standCentres, width, height, minX, minY);
 
         // ---- 5. Soil ------------------------------------------------
         // Generated, hashed, and read by nothing yet — it is here so that when §2.3's
@@ -263,6 +285,160 @@ public static class MapGenerator
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// A spot to found the village that can actually reach its work.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Walkable tiles are labelled into connected components — one sweep — and the
+    /// village goes into the component holding the most forage sites, as near to where
+    /// it wanted to be as that allows. A village with berries it cannot walk to is not
+    /// a hard start, it is an unplayable one, and non-negotiable 1 says a death has to
+    /// be traceable to a decision. Nobody decided the river was there.
+    /// </para>
+    /// <para>
+    /// Ties go to the tile nearest the wanted spot, then to the lower y and then the
+    /// lower x — a total order, because "whichever the scan found first" would make the
+    /// whole world depend on iteration order.
+    /// </para>
+    /// </remarks>
+    private static GridPos ChooseFoundingSite(
+        Terrain[] terrain,
+        GridPos wanted,
+        List<GridPos> forageSites,
+        List<GridPos> stands,
+        int width,
+        int height,
+        int minX,
+        int minY)
+    {
+        int[] component = LabelComponents(terrain, width, height);
+
+        // How much work each land mass can reach.
+        var sitesPerComponent = new Dictionary<int, int>();
+        var standsPerComponent = new Dictionary<int, int>();
+
+        foreach (GridPos site in forageSites)
+        {
+            int label = ComponentAt(component, site, width, height, minX, minY);
+            if (label >= 0)
+            {
+                sitesPerComponent[label] = sitesPerComponent.GetValueOrDefault(label) + 1;
+            }
+        }
+
+        foreach (GridPos stand in stands)
+        {
+            int label = ComponentAt(component, stand, width, height, minX, minY);
+            if (label >= 0)
+            {
+                standsPerComponent[label] = standsPerComponent.GetValueOrDefault(label) + 1;
+            }
+        }
+
+        GridPos best = wanted;
+        int bestSites = -1;
+        int bestStands = -1;
+        int bestDistance = int.MaxValue;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int index = (y * width) + x;
+                if (terrain[index] == Terrain.Water)
+                {
+                    continue;
+                }
+
+                int label = component[index];
+                int sites = sitesPerComponent.GetValueOrDefault(label);
+                int standCount = standsPerComponent.GetValueOrDefault(label);
+                var here = new GridPos(x + minX, y + minY);
+                int distance = here.ManhattanDistanceTo(wanted);
+
+                bool better = sites > bestSites
+                    || (sites == bestSites && standCount > bestStands)
+                    || (sites == bestSites && standCount == bestStands && distance < bestDistance);
+
+                if (better)
+                {
+                    best = here;
+                    bestSites = sites;
+                    bestStands = standCount;
+                    bestDistance = distance;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>Label each walkable tile with the land mass it belongs to. -1 is water.</summary>
+    private static int[] LabelComponents(Terrain[] terrain, int width, int height)
+    {
+        var label = new int[width * height];
+        for (int i = 0; i < label.Length; i++)
+        {
+            label[i] = -1;
+        }
+
+        var queue = new Queue<int>();
+        int next = 0;
+
+        for (int start = 0; start < label.Length; start++)
+        {
+            if (terrain[start] == Terrain.Water || label[start] >= 0)
+            {
+                continue;
+            }
+
+            int current = next++;
+            label[start] = current;
+            queue.Enqueue(start);
+
+            while (queue.Count > 0)
+            {
+                int index = queue.Dequeue();
+                int x = index % width;
+                int y = index / width;
+
+                Visit(x + 1, y);
+                Visit(x - 1, y);
+                Visit(x, y + 1);
+                Visit(x, y - 1);
+
+                void Visit(int nx, int ny)
+                {
+                    if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                    {
+                        return;
+                    }
+
+                    int neighbour = (ny * width) + nx;
+                    if (terrain[neighbour] == Terrain.Water || label[neighbour] >= 0)
+                    {
+                        return;
+                    }
+
+                    label[neighbour] = current;
+                    queue.Enqueue(neighbour);
+                }
+            }
+        }
+
+        return label;
+    }
+
+    private static int ComponentAt(
+        int[] component, GridPos position, int width, int height, int minX, int minY)
+    {
+        int x = position.X - minX;
+        int y = position.Y - minY;
+
+        return x < 0 || x >= width || y < 0 || y >= height ? -1 : component[(y * width) + x];
     }
 
     /// <summary>Walk outward until the tile is not water. Consumes no random draws.</summary>

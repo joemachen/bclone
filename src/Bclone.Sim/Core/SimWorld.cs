@@ -258,8 +258,6 @@ public sealed class SimWorld
         Rng = new DeterministicRandom(seed);
         Tick = 0UL;
 
-        TravelCost = new TravelCostField(config.TravelTicksPerUnit);
-
         // THE WORLD IS GENERATED FIRST, and from the run's own seeded stream (D18).
         //
         // Before anything else draws, because draw order is the seed contract: the
@@ -267,6 +265,12 @@ public sealed class SimWorld
         // second RNG — would mean the seed no longer reproduced the world, which is
         // the entire point of tying worldgen to the sim's seed rather than its own.
         Map = MapGenerator.Generate(config, Rng);
+
+        // The cost field needs the terrain, so it is built after the valley — a route
+        // now goes ROUND the river rather than over it (D40), and catchment, market
+        // errands and the economy's budget all get that for free because they have
+        // always shared this one field (§2.6).
+        TravelCost = new TravelCostField(config.TravelTicksPerUnit, Map);
 
         // Everything the village builds hangs off the founding site the generator
         // chose. The config keys that used to hold absolute coordinates are now
@@ -285,8 +289,6 @@ public sealed class SimWorld
             Position = Map.TreeStands[0],
             YieldPerCut = config.CutYield,
         };
-
-        FoundVillage(config, origin);
 
         int catchment = TravelCostField.TilesToCost(config.ForagerCatchmentTiles);
         int nextWorkplaceId = 1;
@@ -403,6 +405,20 @@ public sealed class SimWorld
                 CatchmentRadius = catchment,
             });
         }
+
+        // THE VILLAGE IS FOUNDED LAST, after the work and the stores exist.
+        //
+        // It used to come first, which meant the founding homes were dropped on a
+        // spiral before there was anything to be near — so they could land in the
+        // river, and their families could not take a step, forage, or eat. With water
+        // impassable (D40) that is fatal in year one and traceable to no decision
+        // anybody made.
+        //
+        // Founding homes now go through exactly the same rule as every home built
+        // afterwards (Household.ChooseSite): near the work, near the store, and never
+        // in the water. One rule for the whole village rather than one for the
+        // founders and another for their children.
+        FoundVillage(config, origin);
     }
 
     /// <summary>
@@ -420,10 +436,10 @@ public sealed class SimWorld
 
         for (int h = 0; h < config.StartingHouseholds; h++)
         {
-            // Around the founding site the generator chose, not around the world
-            // origin. home_x and home_y are an offset now.
-            GridPos home = Household.PlacementFor(
-                h, origin.X + config.HomeX, origin.Y + config.HomeY, config.HouseholdSpacing);
+            // The same rule the village will use for every home it ever builds: near
+            // the work, near the store, never in the water.
+            GridPos home = Household.ChooseSite(
+                this, new GridPos(origin.X + config.HomeX, origin.Y + config.HomeY));
 
             var household = new Household
             {
@@ -431,6 +447,10 @@ public sealed class SimWorld
                 Name = config.HouseholdNames[h % config.HouseholdNames.Count],
                 HomePosition = home,
             };
+
+            // Added before its members are drawn, so the next founding household's
+            // ChooseSite can see this one and does not build on top of it.
+            Households.Add(household);
 
             for (int a = 0; a < config.AdultsPerHousehold; a++)
             {
@@ -462,8 +482,6 @@ public sealed class SimWorld
                 household.AddMember(villager.Id);
                 Villagers.Add(villager);
             }
-
-            Households.Add(household);
         }
 
         PairFounders(config);
@@ -549,9 +567,93 @@ public sealed class SimWorld
     /// it matters more here, because these names end up inside the sentence that
     /// explains why someone walks the way they do.
     /// </remarks>
-    /// <summary>A building's spot, given as an offset from where the village was founded.</summary>
-    private static GridPos Offset(GridPos origin, int dx, int dy) =>
-        new(origin.X + dx, origin.Y + dy);
+    /// <summary>
+    /// A building's spot, given as an offset from where the village was founded — moved
+    /// to dry, reachable ground if the offset lands somewhere nobody can get to.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The offsets are a village <em>layout</em>, drawn up without knowing what the
+    /// valley looks like, so on a generated map any of them can land in the river.
+    /// Measured on seed 1: the shed and the woodcutter's hut both came down in the
+    /// water, so no logs could be stored and no firewood made, and all four founders
+    /// froze in the first winter. Nothing in the log said "your shed is in the river" —
+    /// it just said they were cold.
+    /// </para>
+    /// <para>
+    /// <b>Reachable, not merely dry.</b> A building on the far bank is as useless as
+    /// one under water, and the difference is invisible on the map. Reachability is
+    /// asked against the founding site, and always in that direction, so the cost
+    /// field builds one flow field and reuses it for every candidate rather than one
+    /// per tile tried.
+    /// </para>
+    /// </remarks>
+    private GridPos Offset(GridPos origin, int dx, int dy)
+    {
+        var wanted = new GridPos(origin.X + dx, origin.Y + dy);
+
+        // Spiralling outward by Manhattan rings, scanned in a fixed order so two runs
+        // never disagree about which equally-near spot the village chose.
+        for (int radius = 0; radius < Config.MapWidth; radius++)
+        {
+            for (int ddy = -radius; ddy <= radius; ddy++)
+            {
+                for (int ddx = -radius; ddx <= radius; ddx++)
+                {
+                    if (Math.Abs(ddx) + Math.Abs(ddy) != radius)
+                    {
+                        continue;
+                    }
+
+                    var candidate = new GridPos(wanted.X + ddx, wanted.Y + ddy);
+                    if (!Map.Contains(candidate)
+                        || Map.TerrainAt(candidate) == Terrain.Water
+                        || SomethingStandsAt(candidate))
+                    {
+                        continue;
+                    }
+
+                    if (TravelCost.Cost(candidate, origin) != TravelCostField.Unreachable)
+                    {
+                        return candidate;
+                    }
+                }
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"No reachable ground anywhere near {wanted} to put a building on.");
+    }
+
+    /// <summary>
+    /// Whether a building already occupies this tile.
+    /// </summary>
+    /// <remarks>
+    /// Without this, two buildings whose offsets both landed in the river nudged to the
+    /// same dry tile and stood on top of each other — and a granary drawn underneath a
+    /// shed is a granary nobody can see, which makes "why is nobody fetching food?"
+    /// unanswerable by looking.
+    /// </remarks>
+    private bool SomethingStandsAt(GridPos position)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Position == position)
+            {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Position == position)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static string DescribeDirection(GridPos position, GridPos origin)
     {
