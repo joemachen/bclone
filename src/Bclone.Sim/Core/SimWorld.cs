@@ -176,6 +176,276 @@ public sealed class SimWorld
         return best;
     }
 
+    // ---------------------------------------------------------------
+    //  Placement (D43) — the first thing the player actually does
+    // ---------------------------------------------------------------
+
+    /// <summary>Next id for a workplace, so construction sites never collide with one.</summary>
+    private int _nextWorkplaceId = 1;
+
+    /// <summary>
+    /// Whether a building may be marked here, and what the player should be told.
+    /// </summary>
+    /// <remarks>
+    /// Pure — asks nothing of the world but questions, changes nothing. That is what
+    /// lets the view call it every frame under the cursor and show the answer before
+    /// anybody commits to it, which is the whole of D43's "warn and allow".
+    /// </remarks>
+    public PlacementVerdict CanBuildAt(BuildingKind kind, GridPos position)
+    {
+        if (!Map.Contains(position))
+        {
+            return PlacementVerdict.No("That is outside the valley.");
+        }
+
+        if (Map.TerrainAt(position) == Terrain.Water)
+        {
+            return PlacementVerdict.No("The ground there is under water.");
+        }
+
+        if (SomethingStandsAt(position))
+        {
+            return PlacementVerdict.No("Something already stands there.");
+        }
+
+        // Reachable from where the people are. A building on the far bank is not a long
+        // walk, it is no walk at all (D40), and it would look perfectly fine on the map.
+        GridPos village = Households.Count > 0 ? Households[0].HomePosition : Map.FoundingSite;
+        if (!TravelCost.CanReach(village, position))
+        {
+            return PlacementVerdict.No("There is no route to there from the village.");
+        }
+
+        // Legal, but perhaps unwise — and that is the player's call to make (D43).
+        int walk = TravelCost.Cost(village, position) / TravelCostField.BaseTileCost;
+        int budget = VillageEconomy.MaxHomeToVillageTiles(Config);
+        if (walk > budget)
+        {
+            return PlacementVerdict.Yes(
+                $"That is {walk} tiles from the village; it budgets {budget}. " +
+                "People will spend their days walking to it.");
+        }
+
+        _ = kind;
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>
+    /// Mark out a building. It exists as a site, not a building, until somebody raises it.
+    /// </summary>
+    /// <returns>The verdict; the site is only created when it allows.</returns>
+    public PlacementVerdict Mark(BuildingKind kind, GridPos position)
+    {
+        PlacementVerdict verdict = CanBuildAt(kind, position);
+        if (!verdict.Allowed)
+        {
+            return verdict;
+        }
+
+        BuildingRecipe recipe = BuildingRecipe.For(kind, Config);
+        string name = NameFor(kind);
+
+        Workplaces.Add(new Workplace
+        {
+            Id = NextWorkplaceId(),
+            Kind = JobKind.Builder,
+            Name = $"{name} (building)",
+            Position = position,
+            Capacity = Config.ConstructionSiteCapacity,
+            CatchmentRadius = TravelCostField.TilesToCost(Config.ForagerCatchmentTiles),
+            Construction = new ConstructionSite { Kind = kind, Name = name, Recipe = recipe },
+        });
+
+        Log(Logging.LogLevel.Info, "placement",
+            $"{name} was marked out — {recipe.Logs} logs and {recipe.WorkTicks} ticks of work. " +
+            $"{Clock.SeasonAndYear()}.");
+
+        return verdict;
+    }
+
+    /// <summary>
+    /// Pull a building down. Some of its logs come back; whatever was inside does not.
+    /// </summary>
+    /// <remarks>
+    /// <b>Contents are lost, and loudly.</b> That is the consequence D43 asked for — a
+    /// demolished granary strands what was in it, the same lesson D34 taught about a
+    /// dead family's larder. Losing it silently would be the worse sin: goods vanishing
+    /// with no line in the log is exactly the untraceable outcome §1.1 forbids.
+    /// </remarks>
+    public void Demolish(StoreBuilding building)
+    {
+        ArgumentNullException.ThrowIfNull(building);
+
+        BuildingKind kind = building.Kind switch
+        {
+            StoreKind.Granary => BuildingKind.Granary,
+            StoreKind.Shed => BuildingKind.Shed,
+            _ => BuildingKind.Market,
+        };
+
+        int held = building.Store.Held;
+        int back = BuildingRecipe.For(kind, Config).Logs * Config.DemolitionReturnsPercent / 100;
+
+        StoreBuildings.Remove(building);
+
+        // Any market workplace standing on it goes too — the stall cannot outlive the
+        // building it is part of.
+        for (int i = Workplaces.Count - 1; i >= 0; i--)
+        {
+            if (Workplaces[i].Position == building.Position && Workplaces[i].Kind == JobKind.Marketer)
+            {
+                ReleaseWorkers(Workplaces[i]);
+                Workplaces.RemoveAt(i);
+            }
+        }
+
+        StoreBuilding? shed = NearestStore(
+            building.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+        int recovered = shed?.Store.ReceiveLogs(back) ?? 0;
+
+        Narrate(held > 0
+            ? $"{building.Name} was pulled down — {recovered} logs recovered, and the {held} " +
+              $"goods inside it were lost. {Clock.SeasonAndYear()}."
+            : $"{building.Name} was pulled down — {recovered} logs recovered. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>Abandon a site that has not been finished; its delivered logs come back.</summary>
+    public void CancelConstruction(Workplace site)
+    {
+        ArgumentNullException.ThrowIfNull(site);
+
+        if (site.Construction is null)
+        {
+            throw new ArgumentException($"{site.Name} is not a construction site.", nameof(site));
+        }
+
+        int back = site.Construction.Abandon();
+        ReleaseWorkers(site);
+        Workplaces.Remove(site);
+
+        StoreBuilding? shed = NearestStore(
+            site.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+        shed?.Store.ReceiveLogs(back);
+
+        Narrate($"{site.Construction.Name} was abandoned before it was built — " +
+            $"{back} logs went back to store. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>Turn a finished site into the building it was always going to be.</summary>
+    internal void Complete(Workplace site)
+    {
+        ConstructionSite plan = site.Construction!;
+
+        switch (plan.Kind)
+        {
+            case BuildingKind.WoodcutterHut:
+                Workplaces.Add(new Workplace
+                {
+                    Id = NextWorkplaceId(),
+                    Kind = JobKind.Woodcutter,
+                    Name = plan.Name,
+                    Position = site.Position,
+                    Capacity = Config.WoodcutterHutCapacity,
+                    CatchmentRadius = site.CatchmentRadius,
+                });
+                break;
+
+            default:
+                StoreKind kind = plan.Kind switch
+                {
+                    BuildingKind.Granary => StoreKind.Granary,
+                    BuildingKind.Shed => StoreKind.Shed,
+                    _ => StoreKind.Market,
+                };
+
+                int capacity = plan.Kind switch
+                {
+                    BuildingKind.Granary => VillageEconomy.GranaryCapacity(Config),
+                    BuildingKind.Shed => VillageEconomy.ShedCapacity(Config),
+                    _ => VillageEconomy.MarketCapacity(Config),
+                };
+
+                StoreBuildings.Add(new StoreBuilding
+                {
+                    Id = NextStoreId(),
+                    Kind = kind,
+                    Name = plan.Name,
+                    Position = site.Position,
+                    Store = new Stockpile { Capacity = capacity },
+                });
+
+                // A market is a place to work as well as a place to keep things (D14).
+                if (plan.Kind == BuildingKind.Market && Config.MarketCapacity > 0)
+                {
+                    Workplaces.Add(new Workplace
+                    {
+                        Id = NextWorkplaceId(),
+                        Kind = JobKind.Marketer,
+                        Name = plan.Name,
+                        Position = site.Position,
+                        Capacity = Config.MarketCapacity,
+                        CatchmentRadius = site.CatchmentRadius,
+                    });
+                }
+
+                break;
+        }
+
+        ReleaseWorkers(site);
+        Workplaces.Remove(site);
+
+        Narrate($"{plan.Name} was finished. {Clock.SeasonAndYear()}.");
+    }
+
+    private void ReleaseWorkers(Workplace workplace)
+    {
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            if (Villagers[i].WorkplaceId == workplace.Id)
+            {
+                Villagers[i].WorkplaceId = 0;
+                Villagers[i].JobReason = $"{workplace.Name} is gone.";
+            }
+        }
+    }
+
+    private int NextWorkplaceId()
+    {
+        int max = _nextWorkplaceId;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Id >= max)
+            {
+                max = Workplaces[i].Id + 1;
+            }
+        }
+
+        _nextWorkplaceId = max + 1;
+        return max;
+    }
+
+    private int NextStoreId()
+    {
+        int max = 1;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Id >= max)
+            {
+                max = StoreBuildings[i].Id + 1;
+            }
+        }
+
+        return max;
+    }
+
+    private static string NameFor(BuildingKind kind) => kind switch
+    {
+        BuildingKind.Granary => "a granary",
+        BuildingKind.Shed => "a storage shed",
+        BuildingKind.Market => "a market",
+        _ => "a woodcutter's hut",
+    };
+
     /// <summary>Any store of this kind, for naming things and for tests. Never for logic.</summary>
     /// <remarks>
     /// Deliberately awkward to call. If a piece of logic wants "the granary" it almost

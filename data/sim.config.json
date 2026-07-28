@@ -306,6 +306,38 @@
   // re-centralising everything storage just spread out.
   "market_stock_per_household": 40,
 
+  // ---- What buildings cost to raise (D43) --------------------
+  // Two numbers each, on purpose. Logs are what the village must
+  // HAVE; work ticks are what it must SPEND. A building that is
+  // dear in one and cheap in the other is a different decision
+  // from one that is dear in both, and a single "cost" would
+  // delete that difference.
+  //
+  // Nothing appears the instant it is paid for: the player marks a
+  // site, materials are carried to it, and somebody builds it.
+  // That is the same claim D14 makes about distribution and D29
+  // about processing - things that happen here are work somebody
+  // does. It also means building COMPETES with foraging, so
+  // marking six buildings at once is a decision rather than six
+  // purchases.
+  "granary_logs": 40,
+  "granary_work_ticks": 60,
+  "shed_logs": 30,
+  "shed_work_ticks": 45,
+  "market_logs": 35,
+  "market_work_ticks": 50,
+  "hut_logs": 25,
+  "hut_work_ticks": 40,
+
+  "construction_site_capacity": 3,
+
+  // Less than everything, deliberately. Demolition is how a player
+  // corrects a mistake, and it should cost something - otherwise a
+  // badly sited granary is free to undo and the placement decision
+  // carries no weight at all. Whatever was INSIDE is lost, and the
+  // village says so out loud.
+  "demolition_returns_percent": 50,
+
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",
     "Agnes", "Wendell", "Hattie", "Amos",

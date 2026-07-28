@@ -38,6 +38,12 @@ public enum VillagerState
 
     /// <summary>A marketer carrying goods to the household that needs them (D14).</summary>
     DeliveringToHome,
+
+    /// <summary>A builder fetching materials for a site the player marked out (D43).</summary>
+    FetchingMaterials,
+
+    /// <summary>A builder raising a marked building.</summary>
+    Building,
 }
 
 /// <summary>

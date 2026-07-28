@@ -39,6 +39,18 @@ public enum JobKind
     /// </para>
     /// </remarks>
     Marketer = 3,
+
+    /// <summary>
+    /// Raise a building the player has marked out (D43).
+    /// </summary>
+    /// <remarks>
+    /// Like the marketer, produces nothing — but unlike everything else, the workplace
+    /// itself is temporary: a builder's job disappears the moment the thing they were
+    /// building exists. That is why a construction site is a workplace rather than a
+    /// system of its own; it gets catchment, allocation and refusal reasons for free,
+    /// and then it stops.
+    /// </remarks>
+    Builder = 4,
 }
 
 /// <summary>
@@ -95,6 +107,17 @@ public sealed class Workplace
 
     /// <summary>Villagers currently holding a job here, in id order.</summary>
     public List<int> WorkerIds { get; } = new();
+
+    /// <summary>
+    /// The building being raised here, when this is a construction site. Null otherwise.
+    /// </summary>
+    /// <remarks>
+    /// Hung off the workplace rather than kept in a parallel list, so a site cannot
+    /// exist without somewhere to work at it and a builder cannot hold a job at a site
+    /// that has finished. Two lists that must agree is the shape of half the bugs in
+    /// this project's history.
+    /// </remarks>
+    public ConstructionSite? Construction { get; init; }
 
     /// <summary>
     /// Goods held at this place.

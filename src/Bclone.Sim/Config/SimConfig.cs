@@ -344,6 +344,60 @@ public sealed record SimConfig
     [JsonPropertyName("market_stock_per_household")]
     public int MarketStockPerHousehold { get; init; } = 40;
 
+    // ---------------------------------------------------------------
+    //  What buildings cost to raise (D43)
+    // ---------------------------------------------------------------
+    //
+    // Two numbers each, on purpose. Logs are what the village must HAVE; work ticks are
+    // what it must SPEND. A building that is dear in one and cheap in the other is a
+    // different decision from one that is dear in both, and collapsing them into a
+    // single "cost" would delete that.
+
+    /// <summary>Logs a granary takes to build.</summary>
+    [JsonPropertyName("granary_logs")]
+    public int GranaryLogs { get; init; } = 40;
+
+    /// <summary>Ticks of work a granary takes, once the logs are on site.</summary>
+    [JsonPropertyName("granary_work_ticks")]
+    public int GranaryWorkTicks { get; init; } = 60;
+
+    /// <summary>Logs a storage shed takes to build.</summary>
+    [JsonPropertyName("shed_logs")]
+    public int ShedLogs { get; init; } = 30;
+
+    /// <summary>Ticks of work a storage shed takes.</summary>
+    [JsonPropertyName("shed_work_ticks")]
+    public int ShedWorkTicks { get; init; } = 45;
+
+    /// <summary>Logs a market takes to build.</summary>
+    [JsonPropertyName("market_logs")]
+    public int MarketLogs { get; init; } = 35;
+
+    /// <summary>Ticks of work a market takes.</summary>
+    [JsonPropertyName("market_work_ticks")]
+    public int MarketWorkTicks { get; init; } = 50;
+
+    /// <summary>Logs a woodcutter's hut takes to build.</summary>
+    [JsonPropertyName("hut_logs")]
+    public int HutLogs { get; init; } = 25;
+
+    /// <summary>Ticks of work a woodcutter's hut takes.</summary>
+    [JsonPropertyName("hut_work_ticks")]
+    public int HutWorkTicks { get; init; } = 40;
+
+    /// <summary>How many builders fit on one construction site.</summary>
+    [JsonPropertyName("construction_site_capacity")]
+    public int ConstructionSiteCapacity { get; init; } = 3;
+
+    /// <summary>Share of a building's logs returned when it is pulled down, as a percentage.</summary>
+    /// <remarks>
+    /// Deliberately less than everything. Demolition is how a player corrects a mistake
+    /// (D43), and it should cost something — otherwise a badly-sited granary is free to
+    /// undo and the placement decision carries no weight at all.
+    /// </remarks>
+    [JsonPropertyName("demolition_returns_percent")]
+    public int DemolitionReturnsPercent { get; init; } = 50;
+
     /// <summary>
     /// Consecutive ticks in an unheated home before someone freezes.
     /// </summary>

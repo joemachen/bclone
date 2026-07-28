@@ -125,6 +125,14 @@ public sealed class BehaviorSystem : ISimSystem
                     VillagerState.FetchingFromStore);
                 return;
 
+            case VillagerState.FetchingMaterials:
+            case VillagerState.Building:
+                // To the spot they set off for, not to whatever looks best from this
+                // step — same rule as a marketer's leg, and for the same reason.
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    villager.State);
+                return;
+
             case VillagerState.CollectingForMarket:
                 // To the pickup they chose when they set off, not to whatever is
                 // cheapest from this step. Re-deciding mid-walk let a marketer shuttle
@@ -159,8 +167,12 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsTrading(VillagerState state) =>
         state is VillagerState.CollectingForMarket or VillagerState.DeliveringToHome;
 
+    private static bool IsBuilding(VillagerState state) =>
+        state is VillagerState.FetchingMaterials or VillagerState.Building;
+
     private static bool IsOnAWorkErrand(VillagerState state) =>
-        IsForaging(state) || IsCutting(state) || IsSplitting(state) || IsTrading(state);
+        IsForaging(state) || IsCutting(state) || IsSplitting(state) || IsTrading(state)
+        || IsBuilding(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -187,6 +199,11 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsTrading(state))
         {
             return JobKind.Marketer;
+        }
+
+        if (IsBuilding(state))
+        {
+            return JobKind.Builder;
         }
 
         return IsSplitting(state) ? JobKind.Woodcutter : null;
@@ -326,6 +343,128 @@ public sealed class BehaviorSystem : ISimSystem
         return household.Stockpile.Firewood < firewoodFloor
             ? NearestStoreHolding(world, villager.Position, Goods.Firewood)
             : null;
+    }
+
+    // ---------------------------------------------------------------
+    //  Building (D43)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// A builder's day: carry logs to the site until it has enough, then raise it.
+    /// </summary>
+    /// <remarks>
+    /// The same two-legged shape as the marketer, and for the same reason — a building
+    /// that appeared the instant it was paid for would make placement a menu
+    /// transaction, and D14's whole argument is that things which happen in this
+    /// village are work somebody does.
+    /// </remarks>
+    private static void WorkTheSite(SimWorld world, Villager villager, Workplace job)
+    {
+        ConstructionSite site = job.Construction!;
+
+        // Carrying logs, or the site already has what it needs: head for the site.
+        if (villager.CarriedLogs > 0 || site.HasMaterials)
+        {
+            villager.WorkNote = string.Empty;
+            HeadFor(world, villager, job.Position, VillagerState.Building);
+            return;
+        }
+
+        // Otherwise fetch materials from the nearest shed that has any.
+        StoreBuilding? shed = world.NearestStore(
+            villager.Position, StoreKind.Shed, static store => store.Store.Logs > 0);
+
+        if (shed is null)
+        {
+            villager.WorkNote =
+                $"Nothing to build with — {site.Name} still wants {site.LogsStillNeeded} logs, " +
+                "and no shed within reach has any.";
+            GoHome(world, villager);
+            return;
+        }
+
+        villager.WorkNote = string.Empty;
+        HeadFor(world, villager, shed.Position, VillagerState.FetchingMaterials);
+    }
+
+    /// <summary>Set off for a spot, remembering it so the walk survives re-deciding.</summary>
+    private static void HeadFor(
+        SimWorld world, Villager villager, GridPos target, VillagerState state)
+    {
+        villager.ErrandX = target.X;
+        villager.ErrandY = target.Y;
+        villager.State = state;
+        Travel(world, villager, target, state);
+    }
+
+    /// <summary>A builder at a shed, picking up as many logs as the site still wants.</summary>
+    private static void LoadMaterials(SimWorld world, Villager villager)
+    {
+        Workplace? job = WorkplaceOf(world, villager);
+        ConstructionSite? site = job?.Construction;
+
+        if (site is null)
+        {
+            villager.State = VillagerState.Idle;
+            return;
+        }
+
+        int wanted = Math.Min(site.LogsStillNeeded, world.Config.CarryCapacity);
+
+        for (int i = 0; i < world.StoreBuildings.Count && wanted > 0; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (store.Kind != StoreKind.Shed || store.Position != villager.Position)
+            {
+                continue;
+            }
+
+            int take = Math.Min(wanted, store.Store.Logs);
+            if (take > 0 && store.Store.TryTakeLogs(take))
+            {
+                villager.CarriedLogs += take;
+            }
+
+            break;
+        }
+
+        villager.State = VillagerState.Idle;
+    }
+
+    /// <summary>A builder at the site: put the logs down, then put a tick of work in.</summary>
+    private static void RaiseTheBuilding(SimWorld world, Villager villager)
+    {
+        Workplace? job = WorkplaceOf(world, villager);
+        ConstructionSite? site = job?.Construction;
+
+        if (site is null)
+        {
+            // Finished, or cancelled, while they were walking. Not an error.
+            villager.State = VillagerState.Idle;
+            return;
+        }
+
+        if (villager.CarriedLogs > 0)
+        {
+            int accepted = site.Deliver(villager.CarriedLogs);
+            villager.CarriedLogs -= accepted;
+
+            // Anything the site could not take stays in their arms and goes back to a
+            // shed on the next errand — never dropped, per the conservation rule.
+            if (villager.CarriedLogs > 0)
+            {
+                villager.State = VillagerState.HaulingToStore;
+                return;
+            }
+        }
+
+        site.Work();
+        villager.State = VillagerState.Building;
+
+        if (site.IsFinished)
+        {
+            world.Complete(job!);
+        }
     }
 
     // ---------------------------------------------------------------
@@ -664,6 +803,15 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // Raising a building the player marked out (D43). Materials first, then work:
+        // a builder standing on an empty footprint has nothing to build WITH, and
+        // making them fetch it is what stops construction being a purchase.
+        if (villager.CanWork && job?.Kind == JobKind.Builder && job.Construction is not null)
+        {
+            WorkTheSite(world, villager, job);
+            return;
+        }
+
         // Working the market — moving what is already made to where it is wanted
         // (D14). The only job that produces nothing, and the only one the village can
         // do entirely without.
@@ -998,6 +1146,18 @@ public sealed class BehaviorSystem : ISimSystem
         {
             CollectFromStore(world, villager);
             villager.State = VillagerState.TravelingHome;
+            return;
+        }
+
+        if (onArrival == VillagerState.FetchingMaterials)
+        {
+            LoadMaterials(world, villager);
+            return;
+        }
+
+        if (onArrival == VillagerState.Building)
+        {
+            RaiseTheBuilding(world, villager);
             return;
         }
 

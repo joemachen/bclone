@@ -112,6 +112,27 @@ Categories (only include the ones you use): **Added**, **Changed**,
   at what the buildings support instead of overshooting and falling back. Measured over
   200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
   across goods, not per good: a shed packed with logs has nowhere to stack firewood.
+- **The player can mark out a building, and the village raises it** (D43; placement
+  slice 2, sim half — no UI yet). **The first system in the game that answers to
+  somebody**: everything before this happened *to* the player.
+  - A building does **not** appear when it is paid for. A site is marked, materials are
+    hauled to it from the nearest shed with logs, and a `Builder` raises it — funded
+    from spare hands and **first to yield**, so a village short of hands feeds itself
+    before it builds (§4a). Marking six buildings is a decision, not six purchases.
+  - Construction sites are `Workplace`s of kind `Builder`, so they inherit labour
+    allocation, catchment and refusal reasons instead of growing a parallel system —
+    and the job disappears the moment the building exists.
+  - `CanBuildAt` is **pure**, so a view can call it under the cursor every frame.
+    Refusals are sentences — *"the ground there is under water"*, *"there is no route to
+    there from the village"* — to the same standard `JobReason` already holds. A site
+    that is merely far is **allowed and warned about**, not refused.
+  - **Demolition returns half the logs and loses whatever was inside, out loud**:
+    *"the granary was pulled down — 20 logs recovered, and the 1465 goods inside it were
+    lost."* Goods vanishing with no line in the log is the untraceable outcome §1.1
+    forbids. An abandoned site gives its delivered logs back in full.
+  - Building costs live in `sim.config.json` as two numbers each — logs to *have* and
+    work to *spend* — because a building dear in one and cheap in the other is a
+    different decision from one dear in both.
 - **A village may have more than one of a store** (D38; placement slice 1). No
   player-facing change — the village still founds itself with one of each, and a test
   asserts the new plural helpers give exactly the answers the old singular ones did.

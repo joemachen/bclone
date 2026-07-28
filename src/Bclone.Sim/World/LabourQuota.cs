@@ -39,8 +39,10 @@ public readonly record struct LabourQuota
         int foragers,
         int loggers,
         int woodcutters,
-        int marketers = 0)
+        int marketers = 0,
+        int builders = 0)
     {
+        Builders = builders;
         Hands = hands;
         Mouths = mouths;
         ForagersToFeedEveryone = foragersToFeedEveryone;
@@ -79,6 +81,9 @@ public readonly record struct LabourQuota
     /// <summary>Hands the village wants working the market (D14).</summary>
     public int Marketers { get; }
 
+    /// <summary>Hands the village wants raising what the player marked out (D43).</summary>
+    public int Builders { get; }
+
     /// <summary>The quota for one kind of work.</summary>
     public int For(JobKind kind) => kind switch
     {
@@ -86,6 +91,7 @@ public readonly record struct LabourQuota
         JobKind.Logger => Loggers,
         JobKind.Woodcutter => Woodcutters,
         JobKind.Marketer => Marketers,
+        JobKind.Builder => Builders,
         _ => 0,
     };
 
@@ -164,6 +170,7 @@ public readonly record struct LabourQuota
         int loggersForHuts = LoggersToFeedTheHuts(world, woodcutters);
         int loggersForHouses = LoggersWanted(world);
         int marketersWanted = MarketersWanted(world);
+        int buildersWanted = BuildersWanted(world);
 
         // Nobody is spared for building while the village as a whole is short of
         // food. Counting spare hands is not enough on its own: hands are spare only
@@ -211,6 +218,7 @@ public readonly record struct LabourQuota
             loggersForHuts = 0;
             loggersForHouses = 0;
             marketersWanted = 0;
+            buildersWanted = 0;
         }
 
         // ---- Survival first, in the order things kill you -------------
@@ -243,13 +251,23 @@ public readonly record struct LabourQuota
         // a village that cannot spare anyone loses convenience rather than lives.
         // Funding it any higher would make the market the cliff that fetching was
         // designed to avoid.
+        // Building, out of what is left after the village has fed and warmed itself.
+        //
+        // Deliberately discretionary, alongside cutting logs for houses: a village
+        // short of hands feeds itself before it builds (§4a), and a granary half-raised
+        // through a hard winter is a better outcome than a finished one nobody lived to
+        // use. It is also what makes marking six buildings at once a real decision
+        // rather than six purchases — they compete with the berry patch.
+        int builders = Take(ref free, Cap(buildersWanted, TotalCapacityFor(world, JobKind.Builder)));
+
         int marketers = Take(ref free, Cap(marketersWanted, TotalCapacityFor(world, JobKind.Marketer)));
 
         // Everyone still spare forages. Berries keep, and a hand that gathers nothing
         // still eats.
         foragers += free;
 
-        return new LabourQuota(hands, mouths, toFeedEveryone, foragers, loggers, woodcutters, marketers);
+        return new LabourQuota(
+            hands, mouths, toFeedEveryone, foragers, loggers, woodcutters, marketers, builders);
     }
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
@@ -458,6 +476,32 @@ public readonly record struct LabourQuota
 
         int logsEaten = woodcutters * VillageEconomy.LogsConsumedPerYearAtWorst(world.Config);
         return CeilingDivide(logsEaten, VillageEconomy.WoodCutPerYearAtWorst(world.Config));
+    }
+
+    /// <summary>
+    /// Hands the village wants raising the buildings the player has marked out (D43).
+    /// </summary>
+    /// <remarks>
+    /// Every seat at every unfinished site. Unlike the other quotas this is not derived
+    /// from a need the village worked out for itself — <b>it is the player's intent,
+    /// counted</b>. That is the whole difference placement makes: for the first time
+    /// the labour system is answering to somebody.
+    /// </remarks>
+    public static int BuildersWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int seats = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Kind == JobKind.Builder && workplace.Construction is { IsFinished: false })
+            {
+                seats += workplace.Capacity;
+            }
+        }
+
+        return seats;
     }
 
     /// <summary>
