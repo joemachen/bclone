@@ -75,6 +75,13 @@ public partial class VillageMap : Control
 
     /// <summary>The market (D14), which is both a workplace and a store.</summary>
     private static readonly Color MarketColour = new("#c98f4a");
+
+    /// <summary>A building marked out but not yet raised (D43).</summary>
+    private static readonly Color SiteColour = new("#8f9aa8");
+
+    private static readonly Color GhostFine = new("#7fd48a");
+    private static readonly Color GhostWarned = new("#e0b755");
+    private static readonly Color GhostRefused = new("#d4685f");
     private static readonly Color AdultColour = new("#e8e2d4");
     private static readonly Color ChildColour = new("#8fc7e8");
     private static readonly Color ElderColour = new("#d9a05b");
@@ -236,10 +243,90 @@ public partial class VillageMap : Control
         QueueRedraw();
     }
 
+    // ---------------------------------------------------------------
+    //  Build mode (D43)
+    // ---------------------------------------------------------------
+
+    /// <summary>What the player is about to put down, or null when just looking.</summary>
+    private BuildingKind? _building;
+
+    /// <summary>True when the next click pulls a building down instead of raising one.</summary>
+    private bool _demolishing;
+
+    /// <summary>The tile under the cursor, and what the sim says about building on it.</summary>
+    private GridPos _hovered;
+    private PlacementVerdict _verdict = PlacementVerdict.Fine;
+
+    /// <summary>Raised whenever the ghost's verdict changes, so the shell can say it.</summary>
+    public event System.Action<string>? PlacementMessageChanged;
+
+    /// <summary>Start marking out a building. Null stops.</summary>
+    public void BeginBuilding(BuildingKind? kind)
+    {
+        _building = kind;
+        _demolishing = false;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Next click pulls a building down.</summary>
+    public void BeginDemolishing()
+    {
+        _building = null;
+        _demolishing = true;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Whether the player is in the middle of placing or demolishing.</summary>
+    public bool IsPlacing => _building is not null || _demolishing;
+
     public override void _GuiInput(InputEvent @event)
     {
-        if (_world is null || @event is not InputEventMouseButton { Pressed: true } click)
+        if (_world is null)
         {
+            return;
+        }
+
+        // The ghost follows the cursor, and the verdict is recomputed as it moves.
+        // CanBuildAt is pure, so asking it every frame costs nothing and changes
+        // nothing — which is what lets the answer be shown BEFORE anybody commits.
+        if (@event is InputEventMouseMotion motion && IsPlacing)
+        {
+            Vector2 tile = ToTile(motion.Position);
+            var over = new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
+            if (over != _hovered)
+            {
+                _hovered = over;
+                if (_building is not null)
+                {
+                    _verdict = _world.CanBuildAt(_building.Value, _hovered);
+                }
+
+                Announce();
+                QueueRedraw();
+            }
+
+            return;
+        }
+
+        if (@event is not InputEventMouseButton { Pressed: true } click)
+        {
+            return;
+        }
+
+        if (IsPlacing && click.ButtonIndex == MouseButton.Right)
+        {
+            BeginBuilding(null);
+            _demolishing = false;
+            AcceptEvent();
+            return;
+        }
+
+        if (IsPlacing && click.ButtonIndex == MouseButton.Left)
+        {
+            PlaceOrPullDown(click.Position);
+            AcceptEvent();
             return;
         }
 
@@ -261,6 +348,75 @@ public partial class VillageMap : Control
         ClampCentre();
         QueueRedraw();
         AcceptEvent();
+    }
+
+    /// <summary>Act on a click while in build or demolish mode.</summary>
+    /// <remarks>
+    /// <b>The game does not pause for this</b> (D43, Joe's call). The village carries on
+    /// while you decide, because pausing would make placement a modal act — the world
+    /// stopping to wait on you — and nothing here is urgent enough to stop the clock
+    /// for. That is a claim about what kind of decision building is.
+    /// </remarks>
+    private void PlaceOrPullDown(Vector2 at)
+    {
+        Vector2 tile = ToTile(at);
+        var where = new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
+
+        if (_demolishing)
+        {
+            foreach (StoreBuilding building in _world!.StoreBuildings)
+            {
+                if (building.Position == where)
+                {
+                    _world.Demolish(building);
+                    PlacementMessageChanged?.Invoke($"{building.Name} is coming down.");
+                    QueueRedraw();
+                    return;
+                }
+            }
+
+            PlacementMessageChanged?.Invoke("Nothing there to pull down.");
+            return;
+        }
+
+        PlacementVerdict verdict = _world!.Mark(_building!.Value, where);
+        if (!verdict.Allowed)
+        {
+            // Stay in build mode: a refusal is information, not a dismissal, and
+            // making the player reopen the menu to try one tile over would be a
+            // punishment for exploring.
+            PlacementMessageChanged?.Invoke(verdict.Reason);
+            return;
+        }
+
+        PlacementMessageChanged?.Invoke(verdict.HasWarning
+            ? $"Marked out. {verdict.Warning}"
+            : "Marked out. The village will raise it when it can spare the hands.");
+
+        QueueRedraw();
+    }
+
+    /// <summary>Tell the shell what the cursor is currently over.</summary>
+    private void Announce()
+    {
+        if (_demolishing)
+        {
+            PlacementMessageChanged?.Invoke("Click a building to pull it down. Right-click to stop.");
+            return;
+        }
+
+        if (_building is null)
+        {
+            PlacementMessageChanged?.Invoke(string.Empty);
+            return;
+        }
+
+        PlacementMessageChanged?.Invoke(_verdict switch
+        {
+            { Allowed: false } => _verdict.Reason,
+            { HasWarning: true } => _verdict.Warning,
+            _ => "Click to mark it out. Right-click to stop.",
+        });
     }
 
     private void SetZoom(float pixelsPerTile)
@@ -360,6 +516,40 @@ public partial class VillageMap : Control
         DrawStores();
         DrawHomes();
         DrawVillagers();
+
+        // The ghost last, over everything, because it is the thing being decided.
+        DrawTheGhost();
+    }
+
+    /// <summary>
+    /// The building about to be placed, under the cursor, coloured by what the sim says.
+    /// </summary>
+    /// <remarks>
+    /// Three colours for three answers, and the middle one is the point (D43): green is
+    /// fine, <b>amber is allowed but unwise</b>, red is impossible. The player may build
+    /// on amber. The words alongside say why it is amber, because a colour on its own
+    /// is the shrug this project keeps refusing.
+    /// </remarks>
+    private void DrawTheGhost()
+    {
+        if (_building is null || !_world!.Map.Contains(_hovered))
+        {
+            return;
+        }
+
+        Vector2 centre = ToScreen(_hovered);
+        float size = Mathf.Max(10f, _pixelsPerTile * 0.9f);
+        var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+        Color colour = _verdict switch
+        {
+            { Allowed: false } => GhostRefused,
+            { HasWarning: true } => GhostWarned,
+            _ => GhostFine,
+        };
+
+        DrawRect(rect, colour with { A = 0.35f });
+        DrawRect(rect, colour, filled: false, width: 2f);
     }
 
     /// <summary>
@@ -557,6 +747,31 @@ public partial class VillageMap : Control
                 {
                     DrawArc(centre, radius, 0f, Mathf.Tau, 64, colour with { A = 0.22f }, 1f);
                 }
+            }
+
+            // A construction site is drawn as an outline that fills in as it is built,
+            // rather than as a dot like the workplaces. A half-raised granary should be
+            // legible on the map — that is one of the three things D43 says paying for
+            // buildings with labour buys, and it is the one you can actually see.
+            if (workplace.Construction is { } site)
+            {
+                float size = Mathf.Max(10f, _pixelsPerTile * 0.8f);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+                int total = System.Math.Max(1, site.Recipe.Logs + site.Recipe.WorkTicks);
+                float done = (site.LogsDelivered + site.WorkDone) / (float)total;
+
+                DrawRect(rect, SiteColour with { A = 0.18f });
+                if (done > 0f)
+                {
+                    var filled = new Rect2(
+                        rect.Position + new Vector2(0f, rect.Size.Y * (1f - done)),
+                        new Vector2(rect.Size.X, rect.Size.Y * done));
+                    DrawRect(filled, SiteColour with { A = 0.55f });
+                }
+
+                DrawRect(rect, SiteColour, filled: false, width: 2f);
+                continue;
             }
 
             DrawCircle(centre, Mathf.Max(4f, _pixelsPerTile * 0.4f), colour);

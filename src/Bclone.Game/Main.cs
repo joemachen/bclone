@@ -131,11 +131,12 @@ public partial class Main : Control
         SimWorld world = _loop.World;
 
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
+        // Totals across every granary and shed, not the first of each (D38) — a village
+        // that has built a second one should see what is in it.
         _villageLabel.Text =
             $"{world.Population} villagers · {LivingHouseholds(world)} households · " +
-            $"{TotalFood(world)} food · {world.Granary.Store.Food} in the granary · " +
-            $"{world.StorageShed.Store.Logs} logs and {world.StorageShed.Store.Firewood} " +
-            $"firewood in the shed";
+            $"{TotalFood(world)} food · {world.FoodInGranaries()} in the granaries · " +
+            $"{world.LogsInSheds()} logs and {world.FirewoodInSheds()} firewood in the sheds";
 
         RefreshRoster(world);
         RefreshInspector(world);
@@ -423,12 +424,69 @@ public partial class Main : Control
         controls.AddChild(Muted(
             "   (space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · home recentre)"));
 
+        BuildBuildMenu(column, indexAfterTheControls: 4);
+
         SetSpeed(1.0);
 
         // Start on Selected, and set the button's label from the same switch that the
         // key binding uses — two places writing that text would eventually disagree.
         _detail = MapDetail.Off;
         CycleDetail();
+    }
+
+    /// <summary>What the cursor is over, or what just happened. Empty when not placing.</summary>
+    private Label _placementLabel = null!;
+
+    /// <summary>
+    /// The build menu (D43) — the first controls in the game that change the world
+    /// rather than the view.
+    /// </summary>
+    /// <remarks>
+    /// Every other control here alters how you are looking: speed, pan, zoom, how much
+    /// explanation is drawn. These four buttons and a demolish are the first that ask
+    /// the village for something, so they get their own row rather than being mixed in
+    /// with the camera.
+    /// </remarks>
+    private void BuildBuildMenu(VBoxContainer column, int indexAfterTheControls)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 8);
+
+        row.AddChild(Muted("Build:"));
+        row.AddChild(BuildButton("Granary", BuildingKind.Granary));
+        row.AddChild(BuildButton("Shed", BuildingKind.Shed));
+        row.AddChild(BuildButton("Market", BuildingKind.Market));
+        row.AddChild(BuildButton("Woodcutter", BuildingKind.WoodcutterHut));
+
+        var demolish = new Button { Text = "Demolish" };
+        demolish.Pressed += () => _map.BeginDemolishing();
+        row.AddChild(demolish);
+
+        var stop = new Button { Text = "Cancel" };
+        stop.Pressed += () => _map.BeginBuilding(null);
+        row.AddChild(stop);
+
+        // The refusal or the warning, in the words the sim already produced. Same
+        // standard as JobReason: a red square on its own is the shrug this project
+        // keeps refusing.
+        _placementLabel = Body(string.Empty);
+        row.AddChild(_placementLabel);
+
+        _map.PlacementMessageChanged += message => _placementLabel.Text = message;
+
+        // Under the time controls, above the map. Taking the column explicitly rather
+        // than casting whatever was handed in: the first version took the UI root and
+        // tested `is VBoxContainer`, which is a MarginContainer — so the whole menu was
+        // built, wired up, and silently never added to anything.
+        column.AddChild(row);
+        column.MoveChild(row, indexAfterTheControls);
+    }
+
+    private Button BuildButton(string text, BuildingKind kind)
+    {
+        var button = new Button { Text = text };
+        button.Pressed += () => _map.BeginBuilding(kind);
+        return button;
     }
 
     private Button SpeedButton(string text, double multiplier)

@@ -103,9 +103,9 @@ This gets three things for free: a half-built granary is legible on the map, bui
 
 - A **build menu** listing what can be built and its cost.
 - A **ghost** following the cursor, showing the footprint, and coloured by validity.
-- **Refusals named in words, not just a red square** — *"the ground is under water"*, *"the shed is 14 tiles away; the village budgets 7"*, *"you have 12 logs of the 30 this needs"*. Same standard as `JobReason`.
-- The preview should show **what this building would be near**: nearest work, nearest store, how many homes fall inside its catchment. That is the information a placement decision is actually made on, and it is what turns *"where do I put the market?"* from a guess into a judgement.
-- **Pausing while placing is fine and probably right.** §1.2 is about not being rushed.
+- **Refusals named in words, not just a red square** — *"the ground is under water"*, *"there is no route to there from the village"*. Same standard as `JobReason`.
+- ~~The preview should show **what this building would be near**: nearest work, nearest store, how many homes fall inside its catchment.~~ ✅ **Cut (Joe, 2026-07-28).** It is more screen furniture than judgement, and the map already shows what is near — the player can see the granary and the thicket without being told their distances. If it turns out to be missed after a few placements, it can come back knowing exactly what was wanted.
+- ~~Pausing while placing is probably right.~~ ✅ **No pause (Joe, 2026-07-28).** The village carries on while you decide. Pausing would make placement a modal act — the world stopping and waiting on you — which is the opposite of the unhurried thing §1.2 asks for. **Nothing here is urgent enough to stop the clock for**, and that is worth saying out loud: it is a claim about what kind of decision building is.
 
 ---
 
