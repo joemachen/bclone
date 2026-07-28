@@ -79,6 +79,9 @@ public partial class VillageMap : Control
     /// <summary>A building marked out but not yet raised (D43).</summary>
     private static readonly Color SiteColour = new("#8f9aa8");
 
+    /// <summary>Land the player has painted for housing (D42). Faint on purpose.</summary>
+    private static readonly Color ResidentialColour = new("#b98a52", 0.14f);
+
     private static readonly Color GhostFine = new("#7fd48a");
     private static readonly Color GhostWarned = new("#e0b755");
     private static readonly Color GhostRefused = new("#d4685f");
@@ -253,6 +256,27 @@ public partial class VillageMap : Control
     /// <summary>True when the next click pulls a building down instead of raising one.</summary>
     private bool _demolishing;
 
+    /// <summary>Painting homes: 0 not, 1 painting, -1 erasing.</summary>
+    private int _brush;
+
+    /// <summary>How wide the brush is, in tiles either side.</summary>
+    /// <remarks>
+    /// A brush rather than a single tile, because a residential area is a
+    /// <em>neighbourhood</em> — asking the player to paint it a tile at a time would be
+    /// exactly the click-farm zoning exists to avoid (D42).
+    /// </remarks>
+    private const int BrushRadius = 2;
+
+    /// <summary>Start or stop painting where the village may live (D42).</summary>
+    public void BeginPainting(int direction)
+    {
+        _brush = direction;
+        _building = null;
+        _demolishing = false;
+        Announce();
+        QueueRedraw();
+    }
+
     /// <summary>The tile under the cursor, and what the sim says about building on it.</summary>
     private GridPos _hovered;
     private PlacementVerdict _verdict = PlacementVerdict.Fine;
@@ -265,6 +289,7 @@ public partial class VillageMap : Control
     {
         _building = kind;
         _demolishing = false;
+        _brush = 0;
         Announce();
         QueueRedraw();
     }
@@ -274,12 +299,13 @@ public partial class VillageMap : Control
     {
         _building = null;
         _demolishing = true;
+        _brush = 0;
         Announce();
         QueueRedraw();
     }
 
-    /// <summary>Whether the player is in the middle of placing or demolishing.</summary>
-    public bool IsPlacing => _building is not null || _demolishing;
+    /// <summary>Whether the player is in the middle of placing, demolishing or painting.</summary>
+    public bool IsPlacing => _building is not null || _demolishing || _brush != 0;
 
     public override void _GuiInput(InputEvent @event)
     {
@@ -301,6 +327,14 @@ public partial class VillageMap : Control
                 if (_building is not null)
                 {
                     _verdict = _world.CanBuildAt(_building.Value, _hovered);
+                }
+
+                // Drag to paint. A neighbourhood is a shape you draw, not a sequence of
+                // clicks — the brush exists so that deciding where people live costs one
+                // gesture rather than forty (D42).
+                if (_brush != 0 && motion.ButtonMask.HasFlag(MouseButtonMask.Left))
+                {
+                    PaintAround(_hovered);
                 }
 
                 Announce();
@@ -357,10 +391,55 @@ public partial class VillageMap : Control
     /// stopping to wait on you — and nothing here is urgent enough to stop the clock
     /// for. That is a claim about what kind of decision building is.
     /// </remarks>
+    /// <summary>Paint or erase a brushful of residential land.</summary>
+    private void PaintAround(GridPos centre)
+    {
+        string? warning = null;
+
+        for (int dy = -BrushRadius; dy <= BrushRadius; dy++)
+        {
+            for (int dx = -BrushRadius; dx <= BrushRadius; dx++)
+            {
+                if (Mathf.Abs(dx) + Mathf.Abs(dy) > BrushRadius)
+                {
+                    continue;
+                }
+
+                var tile = new GridPos(centre.X + dx, centre.Y + dy);
+
+                if (_brush < 0)
+                {
+                    _world!.EraseResidential(tile);
+                    continue;
+                }
+
+                PlacementVerdict verdict = _world!.PaintResidential(tile);
+                if (verdict.HasWarning)
+                {
+                    warning = verdict.Warning;
+                }
+            }
+        }
+
+        // One warning for the stroke, not one per tile — which is the entire reason
+        // zoning was a better answer than placing houses one at a time (D42).
+        if (warning is not null)
+        {
+            PlacementMessageChanged?.Invoke(warning);
+        }
+    }
+
     private void PlaceOrPullDown(Vector2 at)
     {
         Vector2 tile = ToTile(at);
         var where = new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
+
+        if (_brush != 0)
+        {
+            PaintAround(where);
+            QueueRedraw();
+            return;
+        }
 
         if (_demolishing)
         {
@@ -399,6 +478,20 @@ public partial class VillageMap : Control
     /// <summary>Tell the shell what the cursor is currently over.</summary>
     private void Announce()
     {
+        if (_brush > 0)
+        {
+            PlacementMessageChanged?.Invoke(
+                "Drag to paint where the village may build homes. Right-click to stop.");
+            return;
+        }
+
+        if (_brush < 0)
+        {
+            PlacementMessageChanged?.Invoke(
+                "Drag to take land back. Houses already standing stay put. Right-click to stop.");
+            return;
+        }
+
         if (_demolishing)
         {
             PlacementMessageChanged?.Invoke("Click a building to pull it down. Right-click to stop.");
@@ -633,6 +726,7 @@ public partial class VillageMap : Control
         // generated valley is invisible, which makes "is this seed worth playing?"
         // a question nobody can answer by looking.
         DrawTerrain(minX, maxX, minY, maxY);
+        DrawResidentialLand(minX, maxX, minY, maxY);
 
         DrawRect(valley, ValleyEdge, filled: false, width: 2f);
 
@@ -658,6 +752,43 @@ public partial class VillageMap : Control
                 ToScreen(new Vector2(maxX - 0.5f, y - 0.5f)),
                 GridLine,
                 1f);
+        }
+    }
+
+    /// <summary>
+    /// Where the player has said the village may live (D42).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Drawn always, not only while painting. A residential zone is a standing decision
+    /// — it is the answer to "why did that house go there?" and to "why has nobody
+    /// moved out in twenty years?" — so it has to be visible when you are not thinking
+    /// about it, which is exactly when those questions occur to you.
+    /// </para>
+    /// <para>
+    /// Faint, though. It is ground the village <em>may</em> use, not something built,
+    /// and it should never compete with the people standing on it.
+    /// </para>
+    /// </remarks>
+    private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
+    {
+        ZoneMap zones = _world!.Zones;
+        float size = _pixelsPerTile * 1.02f;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (!zones.IsResidential(tile))
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, ResidentialColour);
+            }
         }
     }
 

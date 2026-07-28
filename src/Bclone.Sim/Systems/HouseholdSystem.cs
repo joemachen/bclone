@@ -132,22 +132,37 @@ public sealed class HouseholdSystem : ISimSystem
             try
             {
                 Pair(world, seeker, partner, config, timber);
+
+                // Somebody got their home, so the village is no longer asking. Cleared
+                // here rather than by the view noticing free land: the request means "a
+                // couple is waiting", and the honest answer to "are they still waiting?"
+                // is whether one of them has since moved out.
+                world.NeedsMoreResidentialLand = false;
             }
             catch (Household.NoRoomToBuildException noRoom)
             {
-                // The valley is full within reach of work. A real constraint and a
-                // legible one — but the timber is already out of the shed, so it goes
-                // back rather than evaporating. Goods conservation is not negotiable
-                // just because the code took an unusual branch.
-                // Back to the nearest shed with room for it. Conservation is not
-                // negotiable just because the code took an unusual branch.
+                // The painted land is full. The timber is already out of the shed, so it
+                // goes back to the nearest one with room rather than evaporating —
+                // conservation is not negotiable just because the code took an unusual
+                // branch.
                 StoreBuilding? shed = world.NearestStore(
                     seeker.Position, StoreKind.Shed, static store => !store.Store.IsFull);
                 shed?.Store.ReceiveLogs(timber);
 
-                world.Log(Logging.LogLevel.Info, "household",
-                    $"{seeker.Name} and {partner.Name} have nowhere to build: {noRoom.Message} " +
-                    "They stay where they are.");
+                // AND THE VILLAGE ASKS FOR MORE LAND. This is the other half of the
+                // brush (D42): the game says when a decision is due rather than
+                // expecting the player to notice a couple quietly not moving out.
+                // Narrated once, so it reads as people waiting rather than as an error
+                // repeating every year until somebody dies.
+                if (!world.NeedsMoreResidentialLand)
+                {
+                    world.NeedsMoreResidentialLand = true;
+                    world.Narrate(
+                        $"{seeker.Name} and {partner.Name} want a home of their own and there is " +
+                        $"nowhere to put one — {noRoom.Message}. The village needs somewhere new " +
+                        $"to build. {world.Clock.SeasonAndYear()}.");
+                }
+
                 continue;
             }
         }

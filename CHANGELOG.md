@@ -112,6 +112,23 @@ Categories (only include the ones you use): **Added**, **Changed**,
   at what the buildings support instead of overshooting and falling back. Measured over
   200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
   across goods, not per good: a shed packed with logs has nowhere to stack firewood.
+- **The residential brush** (D42; placement slice 3) — the player paints where the
+  village may live, and the village builds inside it **when it has a reason to**. A
+  painted area with no housing shortage produces nothing, and that is the brush working
+  rather than failing.
+  - **Zones are sim state**: hashed, deterministic, part of the seed contract, because
+    a zone is a decision somebody made and two runs given the same decisions must
+    produce the same village.
+  - `Household.ChooseSite` is unchanged except that it only looks at painted land — so
+    **the player picks the neighbourhood and the sim still picks the tile**. That is how
+    placement was handed over without giving up `MaxHomeToWorkTiles`, the bound the
+    whole food economy is derived against.
+  - The distance warning fires **once per brush stroke**, not once per house — the
+    entire reason zoning beat placing houses one at a time.
+  - **The village asks by name** when a couple wants a home and there is nowhere to put
+    one, and the header carries the request until somebody moves out.
+  - Erasing land says where the village may build *next*; houses already standing stay
+    put.
 - **The player can mark out a building, and the village raises it** (D43; placement
   slice 2, sim half — no UI yet). **The first system in the game that answers to
   somebody**: everything before this happened *to* the player.

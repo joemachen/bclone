@@ -80,6 +80,9 @@ public sealed class SimWorld
     /// </remarks>
     public GeneratedMap Map { get; }
 
+    /// <summary>Where the player has said the village may build (D42).</summary>
+    public ZoneMap Zones { get; private set; } = null!;
+
     /// <summary>The berry patch.</summary>
     public FoodSource FoodSource { get; }
 
@@ -182,6 +185,130 @@ public sealed class SimWorld
 
     /// <summary>Next id for a workplace, so construction sites never collide with one.</summary>
     private int _nextWorkplaceId = 1;
+
+    // ---------------------------------------------------------------
+    //  The residential brush (D42)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Paint one tile as somewhere the village may build homes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Painting is <b>permissive about where and firm about what</b>: water and ground
+    /// outside the valley are simply never painted, so the shape the player gets is the
+    /// shape they can actually use, and no home is ever promised on a tile that could
+    /// not hold one.
+    /// </para>
+    /// <para>
+    /// <b>The distance check happens here, once</b>, rather than on every house the
+    /// village later builds inside it (D42). That is the whole reason zoning was the
+    /// better answer than per-house placement: one considered warning about a
+    /// neighbourhood, instead of a nag the player learns to click past.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict PaintResidential(GridPos tile)
+    {
+        if (!Map.Contains(tile))
+        {
+            return PlacementVerdict.No("That is outside the valley.");
+        }
+
+        if (Map.TerrainAt(tile) == Terrain.Water)
+        {
+            return PlacementVerdict.No("Nobody can live on the water.");
+        }
+
+        Zones.SetResidential(tile, true);
+
+        int toWork = NearestForageDistance(tile);
+        int budget = VillageEconomy.MaxHomeToWorkTiles(Config);
+        if (toWork > budget)
+        {
+            return PlacementVerdict.Yes(
+                $"That corner is {toWork} tiles from the nearest food; the village budgets " +
+                $"{budget}. Families there will go hungry.");
+        }
+
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>Un-paint a tile. Homes already standing there stay where they are.</summary>
+    /// <remarks>
+    /// Erasing is about where the village may build <em>next</em>, not a demolition
+    /// order. Pulling houses down because somebody adjusted a brush would be a cruel
+    /// reading of an undo.
+    /// </remarks>
+    public void EraseResidential(GridPos tile) => Zones.SetResidential(tile, false);
+
+    /// <summary>
+    /// Whether the village has run out of room to build and needs the player.
+    /// </summary>
+    /// <remarks>
+    /// The other half of the brush (D42): the game says when a decision is due rather
+    /// than expecting the player to notice. Reduce babysitting, do not add it (§1.2).
+    /// </remarks>
+    public bool NeedsMoreResidentialLand { get; internal set; }
+
+    /// <summary>Distance from a tile to the nearest place anyone forages.</summary>
+    private int NearestForageDistance(GridPos from)
+    {
+        int nearest = int.MaxValue;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind != JobKind.Forager)
+            {
+                continue;
+            }
+
+            int distance = from.ManhattanDistanceTo(Workplaces[i].Position);
+            if (distance < nearest)
+            {
+                nearest = distance;
+            }
+        }
+
+        return nearest == int.MaxValue ? 0 : nearest;
+    }
+
+    /// <summary>
+    /// The land the exiles arrive having already chosen to live on.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A village founded with nothing painted could never build a house at all, and
+    /// the first thing the game asked of a player would be a decision they had no basis
+    /// for (D43, spec §12.7). So the exiles turn up having decided where to live —
+    /// plausible in fiction, and a gentle tutorial: you see what a zone looks like
+    /// before being asked to paint one.
+    /// </para>
+    /// <para>
+    /// Deliberately modest. Big enough that an unattended village behaves as it always
+    /// has, small enough that a player who is actually growing the place will meet the
+    /// brush rather than never needing it.
+    /// </para>
+    /// </remarks>
+    private void PaintTheStarterZone(GridPos origin, SimConfig config)
+    {
+        int radius = config.StartingResidentialRadius;
+
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (Math.Abs(dx) + Math.Abs(dy) > radius)
+                {
+                    continue;
+                }
+
+                var tile = new GridPos(origin.X + dx, origin.Y + dy);
+                if (Map.Contains(tile) && Map.TerrainAt(tile) != Terrain.Water)
+                {
+                    Zones.SetResidential(tile, true);
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Whether a building may be marked here, and what the player should be told.
@@ -618,6 +745,7 @@ public sealed class SimWorld
         // errands and the economy's budget all get that for free because they have
         // always shared this one field (§2.6).
         TravelCost = new TravelCostField(config.TravelTicksPerUnit, Map);
+        Zones = new ZoneMap(Map);
 
         // Everything the village builds hangs off the founding site the generator
         // chose. The config keys that used to hold absolute coordinates are now
@@ -765,6 +893,10 @@ public sealed class SimWorld
         // afterwards (Household.ChooseSite): near the work, near the store, and never
         // in the water. One rule for the whole village rather than one for the
         // founders and another for their children.
+        //
+        // And the exiles arrive having already decided where to live (D42), because a
+        // village with nothing painted could not build a house at all.
+        PaintTheStarterZone(origin, config);
         FoundVillage(config, origin);
     }
 

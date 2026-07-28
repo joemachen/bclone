@@ -50,6 +50,20 @@ public static class StateHash
         // seed anyone has written down.
         hash = MixMap(hash, world.Map);
 
+        // ---- What the player has asked for ----
+        // Zones are a decision somebody made, so they are sim state (D42): two runs
+        // given the same decisions must produce the same village. Left out, a village
+        // painted differently would agree on the hash right up until it built a house.
+        for (int i = 0; i < world.Zones.Residential.Count; i++)
+        {
+            if (world.Zones.Residential[i])
+            {
+                hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
+        hash = MixUInt32(hash, (uint)world.Zones.ResidentialTiles);
+
         // ---- Village ----
         // Every villager and every household, in id order. A hash that covered only
         // the first villager would let the rest of the village desync in silence.

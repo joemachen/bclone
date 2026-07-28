@@ -138,6 +138,17 @@ public partial class Main : Control
             $"{TotalFood(world)} food · {world.FoodInGranaries()} in the granaries · " +
             $"{world.LogsInSheds()} logs and {world.FirewoodInSheds()} firewood in the sheds";
 
+        // The village asking for somewhere to build (D42). Kept in the header rather
+        // than only in the log, because it is a standing state — a couple is waiting
+        // right now — and a line that scrolls away is a request the player will miss.
+        // It clears itself the moment there is room again.
+        if (world.NeedsMoreResidentialLand)
+        {
+            _villageLabel.Text +=
+                "\nSomebody wants a home of their own and there is nowhere to put one — " +
+                "paint more land for houses.";
+        }
+
         RefreshRoster(world);
         RefreshInspector(world);
         AppendNewLogLines();
@@ -461,6 +472,21 @@ public partial class Main : Control
         var demolish = new Button { Text = "Demolish" };
         demolish.Pressed += () => _map.BeginDemolishing();
         row.AddChild(demolish);
+
+        row.AddChild(new VSeparator());
+
+        // The brush (D42). Separated from the buildings because it is a different kind
+        // of decision: those place one thing, this says where a whole neighbourhood may
+        // grow — and the village decides which tiles, and when, and whether at all.
+        row.AddChild(Muted("Homes:"));
+
+        var paint = new Button { Text = "Paint land" };
+        paint.Pressed += () => _map.BeginPainting(1);
+        row.AddChild(paint);
+
+        var erase = new Button { Text = "Take back" };
+        erase.Pressed += () => _map.BeginPainting(-1);
+        row.AddChild(erase);
 
         var stop = new Button { Text = "Cancel" };
         stop.Pressed += () => _map.BeginBuilding(null);

@@ -389,6 +389,36 @@ public sealed record SimConfig
     [JsonPropertyName("construction_site_capacity")]
     public int ConstructionSiteCapacity { get; init; } = 3;
 
+    /// <summary>How much land the exiles arrive having already chosen to live on (D42).</summary>
+    /// <remarks>
+    /// A village founded with no residential zone could never build a house, so the
+    /// starter area exists to stop the game opening on a decision the player has no
+    /// basis for — and to show them what a zone looks like before asking them to paint
+    /// one.
+    /// <para>
+    /// Deliberately modest: large enough that a village nobody helps behaves as it
+    /// always has, small enough that a player who is actively growing the place will
+    /// run out and meet the brush rather than never needing it.
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// <para>
+    /// <b>Four is a measured floor, not a taste.</b> At three, ten of eleven seeds held
+    /// and the eleventh died out — and it died for a reason worth understanding: a
+    /// village that cannot spread cannot form new households, so every home fills to
+    /// <see cref="MaxHouseholdSize"/>, births stop, and the settlement ages out. That is
+    /// D34's failure arriving by a different road.
+    /// </para>
+    /// <para>
+    /// So the starter zone holds comfortably more than the population one granary
+    /// supports. A village nobody helps behaves as it always has; the brush becomes
+    /// necessary when the player builds more granaries and grows past it, which is
+    /// exactly when they are paying attention.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("starting_residential_radius")]
+    public int StartingResidentialRadius { get; init; } = 4;
+
     /// <summary>Share of a building's logs returned when it is pulled down, as a percentage.</summary>
     /// <remarks>
     /// Deliberately less than everything. Demolition is how a player corrects a mistake

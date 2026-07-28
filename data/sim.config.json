@@ -331,6 +331,21 @@
 
   "construction_site_capacity": 3,
 
+  // The land the exiles arrive having already chosen to live on (D42).
+  // A village founded with nothing painted could never build a house,
+  // and the first thing the game asked of a player would be a decision
+  // they had no basis for. It is also a gentle tutorial: you see what a
+  // zone looks like before being asked to paint one.
+  //
+  // FOUR IS A MEASURED FLOOR. At three, ten of eleven seeds held and
+  // the eleventh died out - and the way it died matters: a village that
+  // cannot spread cannot form new households, so every home fills to
+  // max_household_size, births stop, and the settlement ages out. At
+  // four, a village nobody helps behaves as it always has, and the
+  // brush becomes necessary when the player builds more granaries and
+  // grows past it.
+  "starting_residential_radius": 4,
+
   // Less than everything, deliberately. Demolition is how a player
   // corrects a mistake, and it should cost something - otherwise a
   // badly sited granary is free to undo and the placement decision

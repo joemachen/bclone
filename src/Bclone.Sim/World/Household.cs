@@ -91,7 +91,11 @@ public sealed class Household
             {
                 var candidate = new GridPos(villageCentre.X + dx, villageCentre.Y + dy);
 
-                if (!world.Map.Contains(candidate)
+                // INSIDE WHAT THE PLAYER PAINTED (D42). The sim still picks the tile —
+                // it knows the walk to work and the walk to the store, and a cursor
+                // does not — but it only looks where it has been told it may.
+                if (!world.Zones.IsResidential(candidate)
+                    || !world.Map.Contains(candidate)
                     || world.Map.TerrainAt(candidate) == Terrain.Water
                     || IsTaken(world, candidate))
                 {
@@ -143,11 +147,12 @@ public sealed class Household
             return best;
         }
 
-        // Nowhere left within reach of work. A real and legible constraint — the
-        // valley is full — and the caller decides what to do about it rather than a
-        // home being dropped somewhere unsurvivable to keep the code tidy.
+        // Nowhere left in the painted land. A real and legible constraint, and the one
+        // the brush exists to create: the village has filled the neighbourhood it was
+        // given and needs the player to say where the next one goes (D42).
         throw new NoRoomToBuildException(
-            $"No free ground within {reach} tiles of work and {search} of the village centre.");
+            $"no room left in the residential land — {world.Zones.ResidentialTiles} tiles painted, " +
+            $"and every spot within {reach} tiles of work is taken");
     }
 
     /// <summary>Distance to the nearest store of a kind, or <c>int.MaxValue</c>.</summary>
