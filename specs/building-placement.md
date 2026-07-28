@@ -1,6 +1,6 @@
 # Spec: Building placement — the first thing the player actually does
 
-> Status: **draft — open questions for Joe in §11** · Owner: Joe + Claude Code
+> Status: **agreed — Joe's answers folded in 2026-07-28. Buildable; see §13 for the slices.** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements **D38**; the payoff decisions D33, D35 and D36 have been waiting for.
 
 ---
@@ -159,17 +159,21 @@ Joe extends the same brush to **which forest to cut** and **where to plant trees
 
 **What it changes in this spec:** §3's whole table is superseded for homes. The bound survives, the warning moves to the zone, and "the player can doom a family by clicking" becomes "the player can paint a bad neighbourhood and be told so at the time".
 
-### 11.2 Does construction take labour and time, or is it instant?
+### 11.2 Does construction take labour and time? ✅ **Yes (Joe, 2026-07-28).**
 
-*Recommendation: labour and time* (§6) — it matches D14 and D29, and it makes building compete with eating, which is the trade-off that makes placement mean something. Costs a builder job and a construction-site state.
+§6's four steps stand: a site is marked, materials are hauled to it, somebody builds it, it becomes a building. It needs a **`JobKind.Builder`** and a construction-site state, and building competes for hands in the same quota as everything else — which is the trade-off that makes placement mean something rather than being a purchase.
 
-### 11.3 Can buildings be demolished or moved?
+**Consequence worth stating: a village can now be short of hands in a way it chooses.** Marking six buildings at once does not queue six purchases, it competes with foraging — and per §4a's standing policy, *a village short of hands feeds itself before it builds*. Construction should be the first thing to yield, alongside house-raising.
 
-*Recommendation: demolish yes, move no.* Demolition returns some materials and is how a player corrects a mistake; moving is a second system pretending to be a convenience. **A demolished granary should be able to strand its contents**, which is a consequence worth having.
+### 11.3 Can buildings be demolished or moved? ✅ **Demolish, yes.** Move — see note.
 
-### 11.4 Should placement be free-form, or snapped to what the village can reach?
+Demolition is how a player corrects a mistake, and it returns some of the materials. **A demolished store should be able to strand its contents** — that is a consequence worth having, and it is the same lesson D34 taught about a dead family's larder.
 
-Free-form anywhere in the valley invites buildings nobody can use. *Recommendation: free-form, with the reachability warning of §7* — consistent with "warn and allow", and it keeps the map honest rather than fencing the player into a blessed zone.
+> **One word needed from Joe.** The answer given was *"demolish and/or move"*, which reads as yes to both, but move is a materially bigger system than demolish: relocating a building means moving its stores, its workers, and any errand already in flight toward it. **Cheap alternative: express "move" as demolish-then-place**, which costs the materials the demolition did not return and requires no new machinery. That may be all "move" needs to mean. Assumed for now; say if you want a true move.
+
+### 11.4 Free-form placement, or fenced? ✅ **Free-form, with warnings (Joe, 2026-07-28).**
+
+Anywhere in the valley, with §7's refusals and warnings doing the work. Consistent with warn-and-allow, and it keeps the map honest rather than fencing the player into a blessed zone. **Hard refusals stay hard** — water, on top of another building, off the map — because those are not judgement calls, they are impossibilities.
 
 ### 11.5 What does the *first* playable version need?
 
@@ -220,8 +224,53 @@ Also:
 
 **The residential brush is the small one and should come first**, because it is needed for placement to be playable at all and it changes no terrain. **The forestry pair is a separate slice** — it wants mutable terrain, cache invalidation, a growth rate, and it reaches into §2.3 and §2.7. Doing them together would be two hard things landing at once, which this project has now learned about twice.
 
-### 12.5 Open, and worth Joe's answer before the forestry slice
+### 12.5 Resolved (Joe, 2026-07-28)
 
-1. **Does an unpainted forest get cut at all?** Either the harvest brush is the *only* way to fell (maximal control, but a village with no zone painted quietly stops building) or there is a default. *Recommendation: a village with no harvest zone cuts nothing, and is prompted* — same as residential. Consistent, and it makes the brush meaningful rather than advisory.
-2. **Do trees regrow on their own, or only where planted?** *Recommendation: slow natural regrowth plus faster deliberate planting.* Pure planting makes an early mistake unrecoverable; pure regrowth makes the planting brush pointless.
-3. **Is planting gated behind the managed-forestry unlock, or available from the start?** *Recommendation: gated* — it is the concrete node §2.7 has been waiting for, and it gives the tech tree something to be about that the player will actually feel.
+1. **Unpainted forest is not cut.** The harvest brush is the only way to fell. Maximal player control, and it makes the brush meaningful rather than advisory.
+2. **Slow natural regrowth, plus faster deliberate planting.**
+3. **Planting is gated behind the managed-forestry unlock.**
+
+### 12.6 The three answers interlock — and one of them is load-bearing
+
+Read together they form a loop, and it is worth spelling out because **removing any one breaks it**:
+
+> You may only fell what you paint. Felling is therefore always a decision. A valley cleared too eagerly is a mistake you can see. **Natural regrowth is what makes that mistake survivable** rather than terminal — and deliberate planting, once earned, is what makes it *recoverable on purpose* instead of by waiting.
+
+Pure planting-only regrowth would make an early over-clearing unrecoverable before the player had any way to learn the lesson — and since planting is gated behind an unlock that takes generations, they would be locked out of the fix at exactly the moment they needed it. **Natural regrowth is what keeps the gate fair.** That interaction is the reason all three answers have to move together.
+
+### 12.7 Two consequences that need handling, not just noting
+
+**1. A founding village with nothing painted cannot survive.** If unpainted forest is never cut, then a fresh game fells no logs → makes no firewood → freezes in its first winter, and builds no homes ever. Options:
+
+- **Found the village with a starter harvest zone and residential zone already painted** *(recommended)* — the exiles arrive having already decided where to cut and where to live, which is both plausible and a gentle tutorial: the player sees what a zone looks like before being asked to paint one.
+- Prompt at tick zero and pause. Correct but a cold open, and it makes the first thing the game asks of a player a decision they have no basis for.
+
+**2. Planting cannot ship until the tech tree exists.** It is gated behind managed forestry, and there is no tech tree yet (§2.7 is unbuilt). So the forestry work splits again:
+
+- **Harvest brush** — buildable now. Mutable terrain, cache invalidation, natural regrowth.
+- **Planting brush** — waits for §2.7, and becomes that pillar's first real node.
+
+That is not a delay so much as the right order: the harvest brush is what *creates the problem* managed forestry solves, and a tech node that answers a pressure the player has actually felt is worth far more than one that arrives before the pressure does.
+
+### 12.8 Numbers that must be derived, not picked (D16)
+
+- **Natural regrowth rate.** Stated target rather than a number: *a valley cleared by a village of thirty should take about a generation to come back on its own.* That makes deforestation a **generational** mistake, which is §1.5's core loop, and it gives managed forestry something concrete to beat.
+- **Felling yield per forest tile**, against the existing `cut_yield` — today a tree stand is inexhaustible, so this is a new quantity and the whole timber economy is derived against it.
+
+---
+
+## 13. Slices
+
+Small and green before the next, as with the fuel chain and storage. Each is a thing you could stop after.
+
+**1. The singleton seam (§4).** No player-facing change; the village still founds itself exactly as it does today. Granaries, sheds and markets become plural everywhere: *"is there food?"* across all of them, *"where do I deposit?"* the nearest with room, and `PopulationCeiling` derived from **total** capacity. **Worth shipping even if everything after it stalled**, because the singleton assumption is a live bug the moment anything creates a second store.
+
+**2. Placing a building.** Granary, shed, market, woodcutter's hut. Construction sites, materials hauled from the shed, a `Builder` job that competes and yields first. Free-form with warnings; demolition returns some materials. **This is where D33 finally pays: build a second granary, watch the village grow past its old ceiling.** The clearest cause and effect the game has offered anybody.
+
+**3. The residential brush.** Zones as sim state — saved, hashed, deterministic. `ChooseSite` constrained to the painted area. The zone is checked *when painted* and warns about distance to work. The village prompts when it needs somewhere to build. Founding starts with a starter zone (§12.7).
+
+**4. The harvest brush.** Mutable terrain, and therefore the flow-field cache invalidation D41 predicted. Forest becomes finite and located; felling recedes it; natural regrowth returns it on a derived, generational timescale. This is the slice that makes §2.3 real.
+
+**5. The planting brush.** Waits for the tech tree (§2.7), whose first node it becomes.
+
+Bridges (D40) land after 2, since they are a placeable building with a technology behind them — and they are also what makes `specs/pathfinding-and-water.md §12.3` worth fixing, because a river is only interesting once crossing it is a decision.
