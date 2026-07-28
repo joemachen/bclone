@@ -532,7 +532,29 @@ public partial class VillageMap : Control
     /// </remarks>
     private void DrawTheGhost()
     {
-        if (_building is null || !_world!.Map.Contains(_hovered))
+        if (_building is null)
+        {
+            return;
+        }
+
+        // WHERE THE AMBER STARTS, drawn only while placing.
+        //
+        // The warning fires past a distance the player cannot see, which makes it
+        // undiscoverable — Joe placed several buildings and never met one. A ring at
+        // exactly that radius turns a hidden constant into a line on the map, so
+        // "people will spend their days walking to it" arrives as confirmation of
+        // something already visible rather than as a surprise.
+        //
+        // Only while the build menu is open: it is a placement aid, not furniture.
+        SimWorld world = _world!;
+        GridPos village = world.Households.Count > 0
+            ? world.Households[0].HomePosition
+            : world.Map.FoundingSite;
+
+        float comfortable = VillageEconomy.MaxHomeToVillageTiles(world.Config) * _pixelsPerTile;
+        DrawArc(ToScreen(village), comfortable, 0f, Mathf.Tau, 96, GhostWarned with { A = 0.35f }, 1f);
+
+        if (!world.Map.Contains(_hovered))
         {
             return;
         }
