@@ -38,7 +38,9 @@ public static class Phase0Fixtures
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,
-        HungerPerTick = 10,
+        // Seven per tick — a meal every 2.8 days. See SimConfig.HungerPerTick for why
+        // it is not ten; Phase 0's world moves at the same pace as the village's.
+        HungerPerTick = 7,
         HungerMax = 100,
         EatThreshold = 80,
         EatReducesHunger = 80,

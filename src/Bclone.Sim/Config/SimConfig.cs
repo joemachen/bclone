@@ -52,8 +52,34 @@ public sealed record SimConfig
     // ---------------------------------------------------------------
 
     /// <summary>Hunger gained per tick.</summary>
+    /// <remarks>
+    /// <para>
+    /// Seven, not ten. At ten a villager crossed <see cref="EatThreshold"/> every eight
+    /// ticks — a meal every two days — which read as people permanently interrupting
+    /// themselves to eat. Joe watching a run: <em>"the hunger is too aggressive and
+    /// maybe it should be slower."</em> Seven is a meal every 2.8 days: forty per cent
+    /// slower, and still a cadence you can watch rather than calculate.
+    /// </para>
+    /// <para>
+    /// <b>Seven is where it stops being free, and that was measured rather than
+    /// guessed.</b> Over 300 years the village holds a band of 17–32 at seven, against
+    /// 16–31 at ten — unchanged. Below that it comes apart: 12–31 at six, 9–31 at five.
+    /// Nobody starves at any of them, so it is not a food failure — a slower-eating
+    /// village needs a smaller winter store per head, which is a thinner buffer, and a
+    /// thinner buffer swings harder. Slowing hunger further means widening the
+    /// population wave, and that trade should be made deliberately if it is made.
+    /// </para>
+    /// <para>
+    /// <b>This is not a cosmetic dial.</b> It sets what an adult eats in a year, which
+    /// is the number <see cref="World.VillageEconomy"/> derives the entire food economy
+    /// from — the gather yield, the winter store, and the hands that can be spared for
+    /// anything else. Changing it re-derives all of them (D16), and the tests assert
+    /// the shipped config still meets its targets, so a change here fails the build
+    /// rather than the village.
+    /// </para>
+    /// </remarks>
     [JsonPropertyName("hunger_per_tick")]
-    public int HungerPerTick { get; init; } = 10;
+    public int HungerPerTick { get; init; } = 7;
 
     /// <summary>Hunger ceiling. Sitting here is what eventually kills.</summary>
     [JsonPropertyName("hunger_max")]

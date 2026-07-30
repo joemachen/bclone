@@ -782,6 +782,15 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
+        // The ordinary meal, and the one the audit log was missing: only eating from
+        // one's own arms was recorded, so the trail showed four meals in a lifetime
+        // instead of the several thousand a villager actually eats. A log that reports
+        // the rare path and not the common one is worse than none — it invites exactly
+        // the wrong conclusion about how often people eat.
+        world.LogVillager(LogLevel.Debug, villager, "needs",
+            $"ate {mealCost} from the {world.HouseholdOf(villager).Name} larder " +
+            $"(hunger was {villager.Hunger}, {world.HouseholdOf(villager).Stockpile.Food} left)");
+
         Feed(villager, config);
         return true;
     }

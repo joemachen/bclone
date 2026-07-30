@@ -48,10 +48,30 @@
   "max_ticks_per_frame": 250,
 
   // ---- Needs -------------------------------------------------
-  // Hunger fills in 10 ticks and the villager eats at 80, so they
-  // eat roughly every 2 days. That cadence is chosen to be READ
-  // rather than calculated — you should be able to watch it.
-  "hunger_per_tick": 10,
+  // The villager eats at 80 hunger, so at 7 a tick that is a meal
+  // every 11 ticks - roughly every 2.8 days. That cadence is
+  // chosen to be READ rather than calculated: you should be able
+  // to watch it.
+  //
+  // SEVEN, NOT TEN. At ten it was a meal every two days, which read
+  // as people permanently interrupting themselves to eat and left a
+  // working day that did not look like work. Joe, watching a run:
+  // "the hunger is too aggressive and maybe it should be slower."
+  //
+  // SEVEN IS ALSO WHERE IT STOPS BEING FREE, and that was measured
+  // over 300 years rather than guessed. The village holds a band of
+  // 17-32 at seven against 16-31 at ten - unchanged. Below that it
+  // comes apart: 12-31 at six, 9-31 at five. Nobody starves at any
+  // of them, so it is not a food failure. A slower-eating village
+  // needs a smaller winter store per head, a smaller store is a
+  // thinner buffer, and a thinner buffer swings harder. Slowing
+  // hunger further means widening the population wave, and that is
+  // a trade to make deliberately if it is made at all.
+  //
+  // Not a cosmetic dial: this sets what an adult eats in a year,
+  // which is the number the whole food economy is derived from
+  // (D16). gather_yield and stockpile_target below moved with it.
+  "hunger_per_tick": 7,
   "hunger_max": 100,
   "eat_threshold": 80,
   "eat_reduces_hunger": 80,
@@ -74,17 +94,23 @@
   // from the first home starved the outskirts, and deriving from the
   // last home (which happens to sit beside a thicket) assumed everybody
   // had a one-tile commute and starved the whole village.
-  // Re-derived when the valley became generated (D18): the canonical ring of sites
-  // plus the worst jitter the generator may add is a longer walk than the
-  // hand-placed layout was, so a trip has to bring back more. 60 -> 86.
-  "gather_yield": 86,
+  // DERIVED, and re-derived every time an input moves (D16). 60 for the
+  // hand-placed valley; 86 once the map was generated and the walk got
+  // longer; 47 now that hunger runs slower and an adult eats 105 a year
+  // rather than 150. Leaving it at 86 would have PASSED the test - the
+  // guard only asks that the shipped value is enough - and quietly made
+  // food a non-constraint, which is the opposite of what this game is
+  // about.
+  "gather_yield": 47,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
   // Also DERIVED: enough to carry one member through a foraging-less
   // winter, plus the margin that absorbs a worker dying part-way
   // through one. Per member, not per household.
-  "stockpile_target": 67,
+  // Also derived, and it moved with hunger: a quarter of what an adult
+  // eats in a year, plus the winter margin. 67 -> 46.
+  "stockpile_target": 46,
 
   // ---- The valley --------------------------------------------
   // Wide rather than square: the terrain DESIGN.md §2.5 describes is
@@ -225,10 +251,11 @@
   // "exactly affordable" produces a village that is warm by construction
   // with nobody left to build and no slack for a long winter, which is
   // useless the moment anything pushes on it.
-  // Also re-derived for the generated valley: the stand sits on its own ring now and
-  // the haul to the shed is costed against it, so fewer trips fit in a year and each
-  // batch has to be bigger to heat the same homes. 36 -> 141.
-  "firewood_per_split": 141,
+  // Re-derived twice: 36 -> 141 when the valley became generated and the
+  // haul to the shed got longer, then 141 -> 22 when hunger slowed. Fewer
+  // meals means fewer ticks lost to eating, so a woodcutter fits far more
+  // batches into a year and each one can be much smaller.
+  "firewood_per_split": 22,
 
   // Per household, not per member: a house costs the same to heat
   // whether two live in it or five. That makes SPRAWL the thing that
