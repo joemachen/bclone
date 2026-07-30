@@ -311,6 +311,12 @@ internal static class LabourAllocator
         AppendRival(world, workplace, cost, candidates, index, reason);
 
         villager.JobReason = reason.ToString();
+
+        // Into the audit log as well as onto the villager. The sentence on a villager
+        // answers "why is she doing that?" for whoever is looking right now; the log
+        // answers "why did the whole village rearrange itself in year 84?", which is a
+        // question nobody can ask a UI panel a century later.
+        world.LogVillager(LogLevel.Debug, villager, "labour", villager.JobReason);
     }
 
     /// <summary>
@@ -434,6 +440,8 @@ internal static class LabourAllocator
                   $"within reach of home."
                 : $"No work: the village has all the hands it needs on the work that matters " +
                   $"— {quota}";
+
+            world.LogVillager(LogLevel.Debug, villager, "labour", villager.JobReason);
         }
     }
 
@@ -455,6 +463,11 @@ internal static class LabourAllocator
                 movers.Add($"{villager.Name} to {now.Name}");
             }
         }
+
+        // The quota that produced this pass, whether or not anybody moved. Logged
+        // BEFORE the early return on purpose: "nobody changed jobs this year" is itself
+        // something an audit needs explained, and the demand is the explanation.
+        world.Log(LogLevel.Debug, "labour", $"The village wants: {LabourQuota.For(world)}");
 
         if (movers.Count == 0)
         {

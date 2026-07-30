@@ -1361,4 +1361,34 @@ public sealed class SimWorld
     /// </remarks>
     public void Log(LogLevel level, string subsystem, string message) =>
         Logger.Log(Tick, level, subsystem, message);
+
+    /// <summary>
+    /// Whether anything is listening at this level.
+    /// </summary>
+    /// <remarks>
+    /// <b>Guard every DEBUG line with this.</b> The audit log is detailed enough that
+    /// building its messages unconditionally would cost real time in the 300-year
+    /// acceptance runs, where the sink discards them all — string interpolation happens
+    /// before the sink ever gets a say. This is the check that makes rich logging free
+    /// when nobody is reading it.
+    /// </remarks>
+    public bool Logs(LogLevel level) => level >= Logger.MinimumLevel;
+
+    /// <summary>
+    /// Record something a particular villager did, for the audit log.
+    /// </summary>
+    /// <remarks>
+    /// Named and numbered, always in the same shape, so a run can be filtered down to
+    /// one person's whole life with a text search. That is what turns a log into
+    /// something you can answer questions with rather than something you scroll.
+    /// </remarks>
+    public void LogVillager(LogLevel level, Villager villager, string subsystem, string message)
+    {
+        if (!Logs(level))
+        {
+            return;
+        }
+
+        Log(level, subsystem, $"{villager.Name} #{villager.Id}: {message}");
+    }
 }

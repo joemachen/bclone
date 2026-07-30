@@ -31,6 +31,11 @@ public partial class Main : Control
     private SimLoop _loop = null!;
     private FixedTimestepDriver _driver = null!;
     private InMemoryLogSink _sink = null!;
+
+    /// <summary>The full audit trail on disk — everything down to DEBUG.</summary>
+    private FileLogSink _audit = null!;
+    private string _logPath = string.Empty;
+
     private string _configSource = string.Empty;
 
     private Label _clockLabel = null!;
@@ -52,9 +57,30 @@ public partial class Main : Control
     {
         SimConfig config = ConfigLocator.LoadOrDefault(out _configSource);
 
+        // TWO SINKS, WANTING DIFFERENT THINGS.
+        //
+        // The village log on screen is the story (D8) and stays at INFO — six hundred
+        // foraging trips would bury the handful of lines that carry it (D9). The file
+        // takes everything down to DEBUG so a run can be audited afterwards: every
+        // state change, every load carried, every job and every refusal, tick-stamped.
+        //
+        // The wall-clock filename is a filesystem concern and never enters the sim,
+        // which is why FileLogSink takes the name rather than reading a clock —
+        // Bclone.Sim is not allowed to know what time it is (BannedSymbols.txt).
         _sink = new InMemoryLogSink(LogLevel.Info);
-        _loop = SimFactory.CreatePhase0(config, _sink);
-        _driver = new FixedTimestepDriver(config, _sink);
+
+        string logDirectory = System.IO.Path.Combine(
+            System.IO.Directory.GetCurrentDirectory(), "logs");
+        string logPath = System.IO.Path.Combine(
+            logDirectory, $"bclone-{System.DateTime.Now:yyyyMMdd-HHmmss}.log");
+
+        _audit = new FileLogSink(logPath, LogLevel.Debug, alsoConsole: false);
+        _logPath = logPath;
+
+        var sinks = new CompositeLogSink(_sink, _audit);
+
+        _loop = SimFactory.CreatePhase0(config, sinks);
+        _driver = new FixedTimestepDriver(config, sinks);
 
         BuildUi();
         Refresh();
@@ -71,6 +97,14 @@ public partial class Main : Control
 
         Refresh();
     }
+
+    /// <summary>Close the audit log cleanly when the window goes.</summary>
+    /// <remarks>
+    /// It auto-flushes on every line, so nothing is lost if the process is killed — but
+    /// leaving the handle open would keep the file locked against whoever wants to read
+    /// it, which is the whole point of writing it.
+    /// </remarks>
+    public override void _ExitTree() => _audit?.Dispose();
 
     public override void _UnhandledKeyInput(InputEvent @event)
     {
@@ -345,7 +379,11 @@ public partial class Main : Control
         _villageLabel = Body(string.Empty);
         column.AddChild(_villageLabel);
 
-        _seedLabel = Muted($"seed {_loop.World.Seed}   ·   config: {_configSource}");
+        // The seed and the audit log together, because they are the two things you need
+        // to reproduce and explain a run: the seed says which world, the log says what
+        // happened in it.
+        _seedLabel = Muted(
+            $"seed {_loop.World.Seed}   ·   config: {_configSource}   ·   log: {_logPath}");
         column.AddChild(_seedLabel);
 
         // Time controls sit at the TOP, under the header. Belt and braces after two

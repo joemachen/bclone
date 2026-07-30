@@ -112,6 +112,20 @@ Categories (only include the ones you use): **Added**, **Changed**,
   at what the buildings support instead of overshooting and falling back. Measured over
   200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
   across goods, not per good: a shed packed with logs has nowhere to stack firewood.
+- **A full audit trail, written every run.** `logs/bclone-<timestamp>.log` now takes
+  everything down to `DEBUG` — every villager state change, every load carried, every
+  job taken and every refusal, tick-stamped and attributed to a subsystem — while the
+  on-screen village log stays the sparse `INFO` story it has always been (D8, D9). A
+  new `CompositeLogSink` fans one entry out to both, because the two want opposite
+  things and duplicating the call sites is how they would drift apart.
+  - **Villager events are recorded from one place**: `BehaviorSystem.Execute` takes a
+    before-and-after of each villager's state, position and load. A line inside each of
+    the twenty-odd branches would have been wrong within a week — somebody adds a
+    branch and the trail has a hole in exactly the case they were debugging.
+  - `DEBUG` lines are guarded by `world.Logs(level)` so a village logging at `INFO`
+    pays nothing to build strings it discards. The 300-year runs are unchanged.
+  - The log path sits in the header beside the seed: together they are what reproduces
+    and explains a run.
 - **The residential brush** (D42; placement slice 3) — the player paints where the
   village may live, and the village builds inside it **when it has a reason to**. A
   painted area with no housing shortage produces nothing, and that is the brush working

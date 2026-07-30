@@ -34,9 +34,83 @@ public sealed class BehaviorSystem : ISimSystem
         // Always in id order — see spec §4b.
         for (int i = 0; i < world.Villagers.Count; i++)
         {
-            ActOne(world, world.Villagers[i]);
+            Villager villager = world.Villagers[i];
+
+            // EVERY CHANGE OF STATE IS RECORDED, from one place.
+            //
+            // The alternative was a log line inside each of the twenty-odd branches
+            // below, which would have been wrong within a week: somebody adds a branch
+            // and the audit trail quietly has a hole in exactly the case they were
+            // debugging. Taking a before-and-after here catches all of them, including
+            // the ones nobody has written yet.
+            //
+            // Guarded, because building these strings for a sink that discards them
+            // would cost real time in the 300-year runs.
+            if (!world.Logs(LogLevel.Debug))
+            {
+                ActOne(world, villager);
+                continue;
+            }
+
+            VillagerState before = villager.State;
+            GridPos wasAt = villager.Position;
+            int hadFood = villager.CarriedFood;
+            int hadLogs = villager.CarriedLogs;
+            int hadFirewood = villager.CarriedFirewood;
+
+            ActOne(world, villager);
+
+            if (villager.State != before)
+            {
+                world.LogVillager(LogLevel.Debug, villager, "behavior",
+                    $"{Describe(before)} -> {Describe(villager.State)} at {villager.Position}");
+            }
+            else if (villager.Position != wasAt)
+            {
+                world.LogVillager(LogLevel.Trace, villager, "behavior",
+                    $"{Describe(villager.State)}, {wasAt} -> {villager.Position}");
+            }
+
+            // Goods changing hands is the other half of an audit: "why is the granary
+            // empty" is answered by who carried what, and when.
+            int food = villager.CarriedFood - hadFood;
+            int logs = villager.CarriedLogs - hadLogs;
+            int firewood = villager.CarriedFirewood - hadFirewood;
+
+            if (food != 0 || logs != 0 || firewood != 0)
+            {
+                world.LogVillager(LogLevel.Debug, villager, "goods",
+                    $"carrying {Change(food, "food")}{Change(logs, "logs")}" +
+                    $"{Change(firewood, "firewood")}" +
+                    $"— now {villager.CarriedFood}f/{villager.CarriedLogs}l/{villager.CarriedFirewood}w");
+            }
         }
     }
+
+    /// <summary>A state in words rather than an enum name, so the log reads.</summary>
+    private static string Describe(VillagerState state) => state switch
+    {
+        VillagerState.Idle => "idle",
+        VillagerState.TravelingToFood => "walking to forage",
+        VillagerState.Gathering => "gathering",
+        VillagerState.TravelingHome => "walking home",
+        VillagerState.TravelingToTrees => "walking to the stand",
+        VillagerState.Cutting => "felling",
+        VillagerState.Resting => "resting",
+        VillagerState.Dead => "dead",
+        VillagerState.TravelingToHut => "walking to the hut",
+        VillagerState.MakingFirewood => "splitting logs",
+        VillagerState.HaulingToStore => "hauling to a store",
+        VillagerState.FetchingFromStore => "fetching from a store",
+        VillagerState.CollectingForMarket => "collecting for the market",
+        VillagerState.DeliveringToHome => "delivering to a home",
+        VillagerState.FetchingMaterials => "fetching building materials",
+        VillagerState.Building => "building",
+        _ => state.ToString(),
+    };
+
+    private static string Change(int delta, string what) =>
+        delta == 0 ? string.Empty : $"{(delta > 0 ? "+" : string.Empty)}{delta} {what} ";
 
     private static void ActOne(SimWorld world, Villager villager)
     {
@@ -688,6 +762,8 @@ public sealed class BehaviorSystem : ISimSystem
         {
             villager.CarriedFood -= mealCost;
             Feed(villager, config);
+            world.LogVillager(LogLevel.Debug, villager, "needs",
+                $"ate {mealCost} from their own arms (hunger was {villager.Hunger})");
             return true;
         }
 
