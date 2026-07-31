@@ -32,25 +32,43 @@ public sealed class LabourTests
     [Fact]
     public void NoPublicApiLetsACallerAssignAVillagerToAWorkplace()
     {
-        // The Banished pattern being deleted is slotting N workers into a building.
-        // The surest way not to drift back toward it is to make it unexpressible, so
-        // this asserts the absence of the API rather than trusting nobody adds one.
+        // The Banished pattern being deleted is slotting a NAMED WORKER into a
+        // building. The surest way not to drift back toward it is to make it
+        // unexpressible, so this asserts the absence of the API rather than trusting
+        // nobody adds one.
+        //
+        // NARROWED FOR D51, deliberately and with the line restated. The player may now
+        // say how many hands a workplace gets — SimWorld.SetStaffing — and that is not
+        // this pattern: it sets a COUNT, and proximity, household and catchment still
+        // choose the person, so every "why is Elias here?" sentence stays true. What
+        // must remain impossible is naming a villager and binding them to a workplace.
+        // So the guard now tests the signature rather than the verb: no public method
+        // may take both a villager and a workplace.
         var offenders = new List<string>();
 
         foreach (Type type in typeof(SimWorld).Assembly.GetExportedTypes())
         {
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
-                string name = method.Name;
-                bool soundsLikeAssignment =
-                    name.Contains("Assign", StringComparison.OrdinalIgnoreCase)
-                    || name.Contains("Hire", StringComparison.OrdinalIgnoreCase)
-                    || name.Contains("SetJob", StringComparison.OrdinalIgnoreCase)
-                    || name.Contains("SetWorker", StringComparison.OrdinalIgnoreCase);
-
-                if (soundsLikeAssignment)
+                if (method.ReturnType != typeof(void))
                 {
-                    offenders.Add($"{type.Name}.{name}");
+                    // A method that hands something back is answering a question, not
+                    // issuing an order. CostToWork(villager, workplace) is exactly the
+                    // shape being allowed here, and it is a reader.
+                    continue;
+                }
+
+                bool takesAVillager = false;
+                bool takesAWorkplace = false;
+                foreach (ParameterInfo parameter in method.GetParameters())
+                {
+                    takesAVillager |= parameter.ParameterType == typeof(Villager);
+                    takesAWorkplace |= parameter.ParameterType == typeof(Workplace);
+                }
+
+                if (takesAVillager && takesAWorkplace)
+                {
+                    offenders.Add($"{type.Name}.{method.Name}");
                 }
             }
         }

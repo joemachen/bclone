@@ -131,8 +131,45 @@ public sealed class Workplace
     public Stockpile Store { get; } = new();
 
     /// <summary>True when there is no room for anyone else.</summary>
-    public bool IsFull => WorkerIds.Count >= Capacity;
+    /// <summary>
+    /// How many hands the player has insisted on here, or null to let the village
+    /// decide (D51).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Null is the default and must stay the default.</b> The pillar this sits
+    /// beside (§2.2) exists to delete Banished's slotting of N workers into a building,
+    /// and a game that opens with a number on every workplace is that game whatever the
+    /// numbers say. An override is opt-in: a player who never touches one plays the
+    /// village the quota describes.
+    /// </para>
+    /// <para>
+    /// <b>What is overridden is the count, never the person.</b> The player says how
+    /// many; proximity, household and catchment still choose who, and every "why is
+    /// Elias here?" sentence stays true. That is D42's zoning pattern applied to
+    /// labour — you paint the neighbourhood, the sim picks the tile.
+    /// </para>
+    /// <para>
+    /// Player intent, so it is sim state: hashed, deterministic, part of the seed
+    /// contract, exactly as zones are.
+    /// </para>
+    /// </remarks>
+    public int? StaffingOverride { get; set; }
+
+    /// <summary>
+    /// Hands the village will actually staff here — the override if there is one,
+    /// otherwise what physically fits.
+    /// </summary>
+    /// <remarks>
+    /// The single place the two are reconciled. Everything that used to ask
+    /// <see cref="Capacity"/> asks this instead, so an override cannot be honoured by
+    /// half the code and ignored by the other half — which is this project's most
+    /// repeated bug.
+    /// </remarks>
+    public int Places => StaffingOverride ?? Capacity;
+
+    public bool IsFull => WorkerIds.Count >= Places;
 
     /// <summary>Room still going spare.</summary>
-    public int OpenPositions => Capacity - WorkerIds.Count;
+    public int OpenPositions => Places - WorkerIds.Count;
 }

@@ -509,7 +509,7 @@ public readonly record struct LabourQuota
             Workplace workplace = world.Workplaces[i];
             if (workplace.Kind == JobKind.Builder && workplace.Construction is { IsFinished: false })
             {
-                seats += workplace.Capacity;
+                seats += workplace.Places;
             }
         }
 
@@ -612,7 +612,7 @@ public readonly record struct LabourQuota
         {
             if (world.Workplaces[i].Kind == kind)
             {
-                total += world.Workplaces[i].Capacity;
+                total += world.Workplaces[i].Places;
             }
         }
 

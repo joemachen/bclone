@@ -334,6 +334,60 @@ public partial class Main : Control
     }
 
     /// <summary>The player clicked the map while not placing anything.</summary>
+    private Workplace? SelectedWorkplace()
+    {
+        if (_selectedTile is not GridPos tile)
+        {
+            return null;
+        }
+
+        foreach (Workplace workplace in _loop.World.Workplaces)
+        {
+            if (workplace.Position == tile && workplace.Construction is null)
+            {
+                return workplace;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Nudge the selected workplace's staffing, or hand it back to the village.</summary>
+    /// <remarks>
+    /// Buttons rather than a spinner, because the numbers are small and a click is
+    /// cheaper to reach for than a text field. "Let the village decide" is a first-class
+    /// control and not a magic value like -1: reverting is a thing players do often, and
+    /// it has to be as easy as setting.
+    /// </remarks>
+    private void ChangeStaffing(int delta)
+    {
+        Workplace? workplace = SelectedWorkplace();
+        if (workplace is null)
+        {
+            return;
+        }
+
+        int from = workplace.StaffingOverride ?? workplace.Places;
+        int wanted = from + delta;
+        if (wanted < 0)
+        {
+            wanted = 0;
+        }
+
+        _loop.World.SetStaffing(workplace, wanted);
+        RefreshInspector(_loop.World);
+    }
+
+    private void LetTheVillageDecideStaffing()
+    {
+        Workplace? workplace = SelectedWorkplace();
+        if (workplace is not null)
+        {
+            _loop.World.SetStaffing(workplace, null);
+            RefreshInspector(_loop.World);
+        }
+    }
+
     private void OnBuildingClicked(GridPos tile)
     {
         _selectedTile = tile;
@@ -425,9 +479,18 @@ public partial class Main : Control
         }
 
         lines.Add(workplace.WorkerIds.Count == 0
-            ? $"Nobody works here. Room for {workplace.Capacity}."
+            ? $"Nobody works here. Room for {workplace.Places}."
             : $"Worked by {WorkerNames(world, workplace)} — {workplace.WorkerIds.Count} of " +
-              $"{workplace.Capacity} places filled");
+              $"{workplace.Places} places filled");
+
+        // Who decided that number (D51). Said in words rather than shown as a widget
+        // state, because "the village decides" and "you said two" are different facts
+        // about the same building and the player should be able to tell which they are
+        // looking at.
+        lines.Add(workplace.StaffingOverride is int set
+            ? $"Staffing: you have asked for {set}. Room for {workplace.Capacity}."
+            : $"Staffing: left to the village — it wants {LabourQuota.For(world).For(workplace.Kind)} " +
+              $"on this kind of work. Room for {workplace.Capacity}.");
 
         // The buffer at the point of production (D30). Worth showing because it is how
         // you tell "idle for want of a worker" from "idle for want of logs" (D29).
@@ -820,6 +883,24 @@ public partial class Main : Control
         row.AddChild(_placementLabel);
 
         _map.PlacementMessageChanged += message => _placementLabel.Text = message;
+
+        // Staffing, on the same row (D51). Deliberately NOT a control that appears only
+        // when a workplace is selected: a button that comes and goes is a button the
+        // player has to hunt for, and these do nothing harmful when nothing is selected.
+        row.AddChild(new VSeparator());
+        row.AddChild(Muted("Staffing:"));
+
+        var fewer = new Button { Text = "−1" };
+        fewer.Pressed += () => ChangeStaffing(-1);
+        row.AddChild(fewer);
+
+        var more = new Button { Text = "+1" };
+        more.Pressed += () => ChangeStaffing(+1);
+        row.AddChild(more);
+
+        var auto = new Button { Text = "Let the village decide" };
+        auto.Pressed += LetTheVillageDecideStaffing;
+        row.AddChild(auto);
 
         // Under the time controls, above the map. Taking the column explicitly rather
         // than casting whatever was handed in: the first version took the UI root and

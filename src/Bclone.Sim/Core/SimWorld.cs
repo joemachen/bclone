@@ -707,6 +707,51 @@ public sealed class SimWorld
     }
 
     /// <summary>Look up a workplace by id, or null.</summary>
+    /// <summary>
+    /// Tell the village how many hands to put on a workplace, or null to let it decide
+    /// again (D51).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This sets a number, never a person</b>, and that distinction is the whole
+    /// reason it is allowed to exist. D15 removed the API that named a villager and put
+    /// them in a job, and that stays removed: proximity, household and catchment still
+    /// choose who goes where, so every "why is Elias at the stand?" sentence remains
+    /// true. The player shapes the field; they do not command anybody — §2.2's
+    /// philosophy, and the same trade D42 made for housing.
+    /// </para>
+    /// <para>
+    /// <b>Zero is meaningful and different from null.</b> Zero is "nobody works here,
+    /// I mean it"; null is "I have no opinion, do what you think best". The market has
+    /// shipped a switched-off setting since D36, so a workplace nobody staffs is a
+    /// supported state rather than a broken one.
+    /// </para>
+    /// <para>
+    /// The village does not re-plan on the spot: the change lands at the next labour
+    /// pass, which is at worst a season away and immediately if a job has just fallen
+    /// vacant (D47). Re-running the allocator from a UI click would make staffing the
+    /// one decision in this game that stops the world.
+    /// </para>
+    /// </remarks>
+    public void SetStaffing(Workplace workplace, int? places)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (places is int wanted && wanted < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(places), places, "A workplace cannot be staffed by fewer than nobody.");
+        }
+
+        workplace.StaffingOverride = places;
+
+        Narrate(places is int n
+            ? $"{workplace.Name} is to be worked by {n} {(n == 1 ? "person" : "people")} " +
+              $"from now on. {Clock.SeasonAndYear()}."
+            : $"{workplace.Name} is left to the village to staff as it sees fit. " +
+              $"{Clock.SeasonAndYear()}.");
+    }
+
     public Workplace? FindWorkplace(int id)
     {
         for (int i = 0; i < Workplaces.Count; i++)

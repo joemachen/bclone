@@ -98,6 +98,14 @@ public static class StateHash
         {
             Workplace workplace = world.Workplaces[i];
             hash = MixUInt32(hash, (uint)workplace.Id);
+
+            // Player intent is sim state (D42's rule, D51's case): an override changes
+            // who works where, so two runs of one seed that differ in it are different
+            // runs and must hash differently. Null hashes distinctly from any real
+            // count, so "let the village decide" is not the same state as "0".
+            hash = MixUInt32(hash, workplace.StaffingOverride is int places
+                ? (uint)places + 1u
+                : 0u);
             hash = MixUInt32(hash, (uint)workplace.WorkerIds.Count);
             for (int k = 0; k < workplace.WorkerIds.Count; k++)
             {
