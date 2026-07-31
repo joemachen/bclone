@@ -50,6 +50,43 @@ public sealed class ShippedConfigTests
         throw new System.InvalidOperationException("Could not find the repo root.");
     }
 
+    /// <summary>
+    /// The larder-logs invariant, asserted against the file the game actually loads.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="LogsNeverRestInLardersTests"/> proves this for
+    /// <c>VillageFixtures.Village</c>. It is repeated here on purpose: the two configs
+    /// can and do diverge, and the leak this guards was found in the <em>shipped</em>
+    /// one — 240 logs frozen in two houses — while the fixture village was only losing
+    /// 90 and surviving it. A guard that only watches the fixture would have called
+    /// this fixed.
+    /// </remarks>
+    [Fact]
+    public void TheShippedVillageNeverStrandsLogsInALarder()
+    {
+        SimConfig config = Shipped;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        int worst = 0;
+        for (int year = 1; year <= 300; year++)
+        {
+            loop.Step(config.TicksPerYear);
+
+            for (int i = 0; i < world.Households.Count; i++)
+            {
+                int logs = world.Households[i].Stockpile.Logs;
+                if (logs > worst)
+                {
+                    worst = logs;
+                }
+            }
+        }
+
+        _output.WriteLine($"300 years on the shipped config; most logs ever in a larder: {worst}.");
+        Assert.True(worst == 0, $"A household held {worst} logs, which nothing can ever spend.");
+    }
+
     [Fact]
     public void TheVillageTheGameLoadsHoldsForThreeCenturies()
     {

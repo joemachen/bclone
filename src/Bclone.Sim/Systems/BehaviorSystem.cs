@@ -1086,7 +1086,35 @@ public sealed class BehaviorSystem : ISimSystem
         return smallest < c ? smallest : c;
     }
 
-    /// <summary>Put down whatever they are carrying, into their own household's store.</summary>
+    /// <summary>
+    /// Put down whatever they are carrying, into their own household's store —
+    /// <b>except logs</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Logs are never household goods, and letting them become so is a leak that
+    /// cannot drain.</b> A house is paid for by the whole village out of a shed (D25),
+    /// and goods live in buildings (D30) — so `TryTakeBuildingTimber`, the woodcutter
+    /// and every builder all read sheds. Nothing anywhere reads
+    /// <c>Household.Stockpile.Logs</c> except the state hash. A log that reaches a
+    /// larder is dead for the rest of the run.
+    /// </para>
+    /// <para>
+    /// <b>Measured, because it was killing villages.</b> A villager arrives home still
+    /// holding timber whenever a trip is interrupted — the season turns, the yearly
+    /// reshuffle takes their job, they stop to eat. Those armfuls accumulated: 240 logs
+    /// frozen in two houses for twenty years while a construction site wanted 28 and a
+    /// waiting couple wanted 30. Nobody starved and nobody froze; the village simply
+    /// could not build, so no new household ever formed and it aged out with a full
+    /// granary. This is D25's bug returning by a different road, and D30 was supposed
+    /// to have closed it.
+    /// </para>
+    /// <para>
+    /// So the timber stays in their arms and <see cref="ArriveAt"/> turns them round
+    /// toward a shed. Keeping it on the villager rather than teleporting it is the
+    /// point: goods move only by trips people make.
+    /// </para>
+    /// </remarks>
     private static void UnloadAtHome(SimWorld world, Villager villager)
     {
         if (!villager.IsCarrying)
@@ -1100,12 +1128,40 @@ public sealed class BehaviorSystem : ISimSystem
         // this much", and a fetch is goods changing hands (see Stockpile.Receive).
         // Food carried straight back from a gather IS production, though, so that
         // one is added rather than received.
-        larder.Receive(0, villager.CarriedLogs, villager.CarriedFirewood);
+        larder.Receive(0, 0, villager.CarriedFirewood);
         larder.Add(villager.CarriedFood);
 
         villager.CarriedFood = 0;
-        villager.CarriedLogs = 0;
         villager.CarriedFirewood = 0;
+
+        // The degenerate case, handled rather than assumed away: a village with no
+        // shed at all has nowhere to put timber, and sending them to one that does not
+        // exist would throw. Put it down and say so loudly — never silently (METHODOLOGY §4).
+        if (villager.CarriedLogs > 0 && !AnyShedStanding(world))
+        {
+            world.Log(
+                LogLevel.Warn,
+                "goods",
+                $"{villager.Name} came home with {villager.CarriedLogs} logs and the village has " +
+                "no shed to put them in, so they are stranded in the larder where nothing can " +
+                "spend them. Build a shed.");
+
+            larder.Receive(0, villager.CarriedLogs, 0);
+            villager.CarriedLogs = 0;
+        }
+    }
+
+    private static bool AnyShedStanding(SimWorld world)
+    {
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            if (world.StoreBuildings[i].Kind == StoreKind.Shed)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -1291,6 +1347,16 @@ public sealed class BehaviorSystem : ISimSystem
         // Home. Anything in their arms goes into the larder — a gather brought back
         // directly, or an armful fetched from the granary.
         UnloadAtHome(world, villager);
+
+        // Except timber. Anyone who reaches their door still carrying logs turns round
+        // and walks them to a shed, because a log in a larder is a log nobody can ever
+        // spend — see UnloadAtHome for the twenty years this cost.
+        if (villager.CarriedLogs > 0)
+        {
+            villager.State = VillagerState.HaulingToStore;
+            return;
+        }
+
         villager.State = onArrival == VillagerState.Idle ? VillagerState.Resting : onArrival;
     }
 
