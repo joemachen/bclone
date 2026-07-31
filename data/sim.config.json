@@ -30,21 +30,46 @@
   "economy_horizon_households": 20,
 
   // ---- Calendar ----------------------------------------------
-  // 4 ticks/day x 15 days x 4 seasons = 240 ticks per year.
-  // At 1 tick/sec that is 240 real seconds per in-game year at 1x,
-  // and 60 seconds at 4x - the pace Joe asked for.
-  // See specs/phase-0-vertical-slice.md §11 for the derivation.
+  // 4 ticks/day x 30 days x 4 seasons = 480 ticks per year.
+  //
+  // THIRTY, doubled from fifteen (Joe, 2026-07-31), and it is a design
+  // change rather than a tuning one. D45 states the danger of cold in
+  // WEEKS - about two outdoors, about six sheltered without a fire - and
+  // a fifteen-day season made that unsayable: six weeks was longer than
+  // winter existed, so the model could not be expressed in the calendar
+  // the game kept. A thirty-day season gives winter room for a threshold
+  // to sit inside it.
+  //
+  // It re-derives the economy, in the order the derivation runs (food
+  // before fuel): gather_yield 47 -> 46, stockpile_target 46 -> 95,
+  // firewood_per_split unchanged at 22. See those keys for why each moved
+  // as little or as much as it did.
   "ticks_per_day": 4,
-  "days_per_season": 15,
+  "days_per_season": 30,
 
   // ---- Playback only — NEVER read by sim logic ---------------
   // These control how fast the world is drawn, not what happens
   // in it. Changing them must not change sim outcomes; there is a
   // test that proves it (PlaybackSpeed_DoesNotAffectState).
-  // Set so that ONE IN-GAME YEAR TAKES 60 REAL SECONDS AT 4x, which
-  // is the intended watching speed. 240 ticks/year / (1.0 * 4) = 60s.
-  // Playback only - this cannot change what happens in the sim.
-  "target_ticks_per_second": 1.0,
+  // Set so that AN AVERAGE LIFE TAKES 60 REAL MINUTES AT 4x (Joe,
+  // 2026-07-31). That is the number that matters now, and it is a better
+  // one to state than the old "a year takes 60 seconds": the generational
+  // loop is the core loop (DESIGN.md §1.5), so how long a LIFE takes to
+  // watch is the pacing decision and a year is just its unit.
+  //
+  // Derived, not picked: lifespan_years_base is 45, so a year must take
+  // 3600/45 = 80 real seconds at 4x. 480 ticks/year / (1.5 * 4) = 80s.
+  // With the +/-5 year spread, a life runs 53-67 minutes.
+  //
+  // Was 1.0 at a 240-tick year, which gave 60s/year and a 40-50 minute
+  // life. Both numbers moved: the calendar doubled the ticks in a year,
+  // and Joe asked for the longer life.
+  //
+  // What changes on screen is that a DAY passes faster - a year has
+  // twice as many days in it and only a third more real time. That is
+  // the honest consequence of a longer calendar, and it is one number
+  // to put back.
+  "target_ticks_per_second": 1.5,
   "max_ticks_per_frame": 250,
 
   // ---- Needs -------------------------------------------------
@@ -101,7 +126,15 @@
   // guard only asks that the shipped value is enough - and quietly made
   // food a non-constraint, which is the opposite of what this game is
   // about.
-  "gather_yield": 47,
+  // 47 -> 46 when the season doubled, and the SIZE of that move is the
+  // interesting part: a longer year means an adult eats twice as much
+  // (105 -> 215) but also gets twice as many trips to gather it in
+  // (9 -> 19), so the two nearly cancel. A trip is worth what a trip is
+  // worth; lengthening the year does not change the physics of walking
+  // to a berry patch. Set to the DERIVED value, not merely to one that
+  // passes - the guard only asks for "enough", and leaving it at 47
+  // would have made food fractionally free for no stated reason.
+  "gather_yield": 46,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
@@ -109,8 +142,15 @@
   // winter, plus the margin that absorbs a worker dying part-way
   // through one. Per member, not per household.
   // Also derived, and it moved with hunger: a quarter of what an adult
-  // eats in a year, plus the winter margin. 67 -> 46.
-  "stockpile_target": 46,
+  // eats in a year, plus the winter margin. 67 -> 46 -> 95.
+  //
+  // 46 -> 95 is the one number the longer season really does double, and
+  // the reason is the one place where a longer year is NOT self-cancelling:
+  // winter is twice as long, and nothing can be gathered during any of it.
+  // Trips do not help you inside a season with no food in it. So the
+  // store has to carry a household twice as far, and the granary that
+  // holds it doubles with it (capacity 1410 -> 2850).
+  "stockpile_target": 95,
 
   // ---- The valley --------------------------------------------
   // Wide rather than square: the terrain DESIGN.md §2.5 describes is
@@ -268,7 +308,22 @@
   // time to notice and put hands back on the hut. A cold snap that
   // killed as fast as famine would give nobody a chance to respond,
   // which is the difference between pressure and a coin flip.
-  "freezing_ticks": 40,
+  //
+  // 40 -> 80, which keeps this slice honest rather than expressing D45.
+  // Stated: A HOUSEHOLD THAT RUNS OUT OF FIREWOOD IS IN DANGER ABOUT
+  // TWO-THIRDS OF THE WAY THROUGH WINTER. That was true at 40 ticks of a
+  // 60-tick winter and it is true at 80 of 120, so the calendar change
+  // leaves the game the same shape - which is the whole job of this
+  // slice. Leaving it at 40 would have made cold markedly DEADLIER (a
+  // third of the way into a winter twice as long), which is the opposite
+  // of the "dial down winter" this change is part of.
+  //
+  // D45 REPLACES THIS ENTIRELY and the numbers will not survive: cold
+  // becomes positional - about two weeks outdoors unclothed, about six
+  // sheltered without a fire - rather than one household-wide counter.
+  // Deliberately not anticipated here; two hard things at once is the
+  // mistake D42 records this project making twice.
+  "freezing_ticks": 80,
 
   // ---- Storage (D30, D32) ------------------------------------
   // Two buildings, not one. Food spoils and timber does not, and one
