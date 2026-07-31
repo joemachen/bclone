@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.World;
@@ -63,7 +64,75 @@ public sealed class LabourSystem : ISimSystem
         if (world.Tick % (ulong)config.TicksPerSeason == 0UL)
         {
             LabourAllocator.TakeUpSlack(world);
+            return;
         }
+
+        // A DEATH IS NOT SOMETHING THE VILLAGE WAITS OUT (D47).
+        //
+        // The seasonal pass above already fills openings, but waiting up to a season
+        // for it is how a settlement limps: the one person who split logs dies in
+        // early winter and the hut stands empty until spring. That was tolerable while
+        // work was shared out every year; at every three years (D46) it is not, and
+        // this is the half of that trade that makes the slower cadence affordable.
+        //
+        // <b>Detected rather than signalled, deliberately.</b> Asking "is anyone dead
+        // still holding a job?" needs no flag on the world, nothing to hash, and
+        // nothing that can be set and not cleared — the question is answered from the
+        // state itself, so it is self-correcting and cannot drift. That matters more
+        // than the loop costs: this project's recurring bug is code reading state from
+        // where it used to live, and a bookkeeping flag is exactly that shape.
+        if (AnyVacancyLeftByTheDead(world))
+        {
+            LabourAllocator.TakeUpSlack(world);
+        }
+    }
+
+    /// <summary>Whether a dead villager is still holding a job nobody has taken.</summary>
+    private static bool AnyVacancyLeftByTheDead(SimWorld world)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive && villager.HasJob)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Work the village wants doing that nobody is doing — for the shell to show.
+    /// </summary>
+    /// <remarks>
+    /// The other half of D47. Filling a vacancy at once is only half an answer,
+    /// because sometimes there is nobody spare to fill it — and a workplace standing
+    /// empty is currently <em>silent</em>, which is the one thing a legibility-first
+    /// game cannot do (§1.1). A reader, not a writer: it computes from world state on
+    /// demand rather than being maintained, for the same reason as above.
+    /// </remarks>
+    public static IReadOnlyList<Workplace> UnmannedWork(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        LabourQuota quota = LabourQuota.For(world);
+        var idle = new List<Workplace>();
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+
+            // Only work the village actually wants done. A berry patch with nobody at
+            // it in winter is not a problem, it is winter — and crying about it would
+            // train the player to ignore the warning that matters.
+            if (workplace.WorkerIds.Count == 0 && quota.For(workplace.Kind) > 0)
+            {
+                idle.Add(workplace);
+            }
+        }
+
+        return idle;
     }
 
     /// <summary>

@@ -195,6 +195,24 @@ public partial class Main : Control
                 "paint more land for houses.";
         }
 
+        // Work the village wants doing that nobody is doing (D47). In the header
+        // rather than only in the log, for the same reason as the request for land
+        // above: it is a standing state, and a line that scrolls away is a problem the
+        // player never learns they have.
+        IReadOnlyList<Workplace> unmanned = LabourSystem.UnmannedWork(world);
+        if (unmanned.Count > 0)
+        {
+            var names = new List<string>();
+            for (int i = 0; i < unmanned.Count; i++)
+            {
+                names.Add(unmanned[i].Name);
+            }
+
+            _villageLabel.Text +=
+                $"\nNobody is working {string.Join(", ", names)} — and the village wants it done. " +
+                "There is no one spare to send.";
+        }
+
         RefreshRoster(world);
         RefreshInspector(world);
         AppendNewLogLines();
