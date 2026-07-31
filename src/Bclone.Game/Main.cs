@@ -51,6 +51,18 @@ public partial class Main : Control
 
     private int _renderedLogEntries;
     private int _selectedVillagerId;
+
+    /// <summary>
+    /// The tile the player last clicked, when they clicked a building rather than
+    /// picking a villager off the roster.
+    /// </summary>
+    /// <remarks>
+    /// <b>Mutually exclusive with <see cref="_selectedVillagerId"/> on purpose.</b> One
+    /// panel answers "what is that?", so there is exactly one thing selected at a time
+    /// and no question about which of two selections the panel is describing.
+    /// </remarks>
+    private GridPos? _selectedTile;
+
     private MapDetail _detail = MapDetail.Selected;
 
     public override void _Ready()
@@ -189,7 +201,7 @@ public partial class Main : Control
 
         // Alpha is the fraction of a tick elapsed, so villagers glide between tiles
         // instead of teleporting once a second.
-        _map.Present(world, _driver.Alpha, _selectedVillagerId, _detail);
+        _map.Present(world, _driver.Alpha, _selectedVillagerId, _selectedTile, _detail);
     }
 
     private void RefreshRoster(SimWorld world)
@@ -228,10 +240,18 @@ public partial class Main : Control
 
     private void RefreshInspector(SimWorld world)
     {
+        if (_selectedTile is GridPos tile)
+        {
+            _inspector.Text = DescribeWhatIsAt(world, tile);
+            return;
+        }
+
         Villager? villager = world.FindVillager(_selectedVillagerId);
         if (villager is null)
         {
-            _inspector.Text = "Select a villager to see what they are doing, and why.";
+            _inspector.Text =
+                "Select a villager to see what they are doing, and why — " +
+                "or click anything on the map to see what it is.";
             return;
         }
 
@@ -291,7 +311,251 @@ public partial class Main : Control
     {
         Variant metadata = _roster.GetItemMetadata((int)index);
         _selectedVillagerId = metadata.AsInt32();
+        _selectedTile = null;
         RefreshInspector(_loop.World);
+    }
+
+    /// <summary>The player clicked the map while not placing anything.</summary>
+    private void OnBuildingClicked(GridPos tile)
+    {
+        _selectedTile = tile;
+        _selectedVillagerId = 0;
+        _roster.DeselectAll();
+        RefreshInspector(_loop.World);
+    }
+
+    // ---------------------------------------------------------------
+    //  "What is that?" — the building inspector
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Everything the sim has standing on one tile, in plain sentences.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Reports every occupant of the tile rather than the first one found.</b> The
+    /// market is both a <see cref="StoreBuilding"/> and a <see cref="Workplace"/> at one
+    /// position — D36's recorded seam — so a panel that picked one would describe the
+    /// market as half of itself. Asking "what is here?" sidesteps the seam instead of
+    /// having to know about it.
+    /// </para>
+    /// <para>
+    /// Every branch ends in a sentence a player can act on. A workplace with nobody at
+    /// it says so; a store that is full says so; a site that is waiting on logs says how
+    /// many. That is non-negotiable 1 applied to the thing this panel exists for — a
+    /// building standing idle has always been silent, and silence is the one thing a
+    /// legibility-first game cannot do.
+    /// </para>
+    /// </remarks>
+    private static string DescribeWhatIsAt(SimWorld world, GridPos tile)
+    {
+        var lines = new List<string>();
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Position == tile)
+            {
+                DescribeWorkplace(world, workplace, lines);
+            }
+        }
+
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (store.Position == tile)
+            {
+                DescribeStore(store, lines);
+            }
+        }
+
+        foreach (Household household in world.Households)
+        {
+            if (household.HomePosition == tile)
+            {
+                DescribeHome(world, household, lines);
+            }
+        }
+
+        if (lines.Count == 0)
+        {
+            DescribeBareGround(world, tile, lines);
+        }
+
+        lines.Add(string.Empty);
+        lines.Add($"Tile {tile.X}, {tile.Y}");
+        return string.Join("\n", lines);
+    }
+
+    private static void DescribeWorkplace(SimWorld world, Workplace workplace, List<string> lines)
+    {
+        Separate(lines);
+
+        // A site under construction is a different thing from the building it will
+        // become, and saying "the granary" of a patch of pegged-out ground would be a
+        // small lie the player would have to un-learn.
+        if (workplace.Construction is ConstructionSite site)
+        {
+            lines.Add($"{site.Name} — under construction");
+            lines.Add(site.HasMaterials
+                ? $"Materials: all {site.Recipe.Logs} logs delivered"
+                : $"Materials: {site.LogsDelivered} of {site.Recipe.Logs} logs — " +
+                  $"{site.LogsStillNeeded} still to come");
+            lines.Add($"Work: {site.WorkDone} of {site.Recipe.WorkTicks} ticks done");
+        }
+        else
+        {
+            lines.Add($"{workplace.Name} — a workplace ({Describe(workplace.Kind)})");
+        }
+
+        lines.Add(workplace.WorkerIds.Count == 0
+            ? $"Nobody works here. Room for {workplace.Capacity}."
+            : $"Worked by {WorkerNames(world, workplace)} — {workplace.WorkerIds.Count} of " +
+              $"{workplace.Capacity} places filled");
+
+        // The buffer at the point of production (D30). Worth showing because it is how
+        // you tell "idle for want of a worker" from "idle for want of logs" (D29).
+        if (workplace.Store.Held > 0)
+        {
+            lines.Add($"Holding: {DescribeGoods(workplace.Store)}");
+        }
+        else if (workplace.Kind == JobKind.Woodcutter)
+        {
+            lines.Add("Holding: nothing — no logs here to split.");
+        }
+    }
+
+    private static void DescribeStore(StoreBuilding store, List<string> lines)
+    {
+        Separate(lines);
+
+        lines.Add($"{store.Name} — a {Describe(store.Kind)}");
+        lines.Add($"Holding: {DescribeGoods(store.Store)}");
+
+        // Capacity is derived rather than typed in (D33), and it is the number that
+        // decides how big the village gets — so it belongs on screen, not just in a
+        // spec.
+        lines.Add(store.Store.IsFull
+            ? $"Full: {store.Store.Held} of {store.Store.Capacity} — nothing more will fit."
+            : $"Space: {store.Store.Held} of {store.Store.Capacity} used, " +
+              $"{store.Store.FreeSpace} free");
+    }
+
+    private static void DescribeHome(SimWorld world, Household household, List<string> lines)
+    {
+        Separate(lines);
+
+        int living = world.LivingMembersOf(household);
+        lines.Add($"The {household.Name} household — a home");
+
+        if (living == 0)
+        {
+            // An empty house is not a ruin: the next couple to pair up moves in rather
+            // than felling thirty logs beside it. Worth saying, because otherwise it
+            // reads as a bug.
+            lines.Add("Nobody lives here now. The next couple to pair up will move in.");
+        }
+        else
+        {
+            lines.Add($"Home to {HouseholdNames(world, household)}");
+        }
+
+        lines.Add($"Larder: {DescribeGoods(household.Stockpile)}");
+    }
+
+    private static void DescribeBareGround(SimWorld world, GridPos tile, List<string> lines)
+    {
+        string ground = world.Map.TerrainAt(tile) switch
+        {
+            Terrain.Water => "The river. Nobody can cross it and nothing can be built on it.",
+            Terrain.Forest => "Woodland.",
+            _ => "Open ground.",
+        };
+
+        lines.Add(ground);
+
+        if (world.Zones.IsResidential(tile))
+        {
+            lines.Add("Painted for housing — the village may build a home here.");
+        }
+    }
+
+    private static string WorkerNames(SimWorld world, Workplace workplace)
+    {
+        var names = new List<string>();
+        for (int i = 0; i < workplace.WorkerIds.Count; i++)
+        {
+            Villager? worker = world.FindVillager(workplace.WorkerIds[i]);
+            if (worker is not null)
+            {
+                names.Add(worker.Name);
+            }
+        }
+
+        return names.Count == 0 ? "nobody" : string.Join(", ", names);
+    }
+
+    private static string HouseholdNames(SimWorld world, Household household)
+    {
+        var names = new List<string>();
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.Alive && villager.HouseholdId == household.Id)
+            {
+                names.Add($"{villager.Name} ({villager.AgeYears})");
+            }
+        }
+
+        return names.Count == 0 ? "nobody" : string.Join(", ", names);
+    }
+
+    /// <summary>Only the goods actually present, so an empty shelf is not three zeroes.</summary>
+    private static string DescribeGoods(Stockpile store)
+    {
+        var parts = new List<string>();
+
+        if (store.Food > 0)
+        {
+            parts.Add($"{store.Food} food");
+        }
+
+        if (store.Logs > 0)
+        {
+            parts.Add($"{store.Logs} logs");
+        }
+
+        if (store.Firewood > 0)
+        {
+            parts.Add($"{store.Firewood} firewood");
+        }
+
+        return parts.Count == 0 ? "nothing" : string.Join(", ", parts);
+    }
+
+    private static string Describe(JobKind kind) => kind switch
+    {
+        JobKind.Forager => "food is gathered here",
+        JobKind.Logger => "trees are felled here",
+        JobKind.Woodcutter => "logs are split into firewood here",
+        JobKind.Marketer => "goods are handed out from here",
+        JobKind.Builder => "something is being raised here",
+        _ => kind.ToString().ToLowerInvariant(),
+    };
+
+    private static string Describe(StoreKind kind) => kind switch
+    {
+        StoreKind.Granary => "granary, which holds the village's food",
+        StoreKind.Shed => "storage shed, which holds logs and firewood",
+        StoreKind.Market => "market, which holds food and firewood for the houses near it",
+        _ => kind.ToString().ToLowerInvariant(),
+    };
+
+    /// <summary>A blank line between two things standing on the same tile.</summary>
+    private static void Separate(List<string> lines)
+    {
+        if (lines.Count > 0)
+        {
+            lines.Add(string.Empty);
+        }
     }
 
     /// <summary>Append only entries not yet drawn; rebuilding would reset scroll.</summary>
@@ -408,6 +672,7 @@ public partial class Main : Control
             // panel - draw straight across the rest of the window.
             ClipContents = true,
         };
+        _map.BuildingClicked += OnBuildingClicked;
         column.AddChild(_map);
 
         // Roster on the left, the person you clicked on the right.

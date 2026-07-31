@@ -122,7 +122,21 @@ public partial class VillageMap : Control
     private SimWorld? _world;
     private double _alpha;
     private int _selectedVillagerId;
+    private GridPos? _selectedTile;
     private MapDetail _detail = MapDetail.Selected;
+
+    /// <summary>
+    /// Raised when the player clicks the map while not placing anything.
+    /// </summary>
+    /// <remarks>
+    /// <b>A tile, not a building id.</b> The three things that can stand on a tile —
+    /// a store, a workplace and a home — live in three lists with three independent id
+    /// spaces, and the market is deliberately <em>both</em> a store and a workplace at
+    /// one position (D36's known seam). Selecting a tile and asking the sim what is
+    /// there describes the market correctly without having to pick which of its two
+    /// halves the player meant.
+    /// </remarks>
+    public event System.Action<GridPos>? BuildingClicked;
 
     private Vector2 _centreTile;
 
@@ -140,11 +154,13 @@ public partial class VillageMap : Control
     }
 
     /// <summary>Hand the map the state to draw. Called every frame by <see cref="Main"/>.</summary>
-    public void Present(SimWorld world, double alpha, int selectedVillagerId, MapDetail detail)
+    public void Present(
+        SimWorld world, double alpha, int selectedVillagerId, GridPos? selectedTile, MapDetail detail)
     {
         _world = world;
         _alpha = alpha;
         _selectedVillagerId = selectedVillagerId;
+        _selectedTile = selectedTile;
         _detail = detail;
 
         if (!_framed && Size.X > 0f)
@@ -360,6 +376,17 @@ public partial class VillageMap : Control
         if (IsPlacing && click.ButtonIndex == MouseButton.Left)
         {
             PlaceOrPullDown(click.Position);
+            AcceptEvent();
+            return;
+        }
+
+        // Not placing anything, so a click is a question rather than an instruction:
+        // "what is that?". The shell answers it in the same panel the villagers use,
+        // because the player has one place they look to find out about a thing.
+        if (click.ButtonIndex == MouseButton.Left)
+        {
+            Vector2 hit = ToTile(click.Position);
+            BuildingClicked?.Invoke(new GridPos(Mathf.RoundToInt(hit.X), Mathf.RoundToInt(hit.Y)));
             AcceptEvent();
             return;
         }
@@ -608,6 +635,10 @@ public partial class VillageMap : Control
         DrawWorkplaces();
         DrawStores();
         DrawHomes();
+
+        // Over the buildings so it is not hidden by one, under the people so it never
+        // hides them — the same rule the rest of this method follows.
+        DrawSelectedTile();
         DrawVillagers();
 
         // The ghost last, over everything, because it is the thing being decided.
@@ -676,6 +707,29 @@ public partial class VillageMap : Control
     /// there. Distinguished by colour, and outlined so a store never reads as just
     /// another house: "why is nobody fetching food?" has to be answerable by looking.
     /// </remarks>
+    /// <summary>A square around whatever the player last clicked.</summary>
+    /// <remarks>
+    /// A square rather than the ring villagers get, so the two selections never read as
+    /// the same thing: people are round on this map and buildings are square, and the
+    /// highlight should agree with that rather than argue with it.
+    /// </remarks>
+    private void DrawSelectedTile()
+    {
+        if (_selectedTile is not GridPos tile)
+        {
+            return;
+        }
+
+        Vector2 centre = ToScreen(tile);
+        float side = _pixelsPerTile * 0.92f;
+
+        DrawRect(
+            new Rect2(centre - (new Vector2(side, side) / 2f), new Vector2(side, side)),
+            SelectedRing,
+            filled: false,
+            width: 2f);
+    }
+
     private void DrawStores()
     {
         SimWorld world = _world!;
