@@ -261,7 +261,11 @@
   // tree_stand_count and tree_stand_ring_tiles above.
   "cut_yield": 12,
   "cut_ticks": 4,
-  "tree_stand_capacity": 3,
+  // DERIVED (VillageEconomy.RequiredTreeStandSeats), not picked. 3 -> 6.
+  // Enough hands to keep the huts in logs and still leave one for
+  // building - the "+1" in the derivation is what stops the village
+  // heating itself and never growing.
+  "tree_stand_capacity": 6,
 
   // A home has to be built, out of LOGS. Wood is two resources now
   // (D29): a logger fells logs, a woodcutter turns logs into firewood,
@@ -280,7 +284,26 @@
   // woodcutter's daily walk from home.
   "woodcutter_hut_x": -2,
   "woodcutter_hut_y": 1,
-  "woodcutter_hut_capacity": 3,
+  // DERIVED (VillageEconomy.RequiredWoodcutterSeats), not picked. 3 -> 8.
+  //
+  // THE YIELDS WERE RE-DERIVED AND THE CAPACITIES WERE NOT, and that gap
+  // had been open since the economy horizon was raised to twenty
+  // households. Three seats heats about fifteen households; the economy
+  // is budgeted for twenty. A village that reached that size could not
+  // physically make more firewood however many hands were free - the
+  // failure VillageEconomy.RequiredWoodcutterSeats already documents,
+  // where thirty-six people froze.
+  //
+  // It was LATENT rather than harmless: the village only holds around
+  // thirty people, so it never reached the size that would bite. What
+  // changed is that the player can now BUILD GRANARIES (D33, D43) and
+  // grow past the old ceiling on purpose, which walks them straight into
+  // it. A pressure with no answer available is one thing; a pressure the
+  // player unlocks by succeeding is a trap.
+  //
+  // Asserted against the shipped file now, not just the test fixture -
+  // the two diverge, and this gap lived entirely in that divergence.
+  "woodcutter_hut_capacity": 8,
   "logs_per_split": 6,
   "split_ticks": 4,
 

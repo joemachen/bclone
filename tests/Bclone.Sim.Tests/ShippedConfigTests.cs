@@ -51,6 +51,50 @@ public sealed class ShippedConfigTests
     }
 
     /// <summary>
+    /// The buildings must be big enough for the village the economy is budgeted for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Capacity is derived too, and this is the guard that was missing.</b> Every
+    /// re-derivation so far has moved the <em>yields</em> — how much a trip brings back,
+    /// how big a batch is — and left the buildings at capacities picked when a village
+    /// was a dozen people. <c>VillageFixtures.Village</c> derives them, so no test ever
+    /// noticed that the shipped file did not: it had three woodcutter seats where the
+    /// economy required eight, and three tree-stand seats where it required six.
+    /// </para>
+    /// <para>
+    /// It was latent rather than harmless. The village only holds about thirty people,
+    /// so it never reached the twenty households the shortfall is measured against —
+    /// but the player can now build granaries and grow past the old ceiling on purpose
+    /// (D33, D43), which walks them straight into it. A pressure with no answer
+    /// available is one thing; a pressure the player unlocks *by succeeding* is a trap.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheShippedBuildingsAreBigEnoughForTheEconomyTheyServe()
+    {
+        SimConfig shipped = Shipped;
+
+        int hutSeats = VillageEconomy.RequiredWoodcutterSeats(shipped);
+        int standSeats = VillageEconomy.RequiredTreeStandSeats(shipped);
+
+        _output.WriteLine(
+            $"hut needs {hutSeats} seats (config {shipped.WoodcutterHutCapacity}); " +
+            $"stand needs {standSeats} (config {shipped.TreeStandCapacity}).");
+
+        Assert.True(
+            shipped.WoodcutterHutCapacity >= hutSeats,
+            $"woodcutter_hut_capacity is {shipped.WoodcutterHutCapacity} but heating " +
+            $"{shipped.EconomyHorizonHouseholds} households needs {hutSeats} seats. The village " +
+            "would be unable to make more firewood however many hands were free.");
+
+        Assert.True(
+            shipped.TreeStandCapacity >= standSeats,
+            $"tree_stand_capacity is {shipped.TreeStandCapacity} but keeping the huts in logs " +
+            $"and still leaving a hand to build needs {standSeats}.");
+    }
+
+    /// <summary>
     /// The larder-logs invariant, asserted against the file the game actually loads.
     /// </summary>
     /// <remarks>
