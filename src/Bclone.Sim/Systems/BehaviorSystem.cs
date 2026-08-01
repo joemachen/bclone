@@ -88,7 +88,15 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>A state in words rather than an enum name, so the log reads.</summary>
-    private static string Describe(VillagerState state) => state switch
+    /// <remarks>
+    /// Terse on purpose, and a deliberate second mapping alongside
+    /// <see cref="Villager.DescribeState"/>: this writes <em>"idle → gathering"</em> into a
+    /// log, that writes <em>"gathering berries"</em> for a person reading a panel. Two
+    /// registers for two readers. <b>Internal so a test can walk every value of the enum
+    /// through it</b> — the panel's copy of this fell seven states behind before anybody
+    /// noticed, and the only reason to keep two is that neither is allowed to rot.
+    /// </remarks>
+    internal static string Describe(VillagerState state) => state switch
     {
         VillagerState.Idle => "idle",
         VillagerState.TravelingToFood => "walking to forage",
@@ -596,7 +604,6 @@ public sealed class BehaviorSystem : ISimSystem
         // change their mind halfway and shuttle between two equally needy homes.
         if (villager.IsCarrying && villager.ErrandHouseholdId != 0)
         {
-            Household bound = world.HouseholdOf(villager);
             Household? recipient = world.FindHousehold(villager.ErrandHouseholdId);
             if (recipient is not null)
             {
@@ -609,7 +616,6 @@ public sealed class BehaviorSystem : ISimSystem
 
             // The household died out while they were walking. Take it to a store
             // rather than dropping it in the road.
-            _ = bound;
             villager.ErrandHouseholdId = 0;
             villager.State = VillagerState.HaulingToStore;
             Travel(world, villager, StoreForTheLoad(world, villager).Position,
@@ -1327,17 +1333,15 @@ public sealed class BehaviorSystem : ISimSystem
                 break;
             }
 
-            const int keepFood = 0;
-            const int keepFuel = 0;
-
-            int food = Smallest(household.Stockpile.Food - keepFood, load, household.Stockpile.Food);
+            // Everything, because there is nobody left to keep any of it for. This once
+            // subtracted a `keepFood` and a `keepFuel`, both of which were const zero.
+            int food = Smallest(household.Stockpile.Food, load, household.Stockpile.Food);
             if (food > 0 && household.Stockpile.TryTake(food))
             {
                 villager.CarriedFood += food;
             }
 
-            int spareFuel = household.Stockpile.Firewood - keepFuel;
-            int fuel = Smallest(spareFuel, load - food, household.Stockpile.Firewood);
+            int fuel = Smallest(household.Stockpile.Firewood, load - food, household.Stockpile.Firewood);
             if (fuel > 0 && household.Stockpile.TryTakeFirewood(fuel))
             {
                 villager.CarriedFirewood += fuel;

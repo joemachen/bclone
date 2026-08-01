@@ -53,8 +53,8 @@ public sealed class LabourTests
                 if (method.ReturnType != typeof(void))
                 {
                     // A method that hands something back is answering a question, not
-                    // issuing an order. CostToWork(villager, workplace) is exactly the
-                    // shape being allowed here, and it is a reader.
+                    // issuing an order — "how far is Elias from the stand?" is a reader,
+                    // whatever its parameters are.
                     continue;
                 }
 
@@ -164,7 +164,7 @@ public sealed class LabourTests
             }
 
             Workplace workplace = loop.World.FindWorkplace(villager.WorkplaceId)!;
-            Assert.True(LabourSystem.InCatchment(loop.World, villager, workplace),
+            Assert.True(LabourAllocator.InCatchment(loop.World, villager, workplace),
                 $"{villager.Name} works at {workplace.Name} from outside its catchment.");
         }
     }

@@ -178,17 +178,22 @@ public static class VillageEconomy
 
     /// <summary>How far a home may sit from the middle of the village.</summary>
     /// <remarks>
+    /// <para>
     /// The other half of the bound. Without it a household could chase a distant site
     /// out to the valley's edge and then spend its life walking back to the granary —
     /// which is the same mistake in the other direction, and D32 says the interesting
     /// inequality is distance to the store.
+    /// </para>
+    /// <para>
+    /// <b>The same number as <see cref="MaxHomeToWorkTiles"/>, and it delegates rather
+    /// than repeating the sum.</b> Two questions, one answer: a home that is within reach
+    /// of the ring is within reach of the middle of it. They were two identical
+    /// copy-pasted bodies, which is a formula waiting to be corrected in one place and
+    /// not the other — and <see cref="Household.ChooseSite"/> applies both as if they
+    /// were independent, so a divergence would have been silent.
+    /// </para>
     /// </remarks>
-    public static int MaxHomeToVillageTiles(SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        return config.ForageSiteRingTiles + (config.SiteJitterTiles * 2);
-    }
+    public static int MaxHomeToVillageTiles(SimConfig config) => MaxHomeToWorkTiles(config);
 
     /// <summary>
     /// Foraging trips one adult can complete in a year.
@@ -497,7 +502,15 @@ public static class VillageEconomy
     public static int FuelBudgetInHands(SimConfig config, int households) =>
         SpareHandsAt(config, households) / FuelMayCostThisShareOfSpareHands;
 
-    private static int CeilingDivide(int numerator, int denominator) =>
+    /// <summary>
+    /// Integer division rounding up. No floats anywhere near this (D2).
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than private because <see cref="LabourQuota"/> had an identical
+    /// private copy. One arithmetic rule, one place — a rounding rule that exists twice
+    /// is one that can be corrected once.
+    /// </remarks>
+    internal static int CeilingDivide(int numerator, int denominator) =>
         denominator <= 0 ? 0 : (numerator + denominator - 1) / denominator;
 
     /// <summary>Food one adult gathers in a year at a given vigour.</summary>

@@ -110,6 +110,25 @@ public sealed class PlacementTests
     }
 
     [Fact]
+    public void SomebodysHouseIsGroundToo()
+    {
+        // A real bug, and it survived because the question was asked twice. CanBuildAt
+        // used SimWorld.SomethingStandsAt, which checked workplaces and stores;
+        // Household.ChooseSite used its own copy, which also checked homes. Two rules,
+        // one of them wrong — and the wrong one was the one facing the player, so a
+        // granary could be marked out on top of a family's house.
+        SimWorld world = Build(Config).World;
+
+        PlacementVerdict verdict = world.CanBuildAt(
+            BuildingKind.Granary, world.Households[0].HomePosition);
+
+        _output.WriteLine(verdict.Reason);
+        Assert.False(verdict.Allowed,
+            "A granary was allowed on a tile with somebody's home on it.");
+        Assert.Contains("already stands", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void OutsideTheValleyIsRefusedInWords()
     {
         SimConfig config = Config;

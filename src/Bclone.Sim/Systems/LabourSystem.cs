@@ -135,15 +135,8 @@ public sealed class LabourSystem : ISimSystem
         return idle;
     }
 
-    /// <summary>
-    /// Travel cost from a villager's home to a workplace, from the one shared field.
-    /// </summary>
-    /// <remarks>Kept public because the view layer and the tests both ask it. Reading
-    /// a distance is not assigning a job.</remarks>
-    public static int CostToWork(SimWorld world, Villager villager, Workplace workplace) =>
-        LabourAllocator.CostBetween(world, villager, workplace);
-
-    /// <summary>Whether a villager's home is inside a workplace's catchment.</summary>
-    public static bool InCatchment(SimWorld world, Villager villager, Workplace workplace) =>
-        LabourAllocator.InCatchment(world, villager, workplace);
+    // Two one-line passthroughs to LabourAllocator used to sit here — CostToWork and
+    // InCatchment — kept public on the stated grounds that "the view layer and the tests
+    // both ask it". The view layer never asked. Tests reach LabourAllocator directly
+    // through InternalsVisibleTo, so the wrappers were public API maintained for nobody.
 }

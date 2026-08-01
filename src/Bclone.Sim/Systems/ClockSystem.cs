@@ -121,14 +121,15 @@ public sealed class ClockSystem : ISimSystem
                $"{stored} food stored.";
     }
 
-    private static int TotalStored(SimWorld world)
-    {
-        int total = 0;
-        for (int i = 0; i < world.Households.Count; i++)
-        {
-            total += world.Households[i].Stockpile.Food;
-        }
-
-        return total;
-    }
+    /// <summary>
+    /// Food the village has, everywhere it keeps it.
+    /// </summary>
+    /// <remarks>
+    /// This summed the household larders only, which stopped being "what the village has"
+    /// the moment the granary arrived (D30) — and the granary is where most of it lives.
+    /// The season summary was reporting a fraction of the stores as the whole, in the line
+    /// a player uses to judge whether the winter is affordable. It was also a
+    /// copy-for-copy duplicate of a sum in the view.
+    /// </remarks>
+    private static int TotalStored(SimWorld world) => world.TotalFood();
 }

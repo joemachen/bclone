@@ -70,7 +70,7 @@ public sealed class LabourAllocationTests
             }
 
             Workplace held = world.FindWorkplace(villager.WorkplaceId)!;
-            int heldCost = LabourSystem.CostToWork(world, villager, held);
+            int heldCost = LabourAllocator.CostBetween(world, villager, held);
 
             foreach (Workplace other in world.Workplaces)
             {
@@ -79,7 +79,7 @@ public sealed class LabourAllocationTests
                     continue;
                 }
 
-                int otherCost = LabourSystem.CostToWork(world, villager, other);
+                int otherCost = LabourAllocator.CostBetween(world, villager, other);
                 Assert.False(
                     otherCost < heldCost && otherCost <= other.CatchmentRadius,
                     $"{villager.Name} walks to {held.Name} ({heldCost / 10} tiles) past " +
@@ -226,7 +226,7 @@ public sealed class LabourAllocationTests
             }
 
             Workplace workplace = loop.World.FindWorkplace(villager.WorkplaceId)!;
-            Assert.True(LabourSystem.InCatchment(loop.World, villager, workplace),
+            Assert.True(LabourAllocator.InCatchment(loop.World, villager, workplace),
                 $"{villager.Name} works at {workplace.Name} from outside its catchment.");
         }
     }
@@ -518,7 +518,7 @@ public sealed class LabourAllocationTests
 
             foreach (Workplace workplace in world.Workplaces)
             {
-                if (LabourSystem.InCatchment(world, villager, workplace))
+                if (LabourAllocator.InCatchment(world, villager, workplace))
                 {
                     reachable++;
                 }
@@ -581,62 +581,43 @@ public sealed class LabourAllocationTests
     }
 
     [Fact]
-    public void EveryHomeTheVillageWillBuildHasAForageSiteWithinReach()
-    {
-        // A layout guard, asserted against the map rather than against a run, so that
-        // moving a site or tightening catchment fails the build instead of failing
-        // the village a hundred years later.
-        //
-        // This is the constraint the first site layout broke: three sites out at the
-        // edges left the middle of the village dependent on the one original berry
-        // patch, and a home with nothing in reach is a household that cannot feed
-        // itself however well the allocator works. Homes are placed on a fixed spiral
-        // for now; when the map is generated from the seed (D18) this becomes a
-        // property the generator has to guarantee.
-        SimConfig config = Config;
-        int radius = TravelCostField.TilesToCost(config.ForagerCatchmentTiles);
-        var field = new TravelCostField(config.TravelTicksPerUnit);
-
-        for (int i = 0; i <= config.EconomyHorizonHouseholds; i++)
-        {
-            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
-            int nearest = VillageEconomy.NearestForageDistance(config, home);
-
-            Assert.True(field.Cost(home, home with { X = home.X + nearest }) <= radius,
-                $"Home #{i} at {home} is {nearest} tiles from its nearest forage site, " +
-                $"outside a catchment of {config.ForagerCatchmentTiles}.");
-        }
-    }
-
-    [Fact]
     public void TheValleyContainsEveryWorkplaceAndEveryHomeTheVillageWillBuild()
     {
-        // The valley bounds the camera and gives the drawn ground an edge. Nothing in
-        // the sim reads them yet, so nothing in the sim would notice a site or a home
-        // placed outside — it would simply be invisible, and a villager would walk off
-        // the map to work at it.
+        // A site or a home outside the valley would simply be invisible, and a villager
+        // would walk off the drawn map to reach it.
         //
-        // Homes are placed on an unbounded spiral. At 150 years the village reaches
-        // about nine tiles out, well inside; clamping placement to the valley belongs
-        // with seeded map generation (D18), and this is what will catch it if the
-        // village outgrows the map first.
+        // ASSERTED AGAINST HOMES THE VILLAGE ACTUALLY BUILT, which it was not. This used
+        // to walk `Household.PlacementFor` — a square spiral — two hundred times and check
+        // where that put things, on the strength of a comment saying "homes are placed on
+        // an unbounded spiral" and "clamping placement to the valley belongs with seeded
+        // map generation (D18)". D18 shipped, `ChooseSite` replaced the spiral, and the
+        // spiral became a function nothing called except this test. It was asserting a
+        // property of dead code.
         SimConfig config = Config;
         SimLoop loop = Build(config);
+        loop.Step(config.TicksPerYear * 200);
 
         foreach (Workplace workplace in loop.World.Workplaces)
         {
             AssertInsideTheValley(config, workplace.Position, workplace.Name);
         }
 
-        for (int i = 0; i < 200; i++)
+        int homes = 0;
+        foreach (Household household in loop.World.Households)
         {
-            GridPos home = Household.PlacementFor(i, config.HomeX, config.HomeY, config.HouseholdSpacing);
-            AssertInsideTheValley(config, home, $"home #{i}");
+            AssertInsideTheValley(config, household.HomePosition, $"the {household.Name} home");
+            homes++;
         }
 
         _output.WriteLine(
             $"valley {config.MapWidth}x{config.MapHeight}: " +
-            $"x {config.MapMinX}..{config.MapMaxX}, y {config.MapMinY}..{config.MapMaxY}");
+            $"x {config.MapMinX}..{config.MapMaxX}, y {config.MapMinY}..{config.MapMaxY} — " +
+            $"{loop.World.Workplaces.Count} workplaces and {homes} homes, all inside it.");
+
+        // Anti-vacuity (D7): a village that never built a second house proves nothing
+        // about where the village puts houses.
+        Assert.True(homes > config.StartingHouseholds,
+            $"Only {homes} homes were ever built, so this guard never left the founding site.");
     }
 
     private static void AssertInsideTheValley(SimConfig config, GridPos position, string what)
@@ -678,7 +659,7 @@ public sealed class LabourAllocationTests
                 continue;
             }
 
-            int cost = LabourSystem.CostToWork(world, villager, job);
+            int cost = LabourAllocator.CostBetween(world, villager, job);
             if (cost >= worst)
             {
                 worst = cost;

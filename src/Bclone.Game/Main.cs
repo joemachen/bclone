@@ -191,9 +191,14 @@ public partial class Main : Control
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
         // Totals across every granary and shed, not the first of each (D38) — a village
         // that has built a second one should see what is in it.
+        //
+        // "Food" is now everything the village has, granaries included, and says so. It
+        // used to be a households-only sum sitting next to "N in the granaries", which
+        // read as a total-and-its-largest-part but was neither: the two numbers did not
+        // overlap, so a village with 2,000 food in store showed a few hundred.
         _villageLabel.Text =
             $"{world.Population} villagers · {LivingHouseholds(world)} households · " +
-            $"{TotalFood(world)} food · {world.FoodInGranaries()} in the granaries · " +
+            $"{world.TotalFood()} food all told, {world.FoodInGranaries()} of it in the granaries · " +
             $"{world.LogsInSheds()} logs and {world.FirewoodInSheds()} firewood in the sheds";
 
         // The standing alerts, into their own strip rather than onto the end of the
@@ -695,17 +700,6 @@ public partial class Main : Control
         return count;
     }
 
-    private static int TotalFood(SimWorld world)
-    {
-        int total = 0;
-        for (int i = 0; i < world.Households.Count; i++)
-        {
-            total += world.Households[i].Stockpile.Food;
-        }
-
-        return total;
-    }
-
     // ---------------------------------------------------------------
     //  Layout
     // ---------------------------------------------------------------
@@ -1159,32 +1153,6 @@ public partial class Main : Control
         var label = new Label { Text = text };
         label.AddThemeFontSizeOverride("font_size", 12);
         label.Modulate = new Color(1, 1, 1, 0.55f);
-        return label;
-    }
-
-    /// <summary>
-    /// One line, ending in an ellipsis rather than off the edge of the window.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Every one of these was a sentence written to be read and then drawn past the
-    /// right-hand edge of the screen, which is the worst of both: the game has taken the
-    /// trouble to explain itself and the player cannot see the end of the explanation.
-    /// Joe's screenshot caught the alert strip losing <em>"There is no one spare to
-    /// send."</em>
-    /// </para>
-    /// <para>
-    /// An ellipsis is an honest failure — it says <em>there is more here</em> — where a
-    /// hard clip just looks like the sentence stopped. Wrapping is the other option and
-    /// it is refused on purpose: a label that wraps has a height that depends on the
-    /// window width, and a header whose height moves is what makes the map jump.
-    /// </para>
-    /// </remarks>
-    private static Label OneLine(Label label)
-    {
-        label.AutowrapMode = TextServer.AutowrapMode.Off;
-        label.ClipText = true;
-        label.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         return label;
     }
 }

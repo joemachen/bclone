@@ -151,12 +151,6 @@ public sealed class Villager
     /// </remarks>
     public int Cold { get; set; }
 
-    /// <summary>How far toward freezing they are, 0–100. What the panel and the log read.</summary>
-    public int ColdPercentOf(Config.SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-        return config.ExposureThreshold == 0 ? 0 : Cold * 100 / config.ExposureThreshold;
-    }
 
     public VillagerState State { get; set; } = VillagerState.Idle;
 
@@ -248,6 +242,24 @@ public sealed class Villager
     /// for most of the village. A UI line that contradicts the map is worse than a
     /// vague one.
     /// </param>
+    /// <remarks>
+    /// <para>
+    /// <b>Every state has to be here.</b> This covered ten of them and fell through to
+    /// <c>State.ToString()</c> for the rest, so the panel whose entire job is legibility
+    /// printed <c>HaulingToStore</c> and <c>SeekingShelter</c> at the player — raw enum
+    /// names, in the one place the game is supposed to explain itself. Seven of seventeen
+    /// states read like that, and every one of them was added after this method was
+    /// written.
+    /// </para>
+    /// <para>
+    /// <b>There is a second mapping</b> — <c>BehaviorSystem.Describe</c> — and it is
+    /// deliberate rather than an oversight. That one writes terse log lines
+    /// (<em>"idle → gathering"</em>); this one writes a sentence for a person
+    /// (<em>"gathering berries"</em>). Two registers for two readers. What is <em>not</em>
+    /// allowed is either of them going stale, which is why a test walks every value of the
+    /// enum through both and fails if it gets an enum name back.
+    /// </para>
+    /// </remarks>
     public string DescribeState(string? workplaceName = null)
     {
         if (JustAte && Alive)
@@ -269,6 +281,13 @@ public sealed class Villager
             VillagerState.MakingFirewood => "splitting logs into firewood",
             VillagerState.Resting => "resting at home",
             VillagerState.Dead => "dead",
+            VillagerState.HaulingToStore => "carrying a load to the store",
+            VillagerState.FetchingFromStore => "fetching supplies for home",
+            VillagerState.SeekingShelter => "going indoors to get warm",
+            VillagerState.CollectingForMarket => "collecting goods for the market",
+            VillagerState.DeliveringToHome => "delivering goods to a home",
+            VillagerState.FetchingMaterials => "fetching materials for the building site",
+            VillagerState.Building => "raising a building",
             _ => State.ToString(),
         };
     }

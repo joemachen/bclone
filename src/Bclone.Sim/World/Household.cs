@@ -97,7 +97,7 @@ public sealed class Household
                 if (!world.Zones.IsResidential(candidate)
                     || !world.Map.Contains(candidate)
                     || world.Map.TerrainAt(candidate) == Terrain.Water
-                    || IsTaken(world, candidate))
+                    || world.SomethingStandsAt(candidate))
                 {
                     continue;
                 }
@@ -199,78 +199,6 @@ public sealed class Household
         return nearest;
     }
 
-    /// <summary>Whether something already stands here.</summary>
-    private static bool IsTaken(Core.SimWorld world, GridPos position)
-    {
-        for (int i = 0; i < world.Households.Count; i++)
-        {
-            if (world.Households[i].HomePosition == position)
-            {
-                return true;
-            }
-        }
-
-        for (int i = 0; i < world.Workplaces.Count; i++)
-        {
-            if (world.Workplaces[i].Position == position)
-            {
-                return true;
-            }
-        }
-
-        for (int i = 0; i < world.StoreBuildings.Count; i++)
-        {
-            if (world.StoreBuildings[i].Position == position)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public static GridPos PlacementFor(int index, int originX, int originY, int spacing)
-    {
-        // Walk a square spiral outward so homes stay clustered around the origin.
-        int ring = 0;
-        while ((2 * ring + 1) * (2 * ring + 1) <= index)
-        {
-            ring++;
-        }
-
-        int withinRing = index - ((2 * ring - 1) * (2 * ring - 1));
-        int side = ring == 0 ? 1 : 2 * ring;
-
-        int dx, dy;
-        if (ring == 0)
-        {
-            dx = 0;
-            dy = 0;
-        }
-        else if (withinRing < side)
-        {
-            dx = ring;
-            dy = -ring + 1 + withinRing;
-        }
-        else if (withinRing < 2 * side)
-        {
-            dx = ring - 1 - (withinRing - side);
-            dy = ring;
-        }
-        else if (withinRing < 3 * side)
-        {
-            dx = -ring;
-            dy = ring - 1 - (withinRing - 2 * side);
-        }
-        else
-        {
-            dx = -ring + 1 + (withinRing - 3 * side);
-            dy = -ring;
-        }
-
-        return new GridPos(originX + (dx * spacing), originY + (dy * spacing));
-    }
-
     /// <summary>In-game year of the household's most recent birth. Zero if never.</summary>
     public int LastBirthYear { get; set; }
 
@@ -319,6 +247,12 @@ public sealed class Household
         }
     }
 
-    /// <summary>True when nobody lives here any more — a house that outlived its family.</summary>
-    public bool IsEmpty => _memberIds.Count == 0;
+    // THERE IS DELIBERATELY NO IsEmpty HERE.
+    //
+    // There was: `_memberIds.Count == 0`, summarised as "true when nobody lives here any
+    // more". That is the rule HouseholdSystem.IsReadyForAChild spends seventeen lines
+    // explaining "was killing every village" — RemoveMember is called when somebody moves
+    // out and never when somebody dies, so the list only ever grows and a house full of
+    // graves reads as full. Ask `SimWorld.LivingMembersOf` instead; it counts the living,
+    // which is what every occupancy question in the sim actually means.
 }

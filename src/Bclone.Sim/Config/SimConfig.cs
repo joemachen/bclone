@@ -753,10 +753,6 @@ public sealed record SimConfig
     [JsonPropertyName("adults_per_household")]
     public int AdultsPerHousehold { get; init; } = 2;
 
-    /// <summary>Tiles between neighbouring founding homes.</summary>
-    [JsonPropertyName("household_spacing")]
-    public int HouseholdSpacing { get; init; } = 3;
-
     /// <summary>Family names for founding households.</summary>
     [JsonPropertyName("household_names")]
     public IReadOnlyList<string> HouseholdNames { get; init; } = new[]
@@ -1104,11 +1100,6 @@ public sealed record SimConfig
         if (AdultsPerHousehold <= 0)
         {
             throw new SimConfigException($"adults_per_household must be greater than zero (got {AdultsPerHousehold}).");
-        }
-
-        if (HouseholdSpacing <= 0)
-        {
-            throw new SimConfigException($"household_spacing must be greater than zero (got {HouseholdSpacing}).");
         }
 
         if (HouseholdNames is null || HouseholdNames.Count == 0)

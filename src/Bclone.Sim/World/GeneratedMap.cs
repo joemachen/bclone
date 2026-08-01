@@ -101,21 +101,7 @@ public sealed class GeneratedMap
         return index < 0 ? Terrain.Grass : _terrain[index];
     }
 
-    /// <summary>
-    /// How good the ground is here, 0–255. Reserved for §2.3's soil depletion.
-    /// </summary>
-    /// <remarks>
-    /// Generated and hashed but not yet read by anything. It is here so that when soil
-    /// depletion lands it does not have to change the map format — and, more to the
-    /// point, so it does not have to change the <em>draw order</em>, which would
-    /// invalidate every seed anyone had written down (§6).
-    /// </remarks>
-    public byte SoilAt(GridPos position)
-    {
-        int index = IndexOf(position);
-        return index < 0 ? (byte)0 : _soil[index];
-    }
-
+    /// <summary>Whether a tile is inside the valley at all.</summary>
     public bool Contains(GridPos position) =>
         position.X >= MinX && position.X < MinX + Width
         && position.Y >= MinY && position.Y < MinY + Height;

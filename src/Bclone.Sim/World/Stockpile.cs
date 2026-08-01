@@ -279,8 +279,6 @@ public sealed class Stockpile
 /// </summary>
 public sealed class TreeStand
 {
-    public required GridPos Position { get; init; }
-
     public required int YieldPerCut { get; init; }
 }
 

@@ -674,9 +674,9 @@ public readonly record struct LabourQuota
         return total;
     }
 
-    /// <summary>Integer division rounding up. No floats anywhere near this (D2).</summary>
+    /// <summary>Integer division rounding up — <see cref="VillageEconomy.CeilingDivide"/>.</summary>
     private static int CeilingDivide(int numerator, int denominator) =>
-        denominator <= 0 ? 0 : (numerator + denominator - 1) / denominator;
+        VillageEconomy.CeilingDivide(numerator, denominator);
 
     /// <summary>A one-line summary, for logs and for the sentence shown to the player.</summary>
     public override string ToString() =>

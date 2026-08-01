@@ -49,9 +49,6 @@ public sealed class SimLoop
     /// <summary>Systems in execution order.</summary>
     public IReadOnlyList<ISimSystem> Systems => _systems;
 
-    /// <summary>Current tick. Convenience passthrough for the view layer.</summary>
-    public ulong Tick => World.Tick;
-
     /// <summary>
     /// Advance exactly one tick: run every system in order, then increment the
     /// tick counter.

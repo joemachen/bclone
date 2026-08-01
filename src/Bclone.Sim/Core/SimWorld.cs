@@ -804,11 +804,7 @@ public sealed class SimWorld
             YieldPerGather = config.GatherYield,
         };
 
-        TreeStand = new TreeStand
-        {
-            Position = Map.TreeStands[0],
-            YieldPerCut = config.CutYield,
-        };
+        TreeStand = new TreeStand { YieldPerCut = config.CutYield };
 
         int catchment = TravelCostField.TilesToCost(config.ForagerCatchmentTiles);
         int nextWorkplaceId = 1;
@@ -1162,8 +1158,22 @@ public sealed class SimWorld
     /// shed is a granary nobody can see, which makes "why is nobody fetching food?"
     /// unanswerable by looking.
     /// </remarks>
-    private bool SomethingStandsAt(GridPos position)
+    internal bool SomethingStandsAt(GridPos position)
     {
+        // HOMES COUNT, and leaving them out was a real bug rather than an omission:
+        // CanBuildAt asked this question and got "no" for a tile with a house on it, so
+        // the player could mark a granary on top of somebody's home. Meanwhile
+        // Household.ChooseSite asked its OWN version of the same question, which did check
+        // homes — two rules, one of them wrong, and the wrong one was the one facing the
+        // player. There is one now, and ChooseSite calls it.
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (Households[i].HomePosition == position)
+            {
+                return true;
+            }
+        }
+
         for (int i = 0; i < Workplaces.Count; i++)
         {
             if (Workplaces[i].Position == position)
@@ -1548,9 +1558,6 @@ public sealed class SimWorld
 
     /// <summary>The first household's store.</summary>
     public Stockpile Stockpile => Households[0].Stockpile;
-
-    /// <summary>The first household's home position.</summary>
-    public GridPos Home => Households[0].HomePosition;
 
     /// <summary>
     /// Create a world.
