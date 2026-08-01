@@ -185,7 +185,7 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.AgeYears);
         hash = MixUInt32(hash, (uint)villager.Hunger);
         hash = MixUInt32(hash, (uint)villager.TicksAtMaxHunger);
-        hash = MixUInt32(hash, (uint)villager.TicksCold);
+        hash = MixUInt32(hash, (uint)villager.Cold);
         hash = MixByte(hash, (byte)villager.State);
         hash = MixUInt32(hash, (uint)villager.Position.X);
         hash = MixUInt32(hash, (uint)villager.Position.Y);

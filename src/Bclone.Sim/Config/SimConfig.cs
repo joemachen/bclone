@@ -455,18 +455,46 @@ public sealed record SimConfig
     public int DemolitionReturnsPercent { get; init; } = 50;
 
     /// <summary>
-    /// Consecutive ticks in an unheated home before someone freezes.
+    /// Days outdoors in winter, unclothed, before a healthy adult is in danger (D45).
     /// </summary>
     /// <remarks>
-    /// Longer than <see cref="StarvationTicks"/> on purpose. Firewood is made by a
-    /// two-step chain and hunger by a one-step one, so a household can be short of
-    /// fuel for reasons further away from anything it controls — and the village
-    /// needs time to notice and put hands back on the hut. A cold snap that killed as
-    /// fast as famine would give nobody a chance to respond, which is the difference
-    /// between pressure and a coin flip.
+    /// <para>
+    /// Stated in <b>days</b>, not ticks, because it is a statement about a human being
+    /// in the cold rather than about the tick rate — and the tick rate has already moved
+    /// once (D49). Fifteen days is half a winter, which is Joe's number and is chosen so
+    /// that going out is dangerous without being immediately fatal.
+    /// </para>
+    /// <para>
+    /// Zero switches outdoor cold off entirely, which is the world clothing eventually
+    /// creates — the <c>market_capacity: 0</c> pattern, so the village can be tested
+    /// against it before the clothing chain exists.
+    /// </para>
     /// </remarks>
-    [JsonPropertyName("freezing_ticks")]
-    public int FreezingTicks { get; init; } = 40;
+    [JsonPropertyName("exposure_days_outdoors")]
+    public int ExposureDaysOutdoors { get; init; } = 15;
+
+    /// <summary>
+    /// Days under a roof with no fire burning before a healthy adult is in danger (D45).
+    /// </summary>
+    /// <remarks>
+    /// Twenty-five, and what that number decides is worth knowing: it is <em>less</em>
+    /// than a thirty-day winter, so an unheated house can still kill inside one season.
+    /// Had it landed above thirty, <c>CauseOfDeath.Cold</c> would have gone dormant until
+    /// clothing shipped and D17's whole reversal with it.
+    /// </remarks>
+    [JsonPropertyName("exposure_days_sheltered")]
+    public int ExposureDaysSheltered { get; init; } = 25;
+
+    /// <summary>
+    /// How far toward freezing a villager gets before they break off work to get warm.
+    /// </summary>
+    /// <remarks>
+    /// Halfway is where the shipped system already put its "you are cold" narration, so
+    /// the player has been trained on that line; this makes it mean something rather
+    /// than merely be said. Zero switches the behaviour off and nobody ever comes in.
+    /// </remarks>
+    [JsonPropertyName("seek_shelter_percent")]
+    public int SeekShelterPercent { get; init; } = 50;
 
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
@@ -942,9 +970,19 @@ public sealed record SimConfig
                 $"firewood_per_winter_day cannot be negative (got {FirewoodPerWinterDay}).");
         }
 
-        if (FreezingTicks <= 0)
+        // Zero is legal for either — it switches that half of cold off (D45 §4.5), which
+        // is how a world with clothing in it gets tested before clothing exists.
+        if (ExposureDaysOutdoors < 0 || ExposureDaysSheltered < 0)
         {
-            throw new SimConfigException($"freezing_ticks must be greater than zero (got {FreezingTicks}).");
+            throw new SimConfigException(
+                $"exposure_days_outdoors and exposure_days_sheltered cannot be negative " +
+                $"(got {ExposureDaysOutdoors}, {ExposureDaysSheltered}).");
+        }
+
+        if (SeekShelterPercent is < 0 or > 100)
+        {
+            throw new SimConfigException(
+                $"seek_shelter_percent must be between 0 and 100 (got {SeekShelterPercent}).");
         }
 
         if (LogsPerHouse < 0)
@@ -1095,6 +1133,62 @@ public sealed record SimConfig
     /// <summary>Ticks in one season. Derived, not configured.</summary>
     [JsonIgnore]
     public int TicksPerSeason => TicksPerDay * DaysPerSeason;
+
+    /// <summary>Ticks outdoors, unclothed, before danger. Derived from days (D45).</summary>
+    [JsonIgnore]
+    public int ExposureTicksOutdoors => ExposureDaysOutdoors * TicksPerDay;
+
+    /// <summary>Ticks under a roof with no fire before danger. Derived from days (D45).</summary>
+    [JsonIgnore]
+    public int ExposureTicksSheltered => ExposureDaysSheltered * TicksPerDay;
+
+    /// <summary>
+    /// What <see cref="Villager.Cold"/> has to reach to kill somebody (D45).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One accumulator, two rates</b>, and the product of the two tick-counts is the
+    /// scale that makes both rates exact integers for any pair of day-counts a config can
+    /// state. No lowest common multiple, no rounding, no float (D2).
+    /// </para>
+    /// <para>
+    /// The alternative — a counter per row of D45's table — leaves a hole in the ordinary
+    /// case: a villager who alternates between a fortnight outdoors and a spell in a cold
+    /// room trips neither counter and is immortal in conditions that should kill them.
+    /// Partial exposure has to add up.
+    /// </para>
+    /// <para>
+    /// Zero when either half is switched off, which callers read as "cold cannot kill".
+    /// </para>
+    /// </remarks>
+    [JsonIgnore]
+    public int ExposureThreshold => ExposureTicksOutdoors * ExposureTicksSheltered;
+
+    /// <summary>What a tick outdoors in winter costs. Derived (D45).</summary>
+    [JsonIgnore]
+    public int ExposurePerTickOutdoors =>
+        ExposureTicksOutdoors == 0 ? 0 : ExposureThreshold / ExposureTicksOutdoors;
+
+    /// <summary>What a tick under a fireless roof costs. Derived (D45).</summary>
+    [JsonIgnore]
+    public int ExposurePerTickSheltered =>
+        ExposureTicksSheltered == 0 ? 0 : ExposureThreshold / ExposureTicksSheltered;
+
+    /// <summary>
+    /// What a tick beside a burning fire gives back — <b>a day by the fire undoes a day
+    /// outdoors</b> (D45 §4.1, Joe's answer (c)).
+    /// </summary>
+    /// <remarks>
+    /// A fire used to zero the count outright, and that was measured before it was built:
+    /// villagers spend <b>76% of winter standing at a lit hearth</b>, so the count was
+    /// wiped constantly and <em>nobody ever froze in 120 years</em>. Thawing keeps the
+    /// sentence true — you never freeze while a fire is burning — without letting one warm
+    /// minute erase a fortnight in the snow. Mirroring the outdoor rate is the only
+    /// choice that needs no number of its own: slower and a hearth is not really safety,
+    /// faster and it is the reset again wearing a delay.
+    /// </remarks>
+    [JsonIgnore]
+    public int ThawPerTickAtAFire => ExposurePerTickOutdoors;
 }
 
 /// <summary>Thrown when config is missing, malformed, or out of range.</summary>

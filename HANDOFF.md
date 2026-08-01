@@ -9,7 +9,9 @@ whatever you are about to touch. This file is the shortcut, not a substitute.
 
 - Branch `phase/2-wood-fuel-and-tools`, working tree clean, everything pushed, **green at
   every commit**.
-- **357 tests green.** The suite takes ~4m20s; the long 200- and 300-year runs dominate.
+- **370 tests green.** The suite takes ~4m55s; the long 200- and 300-year runs dominate.
+  **Time it twice before believing it** — D53 looked like a 38% regression on one run and
+  was 3% on a quiet machine.
 - Phase 0 and Phase 1 are merged to `main` (PRs #1, #2). Everything since is on this
   branch, unmerged on Joe's standing call: Phase 2's Definition of Done is not met, and
   merging now would make `main` a checkpoint rather than a completed phase.
@@ -105,23 +107,17 @@ make-work in the woods. That is a design gap, and it is Joe's call when to take 
 
 ## Next up, in order (Joe's call)
 
-1. **Shelter and exposure (D45)** — fully specified, unbuilt. Cold becomes positional:
-   **15 days outdoors unclothed, 25 days sheltered without a fire, reset by a burning
-   one** (60 and 100 ticks). Replaces `HearthSystem`'s household accounting. Note 25 days
-   is *less* than a 30-day winter, so an unheated house can still kill within one season —
-   `CauseOfDeath.Cold` stays live. `freezing_ticks` goes 80 → 100 and splits in two.
-   **Must be survivable with no clothing in the game.**
-2. **Clothing** — leather/wool/cotton, gated behind D19/D39's production tier. It removes
+1. **Clothing** — leather/wool/cotton, gated behind D19/D39's production tier. It removes
    the outdoor danger, and so is **what unlocks winter as a working season**.
-3. **Work-in-place instead of round trips.** Joe's idea and the biggest payoff on the
+2. **Work-in-place instead of round trips.** Joe's idea and the biggest payoff on the
    board — see the open decision in DESIGN.md §5. Villagers travel to work and *stay*,
    eating on site, so distance becomes a one-off commute rather than a per-unit tax.
    That kills the 7-tile home-to-work fence and lets the village finally use the
    120×80 valley it occupies twelve tiles of. **Re-derives the food economy a fourth
    time — give it a fresh session and the no-op-first discipline.**
-4. **The seasonal yield curve** (`specs/environment-and-seasons.md` §5.1), last and on
+3. **The seasonal yield curve** (`specs/environment-and-seasons.md` §5.1), last and on
    its own terms.
-5. **Winter work that is not the woods** (D44's forward note, D39's roadmap). Not
+4. **Winter work that is not the woods** (D44's forward note, D39's roadmap). Not
    scheduled, and named here because D52 turned it from "a fix I can make" into "a thing
    the game does not have yet". Herding, slaughtering, fishing.
 
@@ -176,6 +172,15 @@ make-work in the woods. That is a design gap, and it is Joe's call when to take 
 - **Numbers in a handoff are hearsay until re-measured.** D52's predecessor recorded fetch
   trips that were off by 3× and populations taken at the wrong instant, and both were
   quoted back with confidence.
+- **Probe a mechanic before you build it, not after.** D53: D45's cold model was measured
+  against the live village *before a line of it was written*, and the central rule — a
+  fire resets the count — turned out to kill nobody in 120 years, because people spend
+  76% of winter standing at a hearth. Ten minutes of probe against a day of slice. **The
+  cheapest place to find out a design is wrong is before it exists.**
+- **A number chosen to make a body count come out right is a number you will pay for
+  twice.** D53 refused that option by name. The day-counts describe a person in the cold;
+  the death rate is a property of the economy. If cold is too rare, open
+  `WoodcuttersWanted`, not the cold model.
 - **Prefer readers to writers.** D47 asks the world "is anyone dead still holding a job?"
   rather than keeping a flag: nothing to hash, nothing that can be set and not cleared.
   The recurring bug here is code reading state from where it used to live, and a

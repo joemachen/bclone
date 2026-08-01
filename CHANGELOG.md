@@ -17,6 +17,26 @@ Categories (only include the ones you use): **Added**, **Changed**,
 
 ## [Unreleased]
 
+### Changed
+- **Cold is a place you are standing, not a number on your household** (D45, D53;
+  `specs/shelter-and-exposure.md`). `Villager.Cold` rises fastest on open ground,
+  more slowly under a roof with no fire, and falls beside a burning hearth — any
+  occupied home with firewood in it, including a neighbour's. Two people of one
+  family now get cold at different rates. Villagers break off work at halfway to
+  freezing and walk to the nearest fire. Epitaphs say where somebody was when it
+  killed them rather than how long their family had been out of firewood.
+- **A fire thaws rather than resetting**, because the model was measured before it
+  was built: villagers spend 76% of winter at a lit hearth, so a reset would have
+  killed nobody in 120 years. A day by the fire undoes a day outdoors.
+- The tests run the **shipped calendar**. `VillageFixtures` had inherited fifteen-day
+  seasons from Phase 0 while `data/sim.config.json` moved to thirty (D49), so every
+  village test ran a different year from the game for four commits.
+
+### Removed
+- `freezing_ticks`, replaced by `exposure_days_outdoors` and
+  `exposure_days_sheltered` — stated in days, because they describe a person in the
+  cold rather than a tick rate.
+
 ### Added
 - Project scaffolding: `DESIGN.md` (vision, pillars, architecture, build order),
   `CLAUDE.md` (AI working agreement), `METHODOLOGY.md` (engineering standards).

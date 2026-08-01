@@ -70,6 +70,45 @@ public sealed class ShippedConfigTests
     /// available is one thing; a pressure the player unlocks *by succeeding* is a trap.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The shipped calendar has to leave room for the shipped cold model (D45, D49).
+    /// </summary>
+    /// <remarks>
+    /// <b>This is the property the twenty-five was chosen for.</b> An unheated house must
+    /// be able to kill inside one winter, or <c>CauseOfDeath.Cold</c> goes dormant until
+    /// clothing ships and D17's whole reversal goes with it. It is asserted against the
+    /// shipped file specifically because the relationship spans two keys that have moved
+    /// independently before: D49 doubled the season in <c>data/sim.config.json</c> and
+    /// nowhere else, and this suite ran a fifteen-day winter for four commits without
+    /// noticing.
+    /// </remarks>
+    [Fact]
+    public void AnUnheatedHouseCanStillKillWithinOneWinter()
+    {
+        SimConfig config = Shipped;
+
+        _output.WriteLine(
+            $"winter is {config.DaysPerSeason} days; sheltered danger at " +
+            $"{config.ExposureDaysSheltered}, outdoors at {config.ExposureDaysOutdoors}.");
+
+        Assert.True(config.ExposureDaysSheltered < config.DaysPerSeason,
+            $"Danger under a fireless roof comes at {config.ExposureDaysSheltered} days and winter " +
+            $"is {config.DaysPerSeason}, so a house with no fire in it can never kill anybody. " +
+            "Cold has gone dormant, which D45 chose this number to prevent.");
+
+        Assert.True(config.ExposureDaysOutdoors < config.ExposureDaysSheltered,
+            "Open ground has to be more dangerous than a roof, or shelter means nothing.");
+
+        // And the rates the two day-counts derive have to stay exact integers — the
+        // whole reason the threshold is their product rather than a common multiple.
+        Assert.Equal(
+            config.ExposureThreshold,
+            config.ExposurePerTickOutdoors * config.ExposureTicksOutdoors);
+        Assert.Equal(
+            config.ExposureThreshold,
+            config.ExposurePerTickSheltered * config.ExposureTicksSheltered);
+    }
+
     [Fact]
     public void TheShippedBuildingsAreBigEnoughForTheEconomyTheyServe()
     {

@@ -1,7 +1,9 @@
 # Spec: Shelter and exposure — cold becomes a place you are standing
 
 **Decision:** D45. **Slice:** `specs/environment-and-seasons.md §11`, slice 3.
-**Status:** spec written, §9 open questions unanswered, not implemented.
+**Status:** §9 resolved (Joe, 2026-07-31) — **(c) a fire thaws rather than resets, and
+(d) the woodpile is the thing that fails.** §8b is the measurement that forced the
+question; read it before changing any number here.
 
 ---
 
@@ -19,9 +21,16 @@ The whole model, from D45:
 |---|---|
 | Outdoors, no clothing | **15 days** — half a winter |
 | Sheltered, no fire burning | **25 days** |
-| Sheltered, fire burning | never — the count **resets to zero** |
+| Sheltered, fire burning | never — and the count **falls back** |
 
 At `ticks_per_day: 4`, that is **60 ticks** and **100 ticks**.
+
+**The last row is the one that moved** (§9.4, Joe): a fire *thaws* rather than resetting
+to zero. D45 as first written zeroed the count at any hearth, and §8b measured what that
+does — villagers spend **76% of winter standing at a lit fire**, so the count was wiped
+constantly and **nobody ever froze**. Thawing keeps the sentence true (a fire is safety;
+you never freeze while one is burning) without letting a single warm minute erase a
+fortnight in the snow.
 
 **Clothing is not in this slice** (it waits on D19/D39's production tier), so the
 village must be survivable without it. That is the acceptance bar, not a nice-to-have.
@@ -75,9 +84,17 @@ So: **one integer per villager, two rates of accrual.**
 ```
 threshold      = ticksOutdoors * ticksSheltered      (60 * 100 = 6000)
 rate outdoors  = threshold / ticksOutdoors  = 100    per tick
-rate sheltered = threshold / ticksSheltered = 60     per tick
-rate at a fire = reset to 0
+rate sheltered = threshold / ticksSheltered =  60    per tick
+rate at a fire =                             -100    per tick, clamped at 0
 ```
+
+**Thawing is the mirror of the worst exposure, and that is the derivation** — *a day by
+the fire undoes a day outdoors.* One sentence, no new config number, and it is the only
+rate that makes coming home worth exactly what going out cost. Slower and a hearth is
+not really safety; faster and it is the reset again wearing a delay.
+
+`Cold` is clamped to `[0, threshold]` — it cannot go negative, so sitting by a fire all
+autumn does not bank credit against the winter.
 
 The product is used rather than a lowest common multiple so that **both rates are exact
 integers for any pair of day-counts a config can state** — no gcd, no rounding, no
@@ -104,19 +121,35 @@ Consequences, stated because they are the design and not an accident:
 - **Walking is outdoors**, always. Most of a villager's winter is spent walking, so the
   reset at a burning hearth is what actually keeps people alive — see §7.
 
-### 4.3 What resets
+### 4.3 What thaws
 
-**Any occupied home with firewood in it, not only your own.** A neighbour with a fire
-lit does not turn a freezing man away, and the alternative encodes a cruelty the player
-cannot act on: two houses side by side, one warm, one not, and the sim insists you
-freeze in the correct doorway. It also keeps this off the household-accounting road D45
-is getting off.
+**Any occupied home with firewood in it, not only your own.** A neighbour with a fire lit
+does not turn a freezing man away, and the alternative encodes a cruelty the player
+cannot act on: two houses side by side, one warm, one not, and the sim insists you freeze
+in the correct doorway. It also keeps this off the household-accounting road D45 is
+getting off.
 
 Workplaces and stores are shelter but have **no fire**, so they slow the count rather
-than clearing it. That is the middle row of the table and it is what makes the middle
+than reversing it. That is the middle row of the table and it is what makes the middle
 row exist.
 
-### 4.4 Config
+### 4.4 What the model is now FOR — the woodpile is the thing that fails
+
+The other half of §9.4 (d), stated forward rather than discovered backward later.
+
+§8b measured the real constraint: **no household in 120 years went more than 15 days
+without firewood**, and the shipped model kills only because its window is 10. So the
+question *"why did somebody freeze?"* has exactly one honest answer in this game, and it
+is **the woodpile ran out** — not bad luck, not weather, not a threshold nobody could
+see. Every death this system produces should be traceable to a fuel chain that failed:
+too few woodcutters, a shed too far, a winter longer than the pile.
+
+That is the pressure the player answers, and it is why (b) — moving the day-counts until
+a body count comes out right — was refused. **The day-counts describe a human being in
+the cold. The death rate is a property of the economy**, and if cold is too rare the
+thing to look at is `WoodcuttersWanted`, not this file.
+
+### 4.5 Config
 
 Replaces `freezing_ticks` outright — it is deleted, not deprecated.
 
@@ -242,34 +275,28 @@ This is a design decision, not a number to quietly tune — see §9.4.
 
 ---
 
-## 9. Open questions — Joe
+## 9. Questions — resolved (Joe, 2026-07-31)
 
-### 9.1 Does a workplace count as shelter?
+### 9.1 Does a workplace count as shelter? ✅ **Yes.**
 
-**Recommend yes**, per §4.2: huts, markets and stores have roofs; berry patches and tree
-stands do not. It makes *outdoor work* a meaningful category the moment before clothing
-exists to fix it, and it gives the middle row of D45's table something to describe.
+Per §4.2: huts, markets and stores have roofs; berry patches and tree stands do not. It
+makes *outdoor work* a meaningful category the moment before clothing exists to fix it,
+and it gives the middle row of D45's table something to describe.
 
-The alternative — only homes are shelter — is simpler and makes winter far more
-dangerous, since a woodcutter at a hut would then be as exposed as a logger in a field.
+### 9.2 Does any home's fire count, or only your own? ✅ **Any occupied home with firewood.**
 
-### 9.2 Does any home's fire reset you, or only your own?
+§4.3 has the argument: the alternative is a cruelty the player cannot act on, and it
+walks straight back onto the household-accounting road this slice exists to leave.
 
-**Recommend any occupied home with firewood.** §4.3 has the argument: the alternative
-is a cruelty the player cannot act on, and it walks straight back onto the
-household-accounting road this slice exists to leave.
+### 9.3 What is the seek-shelter threshold? ✅ **50%.**
 
-### 9.3 What is the seek-shelter threshold?
+Halfway to dying is where the shipped system already puts its *"you are cold"* warning,
+so the player has been trained on that line and it now means something instead of merely
+being said.
 
-Needs a number. **Recommend 50%** — halfway to dying is where the current system already
-puts its "you are cold" warning, so the player has been trained on that line and it
-would now mean something instead of merely being said.
+### 9.4 Cold stops killing anyone — which way out? ✅ **(c) and (d), Joe.**
 
-Lower and people never work; higher and the walk home is itself fatal.
-
-### 9.4 ⛔ BLOCKING — cold stops killing anyone. Which of these do you want?
-
-§8b is the measurement. Four ways out, and they are genuinely different games:
+§8b is the measurement. Four ways out were put, and they were genuinely different games:
 
 - **(a) Accept it.** Cold becomes a rare emergency rather than a routine killer — you
   only freeze when the woodpile fails badly. *Against:* D17 allowed a second death
@@ -289,11 +316,15 @@ Lower and people never work; higher and the walk home is itself fatal.
   `WoodcuttersWanted`, not on the cold model. This is (a) with the intent stated
   forward instead of backward.
 
-**Recommend (c) plus (d).** Thawing at a rate makes the model do what D45 says in the
-cases D45 was imagining, without picking a death rate; and it keeps the cause of a
-freeze where the player can act on it — the woodpile. **(b) is the one to avoid**: it
-sets a number so that a body count comes out right, which is precisely the habit this
-project keeps paying to unlearn.
+**Chosen: (c) and (d) together.** Thawing at a rate makes the model do what D45 says in
+the cases D45 was imagining, without picking a death rate; and it keeps the cause of a
+freeze where the player can act on it — the woodpile. §4.1 has the thaw rate and its
+derivation, §4.4 has what (d) commits this system to.
+
+**(b) was refused explicitly**: it sets a number so that a body count comes out right,
+which is precisely the habit this project keeps paying to unlearn. **D45's table is
+amended in its last row and nowhere else** — the two day-counts stand exactly as Joe
+stated them, because they describe a person in the cold rather than a difficulty dial.
 
 ---
 

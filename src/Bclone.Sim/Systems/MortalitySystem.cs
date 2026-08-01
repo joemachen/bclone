@@ -56,7 +56,7 @@ public sealed class MortalitySystem : ISimSystem
 
         // Boundary is >=, decided in spec §11.
         bool starving = villager.TicksAtMaxHunger >= config.StarvationTicks;
-        bool freezing = villager.TicksCold >= config.FreezingTicks;
+        bool freezing = config.ExposureThreshold > 0 && villager.Cold >= config.ExposureThreshold;
 
         if (!starving && !freezing)
         {
@@ -72,7 +72,7 @@ public sealed class MortalitySystem : ISimSystem
         // the cause of death a fact about the tick order rather than about the
         // villager, which is exactly the ambiguity D17 forbids.
         int hungerOverrun = starving ? villager.TicksAtMaxHunger * 100 / config.StarvationTicks : 0;
-        int coldOverrun = freezing ? villager.TicksCold * 100 / config.FreezingTicks : 0;
+        int coldOverrun = freezing ? villager.Cold * 100 / config.ExposureThreshold : 0;
 
         Kill(world, villager, coldOverrun > hungerOverrun ? CauseOfDeath.Cold : CauseOfDeath.Starvation);
     }
@@ -97,10 +97,14 @@ public sealed class MortalitySystem : ISimSystem
                 $"{world.Clock}. They had survived {villager.WintersSurvived} winters." +
                 AndAlso(world, villager, CauseOfDeath.Starvation),
 
+            // A statement about the PERSON, not about their household's shelf (D45).
+            // It used to read "the household had been without firewood for N days",
+            // which stopped being true the moment cold became positional: they may have
+            // frozen on the walk back from a tree stand with a full woodpile at home.
+            // Where they were standing when it killed them is the fact that explains it.
             CauseOfDeath.Cold =>
-                $"{villager.Name} froze to death at {villager.AgeYears}, {world.Clock}. " +
-                $"The {world.HouseholdOf(villager).Name} household had been without firewood " +
-                $"for {villager.TicksCold / world.Config.TicksPerDay} days. " +
+                $"{villager.Name} froze to death at {villager.AgeYears}, {world.Clock}, " +
+                $"{WhereTheyWere(world, villager)}. " +
                 $"They had survived {villager.WintersSurvived} winters." +
                 AndAlso(world, villager, CauseOfDeath.Cold),
 
@@ -109,6 +113,22 @@ public sealed class MortalitySystem : ISimSystem
 
         world.Narrate(epitaph);
     }
+
+    /// <summary>Where somebody was when the cold finished them (D45).</summary>
+    /// <remarks>
+    /// Three sentences for three genuinely different stories, and a player acts on each
+    /// differently: out in the open is a walk that was too long, a fireless roof is a
+    /// woodpile that ran out, and a house with a fire in it should be impossible — if it
+    /// ever prints, the thaw is not being applied and that is a bug, said out loud
+    /// rather than swallowed (METHODOLOGY §4).
+    /// </remarks>
+    private static string WhereTheyWere(SimWorld world, Villager villager) =>
+        world.ShelterAt(villager.Position) switch
+        {
+            Shelter.Fire => "beside a burning fire, which should not be possible",
+            Shelter.Roof => "under a roof with no fire under it",
+            _ => "out in the open",
+        };
 
     /// <summary>
     /// Name the other affliction, when there was one.
@@ -130,11 +150,11 @@ public sealed class MortalitySystem : ISimSystem
                 : " They were going hungry too, but it was the cold that killed them.";
         }
 
-        if (cause == CauseOfDeath.Starvation && villager.TicksCold > 0)
+        if (cause == CauseOfDeath.Starvation && villager.Cold > 0)
         {
-            return villager.TicksCold >= config.FreezingTicks
-                ? " Their home was unheated as well; hunger got there first."
-                : " Their home was cold too, but it was hunger that killed them.";
+            return config.ExposureThreshold > 0 && villager.Cold >= config.ExposureThreshold
+                ? " They were freezing as well; hunger got there first."
+                : " They were cold too, but it was hunger that killed them.";
         }
 
         return string.Empty;

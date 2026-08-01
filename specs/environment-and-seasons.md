@@ -309,11 +309,12 @@ entirely — and is therefore what unlocks winter as a working season, which is
 §2.7's *unlock by doing* arriving out of a survival mechanic. Clothing waits on
 D19/D39's production tier, so **every slice before it must be survivable without it.**
 
-**Open sub-question, and it blocks implementation.** "Two weeks" and "six weeks" are
-not units this game keeps: a season is **15 days** and a year is **60**. Six weeks is
-nearly three seasons — longer than winter itself. These need converting into the
-game's calendar before a number is written down, and the conversion is a design
-decision, not arithmetic.
+**Open sub-question, and it blocks implementation.** ✅ **Resolved by D49** — thirty-day
+seasons — and then **by D52's successor**, because D49 landed in `data/sim.config.json`
+and nowhere else, so the tests kept a fifteen-day winter and the numbers still could not
+be expressed. Final: **15 days outdoors, 25 sheltered.** See
+`specs/shelter-and-exposure.md`, and its §8b for the measurement that changed the third
+row of the table above from *reset* to *thaw*.
 
 ### 10.3 Does labour reconsider at the turn of the season? ❌ **The opposite — every three years (D46).**
 
@@ -357,9 +358,12 @@ project learning twice.
 2. **The idle winter** (D44). Give a forager something to do when there is nothing to
    forage. Sim-side, no derivation change. Includes the D47 death-and-vacancy handling
    and the move to a three-year reshuffle (D46), because all three are the labour pass.
-3. **Shelter and exposure** (D45), minus clothing. Resolve §10.2's calendar question
-   first, then replace `HearthSystem`'s household accounting with a positional model.
-   Must be survivable with no clothing in the game.
+3. **Shelter and exposure** ✅ (D45), minus clothing. `specs/shelter-and-exposure.md`.
+   §10.2's calendar question was resolved by D49 — and then found to have landed only in
+   the shipped config, which is what actually blocked this slice. `HearthSystem`'s
+   household accounting is replaced by a positional model; the burning is untouched.
+   **Survivable with no clothing**, and cold now fires when the fuel chain fails rather
+   than on a per-household timer (§9.4 (c) and (d)).
 4. **Clothing**, once D19/D39's production tier exists. The slice that turns winter
    from survivable into workable.
 5. **The seasonal yield curve** (§5.1), on its own terms — economy to an annual basis

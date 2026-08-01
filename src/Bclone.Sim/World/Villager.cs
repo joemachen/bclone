@@ -133,16 +133,30 @@ public sealed class Villager
     public int TicksAtMaxHunger { get; set; }
 
     /// <summary>
-    /// Consecutive ticks spent in an unheated home in winter. Freezing counts from
-    /// here, exactly as starvation counts from <see cref="TicksAtMaxHunger"/>.
+    /// How cold this villager has got, counted from where they have been standing (D45).
     /// </summary>
     /// <remarks>
-    /// Deliberately the same shape as the hunger counter rather than a cleverer one.
-    /// Cold is meant to read as <em>parallel</em> to hunger — a second way the same
-    /// kind of neglect kills you — and two mechanics that behave alike are two the
-    /// player only has to learn once.
+    /// <para>
+    /// <b>Not a tick count</b> — it rises faster outdoors than under a fireless roof and
+    /// falls beside a burning fire, so its unit is
+    /// <see cref="Config.SimConfig.ExposureThreshold"/> rather than time. Read
+    /// <see cref="ColdPercent"/> for anything a person sees.
+    /// </para>
+    /// <para>
+    /// It used to be <c>TicksCold</c>: consecutive ticks in a home whose household had no
+    /// firewood, asked identically of everyone everywhere. That is the household
+    /// bookkeeping D45 replaces — a villager froze because of a number attached to their
+    /// family rather than because of where they had been.
+    /// </para>
     /// </remarks>
-    public int TicksCold { get; set; }
+    public int Cold { get; set; }
+
+    /// <summary>How far toward freezing they are, 0–100. What the panel and the log read.</summary>
+    public int ColdPercentOf(Config.SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        return config.ExposureThreshold == 0 ? 0 : Cold * 100 / config.ExposureThreshold;
+    }
 
     public VillagerState State { get; set; } = VillagerState.Idle;
 

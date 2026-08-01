@@ -337,27 +337,39 @@
   // player decision (DESIGN.md §2.3).
   "firewood_per_winter_day": 1,
 
-  // Longer than starvation_ticks on purpose: firewood comes from a
-  // two-step chain and food from a one-step one, so the village needs
-  // time to notice and put hands back on the hut. A cold snap that
-  // killed as fast as famine would give nobody a chance to respond,
-  // which is the difference between pressure and a coin flip.
+  // ---- Cold is a place you are standing (D45) -----------------
+  // freezing_ticks is GONE. It was one counter per household - "days
+  // since this family ran out of firewood" - asked identically of
+  // everyone, everywhere, so a villager froze because of a number
+  // attached to their relatives rather than because of anything you
+  // could watch happen. These two replace it, and they are stated in
+  // DAYS rather than ticks because they describe a human being in the
+  // cold, not a tick rate. The tick rate has already moved once (D49).
   //
-  // 40 -> 80, which keeps this slice honest rather than expressing D45.
-  // Stated: A HOUSEHOLD THAT RUNS OUT OF FIREWOOD IS IN DANGER ABOUT
-  // TWO-THIRDS OF THE WAY THROUGH WINTER. That was true at 40 ticks of a
-  // 60-tick winter and it is true at 80 of 120, so the calendar change
-  // leaves the game the same shape - which is the whole job of this
-  // slice. Leaving it at 40 would have made cold markedly DEADLIER (a
-  // third of the way into a winter twice as long), which is the opposite
-  // of the "dial down winter" this change is part of.
+  // Fifteen days outdoors is half a winter: going out is dangerous
+  // without being immediately fatal, which is what makes clothing worth
+  // wanting later (D19/D39) rather than mandatory now.
   //
-  // D45 REPLACES THIS ENTIRELY and the numbers will not survive: cold
-  // becomes positional - about two weeks outdoors unclothed, about six
-  // sheltered without a fire - rather than one household-wide counter.
-  // Deliberately not anticipated here; two hard things at once is the
-  // mistake D42 records this project making twice.
-  "freezing_ticks": 80,
+  // Twenty-five sheltered is LESS THAN A THIRTY-DAY WINTER, and that is
+  // the number's job: an unheated house can still kill you inside one
+  // season. Above thirty and CauseOfDeath.Cold would go dormant until
+  // clothing shipped, taking D17's whole reversal with it.
+  //
+  // Zero on either switches that half off - the market_capacity: 0
+  // pattern - which is how the world clothing eventually creates gets
+  // tested before the clothing chain exists.
+  "exposure_days_outdoors": 15,
+  "exposure_days_sheltered": 25,
+
+  // How far toward freezing somebody gets before they drop what they are
+  // doing and walk to the nearest fire. Halfway is where the old system
+  // already printed its "you are cold" line, so the player has been
+  // trained on it; now it means something rather than merely being said.
+  //
+  // Not a tuning knob for difficulty: it is the point at which a person
+  // decides work can wait. Lower and nobody works through a winter at
+  // all; higher and the walk to the fire is itself what kills them.
+  "seek_shelter_percent": 50,
 
   // ---- Storage (D30, D32) ------------------------------------
   // Two buildings, not one. Food spoils and timber does not, and one

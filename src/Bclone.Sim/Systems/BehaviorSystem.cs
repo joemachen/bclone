@@ -102,6 +102,7 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.MakingFirewood => "splitting logs",
         VillagerState.HaulingToStore => "hauling to a store",
         VillagerState.FetchingFromStore => "fetching from a store",
+        VillagerState.SeekingShelter => "going in to get warm",
         VillagerState.CollectingForMarket => "collecting for the market",
         VillagerState.DeliveringToHome => "delivering to a home",
         VillagerState.FetchingMaterials => "fetching building materials",
@@ -131,6 +132,22 @@ public sealed class BehaviorSystem : ISimSystem
         // (spec §11), so pausing for a bite costs one tick and the interrupted
         // action resumes untouched next tick.
         if (TryEat(world, villager))
+        {
+            return;
+        }
+
+        // Then get warm, if the cold has got dangerous (D45).
+        //
+        // BELOW EATING AND ABOVE EVERYTHING ELSE, and the position is the whole of the
+        // rule. Above eating and a villager starves to death in a warm house; below the
+        // work branches and it never fires for anybody who has a job, which is everyone
+        // it exists to protect.
+        //
+        // It is a WALK to a fire, not a teleport to safety, and the walk is outdoors —
+        // so breaking off early is worth more than breaking off late. That is the
+        // decision seek_shelter_percent exists to create, and the reason the threshold
+        // is stated as a share of the way to dying rather than as a temperature.
+        if (TrySeekWarmth(world, villager))
         {
             return;
         }
@@ -735,6 +752,89 @@ public sealed class BehaviorSystem : ISimSystem
 
     // Cutting is deliberately NOT included here. Berries stop in winter; trees do
     // not, so a woodcutter keeps working when a forager cannot.
+
+    /// <summary>
+    /// Break off and head for a fire once the cold has got dangerous (D45).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Returns true if this villager spent the tick getting warm, which includes standing
+    /// at the fire while they thaw — a villager who turned round the moment they crossed
+    /// back under the line would shuttle in and out of the doorway forever.
+    /// </para>
+    /// <para>
+    /// <b>The nearest fire, not their own house.</b> §4.3 of the spec: a neighbour with a
+    /// fire lit does not turn a freezing man away, and sending them past a warm door to
+    /// die at a cold one of their own would be a cruelty the player cannot act on. If the
+    /// village has no fire anywhere then there is nothing to walk to, and they carry on —
+    /// standing still in the open would be strictly worse.
+    /// </para>
+    /// </remarks>
+    private static bool TrySeekWarmth(SimWorld world, Villager villager)
+    {
+        SimConfig config = world.Config;
+
+        int threshold = config.ExposureThreshold;
+        if (threshold <= 0 || config.SeekShelterPercent <= 0)
+        {
+            return false;
+        }
+
+        // Once they are here they stay until they are properly warm, not merely until
+        // they are back under the line they came in over.
+        bool alreadyComingIn = villager.State == VillagerState.SeekingShelter;
+        int line = threshold * config.SeekShelterPercent / 100;
+
+        if (villager.Cold < line && !(alreadyComingIn && villager.Cold > 0))
+        {
+            return false;
+        }
+
+        if (villager.Cold == 0)
+        {
+            return false;
+        }
+
+        GridPos? fire = NearestFire(world, villager.Position);
+        if (fire is null)
+        {
+            return false;
+        }
+
+        villager.ActionTicksRemaining = 0;
+        villager.State = VillagerState.SeekingShelter;
+        Travel(world, villager, fire.Value, VillagerState.SeekingShelter);
+        return true;
+    }
+
+    /// <summary>The closest home with somebody in it and firewood still in the pile.</summary>
+    /// <remarks>
+    /// Households in id order so an exact tie in travel cost always resolves the same
+    /// way — an unordered tie is a desync waiting to happen (D15).
+    /// </remarks>
+    private static GridPos? NearestFire(SimWorld world, GridPos from)
+    {
+        GridPos? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (world.LivingMembersOf(household) == 0 || household.Stockpile.Firewood <= 0)
+            {
+                continue;
+            }
+
+            int cost = world.TravelCost.TicksBetween(from, household.HomePosition);
+            if (cost < bestCost)
+            {
+                bestCost = cost;
+                best = household.HomePosition;
+            }
+        }
+
+        return best;
+    }
 
     /// <summary>
     /// Eat if hungry enough and there is food. Returns true if a meal was taken,

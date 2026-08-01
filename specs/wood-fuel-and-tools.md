@@ -104,14 +104,23 @@ The genuinely new mechanic. A woodcutter's hut differs from every workplace so f
 - **Per household, not per member.** A house costs the same to heat whether two people live in it or five. This is the interesting choice: it makes *sprawl* expensive rather than *population* expensive, so a village that spreads into many small homes pays more than one that stays dense — a pressure that traces directly back to a player decision (§2.3). It also sharpens the widowed-parent case the food economy already centres on: the same heating bill, half the hands.
 - **Winter only**, for legibility. Fuel that trickles all year is a background tax; fuel demanded exactly when foraging stops is a season with teeth. Config-driven so shoulder seasons can be switched on later without a redesign.
 
-### 6b. Freezing
+### 6b. Freezing — ⚠️ **superseded by D45**, see `specs/shelter-and-exposure.md`
 
-Mirrors starvation, deliberately — the shape is already proven and already legible:
+The table below is what shipped, and it is kept because the *reasoning* still holds:
+mirroring starvation made cold legible the day it arrived. What did not hold is the
+household being the unit — a villager froze because of a number attached to their
+relatives, which is neither watchable nor traceable to a place. **Cold is positional
+now:** `Villager.Cold` rises fastest on open ground, more slowly under a fireless roof,
+and falls beside a burning fire. `freezing_ticks` is gone, replaced by
+`exposure_days_outdoors` and `exposure_days_sheltered`.
 
-| Hunger | Cold |
+The rest of §6 — the burning, the derivation, the demand — is untouched by D45 and
+still current.
+
+| Hunger | Cold (as shipped, now superseded) |
 |---|---|
-| `Hunger` rises each tick | `TicksCold` rises each winter tick the household cannot pay |
-| resets on eating | resets when the household has firewood again |
+| `Hunger` rises each tick | `TicksCold` rose each winter tick the household could not pay |
+| resets on eating | reset when the household had firewood again |
 | `TicksAtMaxHunger` ≥ `starvation_ticks` → death | `TicksCold` ≥ `freezing_ticks` → death |
 | `CauseOfDeath.Starvation` | `CauseOfDeath.Cold` |
 

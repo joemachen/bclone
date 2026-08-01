@@ -33,6 +33,9 @@ public enum VillagerState
     /// <summary>Walking to a store to collect what the household is short of (D30).</summary>
     FetchingFromStore,
 
+    /// <summary>Breaking off work to get to a fire before the cold does for them (D45).</summary>
+    SeekingShelter,
+
     /// <summary>A marketer walking to pick up goods that are in the wrong place (D14).</summary>
     CollectingForMarket,
 

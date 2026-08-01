@@ -1196,6 +1196,77 @@ public sealed class SimWorld
         return string.IsNullOrEmpty(where) ? "the near thicket" : $"the {where} thicket";
     }
 
+    /// <summary>
+    /// What the tile at <paramref name="at"/> does for somebody standing on it in
+    /// winter (D45).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A reader, not a flag</b> — the same discipline as D47's vacancy check. The
+    /// answer is computed from the world every time it is asked, so there is nothing to
+    /// hash, nothing that can be set and not cleared, and no way for it to drift out of
+    /// step with where the buildings actually are. This project's recurring bug is code
+    /// reading state from where it used to live.
+    /// </para>
+    /// <para>
+    /// Homes are asked first and win, because a home is the only thing that can hold a
+    /// fire. A hut, a market and a shed have roofs but no hearth; a berry patch and a
+    /// tree stand have neither, which is what makes foraging and logging <em>outdoor
+    /// work</em> — the asymmetry clothing later removes (D19/D39).
+    /// </para>
+    /// </remarks>
+    public Shelter ShelterAt(GridPos at)
+    {
+        for (int i = 0; i < Households.Count; i++)
+        {
+            Household household = Households[i];
+            if (household.HomePosition.X != at.X || household.HomePosition.Y != at.Y)
+            {
+                continue;
+            }
+
+            // An empty house has nobody to keep the fire in, whatever is on its shelf.
+            return LivingMembersOf(household) > 0 && household.Stockpile.Firewood > 0
+                ? Shelter.Fire
+                : Shelter.Roof;
+        }
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = StoreBuildings[i];
+            if (store.Position.X == at.X && store.Position.Y == at.Y)
+            {
+                return Shelter.Roof;
+            }
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace workplace = Workplaces[i];
+            if (workplace.Position.X != at.X || workplace.Position.Y != at.Y)
+            {
+                continue;
+            }
+
+            if (IsUnderCover(workplace.Kind))
+            {
+                return Shelter.Roof;
+            }
+        }
+
+        return Shelter.Outdoors;
+    }
+
+    /// <summary>Whether working at this kind of place puts a roof over you.</summary>
+    /// <remarks>
+    /// A woodcutter's hut and a market stall are buildings; a berry patch and a tree
+    /// stand are weather. A building site is roofless by definition — it is the roof
+    /// that is missing — which is a small cruelty that happens to be true, and it makes
+    /// raising a granary in February a real cost rather than a free winter job.
+    /// </remarks>
+    private static bool IsUnderCover(JobKind kind) =>
+        kind is JobKind.Woodcutter or JobKind.Marketer;
+
     /// <summary>Look up a villager by id, or null if there is no such person.</summary>
     public Villager? FindVillager(int id)
     {

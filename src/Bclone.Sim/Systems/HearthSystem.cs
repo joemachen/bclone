@@ -63,7 +63,7 @@ public sealed class HearthSystem : ISimSystem
             BurnADaysFirewood(world, config);
         }
 
-        ChillTheUnheated(world, config);
+        ChillTheUnsheltered(world, config);
     }
 
     /// <summary>Winter only, for now. Shoulder seasons are a config change away.</summary>
@@ -97,8 +97,35 @@ public sealed class HearthSystem : ISimSystem
         }
     }
 
-    private static void ChillTheUnheated(SimWorld world, SimConfig config)
+    /// <summary>
+    /// Cold, counted from where each villager is standing (D45).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the half of the old system that D45 replaced.</b> It used to ask one
+    /// question — does this villager's household have firewood? — of everyone, everywhere,
+    /// identically, so a villager froze because of a number attached to their family
+    /// rather than because of anything you could watch. Now the tile answers it: open
+    /// ground costs the most, a roof with no hearth costs less, and a burning fire gives
+    /// it back.
+    /// </para>
+    /// <para>
+    /// One accumulator with three rates rather than a counter per state — see
+    /// <see cref="SimConfig.ExposureThreshold"/> for why a counter per state leaves a
+    /// villager who alternates immortal.
+    /// </para>
+    /// </remarks>
+    private static void ChillTheUnsheltered(SimWorld world, SimConfig config)
     {
+        int threshold = config.ExposureThreshold;
+        if (threshold <= 0)
+        {
+            ClearTheCold(world);
+            return;
+        }
+
+        int warnAt = threshold * config.SeekShelterPercent / 100;
+
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -107,21 +134,36 @@ public sealed class HearthSystem : ISimSystem
                 continue;
             }
 
-            if (world.HouseholdOf(villager).Stockpile.Firewood > 0)
+            int before = villager.Cold;
+
+            villager.Cold += world.ShelterAt(villager.Position) switch
             {
-                villager.TicksCold = 0;
-                continue;
+                Shelter.Fire => -config.ThawPerTickAtAFire,
+                Shelter.Roof => config.ExposurePerTickSheltered,
+                _ => config.ExposurePerTickOutdoors,
+            };
+
+            // Clamped both ends. Below zero would bank warmth against next winter, which
+            // is not a thing a body does; above the threshold is death and is
+            // MortalitySystem's to read, so there is nothing to gain by counting past it.
+            if (villager.Cold < 0)
+            {
+                villager.Cold = 0;
+            }
+            else if (villager.Cold > threshold)
+            {
+                villager.Cold = threshold;
             }
 
-            villager.TicksCold++;
-
-            // Once per household per episode, at the moment the cold starts to be
-            // dangerous rather than merely uncomfortable — halfway to killing them.
-            if (villager.TicksCold == config.FreezingTicks / 2)
+            // Once per episode, on the way UP through the line where they break off work
+            // to get warm — so the sentence a player reads and the decision the villager
+            // makes are the same moment. Crossing it downward is somebody thawing out,
+            // and saying it again then would train them to ignore it.
+            if (before < warnAt && villager.Cold >= warnAt && warnAt > 0)
             {
                 world.Narrate(
-                    $"{villager.Name} is cold — the {world.HouseholdOf(villager).Name} household " +
-                    $"has had no firewood for days. {world.Clock.SeasonAndYear()}.");
+                    $"{villager.Name} is dangerously cold and is going in to get warm " +
+                    $"— {world.Clock.SeasonAndYear()}.");
             }
         }
     }
@@ -138,7 +180,7 @@ public sealed class HearthSystem : ISimSystem
     {
         for (int i = 0; i < world.Villagers.Count; i++)
         {
-            world.Villagers[i].TicksCold = 0;
+            world.Villagers[i].Cold = 0;
         }
     }
 }
