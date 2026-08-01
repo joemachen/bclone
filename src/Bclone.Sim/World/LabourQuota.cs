@@ -236,7 +236,18 @@ public readonly record struct LabourQuota
         // one that kills soonest.
         int free = hands;
 
-        int foragers = Take(ref free, toFeedEveryone);
+        // NOTHING CAN BE PICKED IN WINTER, so the village does not staff a berry patch
+        // then — not even the food floor (D44).
+        //
+        // This was the shape of the idle winter: the floor was taken first regardless
+        // of season, every hand left over was dumped into foraging by the last line of
+        // this method, and BehaviorSystem then sent all of them home because
+        // FoodSource.IsGatherable is false. A quarter of the working year, spent
+        // resting, by whoever held the commonest job in the village — and no reshuffle
+        // ever noticed, because the allocator had never heard of seasons.
+        bool canGather = FoodSource.IsGatherable(world.Clock.Season);
+
+        int foragers = canGather ? Take(ref free, toFeedEveryone) : 0;
         woodcutters = Take(ref free, Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter)));
         int loggers = Take(ref free, Cap(loggersForHuts, TotalCapacityFor(world, JobKind.Logger)));
 
@@ -276,7 +287,51 @@ public readonly record struct LabourQuota
 
         // Everyone still spare forages. Berries keep, and a hand that gathers nothing
         // still eats.
-        foragers += free;
+        //
+        // IN WINTER, NOTHING IS ADDED HERE — a hand the village has no work for is left
+        // without one, and the sentence LabourAllocator writes for them says so.
+        //
+        // THE FIRST VERSION SENT EVERY SPARE WINTER HAND TO THE WOODS, capped only by
+        // the tree stands' seats and by whether any shed still had room for one more
+        // log. It was measured and it was wrong, in the way this codebase keeps being
+        // wrong: it staffed work without asking what the work was FOR.
+        //
+        // The demand for timber is already answered, twice, further up this method —
+        // LoggersWanted for the houses the village is waiting on, LoggersToFeedTheHuts
+        // for the firewood chain. Both are funded before this point. So every hand the
+        // fill added was, by construction, cutting logs nothing in the village had a
+        // use for, and "is a shed not yet full?" was never a bound on that — it was a
+        // bound on the shed.
+        //
+        // Which is what it hit. THE SHED IS ONE ROOM (D33): logs and firewood share its
+        // capacity, so timber the village had no use for crowded out the fuel. Measured
+        // over 100 years on the village fixture, with the market switched off — the
+        // sheds held 617-703 logs against a capacity of 717 for the entire run, and the
+        // firewood standing anywhere in the village ran at 60-285 where without the fill
+        // it runs at 104-513. The birth gate reads a household's own firewood, so the
+        // village simply stopped having children: a mean population of 14 where it holds
+        // 22 without the fill, with a full larder, a full shed, nobody starving and
+        // nobody freezing. D33's recorded failure exactly, in mirror image — that one
+        // packed the shed with firewood and could not store logs.
+        //
+        // It also made the MARKET load-bearing, which is the promise in spec §14.4 and
+        // the one thing here that must not break. Marketers shuttled the scarce firewood
+        // out to the homes, so the village with a market kept growing (mean 21) and only
+        // the village without one collapsed. That is how this was found — reported as a
+        // market regression, which it never was: the market arm was the healthy one, and
+        // TheMarketShortensTheWalkForFood failed because its CONTROL had shrunk.
+        //
+        // So the idle winter is narrowed rather than filled. Removing the food floor
+        // still gives the woodcutters and loggers the village DOES want first call on
+        // every hand, which is the half of D44 that was a real bug. The half that is
+        // left — hands with genuinely nothing to do between the last harvest and the
+        // first — is not a gap to paper over with make-work: it is D44's own forward
+        // note, and it wants herding and slaughtering (D39's food roadmap) to answer
+        // it honestly.
+        if (canGather)
+        {
+            foragers += free;
+        }
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, loggers, woodcutters, marketers, builders);

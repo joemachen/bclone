@@ -7,15 +7,14 @@ whatever you are about to touch. This file is the shortcut, not a substitute.
 
 ## State of play
 
-- Branch `phase/2-wood-fuel-and-tools`, **41 commits ahead of `main`**, working tree
-  clean, everything pushed, **green at every commit**.
-- **355 tests green.** The suite takes ~3m30s; the long 300-year runs dominate.
-- Latest commit: `a392682`.
+- Branch `phase/2-wood-fuel-and-tools`, working tree clean, everything pushed, **green at
+  every commit**.
+- **357 tests green.** The suite takes ~4m20s; the long 200- and 300-year runs dominate.
 - Phase 0 and Phase 1 are merged to `main` (PRs #1, #2). Everything since is on this
   branch, unmerged on Joe's standing call: Phase 2's Definition of Done is not met, and
   merging now would make `main` a checkpoint rather than a completed phase.
-- **One side branch: `wip/idle-winter`.** Unpushed, one red test. See §"The one thing
-  that is broken" — it is the next task.
+- **Nothing is broken.** `wip/idle-winter` is superseded and can be deleted — its work
+  landed on the branch with D52.
 
 **Run it:**
 ```
@@ -69,58 +68,62 @@ village decide". D15's guard narrowed from name-matching to signature-matching.
 
 ---
 
-## The one thing that is broken
+## The idle winter — closed, and the diagnosis in the last handoff was wrong
 
-**`wip/idle-winter` — the idle winter fix regresses the market.**
+**`wip/idle-winter` is superseded. Its work is on the branch, D52 records it.** Read that
+entry before touching the labour quota.
 
-The bug it fixes is real and confirmed: `LabourQuota.For` never asked what season it
-was, so in winter the food floor was still staffed and `foragers += free` dumped every
-spare hand onto berry patches with nothing on them. `BehaviorSystem` then sent them all
-home. **A quarter of the working year, idle, for whoever held the commonest job.**
+The bug it fixed was real: `LabourQuota.For` never asked what season it was, so in winter
+the food floor was still staffed and `foragers += free` dumped every spare hand onto
+berry patches with nothing on them. That half is kept.
 
-The branch fixes that — no foragers in winter, spare hands to the woods while the sheds
-have room — and breaks `TheMarketShortensTheWalkForFood`. Measured over 100 years:
+The half that was invented — **spare winter hands to the woods, bounded by whether any
+shed still had room** — is deleted. It bounded the shed, not the work. Demand for timber
+is already answered twice in the same method and funded first, so every hand it added was
+cutting logs the village had no use for. The sheds then sat at 617–703 of 717 capacity for
+the whole run; the shed is one room (D33), so firewood had nowhere to land, and the birth
+gate reads a household's own firewood. **Mean population 14 where it now holds 22 — full
+larder, full shed, nobody starving, nobody freezing.**
 
-| | population | fetch trips |
-|---|---|---|
-| with a market | 23 | 5,702 |
-| without | 33 | 3,044 |
+**It was never a market bug.** `MarketersWanted` has counted errands, not spare hands,
+since D36 — the previous handoff's hypothesis was wrong, and so was its fix. What
+actually happened: marketers shuttled the scarce firewood out to the homes, so **the
+market arm was the healthy one (mean 21) and the CONTROL collapsed.**
+`TheMarketShortensTheWalkForFood` failed because the village it measures against had
+died down to a size where it barely walked anywhere.
 
-**Worse per head as well as in total**, so it is not a metric artifact. Unverified
-hypothesis: winter frees a lot of hands, `MarketersWanted` is funded last out of
-whatever is spare, so the market is fully staffed all winter for the first time and
-churns goods nobody needed moved — adjacent to D36's recorded expensive mistake.
+The previous handoff's numbers (5,702 / 3,044 fetch trips) do not reproduce; the measured
+values were 17,995 / 9,705, and the populations quoted were end-of-run rather than mean.
+**Do not carry a number forward without re-measuring it.**
 
-**The agreed fix, not yet built:** bound `MarketersWanted` by *the work there actually
-is* — households genuinely below target, goods genuinely stranded — rather than by spare
-hands. D51 gives the *player* an override but does not change the default, so this is
-still open. Needs a 300-year measurement to trust.
-
-**Also worth fixing while in there:** that test's metric is a raw aggregate and passed
-for the wrong reason before. Per-capita is the honest form. Same shape as D34's lesson —
-an assertion about a window is not an assertion about a system.
+**Winter is still mostly idle, and that is now the honest answer** rather than a bug: with
+the food floor gone the village wants no extra hands, because it already has its logs.
+D44's own forward note is the fix — winter wants herding and slaughtering (D39), not
+make-work in the woods. That is a design gap, and it is Joe's call when to take it.
 
 ---
 
 ## Next up, in order (Joe's call)
 
-1. **The market regression**, as above. Unblocks `wip/idle-winter`.
-2. **Shelter and exposure (D45)** — fully specified, unbuilt. Cold becomes positional:
+1. **Shelter and exposure (D45)** — fully specified, unbuilt. Cold becomes positional:
    **15 days outdoors unclothed, 25 days sheltered without a fire, reset by a burning
    one** (60 and 100 ticks). Replaces `HearthSystem`'s household accounting. Note 25 days
    is *less* than a 30-day winter, so an unheated house can still kill within one season —
    `CauseOfDeath.Cold` stays live. `freezing_ticks` goes 80 → 100 and splits in two.
    **Must be survivable with no clothing in the game.**
-3. **Clothing** — leather/wool/cotton, gated behind D19/D39's production tier. It removes
+2. **Clothing** — leather/wool/cotton, gated behind D19/D39's production tier. It removes
    the outdoor danger, and so is **what unlocks winter as a working season**.
-4. **Work-in-place instead of round trips.** Joe's idea and the biggest payoff on the
+3. **Work-in-place instead of round trips.** Joe's idea and the biggest payoff on the
    board — see the open decision in DESIGN.md §5. Villagers travel to work and *stay*,
    eating on site, so distance becomes a one-off commute rather than a per-unit tax.
    That kills the 7-tile home-to-work fence and lets the village finally use the
    120×80 valley it occupies twelve tiles of. **Re-derives the food economy a fourth
    time — give it a fresh session and the no-op-first discipline.**
-5. **The seasonal yield curve** (`specs/environment-and-seasons.md` §5.1), last and on
+4. **The seasonal yield curve** (`specs/environment-and-seasons.md` §5.1), last and on
    its own terms.
+5. **Winter work that is not the woods** (D44's forward note, D39's roadmap). Not
+   scheduled, and named here because D52 turned it from "a fix I can make" into "a thing
+   the game does not have yet". Herding, slaughtering, fishing.
 
 ---
 
@@ -162,6 +165,17 @@ an assertion about a window is not an assertion about a system.
   precedent was wrong, and every one that came from a probe was right.
 - **An assertion about a window is not an assertion about a system**, and a raw aggregate
   is not a rate. The market test passed for the wrong reason for months.
+- **A comparative test has TWO villages, and either one can be the broken one.** D52: the
+  market test failed and a whole session went looking inside the market. The market arm
+  was healthy; the *control* had collapsed. **Check the control's population before
+  believing what the comparison says**, and never read a per-head figure off an
+  end-of-run count — that is a phase of an oscillation, not a mean.
+- **A gate on a store is not a gate on the work.** *"Is there room for one more?"* answers
+  a question about the shed. The question the quota has to ask is *"does anything in the
+  village want this?"* — D52, and D33 before it in the opposite direction.
+- **Numbers in a handoff are hearsay until re-measured.** D52's predecessor recorded fetch
+  trips that were off by 3× and populations taken at the wrong instant, and both were
+  quoted back with confidence.
 - **Prefer readers to writers.** D47 asks the world "is anyone dead still holding a job?"
   rather than keeping a flag: nothing to hash, nothing that can be set and not cleared.
   The recurring bug here is code reading state from where it used to live, and a

@@ -231,11 +231,22 @@
   "forage_site_capacity": 4,
   "forager_catchment_tiles": 10,
 
-  // The village shares out all its work again once a year, so people
-  // drift toward the jobs nearest where they live (decision D20).
+  // The village shares out all its work again every three years, so
+  // people drift toward the jobs nearest where they live (decision D20).
   // Seasonal churn would make the stated reason for holding a job go
   // stale before anyone read it.
-  "labour_reshuffle_years": 1,
+  //
+  // THREE, up from one (D46, Joe). D20 already argued that a seasonal
+  // reshuffle churns jobs faster than a player can read the reason for
+  // holding one; a yearly one is the same objection at lower volume.
+  // Three years is a rhythm a person can notice.
+  //
+  // Affordable because the two urgent cases are handled elsewhere and
+  // do not wait for it: TakeUpSlack still runs at every season boundary,
+  // so nobody sits idle beside an opening and the winter quota is acted
+  // on the day the berry patches close (D44); and a job left vacant by a
+  // death is filled the tick after it happens (D47).
+  "labour_reshuffle_years": 3,
 
   // ---- Ageing ------------------------------------------------
   // Full strength until 30, then a straight decline to 55% in the

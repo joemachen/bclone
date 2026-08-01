@@ -360,4 +360,101 @@ public sealed class LabourTests
 
         Assert.True(loop.World.Population > Config.StartingPopulation);
     }
+
+    // ---------------------------------------------------------------
+    //  Winter (D44, D52)
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void NobodyIsStaffedToABerryPatchInWinter()
+    {
+        // D44's bug, asserted. The quota had no idea what season it was, so the food
+        // floor was staffed all winter and every spare hand was poured into foraging
+        // on top of it — onto patches with nothing on them. BehaviorSystem then sent
+        // the lot of them home. A quarter of the working year, resting, by whoever
+        // held the commonest job in the village.
+        SimLoop loop = Build(Config);
+
+        int wintersSeen = 0;
+        for (int year = 1; year <= 20; year++)
+        {
+            for (int season = 0; season < 4; season++)
+            {
+                loop.Step(Config.TicksPerSeason);
+
+                LabourQuota quota = LabourQuota.For(loop.World);
+                if (FoodSource.IsGatherable(loop.World.Clock.Season))
+                {
+                    continue;
+                }
+
+                wintersSeen++;
+                Assert.True(quota.Foragers == 0,
+                    $"The village wants {quota.Foragers} foraging in " +
+                    $"{loop.World.Clock.SeasonAndYear()}, when there is nothing to pick.");
+            }
+        }
+
+        _output.WriteLine($"{wintersSeen} winter readings, none of them staffing a berry patch.");
+        Assert.True(wintersSeen > 0, "No winter was ever sampled, so this guard is vacuous (D7).");
+    }
+
+    [Fact]
+    public void NobodyIsPutOnTheStandWhenNoOneWantsTheTimber()
+    {
+        // D52, and the reason the first idle-winter fix was wrong. Spare winter hands
+        // were sent to the woods, bounded only by the tree stands' seats and by "is any
+        // shed not yet full?" — which bounds the SHED, not the work. Demand for timber
+        // is answered twice over in LabourQuota.For, by LoggersWanted for the houses
+        // and by the hut chain for firewood, and both are funded before that fill ran.
+        // So when BOTH said nobody, the fill still staffed every seat.
+        //
+        // What it cost, because a staffing bug is never only a staffing bug: THE SHED
+        // IS ONE ROOM (D33), logs and firewood share its capacity, so timber nobody
+        // wanted crowded out the fuel. The birth gate reads a household's own firewood,
+        // and the village quietly stopped having children — a mean population of 14
+        // against 22 without the fill, with a full larder, a full shed, nobody starving
+        // and nobody freezing.
+        //
+        // Asserted against the two demand questions rather than against the shed,
+        // because the shed is downstream. A shed legitimately fills; what must never
+        // happen is a hand being spent on a good the village has no use for.
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+
+        int idleDemandSeen = 0;
+        int inWinter = 0;
+
+        for (int season = 1; season <= 200 * 4; season++)
+        {
+            loop.Step(config.TicksPerSeason);
+
+            if (LabourQuota.LoggersWanted(loop.World) > 0
+                || LabourQuota.WoodcuttersWanted(loop.World) > 0)
+            {
+                continue;
+            }
+
+            idleDemandSeen++;
+            if (!FoodSource.IsGatherable(loop.World.Clock.Season))
+            {
+                inWinter++;
+            }
+
+            LabourQuota quota = LabourQuota.For(loop.World);
+            Assert.True(quota.Loggers == 0,
+                $"The village wants {quota.Loggers} at the stand in " +
+                $"{loop.World.Clock.SeasonAndYear()}, with no house waiting on timber and no " +
+                $"firewood wanted. It already holds {loop.World.TotalLogs()} logs.");
+        }
+
+        _output.WriteLine(
+            $"{idleDemandSeen} seasons wanted no timber at all, {inWinter} of them winters.");
+
+        // Anti-vacuity (D7), and the winter half matters on its own: the fill only ever
+        // ran in winter, so a run that never sampled one would prove nothing about it.
+        Assert.True(inWinter > 0,
+            "The village never once went a winter with no use for timber, so this guard is " +
+            "vacuous (D7) — the case it exists for did not happen.");
+    }
 }

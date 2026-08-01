@@ -208,42 +208,100 @@ public sealed class MarketTests
         // market exists to shorten. The marketers' own walking is not counted — that is
         // the cost being paid, not the benefit, and including it would let a market
         // pass this test by making more work for itself.
+        //
+        // PER HEAD, NOT IN TOTAL, and that is not a refinement — the raw aggregate was
+        // measuring the wrong village. Two runs of the same fixture do not hold the same
+        // number of people; whichever one grows more does more walking, for the best of
+        // reasons. So this compared a market against a control of a different size and
+        // called the difference the market's doing. It passed for years on that, and
+        // then failed loudly the first time a change to the LABOUR QUOTA — nothing to do
+        // with the market at all — shrank the no-market control from a mean of 22 people
+        // to 14. The market arm was the healthy one. A whole session went looking for a
+        // market bug that was never there.
+        //
+        // Same lesson as D34's, one level up: an assertion about a window is not an
+        // assertion about a system, and a raw aggregate is not a rate.
         SimConfig config = Config;
 
-        long withMarket = FetchDistanceOverTime(config);
-        long without = FetchDistanceOverTime(config with { MarketCapacity = 0 });
+        Fetching withMarket = FetchDistanceOverTime(config);
+        Fetching without = FetchDistanceOverTime(config with { MarketCapacity = 0 });
 
-        _output.WriteLine($"household fetch-steps: {withMarket} with a market, {without} without.");
+        _output.WriteLine(
+            $"household fetch-steps per 10,000 person-ticks: {withMarket.PerPersonTick} with a " +
+            $"market (mean population {withMarket.MeanPopulation}), {without.PerPersonTick} " +
+            $"without (mean population {without.MeanPopulation}).");
 
-        Assert.True(without > 0, "Nobody ever fetched anything, so this guard is vacuous (D7).");
-        Assert.True(withMarket < without,
-            $"Households walked {withMarket} with a market against {without} without one. The market " +
-            "is not shortening anybody's errand, which makes it decoration.");
+        Assert.True(without.Steps > 0, "Nobody ever fetched anything, so this guard is vacuous (D7).");
+
+        // AND THE CONTROL HAS TO BE A LIVING VILLAGE, checked before the comparison it
+        // is the control for. Free to assert — both runs already happened — and it is
+        // precisely what was missing: when the no-market arm collapsed to a mean of 14
+        // against the market arm's 21, this test reported a market that had stopped
+        // shortening walks. The market was fine. Its control had died down to a size
+        // where it barely walked anywhere.
+        //
+        // A quarter is the one chosen number in this file rather than a derived one, and
+        // the argument for it is spec §14.4: the market buys CONVENIENCE, so switching
+        // it off may cost the village errands and stranded goods. Losing a quarter of
+        // the people is not an inconvenience, it is the cliff §14.4 promises the market
+        // is not — and whatever caused it will not be in this building.
+        Assert.True(without.MeanPopulation * 4 >= withMarket.MeanPopulation * 3,
+            $"The village without a market averaged {without.MeanPopulation} people against " +
+            $"{withMarket.MeanPopulation} with one. The market has become load-bearing (spec §14.4), " +
+            "and until that is fixed this test has no honest control to measure against.");
+
+        Assert.True(withMarket.PerPersonTick < without.PerPersonTick,
+            $"Households walked {withMarket.PerPersonTick} steps per 10,000 person-ticks with a " +
+            $"market against {without.PerPersonTick} without one. The market is not shortening " +
+            "anybody's errand, which makes it decoration.");
+    }
+
+    /// <summary>Fetching done by households over a run, and the village that did it.</summary>
+    /// <param name="Steps">Total steps spent walking to a store.</param>
+    /// <param name="PersonTicks">Living villagers summed over every tick — the denominator.</param>
+    /// <param name="Ticks">How long the run was.</param>
+    private readonly record struct Fetching(long Steps, long PersonTicks, int Ticks)
+    {
+        /// <summary>Fetch-steps per 10,000 person-ticks. Integer, because floats do not
+        /// belong anywhere near a comparison this test turns on (D2).</summary>
+        public long PerPersonTick => PersonTicks == 0 ? 0 : Steps * 10_000 / PersonTicks;
+
+        /// <summary>Mean living population across the run, for the message.</summary>
+        public long MeanPopulation => Ticks == 0 ? 0 : PersonTicks / Ticks;
     }
 
     /// <summary>
-    /// Total steps households spend fetching, over 100 years — the marketers' own
-    /// legs excluded, since their walking is the cost rather than the benefit.
+    /// Steps households spend fetching over 100 years, and the person-ticks to divide
+    /// them by — the marketers' own legs excluded, since their walking is the cost
+    /// rather than the benefit.
     /// </summary>
-    private static long FetchDistanceOverTime(SimConfig config)
+    private static Fetching FetchDistanceOverTime(SimConfig config)
     {
         SimLoop loop = Build(config);
         long steps = 0;
+        long personTicks = 0;
+        int ticks = config.TicksPerYear * 100;
 
-        for (int i = 0; i < config.TicksPerYear * 100; i++)
+        for (int i = 0; i < ticks; i++)
         {
             loop.StepOnce();
 
             foreach (Villager villager in loop.World.Villagers)
             {
-                if (villager.Alive && villager.State == VillagerState.FetchingFromStore)
+                if (!villager.Alive)
+                {
+                    continue;
+                }
+
+                personTicks++;
+                if (villager.State == VillagerState.FetchingFromStore)
                 {
                     steps++;
                 }
             }
         }
 
-        return steps;
+        return new Fetching(steps, personTicks, ticks);
     }
 
     [Fact]
