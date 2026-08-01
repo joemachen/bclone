@@ -1111,40 +1111,31 @@ public partial class Main : Control
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Distinct names, and that is not merely tidiness.</b> Joe's screen read
-    /// <em>"the berry patch, the southern western thicket, the southern eastern thicket,
-    /// the southern eastern thicket"</em> — the same phrase twice, because two different
-    /// tree stands were generated with the same name. Saying it twice tells the player
-    /// nothing they can act on and reads like a bug, which for their purposes it is.
+    /// Joe's screen once read <em>"the berry patch, the southern western thicket, the
+    /// southern eastern thicket, the southern eastern thicket"</em> — the same phrase
+    /// twice, because a bearing has eight values and the village has six forage sites.
+    /// This method collapsed the repeat for a day.
     /// </para>
     /// <para>
-    /// <b>The collision itself is the sim's to fix</b>, not this method's: two workplaces
-    /// that a player cannot tell apart by name are two the game cannot explain. Collapsing
-    /// them here stops the sentence embarrassing itself; it does not make the names
-    /// unique.
+    /// <b>It does not any more, because it should never have been the view's job.</b>
+    /// <c>SimWorld</c> now guarantees that no two places share a name (D56), and a test
+    /// over fifty valleys says so — so a second copy of the rule here would be a second
+    /// place for it to be true, which is how two rules end up disagreeing. All that is
+    /// left is the count, which is a question about how much a person wants to read.
     /// </para>
     /// </remarks>
     private static string NameThem(IReadOnlyList<Workplace> unmanned)
     {
-        var names = new List<string>();
-        for (int i = 0; i < unmanned.Count; i++)
-        {
-            if (!names.Contains(unmanned[i].Name))
-            {
-                names.Add(unmanned[i].Name);
-            }
-        }
-
-        int shown = names.Count < MostPlacesToName ? names.Count : MostPlacesToName;
+        int shown = unmanned.Count < MostPlacesToName ? unmanned.Count : MostPlacesToName;
 
         var said = new List<string>();
         for (int i = 0; i < shown; i++)
         {
-            said.Add(names[i]);
+            said.Add(unmanned[i].Name);
         }
 
         string list = string.Join(", ", said);
-        int more = names.Count - shown;
+        int more = unmanned.Count - shown;
 
         return more <= 0 ? list : $"{list} and {more} more";
     }

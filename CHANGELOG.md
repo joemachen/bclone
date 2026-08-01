@@ -17,6 +17,14 @@ Categories (only include the ones you use): **Added**, **Changed**,
 
 ## [Unreleased]
 
+### Fixed
+- **No two places in the valley share a name** (D56). Bearings only had eight
+  values against six forage sites, so 44 valleys in 50 named two places alike —
+  and every site past the first was called a *thicket* whether it was foraged or
+  felled, so "the southern eastern thicket" could not tell you whether the village
+  was short of food or of timber. Thickets are foraged, woods are felled, bearings
+  are hyphenated, and where two places share one the nearer keeps the plain name.
+
 ### Changed
 - **The view is laid out like Banished** (D55): the valley fills the window and the
   panels float on top of it — village status top-left, log top-right, selection

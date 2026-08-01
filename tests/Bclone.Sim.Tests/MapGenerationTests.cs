@@ -78,6 +78,117 @@ public sealed class MapGenerationTests
     private const ulong GoldenMapHash = 2208871881858546589UL;
 
     [Fact]
+    public void NoTwoPlacesInTheValleyShareAName()
+    {
+        // Joe read this off his own screen: "Nobody is working the berry patch, the
+        // southern western thicket, the southern eastern thicket, the southern eastern
+        // thicket" — the same phrase twice, because a bearing has eight values and this
+        // village has six forage sites. Every one of these names ends up inside a
+        // sentence about why somebody walks the way they do, and a name that points at
+        // two places answers nothing. That is §1.1, not tidiness.
+        //
+        // Stated as ONE NAME, ONE PLACE rather than as one name per building, and the
+        // difference is D36's seam: the market is deliberately both a store and a
+        // workplace at a single position, so those two sharing "the market" is the
+        // model being right rather than a collision. Two names at two different tiles
+        // is the thing that cannot happen.
+        //
+        // Fifty seeds rather than the usual twelve: this is a collision test, and
+        // collisions are exactly the case a small sample misses.
+        int seedsThatNeededTheTieBreak = 0;
+
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seed).World;
+
+            var places = new Dictionary<string, GridPos>();
+            bool tieBroken = false;
+
+            foreach (Workplace workplace in world.Workplaces)
+            {
+                Check(seed, places, workplace.Name, workplace.Position);
+                tieBroken |= workplace.Name.Contains("far", System.StringComparison.Ordinal);
+            }
+
+            foreach (StoreBuilding store in world.StoreBuildings)
+            {
+                Check(seed, places, store.Name, store.Position);
+            }
+
+            if (tieBroken)
+            {
+                seedsThatNeededTheTieBreak++;
+            }
+        }
+
+        // Anti-vacuity (D7), and it is the whole point here: if no seed ever puts two
+        // sites on the same bearing then this test passes over a generator that has no
+        // collisions to resolve, and the code that resolves them is dead. The bug Joe
+        // found was on seed 12345, so at least some seeds must still need the tie-break.
+        _output.WriteLine(
+            $"{seedsThatNeededTheTieBreak} of 50 valleys put two places on one bearing.");
+
+        Assert.True(seedsThatNeededTheTieBreak > 0,
+            "No valley in fifty needed a name disambiguated, so this guard is watching a " +
+            "collision that never happens and the code that resolves them is never run.");
+
+        static void Check(ulong seed, Dictionary<string, GridPos> places, string name, GridPos at)
+        {
+            if (places.TryGetValue(name, out GridPos already))
+            {
+                Assert.True(already == at,
+                    $"Seed {seed}: \"{name}\" names both {already} and {at}. Nothing the village " +
+                    "says about either place can be acted on.");
+                return;
+            }
+
+            places[name] = at;
+        }
+    }
+
+    [Fact]
+    public void ForagingAndFellingAreNamedAsDifferentKindsOfPlace()
+    {
+        // The half of the bug that was worse than the repeat. Every site past the first
+        // was called a *thicket* whatever it was, so a tree stand and a berry patch were
+        // named alike — and a player told nobody was working "the southern eastern
+        // thicket" could not tell whether the village was short of food or of timber.
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), 12345UL).World;
+
+        int thickets = 0;
+        int woods = 0;
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Kind == JobKind.Forager)
+            {
+                Assert.DoesNotContain("wood", workplace.Name, System.StringComparison.Ordinal);
+                thickets++;
+            }
+
+            if (workplace.Kind == JobKind.Logger)
+            {
+                Assert.DoesNotContain("thicket", workplace.Name, System.StringComparison.Ordinal);
+                woods++;
+            }
+        }
+
+        var said = new List<string>();
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            said.Add(workplace.Name);
+        }
+
+        _output.WriteLine(
+            $"{thickets} places to forage and {woods} to fell, none of them named alike:");
+        _output.WriteLine("  " + string.Join(", ", said));
+
+        // Anti-vacuity (D7): a village with one of each proves nothing about the naming.
+        Assert.True(thickets > 1 && woods > 1,
+            "The fixture has too few sites for this to be testing anything.");
+    }
+
+    [Fact]
     public void NothingIsGeneratedOutsideTheValley()
     {
         for (ulong seed = 1; seed <= 50; seed++)

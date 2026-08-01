@@ -817,6 +817,8 @@ public sealed class SimWorld
         // somewhere near enough to work. This is what a binding catchment needs in
         // order to be survivable rather than merely cruel (D19) — and the generator
         // guarantees the spread by construction rather than hoping for it (D24).
+        List<string> forageNames = NamePlaces(Map.ForageSites, origin, "the berry patch", "thicket");
+
         for (int i = 0; i < Map.ForageSites.Count; i++)
         {
             GridPos position = Map.ForageSites[i];
@@ -825,7 +827,7 @@ public sealed class SimWorld
             {
                 Id = nextWorkplaceId++,
                 Kind = JobKind.Forager,
-                Name = i == 0 ? "the berry patch" : DescribeDirection(position, origin),
+                Name = forageNames[i],
                 Position = position,
                 Capacity = config.ForageSiteCapacity,
                 CatchmentRadius = catchment,
@@ -835,13 +837,15 @@ public sealed class SimWorld
         // Last ids, so that where ids break a tie the food comes first. The real
         // "feed yourself before you build" rule is the quota, not the ordering -
         // see LabourQuota - but there is no reason for the two to disagree.
+        List<string> standNames = NamePlaces(Map.TreeStands, origin, "the tree stand", "wood");
+
         for (int i = 0; i < Map.TreeStands.Count; i++)
         {
             Workplaces.Add(new Workplace
             {
                 Id = nextWorkplaceId++,
                 Kind = JobKind.Logger,
-                Name = i == 0 ? "the tree stand" : DescribeDirection(Map.TreeStands[i], origin),
+                Name = standNames[i],
                 Position = Map.TreeStands[i],
                 Capacity = config.TreeStandCapacity,
                 CatchmentRadius = catchment,
@@ -1179,21 +1183,146 @@ public sealed class SimWorld
         return false;
     }
 
-    private static string DescribeDirection(GridPos position, GridPos origin)
+    /// <summary>
+    /// Place names for a set of sites — <b>distinct ones</b>, from where they are.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Two sites that share a name are two the game cannot explain.</b> Joe read this
+    /// off his own screen: <em>"Nobody is working the berry patch, the southern western
+    /// thicket, the southern eastern thicket, the southern eastern thicket"</em> — the
+    /// same phrase twice, because a bearing has eight values and this village has six
+    /// forage sites. Every name here ends up inside a sentence about why somebody walks
+    /// the way they do, and a name that points at two places answers nothing.
+    /// </para>
+    /// <para>
+    /// <b>Worse than the repeat, and the reason this is a sim fix rather than a view
+    /// one: the noun was wrong.</b> Every site past the first was called a *thicket*
+    /// whatever it was, so a tree stand and a berry patch were named alike — and a
+    /// player told nobody was working "the southern eastern thicket" could not tell
+    /// whether the village was short of food or of timber. Thickets are for foraging;
+    /// woods are for felling.
+    /// </para>
+    /// <para>
+    /// Collisions are broken by <em>distance</em>, because that is what a person would
+    /// reach for: the near one keeps the plain name and the ones behind it are the far,
+    /// farther and farthest. Ordered by travel distance and then by tile, so it is a
+    /// total order and no two runs can disagree (D15).
+    /// </para>
+    /// </remarks>
+    private static List<string> NamePlaces(
+        IReadOnlyList<GridPos> sites, GridPos origin, string firstName, string noun)
     {
-        // Relative to the village, not to the world origin — "the northern thicket"
-        // has to mean north of the people saying it, and once the valley is generated
-        // the settlement is no longer at (0,0).
+        var names = new List<string>(sites.Count);
+        for (int i = 0; i < sites.Count; i++)
+        {
+            // The first of each kind is the one the village started with, and it is
+            // named as such — "the berry patch", not "the southern thicket".
+            names.Add(i == 0 ? firstName : $"the {Bearing(sites[i], origin)} {noun}");
+        }
+
+        for (int i = 0; i < names.Count; i++)
+        {
+            var sharing = new List<int>();
+            for (int j = i; j < names.Count; j++)
+            {
+                if (names[j] == names[i])
+                {
+                    sharing.Add(j);
+                }
+            }
+
+            if (sharing.Count < 2)
+            {
+                continue;
+            }
+
+            sharing.Sort((a, b) =>
+            {
+                int byDistance = TilesApart(origin, sites[a]).CompareTo(TilesApart(origin, sites[b]));
+                if (byDistance != 0)
+                {
+                    return byDistance;
+                }
+
+                int byX = sites[a].X.CompareTo(sites[b].X);
+                return byX != 0 ? byX : sites[a].Y.CompareTo(sites[b].Y);
+            });
+
+            // The nearest keeps what it had; everyone behind it says how far behind.
+            for (int k = 1; k < sharing.Count; k++)
+            {
+                names[sharing[k]] = Further(names[sharing[k]], k);
+            }
+        }
+
+        return names;
+    }
+
+    /// <summary>Which way a site lies from the village, in words.</summary>
+    /// <remarks>
+    /// Relative to the village, not to the world origin — "the northern wood" has to mean
+    /// north of the people saying it, and once the valley is generated the settlement is
+    /// no longer at (0,0).
+    /// </remarks>
+    private static string Bearing(GridPos position, GridPos origin)
+    {
         position = new GridPos(position.X - origin.X, position.Y - origin.Y);
 
-        string northSouth = position.Y < 0 ? "northern" : position.Y > 0 ? "southern" : string.Empty;
-        string eastWest = position.X < 0 ? "western" : position.X > 0 ? "eastern" : string.Empty;
+        string northSouth = position.Y < 0 ? "north" : position.Y > 0 ? "south" : string.Empty;
+        string eastWest = position.X < 0 ? "west" : position.X > 0 ? "east" : string.Empty;
 
-        string where = string.IsNullOrEmpty(northSouth)
-            ? eastWest
-            : string.IsNullOrEmpty(eastWest) ? northSouth : $"{northSouth} {eastWest}";
+        // Hyphenated when both apply. It used to read "the northern eastern thicket",
+        // which is not a thing anybody says.
+        if (northSouth.Length > 0 && eastWest.Length > 0)
+        {
+            return $"{northSouth}-{eastWest}ern";
+        }
 
-        return string.IsNullOrEmpty(where) ? "the near thicket" : $"the {where} thicket";
+        if (northSouth.Length > 0)
+        {
+            return $"{northSouth}ern";
+        }
+
+        return eastWest.Length > 0 ? $"{eastWest}ern" : "near";
+    }
+
+    /// <summary>
+    /// The same place name, said of somewhere further out.
+    /// </summary>
+    /// <remarks>
+    /// Three qualifiers, which is four sites in one bearing before it runs out — and if
+    /// it ever does run out the result is a duplicate, so there is a test that every
+    /// workplace in the village has a name of its own. A guard rather than a hope: the
+    /// alternative is this bug coming back silently the first time somebody raises
+    /// <c>forage_site_count</c>.
+    /// </remarks>
+    private static string Further(string name, int rank)
+    {
+        string qualifier = rank switch
+        {
+            1 => "far",
+            2 => "farther",
+            _ => "farthest",
+        };
+
+        // "the southern wood" becomes "the far southern wood".
+        return name.StartsWith("the ", StringComparison.Ordinal)
+            ? $"the {qualifier} {name[4..]}"
+            : $"{qualifier} {name}";
+    }
+
+    /// <summary>Straight-line-ish distance in tiles, integer only (D2).</summary>
+    /// <remarks>
+    /// Chebyshev rather than the travel-cost field, deliberately: names are settled while
+    /// the world is being built, before the cost field exists, and "which is further out"
+    /// is a question about the map rather than about the walk.
+    /// </remarks>
+    private static int TilesApart(GridPos from, GridPos to)
+    {
+        int dx = Math.Abs(to.X - from.X);
+        int dy = Math.Abs(to.Y - from.Y);
+        return dx > dy ? dx : dy;
     }
 
     /// <summary>
