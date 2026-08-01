@@ -181,7 +181,15 @@ public sealed class PluralStoresTests
         _output.WriteLine($"one granary supports {one} people; two support {two}.");
 
         Assert.True(two > one, "A second granary did not raise the ceiling at all.");
-        Assert.Equal(one * 2, two);
+
+        // AT LEAST double, not exactly double. The ceiling is a floor division of
+        // capacity, so doubling the capacity can leave a remainder behind that the
+        // single-granary answer had thrown away — 37 and 75, not 37 and 74. Asserting
+        // exact equality made this a test of whether the division happened to come out
+        // even, which it did at fifteen-day seasons and does not at thirty.
+        Assert.True(two >= one * 2,
+            $"Two granaries support {two} people where one supports {one}. Doubling the room " +
+            "should never buy less than twice the village.");
     }
 
     [Fact]

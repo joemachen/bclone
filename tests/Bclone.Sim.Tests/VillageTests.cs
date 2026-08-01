@@ -58,7 +58,11 @@ public sealed class VillageTests
         loop.Step(10);
         Assert.All(Founders(loop), v => Assert.Equal(20, v.AgeYears));
 
-        loop.Step(240);   // one full year
+        // A year, asked of the config rather than written down. It was 240 ticks
+        // literally, which stopped being a year the moment seasons went from fifteen
+        // days to thirty (D49) — the test then asserted a birthday half way through
+        // one and would have gone on asserting it through any later calendar change.
+        loop.Step(Village.TicksPerYear);
         Assert.All(Founders(loop), v => Assert.Equal(21, v.AgeYears));
     }
 

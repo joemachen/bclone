@@ -22,6 +22,23 @@ public static class VillageFixtures
             // Start from everything except the derived food numbers.
             SimConfig shape = Phase0Fixtures.Plenty with
             {
+                // THE SHIPPED CALENDAR (D49), which this fixture did not have for four
+                // commits. D49 moved `data/sim.config.json` to thirty-day seasons and
+                // re-derived the economy around them; nothing moved the tests, so every
+                // village test went on running a fifteen-day season and a 240-tick year
+                // while the game ran 30 and 480. That is the divergence D50 lived in
+                // entirely and D48 was four times worse inside.
+                //
+                // It blocks D45 specifically, which is how it was found: the whole point
+                // of "25 days sheltered without a fire" is that it fits INSIDE a 30-day
+                // winter, so an unheated house can still kill within one season. Against
+                // a 15-day winter it never fires, `CauseOfDeath.Cold` goes dormant, and
+                // every test written for it would be vacuous (D7).
+                //
+                // Phase0Fixtures keeps fifteen. That is Phase 0's world, its spec
+                // describes it, and its pacing is stated against it.
+                DaysPerSeason = 30,
+
                 StartingHouseholds = 2,
                 AdultsPerHousehold = 2,
                 FounderAge = 20,
