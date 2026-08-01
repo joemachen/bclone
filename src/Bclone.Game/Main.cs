@@ -29,24 +29,15 @@ public partial class Main : Control
     private const int MaxLogLines = 400;
 
     /// <summary>
-    /// Lines the standing-alert strip always occupies, said or unsaid.
-    /// </summary>
-    /// <remarks>
-    /// One per standing alert there can be — nowhere to build, and work nobody is doing.
-    /// The strip is this tall whether or not either is true, because the alternative is
-    /// a header that changes height and a map that moves under the player to match.
-    /// </remarks>
-    private const int StandingAlertLines = 2;
-
-    /// <summary>
     /// How many idle workplaces to name before falling back to a count.
     /// </summary>
     /// <remarks>
-    /// The alert has one line and the line has to fit. Three names is about what fits on
-    /// a normal window, and the fourth was never actionable anyway — a player who is
-    /// told the village is short of hands does not need the full inventory to act.
+    /// The alert wraps inside a floating panel now, so this is about how much a person
+    /// wants to read rather than about what fits on a line. Four names, then a count —
+    /// a player told the village is short of hands does not need the full inventory to
+    /// act on it.
     /// </remarks>
-    private const int MostPlacesToName = 3;
+    private const int MostPlacesToName = 4;
 
     private SimLoop _loop = null!;
     private FixedTimestepDriver _driver = null!;
@@ -229,17 +220,11 @@ public partial class Main : Control
                 "There is no one spare to send.");
         }
 
-        // Padded to the reserved height so the strip is the same size empty as full.
-        // Setting the text to "" would let the label shrink to nothing and put the
-        // reflow straight back — CustomMinimumSize holds the box, but a label with no
-        // lines in it still reports a smaller natural size on some themes, and this
-        // costs one newline to be certain of.
-        while (alerts.Count < StandingAlertLines)
-        {
-            alerts.Add(string.Empty);
-        }
-
-        _alertLabel.Text = string.Join("\n", alerts);
+        // Shown only when there is something to say, and no padding to a reserved height.
+        // The panel floats, so it can grow and shrink without moving anything on screen —
+        // which is the whole reason the layout changed.
+        _alertLabel.Text = string.Join("\n\n", alerts);
+        _alertLabel.Visible = alerts.Count > 0;
 
         RefreshRoster(world);
         RefreshInspector(world);
@@ -725,136 +710,169 @@ public partial class Main : Control
     //  Layout
     // ---------------------------------------------------------------
 
+    /// <summary>
+    /// The valley fills the window and everything else floats on top of it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Rebuilt on Joe's call after watching the old one — <em>"I'm finding the info hard
+    /// to read"</em> — with Banished itself as the reference. The old layout was a single
+    /// vertical stack: header, controls, map, panels underneath. Everything competed with
+    /// the map for height, the map got whatever was left, and the header's own sentences
+    /// were squeezed into one clipped line because there was nowhere else for them to go.
+    /// </para>
+    /// <para>
+    /// <b>Floating panels fix the class of bug rather than an instance of it.</b> Nothing
+    /// shares a layout with the map any more, so a panel that grows by a line cannot move
+    /// the world — which is what D54 spent a fixed-height strip and an ellipsis working
+    /// around. The alert wraps to three lines now and the only consequence is that the
+    /// alert is three lines tall.
+    /// </para>
+    /// <para>
+    /// Panels are pinned to the corners the way Banished pins them: what the village is
+    /// doing top-left, what just happened top-right, who lives here bottom-left, whatever
+    /// you clicked on the right, and the controls bottom-right where your hand already is.
+    /// </para>
+    /// </remarks>
     private void BuildUi()
     {
-        var root = new MarginContainer();
-        foreach (string side in new[] { "margin_left", "margin_top", "margin_right", "margin_bottom" })
-        {
-            root.AddThemeConstantOverride(side, 20);
-        }
-
-        AddChild(root);
-
-        // Anchors AND offsets. SetAnchorsPreset alone moves the anchors but leaves the
-        // offsets, so the container still sized itself to its content - which first
-        // pushed the time controls off the bottom of the window, and then left the
-        // whole UI huddled in the top-left corner. This is the call that does both.
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        root.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        var column = new VBoxContainer();
-        column.AddThemeConstantOverride("separation", 10);
-        root.AddChild(column);
+        // The valley, full-window and BEHIND everything. Added first, because draw order
+        // here is child order and every panel has to be on top of the world it describes.
+        _map = new VillageMap { ClipContents = true };
+        _map.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _map.BuildingClicked += OnBuildingClicked;
+        AddChild(_map);
 
-        _clockLabel = OneLine(Heading(string.Empty));
-        column.AddChild(_clockLabel);
+        BuildStatusPanel();
+        BuildLogPanel();
+        BuildRosterPanel();
+        BuildInspectorPanel();
+        BuildControlPanel();
 
-        _villageLabel = OneLine(Body(string.Empty));
-        column.AddChild(_villageLabel);
+        SetSpeed(1.0);
 
-        // STANDING ALERTS GET THEIR OWN FIXED-HEIGHT STRIP, AND THE HEIGHT IS THE POINT.
+        // Start on Selected, and set the button's label from the same switch that the
+        // key binding uses — two places writing that text would eventually disagree.
+        _detail = MapDetail.Off;
+        CycleDetail();
+    }
+
+    /// <summary>Where the panels sit, in pixels from the edge they are pinned to.</summary>
+    private const int Edge = 14;
+
+    private const int StatusWidth = 560;
+    private const int LogWidth = 620;
+    private const int LogHeight = 210;
+    private const int RosterWidth = 330;
+    private const int RosterHeight = 280;
+
+    /// <summary>
+    /// Room kept clear along the bottom for the controls, which are wider than the window.
+    /// </summary>
+    /// <remarks>
+    /// The build menu is a long row and the roster is pinned to the same corner of the
+    /// screen, so the two overlapped and the controls drew straight over the names. The
+    /// roster stands off the bottom by this much instead. A measured constant rather than
+    /// a computed one because the controls' height is settled by their own contents, and
+    /// asking a container for its size during layout is how circular dependencies start.
+    /// </remarks>
+    private const int ControlsReserve = 160;
+    private const int InspectorWidth = 400;
+    private const int InspectorHeight = 330;
+
+    /// <summary>
+    /// What the village is: the date, what it holds, and anything it is asking for.
+    /// </summary>
+    private void BuildStatusPanel()
+    {
+        VBoxContainer body = Floating(Edge, Edge, StatusWidth, 0, Corner.TopLeft);
+
+        _clockLabel = Heading(string.Empty);
+        body.AddChild(_clockLabel);
+
+        _villageLabel = Wrapped(Body(string.Empty));
+        body.AddChild(_villageLabel);
+
+        // STANDING ALERTS, AND THEY WRAP NOW.
         //
-        // These used to be appended to _villageLabel with a newline, so the header was
-        // one line tall, or two, or three, depending on what the village happened to be
-        // short of. Everything below it shifted to match — and what is below it is the
-        // MAP, which is the one element with ExpandFill and therefore absorbs the whole
-        // difference. VillageMap draws around the centre of its own rect (ToScreen adds
-        // Size / 2), so a header growing by one line moved the entire valley on screen
-        // and changed how much of it fit. Joe watched it and called it the viewing
-        // portal jumping around, which is exactly what it was.
+        // Both of them — nowhere to build (D42), work nobody is doing (D47) — are STATES
+        // rather than events, which is why they are here and not only in the log: a line
+        // that scrolls away is a problem the player never learns they have.
         //
-        // So the strip is always here, always exactly two lines tall whether or not
-        // there is anything to say. Reserving the space costs a little of the window
-        // once; reflowing costs the player their place in the world every time a couple
-        // starts waiting for a house.
-        //
-        // Two lines because there are two standing alerts (nowhere to build, work nobody
-        // is doing). If a third is ever added, this number moves with it — and the
-        // height is asked of the font rather than written down, so it stays right when
-        // somebody changes the font size.
-        _alertLabel = OneLine(Body(string.Empty));
+        // D54 had to give these a fixed two-line strip and cut them off with an ellipsis,
+        // because they lived in the same column as the map and any change in their height
+        // moved the world. Joe's next screenshot showed the cost of that: the sentence now
+        // ended in "There is no one spa…" instead of running off the edge, which is tidier
+        // and no more readable. In a floating panel neither problem exists — the text
+        // wraps, the panel grows, and nothing else on screen notices.
+        _alertLabel = Wrapped(Body(string.Empty));
         _alertLabel.Modulate = new Color(1f, 0.78f, 0.35f);
-        column.AddChild(_alertLabel);
-
-        // Added to the tree FIRST, because GetLineHeight() reads the resolved theme and
-        // a label that is not in the tree yet has none. The floor is there for the same
-        // reason belt is worn with braces: a zero would collapse the strip and quietly
-        // restore the exact bug this is here to fix, and a wrong-but-present height only
-        // looks slightly off.
-        float line = _alertLabel.GetLineHeight();
-        _alertLabel.CustomMinimumSize =
-            new Vector2(0, Mathf.Max(line, 18f) * StandingAlertLines);
+        body.AddChild(_alertLabel);
 
         // The seed and the audit log together, because they are the two things you need
         // to reproduce and explain a run: the seed says which world, the log says what
         // happened in it.
-        _seedLabel = OneLine(Muted(
+        _seedLabel = Wrapped(Muted(
             $"seed {_loop.World.Seed}   ·   config: {_configSource}   ·   log: {_logPath}"));
-        column.AddChild(_seedLabel);
+        body.AddChild(_seedLabel);
+    }
 
-        // Time controls sit at the TOP, under the header. Belt and braces after two
-        // failed attempts to pin them at the bottom: nothing below them in the
-        // layout can push them off screen if there is nothing below them.
-        var controls = new HBoxContainer { CustomMinimumSize = new Vector2(0, 34) };
-        controls.AddThemeConstantOverride("separation", 10);
-        column.AddChild(controls);
+    /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
+    private void BuildLogPanel()
+    {
+        VBoxContainer body = Floating(Edge, Edge, LogWidth, LogHeight, Corner.TopRight, "Village log");
 
-        column.AddChild(new HSeparator());
-
-        // The village itself, drawn. Everything else is here to explain it — so it
-        // gets the largest share of the window, and the panels below keep only their
-        // minimums.
-        _map = new VillageMap
-        {
-            SizeFlagsVertical = SizeFlags.ExpandFill,
-            SizeFlagsStretchRatio = 2.2f,
-            CustomMinimumSize = new Vector2(0, 320),
-
-            // Without this the catchment rings - which are far larger than the map
-            // panel - draw straight across the rest of the window.
-            ClipContents = true,
-        };
-        _map.BuildingClicked += OnBuildingClicked;
-        column.AddChild(_map);
-
-        // Roster on the left, the person you clicked on the right.
-        var middle = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
-        middle.AddThemeConstantOverride("separation", 18);
-        column.AddChild(middle);
-
-        var rosterColumn = new VBoxContainer { CustomMinimumSize = new Vector2(320, 0) };
-        rosterColumn.AddChild(Muted("The village"));
-        middle.AddChild(rosterColumn);
-
-        _roster = new ItemList { SizeFlagsVertical = SizeFlags.ExpandFill };
-        _roster.ItemSelected += OnVillagerSelected;
-        rosterColumn.AddChild(_roster);
-
-        var detailColumn = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        detailColumn.AddChild(Muted("Who they are, and why"));
-        middle.AddChild(detailColumn);
-
-        // ScrollActive so a long reason scrolls rather than being cut off by the log
-        // beneath it. The one panel whose job is explaining a decision must never
-        // truncate the explanation.
-        _inspector = new RichTextLabel
-        {
-            BbcodeEnabled = false,
-            ScrollActive = true,
-            SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 150),
-        };
-        detailColumn.AddChild(_inspector);
-
-        detailColumn.AddChild(Muted("Village log"));
         _villageLog = new RichTextLabel
         {
             ScrollFollowing = true,
             BbcodeEnabled = false,
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 120),
         };
-        detailColumn.AddChild(_villageLog);
+        body.AddChild(_villageLog);
+    }
+
+    /// <summary>Everyone alive, and what they are doing about it.</summary>
+    private void BuildRosterPanel()
+    {
+        VBoxContainer body = Floating(
+            Edge, ControlsReserve, RosterWidth, RosterHeight, Corner.BottomLeft, "The village");
+
+        _roster = new ItemList { SizeFlagsVertical = SizeFlags.ExpandFill };
+        _roster.ItemSelected += OnVillagerSelected;
+        body.AddChild(_roster);
+    }
+
+    /// <summary>Whoever — or whatever — you last clicked on.</summary>
+    private void BuildInspectorPanel()
+    {
+        // Below the log on the right-hand edge, which is where Banished puts the panel
+        // for the thing you have selected.
+        VBoxContainer body = Floating(
+            Edge, Edge + LogHeight + Edge, InspectorWidth, InspectorHeight,
+            Corner.TopRight, "Who they are, and why");
+
+        // ScrollActive so a long reason scrolls rather than being cut off. The one panel
+        // whose job is explaining a decision must never truncate the explanation.
+        _inspector = new RichTextLabel
+        {
+            BbcodeEnabled = false,
+            ScrollActive = true,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+        };
+        body.AddChild(_inspector);
+    }
+
+    /// <summary>Speed, what the map draws, and what the player can ask the village for.</summary>
+    private void BuildControlPanel()
+    {
+        VBoxContainer body = Floating(Edge, Edge, 0, 0, Corner.BottomRight);
+        body.AddThemeConstantOverride("separation", 8);
+
+        var controls = new HBoxContainer();
+        controls.AddThemeConstantOverride("separation", 6);
+        body.AddChild(controls);
 
         controls.AddChild(SpeedButton("Pause", 0.0));
         controls.AddChild(SpeedButton("1x", 1.0));
@@ -877,17 +895,123 @@ public partial class Main : Control
         recentre.Pressed += () => _map.CentreOnTheVillage();
         controls.AddChild(recentre);
 
-        controls.AddChild(Muted(
-            "   (space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · home recentre)"));
+        body.AddChild(BuildBuildMenu());
 
-        BuildBuildMenu(column, controls);
+        // The refusal or the warning, in the words the sim already produced — on its own
+        // line rather than squeezed between the buttons. Same standard as JobReason: a
+        // red square on its own is the shrug this project keeps refusing, and a sentence
+        // that has to share a row with nine buttons is a sentence nobody finishes.
+        _placementLabel = Wrapped(Body(string.Empty));
+        _placementLabel.Modulate = new Color(1f, 0.78f, 0.35f);
+        body.AddChild(_placementLabel);
+        _map.PlacementMessageChanged += message =>
+        {
+            _placementLabel.Text = message;
+            _placementLabel.Visible = message.Length > 0;
+        };
+        _placementLabel.Visible = false;
 
-        SetSpeed(1.0);
+        body.AddChild(Wrapped(Muted(
+            "space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · home recentre")));
+    }
 
-        // Start on Selected, and set the button's label from the same switch that the
-        // key binding uses — two places writing that text would eventually disagree.
-        _detail = MapDetail.Off;
-        CycleDetail();
+    // ---------------------------------------------------------------
+    //  The furniture the panels are made of
+    // ---------------------------------------------------------------
+
+    /// <summary>Which corner a floating panel is pinned to.</summary>
+    private enum Corner { TopLeft, TopRight, BottomLeft, BottomRight }
+
+    /// <summary>
+    /// A panel pinned to one corner, with a body for the caller to fill.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A <paramref name="width"/> or <paramref name="height"/> of zero means <em>as big as
+    /// the contents need</em>: Godot clamps a control to its own minimum size, so a panel
+    /// asked for nothing grows to fit and then stops. That is what lets the status panel
+    /// swell by a line when the village starts asking for something.
+    /// </para>
+    /// <para>
+    /// <b>Mouse filter set to Stop, explicitly.</b> A Container defaults to Pass, so every
+    /// click on a panel would have gone through to the map behind it — and the map now
+    /// covers the whole window, so "behind it" means placing a granary under the button
+    /// you just pressed.
+    /// </para>
+    /// </remarks>
+    private VBoxContainer Floating(
+        float x, float y, float width, float height, Corner corner, string? title = null)
+    {
+        var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
+        panel.AddThemeStyleboxOverride("panel", PanelSkin());
+
+        bool right = corner is Corner.TopRight or Corner.BottomRight;
+        bool bottom = corner is Corner.BottomLeft or Corner.BottomRight;
+
+        panel.AnchorLeft = panel.AnchorRight = right ? 1f : 0f;
+        panel.AnchorTop = panel.AnchorBottom = bottom ? 1f : 0f;
+
+        panel.OffsetLeft = right ? -(x + width) : x;
+        panel.OffsetRight = right ? -x : x + width;
+        panel.OffsetTop = bottom ? -(y + height) : y;
+        panel.OffsetBottom = bottom ? -y : y + height;
+
+        // WHICH WAY IT GROWS WHEN IT OUTGROWS THE SIZE IT WAS ASKED FOR, and the default
+        // is wrong for half the corners. Godot clamps a control to its minimum size by
+        // pushing its right and bottom edges outward, so a panel pinned to the
+        // bottom-right and asked for nothing grew off the screen entirely — the controls
+        // vanished, leaving one lit pixel in the corner. Panels pinned to an edge have to
+        // grow away from it.
+        panel.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
+        panel.GrowVertical = bottom ? GrowDirection.Begin : GrowDirection.End;
+
+        var body = new VBoxContainer();
+        body.AddThemeConstantOverride("separation", 6);
+        panel.AddChild(body);
+
+        if (title is not null)
+        {
+            body.AddChild(Muted(title));
+        }
+
+        AddChild(panel);
+        return body;
+    }
+
+    /// <summary>The look of every floating panel: dark, bordered, readable over a lit map.</summary>
+    /// <remarks>
+    /// Nearly opaque rather than lightly tinted. A panel you can see the valley through is
+    /// a panel whose text sits on grass one moment and on a roof the next, and the whole
+    /// complaint that prompted this was that the information was hard to read.
+    /// </remarks>
+    private static StyleBoxFlat PanelSkin()
+    {
+        var skin = new StyleBoxFlat
+        {
+            BgColor = new Color(0.08f, 0.09f, 0.10f, 0.93f),
+            BorderColor = new Color(0.58f, 0.53f, 0.40f, 0.70f),
+        };
+
+        skin.SetBorderWidthAll(1);
+        skin.SetContentMarginAll(10);
+        skin.SetCornerRadiusAll(3);
+        return skin;
+    }
+
+    /// <summary>
+    /// A label that wraps instead of running off the edge or ending in an ellipsis.
+    /// </summary>
+    /// <remarks>
+    /// The opposite call from D54's, and only because the layout changed underneath it.
+    /// Wrapping was refused then because a label whose height depends on the window width
+    /// would move the map; inside a floating panel it moves nothing, so the sentence the
+    /// game took the trouble to write can be read to the end.
+    /// </remarks>
+    private static Label Wrapped(Label label)
+    {
+        label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        label.CustomMinimumSize = new Vector2(120, 0);
+        return label;
     }
 
     /// <summary>What the cursor is over, or what just happened. Empty when not placing.</summary>
@@ -903,7 +1027,7 @@ public partial class Main : Control
     /// the village for something, so they get their own row rather than being mixed in
     /// with the camera.
     /// </remarks>
-    private void BuildBuildMenu(VBoxContainer column, Control controls)
+    private HBoxContainer BuildBuildMenu()
     {
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 8);
@@ -940,17 +1064,6 @@ public partial class Main : Control
         // The refusal or the warning, in the words the sim already produced. Same
         // standard as JobReason: a red square on its own is the shrug this project
         // keeps refusing.
-        // ExpandFill so the message takes whatever room is going SPARE rather than
-        // demanding room of its own. Without it a long refusal — and refusals here are
-        // full sentences on purpose — widened the row until the staffing controls at the
-        // end of it were pushed off the right of the window. A message that hides a
-        // button is a message that costs the player a control to gain a sentence.
-        _placementLabel = OneLine(Body(string.Empty));
-        _placementLabel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        row.AddChild(_placementLabel);
-
-        _map.PlacementMessageChanged += message => _placementLabel.Text = message;
-
         // Staffing, on the same row (D51). Deliberately NOT a control that appears only
         // when a workplace is selected: a button that comes and goes is a button the
         // player has to hunt for, and these do nothing harmful when nothing is selected.
@@ -969,19 +1082,14 @@ public partial class Main : Control
         auto.Pressed += LetTheVillageDecideStaffing;
         row.AddChild(auto);
 
-        // Under the time controls, above the map. Taking the column explicitly rather
-        // than casting whatever was handed in: the first version took the UI root and
-        // tested `is VBoxContainer`, which is a MarginContainer — so the whole menu was
-        // built, wired up, and silently never added to anything.
-        //
-        // ASKED WHERE THE CONTROLS ARE rather than told. This was a literal 4, counted
-        // by hand off the order the header happened to be built in — so adding the
-        // standing-alert strip above it silently moved the build menu ABOVE the time
-        // controls, which is a layout nobody chose and nothing would have caught. The
-        // node knows its own index; there is no reason to keep a second copy of it in
-        // an argument that goes stale the first time the header changes.
-        column.AddChild(row);
-        column.MoveChild(row, controls.GetIndex() + 1);
+        // HANDED BACK RATHER THAN INSERTED, which is the third and last version of this.
+        // It began by taking the UI root and testing `is VBoxContainer` — the root is a
+        // MarginContainer, so the whole menu was built, wired up and silently never added
+        // to anything. Then it took the column and a hand-counted index, which went stale
+        // the moment a line was added to the header and put the build menu above the time
+        // controls. Returning the row lets the caller decide where it goes, and there is
+        // nothing left to get wrong.
+        return row;
     }
 
     private Button BuildButton(string text, BuildingKind kind)

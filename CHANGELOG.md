@@ -18,6 +18,11 @@ Categories (only include the ones you use): **Added**, **Changed**,
 ## [Unreleased]
 
 ### Changed
+- **The view is laid out like Banished** (D55): the valley fills the window and the
+  panels float on top of it — village status top-left, log top-right, selection
+  below that, roster bottom-left, controls along the bottom. Standing alerts wrap
+  and can be read to the end; nothing shares a layout with the map, so a panel
+  that grows a line no longer moves the world under the player.
 - **Cold is a place you are standing, not a number on your household** (D45, D53;
   `specs/shelter-and-exposure.md`). `Villager.Cold` rises fastest on open ground,
   more slowly under a roof with no fire, and falls beside a burning hearth — any

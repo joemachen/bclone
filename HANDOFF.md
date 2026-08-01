@@ -38,6 +38,10 @@ appeared, because the assembly Godot ran was a day old.
 - **Nothing in `src/Bclone.Game` can be unit-tested at all** (D11 puts it outside the
   solution). View changes are verified by running the game and by nothing else. Say so
   when you report one.
+- **The view is now Banished-shaped** (D55): the map fills the window and five panels float
+  on top, pinned to corners. `Main.BuildUi` builds them through one `Floating(...)` helper
+  — pass a zero width or height to mean *as big as the contents need*. Nothing shares a
+  layout with the map, so a panel that grows cannot move the world.
 - **You can do better than "I ran it and it looked fine", and D54 shows how.** Temporary
   instrumentation in `_Process`, behind an environment variable, removed before
   committing: `GetViewport().GetTexture().GetImage().SavePng(path)` writes a screenshot
