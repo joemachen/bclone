@@ -38,6 +38,14 @@ appeared, because the assembly Godot ran was a day old.
 - **Nothing in `src/Bclone.Game` can be unit-tested at all** (D11 puts it outside the
   solution). View changes are verified by running the game and by nothing else. Say so
   when you report one.
+- **You can do better than "I ran it and it looked fine", and D54 shows how.** Temporary
+  instrumentation in `_Process`, behind an environment variable, removed before
+  committing: `GetViewport().GetTexture().GetImage().SavePng(path)` writes a screenshot
+  you can actually look at, and a `GD.Print` of any node's rect whenever it changes turns
+  *"does the map still jump?"* into a number. Run headless-ish with
+  `--resolution 1800x1400 --quit-after 3000`. **Check the thing you are measuring
+  actually varies during the run** — the first attempt sat at the map's minimum height,
+  where it could not have moved whatever the bug was.
 
 ---
 

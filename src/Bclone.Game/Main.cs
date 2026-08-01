@@ -28,6 +28,26 @@ public partial class Main : Control
 {
     private const int MaxLogLines = 400;
 
+    /// <summary>
+    /// Lines the standing-alert strip always occupies, said or unsaid.
+    /// </summary>
+    /// <remarks>
+    /// One per standing alert there can be — nowhere to build, and work nobody is doing.
+    /// The strip is this tall whether or not either is true, because the alternative is
+    /// a header that changes height and a map that moves under the player to match.
+    /// </remarks>
+    private const int StandingAlertLines = 2;
+
+    /// <summary>
+    /// How many idle workplaces to name before falling back to a count.
+    /// </summary>
+    /// <remarks>
+    /// The alert has one line and the line has to fit. Three names is about what fits on
+    /// a normal window, and the fourth was never actionable anyway — a player who is
+    /// told the village is short of hands does not need the full inventory to act.
+    /// </remarks>
+    private const int MostPlacesToName = 3;
+
     private SimLoop _loop = null!;
     private FixedTimestepDriver _driver = null!;
     private InMemoryLogSink _sink = null!;
@@ -40,6 +60,7 @@ public partial class Main : Control
 
     private Label _clockLabel = null!;
     private Label _villageLabel = null!;
+    private Label _alertLabel = null!;
     private Label _seedLabel = null!;
     private Label _speedLabel = null!;
     private ItemList _roster = null!;
@@ -184,34 +205,41 @@ public partial class Main : Control
             $"{TotalFood(world)} food · {world.FoodInGranaries()} in the granaries · " +
             $"{world.LogsInSheds()} logs and {world.FirewoodInSheds()} firewood in the sheds";
 
-        // The village asking for somewhere to build (D42). Kept in the header rather
-        // than only in the log, because it is a standing state — a couple is waiting
-        // right now — and a line that scrolls away is a request the player will miss.
-        // It clears itself the moment there is room again.
+        // The standing alerts, into their own strip rather than onto the end of the
+        // header. Both are STATES rather than events — a couple is waiting right now, a
+        // workplace is empty right now — which is why they are here at all instead of
+        // only in the log: a line that scrolls away is a problem the player never learns
+        // they have. Both clear themselves the moment the village sorts them out.
+        var alerts = new List<string>();
+
+        // Somewhere to build (D42).
         if (world.NeedsMoreResidentialLand)
         {
-            _villageLabel.Text +=
-                "\nSomebody wants a home of their own and there is nowhere to put one — " +
-                "paint more land for houses.";
+            alerts.Add(
+                "Somebody wants a home of their own and there is nowhere to put one — " +
+                "paint more land for houses.");
         }
 
-        // Work the village wants doing that nobody is doing (D47). In the header
-        // rather than only in the log, for the same reason as the request for land
-        // above: it is a standing state, and a line that scrolls away is a problem the
-        // player never learns they have.
+        // Work the village wants doing that nobody is doing (D47).
         IReadOnlyList<Workplace> unmanned = LabourSystem.UnmannedWork(world);
         if (unmanned.Count > 0)
         {
-            var names = new List<string>();
-            for (int i = 0; i < unmanned.Count; i++)
-            {
-                names.Add(unmanned[i].Name);
-            }
-
-            _villageLabel.Text +=
-                $"\nNobody is working {string.Join(", ", names)} — and the village wants it done. " +
-                "There is no one spare to send.";
+            alerts.Add(
+                $"Nobody is working {NameThem(unmanned)} — and the village wants it done. " +
+                "There is no one spare to send.");
         }
+
+        // Padded to the reserved height so the strip is the same size empty as full.
+        // Setting the text to "" would let the label shrink to nothing and put the
+        // reflow straight back — CustomMinimumSize holds the box, but a label with no
+        // lines in it still reports a smaller natural size on some themes, and this
+        // costs one newline to be certain of.
+        while (alerts.Count < StandingAlertLines)
+        {
+            alerts.Add(string.Empty);
+        }
+
+        _alertLabel.Text = string.Join("\n", alerts);
 
         RefreshRoster(world);
         RefreshInspector(world);
@@ -718,17 +746,50 @@ public partial class Main : Control
         column.AddThemeConstantOverride("separation", 10);
         root.AddChild(column);
 
-        _clockLabel = Heading(string.Empty);
+        _clockLabel = OneLine(Heading(string.Empty));
         column.AddChild(_clockLabel);
 
-        _villageLabel = Body(string.Empty);
+        _villageLabel = OneLine(Body(string.Empty));
         column.AddChild(_villageLabel);
+
+        // STANDING ALERTS GET THEIR OWN FIXED-HEIGHT STRIP, AND THE HEIGHT IS THE POINT.
+        //
+        // These used to be appended to _villageLabel with a newline, so the header was
+        // one line tall, or two, or three, depending on what the village happened to be
+        // short of. Everything below it shifted to match — and what is below it is the
+        // MAP, which is the one element with ExpandFill and therefore absorbs the whole
+        // difference. VillageMap draws around the centre of its own rect (ToScreen adds
+        // Size / 2), so a header growing by one line moved the entire valley on screen
+        // and changed how much of it fit. Joe watched it and called it the viewing
+        // portal jumping around, which is exactly what it was.
+        //
+        // So the strip is always here, always exactly two lines tall whether or not
+        // there is anything to say. Reserving the space costs a little of the window
+        // once; reflowing costs the player their place in the world every time a couple
+        // starts waiting for a house.
+        //
+        // Two lines because there are two standing alerts (nowhere to build, work nobody
+        // is doing). If a third is ever added, this number moves with it — and the
+        // height is asked of the font rather than written down, so it stays right when
+        // somebody changes the font size.
+        _alertLabel = OneLine(Body(string.Empty));
+        _alertLabel.Modulate = new Color(1f, 0.78f, 0.35f);
+        column.AddChild(_alertLabel);
+
+        // Added to the tree FIRST, because GetLineHeight() reads the resolved theme and
+        // a label that is not in the tree yet has none. The floor is there for the same
+        // reason belt is worn with braces: a zero would collapse the strip and quietly
+        // restore the exact bug this is here to fix, and a wrong-but-present height only
+        // looks slightly off.
+        float line = _alertLabel.GetLineHeight();
+        _alertLabel.CustomMinimumSize =
+            new Vector2(0, Mathf.Max(line, 18f) * StandingAlertLines);
 
         // The seed and the audit log together, because they are the two things you need
         // to reproduce and explain a run: the seed says which world, the log says what
         // happened in it.
-        _seedLabel = Muted(
-            $"seed {_loop.World.Seed}   ·   config: {_configSource}   ·   log: {_logPath}");
+        _seedLabel = OneLine(Muted(
+            $"seed {_loop.World.Seed}   ·   config: {_configSource}   ·   log: {_logPath}"));
         column.AddChild(_seedLabel);
 
         // Time controls sit at the TOP, under the header. Belt and braces after two
@@ -819,7 +880,7 @@ public partial class Main : Control
         controls.AddChild(Muted(
             "   (space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · home recentre)"));
 
-        BuildBuildMenu(column, indexAfterTheControls: 4);
+        BuildBuildMenu(column, controls);
 
         SetSpeed(1.0);
 
@@ -842,7 +903,7 @@ public partial class Main : Control
     /// the village for something, so they get their own row rather than being mixed in
     /// with the camera.
     /// </remarks>
-    private void BuildBuildMenu(VBoxContainer column, int indexAfterTheControls)
+    private void BuildBuildMenu(VBoxContainer column, Control controls)
     {
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 8);
@@ -879,7 +940,13 @@ public partial class Main : Control
         // The refusal or the warning, in the words the sim already produced. Same
         // standard as JobReason: a red square on its own is the shrug this project
         // keeps refusing.
-        _placementLabel = Body(string.Empty);
+        // ExpandFill so the message takes whatever room is going SPARE rather than
+        // demanding room of its own. Without it a long refusal — and refusals here are
+        // full sentences on purpose — widened the row until the staffing controls at the
+        // end of it were pushed off the right of the window. A message that hides a
+        // button is a message that costs the player a control to gain a sentence.
+        _placementLabel = OneLine(Body(string.Empty));
+        _placementLabel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         row.AddChild(_placementLabel);
 
         _map.PlacementMessageChanged += message => _placementLabel.Text = message;
@@ -906,8 +973,15 @@ public partial class Main : Control
         // than casting whatever was handed in: the first version took the UI root and
         // tested `is VBoxContainer`, which is a MarginContainer — so the whole menu was
         // built, wired up, and silently never added to anything.
+        //
+        // ASKED WHERE THE CONTROLS ARE rather than told. This was a literal 4, counted
+        // by hand off the order the header happened to be built in — so adding the
+        // standing-alert strip above it silently moved the build menu ABOVE the time
+        // controls, which is a layout nobody chose and nothing would have caught. The
+        // node knows its own index; there is no reason to keep a second copy of it in
+        // an argument that goes stale the first time the header changes.
         column.AddChild(row);
-        column.MoveChild(row, indexAfterTheControls);
+        column.MoveChild(row, controls.GetIndex() + 1);
     }
 
     private Button BuildButton(string text, BuildingKind kind)
@@ -922,6 +996,49 @@ public partial class Main : Control
         var button = new Button { Text = text, CustomMinimumSize = new Vector2(64, 0) };
         button.Pressed += () => SetSpeed(multiplier);
         return button;
+    }
+
+    /// <summary>
+    /// The idle workplaces, as something a person would say out loud.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Distinct names, and that is not merely tidiness.</b> Joe's screen read
+    /// <em>"the berry patch, the southern western thicket, the southern eastern thicket,
+    /// the southern eastern thicket"</em> — the same phrase twice, because two different
+    /// tree stands were generated with the same name. Saying it twice tells the player
+    /// nothing they can act on and reads like a bug, which for their purposes it is.
+    /// </para>
+    /// <para>
+    /// <b>The collision itself is the sim's to fix</b>, not this method's: two workplaces
+    /// that a player cannot tell apart by name are two the game cannot explain. Collapsing
+    /// them here stops the sentence embarrassing itself; it does not make the names
+    /// unique.
+    /// </para>
+    /// </remarks>
+    private static string NameThem(IReadOnlyList<Workplace> unmanned)
+    {
+        var names = new List<string>();
+        for (int i = 0; i < unmanned.Count; i++)
+        {
+            if (!names.Contains(unmanned[i].Name))
+            {
+                names.Add(unmanned[i].Name);
+            }
+        }
+
+        int shown = names.Count < MostPlacesToName ? names.Count : MostPlacesToName;
+
+        var said = new List<string>();
+        for (int i = 0; i < shown; i++)
+        {
+            said.Add(names[i]);
+        }
+
+        string list = string.Join(", ", said);
+        int more = names.Count - shown;
+
+        return more <= 0 ? list : $"{list} and {more} more";
     }
 
     private static Label Heading(string text)
@@ -943,6 +1060,32 @@ public partial class Main : Control
         var label = new Label { Text = text };
         label.AddThemeFontSizeOverride("font_size", 12);
         label.Modulate = new Color(1, 1, 1, 0.55f);
+        return label;
+    }
+
+    /// <summary>
+    /// One line, ending in an ellipsis rather than off the edge of the window.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every one of these was a sentence written to be read and then drawn past the
+    /// right-hand edge of the screen, which is the worst of both: the game has taken the
+    /// trouble to explain itself and the player cannot see the end of the explanation.
+    /// Joe's screenshot caught the alert strip losing <em>"There is no one spare to
+    /// send."</em>
+    /// </para>
+    /// <para>
+    /// An ellipsis is an honest failure — it says <em>there is more here</em> — where a
+    /// hard clip just looks like the sentence stopped. Wrapping is the other option and
+    /// it is refused on purpose: a label that wraps has a height that depends on the
+    /// window width, and a header whose height moves is what makes the map jump.
+    /// </para>
+    /// </remarks>
+    private static Label OneLine(Label label)
+    {
+        label.AutowrapMode = TextServer.AutowrapMode.Off;
+        label.ClipText = true;
+        label.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         return label;
     }
 }
