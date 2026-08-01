@@ -215,6 +215,20 @@ Each phase should ship in a playable, legible state before the next begins.
 - **The idle winter, half fixed and half honestly left open** (D44, D52). The labour quota knows what season it is: no berry patch is staffed while there is nothing on it, and the fuel chain gets first call on the hands that frees. **Winter is still mostly idle, and deliberately so** — the village already has its logs, so cutting more was make-work that packed the sheds and stopped the village having children. Winter's real answer is herding and slaughtering (D39), which is not built. D46's three-year reshuffle finally reached the shipped config here. Two new guards: **nobody is put on the stand when neither houses nor firewood want the timber**, which fires in the first winter of the run against the deleted fill, and `TheMarketShortensTheWalkForFood` now measures a **rate** and asserts its own control is a living village before comparing against it. 357 tests green.
 - **Click a building and it tells you what it is** (slice 1, view only — the sim is untouched). Selection is a **tile**, not a building id: three occupants live in three lists with three id spaces, and the market is deliberately both a store and a workplace at one position, so asking *"what is here?"* describes D36's seam correctly instead of describing the market as half of itself. One panel and one selection — clicking a building clears the roster and vice versa. Every branch ends in something actionable: a workplace with nobody at it says how many it has room for, a hut with no logs says so rather than showing zeroes, a store reports how full it is against the capacity D33 derives, a site says how many logs it still waits on, and an empty house says the next couple will move in — because otherwise it reads as a bug. **Not covered by tests: `Bclone.Game` sits outside the solution (D11), so no view code can be.**
 
+- **Shelter and exposure (D45) — specced, and blocked on a measurement.**
+  `specs/shelter-and-exposure.md`, written before any code per METHODOLOGY §2. The model
+  is positional and the design holds up; **its numbers do not.** Probed against the live
+  village over 120 years before implementing: villagers spend **76% of winter standing at
+  a lit hearth**, the longest unbroken spell outdoors anybody ever has is **under three
+  days** against a threshold of fifteen, and D45's own accumulator peaks at **60% of the
+  way to freezing and never gets closer**. So **cold would stop killing anyone at all** —
+  the opposite of the failure everyone was watching for, and a quiet repeal of the
+  condition D17 attached to allowing a second death system. The cause is that *"25 days
+  in an unheated house"* assumes somebody stays in it; the fuel economy is good enough
+  that **no household in 120 years went more than 15 days without firewood**, and the
+  shipped model kills only because its window is 10. Four ways forward in §9.4, awaiting
+  Joe.
+
 **Next up** *(in order — Joe's call)*:
 1. **Building placement** — `specs/building-placement.md`, five slices in §13. **Slice 1 (the singleton seam) done; slice 2's sim half done — the view half is next**: a build menu, a ghost under the cursor, and `CanBuildAt`'s refusals shown as words. The first system where the player acts. It turns granary capacity (D33) from a config line into a choice, makes the market's position matter (currently worth only 6% off a fetch trip), and is what D35's cemetery and D40's bridges are both waiting on. **It has to start by fixing D38's singleton seam**: `Granary`/`StorageShed`/`Market` each return the *first* of their kind across 13 call sites, and `PopulationCeiling` derives from one granary — so a second granary would be silently ignored by the very gate that decides whether anyone is born.
    - **Resolved (D42): the player paints a residential zone and the village builds inside it as needed**, rather than placing houses one at a time. Stores and workplaces are still placed individually.
