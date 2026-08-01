@@ -227,6 +227,20 @@ Each phase should ship in a playable, legible state before the next begins.
   D45's stated condition, and switching outdoor cold off is a supported config that models
   the world clothing will make. 370 tests green.
 
+- **Clothing — specced, and ⛔ blocked twice over.** `specs/clothing.md`, written before any
+  code and before any decision, because the spec is where the blocker showed up. **Its
+  inputs do not exist**: leather, wool and cotton all come from herding, butchering or
+  farming, and `JobKind` is still Forager, Logger, Woodcutter, Marketer, Builder — that is
+  D19/D39's roadmap, a phase of work rather than a slice. **And its payoff does not exist
+  either**, which is the part worth acting on. `exposure_days_outdoors: 0` already models a
+  perfectly clothed village, so the entire benefit was measured before building any of it:
+  over 300 years, mean population 21 either way, nobody freezes either way, and **0% of
+  winter is spent working outdoors either way**. Clothing today would remove a danger that
+  does not bite in order to unlock work nobody wants done — a no-op, exactly like D53's
+  fire-resets rule. **The one thing that changes that is livestock**, which is both
+  clothing's input and clothing's reason (D44's forward note, D39's roadmap). Awaiting
+  Joe's call on taking that first.
+
 **Next up** *(in order — Joe's call)*:
 1. **Building placement** — `specs/building-placement.md`, five slices in §13. **Slice 1 (the singleton seam) done; slice 2's sim half done — the view half is next**: a build menu, a ghost under the cursor, and `CanBuildAt`'s refusals shown as words. The first system where the player acts. It turns granary capacity (D33) from a config line into a choice, makes the market's position matter (currently worth only 6% off a fetch trip), and is what D35's cemetery and D40's bridges are both waiting on. **It has to start by fixing D38's singleton seam**: `Granary`/`StorageShed`/`Market` each return the *first* of their kind across 13 call sites, and `PopulationCeiling` derives from one granary — so a second granary would be silently ignored by the very gate that decides whether anyone is born.
    - **Resolved (D42): the player paints a residential zone and the village builds inside it as needed**, rather than placing houses one at a time. Stores and workplaces are still placed individually.
