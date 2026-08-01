@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **agreed — Joe's answers folded in 2026-07-27** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the shed that holds manufacturing materials (§4).

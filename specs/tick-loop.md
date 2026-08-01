@@ -1,6 +1,6 @@
 # Spec: Deterministic Fixed-Timestep Tick Loop
 
-> Status: **in progress** · Owner: Joe + Claude Code · Phase: pre-Phase-0 scaffold
+> Status: **✅ built — shipped in the first week and green ever since** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. This is a living doc — update it if reality diverges.
 
 ---

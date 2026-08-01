@@ -1,6 +1,6 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
-> Status: **agreed — Joe's answers folded in 2026-07-27; slice 1 of 3 (see §11)** · Owner: Joe + Claude Code
+> Status: **✅ built — slices 1 and 2 of 3 (see §11); the harvest brush is the third** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decision **D18**.
 
 ---

@@ -1,6 +1,6 @@
 # Spec: Building placement — the first thing the player actually does
 
-> Status: **agreed — Joe's answers folded in 2026-07-28. Buildable; see §13 for the slices.** · Owner: Joe + Claude Code
+> Status: **✅ slices 1–3 built** (the singleton seam, place-a-building, the residential brush). The harvest brush and the planting brush remain — see §13. · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements **D38**; the payoff decisions D33, D35 and D36 have been waiting for.
 
 ---
@@ -268,7 +268,7 @@ Small and green before the next, as with the fuel chain and storage. Each is a t
    - The decisions: *"is there food?"* → **all** granaries. *"Where do I deposit?"* → **nearest with room**, by travel cost, skipping unreachable ones (a granary across the river is not a long walk, it is no walk at all). *"Can we build a house?"* → drawn from **every** shed, a little from each, since a house is paid for by the whole village (D25). *"How big can the village get?"* → `CeilingForCapacity`, from **total** granary capacity, so a bigger granary unlocked through the tech tree raises it the same way a second ordinary one does (D39).
    - The woodcutter's refusal changed with it. *"The storage shed has no logs"* was unverifiable once more than one shed could exist — **which** shed? — so it now says no shed within reach of the hut has a batch.
 
-**2. Placing a building. ✅ Sim half done 2026-07-28; the view half is next.** Granary, shed, market, woodcutter's hut. Construction sites are `Workplace`s of kind `Builder`, so they inherit allocation, catchment and refusal reasons rather than growing a parallel system — and the job disappears when the building exists. Materials are hauled from the nearest shed that has logs; work cannot start until they arrive. Building is funded from spare hands and **yields first**, alongside cutting logs for houses.
+**2. Placing a building. ✅ Built 2026-07-28, both halves** — the sim, then a build menu, a ghost under the cursor and `CanBuildAt`'s refusals shown as words.** Granary, shed, market, woodcutter's hut. Construction sites are `Workplace`s of kind `Builder`, so they inherit allocation, catchment and refusal reasons rather than growing a parallel system — and the job disappears when the building exists. Materials are hauled from the nearest shed that has logs; work cannot start until they arrive. Building is funded from spare hands and **yields first**, alongside cutting logs for houses.
    - `CanBuildAt` is **pure** — asks questions, changes nothing — so the view can call it under the cursor every frame and show the answer before anybody commits. Refusals are sentences (*"the ground there is under water"*, *"there is no route to there from the village"*); a site that is merely far is **allowed and warned about**, which is D43's position.
    - Demolition returns half the logs and **loses whatever was inside, out loud** — measured: *"the granary was pulled down — 20 logs recovered, and the 1465 goods inside it were lost."* An abandoned site gives its delivered logs back in full.
    - Measured end to end: a granary marked in year 12 was standing a year later. **This is D33 paying off** — the village can now be told to grow past its old ceiling.

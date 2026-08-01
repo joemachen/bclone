@@ -1,9 +1,13 @@
 # Spec: Environment and seasons — the year stops being binary
 
-> Status: **draft, unbuilt. §10 resolved by Joe 2026-07-31, and the answers moved the
-> centre of gravity.** The seasonal yield curve is no longer first; the **idle winter**
-> (D44) is, and winter severity has been replaced wholesale by the **shelter-and-exposure
-> model** (D45). §5.2 is superseded — read §10 and §11 before §5.
+> Status: **✅ four of five slices built.** The building selection panel, the calendar
+> (D49), the buildings the economy had outgrown (D50), the idle winter (D44/D52) and
+> shelter-and-exposure (D45/D53) have all shipped; **clothing is blocked** (see
+> `specs/clothing.md`) and the **seasonal yield curve** is the last slice.
+>
+> §10 was resolved by Joe 2026-07-31 and the answers moved the centre of gravity: the
+> yield curve is no longer first, and winter severity was replaced wholesale by the
+> shelter-and-exposure model. §5.2 is superseded — read §10 and §11 before §5.
 >
 > Phase 2's headline (DESIGN.md §2.5). Everything else in Phase 2 so far — fuel,
 > storage, the map, placement — was taken out of order deliberately. This is the
@@ -301,7 +305,7 @@ Joe's model: **cold is about shelter and exposure, not household accounting.**
 |---|---|
 | Outdoors, no clothing | **~2 weeks** |
 | Sheltered, no fire burning | **~6 weeks** |
-| Sheltered, fire burning | never — the count **resets to zero** |
+| Sheltered, fire burning | never — the count **falls back** (D53; *resets to zero* as first written, which was measured to kill nobody) |
 
 Villagers break off and seek shelter at a stated threshold, but still have to go out
 for food and work. **Clothing** (leather, wool or cotton) removes the outdoor danger

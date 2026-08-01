@@ -1,6 +1,6 @@
 # Spec: Village Labour Allocation
 
-> Status: **implemented** · Owner: Joe + Claude Code
+> Status: **✅ implemented.** Note the cadence in §8.1 is stale: it documents a yearly reshuffle, and the shipped value has been **three years** since D46. · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Written *after* three failed improvised attempts (see §3) — that is the reason it exists.
 > **Updated after implementation.** Four things in the original draft turned out to be wrong when measured; each is marked **[revised]** below with what happened. The spec is a living document (`METHODOLOGY.md §2`), and the point of writing it first was to make these findings legible rather than to be right the first time.
 

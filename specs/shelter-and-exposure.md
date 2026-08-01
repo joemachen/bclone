@@ -1,9 +1,10 @@
 # Spec: Shelter and exposure — cold becomes a place you are standing
 
 **Decision:** D45. **Slice:** `specs/environment-and-seasons.md §11`, slice 3.
-**Status:** §9 resolved (Joe, 2026-07-31) — **(c) a fire thaws rather than resets, and
-(d) the woodpile is the thing that fails.** §8b is the measurement that forced the
-question; read it before changing any number here.
+**Status:** ✅ **built** (D53). §9 resolved by Joe — **(c) a fire thaws rather than
+resets, and (d) the woodpile is the thing that fails.** §8b is the measurement that forced
+that question, and it is a *pre-build probe* rather than a description of the shipped
+system; read it before changing any number here.
 
 ---
 
@@ -99,8 +100,7 @@ autumn does not bank credit against the winter.
 The product is used rather than a lowest common multiple so that **both rates are exact
 integers for any pair of day-counts a config can state** — no gcd, no rounding, no
 float (D2). The numbers are large and meaningless on their own, which is fine: nothing
-displays them raw. `Villager.ColdPercent => Cold * 100 / threshold` is what the panel and
-the epitaph read.
+displays them raw — divide by the threshold for anything a person sees.
 
 `Villager.TicksCold` is **renamed to `Cold`** and changes units. It is already hashed; the
 hash contract is unchanged in shape, and every recorded seed's outcome changes, which is
@@ -119,7 +119,7 @@ Consequences, stated because they are the design and not an accident:
 - A **berry patch** and a **tree stand** do not. Foraging and logging are outdoor work,
   which is exactly the asymmetry clothing later removes.
 - **Walking is outdoors**, always. Most of a villager's winter is spent walking, so the
-  reset at a burning hearth is what actually keeps people alive — see §7.
+  thaw at a burning hearth is what actually keeps people alive — see §7.
 
 ### 4.3 What thaws
 
@@ -267,9 +267,10 @@ fuel stays a live death axis the whole way through."*
 in the unheated house. They do not — they walk to work, to the granary, to the market,
 and the fuel economy is good enough that **no household in 120 years went more than 15
 days without firewood.** The binding constraint on freezing is not the cold model at
-all; it is `WoodcuttersWanted` keeping the woodpile stocked. The shipped model kills
-because `freezing_ticks` is **10 days** at the fixture, and households do go 15 without
-fuel. D45 more than doubles that window, so the deaths stop.
+all; it is `WoodcuttersWanted` keeping the woodpile stocked. The model this replaced killed
+because `freezing_ticks` was **10 days** at the fixture, and households do go 15 without
+fuel. D45 more than doubles that window, so the deaths stopped — which is what §9.4 (c)
+and (d) are the answer to. (`freezing_ticks` no longer exists.)
 
 This is a design decision, not a number to quietly tune — see §9.4.
 

@@ -1,6 +1,6 @@
 # Content: Food & Production Catalog
 
-> Status: **reference / not yet implemented** · Owner: Joe + Claude Code
+> Status: **reference / not yet implemented.** ⚠️ Written before D37 cut spoilage and D39 confirmed it: the preservation-versus-spoilage axis this leans on is **not** part of the design. The rest — the raw sources and the processing tier above them — is still the roadmap. · Owner: Joe + Claude Code
 > This is a **content catalog**, not a behavioral system spec. It defines *what* foods and
 > production chains exist. The *mechanics* (spoilage rates, preservation math, exact building
 > requirements, yields) belong to a future system spec — likely something like

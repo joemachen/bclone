@@ -17,39 +17,6 @@ Categories (only include the ones you use): **Added**, **Changed**,
 
 ## [Unreleased]
 
-### Fixed
-- **No two places in the valley share a name** (D56). Bearings only had eight
-  values against six forage sites, so 44 valleys in 50 named two places alike —
-  and every site past the first was called a *thicket* whether it was foraged or
-  felled, so "the southern eastern thicket" could not tell you whether the village
-  was short of food or of timber. Thickets are foraged, woods are felled, bearings
-  are hyphenated, and where two places share one the nearer keeps the plain name.
-
-### Changed
-- **The view is laid out like Banished** (D55): the valley fills the window and the
-  panels float on top of it — village status top-left, log top-right, selection
-  below that, roster bottom-left, controls along the bottom. Standing alerts wrap
-  and can be read to the end; nothing shares a layout with the map, so a panel
-  that grows a line no longer moves the world under the player.
-- **Cold is a place you are standing, not a number on your household** (D45, D53;
-  `specs/shelter-and-exposure.md`). `Villager.Cold` rises fastest on open ground,
-  more slowly under a roof with no fire, and falls beside a burning hearth — any
-  occupied home with firewood in it, including a neighbour's. Two people of one
-  family now get cold at different rates. Villagers break off work at halfway to
-  freezing and walk to the nearest fire. Epitaphs say where somebody was when it
-  killed them rather than how long their family had been out of firewood.
-- **A fire thaws rather than resetting**, because the model was measured before it
-  was built: villagers spend 76% of winter at a lit hearth, so a reset would have
-  killed nobody in 120 years. A day by the fire undoes a day outdoors.
-- The tests run the **shipped calendar**. `VillageFixtures` had inherited fifteen-day
-  seasons from Phase 0 while `data/sim.config.json` moved to thirty (D49), so every
-  village test ran a different year from the game for four commits.
-
-### Removed
-- `freezing_ticks`, replaced by `exposure_days_outdoors` and
-  `exposure_days_sheltered` — stated in days, because they describe a person in the
-  cold rather than a tick rate.
-
 ### Added
 - Project scaffolding: `DESIGN.md` (vision, pillars, architecture, build order),
   `CLAUDE.md` (AI working agreement), `METHODOLOGY.md` (engineering standards).
@@ -85,7 +52,7 @@ Categories (only include the ones you use): **Added**, **Changed**,
   55% in the final year, scaling what a foraging trip brings home. A life now has
   a shape — easy middle years, a visibly tightening old age, then death.
 - Godot 4.7.1 view shell (`src/Bclone.Game`): clock, villager state, hunger bar,
-  vigour, stockpile, scrolling life log, and pause/1x/2x/4x speed controls.
+  vigour, stockpile, scrolling life log, and pause/1x/2x/4x/10x speed controls.
 
 - **Phase 1 — households and smart labour.** A village rather than a villager.
 - **Households**: several villagers living together, births conditional on a food
@@ -126,11 +93,10 @@ Categories (only include the ones you use): **Added**, **Changed**,
   first workplace that can stand idle for want of an *input* rather than a worker, so
   it says which of the two is stopping it — the shape every later chain inherits.
 - **Winter kills on a second axis.** Firewood burns per household per day of winter,
-  and running out is fatal (`CauseOfDeath.Cold`). `freezing_ticks` is deliberately
-  longer than `starvation_ticks`: fuel comes from a two-step chain, so the village
-  needs time to notice and put hands back on the hut. An epitaph names which of cold
-  and hunger killed someone **and reports the other**, which is the legibility
-  condition D17 attached to reversing Phase 0's ban on a second death system.
+  and running out is fatal (`CauseOfDeath.Cold`). An epitaph names which of cold and
+  hunger killed someone **and reports the other**, which is the legibility condition D17
+  attached to reversing Phase 0's ban on a second death system. *(The `freezing_ticks`
+  counter this shipped with was later replaced by the positional model — see Changed.)*
 - **Goods live in buildings** (`specs/storage-and-distribution.md`, D30/D32): a
   **granary** for food, a **storage shed** for materials, small buffers at the
   workplaces that made them, and a working larder in every home so meals stay
@@ -280,6 +246,25 @@ Categories (only include the ones you use): **Added**, **Changed**,
   slice, and one missed would have desynced in silence. Anti-vacuity guarded (D7).
 
 ### Changed
+- **The view is laid out like Banished** (D55): the valley fills the window and the
+  panels float on top of it — village status top-left, log top-right, selection
+  below that, roster bottom-left, controls along the bottom. Standing alerts wrap
+  and can be read to the end; nothing shares a layout with the map, so a panel
+  that grows a line no longer moves the world under the player.
+- **Cold is a place you are standing, not a number on your household** (D45, D53;
+  `specs/shelter-and-exposure.md`). `Villager.Cold` rises fastest on open ground,
+  more slowly under a roof with no fire, and falls beside a burning hearth — any
+  occupied home with firewood in it, including a neighbour's. Two people of one
+  family now get cold at different rates. Villagers break off work at halfway to
+  freezing and walk to the nearest fire. Epitaphs say where somebody was when it
+  killed them rather than how long their family had been out of firewood.
+- **A fire thaws rather than resetting**, because the model was measured before it
+  was built: villagers spend 76% of winter at a lit hearth, so a reset would have
+  killed nobody in 120 years. A day by the fire undoes a day outdoors.
+- The tests run the **shipped calendar**. `VillageFixtures` had inherited fifteen-day
+  seasons from Phase 0 while `data/sim.config.json` moved to thirty (D49), so every
+  village test ran a different year from the game for four commits.
+
 - `release.yml` moved from the repo root to `.github/workflows/`, where the
   README and METHODOLOGY already said it lived, and its Godot/C# build steps
   filled in. Still tag-gated and dormant until `v1.0.0`.
@@ -308,14 +293,53 @@ Categories (only include the ones you use): **Added**, **Changed**,
 - `max_household_size` 4 → 7. Four meant two parents and two children: bare
   replacement, before anyone dies young.
 
+- **The acceptance run watches 300 years, not 150, and asserts the village is still
+  standing at the end.** The old window stopped one generation before the collapse
+  completed: at year 150 the village was at twenty-three and falling, which satisfied
+  "never dropped below the founding four" and read as the tail of a population wave
+  rather than the middle of an extinction. It also now asserts a *band* rather than
+  mere survival, since holding a stable size is what D31 actually asks for. 150 had
+  never been chosen against anything.
+
+---
+
+
+- **Labour reshuffles every three years, not every year** (D46). A yearly reshuffle
+  churns jobs faster than a player can read the reason for holding one; three years is
+  a rhythm a person notices. Affordable because the urgent cases no longer wait for it.
+- **A dead worker's job is filled at once** (D47), rather than standing empty until the
+  next reshuffle — and where nobody can be spared, the header says which work the
+  village wants that nobody is doing. Both are computed from world state on demand
+  rather than kept as flags: nothing to hash, nothing that can be set and not cleared.
+- **The player may say how many hands a workplace gets — never who** (D51). The default
+  is "let the village decide", exactly the derived quota; an override sets a *count*,
+  and proximity, household and catchment still choose the person.
+- **Thirty-day seasons, and pacing stated as a life rather than a year** (D49). An
+  average life takes 60 real minutes at 4x. `stockpile_target` doubled and `gather_yield`
+  barely moved — a longer year doubles both what an adult eats and the trips available
+  to gather it, and those cancel everywhere except winter.
+- **Buildings are big enough for the village the economy is budgeted for** (D50). Every
+  previous re-derivation moved the yields and left the capacities alone; the shipped
+  file had three woodcutter seats where the economy required eight.
+- **Winter no longer sends every spare hand to the woods** (D44, D52). The labour quota
+  knows what season it is, so no berry patch is staffed while there is nothing on it —
+  but the hands that frees are not given make-work. Cutting timber nobody wanted packed
+  the sheds with logs, crowded out the firewood the birth gate reads, and cost the
+  village a third of its population.
 ### Removed
+- `freezing_ticks`, replaced by `exposure_days_outdoors` and
+  `exposure_days_sheltered` — stated in days, because they describe a person in the
+  cold rather than a tick rate.
+
 - **Spoilage, from the plan** (D37). Joe's call — *"it's not fun."* It was a tax that
   arrives as a number going down for no decision the player took, punishing a well-run
   town as hard as a careless one, and it added a chore to a game whose second
   non-negotiable is *reduce babysitting*. The danger it was proposed against — a
   granary that never rots is a bank, and a village with a bank has permanently solved
-  winter — is already answered by storage **capacity**: there is no unlimited bank to
-  have, because the building will not hold it.
+  winter — is answered by **price rather than impossibility** (D39, correcting the
+  reasoning here): the player can build as many granaries as they can afford, so the
+  buffer is not capped at all. A village that has put the labour into ten granaries has
+  genuinely solved winter and should feel like it.
 - **The two sharing policies, and the two village-wide sweeps** — `ShareFood`
   (seasonal), `ShareFirewood` (daily), `SimWorld.TryTakeLogsFromTheVillage`, and
   `TryTakeBuildingTimber`'s village-wide sweep. All four existed because there was
@@ -324,7 +348,26 @@ Categories (only include the ones you use): **Added**, **Changed**,
   day they were written; `specs/storage-and-distribution.md §6` made deleting all
   four the condition for the work counting as done.
 
+- `food_source_x`/`_y`, `extra_forage_sites`, `tree_stand_x`/`_y` — all became generator
+  output (D18). Deleted rather than left in place: a config key nobody reads is a trap,
+  because a modder edits it, nothing happens, and the file gives no hint that it is
+  decoration.
+
 ### Fixed
+- **Logs stopped vanishing into household larders** (D48, and the third time this class
+  of bug has been fixed). `UnloadAtHome` dropped carried logs into a household's
+  stockpile, and nothing in the sim can spend a log from there — 240 logs frozen in two
+  houses for twenty years while a building site waited on 28. Fixed with an invariant
+  asserted against both the fixture and the shipped config rather than a fourth patch.
+  **It presented as a demographic wave, which is how it survived: nobody starved, nobody
+  froze, and the granary was full.**
+- **No two places in the valley share a name** (D56). Bearings only had eight
+  values against six forage sites, so 44 valleys in 50 named two places alike —
+  and every site past the first was called a *thicket* whether it was foraged or
+  felled, so "the southern eastern thicket" could not tell you whether the village
+  was short of food or of timber. Thickets are foraged, woods are felled, bearings
+  are hyphenated, and where two places share one the nearer keeps the plain name.
+
 - **Villagers were invisible on the map.** People standing on the same tile drew
   at the same point, so four adults resting at one house rendered as one dot —
   which made the phase's own Success Test ("watching twelve villagers is still
@@ -397,23 +440,6 @@ Categories (only include the ones you use): **Added**, **Changed**,
 - **The economy derived itself from wherever a spiral happened to put twenty homes.**
   It is now derived from a bound the village *keeps* (`MaxHomeToWorkTiles`), which is
   what lets one economy serve every generated seed.
-
-### Removed (dead config)
-- `food_source_x`/`_y`, `extra_forage_sites`, `tree_stand_x`/`_y` — all became generator
-  output (D18). Deleted rather than left in place: a config key nobody reads is a trap,
-  because a modder edits it, nothing happens, and the file gives no hint that it is
-  decoration.
-
-### Changed (tests)
-- **The acceptance run watches 300 years, not 150, and asserts the village is still
-  standing at the end.** The old window stopped one generation before the collapse
-  completed: at year 150 the village was at twenty-three and falling, which satisfied
-  "never dropped below the founding four" and read as the tail of a population wave
-  rather than the middle of an extinction. It also now asserts a *band* rather than
-  mere survival, since holding a stable size is what D31 actually asks for. 150 had
-  never been chosen against anything.
-
----
 
 <!--
 Release template — copy this block above and fill it in when cutting a version:

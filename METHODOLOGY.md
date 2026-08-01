@@ -69,7 +69,7 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 ## 5. Versioning & Releases (active from v1)
 
 - **Semantic Versioning** (`MAJOR.MINOR.PATCH`). Pre-1.0 the game is in-development; `v1.0.0` is the first real release.
-- **Single source of version truth** (a `VERSION` file or the project/manifest file) — CI reads it; don't hand-edit in multiple places.
+- **Single source of version truth** — the `VERSION` file. **Nothing reads it yet**; wiring it into the build is part of the first real tag (see below).
 - **Release notes:** maintain `CHANGELOG.md` in [Keep a Changelog](https://keepachangelog.com/) style — an `## [Unreleased]` section accumulates entries as you work, and gets stamped with the version + date at release time.
 - **Version bump = a deliberate step:** update `CHANGELOG.md`, bump the version source, commit, then tag `vX.Y.Z`. The tag is what triggers the release build.
 - **Every version gets a screenshot**, committed to `screenshots/` and named `ssNNN-<date>.png` — `ss001-aug1-2026.png`, and up. A changelog says what changed; a screenshot says what it *looked* like, and a generational village-builder is a thing you watch. The README shows the most recent one. Take it with the hook in §6 rather than by hand, so the framing is repeatable.

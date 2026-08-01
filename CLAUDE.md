@@ -28,7 +28,7 @@ If a request — from Joe or your own inference — would violate a Non-Negotiab
 - If you discover a new pillar-level idea or a design tension, add it to DESIGN.md rather than only mentioning it in chat — chat is ephemeral, the doc is not.
 
 ## Before large moves
-- **Confirm the tech stack with Joe before scaffolding** (it's an unresolved Open Decision, §5). Do not pick it silently.
+- **The stack is settled** (D1): C# (.NET 8) + Godot 4, with the sim in a Godot-free class library. Anything that would couple `Bclone.Sim` to the engine is a design change, not a detail — raise it.
 - Flag any architecture deviation from DESIGN.md §3 before committing to it.
 
 ## Working with Joe

@@ -252,16 +252,17 @@
 
   // ---- Ageing ------------------------------------------------
   // Full strength until 30, then a straight decline to 55% in the
-  // final year. This is the only source of year-to-year variation in
-  // Phase 0, and it is what gives a life a shape: easy middle years
+  // final year. It is what gives a life a shape: easy middle years
   // with time to rest, then a long tightening where the same food
   // costs more and more walking.
   "vigour_full_until_age": 30,
   "vigour_min_percent": 55,
 
   // ---- Life --------------------------------------------------
-  // 45 +/- 5 => 40-50 year lives. At 60s per year on 4x, that is a
-  // 40-50 minute life: long enough to be a life rather than a demo.
+  // 45 +/- 5 => 40-50 year lives. At 80s per year on 4x (see
+  // target_ticks_per_second) that is roughly a 55-65 minute life -
+  // D49 states the pacing AS a life rather than as a year, because the
+  // generational loop is the core loop and a year is only its unit.
   "lifespan_years_base": 45,
   "lifespan_years_variance": 5,
 

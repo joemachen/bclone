@@ -1,205 +1,106 @@
-# Handoff — bclone, 2026-07-31
+# Handoff — bclone
 
-Read `CLAUDE.md`, `DESIGN.md` and `METHODOLOGY.md` in full first, then the spec for
-whatever you are about to touch. This file is the shortcut, not a substitute.
+Read `CLAUDE.md`, then **`DESIGN.md` §6 (Progress Tracker) and §7 (Decisions Log)**, then
+`METHODOLOGY.md`, then the spec for whatever you are about to touch.
+
+**This file is deliberately short.** It used to carry a progress list, a queue, and a
+lessons section, all of which drifted out of step with `DESIGN.md` — at one point the two
+files held "next up" lists with no items in common, both labelled "Joe's call". §6 owns
+what is done and what is next; §7 owns why. What is left here is the handful of things
+that live nowhere else.
 
 ---
 
 ## State of play
 
-- Branch `phase/2-wood-fuel-and-tools`, working tree clean, everything pushed, **green at
-  every commit**.
-- **370 tests green.** The suite takes ~4m55s; the long 200- and 300-year runs dominate.
-  **Time it twice before believing it** — D53 looked like a 38% regression on one run and
-  was 3% on a quiet machine.
-- Phase 0 and Phase 1 are merged to `main` (PRs #1, #2). Everything since is on this
-  branch, unmerged on Joe's standing call: Phase 2's Definition of Done is not met, and
-  merging now would make `main` a checkpoint rather than a completed phase.
-- **Nothing is broken.** `wip/idle-winter` is superseded and can be deleted — its work
-  landed on the branch with D52.
+- Branch `phase/2-wood-fuel-and-tools`. Phases 0 and 1 are merged to `main` (PRs #1, #2).
+  Everything since is on this branch, unmerged on Joe's standing call: **Phase 2's
+  Definition of Done is not met**, and merging now would make `main` a checkpoint rather
+  than a completed phase.
+- The suite takes about four minutes; the 200- and 300-year acceptance runs dominate.
+  **Time it twice before believing a regression** — one measurement showed a 38% slowdown
+  that was 3% on a quiet machine.
 
-**Run it:**
-```
-D:\Projects\Godot\Godot_v4.7.1-stable_mono_win64\Godot_v4.7.1-stable_mono_win64.exe --path src/Bclone.Game
-```
+**Run it:** `run.bat`. Set `GODOT` first if your editor is not at
+`D:\Projects\Godot\Godot_v4.7.1-stable_mono_win64\`.
 
 ---
 
 ## The trap that will bite you first
 
-**`bclone.sln` does not contain the Godot project.** `dotnet build bclone.sln` compiles
-the sim and the tests only. A build menu was once written, wired up, and silently never
+**`bclone.sln` does not contain the Godot project.** `dotnet build bclone.sln` compiles the
+sim and the tests only. A build menu was once written, wired up, and silently never
 appeared, because the assembly Godot ran was a day old.
 
-- Building the view: `dotnet build src/Bclone.Game/Bclone.Game.csproj`
-- CI has a separate step for it.
-- **Always rebuild the view explicitly before launching to check a change.** The
-  tell-tale that you are looking at a stale build is text on screen you know you changed.
+- Building the view: `dotnet build src/Bclone.Game/Bclone.Game.csproj`. CI has a separate
+  step for it, and `run.bat` does it before launching.
 - **Nothing in `src/Bclone.Game` can be unit-tested at all** (D11 puts it outside the
   solution). View changes are verified by running the game and by nothing else. Say so
   when you report one.
-- **The view is now Banished-shaped** (D55): the map fills the window and five panels float
-  on top, pinned to corners. `Main.BuildUi` builds them through one `Floating(...)` helper
-  — pass a zero width or height to mean *as big as the contents need*. Nothing shares a
-  layout with the map, so a panel that grows cannot move the world.
-- **You can do better than "I ran it and it looked fine", and D54 shows how.** Temporary
-  instrumentation in `_Process`, behind an environment variable, removed before
-  committing: `GetViewport().GetTexture().GetImage().SavePng(path)` writes a screenshot
-  you can actually look at, and a `GD.Print` of any node's rect whenever it changes turns
-  *"does the map still jump?"* into a number. Run headless-ish with
-  `--resolution 1800x1400 --quit-after 3000`. **Check the thing you are measuring
-  actually varies during the run** — the first attempt sat at the map's minimum height,
-  where it could not have moved whatever the bug was.
-
----
-
-## What landed this session (7 commits)
-
-**The building selection panel.** Click anything on the map and it says what it is.
-Selection is a **tile**, not a building id — three occupants live in three lists with
-three id spaces, and the market is deliberately both a store and a workplace at one
-position (D36's seam), so asking "what is here?" describes it correctly. Every branch
-ends in something actionable: a hut with no logs says so rather than showing zeroes.
-
-**The timber leak (D48), and it is the third time.** `UnloadAtHome` dropped carried logs
-into the household larder, and **nothing in the sim can spend a log in a larder** — the
-only reader of `Household.Stockpile.Logs` is the state hash. 240 logs frozen in two
-houses for twenty years while a site wanted 28 and a couple wanted 30. Fixed with an
-*invariant* rather than a fourth patch.
-
-**Thirty-day seasons and an hour-long life (D49).** Full re-derivation; see the numbers
-in the decision entry. Pacing is now stated as *a life takes 60 real minutes at 4×*
-rather than as a year length.
-
-**Building capacities were derived too, and had been outgrown (D50).** The shipped file
-had 3 woodcutter seats where the economy required 8.
-
-**A dead worker's job is filled at once (D47)**, which is what makes D46's three-year
-reshuffle affordable. Plus a header alert for work the village wants that nobody is doing.
-
-**Player staffing (D51).** The player sets *how many*, never *who*. Default is "let the
-village decide". D15's guard narrowed from name-matching to signature-matching.
-
----
-
-## The idle winter — closed, and the diagnosis in the last handoff was wrong
-
-**`wip/idle-winter` is superseded. Its work is on the branch, D52 records it.** Read that
-entry before touching the labour quota.
-
-The bug it fixed was real: `LabourQuota.For` never asked what season it was, so in winter
-the food floor was still staffed and `foragers += free` dumped every spare hand onto
-berry patches with nothing on them. That half is kept.
-
-The half that was invented — **spare winter hands to the woods, bounded by whether any
-shed still had room** — is deleted. It bounded the shed, not the work. Demand for timber
-is already answered twice in the same method and funded first, so every hand it added was
-cutting logs the village had no use for. The sheds then sat at 617–703 of 717 capacity for
-the whole run; the shed is one room (D33), so firewood had nowhere to land, and the birth
-gate reads a household's own firewood. **Mean population 14 where it now holds 22 — full
-larder, full shed, nobody starving, nobody freezing.**
-
-**It was never a market bug.** `MarketersWanted` has counted errands, not spare hands,
-since D36 — the previous handoff's hypothesis was wrong, and so was its fix. What
-actually happened: marketers shuttled the scarce firewood out to the homes, so **the
-market arm was the healthy one (mean 21) and the CONTROL collapsed.**
-`TheMarketShortensTheWalkForFood` failed because the village it measures against had
-died down to a size where it barely walked anywhere.
-
-The previous handoff's numbers (5,702 / 3,044 fetch trips) do not reproduce; the measured
-values were 17,995 / 9,705, and the populations quoted were end-of-run rather than mean.
-**Do not carry a number forward without re-measuring it.**
-
-**Winter is still mostly idle, and that is now the honest answer** rather than a bug: with
-the food floor gone the village wants no extra hands, because it already has its logs.
-D44's own forward note is the fix — winter wants herding and slaughtering (D39), not
-make-work in the woods. That is a design gap, and it is Joe's call when to take it.
-
----
-
-## Next up, in order (Joe's call)
-
-1. **Clothing** — leather/wool/cotton, gated behind D19/D39's production tier. It removes
-   the outdoor danger, and so is **what unlocks winter as a working season**.
-2. **Work-in-place instead of round trips.** Joe's idea and the biggest payoff on the
-   board — see the open decision in DESIGN.md §5. Villagers travel to work and *stay*,
-   eating on site, so distance becomes a one-off commute rather than a per-unit tax.
-   That kills the 7-tile home-to-work fence and lets the village finally use the
-   120×80 valley it occupies twelve tiles of. **Re-derives the food economy a fourth
-   time — give it a fresh session and the no-op-first discipline.**
-3. **The seasonal yield curve** (`specs/environment-and-seasons.md` §5.1), last and on
-   its own terms.
-4. **Winter work that is not the woods** (D44's forward note, D39's roadmap). Not
-   scheduled, and named here because D52 turned it from "a fix I can make" into "a thing
-   the game does not have yet". Herding, slaughtering, fishing.
+- **You can do better than "I ran it and it looked fine."** `BCLONE_SCREENSHOT` writes the
+  window to a PNG and quits; `BCLONE_SCREENSHOT_YEARS` runs the sim forward first, so the
+  shot shows a village that has lived. METHODOLOGY §6 has the invocation. To check that
+  something *stopped moving*, a `GD.Print` of a node's rect whenever it changes turns "does
+  the map still jump?" into a number — and **check the thing you are measuring actually
+  varies during the run**, or the guard is watching a case that never happens.
 
 ---
 
 ## How Joe wants to work
 
-- **Keep the remote branch green.** Hold WIP in local commits or a side branch; push once
-  a slice is green. Done twice this session and it was right both times.
-- **Report at meaningful transitions, don't grind. When a measurement contradicts the
-  plan, stop and say so.** This worked well this session — twice.
+- **Keep the remote branch green.** Hold WIP in local commits or a side branch; push once a
+  slice is green.
+- **Report at meaningful transitions, don't grind. When a measurement contradicts the plan,
+  stop and say so.**
 - **End every message with the explicit ask.**
-- Spec-first for anything non-trivial; record decisions in DESIGN.md §7 rather than
-  leaving reasoning in chat.
-- Joe finds real bugs by *playing*, and by asking why something is the way it is. Two of
-  the best findings this session came from his questions, not from the plan.
-- **Push back when a design choice is wrong** — he asked for this explicitly, and D51 is
-  the example: his first shape for player staffing would have made micromanagement
-  mandatory, the flag was welcome, and the agreed version is better than either.
+- Spec-first for anything non-trivial; record decisions in `DESIGN.md` §7 rather than
+  leaving reasoning in chat, and update §6 as work lands.
+- Joe finds real bugs by *playing*, and by asking why something is the way it is. Several
+  of the best findings in this project came from his questions rather than from the plan.
+- **Push back when a design choice is wrong** — he asked for this explicitly. D51 is the
+  worked example: his first shape for player staffing would have made micromanagement
+  mandatory, the flag was welcome, and the agreed version is better than either starting
+  position.
 
 ---
 
 ## Lessons that would be expensive to rediscover
 
+The decisions themselves live in §7. These are the ones that generalise past the decision
+that produced them.
+
 - **A village that stops growing while its stores are full is a distribution bug until
-  proven otherwise.** D48 presented as a demographic wave — nobody starved, nobody froze,
-  the granary was full — and so did D34. That disguise has now cost two long
-  investigations.
-- **Derive, don't tune** (D16), and *"meets the target"* is not *"is the derived value"*.
-  The guards only assert "enough".
-- **The derivation has an order** — food before fuel. And **capacities are part of it**
-  (D50); every previous re-derivation moved yields and forgot buildings.
-- **A longer year is mostly self-cancelling.** D49: an adult eats twice as much and gets
-  twice the trips, so `gather_yield` barely moved. The exception is winter, where trips
-  do not help because there is nothing to gather — which is why `stockpile_target`
-  doubled and nothing else did.
-- **`VillageFixtures.Village` and `data/sim.config.json` diverge, and bugs live in the
-  gap.** D50 lived there entirely; D48 was four times worse in the shipped file. Assert
-  invariants against **both**.
-- **Measure, do not pattern-match.** Every diagnosis this session that was reasoned from
-  precedent was wrong, and every one that came from a probe was right.
+  proven otherwise.** D34 and D48 both presented as a demographic wave — nobody starved,
+  nobody froze, the granary was full. That disguise has cost two long investigations.
+- **Measure, do not pattern-match.** Every diagnosis reasoned from precedent in the D52
+  session was wrong, and every one that came from a probe was right. And **probe a mechanic
+  before you build it** — D53's cold model and D56's clothing were both measured as no-ops
+  before a line of either was written.
+- **Numbers in a handoff are hearsay until re-measured.** The predecessor to this file
+  recorded fetch counts off by 3× and populations taken at the wrong instant, and both were
+  quoted forward with confidence.
+- **A comparative test has two villages, and either can be the broken one.** D52: the
+  market test failed and a whole session went looking inside the market. The control had
+  collapsed. Check the control's health before believing the comparison, and never read a
+  per-head figure off an end-of-run count.
 - **An assertion about a window is not an assertion about a system**, and a raw aggregate
-  is not a rate. The market test passed for the wrong reason for months.
-- **A comparative test has TWO villages, and either one can be the broken one.** D52: the
-  market test failed and a whole session went looking inside the market. The market arm
-  was healthy; the *control* had collapsed. **Check the control's population before
-  believing what the comparison says**, and never read a per-head figure off an
-  end-of-run count — that is a phase of an oscillation, not a mean.
-- **A gate on a store is not a gate on the work.** *"Is there room for one more?"* answers
-  a question about the shed. The question the quota has to ask is *"does anything in the
-  village want this?"* — D52, and D33 before it in the opposite direction.
-- **Numbers in a handoff are hearsay until re-measured.** D52's predecessor recorded fetch
-  trips that were off by 3× and populations taken at the wrong instant, and both were
-  quoted back with confidence.
-- **Probe a mechanic before you build it, not after.** D53: D45's cold model was measured
-  against the live village *before a line of it was written*, and the central rule — a
-  fire resets the count — turned out to kill nobody in 120 years, because people spend
-  76% of winter standing at a hearth. Ten minutes of probe against a day of slice. **The
-  cheapest place to find out a design is wrong is before it exists.**
-- **A number chosen to make a body count come out right is a number you will pay for
-  twice.** D53 refused that option by name. The day-counts describe a person in the cold;
-  the death rate is a property of the economy. If cold is too rare, open
-  `WoodcuttersWanted`, not the cold model.
-- **Prefer readers to writers.** D47 asks the world "is anyone dead still holding a job?"
-  rather than keeping a flag: nothing to hash, nothing that can be set and not cleared.
-  The recurring bug here is code reading state from where it used to live, and a
-  bookkeeping flag is that shape.
-- **When a test fails, ask whether the test was right.** `HandingItBackRestores...`
-  demanded a stand be re-staffed within a few years; there are two stands and the village
-  only wants loggers when it wants wood, so the test was asserting the quota was broken.
+  is not a rate.
+- **Derive, don't tune** (D16), and *"meets the target"* is not *"is the derived value"*.
+  The guards only assert "enough". **The derivation has an order** — food before fuel — and
+  **capacities are part of it** (D50).
+- **`VillageFixtures.Village` and `data/sim.config.json` diverge, and bugs live in the
+  gap.** Now a standing rule in METHODOLOGY §3.
+- **Prefer readers to writers.** Ask the world a question rather than maintaining a flag:
+  nothing to hash, nothing that can be set and not cleared. The recurring bug in this
+  project is code reading state from where it used to live, and a bookkeeping flag is that
+  shape.
+- **When two fixes fight each other, the thing they are both working around is the bug.**
+  D55: the map jumping and the sentence clipping were one bug, and the second fix deleted
+  the first.
+- **When a test fails, ask whether the test was right.** Several have been.
+- **A forward-looking comment is a promise to come back** (D57). *"Until building placement
+  exists"*, *"water is generated but nothing reads it yet"* — all true when written, all
+  lies on a specific commit, none of them noticed.
 - **PowerShell:** write commit messages to a file and use `git commit -F`; `-m` with long
   text gets mangled. Do not round-trip source through `Get-Content`/`Set-Content` — it
   corrupts the em-dashes this codebase is full of.
