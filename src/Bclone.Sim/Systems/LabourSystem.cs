@@ -24,10 +24,11 @@ namespace Bclone.Sim.Systems;
 /// </para>
 /// <list type="bullet">
 ///   <item>
-///     <b>Once a year the village shares out all its work again from scratch</b>
-///     (D20). Workers drift toward the jobs nearest where they live, and a household
-///     whose forager died — or who built a house on the far side of the valley — is
-///     corrected without any rule having to anticipate it.
+///     <b>Every <c>labour_reshuffle_years</c> the village shares out all its work again
+///     from scratch</b> — three years as shipped (D20, revised by D46). Workers drift
+///     toward the jobs nearest where they live, and a household whose forager died — or
+///     who built a house on the far side of the valley — is corrected without any rule
+///     having to anticipate it.
 ///   </item>
 ///   <item>
 ///     <b>Every season, whoever is idle takes any opening.</b> Food is stored per

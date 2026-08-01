@@ -275,10 +275,10 @@ public sealed record SimConfig
 
     /// <summary>Where the village's food is kept.</summary>
     /// <remarks>
-    /// Near the homes. A granary is a building people walk to several times a season,
-    /// so its position is the difference between a short errand and a long one — and
-    /// once building placement exists, choosing that position is the first decision in
-    /// the game that storage makes interesting.
+    /// Near the homes. A granary is a building people walk to several times a season, so
+    /// its position is the difference between a short errand and a long one. This places
+    /// only the <em>founding</em> granary; every one after it the player sites themselves
+    /// (D43), which is the first decision storage makes interesting.
     /// </remarks>
     [JsonPropertyName("granary_x")]
     public int GranaryX { get; init; } = 1;
@@ -329,10 +329,9 @@ public sealed record SimConfig
     /// that into the size the village stops growing at.
     /// </para>
     /// <para>
-    /// <b>This is the number that answers "how big can my village get".</b> Once
-    /// building placement exists the answer becomes "build another granary"; until then
-    /// it is this, which is a pressure with no player response available yet — the same
-    /// gap <see cref="World.VillageEconomy.RequiredWoodcutterSeats"/> already carries.
+    /// <b>This is the number that answers "how big can my village get" — per granary.</b>
+    /// The village-wide answer is now "build another one" (D33, D43), which is what turns
+    /// this from a ceiling the player is handed into a price they can choose to pay.
     /// </para>
     /// </remarks>
     [JsonPropertyName("granary_feeds_people")]
@@ -596,9 +595,10 @@ public sealed record SimConfig
 
     /// <summary>How wide the river runs.</summary>
     /// <remarks>
-    /// Zero generates no river at all, which is a supported valley and a useful
-    /// control in tests. Water is generated but nothing reads it yet — see
-    /// <see cref="World.Terrain"/> for why that sequencing is deliberate (D40).
+    /// Zero generates no river at all, which is a supported valley and a useful control
+    /// in tests. <b>A river is load-bearing, not scenery</b> — water is impassable and
+    /// every travel query routes round it (D40, D41), so widening this genuinely moves
+    /// the village's walks.
     /// </remarks>
     [JsonPropertyName("river_width_tiles")]
     public int RiverWidthTiles { get; init; } = 2;
@@ -623,9 +623,16 @@ public sealed record SimConfig
     /// gets corrected by the next reshuffle instead of needing a special case.
     /// </para>
     /// <para>
-    /// Once a year, not once a season. A seasonal reshuffle churns jobs fast enough
-    /// that the stated reason for holding one goes stale before the player reads it,
-    /// and a reshuffle that cannot explain itself is worse than no reshuffle.
+    /// <b>Every three years</b> (D46), and the shipped config says so — this default of 1
+    /// is the older answer, kept only because a config file that sets it is the one that
+    /// matters. D20 argued that a <em>seasonal</em> reshuffle churns jobs faster than a
+    /// player can read the reason for holding one; a yearly one is the same objection at
+    /// lower volume. Three years is a rhythm a person can notice.
+    /// </para>
+    /// <para>
+    /// Affordable because the urgent cases do not wait for it: <c>TakeUpSlack</c> runs at
+    /// every season boundary, and a job left vacant by a death is filled the tick after it
+    /// happens (D47).
     /// </para>
     /// </remarks>
     [JsonPropertyName("labour_reshuffle_years")]
@@ -674,18 +681,25 @@ public sealed record SimConfig
     public int WinterBufferPercent { get; init; } = 180;
 
     /// <summary>
-    /// A household is considered in need below this percentage of its food target.
+    /// A household is short below this percentage of its food target.
     /// </summary>
+    /// <remarks>
+    /// <b>The name is older than the job.</b> Nothing shares anything automatically any
+    /// more — D30 deleted both sharing policies and the market replaced them. This is now
+    /// the line at which the <em>village</em> counts itself short of food
+    /// (<see cref="World.LabourQuota.VillageIsShortOfFood"/>), which is what decides
+    /// whether anyone can be spared from gathering.
+    /// </remarks>
     [JsonPropertyName("sharing_need_percent")]
     public int SharingNeedPercent { get; init; } = 50;
 
     /// <summary>
-    /// A household keeps at least this percentage of its own target before giving
-    /// anything away.
+    /// A household sets out to fetch once its own store falls below this share of target.
     /// </summary>
     /// <remarks>
-    /// Set above <see cref="SharingNeedPercent"/> so generosity can never push a
-    /// giver into the state it is trying to relieve.
+    /// Also named for the deleted sharing policy, where it was how much a giver kept back.
+    /// It is a fetch trigger now: above <see cref="SharingNeedPercent"/> so a household
+    /// starts walking to the store before it is in the state the village would call short.
     /// </remarks>
     [JsonPropertyName("sharing_keep_percent")]
     public int SharingKeepPercent { get; init; } = 80;
@@ -1134,7 +1148,7 @@ public sealed record SimConfig
     public int ExposureTicksSheltered => ExposureDaysSheltered * TicksPerDay;
 
     /// <summary>
-    /// What <see cref="Villager.Cold"/> has to reach to kill somebody (D45).
+    /// What <see cref="World.Villager.Cold"/> has to reach to kill somebody (D45).
     /// </summary>
     /// <remarks>
     /// <para>

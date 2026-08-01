@@ -36,6 +36,10 @@ Testing is not optional and not an afterthought.
 - **QA pass per phase:** before merging a phase, do a manual playthrough against a written QA checklist for that phase (does it stay legible? can you read *why* things happen? does it hold the meditative pace?). Legibility is a QA criterion, not just a design goal.
 - Tests run locally via `test.bat` and in CI on every push/PR.
 
+**Assert against the shipped config, not only the fixture.** `VillageFixtures.Village` derives its numbers; `data/sim.config.json` is typed in by hand and is what the game actually loads. The two drift, and the gap is where bugs live — it has produced D48 (a timber leak four times worse in the shipped file), D50 (three woodcutter seats where the economy needed eight), and D49 (thirty-day seasons that reached the game and not the tests, for four commits). `ShippedConfigTests` runs a real village on the real file; anything the economy depends on gets a guard there as well as against the fixture.
+
+**Probe a mechanic before building it.** The cheapest place to find out a design is wrong is before it exists. A throwaway measurement against the live sim costs ten minutes and has twice now overturned a decision that would have cost a day — D53's cold model was measured to kill nobody before a line of it was written, and D56's clothing turned out to be a no-op the same way. If a change is supposed to move a number, measure the number first.
+
 **Definition of Done (per phase/feature):**
 1. Spec written and current.
 2. Unit tests written and passing.
@@ -68,6 +72,8 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 - **Single source of version truth** (a `VERSION` file or the project/manifest file) — CI reads it; don't hand-edit in multiple places.
 - **Release notes:** maintain `CHANGELOG.md` in [Keep a Changelog](https://keepachangelog.com/) style — an `## [Unreleased]` section accumulates entries as you work, and gets stamped with the version + date at release time.
 - **Version bump = a deliberate step:** update `CHANGELOG.md`, bump the version source, commit, then tag `vX.Y.Z`. The tag is what triggers the release build.
+- **Every version gets a screenshot**, committed to `screenshots/` and named `ssNNN-<date>.png` — `ss001-aug1-2026.png`, and up. A changelog says what changed; a screenshot says what it *looked* like, and a generational village-builder is a thing you watch. The README shows the most recent one. Take it with the hook in §6 rather than by hand, so the framing is repeatable.
+- **Not yet wired up, and deliberately so.** `VERSION` is read by nothing, there are no tags, and `src/Bclone.Game/export_presets.cfg` does not exist — which is a hard blocker on `release.yml` ever succeeding, since it exports the "Windows Desktop" preset from a clean checkout. All three are Phase 2's merge to deal with (Joe's call), and they are recorded here so the first tag is not a surprise.
 
 ---
 
@@ -75,8 +81,16 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 
 - **On every push & PR:** build + run the full test suite (including the determinism test). `main` must stay green.
 - **The Godot view is built separately, and it must be.** `Bclone.Game` is deliberately not in `bclone.sln` (D11 — a root Godot project globs `**/*.cs` and would swallow the sim and the tests into the game build). The cost is that `dotnet build bclone.sln` does **not** compile the view, so CI has its own step for it. Found the hard way: a build menu was written, wired up and never appeared, because nothing had compiled it and the assembly Godot ran was a day old. **If you are checking a view change by running the game, build `src/Bclone.Game/Bclone.Game.csproj` explicitly first** — a green solution build says nothing about it.
-- **On version tag (`v*`):** `.github/workflows/release.yml` builds a **Windows `.exe`**, packages it, and attaches it to a GitHub Release with the changelog section as the body.
-- The release workflow is **tag-gated**, so it stays dormant until you push your first `v1.0.0` tag. **Its build steps are placeholders until the stack is chosen** — fill in the Godot export command or `cargo build --release` at that point (comments in the file show both).
+- **Running the game, and screenshotting it.** `run.bat` builds the view and launches Godot; set `GODOT` if your editor lives somewhere other than the path it defaults to. **The view has no tests at all** (D11), so looking at it is the verification — and `BCLONE_SCREENSHOT` makes looking repeatable:
+
+  ```
+  set BCLONE_SCREENSHOT=D:\Projects\bclone\screenshots\ss002-aug1-2026.png
+  set BCLONE_SCREENSHOT_YEARS=45
+  <godot> --path src/Bclone.Game --resolution 1640x1050
+  ```
+
+  It runs the sim forward the given number of years, draws, writes the PNG and quits. The years matter: a village at tick 3 is four people on a doorstep and an empty log, which is a true picture and a useless one. This is also how the per-version screenshot in §5 is taken.
+- **On version tag (`v*`):** `.github/workflows/release.yml` builds a **Windows `.exe`**, packages it, and attaches it to a GitHub Release with the changelog as the body. The Godot steps are written but have **never run** — see §5 for the missing export preset.
 
 ---
 

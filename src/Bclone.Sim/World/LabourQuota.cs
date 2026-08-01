@@ -172,46 +172,29 @@ public readonly record struct LabourQuota
         int marketersWanted = MarketersWanted(world);
         int buildersWanted = BuildersWanted(world);
 
-        // Nobody is spared for building while the village as a whole is short of
-        // food. Counting spare hands is not enough on its own: hands are spare only
-        // if the food they are not gathering is food the village does not need.
+        // WHILE THERE IS FOOD TO GATHER AND THE VILLAGE IS SHORT OF IT, EVERY HAND
+        // GATHERS. Timber, fuel, building and the market all yield — a marketer most
+        // readily of anything, since they produce nothing at all. That is §4a's
+        // one-sentence policy: a village short of hands feeds itself before it builds.
         //
-        // Deliberately measured across the WHOLE village rather than per household,
-        // and that distinction cost a long run to find. "Is any household below its
-        // sharing floor?" is true almost all the time — households dip below it and
-        // are topped back up every season, by design — so gating on it meant no
-        // timber was ever cut, no houses were ever built, no new households formed,
-        // and the village aged out and died without a single villager starving. The
-        // deaths were all old age, which is exactly what a village that stops having
-        // children looks like.
+        // Each clause was measured, and each cost a long run:
         //
-        // AND ONLY WHILE THERE IS FOOD TO GATHER. Pulling the loggers back onto
-        // the berries in winter is not caution, it is waste: the larder always dips
-        // in winter, and there is nothing out there to pick, so those hands simply
-        // stood idle. Trees do not stop in winter — that asymmetry is most of why the
-        // job is worth holding (D17), and this is the rule that lets the village act
-        // on it.
-        // A village that is genuinely short of food puts every hand on it — and this
-        // gate has to cover the fuel chain too, not just the building half.
+        //   ACROSS THE WHOLE VILLAGE, not per household. "Is any household below its
+        //   sharing floor?" is true almost all the time — they dip and are topped back
+        //   up every season, by design — so gating on it meant no timber was ever cut,
+        //   no houses built, no households formed, and the village aged out and died
+        //   without one villager starving.
         //
-        // Measured, twice, in opposite directions. Exempting fuel from the gate meant
-        // the founding village put two of its four adults on firewood with an empty
-        // larder and starved. Leaving fuel funded only from what was left AFTER the
-        // food floor meant the woodpile drained a little every year until four
-        // households froze in one winter, with a full larder and a yard full of logs.
+        //   ONLY WHILE THERE IS FOOD TO GATHER. Pulling hands back onto the berries in
+        //   winter is not caution, it is waste: the larder always dips then and there
+        //   is nothing out there to pick, so they simply stood idle. Trees do not stop
+        //   in winter, which is most of why the job is worth holding (D17).
         //
-        // So: while there is food to gather and the village is short of it, everyone
-        // gathers. Otherwise heating is a floor alongside eating, and only building is
-        // funded from the leftovers. Winter is exempt because there is nothing out
-        // there to pick — the larder always dips then, and pulling the woodcutters
-        // onto empty berry patches is how the village froze.
-        //
-        // The market yields to this too, and most readily of anything: a marketer
-        // produces nothing, so a village that is genuinely short of food and has
-        // somewhere to gather it cannot afford to have anyone shuffling what it
-        // already owns. This is §4a's one-sentence policy — a village short of hands
-        // feeds itself before it builds — and a trader is further from feeding people
-        // than a logger is.
+        //   AND THE FUEL CHAIN YIELDS TOO, which was got wrong in both directions.
+        //   Exempting fuel put two of the founding four on firewood with an empty
+        //   larder, and they starved. Funding fuel only from what was left after the
+        //   food floor drained the woodpile a little every year until four households
+        //   froze in one winter, with a full larder and a yard full of logs.
         if (FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world))
         {
             woodcutters = 0;
@@ -231,9 +214,9 @@ public readonly record struct LabourQuota
         // a yard full of logs. Nothing was wrong with the chain; it was never staffed.
         //
         // So heating is a floor alongside eating, and only house-building is funded
-        // from what is left. Food comes first of the two because hunger kills in six
-        // days and cold in ten — if the village can only afford one, it should buy the
-        // one that kills soonest.
+        // from what is left. Food comes first of the two because hunger kills in six days
+        // and an unheated house in twenty-five (D45) — if the village can only afford one,
+        // it should buy the one that kills soonest.
         int free = hands;
 
         // NOTHING CAN BE PICKED IN WINTER, so the village does not staff a berry patch
@@ -291,43 +274,19 @@ public readonly record struct LabourQuota
         // IN WINTER, NOTHING IS ADDED HERE — a hand the village has no work for is left
         // without one, and the sentence LabourAllocator writes for them says so.
         //
-        // THE FIRST VERSION SENT EVERY SPARE WINTER HAND TO THE WOODS, capped only by
-        // the tree stands' seats and by whether any shed still had room for one more
-        // log. It was measured and it was wrong, in the way this codebase keeps being
-        // wrong: it staffed work without asking what the work was FOR.
+        // The first version sent every spare winter hand to the woods, bounded by the
+        // stands' seats and by "is any shed not yet full?" — which bounds the SHED, not
+        // the work. Demand for timber is answered twice further up this method and funded
+        // before this point, so every hand the fill added was cutting logs nothing wanted.
+        // It packed the sheds, crowded out the firewood the birth gate reads, and cost the
+        // village a third of its population. D52 has the measurements.
         //
-        // The demand for timber is already answered, twice, further up this method —
-        // LoggersWanted for the houses the village is waiting on, LoggersToFeedTheHuts
-        // for the firewood chain. Both are funded before this point. So every hand the
-        // fill added was, by construction, cutting logs nothing in the village had a
-        // use for, and "is a shed not yet full?" was never a bound on that — it was a
-        // bound on the shed.
-        //
-        // Which is what it hit. THE SHED IS ONE ROOM (D33): logs and firewood share its
-        // capacity, so timber the village had no use for crowded out the fuel. Measured
-        // over 100 years on the village fixture, with the market switched off — the
-        // sheds held 617-703 logs against a capacity of 717 for the entire run, and the
-        // firewood standing anywhere in the village ran at 60-285 where without the fill
-        // it runs at 104-513. The birth gate reads a household's own firewood, so the
-        // village simply stopped having children: a mean population of 14 where it holds
-        // 22 without the fill, with a full larder, a full shed, nobody starving and
-        // nobody freezing. D33's recorded failure exactly, in mirror image — that one
-        // packed the shed with firewood and could not store logs.
-        //
-        // It also made the MARKET load-bearing, which is the promise in spec §14.4 and
-        // the one thing here that must not break. Marketers shuttled the scarce firewood
-        // out to the homes, so the village with a market kept growing (mean 21) and only
-        // the village without one collapsed. That is how this was found — reported as a
-        // market regression, which it never was: the market arm was the healthy one, and
-        // TheMarketShortensTheWalkForFood failed because its CONTROL had shrunk.
-        //
-        // So the idle winter is narrowed rather than filled. Removing the food floor
-        // still gives the woodcutters and loggers the village DOES want first call on
-        // every hand, which is the half of D44 that was a real bug. The half that is
-        // left — hands with genuinely nothing to do between the last harvest and the
-        // first — is not a gap to paper over with make-work: it is D44's own forward
-        // note, and it wants herding and slaughtering (D39's food roadmap) to answer
-        // it honestly.
+        // So the idle winter is narrowed rather than filled. Removing the food floor still
+        // gives the woodcutters and loggers the village DOES want first call on every
+        // hand, which is the half of D44 that was a real bug. The half that is left —
+        // hands with genuinely nothing to do between the last harvest and the first — is
+        // not a gap to paper over with make-work: it is D44's own forward note, and it
+        // wants herding and slaughtering (D39's roadmap) to answer it honestly.
         if (canGather)
         {
             foragers += free;
@@ -445,9 +404,10 @@ public readonly record struct LabourQuota
     /// it, less whatever is already stacked against the wall.
     /// </para>
     /// <para>
-    /// Measured against the <b>whole village's</b> firewood, not each household's,
-    /// because the sharing policy moves it around anyway. A per-household reading
-    /// would staff the hut for a family that is about to be given fuel by a neighbour.
+    /// <b>Demand is counted per home and supply only from the sheds</b> — see the comment
+    /// in the body for the village that froze proving why. This used to say the opposite,
+    /// on the grounds that "the sharing policy moves it around anyway"; that policy was
+    /// deleted by D30 and the reading it justified outlived it by several slices.
     /// </para>
     /// </remarks>
     public static int WoodcuttersWanted(SimWorld world)

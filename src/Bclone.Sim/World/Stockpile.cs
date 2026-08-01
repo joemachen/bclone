@@ -290,8 +290,15 @@ public sealed class FoodSource
     public required int YieldPerGather { get; init; }
 
     /// <summary>
-    /// Winter is the pressure in Phase 0, and food scarcity is its only weapon —
-    /// there is deliberately no separate cold/warmth stat (spec §3).
+    /// Nothing can be picked in winter, which is what makes it the year's pressure.
     /// </summary>
+    /// <remarks>
+    /// Food scarcity was winter's <em>only</em> weapon in Phase 0, whose spec ruled out
+    /// "a second overlapping death system" by name. D17 reversed that deliberately once
+    /// there were households to heat, so cold is now a second axis — see
+    /// <see cref="Villager.Cold"/> and <see cref="CauseOfDeath.Cold"/>. The half of the
+    /// Phase 0 reasoning that did not expire is that a death must never be ambiguous
+    /// between the two.
+    /// </remarks>
     public static bool IsGatherable(Season season) => season != Season.Winter;
 }

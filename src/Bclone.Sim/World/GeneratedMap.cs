@@ -3,17 +3,15 @@ namespace Bclone.Sim.World;
 /// <summary>What a tile is made of.</summary>
 /// <remarks>
 /// <para>
-/// <b>Water is generated but nothing reads it yet</b>, and that is deliberate
-/// sequencing rather than an oversight (`specs/seeded-map-generation.md §11`). Making
-/// water impassable means real pathfinding in <see cref="TravelCostField"/>, which is
-/// the field deciding labour catchment, market errands and the economy's distance
-/// budget — the things that decide who eats. Landing worldgen and pathfinding together
-/// would mean two hard changes failing at once with no way to tell which.
+/// <b>Water is impassable</b> (D40, D41). <see cref="TravelCostField"/> routes round it,
+/// and because every system that asks "how far is that?" shares one cost field (§2.6),
+/// labour catchment, market errands, household placement and the economy's distance
+/// budget all inherited that for free.
 /// </para>
 /// <para>
-/// So this slice generates the river and proves the generation is deterministic and
-/// survivable; the next slice makes the river mean something; bridges (D40) come after
-/// the tech tree and placement.
+/// It was generated-but-unread for one slice on purpose, because landing worldgen and
+/// pathfinding together would have meant two hard changes failing at once with no way to
+/// tell which. Bridges (D40) still wait on the tech tree.
 /// </para>
 /// </remarks>
 public enum Terrain
@@ -21,7 +19,7 @@ public enum Terrain
     /// <summary>Open ground. Walkable, buildable.</summary>
     Grass = 0,
 
-    /// <summary>The river. Impassable once pathfinding lands — see the remarks above.</summary>
+    /// <summary>The river. Impassable — nothing walks it and nothing is built on it.</summary>
     Water = 1,
 
     /// <summary>Trees. Where a tree stand can go.</summary>

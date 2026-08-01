@@ -6,23 +6,21 @@ using Bclone.Sim.World;
 namespace Bclone.Sim.Systems;
 
 /// <summary>
-/// Step 3 of the tick order: the villager decides, then acts.
+/// Step 7 of the tick order: the villager decides, then acts.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Priority order, evaluated top-down every tick (spec §6):
+/// Priority order, evaluated top-down every tick. It began as three items — eat, forage,
+/// rest — and is now about a dozen: eat, get warm (D45), abandon work the season or a
+/// reshuffle has taken away, finish whatever is underway, then the job they hold, then
+/// fetch what the household is short of, then rest. <c>ActOne</c> is the list; read it
+/// there rather than trusting a copy here.
 /// </para>
-/// <list type="number">
-///   <item>Hungry enough to eat, and food in the store → eat.</item>
-///   <item>Below the stockpile target, and it is not winter → forage.</item>
-///   <item>Otherwise → rest.</item>
-/// </list>
 /// <para>
-/// Deliberately a plain top-down if-chain rather than a utility score or behaviour
-/// tree. The player has to be able to read <em>why</em> a villager did something
-/// (non-negotiable 1), and a ranked list of reasons can be explained in one sentence
-/// in the UI. A weighted score cannot. When this grows into real labour assignment in
-/// Phase 1, that constraint carries forward.
+/// Deliberately a plain top-down if-chain rather than a utility score or behaviour tree,
+/// and that constraint has survived every one of those additions. The player has to be
+/// able to read <em>why</em> a villager did something (non-negotiable 1); a ranked list
+/// of reasons can be explained in one sentence in the UI and a weighted score cannot.
 /// </para>
 /// </remarks>
 public sealed class BehaviorSystem : ISimSystem
@@ -400,7 +398,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// </para>
     /// <para>
     /// Food before firewood where both are available, because hunger kills in six days
-    /// and cold in ten.
+    /// and an unheated house in twenty-five (D45).
     /// </para>
     /// </remarks>
     private static StoreBuilding? PlanFetch(SimWorld world, Villager villager)
@@ -1168,7 +1166,7 @@ public sealed class BehaviorSystem : ISimSystem
         // watched it happen: "people seem to not be able to find anything to eat."
         //
         // Food first where both are short, for the same reason PlanFetch prefers it:
-        // hunger kills in six days and cold in ten.
+        // hunger kills in six days and an unheated house in twenty-five (D45).
         int foodShort = world.TargetFoodFor(household) - household.Stockpile.Food;
         int food = Smallest(foodShort, load, target.Store.Food);
         if (food > 0 && target.Store.TryTake(food))

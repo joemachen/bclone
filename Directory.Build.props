@@ -15,6 +15,17 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
+    <!-- Turned on to make the XML doc comments compile rather than merely exist.
+         With TreatWarningsAsErrors above, a broken <see cref="..."/> or a malformed
+         block is now a build failure. Several had accumulated unnoticed, including
+         summaries left sitting above the wrong member after a method moved.
+
+         CS1591 stays off: this codebase documents what needs explaining, not every
+         public member, and demanding a comment on `public int Year { get; }` would
+         produce exactly the noise the real comments are trying to be heard over. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
     <!-- Deterministic compilation: identical sources produce identical
          binaries. Unrelated to sim determinism, but the same spirit. -->
     <Deterministic>true</Deterministic>

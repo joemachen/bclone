@@ -11,9 +11,10 @@ namespace Bclone.Sim.World;
 /// would quietly make the village one organism.
 /// </para>
 /// <para>
-/// The sharing policy that softens this is a <b>placeholder</b>. The intended form is
-/// a manned market or food stall that redistributes within its catchment — a building
-/// someone works at, not a menu setting. See DESIGN.md §2.2 and D14.
+/// <b>What softens it is the market</b> (D14, D36) — a building somebody works at, not a
+/// menu setting. A marketer carries food from the stores to households below target, and
+/// is the only thing in the sim that can reach a dead family's larder. The two automatic
+/// sharing policies that stood in for it were deleted by D30.
 /// </para>
 /// </remarks>
 public sealed class Household

@@ -864,9 +864,9 @@ public sealed class SimWorld
         // Somewhere to put things (D30). Two buildings rather than one, because food
         // and materials are different problems - see StoreBuilding and D32.
         //
-        // They exist from the founding for now. There is no building placement yet,
-        // so the player has no way to put one anywhere; when placement lands, WHERE
-        // the granary goes becomes the first decision storage makes interesting.
+        // These two exist from the founding, so a village always has somewhere to put
+        // things. Every one after them is placed by the player (D43), and WHERE the
+        // granary goes is the first decision storage makes interesting.
         //
         // Both hold a DERIVED amount, not a chosen one (D16). The granary's is the
         // village's real ceiling: births are gated on it holding a share of what
@@ -1481,7 +1481,6 @@ public sealed class SimWorld
     /// So there are two reasons to keep working: my family is short, or the village
     /// is. The second one is the entire argument for having a granary.
     /// </para>
-    /// </remarks>
     /// <para>
     /// <b>Deliberately unbounded, and that is what makes it a ceiling.</b> It is the
     /// birth gate's question — <em>could this village feed another mouth through a

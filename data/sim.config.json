@@ -203,12 +203,15 @@
   "site_jitter_tiles": 1,
   "founding_jitter_tiles": 2,
 
-  // Water is generated but NOTHING READS IT YET, and that sequencing is
-  // deliberate (D40). Making the river impassable means real
-  // pathfinding in the travel-cost field - the field that decides
-  // labour catchment, market errands and the economy's distance budget
-  // - so it is its own slice. Crossing water will need a bridge, which
-  // is a technology first and a building second.
+  // WATER IS IMPASSABLE (D40, D41), so a river is load-bearing rather
+  // than scenery. Every travel query routes round it - labour catchment,
+  // market errands, household placement and the economy's distance
+  // budget all share one cost field, so they inherited it together.
+  // Widening this genuinely lengthens the village's walks. Zero
+  // generates no river at all, which is a supported valley.
+  //
+  // Crossing water will need a bridge, which is a technology first and
+  // a building second, and waits on the tech tree.
   "river_width_tiles": 2,
 
   // Reserved for soil depletion (DESIGN.md §2.3). Generated and hashed,
@@ -379,9 +382,10 @@
   // whose larder it is, but who is near the granary and who has hands
   // to send.
   //
-  // Both sit near the homes and exist from the founding. When building
-  // placement lands, WHERE the granary goes becomes the first decision
-  // in the game that storage makes interesting.
+  // These place the FOUNDING granary and shed, near the homes, so a
+  // village always has somewhere to put things. Every store after them
+  // the player sites themselves (D43) - and WHERE the granary goes is
+  // the first decision in the game that storage makes interesting.
   "granary_x": 1,
   "granary_y": -1,
   "storage_shed_x": -2,
@@ -407,8 +411,9 @@
   //
   // A number about the BUILDING, like how many hands fit at a berry patch -
   // which is why it is here rather than derived. What is NOT typed in is the
-  // consequence. When placement lands, the player answers this by building a
-  // second granary; until then it is this line.
+  // consequence: the player answers a ceiling they have hit by building a
+  // second granary (D33, D43), which prices the buffer rather than capping
+  // it (D39). This line is the price per granary, not the village's limit.
   "granary_feeds_people": 30,
 
   // ---- The market (D14, D36) ---------------------------------

@@ -5,7 +5,7 @@ using Bclone.Sim.World;
 namespace Bclone.Sim.Systems;
 
 /// <summary>
-/// Step 4 of the tick order: the two ways a life ends.
+/// Step 8 of the tick order, and the last: the three ways a life ends.
 /// </summary>
 /// <remarks>
 /// <para>

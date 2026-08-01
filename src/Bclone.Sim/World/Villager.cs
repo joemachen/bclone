@@ -139,8 +139,8 @@ public sealed class Villager
     /// <para>
     /// <b>Not a tick count</b> — it rises faster outdoors than under a fireless roof and
     /// falls beside a burning fire, so its unit is
-    /// <see cref="Config.SimConfig.ExposureThreshold"/> rather than time. Read
-    /// <see cref="ColdPercent"/> for anything a person sees.
+    /// <see cref="Config.SimConfig.ExposureThreshold"/> rather than time — divide by it
+    /// for anything a person sees.
     /// </para>
     /// <para>
     /// It used to be <c>TicksCold</c>: consecutive ticks in a home whose household had no

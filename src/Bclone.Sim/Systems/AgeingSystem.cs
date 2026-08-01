@@ -17,16 +17,17 @@ namespace Bclone.Sim.Systems;
 /// tightening where the same food costs more trips and the margin thins.
 /// </para>
 /// <para>
-/// It is deliberately the <em>only</em> source of year-to-year variation in Phase 0.
-/// The systemic pressures that would otherwise supply it — climate drift, soil
-/// depletion, disease (DESIGN.md §2.3) — belong to later phases, and pulling one
-/// forward would break the build order for something ageing already covers.
+/// It was the only source of year-to-year variation in Phase 0, and the systemic
+/// pressures that will eventually supply more — climate drift, soil depletion, disease
+/// (DESIGN.md §2.3) — still belong to later phases.
 /// </para>
 /// <para>
-/// <b>Childhood is deliberately excluded.</b> A frail child would be the honest
-/// mirror of a frail elder, but Phase 0 has exactly one villager and nobody to
-/// depend on, so a weak childhood is just an unsurvivable opening. Dependency
-/// belongs with households in Phase 1 (spec §11).
+/// <b>Childhood arrived with households</b>, as Phase 0's spec said it would: this returns
+/// <see cref="LifeStage.Child"/> below <c>adult_age</c>, children eat and hold no job, and
+/// the economy is derived against a single adult supporting three of them. What Phase 0
+/// excluded was a frail <em>vigour</em> curve for the young — a weak childhood on top of a
+/// weak old age, with one villager and nobody to depend on, was simply an unsurvivable
+/// opening.
 /// </para>
 /// </remarks>
 public sealed class AgeingSystem : ISimSystem

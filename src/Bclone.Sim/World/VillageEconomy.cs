@@ -298,7 +298,8 @@ public static class VillageEconomy
     /// (<see cref="SimConfig.WinterBufferPercent"/>), and for a sharper reason. A
     /// village that only wants woodcutters once its firewood has run low finds out too
     /// late: the shortfall appears in the middle of winter, the labour pass that could
-    /// answer it runs once a season, and freezing takes ten days. Measured, the village
+    /// answer it runs once a season, and a house with no fire in it kills in
+    /// twenty-five days (D45). Measured, the village
     /// reached eleven people and then froze to death in its third decade, every run.
     /// </para>
     /// <para>
@@ -468,10 +469,10 @@ public static class VillageEconomy
     /// hands were free, and thirty-six people froze.
     /// </para>
     /// <para>
-    /// That is a real pressure and one day it should be the player's to answer, by
-    /// building a second hut. Until building placement exists there is no answer
-    /// available, so the founding capacity has to be large enough for the village the
-    /// rest of the economy is budgeted for.
+    /// That pressure is the player's to answer now, by building a second hut (D43). The
+    /// founding capacity still has to be large enough for the village the rest of the
+    /// economy is budgeted for, so that a player who builds nothing is not quietly
+    /// punished for it — D50 is what happens when it is not.
     /// </para>
     /// </remarks>
     public static int RequiredWoodcutterSeats(SimConfig config)
@@ -682,11 +683,10 @@ public static class VillageEconomy
     /// than the granary comfortably feeds. That is the intended reading — a granary
     /// built for thirty supports a village that runs a little hungrier than thirty.
     /// </para>
-    /// </remarks>
     /// <para>
     /// <b>Per granary.</b> For the ceiling an actual village lives under, ask
-    /// <see cref="CeilingFor(int)"/> with how many granaries it has built — that is the
-    /// number placement is about, and the reason the singleton seam had to be closed
+    /// <see cref="CeilingForCapacity"/> with the capacity it has actually built — that is
+    /// the number placement is about, and the reason the singleton seam had to be closed
     /// before a player could build a second one (D38).
     /// </para>
     /// </remarks>
