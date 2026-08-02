@@ -85,6 +85,44 @@ So clothing today would remove a danger that does not bite, in order to unlock w
 is not wanted. It would measure as a no-op, exactly like the fire-resets rule D53 probed
 before building.
 
+### 5.1 What a second probe added (D59) — the payoff is labour, not lives
+
+Measured again while sizing livestock, and it **sharpens this section rather than
+overturning it.** Two findings, both structural:
+
+- **Winter has the hands.** A mean of **12.7 spare adults out of 14.7** through every
+  winter, over 300 years, on both the shipped config and the fixture — against 0.7 spare
+  in summer. The `0%` above is not a shortage of people. It is the labour quota having
+  nothing it wants doing (D52). Give winter a job and it will be taken.
+- **But clothing can never save a life at the seven-tile bound.**
+  `BehaviorSystem.TrySeekWarmth` breaks a villager off at 50% of the threshold and holds
+  them at the fire until they are back to zero. For a fire `d` travel-ticks away the
+  steady cycle is *work 30−d, walk d, thaw 30+d, walk d*:
+
+  | distance to the nearest fire | share of winter actually worked |
+  |---|---|
+  | 0 (adjacent) | 50% |
+  | 4 | 41% |
+  | 7 (`MaxHomeToWorkTiles`) | ~34% |
+
+  Freezing outright needs **60 unbroken ticks outdoors**; break-off fires at 30 and the
+  walk home is at most 7. Nobody working can ever reach it.
+
+**So the acceptance bar in §7 is right and its metric is not deaths — it is winter work
+done.** Clothing takes an outdoor winter job from ~34% duty to 100%, which is roughly a
+**3× on winter labour**. Three consequences worth carrying into the build:
+
+1. **This is better than what D45 imagined, not worse.** A clothing that saved lives would
+   be a clothing the village must have; a clothing that triples winter output is an
+   *unlock*. §7's "clothing becoming mandatory" failure mode is now satisfied by
+   construction rather than by tuning.
+2. **The stakes escalate on their own.** Once D58's per-site yield lets homes and work
+   spread past 30 travel-ticks from a fire, the same garment quietly becomes life-or-death
+   with no number changed. That is §2.3 arriving out of two systems built for other
+   reasons.
+3. **If lives are wanted sooner, the file to open is `seek_shelter_percent`, not the
+   day-counts** — the same refusal D53 recorded for option (b).
+
 ---
 
 ## 6. What makes clothing matter, and it is one thing
