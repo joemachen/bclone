@@ -447,6 +447,25 @@ public sealed record SimConfig
     [JsonPropertyName("construction_site_capacity")]
     public int ConstructionSiteCapacity { get; init; } = 3;
 
+    /// <summary>How much painted ground one worker can keep (D86).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The first limit in this game that is not distance.</b> Everything bounding work so
+    /// far — <c>MaxHomeToWorkTiles</c>, catchment radii — asks how far somebody must walk.
+    /// This asks how much they can look after, which is what makes the staffing control
+    /// (D62's <c>−1/+1</c>) matter: paint more ground, hire more hands.
+    /// </para>
+    /// <para>
+    /// <b>Content, not a derived number.</b> It says how much land one person keeps, which is
+    /// a fact about the world rather than a consequence of the economy — the same class of
+    /// number as a building's capacity. **The ceiling it implies is derived, though**: a
+    /// workplace cannot be staffed past its capacity, so the most ground anybody can hold is
+    /// capacity × this, and D86's *"to a limit"* needs no second number (D16).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("work_ground_tiles_per_worker")]
+    public int WorkGroundTilesPerWorker { get; init; } = 24;
+
     /// <summary>How much land the exiles arrive having already chosen to live on (D42).</summary>
     /// <remarks>
     /// A village founded with no residential zone could never build a house, so the

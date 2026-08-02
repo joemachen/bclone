@@ -338,6 +338,118 @@ public sealed class SimWorld
         return PlacementVerdict.Fine;
     }
 
+    // ---------------------------------------------------------------
+    //  Work ground, and the first limit in this game that is not distance (D86)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// How much ground a workplace can keep, given the hands currently assigned to it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Read off the workers actually assigned, not off the building's capacity</b> —
+    /// Joe's wording, and the livelier of the two. A hut whose forester dies becomes
+    /// overstretched that moment and can say so, where a capacity-based allowance would go
+    /// on claiming the land was fine while nobody worked it.
+    /// </para>
+    /// <para>
+    /// <b>The "to a limit" in D86 needs no number of its own</b>, and that is the whole
+    /// reason to state the rule this way: a workplace cannot be staffed past its capacity,
+    /// so the largest ground anyone can hold is capacity × per-worker, derived rather than
+    /// typed (D16). A second cap would be a number to argue about that says nothing new.
+    /// </para>
+    /// </remarks>
+    public int WorkGroundAllowanceFor(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        return workplace.WorkerIds.Count * Config.WorkGroundTilesPerWorker;
+    }
+
+    /// <summary>Whether a workplace has been given more ground than it has hands for.</summary>
+    /// <remarks>
+    /// <b>A state, not just a moment.</b> The warning fires when land is painted, but the
+    /// condition outlives the painting — somebody dies, the staffing is turned down, and the
+    /// ground is suddenly too much. The panel needs to be able to ask.
+    /// </remarks>
+    public bool IsOverstretched(Workplace workplace) =>
+        Zones.WorkGroundTiles(workplace.Id) > WorkGroundAllowanceFor(workplace);
+
+    /// <summary>
+    /// Give one tile of ground to a workplace, and say so if it is now more than its
+    /// hands can keep.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A warning, never a refusal</b> (D86, and D43's rule for a site that is merely
+    /// far). Painting big and hiring afterwards is an ordinary way to play, and a brush that
+    /// stopped at the current headcount would make the player fight the staffing control
+    /// with every stroke.
+    /// </para>
+    /// <para>
+    /// <b>Ground already held by another building is left alone and reported</b>, so a
+    /// careless drag across the valley cannot quietly unstaff somebody else's hut. The
+    /// caller decides how loudly to say it: this returns a verdict per tile, and D42
+    /// settled that a brush speaks <em>once per stroke</em>.
+    /// </para>
+    /// <para>
+    /// <b>Water is never painted</b>, matching <see cref="PaintResidential"/> — the shape
+    /// the player gets is the shape they can actually use.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict PaintWorkGround(Workplace workplace, GridPos tile)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (!Map.Contains(tile))
+        {
+            return PlacementVerdict.No("That is outside the valley.");
+        }
+
+        if (Map.TerrainAt(tile) == Terrain.Water)
+        {
+            return PlacementVerdict.No("Nobody can work the water.");
+        }
+
+        int held = Zones.WorkGroundOwner(tile);
+        if (held != 0 && held != workplace.Id)
+        {
+            Workplace? other = FindWorkplace(held);
+            return PlacementVerdict.No(
+                other is null
+                    ? "That ground is already spoken for."
+                    : $"That ground belongs to {other.Name}.");
+        }
+
+        Zones.SetWorkGround(tile, workplace.Id);
+
+        int tiles = Zones.WorkGroundTiles(workplace.Id);
+        int allowance = WorkGroundAllowanceFor(workplace);
+        if (tiles > allowance)
+        {
+            int hands = workplace.WorkerIds.Count;
+            return PlacementVerdict.Yes(
+                hands == 0
+                    ? $"{Capitalised(workplace.Name)} has {tiles} tiles and nobody working it. "
+                      + $"Every hand there can keep {Config.WorkGroundTilesPerWorker}."
+                    : $"{Capitalised(workplace.Name)} has {tiles} tiles and {hands} "
+                      + $"{(hands == 1 ? "pair of hands" : "pairs of hands")} to keep them — "
+                      + $"enough for {allowance}. The rest will go untended.");
+        }
+
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>Take one tile of ground back from a workplace.</summary>
+    public bool EraseWorkGround(Workplace workplace, GridPos tile)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        return Zones.WorkGroundOwner(tile) == workplace.Id && Zones.SetWorkGround(tile, 0);
+    }
+
+    /// <summary>Place names read "a forester's hut"; sometimes one has to start a sentence.</summary>
+    private static string Capitalised(string text) =>
+        string.IsNullOrEmpty(text) ? text : char.ToUpperInvariant(text[0]) + text[1..];
+
     /// <summary>
     /// Set or clear how much of a good the village should keep (D62).
     /// </summary>

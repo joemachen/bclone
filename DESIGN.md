@@ -345,7 +345,14 @@ labour rather than lives**, which is what stock limits turn from a dead end into
 **C3b is done** ✅ — `ZoneMap` holds work ground owned by a building beside the global
 residential layer, one owner per tile, hashed with the owner, and released through the one door
 every workplace now retires by. **Goldens unmoved**, because an unpainted layer hashes as
-absent. 419 tests green. Next: **C3c** — the forester's hut: placed and staffed like a
+absent. **C3c-i is done** ✅ — **ground is priced in workers**, which is the first limit in this game
+that is not distance. Paint anywhere and the hut claims it (Joe's call of two); the hands you
+have decide how much is actually kept, and the village **warns without refusing** —
+*"the south-western wood has 27 tiles and 1 pair of hands to keep them — enough for 24. The
+rest will go untended."* **D86's "to a limit" needed no number of its own:** a workplace cannot
+be staffed past its capacity, so the ceiling is capacity × per-worker, derived (D16). Being
+overstretched is a **state**, not just a moment — lose a forester and this morning's ground is
+too much. 427 tests green, goldens unmoved. Next: **C3c-ii** — the forester's hut itself: placed and staffed like a
 woodcutter's, its ground painted, felling comes off *its* tiles, the forest recedes, and the
 village warns when the paint outruns the hands. **Tree stands retire here.** **C3d** — laborers
 and finite deposits (§5.2 of `specs/mutable-terrain.md`). **Planting is not in C3** — it is

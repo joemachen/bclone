@@ -484,6 +484,16 @@
 
   "construction_site_capacity": 3,
 
+  // How much painted ground one worker can keep (D86). The first limit in
+  // this game that is not distance -- everything else asks how far somebody
+  // must walk; this asks how much they can look after. It is what makes the
+  // staffing control matter: paint more ground, hire more hands.
+  //
+  // The ceiling it implies is derived rather than typed: a workplace cannot
+  // be staffed past its capacity, so the most ground anybody can hold is
+  // capacity times this, and "to a limit" needs no second number.
+  "work_ground_tiles_per_worker": 24,
+
   // The land the exiles arrive having already chosen to live on (D42).
   // A village founded with nothing painted could never build a house,
   // and the first thing the game asked of a player would be a decision
