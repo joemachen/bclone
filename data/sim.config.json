@@ -68,7 +68,27 @@
   // twice as many days in it and only a third more real time. That is
   // the honest consequence of a longer calendar, and it is one number
   // to put back.
-  "target_ticks_per_second": 1.5,
+  //
+  // ---- SLOWED TO 0.75 (D74, Joe: "slow the whole game") -------
+  // Joe, watching the cold start: "year 1 goes by way too quickly, it's
+  // like 20 seconds at 10x." It was, and D49 above was working exactly
+  // as specified - but D49 stated pacing for the STEADY STATE, where
+  // the argument is that a life is the unit worth watching. The
+  // founding is the one stretch of the game that asks the player to
+  // act inside a single year, and 80 seconds is not long enough to
+  // paint land, read the map, mark three buildings and work out why
+  // nothing is happening.
+  //
+  // Halved, so in D49's own terms: a year is 160s at 4x and 64s at
+  // 10x, and an average life takes about TWO HOURS at 4x rather than
+  // one. That is the number to argue with if this feels wrong - the
+  // life is the statement, the tick rate is only its unit.
+  //
+  // PLAYBACK ONLY. FixedTimestepDriver owns the single clock read and
+  // no sim logic may look at this, so nothing derived moves and no
+  // test changes: same seed, same run, same state hash, watched at a
+  // different speed.
+  "target_ticks_per_second": 0.75,
   "max_ticks_per_frame": 250,
 
   // ---- Needs -------------------------------------------------
