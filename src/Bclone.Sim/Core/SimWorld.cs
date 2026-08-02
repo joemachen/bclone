@@ -630,8 +630,7 @@ public sealed class SimWorld
         {
             if (Workplaces[i].Position == building.Position && Workplaces[i].Kind == JobKind.Marketer)
             {
-                ReleaseWorkers(Workplaces[i]);
-                Workplaces.RemoveAt(i);
+                RetireWorkplace(Workplaces[i]);
             }
         }
 
@@ -656,8 +655,7 @@ public sealed class SimWorld
         }
 
         int back = site.Construction.Abandon();
-        ReleaseWorkers(site);
-        Workplaces.Remove(site);
+        RetireWorkplace(site);
 
         StoreBuilding? shed = NearestStore(
             site.Position, StoreKind.Shed, static store => !store.Store.IsFull);
@@ -729,10 +727,51 @@ public sealed class SimWorld
                 break;
         }
 
-        ReleaseWorkers(site);
-        Workplaces.Remove(site);
+        RetireWorkplace(site);
 
         Narrate($"{plan.Name} was finished. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>
+    /// Take a workplace out of the world: let its workers go, and give up any ground it
+    /// had been painted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One door, because there are three ways a workplace can end</b> — demolished with
+    /// its building, cancelled mid-construction, and replaced when a site is finished — and
+    /// each one used to write <c>ReleaseWorkers</c> then <c>Workplaces.Remove</c> by hand.
+    /// D86 gives a workplace a second thing to release, and adding that line to three call
+    /// sites is exactly how <c>StoreKind</c> reached five instalments (D76). <b>The next
+    /// thing a workplace owns gets released here and nowhere else.</b>
+    /// </para>
+    /// <para>
+    /// <b>Ground that is not given up is haunted:</b> land no other hut may be given,
+    /// refused on behalf of a building that no longer exists, and the refusal cannot even
+    /// name who holds it.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A finished construction site gets a NEW workplace id</b> (see
+    /// <c>FinishConstruction</c>), so ground painted for the site does not follow the
+    /// building it becomes. That is harmless today, because ground is only ever given to a
+    /// standing building — and it is the first thing to check when the forester's hut lands.
+    /// </para>
+    /// </remarks>
+    private void RetireWorkplace(Workplace workplace)
+    {
+        ReleaseWorkers(workplace);
+
+        int freed = Zones.ReleaseWorkGround(workplace.Id);
+        if (freed > 0)
+        {
+            Log(
+                Logging.LogLevel.Info,
+                "placement",
+                $"{workplace.Name} is gone, and the {freed} tiles it kept are free again. "
+                + $"{Clock.SeasonAndYear()}.");
+        }
+
+        Workplaces.Remove(workplace);
     }
 
     private void ReleaseWorkers(Workplace workplace)

@@ -341,9 +341,11 @@ and the stock-limit control; livestock and trade are parked. The probe that prec
 it stands and is worth keeping — **winter is 86% idle**, and **clothing's payoff is winter
 labour rather than lives**, which is what stock limits turn from a dead end into a lever.
 
-**C3 continues, re-sequenced by D86 (Joe: *"we should probably move to that sooner"*):**
-**C3b** — zones learn to belong to a building (`ZoneMap` is one global `bool[]` today, and a
-forester's ground is keyed to its hut). **C3c** — the forester's hut: placed and staffed like a
+**C3 continues, re-sequenced by D86 (Joe: *"we should probably move to that sooner"*).**
+**C3b is done** ✅ — `ZoneMap` holds work ground owned by a building beside the global
+residential layer, one owner per tile, hashed with the owner, and released through the one door
+every workplace now retires by. **Goldens unmoved**, because an unpainted layer hashes as
+absent. 419 tests green. Next: **C3c** — the forester's hut: placed and staffed like a
 woodcutter's, its ground painted, felling comes off *its* tiles, the forest recedes, and the
 village warns when the paint outruns the hands. **Tree stands retire here.** **C3d** — laborers
 and finite deposits (§5.2 of `specs/mutable-terrain.md`). **Planting is not in C3** — it is

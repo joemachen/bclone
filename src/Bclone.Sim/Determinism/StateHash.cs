@@ -64,6 +64,24 @@ public static class StateHash
 
         hash = MixUInt32(hash, (uint)world.Zones.ResidentialTiles);
 
+        // Work ground (D86) — which building was given which tile to work. Sparse, in
+        // the same style and for the same reason: a village where nobody has painted any
+        // mixes nothing at all, so this layer is invisible to a run that does not use it
+        // and the goldens do not move for existing.
+        //
+        // The OWNER is mixed as well as the tile, because two huts given the same forty
+        // tiles the other way round is a genuinely different village and must not read as
+        // the same one (D51).
+        for (int i = 0; i < world.Zones.WorkGround.Count; i++)
+        {
+            int owner = world.Zones.WorkGround[i];
+            if (owner != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)owner);
+            }
+        }
+
         // Stock limits (D62), and SILENCE IS THE POINT: a limit nobody has set mixes
         // nothing at all, so a village played without ever opening the control hashes
         // exactly as it did before the control existed. That is what makes
