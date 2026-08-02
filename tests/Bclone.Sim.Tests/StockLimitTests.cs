@@ -163,6 +163,54 @@ public sealed class StockLimitTests
     }
 
     // ---------------------------------------------------------------
+    //  Laborers — who they are, since it turns out not to be what they do
+    // ---------------------------------------------------------------
+
+    /// <summary>A laborer is an able adult no workplace wants — and a child never is.</summary>
+    /// <remarks>
+    /// <para>
+    /// The whole of what a laborer is today. Spec §5.2 measured both errands this slice meant
+    /// to give them at <b>0.0% of ticks</b> — producers carry their own output and builders
+    /// fetch their own materials — so inventing hauling for them would have been D52's
+    /// make-work with a new name. They get work in slice B, when there is something on the
+    /// map to gather.
+    /// </para>
+    /// <para>
+    /// Guarded as a <em>reader</em>: it must agree with the roster at every moment, because
+    /// the alternative — a stored flag — is the bookkeeping-that-drifts shape this project
+    /// keeps paying for.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ALaborerIsAnAbleAdultNobodyHasWorkFor()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        loop.Step(config.TicksPerYear * 30);
+
+        int laborers = 0;
+        foreach (Villager villager in world.Villagers)
+        {
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            Assert.Equal(villager.CanWork && !villager.HasJob, villager.IsLaborer);
+
+            if (villager.IsLaborer)
+            {
+                laborers++;
+                Assert.NotEqual(LifeStage.Child, villager.LifeStage);
+            }
+        }
+
+        _output.WriteLine($"{laborers} laborers of {world.Population} alive after 30 years");
+    }
+
+    // ---------------------------------------------------------------
     //  It binds
     // ---------------------------------------------------------------
 

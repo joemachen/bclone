@@ -280,12 +280,17 @@ is weather** — but its proposed centre of gravity did not (D44). Slices, in or
   docs reconciled with the game. 373 tests green.
 
 **In progress:** **Slice A — stock limits and laborers** (`specs/stock-limits-and-laborers.md`,
-D62–D65). *The limits half is built:* `StockLimits` is player intent held on the world and
-hashed, `LabourQuota.For` caps the derived demand with it, and `SimWorld.SetStockLimit` obeys
-a limit below the survival floor while saying so. **A golden hash taken before the control
-existed proves it is a no-op until somebody uses it** — 50 years, both configs, byte-identical.
-384 tests green. *Still to come in this slice:* `JobKind.Laborer` and the hauling that gives a
-freed hand something to do.
+D62–D66), **sim complete, awaiting its view and Joe's QA pass.** `StockLimits` is player intent
+held on the world and hashed; `LabourQuota.For` caps the derived demand with it;
+`SimWorld.SetStockLimit` obeys a limit below the survival floor while saying so. **A golden
+hash taken before the control existed proves it is a no-op until somebody uses it** — 50 years,
+both configs, byte-identical. **The laborer half was cut by measurement (D66)**: both hauling
+errands occur on 0.0% of ticks, so laborers ship as a *name* (`Villager.IsLaborer`, a reader)
+and get their work in slice B. **385 tests green.**
+
+**Slice A still needs, before it is done:** the limit control in the view (D11 — untestable,
+verified by running it), and Joe's manual QA pass (DoD item 4: set a limit, watch a workplace
+stop, read *why* off the screen).
 
 **The queue was re-ordered by D62**, where Joe stated the core loop
 and the stock-limit control; livestock and trade are parked. The probe that preceded all of
@@ -345,6 +350,12 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D66 · 2026-08-01 · There is no hauling for a laborer to do — measured, and the errands are cut rather than invented.** Slice A's second half, probed before it was built (METHODOLOGY §3, the D53/D56/D59 pattern), and the probe killed it. Over a hundred years on the shipped config: **workplace buffers hold something on 0.0% of ticks** (mean 0.00 goods, worst 0), and **a construction site is short of materials on 0.0% of ticks**. Both errands `specs/stock-limits-and-laborers.md §5` proposed occur exactly never.
+  - **It is the existing design working, not failing.** A producer carries its own output in the same trip, so a workplace buffer is a pass-through and never a store — D30's *"goods move only by trips people make"* holding exactly. And `WorkTheSite` has builders fetch their own materials first, which is D43's *"making them fetch it is what stops construction being a purchase"*. Neither leaves a gap for a third party to fill.
+  - **So inventing hauling would have been D52's make-work with a new name** — the failure the spec warns about in §5.1, one paragraph above where it was about to be committed. That is the fourth time a probe has overturned a design in this project before a line of it was written, and the second time the design was mine.
+  - **The laborers are real; the work is not.** **24.5% of able-adult-ticks are jobless**, so the people exist and are correctly idle — §0's core loop says a village at rest is the game working. What they lack is somewhere to be useful, and that is **slice B**: gathering raw materials off the map, the first task on Joe's own list, which needs stone.
+  - **Joe's hauling task is early rather than wrong.** Two things create it later: **D64's builder's hut**, which keeps builders at a workplace so somebody else must carry, and **slice C's cold start**, where buildings are placed before there is anyone to staff them.
+  - **What shipped instead is a name.** `Villager.IsLaborer` is a **reader** — `CanWork && !HasJob` — not a `JobKind`. Joe's own definition is a question the world can already answer, so asking it beats maintaining a flag: nothing to hash, nothing to set and fail to clear, and no way for the roster and the reality to disagree. A `JobKind.Laborer` would need a phantom workplace to hang off and `LabourAllocator` would need teaching not to allocate to it — a rule invented purely to undo a type that should not exist. The roster now says *"laborer"* where it used to say *"no work"*, which read as a fault when it is usually the village resting.
 - **D65 · 2026-08-01 · Buildings do not decay; the builder's hut repairs what damage breaks.** Joe, closing D64's flagged question. **Upkeep-on-a-timer is refused for D37's reason, word for word** — a decay timer is a tax the player answers with babysitting rather than with a decision, which is §1.2. Banished's own structures do not decay either; tools and clothes wear and buildings do not, and this project has already cut one decay mechanic (spoilage, D37) on exactly this argument. So *maintain* means **repair after damage**: a thing fire or storm breaks is a job for the hut, with no standing loop and nothing to babysit. It also gives the hut work between projects without inventing any, which is the make-work trap D52 records.
 - **D64 · 2026-08-01 · A builder's hut, the cart that stays, and the player's first act. Sequence A → B → C.** Joe settling D63's open ends.
   - **Builders get a hut**, and builders are assigned to it the way every other job is assigned to a workplace. They build **and maintain** everything: buildings, pathways, decorations, walls, fences, bridges. **This changes what a `Builder` is.** Today a construction site *is* the workplace (D38), which was a neat trick — a site got catchment, allocation and refusal reasons for free, and then stopped existing. A hut inverts it: the hut is the persistent workplace and sites become **errands travelled to**. That is **exactly the marketer's shape** (D36), which is the argument for it — a proven pattern rather than a new one — and it means builder staffing becomes persistent and player-controllable through D51's override instead of a job that appears and vanishes. It also gives §2.6's paths and D40's bridges somewhere to attach when they arrive.

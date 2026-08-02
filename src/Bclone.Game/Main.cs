@@ -350,7 +350,12 @@ public partial class Main : Control
                 _ => "adult",
             };
 
-            string work = villager.HasJob ? "working" : "no work";
+            // "no work" was true and unhelpful: it read as a fault when it is usually the
+            // village resting, and it said the same thing about a child as about an adult
+            // nobody needs. A laborer is a state with a name (D63).
+            string work = villager.HasJob ? "working"
+                : villager.IsLaborer ? "laborer"
+                : "not working yet";
             int index = _roster.AddItem($"{villager.Name}, {villager.AgeYears} ({stage}) — {work}");
             _roster.SetItemMetadata(index, villager.Id);
 

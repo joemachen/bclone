@@ -90,6 +90,32 @@ public sealed class Villager
     public bool HasJob => WorkplaceId != 0;
 
     /// <summary>
+    /// An able adult no workplace currently wants — a laborer (D63).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A reader, not a stored state, and deliberately not a <see cref="JobKind"/>.</b>
+    /// Joe's own definition is <em>"villagers who aren't assigned to a specific job"</em>,
+    /// which is a question the world can already answer — so asking it beats maintaining a
+    /// flag: nothing to hash, nothing to set and fail to clear, and no way for the roster and
+    /// the reality to disagree. A `JobKind.Laborer` would need a phantom workplace to hang
+    /// off, since every other kind names a place, and `LabourAllocator` would then have to be
+    /// taught not to allocate to it — a rule invented purely to undo a type that should not
+    /// have existed.
+    /// </para>
+    /// <para>
+    /// <b>Being a laborer is not yet a job of work</b>, and that is measured rather than
+    /// assumed. See <c>specs/stock-limits-and-laborers.md §5.2</c>: both errands the spec
+    /// proposed for them — clearing workplace buffers, and carrying materials to
+    /// construction sites — were measured over a hundred years and occur on <b>0.0%</b> of
+    /// ticks, because producers already carry their own output and builders already fetch
+    /// their own materials. So this exists to be <em>named</em> on screen today, and gains
+    /// work when slice B gives the map raw materials to gather.
+    /// </para>
+    /// </remarks>
+    public bool IsLaborer => CanWork && !HasJob;
+
+    /// <summary>
     /// Why someone who holds a job is not doing it today, or empty when they are.
     /// </summary>
     /// <remarks>

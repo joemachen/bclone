@@ -95,17 +95,43 @@ work and holds no job is a laborer; nothing is ever *allocated* to it, and it ha
 no capacity and no catchment. That is what makes it cheap and what keeps it out of
 `LabourAllocator`'s cost-first pass.
 
-**Slice A gives them hauling only.** Two errands, both of which are widenings of built
-machinery rather than new systems:
+**A laborer is a reader, not a `JobKind`** — `Villager.IsLaborer => CanWork && !HasJob`.
+Joe's definition is a question the world can already answer, so asking it beats maintaining
+a flag: nothing to hash, nothing to set and fail to clear, and no way for the roster and the
+reality to disagree. A `JobKind.Laborer` would need a phantom workplace to hang off, and
+`LabourAllocator` would then need teaching not to allocate to it — a rule invented purely to
+undo a type that should not have existed.
 
-1. **Workplace buffer → store.** A producer's buffer fills and the goods sit there until the
-   producer next walks. A laborer clears it. `VillagerState.HaulingToStore` already exists.
-2. **Store → construction site.** `JobKind.Builder` already hauls materials from the nearest
-   shed to a site (D38, D43). A laborer does the same errand without holding the builder's
-   job.
+### 5.2 ⛔ And the hauling errands do not exist — measured
 
-**Raw gathering is slice B**, and deliberately: it needs stone, and stone is neither a
-`Goods` value nor placed by the map generator.
+This section proposed two errands. **Both were probed before being built, per METHODOLOGY §3,
+and both occur on 0.0% of ticks.** A hundred years, shipped config:
+
+| | measured |
+|---|---|
+| Workplace buffers holding anything | **0.0% of ticks** (mean 0.00 goods, worst 0) |
+| A construction site short of materials | **0.0% of ticks** |
+| Able adults holding no job | **24.5% of able-adult-ticks** |
+
+**Why, and it is the existing design working rather than failing.** A producer carries its
+own output in the same trip, so a workplace buffer is a pass-through and never a store —
+that is D30's *"goods move only by trips people make"* holding exactly. And `WorkTheSite`
+has builders fetch their own materials before working, which is D43's *"making them fetch it
+is what stops construction being a purchase"*. Neither leaves a gap for a third party.
+
+**So there is no hauling for a laborer to do, and inventing some would be D52's make-work
+with a new name** — the failure §5.1 warns about, one paragraph above where it was about to
+be committed.
+
+**The laborers are real; the work is not.** A quarter of able-adult-ticks are jobless, so the
+people exist and are correctly idle (§5.1, and §0's core loop — a village at rest is the game
+working). What they lack is somewhere to be useful, and that is **slice B**: gathering raw
+materials off the map, which is the first task on Joe's own list and needs stone to exist.
+
+**Joe's other laborer task — hauling to and from building sites — becomes real later, not
+never.** Two things create it: **D64's builder's hut**, which keeps builders at a workplace
+so someone else must carry, and **slice C's cold start**, where the player places buildings
+before there is anyone to staff them. It is correctly specced and merely early.
 
 ### 5.1 The trap this must not fall into
 
@@ -163,16 +189,15 @@ gap between them is where D48, D49 and D50 all lived.
    climbing past it, and woodcutters go idle rather than producing into a full store.
 4. **A limit below the floor warns and does not silently kill.** The warning fires; the
    village obeys; the death, if it comes, is preceded by a sentence naming the cause.
-5. **Laborers exist and haul.** Set limits low enough to free hands, and measure hauled loads
-   per person-tick — **a rate, not a raw aggregate** (D52's lesson, and the handoff's).
-6. **Anti-vacuity (D7): laborers must actually appear during the window** the guards watch,
-   and a run with no limits set must produce *some* too, or the fallback is watching a case
-   that never happens.
-7. **The idle winter is now the player's to fill.** With a raised wood limit, winter idleness
-   must fall from the measured **86% baseline** (D59's probe, 12.7 spare of 14.7 able adults,
-   300 years, both configs). This is the slice's headline acceptance number, and it is the
-   same measurement livestock was going to be judged on.
-8. **No new warnings or errors in a clean 300-year playthrough.**
+5. **~~Laborers exist and haul.~~** ⛔ **Cut by §5.2's measurement** — there is no hauling to
+   do. `Villager.IsLaborer` is guarded as a reader instead: an able adult with no workplace
+   is a laborer, a child never is, and the count reconciles against the roster.
+6. **~~The idle winter is now the player's to fill.~~** ⛔ **Deferred to slice B with the
+   work.** Raising a wood limit cannot lower winter idleness below the **86% baseline**
+   (D59's probe) while the only winter work is the logging the village already does; the
+   number moves when laborers can gather. Kept here because it stays the right acceptance
+   bar for the slice that earns it.
+7. **No new warnings or errors in a clean 300-year playthrough.**
 
 ---
 
