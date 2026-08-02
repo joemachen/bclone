@@ -446,6 +446,121 @@ public sealed class SimWorld
         return Zones.WorkGroundOwner(tile) == workplace.Id && Zones.SetWorkGround(tile, 0);
     }
 
+    // ---------------------------------------------------------------
+    //  The harvest brush (D87)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Paint one tile as somewhere the village means to take what is standing.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Painting harvest is <em>taking</em>; a forester's ground is <em>keeping</em></b>
+    /// (D87). This is the brush the opening runs on: the founders mark the trees they mean
+    /// to fell, and the hands no workplace wants go and fell them. The forester's hut is
+    /// what answers running out, and it comes later on purpose — the pressure first, the
+    /// sustainable answer second, which is the argument §12.7 already makes about planting.
+    /// </para>
+    /// <para>
+    /// <b>Permissive about where and firm about what</b>, like
+    /// <see cref="PaintResidential"/>: a tile with nothing on it to take is simply never
+    /// painted, so the shape the player gets is work that actually exists rather than a
+    /// promise the village cannot keep.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict PaintHarvest(GridPos tile)
+    {
+        if (!Map.Contains(tile))
+        {
+            return PlacementVerdict.No("That is outside the valley.");
+        }
+
+        if (!HasSomethingToHarvest(tile))
+        {
+            return PlacementVerdict.No("There is nothing standing there to take.");
+        }
+
+        Zones.SetHarvest(tile, true);
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>Un-paint a tile the village had meant to clear.</summary>
+    public bool EraseHarvest(GridPos tile) => Zones.SetHarvest(tile, false);
+
+    /// <summary>Whether a tile holds anything a laborer could take.</summary>
+    /// <remarks>
+    /// <b>One question, so a new harvestable terrain is answered here and nowhere else.</b>
+    /// Only forest today; stone and iron are D84's finite deposits and land next. This is
+    /// deliberately the same shape as <c>TerrainRules.IsPassable</c> — the seam D76 spent
+    /// five instalments learning to recognise.
+    /// </remarks>
+    public bool HasSomethingToHarvest(GridPos tile) => Map.TerrainAt(tile) == Terrain.Forest;
+
+    /// <summary>
+    /// The nearest tile the village has asked to be cleared, or null if there are none.
+    /// </summary>
+    /// <remarks>
+    /// <b>Measured from where the villager is standing, not from home.</b> A laborer holds
+    /// no job, so this is an errand rather than a commute — there is no daily walk for it to
+    /// flicker against, and taking the nearest tree to hand is what a person would do.
+    /// Walked in a fixed order so two runs pick the same tree.
+    /// </remarks>
+    public GridPos? NearestHarvest(GridPos from)
+    {
+        GridPos? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int y = Map.MinY; y < Map.MinY + Map.Height; y++)
+        {
+            for (int x = Map.MinX; x < Map.MinX + Map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                if (!Zones.IsHarvest(at))
+                {
+                    continue;
+                }
+
+                // Painted ground whose tree has already gone stops being work. The
+                // village un-paints it rather than sending somebody to an empty tile.
+                if (!HasSomethingToHarvest(at))
+                {
+                    Zones.SetHarvest(at, false);
+                    continue;
+                }
+
+                int cost = TravelCost.Cost(from, at);
+                if (cost < bestCost)
+                {
+                    best = at;
+                    bestCost = cost;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Take what is standing on a tile: the ground is cleared and the goods come out.
+    /// </summary>
+    /// <remarks>
+    /// <b>The tile is spent</b> — this is D84's deposit rule, and the difference between
+    /// the brush and the forester's hut in one method. Terrain goes through
+    /// <see cref="SetTerrain"/> so the routing cache hears about it, and the paint comes off
+    /// because the job is done.
+    /// </remarks>
+    public (Goods Goods, int Amount) Harvest(GridPos tile)
+    {
+        if (!HasSomethingToHarvest(tile))
+        {
+            return (Goods.Logs, 0);
+        }
+
+        SetTerrain(tile, Terrain.Grass);
+        Zones.SetHarvest(tile, false);
+        return (Goods.Logs, Config.LogsPerForestTile);
+    }
+
     /// <summary>Place names read "a forester's hut"; sometimes one has to start a sentence.</summary>
     private static string Capitalised(string text) =>
         string.IsNullOrEmpty(text) ? text : char.ToUpperInvariant(text[0]) + text[1..];

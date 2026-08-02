@@ -466,6 +466,25 @@ public sealed record SimConfig
     [JsonPropertyName("work_ground_tiles_per_worker")]
     public int WorkGroundTilesPerWorker { get; init; } = 24;
 
+    /// <summary>Logs a laborer gets from clearing one forest tile (D87).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A forest tile is a deposit and this is what is in it</b> (D84) — take it and the
+    /// ground is grass. That makes it a genuinely new quantity: a tree stand yields
+    /// <c>cut_yield</c> forever, and this yields once.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It is content today and it becomes derived the moment the tree stand retires.</b>
+    /// `building-placement.md §12.8` is explicit that per-tile yield is what the whole timber
+    /// economy gets re-derived against, and that is not this slice — while stands still stand,
+    /// the brush is an extra source rather than the only one, so nothing hangs off this
+    /// number yet. Matching <c>cut_yield</c> is the honest starting point: one tile is one
+    /// visit to the stand.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("logs_per_forest_tile")]
+    public int LogsPerForestTile { get; init; } = 12;
+
     /// <summary>How much land the exiles arrive having already chosen to live on (D42).</summary>
     /// <remarks>
     /// A village founded with no residential zone could never build a house, so the

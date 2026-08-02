@@ -494,6 +494,16 @@
   // capacity times this, and "to a limit" needs no second number.
   "work_ground_tiles_per_worker": 24,
 
+  // Logs from clearing one forest tile (D87). A forest tile is a deposit and
+  // this is what is in it: take it and the ground is grass, where a tree
+  // stand yields cut_yield forever. Matching cut_yield is the honest start --
+  // one tile is one visit to the stand.
+  //
+  // Content today, DERIVED the moment the tree stand retires: per-tile yield
+  // is what the whole timber economy gets re-derived against, and while
+  // stands still stand the brush is an extra source rather than the only one.
+  "logs_per_forest_tile": 12,
+
   // The land the exiles arrive having already chosen to live on (D42).
   // A village founded with nothing painted could never build a house,
   // and the first thing the game asked of a player would be a decision

@@ -61,6 +61,24 @@ public sealed class ZoneMap
     /// </remarks>
     private readonly Dictionary<int, int> _tilesByOwner = new();
 
+    /// <summary>Ground the village means to clear of whatever is standing on it (D87).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Global and owned by nobody</b>, which makes this the third shape in here and is not
+    /// untidiness. Residential belongs to the <em>village</em>; work ground belongs to a
+    /// <em>building</em>; harvest belongs to <em>no one</em>, because the people who do it are
+    /// <see cref="Villager.IsLaborer"/> — able adults no workplace wants — and there is no
+    /// workplace for the paint to hang off.
+    /// </para>
+    /// <para>
+    /// <b>Painting harvest is taking; a forester's ground is keeping.</b> One is a decision to
+    /// spend what is standing there, the other is a decision to farm it. Trees are the one
+    /// resource that can be either, and that is a choice the player makes rather than a
+    /// contradiction (D87, D84).
+    /// </para>
+    /// </remarks>
+    private readonly bool[] _harvest;
+
     private readonly int _width;
     private readonly int _height;
     private readonly int _minX;
@@ -76,6 +94,7 @@ public sealed class ZoneMap
         _minY = map.MinY;
         _residential = new bool[_width * _height];
         _workGround = new int[_width * _height];
+        _harvest = new bool[_width * _height];
     }
 
     /// <summary>How many tiles are painted for housing.</summary>
@@ -208,6 +227,37 @@ public sealed class ZoneMap
 
     /// <summary>Every tile's owner, in a fixed order — for hashing and for drawing.</summary>
     public IReadOnlyList<int> WorkGround => _workGround;
+
+    // ---------------------------------------------------------------
+    //  Harvest — what the village means to clear (D87)
+    // ---------------------------------------------------------------
+
+    /// <summary>How many tiles are painted to be harvested.</summary>
+    public int HarvestTiles { get; private set; }
+
+    /// <summary>Whether the village means to take what is standing on this tile.</summary>
+    public bool IsHarvest(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index >= 0 && _harvest[index];
+    }
+
+    /// <summary>Paint or erase one tile. Returns true if it changed anything.</summary>
+    public bool SetHarvest(GridPos position, bool painted)
+    {
+        int index = IndexOf(position);
+        if (index < 0 || _harvest[index] == painted)
+        {
+            return false;
+        }
+
+        _harvest[index] = painted;
+        HarvestTiles += painted ? 1 : -1;
+        return true;
+    }
+
+    /// <summary>Every painted tile, in a fixed order — for hashing and for drawing.</summary>
+    public IReadOnlyList<bool> Harvest => _harvest;
 
     private int IndexOf(GridPos position)
     {

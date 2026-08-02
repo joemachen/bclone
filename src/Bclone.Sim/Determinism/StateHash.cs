@@ -82,6 +82,23 @@ public static class StateHash
             }
         }
 
+        // What the village means to clear (D87). Sparse, for the third time and the
+        // same reason: a village that has painted nothing mixes nothing.
+        //
+        // NO COUNT ALONGSIDE, unlike residential above — and that is the difference
+        // between this layer being invisible when unused and moving both goldens for
+        // existing. The residential count is mixed unconditionally and is baked into
+        // the hashes already; adding a second such line would mix a fresh zero into
+        // every village that has never painted a tree. The indices determine the set
+        // by themselves, so the count was only ever belt and braces.
+        for (int i = 0; i < world.Zones.Harvest.Count; i++)
+        {
+            if (world.Zones.Harvest[i])
+            {
+                hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
         // Stock limits (D62), and SILENCE IS THE POINT: a limit nobody has set mixes
         // nothing at all, so a village played without ever opening the control hashes
         // exactly as it did before the control existed. That is what makes
