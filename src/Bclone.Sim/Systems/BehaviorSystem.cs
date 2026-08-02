@@ -388,18 +388,32 @@ public sealed class BehaviorSystem : ISimSystem
             return proper;
         }
 
-        // THE CART, WHILE THERE IS NOTHING ELSE (D70). At the founding there is no granary
-        // and no shed, so the store of the right kind does not exist yet — and a villager
-        // holding an armful with nowhere to put it is the one thing the cold start must not
-        // produce, because it is D48's stranded-goods bug arriving by design.
+        // FULL IS NOT THE SAME AS ABSENT, and conflating them crashed Joe's village (D80).
         //
-        // The cart takes anything (StoreKind.Cart), which is what makes it a correct answer
-        // rather than a convenient one: it is the founders' own supplies wagon, and putting
-        // the first harvest back into it is what they would actually do.
-        return world.TheCart
-            ?? throw new InvalidOperationException(
-                $"{villager.Name} has a load to put down and the village has no {wanted} "
-                + "and no cart. Every village must have somewhere to put things.");
+        // Every branch above rejects a store with no room, which is right while somewhere
+        // else has room and catastrophic when nowhere does: he demolished the cart, the
+        // storage pile filled, and the sim threw "the village has no Shed and no cart" —
+        // every tick, forever — while a perfectly good pile stood in the square.
+        //
+        // A village whose stores are full is a village with a PROBLEM, not a village with
+        // an invariant violation. Somewhere to walk beats a stack trace: they go to the
+        // nearest place that would take this good if it could, and the load stays in their
+        // arms until there is room, which is the same thing a person would do.
+        StoreBuilding? anywhere =
+            world.NearestStoreAccepting(villager.Position, load, static _ => true)
+            ?? world.TheCart;
+
+        if (anywhere is not null)
+        {
+            return anywhere;
+        }
+
+        // Genuinely nowhere — no store of any kind takes this. That IS an invariant
+        // violation and it is said out loud rather than swallowed (METHODOLOGY §4).
+        throw new InvalidOperationException(
+            $"{villager.Name} is holding {load} and the village has nowhere at all to put "
+            + "it — no store of any kind accepts it. Every village must have somewhere to "
+            + "put things.");
     }
 
     /// <summary>Any store of this kind, reachable or not, or null if there are none.</summary>

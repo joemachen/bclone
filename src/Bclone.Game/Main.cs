@@ -359,11 +359,18 @@ public partial class Main : Control
                 _ => "adult",
             };
 
-            // "no work" was true and unhelpful: it read as a fault when it is usually the
-            // village resting, and it said the same thing about a child as about an adult
-            // nobody needs. A laborer is a state with a name (D63).
-            string work = villager.HasJob ? "working"
-                : villager.IsLaborer ? "laborer"
+            // WHAT THEY ARE, NOT WHAT THEY ARE DOING RIGHT NOW (D80).
+            //
+            // This said "working" for anybody who HELD a job, while the panel two feet away
+            // said "resting at home" about the same person on the same tick. Both were true
+            // and the pair was a lie: Joe read them side by side and reasonably concluded
+            // something was broken. One word cannot answer two questions.
+            //
+            // The roster answers "who is this?" — their trade — and the panel answers "what
+            // are they doing?". Exactly the distinction the vacancy alert settled: holding a
+            // job and being at it this instant are different facts.
+            string work = villager.IsLaborer ? "laborer"
+                : villager.HasJob ? TradeOf(villager)
                 : "not working yet";
             int index = _roster.AddItem($"{villager.Name}, {villager.AgeYears} ({stage}) — {work}");
             _roster.SetItemMetadata(index, villager.Id);
@@ -1230,6 +1237,21 @@ public partial class Main : Control
 
     /// <summary>The "have N" labels, refreshed with everything else.</summary>
     private readonly List<(Goods Goods, Label Held)> _stockLimitReadouts = new();
+
+    /// <summary>A villager's trade, for the roster. What they are, not where they are.</summary>
+    private string TradeOf(Villager villager)
+    {
+        Workplace? job = _loop.World.FindWorkplace(villager.WorkplaceId);
+        return job?.Kind switch
+        {
+            JobKind.Forager => "forager",
+            JobKind.Logger => "logger",
+            JobKind.Woodcutter => "woodcutter",
+            JobKind.Marketer => "marketer",
+            JobKind.Builder => "builder",
+            _ => "working",
+        };
+    }
 
     private static string GoodsName(Goods goods) => goods switch
     {
