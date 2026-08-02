@@ -320,6 +320,13 @@ and the stock-limit control; livestock and trade are parked. The probe that prec
 it stands and is worth keeping — **winter is 86% idle**, and **clothing's payoff is winter
 labour rather than lives**, which is what stock limits turn from a dead end into a lever.
 
+**⚠️ One open bug ahead of the queue, Joe's call whether it goes first (D83):** the founders
+fetch a full carry-load from the cart every tick and never put it down, because they are
+homeless and home *is* the cart — so the founding stock is emptied into four pairs of arms
+within five ticks, and `TotalFood()` counts stores only, so the header under-reports by
+exactly what is being carried. Measured, pre-existing, not currently fatal, and sitting
+directly upstream of D81's forage gate.
+
 **Next up** *(in order — Joe's call)*:
 *Re-ordered by D62 — the previous queue was slices inherited from specs rather than the
 game Joe described.*
@@ -386,6 +393,12 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D83 · 2026-08-02 · ⚠️ OPEN, found by running the game: the founders empty their own cart into their arms in five ticks, and no reader can see it.** Measured on the shipped config, and **verified identical at `826a138`, so it predates all of today's work** — it is the cold start's, not C2's.
+  - **The numbers.** Tick 0: 800 food in the cart, nothing carried. Tick 1: 640 in the cart, **160 in four pairs of arms**. Tick 2: 480 and 320. Tick 3: 320 and 480. Every founder picks up a full `carry_capacity` of 40 a tick, every tick, and never puts it down. **Food is conserved** — nothing is destroyed — but within five ticks the cart is empty and the whole founding stock is being carried around.
+  - **Why it never stops.** The founders are homeless, so `RestingPlaceOf` is the cart. They fetch *from* the cart, enter `TravelingHome`, and home is where they are already standing — so the leg completes with nothing between pickup and destination, the larder is never reached, and the fetch fires again next tick. **A round trip with no distance in it is not a round trip.**
+  - **⛔ And this is D79's lesson a third time: the village cannot see what it has.** `TotalFood()` sums stores only — `TotalLogs()` beside it says *"plus any in someone's arms"* and does the same thing — so the header told the player **640 food** when the village had 800, and every reader derived from it is short by whatever is being carried. That includes `FoodInGranaries()`, which **D81 just made the village's reason to go out and work.** The two findings touch, which is why this one is recorded rather than patched in a hurry.
+  - **It is not currently fatal**, which is why nothing caught it: `TryEat` takes from a villager's own arms first (D30), so four people carrying their pantry still eat, and `AVillageGivenOnlyAPileOutlivesItsFounders` passes at forty years. **A bug that hides behind a rule that was written for a different reason.**
+  - **Not fixed here, deliberately.** It is a behaviour change in the cold start's fetch path with D81's gate immediately downstream of it, and it wants its own probe and its own commit rather than the end of a long session. **Joe's call on ordering.**
 - **D82 · 2026-08-02 · Goods become an index, and the first two new ones prove it.** Slice C2, in two commits, in Joe's stated order: *refactor when the first new good lands, not before and not after.*
   - **`Stockpile` was three properties, three lifetime counters, nine methods and a `Held` that summed by name.** Adding stone meant remembering nine places, and this project's most repeated bug is code still reading the old shape (D25, D29, D48, D57, D76, D79, D81). One array indexed by `Goods`, one method per verb, and a new good is an enum value.
   - **The named mutators are deleted rather than kept as wrappers**, so the compiler lists every call site and each has to say which good it means — D70's argument for the nullable home, applied one type over. `Add(80)` meant food and did not say so, which is precisely the line that goes quietly wrong when `Goods` grows. **The named readers stay** (`Food`, `Logs`, `Firewood`): they are what the hash, the panel and most of the suite ask for, and unlike the mutators they cannot go stale now that one array sits under them.
