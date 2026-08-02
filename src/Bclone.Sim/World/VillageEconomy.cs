@@ -780,6 +780,33 @@ public static class VillageEconomy
     }
 
     /// <summary>
+    /// How much a storage pile holds, across every kind of goods.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Stated target: enough to raise the village's first buildings out of, and no
+    /// more.</b> A pile costs nothing, so the only thing restraining it is its size — one
+    /// large enough to be the granary would delete the reason to build a granary, and one
+    /// too small to hold the timber for a house makes the opening a puzzle about hauling.
+    /// </para>
+    /// <para>
+    /// So it is derived from what the opening actually needs: <b>a house and a woodcutter's
+    /// hut</b>, plus a winter's firewood for the households the founding starts with. That is
+    /// the shape of every capacity in this file — a sentence about what the building is for,
+    /// turned into arithmetic — rather than a number somebody liked (D16).
+    /// </para>
+    /// </remarks>
+    public static int PileCapacity(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int toBuild = config.LogsPerHouse + config.HutLogs;
+        int firewood = config.StartingHouseholds * FirewoodStoreWantedPerHousehold(config);
+
+        return toBuild + firewood;
+    }
+
+    /// <summary>
     /// How much the market holds, across food and firewood together.
     /// </summary>
     /// <remarks>

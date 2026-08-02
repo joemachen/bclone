@@ -166,8 +166,8 @@ public sealed class HouseholdSystem : ISimSystem
             {
                 // The timber is already out of the shed, so it goes back. Conservation is
                 // not negotiable just because the code took an unusual branch.
-                StoreBuilding? shed = world.NearestStore(
-                    world.Map.FoundingSite, StoreKind.Shed, static store => !store.Store.IsFull);
+                StoreBuilding? shed = world.NearestStoreAccepting(
+                    world.Map.FoundingSite, Goods.Logs, static store => !store.Store.IsFull);
 
                 if (shed is not null)
                 {
@@ -251,8 +251,8 @@ public sealed class HouseholdSystem : ISimSystem
                 // goes back to the nearest one with room rather than evaporating —
                 // conservation is not negotiable just because the code took an unusual
                 // branch.
-                StoreBuilding? shed = world.NearestStore(
-                    seeker.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+                StoreBuilding? shed = world.NearestStoreAccepting(
+                    seeker.Position, Goods.Logs, static store => !store.Store.IsFull);
                 shed?.Store.ReceiveLogs(timber);
 
                 // AND THE VILLAGE ASKS FOR MORE LAND. This is the other half of the
@@ -352,7 +352,7 @@ public sealed class HouseholdSystem : ISimSystem
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
-            if (store.Kind is StoreKind.Shed or StoreKind.Cart)
+            if (store.Accepts(Goods.Logs))
             {
                 available += store.Store.Logs;
             }
@@ -367,7 +367,7 @@ public sealed class HouseholdSystem : ISimSystem
         for (int i = 0; i < world.StoreBuildings.Count && remaining > 0; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
-            if (store.Kind is not (StoreKind.Shed or StoreKind.Cart))
+            if (!store.Accepts(Goods.Logs))
             {
                 continue;
             }

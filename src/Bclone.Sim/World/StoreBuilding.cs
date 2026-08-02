@@ -43,6 +43,29 @@ public enum StoreKind
     /// </para>
     /// </remarks>
     Cart = 3,
+
+    /// <summary>
+    /// A storage pile — goods stacked on cleared ground, and the first thing the player
+    /// places (D76).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>It costs nothing but the ground it stands on</b>, which is what makes it the right
+    /// first move: a village with nowhere to put things cannot begin, and asking it to build
+    /// a shed out of timber it has nowhere to stack is a circle. Joe's opening starts here
+    /// for the same reason Banished's does.
+    /// </para>
+    /// <para>
+    /// <b>It holds anything, like the cart, so only its capacity restrains it.</b> That
+    /// capacity is derived rather than typed in — a pile large enough to be the granary
+    /// would delete the reason to build one.
+    /// </para>
+    /// <para>
+    /// <b>Not shelter.</b> <c>SimWorld.ShelterAt</c> knows only about homes, so standing at
+    /// a pile is standing outdoors and the cold counts it.
+    /// </para>
+    /// </remarks>
+    Pile = 4,
 }
 
 /// <summary>
@@ -109,9 +132,11 @@ public sealed class StoreBuilding
         StoreKind.Market => goods is Goods.Food or Goods.Firewood,
 
         // Everything, because the founders' load was never sorted — it is what they could
-        // carry (D64). The cart is deliberately the only store that does not specialise,
-        // and its smallness rather than its rules is what stops it being the granary.
+        // carry (D64). A heap on the ground does not specialise either: the two stores that
+        // take anything are the two that are not really buildings, and in both cases it is
+        // the SIZE rather than the rules that stops them being the granary.
         StoreKind.Cart => true,
+        StoreKind.Pile => true,
         _ => false,
     };
 }

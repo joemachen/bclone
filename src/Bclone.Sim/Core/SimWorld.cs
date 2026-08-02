@@ -161,6 +161,58 @@ public sealed class SimWorld
     /// impassable (D40) a granary on the far bank is not a long walk, it is no walk at
     /// all. Ties go to the lower id so two runs never disagree.
     /// </remarks>
+    /// <summary>
+    /// The nearest store that will <em>take</em> this good, whatever kind of building it is.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Ask by what a store holds, not by which building it is.</b> This is the fix for a
+    /// bug that has now been patched four times: <c>TryTakeBuildingTimber</c>,
+    /// <c>StoreForTheLoad</c>, the builder's material fetch and the woodcutter's log fetch
+    /// each named <see cref="StoreKind.Shed"/> and each went blind the moment the goods were
+    /// somewhere else. The founders' cart was the first store to expose it and the storage
+    /// pile would have been the fifth.
+    /// </para>
+    /// <para>
+    /// <em>"Where is the nearest shed?"</em> is a question about buildings.
+    /// <em>"Where can I put these logs?"</em> is a question about goods, and only the second
+    /// survives a new kind of store. <see cref="NearestStore"/> stays for the cases that
+    /// genuinely mean a particular building — naming one, or refunding a demolition — but
+    /// nothing that moves goods should be asking it.
+    /// </para>
+    /// <para>
+    /// Unreachable stores are skipped and ties go to the lower id, exactly as
+    /// <see cref="NearestStore"/> does: with water impassable (D40) a pile on the far bank
+    /// is not a long walk, it is no walk at all.
+    /// </para>
+    /// </remarks>
+    public StoreBuilding? NearestStoreAccepting(
+        GridPos from, Goods goods, Func<StoreBuilding, bool> usable)
+    {
+        ArgumentNullException.ThrowIfNull(usable);
+
+        StoreBuilding? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = StoreBuildings[i];
+            if (!store.Accepts(goods) || !usable(store))
+            {
+                continue;
+            }
+
+            int cost = TravelCost.Cost(from, store.Position);
+            if (cost != TravelCostField.Unreachable && cost < bestCost)
+            {
+                bestCost = cost;
+                best = store;
+            }
+        }
+
+        return best;
+    }
+
     public StoreBuilding? NearestStore(GridPos from, StoreKind kind, Func<StoreBuilding, bool> usable)
     {
         ArgumentNullException.ThrowIfNull(usable);
@@ -540,6 +592,7 @@ public sealed class SimWorld
                 {
                     BuildingKind.Granary => StoreKind.Granary,
                     BuildingKind.Shed => StoreKind.Shed,
+                    BuildingKind.Pile => StoreKind.Pile,
                     _ => StoreKind.Market,
                 };
 
@@ -547,6 +600,7 @@ public sealed class SimWorld
                 {
                     BuildingKind.Granary => VillageEconomy.GranaryCapacity(Config),
                     BuildingKind.Shed => VillageEconomy.ShedCapacity(Config),
+                    BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
                     _ => VillageEconomy.MarketCapacity(Config),
                 };
 
@@ -628,6 +682,7 @@ public sealed class SimWorld
         BuildingKind.Granary => "a granary",
         BuildingKind.Shed => "a storage shed",
         BuildingKind.Market => "a market",
+        BuildingKind.Pile => "a storage pile",
         _ => "a woodcutter's hut",
     };
 

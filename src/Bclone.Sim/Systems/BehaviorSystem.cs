@@ -346,10 +346,26 @@ public sealed class BehaviorSystem : ISimSystem
         // gate reads granaries. Letting the day's gathering land in the market would
         // make the village's population ceiling depend on where somebody was standing.
         StoreKind wanted = villager.CarriedFood > 0 ? StoreKind.Granary : StoreKind.Shed;
+        Goods load = villager.CarriedFood > 0 ? Goods.Food
+            : villager.CarriedLogs > 0 ? Goods.Logs
+            : Goods.Firewood;
 
+        // THE PREFERRED KIND FIRST, THEN ANYWHERE THAT WILL TAKE IT (D76).
+        //
+        // The preference is the part worth keeping and is not a tidiness rule: a forager's
+        // harvest belongs in a GRANARY because the birth gate reads granaries, and letting
+        // the day's gathering land in the market would make the village's population ceiling
+        // depend on where somebody happened to be standing (D33).
+        //
+        // But a preference that cannot be satisfied must not become a refusal, which is what
+        // it was: with no shed built, a villager holding logs found nothing and this method
+        // fell through to the cart by name — one more place that had to be told about each
+        // new store. Asking "what will take this?" needs telling about none of them.
         StoreBuilding? proper =
             world.NearestStore(villager.Position, wanted, static store => !store.Store.IsFull)
-            ?? FirstOfKind(world, wanted);
+            ?? FirstOfKind(world, wanted)
+            ?? world.NearestStoreAccepting(
+                villager.Position, load, static store => !store.Store.IsFull);
 
         if (proper is not null)
         {
@@ -392,14 +408,23 @@ public sealed class BehaviorSystem : ISimSystem
         return null;
     }
 
-    /// <summary>The nearest shed holding a full batch of logs, or null.</summary>
+    /// <summary>The nearest store holding a full batch of logs, or null.</summary>
     /// <remarks>
+    /// <para>
     /// Asked from the HUT rather than from the woodcutter, because the walk that
     /// matters is the one between the yard and the work — that adjacency is what makes
     /// splitting a job rather than a teleport (D30).
+    /// </para>
+    /// <para>
+    /// <b>Asked by what holds logs, not by which building does (D76).</b> This line named
+    /// <see cref="StoreKind.Shed"/> and was the fourth site of one bug: Joe marked a
+    /// woodcutter's hut, marked no shed, and the hut reported <em>"no logs here to split"</em>
+    /// while four hundred logs sat in the cart. His village froze around a working hut it
+    /// could not feed.
+    /// </para>
     /// </remarks>
-    private static StoreBuilding? NearestShedWithLogs(SimWorld world, GridPos hut, int batch) =>
-        world.NearestStore(hut, StoreKind.Shed, store => store.Store.Logs >= batch);
+    private static StoreBuilding? NearestStoreWithLogs(SimWorld world, GridPos hut, int batch) =>
+        world.NearestStoreAccepting(hut, Goods.Logs, store => store.Store.Logs >= batch);
 
     /// <summary>The nearest store that will take this good and has room, or null.</summary>
     private static StoreBuilding? NearestStoreAccepting(SimWorld world, GridPos from, Goods goods)
@@ -517,14 +542,8 @@ public sealed class BehaviorSystem : ISimSystem
         // that read sheds-only and had to learn about the cart — TryTakeBuildingTimber
         // and StoreForTheLoad were the other two — which says the seam is the KIND check
         // rather than any one call site.
-        StoreBuilding? shed = world.NearestStore(
-            villager.Position,
-            StoreKind.Shed,
-            static store => store.Store.Logs > 0)
-            ?? world.NearestStore(
-                villager.Position,
-                StoreKind.Cart,
-                static store => store.Store.Logs > 0);
+        StoreBuilding? shed = world.NearestStoreAccepting(
+            villager.Position, Goods.Logs, static store => store.Store.Logs > 0);
 
         if (shed is null)
         {
@@ -570,7 +589,7 @@ public sealed class BehaviorSystem : ISimSystem
             // The cart counts here too, and it must: the walk above may have sent them to
             // one, and a builder who arrives at the timber and cannot pick it up is worse
             // than one who never set off (D75).
-            if (store.Kind is not (StoreKind.Shed or StoreKind.Cart)
+            if (!store.Accepts(Goods.Logs)
                 || store.Position != villager.Position)
             {
                 continue;
@@ -1089,7 +1108,7 @@ public sealed class BehaviorSystem : ISimSystem
             // The nearest shed that actually has a batch in it. Naming THAT shed rather
             // than "the shed" is the point of the refusal: with more than one, "the
             // shed has no logs" would be a sentence the player could not check.
-            StoreBuilding? yard = NearestShedWithLogs(world, job.Position, config.LogsPerSplit);
+            StoreBuilding? yard = NearestStoreWithLogs(world, job.Position, config.LogsPerSplit);
             if (yard is null)
             {
                 villager.WorkNote =
@@ -1604,7 +1623,7 @@ public sealed class BehaviorSystem : ISimSystem
                 //
                 // It replaces a sweep across every household's private pile, which was
                 // a shed in all but name and could not be seen, sited or reasoned about.
-                StoreBuilding? woodyard = NearestShedWithLogs(
+                StoreBuilding? woodyard = NearestStoreWithLogs(
                     world, villager.Position, world.Config.LogsPerSplit);
 
                 if (woodyard is null || !woodyard.Store.TryTakeLogs(world.Config.LogsPerSplit))
@@ -1629,8 +1648,8 @@ public sealed class BehaviorSystem : ISimSystem
                 // Back into the shed the logs came out of where there is room, so a
                 // woodyard stays one place rather than becoming a two-shed shuffle.
                 StoreBuilding wall = woodyard.Store.IsFull
-                    ? world.NearestStore(
-                        villager.Position, StoreKind.Shed, static store => !store.Store.IsFull)
+                    ? world.NearestStoreAccepting(
+                        villager.Position, Goods.Firewood, static store => !store.Store.IsFull)
                         ?? woodyard
                     : woodyard;
 

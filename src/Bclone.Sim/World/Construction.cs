@@ -15,6 +15,17 @@ public enum BuildingKind
     Shed = 1,
     Market = 2,
     WoodcutterHut = 3,
+
+    /// <summary>
+    /// A storage pile — cleared ground with goods stacked on it (D76).
+    /// </summary>
+    /// <remarks>
+    /// <b>The one building that costs nothing</b>, and the first the player places. Note
+    /// that <see cref="BuildingRecipe.For"/>'s default arm hands out the hut's recipe, so
+    /// this kind must be named there explicitly or a pile silently costs 25 logs — which
+    /// would delete the entire reason it exists.
+    /// </remarks>
+    Pile = 4,
 }
 
 /// <summary>What a building costs to raise.</summary>
@@ -37,6 +48,12 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
             BuildingKind.Granary => new BuildingRecipe(config.GranaryLogs, config.GranaryWorkTicks),
             BuildingKind.Shed => new BuildingRecipe(config.ShedLogs, config.ShedWorkTicks),
             BuildingKind.Market => new BuildingRecipe(config.MarketLogs, config.MarketWorkTicks),
+
+            // NO MATERIALS AT ALL, and that is the design rather than a shortcut: a village
+            // with nowhere to put things cannot begin, and asking it to build a store out of
+            // timber it has nowhere to stack is a circle. Work is still owed, so a pile is
+            // somewhere somebody cleared rather than somewhere that appeared.
+            BuildingKind.Pile => new BuildingRecipe(0, config.PileWorkTicks),
             _ => new BuildingRecipe(config.HutLogs, config.HutWorkTicks),
         };
     }

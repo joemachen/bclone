@@ -410,6 +410,17 @@ public sealed record SimConfig
     [JsonPropertyName("hut_work_ticks")]
     public int HutWorkTicks { get; init; } = 40;
 
+    /// <summary>Ticks of work clearing a storage pile takes. It costs no materials (D76).</summary>
+    /// <remarks>
+    /// <b>Small, but not zero.</b> A pile is somewhere the village cleared and levelled, not
+    /// somewhere that appeared when the player clicked — and the work is what makes placing
+    /// one a decision with a cost rather than a free action to spam. It is the cheapest
+    /// thing in the game on purpose: it must be affordable on the first day, by four people
+    /// with nothing.
+    /// </remarks>
+    [JsonPropertyName("pile_work_ticks")]
+    public int PileWorkTicks { get; init; } = 8;
+
     /// <summary>How many builders fit on one construction site.</summary>
     [JsonPropertyName("construction_site_capacity")]
     public int ConstructionSiteCapacity { get; init; } = 3;

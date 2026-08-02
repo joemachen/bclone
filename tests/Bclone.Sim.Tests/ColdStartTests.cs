@@ -221,6 +221,61 @@ public sealed class ColdStartTests
             + $"opening; {frozen} of them froze.");
     }
 
+    /// <summary>
+    /// ⭐ Joe's own opening, on the config the game loads: a pile, land, a hut. No shed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the run that killed his village, scripted.</b> He placed a woodcutter's hut
+    /// and never a shed, and the hut reported <em>"no logs here to split"</em> while the
+    /// timber sat in the cart — because the fetch named <c>StoreKind.Shed</c>. That was the
+    /// fourth site of one bug, and D76 replaced the question rather than patching the fifth.
+    /// </para>
+    /// <para>
+    /// <b>Run against <see cref="ShippedConfig"/>, not the fixture</b>, because the whole
+    /// point is that his game died where the fixture's test passed. The other guards here
+    /// use the fixture; this one must not.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void JoesOpeningSurvivesOnTheShippedConfig()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Assert.False(config.FoundingBuildings, "This guard is meaningless on a warm start.");
+
+        GridPos site = world.Map.FoundingSite;
+
+        // 1. Somewhere to put things. It costs nothing, which is the point.
+        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
+
+        // 2. Somewhere to live.
+        for (int dy = -4; dy <= 4; dy++)
+        {
+            for (int dx = -4; dx <= 4; dx++)
+            {
+                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
+            }
+        }
+
+        // 3. Something to make firewood with. AND NO SHED — that is the test.
+        MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+
+        loop.Step(config.TicksPerYear);
+
+        int frozen = CountDeaths(world, CauseOfDeath.Cold);
+        _output.WriteLine(
+            $"Joe's opening on the shipped config: {world.Population} alive, {frozen} frozen, "
+            + $"{world.FirewoodInSheds()} firewood in stores");
+
+        Assert.True(
+            world.Population == config.StartingPopulation,
+            $"{config.StartingPopulation - world.Population} founders died playing the "
+            + $"opening as designed; {frozen} froze.");
+    }
+
     // ---------------------------------------------------------------
     //  The tie back to what ships
     // ---------------------------------------------------------------

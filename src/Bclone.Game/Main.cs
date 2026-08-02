@@ -746,6 +746,8 @@ public partial class Main : Control
         StoreKind.Granary => "granary, which holds the village's food",
         StoreKind.Shed => "storage shed, which holds logs and firewood",
         StoreKind.Market => "market, which holds food and firewood for the houses near it",
+        StoreKind.Pile => "storage pile — cleared ground, and it holds anything",
+        StoreKind.Cart => "cart the founders arrived in, which holds anything",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -1261,6 +1263,10 @@ public partial class Main : Control
         row.AddThemeConstantOverride("separation", 8);
 
         row.AddChild(Muted("Build:"));
+
+        // First in the row because it is first in the game (D76): a pile costs nothing but
+        // the ground, and a village with nowhere to put things cannot begin.
+        row.AddChild(BuildButton("Storage pile", BuildingKind.Pile));
         row.AddChild(BuildButton("Granary", BuildingKind.Granary));
         row.AddChild(BuildButton("Shed", BuildingKind.Shed));
         row.AddChild(BuildButton("Market", BuildingKind.Market));
