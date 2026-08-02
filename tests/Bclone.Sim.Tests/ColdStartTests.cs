@@ -68,6 +68,41 @@ public sealed class ColdStartTests
             + $"{world.StoreBuildings.Count} building, {world.TheCart!.Store.Food} food in it");
     }
 
+    /// <summary>They brought tools, and nothing in the valley can replace them (D82).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Asserted against the shipped config</b>, because the fixture keeps the old founding
+    /// and would not have a cart to check. The number is content and lives in
+    /// <c>cart_tools</c>; what this guards is that the founding actually loads it, and that
+    /// the tools do not silently displace the food — the cart has one capacity across every
+    /// good, so a good added carelessly to the founding load is a good taken off it.
+    /// </para>
+    /// <para>
+    /// <b>Nothing spends tools yet</b> (D17 parks the workshop), so there is no behaviour to
+    /// test beyond this. That is the honest state of the slice and is recorded rather than
+    /// dressed up.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheFoundersBringToolsAndNotAtTheCostOfTheirFood()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        StoreBuilding cart = world.TheCart!;
+        _output.WriteLine(
+            $"the cart: {cart.Store.Food} food, {cart.Store.Logs} logs, "
+            + $"{cart.Store[Goods.Tools]} tools, {cart.Store.FreeSpace} spare of "
+            + $"{config.CartCapacity}");
+
+        Assert.Equal(config.CartTools, cart.Store[Goods.Tools]);
+        Assert.True(config.CartTools > 0, "The founders arrive with tools (Joe's opening).");
+
+        // The whole load fitted, so nothing was quietly left behind at the roadside.
+        Assert.Equal(config.CartFood, cart.Store.Food);
+        Assert.Equal(config.CartLogs, cart.Store.Logs);
+    }
+
     /// <summary>The cart feeds them, so D10 survives the founding.</summary>
     /// <remarks>
     /// Phase 0 killed a villager who starved beside a full larder and decided a survival game

@@ -32,18 +32,15 @@ public sealed class StockLimits
     /// The goods a limit can be set on, in a fixed order.
     /// </summary>
     /// <remarks>
-    /// <b>Enumerated, not a fixed list typed in somewhere.</b> Three goods exist today; Joe's
-    /// worked example names stone, tools and clothes as well, and none of them are built. The
-    /// control has to describe what the game <em>has</em>, so that adding a good gives it a
-    /// limit rather than needing one remembered. The order is the enum's own and is part of
-    /// the hash, so it must not be shuffled casually.
+    /// <b>Enumerated, not a fixed list typed in somewhere</b> — which is what this said
+    /// while being a fixed list typed in here. Adding stone and tools was the moment that
+    /// mattered, and the list would have gone stale exactly as
+    /// <c>EveryGoodTheGameHasCanBeLimited</c> was written to catch. It reads the enum now,
+    /// so the guard cannot fail and the control describes what the game <em>has</em> rather
+    /// than what somebody remembered. The order is the enum's own and is part of the hash,
+    /// so a good may be appended and never renumbered.
     /// </remarks>
-    public static readonly IReadOnlyList<Goods> Kinds = new[]
-    {
-        Goods.Food,
-        Goods.Logs,
-        Goods.Firewood,
-    };
+    public static readonly IReadOnlyList<Goods> Kinds = Enum.GetValues<Goods>();
 
     private readonly int?[] _limits = new int?[Kinds.Count];
 

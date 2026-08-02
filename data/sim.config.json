@@ -519,9 +519,14 @@
   // The capacity is small on purpose. The cart accepts every kind of goods,
   // unlike every other store, so its size rather than its rules is the only
   // thing stopping it being the granary and the shed at once.
+  //
+  // The tools are NOT a dial and cannot be one yet: nothing in the game makes
+  // or spends them, so they are a stock the player can see and cannot use. The
+  // founders brought them; a workshop to replace them is D17's, still parked.
   "cart_capacity": 1200,
   "cart_food": 800,
   "cart_logs": 30,
+  "cart_tools": 20,
 
   // Less than everything, deliberately. Demolition is how a player
   // corrects a mistake, and it should cost something - otherwise a

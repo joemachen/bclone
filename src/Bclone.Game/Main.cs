@@ -718,25 +718,33 @@ public partial class Main : Control
     /// <summary>Only the goods actually present, so an empty shelf is not three zeroes.</summary>
     private static string DescribeGoods(Stockpile store)
     {
+        // Every good, by index. Written three times by hand until stone and tools
+        // arrived, which is the point at which a panel whose whole job is to say what is
+        // here would have started silently omitting things.
         var parts = new List<string>();
 
-        if (store.Food > 0)
+        for (int i = 0; i < Stockpile.Kinds; i++)
         {
-            parts.Add($"{store.Food} food");
-        }
-
-        if (store.Logs > 0)
-        {
-            parts.Add($"{store.Logs} logs");
-        }
-
-        if (store.Firewood > 0)
-        {
-            parts.Add($"{store.Firewood} firewood");
+            var goods = (Goods)i;
+            if (store[goods] > 0)
+            {
+                parts.Add($"{store[goods]} {NameOf(goods)}");
+            }
         }
 
         return parts.Count == 0 ? "nothing" : string.Join(", ", parts);
     }
+
+    /// <summary>A good's name as a player would say it.</summary>
+    private static string NameOf(Goods goods) => goods switch
+    {
+        Goods.Food => "food",
+        Goods.Logs => "logs",
+        Goods.Firewood => "firewood",
+        Goods.Stone => "stone",
+        Goods.Tools => "tools",
+        _ => goods.ToString().ToLowerInvariant(),
+    };
 
     private static string Describe(JobKind kind) => kind switch
     {

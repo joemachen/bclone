@@ -36,6 +36,7 @@ public sealed class StockLimitTests
     //   before the restock (D77): fixture 6240348392465688561, shipped 7734052055491107200
     //   before the supply fix (D79): fixture 13156470216450962100, shipped 13143121898114073713
     //   before the room fix (D81): fixture 14798520869458526773, shipped 3491502518393071633
+    //   before stone and tools (D82): fixture 11013974864926656020, shipped 3491502518393071633
     //
     // D79 moved them a second time and for a bigger reason: the fuel quota had been reading
     // firewood in SHEDS, so a village whose fuel sat in a cart or a pile believed it had
@@ -50,8 +51,17 @@ public sealed class StockLimitTests
     // (2.8%, and the whole of the gap is the market's 95 spare units: bar 2945 against
     // 2850) and on 0 of 24,000 shipped ticks. So the shipped hash below is unchanged
     // because nothing about that run changed, not because it went unchecked.
-    private const ulong FixtureFiftyYearHash = 11013974864926656020UL;
-    private const ulong ShippedFiftyYearHash = 3491502518393071633UL;
+    // D82 MOVED BOTH, and for a reason that is not a behaviour change at all: the state
+    // hash now mixes EVERY good rather than three named ones, so two more numbers enter it
+    // per store and per household the moment stone and tools exist — even where both are
+    // zero. That is deliberate and it is the whole safety property: a good that is not
+    // hashed is a good two different worlds can disagree about while reading identical
+    // (D51). The founders' twenty tools are in there too.
+    //
+    // The refactor that preceded it — Stockpile becoming an indexed array — moved NOTHING,
+    // which is what made it safe to do this on top.
+    private const ulong FixtureFiftyYearHash = 4673658241522176988UL;
+    private const ulong ShippedFiftyYearHash = 12610424914054256081UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -150,19 +160,64 @@ public sealed class StockLimitTests
 
     /// <summary>Every good the game has can be limited, so adding one cannot forget to.</summary>
     /// <remarks>
-    /// The anti-drift guard for <see cref="StockLimits.Kinds"/>. Joe's worked example names
-    /// stone, tools and clothes; none exist yet, and when they do this test is what fails if
-    /// the list is not extended with them.
+    /// <para>
+    /// <b>This used to guard a hand-written list and it fired exactly once</b> — when stone
+    /// and tools landed (D82), which is the moment it was written for. The list reads the
+    /// enum now, so the containment half is true by construction and would be a tautology
+    /// dressed as a test.
+    /// </para>
+    /// <para>
+    /// What is left is not: a limit has to be <em>settable and readable back</em> for every
+    /// good, which is what catches the array behind <see cref="StockLimits.Kinds"/> being
+    /// sized or indexed against a stale count — an <c>IndexOutOfRangeException</c> in the
+    /// middle of a run, or worse, two goods sharing a slot.
+    /// </para>
     /// </remarks>
     [Fact]
     public void EveryGoodTheGameHasCanBeLimited()
     {
-        foreach (Goods goods in Enum.GetValues<Goods>())
+        var limits = new StockLimits();
+        Goods[] all = Enum.GetValues<Goods>();
+
+        Assert.Equal(all.Length, StockLimits.Kinds.Count);
+        Assert.Equal(all.Length, Stockpile.Kinds);
+
+        // A distinct limit per good, then read every one of them back: two goods sharing a
+        // slot would pass a set-and-read of one good and fail here.
+        for (int i = 0; i < all.Length; i++)
         {
-            Assert.Contains(goods, StockLimits.Kinds);
+            limits.Set(all[i], 100 + i);
         }
 
-        Assert.Equal(Enum.GetValues<Goods>().Length, StockLimits.Kinds.Count);
+        for (int i = 0; i < all.Length; i++)
+        {
+            Assert.Equal(100 + i, limits.For(all[i]));
+        }
+    }
+
+    /// <summary>Two villages differing only in one good must not hash alike.</summary>
+    /// <remarks>
+    /// <b>The property that justifies D82 moving both goldens.</b> The state hash mixed
+    /// three named goods, so a world holding stone and a world holding none read as the same
+    /// run — D51's trap, where two different states are indistinguishable to the one test
+    /// that exists to tell states apart. It mixes every good by index now, and this is what
+    /// says so for goods that nothing yet produces.
+    /// </remarks>
+    [Theory]
+    [InlineData(Goods.Stone)]
+    [InlineData(Goods.Tools)]
+    public void AGoodNothingProducesIsStillPartOfTheWorld(Goods goods)
+    {
+        SimConfig config = VillageFixtures.Village;
+
+        SimWorld without = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        SimWorld with = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        StoreBuilding shed = with.AnyStoreOf(StoreKind.Shed);
+        Assert.True(shed.Accepts(goods), $"A shed must hold {goods} — it is a material.");
+        Assert.Equal(7, shed.Store.Receive(goods, 7));
+
+        Assert.NotEqual(StateHash.Compute(without), StateHash.Compute(with));
     }
 
     /// <summary>A limit is met when the village holds at least that much.</summary>

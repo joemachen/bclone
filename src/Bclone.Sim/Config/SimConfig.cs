@@ -525,6 +525,23 @@ public sealed record SimConfig
     [JsonPropertyName("cart_logs")]
     public int CartLogs { get; init; } = 10;
 
+    /// <summary>Tools the founders arrive carrying — the only ones in the world (D17, D64).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Inert until there is a workshop</b>, and that is the honest state of it: nothing
+    /// consumes tools yet, so this is a stock the player can see and cannot spend. D17 parked
+    /// tools waiting on somewhere to make them, and Joe's opening has the founders arrive with
+    /// them, so the good and the founding stock land together and the mechanic follows.
+    /// </para>
+    /// <para>
+    /// <b>Not a difficulty dial</b>, unlike <see cref="CartFood"/> and <see cref="CartLogs"/>
+    /// beside it — it cannot be, while nothing spends it. When tools start wearing out it
+    /// becomes one, and this remark is what should be deleted then.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("cart_tools")]
+    public int CartTools { get; init; } = 20;
+
     /// <summary>Share of a building's logs returned when it is pulled down, as a percentage.</summary>
     /// <remarks>
     /// Deliberately less than everything. Demolition is how a player corrects a mistake

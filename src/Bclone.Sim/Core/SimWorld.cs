@@ -1845,10 +1845,12 @@ public sealed class SimWorld
         };
 
         StoreBuildings.Add(cart);
-        // Food first, then timber — the order capacity binds in, stated rather than
-        // implied by an argument list (Stockpile.Receive).
+        // Food first, then timber, then the tools they carried — the order capacity
+        // binds in, stated rather than implied by an argument list (Stockpile.Receive).
+        // Received rather than added: the founders did not make any of it here.
         cart.Store.Receive(Goods.Food, config.CartFood);
         cart.Store.Receive(Goods.Logs, config.CartLogs);
+        cart.Store.Receive(Goods.Tools, config.CartTools);
     }
 
 

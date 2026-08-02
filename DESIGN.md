@@ -292,6 +292,16 @@ is weather** — but its proposed centre of gravity did not (D44). Slices, in or
   went from 4.3%/6.7% to **7.1%/8.2%**, and a pile-only village went from **dead at a hundred
   years** to seven people in five households. 405 tests green.
 
+- **Goods became an index, and stone and tools arrived on it** ✅ (D82; slice C2 of the
+  Banished opening). `Stockpile` was three hand-written goods with nine methods between them;
+  it is one array keyed by `Goods` now, and the **named mutators were deleted rather than
+  wrapped** so the compiler made every call site say which good it meant. **The refactor moved
+  neither golden**, which is the only way a refactor gets to call itself one. Then
+  **`Goods.Stone` and `Goods.Tools`**, with tools in the founders' cart — **both inert**:
+  stone gets its source in C3, tools their workshop when D17 comes off the shelf. Both goldens
+  moved for the goods, deliberately, because the state hash now covers every good rather than
+  three named ones. 400 tests green.
+
 **In progress:** **Slice A — stock limits and laborers** (`specs/stock-limits-and-laborers.md`,
 D62–D66), **sim complete, awaiting its view and Joe's QA pass.** `StockLimits` is player intent
 held on the world and hashed; `LabourQuota.For` caps the derived demand with it;
@@ -376,6 +386,14 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D82 · 2026-08-02 · Goods become an index, and the first two new ones prove it.** Slice C2, in two commits, in Joe's stated order: *refactor when the first new good lands, not before and not after.*
+  - **`Stockpile` was three properties, three lifetime counters, nine methods and a `Held` that summed by name.** Adding stone meant remembering nine places, and this project's most repeated bug is code still reading the old shape (D25, D29, D48, D57, D76, D79, D81). One array indexed by `Goods`, one method per verb, and a new good is an enum value.
+  - **The named mutators are deleted rather than kept as wrappers**, so the compiler lists every call site and each has to say which good it means — D70's argument for the nullable home, applied one type over. `Add(80)` meant food and did not say so, which is precisely the line that goes quietly wrong when `Goods` grows. **The named readers stay** (`Food`, `Logs`, `Firewood`): they are what the hash, the panel and most of the suite ask for, and unlike the mutators they cannot go stale now that one array sits under them.
+  - **The refactor moved nothing, and that is what made it safe to build on.** 397 green with both fifty-year goldens byte-identical. A refactor that cannot prove it changed nothing is a rewrite.
+  - **Then `Goods.Stone` and `Goods.Tools`.** Stone is what a building past a log hut costs (D63) and **gets its source in C3**, where the map generator places rock and the player paints it to be cleared. Tools are what the founders arrived with and **nothing yet makes or spends** — D17's workshop is still parked, so `cart_tools` is a stock the player can see and cannot use. **Recorded as inert rather than dressed up**, in the config comment beside the number and in the guard that checks it.
+  - **⚠️ Both goldens moved, and not because behaviour changed.** The state hash mixed three *named* goods; it mixes every good *by index* now, so two more numbers enter it per store and per household the moment stone and tools exist — even at zero. **That is the safety property, not a cost:** a good that is not hashed is a good two worlds can disagree about while reading identical, which is D51's trap. `AGoodNothingProducesIsStillPartOfTheWorld` asserts it directly. Fixture `11013974864926656020` → `4673658241522176988`; shipped `3491502518393071633` → `12610424914054256081`.
+  - **`StockLimits.Kinds` said "enumerated, not a fixed list typed in somewhere" while being a fixed list typed in there.** It reads the enum now. Its anti-drift guard fired exactly once — on this change, which is the change it was written for — and has been rewritten to test what is still testable: a limit set and read back per good, which catches two goods sharing a slot.
+  - **A shed takes stone and tools; the market does not.** The shed has always been the materials building (D32); the market exists to be the short trip for what a *household* is short of (D14, D78), and no household consumes either. 400 tests green.
 - **D81 · 2026-08-02 · A village with nowhere to put food never sends anyone to get any — and that, not the allocator, is why one couple stayed home.** D80's open question, probed before a line was changed. **Both of D80's candidates measure as dead and a third cause is decisive.**
   - **What Joe saw, in numbers.** Twenty years of his opening on the shipped config: household 1 spent **4.3%** of its able-adult ticks at work against household 2's **6.7%**, and in **year one it was 4.1% against 26.0%** — his *"one couple stays home"* exactly. **Household 1 rests on all eight seeds tested** (2.8–5.1% against 17.0–19.3%), so it is systematic rather than one unlucky valley.
   - **⛔ The emergency restock (D77) is not it.** Both founding households spent **0.00%** of their ticks on fetch errands, over twenty years and over a hundred. It cannot cause a split it never fires in.

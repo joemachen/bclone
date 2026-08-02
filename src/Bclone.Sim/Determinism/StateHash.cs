@@ -100,13 +100,15 @@ public static class StateHash
         {
             Household household = world.Households[i];
             hash = MixUInt32(hash, (uint)household.Id);
-            hash = MixUInt32(hash, (uint)household.Stockpile.Food);
-            hash = MixUInt32(hash, (uint)household.Stockpile.LifetimeGathered);
             hash = MixUInt32(hash, (uint)household.LastBirthYear);
-            hash = MixUInt32(hash, (uint)household.Stockpile.Logs);
-            hash = MixUInt32(hash, (uint)household.Stockpile.LifetimeLogsFelled);
-            hash = MixUInt32(hash, (uint)household.Stockpile.Firewood);
-            hash = MixUInt32(hash, (uint)household.Stockpile.LifetimeFirewoodCut);
+
+            // The larder and what it has ever produced, every good of it — the same
+            // loop MixStore uses, for the same reason.
+            hash = MixStore(hash, household.Stockpile);
+            for (int g = 0; g < Stockpile.Kinds; g++)
+            {
+                hash = MixUInt32(hash, (uint)household.Stockpile.Produced((Goods)g));
+            }
 
             hash = MixUInt32(hash, (uint)household.MemberIds.Count);
             for (int m = 0; m < household.MemberIds.Count; m++)
@@ -155,9 +157,15 @@ public static class StateHash
     /// </remarks>
     private static ulong MixStore(ulong hash, Stockpile store)
     {
-        hash = MixUInt32(hash, (uint)store.Food);
-        hash = MixUInt32(hash, (uint)store.Logs);
-        hash = MixUInt32(hash, (uint)store.Firewood);
+        // Every good, by index, rather than three lines naming three of them. A good
+        // that is not hashed is a good two different worlds can disagree about while
+        // reading identical — D51's trap, and the reason this is a loop the day stone
+        // and tools arrive rather than the day somebody notices.
+        for (int i = 0; i < Stockpile.Kinds; i++)
+        {
+            hash = MixUInt32(hash, (uint)store[(Goods)i]);
+        }
+
         return hash;
     }
 

@@ -128,7 +128,12 @@ public sealed class StoreBuilding
     public bool Accepts(Goods goods) => Kind switch
     {
         StoreKind.Granary => goods == Goods.Food,
-        StoreKind.Shed => goods is Goods.Logs or Goods.Firewood,
+
+        // Materials, which is what the shed has always been for — stone and tools join
+        // logs and firewood on exactly that reading (D32). The market does not take
+        // them: it exists to be the short trip for whatever a HOUSEHOLD is short of
+        // (D14, D78), and no household consumes either yet.
+        StoreKind.Shed => goods is Goods.Logs or Goods.Firewood or Goods.Stone or Goods.Tools,
         StoreKind.Market => goods is Goods.Food or Goods.Firewood,
 
         // Everything, because the founders' load was never sorted — it is what they could
@@ -141,10 +146,36 @@ public sealed class StoreBuilding
     };
 }
 
-/// <summary>The kinds of goods a store can hold. Stone, lumber and cloth land here.</summary>
+/// <summary>The kinds of goods a store can hold. Lumber and cloth land here next.</summary>
+/// <remarks>
+/// <para>
+/// <b>The values are hashed by position</b> — <see cref="Stockpile"/> indexes by them and
+/// <see cref="StockLimits.Kinds"/> is ordered by them — so a good may be <em>appended</em>
+/// but never renumbered. Renumbering would silently reinterpret every saved limit and every
+/// golden hash as being about a different good.
+/// </para>
+/// <para>
+/// <b>Stone and tools exist before anything makes or spends them, deliberately.</b> Joe's
+/// call: do the indexed-goods refactor when the first new good lands, not before and not
+/// after — so the good is what proves the refactor, and the machinery around it (limits,
+/// hashing, the panel, what a shed will take) lands in one piece rather than being
+/// retrofitted per good. <b>Stone gets its source in slice C3</b>, where the map generator
+/// places rock and the player paints it to be cleared; <b>tools get their workshop</b> when
+/// D17 comes off the shelf. Until then the only tools in the world are the ones the founders
+/// arrived with.
+/// </para>
+/// </remarks>
 public enum Goods
 {
     Food = 0,
     Logs = 1,
     Firewood = 2,
+
+    /// <summary>What a building past a log hut costs (D63). Placed by the map, not grown.</summary>
+    Stone = 3,
+
+    /// <summary>
+    /// What the founders brought and nobody can yet replace (D17, D64).
+    /// </summary>
+    Tools = 4,
 }

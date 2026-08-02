@@ -869,6 +869,14 @@ public static class VillageEconomy
                     * config.LogsPerSplit / perSplit;
                 return forFirewood + config.LogsPerHouse;
 
+            case Goods.Stone:
+            case Goods.Tools:
+                // No floor, because nothing spends them yet — a survival floor is
+                // derived from consumption, and neither has any. Named rather than left
+                // to the default so that the day stone becomes what a building costs,
+                // this is the line that is obviously wrong instead of quietly right.
+                return 0;
+
             default:
                 return 0;
         }
