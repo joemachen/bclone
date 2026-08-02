@@ -499,9 +499,9 @@
   // The capacity is small on purpose. The cart accepts every kind of goods,
   // unlike every other store, so its size rather than its rules is the only
   // thing stopping it being the granary and the shed at once.
-  "cart_capacity": 200,
-  "cart_food": 400,
-  "cart_logs": 10,
+  "cart_capacity": 1200,
+  "cart_food": 800,
+  "cart_logs": 30,
 
   // Less than everything, deliberately. Demolition is how a player
   // corrects a mistake, and it should cost something - otherwise a

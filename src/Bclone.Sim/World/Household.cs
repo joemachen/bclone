@@ -205,6 +205,25 @@ public sealed class Household
             }
         }
 
+        // THE CART, AND THEN THE GROUND THEY LANDED ON (D72).
+        //
+        // At the founding there is no granary, so every candidate tile scored
+        // int.MaxValue, every score overflowed to the same value, and ChooseSite refused
+        // the entire valley — the village asked for more land it already had, and four
+        // founders froze beside 30 logs and a painted field. This is the fallback
+        // `specs/cold-start.md §6` names and is the only one of the three that was
+        // actually load-bearing.
+        //
+        // The cart is the honest answer while it is the only store: it IS where the food
+        // is. After that, the founding site — because a village with no stores at all
+        // still has a middle, and scoring every tile alike is what "no opinion" should
+        // look like rather than what "reject everything" looks like.
+        if (nearest == int.MaxValue)
+        {
+            GridPos fallback = world.TheCart?.Position ?? world.Map.FoundingSite;
+            nearest = from.ManhattanDistanceTo(fallback);
+        }
+
         return nearest;
     }
 

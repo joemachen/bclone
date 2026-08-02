@@ -412,6 +412,23 @@ public readonly record struct LabourQuota
         // through a winter would actually do.
         int housesWanted = CeilingDivide(waiting, 2) + 1;
 
+        // A FAMILY WITH NO HOUSE WANTS ONE, and this had to be said out loud (D72).
+        //
+        // "Waiting for a home" was counted only as UNPAIRED adults, because until the cold
+        // start the only way to want a house was to grow up and find somebody. The founders
+        // are already paired and already a household — they simply have no roof — so they
+        // were invisible here. Measured by Joe playing it: the tree stand read "the village
+        // wants 0 on this kind of work" while four people stood in the open, and they froze
+        // in winter 1 without a log being cut.
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (!household.HasHome && world.LivingMembersOf(household) > 0)
+            {
+                housesWanted++;
+            }
+        }
+
         // Timber standing ANYWHERE in the village — the shed, a workplace buffer, or
         // in somebody's arms on the way there.
         //

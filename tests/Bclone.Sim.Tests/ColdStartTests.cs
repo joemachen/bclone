@@ -32,6 +32,9 @@ public sealed class ColdStartTests
     private static SimConfig ColdVillage => VillageFixtures.Village with
     {
         FoundingBuildings = false,
+        CartCapacity = ShippedConfig.Load().CartCapacity,
+        CartFood = ShippedConfig.Load().CartFood,
+        CartLogs = ShippedConfig.Load().CartLogs,
     };
 
     private static SimLoop Build(SimConfig config) =>
@@ -143,6 +146,84 @@ public sealed class ColdStartTests
         _output.WriteLine($"reached winter with all {loop.World.Population} founders alive");
     }
 
+    /// <summary>
+    /// ⭐ A competently played opening survives winter 1 — the other half of Joe's bar.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Written after Joe played it and everyone died anyway</b>, which is what this guard
+    /// exists to stop happening twice. Two bugs made the opening unwinnable rather than hard
+    /// (D72): a family that already existed and had no roof was invisible to
+    /// <c>LoggersWanted</c>, so the village wanted nobody at the tree stand; and building
+    /// timber was drawn only from sheds, of which a cold start has none, so even felled logs
+    /// could not become a house.
+    /// </para>
+    /// <para>
+    /// The player's part is scripted here as the two things they can actually do on day one:
+    /// paint somewhere to live, and mark a woodcutter's hut. Everything after that is the
+    /// village's own machinery.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillageThatIsPlayedBuildsItselfHousesFromNothing()
+    {
+        SimConfig config = ColdVillage;
+        SimLoop loop = Build(config);
+        SimWorld world = loop.World;
+
+        // Day one, and the only two moves that matter.
+        GridPos site = world.Map.FoundingSite;
+        for (int dy = -4; dy <= 4; dy++)
+        {
+            for (int dx = -4; dx <= 4; dx++)
+            {
+                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
+            }
+        }
+
+        // And a shed to keep timber in, and the hut that turns it into firewood — without
+        // which a house is a roof with no fire under it, and D45 kills at day 25 of 30.
+        MarkSomewhereNear(world, BuildingKind.Shed, site, 2);
+        MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+
+        _output.WriteLine(
+            $"painted {world.Zones.ResidentialTiles} tiles; cart holds "
+            + $"{world.TheCart!.Store.Food} food, {world.TheCart!.Store.Logs} logs");
+
+        loop.Step(config.TicksPerYear);
+
+        int frozen = CountDeaths(world, CauseOfDeath.Cold);
+        int homes = 0;
+        foreach (Household household in world.Households)
+        {
+            if (household.HasHome)
+            {
+                homes++;
+            }
+        }
+
+        _output.WriteLine(
+            $"after one played year: {world.Population} alive, {frozen} frozen, {homes} homes");
+
+        // WHAT IS PROVEN, AND IT IS THE THING FOUR BUGS WERE HIDING: a village that starts
+        // with nothing can build itself houses. Before D72 this was zero, for four separate
+        // reasons, and the village could not have been saved by any amount of play.
+        Assert.True(homes > 0, "A year passed with land painted and no house was ever built.");
+
+        // WHAT IS NOT PROVEN, AND IS DELIBERATELY NOT ASSERTED YET: that a played opening
+        // survives winter 1. It currently does not — four founders cannot raise two houses,
+        // a shed and a hut, fell the timber for all of it, split firewood and feed
+        // themselves inside one year. That is a TUNING question and it is Joe's, per
+        // `specs/cold-start.md §7.2`: the dials are the cart's contents and the founding
+        // season, never the exposure rates (D53). Asserting survival here before he has
+        // said what "fair" means would be tuning the game to make a test pass, which is
+        // exactly what D16 and D53 both refuse.
+        _output.WriteLine(
+            world.Population > 0
+                ? "…and it survived."
+                : "…and it did not survive. Winter 1 is currently unwinnable; see §7.2.");
+    }
+
     // ---------------------------------------------------------------
     //  The tie back to what ships
     // ---------------------------------------------------------------
@@ -164,6 +245,27 @@ public sealed class ColdStartTests
             VillageFixtures.Village.FoundingBuildings,
             "The village fixture keeps the old founding, so the suite tests an established "
             + "village (Joe's call).");
+    }
+
+    /// <summary>Mark a building on the first tile near the site that will take one.</summary>
+    /// <remarks>
+    /// The player clicks somewhere sensible and the village tells them if it will not do
+    /// (D43). A test cannot click, so it tries a small ring and takes the first yes.
+    /// </remarks>
+    private static void MarkSomewhereNear(
+        SimWorld world, BuildingKind kind, GridPos site, int radius)
+    {
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                var at = new GridPos(site.X + dx, site.Y + dy);
+                if (world.Mark(kind, at).Allowed)
+                {
+                    return;
+                }
+            }
+        }
     }
 
     private static int CountDeaths(SimWorld world, CauseOfDeath cause)

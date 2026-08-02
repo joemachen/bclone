@@ -39,6 +39,23 @@ public sealed class HouseholdSystem : ISimSystem
         // Births and household formation resolve only on a year boundary - a
         // household does not reconsider four times a day, and it keeps the log to
         // one line per event.
+        // THE ROOFLESS ARE ANSWERED EVERY DAY, NOT EVERY NEW YEAR (D72).
+        //
+        // Everything else here is deliberately annual — a household does not reconsider
+        // having children four times a day, and the annual cadence keeps the log to one
+        // line per event. Housing a family that is standing in the open cannot wait that
+        // long: the founders arrive in spring, the next year boundary is after winter, and
+        // measured, they freeze to death before the pass that would have housed them ever
+        // runs. A family in the open does not wait for New Year's Day to be given the
+        // house the village can already afford.
+        //
+        // Cheap to run: it walks the households and leaves immediately once they all have
+        // roofs, which is every tick of an established village.
+        if (world.Tick % (ulong)config.TicksPerDay == 0UL)
+        {
+            HouseTheRoofless(world, config);
+        }
+
         if (world.Tick % (ulong)config.TicksPerYear != 0UL)
         {
             return;
@@ -83,6 +100,95 @@ public sealed class HouseholdSystem : ISimSystem
     /// a parent or a sibling.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Raise a house for a family that has one already and lives in the open (D72).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The path the cold start needed and did not have.</b> Until D70 there was exactly
+    /// one way for a house to get built — an unpaired adult finds a partner and the pair
+    /// moves out — so <em>wanting a house</em> and <em>forming a couple</em> were the same
+    /// event. The founders are already paired and already a household; they simply have no
+    /// roof, which was a state the sim could not previously represent and therefore could
+    /// not answer.
+    /// </para>
+    /// <para>
+    /// <b>Found by playing it, not by reasoning about it.</b> Joe's first cold start: all
+    /// four founders froze in winter 1 without a single log being cut, and the tree stand
+    /// read <em>"the village wants 0 on this kind of work"</em> — because
+    /// <c>LoggersWanted</c> counted only unpaired seekers, and because even with timber
+    /// nothing would have spent it. Two halves of one gap.
+    /// </para>
+    /// <para>
+    /// Ordered before <see cref="FormNewHouseholds"/>: a family in the open has a better
+    /// claim on the village's timber than a couple wanting to move out of a house that
+    /// already exists.
+    /// </para>
+    /// </remarks>
+    private static void HouseTheRoofless(SimWorld world, SimConfig config)
+    {
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (household.HasHome || world.LivingMembersOf(household) == 0)
+            {
+                continue;
+            }
+
+            // An empty house is a house — the same rule new couples get, and for the same
+            // reason: standing among your own empty homes while felling more trees is an
+            // absurdity, not a hard decision.
+            Household? standingEmpty = FindAnEmptyHome(world);
+            if (standingEmpty is not null)
+            {
+                household.HomePosition = standingEmpty.HomePosition;
+                standingEmpty.HomePosition = null;
+                world.Narrate(
+                    $"The {household.Name} household moved into the empty house at "
+                    + $"{household.HomePosition} — {world.Clock.SeasonAndYear()}.");
+                continue;
+            }
+
+            if (!TryTakeBuildingTimber(world, config, out int timber))
+            {
+                continue;
+            }
+
+            try
+            {
+                household.HomePosition = Household.ChooseSite(world, world.Map.FoundingSite);
+                world.NeedsMoreResidentialLand = false;
+                world.Narrate(
+                    $"The {household.Name} household raised a house at "
+                    + $"{household.HomePosition} — {world.Clock.SeasonAndYear()}.");
+            }
+            catch (Household.NoRoomToBuildException)
+            {
+                // The timber is already out of the shed, so it goes back. Conservation is
+                // not negotiable just because the code took an unusual branch.
+                StoreBuilding? shed = world.NearestStore(
+                    world.Map.FoundingSite, StoreKind.Shed, static store => !store.Store.IsFull);
+
+                if (shed is not null)
+                {
+                    shed.Store.ReceiveLogs(timber);
+                }
+                else
+                {
+                    world.TheCart?.Store.ReceiveLogs(timber);
+                }
+
+                if (!world.NeedsMoreResidentialLand)
+                {
+                    world.NeedsMoreResidentialLand = true;
+                    world.Narrate(
+                        $"The {household.Name} household has nowhere to build — "
+                        + "paint some land for houses.");
+                }
+            }
+        }
+    }
+
     private static void FormNewHouseholds(SimWorld world, SimConfig config, int year)
     {
         // Snapshot: a villager who pairs this year must not also be considered as
@@ -236,7 +342,23 @@ public sealed class HouseholdSystem : ISimSystem
         // the whole village (D25), so which building the logs happen to sit in should
         // not decide whether it can be built — and with several sheds, insisting on
         // one would have stalled a village that had the timber twice over.
-        if (world.LogsInSheds() < config.LogsPerHouse)
+        // AND FROM THE CART, while it is the only store the village has (D72). At the
+        // founding there is no shed at all, so drawing only from sheds meant the first
+        // house could never be built however much timber the founders had felled — which
+        // is how Joe's first cold start ended with four people frozen in the open. The
+        // cart is a store the villagers may use while it stands (D64); building out of it
+        // is exactly what it is for.
+        int available = 0;
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (store.Kind is StoreKind.Shed or StoreKind.Cart)
+            {
+                available += store.Store.Logs;
+            }
+        }
+
+        if (available < config.LogsPerHouse)
         {
             return false;
         }
@@ -245,7 +367,7 @@ public sealed class HouseholdSystem : ISimSystem
         for (int i = 0; i < world.StoreBuildings.Count && remaining > 0; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
-            if (store.Kind != StoreKind.Shed)
+            if (store.Kind is not (StoreKind.Shed or StoreKind.Cart))
             {
                 continue;
             }
