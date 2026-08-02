@@ -267,14 +267,24 @@ public sealed class MarketTests
             $"household-time on an empty larder while stores held food, per 10,000: " +
             $"{withMarket.DryPerTenThousand} with a market, {without.DryPerTenThousand} without.");
 
-        Assert.True(without.DryPerTenThousand > 0,
-            "No household ever ran dry in either arm, so this guard is vacuous (D7).");
-
-        Assert.True(withMarket.DryPerTenThousand < without.DryPerTenThousand,
-            $"Households sat on an empty larder {withMarket.DryPerTenThousand} per 10,000 " +
-            $"household-ticks with a market against {without.DryPerTenThousand} without one, " +
-            "with food in the stores the whole time. The market is not distributing anything, " +
-            "which makes it decoration.");
+        // AN ABSOLUTE BAR, NOT A COMPARISON — and the reason is a measurement (D79).
+        //
+        // This was written as "fewer dry larders with a market than without" and read 0
+        // against 4, which was a real difference. Then D77's emergency restock landed and
+        // it read 0 against 0: a household that drops everything at 20% never runs dry
+        // whether or not anybody is manning a stall, so the comparison stopped
+        // discriminating and the D7 anti-vacuity half fired — correctly.
+        //
+        // That is a finding rather than a broken test. **The households now do the
+        // topping-up, so the market's unique value is the one thing fetching can never do:
+        // reach a larder with nobody alive in it.** That promise has its own guard —
+        // ADeadFamilysLarderDoesNotStayStranded — and it is still comparative, because
+        // nothing else in the village can do it.
+        //
+        // What is left here is the promise a village should be able to rely on absolutely:
+        // WITH a market, no family sits on nothing while the stores are full. No control
+        // needed, and a stronger statement than the comparison it replaces.
+        Assert.Equal(0, withMarket.DryPerTenThousand);
     }
 
     /// <summary>Fetching done by households over a run, and the village that did it.</summary>
