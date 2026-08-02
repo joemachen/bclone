@@ -281,22 +281,12 @@ public sealed class ColdStartTests
 
         Assert.False(config.FoundingBuildings, "This guard is meaningless on a warm start.");
 
-        GridPos site = world.Map.FoundingSite;
+        PlayTheOpening(world);
 
-        // 1. Somewhere to put things. It costs nothing, which is the point.
-        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
-
-        // 2. Somewhere to live.
-        for (int dy = -4; dy <= 4; dy++)
-        {
-            for (int dx = -4; dx <= 4; dx++)
-            {
-                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
-            }
-        }
-
-        // 3. Something to make firewood with. AND NO SHED — that is the test.
-        MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+        // The opening asks for NO STORE AT ALL now — not a shed, and no longer a pile.
+        // Everything the founders gather goes back to the cart they arrived in.
+        Assert.Single(world.StoreBuildings);
+        Assert.Equal(StoreKind.Cart, world.StoreBuildings[0].Kind);
 
         loop.Step(config.TicksPerYear);
 
@@ -309,6 +299,57 @@ public sealed class ColdStartTests
             world.Population == config.StartingPopulation,
             $"{config.StartingPopulation - world.Population} founders died playing the "
             + $"opening as designed; {frozen} froze.");
+    }
+
+    /// <summary>
+    /// ⭐ The founders fell the trees they painted, and that is where the timber comes from.
+    /// </summary>
+    /// <remarks>
+    /// <b>The opening's material chain, asserted</b> (D87). Before this, timber came from a
+    /// tree stand the generator dropped and the player had no say in it. Now the founders mark
+    /// what they mean to take and their spare hands take it — which is the answer to
+    /// <c>building-placement.md §12.5</c>'s <em>"unpainted forest is never cut"</em> that does
+    /// not require auto-painting a starter zone and therefore does not reverse D70.
+    /// </remarks>
+    [Fact]
+    public void TheOpeningGetsItsTimberFromTheTreesThePlayerPainted()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        PlayTheOpening(world);
+
+        int painted = PaintTheNearbyTrees(world, 10);
+        Assert.True(painted > 0, "There must be fellable forest near the founding site.");
+
+        int forestBefore = 0;
+        for (int i = 0; i < world.Map.Tiles.Count; i++)
+        {
+            if (world.Map.Tiles[i] == Terrain.Forest)
+            {
+                forestBefore++;
+            }
+        }
+
+        loop.Step(config.TicksPerYear);
+
+        int forestAfter = 0;
+        for (int i = 0; i < world.Map.Tiles.Count; i++)
+        {
+            if (world.Map.Tiles[i] == Terrain.Forest)
+            {
+                forestAfter++;
+            }
+        }
+
+        _output.WriteLine(
+            $"{painted} tiles painted; forest {forestBefore} -> {forestAfter}, "
+            + $"{world.LogsInSheds()} logs in reach, {world.Population} alive");
+
+        Assert.True(
+            forestAfter < forestBefore,
+            "A year passed with trees painted at the founding and none was felled.");
     }
 
     /// <summary>
@@ -337,19 +378,7 @@ public sealed class ColdStartTests
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
-        GridPos site = world.Map.FoundingSite;
-        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
-
-        for (int dy = -4; dy <= 4; dy++)
-        {
-            for (int dx = -4; dx <= 4; dx++)
-            {
-                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
-            }
-        }
-
-        MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
-
+        PlayTheOpening(world);
         loop.Step(config.TicksPerYear * 5);
 
         int starved = CountDeaths(world, CauseOfDeath.Starvation);
@@ -569,10 +598,15 @@ public sealed class ColdStartTests
             $"forty years on: {world.Population} alive in {world.Households.Count} households, "
             + $"{founders} of the founders left, {world.FoodInGranaries()} food in stores");
 
+        // NOT "> 0", and the loose bar is why this let something through once already.
+        // A village that ages from nine down to two over forty years passes any
+        // still-standing test while plainly failing, and it does it with nobody starved
+        // and nobody frozen. The founding four is the floor worth defending.
         Assert.True(
-            world.Population > 0,
-            "A played opening died out inside forty years without anybody starving or "
-            + "freezing — it simply never had a child.");
+            world.Population >= config.StartingPopulation,
+            $"A played opening fell to {world.Population} from {config.StartingPopulation} "
+            + "inside forty years without anybody starving or freezing — it simply stopped "
+            + "having children.");
     }
 
     private static bool IsWorking(VillagerState state) =>
@@ -582,12 +616,31 @@ public sealed class ColdStartTests
 
     private static double Share(long part, long whole) => whole == 0 ? 0 : 100.0 * part / whole;
 
-    /// <summary>Joe's opening: somewhere to put things, somewhere to live, a hut. No shed.</summary>
+    /// <summary>
+    /// Joe's opening as he actually plays it: somewhere to live, trees to fell, a hut.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>No pile and no shed.</b> Joe, playing: <em>"so far I've found that I don't actually
+    /// need the pile at the start. It doesn't get used at all because the cart stores wood and
+    /// I haven't harvested any other resources."</em> He is right, and the reason is that
+    /// <b>D76's motivation was fixed by D76's own change</b> — the pile was introduced because
+    /// the woodcutter's hut could not see logs sitting in the cart, and that bug was cured by
+    /// asking stores what they <em>hold</em> rather than which building they are. The pile is
+    /// still a perfectly good thing to place; it simply stopped being load-bearing, and a
+    /// guard that scripts it as though it were is testing a game nobody plays.
+    /// </para>
+    /// <para>
+    /// <b>Painting trees replaced it as the third move</b> (D87). That is where the timber
+    /// comes from now: the founders mark what they mean to fell and their spare hands go and
+    /// fell it.
+    /// </para>
+    /// </remarks>
     private static void PlayTheOpening(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;
-        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
 
+        // 1. Somewhere to live.
         for (int dy = -4; dy <= 4; dy++)
         {
             for (int dx = -4; dx <= 4; dx++)
@@ -596,7 +649,46 @@ public sealed class ColdStartTests
             }
         }
 
+        // 2. Something to make firewood with. NO PILE AND NO SHED — that is the test.
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+
+        // ⚠️ AND DELIBERATELY NO HARVEST PAINTING, which was tried here and measured as
+        // harmful — see TheOpeningGetsItsTimberFromTheTreesThePlayerPainted, which paints
+        // for its own purpose and runs one year. Over forty years, four arms on the
+        // shipped config:
+        //
+        //   pile, no harvest .... 6 →  9 →  9      no pile, no harvest .. 6 → 9 → 8
+        //   pile AND harvest .... 5 →  9 →  8      NO PILE + HARVEST .... 4 → 6 → 2
+        //
+        // Removing the pile is harmless on its own, which is what Joe observed. Painting
+        // a forest with ONLY THE CART to put it in is not: the cart fills with timber
+        // (677 logs of its 1,200 by year five) and the food it crowds out never arrives —
+        // 164 food against 400+ in every other arm. The village then stops having
+        // children and ages out, with ZERO starved and ZERO frozen.
+        //
+        // That is a legibility failure before it is a balance one (§1.1) and exactly the
+        // uncozy failure D88 rules out: a village dying of something it could not have
+        // seen coming. It is recorded rather than tuned, and it is Joe's call.
+    }
+
+    /// <summary>Paint every fellable tile within a short walk of the founding site.</summary>
+    private static int PaintTheNearbyTrees(SimWorld world, int radius)
+    {
+        GridPos site = world.Map.FoundingSite;
+        int painted = 0;
+
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (world.PaintHarvest(new GridPos(site.X + dx, site.Y + dy)).Allowed)
+                {
+                    painted++;
+                }
+            }
+        }
+
+        return painted;
     }
 
     // ---------------------------------------------------------------
