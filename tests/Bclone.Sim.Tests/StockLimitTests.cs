@@ -56,7 +56,10 @@ public sealed class StockLimitTests
     [InlineData(true, ShippedFiftyYearHash)]
     public void AVillagePlayedWithoutLimitsIsTheVillageThatCameBefore(bool shipped, ulong expected)
     {
-        SimConfig config = shipped ? ShippedConfig.Load() : VillageFixtures.Village;
+        // The established village either way: this golden is about stock limits being a
+        // no-op, and it was captured before the cold start existed. ColdStartTests owns the
+        // founding.
+        SimConfig config = shipped ? ShippedConfig.Established() : VillageFixtures.Village;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
 
         loop.Step(config.TicksPerYear * 50);

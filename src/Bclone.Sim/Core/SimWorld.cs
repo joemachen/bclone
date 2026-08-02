@@ -906,6 +906,22 @@ public sealed class SimWorld
             });
         }
 
+        // EVERYTHING FROM HERE IS A BUILDING, AND THE COLD START HAS NONE (D70).
+        //
+        // The workplaces above are not buildings and stay either way: a berry patch and a
+        // stand of trees are features of the valley and were always there. What follows —
+        // the hut, the granary, the shed, the market — is what somebody had to raise, and
+        // in the cold start that somebody is the player. The founders get their cart.
+        // The founding happens here rather than at the end of the constructor, and only
+        // because there is nothing left to wait for: the reason it normally goes last is
+        // that ChooseSite wants the stores to exist, and in a cold start there are none.
+        if (!config.FoundingBuildings)
+        {
+            RaiseTheCart(config, origin);
+            FoundVillage(config, origin);
+            return;
+        }
+
         // The first workplace that consumes an input rather than only producing one
         // (D29). Logs in, firewood out - and it can stand idle for want of logs,
         // which is a state no other workplace can be in.
@@ -999,7 +1015,16 @@ public sealed class SimWorld
         //
         // And the exiles arrive having already decided where to live (D42), because a
         // village with nothing painted could not build a house at all.
-        PaintTheStarterZone(origin, config);
+        //
+        // UNLESS THEY ARRIVE TO AN EMPTY VALLEY (D70). Then deciding where to live is the
+        // player's first act rather than a thing the world did for them, so no zone is
+        // painted and no home is raised — the founders stand at their cart, and the first
+        // winter is thirty days away.
+        if (config.FoundingBuildings)
+        {
+            PaintTheStarterZone(origin, config);
+        }
+
         FoundVillage(config, origin);
     }
 
@@ -1020,8 +1045,15 @@ public sealed class SimWorld
         {
             // The same rule the village will use for every home it ever builds: near
             // the work, near the store, never in the water.
-            GridPos home = Household.ChooseSite(
-                this, new GridPos(origin.X + config.HomeX, origin.Y + config.HomeY));
+            //
+            // Or no home at all, if the founders arrived to an empty valley (D70). The
+            // household still exists — it is a family, not a building — and it goes on
+            // holding a name, a larder and its members. What it does not have is anywhere
+            // to put them, which is the whole of the cold start.
+            GridPos? home = config.FoundingBuildings
+                ? Household.ChooseSite(
+                    this, new GridPos(origin.X + config.HomeX, origin.Y + config.HomeY))
+                : null;
 
             var household = new Household
             {
@@ -1049,7 +1081,11 @@ public sealed class SimWorld
                     Id = nextVillagerId++,
                     Name = name,
                     LifespanYears = lifespan,
-                    Position = home,
+
+                    // Standing at their house, or at the cart they arrived in (D70). Not
+                    // RestingPlaceOf — that reads the household, and this villager is not
+                    // in it yet.
+                    Position = home ?? origin,
                     HouseholdId = household.Id,
 
                     // Year 1 is the first year, so someone aged N at founding was
@@ -1645,6 +1681,32 @@ public sealed class SimWorld
 
         return Map.FoundingSite;
     }
+
+    /// <summary>
+    /// Put down the wagon the founders arrived in — the only building of the cold start.
+    /// </summary>
+    /// <remarks>
+    /// <b>It is what keeps D30 true through the founding:</b> goods live in buildings, and a
+    /// valley with nothing raised would otherwise have nowhere for the supplies to be. What
+    /// it holds is content and lives in config, because it is the difficulty dial for the
+    /// opening (<c>specs/cold-start.md §7.2</c>) — the exposure rates are not, and must not
+    /// be reached for instead (D53).
+    /// </remarks>
+    private void RaiseTheCart(SimConfig config, GridPos origin)
+    {
+        var cart = new StoreBuilding
+        {
+            Id = 1,
+            Kind = StoreKind.Cart,
+            Name = "the cart",
+            Position = origin,
+            Store = new Stockpile { Capacity = config.CartCapacity },
+        };
+
+        StoreBuildings.Add(cart);
+        cart.Store.Receive(config.CartFood, config.CartLogs, 0);
+    }
+
 
     /// <summary>The wagon the founders arrived in, while it still stands (D64).</summary>
     public StoreBuilding? TheCart

@@ -479,6 +479,30 @@
   // grows past it.
   "starting_residential_radius": 4,
 
+  // THE COLD START (D70). The founders arrive to an empty valley with a cart:
+  // no granary, no shed, no market, no woodcutter's hut, no homes, and nothing
+  // painted to build them on. Every one of those is the player's to raise, and
+  // starting_residential_radius above is not applied at all while this is false.
+  //
+  // Fixtures leave this true, so the several hundred tests written about an
+  // established village go on testing one (Joe's call). That is exactly the
+  // fixture-versus-shipped gap METHODOLOGY 3 warns about, so ColdStartTests
+  // exists to cover this path and asserts that THIS file says false.
+  "founding_buildings": false,
+
+  // What the founders arrive carrying, and how much the cart holds. These are
+  // the difficulty dial for the opening, together with the founding season --
+  // the exposure rates are NOT a dial and must not be reached for instead, for
+  // the reason D53 records: they describe a person in the cold, and the death
+  // rate is a property of the economy.
+  //
+  // The capacity is small on purpose. The cart accepts every kind of goods,
+  // unlike every other store, so its size rather than its rules is the only
+  // thing stopping it being the granary and the shed at once.
+  "cart_capacity": 200,
+  "cart_food": 400,
+  "cart_logs": 10,
+
   // Less than everything, deliberately. Demolition is how a player
   // corrects a mistake, and it should cost something - otherwise a
   // badly sited granary is free to undo and the placement decision

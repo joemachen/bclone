@@ -444,6 +444,54 @@ public sealed record SimConfig
     [JsonPropertyName("starting_residential_radius")]
     public int StartingResidentialRadius { get; init; } = 4;
 
+    /// <summary>
+    /// Whether the founders arrive to a village already built, or to an empty valley (D70).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>False is the game; true is the world most of the tests describe.</b> The shipped
+    /// file sets this false — the founders get a cart and nothing else, and every building,
+    /// every home and the residential zone itself are the player's to make. Fixtures leave
+    /// it true, so the several hundred tests written about an established village go on
+    /// testing an established village rather than four people freezing in a field.
+    /// </para>
+    /// <para>
+    /// <b>The precedent is <see cref="FirewoodPerWinterDay"/>.</b> Phase 0's spec rules
+    /// warmth out by name, so its fixture switches fuel off entirely and
+    /// <c>HearthSystem</c> honours that — <em>"the fixture should encode the world its
+    /// tests describe"</em>. This is the same move one layer up, and the same discipline
+    /// applies with it: <b>the cold start needs its own tests, or it becomes the one path
+    /// in the game nothing exercises.</b> METHODOLOGY §3's rule about the gap between the
+    /// fixture and the shipped file is what makes that non-optional — the gap has already
+    /// produced D48, D49 and D50.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("founding_buildings")]
+    public bool FoundingBuildings { get; init; } = true;
+
+    /// <summary>How much the founders' cart can hold, across every kind of goods (D64).</summary>
+    /// <remarks>
+    /// <b>Small on purpose.</b> The cart accepts every good, unlike every other store, so
+    /// its capacity rather than its rules is the only thing stopping it being the granary
+    /// and the shed at once. A village that never outgrows its wagon never has to build.
+    /// </remarks>
+    [JsonPropertyName("cart_capacity")]
+    public int CartCapacity { get; init; } = 200;
+
+    /// <summary>Food the founders arrive carrying.</summary>
+    /// <remarks>
+    /// <b>One of the two dials for how hard the opening is</b>
+    /// (<c>specs/cold-start.md §7.2</c>), the other being the founding season. The exposure
+    /// rates are deliberately <em>not</em> a dial: they describe a person in the cold, and
+    /// D53 refused moving them to make a body count come out right.
+    /// </remarks>
+    [JsonPropertyName("cart_food")]
+    public int CartFood { get; init; } = 400;
+
+    /// <summary>Timber the founders arrive carrying — a start on the first house, not a house.</summary>
+    [JsonPropertyName("cart_logs")]
+    public int CartLogs { get; init; } = 10;
+
     /// <summary>Share of a building's logs returned when it is pulled down, as a percentage.</summary>
     /// <remarks>
     /// Deliberately less than everything. Demolition is how a player corrects a mistake

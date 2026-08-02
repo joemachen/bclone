@@ -31,8 +31,17 @@ public sealed class ShippedConfigTests
 
     public ShippedConfigTests(ITestOutputHelper output) => _output = output;
 
-    private static SimConfig Shipped =>
-        SimConfigLoader.LoadFromFile(System.IO.Path.Combine(RepoRoot(), "data", "sim.config.json"));
+    /// <summary>
+    /// The shipped file's numbers, on a village that has already been built.
+    /// </summary>
+    /// <remarks>
+    /// These guards are about the hand-typed file's <em>numbers</em> drifting from the
+    /// derived fixture — D48, D49 and D50 are all number bugs. Since D70 the shipped file
+    /// starts cold, so running them unmodified would assert that four people with no houses
+    /// survive three centuries. <c>ColdStartTests</c> owns the founding, and checks that the
+    /// real file still starts cold, so this cannot become a way of never testing what ships.
+    /// </remarks>
+    private static SimConfig Shipped => ShippedConfig.Established();
 
     private static string RepoRoot()
     {

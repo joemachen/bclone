@@ -347,8 +347,49 @@ public sealed class BehaviorSystem : ISimSystem
         // make the village's population ceiling depend on where somebody was standing.
         StoreKind wanted = villager.CarriedFood > 0 ? StoreKind.Granary : StoreKind.Shed;
 
-        return world.NearestStore(villager.Position, wanted, static store => !store.Store.IsFull)
-            ?? world.AnyStoreOf(wanted);
+        StoreBuilding? proper =
+            world.NearestStore(villager.Position, wanted, static store => !store.Store.IsFull)
+            ?? FirstOfKind(world, wanted);
+
+        if (proper is not null)
+        {
+            return proper;
+        }
+
+        // THE CART, WHILE THERE IS NOTHING ELSE (D70). At the founding there is no granary
+        // and no shed, so the store of the right kind does not exist yet — and a villager
+        // holding an armful with nowhere to put it is the one thing the cold start must not
+        // produce, because it is D48's stranded-goods bug arriving by design.
+        //
+        // The cart takes anything (StoreKind.Cart), which is what makes it a correct answer
+        // rather than a convenient one: it is the founders' own supplies wagon, and putting
+        // the first harvest back into it is what they would actually do.
+        return world.TheCart
+            ?? throw new InvalidOperationException(
+                $"{villager.Name} has a load to put down and the village has no {wanted} "
+                + "and no cart. Every village must have somewhere to put things.");
+    }
+
+    /// <summary>Any store of this kind, reachable or not, or null if there are none.</summary>
+    /// <remarks>
+    /// <b>Reachable or not is the point, and it is not new behaviour.</b> This is what
+    /// <c>SimWorld.AnyStoreOf</c> did before the cold start needed a non-throwing version:
+    /// a villager holding an armful must be given somewhere to walk even when the only
+    /// granary is across the water, because the alternative is standing still forever with
+    /// goods that nothing can spend (D48). The difference is that this returns null instead
+    /// of throwing, so the caller can offer the cart before giving up.
+    /// </remarks>
+    private static StoreBuilding? FirstOfKind(SimWorld world, StoreKind kind)
+    {
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            if (world.StoreBuildings[i].Kind == kind)
+            {
+                return world.StoreBuildings[i];
+            }
+        }
+
+        return null;
     }
 
     /// <summary>The nearest shed holding a full batch of logs, or null.</summary>
