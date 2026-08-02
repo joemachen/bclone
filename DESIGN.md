@@ -266,15 +266,20 @@ is weather** — but its proposed centre of gravity did not (D44). Slices, in or
 - **A housekeeping pass** (D57). Two live bugs fixed, eleven dead symbols removed, and the
   docs reconciled with the game. 373 tests green.
 
-**In progress:** **Livestock** (D59) — confirmed by Joe 2026-08-01, probe first per
-METHODOLOGY §3.
+**In progress:** **Livestock** (D59, D60). Probed first per METHODOLOGY §3 — winter is 86%
+idle, and clothing's payoff is winter labour rather than lives. `specs/livestock.md`
+written; **slice 1 (pasture, herd, hay) not started**, and it has two open questions in
+§12 that want Joe before the code does.
 
 **Next up** *(in order — Joe's call)*:
-1. **Livestock** — herdsmen and butchering (D19, D39, D59). An **optional** food source, one
-   of several the village chooses between as it scales, not a tier everyone climbs. It is the
-   one thing that unblocks clothing, and it is also D44's own answer to what winter work is.
-2. **Clothing**, straight after. It turns winter from survivable into workable, which is
-   §2.7's *unlock by doing* arriving out of a survival mechanic.
+1. **Livestock** — `specs/livestock.md` (D19, D39, D59, D60). An **optional** food source,
+   one of several the village chooses between as it scales, not a tier everyone climbs.
+   Three slices: **pasture, herd and hay** (bought for the winter work, no output at all),
+   then **butchering**, then clothing. It is the one thing that unblocks clothing, and it is
+   also D44's own answer to what winter work is.
+2. **Clothing**, straight after — livestock's third slice. It turns winter from survivable
+   into workable, which is §2.7's *unlock by doing* arriving out of a survival mechanic.
+   Its payoff is **winter labour, not lives** (`specs/clothing.md §5.1`).
 3. **The 7-tile bound** — the biggest payoff on the board and the largest re-derivation.
    **Mechanism settled (D58): per-site yield**, with richer distant sites as its other half.
    Give it a fresh session.
@@ -295,6 +300,12 @@ METHODOLOGY §3.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D60 · 2026-08-01 · The herd starves, and hay is the woodpile's shape a second time.** Joe's calls on `specs/livestock.md`: the slicing, and *"herd starves"*. Three things settled:
+  - **Grazing is free for three seasons; winter is not.** Animals feed themselves on painted pasture from spring to autumn and cost only the tending. In winter there is nothing on the ground, so they eat **hay** — cut in summer, carried to a barn, carried back out. **Deliberately the woodpile's shape** (D53): the honest answer to *"why did the cattle die?"* is **the hay chain failed**, exactly as the honest answer to *"why did somebody freeze?"* is **the fuel chain failed**. One proven shape used twice rather than a second invention.
+  - **The seasonal inversion is the whole design, and the probe is what makes it a decision.** Hay is cut in **summer**, when the village has **0.7 spare hands**, and spent in **winter**, when it has **12.7**. A pasture is labour borrowed from the season with none and repaid in the season with nothing to do. That is why livestock is not merely "a berry patch that also works in winter", and it is the seasons spec's own rule — *a season with teeth is one the player prepares for* — arriving as arithmetic.
+  - **The herd starves rather than merely stops growing** (Joe). A herd that cannot be lost is a free-money button and §2.3 gets nothing from it. The counterweight is written into the spec as a guard rather than a hope: a herd sized to its pasture with a barn built and hands available must survive an ordinary winter every time for 300 years, because **a pressure the player cannot answer is a leak, not a pressure** (D53's framing). And **the herdsman may not freeze** while the herd starves — §7 of the spec, which is what keeps the slice survivable without clothing.
+  - **Hay gets its own barn and does not share the shed**, which is D52 refusing to be re-run: the shed is one room, packing it with logs left firewood nowhere to go and cost the village a third of its population for a century, and a third good in the same room adds a way to fail that the player cannot diagnose.
+  - **Three slices** — pasture/herd/hay, then butchering, then clothing. The first ships with **no output at all**, bought entirely for the winter work and the pressure, which is the clearest statement yet that this is a labour system wearing a food system's clothes.
 - **D59 · 2026-08-01 · Livestock is next, and herding is an *optional* food source rather than a tier every village climbs.** Joe, confirming the queue and correcting its framing in the same breath: *"herding is an optional food source, like fishing, orchards, etc. As the village scales, users can choose between different food sources."* That is a stronger statement than "livestock unblocks clothing", and it constrains the build in three ways:
   - **The derivation may never depend on it.** `RequiredGatherYield` solves for one weakest adult feeding themselves and three dependants **by foraging** (D16, D57), so meat has to be slack on top of that equation rather than a term in it. That is a property livestock happens to have for free — which is also the ordering argument for taking it before the 7-tile bound (D58), the one slice that *does* reopen the derivation chain.
   - **Optional means the sources have to genuinely differ, or the choice is a skin.** Herding's differentiators are structural rather than flavour: it **works in winter**, when foraging cannot; it **occupies land** — a pasture is an area the player paints, D42's brush shape, where every food source so far has been a generated point site; and it **yields something that is not food**, hides and wool, which is clothing's input.
