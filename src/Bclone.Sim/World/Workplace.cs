@@ -2,20 +2,44 @@ namespace Bclone.Sim.World;
 
 /// <summary>Kinds of work. Data-driven content lands here in a later pass.</summary>
 /// <remarks>
-/// <b>On the names:</b> a <see cref="Logger"/> fells trees and a
+/// <b>On the names:</b> a <see cref="Forester"/> fells trees and a
 /// <see cref="Woodcutter"/> splits the logs into firewood (D29). That follows
 /// <em>Banished</em>, and it cuts against everyday usage — colloquially a woodcutter
 /// is the one with the axe in the forest. The split is deliberate: they are two
 /// different jobs in two different places, and the chain between them is the first
 /// secondary processing in the game.
+/// <para>
+/// The first of those was <c>Logger</c> until D86 made the timber chain something the
+/// player sites and keeps rather than something the generator provides. A forester fells
+/// <em>and</em> replants; a logger only ever took. Renaming was cheaper and more honest
+/// than a second job kind — see the value's own remarks.
+/// </para>
 /// </remarks>
 public enum JobKind
 {
     /// <summary>Gather food from a wild source.</summary>
     Forager = 0,
 
-    /// <summary>Fell trees at a stand, producing logs.</summary>
-    Logger = 1,
+    /// <summary>
+    /// Work a wood — fell trees for logs, and in time plant them again (D86).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This was <c>Logger</c>, and it is a rename rather than a new job</b> — the same
+    /// person, doing the same work, on ground somebody chose instead of at an
+    /// inexhaustible stand the generator dropped. Adding <c>JobKind.Forester</c> beside
+    /// <c>Logger</c> would have meant a second quota arm, a second slot in the allocator's
+    /// scarcity order, a second plural, a second behaviour branch and a rule somewhere to
+    /// stop the village staffing both — **machinery invented purely to undo a type that
+    /// should not have existed**, which is the argument D66 made against
+    /// <c>JobKind.Laborer</c> almost word for word.
+    /// </para>
+    /// <para>
+    /// <b>The value stays 1 on purpose.</b> It is hashed by position, so renumbering would
+    /// silently reinterpret every golden as being about a different job.
+    /// </para>
+    /// </remarks>
+    Forester = 1,
 
     /// <summary>Split logs into firewood at a hut. Consumes an input (D29).</summary>
     Woodcutter = 2,

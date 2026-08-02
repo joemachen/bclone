@@ -107,7 +107,7 @@ public sealed class LabourAllocationTests
             loop.StepOnce();
 
             LabourQuota quota = LabourQuota.For(loop.World);
-            int cutting = CountWorking(loop.World, JobKind.Logger);
+            int cutting = CountWorking(loop.World, JobKind.Forester);
             int sparable = System.Math.Max(0, quota.Hands - quota.ForagersToFeedEveryone);
 
             Assert.True(cutting <= sparable,
@@ -130,7 +130,7 @@ public sealed class LabourAllocationTests
 
         // A village founded with an empty larder has no spare hands by definition.
         Assert.True(LabourQuota.VillageIsShortOfFood(loop.World));
-        Assert.Equal(0, quota.Loggers);
+        Assert.Equal(0, quota.Foresters);
         Assert.Equal(quota.Hands, quota.Foragers);
     }
 
@@ -156,7 +156,7 @@ public sealed class LabourAllocationTests
             }
 
             quota = LabourQuota.For(loop.World);
-            if (quota.Loggers > 0)
+            if (quota.Foresters > 0)
             {
                 _output.WriteLine($"{loop.World.Clock.SeasonAndYear()}: {quota}");
                 break;
@@ -164,8 +164,8 @@ public sealed class LabourAllocationTests
         }
 
         Assert.False(LabourQuota.VillageIsShortOfFood(loop.World));
-        Assert.True(quota.Loggers > 0, "A fed village with couples waiting should build.");
-        Assert.Equal(quota.Hands, quota.Foragers + quota.Loggers + quota.Woodcutters);
+        Assert.True(quota.Foresters > 0, "A fed village with couples waiting should build.");
+        Assert.Equal(quota.Hands, quota.Foragers + quota.Foresters + quota.Woodcutters);
     }
 
     [Fact]
@@ -187,7 +187,7 @@ public sealed class LabourAllocationTests
         }
 
         Assert.False(LabourQuota.VillageIsShortOfFood(loop.World));
-        Assert.Equal(0, LabourQuota.LoggersWanted(loop.World));
+        Assert.Equal(0, LabourQuota.ForestersWanted(loop.World));
     }
 
     // ---------------------------------------------------------------
@@ -257,7 +257,7 @@ public sealed class LabourAllocationTests
             mouths: world.Population,
             foragersToFeedEveryone: 1,
             foragers: foraging - 1,
-            loggers: CountWorking(world, JobKind.Logger),
+            foresters: CountWorking(world, JobKind.Forester),
             woodcutters: CountWorking(world, JobKind.Woodcutter),
 
             // Every other kind is asked for exactly what the village already has, so

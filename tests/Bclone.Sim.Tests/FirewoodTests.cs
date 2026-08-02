@@ -128,9 +128,9 @@ public sealed class FirewoodTests
             }
 
             checkedSeasons++;
-            Assert.True(quota.Loggers > 0 || loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs >= config.LogsPerSplit,
+            Assert.True(quota.Foresters > 0 || loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs >= config.LogsPerSplit,
                 $"Season {season}: the village wants {quota.Woodcutters} woodcutters but no " +
-                $"loggers, and only {loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs} logs in store — {quota}");
+                $"foresters, and only {loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs} logs in store — {quota}");
         }
 
         _output.WriteLine($"{checkedSeasons} seasons where the village wanted firewood made");

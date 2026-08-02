@@ -609,7 +609,7 @@ internal static class LabourAllocator
 
     /// <summary>Job kinds, in the order the village cares about them.</summary>
     private static readonly JobKind[] KindsInOrder =
-        { JobKind.Forager, JobKind.Logger, JobKind.Woodcutter, JobKind.Marketer, JobKind.Builder };
+        { JobKind.Forager, JobKind.Forester, JobKind.Woodcutter, JobKind.Marketer, JobKind.Builder };
 
     private static int CountHolding(SimWorld world, JobKind kind)
     {
@@ -726,7 +726,7 @@ internal static class LabourAllocator
     private static string Plural(JobKind kind) => kind switch
     {
         JobKind.Forager => "foragers",
-        JobKind.Logger => "loggers",
+        JobKind.Forester => "foresters",
         JobKind.Woodcutter => "woodcutters",
         JobKind.Marketer => "traders",
         JobKind.Builder => "builders",

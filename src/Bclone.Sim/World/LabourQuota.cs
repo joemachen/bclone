@@ -37,7 +37,7 @@ public readonly record struct LabourQuota
         int mouths,
         int foragersToFeedEveryone,
         int foragers,
-        int loggers,
+        int foresters,
         int woodcutters,
         int marketers = 0,
         int builders = 0)
@@ -47,7 +47,7 @@ public readonly record struct LabourQuota
         Mouths = mouths;
         ForagersToFeedEveryone = foragersToFeedEveryone;
         Foragers = foragers;
-        Loggers = loggers;
+        Foresters = foresters;
         Woodcutters = woodcutters;
         Marketers = marketers;
     }
@@ -73,7 +73,7 @@ public readonly record struct LabourQuota
     public int Foragers { get; }
 
     /// <summary>Hands the village wants felling trees.</summary>
-    public int Loggers { get; }
+    public int Foresters { get; }
 
     /// <summary>Hands the village wants splitting logs into firewood.</summary>
     public int Woodcutters { get; }
@@ -88,7 +88,7 @@ public readonly record struct LabourQuota
     public int For(JobKind kind) => kind switch
     {
         JobKind.Forager => Foragers,
-        JobKind.Logger => Loggers,
+        JobKind.Forester => Foresters,
         JobKind.Woodcutter => Woodcutters,
         JobKind.Marketer => Marketers,
         JobKind.Builder => Builders,
@@ -162,13 +162,13 @@ public readonly record struct LabourQuota
         }
 
         // THE CHAIN, WORKED BACKWARDS (D29). Homes need heating, so the village wants
-        // woodcutters; woodcutters eat logs, so it wants loggers — for the firewood
+        // woodcutters; woodcutters eat logs, so it wants foresters — for the firewood
         // as well as for the houses. Demand propagates back down the chain rather
         // than each workplace guessing at its own, which is the same lesson the
         // forager quota is a record of, one link further along.
         int woodcutters = WoodcuttersWanted(world);
-        int loggersForHuts = LoggersToFeedTheHuts(world, woodcutters);
-        int loggersForHouses = LoggersWanted(world);
+        int forestersForHuts = LoggersToFeedTheHuts(world, woodcutters);
+        int forestersForHouses = ForestersWanted(world);
         int marketersWanted = MarketersWanted(world);
         int buildersWanted = BuildersWanted(world);
 
@@ -198,8 +198,8 @@ public readonly record struct LabourQuota
         if (FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world))
         {
             woodcutters = 0;
-            loggersForHuts = 0;
-            loggersForHouses = 0;
+            forestersForHuts = 0;
+            forestersForHouses = 0;
             marketersWanted = 0;
             buildersWanted = 0;
         }
@@ -254,8 +254,8 @@ public readonly record struct LabourQuota
 
         if (limits.IsMet(Goods.Logs, world.LogsInSheds()))
         {
-            loggersForHuts = 0;
-            loggersForHouses = 0;
+            forestersForHuts = 0;
+            forestersForHouses = 0;
         }
 
         // Food is the one that can cost lives, and it is still obeyed. §3 of the spec: a
@@ -267,11 +267,11 @@ public readonly record struct LabourQuota
 
         int foragers = canGather && !foodIsEnough ? Take(ref free, toFeedEveryone) : 0;
         woodcutters = Take(ref free, Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter)));
-        int loggers = Take(ref free, Cap(loggersForHuts, TotalCapacityFor(world, JobKind.Logger)));
+        int foresters = Take(ref free, Cap(forestersForHuts, TotalCapacityFor(world, JobKind.Forester)));
 
         // Only now the discretionary half: logs for the homes the village wants to
         // build. This is the one that yields when times are hard.
-        loggers += Take(ref free, Cap(loggersForHouses, TotalCapacityFor(world, JobKind.Logger) - loggers));
+        foresters += Take(ref free, Cap(forestersForHouses, TotalCapacityFor(world, JobKind.Forester) - foresters));
 
         // And the market, last of all, out of hands nobody else needs (D14).
         //
@@ -317,7 +317,7 @@ public readonly record struct LabourQuota
         // village a third of its population. D52 has the measurements.
         //
         // So the idle winter is narrowed rather than filled. Removing the food floor still
-        // gives the woodcutters and loggers the village DOES want first call on every
+        // gives the woodcutters and foresters the village DOES want first call on every
         // hand, which is the half of D44 that was a real bug. The half that is left —
         // hands with genuinely nothing to do between the last harvest and the first — is
         // not a gap to paper over with make-work: it is D44's own forward note, and it
@@ -332,7 +332,7 @@ public readonly record struct LabourQuota
         }
 
         return new LabourQuota(
-            hands, mouths, toFeedEveryone, foragers, loggers, woodcutters, marketers, builders);
+            hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders);
     }
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
@@ -359,7 +359,7 @@ public readonly record struct LabourQuota
     }
 
     /// <summary>
-    /// How many loggers the village has a use for.
+    /// How many foresters the village has a use for.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -372,7 +372,7 @@ public readonly record struct LabourQuota
     /// <para>
     /// Deriving it mattered more than expected. The first version simply spared every
     /// hand not needed for food, which for a founding village of four adults meant
-    /// <em>two loggers</em> — and one cutter produces enough timber for several
+    /// <em>two foresters</em> — and one cutter produces enough timber for several
     /// houses a year, so the village was putting half its labour into a resource it
     /// could not spend while the other half tried to feed everyone. It oscillated for
     /// a century and died. Wood is simply much cheaper than food, and the quota had no
@@ -384,7 +384,7 @@ public readonly record struct LabourQuota
     /// of the question stays the same; only the demand side grows.
     /// </para>
     /// </remarks>
-    public static int LoggersWanted(SimWorld world)
+    public static int ForestersWanted(SimWorld world)
     {
         ArgumentNullException.ThrowIfNull(world);
 
@@ -543,7 +543,7 @@ public readonly record struct LabourQuota
     }
 
     /// <summary>
-    /// Extra loggers needed to keep the huts in logs.
+    /// Extra foresters needed to keep the huts in logs.
     /// </summary>
     /// <remarks>
     /// The back-propagation step. Without it the village staffs its huts, burns
@@ -715,5 +715,5 @@ public readonly record struct LabourQuota
     /// <summary>A one-line summary, for logs and for the sentence shown to the player.</summary>
     public override string ToString() =>
         $"{Hands} hands for {Mouths} mouths: {Foragers} foraging " +
-        $"(at least {ForagersToFeedEveryone} to feed everyone), {Loggers} cutting.";
+        $"(at least {ForagersToFeedEveryone} to feed everyone), {Foresters} cutting.";
 }

@@ -306,7 +306,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (IsCutting(state))
         {
-            return JobKind.Logger;
+            return JobKind.Forester;
         }
 
         if (IsTrading(state))
@@ -1285,7 +1285,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         // Timber. Fellable year-round, unlike berries, so a logger still has
         // something to do in winter - which is part of why the job is worth holding.
-        if (villager.CanWork && job?.Kind == JobKind.Logger)
+        if (villager.CanWork && job?.Kind == JobKind.Forester)
         {
             if (villager.Position == job.Position)
             {

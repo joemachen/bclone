@@ -352,7 +352,17 @@ have decide how much is actually kept, and the village **warns without refusing*
 rest will go untended."* **D86's "to a limit" needed no number of its own:** a workplace cannot
 be staffed past its capacity, so the ceiling is capacity × per-worker, derived (D16). Being
 overstretched is a **state**, not just a moment — lose a forester and this morning's ground is
-too much. 427 tests green, goldens unmoved. Next: **C3c-ii** — the forester's hut itself: placed and staffed like a
+too much. 427 tests green, goldens unmoved.
+
+**C3c-ii is done** ✅ — **`JobKind.Logger` became `JobKind.Forester`, and it is a rename rather
+than a new job.** Joe: *"foresters replace loggers — is there a more elegant way to make that
+transition?"* There is, and it is not adding an enum value: a second kind would have meant a
+second quota arm, a second slot in the allocator's scarcity order, a second plural, a second
+behaviour branch and a rule to stop the village staffing both — **machinery invented purely to
+undo a type that should not exist**, which is D66's argument against `JobKind.Laborer` almost
+word for word. The value stays `1`, so nothing renumbered and **both goldens are unmoved**:
+the transition's first step is provably a no-op, which is what makes the next ones safe. Next:
+**C3c-iii** — the forester's hut itself: placed and staffed like a
 woodcutter's, its ground painted, felling comes off *its* tiles, the forest recedes, and the
 village warns when the paint outruns the hands. **Tree stands retire here.** **C3d** — laborers
 and finite deposits (§5.2 of `specs/mutable-terrain.md`). **Planting is not in C3** — it is

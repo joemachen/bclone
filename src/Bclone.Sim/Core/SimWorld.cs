@@ -1203,7 +1203,7 @@ public sealed class SimWorld
             Workplaces.Add(new Workplace
             {
                 Id = nextWorkplaceId++,
-                Kind = JobKind.Logger,
+                Kind = JobKind.Forester,
                 Name = standNames[i],
                 Position = Map.TreeStands[i],
                 Capacity = config.TreeStandCapacity,

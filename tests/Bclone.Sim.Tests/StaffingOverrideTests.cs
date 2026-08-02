@@ -55,7 +55,7 @@ public sealed class StaffingOverrideTests
 
         loop.Step(Config.TicksPerYear * 5);
 
-        Workplace stand = world.Workplaces.First(w => w.Kind == JobKind.Logger);
+        Workplace stand = world.Workplaces.First(w => w.Kind == JobKind.Forester);
         world.SetStaffing(stand, 0);
 
         loop.Step(Config.TicksPerYear * 5);
@@ -73,7 +73,7 @@ public sealed class StaffingOverrideTests
         SimWorld world = loop.World;
         loop.Step(Config.TicksPerYear * 5);
 
-        Workplace stand = world.Workplaces.First(w => w.Kind == JobKind.Logger);
+        Workplace stand = world.Workplaces.First(w => w.Kind == JobKind.Forester);
 
         world.SetStaffing(stand, 0);
         Assert.Equal(0, stand.Places);
@@ -85,7 +85,7 @@ public sealed class StaffingOverrideTests
         // Asserted on the MECHANISM, not on the village's appetite, and that is a
         // correction worth recording. The first version of this test demanded the stand
         // be staffed again within a few years and failed — correctly. There are two tree
-        // stands and the village only wants loggers when it wants wood, so this
+        // stands and the village only wants foresters when it wants wood, so this
         // particular one may honestly go decades unused. Demanding otherwise would have
         // been asserting that the quota is broken.
         //
@@ -117,7 +117,7 @@ public sealed class StaffingOverrideTests
         Assert.Equal(before, StateHash.Compute(closed.World));
 
         closed.World.SetStaffing(
-            closed.World.Workplaces.First(w => w.Kind == JobKind.Logger), 0);
+            closed.World.Workplaces.First(w => w.Kind == JobKind.Forester), 0);
 
         Assert.NotEqual(StateHash.Compute(untouched.World), StateHash.Compute(closed.World));
     }
@@ -146,7 +146,7 @@ public sealed class StaffingOverrideTests
         SimWorld world = loop.World;
         loop.Step(Config.TicksPerYear * 6);
 
-        Workplace stand = world.Workplaces.First(w => w.Kind == JobKind.Logger);
+        Workplace stand = world.Workplaces.First(w => w.Kind == JobKind.Forester);
         world.SetStaffing(stand, 1);
         loop.Step(Config.TicksPerYear * 4);
 

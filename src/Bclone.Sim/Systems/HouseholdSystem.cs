@@ -116,7 +116,7 @@ public sealed class HouseholdSystem : ISimSystem
     /// <b>Found by playing it, not by reasoning about it.</b> Joe's first cold start: all
     /// four founders froze in winter 1 without a single log being cut, and the tree stand
     /// read <em>"the village wants 0 on this kind of work"</em> — because
-    /// <c>LoggersWanted</c> counted only unpaired seekers, and because even with timber
+    /// <c>ForestersWanted</c> counted only unpaired seekers, and because even with timber
     /// nothing would have spent it. Two halves of one gap.
     /// </para>
     /// <para>

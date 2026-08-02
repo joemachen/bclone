@@ -1142,7 +1142,7 @@ public partial class VillageMap : Control
     private static Color ColourOf(JobKind kind) => kind switch
     {
         JobKind.Forager => BerryColour,
-        JobKind.Logger => TreeColour,
+        JobKind.Forester => TreeColour,
         JobKind.Woodcutter => HutColour,
         _ => MarketColour,
     };

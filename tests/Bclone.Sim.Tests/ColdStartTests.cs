@@ -189,7 +189,7 @@ public sealed class ColdStartTests
     /// <b>Written after Joe played it and everyone died anyway</b>, which is what this guard
     /// exists to stop happening twice. Two bugs made the opening unwinnable rather than hard
     /// (D72): a family that already existed and had no roof was invisible to
-    /// <c>LoggersWanted</c>, so the village wanted nobody at the tree stand; and building
+    /// <c>ForestersWanted</c>, so the village wanted nobody at the tree stand; and building
     /// timber was drawn only from sheds, of which a cold start has none, so even felled logs
     /// could not become a house.
     /// </para>

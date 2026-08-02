@@ -166,7 +166,7 @@ public sealed class MapGenerationTests
                 thickets++;
             }
 
-            if (workplace.Kind == JobKind.Logger)
+            if (workplace.Kind == JobKind.Forester)
             {
                 Assert.DoesNotContain("thicket", workplace.Name, System.StringComparison.Ordinal);
                 woods++;
@@ -525,7 +525,7 @@ public sealed class MapGenerationTests
                 return workplace.Kind switch
                 {
                     JobKind.Forager => 'F',
-                    JobKind.Logger => 'T',
+                    JobKind.Forester => 'T',
                     JobKind.Woodcutter => 'W',
                     _ => 'M',
                 };

@@ -44,7 +44,7 @@ public sealed class WoodTests
             loop.Step(Config.TicksPerSeason);
             Workplace stand = FindStand(loop.World);
             mostAtOnce = System.Math.Max(mostAtOnce, stand.WorkerIds.Count);
-            Assert.Equal(JobKind.Logger, stand.Kind);
+            Assert.Equal(JobKind.Forester, stand.Kind);
         }
 
         _output.WriteLine($"most at the stand at once, over 40 years: {mostAtOnce}");
@@ -281,7 +281,7 @@ public sealed class WoodTests
     {
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
-            if (world.Workplaces[i].Kind == JobKind.Logger)
+            if (world.Workplaces[i].Kind == JobKind.Forester)
             {
                 return world.Workplaces[i];
             }

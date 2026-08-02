@@ -380,9 +380,9 @@ public static class VillageEconomy
         int woodcutters = CeilingDivide(firewoodNeeded, FirewoodMadePerYearAtWorst(config));
 
         int logsNeeded = woodcutters * LogsConsumedPerYearAtWorst(config);
-        int loggers = CeilingDivide(logsNeeded, WoodCutPerYearAtWorst(config));
+        int foresters = CeilingDivide(logsNeeded, WoodCutPerYearAtWorst(config));
 
-        return woodcutters + loggers;
+        return woodcutters + foresters;
     }
 
     /// <summary>
@@ -425,7 +425,7 @@ public static class VillageEconomy
     /// </para>
     /// <para>
     /// Solved by search rather than algebra because there are two ceilings in the
-    /// chain — woodcutters rounded up, then the loggers who feed them rounded up
+    /// chain — woodcutters rounded up, then the foresters who feed them rounded up
     /// again — and inverting that in closed form would be clever in the bad way.
     /// A handful of integer iterations at start-up is not worth being clever about.
     /// </para>

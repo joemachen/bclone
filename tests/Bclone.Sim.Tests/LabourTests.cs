@@ -405,7 +405,7 @@ public sealed class LabourTests
         // D52, and the reason the first idle-winter fix was wrong. Spare winter hands
         // were sent to the woods, bounded only by the tree stands' seats and by "is any
         // shed not yet full?" — which bounds the SHED, not the work. Demand for timber
-        // is answered twice over in LabourQuota.For, by LoggersWanted for the houses
+        // is answered twice over in LabourQuota.For, by ForestersWanted for the houses
         // and by the hut chain for firewood, and both are funded before that fill ran.
         // So when BOTH said nobody, the fill still staffed every seat.
         //
@@ -429,7 +429,7 @@ public sealed class LabourTests
         {
             loop.Step(config.TicksPerSeason);
 
-            if (LabourQuota.LoggersWanted(loop.World) > 0
+            if (LabourQuota.ForestersWanted(loop.World) > 0
                 || LabourQuota.WoodcuttersWanted(loop.World) > 0)
             {
                 continue;
@@ -442,8 +442,8 @@ public sealed class LabourTests
             }
 
             LabourQuota quota = LabourQuota.For(loop.World);
-            Assert.True(quota.Loggers == 0,
-                $"The village wants {quota.Loggers} at the stand in " +
+            Assert.True(quota.Foresters == 0,
+                $"The village wants {quota.Foresters} at the stand in " +
                 $"{loop.World.Clock.SeasonAndYear()}, with no house waiting on timber and no " +
                 $"firewood wanted. It already holds {loop.World.TotalLogs()} logs.");
         }

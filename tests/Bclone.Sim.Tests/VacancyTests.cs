@@ -120,7 +120,7 @@ public sealed class VacancyTests
 
         LabourQuota wanted = LabourQuota.For(loop.World);
         Assert.True(
-            wanted.Foragers + wanted.Loggers + wanted.Woodcutters > 0,
+            wanted.Foragers + wanted.Foresters + wanted.Woodcutters > 0,
             "The village wants no work of any kind at the moment this is sampled, so "
             + "emptying its workplaces cannot possibly change the answer. That is a broken "
             + "control, not a broken alert.");

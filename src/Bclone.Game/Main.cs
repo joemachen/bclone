@@ -749,7 +749,7 @@ public partial class Main : Control
     private static string Describe(JobKind kind) => kind switch
     {
         JobKind.Forager => "food is gathered here",
-        JobKind.Logger => "trees are felled here",
+        JobKind.Forester => "trees are felled here",
         JobKind.Woodcutter => "logs are split into firewood here",
         JobKind.Marketer => "goods are handed out from here",
         JobKind.Builder => "something is being raised here",
@@ -1253,7 +1253,7 @@ public partial class Main : Control
         return job?.Kind switch
         {
             JobKind.Forager => "forager",
-            JobKind.Logger => "logger",
+            JobKind.Forester => "forester",
             JobKind.Woodcutter => "woodcutter",
             JobKind.Marketer => "marketer",
             JobKind.Builder => "builder",

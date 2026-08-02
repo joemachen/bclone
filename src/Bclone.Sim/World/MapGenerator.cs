@@ -46,7 +46,7 @@ public static class MapGenerator
         CarveRiver(config, rng, terrain, width, height);
 
         // ---- 2. Forest stands --------------------------------------
-        // Clusters, never scatter: a stand is a place you walk to, and JobKind.Logger
+        // Clusters, never scatter: a stand is a place you walk to, and JobKind.Forester
         // already assumes one. Scattered trees would be texture.
         var standCentres = new List<GridPos>();
         int stands = config.TreeStandCount;
