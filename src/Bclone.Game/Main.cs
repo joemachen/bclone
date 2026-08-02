@@ -288,6 +288,15 @@ public partial class Main : Control
             $"{world.TotalFood()} food all told, {world.FoodInGranaries()} of it in the granaries · " +
             $"{world.LogsInSheds()} logs and {world.FirewoodInSheds()} firewood in the sheds";
 
+        // What each limited good actually stands at, beside the number the player set —
+        // so "nobody is splitting logs" and "you asked for 200 and there are 214" are the
+        // same glance rather than two.
+        for (int i = 0; i < _stockLimitReadouts.Count; i++)
+        {
+            (Goods goods, Label held) = _stockLimitReadouts[i];
+            held.Text = $"have {HeldFor(world, goods)}";
+        }
+
         // The standing alerts, into their own strip rather than onto the end of the
         // header. Both are STATES rather than events — a couple is waiting right now, a
         // workplace is empty right now — which is why they are here at all instead of
@@ -982,6 +991,7 @@ public partial class Main : Control
         controls.AddChild(recentre);
 
         body.AddChild(BuildBuildMenu());
+        body.AddChild(BuildStockLimitMenu());
 
         // The refusal or the warning, in the words the sim already produced — on its own
         // line rather than squeezed between the buttons. Same standard as JobReason: a
@@ -1113,6 +1123,138 @@ public partial class Main : Control
     /// the village for something, so they get their own row rather than being mixed in
     /// with the camera.
     /// </remarks>
+    /// <summary>
+    /// The stock limits (D62) — how much of each good the village should keep.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Folded away behind a toggle, and that is the design rather than tidiness.</b> The
+    /// sim's default is null — <em>let the village decide</em> — and §1.2 says a game that
+    /// opens with a number against every good is the spreadsheet game whatever the numbers
+    /// say. A player who never opens this drawer plays exactly the village that existed
+    /// before it, and there is a golden hash test that says so. Putting three spin boxes on
+    /// screen permanently would undo that in the only place it actually matters: what the
+    /// player sees on the first frame.
+    /// </para>
+    /// <para>
+    /// <b>Each good gets a "village decides" tick alongside its number</b>, because null and
+    /// zero are different instructions — <em>no opinion</em> against <em>stop, I mean it</em>
+    /// — and a spin box alone cannot say the first. Conflating them in the UI would make the
+    /// sim's careful distinction unreachable from the game.
+    /// </para>
+    /// <para>
+    /// <b>The current stock sits beside the limit</b>, so a stopped workplace explains
+    /// itself where the decision was made: <em>200 · have 214</em> is the whole causal chain
+    /// in five characters, which is §1.1's test.
+    /// </para>
+    /// </remarks>
+    private VBoxContainer BuildStockLimitMenu()
+    {
+        var wrapper = new VBoxContainer();
+        wrapper.AddThemeConstantOverride("separation", 4);
+
+        var rows = new VBoxContainer { Visible = false };
+        rows.AddThemeConstantOverride("separation", 2);
+
+        // Left-aligned and sized to its own text: a VBox stretches its children, and a
+        // toggle spanning the whole panel reads as a section header rather than a button
+        // you press.
+        var toggleRow = new HBoxContainer();
+        var toggle = new Button { Text = "Stock limits", ToggleMode = true };
+        toggle.Toggled += on => rows.Visible = on;
+        toggleRow.AddChild(toggle);
+        toggleRow.AddChild(Muted("— how much to keep before the work stops"));
+
+        wrapper.AddChild(toggleRow);
+        wrapper.AddChild(rows);
+
+        foreach (Goods goods in StockLimits.Kinds)
+        {
+            rows.AddChild(BuildStockLimitRow(goods));
+        }
+
+        return wrapper;
+    }
+
+    /// <summary>One good's limit: a name, a "village decides" tick, a number, and the stock.</summary>
+    private HBoxContainer BuildStockLimitRow(Goods goods)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 6);
+
+        Label name = Muted(GoodsName(goods));
+        name.CustomMinimumSize = new Vector2(74, 0);
+        row.AddChild(name);
+
+        var auto = new CheckBox { Text = "village decides", ButtonPressed = true };
+        var amount = new SpinBox
+        {
+            MinValue = 0,
+            MaxValue = 100_000,
+            Step = 10,
+            Value = 200,
+            Editable = false,
+            CustomMinimumSize = new Vector2(110, 0),
+        };
+
+        Label held = Muted(string.Empty);
+        held.CustomMinimumSize = new Vector2(90, 0);
+
+        void Apply()
+        {
+            amount.Editable = !auto.ButtonPressed;
+            int? limit = auto.ButtonPressed ? null : (int)amount.Value;
+
+            PlacementVerdict verdict = _loop.World.SetStockLimit(goods, limit);
+            if (verdict.HasWarning)
+            {
+                // The sim's own sentence, in the channel that already carries the sim's own
+                // sentences (D43's placement warnings). One voice, not two.
+                _placementLabel.Text = verdict.Warning;
+                _placementLabel.Visible = true;
+            }
+        }
+
+        auto.Toggled += _ => Apply();
+        amount.ValueChanged += _ => Apply();
+
+        row.AddChild(auto);
+        row.AddChild(amount);
+        row.AddChild(held);
+
+        _stockLimitReadouts.Add((goods, held));
+        return row;
+    }
+
+    /// <summary>The "have N" labels, refreshed with everything else.</summary>
+    private readonly List<(Goods Goods, Label Held)> _stockLimitReadouts = new();
+
+    private static string GoodsName(Goods goods) => goods switch
+    {
+        Goods.Food => "Food",
+        Goods.Logs => "Logs",
+        Goods.Firewood => "Firewood",
+        _ => goods.ToString(),
+    };
+
+    /// <summary>
+    /// How much of a good the limit is actually measured against.
+    /// </summary>
+    /// <remarks>
+    /// <b>The same total <c>LabourQuota</c> reads, and it must stay that way.</b> Firewood is
+    /// counted in the sheds, not everywhere, because a pile in somebody else's home is not
+    /// supply — no errand reaches it. Showing the player a village-wide total beside a limit
+    /// that governs the shed would explain a stopped woodcutter with a number that had
+    /// nothing to do with why it stopped, which is D29 wearing a UI.
+    /// </remarks>
+    private static int HeldFor(SimWorld world, Goods goods) => goods switch
+    {
+        Goods.Food => world.FoodInGranaries(),
+        Goods.Logs => world.LogsInSheds(),
+        Goods.Firewood => world.FirewoodInSheds(),
+        _ => 0,
+    };
+
     private HBoxContainer BuildBuildMenu()
     {
         var row = new HBoxContainer();
