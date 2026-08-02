@@ -285,8 +285,8 @@ public partial class Main : Control
         // overlap, so a village with 2,000 food in store showed a few hundred.
         _villageLabel.Text =
             $"{world.Population} villagers · {LivingHouseholds(world)} households · " +
-            $"{world.TotalFood()} food all told, {world.FoodInGranaries()} of it in the granaries · " +
-            $"{world.LogsInSheds()} logs and {world.FirewoodInSheds()} firewood in the sheds";
+            $"{world.TotalFood()} food all told, {world.FoodInGranaries()} of it in the stores · " +
+            $"{world.LogsInSheds()} logs and {world.FirewoodInSheds()} firewood in the stores";
 
         // What each limited good actually stands at, beside the number the player set —
         // so "nobody is splitting logs" and "you asked for 200 and there are 214" are the

@@ -276,6 +276,63 @@ public sealed class ColdStartTests
             + $"opening as designed; {frozen} froze.");
     }
 
+    /// <summary>
+    /// ⭐ And it is still alive after five years — winter 1 was never the hard one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe played the opening twice and both villages starved in winter 2.</b> Every
+    /// guard here stopped at one year, so the game was tested precisely up to the point it
+    /// began going wrong. His cart held <b>541 firewood</b> and nobody was foraging: with no
+    /// shed built, <c>FirewoodInSheds</c> read zero however much fuel was standing about, so
+    /// the fuel quota kept every spare hand on the chain and the berry patches sat empty
+    /// (D79).
+    /// </para>
+    /// <para>
+    /// Five years rather than two, because the failure was a <em>drift</em> — the village
+    /// looked fine at the end of year 1 and was already committing the mistake that killed
+    /// it. A guard that stops the tick after the danger starts is the one that let this
+    /// through.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheOpeningStillHasAVillageFiveYearsLater()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        GridPos site = world.Map.FoundingSite;
+        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
+
+        for (int dy = -4; dy <= 4; dy++)
+        {
+            for (int dx = -4; dx <= 4; dx++)
+            {
+                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
+            }
+        }
+
+        MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+
+        loop.Step(config.TicksPerYear * 5);
+
+        int starved = CountDeaths(world, CauseOfDeath.Starvation);
+        int frozen = CountDeaths(world, CauseOfDeath.Cold);
+        _output.WriteLine(
+            $"five years on: {world.Population} alive, {starved} starved, {frozen} frozen, "
+            + $"{world.TotalFood()} food and {world.FirewoodInSheds()} firewood in reach");
+
+        Assert.True(
+            starved == 0,
+            $"{starved} founders starved in the first five years, with {world.TotalFood()} "
+            + "food in the village. Somebody is not being sent to pick berries.");
+
+        Assert.True(
+            world.Population >= config.StartingPopulation,
+            $"The village fell to {world.Population} from {config.StartingPopulation}.");
+    }
+
     // ---------------------------------------------------------------
     //  The tie back to what ships
     // ---------------------------------------------------------------

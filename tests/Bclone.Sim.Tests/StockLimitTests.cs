@@ -33,9 +33,15 @@ public sealed class StockLimitTests
     // silent. This is the ONLY sanctioned reason to touch these: if a change moves them
     // and cannot say why in one sentence, the change is wrong, not the golden.
     //
-    //   before the restock: fixture 6240348392465688561, shipped 7734052055491107200
-    private const ulong FixtureFiftyYearHash = 13156470216450962100UL;
-    private const ulong ShippedFiftyYearHash = 13143121898114073713UL;
+    //   before the restock (D77): fixture 6240348392465688561, shipped 7734052055491107200
+    //   before the supply fix (D79): fixture 13156470216450962100, shipped 13143121898114073713
+    //
+    // D79 moved them a second time and for a bigger reason: the fuel quota had been reading
+    // firewood in SHEDS, so a village whose fuel sat in a cart or a pile believed it had
+    // none and put every spare hand on the chain forever. Correcting what the village can
+    // see changes what it does, which changes its history. That is the golden working.
+    private const ulong FixtureFiftyYearHash = 14798520869458526773UL;
+    private const ulong ShippedFiftyYearHash = 3491502518393071633UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

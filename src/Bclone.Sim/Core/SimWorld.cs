@@ -126,13 +126,50 @@ public sealed class SimWorld
     // would have let the ones nobody re-read keep the old answer.
 
     /// <summary>Total food across every granary in the village.</summary>
-    public int FoodInGranaries() => TotalIn(StoreKind.Granary, static store => store.Food);
+    public int FoodInGranaries() => TotalAccepting(Goods.Food, static store => store.Food);
 
-    /// <summary>Total logs across every shed.</summary>
-    public int LogsInSheds() => TotalIn(StoreKind.Shed, static store => store.Logs);
+    /// <summary>Total logs anywhere a household or a builder could fetch them from.</summary>
+    public int LogsInSheds() => TotalAccepting(Goods.Logs, static store => store.Logs);
 
-    /// <summary>Total firewood across every shed — what a household can actually fetch.</summary>
-    public int FirewoodInSheds() => TotalIn(StoreKind.Shed, static store => store.Firewood);
+    /// <summary>
+    /// Total firewood the village can actually reach — the supply the fuel quota reads.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Any store that takes firewood, not only a shed (D79).</b> D29's rule is that a pile
+    /// in <em>somebody's house</em> is not supply, because no errand reaches it — and that
+    /// still holds, because household larders are not stores. But a cart and a storage pile
+    /// are, and reading only sheds made them invisible.
+    /// </para>
+    /// <para>
+    /// <b>Measured by Joe, twice, and it starved his village.</b> A cold start has no shed,
+    /// so this returned zero however much fuel was standing about: `WoodcuttersWanted` saw a
+    /// village with no firewood at all and put every spare hand on the fuel chain, forever.
+    /// His cart held <b>541 firewood</b> and nobody was foraging — <em>"they were cold too,
+    /// but it was hunger that killed them."</em>
+    /// </para>
+    /// <para>
+    /// <b>This is the D76 seam on the quota side</b>, which `specs/storage-piles.md §4.1`
+    /// named and then did not fix. The lesson is that widening the finders was half the job:
+    /// anything that answers <em>how much has the village got?</em> had the same bug.
+    /// </para>
+    /// </remarks>
+    public int FirewoodInSheds() => TotalAccepting(Goods.Firewood, static store => store.Firewood);
+
+    /// <summary>Sum a good across every store that will hold it, reachable or not.</summary>
+    private int TotalAccepting(Goods goods, Func<Stockpile, int> read)
+    {
+        int total = 0;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Accepts(goods))
+            {
+                total += read(StoreBuildings[i].Store);
+            }
+        }
+
+        return total;
+    }
 
     /// <summary>How much food the village's granaries can hold between them.</summary>
     public int GranaryCapacity() => TotalIn(StoreKind.Granary, static store => store.Capacity);
