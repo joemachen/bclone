@@ -279,6 +279,19 @@ is weather** — but its proposed centre of gravity did not (D44). Slices, in or
 - **A housekeeping pass** (D57). Two live bugs fixed, eleven dead symbols removed, and the
   docs reconciled with the game. 373 tests green.
 
+- **The couple that stayed home** ✅ (D81). Joe watched one founding household do most of
+  the work while the other sat at home, and **both of the candidates written into D80 were
+  measured dead**: the emergency restock fires on 0.00% of their ticks, and the two
+  households held jobs equally (75.6% against 74.7%) from homes the same distance from the
+  same berries. **The cause was that the village had nowhere to put food and therefore never
+  wanted any** — `FoodTheGranaryHasRoomFor` counted granaries by kind while the figure it was
+  compared against counted every store that takes food, so a cold start with a pile and a
+  cart scored **zero room** and the village-wide reason to work fired on **0.0%** of
+  gatherable ticks. With only *my own larder* left as a reason, the family that filled theirs
+  first rested for a century. **D76's seam for the fifth time.** Work shares over twenty years
+  went from 4.3%/6.7% to **7.1%/8.2%**, and a pile-only village went from **dead at a hundred
+  years** to seven people in five households. 405 tests green.
+
 **In progress:** **Slice A — stock limits and laborers** (`specs/stock-limits-and-laborers.md`,
 D62–D66), **sim complete, awaiting its view and Joe's QA pass.** `StockLimits` is player intent
 held on the world and hashed; `LabourQuota.For` caps the derived demand with it;
@@ -362,6 +375,19 @@ village wants one.
 ## 7. Decisions Log
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
+
+- **D81 · 2026-08-02 · A village with nowhere to put food never sends anyone to get any — and that, not the allocator, is why one couple stayed home.** D80's open question, probed before a line was changed. **Both of D80's candidates measure as dead and a third cause is decisive.**
+  - **What Joe saw, in numbers.** Twenty years of his opening on the shipped config: household 1 spent **4.3%** of its able-adult ticks at work against household 2's **6.7%**, and in **year one it was 4.1% against 26.0%** — his *"one couple stays home"* exactly. **Household 1 rests on all eight seeds tested** (2.8–5.1% against 17.0–19.3%), so it is systematic rather than one unlucky valley.
+  - **⛔ The emergency restock (D77) is not it.** Both founding households spent **0.00%** of their ticks on fetch errands, over twenty years and over a hundred. It cannot cause a split it never fires in.
+  - **⛔ The cost-first pass is not it either, in the form D80 proposed.** The two households held jobs **equally** — 75.6% against 74.7% — and their homes are **the same travel cost (10) from the nearest berries**. The allocator was sharing the *posts* out evenly; the resting household simply never went to theirs.
+  - **✅ The cause: `FoodTheGranaryHasRoomFor` asked by kind while the amount it was compared against asked by capability.** There are two reasons to forage — *my family is short*, or *the village is* — and the village's half is measured against the room it has to store more. That room read `GranaryCapacity()`, which counts **granaries**; `FoodInGranaries()`, the other side of the same comparison, counts **every store that takes food**. **One comparison, two questions** — and a cold start is where they part: no granary, no room, so *"does the village want more food?"* answered **no, forever**, beside a pile with room for eleven hundred. **Measured: the village-wide reason to work fired on 0.0% of gatherable ticks, against 99.9% when asked by capability.**
+  - **With only one reason left, the split is inevitable and self-sustaining.** A forager's harvest goes to a *store*, not to their own larder, so the household that works never fills its own larder and works forever, while the household that filled theirs once rests for a century. **`TargetFoodForTheGranary`'s own remarks predicted this failure in as many words** — *"the founding woodcutters starved in year one while the other house sat on three hundred food and its foragers put their feet up"* — and the second reason to work exists solely to prevent it. It had been switched off in the one world that needed it.
+  - **This is D76's seam for the fifth time and D79's for the second.** D79 widened `FirewoodInSheds` and `LogsInSheds`; the *capacity* side was never looked at. **Widening the finders and the totals was two thirds of the job.**
+  - **After: 7.1% against 8.2% over twenty years**, and the pile-only village **survives instead of dying out** — population 4 at twenty years and **0 at a hundred** before, against **9 and 7-in-five-households** after. It never had a child because it never built a store, because nobody was ever sent to fill one.
+  - **The birth gate is deliberately untouched.** `GranaryCapacity()` still answers by kind, because *how big may this village get?* is answered **per granary** on purpose (D33, D39) — "build another one" is the intended reply. Only the *work* question was widened, and it has exactly one call site. Renamed `FoodTheVillageHasRoomFor`, because the old name was the bug written down.
+  - **One golden moved and one did not, and the asymmetry is measured rather than lucky.** The two answers can only differ once a village's food target climbs past its granary capacity: **681 of 24,000 fixture ticks (2.8%)** and **0 of 24,000 shipped ticks**. Fixture `14798520869458526773` → `11013974864926656020`; shipped unchanged at `3491502518393071633`.
+  - **⚠️ A residual gap is left standing, and it is a design question rather than a bug.** Year one is still 7.5% against 26.5%, because the household nearer the timber gets the **logger's** seat and a logger works about **a third** of their ticks where a forager works a **twentieth**. The allocator is fair by headcount and the *job kinds* are not equal work. **Joe's call** — rotate the assignment, price the duty cycle into the quota, or keep it as legible inequality (§2.2). Guarded at a factor of two so the fix cannot silently regress while the design question stays open.
+  - **Five sessions running: every diagnosis reasoned from precedent lost, every one from a probe won.** Both written-down candidates were wrong and ten minutes of measurement said so.
 
 - **D80 · 2026-08-02 · Full is not the same as absent, and one word cannot answer two questions.** Three findings from Joe playing the pile opening; two fixed, one open.
   - **⛔ A full village crashed.** He demolished the cart to see whether goods would go to the storage pile — *"they did!"* — and then the sim threw **every tick**: *"Otto has a load to put down and the village has no Shed and no cart."* Every branch of `StoreForTheLoad` filtered on `!IsFull`, so once the pile filled there were no candidates left and the last resort was a stack trace, **while a perfectly good pile stood in the square.** A village whose stores are full has a *problem*; it does not have an invariant violation. They now walk to the nearest place that would take the load if it could and keep holding it until there is room — which is what a person does. The throw survives for the genuinely degenerate case: no store of any kind accepts this good.

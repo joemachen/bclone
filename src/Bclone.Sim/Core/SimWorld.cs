@@ -1687,7 +1687,7 @@ public sealed class SimWorld
     /// </para>
     /// <para>
     /// <b>Do not use it to decide whether anyone should go out and work.</b> That is a
-    /// different question and it lives in <see cref="FoodTheGranaryHasRoomFor"/>.
+    /// different question and it lives in <see cref="FoodTheVillageHasRoomFor"/>.
     /// Answering both with this one number killed the village outright: above the
     /// ceiling the target is unreachable by construction, so "does the village want
     /// more food?" was permanently yes, every hand stayed on the berry patches
@@ -1700,24 +1700,73 @@ public sealed class SimWorld
     public int TargetFoodForTheGranary() => Config.StockpileTarget * Population;
 
     /// <summary>
-    /// Food worth gathering for the granary — the target, or what fits, whichever is
-    /// less.
+    /// Food worth gathering for the village store — the target, or what will fit,
+    /// whichever is less.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The work question, as against the birth question above. <b>A village cannot want
     /// more food than it has somewhere to put</b>, and a forager standing at a full
-    /// granary should go and do something else — which is exactly the pressure capacity
+    /// store should go and do something else — which is exactly the pressure capacity
     /// was added to create (spec §4: "a full shed means a producer has somewhere to
     /// stop").
+    /// </para>
+    /// <para>
+    /// <b>Asked by capability, not by kind, and this was the fifth site of D76's bug.</b>
+    /// It used to read <see cref="GranaryCapacity"/> — granaries only — while the amount
+    /// it was compared against, <see cref="FoodInGranaries"/>, counts every store that
+    /// takes food. <b>One comparison, two different questions</b>, and the cold start is
+    /// the world where they part company: a village with a pile and a cart and no granary
+    /// scored zero room, so <em>"does the village want more food?"</em> answered <b>no,
+    /// forever</b>. Measured on Joe's opening before the fix: the village-wide reason to
+    /// work fired on <b>0.0%</b> of gatherable ticks, against 99.9% once asked this way,
+    /// while a pile stood beside them with room for eleven hundred.
+    /// </para>
+    /// <para>
+    /// <b>What that cost is the whole of D81.</b> With no village-wide reason to work,
+    /// the only reason left is a household's own larder — so the family whose larder
+    /// filled first rested for a century while their neighbours did the work, which is
+    /// precisely the failure <see cref="TargetFoodForTheGranary"/>'s own remarks predict
+    /// two methods above: <em>"the founding woodcutters starved in year one while the
+    /// other house sat on three hundred food and its foragers put their feet up."</em>
+    /// </para>
+    /// <para>
+    /// <b>Room, not raw capacity.</b> A pile packed with logs genuinely has nowhere to
+    /// stack berries — <see cref="Stockpile.Capacity"/> is total across every kind of
+    /// goods — so this asks what the village could <em>end up</em> holding: the food
+    /// already stored, plus the space left beside it.
+    /// </para>
+    /// <para>
+    /// <b>The birth gate is deliberately untouched.</b> <see cref="GranaryCapacity"/>
+    /// still answers by kind, because <em>how big may this village get?</em> is answered
+    /// per granary on purpose (D33, D39) — "build another one" is the intended reply, and
+    /// widening it here would have moved the population ceiling while fixing a labour bug.
+    /// Two questions, two readers.
+    /// </para>
     /// </remarks>
-    public int FoodTheGranaryHasRoomFor()
+    public int FoodTheVillageHasRoomFor()
     {
-        // Across every granary the village has built (D38). Reading one building's
-        // capacity here would have meant a second granary added room the foragers
-        // never knew to fill.
+        // Across every store the village can actually put food in (D76, D79) — the
+        // granaries it has built, the pile the player dropped on day one, and the cart
+        // they arrived in.
         int wanted = TargetFoodForTheGranary();
-        int capacity = GranaryCapacity();
+        int capacity = FoodInGranaries() + RoomLeftForFood();
         return wanted < capacity ? wanted : capacity;
+    }
+
+    /// <summary>Free space across every store that would take food.</summary>
+    private int RoomLeftForFood()
+    {
+        int room = 0;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Accepts(Goods.Food))
+            {
+                room += StoreBuildings[i].Store.FreeSpace;
+            }
+        }
+
+        return room;
     }
 
     /// <summary>Where a villager lives, or null if their family has no house yet (D70).</summary>

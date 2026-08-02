@@ -334,6 +334,235 @@ public sealed class ColdStartTests
     }
 
     // ---------------------------------------------------------------
+    //  Somewhere to put it — D81
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ A village with a pile and no granary has a reason to go out and work.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The bug in one assertion.</b> There are two reasons to forage — my family is
+    /// short, or the village is — and the second is measured against what the village has
+    /// <em>room</em> for. That room used to be read off <c>GranaryCapacity()</c>, which
+    /// counts granaries by kind, while the amount it was compared against counts every
+    /// store that takes food. <b>One comparison, two different questions</b>, and a cold
+    /// start is where they part company: no granary, no room, so the village answered
+    /// <em>"we want no more food"</em> forever — standing beside a pile with room for
+    /// eleven hundred.
+    /// </para>
+    /// <para>
+    /// Measured on Joe's opening before the fix: the village-wide reason to work fired on
+    /// <b>0.0%</b> of gatherable ticks over five years, against <b>5.6%</b> after. This is
+    /// D76's seam for the fifth time and D79's for the second, which is why it gets an
+    /// assertion rather than a comment.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillageWithAPileAndNoGranaryStillWantsFood()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        MarkSomewhereNear(world, BuildingKind.Pile, world.Map.FoundingSite, 2);
+
+        Assert.Equal(0, world.GranaryCapacity());
+
+        _output.WriteLine(
+            $"no granary: granaryCapacity {world.GranaryCapacity()}, "
+            + $"foodInStores {world.FoodInGranaries()}, "
+            + $"roomFor {world.FoodTheVillageHasRoomFor()}");
+
+        // The room, not the appetite. At tick 0 the cart holds 800 food against a target
+        // of 380, so a village that wanted MORE right now would be the wrong answer — the
+        // bug is that it had nowhere to put any, ever, at any level of stock.
+        Assert.True(
+            world.FoodTheVillageHasRoomFor() > 0,
+            "A village with a pile standing in the square believes it has nowhere to put "
+            + "food, so nobody is ever sent to gather any.");
+    }
+
+    /// <summary>
+    /// ⭐ And the stores actually fill — the consequence a player watches.
+    /// </summary>
+    /// <remarks>
+    /// The behavioural half of the guard above, and the one that would have caught this
+    /// from the outside. Joe's opening ran five years with <b>zero</b> food ever reaching a
+    /// store: every forager stopped the moment their own larder was full, so the village
+    /// held only what was in its larders and the pile stayed empty. A village store that
+    /// never fills is a village that cannot survive losing anybody.
+    /// </remarks>
+    [Fact]
+    public void TheOpeningFillsItsStores()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        PlayTheOpening(world);
+        loop.Step(config.TicksPerYear * 5);
+
+        _output.WriteLine(
+            $"five years on: {world.FoodInGranaries()} food in stores, "
+            + $"{world.TotalFood()} in the village, pop {world.Population}");
+
+        Assert.True(
+            world.FoodInGranaries() > 0,
+            "Five years of play and not one berry ever reached the village store.");
+    }
+
+    /// <summary>
+    /// ⭐ Both founding households do a share of the work.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing:</b> <em>"one couple stays home and the other does most of the
+    /// work."</em> Measured over twenty years before the fix: the Thatchers spent
+    /// <b>4.3%</b> of their able-adult ticks at work against the Fletchers' <b>6.7%</b>,
+    /// and in year one it was <b>4.1%</b> against <b>26.0%</b>. Both households held jobs
+    /// equally (75.6% against 74.7%) and lived the same distance from the nearest berries,
+    /// so the allocator was sharing the <em>posts</em> out evenly and the resting household
+    /// simply never went to theirs — a forager only forages when somebody wants food, and
+    /// with the village-wide half of that question dead, the family whose larder filled
+    /// first stopped working and never started again.
+    /// </para>
+    /// <para>
+    /// After: <b>7.1%</b> against <b>8.2%</b>. The bar is set at a factor of two rather
+    /// than at those numbers, because <b>a residual gap is expected and is not this
+    /// bug</b>: the household nearer the timber gets the logger's seat, and a logger works
+    /// about a third of their ticks where a forager works a twentieth. That is a live
+    /// design question (D81) and not something a guard should freeze.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NeitherFoundingHouseholdRestsWhileTheOtherWorks()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        PlayTheOpening(world);
+
+        int[] founding = { 1, 2 };
+        var adultTicks = new long[3];
+        var workTicks = new long[3];
+
+        for (long tick = 0; tick < config.TicksPerYear * 20L; tick++)
+        {
+            loop.StepOnce();
+
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive || !villager.CanWork
+                    || System.Array.IndexOf(founding, villager.HouseholdId) < 0)
+                {
+                    continue;
+                }
+
+                adultTicks[villager.HouseholdId]++;
+                if (IsWorking(villager.State))
+                {
+                    workTicks[villager.HouseholdId]++;
+                }
+            }
+        }
+
+        double first = Share(workTicks[1], adultTicks[1]);
+        double second = Share(workTicks[2], adultTicks[2]);
+
+        _output.WriteLine(
+            $"twenty years: household 1 worked {first:F1}% of its able-adult ticks "
+            + $"({workTicks[1]}/{adultTicks[1]}), household 2 {second:F1}% "
+            + $"({workTicks[2]}/{adultTicks[2]})");
+
+        // Anti-vacuity (D7): a comparison between two households who both did nothing
+        // would pass this and mean nothing at all.
+        Assert.True(
+            first > 1.0 && second > 1.0,
+            $"Neither founding household did any work to compare ({first:F1}%, {second:F1}%).");
+
+        double lower = Math.Min(first, second);
+        double higher = Math.Max(first, second);
+        Assert.True(
+            higher <= lower * 2,
+            $"One founding household worked {higher:F1}% of its ticks while the other "
+            + $"worked {lower:F1}% — more than twice the share, which is Joe's "
+            + "\"one couple stays home\" back again.");
+    }
+
+    /// <summary>
+    /// ⭐ A village that is only ever given a pile is still standing forty years on.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The founders are all dead by then</b>, so this is the first guard that asks
+    /// whether the opening produces a village rather than a well-managed campsite. Before
+    /// D81 it did not: with no granary the village had no reason to gather beyond its own
+    /// larders, so it never built a store, never passed the birth gate, and the same four
+    /// people aged out — <b>population 4 at twenty years and 0 at a hundred</b>. After, it
+    /// is 9 at twenty and 7 at a hundred, in five households.
+    /// </para>
+    /// <para>
+    /// D79's lesson, applied one length further out: <em>a guard that stops the tick after
+    /// the danger begins is the one that lets it through.</em> Five years was long enough
+    /// to see nobody starve and far too short to see nobody be born.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillageGivenOnlyAPileOutlivesItsFounders()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        PlayTheOpening(world);
+        loop.Step(config.TicksPerYear * 40);
+
+        int founders = 0;
+        foreach (Villager villager in world.Villagers)
+        {
+            if (villager.Alive && villager.BirthYear == 0)
+            {
+                founders++;
+            }
+        }
+
+        _output.WriteLine(
+            $"forty years on: {world.Population} alive in {world.Households.Count} households, "
+            + $"{founders} of the founders left, {world.FoodInGranaries()} food in stores");
+
+        Assert.True(
+            world.Population > 0,
+            "A played opening died out inside forty years without anybody starving or "
+            + "freezing — it simply never had a child.");
+    }
+
+    private static bool IsWorking(VillagerState state) =>
+        state is VillagerState.Gathering or VillagerState.Cutting
+            or VillagerState.MakingFirewood or VillagerState.Building
+            or VillagerState.CollectingForMarket or VillagerState.DeliveringToHome;
+
+    private static double Share(long part, long whole) => whole == 0 ? 0 : 100.0 * part / whole;
+
+    /// <summary>Joe's opening: somewhere to put things, somewhere to live, a hut. No shed.</summary>
+    private static void PlayTheOpening(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
+
+        for (int dy = -4; dy <= 4; dy++)
+        {
+            for (int dx = -4; dx <= 4; dx++)
+            {
+                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
+            }
+        }
+
+        MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+    }
+
+    // ---------------------------------------------------------------
     //  The tie back to what ships
     // ---------------------------------------------------------------
 

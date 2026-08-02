@@ -35,12 +35,22 @@ public sealed class StockLimitTests
     //
     //   before the restock (D77): fixture 6240348392465688561, shipped 7734052055491107200
     //   before the supply fix (D79): fixture 13156470216450962100, shipped 13143121898114073713
+    //   before the room fix (D81): fixture 14798520869458526773, shipped 3491502518393071633
     //
     // D79 moved them a second time and for a bigger reason: the fuel quota had been reading
     // firewood in SHEDS, so a village whose fuel sat in a cart or a pile believed it had
     // none and put every spare hand on the chain forever. Correcting what the village can
     // see changes what it does, which changes its history. That is the golden working.
-    private const ulong FixtureFiftyYearHash = 14798520869458526773UL;
+    //
+    // D81 MOVED THE FIXTURE ONE AND NOT THE SHIPPED ONE, and the asymmetry is measured
+    // rather than lucky. "Is there anywhere to put more food?" now asks every store that
+    // takes food instead of only the granaries, so the two answers can only differ once a
+    // village's food target climbs past its granary capacity — before that, both bars are
+    // the target. Over fifty years the two answers differ on 681 of 24,000 fixture ticks
+    // (2.8%, and the whole of the gap is the market's 95 spare units: bar 2945 against
+    // 2850) and on 0 of 24,000 shipped ticks. So the shipped hash below is unchanged
+    // because nothing about that run changed, not because it went unchecked.
+    private const ulong FixtureFiftyYearHash = 11013974864926656020UL;
     private const ulong ShippedFiftyYearHash = 3491502518393071633UL;
 
     // ---------------------------------------------------------------

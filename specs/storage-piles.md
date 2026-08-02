@@ -62,6 +62,33 @@ widen it rather than to teach 23 switches about a new kind.
 - **Each is a decision, not a rename.** `SimWorld.cs:113-126` records the last time the
   singular store accessors were deleted, and that the call sites each needed a *decision*.
 
+### 4.1b The capacity side, and the third instalment (D81)
+
+D79 widened the **totals** — `FirewoodInSheds`, `LogsInSheds` — after a cold start with a
+cart full of firewood reported having none. **The capacity side was never looked at**, and it
+had the same bug:
+
+```
+FoodTheGranaryHasRoomFor = min(target, GranaryCapacity())   // granaries, BY KIND
+        compared against  FoodInGranaries()                 // any store that takes food, BY CAPABILITY
+```
+
+**One comparison asking two different questions.** A village with a pile and a cart and no
+granary scored **zero room**, so *"does the village want more food?"* answered **no,
+forever** — measured at **0.0% of gatherable ticks**, against 99.9% once asked by capability.
+That is D80's *"one couple stays home"*: with the village-wide reason to work dead, a
+household's own larder is the only reason left, and the family that fills theirs first stops
+working for good.
+
+So the rule generalises past finders and past totals: **anything that switches on
+`StoreKind` to decide what the village has, or has room for, is this bug.** `NearestStoreAccepting`
+was the finder; `TotalAccepting` is the total; `FoodTheVillageHasRoomFor` is the room.
+
+**One reader stays keyed to `Granary` on purpose:** `GranaryCapacity()`, because *how big may
+this village get?* is answered **per granary** by design (D33, D39) and "build another one" is
+the intended reply. Two questions, two readers — which is the same distinction §4.1 draws
+below, from the other end.
+
 ### 4.1 What must NOT change
 
 `LabourQuota.WoodcuttersWanted` counts **firewood in sheds**, deliberately (D29): a pile in
@@ -110,6 +137,15 @@ with a full pile, which is D29's original failure in a new costume.
 5. **Doing nothing still kills** (`ColdStartTests`), unchanged.
 6. **The established village is untouched** — full suite green, both golden hashes unmoved.
    A pile nobody places must change nothing.
+7. **A village with a pile and no granary has somewhere to put food** (D81) —
+   `AVillageWithAPileAndNoGranaryStillWantsFood`, and its behavioural half
+   `TheOpeningFillsItsStores`: five years of play used to put **zero** food into a store.
+8. **The opening outlives its founders** — `AVillageGivenOnlyAPileOutlivesItsFounders`. The
+   guards above all stopped at five years, and a village that never has a child looks
+   perfectly healthy for twenty.
+9. **Neither founding household rests while the other works** —
+   `NeitherFoundingHouseholdRestsWhileTheOtherWorks`, at a factor of two, because a residual
+   gap from job-kind duty cycles is an open design question and not this bug.
 
 ---
 

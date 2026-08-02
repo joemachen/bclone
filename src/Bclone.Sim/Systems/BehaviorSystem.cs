@@ -1175,14 +1175,19 @@ public sealed class BehaviorSystem : ISimSystem
         // never fills, and a household with nobody foraging starves beside neighbours
         // who are resting on three hundred food.
         //
-        // The village's half is measured against what the granary has ROOM for, not
+        // The village's half is measured against what the village has ROOM for, not
         // against what everyone alive would ideally have stored. Past the point where
-        // the granary can hold a winter for everybody, the ideal is unreachable — and
+        // the stores can hold a winter for everybody, the ideal is unreachable — and
         // an unreachable target means "go and forage" is the answer forever, which put
         // every hand on the berry patches and froze the village to death (see
         // SimWorld.TargetFoodForTheGranary).
+        //
+        // ROOM IS ASKED OF EVERY STORE THAT TAKES FOOD, NOT OF GRANARIES (D81). This
+        // half used to be dead in a cold start — no granary, no room, so the only
+        // reason to work was your own larder, and the household that filled theirs
+        // first rested while their neighbours did everything.
         bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household)
-            || world.FoodInGranaries() < world.FoodTheGranaryHasRoomFor();
+            || world.FoodInGranaries() < world.FoodTheVillageHasRoomFor();
 
         // FETCH — before work, because a household with an empty larder has a more
         // pressing errand than its job.
