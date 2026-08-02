@@ -32,7 +32,7 @@ public sealed class PlacementTests
     /// <summary>Somewhere legal to build, a few tiles from the village.</summary>
     private static GridPos SomewhereBuildable(SimWorld world, BuildingKind kind)
     {
-        GridPos village = world.Households[0].HomePosition;
+        GridPos village = world.Households[0].Home();
 
         for (int radius = 1; radius < 12; radius++)
         {
@@ -120,7 +120,7 @@ public sealed class PlacementTests
         SimWorld world = Build(Config).World;
 
         PlacementVerdict verdict = world.CanBuildAt(
-            BuildingKind.Granary, world.Households[0].HomePosition);
+            BuildingKind.Granary, world.Households[0].Home());
 
         _output.WriteLine(verdict.Reason);
         Assert.False(verdict.Allowed,
@@ -150,7 +150,7 @@ public sealed class PlacementTests
         // fail §1.1 outright.
         SimConfig config = Config;
         SimWorld world = Build(config).World;
-        GridPos village = world.Households[0].HomePosition;
+        GridPos village = world.Households[0].Home();
 
         PlacementVerdict? warned = null;
         for (int distance = 8; distance < 40 && warned is null; distance++)

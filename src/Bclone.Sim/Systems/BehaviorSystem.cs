@@ -218,7 +218,7 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.FetchingFromStore:
-                Travel(world, villager, PlanFetch(world, villager)?.Position ?? world.HomeOf(villager),
+                Travel(world, villager, PlanFetch(world, villager)?.Position ?? world.RestingPlaceOf(villager),
                     VillagerState.FetchingFromStore);
                 return;
 
@@ -245,7 +245,7 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.TravelingHome:
-                Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
+                Travel(world, villager, world.RestingPlaceOf(villager), VillagerState.Idle);
                 return;
         }
 
@@ -602,13 +602,16 @@ public sealed class BehaviorSystem : ISimSystem
         // change their mind halfway and shuttle between two equally needy homes.
         if (villager.IsCarrying && villager.ErrandHouseholdId != 0)
         {
+            // A house to deliver to, not merely a family: a marketer cannot leave an armful
+            // at a household that has not built anything yet (D70), and the branch below
+            // already knows how to put a load back rather than drop it in the road.
             Household? recipient = world.FindHousehold(villager.ErrandHouseholdId);
-            if (recipient is not null)
+            if (recipient?.HomePosition is GridPos doorstep)
             {
                 villager.State = VillagerState.DeliveringToHome;
-                villager.ErrandX = recipient.HomePosition.X;
-                villager.ErrandY = recipient.HomePosition.Y;
-                Travel(world, villager, recipient.HomePosition, VillagerState.DeliveringToHome);
+                villager.ErrandX = doorstep.X;
+                villager.ErrandY = doorstep.Y;
+                Travel(world, villager, doorstep, VillagerState.DeliveringToHome);
                 return;
             }
 
@@ -698,9 +701,11 @@ public sealed class BehaviorSystem : ISimSystem
             // filling, so the birth gate never opened and the settlement died out at
             // five people. A trader moves what nobody is using, not what somebody has
             // just earned.
-            if (!occupied && held > 0)
+            // Only a house can strand goods, and only a house can be collected from. A
+            // homeless family has no shelf for anything to sit on.
+            if (!occupied && held > 0 && household.HomePosition is GridPos larder)
             {
-                Offer(household.HomePosition, household.Id, goods, delivering: false);
+                Offer(larder, household.Id, goods, delivering: false);
             }
         }
 
@@ -751,7 +756,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         villager.ActionTicksRemaining = 0;
         villager.State = VillagerState.TravelingHome;
-        Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
+        Travel(world, villager, world.RestingPlaceOf(villager), VillagerState.Idle);
     }
 
     // Cutting is deliberately NOT included here. Berries stop in winter; trees do
@@ -829,11 +834,16 @@ public sealed class BehaviorSystem : ISimSystem
                 continue;
             }
 
-            int cost = world.TravelCost.TicksBetween(from, household.HomePosition);
+            if (household.HomePosition is not GridPos hearth)
+            {
+                continue;
+            }
+
+            int cost = world.TravelCost.TicksBetween(from, hearth);
             if (cost < bestCost)
             {
                 bestCost = cost;
-                best = household.HomePosition;
+                best = hearth;
             }
         }
 
@@ -1064,10 +1074,10 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         // Rest — at home if not already there.
-        if (villager.Position != world.HomeOf(villager))
+        if (villager.Position != world.RestingPlaceOf(villager))
         {
             villager.State = VillagerState.TravelingHome;
-            Travel(world, villager, world.HomeOf(villager), VillagerState.Idle);
+            Travel(world, villager, world.RestingPlaceOf(villager), VillagerState.Idle);
             return;
         }
 

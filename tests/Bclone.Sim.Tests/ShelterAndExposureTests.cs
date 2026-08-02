@@ -81,7 +81,7 @@ public sealed class ShelterAndExposureTests
         Villager inside = world.FindVillager(home.MemberIds[0])!;
         Villager outside = world.FindVillager(home.MemberIds[1])!;
 
-        inside.Position = home.HomePosition;
+        inside.Position = home.Home();
         outside.Position = FarFromAnyBuilding(world);
         inside.Cold = 0;
         outside.Cold = 0;
@@ -131,7 +131,7 @@ public sealed class ShelterAndExposureTests
         SimWorld world = InWinter(config);
 
         Villager villager = world.Villagers[0];
-        villager.Position = world.Households[0].HomePosition;
+        villager.Position = world.Households[0].Home();
         villager.Cold = config.ExposureThreshold;
 
         Chill(world, 1);
@@ -163,7 +163,7 @@ public sealed class ShelterAndExposureTests
         Assert.NotEqual(mine.Id, theirs.Id);
 
         Villager villager = world.FindVillager(mine.MemberIds[0])!;
-        villager.Position = theirs.HomePosition;
+        villager.Position = theirs.Home();
         villager.Cold = config.ExposureThreshold / 2;
 
         int before = villager.Cold;

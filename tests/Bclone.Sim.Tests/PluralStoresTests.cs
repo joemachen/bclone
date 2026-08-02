@@ -108,7 +108,7 @@ public sealed class PluralStoresTests
 
         foreach (Household household in world.Households)
         {
-            if (household.HomePosition == position) return true;
+            if (household.Home() == position) return true;
         }
 
         return false;
@@ -215,7 +215,7 @@ public sealed class PluralStoresTests
         // respects water being impassable (D40) rather than measuring a line.
         SimWorld world = WithASecondOfEach(Config);
 
-        GridPos from = world.Households[0].HomePosition;
+        GridPos from = world.Households[0].Home();
         StoreBuilding? nearest = world.NearestStore(
             from, StoreKind.Granary, static store => !store.Store.IsFull);
 
@@ -259,7 +259,7 @@ public sealed class PluralStoresTests
             Store = new Stockpile { Capacity = 1000 },
         });
 
-        GridPos from = world.Households[0].HomePosition;
+        GridPos from = world.Households[0].Home();
         StoreBuilding? chosen = world.NearestStore(from, StoreKind.Granary, static _ => true);
 
         _output.WriteLine(

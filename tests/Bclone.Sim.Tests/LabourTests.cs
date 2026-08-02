@@ -198,7 +198,7 @@ public sealed class LabourTests
 
             Workplace held = loop.World.FindWorkplace(villager.WorkplaceId)!;
             int cost = loop.World.TravelCost.Cost(
-                loop.World.HomeOf(villager), held.Position);
+                loop.World.RestingPlaceOf(villager), held.Position);
 
             Assert.True(cost <= held.CatchmentRadius,
                 $"{villager.Name} holds {held.Name} at {cost} against a reach of " +

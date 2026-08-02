@@ -203,7 +203,14 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            var home = new Vector2(household.HomePosition.X, household.HomePosition.Y);
+            // A family with no house yet (D70) has nothing to frame — they are standing at
+            // the cart, which the founding site already accounts for.
+            if (household.HomePosition is not GridPos standing)
+            {
+                continue;
+            }
+
+            var home = new Vector2(standing.X, standing.Y);
             min = min.Min(home);
             max = max.Max(home);
             homes++;
@@ -671,9 +678,7 @@ public partial class VillageMap : Control
         //
         // Only while the build menu is open: it is a placement aid, not furniture.
         SimWorld world = _world!;
-        GridPos village = world.Households.Count > 0
-            ? world.Households[0].HomePosition
-            : world.Map.FoundingSite;
+        GridPos village = world.FirstHomeOrFoundingSite();
 
         float comfortable = VillageEconomy.MaxHomeToVillageTiles(world.Config) * _pixelsPerTile;
         DrawArc(ToScreen(village), comfortable, 0f, Mathf.Tau, 96, GhostWarned with { A = 0.35f }, 1f);
@@ -922,7 +927,7 @@ public partial class VillageMap : Control
             bool selected = villager.Id == _selectedVillagerId;
 
             DrawLine(
-                ToScreen(world.HomeOf(villager)),
+                ToScreen(world.RestingPlaceOf(villager)),
                 ToScreen(workplace.Position),
                 colour with { A = selected ? 0.75f : 0.3f },
                 selected ? 2f : 1f);
@@ -994,7 +999,13 @@ public partial class VillageMap : Control
             Household household = world.Households[i];
             bool occupied = world.LivingMembersOf(household) > 0;
 
-            Vector2 centre = ToScreen(household.HomePosition);
+            // Nothing to draw for a family that has not built yet (D70).
+            if (household.HomePosition is not GridPos site)
+            {
+                continue;
+            }
+
+            Vector2 centre = ToScreen(site);
             float size = Mathf.Max(6f, _pixelsPerTile * 0.62f);
             var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
 

@@ -268,7 +268,7 @@ public sealed class MapGenerationTests
                 int nearest = int.MaxValue;
                 foreach (GridPos site in world.Map.ForageSites)
                 {
-                    nearest = Math.Min(nearest, household.HomePosition.ManhattanDistanceTo(site));
+                    nearest = Math.Min(nearest, household.Home().ManhattanDistanceTo(site));
                 }
 
                 Assert.True(nearest <= budget,
@@ -370,7 +370,7 @@ public sealed class MapGenerationTests
 
             foreach (Household household in world.Households)
             {
-                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(household.HomePosition));
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(household.Home()));
             }
         }
     }
@@ -386,7 +386,7 @@ public sealed class MapGenerationTests
         for (ulong seed = 1; seed <= 20; seed++)
         {
             SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
-            GridPos home = world.Households[0].HomePosition;
+            GridPos home = world.Households[0].Home();
 
             foreach (StoreBuilding store in world.StoreBuildings)
             {
@@ -416,7 +416,7 @@ public sealed class MapGenerationTests
         SimConfig config = Config;
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
 
-        GridPos from = world.Households[0].HomePosition;
+        GridPos from = world.Households[0].Home();
         int detoured = 0;
 
         foreach (Workplace workplace in world.Workplaces)
@@ -453,7 +453,7 @@ public sealed class MapGenerationTests
         SimConfig config = Config with { RiverWidthTiles = 0 };
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
 
-        GridPos from = world.Households[0].HomePosition;
+        GridPos from = world.Households[0].Home();
 
         foreach (Workplace workplace in world.Workplaces)
         {
@@ -534,7 +534,7 @@ public sealed class MapGenerationTests
 
         foreach (Household household in world.Households)
         {
-            if (household.HomePosition == here)
+            if (household.Home() == here)
             {
                 return 'h';
             }

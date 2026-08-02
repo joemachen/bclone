@@ -270,7 +270,7 @@ public sealed class StorageTests
 
             foreach (Household household in world.Households)
             {
-                Assert.NotEqual(household.HomePosition, building.Position);
+                Assert.NotEqual(household.Home(), building.Position);
             }
         }
     }

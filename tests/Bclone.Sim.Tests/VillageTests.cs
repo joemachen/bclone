@@ -429,7 +429,7 @@ public sealed class VillageTests
         foreach (Household household in loop.World.Households)
         {
             int cost = loop.World.TravelCost.TicksBetween(
-                household.HomePosition, loop.World.FoodSource.Position);
+                household.Home(), loop.World.FoodSource.Position);
             if (cost > worst)
             {
                 worst = cost;

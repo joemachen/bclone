@@ -241,7 +241,7 @@ public sealed class ShippedConfigTests
 
                 // Empty larder. Is there food they could have walked to?
                 StoreBuilding? source = world.NearestStore(
-                    household.HomePosition, StoreKind.Granary, static store => store.Store.Food > 0);
+                    household.Home(), StoreKind.Granary, static store => store.Store.Food > 0);
 
                 if (source is not null)
                 {
@@ -276,7 +276,7 @@ public sealed class ShippedConfigTests
         loop.Step(config.TicksPerYear * 15);
 
         SimWorld world = loop.World;
-        GridPos home = world.Households[0].HomePosition;
+        GridPos home = world.Households[0].Home();
 
         int marked = 0;
         foreach (BuildingKind kind in new[]

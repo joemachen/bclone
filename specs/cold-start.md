@@ -132,18 +132,15 @@ built must hash as it always hashed once it is standing.
 
 ## 7. Open questions
 
-### 7.1 ⚠️ Can a homeless couple have children? — needs Joe
+### 7.1 ✅ A homeless couple cannot have children — resolved (Joe, D71)
 
-Births are gated on the household's food and firewood (D31, D33). A homeless household has
-neither a larder nor a hearth, so on today's rules **the founders could never have children
-until a house stands**, which is probably right and is certainly harsh — if the player is
-slow, the founding generation ages out.
+Option (a). **No roof, no children.** Diegetic, harsh, and it makes the first house genuinely
+urgent: a slow player watches the founding generation age with nothing behind it.
 
-Two readings, and it is a pacing decision rather than a correctness one:
-- **(a) No children until there is a roof.** Diegetic, harsh, and it makes the first house
-  genuinely urgent. **Recommended.**
-- **(b) Children allowed, gated on the cart's stores.** Softer, and it keeps the village
-  growing while the player learns the controls.
+**Written as its own rule in `IsReadyForAChild` rather than left to fall out of the food and
+firewood gates.** It would have been true either way — a homeless family has no larder and no
+hearth, so it could never pass them — but a rule that happens by arithmetic is one a later
+change can silently repeal. This one is load-bearing enough to say out loud.
 
 ### 7.2 What the cart holds, and the founding season
 

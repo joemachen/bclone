@@ -20,6 +20,29 @@ public enum StoreKind
     /// and the shed for the other would put the walking back.
     /// </remarks>
     Market = 2,
+
+    /// <summary>
+    /// The wagon the founders arrived in — the one building the player did not raise (D64).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>It exists so that D30 survives the cold start.</b> Goods live in buildings, and a
+    /// village with nothing built would otherwise have nowhere for the founders' supplies to
+    /// be. A cart is the honest answer: it is a place, it arrived with them, and it is the
+    /// story §0 already tells about exiles.
+    /// </para>
+    /// <para>
+    /// <b>It holds anything</b>, because the founders' load is not sorted into a granary's
+    /// worth of food and a shed's worth of timber — it is what they could carry. Small, and
+    /// <b>demolishable once empty</b> (Joe): a wagon standing in the square forever is a
+    /// monument to a slice rather than a building.
+    /// </para>
+    /// <para>
+    /// <b>It is not shelter.</b> <c>SimWorld.ShelterAt</c> knows only about homes, so
+    /// standing at the cart is standing outdoors and the cold counts it as such.
+    /// </para>
+    /// </remarks>
+    Cart = 3,
 }
 
 /// <summary>
@@ -84,6 +107,11 @@ public sealed class StoreBuilding
         StoreKind.Granary => goods == Goods.Food,
         StoreKind.Shed => goods is Goods.Logs or Goods.Firewood,
         StoreKind.Market => goods is Goods.Food or Goods.Firewood,
+
+        // Everything, because the founders' load was never sorted — it is what they could
+        // carry (D64). The cart is deliberately the only store that does not specialise,
+        // and its smallness rather than its rules is what stops it being the granary.
+        StoreKind.Cart => true,
         _ => false,
     };
 }

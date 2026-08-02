@@ -395,7 +395,7 @@ public sealed class SimWorld
 
         // Reachable from where the people are. A building on the far bank is not a long
         // walk, it is no walk at all (D40), and it would look perfectly fine on the map.
-        GridPos village = Households.Count > 0 ? Households[0].HomePosition : Map.FoundingSite;
+        GridPos village = FirstHomeOrFoundingSite();
         if (!TravelCost.CanReach(village, position))
         {
             return PlacementVerdict.No("There is no route to there from the village.");
@@ -1417,7 +1417,17 @@ public sealed class SimWorld
         for (int i = 0; i < Households.Count; i++)
         {
             Household household = Households[i];
-            if (household.HomePosition.X != at.X || household.HomePosition.Y != at.Y)
+
+            // A family with no house shelters nobody, anywhere — including themselves. That
+            // is the whole tension of the founding (D70): until somebody raises a roof there
+            // is no Shelter.Roof and no Shelter.Fire in the valley, so open ground is the
+            // only state there is and winter is counted in days.
+            if (household.HomePosition is not GridPos home)
+            {
+                continue;
+            }
+
+            if (home.X != at.X || home.Y != at.Y)
             {
                 continue;
             }
@@ -1582,8 +1592,76 @@ public sealed class SimWorld
         return wanted < capacity ? wanted : capacity;
     }
 
-    /// <summary>Where a villager lives and returns to.</summary>
-    public GridPos HomeOf(Villager villager) => HouseholdOf(villager).HomePosition;
+    /// <summary>Where a villager lives, or null if their family has no house yet (D70).</summary>
+    public GridPos? HomeOf(Villager villager) => HouseholdOf(villager).HomePosition;
+
+    /// <summary>
+    /// Where a villager goes when there is nothing else to do — their house, or the cart.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Every villager must always have somewhere to be</b>, or the founding is a crash
+    /// rather than a hardship (`specs/cold-start.md §8`). Until a family has a roof, that
+    /// somewhere is the cart they arrived with: it is where the food is, which keeps D10's
+    /// promise that a meal is takeable where you stand, and it puts the founders in one place
+    /// so the player can see them.
+    /// </para>
+    /// <para>
+    /// <b>It is emphatically not shelter.</b> <see cref="ShelterAt"/> knows nothing about the
+    /// cart, so standing at it is standing outdoors, and the cold counts accordingly. The two
+    /// questions — <em>where do I go?</em> and <em>what does this tile cost me?</em> — are
+    /// kept apart on purpose; conflating them is how a cart quietly becomes a hearth.
+    /// </para>
+    /// </remarks>
+    public GridPos RestingPlaceOf(Villager villager) =>
+        HouseholdOf(villager).HomePosition ?? TheCart?.Position ?? Map.FoundingSite;
+
+    /// <summary>
+    /// Where "the village" is, for anything that needs one point to measure from.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The first household that has actually got a roof — <b>not merely the first
+    /// household</b>. At the founding they all exist and none of them are anywhere yet
+    /// (D70), and <em>"where is the village?"</em> then has exactly one honest answer: where
+    /// they landed.
+    /// </para>
+    /// <para>
+    /// <b>One method because two callers wanted it</b> — reachability in
+    /// <see cref="CanBuildAt"/> and the placement ring the map draws. They had the same
+    /// three lines each, which is the shape D57 spent a session deleting: a rule written
+    /// twice is a rule that gets corrected once.
+    /// </para>
+    /// </remarks>
+    public GridPos FirstHomeOrFoundingSite()
+    {
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (Households[i].HomePosition is GridPos standing)
+            {
+                return standing;
+            }
+        }
+
+        return Map.FoundingSite;
+    }
+
+    /// <summary>The wagon the founders arrived in, while it still stands (D64).</summary>
+    public StoreBuilding? TheCart
+    {
+        get
+        {
+            for (int i = 0; i < StoreBuildings.Count; i++)
+            {
+                if (StoreBuildings[i].Kind == StoreKind.Cart)
+                {
+                    return StoreBuildings[i];
+                }
+            }
+
+            return null;
+        }
+    }
 
     /// <summary>Living villagers. Convenience for narration and the UI.</summary>
     public int Population

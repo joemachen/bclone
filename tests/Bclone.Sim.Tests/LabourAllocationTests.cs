@@ -564,7 +564,7 @@ public sealed class LabourAllocationTests
             {
                 if (workplace.Kind == JobKind.Forager
                     && loop.World.TravelCost.IsWithinCatchment(
-                        household.HomePosition, workplace.Position, workplace.CatchmentRadius))
+                        household.Home(), workplace.Position, workplace.CatchmentRadius))
                 {
                     anywhere = true;
                     break;
@@ -572,7 +572,7 @@ public sealed class LabourAllocationTests
             }
 
             Assert.True(anywhere,
-                $"The {household.Name} household at {household.HomePosition} has no forage site in reach.");
+                $"The {household.Name} household at {household.Home()} has no forage site in reach.");
         }
 
         // Anti-vacuity: a village that died leaves no occupied households, and the
@@ -605,7 +605,7 @@ public sealed class LabourAllocationTests
         int homes = 0;
         foreach (Household household in loop.World.Households)
         {
-            AssertInsideTheValley(config, household.HomePosition, $"the {household.Name} home");
+            AssertInsideTheValley(config, household.Home(), $"the {household.Name} home");
             homes++;
         }
 

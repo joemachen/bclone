@@ -248,7 +248,7 @@ internal static class LabourAllocator
                 continue;
             }
 
-            GridPos home = world.HomeOf(villager);
+            GridPos home = world.RestingPlaceOf(villager);
 
             for (int w = 0; w < world.Workplaces.Count; w++)
             {
@@ -716,7 +716,7 @@ internal static class LabourAllocator
     /// flicker as people walk about.
     /// </remarks>
     internal static int CostBetween(SimWorld world, Villager villager, Workplace workplace) =>
-        world.TravelCost.Cost(world.HomeOf(villager), workplace.Position);
+        world.TravelCost.Cost(world.RestingPlaceOf(villager), workplace.Position);
 
     internal static bool InCatchment(SimWorld world, Villager villager, Workplace workplace) =>
         CostBetween(world, villager, workplace) <= workplace.CatchmentRadius;

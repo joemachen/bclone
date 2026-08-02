@@ -40,7 +40,7 @@ public sealed class ResidentialZoneTests
 
         foreach (Household household in world.Households)
         {
-            Assert.True(world.Zones.IsResidential(household.HomePosition),
+            Assert.True(world.Zones.IsResidential(household.Home()),
                 $"{household.Name} was founded outside the residential land.");
         }
     }
@@ -59,8 +59,8 @@ public sealed class ResidentialZoneTests
 
             foreach (Household household in loop.World.Households)
             {
-                Assert.True(loop.World.Zones.IsResidential(household.HomePosition),
-                    $"{household.Name} stands at {household.HomePosition}, which nobody painted.");
+                Assert.True(loop.World.Zones.IsResidential(household.Home()),
+                    $"{household.Name} stands at {household.Home()}, which nobody painted.");
             }
         }
     }
@@ -91,7 +91,7 @@ public sealed class ResidentialZoneTests
                 bool lived = false;
                 foreach (Household household in world.Households)
                 {
-                    if (household.HomePosition == tile)
+                    if (household.Home() == tile)
                     {
                         lived = true;
                     }
@@ -130,7 +130,7 @@ public sealed class ResidentialZoneTests
                 bool lived = false;
                 foreach (Household household in world.Households)
                 {
-                    if (household.HomePosition == tile)
+                    if (household.Home() == tile)
                     {
                         lived = true;
                     }
@@ -179,7 +179,7 @@ public sealed class ResidentialZoneTests
                 bool lived = false;
                 foreach (Household household in world.Households)
                 {
-                    if (household.HomePosition == tile) lived = true;
+                    if (household.Home() == tile) lived = true;
                 }
 
                 if (!lived) world.EraseResidential(tile);
@@ -190,7 +190,7 @@ public sealed class ResidentialZoneTests
         int stalled = world.Households.Count;
 
         // The player paints. Around the village, so it is land anyone can work from.
-        GridPos village = world.Households[0].HomePosition;
+        GridPos village = world.Households[0].Home();
         int painted = 0;
         for (int dy = -5; dy <= 5; dy++)
         {
@@ -251,7 +251,7 @@ public sealed class ResidentialZoneTests
         SimConfig config = Config;
         SimWorld world = Build(config).World;
 
-        GridPos village = world.Households[0].HomePosition;
+        GridPos village = world.Households[0].Home();
         int budget = VillageEconomy.MaxHomeToWorkTiles(config);
 
         PlacementVerdict? warned = null;
@@ -300,11 +300,11 @@ public sealed class ResidentialZoneTests
 
         SimWorld world = loop.World;
         int before = world.Households.Count;
-        GridPos lived = world.Households[0].HomePosition;
+        GridPos lived = world.Households[0].Home();
 
         world.EraseResidential(lived);
 
         Assert.Equal(before, world.Households.Count);
-        Assert.Equal(lived, world.Households[0].HomePosition);
+        Assert.Equal(lived, world.Households[0].Home());
     }
 }

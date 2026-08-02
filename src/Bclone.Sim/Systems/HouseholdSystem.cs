@@ -301,7 +301,15 @@ public sealed class HouseholdSystem : ISimSystem
     {
         Household oldHome = world.HouseholdOf(a);
         Household partnerHome = world.HouseholdOf(b);
-        GridPos home = household.HomePosition;
+
+        // A couple only ever moves into a house that exists — either one standing empty or
+        // one just raised — so this is not the founding case and the position is real. Said
+        // out loud rather than swallowed, per METHODOLOGY §4: a null here would mean somebody
+        // had been married into thin air.
+        GridPos home = household.HomePosition
+            ?? throw new InvalidOperationException(
+                $"The {household.Name} household was given a pair of residents with no house " +
+                "to put them in.");
 
         // Each family sends their child off with a share of the larder. Without it a
         // new household starts on empty and can be wiped out by its first winter
@@ -390,7 +398,12 @@ public sealed class HouseholdSystem : ISimSystem
             AgeYears = 0,
             LifeStage = LifeStage.Child,
             HouseholdId = household.Id,
-            Position = household.HomePosition,
+
+            // Born at home, and there is always one: IsReadyForAChild refuses a household
+            // with no roof (D71), so a child cannot be born into the open.
+            Position = household.HomePosition
+                ?? throw new InvalidOperationException(
+                    $"A child was born to the {household.Name} household, which has no house."),
         };
 
         household.AddMember(child.Id);
@@ -432,6 +445,16 @@ public sealed class HouseholdSystem : ISimSystem
         // Every other occupancy question in the sim already asks LivingMembersOf. This
         // was the one place that did not.
         if (world.LivingMembersOf(household) >= config.MaxHouseholdSize)
+        {
+            return false;
+        }
+
+        // NO ROOF, NO CHILDREN (Joe's call, D71). A homeless family has neither a larder
+        // nor a hearth, so on the gates below they could never qualify anyway — but saying
+        // it here rather than letting it fall out of two arithmetic checks is the
+        // difference between a rule and an accident, and this one is load-bearing: it is
+        // what makes the first house urgent at the founding rather than optional.
+        if (!household.HasHome)
         {
             return false;
         }

@@ -24,7 +24,37 @@ public sealed class Household
     /// <summary>A family name, so a household reads as people rather than "Household 3".</summary>
     public required string Name { get; init; }
 
-    public required GridPos HomePosition { get; init; }
+    /// <summary>
+    /// Where this family's house stands, or <c>null</c> if they have not got one yet.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Null is the founding (D70).</b> Until the cold start, a household <em>was</em> its
+    /// home — this was <c>required</c> and non-nullable, there was no homeless state anywhere
+    /// in the sim, and every villager belonged to a household from birth. The founders now
+    /// arrive with a cart and no roof, so the type has to be able to say so.
+    /// </para>
+    /// <para>
+    /// <b>A nullable rather than a sentinel position, deliberately.</b> Parking a homeless
+    /// family at the cart would have changed no readers and lied to all of them:
+    /// <c>ShelterAt</c> would have treated the cart as a hearth, and a larder held there is
+    /// exactly the right-stuff-in-the-wrong-place shape that has cost this project four
+    /// investigations (D25, D29, D48, D57). <see cref="GridPos"/> is a struct, so this is a
+    /// genuinely different type and every reader has to say what it means by it — the
+    /// compiler performs the audit rather than a person remembering to.
+    /// </para>
+    /// <para>
+    /// <b>Set once a house is raised</b>, which is why it is no longer <c>init</c>.
+    /// </para>
+    /// </remarks>
+    public GridPos? HomePosition { get; set; }
+
+    /// <summary>True once this family has a roof of their own.</summary>
+    /// <remarks>
+    /// A reader over the nullable rather than a second flag — nothing to hash, nothing to set
+    /// and fail to clear (D66's argument for <see cref="Villager.IsLaborer"/>, one type over).
+    /// </remarks>
+    public bool HasHome => HomePosition is not null;
 
     /// <summary>
     /// Where the nth household is built.
