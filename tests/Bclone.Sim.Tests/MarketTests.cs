@@ -199,10 +199,10 @@ public sealed class MarketTests
     }
 
     [Fact]
-    public void TheMarketShortensTheWalkForFood()
+    public void TheMarketKeepsLardersFromRunningDry()
     {
-        // The spec's own standard for this building: "a manned market measurably
-        // reduces total travel versus none, or it is decoration" (§8).
+        // THE SPEC SAID "measurably reduces total travel versus none, or it is decoration"
+        // (§8) — and that is a consequence rather than the purpose. See D78 below.
         //
         // Measured as how far households have to go to FETCH, which is the trip the
         // market exists to shorten. The marketers' own walking is not counted — that is
@@ -250,20 +250,62 @@ public sealed class MarketTests
             $"{withMarket.MeanPopulation} with one. The market has become load-bearing (spec §14.4), " +
             "and until that is fixed this test has no honest control to measure against.");
 
-        Assert.True(withMarket.PerPersonTick < without.PerPersonTick,
-            $"Households walked {withMarket.PerPersonTick} steps per 10,000 person-ticks with a " +
-            $"market against {without.PerPersonTick} without one. The market is not shortening " +
-            "anybody's errand, which makes it decoration.");
+        // THE BAR IS DISTRIBUTION, NOT DISTANCE (D78, Joe's correction).
+        //
+        // This used to assert that households walked fewer steps with a market. That is a
+        // CONSEQUENCE of the market rather than its purpose — Joe: "the market exists to
+        // provide more equal goods distribution to homes, to lessen demand-curve bank
+        // runs." Measuring the consequence made the guard fail a change that improved the
+        // purpose: an emergency restock (D77) cut households running dry and raised the
+        // step count, and this test called that a broken market.
+        //
+        // So the question is now the one the building answers: how much of the time does a
+        // family sit on an empty larder while the village's stores are full? That is a bank
+        // run — goods that exist and have not reached you — and it is exactly what a
+        // marketer is for.
+        _output.WriteLine(
+            $"household-time on an empty larder while stores held food, per 10,000: " +
+            $"{withMarket.DryPerTenThousand} with a market, {without.DryPerTenThousand} without.");
+
+        Assert.True(without.DryPerTenThousand > 0,
+            "No household ever ran dry in either arm, so this guard is vacuous (D7).");
+
+        Assert.True(withMarket.DryPerTenThousand < without.DryPerTenThousand,
+            $"Households sat on an empty larder {withMarket.DryPerTenThousand} per 10,000 " +
+            $"household-ticks with a market against {without.DryPerTenThousand} without one, " +
+            "with food in the stores the whole time. The market is not distributing anything, " +
+            "which makes it decoration.");
     }
 
     /// <summary>Fetching done by households over a run, and the village that did it.</summary>
     /// <param name="Steps">Total steps spent walking to a store.</param>
     /// <param name="PersonTicks">Living villagers summed over every tick — the denominator.</param>
     /// <param name="Ticks">How long the run was.</param>
-    private readonly record struct Fetching(long Steps, long PersonTicks, int Ticks)
+    /// <param name="DryHouseholdTicks">Household-ticks on an empty larder while stores held food.</param>
+    /// <param name="HouseholdTicks">Living households summed over every tick — that denominator.</param>
+    private readonly record struct Fetching(
+        long Steps, long PersonTicks, int Ticks, long DryHouseholdTicks, long HouseholdTicks)
     {
+        /// <summary>
+        /// Share of household-time spent with an empty larder while the stores held food.
+        /// </summary>
+        /// <remarks>
+        /// <b>The market's actual promise</b> (D78, Joe): it exists to distribute goods more
+        /// evenly to homes and to take the edge off demand spikes — not to shorten walks.
+        /// Walk length is a <em>consequence</em> the old bar measured, and measuring a
+        /// consequence is how a guard ends up failing a change that improved the thing it
+        /// was written to protect.
+        /// </remarks>
+        public long DryPerTenThousand =>
+            HouseholdTicks == 0 ? 0 : DryHouseholdTicks * 10_000 / HouseholdTicks;
+
         /// <summary>Fetch-steps per 10,000 person-ticks. Integer, because floats do not
         /// belong anywhere near a comparison this test turns on (D2).</summary>
+        /// <remarks>
+        /// <b>Reported, no longer asserted</b> (D78). It is a useful thing to see and the
+        /// wrong thing to fail on: a change that stops households running dry by sending
+        /// somebody to fetch will raise this number while improving the village.
+        /// </remarks>
         public long PerPersonTick => PersonTicks == 0 ? 0 : Steps * 10_000 / PersonTicks;
 
         /// <summary>Mean living population across the run, for the message.</summary>
@@ -280,6 +322,8 @@ public sealed class MarketTests
         SimLoop loop = Build(config);
         long steps = 0;
         long personTicks = 0;
+        long dry = 0;
+        long householdTicks = 0;
         int ticks = config.TicksPerYear * 100;
 
         for (int i = 0; i < ticks; i++)
@@ -299,9 +343,39 @@ public sealed class MarketTests
                     steps++;
                 }
             }
+
+            // THE BANK RUN, COUNTED (D78). A household sitting on nothing while the
+            // village's stores hold plenty is the failure the market exists to prevent —
+            // goods that exist and have not reached you. Counted per household-tick so it
+            // is a rate and not a headcount, for the same reason the steps above are.
+            // The village's own stores, not its larders: the question is whether food
+            // exists somewhere a marketer could have brought it from.
+            bool storesHaveFood = false;
+            foreach (StoreBuilding store in loop.World.StoreBuildings)
+            {
+                if (store.Store.Food > 0)
+                {
+                    storesHaveFood = true;
+                    break;
+                }
+            }
+
+            foreach (Household household in loop.World.Households)
+            {
+                if (loop.World.LivingMembersOf(household) == 0)
+                {
+                    continue;
+                }
+
+                householdTicks++;
+                if (storesHaveFood && household.Stockpile.Food == 0)
+                {
+                    dry++;
+                }
+            }
         }
 
-        return new Fetching(steps, personTicks, ticks);
+        return new Fetching(steps, personTicks, ticks, dry, householdTicks);
     }
 
     [Fact]
