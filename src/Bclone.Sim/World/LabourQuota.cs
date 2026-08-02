@@ -654,23 +654,41 @@ public readonly record struct LabourQuota
     {
         ArgumentNullException.ThrowIfNull(world);
 
-        int target = 0;
-
+        // A HUNGER LINE, NOT A STOCKING TARGET (D73, Joe's (1)).
+        //
+        // This used to compare against the sum of TargetFoodFor(household) — which is
+        // stockpile_target per member, a winter's eating PLUS the winter buffer, and the
+        // number the village aims to have banked. Asking "do we have everything we would
+        // like?" and calling the answer "short of food" is a category error, and it had
+        // one consequence in every world and a fatal one in the newest:
+        //
+        //   In an established village it is nearly always false, because the granary
+        //   starts full and stays there — so nobody noticed the question was wrong.
+        //
+        //   In a cold start it is true from the first week and never stops being true.
+        //   The founders' cart holds less than two households' aspiration, so every hand
+        //   foraged, no timber was ever felled, a marked woodcutter's hut sat at 0 of 25
+        //   logs, and everybody froze. Joe watched it happen twice, and no amount of food
+        //   in the cart could fix it: the target scales with members, so filling the cart
+        //   raises the bar with it.
+        //
+        // So the line is what the village must EAT to get through the season it cannot
+        // gather in — the bare ration, without the buffer. The buffer is what a village
+        // wants; this is what it needs. Falling below the buffer is a village that should
+        // work harder at food; falling below the ration is a village that should drop
+        // everything, and only the second is what this question was ever asked for.
+        int mouths = 0;
         for (int i = 0; i < world.Households.Count; i++)
         {
-            Household household = world.Households[i];
-            if (world.LivingMembersOf(household) == 0)
-            {
-                continue;
-            }
-
-            target += world.TargetFoodFor(household);
+            mouths += world.LivingMembersOf(world.Households[i]);
         }
+
+        int ration = VillageEconomy.WinterRationPerHead(world.Config) * mouths;
 
         // Food anywhere, granary included. A village with a full granary is not short
         // of food, however thin the individual larders happen to be at this instant —
         // and reading only the larders would send everyone foraging past a full store.
-        return world.TotalFood() < target * world.Config.SharingNeedPercent / 100;
+        return world.TotalFood() < ration;
     }
 
     /// <summary>Every seat at every workplace of one kind.</summary>

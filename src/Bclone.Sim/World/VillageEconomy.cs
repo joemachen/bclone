@@ -620,6 +620,33 @@ public static class VillageEconomy
     }
 
     /// <summary>
+    /// What one person must eat to get through the season nothing can be gathered in.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The bare ration, deliberately without the winter buffer</b> — this is the
+    /// <em>hunger</em> line, where <see cref="RequiredStockpilePerAdult"/> is the
+    /// <em>stocking</em> target (D73). The two were conflated in
+    /// <c>LabourQuota.VillageIsShortOfFood</c>, which asked "do we have everything we
+    /// would like?" and called the answer <em>short of food</em>. In an established
+    /// village that is nearly always false and nobody noticed; in a cold start it is true
+    /// from the first week and never stops, so nothing was ever built and the founders
+    /// froze.
+    /// </para>
+    /// <para>
+    /// Falling below the buffer is a village that should work harder at food. Falling
+    /// below this is a village that should drop everything, and only the second is what
+    /// that question was ever asked for.
+    /// </para>
+    /// </remarks>
+    public static int WinterRationPerHead(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return AdultFoodPerYear(config) / 4;
+    }
+
+    /// <summary>
     /// Food a household should keep to survive winter, per member.
     /// </summary>
     /// <remarks>
