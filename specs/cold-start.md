@@ -210,6 +210,44 @@ unnecessary, because a village with 800 food in the cart and nobody hungry would
 reporting itself short. Doing (2) first means editing three guards to permit something that
 (1) would then make moot.
 
+### 7.1d Joe's third run — houses yes, hut no; and the year is too short to play
+
+The hunger-line fix (D73) landed and the village still does not raise what is marked.
+Joe: *"they built the houses but not the woodcutter's hut"*, with the shed reading
+**"0 of 30 logs — 30 still to come. Work: 0 of 45 ticks done. Staffing: left to the
+village — it wants 0 on this kind of work."**
+
+**Hypothesis, and it needs a probe before anybody acts on it** (METHODOLOGY §3 — every
+diagnosis reasoned from precedent in this project has been wrong, and every one from a
+measurement right). `LabourQuota.For` spends its hands in a fixed order:
+
+```
+foragers (floor)  →  woodcutters  →  loggers for huts
+                  →  loggers for houses  →  builders (capped at free / 2)
+```
+
+With **four founders**, the food floor takes one and about three are spare. `LoggersWanted`
+is non-zero — the village has no timber and wants a woodpile — so the loggers take what is
+left, and `builders = min(wanted, free / 2)` is then **zero or one**. The marked hut waits
+on a builder who is never funded, while logs pile up in the cart with nothing to spend them.
+
+If that is right, the shape of the fix is **not** a bigger cart. It is that
+**building is funded before speculative timber at the founding** — a village with a marked
+hut and no fire wants a builder more than it wants a woodpile. Note the `free / 2` cap was
+introduced for a real failure (four buildings marked, twelve builders, the village dead with
+the buildings finished), so it must be narrowed rather than deleted.
+
+**And the year is too short to play.** Joe: *"year 1 goes by way too quickly — it's like 20
+seconds at 10×."* That is D49 working as specified (a year is 80s at 4×, ~32s at 10×), and
+the specification is now in tension with the cold start: **the founding is the one stretch
+of the game that demands the player act inside a single year**, and eighty seconds is not
+long enough to paint land, read the map, mark three buildings and understand why nothing is
+happening. D49 stated pacing as *a life takes 60 real minutes at 4×* because the
+generational loop is the core loop — that argument still holds for the steady state and
+does not hold for the founding. **Joe's call**, and the options are: slow the whole game,
+slow only the first year, or start the founding in a season that leaves more of the year in
+front of it (§7.2's other dial).
+
 ### 7.2 What the cart holds, and the founding season
 
 The two dials §2 says to reach for if winter 1 lands wrong. Both are config. **Not
