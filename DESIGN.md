@@ -342,6 +342,16 @@ Then, unsequenced:
 them, and go back to being what D59 called them — optional food sources, taken when the
 village wants one.
 
+**Written ahead, waiting for its phase:**
+- **`specs/tech-tree.md`** — the knowledge-based tech tree (§2.7), *design settled, unbuilt*.
+  Drafted on Joe's initiative so the pillar has settled content to build against rather than
+  content invented mid-implementation. **Checked against §2.7 and it holds**: progression
+  with no research points and nothing unlocked by a counter filling up; three knowledge
+  states with re-locking when the last knower dies unapprenticed; civic gating by scale; and
+  apprenticeship versus schooling as genuinely exclusive branches, which is the *broad, not
+  tall* shape §2.7 asks for. It also names its own load-bearing parts and says the rest is
+  furniture, which is the right way for a document written this far ahead to age.
+
 **Parked, with a stated reason:**
 - **Tools** (D17) — waiting on a workshop to make them at.
 - **Cemeteries** (D35) — waiting on placement.
