@@ -290,7 +290,15 @@ is weather** — but its proposed centre of gravity did not (D44). Slices, in or
   gatherable ticks. With only *my own larder* left as a reason, the family that filled theirs
   first rested for a century. **D76's seam for the fifth time.** Work shares over twenty years
   went from 4.3%/6.7% to **7.1%/8.2%**, and a pile-only village went from **dead at a hundred
-  years** to seven people in five households. 405 tests green.
+  years** to seven people in five households. **Confirmed by Joe at the screen, which is the
+  only bar that counted — *"yeah it looks like everyone is working"***. 400 tests green.
+
+- **Goods in transit are not supply** ✅ (D83, Joe's ruling). The header reads what is in the
+  village's stores, not what is in somebody's arms, and that is the design: the village can
+  spend what it can reach. The founding loop that raised the question — homeless founders
+  fetching from a cart that is also their home, so the errand has no distance in it — **ends
+  by itself at tick 80** when the first houses go up, on 5.8% of year one's ticks and none
+  thereafter.
 
 - **Goods became an index, and stone and tools arrived on it** ✅ (D82; slice C2 of the
   Banished opening). `Stockpile` was three hand-written goods with nine methods between them;
@@ -319,13 +327,6 @@ stop, read *why* off the screen).
 and the stock-limit control; livestock and trade are parked. The probe that preceded all of
 it stands and is worth keeping — **winter is 86% idle**, and **clothing's payoff is winter
 labour rather than lives**, which is what stock limits turn from a dead end into a lever.
-
-**⚠️ One open bug ahead of the queue, Joe's call whether it goes first (D83):** the founders
-fetch a full carry-load from the cart every tick and never put it down, because they are
-homeless and home *is* the cart — so the founding stock is emptied into four pairs of arms
-within five ticks, and `TotalFood()` counts stores only, so the header under-reports by
-exactly what is being carried. Measured, pre-existing, not currently fatal, and sitting
-directly upstream of D81's forage gate.
 
 **Next up** *(in order — Joe's call)*:
 *Re-ordered by D62 — the previous queue was slices inherited from specs rather than the
@@ -393,12 +394,14 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
-- **D83 · 2026-08-02 · ⚠️ OPEN, found by running the game: the founders empty their own cart into their arms in five ticks, and no reader can see it.** Measured on the shipped config, and **verified identical at `826a138`, so it predates all of today's work** — it is the cold start's, not C2's.
+- **D83 · 2026-08-02 · ✅ Goods in transit are not supply — Joe's ruling, and the founding loop that raised the question ends by itself.** Found by running the game: the header read *"640 food all told"* where the cart holds 800. Measured on the shipped config, and **verified identical at `826a138`, so it predates all of today's work** — it is the cold start's, not C2's.
   - **The numbers.** Tick 0: 800 food in the cart, nothing carried. Tick 1: 640 in the cart, **160 in four pairs of arms**. Tick 2: 480 and 320. Tick 3: 320 and 480. Every founder picks up a full `carry_capacity` of 40 a tick, every tick, and never puts it down. **Food is conserved** — nothing is destroyed — but within five ticks the cart is empty and the whole founding stock is being carried around.
   - **Why it never stops.** The founders are homeless, so `RestingPlaceOf` is the cart. They fetch *from* the cart, enter `TravelingHome`, and home is where they are already standing — so the leg completes with nothing between pickup and destination, the larder is never reached, and the fetch fires again next tick. **A round trip with no distance in it is not a round trip.**
-  - **⛔ And this is D79's lesson a third time: the village cannot see what it has.** `TotalFood()` sums stores only — `TotalLogs()` beside it says *"plus any in someone's arms"* and does the same thing — so the header told the player **640 food** when the village had 800, and every reader derived from it is short by whatever is being carried. That includes `FoodInGranaries()`, which **D81 just made the village's reason to go out and work.** The two findings touch, which is why this one is recorded rather than patched in a hurry.
-  - **It is not currently fatal**, which is why nothing caught it: `TryEat` takes from a villager's own arms first (D30), so four people carrying their pantry still eat, and `AVillageGivenOnlyAPileOutlivesItsFounders` passes at forty years. **A bug that hides behind a rule that was written for a different reason.**
-  - **Not fixed here, deliberately.** It is a behaviour change in the cold start's fetch path with D81's gate immediately downstream of it, and it wants its own probe and its own commit rather than the end of a long session. **Joe's call on ordering.**
+  - **✅ RESOLVED BY JOE, and it is a design ruling rather than a shrug.** *"Every reader is short by whatever is in transit — I think this is fair and reasonable to leave as is."* **Goods in somebody's arms are not supply**, which is the same rule D29 states about a larder and D76 states about a store: the village can spend what it can reach, and an armful walking across a field is neither. It is also the honest reading of `TotalFood()`'s behaviour rather than an excuse for it.
+  - **⚠️ CORRECTION to this entry as first written, and it was wrong in the direction that costs a session.** It said `TotalLogs()` *"says 'plus any in someone's arms' and does the same thing"* as `TotalFood()`. **It does not — it counts arms, deliberately**, and the comment above it records a village that spent a century cutting timber it already had because an earlier version under-counted. Written from the doc comment without reading the body, which is the exact failure this project keeps paying for. D77's rule applies to its own log: **a decisions log that misstates where things are costs the next session precisely the time it exists to save.**
+  - **So the two readers are not inconsistent, they are two questions** — the resolution this project keeps arriving at (D76, D79, D81). *"Will the village have timber?"* counts the load on its way to the shed, because it will arrive. *"Has the village got food?"* counts what is actually in a store. Both are right, and neither should be made to look like the other.
+  - **And the loop is a founding transient, measured rather than assumed.** Over year one of Joe's opening, food is in somebody's arms on **28 of 480 ticks (5.8%)**, and on **none at all after tick 80** — the moment the two houses are up, home stops being the cart, the walk has distance in it, and the load gets put down. **It ends structurally rather than needing a rule**, because the thing that caused it was a round trip with no distance in it. Nothing starves: `TotalFood` is 640 at tick 0 and 1120 by tick 80.
+  - **What is worth keeping is the shape, not the bug:** a zero-length errand is a loop, and there will be another one. `TryEat` taking from a villager's own arms first (D30) is what kept this harmless, which is a rule written for a different reason doing the work.
 - **D82 · 2026-08-02 · Goods become an index, and the first two new ones prove it.** Slice C2, in two commits, in Joe's stated order: *refactor when the first new good lands, not before and not after.*
   - **`Stockpile` was three properties, three lifetime counters, nine methods and a `Held` that summed by name.** Adding stone meant remembering nine places, and this project's most repeated bug is code still reading the old shape (D25, D29, D48, D57, D76, D79, D81). One array indexed by `Goods`, one method per verb, and a new good is an enum value.
   - **The named mutators are deleted rather than kept as wrappers**, so the compiler lists every call site and each has to say which good it means — D70's argument for the nullable home, applied one type over. `Add(80)` meant food and did not say so, which is precisely the line that goes quietly wrong when `Goods` grows. **The named readers stay** (`Food`, `Logs`, `Firewood`): they are what the hash, the panel and most of the suite ask for, and unlike the mutators they cannot go stale now that one array sits under them.
@@ -419,6 +422,7 @@ village wants one.
   - **One golden moved and one did not, and the asymmetry is measured rather than lucky.** The two answers can only differ once a village's food target climbs past its granary capacity: **681 of 24,000 fixture ticks (2.8%)** and **0 of 24,000 shipped ticks**. Fixture `14798520869458526773` → `11013974864926656020`; shipped unchanged at `3491502518393071633`.
   - **⚠️ A residual gap is left standing, and it is a design question rather than a bug.** Year one is still 7.5% against 26.5%, because the household nearer the timber gets the **logger's** seat and a logger works about **a third** of their ticks where a forager works a **twentieth**. The allocator is fair by headcount and the *job kinds* are not equal work. **Joe's call** — rotate the assignment, price the duty cycle into the quota, or keep it as legible inequality (§2.2). Guarded at a factor of two so the fix cannot silently regress while the design question stays open.
   - **Five sessions running: every diagnosis reasoned from precedent lost, every one from a probe won.** Both written-down candidates were wrong and ten minutes of measurement said so.
+  - **✅ Joe played it and closed it: *"yeah it looks like everyone is working."*** The measurement said 7.1% against 8.2%; the bar was always whether it reads that way on the screen.
 
 - **D80 · 2026-08-02 · Full is not the same as absent, and one word cannot answer two questions.** Three findings from Joe playing the pile opening; two fixed, one open.
   - **⛔ A full village crashed.** He demolished the cart to see whether goods would go to the storage pile — *"they did!"* — and then the sim threw **every tick**: *"Otto has a load to put down and the village has no Shed and no cart."* Every branch of `StoreForTheLoad` filtered on `!IsFull`, so once the pile filled there were no candidates left and the last resort was a stack trace, **while a perfectly good pile stood in the square.** A village whose stores are full has a *problem*; it does not have an invariant violation. They now walk to the nearest place that would take the load if it could and keep holding it until there is room — which is what a person does. The throw survives for the genuinely degenerate case: no store of any kind accepts this good.
