@@ -74,9 +74,17 @@ public sealed class SimWorld
     /// The valley, generated from this run's seed (D18).
     /// </summary>
     /// <remarks>
-    /// Immutable once generated, so it is world state without being world <em>change</em>
-    /// — the hash covers it once and it can never drift. When terrain becomes mutable
-    /// (a felled stand, a paved road) that stops being true and this needs revisiting.
+    /// <para>
+    /// <b>No longer immutable</b> (`specs/mutable-terrain.md`). It said the hash *"covers it
+    /// once and it can never drift"*, which was true of the contents and never of the
+    /// hashing: <c>StateHash.MixMap</c> has always walked the live tile array on every
+    /// <c>Compute</c>, so a changed tile has always been covered. What genuinely had to be
+    /// built was the cache-invalidation path D41 predicted.
+    /// </para>
+    /// <para>
+    /// <b>Change it through <see cref="SetTerrain"/>, not through the map</b>, or nothing
+    /// finds out.
+    /// </para>
     /// </remarks>
     public GeneratedMap Map { get; }
 
@@ -378,6 +386,60 @@ public sealed class SimWorld
         return PlacementVerdict.Yes(
             $"The village needs {floor} {name} to see the year out and you have asked it to "
             + $"stop at {limit.Value}. It will do as you say.");
+    }
+
+    /// <summary>
+    /// Change what a tile is made of, and tell everything that had cached an opinion
+    /// about it. Returns whether anything changed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The only way terrain should change during a run</b>
+    /// (`specs/mutable-terrain.md §4.1`). A felled stand, a paved road, a bridge (D40) all
+    /// come through here, so there is one place that knows the valley moved.
+    /// </para>
+    /// <para>
+    /// <b>The cache is dropped on a change of passability, not on a change of terrain</b>,
+    /// and that distinction is doing real work rather than being fussy. Every cached route is
+    /// a full Dijkstra over the valley, one per destination, and a logger fells several times
+    /// a year — dropping them all on every fell would rebuild the village's whole routing
+    /// repeatedly for a change that moves no route. Grass and forest cost the same to cross,
+    /// so felling genuinely changes nothing about travel; <b>that is now a rule with a test
+    /// on it rather than the coincidence the cache had been relying on</b> (§12.3 of
+    /// `building-placement.md` calls it luck, correctly).
+    /// </para>
+    /// <para>
+    /// <b>Logged, because a valley changing shape is a thing an audit should be able to
+    /// see</b> (METHODOLOGY §4) — and the route-affecting case says so at a level a player's
+    /// bug report would carry.
+    /// </para>
+    /// </remarks>
+    public bool SetTerrain(GridPos position, Terrain terrain)
+    {
+        Terrain before = Map.TerrainAt(position);
+        if (!Map.SetTerrain(position, terrain))
+        {
+            return false;
+        }
+
+        bool routeAffecting = TerrainRules.IsPassable(before) != TerrainRules.IsPassable(terrain);
+        if (routeAffecting)
+        {
+            TravelCost.Forget();
+        }
+
+        if (Logs(LogLevel.Debug))
+        {
+            Log(
+                LogLevel.Debug,
+                "map",
+                $"{position} became {terrain} (was {before})."
+                + (routeAffecting
+                    ? " Passability changed, so every cached route was dropped."
+                    : " Passability is unchanged, so routes stand."));
+        }
+
+        return true;
     }
 
     /// <summary>Un-paint a tile. Homes already standing there stay where they are.</summary>

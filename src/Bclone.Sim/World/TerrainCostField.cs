@@ -106,7 +106,7 @@ public sealed class TerrainCostField
         // the river is a bug in whatever placed it, and hiding it here would make that
         // bug appear somewhere else entirely.
         int start = field.IndexOf(destination);
-        if (start < 0 || map.TerrainAt(destination) == Terrain.Water)
+        if (start < 0 || !TerrainRules.IsPassable(map.TerrainAt(destination)))
         {
             return field;
         }
@@ -150,7 +150,7 @@ public sealed class TerrainCostField
                 }
 
                 var neighbour = new GridPos(nx + map.MinX, ny + map.MinY);
-                if (map.TerrainAt(neighbour) == Terrain.Water)
+                if (!TerrainRules.IsPassable(map.TerrainAt(neighbour)))
                 {
                     // The whole point (D40). Water is not expensive, it is impossible,
                     // until the village learns to bridge it.

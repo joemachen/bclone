@@ -33,13 +33,20 @@ public sealed class TravelCostField
     /// One flow field per destination, built on first ask and kept forever.
     /// </summary>
     /// <remarks>
-    /// <b>Cached without any invalidation protocol, because terrain never changes.</b>
-    /// <see cref="GeneratedMap"/> is immutable once generated, so a field computed for
-    /// a destination is correct for the rest of the run — there is no stale-cache case
-    /// to get wrong, which removes the most likely home for the "code reading state
-    /// from where it used to live" bug this project keeps meeting. If terrain ever
-    /// becomes mutable — a felled stand, a paved road, a bridge (D40) — this comment
-    /// stops being true and the cache needs a way to be dropped.
+    /// <para>
+    /// <b>Terrain can change now, so this has an invalidation path</b> — see
+    /// <see cref="Forget"/>. It said *"cached without any invalidation protocol, because
+    /// terrain never changes"* for two phases and named the day it would stop being true
+    /// (D41); a felled stand is that day.
+    /// </para>
+    /// <para>
+    /// <b>Dropped on a change of passability, not on a change of terrain</b>, and the
+    /// distinction is the whole performance argument: each field is a full Dijkstra over the
+    /// valley, one per destination, and felling happens several times a year per logger.
+    /// Grass and forest cost the same to cross, so felling moves no route
+    /// (`specs/mutable-terrain.md §4.2`) — but that is now a <em>stated rule</em> that a
+    /// test holds down, rather than a coincidence the cache was relying on.
+    /// </para>
     /// </remarks>
     private readonly Dictionary<GridPos, TerrainCostField> _fields = new();
 
@@ -93,6 +100,22 @@ public sealed class TravelCostField
     /// </remarks>
     public GridPos StepToward(GridPos from, GridPos to) =>
         _map is null ? from.StepToward(to) : FieldTo(to).StepFrom(from);
+
+    /// <summary>
+    /// Throw away every cached route, because the ground they were computed over has
+    /// changed shape.
+    /// </summary>
+    /// <remarks>
+    /// <b>All of them, not the ones near the change.</b> A flow field spans the whole valley,
+    /// so a single tile becoming impassable can lengthen a route that starts nowhere near it —
+    /// working out which fields are affected is the same Dijkstra as rebuilding them, and
+    /// getting it subtly wrong would leave exactly the stale route this exists to prevent. It
+    /// is cheap because it is rare: only a change of <em>passability</em> gets here.
+    /// </remarks>
+    public void Forget() => _fields.Clear();
+
+    /// <summary>How many routes are currently cached. For tests and diagnostics.</summary>
+    internal int CachedFields => _fields.Count;
 
     private TerrainCostField FieldTo(GridPos destination)
     {

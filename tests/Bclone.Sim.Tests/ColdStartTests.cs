@@ -466,8 +466,10 @@ public sealed class ColdStartTests
     /// After: <b>7.1%</b> against <b>8.2%</b>. The bar is set at a factor of two rather
     /// than at those numbers, because <b>a residual gap is expected and is not this
     /// bug</b>: the household nearer the timber gets the logger's seat, and a logger works
-    /// about a third of their ticks where a forager works a twentieth. That is a live
-    /// design question (D81) and not something a guard should freeze.
+    /// about a third of their ticks where a forager works a twentieth. <b>Joe closed that
+    /// as intended</b> — it is inequality of the kind §2.2 exists to produce, spatial and
+    /// back-traceable to where a family lives. So the loose bar is not a placeholder for a
+    /// decision still to come; it is the guard declining to freeze a gap the design wants.
     /// </para>
     /// </remarks>
     [Fact]

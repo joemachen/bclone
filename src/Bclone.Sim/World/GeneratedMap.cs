@@ -26,6 +26,26 @@ public enum Terrain
     Forest = 2,
 }
 
+/// <summary>What a kind of ground does to somebody trying to cross it.</summary>
+public static class TerrainRules
+{
+    /// <summary>Whether anything can walk over this kind of ground.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Asked of the terrain rather than listed at each call site.</b>
+    /// <see cref="Terrain.Water"/> was named in two places in
+    /// <see cref="TerrainCostField"/>, and mutable terrain wanted to name it a third — which
+    /// is the <c>StoreKind</c> seam in a new costume, and that one ran to five instalments
+    /// before the question was replaced instead of the call site (D76).
+    /// </para>
+    /// <para>
+    /// <b>It is the question the cache turns on</b>, too: a terrain change matters to a route
+    /// exactly when it changes this answer (`specs/mutable-terrain.md §4.2`).
+    /// </para>
+    /// </remarks>
+    public static bool IsPassable(Terrain terrain) => terrain != Terrain.Water;
+}
+
 /// <summary>
 /// A valley, generated from the run's seed.
 /// </summary>
@@ -97,6 +117,41 @@ public sealed class GeneratedMap
     {
         int index = IndexOf(position);
         return index < 0 ? Terrain.Grass : _terrain[index];
+    }
+
+    /// <summary>
+    /// Change what a tile is made of. Returns whether it changed anything.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The one door terrain changes through</b> (`specs/mutable-terrain.md §4.1`), so
+    /// <em>"who changed this tile?"</em> has a single answer. Everything else about the map
+    /// stays read-only.
+    /// </para>
+    /// <para>
+    /// <b>The valley stopped being immutable here</b>, which D41 predicted a phase early and
+    /// which costs one thing: <see cref="TravelCostField"/> caches a flow field per
+    /// destination and had no way to drop one. Callers go through
+    /// <c>SimWorld.SetTerrain</c>, which owns that. Changing a tile on the map directly is
+    /// legal and does not tell anybody — which is fine for the generator, building the world
+    /// before anything has cached an opinion about it, and wrong for anything during a run.
+    /// </para>
+    /// <para>
+    /// <b>Out of bounds is refused rather than thrown</b>, matching
+    /// <see cref="TerrainAt"/> — a brush dragged off the edge of the valley is an ordinary
+    /// thing for a player to do.
+    /// </para>
+    /// </remarks>
+    public bool SetTerrain(GridPos position, Terrain terrain)
+    {
+        int index = IndexOf(position);
+        if (index < 0 || _terrain[index] == terrain)
+        {
+            return false;
+        }
+
+        _terrain[index] = terrain;
+        return true;
     }
 
     /// <summary>Whether a tile is inside the valley at all.</summary>
