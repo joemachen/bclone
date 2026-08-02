@@ -12,6 +12,12 @@ A generational village-builder / survival-sim — a ground-up spiritual successo
 
 The design intent, in one line: **vanilla Banished tells resource stories ("the winter killed 34 people"); this game tells people stories ("old Mabel trained her granddaughter as herbalist before the fever took her, and that's the only reason the town survived the plague year").** Every system exists to serve that shift.
 
+**And the core loop, in Joe's words (2026-08-01), because it was missing and its absence was costing us** — see D62:
+
+> *"Every winter isn't going to be crazy difficult once the user gets the hang of how much food they need to produce (regardless of source). Then it becomes about **maintaining the production pipeline while scaling the village and unlocking new tech**."*
+
+**Winter is a rhythm the player learns, not a recurring crisis.** That sentence settles a question three specs have circled and none has answered: how hard winter is *supposed* to be. The answer is that its difficulty is a phase the player passes through, and what the game is about afterwards is the pipeline, the scaling and the tech. Systems that make winter permanently dangerous are working against this; systems that make the pipeline richer are working for it.
+
 ---
 
 ## 1. Non-Negotiables (the soul — do not break these)
@@ -44,6 +50,11 @@ Each pillar has a one-line thesis, the mechanic, and the failure mode to design 
 - **Distribution is a job, not a slider.** ✅ **Built** (D14, D36). A **manned market** moves goods from the stores to households below target, and is the only thing in the game that can reach a dead family's larder. The automatic sharing policies that stood in for it are deleted (D30). A marketer produces nothing — the promise is that switching the market off costs the village *convenience*, never lives, and there is a 300-year test that says so.
 - **Food comes from many kinds of work, not one patch.** Planned workplaces: **fishing huts, gathering huts, hunting huts**, and then **secondary processing** (a smokehouse, a mill — turning a raw yield into something better or longer-keeping).
   - **Named by Joe, 2026-07-27 (D39), so this stops being a gesture:** raw sources are **farming crops, herdsmen and butchering, gathering, fishing**. Above them sits the processing tier that makes them worth having — **bread baked from wheat, wine from berries, beer from wheat**. Each is a chain of the shape D29 already built once (an input consumed to make an output, a workplace that can be idle for want of stock rather than for want of a worker), which is the argument for having built that shape carefully. This is also where §2.7's "unlock by doing" gets somewhere to live: *bake enough bread across enough winters*. Two reasons this is structural rather than content. First, a catchment radius can only bind if a distant household has *something nearby* to work; with a single food source, a real catchment just starves the outskirts. Second, processing is where the tech tree (§2.7) attaches to daily life — "bake enough bread across enough winters" needs an oven someone works at. Recorded as D19; the first step is simply more than one raw food source.
+- **Stock limits: the player says *how much of each good the village wants*, and production stops there** (Joe, 2026-08-01 — D62). *"The user should be able to set the max village quota before workers stop working and does laborer work, or idles (regardless of job). i.e. 200 wood, 200 firewood, 2000 food, 100 stone, 50 tools, 50 clothes."* **Not yet built, and it is the missing player-facing control the whole economy has been improvising around.**
+  - **It is the same softening as D51, one axis over, and it does not touch this pillar's line.** A limit states a *goal*, not a person: the sim still chooses who by proximity, household and catchment, so every *"why is Elias at the stand?"* sentence stays true. D51 says **how many hands**; a limit says **until when**. They are two halves of one control and neither is slotting a named worker into a building.
+  - **Architecturally it splits the economy in two, and the split is what keeps D16 intact.** `VillageEconomy` goes on deriving the **survival floor** — what the village must produce not to die — and the player sets the **ceiling** above it. Derived floor, player ceiling. A limit set below the floor is allowed and *warned about*, which is D43's pattern; it is a decision with a consequence, not an error.
+  - **It is also the honest answer to the idle winter** that D44 and D52 spent two sessions on. The village is idle because the derived quota has nothing left to want; with limits, what it wants is what the player asked for. And **it is what gives clothing a reason without animals or trade** — a high wood or firewood target keeps loggers at the stands through winter, tree stands are open ground, and cold starts to bite. `LoggersWanted` and `WoodcuttersWanted` are exactly where it plugs in.
+  - **Built over the goods list, not a fixed six.** Three goods exist today (food, logs, firewood); stone, tools and clothes are on Joe's list and none of them are built. The control has to enumerate what the game has.
 - **Softened once, deliberately (D51).** The player may say **how many** hands a workplace gets — never *who*. Proximity, household and catchment still choose the person, so every *"why is Elias at the stand?"* sentence stays true. The line this pillar holds is *slotting a named worker into a building*, not the player having an opinion about staffing levels.
 - **Failure mode:** opacity. The player must be able to inspect *why* a given villager took a given job. Every assignment and every refusal writes its own reason, naming the runner-up.
 
@@ -266,31 +277,36 @@ is weather** — but its proposed centre of gravity did not (D44). Slices, in or
 - **A housekeeping pass** (D57). Two live bugs fixed, eleven dead symbols removed, and the
   docs reconciled with the game. 373 tests green.
 
-**In progress:** nothing. **Livestock is specced and ⛔ blocked** (D59, D60, **D61**):
-animals may only be acquired by trade, and there is no trade. The probe that preceded it
-stands and is worth keeping — **winter is 86% idle**, and **clothing's payoff is winter
-labour rather than lives**. The next slice is Joe's to pick from D61's three routes.
+**In progress:** nothing. **The queue was re-ordered by D62**, where Joe stated the core loop
+and the stock-limit control; livestock and trade are parked. The probe that preceded all of
+it stands and is worth keeping — **winter is 86% idle**, and **clothing's payoff is winter
+labour rather than lives**, which is what stock limits turn from a dead end into a lever.
 
 **Next up** *(in order — Joe's call)*:
-0. **Unblock livestock** (D61) — **Joe's call between three routes**: a minimal trading post
-   (sell firewood, buy a beast — D29 reserved firewood for exactly this), **hunting** as a
-   no-trade substitute that hits everything livestock was wanted for, or reordering and
-   coming back. Nothing below it can proceed until this is picked.
-1. **Livestock** — `specs/livestock.md` (D19, D39, D59, D60), ⛔ **blocked on the above.** An
-   **optional** food source, one of several the village chooses between as it scales, not a
-   tier everyone climbs. Three slices: **pasture, herd and hay** (bought for the winter work,
-   no output at all), then **butchering**, then clothing.
-2. **Clothing**, straight after — livestock's third slice. It turns winter from survivable
-   into workable, which is §2.7's *unlock by doing* arriving out of a survival mechanic.
-   Its payoff is **winter labour, not lives** (`specs/clothing.md §5.1`).
-3. **The 7-tile bound** — the biggest payoff on the board and the largest re-derivation.
+*Re-ordered by D62 — the previous queue was slices inherited from specs rather than the
+game Joe described.*
+
+1. **Stock limits** (D62, §2.2) — the player sets a target stock per good and production
+   stops there. Derived floor, player ceiling. The missing player-facing control, the honest
+   answer to the idle winter, and what gives clothing a reason with no animals and no trade.
+2. **Clothing, starting from a founding stock that wears out** (D62). Unblocked by the
+   above; `specs/clothing.md` needs rewriting around inheritance-that-decays rather than
+   unlock-you-build-toward.
+3. **Crops and orchards** — sown in spring, harvested in autumn, per-crop calendars.
+   **Replaces the seasonal yield curve** (`specs/environment-and-seasons.md §5.1`), which is
+   three multipliers where this is a growth cycle you can watch. This is what makes the year
+   real and what the granary is *for*.
+4. **The 7-tile bound** — the biggest payoff on the board and the largest re-derivation.
    **Mechanism settled (D58): per-site yield**, with richer distant sites as its other half.
    Give it a fresh session.
-4. **The seasonal yield curve** (`specs/environment-and-seasons.md §5.1`), last and on its
-   own terms.
 5. **Make the river matter** — water is impassable and provably so, but the generator steers
    every village onto the side of the valley with the work on it, so nothing ever needs to
    cross. Belongs with **bridges** (D40), which need the tech tree.
+
+**Parked by D62, still good designs:** **livestock** (`specs/livestock.md`, D59–D61) and the
+**trade** dependency under it. They stop being urgent the moment clothing does not need
+them, and go back to being what D59 called them — optional food sources, taken when the
+village wants one.
 
 **Parked, with a stated reason:**
 - **Tools** (D17) — waiting on a workshop to make them at.
@@ -303,6 +319,12 @@ labour rather than lives**. The next slice is Joe's to pick from D61's three rou
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D62 · 2026-08-01 · Joe states the core loop, and three of the four things he says change the plan.** Prompted by his own *"something doesn't feel aligned with my vision"*, which was correct: DESIGN §6's queue was a list of slices inherited from specs, and what he described is a game. Recorded in full because chat is ephemeral and this is the most load-bearing design input of the phase.
+  - **The core loop, now in §0.** *"Every winter isn't going to be crazy difficult once the user gets the hang of how much food they need to produce. Then it becomes about maintaining the production pipeline while scaling the village and unlocking new tech."* **Winter is a rhythm the player learns, not a recurring crisis** — which settles a question three specs circled and none answered, and corrects an emphasis I had been carrying: *"winter needs to bite harder"* was never a goal of this design.
+  - **Stock limits, now in §2.2, and they are the biggest thing in the message.** The player sets a target stock per good and production stops there. Derived floor, player ceiling — D16 intact. It is also the honest answer to the idle winter (D44, D52), and **it gives clothing a reason with no animals and no trade**, which collapses D61's four-slice chain to one.
+  - **Villagers start clothed** (Joe: *"the villagers can start with some clothing, can't they?"*). **Yes, and it is a better design than `specs/clothing.md` proposes.** That spec has clothing as an unlock you build toward, which is why it needed a production tier under it before it could exist at all. Starting stock inverts it: clothing is an **inheritance that wears out**, and the question stops being *"how do I get my first coat?"* and becomes *"can I still make them when the founders' ones are gone?"* That is §2.7's own phrase — *a fragile inheritance* — arriving in a survival mechanic, and it is the same shape as knowledge dying with a master. It also retires the leather blocker for the starting state and makes the tailor's demand continuous rather than the errand D22 warns about. **No regression risk:** a village that can never make a garment degrades to exactly today's behaviour, which is the floor.
+  - **Seasonal gating was too broad, and the yield curve is the wrong shape.** Joe: logging, butchering and fishing all happen year-round and the player assigns hands as they like; **crops and orchards are the things winter stops.** `specs/environment-and-seasons.md §5.1` proposes three multipliers on forage yield, which is a number. What Joe describes is a **growth cycle** — sown in spring, ripening through summer, harvested in autumn, with per-crop calendars so wheat and corn and peas come in at different times. That is watchable: a field greens up and is cut. **A multiplier is a number; a field is a season.** §5.1 should be rewritten rather than built, and the granary stops being a safety margin and becomes the thing the whole year is aimed at.
+  - **What this parks:** livestock (D59, D60) and the trade dependency (D61) both stop being urgent, because clothing no longer needs them. They stay good designs and go back to being optional food sources, which is what D59 said they were.
 - **D61 · 2026-08-01 · A beast has to be bought — so livestock is blocked on trade, and clothing is behind two unbuilt pillars.** Joe, answering `specs/livestock.md §12.1`: *"I don't want animals available to the user until they trade for it."* The spec had proposed a founding stock stated in the config the way the founding households are, and flagged it as **the one link in the chain with nothing diegetic underneath it**. That flag was right and the placeholder is refused.
   - **It is a better design and a worse schedule, and both halves are real.** A herd you had to *buy* is a herd you invested in, which is what makes losing it to a bad winter (D60) cost something; animals appearing because a brush was dragged is the sort of thing this project deletes elsewhere. It also gives §2.3 its first genuine *surplus sink* — today a village's spare firewood just packs the shed (D52) and nothing in the game wants anything.
   - **But it puts §2.4 — build-order item 7, the last pillar — in front of Phase 2's remaining work**, and clothing is now behind *two* unbuilt things rather than one. That is a real cost and it is recorded here rather than absorbed quietly.
