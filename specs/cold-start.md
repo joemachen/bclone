@@ -181,6 +181,35 @@ the target, or building is exempt from it the way heating already is. **Until th
 answered, no amount of tuning the cart makes winter 1 winnable** — the cart is what puts the
 village below the line in the first place.
 
+### 7.1c ⚠️ Option (2) was tried and reverted — it needs a session of its own
+
+Joe chose **(2) exempt building from the gate, then (1) fix the gate** as a follow-up. The
+one-line change was made and **reverted the same session**, because it is not a one-line
+change:
+
+**Seven tests fail, and three of them are the deliberate guards for the rule being
+overridden** — not incidental breakage.
+
+| Failing | Why |
+|---|---|
+| `PlacementTests.BuildingYieldsToFeedingPeople` | Its comment *is* the rule: *"a village with an empty larder and berries to pick cannot afford to have anybody raising a granary."* |
+| `LabourAllocationTests.AVillageShortOfHandsPutsAllOfThemOnFood` | Same policy, one layer down. |
+| `LabourAllocationTests.AFedVillageWithSomeoneWaitingForAHouseCutsTimber` | The paired case. |
+| `WoodTests.SpareWorkersTakeTheTreeStand`, `VacancyTests…` | Knock-on. |
+| `StockLimitTests` golden hashes ×2 | Behaviour genuinely changed, so both goldens must be re-taken. |
+
+**This is the "when a test fails, ask whether the test was right" case, and here they are
+right.** They encode §4a's stated policy. Changing it means **rewriting those guards to
+express the new rule and re-deriving two goldens** — deliberate work, not a patch, and
+exactly the kind of thing that goes wrong when squeezed into the end of a session.
+
+**Recommendation for whoever takes it:** do **(1) first, not (2)**. Making
+`VillageIsShortOfFood` ask a genuine hunger question rather than compare against a stocking
+target is the change that is actually *correct* in every world — and it may well make (2)
+unnecessary, because a village with 800 food in the cart and nobody hungry would simply stop
+reporting itself short. Doing (2) first means editing three guards to permit something that
+(1) would then make moot.
+
 ### 7.2 What the cart holds, and the founding season
 
 The two dials §2 says to reach for if winter 1 lands wrong. Both are config. **Not
