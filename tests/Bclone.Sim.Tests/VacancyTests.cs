@@ -105,6 +105,26 @@ public sealed class VacancyTests
 
         loop.Step(config.TicksPerYear * 5);
 
+        // SAMPLED IN A SEASON THAT WANTS WORK DOING, not at whatever instant five years
+        // happens to land on — and asserted, not hoped for (D52).
+        //
+        // This compared "before anyone left" against "after everyone left" at an arbitrary
+        // tick. UnmannedWork only counts a workplace the village actually WANTS staffed,
+        // so on a tick where the quota happens to be zero — winter, or a lean spell —
+        // emptying every workplace changes nothing and the test reads as a broken alert.
+        // The alert was fine; the instant was.
+        while (loop.World.Clock.Season != Season.Summer)
+        {
+            loop.StepOnce();
+        }
+
+        LabourQuota wanted = LabourQuota.For(loop.World);
+        Assert.True(
+            wanted.Foragers + wanted.Loggers + wanted.Woodcutters > 0,
+            "The village wants no work of any kind at the moment this is sampled, so "
+            + "emptying its workplaces cannot possibly change the answer. That is a broken "
+            + "control, not a broken alert.");
+
         // A healthy village should have nothing to report — the alert has to stay rare
         // or the player learns to ignore it, which is worse than not having it.
         IReadOnlyList<Workplace> quiet = LabourSystem.UnmannedWork(world);

@@ -421,6 +421,28 @@ public sealed record SimConfig
     [JsonPropertyName("pile_work_ticks")]
     public int PileWorkTicks { get; init; } = 8;
 
+    /// <summary>
+    /// How empty a household's stores get before somebody drops everything to refill them
+    /// (D77).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>An emergency line, not the ordinary one.</b> This is the share below which a
+    /// family stops what it is doing — because a household at nothing in winter is the case
+    /// the whole rule exists for, and the errand used to lose to ordinary work every tick.
+    /// Joe watched a house come through a winter with no firewood at all while its residents
+    /// walked next door to get warm.
+    /// </para>
+    /// <para>
+    /// Deliberately low. A high number makes every villager an errand-runner and empties the
+    /// berry patch, which is the shape D52 records; a low one means the interruption is rare
+    /// and always justified. Measured at 20: household-time on an empty larder goes to
+    /// <b>zero</b>, with a market and without.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("restock_emergency_percent")]
+    public int RestockEmergencyPercent { get; init; } = 20;
+
     /// <summary>How many builders fit on one construction site.</summary>
     [JsonPropertyName("construction_site_capacity")]
     public int ConstructionSiteCapacity { get; init; } = 3;

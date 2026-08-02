@@ -158,6 +158,22 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // Then refill a household that has nearly nothing left (D77).
+        //
+        // ABOVE WORK AND BELOW WARMTH, and the position is the rule. Below the work
+        // branches — where the ordinary errand still sits — it never fires for anybody who
+        // holds a job, which is everyone it exists to protect: Joe watched a house come
+        // through a winter with no firewood at all, its residents walking to the
+        // neighbour's fire, while the header read "there is no one spare to send" every
+        // tick. An errand that loses exactly when it matters is not an errand.
+        //
+        // Above warmth would be worse than useless — a villager freezing on the way to
+        // collect the fuel they are freezing for.
+        if (TryEmergencyRestock(world, villager))
+        {
+            return;
+        }
+
         // Abandon a foraging trip the moment the season turns.
         //
         // The season is checked in Decide(), but a villager already walking to the
@@ -467,6 +483,120 @@ public sealed class BehaviorSystem : ISimSystem
     /// and an unheated house in twenty-five (D45).
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Drop everything and refill a household that is nearly out of food or fuel (D77).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Emergency only</b>, at <see cref="SimConfig.RestockEmergencyPercent"/> of what the
+    /// household needs. This errand outranks a job, and an errand that outranks a job has to
+    /// be rare or it empties the berry patch (D52).
+    /// </para>
+    /// <para>
+    /// <b>Children may go.</b> Carrying is not work, and a family with both adults at the
+    /// tree stand still has legs in it — which is why this is not gated on
+    /// <see cref="Villager.CanWork"/> the way the ordinary errand is.
+    /// </para>
+    /// <para>
+    /// <b>One at a time, asked rather than recorded.</b> Without the limit a family of five
+    /// all down tools for the same armful. It is a <em>reader</em> over the household's
+    /// members rather than a flag, because a flag is one more thing that can be set and not
+    /// cleared (D66, D71).
+    /// </para>
+    /// <para>
+    /// <b>Judged on distribution, not distance</b> (D78): this raises how far households
+    /// walk and takes the time they spend on an empty larder to zero. The second is what the
+    /// errand is for, and what the guard measures.
+    /// </para>
+    /// </remarks>
+    private static bool TryEmergencyRestock(SimWorld world, Villager villager)
+    {
+        SimConfig config = world.Config;
+        int share = config.RestockEmergencyPercent;
+        if (share <= 0)
+        {
+            return false;
+        }
+
+        Household household = world.HouseholdOf(villager);
+
+        // Already on the way — keep going rather than reconsidering every tick, or they
+        // shuttle between the two nearest stores forever.
+        bool alreadyGoing = villager.State == VillagerState.FetchingFromStore;
+
+        Goods? wanted = WhatTheHouseholdIsNearlyOutOf(world, household, share);
+        if (wanted is null)
+        {
+            return false;
+        }
+
+        if (!alreadyGoing && SomebodyElseIsFetching(world, household, villager))
+        {
+            return false;
+        }
+
+        StoreBuilding? source = NearestStoreHolding(world, villager.Position, wanted.Value);
+        if (source is null)
+        {
+            return false;
+        }
+
+        villager.ActionTicksRemaining = 0;
+        villager.State = VillagerState.FetchingFromStore;
+        Travel(world, villager, source.Position, VillagerState.FetchingFromStore);
+        return true;
+    }
+
+    /// <summary>Food first, then fuel — the one that kills soonest (D45's ordering).</summary>
+    private static Goods? WhatTheHouseholdIsNearlyOutOf(
+        SimWorld world, Household household, int share)
+    {
+        if (world.LivingMembersOf(household) == 0)
+        {
+            return null;
+        }
+
+        int foodFloor = world.TargetFoodFor(household) * share / 100;
+        if (household.Stockpile.Food < foodFloor)
+        {
+            return Goods.Food;
+        }
+
+        // Fuel only matters where it is burned. Hauling it about in spring is time not
+        // spent on the food store that gets them to the winter they would burn it in.
+        if (FoodSource.IsGatherable(world.Clock.Season) && world.Clock.Season != Season.Fall)
+        {
+            return null;
+        }
+
+        int fuelFloor =
+            VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config) * share / 100;
+
+        return household.Stockpile.Firewood < fuelFloor ? Goods.Firewood : null;
+    }
+
+    /// <summary>Whether a housemate is already away fetching. Asked, never recorded.</summary>
+    private static bool SomebodyElseIsFetching(
+        SimWorld world, Household household, Villager villager)
+    {
+        for (int i = 0; i < household.MemberIds.Count; i++)
+        {
+            int id = household.MemberIds[i];
+            if (id == villager.Id)
+            {
+                continue;
+            }
+
+            Villager? housemate = world.FindVillager(id);
+            if (housemate is { Alive: true, State: VillagerState.FetchingFromStore })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static StoreBuilding? PlanFetch(SimWorld world, Villager villager)
     {
         Household household = world.HouseholdOf(villager);

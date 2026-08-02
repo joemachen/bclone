@@ -22,11 +22,20 @@ public sealed class StockLimitTests
 
     public StockLimitTests(ITestOutputHelper output) => _output = output;
 
-    // Captured from the tree at 12a4e46, BEFORE stock limits existed — which is the
-    // only moment these numbers could honestly be taken. A golden is worthless if it
-    // is recorded from the code it is meant to be guarding.
-    private const ulong FixtureFiftyYearHash = 6240348392465688561UL;
-    private const ulong ShippedFiftyYearHash = 7734052055491107200UL;
+    // Captured from the tree at 12a4e46, BEFORE stock limits existed — which is the only
+    // moment those numbers could honestly be taken. A golden is worthless if it is recorded
+    // from the code it is meant to be guarding.
+    //
+    // RE-TAKEN ONCE, DELIBERATELY (D77). The emergency restock changes what villagers do,
+    // so it changes the history — that is the point of it, not a regression, and a golden
+    // that survived a real behaviour change would be measuring nothing. Re-taken here in
+    // its own commit, with the old values kept below so the move is visible rather than
+    // silent. This is the ONLY sanctioned reason to touch these: if a change moves them
+    // and cannot say why in one sentence, the change is wrong, not the golden.
+    //
+    //   before the restock: fixture 6240348392465688561, shipped 7734052055491107200
+    private const ulong FixtureFiftyYearHash = 13156470216450962100UL;
+    private const ulong ShippedFiftyYearHash = 13143121898114073713UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
