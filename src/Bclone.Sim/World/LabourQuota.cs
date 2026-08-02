@@ -230,7 +230,42 @@ public readonly record struct LabourQuota
         // ever noticed, because the allocator had never heard of seasons.
         bool canGather = FoodSource.IsGatherable(world.Clock.Season);
 
-        int foragers = canGather ? Take(ref free, toFeedEveryone) : 0;
+        // ---- The player's ceiling, applied on top of the derivation (D62) ----
+        //
+        // A limit does not replace any of the demand worked out above; it caps it. So the
+        // village goes on knowing what it needs, and simply stops once the player has as
+        // much as they asked for — which is what makes "nobody is splitting logs because
+        // you asked for 200 firewood and the village has 214" a sentence the game can say.
+        //
+        // EACH LIMIT READS THE SAME SUPPLY ITS DEMAND FUNCTION READS, and that is not a
+        // detail. WoodcuttersWanted counts firewood IN THE SHED, deliberately: a pile in
+        // somebody else's home is not supply because no errand reaches it. A limit counting
+        // firewood everywhere would disagree with the demand it caps, and D29 is the record
+        // of what that costs — the village believed itself stocked, staffed one woodcutter,
+        // and froze to extinction with a hundred and eighty firewood in homes and an empty
+        // shed. Reading the wrong total here would be that bug with the player's own number
+        // on it.
+        StockLimits limits = world.StockLimits;
+
+        if (limits.IsMet(Goods.Firewood, world.FirewoodInSheds()))
+        {
+            woodcutters = 0;
+        }
+
+        if (limits.IsMet(Goods.Logs, world.LogsInSheds()))
+        {
+            loggersForHuts = 0;
+            loggersForHouses = 0;
+        }
+
+        // Food is the one that can cost lives, and it is still obeyed. §3 of the spec: a
+        // game that refuses the player's number argues with them, and one that obeys it
+        // silently has killed them without saying so. The saying-so happens once, when the
+        // limit is set (SimWorld.SetStockLimit) — not once a tick, which is the nag D42
+        // deliberately avoided.
+        bool foodIsEnough = limits.IsMet(Goods.Food, world.FoodInGranaries());
+
+        int foragers = canGather && !foodIsEnough ? Take(ref free, toFeedEveryone) : 0;
         woodcutters = Take(ref free, Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter)));
         int loggers = Take(ref free, Cap(loggersForHuts, TotalCapacityFor(world, JobKind.Logger)));
 
@@ -287,7 +322,11 @@ public readonly record struct LabourQuota
         // hands with genuinely nothing to do between the last harvest and the first — is
         // not a gap to paper over with make-work: it is D44's own forward note, and it
         // wants herding and slaughtering (D39's roadmap) to answer it honestly.
-        if (canGather)
+        // A stock limit stops this too, and it has to: leaving the spare hands here would
+        // cap the quota and then hand every freed body straight back to the berry patch,
+        // so the granary would sail past the number the player asked for and the control
+        // would appear broken while working perfectly.
+        if (canGather && !foodIsEnough)
         {
             foragers += free;
         }

@@ -769,6 +769,57 @@ public static class VillageEconomy
         return config.MarketStockPerHousehold * config.EconomyHorizonHouseholds;
     }
 
+    /// <summary>
+    /// How much of a good the village needs not to die — the floor a stock limit sits above.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The derived half of D62's "derived floor, player ceiling".</b> A limit governs
+    /// everything above this; set below it, the limit is still obeyed and the player is
+    /// <em>told</em> (D43's pattern). One method rather than the caller working it out per
+    /// good, because a floor computed in two places is a floor that can be corrected in one —
+    /// this project's most repeated bug (D57).
+    /// </para>
+    /// <para>
+    /// Each answer is the same number the village already aims at elsewhere, not a new one
+    /// invented for the warning: food is the winter store per head, firewood is what every
+    /// household burns and banks, and logs are what it takes to make that firewood plus a
+    /// house's worth so building never has to empty the woodpile.
+    /// </para>
+    /// </remarks>
+    public static int SurvivalFloorFor(SimConfig config, Goods goods, int people, int households)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        if (people < 0)
+        {
+            people = 0;
+        }
+
+        if (households < 0)
+        {
+            households = 0;
+        }
+
+        switch (goods)
+        {
+            case Goods.Food:
+                return RequiredStockpilePerAdult(config) * people;
+
+            case Goods.Firewood:
+                return FirewoodStoreWantedPerHousehold(config) * households;
+
+            case Goods.Logs:
+                int perSplit = config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit;
+                int forFirewood = households * FirewoodStoreWantedPerHousehold(config)
+                    * config.LogsPerSplit / perSplit;
+                return forFirewood + config.LogsPerHouse;
+
+            default:
+                return 0;
+        }
+    }
+
     /// <summary>A one-line summary for logs and tests.</summary>
     public static string Describe(SimConfig config) =>
         $"adult eats {AdultFoodPerYear(config)}/yr, child {ChildFoodPerYear(config)}/yr; " +

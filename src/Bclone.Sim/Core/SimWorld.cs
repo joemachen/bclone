@@ -83,6 +83,14 @@ public sealed class SimWorld
     /// <summary>Where the player has said the village may build (D42).</summary>
     public ZoneMap Zones { get; private set; } = null!;
 
+    /// <summary>How much of each good the player wants kept (D62).</summary>
+    /// <remarks>
+    /// Player intent, so it lives beside <see cref="Zones"/> rather than in
+    /// <see cref="Config"/>: a config value is what the world is made of, and this is
+    /// something somebody decided during a run.
+    /// </remarks>
+    public StockLimits StockLimits { get; } = new();
+
     /// <summary>The berry patch.</summary>
     public FoodSource FoodSource { get; }
 
@@ -231,6 +239,56 @@ public sealed class SimWorld
         }
 
         return PlacementVerdict.Fine;
+    }
+
+    /// <summary>
+    /// Set or clear how much of a good the village should keep (D62).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Always obeyed, and warned about when it is below what the village needs to
+    /// live.</b> That is the whole of D62's "derived floor, player ceiling": the economy goes
+    /// on deriving the floor, the player sets the ceiling, and a ceiling set under the floor
+    /// is a decision with a consequence rather than an error to reject. A game that refuses
+    /// the player's number is arguing with them; a game that obeys it silently has killed
+    /// them without saying so.
+    /// </para>
+    /// <para>
+    /// <b>The warning fires here, once, when the limit is set</b> — not every tick the
+    /// village is short. That is D42's rule about the distance warning happening per brush
+    /// stroke rather than per house: one considered sentence, instead of a nag the player
+    /// learns to click past.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict SetStockLimit(Goods goods, int? limit)
+    {
+        if (!StockLimits.Set(goods, limit))
+        {
+            return PlacementVerdict.Fine;
+        }
+
+        if (limit is null)
+        {
+            return PlacementVerdict.Fine;
+        }
+
+        int floor = VillageEconomy.SurvivalFloorFor(Config, goods, Population, Households.Count);
+        if (limit.Value >= floor)
+        {
+            return PlacementVerdict.Fine;
+        }
+
+        string name = goods switch
+        {
+            Goods.Food => "food",
+            Goods.Logs => "logs",
+            Goods.Firewood => "firewood",
+            _ => goods.ToString().ToLowerInvariant(),
+        };
+
+        return PlacementVerdict.Yes(
+            $"The village needs {floor} {name} to see the year out and you have asked it to "
+            + $"stop at {limit.Value}. It will do as you say.");
     }
 
     /// <summary>Un-paint a tile. Homes already standing there stay where they are.</summary>

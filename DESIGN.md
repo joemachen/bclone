@@ -169,7 +169,7 @@ Each phase should ship in a playable, legible state before the next begins.
   - **Not scheduled**, deliberately: it reopens the whole derivation chain, and D44/D45 were taken first.
   - **✅ The mechanism is settled (D58): per-site yield.** Two docs had described two mechanisms under this one bullet — per-site yield above, and *work-in-place* from an old handoff, where villagers travel to work and **stay**, eating on site, so distance becomes a one-off commute rather than a per-unit tax. They are **not** two halves of the same answer: per-site yield makes distance *mean* something, work-in-place makes it *cheap*. Joe's call is per-site yield; work-in-place stays on the board as a later slice that wants clothing to exist first. See D58.
   - **Still not scheduled** — the mechanism is chosen, the slice is not started. It is queue item 3 and it still wants a fresh session.
-- [ ] **Does "maintain" mean buildings decay? (D64.)** Joe's builder's hut *"builds and maintains"*. If structures need upkeep, that is the same shape **D37 cut spoilage for** — a decay timer is a tax the player answers with babysitting rather than with a decision — and §1.2 is what it would be judged against. **Banished's own buildings do not decay**; tools and clothes wear out and structures do not, which suggests "maintain" may mean **repair after damage** (fire, storm) rather than a standing upkeep loop. Repair-after-damage costs nothing in babysitting and gives the hut something to do between projects. **Recommendation: repair-after-damage, no decay.** Joe's call.
+- [x] **Does "maintain" mean buildings decay?** ✅ Resolved 2026-08-01 → **repair after damage, no decay** (Joe). Buildings do not rot on a timer; the builder's hut repairs what fire or storm breaks. See D65.
 - [ ] **Fan-out variability on the map (view only).** Joe's note: people grouped on a tile currently sit on a perfect ring at a fixed radius, which reads as arranged rather than gathered. Vary both the radius and the angle a little — deterministically, from villager id — so a crowded tile looks like a crowd. Small, and purely cosmetic.
 
 ---
@@ -279,7 +279,15 @@ is weather** — but its proposed centre of gravity did not (D44). Slices, in or
 - **A housekeeping pass** (D57). Two live bugs fixed, eleven dead symbols removed, and the
   docs reconciled with the game. 373 tests green.
 
-**In progress:** nothing. **The queue was re-ordered by D62**, where Joe stated the core loop
+**In progress:** **Slice A — stock limits and laborers** (`specs/stock-limits-and-laborers.md`,
+D62–D65). *The limits half is built:* `StockLimits` is player intent held on the world and
+hashed, `LabourQuota.For` caps the derived demand with it, and `SimWorld.SetStockLimit` obeys
+a limit below the survival floor while saying so. **A golden hash taken before the control
+existed proves it is a no-op until somebody uses it** — 50 years, both configs, byte-identical.
+384 tests green. *Still to come in this slice:* `JobKind.Laborer` and the hauling that gives a
+freed hand something to do.
+
+**The queue was re-ordered by D62**, where Joe stated the core loop
 and the stock-limit control; livestock and trade are parked. The probe that preceded all of
 it stands and is worth keeping — **winter is 86% idle**, and **clothing's payoff is winter
 labour rather than lives**, which is what stock limits turn from a dead end into a lever.
@@ -337,6 +345,7 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D65 · 2026-08-01 · Buildings do not decay; the builder's hut repairs what damage breaks.** Joe, closing D64's flagged question. **Upkeep-on-a-timer is refused for D37's reason, word for word** — a decay timer is a tax the player answers with babysitting rather than with a decision, which is §1.2. Banished's own structures do not decay either; tools and clothes wear and buildings do not, and this project has already cut one decay mechanic (spoilage, D37) on exactly this argument. So *maintain* means **repair after damage**: a thing fire or storm breaks is a job for the hut, with no standing loop and nothing to babysit. It also gives the hut work between projects without inventing any, which is the make-work trap D52 records.
 - **D64 · 2026-08-01 · A builder's hut, the cart that stays, and the player's first act. Sequence A → B → C.** Joe settling D63's open ends.
   - **Builders get a hut**, and builders are assigned to it the way every other job is assigned to a workplace. They build **and maintain** everything: buildings, pathways, decorations, walls, fences, bridges. **This changes what a `Builder` is.** Today a construction site *is* the workplace (D38), which was a neat trick — a site got catchment, allocation and refusal reasons for free, and then stopped existing. A hut inverts it: the hut is the persistent workplace and sites become **errands travelled to**. That is **exactly the marketer's shape** (D36), which is the argument for it — a proven pattern rather than a new one — and it means builder staffing becomes persistent and player-controllable through D51's override instead of a job that appears and vanishes. It also gives §2.6's paths and D40's bridges somewhere to attach when they arrive.
   - **⚠️ "Maintain" is an open question and is deliberately not being implemented.** If buildings decay and need upkeep, that is **the same shape D37 cut spoilage for** — *"a decay timer is a tax the player answers with babysitting rather than with a decision"* — and §1.2 is the non-negotiable it would be tested against. Worth noting that **Banished's own buildings do not decay**; tools and clothes wear, structures do not. So "maintain" may mean repair-after-damage, which is content with no upkeep loop and no tension at all. **Flagged rather than assumed** — see the open question in §5.

@@ -64,6 +64,28 @@ public static class StateHash
 
         hash = MixUInt32(hash, (uint)world.Zones.ResidentialTiles);
 
+        // Stock limits (D62), and SILENCE IS THE POINT: a limit nobody has set mixes
+        // nothing at all, so a village played without ever opening the control hashes
+        // exactly as it did before the control existed. That is what makes
+        // "the default is a no-op" a golden test rather than a promise — see
+        // StockLimitTests. It is also the same shape the zone loop above already uses:
+        // painted tiles are mixed, unpainted ones are not.
+        //
+        // The good's index goes in with its value, so two different opinions can never
+        // collide, and NULL AND ZERO DIVERGE HERE: null mixes nothing, zero mixes a zero.
+        // They are different instructions — "no opinion" against "stop, I mean it" — and a
+        // hash that conflated them would let a determinism test pass across a real
+        // divergence (D51 records the same trap one control over).
+        for (int i = 0; i < StockLimits.Kinds.Count; i++)
+        {
+            int? limit = world.StockLimits.For(StockLimits.Kinds[i]);
+            if (limit is not null)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)limit.Value);
+            }
+        }
+
         // ---- Village ----
         // Every villager and every household, in id order. A hash that covered only
         // the first villager would let the rest of the village desync in silence.
