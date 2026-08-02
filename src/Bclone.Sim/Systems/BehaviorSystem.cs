@@ -508,15 +508,29 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        // Otherwise fetch materials from the nearest shed that has any.
+        // Otherwise fetch materials from the nearest shed that has any — OR THE CART,
+        // while it is the only store the village has (D75).
+        //
+        // Measured, after two playthroughs where a marked hut sat at "0 of 25 logs" with
+        // a builder assigned to it and 426 logs standing in the village: the builder was
+        // funded all along and simply could not see the timber. This is the third place
+        // that read sheds-only and had to learn about the cart — TryTakeBuildingTimber
+        // and StoreForTheLoad were the other two — which says the seam is the KIND check
+        // rather than any one call site.
         StoreBuilding? shed = world.NearestStore(
-            villager.Position, StoreKind.Shed, static store => store.Store.Logs > 0);
+            villager.Position,
+            StoreKind.Shed,
+            static store => store.Store.Logs > 0)
+            ?? world.NearestStore(
+                villager.Position,
+                StoreKind.Cart,
+                static store => store.Store.Logs > 0);
 
         if (shed is null)
         {
             villager.WorkNote =
                 $"Nothing to build with — {site.Name} still wants {site.LogsStillNeeded} logs, " +
-                "and no shed within reach has any.";
+                "and nowhere within reach has any.";
             GoHome(world, villager);
             return;
         }
@@ -552,7 +566,12 @@ public sealed class BehaviorSystem : ISimSystem
         for (int i = 0; i < world.StoreBuildings.Count && wanted > 0; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
-            if (store.Kind != StoreKind.Shed || store.Position != villager.Position)
+
+            // The cart counts here too, and it must: the walk above may have sent them to
+            // one, and a builder who arrives at the timber and cannot pick it up is worse
+            // than one who never set off (D75).
+            if (store.Kind is not (StoreKind.Shed or StoreKind.Cart)
+                || store.Position != villager.Position)
             {
                 continue;
             }

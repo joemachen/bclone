@@ -165,7 +165,7 @@ public sealed class ColdStartTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void AVillageThatIsPlayedBuildsItselfHousesFromNothing()
+    public void AVillageThatIsPlayedSurvivesItsFirstWinter()
     {
         SimConfig config = ColdVillage;
         SimLoop loop = Build(config);
@@ -210,18 +210,15 @@ public sealed class ColdStartTests
         // reasons, and the village could not have been saved by any amount of play.
         Assert.True(homes > 0, "A year passed with land painted and no house was ever built.");
 
-        // WHAT IS NOT PROVEN, AND IS DELIBERATELY NOT ASSERTED YET: that a played opening
-        // survives winter 1. It currently does not — four founders cannot raise two houses,
-        // a shed and a hut, fell the timber for all of it, split firewood and feed
-        // themselves inside one year. That is a TUNING question and it is Joe's, per
-        // `specs/cold-start.md §7.2`: the dials are the cart's contents and the founding
-        // season, never the exposure rates (D53). Asserting survival here before he has
-        // said what "fair" means would be tuning the game to make a test pass, which is
-        // exactly what D16 and D53 both refuse.
-        _output.WriteLine(
-            world.Population > 0
-                ? "…and it survived."
-                : "…and it did not survive. Winter 1 is currently unwinnable; see §7.2.");
+        // AND IT SURVIVES (D75). This was unwinnable through three playthroughs and six
+        // bugs, and the last of them was a builder who was funded, standing beside 426
+        // logs, unable to see them because the fetch read sheds and the timber was in the
+        // cart. Nothing was tuned to get here — the cart still holds what it held when the
+        // village was dying, which is the point: it was never a difficulty problem.
+        Assert.True(
+            world.Population == config.StartingPopulation,
+            $"{config.StartingPopulation - world.Population} founders died in a played "
+            + $"opening; {frozen} of them froze.");
     }
 
     // ---------------------------------------------------------------
