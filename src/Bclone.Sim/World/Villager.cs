@@ -314,6 +314,7 @@ public sealed class Villager
             VillagerState.DeliveringToHome => "delivering goods to a home",
             VillagerState.FetchingMaterials => "fetching materials for the building site",
             VillagerState.Building => "raising a building",
+            VillagerState.Clearing => "clearing trees the village marked",
             _ => State.ToString(),
         };
     }

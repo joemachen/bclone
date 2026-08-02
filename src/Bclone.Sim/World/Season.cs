@@ -47,6 +47,15 @@ public enum VillagerState
 
     /// <summary>A builder raising a marked building.</summary>
     Building,
+
+    /// <summary>Clearing a tile the village painted for harvest (D87).</summary>
+    /// <remarks>
+    /// <b>Not a job, and that is the point.</b> This is what an able adult does when their
+    /// own work has nothing for them this tick — a laborer who holds no job at all, or a
+    /// forester in a winter with no timber wanted, or a woodcutter whose yard is empty.
+    /// Their primary work always comes first (Joe, D87); this is helping out on the side.
+    /// </remarks>
+    Clearing,
 }
 
 /// <summary>

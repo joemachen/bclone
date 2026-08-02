@@ -18,6 +18,44 @@ The design intent, in one line: **vanilla Banished tells resource stories ("the 
 
 **Winter is a rhythm the player learns, not a recurring crisis.** That sentence settles a question three specs have circled and none has answered: how hard winter is *supposed* to be. The answer is that its difficulty is a phase the player passes through, and what the game is about afterwards is the pipeline, the scaling and the tech. Systems that make winter permanently dangerous are working against this; systems that make the pipeline richer are working for it.
 
+### 0.1 The niche, in Joe's words (2026-08-02) — the lens every plan goes through
+
+> **"A cozy, but challenging village builder and management sim."**
+
+**Both words are load-bearing and they pull against each other, which is the point.** Recorded
+here rather than in §1 because it is not a seventh non-negotiable — it is the **lens**: the
+question to ask of a feature once it already satisfies §1. *Does this make the game cosier, or
+merely easier? Does it make it more challenging, or merely crueller?*
+
+**Where they pull apart is failure**, and the resolution this game has already been reaching
+for without naming it:
+
+- **The challenge is in the planning, never in the punishment.** You lose *villagers*, not
+  *runs*. A mistake should cost you a generation of progress and be visible on the map — never
+  end the game, and never be unrecoverable before you understood it.
+- **⭐ Legibility is what lets it be both** (§1.1), which is why that non-negotiable is first.
+  A hard game you can read is absorbing; a hard game you cannot read is just unfair. Every
+  time this project has chosen the traceable answer over the clever one it was buying *cozy*
+  without spending *challenging*.
+- **No anxiety mechanics.** No twitch, no timers you must be present for, no punishment for
+  stepping away — §1.2 already says this and the niche is why it matters commercially as well
+  as artistically.
+- **Recoverable by design.** `building-placement.md §12.6` is the model: *natural regrowth is
+  what makes over-clearing survivable rather than terminal.* **That interaction is the niche in
+  one sentence** — the mistake is real, visible and expensive, and the valley forgives you
+  slowly. Anything that can strand a player with no way back is the wrong shape, and where such
+  a state exists today the fix is a priority rather than a nicety.
+
+**What it argues for in the current work:** deposits that run out are *challenging* and the
+forester's hut is the *cozy* answer to them (D84, D86) — the pressure and its remedy shipping
+close together, rather than a pressure that sits unanswered for a phase. It also argues for
+**natural regrowth landing sooner than planting**, since a valley cleared with no way back is
+the one genuinely uncozy state this design can currently produce.
+
+**What it argues against:** difficulty added by taking information away, by making the player
+watch the clock, or by killing a village for something it could not have seen coming. All three
+are already refused by §1 — the niche is the reason they stay refused when a system is tempting.
+
 ---
 
 ## 1. Non-Negotiables (the soul — do not break these)
@@ -454,12 +492,23 @@ village wants one.
   - **All of it, not the fields near the change.** A flow field spans the valley, so one tile becoming impassable can lengthen a route starting nowhere near it — and working out which fields are affected is the same Dijkstra as rebuilding them.
   - **`Terrain.Water` stopped being named at call sites.** It appeared at two, and this wanted a third; `TerrainRules.IsPassable` is the question instead. **That is D76's seam recognised before it ran to five instalments** rather than after.
   - **Deliberately nothing player-facing**, and it ships alone because it is the one part of C3 no open question touches — D84 blocks the terrain kinds and §5.1 of its spec blocks the brush. 408 green, both goldens unmoved.
+- **D88 · 2026-08-02 · The niche is named: *a cozy, but challenging village builder and management sim* — and it is a lens, not a seventh non-negotiable.** Joe, stating the target so planning can be read against it. Written up in §0.1.
+  - **Both words are load-bearing and they pull against each other**, which is what makes it a useful test rather than a slogan. The question to ask of a feature that already satisfies §1: *does this make the game cosier, or merely easier? More challenging, or merely crueller?*
+  - **The resolution is that challenge lives in the planning and never in the punishment.** You lose villagers, not runs. A mistake should cost a generation and be visible on the map — never end the game, and never be unrecoverable before it was understood.
+  - **⭐ §1.1 is the bridge, and this explains why legibility is the first non-negotiable rather than the third.** A hard game you can read is absorbing; a hard game you cannot read is unfair. **Every time this project has chosen the traceable answer over the clever one, it was buying *cozy* without spending *challenging*** — which is a better account of that rule's value than "it is nice for debugging".
+  - **The model already exists in the specs:** `building-placement.md §12.6` — *natural regrowth is what makes over-clearing survivable rather than terminal.* That interaction **is** the niche in one sentence: the mistake is real, visible and expensive, and the valley forgives you slowly.
+  - **What it changes immediately.** It promotes **natural regrowth above planting**: a valley cleared with no way back is the one genuinely uncozy state this design can currently produce, and D87 just gave the player a brush that can produce it. It also endorses the shape of D84/D86 — deposits run out (challenging) and the forester's hut answers them (cozy), shipping close together rather than a pressure left unanswered for a phase.
+  - **What it rules out**, all three already refused by §1 and now with a second reason: difficulty made by withholding information, by making the player watch a clock, or by killing a village for something it could not have seen coming.
 - **D87 · 2026-08-02 · The brush gathers, the hut sustains — and the opening needs the brush, not the hut.** Joe, playing, and it re-sequences the rest of C3. *"If there is a 'harvest trees' paint brush then the user can paint the map to harvest existing trees and laborers should harvest those trees — that is the intention for the opening with respect to gathering building materials (logs, stone, iron)."*
   - **⭐ These are two mechanisms and not two versions of one**, which is what the plan had been quietly assuming. **Painting harvest is *taking*** — a global brush over what is already standing, worked by **laborers**, and the ground is spent when it is done. **A forester's hut is *keeping*** — ground that belongs to a building, worked by somebody assigned to it, and it is how the wood goes on existing. **That is D84's rule exactly**: a deposit is finite and brushed; a building is a livelihood the player sites. Trees are the one resource that is *both*, and there is no contradiction in that — you clear a wood, or you farm it.
   - **So the opening needs neither a forester's hut nor a tree stand.** The founders paint the trees they mean to fell and their spare hands go and do it. **The hut is the answer to running out**, which is the right order and the same argument §12.7 makes about planting: the pressure comes first, the sustainable answer second.
   - **⭐ And this is finally the work D66 could not find.** The laborer shipped as a *name* because both errands the spec proposed occurred on 0.0% of ticks, with **24.5% of able-adult-ticks jobless**. Gathering off the map is the work — the first task on Joe's own list a year ago — and it arrives without inventing anything, because the people are already standing there idle.
   - **The harvest layer is global and unowned**, unlike the forester's ground (D86) — laborers hold no job, so there is no workplace for the paint to belong to. **`ZoneMap` therefore ends up with three shapes, and each says something true**: residential belongs to the village, work ground belongs to a building, harvest belongs to nobody and is a job of work anybody spare can take.
   - **⚠️ Open, and D67 wants the finer answer:** one harvest layer that takes whatever is on the tile, or a brush per material so a player can clear stone and leave the trees. D67 asked for the latter *plus* a "remove all resources" brush. **One layer first, since only forest is harvestable today**, and a per-material filter is additive rather than a rewrite.
+  - **✅ Who may clear, answered by Joe, and the answer is a position rather than a rule.** *"The harvest brush is only for the jobless / laborers. Users with a specific job can harvest, but ONLY when they are idle from their full-time job. They are just helping out on the side. Their primary job comes first."* **That is one branch, below every job and above resting** — anybody who reaches it has already declined their own work this tick, so it needs no quota, no new job kind and no rule about who is allowed. **Better than the alternative I proposed** (teaching `LabourQuota` to notice painted work), which would have made felling compete with eating.
+  - **The one early return that had to be taught to ask** is the woodcutter with an empty yard, which goes home before reaching the bottom of `Decide` — and is the most idle person in a winter village, so precisely who the brush is for.
+  - **It is D52's idle winter finally spent on something real.** Winter measured **86% idle** and D66 shipped the laborer as a *name* because both errands proposed for them occurred on **0.0%** of ticks. Measured now: 49 tiles painted, **forest 50 → 23 in one year**, 438 logs into stores that started empty, and a village that clears its whole valley is still alive at thirty years.
+  - **⚠️ Worth watching rather than fixing:** with a forest painted, three years ran **767 clearing ticks against 231 gathering** — idle time converts to timber fast. That is the design working (it is *only* idle time), but it means a painted valley is a strong lever, and the number to remember when the timber economy is re-derived against per-tile yield.
 - **D86 · 2026-08-02 · Tree stands become forester's huts, and the painted area is sized by the hands you put in it.** Joe, answering the harvest-brush conflict — and the answer supersedes `building-placement.md §12`'s global brush rather than choosing a side in it. *"Ultimately we'll be replacing tree stands with forester huts — the user can paint the area for the forester to plant/harvest trees for sustainability and consistent supply of wood. More foresters in a hut, the bigger the painted area can be (to a limit). We should probably move to that sooner."*
   - **The painted area belongs to a building, not to the world.** §12 made harvest a global zone layer like residential; this ties it to a hut. **That is the better shape and it fixes something §12 left open**: the labour allocator is built entirely around workplaces with a catchment (D21–D25), and a global harvest zone has no workplace in it — so *"who fells here, and is it near where they live?"* had no answer. A hut is the answer. `buildings-plan.md §8.1` reaches the same conclusion from the farming end and calls it *"a zone plus a small barn that is the workplace"*.
   - **⭐ Area is priced in workers, and that is a genuinely new kind of constraint for this game.** More foresters in the hut, more land they can be asked to keep — up to a limit. Every previous limit here has been distance (`MaxHomeToWorkTiles`, catchment); this one is **workload**, and it makes the staffing control (D62's `−1/+1`) matter in a way it never has: you paint more, so you hire more.

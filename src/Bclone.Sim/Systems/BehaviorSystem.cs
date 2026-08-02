@@ -113,6 +113,7 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.DeliveringToHome => "delivering to a home",
         VillagerState.FetchingMaterials => "fetching building materials",
         VillagerState.Building => "building",
+        VillagerState.Clearing => "clearing painted ground",
         _ => state.ToString(),
     };
 
@@ -236,6 +237,13 @@ public sealed class BehaviorSystem : ISimSystem
             case VillagerState.FetchingFromStore:
                 Travel(world, villager, PlanFetch(world, villager)?.Position ?? world.RestingPlaceOf(villager),
                     VillagerState.FetchingFromStore);
+                return;
+
+            case VillagerState.Clearing:
+                // To the tree they set off for, not to whatever is nearest from this
+                // step — the same rule as a marketer's leg, and for the same reason.
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    VillagerState.Clearing);
                 return;
 
             case VillagerState.FetchingMaterials:
@@ -1263,7 +1271,17 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.WorkNote =
                     $"Nothing to split — no shed within reach of {job.Name} has the " +
                     $"{config.LogsPerSplit} logs a batch needs.";
-                GoHome(world, villager);
+
+                // Idle from their trade, so they may help clear (D87). This branch
+                // returns early rather than falling through to the bottom of Decide,
+                // so it has to ask — and a woodcutter with an empty yard is the most
+                // idle person in a winter village, which is exactly who the brush is
+                // for.
+                if (!TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
                 return;
             }
 
@@ -1301,6 +1319,27 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // Clear ground the village painted, if there is nothing else to do (D87).
+        //
+        // ⭐ THE POSITION IS THE WHOLE RULE, and it is Joe's: "the harvest brush is only
+        // for the jobless / laborers. Users with a specific job can harvest, but ONLY
+        // when they are idle from their full-time job. They are just helping out on the
+        // side. Their primary job comes first."
+        //
+        // Below every job branch and above resting is exactly that sentence in code.
+        // Anybody who reaches this line has already declined their own work this tick —
+        // a laborer who holds no job at all, a forager in winter, a forager whose larder
+        // and village are both full, a woodcutter with an empty yard. Putting it any
+        // higher would make felling outrank somebody's trade; any lower is resting.
+        //
+        // It is also the answer to the idle winter (D52, D66). Winter measured 86% idle
+        // and the laborer shipped as a NAME because both errands proposed for them
+        // occurred on 0.0% of ticks. This is work that was always on the map.
+        if (TryHelpWithHarvest(world, villager))
+        {
+            return;
+        }
+
         // Rest — at home if not already there.
         if (villager.Position != world.RestingPlaceOf(villager))
         {
@@ -1310,6 +1349,41 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         villager.State = VillagerState.Resting;
+    }
+
+    /// <summary>
+    /// Go and clear the nearest painted tile, if the village has asked for any.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Never for a child</b> — this is work, not carrying, which is the line D77 drew
+    /// when it let children fetch.
+    /// </para>
+    /// <para>
+    /// <b>The tile is remembered on the villager</b> rather than recomputed each step, for
+    /// the reason <see cref="Villager.ErrandX"/> already records: the nearest tile is judged
+    /// from where somebody is standing, so re-deciding while walking lets them shuttle
+    /// between two trees forever without reaching either.
+    /// </para>
+    /// </remarks>
+    private static bool TryHelpWithHarvest(SimWorld world, Villager villager)
+    {
+        if (!villager.CanWork)
+        {
+            return false;
+        }
+
+        GridPos? tile = world.NearestHarvest(villager.Position);
+        if (tile is null)
+        {
+            return false;
+        }
+
+        villager.ErrandX = tile.Value.X;
+        villager.ErrandY = tile.Value.Y;
+        villager.State = VillagerState.Clearing;
+        Travel(world, villager, tile.Value, VillagerState.Clearing);
+        return true;
     }
 
     /// <summary>Take one step, and switch to <paramref name="onArrival"/> if that
@@ -1647,6 +1721,29 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival == VillagerState.Clearing)
+        {
+            // Somebody else may have taken it while this one walked, and regrowth or a
+            // forester's hut can clear ground from under the paint. Not an error — go
+            // and find another, or go home.
+            var tile = new GridPos(villager.ErrandX, villager.ErrandY);
+            if (!world.HasSomethingToHarvest(tile))
+            {
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                if (!TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
+                return;
+            }
+
+            villager.State = VillagerState.Clearing;
+            villager.ActionTicksRemaining = world.Config.CutTicks;
+            return;
+        }
+
         if (onArrival == VillagerState.FetchingMaterials)
         {
             LoadMaterials(world, villager);
@@ -1761,6 +1858,39 @@ public sealed class BehaviorSystem : ISimSystem
                 // Picked up, not banked. The logs go to the shed on the way home,
                 // which is what makes them the village's rather than this family's.
                 villager.CarriedLogs += wood;
+                villager.State = VillagerState.HaulingToStore;
+                Travel(world, villager, StoreForTheLoad(world, villager).Position,
+                    VillagerState.HaulingToStore);
+                return;
+
+            case VillagerState.Clearing:
+                // The tile is SPENT — that is D84's deposit rule, and the whole
+                // difference between this and a tree stand. Vigour scales it the same
+                // way it scales berries and timber: the same day's work brings back
+                // less as somebody ages.
+                var cleared = new GridPos(villager.ErrandX, villager.ErrandY);
+                (Goods goods, int amount) = world.Harvest(cleared);
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+
+                if (amount <= 0)
+                {
+                    // Beaten to it between arriving and finishing. Not an error.
+                    GoHome(world, villager);
+                    return;
+                }
+
+                int taken = amount * villager.Vigour / 100;
+                if (taken < 1)
+                {
+                    taken = 1;
+                }
+
+                villager.CarriedLogs += goods == Goods.Logs ? taken : 0;
+
+                world.Log(LogLevel.Debug, "behavior",
+                    $"{villager.Name} cleared {cleared} for {taken} {goods} — {world.Clock}.");
+
                 villager.State = VillagerState.HaulingToStore;
                 Travel(world, villager, StoreForTheLoad(world, villager).Position,
                     VillagerState.HaulingToStore);

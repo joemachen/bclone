@@ -507,6 +507,21 @@ public sealed class SimWorld
     /// </remarks>
     public GridPos? NearestHarvest(GridPos from)
     {
+        // ⭐ NOTHING PAINTED, NOTHING TO SCAN — and this line is not an optimisation, it
+        // is the difference between the feature being free and being ruinous. This is
+        // asked by every able adult who has nothing else to do, every tick, and the scan
+        // below walks the whole valley: 9,600 tiles × everybody idle × every tick. The
+        // full suite went from four minutes to over ten the moment laborers could clear,
+        // in a suite where almost nothing paints anything.
+        //
+        // A village that has never used the brush now pays one integer compare, which is
+        // the same argument the sparse hashing makes one file over: a feature nobody has
+        // switched on should cost nothing at all.
+        if (Zones.HarvestTiles == 0)
+        {
+            return null;
+        }
+
         GridPos? best = null;
         int bestCost = int.MaxValue;
 
