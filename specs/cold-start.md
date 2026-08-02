@@ -1,0 +1,219 @@
+# Spec: The cold start — the founders arrive with a cart and nothing else
+
+**Decisions:** **D63**, **D64**, **D69**. Slice **C** of Joe's A → B → C, pulled ahead of B
+(stone) on his call. **Status:** specced, not started.
+
+---
+
+## 1. Goal
+
+The village begins with **no buildings at all**. Four founders, a cart of supplies, and a
+valley. The player paints where people may live and marks what to raise; the founders fell
+the timber and build it. **Winter 1 is survivable only if they get there in time.**
+
+Joe's bar, and it is the acceptance test: *winter 1 shouldn't be survivable unless the user
+builds houses for all founding villagers and their children, and a woodcutter with stocked
+firewood in each home, before they freeze.*
+
+---
+
+## 2. The finding that makes this small: the cold model already does it
+
+**No new difficulty is needed and none should be added.** Winter is 120 ticks. The shipped
+exposure model (D45, D53) already gives:
+
+| The founders have | What happens |
+|---|---|
+| No house | `Shelter.Outdoors`, 100 a tick — **dead at tick 60**, halfway through winter |
+| A house, no firewood | `Shelter.Roof`, 60 a tick — **dead at tick 100**, five days before spring |
+| House + woodcutter + firewood | `Shelter.Fire` thaws them — **survival** |
+
+That is Joe's specification exactly, arrived at from the other direction by two earlier
+slices. It has never fired because `SimWorld.Create` hands the village its buildings.
+
+**And the safety net removes itself.** D53 measured cold as killing nobody in 300 years
+because `TrySeekWarmth` always finds a hearth to walk to. `NearestFire` returns null when no
+occupied home holds firewood, so in a village with nothing built the break-off rule simply
+does not fire. **The protection was always the village's, never the villager's** — which is
+the design working, not a hole.
+
+**So this slice is a founding change and a refactor, not a balance exercise.** If winter 1
+turns out to be too easy or too hard, the numbers to reach for are the cart's contents and
+the founding season — never the exposure rates, which describe a person in the cold (D53's
+refusal of option (b)).
+
+---
+
+## 3. The refactor this actually is
+
+**`Household.HomePosition` is `required` and non-nullable: a household *is* its home.**
+There is no homeless state anywhere in the sim, and every villager belongs to a household
+from birth. That is the whole difficulty of this slice.
+
+**Resolution: `HomePosition` becomes `GridPos?`.**
+
+- **The compiler does the audit, and that is the argument.** `GridPos` is a struct, so
+  `GridPos?` is a genuinely different type; with `TreatWarningsAsErrors` on, **every one of
+  the 29 call sites across 7 files must be dealt with or the build fails.** This project's
+  single most repeated bug is code reading state from where it used to live (D25, D29, D48,
+  D57), and a nullable makes that class unmissable here.
+- **A sentinel position is refused** — parking homeless households at the cart would change
+  no readers and lie to all of them. `Shelter.Fire` would treat the cart as a hearth, and a
+  household larder held at the cart is precisely the right-stuff-in-the-wrong-place shape
+  that has cost this project four investigations.
+- **Homes as first-class buildings is the end state and not this slice.** D64's hut builds
+  *"all buildings"*, and `specs/storage-and-distribution.md §4` already wants one `Building`
+  type — but merging that seam (D36) while also removing the founding is two hard things at
+  once, which D42 taught twice.
+
+### 3.1 What a homeless villager does
+
+| Question | Answer |
+|---|---|
+| Where do they eat? | The cart, as a store. **D10 is not negotiable** — a meal must be takeable where they stand, and Phase 0 killed somebody who starved beside a full larder. |
+| Where do they rest? | At the cart. |
+| What shelter are they in? | `Shelter.Outdoors`. This is the whole tension. |
+| Where does their work go? | The cart, until a shed stands. |
+| Can they pair and have children? | **Yes, and this needs a decision — see §7.1.** |
+
+---
+
+## 4. The cart (D64)
+
+One `StoreBuilding` present at founding, at the founding site.
+
+- Holds the founders' **food**, and later their tools and clothes when those goods exist.
+- **Demolishable once empty**, and **usable as small storage while it stands** — Joe's own
+  terms, and Banished's.
+- **It keeps D30 intact:** goods still live in a building. The cart is simply the one
+  building the player did not raise, which is the story §0 already tells about exiles.
+- It is **not shelter**. No roof, no hearth, no exception in `ShelterAt`.
+- Its capacity is small and stated in config — content, not economy (§10).
+
+---
+
+## 5. What the player must do, and in what order
+
+1. **Paint residential land.** `starting_residential_radius`'s auto-painted zone **goes**;
+   D42's brush becomes load-bearing for the first time rather than optional.
+2. **Mark a house site** — or rather, mark nothing: `HouseholdSystem` already builds a home
+   when a couple wants one and there is painted land and timber. **Homes stay
+   village-built, not player-placed**, because that is D42's settled division — the player
+   picks the neighbourhood, the sim picks the tile — and changing it here would give up
+   `MaxHomeToWorkTiles`, the bound the whole food economy is derived against.
+3. **Mark a woodcutter's hut**, or nobody makes firewood and everybody dies under a roof
+   five days before spring.
+4. **Mark a shed and a granary** when the cart runs short.
+
+**Every one of those already works.** The build menu (D38, D43), the brush (D42) and the
+home-building (D42, `LogsPerHouse`) are all shipped. This slice removes the head start, it
+does not add the machinery.
+
+---
+
+## 6. The derivations that read buildings out of the config
+
+Three of them have no answer at tick 0 in a world with nothing built, and each needs a
+stated behaviour rather than a crash:
+
+| Reader | Reads | With nothing built |
+|---|---|---|
+| `VillageEconomy.CutRoundTripTicks` | `StorageShedX/Y` | Budget against the **founding site**, which is where goods go until a shed exists. |
+| `VillageEconomy.FirewoodRoundTripTicks` | `WoodcutterHutX/Y` | Same. |
+| `Household.ChooseSite` | nearest granary | Fall back to the founding site — the cart is the store. |
+
+**These are the steady-state economy's inputs and they must not move**, or every derived
+number in the project changes for a founding that lasts one year. The config coordinates
+stay as the *planned* positions; the fallback only applies while the building is absent.
+**Guarded by the golden hash** (`StockLimitTests`): a village that builds where it always
+built must hash as it always hashed once it is standing.
+
+---
+
+## 7. Open questions
+
+### 7.1 ⚠️ Can a homeless couple have children? — needs Joe
+
+Births are gated on the household's food and firewood (D31, D33). A homeless household has
+neither a larder nor a hearth, so on today's rules **the founders could never have children
+until a house stands**, which is probably right and is certainly harsh — if the player is
+slow, the founding generation ages out.
+
+Two readings, and it is a pacing decision rather than a correctness one:
+- **(a) No children until there is a roof.** Diegetic, harsh, and it makes the first house
+  genuinely urgent. **Recommended.**
+- **(b) Children allowed, gated on the cart's stores.** Softer, and it keeps the village
+  growing while the player learns the controls.
+
+### 7.2 What the cart holds, and the founding season
+
+The two dials §2 says to reach for if winter 1 lands wrong. Both are config. **Not
+guessable — they want a probe** (METHODOLOGY §3): measure how many ticks a competent opening
+actually takes against the 360 available before winter, then set the cart so an *incompetent*
+one dies. Back-of-envelope from D63 says the founders have roughly ten times the time they
+need for one house, so the pressure will have to come from the *number* of buildings, not
+from any one of them.
+
+### 7.3 Tattered furs (D69)
+
+D69 withdraws "founders start clothed" and asks for a few winters of *almost* freezing. That
+needs a **third exposure rate** between bare and dressed. **It is not in this slice** — it is
+a clothing change and belongs with `specs/clothing.md`'s rewrite — but it is recorded here
+because winter 1's difficulty is tuned against whichever rate the founders actually have.
+
+---
+
+## 8. Failure modes to design against
+
+- **A founding that is unsurvivable however well it is played.** The counterweight to §1, and
+  it gets a test: a *competently* played opening — land painted at once, a hut marked early —
+  must survive winter 1 every time, on every seed.
+- **A founding that is survivable by doing nothing.** The other side, and the actual bar Joe
+  set. Doing nothing must kill.
+- **A crash rather than a consequence.** Nothing may throw because a building is missing.
+  Every fallback in §6 is stated, and the degenerate cases get the same treatment
+  `BehaviorSystem` already gives a village with no shed: put it down, and **say so loudly**
+  (METHODOLOGY §4).
+- **The steady state moving.** §6, guarded by the golden hash.
+- **The founders being unable to eat.** D10. A meal must be takeable where they stand, and
+  the cart is what makes that true before there is a larder.
+
+---
+
+## 9. How it is tested
+
+Against **both** `VillageFixtures.Village` **and the shipped config**.
+
+1. **Determinism green**; the cart and the null home are in the state hash.
+2. **Nothing throws in a village with no buildings** — the founding is stepped a full year
+   with nothing painted and nothing marked, and the run stays clean apart from the deaths it
+   is supposed to produce.
+3. **⭐ Doing nothing kills.** No land painted, nothing marked: the founders are dead or dying
+   by the end of winter 1. Joe's bar.
+4. **⭐ A competent opening survives.** Land painted at founding, a woodcutter's hut marked:
+   the village comes through winter 1 alive, on **every seed tested** — twelve, as
+   `MapGenerationTests` already uses.
+5. **The steady state is unchanged** once the village has built what it used to start with.
+6. **Anti-vacuity (D7):** the "competent" arm must actually have been *at risk* — somebody's
+   cold must climb meaningfully — or it is proving survival in a world where nothing was
+   dangerous.
+7. **No new warnings or errors** beyond the intended ones in a clean playthrough.
+
+---
+
+## 10. Numbers
+
+Config, because they are content: what the cart holds and how much it can hold. **Derived,
+because they are consequences:** everything in `VillageEconomy`, unchanged by §6's fallbacks.
+
+---
+
+## 11. Definition of Done
+
+1. This spec current.
+2. The seven guards in §9 green.
+3. Determinism test green.
+4. **Joe's manual QA: start a new village, and find out whether winter 1 is fair.** This one
+   cannot be automated and is the whole point of the slice.
+5. No unintended errors in a clean playthrough.
+6. `DESIGN.md` §6 and §7 updated.

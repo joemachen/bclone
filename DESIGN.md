@@ -303,6 +303,9 @@ game Joe described.*
 
 **A → B → C is Joe's confirmed sequence (D64)** for the first three:
 
+**⚠️ Re-ordered again on Joe's call, 2026-08-01: C before B.** The winter-1 question is the
+more interesting one and stone is not a dependency of it — buildings cost logs today.
+
 - **A. Stock limits and laborers** (D62, D63, §2.2; `specs/stock-limits-and-laborers.md`) —
   the player sets a target stock per good, production stops there, and the hands that frees
   become laborers who haul. Derived floor, player ceiling. The missing player-facing
@@ -350,6 +353,13 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D70 · 2026-08-01 · The cold start is a nullable home, and the compiler is the audit.** `specs/cold-start.md`, written before any code. Joe pulled slice C ahead of B; stone is not a dependency, since buildings cost logs today.
+  - **The slice needs no new difficulty and none should be added** — see D69 and the spec's §2. What it needs is to stop `SimWorld.Create` handing the village its buildings.
+  - **The real work is one refactor, and it is bigger than it looks.** `Household.HomePosition` is `required` and non-nullable: **a household *is* its home**, there is no homeless state anywhere in the sim, and every villager belongs to a household from birth. Making it `GridPos?` forces **29 call sites across 7 files** to be dealt with — and that is the argument rather than the cost. `GridPos` is a struct, so the nullable is a genuinely different type, and with `TreatWarningsAsErrors` on **every reader must be handled or the build fails.** This project's most repeated bug is code reading state from where it used to live (D25, D29, D48, D57); here that class is made unmissable.
+  - **A sentinel position is refused.** Parking homeless households at the cart would change no readers and lie to all of them — `Shelter.Fire` would treat the cart as a hearth, and a household larder held there is exactly the right-stuff-in-the-wrong-place shape that has cost four investigations.
+  - **Homes as first-class buildings is the end state and explicitly not this slice.** D64's hut builds *"all buildings"* and `specs/storage-and-distribution.md §4` already wants one `Building` type, but merging that seam while also removing the founding is two hard things at once (D42, twice).
+  - **Homes stay village-built rather than player-placed**, which is D42's settled division: the player picks the neighbourhood, the sim picks the tile. Changing it here would give up `MaxHomeToWorkTiles`, the bound the entire food economy is derived against.
+  - **One open question for Joe, and it is pacing rather than correctness (§7.1):** births are gated on a household's food and firewood, so on today's rules **a homeless couple can never have children**. Harsh, diegetic, and it makes the first house urgent — or it ages the founding generation out while the player learns the controls.
 - **D69 · 2026-08-01 · Winter 1 must be earned, and the founders have tattered furs rather than clothing.** Joe, reversing D62's clothing clause and setting the cold start's difficulty. *"It shouldn't be [survivable] unless the user builds houses for all founding villagers and their children and a woodcutter with stocked/used firewood in each home before they freeze in winter 1."*
   - **The cold model already does this exactly, and that is worth stating before anybody builds anything.** Winter is 120 ticks. Open ground kills in **60**; a roof with no fire under it kills in **100**; a home with firewood in it thaws you. So *no house* is death halfway through winter, *house but no fuel* is death about five days before spring, and *house plus woodcutter plus firewood* is survival. **That is Joe's specification, arrived at from the other direction by D45 and D53** — it has simply never fired, because the village starts with houses and a full shed. Slice C does not need a new difficulty; it needs to stop giving the founders their buildings.
   - **`TrySeekWarmth` stops protecting them for free, too.** D53 measured cold as killing nobody because everyone can always walk to a hearth; `NearestFire` returns null when no home has firewood, so in a village with nothing built there is nothing to walk to and the break-off rule simply does not fire. The safety is the village's, not the villager's.
