@@ -266,17 +266,20 @@ is weather** — but its proposed centre of gravity did not (D44). Slices, in or
 - **A housekeeping pass** (D57). Two live bugs fixed, eleven dead symbols removed, and the
   docs reconciled with the game. 373 tests green.
 
-**In progress:** **Livestock** (D59, D60). Probed first per METHODOLOGY §3 — winter is 86%
-idle, and clothing's payoff is winter labour rather than lives. `specs/livestock.md`
-written; **slice 1 (pasture, herd, hay) not started**, and it has two open questions in
-§12 that want Joe before the code does.
+**In progress:** nothing. **Livestock is specced and ⛔ blocked** (D59, D60, **D61**):
+animals may only be acquired by trade, and there is no trade. The probe that preceded it
+stands and is worth keeping — **winter is 86% idle**, and **clothing's payoff is winter
+labour rather than lives**. The next slice is Joe's to pick from D61's three routes.
 
 **Next up** *(in order — Joe's call)*:
-1. **Livestock** — `specs/livestock.md` (D19, D39, D59, D60). An **optional** food source,
-   one of several the village chooses between as it scales, not a tier everyone climbs.
-   Three slices: **pasture, herd and hay** (bought for the winter work, no output at all),
-   then **butchering**, then clothing. It is the one thing that unblocks clothing, and it is
-   also D44's own answer to what winter work is.
+0. **Unblock livestock** (D61) — **Joe's call between three routes**: a minimal trading post
+   (sell firewood, buy a beast — D29 reserved firewood for exactly this), **hunting** as a
+   no-trade substitute that hits everything livestock was wanted for, or reordering and
+   coming back. Nothing below it can proceed until this is picked.
+1. **Livestock** — `specs/livestock.md` (D19, D39, D59, D60), ⛔ **blocked on the above.** An
+   **optional** food source, one of several the village chooses between as it scales, not a
+   tier everyone climbs. Three slices: **pasture, herd and hay** (bought for the winter work,
+   no output at all), then **butchering**, then clothing.
 2. **Clothing**, straight after — livestock's third slice. It turns winter from survivable
    into workable, which is §2.7's *unlock by doing* arriving out of a survival mechanic.
    Its payoff is **winter labour, not lives** (`specs/clothing.md §5.1`).
@@ -300,6 +303,11 @@ written; **slice 1 (pasture, herd, hay) not started**, and it has two open quest
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D61 · 2026-08-01 · A beast has to be bought — so livestock is blocked on trade, and clothing is behind two unbuilt pillars.** Joe, answering `specs/livestock.md §12.1`: *"I don't want animals available to the user until they trade for it."* The spec had proposed a founding stock stated in the config the way the founding households are, and flagged it as **the one link in the chain with nothing diegetic underneath it**. That flag was right and the placeholder is refused.
+  - **It is a better design and a worse schedule, and both halves are real.** A herd you had to *buy* is a herd you invested in, which is what makes losing it to a bad winter (D60) cost something; animals appearing because a brush was dragged is the sort of thing this project deletes elsewhere. It also gives §2.3 its first genuine *surplus sink* — today a village's spare firewood just packs the shed (D52) and nothing in the game wants anything.
+  - **But it puts §2.4 — build-order item 7, the last pillar — in front of Phase 2's remaining work**, and clothing is now behind *two* unbuilt things rather than one. That is a real cost and it is recorded here rather than absorbed quietly.
+  - **The routes out, and Joe's call which.** (a) **A minimal trading post** — a merchant who visits, a price, and two goods: sell firewood, buy a beast. D29 reserved firewood as the first named tradeable for exactly this, so the post arrives with something to sell rather than needing content invented for it. Much smaller than the pillar. (b) **Hunting instead** — wild game is not owned and needs no trade, and it hits every single thing livestock was being taken for: year-round outdoor work for the 86%-idle winter, hides for clothing, an additive food source, and depletion as a §2.3 pressure that could reuse D42's forest-exhaustion machinery. What it loses is D60's seasonal inversion, which was the best thing about the herd. (c) **Reorder** — take per-site yield (D58) or the seasonal yield curve now and come back when trade exists.
+  - **`specs/livestock.md` stays valid and is merely re-sequenced.** Nothing in it was wrong; it was written against a founding-stock assumption that has been withdrawn.
 - **D60 · 2026-08-01 · The herd starves, and hay is the woodpile's shape a second time.** Joe's calls on `specs/livestock.md`: the slicing, and *"herd starves"*. Three things settled:
   - **Grazing is free for three seasons; winter is not.** Animals feed themselves on painted pasture from spring to autumn and cost only the tending. In winter there is nothing on the ground, so they eat **hay** — cut in summer, carried to a barn, carried back out. **Deliberately the woodpile's shape** (D53): the honest answer to *"why did the cattle die?"* is **the hay chain failed**, exactly as the honest answer to *"why did somebody freeze?"* is **the fuel chain failed**. One proven shape used twice rather than a second invention.
   - **The seasonal inversion is the whole design, and the probe is what makes it a decision.** Hay is cut in **summer**, when the village has **0.7 spare hands**, and spent in **winter**, when it has **12.7**. A pasture is labour borrowed from the season with none and repaid in the season with nothing to do. That is why livestock is not merely "a berry patch that also works in winter", and it is the seasons spec's own rule — *a season with teeth is one the player prepares for* — arriving as arithmetic.

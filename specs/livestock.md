@@ -1,7 +1,10 @@
 # Spec: Livestock — the herd, the hay, and what winter is for
 
-**Decisions:** D19, D39, D44, D52, **D59**. **Phase:** 2, after the shelter-and-exposure slice.
-**Status:** specced, not started. Slices in §11.
+**Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
+shelter-and-exposure slice.
+**Status:** ⛔ **specced and BLOCKED — animals may only be acquired by trade (D61), and
+there is no trade.** Everything below is still the design; §12.1 is the blocker. Slices
+in §11.
 
 ---
 
@@ -269,10 +272,12 @@ Joe's call, 2026-08-01. Each ships playable and legible before the next starts.
 
 ## 12. Open questions for Joe
 
-1. **Where the first animals come from.** There is no trade (§2.4) and no starting herd. The
-   recommendation is that painting a pasture and raising a barn causes the village to start
-   from a small founding stock, stated in the config the way the founding households are —
-   a placeholder that trade later replaces honestly. **This is a real gap, not a detail.**
+1. ⛔ **Where the first animals come from — ANSWERED, and it blocks the slice (D61).** Joe:
+   *"I don't want animals available to the user until they trade for it."* The
+   founding-stock placeholder proposed here is refused, and rightly — it was the one link in
+   the chain with nothing diegetic underneath it. **The consequence is that livestock now
+   depends on §2.4, which does not exist**, and §2.4 is build-order item 7. Nothing in
+   slices 1–3 can start until there is a way to buy a beast. See D61 for the routes out.
 2. **One animal or several.** Recommendation: **one generic livestock** to start, defined in
    data so a modder or a later slice adds sheep and goats without restructuring. The
    argument is §2.5's own about biomes — *three shallow ones are worse than one properly
