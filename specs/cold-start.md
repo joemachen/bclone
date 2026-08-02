@@ -142,6 +142,45 @@ firewood gates.** It would have been true either way — a homeless family has n
 hearth, so it could never pass them — but a rule that happens by arithmetic is one a later
 change can silently repeal. This one is load-bearing enough to say out loud.
 
+### 7.1b ⛔ Two findings from Joe's second run — both open, and the second is the blocker
+
+**1. A house is built instantly; every other building is a construction site.** Joe:
+*"they built homes (immediate builds btw, not a visual timed thing like other buildings)."*
+`HouseTheRoofless` and `FormNewHouseholds` both take the timber and set `HomePosition` in
+one tick, where a granary or a hut is marked, hauled to, and worked on for a stated number
+of ticks (D38, D43). **That inconsistency is now visible and it hides the cost of a house**
+— it also means houses never compete with anything else for builders, which is exactly the
+distortion that made winter 1 look winnable when it is not. Houses should go through
+`ConstructionSite` like everything else. **Not a small change:** `HouseholdSystem` currently
+assumes a house exists the moment it is paid for.
+
+**2. ⛔ The woodcutter's hut was marked and ignored — and this is the root cause.** Joe's
+panel: *"Materials: 0 of 25 logs — 25 still to come. Work: 0 of 40 ticks done. Nobody works
+here. Staffing: left to the village — it wants 0 on this kind of work."*
+
+The chain, and it is one condition:
+
+```
+LabourQuota.For:
+    if (gatherable season && VillageIsShortOfFood(world))
+        woodcutters = loggers = builders = marketers = 0
+```
+
+`VillageIsShortOfFood` compares **all the food in the village** against the sum of
+`TargetFoodFor(household)` — a *stocking* target of `stockpile_target` per member, not a
+starvation line. At the founding that is roughly **760 for two households against a cart
+holding 800**, so the village crosses into "short of food" within days of arriving and
+**never leaves it**: every hand forages, nobody fells, nobody builds, and the marked hut sits
+at 0 of 25 logs until everybody freezes.
+
+**This is not a cold-start bug.** The gate has always read a stocking target; an established
+village simply starts above it and stays there. The cold start is the first world that
+begins below it. **The fix is a design decision, not a patch**, and it is Joe's: either the
+gate reads a genuine hunger line rather than a stocking target, or the founding starts above
+the target, or building is exempt from it the way heating already is. **Until this is
+answered, no amount of tuning the cart makes winter 1 winnable** — the cart is what puts the
+village below the line in the first place.
+
 ### 7.2 What the cart holds, and the founding season
 
 The two dials §2 says to reach for if winter 1 lands wrong. Both are config. **Not
