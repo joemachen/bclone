@@ -183,6 +183,34 @@ If this is too big for one slice, the smallest version that is genuinely worth p
 
 ## 12. Zones — the brush, and what it turns out to be for
 
+> ### ⚠️ SUPERSEDED IN PART BY D86 (2026-08-02) — read this first
+>
+> **The harvest brush is not a global zone layer. It is ground that belongs to a forester's
+> hut.** Joe: *"ultimately we'll be replacing tree stands with forester huts — the user can
+> paint the area for the forester to plant/harvest trees. More foresters in a hut, the bigger
+> the painted area can be, to a limit."*
+>
+> What that changes below:
+> - **§12.2's "Harvest" row** — the village fells inside *a hut's* ground, not inside a global
+>   zone. **Tree stands retire**; the hut replaces them rather than sitting beside them.
+> - **§12.7's first consequence is void.** A founding with nothing painted no longer starves,
+>   because the player sites a forester's hut on day one exactly as they already site a
+>   woodcutter's hut. **No starter zone, and D70's cold start is not reversed** — that fix was
+>   written before the cold start existed and would have undone its whole point.
+> - **New, and it has no precedent here: area is priced in workers**, with a warning when the
+>   paint outruns the hands. Every other limit in this game is distance.
+>
+> **What survives untouched:** §12.1's pattern, §12.5's three answers (unpainted forest is not
+> cut; slow natural regrowth plus faster deliberate planting; planting gated behind managed
+> forestry), §12.6's interlock, §12.8's derived numbers, and all of §12.3's costs — which
+> `specs/mutable-terrain.md` has now paid.
+>
+> **Why the hut is the better shape**, and it fixes something this section left open: the
+> labour allocator is built entirely around workplaces with a catchment (D21–D25), and a global
+> harvest zone has no workplace in it — so *"who fells here, and do they live near it?"* had no
+> answer. `buildings-plan.md §8.1` reaches the same conclusion from the farming end.
+
+
 Joe's answer to §11.1 named three brushes: **residential**, **which forest to cut**, and **where to plant trees**. They are one mechanic, and together they are more than a placement convenience.
 
 ### 12.1 The pattern

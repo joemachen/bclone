@@ -95,19 +95,73 @@ passability becomes a question the terrain answers, and the two existing sites a
   cleared by a village of thirty comes back in about a generation* — and that is the harvest
   brush's slice, not this one.
 
-### 5.1 ⚠️ The open question the harvest brush hits, recorded here so it is not rediscovered
+### 5.2 ✅ What is finite and what is not — Joe's rule (D84)
 
-**`building-placement.md §12.5` says unpainted forest is never cut. The cold start now has
-nothing painted.**
+**A *deposit* is finite. A *building* is not.** The axis is **found versus placed**, not surface
+versus subsurface: a deposit is a quantity the generator put in a place and you take it until
+it is gone; a building is a livelihood the player sited, and it does not run out. Loose rock and
+a quarry both yield stone and are not the same object.
 
-Those two were settled six days apart and have never been true at the same time. §12.7 saw the
-problem and recommended founding the village with a starter harvest zone already painted —
-but **D70's cold start deliberately deleted the auto-painted residential zone** so that the
-player's first act is a decision, and Joe has since played and validated that opening.
+| Source | Kind | Finite? | Worked by |
+|---|---|---|---|
+| Forest tile | deposit | **Yes** — and regrown, by a forester (D86) | laborer / forester |
+| Surface stone deposit | deposit | **Yes** | laborer |
+| Iron deposit | deposit | **Yes** | laborer |
+| Gem deposit | deposit | **Yes** (D67: visible seams, never a roll) | laborer |
+| Quarry | building | **No** | quarry worker |
+| Iron mine | building | **No** | miner |
+| Berries, mushrooms, herbs | gatherer site | **No** | gatherer |
 
-So the harvest brush cannot ship on §12.5's rule without either reversing D70's founding or
-giving the founders a fellable stand some other way. **Joe's call, and it wants answering
-before the brush is built rather than during.**
+**It is case by case on purpose** and the table is the record, so a new resource is a row
+somebody has to fill in rather than a default it inherits silently.
+
+**Why this shape is right, in one line each:**
+
+- **A spent deposit leaves no scar** — the tile goes back to ordinary ground — which answers
+  `buildings-plan.md §2.2`'s stated objection to depletion. That objection was only ever true
+  of depleting a *building*, and nothing does.
+- **§2.3 gets its expansion pressure free.** Deposits run out, so the village moves. The
+  building is what you place when you are tired of moving.
+- **⚠️ Watch:** with quarries and mines infinite, all of §2.3's pressure rests on deposits and
+  trees. The quarry must therefore sit far enough up the tree that clearing deposits is
+  genuinely the early game.
+
+### 5.1 ✅ The harvest-brush conflict — resolved by D86, and the brush moved
+
+**Superseded: `building-placement.md §12` makes harvest a global zone layer. It belongs to a
+building instead.**
+
+The conflict was real: §12.5 says *unpainted forest is never cut*, and D70's cold start
+deliberately paints nothing, so a founding would fell no timber, make no firewood and freeze.
+§12.7 proposed auto-painting a starter zone, which reverses D70's whole point.
+
+**Joe's answer removes the conflict rather than picking a side (D86): tree stands become
+forester's huts, and the painted area belongs to the hut.** The player places a hut on day one
+exactly as they already place a woodcutter's hut, and paints its ground. **No auto-paint and no
+exception to D70** — the timber chain is simply one more thing you site.
+
+It also fixes what §12 left open: the labour allocator is built around **workplaces with a
+catchment** (D21–D25), and a global harvest zone contains no workplace, so *"who fells here,
+and do they live near it?"* had no answer. **Area is priced in workers** — more foresters, more
+ground, to a limit — and the village **warns** when the paint outruns the hands.
+
+### 5.4 What comes next, in order
+
+**C3b — zones learn to belong to a building.** `ZoneMap` is one `bool[] _residential` today.
+D86 needs a painted area **keyed by the hut that owns it**, not merely a second global layer —
+which is a bigger change than "add a layer" and is the reason it is its own slice. Residential
+stays global; it belongs to the village, not to a building.
+
+**C3c — the forester's hut.** Placed like a woodcutter's hut, staffed like one, and its ground
+painted. Felling comes off *its* tiles, the forest recedes where it was cut, and the village
+warns when the paint outruns the hands. **Tree stands retire here.**
+
+**C3d — laborers, and deposits.** Surface stone and iron as finite deposits per §5.2, cleared
+by the laborers D66 could find no work for.
+
+**Not in C3 at all — planting.** It is gated behind managed forestry (§12.5, Joe), and §2.7 is
+unbuilt. The hut can fell before it can sow, and that is the right order: the harvest is what
+*creates* the pressure the forestry node answers.
 
 ---
 
