@@ -79,7 +79,7 @@ public sealed class HearthSystem : ISimSystem
                 continue;
             }
 
-            if (!household.Stockpile.TryTakeFirewood(config.FirewoodPerWinterDay))
+            if (!household.Stockpile.TryTake(Goods.Firewood, config.FirewoodPerWinterDay))
             {
                 continue;
             }

@@ -87,15 +87,15 @@ public sealed class StorageTests
         loop.Step(Config.TicksPerYear);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.AnyStoreOf(StoreKind.Granary).Store.Add(1);
+        loop.World.AnyStoreOf(StoreKind.Granary).Store.Add(Goods.Food, 1);
         ulong afterGranary = StateHash.Compute(loop.World);
         Assert.NotEqual(before, afterGranary);
 
-        loop.World.AnyStoreOf(StoreKind.Shed).Store.AddLogs(1);
+        loop.World.AnyStoreOf(StoreKind.Shed).Store.Add(Goods.Logs, 1);
         ulong afterShed = StateHash.Compute(loop.World);
         Assert.NotEqual(afterGranary, afterShed);
 
-        loop.World.Workplaces[0].Store.AddFirewood(1);
+        loop.World.Workplaces[0].Store.Add(Goods.Firewood, 1);
         Assert.NotEqual(afterShed, StateHash.Compute(loop.World));
     }
 
@@ -151,9 +151,9 @@ public sealed class StorageTests
         // ever falls — which is the direction nobody notices.
         var store = new Stockpile { Capacity = 10 };
 
-        Assert.Equal(6, store.Add(6));
-        Assert.Equal(4, store.AddLogs(9));      // only four would fit
-        Assert.Equal(0, store.AddFirewood(1));  // and now nothing does
+        Assert.Equal(6, store.Add(Goods.Food, 6));
+        Assert.Equal(4, store.Add(Goods.Logs, 9));      // only four would fit
+        Assert.Equal(0, store.Add(Goods.Firewood, 1));  // and now nothing does
 
         Assert.True(store.IsFull);
         Assert.Equal(10, store.Held);
@@ -169,10 +169,10 @@ public sealed class StorageTests
         // A per-good cap would be three shelves that never compete, which is
         // bookkeeping wearing a constraint's clothes.
         var store = new Stockpile { Capacity = 10 };
-        store.AddLogs(10);
+        store.Add(Goods.Logs, 10);
 
-        Assert.Equal(0, store.AddFirewood(5));
-        Assert.Equal(0, store.Add(5));
+        Assert.Equal(0, store.Add(Goods.Firewood, 5));
+        Assert.Equal(0, store.Add(Goods.Food, 5));
     }
 
     [Fact]

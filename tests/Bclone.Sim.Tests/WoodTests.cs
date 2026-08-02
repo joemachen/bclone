@@ -106,8 +106,8 @@ public sealed class WoodTests
         // Empty the SHED, not the houses — logs live in a building now (D30), so
         // emptying household piles leaves the village its whole woodpile and no
         // reason to fell anything.
-        loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTakeLogs(loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs);
-        loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTakeFirewood(loop.World.AnyStoreOf(StoreKind.Shed).Store.Firewood);
+        loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTake(Goods.Logs, loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs);
+        loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTake(Goods.Firewood, loop.World.AnyStoreOf(StoreKind.Shed).Store.Firewood);
 
         int before = TotalLifetimeWood(loop.World);
         while (loop.World.Clock.IsWinter)
@@ -164,7 +164,7 @@ public sealed class WoodTests
         loop.Step(Config.TicksPerYear);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Households[0].Stockpile.AddLogs(1);
+        loop.World.Households[0].Stockpile.Add(Goods.Logs, 1);
 
         Assert.NotEqual(before, StateHash.Compute(loop.World));
     }
@@ -180,7 +180,7 @@ public sealed class WoodTests
         loop.Step(Config.TicksPerYear);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Households[0].Stockpile.AddFirewood(1);
+        loop.World.Households[0].Stockpile.Add(Goods.Firewood, 1);
 
         Assert.NotEqual(before, StateHash.Compute(loop.World));
     }
@@ -193,19 +193,19 @@ public sealed class WoodTests
         SimLoop loop = Build(Config);
         Stockpile store = loop.World.Households[0].Stockpile;
 
-        store.AddLogs(10);
-        store.AddFirewood(3);
+        store.Add(Goods.Logs, 10);
+        store.Add(Goods.Firewood, 3);
 
         Assert.Equal(10, store.Logs);
         Assert.Equal(3, store.Firewood);
 
-        Assert.True(store.TryTakeLogs(10));
+        Assert.True(store.TryTake(Goods.Logs, 10));
         Assert.Equal(0, store.Logs);
         Assert.Equal(3, store.Firewood);
 
         // Spending logs must not spend firewood, and the woodcutter's conversion in
         // slice 2 is the ONLY thing that should ever turn one into the other.
-        Assert.False(store.TryTakeFirewood(4));
+        Assert.False(store.TryTake(Goods.Firewood, 4));
         Assert.Equal(3, store.Firewood);
     }
 

@@ -171,11 +171,11 @@ public sealed class HouseholdSystem : ISimSystem
 
                 if (shed is not null)
                 {
-                    shed.Store.ReceiveLogs(timber);
+                    shed.Store.Receive(Goods.Logs, timber);
                 }
                 else
                 {
-                    world.TheCart?.Store.ReceiveLogs(timber);
+                    world.TheCart?.Store.Receive(Goods.Logs, timber);
                 }
 
                 if (!world.NeedsMoreResidentialLand)
@@ -253,7 +253,7 @@ public sealed class HouseholdSystem : ISimSystem
                 // branch.
                 StoreBuilding? shed = world.NearestStoreAccepting(
                     seeker.Position, Goods.Logs, static store => !store.Store.IsFull);
-                shed?.Store.ReceiveLogs(timber);
+                shed?.Store.Receive(Goods.Logs, timber);
 
                 // AND THE VILLAGE ASKS FOR MORE LAND. This is the other half of the
                 // brush (D42): the game says when a decision is due rather than
@@ -373,7 +373,7 @@ public sealed class HouseholdSystem : ISimSystem
             }
 
             int fromHere = Math.Min(remaining, store.Store.Logs);
-            if (fromHere > 0 && store.Store.TryTakeLogs(fromHere))
+            if (fromHere > 0 && store.Store.TryTake(Goods.Logs, fromHere))
             {
                 remaining -= fromHere;
             }
@@ -446,7 +446,7 @@ public sealed class HouseholdSystem : ISimSystem
         b.PartnerId = a.Id;
 
         // A dowry is goods changing hands, not goods produced.
-        household.Stockpile.Receive(dowry, 0, 0);
+        household.Stockpile.Receive(Goods.Food, dowry);
 
         world.Narrate(timber > 0
             ? $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
@@ -469,7 +469,7 @@ public sealed class HouseholdSystem : ISimSystem
             share = config.StockpileTarget;
         }
 
-        return from.Stockpile.TryTake(share) ? share : 0;
+        return from.Stockpile.TryTake(Goods.Food, share) ? share : 0;
     }
 
     private static void MoveIn(SimWorld world, Villager villager, Household household, GridPos home)

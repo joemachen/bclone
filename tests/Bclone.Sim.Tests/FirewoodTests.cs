@@ -77,8 +77,8 @@ public sealed class FirewoodTests
             // Empty the yard from under them.
             foreach (Household household in loop.World.Households)
             {
-                household.Stockpile.TryTakeLogs(household.Stockpile.Logs);
-                loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTakeLogs(loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs);
+                household.Stockpile.TryTake(Goods.Logs, household.Stockpile.Logs);
+                loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTake(Goods.Logs, loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs);
             }
 
             foreach (Villager villager in loop.World.Villagers)

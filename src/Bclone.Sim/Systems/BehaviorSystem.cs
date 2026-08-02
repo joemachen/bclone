@@ -740,7 +740,7 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             int take = Math.Min(wanted, store.Store.Logs);
-            if (take > 0 && store.Store.TryTakeLogs(take))
+            if (take > 0 && store.Store.TryTake(Goods.Logs, take))
             {
                 villager.CarriedLogs += take;
             }
@@ -1109,7 +1109,7 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        if (!world.HouseholdOf(villager).Stockpile.TryTake(mealCost))
+        if (!world.HouseholdOf(villager).Stockpile.TryTake(Goods.Food, mealCost))
         {
             // Unreachable given the check above; if it ever fires, something else
             // is mutating the stockpile and we want to know loudly.
@@ -1407,7 +1407,7 @@ public sealed class BehaviorSystem : ISimSystem
         // hunger kills in six days and an unheated house in twenty-five (D45).
         int foodShort = world.TargetFoodFor(household) - household.Stockpile.Food;
         int food = Smallest(foodShort, load, target.Store.Food);
-        if (food > 0 && target.Store.TryTake(food))
+        if (food > 0 && target.Store.TryTake(Goods.Food, food))
         {
             villager.CarriedFood += food;
             return;
@@ -1416,7 +1416,7 @@ public sealed class BehaviorSystem : ISimSystem
         int firewoodShort =
             VillageEconomy.FirewoodStoreWantedPerHousehold(config) - household.Stockpile.Firewood;
         int firewood = Smallest(firewoodShort, load, target.Store.Firewood);
-        if (firewood > 0 && target.Store.TryTakeFirewood(firewood))
+        if (firewood > 0 && target.Store.TryTake(Goods.Firewood, firewood))
         {
             villager.CarriedFirewood += firewood;
         }
@@ -1470,8 +1470,8 @@ public sealed class BehaviorSystem : ISimSystem
         // this much", and a fetch is goods changing hands (see Stockpile.Receive).
         // Food carried straight back from a gather IS production, though, so that
         // one is added rather than received.
-        larder.Receive(0, 0, villager.CarriedFirewood);
-        larder.Add(villager.CarriedFood);
+        larder.Receive(Goods.Firewood, villager.CarriedFirewood);
+        larder.Add(Goods.Food, villager.CarriedFood);
 
         villager.CarriedFood = 0;
         villager.CarriedFirewood = 0;
@@ -1488,7 +1488,7 @@ public sealed class BehaviorSystem : ISimSystem
                 "no shed to put them in, so they are stranded in the larder where nothing can " +
                 "spend them. Build a shed.");
 
-            larder.Receive(0, villager.CarriedLogs, 0);
+            larder.Receive(Goods.Logs, villager.CarriedLogs);
             villager.CarriedLogs = 0;
         }
     }
@@ -1532,7 +1532,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             int foodWanted = world.TargetFoodFor(recipient) - recipient.Stockpile.Food;
             int food = Smallest(foodWanted, load, store.Store.Food);
-            if (food > 0 && store.Store.TryTake(food))
+            if (food > 0 && store.Store.TryTake(Goods.Food, food))
             {
                 villager.CarriedFood += food;
                 villager.State = VillagerState.DeliveringToHome;
@@ -1542,7 +1542,7 @@ public sealed class BehaviorSystem : ISimSystem
             int fuelWanted = VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config)
                 - recipient.Stockpile.Firewood;
             int fuel = Smallest(fuelWanted, load, store.Store.Firewood);
-            if (fuel > 0 && store.Store.TryTakeFirewood(fuel))
+            if (fuel > 0 && store.Store.TryTake(Goods.Firewood, fuel))
             {
                 villager.CarriedFirewood += fuel;
                 villager.State = VillagerState.DeliveringToHome;
@@ -1572,13 +1572,13 @@ public sealed class BehaviorSystem : ISimSystem
             // Everything, because there is nobody left to keep any of it for. This once
             // subtracted a `keepFood` and a `keepFuel`, both of which were const zero.
             int food = Smallest(household.Stockpile.Food, load, household.Stockpile.Food);
-            if (food > 0 && household.Stockpile.TryTake(food))
+            if (food > 0 && household.Stockpile.TryTake(Goods.Food, food))
             {
                 villager.CarriedFood += food;
             }
 
             int fuel = Smallest(household.Stockpile.Firewood, load - food, household.Stockpile.Firewood);
-            if (fuel > 0 && household.Stockpile.TryTakeFirewood(fuel))
+            if (fuel > 0 && household.Stockpile.TryTake(Goods.Firewood, fuel))
             {
                 villager.CarriedFirewood += fuel;
             }
@@ -1603,7 +1603,8 @@ public sealed class BehaviorSystem : ISimSystem
             // Received, never Add — a delivery is goods changing hands, and routing it
             // through Add would credit this household with producing what somebody
             // else gathered. That is the bug Stockpile.Receive exists for.
-            recipient.Stockpile.Receive(villager.CarriedFood, 0, villager.CarriedFirewood);
+            recipient.Stockpile.Receive(Goods.Food, villager.CarriedFood);
+            recipient.Stockpile.Receive(Goods.Firewood, villager.CarriedFirewood);
             villager.CarriedFood = 0;
             villager.CarriedFirewood = 0;
         }
@@ -1628,9 +1629,9 @@ public sealed class BehaviorSystem : ISimSystem
             // The load goes into the building, and only then does it exist anywhere
             // the village can spend it. This is the moment goods stopped teleporting.
             Stockpile store = StoreForTheLoad(world, villager).Store;
-            store.Add(villager.CarriedFood);
-            store.AddLogs(villager.CarriedLogs);
-            store.AddFirewood(villager.CarriedFirewood);
+            store.Add(Goods.Food, villager.CarriedFood);
+            store.Add(Goods.Logs, villager.CarriedLogs);
+            store.Add(Goods.Firewood, villager.CarriedFirewood);
             villager.CarriedFood = 0;
             villager.CarriedLogs = 0;
             villager.CarriedFirewood = 0;
@@ -1775,7 +1776,7 @@ public sealed class BehaviorSystem : ISimSystem
                 StoreBuilding? woodyard = NearestStoreWithLogs(
                     world, villager.Position, world.Config.LogsPerSplit);
 
-                if (woodyard is null || !woodyard.Store.TryTakeLogs(world.Config.LogsPerSplit))
+                if (woodyard is null || !woodyard.Store.TryTake(Goods.Logs, world.Config.LogsPerSplit))
                 {
                     // The yard emptied while they were working. Not an error: another
                     // woodcutter, or a house being raised, got there first.
@@ -1802,7 +1803,7 @@ public sealed class BehaviorSystem : ISimSystem
                         ?? woodyard
                     : woodyard;
 
-                wall.Store.AddFirewood(firewood);
+                wall.Store.Add(Goods.Firewood, firewood);
                 villager.State = VillagerState.TravelingHome;
                 return;
 

@@ -57,7 +57,7 @@ public sealed class ShelterAndExposureTests
         {
             foreach (Household household in world.Households)
             {
-                household.Stockpile.AddFirewood(10);
+                household.Stockpile.Add(Goods.Firewood, 10);
             }
 
             hearth.Execute(world);

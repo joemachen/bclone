@@ -19,9 +19,46 @@ namespace Bclone.Sim.World;
 /// you for bad decisions but never for a scheduling artifact (D10). So homes keep a
 /// working larder, and the only question storage answers is how it gets refilled.
 /// </para>
+/// <para>
+/// <b>Indexed by <see cref="Goods"/>, not three hand-written fields</b> (C2, Joe's call:
+/// refactor when the first new good lands, not before and not after). It held
+/// <c>Food</c>, <c>Logs</c> and <c>Firewood</c> as separate properties with a matching
+/// <c>Add</c>/<c>Receive</c>/<c>TryTake</c> trio each and a <c>Held</c> that summed them
+/// by name — nine methods and a hard-coded sum that every new good would have had to be
+/// threaded through by hand. <b>Adding stone meant remembering nine places</b>, and this
+/// project's most repeated bug is code that kept reading the old shape (D25, D29, D48,
+/// D57, D76, D79, D81). One array, one method per verb, and a new good is an enum value.
+/// </para>
+/// <para>
+/// <b>The named readers stay</b> — <see cref="Food"/>, <see cref="Logs"/>,
+/// <see cref="Firewood"/>. They are what the state hash, the panel and most of the suite
+/// ask for, they read as English at the call site, and unlike the old <em>mutators</em>
+/// they cannot go stale: there is one array underneath them now, so a reader and the
+/// store can no longer disagree.
+/// </para>
 /// </remarks>
 public sealed class Stockpile
 {
+    /// <summary>How many kinds of goods exist. Grows with <see cref="Goods"/>.</summary>
+    /// <remarks>
+    /// Read off the enum rather than typed, so adding a good cannot leave an array one
+    /// short — which would be an <c>IndexOutOfRangeException</c> in the middle of the
+    /// sim rather than a compile error.
+    /// </remarks>
+    public static readonly int Kinds = System.Enum.GetValues<Goods>().Length;
+
+    private readonly int[] _held = new int[Kinds];
+
+    /// <summary>
+    /// How much of each good this store has ever taken in <em>as production</em>.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not incremented by <see cref="Receive"/> — see its remarks. These
+    /// numbers are claims about a life and a household, and inflating them by counting
+    /// gifts is how the village once appeared to consume more logs than it had felled.
+    /// </remarks>
+    private readonly int[] _produced = new int[Kinds];
+
     /// <summary>
     /// How much this store can hold in total, across every kind of goods.
     /// </summary>
@@ -43,7 +80,19 @@ public sealed class Stockpile
     public int Capacity { get; init; } = int.MaxValue;
 
     /// <summary>Everything held here, of every kind. What <see cref="Capacity"/> limits.</summary>
-    public int Held => Food + Logs + Firewood;
+    public int Held
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < _held.Length; i++)
+            {
+                total += _held[i];
+            }
+
+            return total;
+        }
+    }
 
     /// <summary>Room left. Zero when full; never negative.</summary>
     public int FreeSpace
@@ -58,11 +107,14 @@ public sealed class Stockpile
     /// <summary>Whether this store has no room for anything more.</summary>
     public bool IsFull => FreeSpace == 0;
 
-    /// <summary>Food on hand. Never negative — asserted, not hoped.</summary>
-    public int Food { get; private set; }
+    /// <summary>How much of one good is on hand. Never negative — asserted, not hoped.</summary>
+    public int this[Goods goods] => _held[Index(goods)];
 
-    /// <summary>Total food ever gathered, for the epitaph.</summary>
-    public int LifetimeGathered { get; private set; }
+    /// <summary>How much of one good was ever produced here, for the epitaph.</summary>
+    public int Produced(Goods goods) => _produced[Index(goods)];
+
+    /// <summary>Food on hand.</summary>
+    public int Food => _held[(int)Goods.Food];
 
     /// <summary>
     /// Felled timber on hand.
@@ -79,10 +131,7 @@ public sealed class Stockpile
     /// spend them meant no home was ever built.
     /// </para>
     /// </remarks>
-    public int Logs { get; private set; }
-
-    /// <summary>Total logs ever felled.</summary>
-    public int LifetimeLogsFelled { get; private set; }
+    public int Logs => _held[(int)Goods.Logs];
 
     /// <summary>
     /// Firewood on hand — the fuel a household burns to get through winter.
@@ -100,13 +149,20 @@ public sealed class Stockpile
     /// which is the same argument D14 makes about food.
     /// </para>
     /// </remarks>
-    public int Firewood { get; private set; }
+    public int Firewood => _held[(int)Goods.Firewood];
 
-    /// <summary>Total firewood ever cut.</summary>
-    public int LifetimeFirewoodCut { get; private set; }
+    /// <summary>Total food ever gathered here, for the epitaph.</summary>
+    public int LifetimeGathered => _produced[(int)Goods.Food];
+
+    /// <summary>Total logs ever felled here.</summary>
+    public int LifetimeLogsFelled => _produced[(int)Goods.Logs];
+
+    /// <summary>Total firewood ever cut here.</summary>
+    public int LifetimeFirewoodCut => _produced[(int)Goods.Firewood];
 
     /// <summary>
-    /// Put food in, up to what will fit. Returns how much was <em>actually</em> taken.
+    /// Put newly produced goods in, up to what will fit. Returns how much was
+    /// <em>actually</em> taken.
     /// </summary>
     /// <remarks>
     /// <b>The return value is the whole point and it must not be ignored.</b> A store
@@ -115,16 +171,11 @@ public sealed class Stockpile
     /// guarantee (spec §8) in exactly the direction that is hardest to notice, since
     /// the total only ever falls. Callers deposit what fits and keep the rest.
     /// </remarks>
-    public int Add(int amount)
+    public int Add(Goods goods, int amount)
     {
-        if (amount < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot add negative food ({amount}).");
-        }
-
-        int accepted = amount < FreeSpace ? amount : FreeSpace;
-        Food += accepted;
-        LifetimeGathered += accepted;
+        int accepted = Clamp(goods, amount, nameof(amount));
+        _held[(int)goods] += accepted;
+        _produced[(int)goods] += accepted;
         return accepted;
     }
 
@@ -141,136 +192,64 @@ public sealed class Stockpile
     /// figure in a villager's epitaph, which is worse: that number is a claim about a
     /// life.
     /// </remarks>
-    /// <remarks>
-    /// Where capacity binds, goods are taken in the order they are named — food, then
-    /// logs, then firewood. Fixed rather than clever, because a store deciding for
-    /// itself which of someone's goods to prefer is exactly the kind of hidden rule
-    /// non-negotiable 1 is against. Returns the total accepted.
-    /// </remarks>
-    public int Receive(int food, int logs, int firewood)
+    public int Receive(Goods goods, int amount)
     {
-        if (food < 0 || logs < 0 || firewood < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(food), $"Cannot receive negative goods ({food}, {logs}, {firewood}).");
-        }
-
-        return ReceiveFood(food) + ReceiveLogs(logs) + ReceiveFirewood(firewood);
-    }
-
-    /// <summary>Take in food somebody else produced. Returns how much fitted.</summary>
-    public int ReceiveFood(int amount)
-    {
-        int accepted = Clamp(amount, nameof(amount));
-        Food += accepted;
+        int accepted = Clamp(goods, amount, nameof(amount));
+        _held[(int)goods] += accepted;
         return accepted;
     }
 
-    /// <summary>Take in logs somebody else produced. Returns how much fitted.</summary>
-    public int ReceiveLogs(int amount)
-    {
-        int accepted = Clamp(amount, nameof(amount));
-        Logs += accepted;
-        return accepted;
-    }
-
-    /// <summary>Take in firewood somebody else produced. Returns how much fitted.</summary>
-    public int ReceiveFirewood(int amount)
-    {
-        int accepted = Clamp(amount, nameof(amount));
-        Firewood += accepted;
-        return accepted;
-    }
-
-    private int Clamp(int amount, string parameterName)
+    /// <summary>Take goods if there are enough, changing nothing otherwise.</summary>
+    public bool TryTake(Goods goods, int amount)
     {
         if (amount < 0)
         {
-            throw new ArgumentOutOfRangeException(parameterName, $"Cannot receive negative goods ({amount}).");
+            throw new System.ArgumentOutOfRangeException(
+                nameof(amount), $"Cannot take negative {Name(goods)} ({amount}).");
         }
 
-        return amount < FreeSpace ? amount : FreeSpace;
-    }
-
-    /// <summary>Put felled logs in, up to what will fit. Returns how much was taken.</summary>
-    public int AddLogs(int amount)
-    {
-        if (amount < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot add negative logs ({amount}).");
-        }
-
-        int accepted = amount < FreeSpace ? amount : FreeSpace;
-        Logs += accepted;
-        LifetimeLogsFelled += accepted;
-        return accepted;
-    }
-
-    /// <summary>Take logs if there are enough, changing nothing otherwise.</summary>
-    public bool TryTakeLogs(int amount)
-    {
-        if (amount < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot take negative logs ({amount}).");
-        }
-
-        if (Logs < amount)
+        int index = Index(goods);
+        if (_held[index] < amount)
         {
             return false;
         }
 
-        Logs -= amount;
+        _held[index] -= amount;
         return true;
     }
 
-    /// <summary>Put split firewood in, up to what will fit. Returns how much was taken.</summary>
-    public int AddFirewood(int amount)
+    private int Clamp(Goods goods, int amount, string parameterName)
     {
         if (amount < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot add negative firewood ({amount}).");
+            throw new System.ArgumentOutOfRangeException(
+                parameterName, $"Cannot add negative {Name(goods)} ({amount}).");
         }
 
-        int accepted = amount < FreeSpace ? amount : FreeSpace;
-        Firewood += accepted;
-        LifetimeFirewoodCut += accepted;
-        return accepted;
+        Index(goods);
+        int free = FreeSpace;
+        return amount < free ? amount : free;
     }
 
-    /// <summary>Take firewood if there is enough, changing nothing otherwise.</summary>
-    public bool TryTakeFirewood(int amount)
+    private static int Index(Goods goods)
     {
-        if (amount < 0)
+        int index = (int)goods;
+        if (index < 0 || index >= Kinds)
         {
-            throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot take negative firewood ({amount}).");
+            throw new System.ArgumentOutOfRangeException(
+                nameof(goods), $"There is no such good as {goods}.");
         }
 
-        if (Firewood < amount)
-        {
-            return false;
-        }
-
-        Firewood -= amount;
-        return true;
+        return index;
     }
 
-    /// <summary>Take food if there is enough. Returns false without changing
-    /// anything if there is not.</summary>
-    public bool TryTake(int amount)
+    private static string Name(Goods goods) => goods switch
     {
-        if (amount < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), $"Cannot take negative food ({amount}).");
-        }
-
-        if (Food < amount)
-        {
-            return false;
-        }
-
-        Food -= amount;
-        return true;
-    }
+        Goods.Food => "food",
+        Goods.Logs => "logs",
+        Goods.Firewood => "firewood",
+        _ => goods.ToString().ToLowerInvariant(),
+    };
 }
 
 /// <summary>

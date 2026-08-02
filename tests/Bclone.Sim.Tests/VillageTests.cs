@@ -119,7 +119,7 @@ public sealed class VillageTests
         Household first = loop.World.Households[0];
         Household second = loop.World.Households[1];
 
-        first.Stockpile.TryTake(first.Stockpile.Food);
+        first.Stockpile.TryTake(Goods.Food, first.Stockpile.Food);
 
         Assert.Equal(0, first.Stockpile.Food);
         Assert.True(second.Stockpile.Food > 0, "Emptying one larder must not empty the other.");
@@ -193,7 +193,7 @@ public sealed class VillageTests
         loop.Step(500);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Households[^1].Stockpile.Add(1);
+        loop.World.Households[^1].Stockpile.Add(Goods.Food, 1);
 
         Assert.NotEqual(before, StateHash.Compute(loop.World));
     }

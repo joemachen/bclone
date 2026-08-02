@@ -152,7 +152,7 @@ public sealed class LabourAllocationTests
 
             foreach (Household household in loop.World.Households)
             {
-                household.Stockpile.Add(loop.World.TargetFoodFor(household));
+                household.Stockpile.Add(Goods.Food, loop.World.TargetFoodFor(household));
             }
 
             quota = LabourQuota.For(loop.World);
@@ -182,8 +182,8 @@ public sealed class LabourAllocationTests
 
         foreach (Household household in loop.World.Households)
         {
-            household.Stockpile.Add(loop.World.TargetFoodFor(household) * 10);
-            household.Stockpile.AddLogs(Config.LogsPerHouse * 10);
+            household.Stockpile.Add(Goods.Food, loop.World.TargetFoodFor(household) * 10);
+            household.Stockpile.Add(Goods.Logs, Config.LogsPerHouse * 10);
         }
 
         Assert.False(LabourQuota.VillageIsShortOfFood(loop.World));

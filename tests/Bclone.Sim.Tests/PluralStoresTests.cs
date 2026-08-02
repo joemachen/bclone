@@ -126,7 +126,7 @@ public sealed class PluralStoresTests
             : first;
 
         int before = world.FoodInGranaries();
-        second.Store.Add(100);
+        second.Store.Add(Goods.Food, 100);
 
         _output.WriteLine($"{before} food before, {world.FoodInGranaries()} after adding 100 to a second granary.");
         Assert.Equal(before + 100, world.FoodInGranaries());
@@ -145,7 +145,7 @@ public sealed class PluralStoresTests
         {
             if (store.Kind == StoreKind.Shed)
             {
-                store.Store.TryTakeLogs(store.Store.Logs);
+                store.Store.TryTake(Goods.Logs, store.Store.Logs);
             }
         }
 
@@ -155,7 +155,7 @@ public sealed class PluralStoresTests
         {
             if (store.Kind == StoreKind.Shed)
             {
-                store.Store.AddLogs(half);
+                store.Store.Add(Goods.Logs, half);
             }
         }
 

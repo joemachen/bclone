@@ -575,7 +575,7 @@ public sealed class SimWorld
 
         StoreBuilding? shed = NearestStore(
             building.Position, StoreKind.Shed, static store => !store.Store.IsFull);
-        int recovered = shed?.Store.ReceiveLogs(back) ?? 0;
+        int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
 
         Narrate(held > 0
             ? $"{building.Name} was pulled down — {recovered} logs recovered, and the {held} " +
@@ -599,7 +599,7 @@ public sealed class SimWorld
 
         StoreBuilding? shed = NearestStore(
             site.Position, StoreKind.Shed, static store => !store.Store.IsFull);
-        shed?.Store.ReceiveLogs(back);
+        shed?.Store.Receive(Goods.Logs, back);
 
         Narrate($"{site.Construction.Name} was abandoned before it was built — " +
             $"{back} logs went back to store. {Clock.SeasonAndYear()}.");
@@ -1845,7 +1845,10 @@ public sealed class SimWorld
         };
 
         StoreBuildings.Add(cart);
-        cart.Store.Receive(config.CartFood, config.CartLogs, 0);
+        // Food first, then timber — the order capacity binds in, stated rather than
+        // implied by an argument list (Stockpile.Receive).
+        cart.Store.Receive(Goods.Food, config.CartFood);
+        cart.Store.Receive(Goods.Logs, config.CartLogs);
     }
 
 

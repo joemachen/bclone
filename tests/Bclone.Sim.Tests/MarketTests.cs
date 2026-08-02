@@ -404,11 +404,11 @@ public sealed class MarketTests
         SimWorld world = Build(config).World;
 
         Household household = world.Households[0];
-        household.Stockpile.TryTake(household.Stockpile.Food);
+        household.Stockpile.TryTake(Goods.Food, household.Stockpile.Food);
 
         StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
-        market.Store.Add(200);
-        market.Store.AddFirewood(200);
+        market.Store.Add(Goods.Food, 200);
+        market.Store.Add(Goods.Firewood, 200);
 
         // Put somebody at the market's door with an empty larder behind them.
         Villager villager = world.FindVillager(household.MemberIds[0])!;
