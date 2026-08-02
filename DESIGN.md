@@ -169,6 +169,7 @@ Each phase should ship in a playable, legible state before the next begins.
   - **Not scheduled**, deliberately: it reopens the whole derivation chain, and D44/D45 were taken first.
   - **✅ The mechanism is settled (D58): per-site yield.** Two docs had described two mechanisms under this one bullet — per-site yield above, and *work-in-place* from an old handoff, where villagers travel to work and **stay**, eating on site, so distance becomes a one-off commute rather than a per-unit tax. They are **not** two halves of the same answer: per-site yield makes distance *mean* something, work-in-place makes it *cheap*. Joe's call is per-site yield; work-in-place stays on the board as a later slice that wants clothing to exist first. See D58.
   - **Still not scheduled** — the mechanism is chosen, the slice is not started. It is queue item 3 and it still wants a fresh session.
+- [ ] **Does "maintain" mean buildings decay? (D64.)** Joe's builder's hut *"builds and maintains"*. If structures need upkeep, that is the same shape **D37 cut spoilage for** — a decay timer is a tax the player answers with babysitting rather than with a decision — and §1.2 is what it would be judged against. **Banished's own buildings do not decay**; tools and clothes wear out and structures do not, which suggests "maintain" may mean **repair after damage** (fire, storm) rather than a standing upkeep loop. Repair-after-damage costs nothing in babysitting and gives the hut something to do between projects. **Recommendation: repair-after-damage, no decay.** Joe's call.
 - [ ] **Fan-out variability on the map (view only).** Joe's note: people grouped on a tile currently sit on a perfect ring at a fixed radius, which reads as arranged rather than gathered. Vary both the radius and the angle a little — deterministically, from villager id — so a crowded tile looks like a crowd. Small, and purely cosmetic.
 
 ---
@@ -287,16 +288,32 @@ labour rather than lives**, which is what stock limits turn from a dead end into
 *Re-ordered by D62 — the previous queue was slices inherited from specs rather than the
 game Joe described.*
 
-1. **Stock limits** (D62, §2.2) — the player sets a target stock per good and production
-   stops there. Derived floor, player ceiling. The missing player-facing control, the honest
-   answer to the idle winter, and what gives clothing a reason with no animals and no trade.
-2. **Clothing, starting from a founding stock that wears out** (D62). Unblocked by the
-   above; `specs/clothing.md` needs rewriting around inheritance-that-decays rather than
+**A → B → C is Joe's confirmed sequence (D64)** for the first three:
+
+- **A. Stock limits and laborers** (D62, D63, §2.2; `specs/stock-limits-and-laborers.md`) —
+  the player sets a target stock per good, production stops there, and the hands that frees
+  become laborers who haul. Derived floor, player ceiling. The missing player-facing
+  control, the honest answer to the idle winter, and what gives clothing a reason with no
+  animals and no trade.
+- **B. Stone and raw gathering** (D63) — the first new raw material, placed by the map
+  generator, and the half of laborer work that does not exist yet. Stone is what a building
+  past a log hut costs, so it unblocks the rest of Joe's list (iron, gold, silver, gems).
+- **C. The cold start** (D63, D64) — zero buildings, the founders' cart, the player brushing
+  the first zone and placing the first buildings. Last, because rebuilding the opening
+  before the control and the materials exist means rebuilding it twice.
+
+Then, unsequenced:
+
+1. **Clothing, starting from a founding stock that wears out** (D62). Unblocked by A;
+   `specs/clothing.md` needs rewriting around inheritance-that-decays rather than
    unlock-you-build-toward.
-3. **Crops and orchards** — sown in spring, harvested in autumn, per-crop calendars.
+2. **Crops and orchards** — sown in spring, harvested in autumn, per-crop calendars.
    **Replaces the seasonal yield curve** (`specs/environment-and-seasons.md §5.1`), which is
    three multipliers where this is a growth cycle you can watch. This is what makes the year
    real and what the granary is *for*.
+3. **The builder's hut** (D64) — builders assigned to a persistent workplace, sites as
+   errands, the marketer's shape. Wants to land near A, since it is the same conversation
+   about who does what work.
 4. **The 7-tile bound** — the biggest payoff on the board and the largest re-derivation.
    **Mechanism settled (D58): per-site yield**, with richer distant sites as its other half.
    Give it a fresh session.
@@ -320,6 +337,12 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D64 · 2026-08-01 · A builder's hut, the cart that stays, and the player's first act. Sequence A → B → C.** Joe settling D63's open ends.
+  - **Builders get a hut**, and builders are assigned to it the way every other job is assigned to a workplace. They build **and maintain** everything: buildings, pathways, decorations, walls, fences, bridges. **This changes what a `Builder` is.** Today a construction site *is* the workplace (D38), which was a neat trick — a site got catchment, allocation and refusal reasons for free, and then stopped existing. A hut inverts it: the hut is the persistent workplace and sites become **errands travelled to**. That is **exactly the marketer's shape** (D36), which is the argument for it — a proven pattern rather than a new one — and it means builder staffing becomes persistent and player-controllable through D51's override instead of a job that appears and vanishes. It also gives §2.6's paths and D40's bridges somewhere to attach when they arrive.
+  - **⚠️ "Maintain" is an open question and is deliberately not being implemented.** If buildings decay and need upkeep, that is **the same shape D37 cut spoilage for** — *"a decay timer is a tax the player answers with babysitting rather than with a decision"* — and §1.2 is the non-negotiable it would be tested against. Worth noting that **Banished's own buildings do not decay**; tools and clothes wear, structures do not. So "maintain" may mean repair-after-damage, which is content with no upkeep loop and no tension at all. **Flagged rather than assumed** — see the open question in §5.
+  - **The cart is confirmed and it stays useful.** The founders' food, goods, clothes and tools arrive in it; it is a `StoreBuilding` present at founding, **demolishable once empty**, and **small storage while it stands**. That is Banished's own opening and it keeps D30 intact — goods still live in a building, and the building is simply the one thing the player did not raise.
+  - **The player brushes the first residential zone and places the first buildings.** So `starting_residential_radius`'s auto-painted zone goes, and the opening becomes an act rather than a state. D42 built the brush; this is the first time it is load-bearing rather than optional.
+  - **Sequence confirmed: A → B → C.** Stock limits and laborers first, then stone and raw gathering, then the cold start. C last because rebuilding the opening before the control and the materials exist means rebuilding it twice.
 - **D63 · 2026-08-01 · Laborers, and the founders arrive with nothing built.** Joe, extending D62. Two things of very different size, recorded together because they arrived together and must not be built together.
   - **Laborers are a fallback, not a sixth job**, and that is what makes them cheap: a villager no workplace currently wants. Their work is hauling and raw gathering. **They belong in the stock-limit slice**, because a limit is what creates them — a limit with nowhere for the spare hand to go is just a village standing still, which is the idle winter again wearing a new hat.
   - **Half of it already exists.** `JobKind.Builder` hauls materials from the nearest shed to a site (D38, D43), and `VillagerState.HaulingToStore` is the movement. So the hauling half is a widening of built machinery. **The gathering half is genuinely new, and it is gated on resources that do not exist:** `Goods` has food, logs and firewood. Stone, iron, gold, silver and gems are none of them a good, and none of them are placed by the map generator (D18). **Stone is the one that unblocks the rest**, because it is what a building past a log hut costs.
