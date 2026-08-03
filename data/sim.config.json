@@ -572,8 +572,8 @@
   // The tools are NOT a dial and cannot be one yet: nothing in the game makes
   // or spends them, so they are a stock the player can see and cannot use. The
   // founders brought them; a workshop to replace them is D17's, still parked.
-  "cart_capacity": 1200,
-  "cart_food": 800,
+  "cart_capacity": 1650,
+  "cart_food": 1200,
   "cart_logs": 30,
   "cart_tools": 20,
 
