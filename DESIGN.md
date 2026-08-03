@@ -449,7 +449,32 @@ and finite deposits (§5.2 of `specs/mutable-terrain.md`). **Planting is not in 
 gated behind managed forestry and §2.7 is unbuilt, which is the right order: the harvest is
 what *creates* the pressure that node answers.
 
-**Next up** *(in order — Joe's call)*:
+**⭐ NEXT SESSION IS THE VIEW (Joe, 2026-08-03), and it comes before any more sim work.**
+Four slices of behaviour landed with **no controls at all** — a census found *zero* references
+to the harvest brush or work-ground painting anywhere in `src/Bclone.Game`, so the only brush
+button is still D42's "Paint land". Everything D86–D92 built is reachable only from the test
+suite. **That is the legibility non-negotiable turned on the project itself**: a feature the
+player cannot reach is a feature that does not exist, and §0.1's whole argument is that this
+game is playable-and-readable before it is clever.
+
+It also matters for how the work goes. **Nine of the ten bugs in the cold start surfaced
+because Joe played it**, and tonight cost three wrong diagnoses reasoned from code against
+three right ones from measurement — so putting today's systems in front of him is worth more
+than another attempt at D93.
+
+What it needs, in order:
+1. **The harvest brush with its four modes** — trees / stone / iron / all (D92), drag-painted,
+   reusing the once-per-stroke warning shape D42 already has.
+2. **Work-ground painting** (D86, D93) — per workplace, with the overstretched warning it
+   already computes and the *state* readable on the panel, not just the moment.
+3. **The seam colours checked against a real screenshot** rather than my assertion that rust
+   and grey read apart — `BCLONE_SCREENSHOT` makes that repeatable (METHODOLOGY §6).
+4. **The staffing control moved somewhere sensible** (Joe: *"it's in a weird place right
+   now"*), because D93 is about to make it the answer to a question the player is asked often.
+
+**Then** D93 resumes at the quota probe, which is where D94 left it.
+
+**Next up** *(after the view — Joe's call)*:
 *Re-ordered by D62 — the previous queue was slices inherited from specs rather than the
 game Joe described.*
 
