@@ -424,8 +424,9 @@ the transition's first step is provably a no-op, which is what makes the next on
 1. ~~**`Terrain` gains `Rock` and `IronDeposit`**~~ ✅ **done (D91)** — visible seams, appended
    to the draw order so no seed's valley moved, laid only over open grass so the timber
    economy is untouched. Stone near, iron far.
-2. **A harvest brush per material, plus an all-brush** (D67, settled by D90). One layer is not
-   enough — clearing stone for a foundation must not fell the wood around it.
+2. ~~**A harvest brush per material, plus an all-brush**~~ ✅ **done (D92)** — as *modes of one
+   tool*, Joe's call: the mode filters which tiles take the paint and is then forgotten, so
+   nothing new is stored or hashed.
 3. **Harvest delivers to the construction site**, not to a store: fell a painted tree, carry
    the logs *to the site*, go back for stone, and build only when it is all on the ground.
    **This is the hauling D66 measured as non-existent and predicted would arrive here.**
@@ -516,6 +517,11 @@ village wants one.
   - **All of it, not the fields near the change.** A flow field spans the valley, so one tile becoming impassable can lengthen a route starting nowhere near it — and working out which fields are affected is the same Dijkstra as rebuilding them.
   - **`Terrain.Water` stopped being named at call sites.** It appeared at two, and this wanted a third; `TerrainRules.IsPassable` is the question instead. **That is D76's seam recognised before it ran to five instalments** rather than after.
   - **Deliberately nothing player-facing**, and it ships alone because it is the one part of C3 no open question touches — D84 blocks the terrain kinds and §5.1 of its spec blocks the brush. 408 green, both goldens unmoved.
+- **D92 · 2026-08-02 · The harvest brush has modes, and a mode is a filter rather than a layer.** Step 2 of D90. Joe, choosing between the two shapes I put up: *"you pick trees or stone or all and drag."*
+  - **The mode decides which tiles take the paint, and is then forgotten.** A marked tile is simply *marked*; what a laborer gets from it is whatever is standing there. **Nothing new is stored and nothing new is hashed** — the single harvest layer built for D87 was already the right shape, and `Everything` falls out for free as the absence of a filter.
+  - **It still answers what D67 asked for**, which is the part worth noticing: *clear the stone and leave the wood* works because **the wood in a stone-brushed drag never takes the paint in the first place** — not because three layers are kept in step. A layer per material would store the same fact three times and would let a tile be marked for a good it does not have.
+  - **⭐ Guarded as a property rather than a behaviour:** a tile painted with the stone brush and the same tile painted with the all-brush produce **identical state hashes**. If the mode were stored, the same valley painted two ways would be two different worlds, and the hash would carry a fact that changes nothing about what happens — D51's trap approached from the other side.
+  - **Refusals name both halves** — *"the brush is set to clear stone, and that is woodland"* — because a brush that silently does nothing over half a drag is the opaque failure §1.1 exists to prevent. 471 tests green, all three goldens unmoved.
 - **D91 · 2026-08-02 · The valley has stone and iron in it, and the draw order did not move.** Step 1 of D90's opening. `Terrain` gains **`Rock`** and **`IronDeposit`**, laid down as visible seams by the generator, with `Goods.Iron` to go with them.
   - **⭐ Appended after every existing draw, and that is the whole of the care.** Draw order is the contract: inserting anywhere earlier shifts every subsequent random value, so the river, the stands, the forage sites, the founding and the soil would all move for **every seed anybody has written down** — a save-breaking change wearing the clothes of a worldgen feature. `TheSeamsWereAppendedToTheDrawOrder` **proves** it rather than asserting it, by generating the same seed with the seam counts set to zero and checking the founding site, forage sites, tree stands and soil are identical.
   - **Seams, never a roll** (D67). *"Why did we get a gem?"* answered by *"you were lucky"* is not a causal chain a player can act on. You can see a seam, so going after it is a decision.
