@@ -182,6 +182,25 @@ public static class StateHash
             hash = MixStore(hash, world.StoreBuildings[i].Store);
         }
 
+        // ---- Goods on the ground (D96) ----
+        // A heap is as much sim state as anything in a store — it is goods in a place, which
+        // is the whole reason it can be walked to (D96, against D83's arms).
+        //
+        // SPARSE AND WITH NO COUNT, exactly like the harvest layer above and for exactly that
+        // reason: a village that has never set anything down mixes nothing at all, so this is
+        // invisible to every run that does not use it and the goldens do not move for it
+        // existing. A count mixed unconditionally would put a fresh zero into every
+        // established village — the mistake the residential layer made, and the one D87
+        // deliberately declined to repeat.
+        for (int i = 0; i < world.GroundStacks.Count; i++)
+        {
+            GroundStack stack = world.GroundStacks[i];
+            hash = MixUInt32(hash, (uint)stack.Position.X);
+            hash = MixUInt32(hash, (uint)stack.Position.Y);
+            hash = MixByte(hash, (byte)stack.Goods);
+            hash = MixUInt32(hash, (uint)stack.Amount);
+        }
+
         return hash;
     }
 

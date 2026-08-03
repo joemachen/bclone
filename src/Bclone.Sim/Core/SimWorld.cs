@@ -285,6 +285,149 @@ public sealed class SimWorld
     }
 
     // ---------------------------------------------------------------
+    //  Goods on the ground (D96)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Loads people have set down because nothing would take them (D96).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A list of its own, beside <see cref="StoreBuildings"/> and never inside it.</b> That
+    /// separation is D96's supply-invisible restraint, bought structurally: every reader that
+    /// answers <em>what has the village got?</em> or <em>where can this go?</em> walks the
+    /// store list, so a heap is invisible to all of them without one of them being told.
+    /// See <see cref="GroundStack"/> for why a fifth <see cref="StoreKind"/> would have been
+    /// the sixth instalment of D76.
+    /// </para>
+    /// <para>
+    /// Appended in the order things were put down and never reordered, for the reason the
+    /// villagers and the stores are: this list decides which heap somebody walks to when two
+    /// are equally close, and a tie resolved by iteration order is a desync waiting to happen.
+    /// </para>
+    /// </remarks>
+    public List<GroundStack> GroundStacks { get; } = new();
+
+    /// <summary>
+    /// Put a load down where somebody is standing. The one door in.
+    /// </summary>
+    /// <remarks>
+    /// <b>Last resort, never a choice</b> (D96) — the callers are the ones that have just
+    /// found nowhere at all to put a load, and there are only three of them. Merged into a
+    /// heap of the same good already on the tile, so a clearing worked over a year is one
+    /// pile of logs rather than fifty stacked in the same square.
+    /// </remarks>
+    public void SetDown(GridPos position, Goods goods, int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            if (GroundStacks[i].Position == position && GroundStacks[i].Goods == goods)
+            {
+                GroundStacks[i].Amount += amount;
+                return;
+            }
+        }
+
+        GroundStacks.Add(new GroundStack { Position = position, Goods = goods, Amount = amount });
+    }
+
+    /// <summary>Take up to <paramref name="amount"/> off a heap; it goes when it is empty.</summary>
+    public int TakeFromGround(GridPos position, Goods goods, int amount)
+    {
+        if (amount <= 0)
+        {
+            return 0;
+        }
+
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            GroundStack stack = GroundStacks[i];
+            if (stack.Position != position || stack.Goods != goods)
+            {
+                continue;
+            }
+
+            int taken = amount < stack.Amount ? amount : stack.Amount;
+            stack.Amount -= taken;
+            if (stack.Amount == 0)
+            {
+                GroundStacks.RemoveAt(i);
+            }
+
+            return taken;
+        }
+
+        return 0;
+    }
+
+    /// <summary>How much of one good is lying on a tile.</summary>
+    public int GroundStackAt(GridPos position, Goods goods)
+    {
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            if (GroundStacks[i].Position == position && GroundStacks[i].Goods == goods)
+            {
+                return GroundStacks[i].Amount;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// The nearest heap worth walking to, or null if no trip would achieve anything.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Only a heap a store would actually take.</b> Without that condition somebody
+    /// picks up the load beside a full shed and carries it straight back to the same full
+    /// shed, forever. With it, a village whose stores are all full simply leaves its heaps
+    /// alone until there is room — which is the self-correcting behaviour D96 predicted, and
+    /// it needs no rule telling anybody to.
+    /// </para>
+    /// <para>
+    /// <b>The empty-list guard is not an optimisation.</b> This is asked by every able adult
+    /// with nothing else to do, every tick — the same position that took the suite from four
+    /// minutes to over ten when <see cref="NearestHarvest"/> shipped without one (D87). A
+    /// village that has never dropped anything pays one integer compare.
+    /// </para>
+    /// </remarks>
+    public GroundStack? NearestGroundStack(GridPos from)
+    {
+        if (GroundStacks.Count == 0)
+        {
+            return null;
+        }
+
+        GroundStack? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            GroundStack stack = GroundStacks[i];
+            if (NearestStoreAccepting(
+                    stack.Position, stack.Goods, static store => !store.Store.IsFull) is null)
+            {
+                continue;
+            }
+
+            int cost = TravelCost.Cost(from, stack.Position);
+            if (cost != TravelCostField.Unreachable && cost < bestCost)
+            {
+                bestCost = cost;
+                best = stack;
+            }
+        }
+
+        return best;
+    }
+
+    // ---------------------------------------------------------------
     //  Placement (D43) — the first thing the player actually does
     // ---------------------------------------------------------------
 

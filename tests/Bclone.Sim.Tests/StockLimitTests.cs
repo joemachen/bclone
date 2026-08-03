@@ -67,8 +67,30 @@ public sealed class StockLimitTests
     // tree or tile of water differs (SeamsTests.SeamsAreLaidOnlyOverOpenGround).
     //
     //   before the seams (D91): fixture 4673658241522176988, shipped 12610424914054256081
-    private const ulong FixtureFiftyYearHash = 12290013349185536345UL;
-    private const ulong ShippedFiftyYearHash = 12199105553016889764UL;
+    //
+    // ⭐ D96 MOVED BOTH, AND IT IS THE LARGEST BEHAVIOUR CHANGE ANY OF THESE HAS RECORDED —
+    // because it is a conservation leak being closed rather than a rule being adjusted.
+    // ArriveAt deposited a load into a store and zeroed the villager's arms without reading
+    // what Stockpile.Add had ACTUALLY taken, so anything a full store refused ceased to exist.
+    // Measured over these very fifty years: 17,451 food went into the granary's doorstep and
+    // out of the world on the shipped config, 22,317 on the fixture.
+    //
+    // The consequence is a bigger, richer village, and it is measured rather than assumed:
+    // food in stores 2,164 -> 3,640, population 29 -> 36, on firewood production that did not
+    // move (6,654 ever cut -> 6,548) and with nobody frozen in either. It also required the
+    // one change in StoreForTheLoad's ordering — room now outranks kind once the preferred
+    // kind is full — without which a forager was still sent to a granary that could not take
+    // the load. See specs/goods-on-the-ground.md §3.
+    //
+    // The goods now on the ground are hashed, but that is NOT what moved these: a village
+    // that sets nothing down mixes nothing at all (GoodsOnTheGroundTests
+    // .AVillageThatDroppedNothingIsHashedAsThoughTheGroundDidNotExist). What moved them is
+    // that fifty years of history is genuinely different.
+    //
+    //   before goods on the ground (D96): fixture 12290013349185536345,
+    //                                     shipped 12199105553016889764
+    private const ulong FixtureFiftyYearHash = 16616051083588314705UL;
+    private const ulong ShippedFiftyYearHash = 10176218336442890909UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -346,10 +368,27 @@ public sealed class StockLimitTests
     /// Anti-vacuity (D7): the village must actually want to pass the limit it is held under.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A cap that binds nothing proves nothing. If an unlimited village never reached 40
     /// firewood anyway, the test above would pass on a village that simply never got going —
     /// which is D52's lesson exactly: a comparative test has two villages and either can be
     /// the broken one.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE PEAK, NOT THE STOCK AT ONE INSTANT, AND D96 IS WHY.</b> This read
+    /// <c>FirewoodInSheds()</c> after exactly forty years — which is tick 19,200, which is the
+    /// first tick of spring, which is the annual <em>trough</em>: the village has just burned
+    /// a winter's fuel. Closing the conservation leak (D96) left the village with 40% more
+    /// food, so it grew from 29 people to 36 on the same firewood production — 6,548 ever cut
+    /// against 6,654 — and a bigger village ends winter on a thinner stock. It read 20.
+    /// </para>
+    /// <para>
+    /// <b>The old number was luck and the new one is not a fuel failure:</b> nobody freezes in
+    /// either village across fifty years. The word this guard needs is <em>passed</em>, and a
+    /// maximum is what "passed" means — so it now measures the thing it always claimed to.
+    /// A guard whose answer depends on which tick of the year it stops on was never asserting
+    /// what its name says.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheUnlimitedVillageReallyWouldHavePassedThatLimit()
@@ -357,12 +396,22 @@ public sealed class StockLimitTests
         SimConfig config = VillageFixtures.Village;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
 
-        loop.Step(config.TicksPerYear * 40);
+        int peak = 0;
+        for (int tick = 0; tick < config.TicksPerYear * 40; tick++)
+        {
+            loop.StepOnce();
+            int held = loop.World.FirewoodInSheds();
+            if (held > peak)
+            {
+                peak = held;
+            }
+        }
 
-        int firewood = loop.World.FirewoodInSheds();
-        _output.WriteLine($"unlimited village holds {firewood} firewood after 40 years");
+        _output.WriteLine(
+            $"unlimited village peaked at {peak} firewood in forty years, and holds "
+            + $"{loop.World.FirewoodInSheds()} at the end of the fortieth winter");
 
-        Assert.True(firewood > 40, $"Only {firewood} firewood, so a limit of 40 binds nothing.");
+        Assert.True(peak > 40, $"Only ever {peak} firewood, so a limit of 40 binds nothing.");
     }
 
     // ---------------------------------------------------------------

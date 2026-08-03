@@ -315,6 +315,7 @@ public sealed class Villager
             VillagerState.FetchingMaterials => "fetching materials for the building site",
             VillagerState.Building => "raising a building",
             VillagerState.Clearing => "clearing trees the village marked",
+            VillagerState.TidyingGround => "fetching a load left on the ground",
             _ => State.ToString(),
         };
     }

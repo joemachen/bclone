@@ -56,6 +56,18 @@ public enum VillagerState
     /// Their primary work always comes first (Joe, D87); this is helping out on the side.
     /// </remarks>
     Clearing,
+
+    /// <summary>Fetching a load somebody left on the ground and taking it to a store (D96).</summary>
+    /// <remarks>
+    /// <b>Its own errand, and it has to be.</b> Goods on the ground are supply-invisible, so
+    /// nothing can pull them in the way <em>"the village wants more food"</em> pulls a
+    /// forager — that question reads stores. The errand is stated from the other end instead:
+    /// <em>there is a load lying about; take it to a store.</em> That is D66's missing hauling
+    /// arriving a second time, and unlike the first it needs no construction site to exist.
+    /// Like <see cref="Clearing"/> it is what somebody does when their own work has nothing
+    /// for them this tick.
+    /// </remarks>
+    TidyingGround,
 }
 
 /// <summary>

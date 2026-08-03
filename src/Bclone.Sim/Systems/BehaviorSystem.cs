@@ -114,6 +114,7 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.FetchingMaterials => "fetching building materials",
         VillagerState.Building => "building",
         VillagerState.Clearing => "clearing painted ground",
+        VillagerState.TidyingGround => "fetching a load off the ground",
         _ => state.ToString(),
     };
 
@@ -231,7 +232,16 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.HaulingToStore:
-                Travel(world, villager, StoreForTheLoad(world, villager).Position, VillagerState.HaulingToStore);
+                if (StoreForTheLoad(world, villager) is not StoreBuilding bound)
+                {
+                    // Nowhere left to carry it — it goes down here, and somebody comes
+                    // back for it when there is room (D96).
+                    SetDownWhereTheyStand(world, villager);
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, bound.Position, VillagerState.HaulingToStore);
                 return;
 
             case VillagerState.FetchingFromStore:
@@ -244,6 +254,12 @@ public sealed class BehaviorSystem : ISimSystem
                 // step — the same rule as a marketer's leg, and for the same reason.
                 Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
                     VillagerState.Clearing);
+                return;
+
+            case VillagerState.TidyingGround:
+                // To the heap they set off for, same rule again (D96).
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    VillagerState.TidyingGround);
                 return;
 
             case VillagerState.FetchingMaterials:
@@ -340,7 +356,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// goes to the granary, materials to the shed, and there is no third answer to get
     /// out of step (D32).
     /// </remarks>
-    private static StoreBuilding StoreForTheLoad(SimWorld world, Villager villager)
+    private static StoreBuilding? StoreForTheLoad(SimWorld world, Villager villager)
     {
         // A TRADER puts it down at the nearest counter that will take it, which is
         // usually the market — and that is the only way the market ever gets stocked,
@@ -385,11 +401,23 @@ public sealed class BehaviorSystem : ISimSystem
         // it was: with no shed built, a villager holding logs found nothing and this method
         // fell through to the cart by name — one more place that had to be told about each
         // new store. Asking "what will take this?" needs telling about none of them.
+        //
+        // ⭐ AND ROOM OUTRANKS KIND ONCE THE PREFERRED KIND IS FULL (D96). The middle arm
+        // used to be `FirstOfKind(wanted)`, which returns a store of the right kind
+        // WHATEVER ITS STATE — so a forager holding berries with every granary full was
+        // sent to a full granary while the market stood half empty. That was merely wasteful
+        // while the load then evaporated; with goods able to be set down it is a loop: put
+        // the food down at the granary door, pick it up again as a spare hand, walk nowhere,
+        // put it down again, forever.
+        //
+        // FirstOfKind survives as the arm BELOW, which is the case D48 wrote it for — the
+        // only granary is across the water, and somebody holding an armful must still be
+        // given somewhere to walk rather than standing still with goods nothing can spend.
         StoreBuilding? proper =
             world.NearestStore(villager.Position, wanted, static store => !store.Store.IsFull)
-            ?? FirstOfKind(world, wanted)
             ?? world.NearestStoreAccepting(
-                villager.Position, load, static store => !store.Store.IsFull);
+                villager.Position, load, static store => !store.Store.IsFull)
+            ?? FirstOfKind(world, wanted);
 
         if (proper is not null)
         {
@@ -408,20 +436,85 @@ public sealed class BehaviorSystem : ISimSystem
         // nearest place that would take this good if it could, and the load stays in their
         // arms until there is room, which is the same thing a person would do.
         StoreBuilding? anywhere =
-            world.NearestStoreAccepting(villager.Position, load, static _ => true)
-            ?? world.TheCart;
+            world.NearestStoreAccepting(villager.Position, load, static _ => true);
+
+        // The cart even where no route reaches it, as before — but only if it would take
+        // this good. It stopped taking logs (D90 step 4), and a fallback that ignores
+        // Accepts would walk a forester to a wagon that refuses the load.
+        if (anywhere is null && world.TheCart is StoreBuilding cart && cart.Accepts(load))
+        {
+            anywhere = cart;
+        }
 
         if (anywhere is not null)
         {
             return anywhere;
         }
 
-        // Genuinely nowhere — no store of any kind takes this. That IS an invariant
-        // violation and it is said out loud rather than swallowed (METHODOLOGY §4).
-        throw new InvalidOperationException(
-            $"{villager.Name} is holding {load} and the village has nowhere at all to put "
-            + "it — no store of any kind accepts it. Every village must have somewhere to "
-            + "put things.");
+        // GENUINELY NOWHERE, AND THAT IS NO LONGER AN INVARIANT VIOLATION (D96).
+        //
+        // This threw — "every village must have somewhere to put things" — and that was
+        // true only while every village did. A founding whose cart will not take timber is
+        // a village with nowhere to put logs until it clears ground for a pile, which is
+        // the whole shape of Joe's opening, so the throw would fire on the intended path.
+        //
+        // Null instead, and the caller sets the load down where they are standing. A
+        // village whose stores are all full is a village with a PROBLEM, not a broken
+        // world — D80's own words, one level further down than it applied them. Said out
+        // loud rather than swallowed (METHODOLOGY §4); the heap is on the map either way.
+        world.Log(LogLevel.Debug, "goods",
+            $"{villager.Name} has {load} and nowhere in the village will take it — "
+            + $"setting it down at {villager.Position}. {world.Clock}.");
+
+        return null;
+    }
+
+    /// <summary>
+    /// Put everything in somebody's arms down where they are standing (D96).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Last resort, and the only three callers are the three that have just been told
+    /// there is nowhere.</b> Setting down is never a choice — that is the second of D96's
+    /// two restraints, and together with supply-invisibility it says one thing: the ground
+    /// is where goods <em>end up</em>, never where they are <em>kept</em>.
+    /// </para>
+    /// <para>
+    /// <b>It is also the conservation rule finally being kept.</b> <c>Stockpile.Add</c>
+    /// returns what actually fitted and its own remarks say the return value must not be
+    /// ignored; <c>ArriveAt</c> ignored it and zeroed the arms, so a load that arrived at a
+    /// full store was silently destroyed. Measured over fifty years, both configs spend
+    /// roughly a quarter of their ticks with some store full. <b>A heap you can see and
+    /// send somebody to fetch is the honest end of that walk.</b>
+    /// </para>
+    /// </remarks>
+    /// <summary>Set off for wherever this load can go — or set it down, if nowhere can.</summary>
+    /// <remarks>
+    /// The felling and clearing branches both end here. A forester who has just cut timber
+    /// the village has nowhere to put leaves it <b>at the stump</b>, which is what a person
+    /// does and is the bootstrap D95 needed: the founding can always start moving material,
+    /// whether or not a store exists yet.
+    /// </remarks>
+    private static void HaulOrSetDown(SimWorld world, Villager villager)
+    {
+        if (StoreForTheLoad(world, villager) is StoreBuilding destination)
+        {
+            Travel(world, villager, destination.Position, VillagerState.HaulingToStore);
+            return;
+        }
+
+        SetDownWhereTheyStand(world, villager);
+        GoHome(world, villager);
+    }
+
+    private static void SetDownWhereTheyStand(SimWorld world, Villager villager)
+    {
+        world.SetDown(villager.Position, Goods.Food, villager.CarriedFood);
+        world.SetDown(villager.Position, Goods.Logs, villager.CarriedLogs);
+        world.SetDown(villager.Position, Goods.Firewood, villager.CarriedFirewood);
+        villager.CarriedFood = 0;
+        villager.CarriedLogs = 0;
+        villager.CarriedFirewood = 0;
     }
 
     /// <summary>Any store of this kind, reachable or not, or null if there are none.</summary>
@@ -847,11 +940,11 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             // The household died out while they were walking. Take it to a store
-            // rather than dropping it in the road.
+            // rather than dropping it in the road — and if no store will take it, set it
+            // down rather than carrying it about forever (D96).
             villager.ErrandHouseholdId = 0;
             villager.State = VillagerState.HaulingToStore;
-            Travel(world, villager, StoreForTheLoad(world, villager).Position,
-                VillagerState.HaulingToStore);
+            HaulOrSetDown(world, villager);
             return;
         }
 
@@ -1272,12 +1365,13 @@ public sealed class BehaviorSystem : ISimSystem
                     $"Nothing to split — no shed within reach of {job.Name} has the " +
                     $"{config.LogsPerSplit} logs a batch needs.";
 
-                // Idle from their trade, so they may help clear (D87). This branch
-                // returns early rather than falling through to the bottom of Decide,
-                // so it has to ask — and a woodcutter with an empty yard is the most
-                // idle person in a winter village, which is exactly who the brush is
-                // for.
-                if (!TryHelpWithHarvest(world, villager))
+                // Idle from their trade, so they may tidy or help clear (D87, D96). This
+                // branch returns early rather than falling through to the bottom of
+                // Decide, so it has to ask — and a woodcutter with an empty yard is the
+                // most idle person in a winter village, which is exactly who both errands
+                // are for. Same order as the bottom of Decide, deliberately: two copies of
+                // one ranking is how they come to disagree.
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
                     GoHome(world, villager);
                 }
@@ -1316,6 +1410,25 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(world, villager, job.Position, VillagerState.Cutting);
             }
 
+            return;
+        }
+
+        // Pick up a load somebody left lying about, if there is nothing else to do (D96).
+        //
+        // ⭐ ABOVE CLEARING AND BELOW EVERY JOB, and both halves of that are the rule.
+        // Below every job for D87's reason — anybody who reaches this line has already
+        // declined their own work this tick, so it needs no quota and no job kind. Above
+        // clearing because a load already won is worth more than a load not yet taken:
+        // tidying before felling is what stops a painted valley producing heaps faster than
+        // it produces order.
+        //
+        // It has to be its own errand rather than a pull, and that is D96's gift rather than
+        // its cost: goods on the ground are supply-invisible, so "the village wants more
+        // food" cannot reach them — that question reads stores. "There is a load lying about;
+        // take it to a store" reaches them, and needs no construction site to exist, which is
+        // the second of D66's two missing errands arriving at last.
+        if (TryTidyGround(world, villager))
+        {
             return;
         }
 
@@ -1366,6 +1479,77 @@ public sealed class BehaviorSystem : ISimSystem
     /// between two trees forever without reaching either.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Go and fetch a load somebody left on the ground, if any is worth fetching (D96).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Never for a child</b> and never while already carrying: a pair of arms holds one
+    /// load, and picking up a heap on top of a load is how goods get double-counted.
+    /// </para>
+    /// <para>
+    /// <b>Only a heap a store would actually take</b> — the condition lives in
+    /// <see cref="SimWorld.NearestGroundStack"/> and is what stops somebody shuttling a load
+    /// back and forth to a full shed. A village with no room leaves its heaps alone, and
+    /// tidies up when it has somewhere to tidy into.
+    /// </para>
+    /// <para>
+    /// <b>The heap is remembered on the villager</b>, like a painted tile and for the reason
+    /// <see cref="Villager.ErrandX"/> records: the nearest heap is judged from where somebody
+    /// is standing, so re-deciding while walking lets them shuttle between two heaps forever
+    /// without reaching either.
+    /// </para>
+    /// </remarks>
+    private static bool TryTidyGround(SimWorld world, Villager villager)
+    {
+        if (!villager.CanWork || villager.IsCarrying)
+        {
+            return false;
+        }
+
+        GroundStack? stack = world.NearestGroundStack(villager.Position);
+        if (stack is null)
+        {
+            return false;
+        }
+
+        villager.ErrandX = stack.Position.X;
+        villager.ErrandY = stack.Position.Y;
+        villager.State = VillagerState.TidyingGround;
+        Travel(world, villager, stack.Position, VillagerState.TidyingGround);
+        return true;
+    }
+
+    /// <summary>Standing on a heap: pick up an armful and take it to a store.</summary>
+    /// <remarks>
+    /// <b>One armful, like every other trip</b> (<c>carry_capacity</c>). That is what stops
+    /// tidying being a teleport with extra steps — the same rule that makes a household's
+    /// fetch a real journey (D32), applied to the mess.
+    /// </remarks>
+    private static void PickUpFromTheGround(SimWorld world, Villager villager)
+    {
+        var at = new GridPos(villager.ErrandX, villager.ErrandY);
+        villager.ErrandX = 0;
+        villager.ErrandY = 0;
+
+        int room = world.Config.CarryCapacity;
+        villager.CarriedFood += world.TakeFromGround(at, Goods.Food, room);
+        room -= villager.CarriedFood;
+        villager.CarriedLogs += world.TakeFromGround(at, Goods.Logs, room);
+        room -= villager.CarriedLogs;
+        villager.CarriedFirewood += world.TakeFromGround(at, Goods.Firewood, room);
+
+        if (!villager.IsCarrying)
+        {
+            // Somebody got here first. Not an error — reconsider next tick.
+            GoHome(world, villager);
+            return;
+        }
+
+        villager.State = VillagerState.HaulingToStore;
+        HaulOrSetDown(world, villager);
+    }
+
     private static bool TryHelpWithHarvest(SimWorld world, Villager villager)
     {
         if (!villager.CanWork)
@@ -1702,13 +1886,24 @@ public sealed class BehaviorSystem : ISimSystem
         {
             // The load goes into the building, and only then does it exist anywhere
             // the village can spend it. This is the moment goods stopped teleporting.
-            Stockpile store = StoreForTheLoad(world, villager).Store;
-            store.Add(Goods.Food, villager.CarriedFood);
-            store.Add(Goods.Logs, villager.CarriedLogs);
-            store.Add(Goods.Firewood, villager.CarriedFirewood);
-            villager.CarriedFood = 0;
-            villager.CarriedLogs = 0;
-            villager.CarriedFirewood = 0;
+            //
+            // ⭐ WHAT FITS GOES IN AND THE REMAINDER GOES DOWN (D96). Add returns what it
+            // actually took — its own remarks say so and say it must not be ignored — and
+            // this zeroed the arms regardless, so a load that arrived at a full store was
+            // destroyed. RaiseTheBuilding one screen up gets it right and says why:
+            // "never dropped, per the conservation rule".
+            if (StoreForTheLoad(world, villager) is StoreBuilding destination)
+            {
+                Stockpile store = destination.Store;
+                villager.CarriedFood -= store.Add(Goods.Food, villager.CarriedFood);
+                villager.CarriedLogs -= store.Add(Goods.Logs, villager.CarriedLogs);
+                villager.CarriedFirewood -= store.Add(Goods.Firewood, villager.CarriedFirewood);
+            }
+
+            if (villager.IsCarrying)
+            {
+                SetDownWhereTheyStand(world, villager);
+            }
 
             villager.State = VillagerState.TravelingHome;
             return;
@@ -1741,6 +1936,12 @@ public sealed class BehaviorSystem : ISimSystem
 
             villager.State = VillagerState.Clearing;
             villager.ActionTicksRemaining = world.Config.CutTicks;
+            return;
+        }
+
+        if (onArrival == VillagerState.TidyingGround)
+        {
+            PickUpFromTheGround(world, villager);
             return;
         }
 
@@ -1843,7 +2044,8 @@ public sealed class BehaviorSystem : ISimSystem
                 // up per season instead.
                 world.Log(LogLevel.Debug, "behavior",
                     $"Gathered {yield} food, bound for " +
-                    $"{(homeNeedsIt ? "home" : StoreForTheLoad(world, villager).Name)} — {world.Clock}.");
+                    $"{(homeNeedsIt ? "home" : StoreForTheLoad(world, villager)?.Name ?? "the ground")}" +
+                    $" — {world.Clock}.");
                 return;
 
             case VillagerState.Cutting:
@@ -1859,8 +2061,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // which is what makes them the village's rather than this family's.
                 villager.CarriedLogs += wood;
                 villager.State = VillagerState.HaulingToStore;
-                Travel(world, villager, StoreForTheLoad(world, villager).Position,
-                    VillagerState.HaulingToStore);
+                HaulOrSetDown(world, villager);
                 return;
 
             case VillagerState.Clearing:
@@ -1892,8 +2093,7 @@ public sealed class BehaviorSystem : ISimSystem
                     $"{villager.Name} cleared {cleared} for {taken} {goods} — {world.Clock}.");
 
                 villager.State = VillagerState.HaulingToStore;
-                Travel(world, villager, StoreForTheLoad(world, villager).Position,
-                    VillagerState.HaulingToStore);
+                HaulOrSetDown(world, villager);
                 return;
 
             case VillagerState.MakingFirewood:
