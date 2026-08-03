@@ -75,7 +75,17 @@ public sealed class MapGenerationTests
     }
 
     /// <summary>Seed 12345 on the village config. See <see cref="DrawOrderIsTheContract"/>.</summary>
-    private const ulong GoldenMapHash = 2208871881858546589UL;
+    // RE-TAKEN ONCE, DELIBERATELY (D91): the valley has stone and iron in it now, so its
+    // fingerprint changes. That is the golden working, not breaking.
+    //
+    // What it does NOT mean is that the draw order moved — the seams are APPENDED after
+    // every existing draw, and SeamsTests.TheSeamsWereAppendedToTheDrawOrder proves it by
+    // generating the same seed with the seam counts set to zero and asserting the founding
+    // site, the forage sites, the tree stands and the soil are all identical. Only the new
+    // tiles differ.
+    //
+    //   before the seams (D91): 2208871881858546589
+    private const ulong GoldenMapHash = 7476686338440514564UL;
 
     [Fact]
     public void NoTwoPlacesInTheValleyShareAName()

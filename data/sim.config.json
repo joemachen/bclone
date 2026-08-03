@@ -504,6 +504,35 @@
   // stands still stand the brush is an extra source rather than the only one.
   "logs_per_forest_tile": 12,
 
+  // Visible seams of stone and iron (D67, D84, D90). RULES, NOT
+  // COORDINATES: a modder controls how much ore a valley has and roughly
+  // where, never which tile.
+  //
+  // Seams rather than scatter, and never a percentage roll -- you can see
+  // a seam, so going after it is a decision rather than a lottery.
+  //
+  // STONE NEAR, IRON FAR, and that is design rather than scarcity for its
+  // own sake. Reaching the iron is something the player chooses to do, and
+  // a valley whose ore sits in the far woods plays differently from one
+  // where it is on the doorstep.
+  //
+  // Laid only over open grass -- never over forest, because taking trees
+  // out of the valley would be a balance change hiding inside a worldgen
+  // change, and the whole fuel economy is derived against reachable wood.
+  // What one tile of each seam holds. Less iron per tile than stone, and
+  // fewer iron seams -- together those are what make iron worth walking
+  // for rather than merely further away.
+  "stone_per_rock_tile": 12,
+  "iron_per_deposit_tile": 8,
+
+  "stone_seam_count": 4,
+  "stone_seam_ring_tiles": 14,
+  "stone_seam_radius_tiles": 2,
+
+  "iron_seam_count": 2,
+  "iron_seam_ring_tiles": 26,
+  "iron_seam_radius_tiles": 1,
+
   // The land the exiles arrive having already chosen to live on (D42).
   // A village founded with nothing painted could never build a house,
   // and the first thing the game asked of a player would be a decision

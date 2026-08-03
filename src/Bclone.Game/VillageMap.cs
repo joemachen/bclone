@@ -70,6 +70,17 @@ public partial class VillageMap : Control
     /// <summary>Generated woodland. Quieter than the tree stand that stands in it.</summary>
     private static readonly Color ForestColour = new("#2a3d2c");
 
+    /// <summary>A stone seam — pale and dry against the grass, so it reads as bare ground.</summary>
+    private static readonly Color RockColour = new("#6b6459");
+
+    /// <summary>An iron seam. Rusted, and warmer than the stone so the two never blur.</summary>
+    /// <remarks>
+    /// <b>Two seams a player must tell apart at a glance</b> (D67: you go after a seam
+    /// because you can see it), so they differ in hue rather than only in lightness —
+    /// which is also the one difference that survives being colour-blind.
+    /// </remarks>
+    private static readonly Color IronColour = new("#7a4a33");
+
     /// <summary>The woodcutter's hut — a workplace, not a stand of trees.</summary>
     private static readonly Color HutColour = new("#9a6b3f");
 
@@ -885,10 +896,23 @@ public partial class VillageMap : Control
 
                 Vector2 centre = ToScreen(tile);
                 var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-                DrawRect(rect, terrain == Terrain.Water ? WaterColour : ForestColour);
+                DrawRect(rect, ColourOf(terrain));
             }
         }
     }
+
+    /// <summary>What a kind of ground is drawn as.</summary>
+    /// <remarks>
+    /// Grass never reaches here — it is the background, skipped by the caller so the
+    /// common case draws nothing at all.
+    /// </remarks>
+    private static Color ColourOf(Terrain terrain) => terrain switch
+    {
+        Terrain.Water => WaterColour,
+        Terrain.Rock => RockColour,
+        Terrain.IronDeposit => IronColour,
+        _ => ForestColour,
+    };
 
     /// <summary>
     /// A line from where somebody lives to where they work.

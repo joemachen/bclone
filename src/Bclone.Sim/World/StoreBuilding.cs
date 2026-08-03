@@ -133,7 +133,8 @@ public sealed class StoreBuilding
         // logs and firewood on exactly that reading (D32). The market does not take
         // them: it exists to be the short trip for whatever a HOUSEHOLD is short of
         // (D14, D78), and no household consumes either yet.
-        StoreKind.Shed => goods is Goods.Logs or Goods.Firewood or Goods.Stone or Goods.Tools,
+        StoreKind.Shed => goods is Goods.Logs or Goods.Firewood or Goods.Stone or Goods.Tools
+            or Goods.Iron,
         StoreKind.Market => goods is Goods.Food or Goods.Firewood,
 
         // Everything, because the founders' load was never sorted — it is what they could
@@ -178,4 +179,7 @@ public enum Goods
     /// What the founders brought and nobody can yet replace (D17, D64).
     /// </summary>
     Tools = 4,
+
+    /// <summary>Ore, cleared from a visible seam or mined (D84, D90).</summary>
+    Iron = 5,
 }

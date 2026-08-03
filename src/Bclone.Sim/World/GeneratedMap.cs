@@ -24,6 +24,27 @@ public enum Terrain
 
     /// <summary>Trees. Where a tree stand can go.</summary>
     Forest = 2,
+
+    /// <summary>
+    /// Stone lying on the ground — a seam you can see and clear (D84, D90).
+    /// </summary>
+    /// <remarks>
+    /// <b>A deposit, so it is finite</b>: a laborer clears it and the ground is grass
+    /// underneath. That is the opposite of a quarry, which is a building the player sites
+    /// and which never runs out — the same good from two sources, and the difference is
+    /// found-versus-placed rather than surface-versus-subsurface.
+    /// </remarks>
+    Rock = 3,
+
+    /// <summary>Iron in the ground, visible and finite — the far half of the pair.</summary>
+    /// <remarks>
+    /// <b>Placed further out than stone on purpose.</b> Reaching it is a decision rather
+    /// than a stage you pass: a valley whose iron is in the far woods plays differently
+    /// from one where it is on the doorstep, which is the argument D67 makes for visible
+    /// seams over a percentage roll — <em>"you can see the seam, so going after it is a
+    /// decision"</em>.
+    /// </remarks>
+    IronDeposit = 4,
 }
 
 /// <summary>What a kind of ground does to somebody trying to cross it.</summary>
@@ -44,6 +65,20 @@ public static class TerrainRules
     /// </para>
     /// </remarks>
     public static bool IsPassable(Terrain terrain) => terrain != Terrain.Water;
+
+    /// <summary>What clearing one tile of this ground yields, or null if nothing.</summary>
+    /// <remarks>
+    /// <b>One question, answered in one place</b>, so a new harvestable kind is a row here
+    /// rather than a fifth site to remember — which is the seam D76 spent five instalments
+    /// learning to recognise. It is deliberately the terrain that knows, not the harvester.
+    /// </remarks>
+    public static Goods? Yields(Terrain terrain) => terrain switch
+    {
+        Terrain.Forest => Goods.Logs,
+        Terrain.Rock => Goods.Stone,
+        Terrain.IronDeposit => Goods.Iron,
+        _ => null,
+    };
 }
 
 /// <summary>

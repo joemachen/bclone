@@ -494,7 +494,8 @@ public sealed class SimWorld
     /// deliberately the same shape as <c>TerrainRules.IsPassable</c> — the seam D76 spent
     /// five instalments learning to recognise.
     /// </remarks>
-    public bool HasSomethingToHarvest(GridPos tile) => Map.TerrainAt(tile) == Terrain.Forest;
+    public bool HasSomethingToHarvest(GridPos tile) =>
+        TerrainRules.Yields(Map.TerrainAt(tile)) is not null;
 
     /// <summary>
     /// The nearest tile the village has asked to be cleared, or null if there are none.
@@ -566,14 +567,27 @@ public sealed class SimWorld
     /// </remarks>
     public (Goods Goods, int Amount) Harvest(GridPos tile)
     {
-        if (!HasSomethingToHarvest(tile))
+        Goods? yields = TerrainRules.Yields(Map.TerrainAt(tile));
+        if (yields is null)
         {
             return (Goods.Logs, 0);
         }
 
         SetTerrain(tile, Terrain.Grass);
         Zones.SetHarvest(tile, false);
-        return (Goods.Logs, Config.LogsPerForestTile);
+
+        // One number per kind of ground, and the terrain is what says which — a new
+        // harvestable kind is a row in TerrainRules.Yields and a key in config, not a
+        // fifth place to remember.
+        int amount = yields.Value switch
+        {
+            Goods.Logs => Config.LogsPerForestTile,
+            Goods.Stone => Config.StonePerRockTile,
+            Goods.Iron => Config.IronPerDepositTile,
+            _ => 0,
+        };
+
+        return (yields.Value, amount);
     }
 
     /// <summary>Place names read "a forester's hut"; sometimes one has to start a sentence.</summary>

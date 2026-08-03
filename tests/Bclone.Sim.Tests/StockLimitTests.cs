@@ -60,8 +60,15 @@ public sealed class StockLimitTests
     //
     // The refactor that preceded it — Stockpile becoming an indexed array — moved NOTHING,
     // which is what made it safe to do this on top.
-    private const ulong FixtureFiftyYearHash = 4673658241522176988UL;
-    private const ulong ShippedFiftyYearHash = 12610424914054256081UL;
+    // D91 MOVED BOTH AGAIN, and for the plainest reason yet: the valley has stone and
+    // iron in it now, terrain is in the state hash, so every village's fingerprint
+    // changes on the first tick. Nothing about behaviour moved — nothing yet mines,
+    // clears or spends either, and the seams are laid only over open grass so not one
+    // tree or tile of water differs (SeamsTests.SeamsAreLaidOnlyOverOpenGround).
+    //
+    //   before the seams (D91): fixture 4673658241522176988, shipped 12610424914054256081
+    private const ulong FixtureFiftyYearHash = 12290013349185536345UL;
+    private const ulong ShippedFiftyYearHash = 12199105553016889764UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

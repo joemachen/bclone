@@ -121,6 +121,31 @@ public static class MapGenerator
             soil[i] = (byte)rng.NextInt(config.SoilQualityMin, config.SoilQualityMax + 1);
         }
 
+        // ---- 6. Stone and iron --------------------------------------
+        // ⭐ APPENDED AFTER EVERY EXISTING DRAW, AND THAT IS THE WHOLE OF THE CARE HERE.
+        // Draw order is the contract (§1 of this file): inserting these anywhere earlier
+        // would shift every subsequent value, so the river, the stands, the forage sites,
+        // the founding site and the soil would all move for every seed ever written down.
+        // Added at the end, all of those are byte-identical and only the new tiles differ.
+        //
+        // SEAMS, NOT SCATTER — the same argument the forest stands are built on, and D67's
+        // reason for refusing a percentage roll: you can see a seam, so going after it is a
+        // decision rather than a lottery. Scattered ore would be texture.
+        //
+        // STONE NEAR, IRON FAR. That is the design rather than flavour: reaching the iron
+        // is a thing the player chooses to do, and a valley whose ore sits in the far woods
+        // plays differently from one where it is on the doorstep (§2.5's argument for
+        // seeded maps).
+        PaintSeams(
+            config, rng, terrain, Terrain.Rock,
+            config.StoneSeamCount, config.StoneSeamRingTiles, config.StoneSeamRadiusTiles,
+            width, height, minX, minY);
+
+        PaintSeams(
+            config, rng, terrain, Terrain.IronDeposit,
+            config.IronSeamCount, config.IronSeamRingTiles, config.IronSeamRadiusTiles,
+            width, height, minX, minY);
+
         return new GeneratedMap(
             width, height, minX, minY, terrain, soil, forageSites, standCentres, founding);
     }
@@ -253,6 +278,68 @@ public static class MapGenerator
             // Wander: -1, 0 or +1 each column.
             y += rng.NextInt(-1, 2);
             y = Math.Clamp(y, 1, height - config.RiverWidthTiles - 1);
+        }
+    }
+
+    /// <summary>
+    /// Lay seams of one kind of deposit around a ring, clumped rather than scattered.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Only ever over open grass.</b> Not water, for the obvious reason, and <b>not
+    /// forest</b> — because overwriting trees would quietly take timber out of the valley
+    /// and the whole food-and-fuel economy is derived against how much wood a village can
+    /// reach. A seam that costs the village a stand is a balance change hiding inside a
+    /// worldgen change.
+    /// </para>
+    /// <para>
+    /// <b>The ring-and-jitter shape is copied from the forage sites deliberately</b>
+    /// (D24): drawing angles at random clusters things, and a valley whose four stone
+    /// seams all landed in one corner is a valley where the resource may as well not
+    /// exist for half the village.
+    /// </para>
+    /// </remarks>
+    private static void PaintSeams(
+        SimConfig config,
+        DeterministicRandom rng,
+        Terrain[] terrain,
+        Terrain kind,
+        int count,
+        int ringTiles,
+        int radius,
+        int width,
+        int height,
+        int minX,
+        int minY)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            GridPos centre = ClampInside(
+                DrawRingPosition(rng, ringTiles, config.SiteJitterTiles, i, count), config);
+
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    if (Math.Abs(dx) + Math.Abs(dy) > radius)
+                    {
+                        continue;
+                    }
+
+                    int x = centre.X + dx - minX;
+                    int row = centre.Y + dy - minY;
+                    if (x < 0 || x >= width || row < 0 || row >= height)
+                    {
+                        continue;
+                    }
+
+                    int index = (row * width) + x;
+                    if (terrain[index] == Terrain.Grass)
+                    {
+                        terrain[index] = kind;
+                    }
+                }
+            }
         }
     }
 

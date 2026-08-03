@@ -485,6 +485,61 @@ public sealed record SimConfig
     [JsonPropertyName("logs_per_forest_tile")]
     public int LogsPerForestTile { get; init; } = 12;
 
+    // ---------------------------------------------------------------
+    //  Visible seams (D67, D84, D90)
+    // ---------------------------------------------------------------
+
+    /// <summary>Stone a laborer gets from clearing one seam tile (D90).</summary>
+    /// <remarks>
+    /// A deposit, so this is what is in one tile and taking it leaves grass — the same
+    /// shape as <see cref="LogsPerForestTile"/>, and the opposite of a quarry.
+    /// </remarks>
+    [JsonPropertyName("stone_per_rock_tile")]
+    public int StonePerRockTile { get; init; } = 12;
+
+    /// <summary>Iron a laborer gets from clearing one seam tile (D90).</summary>
+    /// <remarks>
+    /// <b>Less than stone per tile, and there is less of it in the valley</b> — the two
+    /// together are what make iron worth walking for rather than merely further away.
+    /// </remarks>
+    [JsonPropertyName("iron_per_deposit_tile")]
+    public int IronPerDepositTile { get; init; } = 8;
+
+    /// <summary>How many stone seams the generator lays down.</summary>
+    /// <remarks>
+    /// <b>Rules, not coordinates</b> (D18): a modder controls how much ore a valley has and
+    /// roughly where, never which tile. Stone is the common one and sits near the village —
+    /// it is what a building past a log hut costs (D63).
+    /// </remarks>
+    [JsonPropertyName("stone_seam_count")]
+    public int StoneSeamCount { get; init; } = 4;
+
+    /// <summary>How far out the stone seams ring the origin.</summary>
+    [JsonPropertyName("stone_seam_ring_tiles")]
+    public int StoneSeamRingTiles { get; init; } = 14;
+
+    /// <summary>How wide one stone seam is.</summary>
+    [JsonPropertyName("stone_seam_radius_tiles")]
+    public int StoneSeamRadiusTiles { get; init; } = 2;
+
+    /// <summary>How many iron seams the generator lays down.</summary>
+    /// <remarks>
+    /// <b>Fewer and further out than stone, and that is the design rather than scarcity for
+    /// its own sake.</b> Reaching the iron is a decision the player makes — a valley whose ore
+    /// is in the far woods plays differently from one where it is on the doorstep, which is
+    /// the argument D67 makes for visible seams over a percentage roll.
+    /// </remarks>
+    [JsonPropertyName("iron_seam_count")]
+    public int IronSeamCount { get; init; } = 2;
+
+    /// <summary>How far out the iron seams ring the origin.</summary>
+    [JsonPropertyName("iron_seam_ring_tiles")]
+    public int IronSeamRingTiles { get; init; } = 26;
+
+    /// <summary>How wide one iron seam is.</summary>
+    [JsonPropertyName("iron_seam_radius_tiles")]
+    public int IronSeamRadiusTiles { get; init; } = 1;
+
     /// <summary>How much land the exiles arrive having already chosen to live on (D42).</summary>
     /// <remarks>
     /// A village founded with no residential zone could never build a house, so the
