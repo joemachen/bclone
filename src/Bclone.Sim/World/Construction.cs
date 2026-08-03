@@ -49,11 +49,23 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
             BuildingKind.Shed => new BuildingRecipe(config.ShedLogs, config.ShedWorkTicks),
             BuildingKind.Market => new BuildingRecipe(config.MarketLogs, config.MarketWorkTicks),
 
-            // NO MATERIALS AT ALL, and that is the design rather than a shortcut: a village
-            // with nowhere to put things cannot begin, and asking it to build a store out of
-            // timber it has nowhere to stack is a circle. Work is still owed, so a pile is
-            // somewhere somebody cleared rather than somewhere that appeared.
-            BuildingKind.Pile => new BuildingRecipe(0, config.PileWorkTicks),
+            // NOTHING AT ALL — no materials and no work (D96). A village with nowhere to put
+            // things cannot begin, and asking it to build a store out of timber it has
+            // nowhere to stack is a circle.
+            //
+            // ⭐ The work went because the cost moved somewhere better rather than because it
+            // was abolished: a pile may only be placed on ground that is already clear, so
+            // ITS COST IS THE CLEARING. `pile_work_ticks` was eight ticks of levelling bare
+            // earth, which was strange on its own terms; clearing a wood to make room for the
+            // store is a decision with a visible price, paid in the currency the rest of the
+            // game uses. A pile is therefore instant, and `SimWorld.Mark` never makes a
+            // construction site for one — which is also what closes D95's window, where the
+            // cart refused logs and the pile that would take them was not standing yet.
+            //
+            // The recipe survives at zero because `Demolish` reads one to work out a refund,
+            // and zero is the right answer there too: you get nothing back from a heap you
+            // never paid for.
+            BuildingKind.Pile => new BuildingRecipe(0, 0),
             _ => new BuildingRecipe(config.HutLogs, config.HutWorkTicks),
         };
     }

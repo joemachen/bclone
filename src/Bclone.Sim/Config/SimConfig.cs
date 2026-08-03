@@ -410,16 +410,15 @@ public sealed record SimConfig
     [JsonPropertyName("hut_work_ticks")]
     public int HutWorkTicks { get; init; } = 40;
 
-    /// <summary>Ticks of work clearing a storage pile takes. It costs no materials (D76).</summary>
-    /// <remarks>
-    /// <b>Small, but not zero.</b> A pile is somewhere the village cleared and levelled, not
-    /// somewhere that appeared when the player clicked — and the work is what makes placing
-    /// one a decision with a cost rather than a free action to spam. It is the cheapest
-    /// thing in the game on purpose: it must be affordable on the first day, by four people
-    /// with nothing.
-    /// </remarks>
-    [JsonPropertyName("pile_work_ticks")]
-    public int PileWorkTicks { get; init; } = 8;
+    // `pile_work_ticks` WAS HERE AND IS GONE (D96, Joe). It said "small, but not zero — the
+    // work is what makes placing a pile a decision with a cost", and the cost turned out to
+    // belong somewhere better: a pile may only go on ground that is already clear, so ITS
+    // COST IS THE CLEARING. That is paid in the same currency the rest of the game uses and
+    // it ties the harvest brush to placement, where an abstract eight ticks of levelling bare
+    // earth tied it to nothing.
+    //
+    // Deleted rather than set to zero, on Joe's own reasoning: a number that is always zero
+    // is a lie waiting to be found.
 
     /// <summary>
     /// How empty a household's stores get before somebody drops everything to refill them

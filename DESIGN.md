@@ -428,6 +428,12 @@ the transition's first step is provably a no-op, which is what makes the next on
   at the doorstep, **17,451 food over the goldens' own fifty years** — and closing it makes the
   village a quarter bigger on unchanged production. Both goldens re-taken. 481 tests green.
 
+- **The pile is instant, and the clearing is what it costs** ✅ (D96 step 2, D98). Marked on
+  clear ground it stands the same tick — no site, no builder, no window. Marked on woodland it
+  is refused with the tool named. **`pile_work_ticks` is deleted**, and a **free-timber press
+  was found on the way**: pulling down a pile or the cart refunded half a market's logs out of
+  a building nobody paid for.
+
 **Next — the opening Joe described, in the one order that does not break it (D90):**
 
 1. ~~**`Terrain` gains `Rock` and `IronDeposit`**~~ ✅ **done (D91)** — visible seams, appended
@@ -549,6 +555,13 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D98 · 2026-08-03 · The pile is instant, and its cost moved from an invented number to the ground it stands on.** D96's second step. Joe: *"if there are resources, they must first be cleared and then the stockpile can be instant."*
+  - **`pile_work_ticks` is deleted rather than zeroed**, on Joe's own reasoning — a number that is always zero is a lie waiting to be found. It was *"small, but not zero: the work is what makes placing a pile a decision with a cost"*, and that instinct was right about the cost and wrong about where it lived. **Eight ticks of levelling bare earth tied the decision to nothing.** Clearing a wood to make room for the store ties it to the map, to the harvest brush, and to a price the player can see before they pay it.
+  - **⭐ So `CanBuildAt` refuses a pile on ground that still has something on it, and the refusal names the tool** — *"a pile is cleared ground, and that is woodland. Clear it with the harvest brush and the pile goes straight up."* Both halves, because a refusal the player cannot act on is worse than none (§1.1, and D92's rule about a brush that silently does nothing).
+  - **Only the pile takes the rule**, deliberately. Whether a granary may be marked in a forest is a separate question and this does not open it; the pile is the building whose *entire* cost the clearing becomes.
+  - **And a pile is no longer a construction site at all**, which is the half that matters for what comes next: it costs nothing and owes no work, so a site for one is a builder walking to a footprint to do nothing. **D95 built the cart's refusal of logs on top of a pile that was still a site**, and the window between marking one and it standing left a forester with nowhere on earth to put a load — **0 homes, nothing built**. This closes that window rather than narrowing it.
+  - **⚠️ A free-timber press, found while reading `Demolish` to make the change.** The pile and the cart both fell into a `_ => BuildingKind.Market` arm, so pulling down a heap of cleared ground — or the wagon the founders arrived in — **refunded half a market's logs, seventeen, out of a building nobody paid for.** The two buildings the player did not pay for now return nothing. Guarded, and guarded non-vacuously: the cart case needs a shed standing or `Demolish` has nowhere to put a refund and the test passes on a village where the bug cannot fire.
+  - **One place raises a store now**, because there are two ways one can arrive — finished by a builder, or laid out instantly. Two copies of the kind-to-capacity mapping is how a store kind comes to have the wrong size in one of them; `StoreKind` has taught that lesson five times (D76).
 - **D97 · 2026-08-03 · Goods can be set down on the ground — and building it found a seventeen-thousand-food leak that had been there all along.** D96's first step, `specs/goods-on-the-ground.md`. The mechanism is Joe's design implemented as specified; **the finding is what this entry is for.**
   - **⭐ `ArriveAt` was destroying every load a full store refused, and had been for the whole project.** `Stockpile.Add` returns what actually fitted — its own remarks say the return value *"is the whole point and it must not be ignored"* — and that call site ignored it and zeroed the villager's arms regardless. `RaiseTheBuilding` one file over gets it right and states the rule: *"never dropped, per the conservation rule."*
   - **Measured over the goldens' own fifty years: 17,451 food on the shipped config, 22,317 on the fixture, all of it at the granary's own doorstep.** A forager whose larder was topped up while they walked hauls the surplus to the granary, the granary is full, the load evaporates, repeat for fifty years. **Nothing ever read as wrong because the leak only made totals fall** — the direction that is hardest to notice, which is exactly what `Stockpile.Add` warned about.

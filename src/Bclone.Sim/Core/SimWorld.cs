@@ -981,6 +981,25 @@ public sealed class SimWorld
             return PlacementVerdict.No("Something already stands there.");
         }
 
+        // ⭐ A PILE IS CLEARED GROUND, SO THE GROUND HAS TO BE CLEAR (D96, Joe): "if there
+        // are resources, they must first be cleared and then the stockpile can be instant."
+        //
+        // This is the whole of what a pile costs now. `pile_work_ticks` is gone, and the
+        // price it was standing in for is paid here instead — in the harvest brush, on the
+        // map, in the currency the rest of the game uses. Siting a store in a wood is a
+        // decision you can see the cost of.
+        //
+        // ONLY THE PILE, deliberately. Whether a granary may be marked in a forest is a
+        // separate question and is not opened here; the pile is the building whose entire
+        // cost this becomes.
+        if (kind == BuildingKind.Pile
+            && TerrainRules.Yields(Map.TerrainAt(position)) is Goods standing)
+        {
+            return PlacementVerdict.No(
+                $"A pile is cleared ground, and that is {Describe(standing)}. Clear it with "
+                + "the harvest brush and the pile goes straight up.");
+        }
+
         // Reachable from where the people are. A building on the far bank is not a long
         // walk, it is no walk at all (D40), and it would look perfectly fine on the map.
         GridPos village = FirstHomeOrFoundingSite();
@@ -999,7 +1018,6 @@ public sealed class SimWorld
                 "People will spend their days walking to it.");
         }
 
-        _ = kind;
         return PlacementVerdict.Fine;
     }
 
@@ -1017,6 +1035,20 @@ public sealed class SimWorld
 
         BuildingRecipe recipe = BuildingRecipe.For(kind, Config);
         string name = NameFor(kind);
+
+        // ⭐ A PILE IS NOT A CONSTRUCTION SITE, AND THAT IS THE POINT (D96). It costs nothing
+        // and owes no work, so a site for one would be a builder walking over to a footprint
+        // to do nothing — and worse than pointless: D95 built the cart's refusal of logs on
+        // top of a pile that WAS a site, and the window between marking one and it standing
+        // left a forester with nowhere on earth to put a load. Nothing was built at all,
+        // 0 homes. Raising it here closes that window rather than narrowing it.
+        if (kind == BuildingKind.Pile)
+        {
+            RaiseStore(kind, position, name);
+            Narrate($"{Capitalised(name)} was laid out on cleared ground. " +
+                $"{Clock.SeasonAndYear()}.");
+            return verdict;
+        }
 
         Workplaces.Add(new Workplace
         {
@@ -1049,11 +1081,19 @@ public sealed class SimWorld
     {
         ArgumentNullException.ThrowIfNull(building);
 
+        // ⚠️ THE PILE AND THE CART REFUNDED HALF A MARKET, and that was a free-timber press:
+        // both fell into a `_ => Market` arm, so pulling down a heap of cleared ground — or
+        // the wagon the founders turned up in — paid back seventeen logs out of a building
+        // that cost nothing. Found while reading this to make the pile instant (D96).
+        //
+        // The two buildings the player did not pay for return nothing, which is the honest
+        // answer and the one the recipes already give: a pile's is (0, 0).
         BuildingKind kind = building.Kind switch
         {
             StoreKind.Granary => BuildingKind.Granary,
             StoreKind.Shed => BuildingKind.Shed,
-            _ => BuildingKind.Market,
+            StoreKind.Market => BuildingKind.Market,
+            _ => BuildingKind.Pile,
         };
 
         int held = building.Store.Held;
@@ -1122,30 +1162,7 @@ public sealed class SimWorld
                 break;
 
             default:
-                StoreKind kind = plan.Kind switch
-                {
-                    BuildingKind.Granary => StoreKind.Granary,
-                    BuildingKind.Shed => StoreKind.Shed,
-                    BuildingKind.Pile => StoreKind.Pile,
-                    _ => StoreKind.Market,
-                };
-
-                int capacity = plan.Kind switch
-                {
-                    BuildingKind.Granary => VillageEconomy.GranaryCapacity(Config),
-                    BuildingKind.Shed => VillageEconomy.ShedCapacity(Config),
-                    BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
-                    _ => VillageEconomy.MarketCapacity(Config),
-                };
-
-                StoreBuildings.Add(new StoreBuilding
-                {
-                    Id = NextStoreId(),
-                    Kind = kind,
-                    Name = plan.Name,
-                    Position = site.Position,
-                    Store = new Stockpile { Capacity = capacity },
-                });
+                RaiseStore(plan.Kind, site.Position, plan.Name);
 
                 // A market is a place to work as well as a place to keep things (D14).
                 if (plan.Kind == BuildingKind.Market && Config.MarketCapacity > 0)
@@ -1167,6 +1184,45 @@ public sealed class SimWorld
         RetireWorkplace(site);
 
         Narrate($"{plan.Name} was finished. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>Put a store building into the world, with the capacity its kind derives.</summary>
+    /// <remarks>
+    /// <b>One place, because there are two ways a store can arrive now</b> — finished by a
+    /// builder, or laid out instantly because it is a pile (D96). Two copies of the
+    /// kind-to-capacity mapping is exactly how a store kind comes to have the wrong size in
+    /// one of them and nobody notices for a phase; <c>StoreKind</c> has already taught this
+    /// lesson five times (D76).
+    /// </remarks>
+    private StoreBuilding RaiseStore(BuildingKind kind, GridPos position, string name)
+    {
+        StoreKind storeKind = kind switch
+        {
+            BuildingKind.Granary => StoreKind.Granary,
+            BuildingKind.Shed => StoreKind.Shed,
+            BuildingKind.Pile => StoreKind.Pile,
+            _ => StoreKind.Market,
+        };
+
+        int capacity = kind switch
+        {
+            BuildingKind.Granary => VillageEconomy.GranaryCapacity(Config),
+            BuildingKind.Shed => VillageEconomy.ShedCapacity(Config),
+            BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
+            _ => VillageEconomy.MarketCapacity(Config),
+        };
+
+        var building = new StoreBuilding
+        {
+            Id = NextStoreId(),
+            Kind = storeKind,
+            Name = name,
+            Position = position,
+            Store = new Stockpile { Capacity = capacity },
+        };
+
+        StoreBuildings.Add(building);
+        return building;
     }
 
     /// <summary>
