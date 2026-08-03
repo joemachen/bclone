@@ -93,6 +93,15 @@ public partial class VillageMap : Control
     /// <summary>Land the player has painted for housing (D42). Faint on purpose.</summary>
     private static readonly Color ResidentialColour = new("#b98a52", 0.14f);
 
+    /// <summary>Ground the village has been told to clear (D87).</summary>
+    /// <remarks>
+    /// <b>Warmer and stronger than the residential wash</b>, because the two overlap on the
+    /// map and mean opposite things — one says *you may build here*, the other says *this is
+    /// coming down*. Still translucent: it is an instruction about the ground, not a new kind
+    /// of ground, and a marked wood must still read as a wood.
+    /// </remarks>
+    private static readonly Color HarvestColour = new("#d8892f", 0.26f);
+
     private static readonly Color GhostFine = new("#7fd48a");
     private static readonly Color GhostWarned = new("#e0b755");
     private static readonly Color GhostRefused = new("#d4685f");
@@ -301,10 +310,32 @@ public partial class VillageMap : Control
     /// </remarks>
     private const int BrushRadius = 2;
 
+    /// <summary>
+    /// Which harvest mode the brush is set to, or null when it is painting homes.
+    /// </summary>
+    /// <remarks>
+    /// <b>Modes of one tool</b> (D92, Joe): the mode decides which tiles take the paint and
+    /// is then forgotten. So the view holds the setting and the sim holds one layer — there
+    /// is no per-material state anywhere, which is what made the sim side free.
+    /// </remarks>
+    private HarvestBrush? _harvestMode;
+
     /// <summary>Start or stop painting where the village may live (D42).</summary>
     public void BeginPainting(int direction)
     {
         _brush = direction;
+        _harvestMode = null;
+        _building = null;
+        _demolishing = false;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Start or stop marking what the village means to take (D87, D92).</summary>
+    public void BeginHarvesting(HarvestBrush mode, int direction)
+    {
+        _brush = direction;
+        _harvestMode = mode;
         _building = null;
         _demolishing = false;
         Announce();
@@ -440,6 +471,7 @@ public partial class VillageMap : Control
     private void PaintAround(GridPos centre)
     {
         string? warning = null;
+        string? refused = null;
 
         for (int dy = -BrushRadius; dy <= BrushRadius; dy++)
         {
@@ -451,6 +483,30 @@ public partial class VillageMap : Control
                 }
 
                 var tile = new GridPos(centre.X + dx, centre.Y + dy);
+
+                if (_harvestMode is not null)
+                {
+                    if (_brush < 0)
+                    {
+                        _world!.EraseHarvest(tile);
+                        continue;
+                    }
+
+                    // Refusals are silent per tile and counted for the stroke: a drag
+                    // across mixed ground is MEANT to skip what the mode does not take,
+                    // and forty sentences would bury the one that matters (D42, D92).
+                    PlacementVerdict marked = _world!.PaintHarvest(tile, _harvestMode.Value);
+                    if (!marked.Allowed)
+                    {
+                        refused = marked.Reason;
+                    }
+                    else if (marked.HasWarning)
+                    {
+                        warning = marked.Warning;
+                    }
+
+                    continue;
+                }
 
                 if (_brush < 0)
                 {
@@ -468,9 +524,16 @@ public partial class VillageMap : Control
 
         // One warning for the stroke, not one per tile — which is the entire reason
         // zoning was a better answer than placing houses one at a time (D42).
+        // A warning outranks a refusal: "you painted more than your hands can keep" is
+        // something to act on, where "some of that was the wrong kind of ground" is the
+        // brush doing exactly what the mode asked of it.
         if (warning is not null)
         {
             PlacementMessageChanged?.Invoke(warning);
+        }
+        else if (refused is not null)
+        {
+            PlacementMessageChanged?.Invoke(refused);
         }
     }
 
@@ -858,6 +921,25 @@ public partial class VillageMap : Control
                 Vector2 centre = ToScreen(tile);
                 var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
                 DrawRect(rect, ResidentialColour);
+            }
+        }
+
+        // What the village has been told to take (D87). Drawn over the terrain rather
+        // than replacing it, so a marked wood still reads as a wood — the paint is an
+        // instruction about the ground, not a new kind of ground.
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (!zones.IsHarvest(tile))
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, HarvestColour);
             }
         }
     }

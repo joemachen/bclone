@@ -1008,6 +1008,7 @@ public partial class Main : Control
         controls.AddChild(recentre);
 
         body.AddChild(BuildBuildMenu());
+        body.AddChild(BuildHarvestMenu());
         body.AddChild(BuildStockLimitMenu());
 
         // The refusal or the warning, in the words the sim already produced — on its own
@@ -1286,6 +1287,50 @@ public partial class Main : Control
         Goods.Firewood => world.FirewoodInSheds(),
         _ => 0,
     };
+
+    /// <summary>
+    /// What the village should take off the map — modes of one tool (D87, D92).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Its own row, and that is not cosmetic.</b> Six more buttons on the build row
+    /// pushed it past the window and clipped "Market", "Woodcutter" and "Demolish" off the
+    /// left edge — buttons that exist and cannot be pressed, which is D55's finding
+    /// arriving again from the other direction. Caught by taking a screenshot, which is the
+    /// only verification the view has (D11).
+    /// </para>
+    /// <para>
+    /// Ordered the way a player reaches for them: trees are the opening's timber, stone and
+    /// iron are what a building past a log hut will cost, and <em>All</em> is the
+    /// clear-this-area brush D67 asked for.
+    /// </para>
+    /// </remarks>
+    private HBoxContainer BuildHarvestMenu()
+    {
+        var row = new HBoxContainer();
+        row.AddChild(Muted("Harvest:"));
+
+        foreach ((string Label, HarvestBrush Mode) entry in new[]
+        {
+            ("Trees", HarvestBrush.Trees),
+            ("Stone", HarvestBrush.Stone),
+            ("Iron", HarvestBrush.Iron),
+            ("All", HarvestBrush.Everything),
+        })
+        {
+            HarvestBrush captured = entry.Mode;
+            var button = new Button { Text = entry.Label };
+            button.Pressed += () => _map.BeginHarvesting(captured, 1);
+            row.AddChild(button);
+        }
+
+        var unmark = new Button { Text = "Unmark" };
+        unmark.Pressed += () => _map.BeginHarvesting(HarvestBrush.Everything, -1);
+        row.AddChild(unmark);
+
+        row.AddChild(Muted("— painted ground is felled or dug by whoever is spare"));
+        return row;
+    }
 
     private HBoxContainer BuildBuildMenu()
     {
