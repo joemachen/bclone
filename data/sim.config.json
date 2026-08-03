@@ -574,7 +574,7 @@
   // founders brought them; a workshop to replace them is D17's, still parked.
   "cart_capacity": 1650,
   "cart_food": 1200,
-  "cart_logs": 30,
+  "cart_logs": 0,
   "cart_tools": 20,
 
   // Less than everything, deliberately. Demolition is how a player
