@@ -427,9 +427,12 @@ the transition's first step is provably a no-op, which is what makes the next on
 2. ~~**A harvest brush per material, plus an all-brush**~~ ✅ **done (D92)** — as *modes of one
    tool*, Joe's call: the mode filters which tiles take the paint and is then forgotten, so
    nothing new is stored or hashed.
-3. **Harvest delivers to the construction site**, not to a store: fell a painted tree, carry
-   the logs *to the site*, go back for stone, and build only when it is all on the ground.
-   **This is the hauling D66 measured as non-existent and predicted would arrive here.**
+3. **Laborers carry materials to the site; builders only build** (D93, specced not built).
+   Painted ground → laborer clears it → nearest store → **laborer** fetches → site → builder
+   builds. **The store stays in the middle**, so a village whose painted ground runs out
+   mid-build is not stranded. **Builders stop fetching**, which is what makes a builder's hut
+   mean anything later, and D43's rule survives — somebody still walks every log to every
+   site. **Probe it before building it:** how often is a site waiting with no laborer free?
 4. **Only then does `cart_logs` go to zero** and the cart stop accepting logs. **Doing this
    first would leave a founding that cannot build anything at all** — the 30 logs exist
    because of D72, and removing them before the map-to-site flow exists re-opens that bug.
@@ -517,6 +520,13 @@ village wants one.
   - **All of it, not the fields near the change.** A flow field spans the valley, so one tile becoming impassable can lengthen a route starting nowhere near it — and working out which fields are affected is the same Dijkstra as rebuilding them.
   - **`Terrain.Water` stopped being named at call sites.** It appeared at two, and this wanted a third; `TerrainRules.IsPassable` is the question instead. **That is D76's seam recognised before it ran to five instalments** rather than after.
   - **Deliberately nothing player-facing**, and it ships alone because it is the one part of C3 no open question touches — D84 blocks the terrain kinds and §5.1 of its spec blocks the brush. 408 green, both goldens unmoved.
+- **D93 · 2026-08-02 · ⚠️ SPECCED, NOT BUILT. Laborers carry materials to the site; builders only build.** Step 3 of D90, and Joe's answer takes the middle of the two shapes I offered and **corrects the actor in both**: *"a laborer clears painted ground into the nearest store as it does today, and LABORERS (not builders) fetch from the store and transport to the building site."*
+  - **The chain, in full:** painted ground → laborer clears it → **nearest store** → laborer fetches → **construction site** → builder builds. The store stays in the middle, so a village whose painted ground runs out mid-build is not stranded — which is what the pure map-to-site version risked, and it is the cosy half of D88 rather than a compromise.
+  - **⭐ Builders stop fetching, and that is the load-bearing half.** `WorkTheSite` has them fetch their own materials today, and D43's reason was *"making them fetch it is what stops construction being a purchase."* **That rule survives intact** — somebody still walks every log to every site — it is simply a different somebody. What changes is that a builder at a site is *building*, which is what makes a builder's hut (D64) mean anything later.
+  - **This is the second of D66's two proposed errands, arriving exactly where it predicted.** That probe measured *"a construction site is short of materials on 0.0% of ticks"* and cut the work, noting the reason: builders fetch their own. Remove that and the errand exists.
+  - **Priority, derived from D90's own wording — *"harvest the painted as needed during the building construction"*: deliver before clearing.** If the store holds what a site is short of, carry it; only if it does not does a spare hand go and make some. Clearing is speculative and delivery is not, and that ordering is what makes a painted area a *licence* rather than a standing order.
+  - **⚠️ The risk to measure first, and it is not small:** if nothing is ever short of hands, a village where every adult holds a job never frees a laborer, and **nothing would be delivered and nothing would be built**. Today that cannot happen because the builder fetches for themselves. So the first thing this slice needs is a probe: *how often is a construction site waiting on a delivery with no laborer free?* If the answer is "often", the fix is the quota funding fewer builders and more idle hands, not a rule bolted onto the errand.
+  - **Reuse rather than invent:** `VillagerState.FetchingMaterials` already exists with `ErrandX/ErrandY` for exactly this leg, and `ConstructionSite` already tracks what has been delivered.
 - **D92 · 2026-08-02 · The harvest brush has modes, and a mode is a filter rather than a layer.** Step 2 of D90. Joe, choosing between the two shapes I put up: *"you pick trees or stone or all and drag."*
   - **The mode decides which tiles take the paint, and is then forgotten.** A marked tile is simply *marked*; what a laborer gets from it is whatever is standing there. **Nothing new is stored and nothing new is hashed** — the single harvest layer built for D87 was already the right shape, and `Everything` falls out for free as the absence of a filter.
   - **It still answers what D67 asked for**, which is the part worth noticing: *clear the stone and leave the wood* works because **the wood in a stone-brushed drag never takes the paint in the first place** — not because three layers are kept in step. A layer per material would store the same fact three times and would let a tile be marked for a good it does not have.
