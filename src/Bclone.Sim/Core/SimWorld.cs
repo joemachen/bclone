@@ -468,21 +468,59 @@ public sealed class SimWorld
     /// promise the village cannot keep.
     /// </para>
     /// </remarks>
-    public PlacementVerdict PaintHarvest(GridPos tile)
+    public PlacementVerdict PaintHarvest(GridPos tile, HarvestBrush brush = HarvestBrush.Everything)
     {
         if (!Map.Contains(tile))
         {
             return PlacementVerdict.No("That is outside the valley.");
         }
 
-        if (!HasSomethingToHarvest(tile))
+        Goods? standing = TerrainRules.Yields(Map.TerrainAt(tile));
+        if (standing is null)
         {
             return PlacementVerdict.No("There is nothing standing there to take.");
+        }
+
+        // ⭐ THE MODE IS A FILTER AND IS THEN FORGOTTEN (D90, Joe's call of two). A marked
+        // tile is simply marked; what a laborer gets from it is whatever is standing there.
+        // So "clear the stone and leave the wood" works by the wood never taking the paint,
+        // rather than by storing three layers and letting a tile be marked for a good it
+        // does not have.
+        Goods? wanted = WhatTheBrushTakes(brush);
+        if (wanted is not null && standing.Value != wanted.Value)
+        {
+            return PlacementVerdict.No(
+                $"The brush is set to {Describe(brush)}, and that is {Describe(standing.Value)}.");
         }
 
         Zones.SetHarvest(tile, true);
         return PlacementVerdict.Fine;
     }
+
+    /// <summary>The good a brush setting will accept, or null for "anything".</summary>
+    private static Goods? WhatTheBrushTakes(HarvestBrush brush) => brush switch
+    {
+        HarvestBrush.Trees => Goods.Logs,
+        HarvestBrush.Stone => Goods.Stone,
+        HarvestBrush.Iron => Goods.Iron,
+        _ => null,
+    };
+
+    private static string Describe(HarvestBrush brush) => brush switch
+    {
+        HarvestBrush.Trees => "fell trees",
+        HarvestBrush.Stone => "clear stone",
+        HarvestBrush.Iron => "dig iron",
+        _ => "clear everything",
+    };
+
+    private static string Describe(Goods goods) => goods switch
+    {
+        Goods.Logs => "woodland",
+        Goods.Stone => "a stone seam",
+        Goods.Iron => "an iron seam",
+        _ => goods.ToString().ToLowerInvariant(),
+    };
 
     /// <summary>Un-paint a tile the village had meant to clear.</summary>
     public bool EraseHarvest(GridPos tile) => Zones.SetHarvest(tile, false);

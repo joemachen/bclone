@@ -191,3 +191,115 @@ public sealed class SeamsTests
             "Iron is meant to sit further out than stone — reaching it is the decision.");
     }
 }
+
+/// <summary>
+/// The harvest brush has modes, and the mode is a filter rather than a layer (D67, D90).
+/// </summary>
+/// <remarks>
+/// Joe: <em>"you pick trees or stone or all and drag."</em> So a mode decides which tiles take
+/// the paint and is then forgotten — a marked tile is simply marked, and what a laborer gets
+/// is whatever is standing there. <b>Nothing new is stored and nothing new is hashed</b>, and
+/// it still answers what D67 asked for, because the wood in a stone-brushed drag never takes
+/// the paint in the first place.
+/// </remarks>
+public sealed class HarvestBrushModeTests
+{
+    private readonly ITestOutputHelper _output;
+
+    public HarvestBrushModeTests(ITestOutputHelper output) => _output = output;
+
+    private static SimWorld Build() =>
+        SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+
+    private static GridPos Find(SimWorld world, Terrain terrain)
+    {
+        for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
+        {
+            for (int x = world.Map.MinX; x < world.Map.MinX + world.Map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                if (world.Map.TerrainAt(at) == terrain)
+                {
+                    return at;
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"The valley has no {terrain}.");
+    }
+
+    /// <summary>⭐ Each mode takes its own and refuses the rest, by name.</summary>
+    [Theory]
+    [InlineData(HarvestBrush.Trees, Terrain.Forest, Terrain.Rock)]
+    [InlineData(HarvestBrush.Stone, Terrain.Rock, Terrain.Forest)]
+    [InlineData(HarvestBrush.Iron, Terrain.IronDeposit, Terrain.Forest)]
+    public void AModeTakesItsOwnAndLeavesTheRest(
+        HarvestBrush brush, Terrain wanted, Terrain other)
+    {
+        SimWorld world = Build();
+
+        GridPos mine = Find(world, wanted);
+        GridPos theirs = Find(world, other);
+
+        Assert.True(world.PaintHarvest(mine, brush).Allowed);
+        Assert.True(world.Zones.IsHarvest(mine));
+
+        PlacementVerdict refused = world.PaintHarvest(theirs, brush);
+        _output.WriteLine($"{brush} over {other}: {refused.Reason}");
+
+        Assert.False(refused.Allowed);
+        Assert.False(world.Zones.IsHarvest(theirs));
+        Assert.NotEmpty(refused.Reason);
+    }
+
+    /// <summary>The all-brush is the absence of a filter, so it takes everything.</summary>
+    [Fact]
+    public void TheAllBrushTakesWhateverIsStanding()
+    {
+        SimWorld world = Build();
+
+        foreach (Terrain terrain in new[] { Terrain.Forest, Terrain.Rock, Terrain.IronDeposit })
+        {
+            GridPos tile = Find(world, terrain);
+            Assert.True(
+                world.PaintHarvest(tile, HarvestBrush.Everything).Allowed,
+                $"The all-brush refused {terrain}.");
+        }
+
+        Assert.Equal(3, world.Zones.HarvestTiles);
+    }
+
+    /// <summary>Empty ground takes no brush at all.</summary>
+    [Theory]
+    [InlineData(HarvestBrush.Everything)]
+    [InlineData(HarvestBrush.Trees)]
+    [InlineData(HarvestBrush.Stone)]
+    public void OpenGroundIsNeverPainted(HarvestBrush brush)
+    {
+        SimWorld world = Build();
+        Assert.False(world.PaintHarvest(Find(world, Terrain.Grass), brush).Allowed);
+    }
+
+    /// <summary>
+    /// ⭐ A tile marked by one mode is indistinguishable from one marked by another.
+    /// </summary>
+    /// <remarks>
+    /// The point of modes-being-a-filter, stated as a property: the layer holds
+    /// <em>marked</em>, not <em>marked for stone</em>. If the mode were stored, the same
+    /// valley painted two ways would be two different worlds, and the hash would have to
+    /// carry a fact that changes nothing about what happens.
+    /// </remarks>
+    [Fact]
+    public void HowATileWasMarkedIsNotRemembered()
+    {
+        SimWorld byMode = Build();
+        SimWorld byAll = Build();
+
+        GridPos tile = Find(byMode, Terrain.Rock);
+
+        byMode.PaintHarvest(tile, HarvestBrush.Stone);
+        byAll.PaintHarvest(tile, HarvestBrush.Everything);
+
+        Assert.Equal(StateHash.Compute(byMode), StateHash.Compute(byAll));
+    }
+}

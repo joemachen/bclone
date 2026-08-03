@@ -82,6 +82,39 @@ public static class TerrainRules
 }
 
 /// <summary>
+/// Which standing thing the harvest brush is set to take (D67, D90).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Modes of one tool, not a layer per material</b> (Joe: *"you pick trees or stone or all
+/// and drag"*). The mode filters <em>which tiles take the paint</em> and is then forgotten —
+/// a marked tile is simply marked, and what a laborer gets from it is whatever is standing
+/// there.
+/// </para>
+/// <para>
+/// <b>That is what makes it cheap and what makes it right.</b> Nothing new is stored, nothing
+/// new is hashed, and <see cref="Everything"/> falls out for free as the absence of a filter.
+/// It still answers what D67 asked for — <em>clear the stone and leave the wood</em> — because
+/// the wood in the dragged area never takes the paint in the first place. A layer per material
+/// would store the same fact three times and let a tile be marked for a good it does not have.
+/// </para>
+/// </remarks>
+public enum HarvestBrush
+{
+    /// <summary>Everything standing: trees, stone and iron alike.</summary>
+    Everything = 0,
+
+    /// <summary>Trees only.</summary>
+    Trees = 1,
+
+    /// <summary>Stone seams only.</summary>
+    Stone = 2,
+
+    /// <summary>Iron seams only.</summary>
+    Iron = 3,
+}
+
+/// <summary>
 /// A valley, generated from the run's seed.
 /// </summary>
 /// <remarks>
