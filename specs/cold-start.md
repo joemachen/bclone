@@ -250,6 +250,14 @@ front of it (§7.2's other dial).
 
 ### 7.2 What the cart holds, and the founding season
 
+> **⚠️ CORRECTION (D93, 2026-08-03): there is only one dial, not two.** The founders already
+> arrive at **tick 0, which is Spring** — 360 of the year's 480 ticks before winter, and the
+> furthest from the frost any founding can be. There is no `founding_season` key and adding
+> one could only make the opening *harder*. **The opening has been running at maximum slack
+> the whole time**, and still passes its guards by about sixty ticks: first firewood at t300
+> against a winter starting at t360. So the cart's contents is the only lever this section
+> actually offers.
+
 The two dials §2 says to reach for if winter 1 lands wrong. Both are config. **Not
 guessable — they want a probe** (METHODOLOGY §3): measure how many ticks a competent opening
 actually takes against the 360 available before winter, then set the cart so an *incompetent*
