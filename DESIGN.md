@@ -411,8 +411,31 @@ the transition's first step is provably a no-op, which is what makes the next on
   unmoved** — the layer is hashed sparsely *and without a count*, unlike residential's, which
   is exactly what keeps it invisible to a village that never paints. 439 tests green.
 
-Next: **the laborers themselves** — walk to the nearest painted tree, fell it, carry the logs
-to a store. That is D66's missing work, and after it the forester's hut: placed and staffed like a
+- **Laborers clear what the village painted** ✅ (D87). Joe's rule turned out to be a
+  **position** rather than a mechanism — below every job branch and above resting, so anybody
+  who reaches it has already declined their own work this tick. No quota, no new job kind, no
+  rule about who is allowed. Measured: forest 50 → 23 in a year, 438 logs into empty stores, a
+  village that clears its whole valley still alive at thirty. **A performance bug was caught on
+  the way in** — the scan runs for every idle adult every tick, and the suite went from four
+  minutes to over ten until a village that has painted nothing paid one integer compare.
+
+**Next — the opening Joe described, in the one order that does not break it (D90):**
+
+1. **`Terrain` gains `Rock` and `IronDeposit`**, placed by the generator in the fixed draw
+   order. Unblocked by D84; C3a made terrain mutable for exactly this.
+2. **A harvest brush per material, plus an all-brush** (D67, settled by D90). One layer is not
+   enough — clearing stone for a foundation must not fell the wood around it.
+3. **Harvest delivers to the construction site**, not to a store: fell a painted tree, carry
+   the logs *to the site*, go back for stone, and build only when it is all on the ground.
+   **This is the hauling D66 measured as non-existent and predicted would arrive here.**
+4. **Only then does `cart_logs` go to zero** and the cart stop accepting logs. **Doing this
+   first would leave a founding that cannot build anything at all** — the 30 logs exist
+   because of D72, and removing them before the map-to-site flow exists re-opens that bug.
+5. Then the **forester's hut** (D86) — its ground and worker-priced area are built and waiting.
+
+Then the deferred pair: **natural regrowth** (promoted above planting by D88 — a cleared valley
+with no way back is the one uncozy state this design can now produce) and **D89's cart**, which
+step 4 dissolves.: placed and staffed like a
 woodcutter's, its ground painted, felling comes off *its* tiles, the forest recedes, and the
 village warns when the paint outruns the hands. **Tree stands retire here.** **C3d** — laborers
 and finite deposits (§5.2 of `specs/mutable-terrain.md`). **Planting is not in C3** — it is
@@ -492,6 +515,15 @@ village wants one.
   - **All of it, not the fields near the change.** A flow field spans the valley, so one tile becoming impassable can lengthen a route starting nowhere near it — and working out which fields are affected is the same Dijkstra as rebuilding them.
   - **`Terrain.Water` stopped being named at call sites.** It appeared at two, and this wanted a third; `TerrainRules.IsPassable` is the question instead. **That is D76's seam recognised before it ran to five instalments** rather than after.
   - **Deliberately nothing player-facing**, and it ships alone because it is the one part of C3 no open question touches — D84 blocks the terrain kinds and §5.1 of its spec blocks the brush. 408 green, both goldens unmoved.
+- **D90 · 2026-08-02 · The founders arrive with nothing but food and tools, and construction is fed straight off the map.** Joe, settling D89 and rewriting the opening with it. *"Founders arrive with no logs at all. The user first has to paint areas to harvest trees/stone/iron (or all) from the map. The founders act as laborers and harvest the painted as needed during the building construction. They harvest logs, take them to the building site, harvest stones and take them to the build site again (until all materials are present), then they build the buildings."*
+  - **⭐ It answers D89 structurally rather than by explaining it.** A cart that cannot hold logs cannot be strangled by them, so there is no alert to read, no hidden priority rule and no unexplained control — the constraint is a **cart that is what you arrived in**, holding your food and your tools, which a player understands without being taught. Logs are the one thing that plausibly will not fit.
+  - **And it gives the storage pile its reason back.** D76 built it as *"the first thing the player places"*; the fix in that same decision — asking stores what they *hold* — quietly made it optional, and Joe found it unused in play. **You cannot take timber until you have somewhere to put it** is the rule that makes it load-bearing again, honestly this time.
+  - **⭐ Materials go from the map to the construction site, not through a store**, and that is the load-bearing half of this. Today a builder fetches from a shed (D43); here a laborer fells a painted tree, carries the logs *to the site*, goes back for stone, and only when everything is on the ground does anybody build. **This is the hauling work D66 measured as non-existent and predicted would arrive exactly here** — *"two things create it later: D64's builder's hut, and slice C's cold start, where buildings are placed before there is anyone to staff them."*
+  - **Harvest is demand-driven — *"as needed during the building construction"*** — not "clear everything you painted". A painted area is a **licence** rather than an order, which is `building-placement.md §12.1`'s pattern exactly: *the player paints intent, and the village acts on it when it has a reason to.*
+  - **✅ It settles D87's open question the other way from my recommendation:** *"trees/stone/iron (or all)"* is **a brush per material plus an all-brush**, which is what D67 asked for. One layer is not enough — a player clearing stone for a foundation should not be made to fell the wood around it.
+  - **⚠️ Sequencing, and getting it wrong would break the opening Joe has already validated.** `cart_logs` is 30 today *because* of D72 — *"building timber was drawn only from sheds, and a cold start has none, so even felled logs could not become a house."* **Removing it before the map-to-site flow exists leaves a founding that cannot build anything at all.** So the order is: **terrain kinds → per-material brushes → harvest-to-site delivery → and only then the cart's logs come out.**
+  - **`Terrain` finally gains `Rock` and `IronDeposit`**, unblocked by D84's ruling that a deposit is finite and a building is not. C3a made terrain mutable for exactly this.
+  - **✅ The cart becomes a food-and-tools box and stays demolishable** (Joe). `StoreKind.Cart`'s *"it accepts everything"* (D64, D71) has to be rewritten in the same commit, or it joins the list of comments describing a world that has moved on.
 - **D89 · 2026-08-02 · ⚠️ OPEN, and the niche caught it on its first day: a village can be strangled by its own woodpile, in silence.** Joe: *"so far I've found that I don't actually need the pile at the start — it doesn't get used at all."* He is right, and re-pointing the guards at a pile-free opening turned up something else.
   - **Four arms, forty years, shipped config.** Pile + no harvest: **6 → 9 → 9.** No pile + no harvest: **6 → 9 → 8.** Pile *and* harvest: **5 → 9 → 8.** **No pile + harvest: 4 → 6 → 2.**
   - **So dropping the pile is harmless on its own** — which vindicates the observation and is why the opening is now scripted without one. **Painting a forest with only the cart to put it in is not.** The cart fills with timber (677 logs of its 1,200 by year five) and the food it crowds out never arrives: **164 food against 400+ in every other arm.** The village stops having children and ages out.
