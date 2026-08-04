@@ -58,6 +58,8 @@ public partial class Main : Control
     private RichTextLabel _inspector = null!;
     private HBoxContainer _staffingRow = null!;
     private Label _staffingLabel = null!;
+    private HBoxContainer _queueRow = null!;
+    private Label _queueLabel = null!;
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
 
@@ -395,6 +397,14 @@ public partial class Main : Control
                 ? $"Staffing {staffable.Name} — you asked for {asked} of {staffable.Capacity}:"
                 : $"Staffing {staffable.Name} — village's choice, {staffable.Places} of "
                     + $"{staffable.Capacity}:";
+        }
+
+        // The queue controls only mean anything for something still being built.
+        _queueRow.Visible = staffable?.Construction is not null;
+        if (staffable?.Construction is not null)
+        {
+            _queueLabel.Text =
+                $"Build queue — {world.QueuePositionOf(staffable)} of {world.BuildQueue().Count}:";
         }
 
         if (_selectedTile is GridPos tile)
@@ -1072,6 +1082,37 @@ public partial class Main : Control
         var auto = new Button { Text = "Village decides" };
         auto.Pressed += LetTheVillageDecideStaffing;
         _staffingRow.AddChild(auto);
+
+        // ⭐ AND THE BUILD QUEUE, WHICH IS JOE'S OWN ANSWER TO HIS VILLAGE FREEZING:
+        // "I think this is solved by letting the user increase/decrease the priority level of
+        // a building under construction." It is — and it is better than any rule about which
+        // KIND of building matters most, because the village cannot know whether this winter
+        // needs a granary or a roof and the player can.
+        _queueRow = new HBoxContainer { Visible = false };
+        _queueRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_queueRow);
+
+        _queueLabel = Muted("Build queue:");
+        _queueRow.AddChild(_queueLabel);
+
+        var sooner = new Button { Text = "▲ Sooner" };
+        sooner.Pressed += () => MoveSelectedInQueue(-1);
+        _queueRow.AddChild(sooner);
+
+        var later = new Button { Text = "▼ Later" };
+        later.Pressed += () => MoveSelectedInQueue(+1);
+        _queueRow.AddChild(later);
+    }
+
+    /// <summary>Move the selected construction site one place along the queue.</summary>
+    private void MoveSelectedInQueue(int places)
+    {
+        Workplace? site = SelectedWorkplace();
+        if (site?.Construction is not null)
+        {
+            _loop.World.MoveInBuildQueue(site, places);
+            RefreshInspector(_loop.World);
+        }
     }
 
     /// <summary>Speed, what the map draws, and what the player can ask the village for.</summary>

@@ -171,6 +171,16 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.WorkerIds[k]);
             }
 
+            // Where the player put this site in the build queue (D105). SILENT UNTIL SOMEBODY
+            // MOVES SOMETHING, in the same shape and for the same reason as the stock limits
+            // below: a village played without ever reordering the queue must hash exactly as
+            // it did before the control existed, which is what makes "the default is a no-op"
+            // a golden test rather than a promise. Null and a number are different states.
+            if (workplace.QueueRank is int rank)
+            {
+                hash = MixUInt32(hash, (uint)rank);
+            }
+
             hash = MixStore(hash, workplace.Store);
         }
 

@@ -181,6 +181,29 @@ public sealed class Workplace
     public int? StaffingOverride { get; set; }
 
     /// <summary>
+    /// Where the player has asked this site to sit in the build queue, or null for
+    /// "wherever it was marked" (D105).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Null and a number are different states, exactly as with
+    /// <see cref="StaffingOverride"/></b> — "I have not touched this" is not the same fact as
+    /// "I put it third", and the state hash keeps them apart. It also means the control is a
+    /// provable no-op until somebody uses it: a village played without ever reordering
+    /// anything hashes as though the control did not exist.
+    /// </para>
+    /// <para>
+    /// <b>Sorted against <see cref="Id"/> when it is null</b>, so the default order is the
+    /// order things were marked and a player who reorders one site does not have to reorder
+    /// all of them.
+    /// </para>
+    /// </remarks>
+    public int? QueueRank { get; set; }
+
+    /// <summary>What this site sorts by in the build queue.</summary>
+    public int EffectiveQueueRank => QueueRank ?? Id;
+
+    /// <summary>
     /// Hands the village will actually staff here — the override if there is one,
     /// otherwise what physically fits.
     /// </summary>

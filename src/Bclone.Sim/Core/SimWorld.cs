@@ -1246,16 +1246,34 @@ public sealed class SimWorld
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>The order is the one the allocator actually uses</b> — what the player marked before
-    /// a house the village marked for itself (D102), and within each group the order they were
-    /// marked. That matters more than it sounds: <b>a queue position shown on a panel has to
-    /// be the real one</b>, or it is a number the player plans against and the village ignores.
+    /// <b>⭐ THE ORDER IS THE ORDER THINGS WERE MARKED. Nothing else.</b> Workplace ids only
+    /// ever increase, so "first marked, first built" needs nothing stored and no rule anybody
+    /// has to learn — which is the whole of what a player expects from a queue.
     /// </para>
     /// <para>
-    /// <b>Marking order is by workplace id</b>, which only ever increases, so "first marked,
-    /// first built" needs nothing stored. The list is rebuilt on each call rather than
-    /// maintained, for the reason <see cref="HomeSiteFor"/> gives: a cached order is one more
-    /// thing that can disagree with the world.
+    /// <b>It was briefly "everything the player marked, then the houses" (D102), and Joe's
+    /// village froze to death because of it.</b> He marked a granary in his first spring; it
+    /// went in front of two houses that had been waiting since tick 4, took every builder for
+    /// forty logs and sixty ticks of work, and <b>nobody ever got a roof</b>. Measured, exactly
+    /// as he played it: <b>0 alive, 4 frozen, 0 houses</b>, the granary stuck at 46 of 60 —
+    /// against 4 alive and 2 houses in the same opening without it.
+    /// </para>
+    /// <para>
+    /// <b>Marking order solves what D102's rule was for, without that.</b> The founding case
+    /// it existed to fix — two houses marked at tick 4 starving the woodcutter's hut — comes
+    /// out right anyway, because the player marks the hut at tick 0 and `HouseTheRoofless`
+    /// does not run until tick 4. <b>The hut is simply earlier.</b>
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>What it does not solve, and the honest limit of it:</b> a hut marked in year
+    /// twenty queues behind every house already waiting, and there is no way to say
+    /// <em>"that one first"</em>. That is what an editable priority list is for (Joe), and
+    /// this is the order it should default to.
+    /// </para>
+    /// <para>
+    /// The list is rebuilt on each call rather than maintained, for the reason
+    /// <see cref="HomeSiteFor"/> gives: a cached order is one more thing that can disagree
+    /// with the world.
     /// </para>
     /// </remarks>
     public List<Workplace> BuildQueue()
@@ -1270,19 +1288,72 @@ public sealed class SimWorld
             }
         }
 
+        // Rank first, then id — so a site nobody has touched sits where it was marked, and a
+        // site the player moved sits where they put it (D105).
         queue.Sort(static (a, b) =>
         {
-            bool aIsHome = a.Construction!.Kind == BuildingKind.Home;
-            bool bIsHome = b.Construction!.Kind == BuildingKind.Home;
-            if (aIsHome != bIsHome)
-            {
-                return aIsHome ? 1 : -1;
-            }
-
-            return a.Id.CompareTo(b.Id);
+            int byRank = a.EffectiveQueueRank.CompareTo(b.EffectiveQueueRank);
+            return byRank != 0 ? byRank : a.Id.CompareTo(b.Id);
         });
 
         return queue;
+    }
+
+    /// <summary>
+    /// Move a site one place up or down the build queue (D105, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe's answer to his own village freezing:</b> <em>"I think this is solved by letting
+    /// the user increase/decrease the priority level of a building under construction."</em>
+    /// It is, and it is the better answer than any rule about which KINDS of building matter
+    /// most — the village cannot know whether this winter needs a granary or a roof, and the
+    /// player can.
+    /// </para>
+    /// <para>
+    /// <b>A swap with the neighbour, not a number the player nudges.</b> One press moves it
+    /// exactly one place, always — where incrementing a priority value would sometimes move it
+    /// past two things and sometimes past none, depending on what its neighbours happened to
+    /// hold. The panel says <em>"3rd of 5"</em>, so pressing up had better make it 2nd.
+    /// </para>
+    /// <para>
+    /// Returns false when there is nowhere to move — already first, already last, or not a
+    /// site at all — so the view can say nothing happened rather than pretending.
+    /// </para>
+    /// </remarks>
+    public bool MoveInBuildQueue(Workplace site, int places)
+    {
+        ArgumentNullException.ThrowIfNull(site);
+
+        List<Workplace> queue = BuildQueue();
+        int at = queue.FindIndex(candidate => candidate.Id == site.Id);
+        int to = at + places;
+        if (at < 0 || to < 0 || to >= queue.Count || places == 0)
+        {
+            return false;
+        }
+
+        // Both ends are pinned explicitly, because either may still be sitting on its id.
+        // Leaving one null would let it drift the moment anything else was reordered.
+        Workplace other = queue[to];
+        int mine = site.EffectiveQueueRank;
+        int theirs = other.EffectiveQueueRank;
+
+        site.QueueRank = theirs;
+        other.QueueRank = mine;
+
+        // Identical ranks fall back to id order, which would undo the swap. Nudge the one
+        // that is meant to be earlier so the order is unambiguous.
+        if (mine == theirs)
+        {
+            site.QueueRank = places < 0 ? theirs - 1 : theirs + 1;
+        }
+
+        Log(Logging.LogLevel.Info, "placement",
+            $"{site.Construction!.Name} moved {(places < 0 ? "up" : "down")} the build queue — "
+            + $"now {QueuePositionOf(site)} of {queue.Count}. {Clock.SeasonAndYear()}.");
+
+        return true;
     }
 
     /// <summary>Where a site stands in <see cref="BuildQueue"/>, counting from one, or 0.</summary>
