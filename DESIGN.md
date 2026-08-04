@@ -429,10 +429,13 @@ the transition's first step is provably a no-op, which is what makes the next on
   village a quarter bigger on unchanged production. Both goldens re-taken. 481 tests green.
 
 - **The pile is instant, and the clearing is what it costs** ✅ (D96 step 2, D98). Marked on
-  clear ground it stands the same tick — no site, no builder, no window. Marked on woodland it
-  is refused with the tool named. **`pile_work_ticks` is deleted**, and a **free-timber press
-  was found on the way**: pulling down a pile or the cart refunded half a market's logs out of
-  a building nobody paid for.
+  clear ground it stands the same tick — no site, no builder, no window. **`pile_work_ticks` is
+  deleted**, and a **free-timber press was found on the way**: pulling down a pile or the cart
+  refunded half a market's logs out of a building nobody paid for.
+- **And the village clears the ground for it** ✅ (D100, Joe's correction). Marking anything on
+  trees, stone or iron paints that tile for harvest and the laborers come; a pile waits and
+  goes up the moment the ground is bare. **Only the pile waits** — making every site wait would
+  insert the hop D93 measured as fatal to winter 1.
 
 - **The cart is a food-and-tools box** ✅ (D96 step 3 = D90 step 4, D99). `cart_logs` deleted,
   and **D89's fatal arm fixed structurally**: trees painted with no store held 164 food at year
@@ -571,6 +574,12 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D100 · 2026-08-04 · The village clears the ground; the player does not have to.** Joe, correcting D98 the same day it landed: *"I want laborers to auto-remove the resources if a building is placed on a resource — the user can if they choose to, but shouldn't have to."*
+  - **What was wrong, and it was a reading rather than a bug.** D98 made `CanBuildAt` **refuse** a pile on wooded ground and tell the player to clear it first. That satisfies the letter of D96 — *"if there are resources, they must first be cleared and then the stockpile can be instant"* — and inverts its spirit: **the clearing is still what a pile costs, but it is a price the village pays rather than an errand the player is sent on.** §1.2 says systems should reduce babysitting, and a refusal that hands the player a two-step chore is babysitting with extra reading.
+  - **⭐ Marking anything on a resource paints that tile for harvest**, and the laborers who already clear painted ground (D87) come and take it. **No new machinery at all** — the brush, the errand and D84's deposit rule all exist; what the mark adds is the *intent*, which is `building-placement.md §12.1`'s pattern exactly: the player paints intent, and the village acts on it when it has a reason to. A player who prefers to clear it themselves gets the identical outcome one step sooner, which is Joe's *"can if they choose to"*.
+  - **A pile then waits**, on `SimWorld.PilesWaitingOnTheGround` — player intent, so hashed, and sparsely so a village that marks none mixes nothing. **It goes up from `SetTerrain`, the one door terrain changes through (D85)**, so it fires for whoever did the clearing rather than for one particular caller. Hooking `Harvest` would have been identical today and wrong the day anything else clears ground; that door exists so there is one place to ask.
+  - **⚠️ Only the pile waits, and the asymmetry is deliberate.** A pile *is* the ground it stands on; a granary is a building that happens to be there. **Making every site wait for a clearing would insert a hop into the cold start, and D93 measured an inserted hop as precisely the thing that kills winter 1** — three separate attempts, all dying at 0 alive / 4 frozen. So every kind asks for its ground to be cleared and only the pile is blocked by it.
+  - **Deliberately not a `ConstructionSite`.** A site needs a builder to tick it, and an instant pile's whole point is that it needs nobody — a site would put the builder dependency back and re-open the window D95 died in. A waiting list is what this actually is, so it is one. 497 tests green, all three goldens unmoved.
 - **D99 · 2026-08-03 · The cart stops accepting logs, and the change that was reverted twice lands without moving the cold start's schedule.** D96's third step, which is D90's fourth and has been waiting on the other two. **`cart_logs` is deleted rather than zeroed**, because `Stockpile.Receive` knows nothing about `Accepts` and the key would have gone on loading the fixture's ten into a wagon that refuses them.
   - **⭐ The precondition was the whole problem, and D96 supplied it.** D95 built this and reverted it: a pile was a construction site, so between marking one and it standing a forester had nowhere on earth to put a load — **0 homes, nothing built at all**. Now a load can be set down (D97) and a pile stands the tick it is marked (D98), so neither hole exists.
   - **Measured against D93's five ticks, because that is the knife edge everything here dies on.** Shipped config, the guard's own village: **builder t120, logs delivered t128, hut standing t170, staffed t240, first firewood t248** — against a winter at t360. **112 ticks of slack**, where D93 measured 60 on green code at t300. **The cart change costs about three ticks.** The opening is not tighter than it was; it is looser, because steps 1 and 2 went in first.

@@ -205,9 +205,14 @@ deliberately did not repeat.
 Joe (D96): *"If there are resources, they must first be cleared and then the stockpile can be
 instant."*
 
-- **`CanBuildAt(Pile, …)` refuses ground that still has something standing on it** —
-  *"There are trees standing there. Clear the ground first, and the pile can go straight up."*
-  The refusal names the brush, because a refusal the player cannot act on is worse than none.
+> **⚠️ CORRECTED BY JOE (D100). The first version of this refused the mark, and that read the
+> rule backwards.** *"I want laborers to auto-remove the resources if a building is placed on a
+> resource — the user can if they choose to, but shouldn't have to."* **The clearing is still
+> what a pile costs; it is a price the village pays rather than an errand the player is sent
+> on.** §5.3 has the corrected design.
+
+- ~~**`CanBuildAt(Pile, …)` refuses ground that still has something standing on it.**~~
+  **Withdrawn** — see §5.3.
 - **On clear ground, `Mark(Pile, …)` raises it there and then.** No `ConstructionSite`, no
   `Workplace`, no builder. The pile *is* what the sentence says it is: cleared ground with
   goods stacked on it.
@@ -217,6 +222,31 @@ instant."*
 
 **Only the pile takes this rule.** A granary marked in a wood is a separate question and is
 not opened here; the pile is the building whose *entire* cost this becomes.
+
+### 5.3 ⭐ The village clears the ground; the player does not have to (D100)
+
+**Joe's rule, and it is about every building rather than about the pile:** *"laborers
+auto-remove the resources if a building is placed on a resource."*
+
+| Marked on | What happens |
+|---|---|
+| Clear ground | Pile stands the same tick. Every other kind gets its site, as today. |
+| Ground with trees / stone / iron | **The tile is painted for harvest**, and the laborers who already clear painted ground (D87) come and take it. |
+
+- **No new machinery.** The brush, the errand and the deposit rule all exist. What the mark
+  adds is the *intent*, which is `building-placement.md §12.1`'s pattern exactly: the player
+  paints intent, and the village acts on it when it has a reason to.
+- **A pile then WAITS** — held on `SimWorld.PilesWaitingOnTheGround`, which is player intent
+  and therefore hashed (sparsely, so a village that marks none mixes nothing). It goes up from
+  `SetTerrain`, **the one door terrain changes through** (D85), so it fires whoever did the
+  clearing — a laborer working the paint, or the player doing it by hand.
+- **⚠️ Only the pile waits, and the asymmetry is deliberate.** A pile *is* the ground it stands
+  on; a granary is a building that happens to be there. Making every site wait for a clearing
+  would insert a hop into the cold start, and D93 measured an inserted hop as the thing that
+  kills winter 1.
+- **Deliberately not a `ConstructionSite`.** A site needs a builder to tick it, and the whole
+  point of an instant pile is that it needs nobody — a site would put the builder dependency
+  back and re-open the window D95 died in. A waiting list is what this actually is.
 
 ### 5.2 The bug next door, found while reading `Demolish`
 
@@ -294,8 +324,12 @@ Against **both** `VillageFixtures.Village` and the shipped config, per METHODOLO
 **The instant pile**
 
 8. **A pile on clear ground stands the tick it is marked** — no site, no builder.
-9. **A pile on a forest tile is refused, with a sentence naming the brush.**
-10. **Clear the tile and the same click is allowed** — the price is paid in clearing.
+9. **A pile on a forest tile is accepted and the tile is painted for harvest** (D100), and
+   **the village clears it unasked** — a played half-year with nothing else done leaves the
+   pile standing on grass.
+10. **It goes up from `SetTerrain`**, so the player clearing it by hand works identically.
+    **And every building asks for its ground to be cleared, not only the pile** — but only the
+    pile waits.
 11. **`pile_work_ticks` is gone from config and from the shipped file.**
 12. **Demolishing a pile or a cart refunds nothing** (§5.2).
 

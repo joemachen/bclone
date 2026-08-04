@@ -338,6 +338,71 @@ public sealed class SimWorld
         GroundStacks.Add(new GroundStack { Position = position, Goods = goods, Amount = amount });
     }
 
+    private readonly List<GridPos> _pilesWaitingOnTheGround = new();
+
+    /// <summary>
+    /// Piles the player has marked whose ground is still being cleared (D100).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Player intent, so it is sim state and it is hashed</b> (D42's rule, D51's case): two
+    /// runs of one seed given the same marks must produce the same village, and a pile that is
+    /// coming is a different world from one that is not.
+    /// </para>
+    /// <para>
+    /// <b>Deliberately not a <see cref="ConstructionSite"/>.</b> A site needs a builder to tick
+    /// it, and the whole point of an instant pile is that it needs nobody — a site would put
+    /// the builder dependency back and re-open the window D95 died in. This is a waiting list,
+    /// which is what it actually is.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<GridPos> PilesWaitingOnTheGround => _pilesWaitingOnTheGround;
+
+    /// <summary>
+    /// Raise any pile that was waiting for this tile to be cleared.
+    /// </summary>
+    /// <remarks>
+    /// <b>Hung off <see cref="SetTerrain"/> — the one door terrain changes through (D85).</b>
+    /// Hooking <c>Harvest</c> instead would have been the same thing today and wrong the day
+    /// anything else clears ground; the rule that door exists for is that there is one place
+    /// to ask. Guarded by an empty-list compare, so a village that has marked no pending pile
+    /// pays nothing for the check.
+    /// </remarks>
+    private void RaiseAnyPileWaitingOn(GridPos tile)
+    {
+        if (_pilesWaitingOnTheGround.Count == 0
+            || TerrainRules.Yields(Map.TerrainAt(tile)) is not null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _pilesWaitingOnTheGround.Count; i++)
+        {
+            if (_pilesWaitingOnTheGround[i] != tile)
+            {
+                continue;
+            }
+
+            _pilesWaitingOnTheGround.RemoveAt(i);
+            string name = NameFor(BuildingKind.Pile);
+
+            // Something may have gone up here while the trees were coming down. Said out
+            // loud rather than silently dropped: a mark the player made and never sees the
+            // result of is the untraceable outcome §1.1 forbids.
+            if (SomethingStandsAt(tile))
+            {
+                Narrate($"The ground at {tile} was cleared, but something else stands there "
+                    + $"now, so {name} was never laid out. {Clock.SeasonAndYear()}.");
+                return;
+            }
+
+            RaiseStore(BuildingKind.Pile, tile, name);
+            Narrate($"{Capitalised(name)} was laid out on the ground the village just "
+                + $"cleared. {Clock.SeasonAndYear()}.");
+            return;
+        }
+    }
+
     /// <summary>Whether the village has already been told it has nowhere for a good.</summary>
     /// <remarks>
     /// <b>Gates narration and nothing else</b>, which is why it is not in the state hash: two
@@ -932,6 +997,9 @@ public sealed class SimWorld
                     : " Passability is unchanged, so routes stand."));
         }
 
+        // Ground that has just been cleared may be ground a pile was waiting for (D100).
+        RaiseAnyPileWaitingOn(position);
+
         return true;
     }
 
@@ -1037,24 +1105,14 @@ public sealed class SimWorld
             return PlacementVerdict.No("Something already stands there.");
         }
 
-        // ⭐ A PILE IS CLEARED GROUND, SO THE GROUND HAS TO BE CLEAR (D96, Joe): "if there
-        // are resources, they must first be cleared and then the stockpile can be instant."
+        // ⚠️ STANDING TREES ARE NOT A REFUSAL, and this is a correction rather than an
+        // omission (Joe, D100). It refused a pile on wooded ground and told the player to
+        // clear it first — which read the rule backwards. The village clears it: "I want
+        // laborers to auto-remove the resources if a building is placed on a resource — the
+        // user can if they choose to, but shouldn't have to."
         //
-        // This is the whole of what a pile costs now. `pile_work_ticks` is gone, and the
-        // price it was standing in for is paid here instead — in the harvest brush, on the
-        // map, in the currency the rest of the game uses. Siting a store in a wood is a
-        // decision you can see the cost of.
-        //
-        // ONLY THE PILE, deliberately. Whether a granary may be marked in a forest is a
-        // separate question and is not opened here; the pile is the building whose entire
-        // cost this becomes.
-        if (kind == BuildingKind.Pile
-            && TerrainRules.Yields(Map.TerrainAt(position)) is Goods standing)
-        {
-            return PlacementVerdict.No(
-                $"A pile is cleared ground, and that is {Describe(standing)}. Clear it with "
-                + "the harvest brush and the pile goes straight up.");
-        }
+        // So `Mark` paints the ground for harvest instead, and a pile marked on a resource
+        // waits for the clearing rather than being turned away. See `Mark`.
 
         // Reachable from where the people are. A building on the far bank is not a long
         // walk, it is no walk at all (D40), and it would look perfectly fine on the map.
@@ -1092,6 +1150,21 @@ public sealed class SimWorld
         BuildingRecipe recipe = BuildingRecipe.For(kind, Config);
         string name = NameFor(kind);
 
+        // ⭐ THE VILLAGE CLEARS THE GROUND, THE PLAYER DOES NOT HAVE TO (Joe, D100).
+        //
+        // Marking anything on a tile that still has something standing paints that tile for
+        // harvest, and the laborers who already do that work come and take it (D87). No new
+        // machinery: the brush, the errand and the deposit rule all exist, and this simply
+        // states the intent for them.
+        //
+        // "The user can if they choose to, but shouldn't have to" — so a player who clears it
+        // by hand first sees exactly the same outcome, one step sooner.
+        bool groundIsBusy = TerrainRules.Yields(Map.TerrainAt(position)) is not null;
+        if (groundIsBusy)
+        {
+            Zones.SetHarvest(position, true);
+        }
+
         // ⭐ A PILE IS NOT A CONSTRUCTION SITE, AND THAT IS THE POINT (D96). It costs nothing
         // and owes no work, so a site for one would be a builder walking over to a footprint
         // to do nothing — and worse than pointless: D95 built the cart's refusal of logs on
@@ -1100,9 +1173,24 @@ public sealed class SimWorld
         // 0 homes. Raising it here closes that window rather than narrowing it.
         if (kind == BuildingKind.Pile)
         {
-            RaiseStore(kind, position, name);
-            Narrate($"{Capitalised(name)} was laid out on cleared ground. " +
-                $"{Clock.SeasonAndYear()}.");
+            // Clear ground: it stands now. Wooded ground: it stands the moment the wood is
+            // gone, and THE CLEARING IS WHAT IT COSTS (D96) — which is still true, and is
+            // now a price the village pays rather than an errand the player is sent on.
+            if (!groundIsBusy)
+            {
+                RaiseStore(kind, position, name);
+                Narrate($"{Capitalised(name)} was laid out on cleared ground. " +
+                    $"{Clock.SeasonAndYear()}.");
+                return verdict;
+            }
+
+            if (!_pilesWaitingOnTheGround.Contains(position))
+            {
+                _pilesWaitingOnTheGround.Add(position);
+            }
+
+            Narrate($"{Capitalised(name)} is marked out, and the ground is being cleared for "
+                + $"it first. {Clock.SeasonAndYear()}.");
             return verdict;
         }
 

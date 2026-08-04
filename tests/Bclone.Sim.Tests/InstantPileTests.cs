@@ -44,7 +44,12 @@ public sealed class InstantPileTests
                 for (int dx = -radius; dx <= radius; dx++)
                 {
                     var at = new GridPos(site.X + dx, site.Y + dy);
-                    if (world.CanBuildAt(BuildingKind.Pile, at).Allowed)
+
+                    // Buildable AND bare. Wooded ground is buildable too now (D100) — the
+                    // village clears it — but a pile marked there waits, and these guards
+                    // are about the one that does not.
+                    if (!world.HasSomethingToHarvest(at)
+                        && world.CanBuildAt(BuildingKind.Pile, at).Allowed)
                     {
                         return at;
                     }
@@ -133,39 +138,26 @@ public sealed class InstantPileTests
     //  …but only on ground that is clear
     // ---------------------------------------------------------------
 
-    /// <summary>⭐ A pile is refused on wooded ground, and the refusal says what to do.</summary>
+    /// <summary>
+    /// ⭐ A pile marked on wooded ground is accepted, and the village clears the ground.
+    /// </summary>
     /// <remarks>
-    /// <b>A refusal the player cannot act on is worse than none</b> (§1.1, D43's shape). This
-    /// one names both halves — what is standing there, and the tool that removes it — which is
-    /// the same rule D92 applied to a brush refusing half a drag.
+    /// <para>
+    /// <b>Joe, correcting me (D100):</b> <em>"I want laborers to auto-remove the resources if a
+    /// building is placed on a resource — the user can if they choose to, but shouldn't have
+    /// to."</em> The first version of this refused the mark and told the player to clear it
+    /// first, which reads the rule backwards: <b>the clearing is still what a pile costs, but
+    /// it is a price the village pays rather than an errand the player is sent on.</b>
+    /// </para>
+    /// <para>
+    /// <b>No new machinery.</b> Marking paints the tile for harvest, and the laborers who
+    /// already clear painted ground (D87) come and take it. What the mark adds is the
+    /// intent — which is `building-placement.md §12.1`'s pattern exactly: the player paints
+    /// intent, and the village acts on it when it has a reason to.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void APileIsRefusedOnGroundThatStillHasSomethingOnIt()
-    {
-        SimWorld world = World(VillageFixtures.Village);
-
-        GridPos? wooded = WoodedGroundNear(world);
-        Assert.NotNull(wooded);
-
-        PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Pile, wooded.Value);
-        _output.WriteLine($"marking a pile on {wooded.Value}: \"{verdict.Reason}\"");
-
-        Assert.False(verdict.Allowed);
-        Assert.Contains("clear", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("brush", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
-
-        // Refused means refused: nothing was built and nothing was marked.
-        Assert.False(world.Mark(BuildingKind.Pile, wooded.Value).Allowed);
-        Assert.DoesNotContain(world.StoreBuildings, store => store.Kind == StoreKind.Pile);
-    }
-
-    /// <summary>⭐ Clear the tile and the same click is allowed — the price was the clearing.</summary>
-    /// <remarks>
-    /// The two halves together are the mechanic: siting a store in a wood is not forbidden, it
-    /// is <em>priced</em>, and the price is one the player pays with a tool they already have.
-    /// </remarks>
-    [Fact]
-    public void ClearingTheGroundIsWhatBuysThePile()
+    public void APileMarkedOnWoodedGroundPaintsItForClearing()
     {
         SimWorld world = World(VillageFixtures.Village);
 
@@ -173,37 +165,95 @@ public sealed class InstantPileTests
         Assert.NotNull(wooded);
         GridPos at = wooded.Value;
 
-        Assert.False(world.CanBuildAt(BuildingKind.Pile, at).Allowed);
+        Assert.False(world.Zones.IsHarvest(at));
+        PlacementVerdict verdict = world.Mark(BuildingKind.Pile, at);
+        _output.WriteLine($"marked a pile on {at}: allowed={verdict.Allowed}, "
+            + $"painted={world.Zones.IsHarvest(at)}, "
+            + $"waiting={world.PilesWaitingOnTheGround.Count}");
 
-        // The clearing itself — what a laborer's day of work does to the tile.
+        Assert.True(verdict.Allowed);
+        Assert.True(world.Zones.IsHarvest(at), "Marking did not ask for the ground to be cleared.");
+
+        // Not standing yet — the ground is still wooded, and that is the cost.
+        Assert.DoesNotContain(world.StoreBuildings, store => store.Kind == StoreKind.Pile);
+        Assert.Contains(at, world.PilesWaitingOnTheGround);
+    }
+
+    /// <summary>⭐ And it goes up the moment the ground comes clear.</summary>
+    /// <remarks>
+    /// Hung off <c>SetTerrain</c> — the one door terrain changes through (D85) — so it fires
+    /// whoever did the clearing: a laborer working the paint, or the player doing it by hand.
+    /// </remarks>
+    [Fact]
+    public void APileWaitingOnItsGroundGoesUpWhenTheGroundIsCleared()
+    {
+        SimWorld world = World(VillageFixtures.Village);
+
+        GridPos at = WoodedGroundNear(world)!.Value;
+        world.Mark(BuildingKind.Pile, at);
+        Assert.Single(world.PilesWaitingOnTheGround);
+
+        // Exactly what a laborer's finished day of work does to the tile.
         (Goods goods, int amount) = world.Harvest(at);
-        _output.WriteLine($"cleared {at} for {amount} {goods}; now: "
-            + $"\"{world.CanBuildAt(BuildingKind.Pile, at).Reason}\"");
+        _output.WriteLine($"cleared {at} for {amount} {goods}; "
+            + $"{world.PilesWaitingOnTheGround.Count} still waiting, "
+            + $"{world.StoreBuildings.Count} stores");
 
         Assert.True(amount > 0);
-        Assert.True(world.CanBuildAt(BuildingKind.Pile, at).Allowed);
-        Assert.True(world.Mark(BuildingKind.Pile, at).Allowed);
+        Assert.Empty(world.PilesWaitingOnTheGround);
         Assert.Contains(
             world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Position == at);
     }
 
-    /// <summary>Every other building is unaffected — only the pile takes this rule.</summary>
+    /// <summary>⭐ And the laborers actually do it, unprompted, in a played village.</summary>
     /// <remarks>
-    /// Deliberate scope. Whether a granary may be marked in a forest is a separate question
-    /// and D96 does not open it; the pile is the building whose <em>entire</em> cost the
-    /// clearing becomes.
+    /// The behavioural half, and the one that answers Joe's sentence rather than its
+    /// mechanism: <em>the user shouldn't have to.</em> Nothing here paints anything or clears
+    /// anything — a pile is marked on a tree and the village is left to get on with it.
     /// </remarks>
     [Fact]
-    public void OnlyThePileNeedsClearGround()
+    public void TheVillageClearsTheGroundForAPileWithoutBeingAskedTwice()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        GridPos at = WoodedGroundNear(world)!.Value;
+        world.Mark(BuildingKind.Pile, at);
+
+        loop.Step(config.TicksPerYear / 2);
+
+        _output.WriteLine(
+            $"half a year after marking a pile on woodland: "
+            + $"{world.PilesWaitingOnTheGround.Count} waiting, terrain now "
+            + $"{world.Map.TerrainAt(at)}");
+
+        Assert.Empty(world.PilesWaitingOnTheGround);
+        Assert.Contains(
+            world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Position == at);
+    }
+
+    /// <summary>Every building asks for its ground to be cleared, not only the pile.</summary>
+    /// <remarks>
+    /// Joe's wording is <em>"if a building is placed on a resource"</em>, so the paint is not
+    /// a pile rule. <b>Only the pile WAITS, though</b>, and that asymmetry is deliberate: a
+    /// pile is the ground it stands on, while a granary is a building that happens to be
+    /// there — and making every site wait for a clearing would insert a hop into the cold
+    /// start, which is the one thing D93 measured as fatal.
+    /// </remarks>
+    [Fact]
+    public void MarkingAnyBuildingOnAResourceAsksForItToBeCleared()
     {
         SimWorld world = World(VillageFixtures.Village);
 
-        GridPos? wooded = WoodedGroundNear(world);
-        Assert.NotNull(wooded);
+        GridPos at = WoodedGroundNear(world)!.Value;
+        Assert.True(world.Mark(BuildingKind.Shed, at).Allowed);
 
-        Assert.False(world.CanBuildAt(BuildingKind.Pile, wooded.Value).Allowed);
-        Assert.True(world.CanBuildAt(BuildingKind.Shed, wooded.Value).Allowed);
-        Assert.True(world.CanBuildAt(BuildingKind.WoodcutterHut, wooded.Value).Allowed);
+        Assert.True(world.Zones.IsHarvest(at));
+
+        // …and the shed's site exists straight away, unlike a pile's.
+        Assert.Contains(world.Workplaces, place => place.Construction?.Kind == BuildingKind.Shed);
+        Assert.Empty(world.PilesWaitingOnTheGround);
     }
 
     // ---------------------------------------------------------------
