@@ -298,6 +298,28 @@ public readonly record struct LabourQuota
         //
         // Half is the same margin FuelBudgetInHands uses and for the same reason: the
         // floor is what the village must not fall below, not what it should live on.
+        //
+        // ⚠️ AND IT IS WHY BUILDING IS SO SLOW — MEASURED, NOT FIXED HERE (D103). `free / 2`
+        // is integer division, so a village with ONE hand spare wants ZERO builders, and a
+        // four-adult founding has exactly one hand spare for most of the year. On Joe's own
+        // opening the builder quota is zero for the whole of autumn and goes to one the tick
+        // winter stops the foraging — which is what he watched: "they built one house at the
+        // very last minute, even though they had all of fall to build it, and then never
+        // built the 2nd."
+        //
+        // Narrowing it to "never round a willing hand down to nobody" was tried and reverted:
+        // it fixes the founding outright (both houses up by t300 against t403 and t900) and
+        // then KILLS SEED 11 OF ELEVEN — a village that peaks at 32 and ages out to nothing
+        // by year 160, with zero starved and zero frozen and four sites it never builds.
+        // D93 tried the same narrowing once before and it killed the village then too.
+        //
+        // ⭐ The measurement that matters for whoever takes this next: builders got 0.1% of
+        // all adult ticks in that run, WITH the cap widened and twenty-four adults standing
+        // about. So `free / 2` is not the only gate — `VillageIsShortOfFood` above zeroes
+        // `buildersWanted` outright for three seasons in four once the stocking target scales
+        // with population, and that is `specs/cold-start.md §7.1b`'s gate showing up in the
+        // steady state rather than at the founding. Both have to move together, and the
+        // seed-11 arm is the guard that says whether they moved correctly.
         int buildersAfforded = Math.Min(buildersWanted, free / 2);
         int builders = Take(ref free, Cap(buildersAfforded, TotalCapacityFor(world, JobKind.Builder)));
 

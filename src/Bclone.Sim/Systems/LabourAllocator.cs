@@ -255,6 +255,10 @@ internal static class LabourAllocator
     {
         var candidates = new List<Candidate>();
 
+        // The build queue, once rather than per candidate — it sorts every unfinished site,
+        // and asking it inside the loop below would do that for every villager.
+        List<Workplace>? queue = kind == JobKind.Builder ? world.BuildQueue() : null;
+
         for (int v = 0; v < world.Villagers.Count; v++)
         {
             Villager villager = world.Villagers[v];
@@ -280,7 +284,7 @@ internal static class LabourAllocator
                     continue;
                 }
 
-                candidates.Add(new Candidate(RankOf(workplace), cost, villager.Id, workplace.Id));
+                candidates.Add(new Candidate(RankOf(queue, workplace), cost, villager.Id, workplace.Id));
             }
         }
 
@@ -314,8 +318,30 @@ internal static class LabourAllocator
     /// to housing itself, and nobody is homeless forever because of a rule.
     /// </para>
     /// </remarks>
-    private static int RankOf(Workplace workplace) =>
-        workplace.Construction is { Kind: BuildingKind.Home } ? 1 : 0;
+    /// <remarks>
+    /// <b>⭐ It is the site's place in <see cref="SimWorld.BuildQueue"/>, not a two-way
+    /// player/village flag (D104).</b> The panel shows the player *"3rd of 5 — the granary is
+    /// immediately ahead of it"*, and a number a player plans against has to be the number the
+    /// village actually works to. A flag would have made the first claim true and the second
+    /// one only usually true, which is the worse of both.
+    /// </remarks>
+    private static int RankOf(List<Workplace>? queue, Workplace workplace)
+    {
+        if (queue is null)
+        {
+            return 0;
+        }
+
+        for (int i = 0; i < queue.Count; i++)
+        {
+            if (queue[i].Id == workplace.Id)
+            {
+                return i;
+            }
+        }
+
+        return queue.Count;
+    }
 
     // ---------------------------------------------------------------
     //  Legibility (spec §6) — the phase's actual deliverable

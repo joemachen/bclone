@@ -56,6 +56,8 @@ public partial class Main : Control
     private Label _speedLabel = null!;
     private ItemList _roster = null!;
     private RichTextLabel _inspector = null!;
+    private HBoxContainer _staffingRow = null!;
+    private Label _staffingLabel = null!;
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
 
@@ -384,6 +386,17 @@ public partial class Main : Control
 
     private void RefreshInspector(SimWorld world)
     {
+        // The staffing buttons belong to whatever is selected, so they follow it.
+        Workplace? staffable = SelectedWorkplace();
+        _staffingRow.Visible = staffable is not null;
+        if (staffable is not null)
+        {
+            _staffingLabel.Text = staffable.StaffingOverride is int asked
+                ? $"Staffing {staffable.Name} — you asked for {asked} of {staffable.Capacity}:"
+                : $"Staffing {staffable.Name} — village's choice, {staffable.Places} of "
+                    + $"{staffable.Capacity}:";
+        }
+
         if (_selectedTile is GridPos tile)
         {
             _inspector.Text = DescribeWhatIsAt(world, tile);
@@ -467,15 +480,29 @@ public partial class Main : Control
             return null;
         }
 
+        // A standing workplace first, then a site — because the market is a store and a
+        // workplace at one position (D36's seam) and a finished building is the more likely
+        // thing the player meant. A CONSTRUCTION SITE IS STAFFABLE TOO (Joe): "how many
+        // builders on this?" is the same question as "how many woodcutters in this hut?",
+        // and it is the one the player most often wants to answer, since a stalled site is
+        // solved by freeing somebody (D93).
+        Workplace? site = null;
         foreach (Workplace workplace in _loop.World.Workplaces)
         {
-            if (workplace.Position == tile && workplace.Construction is null)
+            if (workplace.Position != tile)
+            {
+                continue;
+            }
+
+            if (workplace.Construction is null)
             {
                 return workplace;
             }
+
+            site ??= workplace;
         }
 
-        return null;
+        return site;
     }
 
     /// <summary>Nudge the selected workplace's staffing, or hand it back to the village.</summary>
@@ -583,6 +610,24 @@ public partial class Main : Control
         return string.Join("\n", lines);
     }
 
+    /// <summary>"1st", "2nd", "3rd", "4th" — for a queue position a player reads aloud.</summary>
+    private static string Ordinal(int number)
+    {
+        int lastTwo = number % 100;
+        if (lastTwo is >= 11 and <= 13)
+        {
+            return $"{number}th";
+        }
+
+        return (number % 10) switch
+        {
+            1 => $"{number}st",
+            2 => $"{number}nd",
+            3 => $"{number}rd",
+            _ => $"{number}th",
+        };
+    }
+
     private static void DescribeWorkplace(SimWorld world, Workplace workplace, List<string> lines)
     {
         Separate(lines);
@@ -598,6 +643,28 @@ public partial class Main : Control
                 : $"Materials: {site.LogsDelivered} of {site.Recipe.Logs} logs — " +
                   $"{site.LogsStillNeeded} still to come");
             lines.Add($"Work: {site.WorkDone} of {site.Recipe.WorkTicks} ticks done");
+
+            // ⭐ WHERE IT IS IN THE QUEUE, AND WHAT IS AHEAD OF IT (Joe). A site sitting at
+            // "0 of 30 ticks" with nobody on it is the opaque stall D93 rules out twice: the
+            // player can only act on it — by freeing a hand, or by cancelling something —
+            // if they can see WHAT is in front of it.
+            //
+            // The number is the real order the village works in, not a display convention.
+            List<Workplace> queue = world.BuildQueue();
+            int place = world.QueuePositionOf(workplace);
+            if (place > 0)
+            {
+                lines.Add(place == 1
+                    ? $"Queue: 1st of {queue.Count} — nothing is ahead of it."
+                    : $"Queue: {Ordinal(place)} of {queue.Count} — "
+                        + $"{queue[place - 2].Construction!.Name} is immediately ahead of it.");
+            }
+
+            // And the ground, which is the other thing that can stop it dead (D101).
+            if (!world.GroundIsClearAt(workplace.Position))
+            {
+                lines.Add("Waiting: the ground it stands on is still being cleared.");
+            }
         }
         else
         {
@@ -967,6 +1034,8 @@ public partial class Main : Control
 
         // ScrollActive so a long reason scrolls rather than being cut off. The one panel
         // whose job is explaining a decision must never truncate the explanation.
+        // ScrollActive so a long reason scrolls rather than being cut off. The one panel
+        // whose job is explaining a decision must never truncate the explanation.
         _inspector = new RichTextLabel
         {
             BbcodeEnabled = false,
@@ -974,6 +1043,35 @@ public partial class Main : Control
             SizeFlagsVertical = SizeFlags.ExpandFill,
         };
         body.AddChild(_inspector);
+
+        // ⭐ STAFFING WHERE THE BUILDING IS (Joe). It lived on the toolbar and acted on
+        // whatever happened to be selected, which D93 recorded as "in a weird place right
+        // now" — and it becomes a lever the player reaches for often, so hunting for it
+        // reads as the game being unfair.
+        //
+        // Here it is unmistakably ABOUT the thing named directly above it. It hides when
+        // the selection is not a staffable workplace, which is the opposite of the old
+        // reasoning ("a button that comes and goes is a button you hunt for") — and the
+        // reason it is safe to reverse is that the buttons now sit inside the panel that
+        // says what they would act on. A control with no subject is worse than an absent one.
+        _staffingRow = new HBoxContainer { Visible = false };
+        _staffingRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_staffingRow);
+
+        _staffingLabel = Muted("Staffing:");
+        _staffingRow.AddChild(_staffingLabel);
+
+        var fewer = new Button { Text = "−1" };
+        fewer.Pressed += () => ChangeStaffing(-1);
+        _staffingRow.AddChild(fewer);
+
+        var more = new Button { Text = "+1" };
+        more.Pressed += () => ChangeStaffing(+1);
+        _staffingRow.AddChild(more);
+
+        var auto = new Button { Text = "Village decides" };
+        auto.Pressed += LetTheVillageDecideStaffing;
+        _staffingRow.AddChild(auto);
     }
 
     /// <summary>Speed, what the map draws, and what the player can ask the village for.</summary>
@@ -1370,26 +1468,12 @@ public partial class Main : Control
         stop.Pressed += () => _map.BeginBuilding(null);
         row.AddChild(stop);
 
-        // The refusal or the warning, in the words the sim already produced. Same
-        // standard as JobReason: a red square on its own is the shrug this project
-        // keeps refusing.
-        // Staffing, on the same row (D51). Deliberately NOT a control that appears only
-        // when a workplace is selected: a button that comes and goes is a button the
-        // player has to hunt for, and these do nothing harmful when nothing is selected.
-        row.AddChild(new VSeparator());
-        row.AddChild(Muted("Staffing:"));
-
-        var fewer = new Button { Text = "−1" };
-        fewer.Pressed += () => ChangeStaffing(-1);
-        row.AddChild(fewer);
-
-        var more = new Button { Text = "+1" };
-        more.Pressed += () => ChangeStaffing(+1);
-        row.AddChild(more);
-
-        var auto = new Button { Text = "Let the village decide" };
-        auto.Pressed += LetTheVillageDecideStaffing;
-        row.AddChild(auto);
+        // ⭐ STAFFING USED TO BE ON THIS ROW AND HAS MOVED TO THE BUILDING PANEL (Joe).
+        // The old note said it deliberately never came and went, "because a button the
+        // player has to hunt for" is worse — and D93 then recorded Joe's verdict on the
+        // result: "the staffing control is in a weird place right now". Both things were
+        // true. A control that is always there but never says WHAT it acts on is the
+        // thing you hunt for; beside the name of the building, it needs no explaining.
 
         // HANDED BACK RATHER THAN INSERTED, which is the third and last version of this.
         // It began by taking the UI root and testing `is VBoxContainer` — the root is a

@@ -1241,6 +1241,67 @@ public sealed class SimWorld
         RaiseSiteFor(BuildingKind.Home, position, "a house", recipe, householdId);
     }
 
+    /// <summary>
+    /// Every building waiting to be raised, in the order the village will get to them (D104).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The order is the one the allocator actually uses</b> — what the player marked before
+    /// a house the village marked for itself (D102), and within each group the order they were
+    /// marked. That matters more than it sounds: <b>a queue position shown on a panel has to
+    /// be the real one</b>, or it is a number the player plans against and the village ignores.
+    /// </para>
+    /// <para>
+    /// <b>Marking order is by workplace id</b>, which only ever increases, so "first marked,
+    /// first built" needs nothing stored. The list is rebuilt on each call rather than
+    /// maintained, for the reason <see cref="HomeSiteFor"/> gives: a cached order is one more
+    /// thing that can disagree with the world.
+    /// </para>
+    /// </remarks>
+    public List<Workplace> BuildQueue()
+    {
+        var queue = new List<Workplace>();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Construction is { IsFinished: false })
+            {
+                queue.Add(Workplaces[i]);
+            }
+        }
+
+        queue.Sort(static (a, b) =>
+        {
+            bool aIsHome = a.Construction!.Kind == BuildingKind.Home;
+            bool bIsHome = b.Construction!.Kind == BuildingKind.Home;
+            if (aIsHome != bIsHome)
+            {
+                return aIsHome ? 1 : -1;
+            }
+
+            return a.Id.CompareTo(b.Id);
+        });
+
+        return queue;
+    }
+
+    /// <summary>Where a site stands in <see cref="BuildQueue"/>, counting from one, or 0.</summary>
+    public int QueuePositionOf(Workplace site)
+    {
+        ArgumentNullException.ThrowIfNull(site);
+
+        List<Workplace> queue = BuildQueue();
+        for (int i = 0; i < queue.Count; i++)
+        {
+            if (queue[i].Id == site.Id)
+            {
+                return i + 1;
+            }
+        }
+
+        return 0;
+    }
+
     /// <summary>The house being built for a household, or null if none is marked.</summary>
     /// <remarks>
     /// <b>Asked rather than recorded on the household</b> (D66, D71's rule): a flag is one more
