@@ -789,6 +789,19 @@ public sealed class SimWorld
     /// <summary>Un-paint a tile the village had meant to clear.</summary>
     public bool EraseHarvest(GridPos tile) => Zones.SetHarvest(tile, false);
 
+    /// <summary>
+    /// Whether a tile has been cleared of everything standing on it — so a site here may be
+    /// worked (D101).
+    /// </summary>
+    /// <remarks>
+    /// <b>The inverse of <see cref="HasSomethingToHarvest"/>, and named for the question its
+    /// callers are actually asking.</b> A builder does not want to know whether there is a
+    /// harvest here; they want to know whether they can start. Two readings of one fact, and
+    /// the reason both exist is that <c>!HasSomethingToHarvest(x)</c> at a building call site
+    /// is the sort of double negative somebody eventually gets backwards.
+    /// </remarks>
+    public bool GroundIsClearAt(GridPos tile) => !HasSomethingToHarvest(tile);
+
     /// <summary>Whether a tile holds anything a laborer could take.</summary>
     /// <remarks>
     /// <b>One question, so a new harvestable terrain is answered here and nowhere else.</b>

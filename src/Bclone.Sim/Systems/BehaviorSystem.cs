@@ -766,16 +766,35 @@ public sealed class BehaviorSystem : ISimSystem
     /// transaction, and D14's whole argument is that things which happen in this
     /// village are work somebody does.
     /// </remarks>
-    private static void WorkTheSite(SimWorld world, Villager villager, Workplace job)
+    /// <returns>
+    /// False when there is nothing a builder can do here this tick, so the caller lets them
+    /// fall through to the errands anybody spare may take (D87, D96).
+    /// </returns>
+    private static bool WorkTheSite(SimWorld world, Villager villager, Workplace job)
     {
         ConstructionSite site = job.Construction!;
+
+        // ⭐ NOTHING IS BUILT ON GROUND THAT IS STILL STANDING (Joe, D101). The trees under a
+        // marked site come down first, and the mark is what asked for them (D100).
+        //
+        // The builder is not merely sent home: they fall through to the bottom of Decide,
+        // where clearing painted ground is exactly the work that unblocks them. That is D87's
+        // position rule paying for itself — the person waiting on a clearing is allowed to go
+        // and do the clearing, and nobody had to write a rule saying so.
+        if (!world.GroundIsClearAt(job.Position))
+        {
+            villager.WorkNote =
+                $"{site.Name} cannot be started yet — the ground it stands on is still being "
+                + "cleared.";
+            return false;
+        }
 
         // Carrying logs, or the site already has what it needs: head for the site.
         if (villager.CarriedLogs > 0 || site.HasMaterials)
         {
             villager.WorkNote = string.Empty;
             HeadFor(world, villager, job.Position, VillagerState.Building);
-            return;
+            return true;
         }
 
         // Otherwise fetch materials from the nearest shed that has any — OR THE CART,
@@ -795,12 +814,15 @@ public sealed class BehaviorSystem : ISimSystem
             villager.WorkNote =
                 $"Nothing to build with — {site.Name} still wants {site.LogsStillNeeded} logs, " +
                 "and nowhere within reach has any.";
-            GoHome(world, villager);
-            return;
+
+            // Nothing to fetch and nothing to build: let them take whatever spare work there
+            // is rather than walking home to stand still.
+            return false;
         }
 
         villager.WorkNote = string.Empty;
         HeadFor(world, villager, shed.Position, VillagerState.FetchingMaterials);
+        return true;
     }
 
     /// <summary>Set off for a spot, remembering it so the walk survives re-deciding.</summary>
@@ -879,6 +901,21 @@ public sealed class BehaviorSystem : ISimSystem
             }
         }
 
+        // Materials may be stacked on a site whose ground is still standing — that is a
+        // delivery, not building — but NO WORK GOES IN until the ground is clear (D101).
+        // Checked here as well as in WorkTheSite because a builder can already be standing
+        // here when the site is marked, and a rule enforced in one of two places is a rule
+        // that gets around.
+        if (!world.GroundIsClearAt(job!.Position))
+        {
+            villager.WorkNote =
+                $"{site.Name} cannot be started yet — the ground it stands on is still being "
+                + "cleared.";
+            villager.State = VillagerState.Idle;
+            return;
+        }
+
+        villager.WorkNote = string.Empty;
         site.Work();
         villager.State = VillagerState.Building;
 
@@ -1334,9 +1371,9 @@ public sealed class BehaviorSystem : ISimSystem
         // Raising a building the player marked out (D43). Materials first, then work:
         // a builder standing on an empty footprint has nothing to build WITH, and
         // making them fetch it is what stops construction being a purchase.
-        if (villager.CanWork && job?.Kind == JobKind.Builder && job.Construction is not null)
+        if (villager.CanWork && job?.Kind == JobKind.Builder && job.Construction is not null
+            && WorkTheSite(world, villager, job))
         {
-            WorkTheSite(world, villager, job);
             return;
         }
 

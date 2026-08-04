@@ -236,10 +236,9 @@ public sealed class InstantPileTests
     /// <summary>Every building asks for its ground to be cleared, not only the pile.</summary>
     /// <remarks>
     /// Joe's wording is <em>"if a building is placed on a resource"</em>, so the paint is not
-    /// a pile rule. <b>Only the pile WAITS, though</b>, and that asymmetry is deliberate: a
-    /// pile is the ground it stands on, while a granary is a building that happens to be
-    /// there — and making every site wait for a clearing would insert a hop into the cold
-    /// start, which is the one thing D93 measured as fatal.
+    /// a pile rule. The site itself still exists straight away — a pile is the one thing that
+    /// <em>is</em> the ground it stands on, so it is the one thing with nothing to exist as
+    /// until the ground is bare.
     /// </remarks>
     [Fact]
     public void MarkingAnyBuildingOnAResourceAsksForItToBeCleared()
@@ -254,6 +253,61 @@ public sealed class InstantPileTests
         // …and the shed's site exists straight away, unlike a pile's.
         Assert.Contains(world.Workplaces, place => place.Construction?.Kind == BuildingKind.Shed);
         Assert.Empty(world.PilesWaitingOnTheGround);
+    }
+
+    /// <summary>⭐ …and no work goes into it until the ground is bare (Joe, D101).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: "all sites should wait for clearing before building can begin."</b> Materials
+    /// may still be stacked on the footprint — that is a delivery, not building — but not one
+    /// tick of work goes in while a tree is standing on it.
+    /// </para>
+    /// <para>
+    /// <b>And the builder who is waiting goes and does the clearing</b>, which is D87's
+    /// position rule paying for itself: a builder with nothing to build falls through to the
+    /// bottom of <c>Decide</c>, where clearing painted ground is exactly the work that
+    /// unblocks them. Nobody had to write a rule saying so.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NoWorkGoesIntoASiteWhoseGroundIsStillStanding()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        GridPos at = WoodedGroundNear(world)!.Value;
+        Assert.True(world.Mark(BuildingKind.Shed, at).Allowed);
+
+        Workplace site = Assert.Single(
+            world.Workplaces, place => place.Construction?.Kind == BuildingKind.Shed);
+
+        // Give it every log it wants, so materials can never be the reason it is not built.
+        site.Construction!.Deliver(site.Construction.Recipe.Logs);
+        Assert.True(site.Construction.HasMaterials);
+
+        int woodedTicks = 0;
+        while (!world.GroundIsClearAt(at) && woodedTicks < config.TicksPerYear)
+        {
+            loop.StepOnce();
+            woodedTicks++;
+            Assert.Equal(0, site.Construction.WorkDone);
+        }
+
+        _output.WriteLine(
+            $"the ground under the site stood for {woodedTicks} ticks with the site fully "
+            + $"stocked, and {site.Construction.WorkDone} ticks of work went in");
+
+        // Anti-vacuity (D7): if the tile was cleared on tick one this proved nothing.
+        Assert.True(woodedTicks > 1, "The ground was clear immediately, so nothing was tested.");
+
+        // And once it IS clear, the village gets on with it.
+        Assert.True(world.GroundIsClearAt(at), "The village never cleared the marked ground.");
+        loop.Step(config.TicksPerYear);
+        _output.WriteLine($"a year later: {site.Construction?.WorkDone.ToString() ?? "finished"}");
+        Assert.True(
+            site.Construction is null || site.Construction.WorkDone > 0,
+            "The ground was cleared and still nothing was ever built.");
     }
 
     // ---------------------------------------------------------------
