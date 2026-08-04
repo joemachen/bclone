@@ -471,6 +471,15 @@ and finite deposits (§5.2 of `specs/mutable-terrain.md`). **Planting is not in 
 gated behind managed forestry and §2.7 is unbuilt, which is the right order: the harvest is
 what *creates* the pressure that node answers.
 
+**⚠️ AND D96'S THREE STEPS LANDED WITH NO VIEW EITHER (D97–D99).** The harvest brush and the
+build menu did reach the toolbar since this was written, so the list below is partly done —
+but **nothing draws a heap on the ground**, and a census finds one mention of the storage pile
+in `src/Bclone.Game` (a panel string). That matters more than usual here: the point of goods on
+the ground is that *they are in a place, so they can be walked to*, and a place the player
+cannot see is a place they cannot reason about. **A granary overflowing into a heap outside its
+own door is the clearest "build another granary" signal this game has ever had, and today it is
+invisible.** Add it to the list.
+
 **⭐ NEXT SESSION IS THE VIEW (Joe, 2026-08-03), and it comes before any more sim work.**
 Four slices of behaviour landed with **no controls at all** — a census found *zero* references
 to the harvest brush or work-ground painting anywhere in `src/Bclone.Game`, so the only brush
