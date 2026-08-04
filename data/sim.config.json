@@ -572,9 +572,13 @@
   // The tools are NOT a dial and cannot be one yet: nothing in the game makes
   // or spends them, so they are a stock the player can see and cannot use. The
   // founders brought them; a workshop to replace them is D17's, still parked.
+  //
+  // `cart_logs` is gone rather than sitting at 0 (D90 step 4): the cart REFUSES
+  // timber now, so a key holding a number the wagon would not accept is a lie
+  // waiting to be found. It is a food-and-tools box, which is what you arrived
+  // in.
   "cart_capacity": 1650,
   "cart_food": 1200,
-  "cart_logs": 0,
   "cart_tools": 20,
 
   // Less than everything, deliberately. Demolition is how a player

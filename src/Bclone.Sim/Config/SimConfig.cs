@@ -613,9 +613,20 @@ public sealed record SimConfig
     [JsonPropertyName("cart_food")]
     public int CartFood { get; init; } = 400;
 
-    /// <summary>Timber the founders arrive carrying — a start on the first house, not a house.</summary>
-    [JsonPropertyName("cart_logs")]
-    public int CartLogs { get; init; } = 10;
+    // `cart_logs` WAS HERE AND IS GONE (D90 step 4, D95, landed with D96). It was a start on
+    // the first house, and it existed because of D72 — building timber was drawn only from
+    // sheds and a cold start has none, so even felled logs could not become a house. The
+    // harvest brush gave the village its own way to timber and that gate lifted without
+    // anybody noticing.
+    //
+    // D95 measured taking it away rather than assuming: forty years went from 13 alive in 5
+    // households to 14 in 6, houses still raised, and DoingNothingKillsTheFounders still
+    // killed all four. Thirty logs was never the constraint, and that cart space is worth
+    // more as food. The shipped file had already been set to 0.
+    //
+    // DELETED RATHER THAN LEFT AT ZERO, because the cart now REFUSES logs and Stockpile.
+    // Receive knows nothing about Accepts — so the key would have gone on quietly loading
+    // the fixture's default of ten into a wagon that will not take them.
 
     /// <summary>Tools the founders arrive carrying — the only ones in the world (D17, D64).</summary>
     /// <remarks>
@@ -626,9 +637,9 @@ public sealed record SimConfig
     /// them, so the good and the founding stock land together and the mechanic follows.
     /// </para>
     /// <para>
-    /// <b>Not a difficulty dial</b>, unlike <see cref="CartFood"/> and <see cref="CartLogs"/>
-    /// beside it — it cannot be, while nothing spends it. When tools start wearing out it
-    /// becomes one, and this remark is what should be deleted then.
+    /// <b>Not a difficulty dial</b>, unlike <see cref="CartFood"/> beside it — it cannot be,
+    /// while nothing spends it. When tools start wearing out it becomes one, and this remark
+    /// is what should be deleted then.
     /// </para>
     /// </remarks>
     [JsonPropertyName("cart_tools")]

@@ -324,6 +324,8 @@ public sealed class SimWorld
             return;
         }
 
+        SayIfThereIsNowhereAtAllForThis(goods);
+
         for (int i = 0; i < GroundStacks.Count; i++)
         {
             if (GroundStacks[i].Position == position && GroundStacks[i].Goods == goods)
@@ -334,6 +336,60 @@ public sealed class SimWorld
         }
 
         GroundStacks.Add(new GroundStack { Position = position, Goods = goods, Amount = amount });
+    }
+
+    /// <summary>Whether the village has already been told it has nowhere for a good.</summary>
+    /// <remarks>
+    /// <b>Gates narration and nothing else</b>, which is why it is not in the state hash: two
+    /// runs of one seed say the same sentence at the same tick because everything that decides
+    /// it is hashed. It exists for D42's rule about the distance warning — one considered
+    /// sentence, rather than a nag the player learns to click past.
+    /// </remarks>
+    private readonly bool[] _saidThereIsNowhereFor = new bool[Stockpile.Kinds];
+
+    /// <summary>
+    /// Say so, once, when a good is being set down because the village has nowhere for it
+    /// at all.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ This is the sentence that keeps D90 step 4 fair.</b> The cart stopped taking logs,
+    /// so a founding that paints trees and places no store fells timber into a field where
+    /// <c>LogsInSheds</c> cannot see it — goods on the ground are supply-invisible by design —
+    /// and the hut then reports <em>"no logs here to split"</em> while four hundred logs lie
+    /// about. <b>That is D89's silent strangling in a new costume</b>, and D89 is the decision
+    /// that named it as a legibility failure before a balance one.
+    /// </para>
+    /// <para>
+    /// <b>Nowhere AT ALL, not merely full.</b> A village whose stores are packed has a problem
+    /// it can see in its own stores; a village with no store that will take a good has a
+    /// problem it cannot see anywhere, and only the second is worth interrupting for. So this
+    /// fires roughly once a game, on the first felled tree of a founding with no pile.
+    /// </para>
+    /// </remarks>
+    private void SayIfThereIsNowhereAtAllForThis(Goods goods)
+    {
+        if (_saidThereIsNowhereFor[(int)goods])
+        {
+            return;
+        }
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Accepts(goods))
+            {
+                return;
+            }
+        }
+
+        _saidThereIsNowhereFor[(int)goods] = true;
+
+        Narrate(
+            $"There is nowhere in the village to keep {goods.ToString().ToLowerInvariant()}, "
+            + "so it is being left "
+            + "on the ground where it falls — and goods on the ground feed nobody and build "
+            + $"nothing. A storage pile costs only the cleared ground it stands on. "
+            + $"{Clock.SeasonAndYear()}.");
     }
 
     /// <summary>Take up to <paramref name="amount"/> off a heap; it goes when it is empty.</summary>
@@ -2439,11 +2495,13 @@ public sealed class SimWorld
         };
 
         StoreBuildings.Add(cart);
-        // Food first, then timber, then the tools they carried — the order capacity
-        // binds in, stated rather than implied by an argument list (Stockpile.Receive).
-        // Received rather than added: the founders did not make any of it here.
+        // Food first, then the tools they carried — the order capacity binds in, stated
+        // rather than implied by an argument list (Stockpile.Receive). Received rather than
+        // added: the founders did not make any of it here.
+        //
+        // NO TIMBER, and it is a wagon that will not take any (D90 step 4). What the cart
+        // holds is what you arrived in: your food and your tools.
         cart.Store.Receive(Goods.Food, config.CartFood);
-        cart.Store.Receive(Goods.Logs, config.CartLogs);
         cart.Store.Receive(Goods.Tools, config.CartTools);
     }
 

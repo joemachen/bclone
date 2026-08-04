@@ -34,7 +34,6 @@ public sealed class ColdStartTests
         FoundingBuildings = false,
         CartCapacity = ShippedConfig.Load().CartCapacity,
         CartFood = ShippedConfig.Load().CartFood,
-        CartLogs = ShippedConfig.Load().CartLogs,
     };
 
     private static SimLoop Build(SimConfig config) =>
@@ -100,7 +99,15 @@ public sealed class ColdStartTests
 
         // The whole load fitted, so nothing was quietly left behind at the roadside.
         Assert.Equal(config.CartFood, cart.Store.Food);
-        Assert.Equal(config.CartLogs, cart.Store.Logs);
+
+        // ⭐ AND NO TIMBER, EVER (D90 step 4). The cart is a food-and-tools box: it will not
+        // take logs, so `cart_logs` is gone rather than zeroed and the wagon cannot be
+        // strangled by a woodpile (D89).
+        // The Stockpile itself knows nothing about Accepts — which is exactly why the config
+        // key had to go rather than sit at zero: it would have gone on loading the fixture's
+        // default of ten straight past the refusal.
+        Assert.Equal(0, cart.Store.Logs);
+        Assert.False(cart.Accepts(Goods.Logs));
     }
 
     /// <summary>The cart feeds them, so D10 survives the founding.</summary>
@@ -216,8 +223,16 @@ public sealed class ColdStartTests
             }
         }
 
-        // And a shed to keep timber in, and the hut that turns it into firewood — without
-        // which a house is a roof with no fire under it, and D45 kills at day 25 of 30.
+        // Somewhere to put timber, and the hut that turns it into firewood — without which a
+        // house is a roof with no fire under it, and D45 kills at day 25 of 30.
+        //
+        // ⭐ THE PILE FIRST, AND A SHED CANNOT TAKE ITS PLACE (D90 step 4). A shed costs 30
+        // logs and is a construction site, so it cannot be what holds the village's first
+        // timber — the cart will not take logs any more, and a founding with nowhere to put
+        // a felled tree sets it down in a field where nothing can spend it. The pile costs
+        // the ground it stands on and stands the tick it is marked (D98). The shed stays,
+        // built out of the pile, because this guard is about a village that grows.
+        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
         MarkSomewhereNear(world, BuildingKind.Shed, site, 2);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
 
@@ -283,10 +298,11 @@ public sealed class ColdStartTests
 
         PlayTheOpening(world);
 
-        // The opening asks for NO STORE AT ALL now — not a shed, and no longer a pile.
-        // Everything the founders gather goes back to the cart they arrived in.
-        Assert.Single(world.StoreBuildings);
-        Assert.Equal(StoreKind.Cart, world.StoreBuildings[0].Kind);
+        // The opening asks for a pile and nothing else — no shed, no granary. Food goes back
+        // to the cart they arrived in; timber cannot, so it goes to the pile (D90 step 4).
+        Assert.Equal(2, world.StoreBuildings.Count);
+        Assert.Contains(world.StoreBuildings, store => store.Kind == StoreKind.Cart);
+        Assert.Contains(world.StoreBuildings, store => store.Kind == StoreKind.Pile);
 
         loop.Step(config.TicksPerYear);
 
@@ -649,7 +665,28 @@ public sealed class ColdStartTests
             }
         }
 
-        // 2. Something to make firewood with. NO PILE AND NO SHED — that is the test.
+        // 2. ⭐ SOMEWHERE TO PUT TIMBER, AND THE PILE IS LOAD-BEARING AGAIN (D90 step 4).
+        //
+        // This said "NO PILE AND NO SHED — that is the test", on D89's measurement that Joe
+        // never needed one: the cart held the wood, so the pile did nothing. THE CART NO
+        // LONGER TAKES LOGS, which is the whole of D90's answer to D89 — a wagon that cannot
+        // hold timber cannot be strangled by it — and D90 says in as many words that this is
+        // what gives the pile its reason back: "you cannot take timber until you have
+        // somewhere to put it."
+        //
+        // Measured rather than argued. Without this line the founding is exactly D95's
+        // failure: foresters fell, the cart refuses the load, they set it down (first drop
+        // at t16), and goods on the ground are supply-invisible — so 864 logs lie in a field
+        // that LogsInSheds cannot see, no builder is ever funded, the hut never stands and
+        // all four freeze. That is the design working, not a bug: the first thing the player
+        // places is somewhere to keep things, which is Banished's opening and D76's.
+        //
+        // A shed will not do instead, and that asymmetry is the point: a shed costs 30 logs
+        // and is a construction site, so it cannot be the thing that holds the first timber.
+        // A pile costs the ground it stands on and goes up the tick it is marked (D98).
+        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
+
+        // 3. Something to make firewood with. Still no shed — the pile is the store.
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
 
         // ⚠️ AND DELIBERATELY NO HARVEST PAINTING, which was tried here and measured as

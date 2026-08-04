@@ -32,10 +32,27 @@ public enum StoreKind
     /// story §0 already tells about exiles.
     /// </para>
     /// <para>
-    /// <b>It holds anything</b>, because the founders' load is not sorted into a granary's
-    /// worth of food and a shed's worth of timber — it is what they could carry. Small, and
-    /// <b>demolishable once empty</b> (Joe): a wagon standing in the square forever is a
-    /// monument to a slice rather than a building.
+    /// <b>It holds anything EXCEPT timber</b> (D90 step 4, landed with D96). It used to hold
+    /// everything, because the founders' load is not sorted into a granary's worth of food
+    /// and a shed's worth of timber — it is what they could carry. <b>Logs are the one thing
+    /// that plausibly will not fit</b>, and Joe's opening turns on that: you cannot take
+    /// timber until you have somewhere to put it, which is what gives the storage pile its
+    /// reason back.
+    /// </para>
+    /// <para>
+    /// <b>⭐ It also fixes a village that could be strangled by its own woodpile, in silence
+    /// (D89).</b> Measured over forty years on the shipped config, the arm with trees painted
+    /// and no store placed ran <b>4 → 6 → 2</b> against 8 or 9 for every other arm: the cart
+    /// filled with timber — 677 logs of its 1,200 by year five — and the food it crowded out
+    /// never arrived, 164 against 400+. The village then stopped having children and aged out
+    /// with <b>zero starved and zero frozen</b>, which is a legibility failure before it is a
+    /// balance one and precisely the uncozy death §0.1 rules out. <b>A cart that cannot hold
+    /// logs cannot be strangled by them</b> — the constraint is structural rather than a
+    /// warning the player has to read.
+    /// </para>
+    /// <para>
+    /// Small, and <b>demolishable once empty</b> (Joe): a wagon standing in the square forever
+    /// is a monument to a slice rather than a building.
     /// </para>
     /// <para>
     /// <b>It is not shelter.</b> <c>SimWorld.ShelterAt</c> knows only about homes, so
@@ -137,11 +154,19 @@ public sealed class StoreBuilding
             or Goods.Iron,
         StoreKind.Market => goods is Goods.Food or Goods.Firewood,
 
-        // Everything, because the founders' load was never sorted — it is what they could
-        // carry (D64). A heap on the ground does not specialise either: the two stores that
-        // take anything are the two that are not really buildings, and in both cases it is
-        // the SIZE rather than the rules that stops them being the granary.
-        StoreKind.Cart => true,
+        // ⭐ EVERYTHING BUT TIMBER (D90 step 4). The founders' load was never sorted — it is
+        // what they could carry (D64) — and logs are the one thing that plausibly will not
+        // fit in a wagon you arrived in. That single refusal is what makes the storage pile
+        // load-bearing again (you cannot take timber until you have somewhere to put it) and
+        // what stops D89's silent strangling, where a cart packed with logs crowded out the
+        // food and the village aged out with nobody starved and nobody frozen.
+        //
+        // It only became safe once goods could be set down (D96): before that, a forester
+        // whose cart refused a load had nowhere on earth to put it.
+        StoreKind.Cart => goods != Goods.Logs,
+
+        // The pile still takes anything, and it is the one store that does. A heap does not
+        // specialise, and its SIZE rather than its rules is what stops it being the granary.
         StoreKind.Pile => true,
         _ => false,
     };

@@ -434,6 +434,13 @@ the transition's first step is provably a no-op, which is what makes the next on
   was found on the way**: pulling down a pile or the cart refunded half a market's logs out of
   a building nobody paid for.
 
+- **The cart is a food-and-tools box** ✅ (D96 step 3 = D90 step 4, D99). `cart_logs` deleted,
+  and **D89's fatal arm fixed structurally**: trees painted with no store held 164 food at year
+  five and now holds 940. **The pile is load-bearing again** — a shed cannot take its place,
+  because a shed costs 30 logs and is a construction site. The cold start's schedule is
+  measured and *looser* than before: first firewood at **t248** against winter at t360, where
+  D93 recorded t300.
+
 **Next — the opening Joe described, in the one order that does not break it (D90):**
 
 1. ~~**`Terrain` gains `Rock` and `IronDeposit`**~~ ✅ **done (D91)** — visible seams, appended
@@ -450,9 +457,9 @@ the transition's first step is provably a no-op, which is what makes the next on
    site. **A stall for want of a carrier is the player's to solve** by lowering staffing
    (Joe) — **so the site saying it is waiting ships in the same slice**, because a silent
    stall is the one thing that would make it unfair rather than hard.
-4. **Only then does `cart_logs` go to zero** and the cart stop accepting logs. **Doing this
-   first would leave a founding that cannot build anything at all** — the 30 logs exist
-   because of D72, and removing them before the map-to-site flow exists re-opens that bug.
+4. ~~**Only then does `cart_logs` go to zero** and the cart stop accepting logs.~~ ✅ **done
+   (D99)**, on D96's two preconditions rather than on the map-to-site flow. `cart_logs` is
+   deleted, not zeroed; the pile is what a founding puts its first timber in.
 5. Then the **forester's hut** (D86) — its ground and worker-priced area are built and waiting.
 
 Then the deferred pair: **natural regrowth** (promoted above planting by D88 — a cleared valley
@@ -555,6 +562,13 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D99 · 2026-08-03 · The cart stops accepting logs, and the change that was reverted twice lands without moving the cold start's schedule.** D96's third step, which is D90's fourth and has been waiting on the other two. **`cart_logs` is deleted rather than zeroed**, because `Stockpile.Receive` knows nothing about `Accepts` and the key would have gone on loading the fixture's ten into a wagon that refuses them.
+  - **⭐ The precondition was the whole problem, and D96 supplied it.** D95 built this and reverted it: a pile was a construction site, so between marking one and it standing a forester had nowhere on earth to put a load — **0 homes, nothing built at all**. Now a load can be set down (D97) and a pile stands the tick it is marked (D98), so neither hole exists.
+  - **Measured against D93's five ticks, because that is the knife edge everything here dies on.** Shipped config, the guard's own village: **builder t120, logs delivered t128, hut standing t170, staffed t240, first firewood t248** — against a winter at t360. **112 ticks of slack**, where D93 measured 60 on green code at t300. **The cart change costs about three ticks.** The opening is not tighter than it was; it is looser, because steps 1 and 2 went in first.
+  - **✅ D89's fatal arm is fixed structurally rather than warned about.** *Trees painted, no store placed* ran **4 → 6 → 2** over forty years against 8 or 9 for every other arm, because the cart filled with timber — 677 logs of its 1,200 by year five — and the food it crowded out never came: **164 food against 400+**, the village ageing out with nobody starved and nobody frozen. Measured now: **940 food at five years and no logs in the cart at all.** A wagon that cannot hold timber cannot be strangled by it.
+  - **⭐ And the storage pile is load-bearing again, honestly this time.** D76 built it as *"the first thing the player places"* and D76's own fix made it optional; D89 found it unused in play. **You cannot take timber until you have somewhere to put it** is the rule that restores it — and a shed cannot stand in for it, because a shed costs 30 logs and is a construction site, so it can never be what holds a village's *first* timber. **`ColdStartTests.PlayTheOpening` places one again**, and the comment saying *"no pile and no shed — that is the test"* is rewritten rather than left describing a game that has moved on.
+  - **⚠️ The one thing this creates, and it ships fixed in the same slice, because D89 is the decision that forbids it.** Goods on the ground are supply-invisible, so a founding that paints trees and places no store fells timber into a field `LogsInSheds` cannot see — the hut then says *"no logs here to split"* beside four hundred logs. **That is D89's silent strangling in a new costume**, so the village says it out loud, once: *"there is nowhere in the village to keep logs, so it is being left on the ground where it falls — and goods on the ground feed nobody and build nothing. A storage pile costs only the cleared ground it stands on."* Fired at **t16** of a founding with no pile. **On *nowhere at all* rather than on *full***, because a village whose stores are packed can see that in its stores.
+  - **⚠️ Worth watching, not fixing: the founding is still exquisitely placement-sensitive.** A probe that sited the pile at (-1,-2) instead of (-3,-3) killed all four founders where the guard's own placement survives comfortably. That is D93's finding standing unchanged — *the founding is balanced so finely that any perturbation of who works when kills it* — and it is the strongest remaining argument for widening the opening's slack deliberately, which §7.2 of `specs/cold-start.md` says is Joe's call.
 - **D98 · 2026-08-03 · The pile is instant, and its cost moved from an invented number to the ground it stands on.** D96's second step. Joe: *"if there are resources, they must first be cleared and then the stockpile can be instant."*
   - **`pile_work_ticks` is deleted rather than zeroed**, on Joe's own reasoning — a number that is always zero is a lie waiting to be found. It was *"small, but not zero: the work is what makes placing a pile a decision with a cost"*, and that instinct was right about the cost and wrong about where it lived. **Eight ticks of levelling bare earth tied the decision to nothing.** Clearing a wood to make room for the store ties it to the map, to the harvest brush, and to a price the player can see before they pay it.
   - **⭐ So `CanBuildAt` refuses a pile on ground that still has something on it, and the refusal names the tool** — *"a pile is cleared ground, and that is woodland. Clear it with the harvest brush and the pile goes straight up."* Both halves, because a refusal the player cannot act on is worse than none (§1.1, and D92's rule about a brush that silently does nothing).

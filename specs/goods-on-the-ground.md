@@ -1,7 +1,9 @@
 # Spec: Goods on the ground, and a pile that costs the clearing
 
-**Decisions:** **D96**, and D90 step 4 which has been waiting on it. Neighbours: D76, D80,
-D83, D89, D95. **Status:** specced, in progress.
+**Decisions:** **D96**, and D90 step 4 which has been waiting on it. Implemented as **D97**
+(ground stacks), **D98** (the instant pile) and **D99** (the cart). Neighbours: D76, D80, D83,
+D89, D95. **Status:** ✅ **all three steps shipped**, 496 tests green — awaiting Joe's QA pass
+(§10.6) and the view, which draws none of it yet.
 
 ---
 
@@ -301,16 +303,23 @@ Against **both** `VillageFixtures.Village` and the shipped config, per METHODOLO
 
 13. **The cart refuses logs**, and a forester with a full cart still gets rid of a load —
     to a store if one will take it, to the ground if not.
-14. **⭐ The arm that killed a village is now survivable:** Joe's opening *with trees painted
-    and no store placed* keeps its founders, where it fell to 2 in forty years.
-15. **`JoesOpeningSurvivesOnTheShippedConfig` and the whole cold-start file stay green** —
-    the gate.
+14. **⭐ The arm that killed a village no longer strangles it:** Joe's opening *with trees
+    painted and no store placed* holds **940 food at five years**, where D89 measured 164.
+15. **⭐ And the village SAYS it has nowhere to keep timber** — once, at t16 of a founding with
+    no pile, and never when a pile stands. **This is not polish**: goods on the ground are
+    supply-invisible, so without it a hut reports *"no logs here to split"* beside four hundred
+    logs, which is D89's silent strangling in a new costume and the failure §1.1 forbids.
+16. **`JoesOpeningSurvivesOnTheShippedConfig` and the whole cold-start file stay green** —
+    the gate. **`PlayTheOpening` places a pile again**, because D90's rule now binds: you
+    cannot take timber until you have somewhere to put it, and a shed cannot stand in for a
+    pile because a shed costs 30 logs and is a construction site.
 
 **Everything**
 
-16. **All three goldens accounted for.** Any that moves is re-taken in the same commit with
-    the old value kept beside it and a one-sentence reason. If the sentence cannot be written,
-    the change is wrong and not the golden.
+17. **All three goldens accounted for.** ✅ Step 1 moved both fifty-year hashes — the leak in
+    §3.1, re-taken in the same commit with the old values kept beside them. **Steps 2 and 3
+    moved nothing**, which is the right answer: a village that marks no pile and has no cart
+    is untouched by either.
 
 ---
 
@@ -319,10 +328,28 @@ Against **both** `VillageFixtures.Village` and the shipped config, per METHODOLO
 - ~~**Before step 1:** does an established fifty-year village ever fill a store?~~ ✅ **Done,
   and it does** — §3.1. Both goldens move, and the reason is written into `StockLimitTests`
   beside them.
-- **Before step 3:** the cold-start ticks D93 measured — builders funded, logs delivered, hut
-  standing, staffed, first firewood — against the winter at t360. **The opening passes by
-  sixty ticks of four hundred and eighty**, and the cart change moves who carries what. If
-  those five numbers move, that is the finding, not a detail.
+- ✅ **Before step 3, and taken on both sides of it:** D93's five ticks, shipped config, the
+  guard's own village.
+
+  | | D93 (green code) | after steps 1–2 | after step 3 |
+  |---|---|---|---|
+  | builder funded | t120 | t120 | t120 |
+  | logs delivered | t129 | t123 | t128 |
+  | hut standing | t172 | t166 | t170 |
+  | hut staffed | t240 | t240 | t240 |
+  | **first firewood** | **t300** | **t245** | **t248** |
+  | slack before winter (t360) | 60 | 115 | **112** |
+
+  **The cart change costs about three ticks and the slice as a whole buys fifty.** D93's
+  finding was that *any* perturbation of who works when killed the opening; this one does not,
+  and the reason is that the two preconditions went in first.
+
+- ⚠️ **And one thing the measuring turned up that is not fixed here.** A probe that sited the
+  pile at (-3, -3) survives comfortably; the same opening with the pile at (-1, -2) **killed
+  all four founders**. That is D93's *"balanced so finely that any perturbation kills it"*
+  standing unchanged, now visible in *placement* rather than in labour. It is the strongest
+  remaining argument for widening the opening's slack deliberately — `specs/cold-start.md §7.2`,
+  and Joe's call.
 
 ---
 
