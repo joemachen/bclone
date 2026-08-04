@@ -144,6 +144,14 @@ change can silently repeal. This one is load-bearing enough to say out loud.
 
 ### 7.1b ⛔ Two findings from Joe's second run — both open, and the second is the blocker
 
+**1. ✅ RESOLVED (D102, Joe: *"homes still build instantly — and they shouldn't"*).** A house
+is a `ConstructionSite` like everything else now: marked out by the village, its timber hauled
+by a builder, and worked on. It killed the founding on the first attempt — two house sites went
+in front of the woodcutter's hut and its timber arrived four ticks after winter — and the fix
+was **builders staffing what the player marked before a house the village marked for itself**,
+not anything about the work. The original finding is kept below because its reasoning is what
+the fix had to answer.
+
 **1. A house is built instantly; every other building is a construction site.** Joe:
 *"they built homes (immediate builds btw, not a visual timed thing like other buildings)."*
 `HouseTheRoofless` and `FormNewHouseholds` both take the timber and set `HomePosition` in

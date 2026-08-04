@@ -26,6 +26,28 @@ public enum BuildingKind
     /// would delete the entire reason it exists.
     /// </remarks>
     Pile = 4,
+
+    /// <summary>
+    /// A house — and it is a construction site like everything else now (Joe, D102).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The one inconsistency `specs/cold-start.md §7.1b` has been carrying since Joe's
+    /// second run</b>: <em>"they built homes (immediate builds btw, not a visual timed thing
+    /// like other buildings)"</em>. `HouseTheRoofless` and `FormNewHouseholds` took the timber
+    /// and set `HomePosition` in a single tick, where every other building is marked, hauled
+    /// to and worked on. That hid what a house costs, and — worse — meant houses never
+    /// competed with anything for builders, which is exactly the distortion that made winter 1
+    /// look winnable when it was not.
+    /// </para>
+    /// <para>
+    /// <b>Still not player-placed</b>, and that is D42's settled division rather than an
+    /// oversight: the player paints the neighbourhood and the sim picks the tile, because
+    /// `MaxHomeToWorkTiles` is the bound the whole food economy is derived against. What
+    /// changes is that the house the sim chose now has to be <em>built</em>.
+    /// </para>
+    /// </remarks>
+    Home = 5,
 }
 
 /// <summary>What a building costs to raise.</summary>
@@ -66,6 +88,10 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
             // and zero is the right answer there too: you get nothing back from a heap you
             // never paid for.
             BuildingKind.Pile => new BuildingRecipe(0, 0),
+
+            // A house costs what it has always cost in timber (`logs_per_house`, which the
+            // whole timber economy is derived against) and now owes work as well (D102).
+            BuildingKind.Home => new BuildingRecipe(config.LogsPerHouse, config.HomeWorkTicks),
             _ => new BuildingRecipe(config.HutLogs, config.HutWorkTicks),
         };
     }
@@ -100,6 +126,19 @@ public sealed class ConstructionSite
 
     /// <summary>What it will be called once it stands.</summary>
     public required string Name { get; init; }
+
+    /// <summary>
+    /// The household this is being built for, or 0 for a building that belongs to the
+    /// village (D102).
+    /// </summary>
+    /// <remarks>
+    /// <b>Only a home has one</b>, because a home is the one building that belongs to
+    /// somebody. Recorded on the site rather than worked out at completion, so a family who
+    /// waited two years for a house gets <em>that</em> house — the one the sim sited for them
+    /// while they were still counted as roofless — rather than whichever roofless family
+    /// happens to be first in the list on the day it is finished.
+    /// </remarks>
+    public int ForHouseholdId { get; init; }
 
     public required BuildingRecipe Recipe { get; init; }
 

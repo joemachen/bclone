@@ -428,6 +428,14 @@ public sealed class VillageTests
         int worst = 0;
         foreach (Household household in loop.World.Households)
         {
+            // A family whose house is still being raised has no doorstep to measure from
+            // (D102). Their site was chosen by the same ChooseSite this test is about, so
+            // nothing goes unguarded — it is simply measured when the house stands.
+            if (!household.HasHome)
+            {
+                continue;
+            }
+
             int cost = loop.World.TravelCost.TicksBetween(
                 household.Home(), loop.World.FoodSource.Position);
             if (cost > worst)

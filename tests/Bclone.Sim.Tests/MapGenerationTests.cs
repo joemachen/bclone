@@ -380,7 +380,12 @@ public sealed class MapGenerationTests
 
             foreach (Household household in world.Households)
             {
-                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(household.Home()));
+                // Only houses that stand. One being built is a workplace, and the loop
+                // above has already checked that none of those is in the river (D102).
+                if (household.HasHome)
+                {
+                    Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(household.Home()));
+                }
             }
         }
     }

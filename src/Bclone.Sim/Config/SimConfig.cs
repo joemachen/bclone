@@ -410,6 +410,25 @@ public sealed record SimConfig
     [JsonPropertyName("hut_work_ticks")]
     public int HutWorkTicks { get; init; } = 40;
 
+    /// <summary>Ticks of work a house takes to raise (D102).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>New because houses used to be instant</b>, which
+    /// <c>specs/cold-start.md §7.1b</c> has been carrying as an open inconsistency since Joe
+    /// watched it: every other building is marked, hauled to and worked on, and a house simply
+    /// appeared the moment its timber was paid for.
+    /// </para>
+    /// <para>
+    /// <b>The cheapest thing that is still a building.</b> Below a woodcutter's hut, because a
+    /// house is one room and a hut is a workshop — and deliberately not below a pile, which
+    /// costs no work at all because a pile is not a building. What this number really controls
+    /// is how much a growing village's houses compete with its granaries and huts for the
+    /// hands that build both, which is the competition D102 exists to create.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("home_work_ticks")]
+    public int HomeWorkTicks { get; init; } = 30;
+
     // `pile_work_ticks` WAS HERE AND IS GONE (D96, Joe). It said "small, but not zero — the
     // work is what makes placing a pile a decision with a cost", and the cost turned out to
     // belong somewhere better: a pile may only go on ground that is already clear, so ITS

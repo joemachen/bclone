@@ -87,10 +87,23 @@ public sealed class StockLimitTests
     // .AVillageThatDroppedNothingIsHashedAsThoughTheGroundDidNotExist). What moved them is
     // that fifty years of history is genuinely different.
     //
-    //   before goods on the ground (D96): fixture 12290013349185536345,
-    //                                     shipped 12199105553016889764
-    private const ulong FixtureFiftyYearHash = 16616051083588314705UL;
-    private const ulong ShippedFiftyYearHash = 10176218336442890909UL;
+    // ⭐ D102 MOVED BOTH AGAIN, and this one is the plainest of the lot: A HOUSE IS A
+    // CONSTRUCTION SITE NOW. It used to take its timber straight out of the stores and set
+    // HomePosition in the same tick; it is marked out, hauled to and worked on like every
+    // other building, so a village fifty years old has built its houses on different ticks,
+    // in a different order, with different hands. `specs/cold-start.md §7.1b` has carried
+    // that inconsistency as open since Joe watched it, and this closes it.
+    //
+    // Also in here, and measured rather than assumed: builders now prefer what the PLAYER
+    // marked over a house the village marked for itself (LabourAllocator.RankOf). Without it
+    // the founding died — two house sites went in front of the woodcutter's hut, its timber
+    // arrived at t364 against a winter starting at t360, and the shipped guard read 2 alive
+    // and 2 frozen. With it the hut is back to t129/t172/t249, exactly where it was.
+    //
+    //   before houses were built (D102): fixture 16616051083588314705,
+    //                                    shipped 10176218336442890909
+    private const ulong FixtureFiftyYearHash = 16059676616951633422UL;
+    private const ulong ShippedFiftyYearHash = 15383236497282309390UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

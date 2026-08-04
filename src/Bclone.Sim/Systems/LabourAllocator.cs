@@ -45,7 +45,14 @@ internal static class LabourAllocator
     /// two candidates ever compare equal and nothing is left to the sort's stability
     /// (spec §5). This is the largest ordering surface in the sim so far.
     /// </remarks>
-    private readonly record struct Candidate(int Cost, int VillagerId, int WorkplaceId);
+    /// <param name="Rank">
+    /// Which claims get looked at first, whatever they cost. <b>Zero for everything except a
+    /// house the village marked for itself</b> (D102), which is one.
+    /// </param>
+    /// <param name="Cost">Travel cost from where this villager rests to the workplace.</param>
+    /// <param name="VillagerId">Who is claiming it.</param>
+    /// <param name="WorkplaceId">What they are claiming.</param>
+    private readonly record struct Candidate(int Rank, int Cost, int VillagerId, int WorkplaceId);
 
     // ---------------------------------------------------------------
     //  The two entry points
@@ -189,6 +196,14 @@ internal static class LabourAllocator
         // stable — see the note on Candidate.
         candidates.Sort(static (a, b) =>
         {
+            // ⭐ RANK BEFORE COST, AND ONLY BUILDING USES IT (D102). What the player marked
+            // is staffed before what the village marked for itself — see BuildCandidates.
+            int byRank = a.Rank.CompareTo(b.Rank);
+            if (byRank != 0)
+            {
+                return byRank;
+            }
+
             int byCost = a.Cost.CompareTo(b.Cost);
             if (byCost != 0)
             {
@@ -265,12 +280,42 @@ internal static class LabourAllocator
                     continue;
                 }
 
-                candidates.Add(new Candidate(cost, villager.Id, workplace.Id));
+                candidates.Add(new Candidate(RankOf(workplace), cost, villager.Id, workplace.Id));
             }
         }
 
         return candidates;
     }
+
+    /// <summary>
+    /// ⭐ What the player marked is staffed before what the village marked for itself (D102).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Measured, and this is the whole reason it exists.</b> Making houses real
+    /// construction sites put two of them in front of the woodcutter's hut at the founding,
+    /// because <c>HouseTheRoofless</c> marks a house for every roofless family on tick 4. The
+    /// hut's timber then arrived at <b>t364</b> against a winter starting at t360, and the
+    /// founding died — 2 alive, 2 frozen. The cost was not the work: with
+    /// <c>home_work_ticks</c> set to zero the timeline did not move by one tick, because the
+    /// bottleneck is the <em>timber a builder hauls</em>, and two houses' worth goes first.
+    /// </para>
+    /// <para>
+    /// <b>It is a rule rather than a patch, and the policy already exists one file over.</b>
+    /// <c>LabourQuota</c> says in as many words that <em>"heating is a floor alongside eating,
+    /// and only house-building is funded from what is left"</em> — houses already yield to the
+    /// fuel chain when hands are shared out. This says the same thing about the hands that
+    /// build: a woodcutter's hut the player asked for outranks a house the village decided on
+    /// by itself.
+    /// </para>
+    /// <para>
+    /// <b>It is a priority, not an exclusion.</b> Once the marked buildings are staffed, the
+    /// houses take whoever is left — so a village that has built what it was told to goes back
+    /// to housing itself, and nobody is homeless forever because of a rule.
+    /// </para>
+    /// </remarks>
+    private static int RankOf(Workplace workplace) =>
+        workplace.Construction is { Kind: BuildingKind.Home } ? 1 : 0;
 
     // ---------------------------------------------------------------
     //  Legibility (spec §6) — the phase's actual deliverable

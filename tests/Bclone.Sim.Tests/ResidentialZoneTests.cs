@@ -59,8 +59,29 @@ public sealed class ResidentialZoneTests
 
             foreach (Household household in loop.World.Households)
             {
+                if (!household.HasHome)
+                {
+                    continue;
+                }
+
                 Assert.True(loop.World.Zones.IsResidential(household.Home()),
                     $"{household.Name} stands at {household.Home()}, which nobody painted.");
+            }
+
+            // ⭐ AND THE HOUSES STILL BEING RAISED, which is where the claim now has to be
+            // made (D102). A house is a construction site before it is a home, so checking
+            // only standing homes would let a site be marked on unpainted land and only
+            // notice a year later — or never, if it was never finished. The brush's claim is
+            // about where the village DECIDES to build, and that decision is the site.
+            foreach (Workplace site in loop.World.Workplaces)
+            {
+                if (site.Construction?.Kind != BuildingKind.Home)
+                {
+                    continue;
+                }
+
+                Assert.True(loop.World.Zones.IsResidential(site.Position),
+                    $"A house is being raised at {site.Position}, which nobody painted.");
             }
         }
     }

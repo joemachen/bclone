@@ -38,13 +38,19 @@ public sealed class WoodTests
         // last reshuffle's cutting is finished and the next has not been decided.
         SimLoop loop = Build(Config);
 
+        // ⚠️ ACROSS EVERY STAND, NOT THE FIRST ONE IN THE LIST (D102). This read
+        // `FindStand(...).WorkerIds.Count`, which is one of the fixture's TWO stands — so it
+        // was asserting that the village staffs a particular thicket rather than that it cuts
+        // wood at all. Houses becoming construction sites moved where people live and
+        // therefore which stand is nearest, and the guard went red while the village went on
+        // felling exactly as much timber: measured, up to 2 foresters at once over the same
+        // forty years. **The old pass was luck, and the test's own name says what it means.**
         int mostAtOnce = 0;
         for (int season = 0; season < 40 * 4; season++)
         {
             loop.Step(Config.TicksPerSeason);
-            Workplace stand = FindStand(loop.World);
-            mostAtOnce = System.Math.Max(mostAtOnce, stand.WorkerIds.Count);
-            Assert.Equal(JobKind.Forester, stand.Kind);
+            mostAtOnce = System.Math.Max(mostAtOnce, CountWorking(loop.World, JobKind.Forester));
+            Assert.Equal(JobKind.Forester, FindStand(loop.World).Kind);
         }
 
         _output.WriteLine($"most at the stand at once, over 40 years: {mostAtOnce}");

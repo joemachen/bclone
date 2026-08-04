@@ -149,35 +149,28 @@ public sealed class HouseholdSystem : ISimSystem
                 continue;
             }
 
-            if (!TryTakeBuildingTimber(world, config, out int timber))
+            // ⭐ A HOUSE IS MARKED OUT, NOT CONJURED (D102). It used to take the timber
+            // straight out of the stores and set HomePosition in the same tick, which is the
+            // inconsistency `specs/cold-start.md §7.1b` has been carrying since Joe watched
+            // it: "immediate builds, not a visual timed thing like other buildings."
+            //
+            // No timber is taken here now. A builder hauls it, like every other site — which
+            // is D43's rule about construction not being a purchase, finally applied to the
+            // building the village raises most often.
+            if (world.HomeSiteFor(household.Id) is not null)
             {
+                // Already being built for them. Asked rather than flagged, so a cancelled
+                // site cannot leave a family waiting for a house forever.
                 continue;
             }
 
             try
             {
-                household.HomePosition = Household.ChooseSite(world, world.Map.FoundingSite);
+                world.MarkHome(household.Id, Household.ChooseSite(world, world.Map.FoundingSite));
                 world.NeedsMoreResidentialLand = false;
-                world.Narrate(
-                    $"The {household.Name} household raised a house at "
-                    + $"{household.HomePosition} — {world.Clock.SeasonAndYear()}.");
             }
             catch (Household.NoRoomToBuildException)
             {
-                // The timber is already out of the shed, so it goes back. Conservation is
-                // not negotiable just because the code took an unusual branch.
-                StoreBuilding? shed = world.NearestStoreAccepting(
-                    world.Map.FoundingSite, Goods.Logs, static store => !store.Store.IsFull);
-
-                if (shed is not null)
-                {
-                    shed.Store.Receive(Goods.Logs, timber);
-                }
-                else
-                {
-                    world.TheCart?.Store.Receive(Goods.Logs, timber);
-                }
-
                 if (!world.NeedsMoreResidentialLand)
                 {
                     world.NeedsMoreResidentialLand = true;
@@ -222,22 +215,18 @@ public sealed class HouseholdSystem : ISimSystem
             Household? standingEmpty = FindAnEmptyHome(world);
             if (standingEmpty is not null)
             {
-                MoveInTogether(world, seeker, partner, standingEmpty, config, timber: 0);
+                MoveInTogether(world, seeker, partner, standingEmpty, config);
                 continue;
             }
 
-            // Otherwise a home has to be BUILT. Until the two families between them
-            // have the timber, the couple waits - which is what makes cutting wood
-            // matter, and ties how fast the village spreads to how it spends its
-            // labour.
-            if (!TryTakeBuildingTimber(world, config, out int timber))
-            {
-                continue;
-            }
-
+            // Otherwise a home has to be BUILT — marked out and raised by somebody, like
+            // every other building (D102). The couple pairs off now and waits for the roof,
+            // which is what ties how fast the village spreads to how it spends its labour.
+            //
+            // No timber is drawn here any more: a builder hauls it to the site.
             try
             {
-                Pair(world, seeker, partner, config, timber);
+                Pair(world, seeker, partner, config);
 
                 // Somebody got their home, so the village is no longer asking. Cleared
                 // here rather than by the view noticing free land: the request means "a
@@ -247,13 +236,8 @@ public sealed class HouseholdSystem : ISimSystem
             }
             catch (Household.NoRoomToBuildException noRoom)
             {
-                // The painted land is full. The timber is already out of the shed, so it
-                // goes back to the nearest one with room rather than evaporating —
-                // conservation is not negotiable just because the code took an unusual
-                // branch.
-                StoreBuilding? shed = world.NearestStoreAccepting(
-                    seeker.Position, Goods.Logs, static store => !store.Store.IsFull);
-                shed?.Store.Receive(Goods.Logs, timber);
+                // The painted land is full. Nothing to hand back — no timber is drawn until
+                // a builder carries it to the site (D102).
 
                 // AND THE VILLAGE ASKS FOR MORE LAND. This is the other half of the
                 // brush (D42): the game says when a decision is due rather than
@@ -311,78 +295,14 @@ public sealed class HouseholdSystem : ISimSystem
         return null;
     }
 
-    /// <summary>
-    /// Draw the timber for a new house out of the village's shed, or take nothing.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// All-or-nothing on purpose: half-taken timber would leave the shed poorer with
-    /// no house to show for it, and the couple would try again next year and pay
-    /// twice.
-    /// </para>
-    /// <para>
-    /// <b>This used to be a sweep across every household's private pile</b>, added
-    /// because timber is cut by whoever lives nearest the stand — very often nobody's
-    /// parent — so drawing only from the two parent households meant the village cut
-    /// wood year after year, piled it where it could not be spent, and never built
-    /// anything (D25). The sweep was a shed in all but name: a village-wide store that
-    /// could not be seen, sited, or reasoned about. Now it is a building, and this is
-    /// one line.
-    /// </para>
-    /// </remarks>
-    private static bool TryTakeBuildingTimber(SimWorld world, SimConfig config, out int taken)
-    {
-        taken = 0;
-        if (config.LogsPerHouse == 0)
-        {
-            return true;
-        }
-
-        // Drawn from EVERY shed, a little from each if need be. A house is paid for by
-        // the whole village (D25), so which building the logs happen to sit in should
-        // not decide whether it can be built — and with several sheds, insisting on
-        // one would have stalled a village that had the timber twice over.
-        // AND FROM THE CART, while it is the only store the village has (D72). At the
-        // founding there is no shed at all, so drawing only from sheds meant the first
-        // house could never be built however much timber the founders had felled — which
-        // is how Joe's first cold start ended with four people frozen in the open. The
-        // cart is a store the villagers may use while it stands (D64); building out of it
-        // is exactly what it is for.
-        int available = 0;
-        for (int i = 0; i < world.StoreBuildings.Count; i++)
-        {
-            StoreBuilding store = world.StoreBuildings[i];
-            if (store.Accepts(Goods.Logs))
-            {
-                available += store.Store.Logs;
-            }
-        }
-
-        if (available < config.LogsPerHouse)
-        {
-            return false;
-        }
-
-        int remaining = config.LogsPerHouse;
-        for (int i = 0; i < world.StoreBuildings.Count && remaining > 0; i++)
-        {
-            StoreBuilding store = world.StoreBuildings[i];
-            if (!store.Accepts(Goods.Logs))
-            {
-                continue;
-            }
-
-            int fromHere = Math.Min(remaining, store.Store.Logs);
-            if (fromHere > 0 && store.Store.TryTake(Goods.Logs, fromHere))
-            {
-                remaining -= fromHere;
-            }
-        }
-
-        taken = config.LogsPerHouse - remaining;
-        return remaining == 0;
-    }
-
+    // `TryTakeBuildingTimber` WAS HERE AND IS GONE (D102). It drew a house's timber straight
+    // out of the village's stores in one tick, which is what made a house instant — and it was
+    // itself the fix for something worse (D25's sweep across every household's private pile).
+    //
+    // A builder hauls the logs to the site now, exactly as they do for a granary, so the
+    // question "where does the timber come from?" has one answer for every building rather
+    // than two. Deleted rather than left unused, per D57: a method nobody calls is a method
+    // somebody re-reads and believes.
     /// <summary>The lowest-id house nobody lives in any more, or null.</summary>
     /// <remarks>Lowest id, so which house a couple takes is a fact about the village
     /// rather than about iteration — and it means the oldest empty home fills first,
@@ -400,38 +320,41 @@ public sealed class HouseholdSystem : ISimSystem
         return null;
     }
 
-    private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config, int timber)
+    private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config)
     {
         // Chosen with regard to where the work is, rather than the next spot on a
         // spiral (see Household.ChooseSite). This is what makes a generated valley
-        // habitable by construction instead of by a lucky ring radius.
-        GridPos home = Household.ChooseSite(world, world.Map.FoundingSite);
+        // habitable by construction instead of by a lucky ring radius. It throws if the
+        // painted land is full, BEFORE the household exists — so a couple is never left
+        // half-formed by a site that could not be found.
+        GridPos site = Household.ChooseSite(world, world.Map.FoundingSite);
 
         var household = new Household
         {
             Id = NextHouseholdId(world),
             Name = config.HouseholdNames[world.Households.Count % config.HouseholdNames.Count],
-            HomePosition = home,
+
+            // ⭐ NO ROOF YET (D102). The house is marked out below and somebody has to build
+            // it; until then this couple is homeless, which is a state the sim has had since
+            // the cold start (`specs/cold-start.md §3`) and which D71 already attaches a rule
+            // to: no roof, no children.
+            HomePosition = null,
         };
 
         world.Households.Add(household);
-        MoveInTogether(world, a, b, household, config, timber);
+        MoveInTogether(world, a, b, household, config);
+        world.MarkHome(household.Id, site);
     }
 
     private static void MoveInTogether(
-        SimWorld world, Villager a, Villager b, Household household, SimConfig config, int timber)
+        SimWorld world, Villager a, Villager b, Household household, SimConfig config)
     {
         Household oldHome = world.HouseholdOf(a);
         Household partnerHome = world.HouseholdOf(b);
 
-        // A couple only ever moves into a house that exists — either one standing empty or
-        // one just raised — so this is not the founding case and the position is real. Said
-        // out loud rather than swallowed, per METHODOLOGY §4: a null here would mean somebody
-        // had been married into thin air.
-        GridPos home = household.HomePosition
-            ?? throw new InvalidOperationException(
-                $"The {household.Name} household was given a pair of residents with no house " +
-                "to put them in.");
+        // A house if there is one — a couple taking over one standing empty — and null if
+        // theirs is still being built (D102). Homeless is a real state, not an error.
+        GridPos? home = household.HomePosition;
 
         // Each family sends their child off with a share of the larder. Without it a
         // new household starts on empty and can be wiped out by its first winter
@@ -448,10 +371,10 @@ public sealed class HouseholdSystem : ISimSystem
         // A dowry is goods changing hands, not goods produced.
         household.Stockpile.Receive(Goods.Food, dowry);
 
-        world.Narrate(timber > 0
+        world.Narrate(home is null
             ? $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
-              $"built a home of their own - the {household.Name} household, " +
-              $"{world.Clock.SeasonAndYear()}. {timber} timber and {dowry} food between them."
+              $"started the {household.Name} household - {world.Clock.SeasonAndYear()}. " +
+              $"{dowry} food between them, and a house being raised for them."
             : $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
               $"took over the empty {household.Name} house - {world.Clock.SeasonAndYear()}. " +
               $"{dowry} food between them, and no trees felled for it.");
@@ -472,11 +395,19 @@ public sealed class HouseholdSystem : ISimSystem
         return from.Stockpile.TryTake(Goods.Food, share) ? share : 0;
     }
 
-    private static void MoveIn(SimWorld world, Villager villager, Household household, GridPos home)
+    private static void MoveIn(
+        SimWorld world, Villager villager, Household household, GridPos? home)
     {
         world.HouseholdOf(villager).RemoveMember(villager.Id);
         villager.HouseholdId = household.Id;
-        villager.Position = home;
+
+        // Only if there is a door to stand at. A couple whose house is still being built
+        // stays where they are and rests wherever RestingPlaceOf sends them (D102).
+        if (home is GridPos doorstep)
+        {
+            villager.Position = doorstep;
+        }
+
         household.AddMember(villager.Id);
     }
 

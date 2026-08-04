@@ -264,7 +264,14 @@ public sealed class LabourAllocationTests
             // the forager is the only surplus and this test stays about the one thing
             // it is named for. Omitting the marketers made the quota ask for none and
             // shed the lot alongside the forager.
-            marketers: CountWorking(world, JobKind.Marketer));
+            marketers: CountWorking(world, JobKind.Marketer),
+
+            // AND THE BUILDERS, for exactly the same reason and one decision later
+            // (D102). A forty-year village used to hold no builders at all, because
+            // nothing was ever marked; houses are construction sites now, so it holds
+            // some almost always — and leaving this at its default of zero shed all four
+            // of them alongside the forager.
+            builders: CountWorking(world, JobKind.Builder));
 
         System.Collections.Generic.List<int> shed = LabourAllocator.ShedSurplus(world, quota);
 
@@ -605,6 +612,14 @@ public sealed class LabourAllocationTests
         int homes = 0;
         foreach (Household household in loop.World.Households)
         {
+            // A house being built is not a home yet (D102), and this asks about where the
+            // village PUT its homes. The site it is being raised on is a workplace, and the
+            // loop above already checked every one of those.
+            if (!household.HasHome)
+            {
+                continue;
+            }
+
             AssertInsideTheValley(config, household.Home(), $"the {household.Name} home");
             homes++;
         }

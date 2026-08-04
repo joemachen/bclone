@@ -1207,6 +1207,65 @@ public sealed class SimWorld
             return verdict;
         }
 
+        RaiseSiteFor(kind, position, name, recipe, forHouseholdId: 0);
+        return verdict;
+    }
+
+    /// <summary>
+    /// Mark out a house for a household that has none (D102).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Internal, because a house is not player-placed and that is settled (D42).</b> The
+    /// player paints the neighbourhood and <see cref="Household.ChooseSite"/> picks the tile,
+    /// because <c>MaxHomeToWorkTiles</c> is the bound the food economy is derived against.
+    /// What D102 changes is only that the house then has to be built.
+    /// </para>
+    /// <para>
+    /// It does not go through <see cref="CanBuildAt"/>: <c>ChooseSite</c> has already found
+    /// painted, reachable, buildable ground and thrown if there was none, so asking again
+    /// would be a second opinion that can only disagree.
+    /// </para>
+    /// </remarks>
+    internal void MarkHome(int householdId, GridPos position)
+    {
+        BuildingRecipe recipe = BuildingRecipe.For(BuildingKind.Home, Config);
+
+        // The same rule every other site gets (D100): if something is standing here, the
+        // village clears it, and nothing is built until it has.
+        if (TerrainRules.Yields(Map.TerrainAt(position)) is not null)
+        {
+            Zones.SetHarvest(position, true);
+        }
+
+        RaiseSiteFor(BuildingKind.Home, position, "a house", recipe, householdId);
+    }
+
+    /// <summary>The house being built for a household, or null if none is marked.</summary>
+    /// <remarks>
+    /// <b>Asked rather than recorded on the household</b> (D66, D71's rule): a flag is one more
+    /// thing that can be set and not cleared, and a household whose site was cancelled while
+    /// it still believed one was coming would wait for a house forever.
+    /// </remarks>
+    internal Workplace? HomeSiteFor(int householdId)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Construction is { Kind: BuildingKind.Home } plan
+                && plan.ForHouseholdId == householdId)
+            {
+                return Workplaces[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Put a construction site into the world. One place, for the same reason
+    /// <see cref="RaiseStore"/> is one place.</summary>
+    private void RaiseSiteFor(
+        BuildingKind kind, GridPos position, string name, BuildingRecipe recipe, int forHouseholdId)
+    {
         Workplaces.Add(new Workplace
         {
             Id = NextWorkplaceId(),
@@ -1215,14 +1274,18 @@ public sealed class SimWorld
             Position = position,
             Capacity = Config.ConstructionSiteCapacity,
             CatchmentRadius = TravelCostField.TilesToCost(Config.ForagerCatchmentTiles),
-            Construction = new ConstructionSite { Kind = kind, Name = name, Recipe = recipe },
+            Construction = new ConstructionSite
+            {
+                Kind = kind,
+                Name = name,
+                Recipe = recipe,
+                ForHouseholdId = forHouseholdId,
+            },
         });
 
         Log(Logging.LogLevel.Info, "placement",
             $"{name} was marked out — {recipe.Logs} logs and {recipe.WorkTicks} ticks of work. " +
             $"{Clock.SeasonAndYear()}.");
-
-        return verdict;
     }
 
     /// <summary>
@@ -1306,6 +1369,40 @@ public sealed class SimWorld
 
         switch (plan.Kind)
         {
+            // ⭐ A HOUSE IS FINISHED, AND THE FAMILY IT WAS BUILT FOR MOVES IN (D102).
+            //
+            // The household is named on the site rather than looked up now, so a family who
+            // waited two years gets THAT house — not whichever roofless family happens to be
+            // first in the list on the day it is done.
+            case BuildingKind.Home:
+                Household? family = FindHousehold(plan.ForHouseholdId);
+                if (family is null)
+                {
+                    // Nobody left to move in. Not an error — a family can die out while its
+                    // house is being raised, and an empty house is a house (HouseholdSystem
+                    // hands it to the next family that needs one).
+                    Narrate($"The house at {site.Position} was finished with nobody left to "
+                        + $"live in it. {Clock.SeasonAndYear()}.");
+                    break;
+                }
+
+                family.HomePosition = site.Position;
+                NeedsMoreResidentialLand = false;
+
+                // Standing outside their new door, rather than wherever the errand that
+                // filled the last tick left them.
+                for (int i = 0; i < Villagers.Count; i++)
+                {
+                    if (Villagers[i].Alive && Villagers[i].HouseholdId == family.Id)
+                    {
+                        Villagers[i].Position = site.Position;
+                    }
+                }
+
+                Narrate($"The {family.Name} household moved into the house they had raised at "
+                    + $"{site.Position} — {Clock.SeasonAndYear()}.");
+                break;
+
             case BuildingKind.WoodcutterHut:
                 Workplaces.Add(new Workplace
                 {
@@ -1471,6 +1568,7 @@ public sealed class SimWorld
         BuildingKind.Shed => "a storage shed",
         BuildingKind.Market => "a market",
         BuildingKind.Pile => "a storage pile",
+        BuildingKind.Home => "a house",
         _ => "a woodcutter's hut",
     };
 
