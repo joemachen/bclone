@@ -121,6 +121,20 @@ public static class StateHash
             }
         }
 
+        // Profession targets (D106), in the same shape and for the same reason: a village
+        // played without ever opening the panel mixes nothing at all, so the control is a
+        // provable no-op until somebody uses it. Null and zero diverge here too — "no opinion"
+        // and "nobody on this, I mean it" are different instructions.
+        for (int i = 0; i < JobLimits.Kinds.Count; i++)
+        {
+            int? target = world.JobLimits.For(JobLimits.Kinds[i]);
+            if (target is not null)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)target.Value);
+            }
+        }
+
         // ---- Village ----
         // Every villager and every household, in id order. A hash that covered only
         // the first villager would let the rest of the village desync in silence.

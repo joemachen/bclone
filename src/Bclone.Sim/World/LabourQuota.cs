@@ -353,8 +353,47 @@ public readonly record struct LabourQuota
             foragers += free;
         }
 
+        // ⭐ AND THEN THE PLAYER HAS THE LAST WORD (D106). Everything above is the village
+        // deciding for itself; a profession target replaces its answer for that one kind.
+        //
+        // APPLIED AT THE END, DELIBERATELY, and it is the difference between a control and a
+        // suggestion. Folding a target into the middle would let the food floor and the
+        // `free / 2` building cap quietly overrule it — and overruling it is precisely what
+        // the player is reaching for the panel to stop. D103 is the case: building is funded
+        // from what is left, and measured, what is left is nothing for most of the year. The
+        // village cannot fix that for itself without killing some valleys (tried twice); a
+        // player who can say "two builders" fixes the one in front of them.
+        //
+        // STILL BOUNDED BY WHAT EXISTS — capacity, and the number of able adults. You may ask
+        // for six woodcutters; you may not conjure the seats or the people. That bound is not
+        // the game arguing back, it is the game not lying about what it did with your number.
+        foragers = Asked(world, JobKind.Forager, foragers, hands);
+        foresters = Asked(world, JobKind.Forester, foresters, hands);
+        woodcutters = Asked(world, JobKind.Woodcutter, woodcutters, hands);
+        marketers = Asked(world, JobKind.Marketer, marketers, hands);
+        builders = Asked(world, JobKind.Builder, builders, hands);
+
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders);
+    }
+
+    /// <summary>What the player asked for on this kind of work, or what the village decided.</summary>
+    /// <remarks>
+    /// <b>Bounded by the seats that exist and by the people who exist</b>, and by nothing else.
+    /// It is deliberately allowed to exceed what the village would have chosen — that is the
+    /// whole reason the control exists — and deliberately allowed to be zero, which is how a
+    /// player turns a profession's hands back into laborers.
+    /// </remarks>
+    private static int Asked(SimWorld world, JobKind kind, int decided, int hands)
+    {
+        if (world.JobLimits.For(kind) is not int asked)
+        {
+            return decided;
+        }
+
+        int seats = TotalCapacityFor(world, kind);
+        int bounded = asked < seats ? asked : seats;
+        return bounded < hands ? bounded : hands;
     }
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>

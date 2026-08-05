@@ -301,6 +301,19 @@ public partial class Main : Control
             held.Text = $"have {HeldFor(world, goods)}";
         }
 
+        // The same glance for the professions: how many are actually on this work, and how
+        // many places there are to be on it (D106). "0 of 2" is Joe's screenshot, and it is
+        // what tells you whether asking for three would achieve anything.
+        LabourQuota quota = LabourQuota.For(world);
+        for (int i = 0; i < _professionReadouts.Count; i++)
+        {
+            (JobKind kind, Label places) = _professionReadouts[i];
+            places.Text = $"{WorkingAt(world, kind)} of {SeatsFor(world, kind)} — "
+                + $"village wants {quota.For(kind)}";
+        }
+
+        _laborerReadout.Text = $"{world.Laborers}";
+
         // The standing alerts, into their own strip rather than onto the end of the
         // header. Both are STATES rather than events — a couple is waiting right now, a
         // workplace is empty right now — which is why they are here at all instead of
@@ -1148,6 +1161,7 @@ public partial class Main : Control
 
         body.AddChild(BuildBuildMenu());
         body.AddChild(BuildHarvestMenu());
+        body.AddChild(BuildProfessionsMenu());
         body.AddChild(BuildStockLimitMenu());
 
         // The refusal or the warning, in the words the sim already produced — on its own
@@ -1333,6 +1347,117 @@ public partial class Main : Control
         return wrapper;
     }
 
+    /// <summary>
+    /// Banished's professions panel: how many people on each kind of work, village-wide (D106).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe's ask, and his screenshot is the spec:</b> a row per profession, a number you
+    /// set, and <em>"of N"</em> for how many places exist. The per-building control (D104)
+    /// answers <em>"how many at THIS hut?"</em>; this answers <em>"how many woodcutters at
+    /// all?"</em>, which is the question you actually have an opinion about.
+    /// </para>
+    /// <para>
+    /// <b>Laborers are shown and not set</b>, because they are what is left over — the same
+    /// relationship Banished has, and the reason <c>Villager.IsLaborer</c> is a reader rather
+    /// than a stored state (D66). Take two hands off gathering and there are two more laborers;
+    /// there is nothing else "setting laborers" could mean that is not just that.
+    /// </para>
+    /// </remarks>
+    private VBoxContainer BuildProfessionsMenu()
+    {
+        var wrapper = new VBoxContainer();
+        wrapper.AddThemeConstantOverride("separation", 4);
+
+        var rows = new VBoxContainer { Visible = false };
+        rows.AddThemeConstantOverride("separation", 2);
+
+        var toggleRow = new HBoxContainer();
+        var toggle = new Button { Text = "Professions", ToggleMode = true };
+        toggle.Toggled += on => rows.Visible = on;
+        toggleRow.AddChild(toggle);
+        toggleRow.AddChild(Muted("— how many people on each kind of work"));
+
+        wrapper.AddChild(toggleRow);
+        wrapper.AddChild(rows);
+
+        // Laborers first, as in Joe's screenshot, and as a readout: they are the remainder.
+        var laborRow = new HBoxContainer();
+        laborRow.AddThemeConstantOverride("separation", 6);
+        Label laborName = Muted("Laborer");
+        laborName.CustomMinimumSize = new Vector2(90, 0);
+        laborRow.AddChild(laborName);
+        _laborerReadout = Muted(string.Empty);
+        laborRow.AddChild(_laborerReadout);
+        laborRow.AddChild(Muted("— whatever is spare: clearing, hauling, tidying"));
+        rows.AddChild(laborRow);
+
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            rows.AddChild(BuildProfessionRow(kind));
+        }
+
+        return wrapper;
+    }
+
+    /// <summary>One profession: a name, a "village decides" tick, a number, and the places.</summary>
+    private HBoxContainer BuildProfessionRow(JobKind kind)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 6);
+
+        Label name = Muted(ProfessionName(kind));
+        name.CustomMinimumSize = new Vector2(90, 0);
+        row.AddChild(name);
+
+        var auto = new CheckBox { Text = "village decides", ButtonPressed = true };
+        var amount = new SpinBox
+        {
+            MinValue = 0,
+            MaxValue = 999,
+            Step = 1,
+            Value = 0,
+            Editable = false,
+            CustomMinimumSize = new Vector2(90, 0),
+        };
+
+        Label places = Muted(string.Empty);
+        places.CustomMinimumSize = new Vector2(150, 0);
+
+        void Apply()
+        {
+            amount.Editable = !auto.ButtonPressed;
+            int? target = auto.ButtonPressed ? null : (int)amount.Value;
+
+            PlacementVerdict verdict = _loop.World.SetJobLimit(kind, target);
+            if (verdict.HasWarning)
+            {
+                _placementLabel.Text = verdict.Warning;
+                _placementLabel.Visible = true;
+            }
+        }
+
+        auto.Toggled += _ => Apply();
+        amount.ValueChanged += _ => Apply();
+
+        row.AddChild(auto);
+        row.AddChild(amount);
+        row.AddChild(places);
+
+        _professionReadouts.Add((kind, places));
+        return row;
+    }
+
+    private static string ProfessionName(JobKind kind) => kind switch
+    {
+        JobKind.Forager => "Gatherer",
+        JobKind.Forester => "Forester",
+        JobKind.Woodcutter => "Woodcutter",
+        JobKind.Marketer => "Vendor",
+        JobKind.Builder => "Builder",
+        _ => kind.ToString(),
+    };
+
     /// <summary>One good's limit: a name, a "village decides" tick, a number, and the stock.</summary>
     private HBoxContainer BuildStockLimitRow(Goods goods)
     {
@@ -1385,6 +1510,38 @@ public partial class Main : Control
 
     /// <summary>The "have N" labels, refreshed with everything else.</summary>
     private readonly List<(Goods Goods, Label Held)> _stockLimitReadouts = new();
+    private readonly List<(JobKind Kind, Label Places)> _professionReadouts = new();
+    private Label _laborerReadout = null!;
+
+    /// <summary>How many people are actually on this kind of work right now.</summary>
+    private static int WorkingAt(SimWorld world, JobKind kind)
+    {
+        int count = 0;
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Kind == kind)
+            {
+                count += workplace.WorkerIds.Count;
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>How many places there are to be on it — the "of N" in Joe's screenshot.</summary>
+    private static int SeatsFor(SimWorld world, JobKind kind)
+    {
+        int seats = 0;
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Kind == kind)
+            {
+                seats += workplace.Capacity;
+            }
+        }
+
+        return seats;
+    }
 
     /// <summary>A villager's trade, for the roster. What they are, not where they are.</summary>
     private string TradeOf(Villager villager)

@@ -99,6 +99,98 @@ public sealed class SimWorld
     /// </remarks>
     public StockLimits StockLimits { get; } = new();
 
+    /// <summary>How many people the player wants on each kind of work (D106).</summary>
+    /// <remarks>
+    /// Banished's professions panel: the village decides for itself until the player says
+    /// otherwise, and then it does as it is told. See <see cref="JobLimits"/> for why this is
+    /// allowed to ask for <em>more</em> than the village would choose, where a stock limit may
+    /// only ask for less.
+    /// </remarks>
+    public JobLimits JobLimits { get; } = new();
+
+    /// <summary>
+    /// Set or clear how many people should be on a kind of work, and say what it will cost.
+    /// </summary>
+    /// <remarks>
+    /// <b>Always obeyed, and warned about when it takes hands off something that keeps people
+    /// alive</b> — D62's shape exactly. A game that refuses the player's number is arguing with
+    /// them; one that obeys silently has killed them without saying so. The warning fires once,
+    /// when the number is set, rather than every tick the village is short (D42's rule about
+    /// the distance warning).
+    /// </remarks>
+    public PlacementVerdict SetJobLimit(JobKind kind, int? target)
+    {
+        if (!JobLimits.Set(kind, target))
+        {
+            return PlacementVerdict.Fine;
+        }
+
+        if (target is not int asked)
+        {
+            Log(Logging.LogLevel.Info, "labour",
+                $"{Describe(kind)} is left to the village again. {Clock.SeasonAndYear()}.");
+            return PlacementVerdict.Fine;
+        }
+
+        int seats = 0;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind == kind)
+            {
+                seats += Workplaces[i].Capacity;
+            }
+        }
+
+        Log(Logging.LogLevel.Info, "labour",
+            $"You asked for {asked} on {Describe(kind)}. {Clock.SeasonAndYear()}.");
+
+        if (asked > seats)
+        {
+            return PlacementVerdict.Yes(
+                $"There is only room for {seats} on {Describe(kind)}, so {asked} cannot all be "
+                + "put to work. Build somewhere for them first.");
+        }
+
+        // The two that kill people if nobody does them (D45: hunger in six days, an unheated
+        // house in twenty-five). Said plainly rather than refused.
+        if (asked == 0 && kind is JobKind.Forager or JobKind.Woodcutter)
+        {
+            return PlacementVerdict.Yes(
+                $"Nobody will be put on {Describe(kind)} at all. The village will live on what "
+                + "it has already put away.");
+        }
+
+        return PlacementVerdict.Fine;
+    }
+
+    private static string Describe(JobKind kind) => kind switch
+    {
+        JobKind.Forager => "gathering",
+        JobKind.Forester => "felling timber",
+        JobKind.Woodcutter => "splitting firewood",
+        JobKind.Marketer => "the market",
+        JobKind.Builder => "building",
+        _ => kind.ToString().ToLowerInvariant(),
+    };
+
+    /// <summary>Able adults with no job — the hands everything spare is done by (D63).</summary>
+    public int Laborers
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < Villagers.Count; i++)
+            {
+                if (Villagers[i].IsLaborer)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
     /// <summary>The berry patch.</summary>
     public FoodSource FoodSource { get; }
 
