@@ -132,7 +132,7 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 | Role | Building | Placement needs | Produces → goes to | Local store | Status |
 |---|---|---|---|---|---|
 | **Laborer** | none, by design | — | clears & hauls | — | ✅ clearing, tidying. ⛔ carry-to-site (D93) |
-| **Builder** | builder's hut | — | raises buildings; later roads, bridges, fences | — | ⚠️ job exists, **no hut** (D64). **Next slice.** |
+| **Builder** | builder's hut | — | raises buildings; later roads, bridges, fences | — | ✅ **hut built (D110)**. Free and instant; seats derived; a site is an errand, not a seat |
 | **Forester** | forester's hut | owned ground | logs → shed | 50 logs | ⚠️ job exists (D96 rename); hut, ground and worker-pricing built and waiting (D86, C3c) |
 | **Woodcutter** | woodcutter's hut | — | firewood → shed | 50 firewood | ✅ built. Local store new. |
 | **Gatherer** | gatherer's hut | forest nearby | food → granary | 100 food | ⚠️ job exists as map-placed forage sites. **Blocked — §6.1** |
@@ -239,6 +239,19 @@ Each step leaves the suite green and is measured against the cold start's five t
 
 1. **The builder's hut** — Joe's call. Builders are the one job with no building at all, and
    D103's starvation is the live complaint. Its own plan is written.
+   - ✅ **The hut and sites-as-errands are in (D110).** It is **free and instant** on cleared
+     ground like the pile, its **seats are derived** (`VillageEconomy.BuilderHutCapacity` — the
+     hands left once the village has fed and heated itself, eight on both configs), and
+     `construction_site_capacity` is deleted rather than zeroed. **There is no fallback: no
+     hut, nothing is raised**, and the village says so the first time something is marked with
+     nobody to raise it — because the alternative is the silent stall D93 forbids.
+   - **The queue is what decides which site the crew walks to**, so D102's *player before
+     village* survives as marking order (D104/D105) and the reorder controls still move hands.
+   - **⚠️ `Workplace.IsSite` is the seam this created**, and it wants watching as §5's local
+     store lands: a workplace that nobody can be posted to is a new shape, and seven readers
+     plus four test guards had to learn about it in one slice.
+   - ⏳ Still to come in this slice: buildings finishing at **0 workers** with founders arriving
+     as laborers, §3.0's linked staffing, then the unstaffed alert and `Demolish(Workplace)`.
 2. **The local store**, proved on the forester and woodcutter — the two professions that already
    exist. Everything after lands on a pattern that works.
 3. **The fisherman** — the cleanest new profession, and the one that proves terrain-conditioned

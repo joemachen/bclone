@@ -144,6 +144,25 @@ public sealed class Workplace
     public ConstructionSite? Construction { get; init; }
 
     /// <summary>
+    /// True when this is a construction site rather than a place anybody works at (D108).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A site stopped being staffed when the builder's hut arrived.</b> Builders hold a
+    /// job at the hut and treat sites as errands (Joe), so a site has no seats, takes no
+    /// workers, and must not be offered to the allocator or described to an idle villager
+    /// as somewhere they might have worked.
+    /// </para>
+    /// <para>
+    /// <b>Asked here rather than by comparing <see cref="Capacity"/> to zero</b>, which is
+    /// the same thing today and stops being so the moment anything else has no seats. Every
+    /// reader that has to skip sites asks this one question — the seam <c>StoreKind</c> ran
+    /// to five instalments before anybody named (D76).
+    /// </para>
+    /// </remarks>
+    public bool IsSite => Construction is not null;
+
+    /// <summary>
     /// Goods held at this place.
     /// </summary>
     /// <remarks>

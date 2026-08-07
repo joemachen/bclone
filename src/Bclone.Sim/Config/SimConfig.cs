@@ -235,6 +235,24 @@ public sealed record SimConfig
     //  Firewood (D29) — the woodcutter's hut
     // ---------------------------------------------------------------
 
+    /// <summary>Where a warm start's builder's hut stands (D108).</summary>
+    /// <remarks>
+    /// <b>A position is content; the hut's SEATS are not.</b> Where a building sits is a fact
+    /// about the valley that a modder may move freely, and how many hands fit in it is a
+    /// consequence of the economy — so this is typed and
+    /// <c>VillageEconomy.BuilderHutCapacity</c> is derived (D16, D50).
+    /// <para>
+    /// Only a warm start reads it. In the game as it ships the founders arrive to an empty
+    /// valley and the hut is the player's first act (D70).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("builder_hut_x")]
+    public int BuilderHutX { get; init; } = -1;
+
+    /// <summary>Where a warm start's builder's hut stands (D108).</summary>
+    [JsonPropertyName("builder_hut_y")]
+    public int BuilderHutY { get; init; } = -1;
+
     /// <summary>Where logs are split into firewood.</summary>
     /// <remarks>
     /// Near the homes rather than near the stand. Logs are drawn village-wide, so the
@@ -460,10 +478,6 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("restock_emergency_percent")]
     public int RestockEmergencyPercent { get; init; } = 20;
-
-    /// <summary>How many builders fit on one construction site.</summary>
-    [JsonPropertyName("construction_site_capacity")]
-    public int ConstructionSiteCapacity { get; init; } = 3;
 
     /// <summary>How much painted ground one worker can keep (D86).</summary>
     /// <remarks>

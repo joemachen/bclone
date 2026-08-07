@@ -45,14 +45,18 @@ internal static class LabourAllocator
     /// two candidates ever compare equal and nothing is left to the sort's stability
     /// (spec §5). This is the largest ordering surface in the sim so far.
     /// </remarks>
-    /// <param name="Rank">
-    /// Which claims get looked at first, whatever they cost. <b>Zero for everything except a
-    /// house the village marked for itself</b> (D102), which is one.
-    /// </param>
     /// <param name="Cost">Travel cost from where this villager rests to the workplace.</param>
     /// <param name="VillagerId">Who is claiming it.</param>
     /// <param name="WorkplaceId">What they are claiming.</param>
-    private readonly record struct Candidate(int Rank, int Cost, int VillagerId, int WorkplaceId);
+    /// <remarks>
+    /// It carried a <c>Rank</c> as well until D108 — <em>"what the player marked is staffed
+    /// before a house the village marked for itself"</em> (D102), expressed as a site's place
+    /// in the build queue (D104). <b>Construction sites are no longer staffed at all</b>, so
+    /// there is nothing here to rank: builders hold a job at the hut and walk out to
+    /// <see cref="SimWorld.NextToBuild"/>, which is the head of that same queue. The
+    /// guarantee moved to the errand rather than being dropped.
+    /// </remarks>
+    private readonly record struct Candidate(int Cost, int VillagerId, int WorkplaceId);
 
     // ---------------------------------------------------------------
     //  The two entry points
@@ -196,14 +200,6 @@ internal static class LabourAllocator
         // stable — see the note on Candidate.
         candidates.Sort(static (a, b) =>
         {
-            // ⭐ RANK BEFORE COST, AND ONLY BUILDING USES IT (D102). What the player marked
-            // is staffed before what the village marked for itself — see BuildCandidates.
-            int byRank = a.Rank.CompareTo(b.Rank);
-            if (byRank != 0)
-            {
-                return byRank;
-            }
-
             int byCost = a.Cost.CompareTo(b.Cost);
             if (byCost != 0)
             {
@@ -255,10 +251,6 @@ internal static class LabourAllocator
     {
         var candidates = new List<Candidate>();
 
-        // The build queue, once rather than per candidate — it sorts every unfinished site,
-        // and asking it inside the loop below would do that for every villager.
-        List<Workplace>? queue = kind == JobKind.Builder ? world.BuildQueue() : null;
-
         for (int v = 0; v < world.Villagers.Count; v++)
         {
             Villager villager = world.Villagers[v];
@@ -272,7 +264,13 @@ internal static class LabourAllocator
             for (int w = 0; w < world.Workplaces.Count; w++)
             {
                 Workplace workplace = world.Workplaces[w];
-                if (workplace.Kind != kind)
+
+                // ⭐ A CONSTRUCTION SITE IS NOT SOMEWHERE ANYBODY WORKS (D108). Builders
+                // hold their job at the hut and walk out to the head of the build queue as
+                // an errand, so a site must never be offered as a claim — it has no seats
+                // to give, and offering it would mean a villager whose whole livelihood
+                // vanished the tick the building was finished.
+                if (workplace.Kind != kind || workplace.IsSite)
                 {
                     continue;
                 }
@@ -284,63 +282,11 @@ internal static class LabourAllocator
                     continue;
                 }
 
-                candidates.Add(new Candidate(RankOf(queue, workplace), cost, villager.Id, workplace.Id));
+                candidates.Add(new Candidate(cost, villager.Id, workplace.Id));
             }
         }
 
         return candidates;
-    }
-
-    /// <summary>
-    /// ⭐ What the player marked is staffed before what the village marked for itself (D102).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Measured, and this is the whole reason it exists.</b> Making houses real
-    /// construction sites put two of them in front of the woodcutter's hut at the founding,
-    /// because <c>HouseTheRoofless</c> marks a house for every roofless family on tick 4. The
-    /// hut's timber then arrived at <b>t364</b> against a winter starting at t360, and the
-    /// founding died — 2 alive, 2 frozen. The cost was not the work: with
-    /// <c>home_work_ticks</c> set to zero the timeline did not move by one tick, because the
-    /// bottleneck is the <em>timber a builder hauls</em>, and two houses' worth goes first.
-    /// </para>
-    /// <para>
-    /// <b>It is a rule rather than a patch, and the policy already exists one file over.</b>
-    /// <c>LabourQuota</c> says in as many words that <em>"heating is a floor alongside eating,
-    /// and only house-building is funded from what is left"</em> — houses already yield to the
-    /// fuel chain when hands are shared out. This says the same thing about the hands that
-    /// build: a woodcutter's hut the player asked for outranks a house the village decided on
-    /// by itself.
-    /// </para>
-    /// <para>
-    /// <b>It is a priority, not an exclusion.</b> Once the marked buildings are staffed, the
-    /// houses take whoever is left — so a village that has built what it was told to goes back
-    /// to housing itself, and nobody is homeless forever because of a rule.
-    /// </para>
-    /// </remarks>
-    /// <remarks>
-    /// <b>⭐ It is the site's place in <see cref="SimWorld.BuildQueue"/>, not a two-way
-    /// player/village flag (D104).</b> The panel shows the player *"3rd of 5 — the granary is
-    /// immediately ahead of it"*, and a number a player plans against has to be the number the
-    /// village actually works to. A flag would have made the first claim true and the second
-    /// one only usually true, which is the worse of both.
-    /// </remarks>
-    private static int RankOf(List<Workplace>? queue, Workplace workplace)
-    {
-        if (queue is null)
-        {
-            return 0;
-        }
-
-        for (int i = 0; i < queue.Count; i++)
-        {
-            if (queue[i].Id == workplace.Id)
-            {
-                return i;
-            }
-        }
-
-        return queue.Count;
     }
 
     // ---------------------------------------------------------------
@@ -697,6 +643,13 @@ internal static class LabourAllocator
         return count;
     }
 
+    /// <remarks>
+    /// <b>Construction sites are skipped here as well as in <see cref="BuildCandidates"/>,
+    /// and this half is about sentences rather than about jobs</b> (D108). These readers feed
+    /// <see cref="ExplainTheIdle"/>, so a site left in would have an idle villager told
+    /// <em>"the granary (building) is full — it has its 0 hands"</em>: true of a place nobody
+    /// can ever work, and useless to act on.
+    /// </remarks>
     private static Workplace? NearestInCatchment(SimWorld world, Villager villager, out int cost)
     {
         Workplace? best = null;
@@ -705,6 +658,11 @@ internal static class LabourAllocator
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
+            if (workplace.IsSite)
+            {
+                continue;
+            }
+
             int candidate = CostBetween(world, villager, workplace);
 
             if (candidate <= workplace.CatchmentRadius && candidate < cost)
@@ -730,7 +688,9 @@ internal static class LabourAllocator
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
-            if (!workplace.IsFull || CountHolding(world, workplace.Kind) >= quota.For(workplace.Kind))
+            if (workplace.IsSite
+                || !workplace.IsFull
+                || CountHolding(world, workplace.Kind) >= quota.For(workplace.Kind))
             {
                 continue;
             }
@@ -753,6 +713,11 @@ internal static class LabourAllocator
 
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
+            if (world.Workplaces[i].IsSite)
+            {
+                continue;
+            }
+
             int candidate = CostBetween(world, villager, world.Workplaces[i]);
             if (candidate < cost)
             {

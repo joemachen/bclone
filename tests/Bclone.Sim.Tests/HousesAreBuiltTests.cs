@@ -59,6 +59,19 @@ public sealed class HousesAreBuiltTests
         return homes;
     }
 
+    /// <summary>
+    /// Somebody to build, because nothing is raised without one (D108).
+    /// </summary>
+    /// <remarks>
+    /// <b>The cold-start guards below all have to place this now, and it is the change
+    /// rather than an oversight.</b> A construction site is an errand the hut's crew walks
+    /// out to; a founding with no hut can mark a woodcutter's hut and two houses and watch
+    /// all three sit at "0 of 25 logs" forever. It costs nothing but the ground it stands
+    /// on, so the founding pays nothing for it — which is why the hut is free.
+    /// </remarks>
+    private static void MarkABuildersHut(SimWorld world) =>
+        MarkSomewhereNear(world, BuildingKind.BuilderHut, world.Map.FoundingSite, 2);
+
     private static void PaintHomeGround(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;
@@ -158,6 +171,7 @@ public sealed class HousesAreBuiltTests
 
         PaintHomeGround(world);
         MarkSomewhereNear(world, BuildingKind.Pile, world.Map.FoundingSite, 2);
+        MarkABuildersHut(world);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, world.Map.FoundingSite, 3);
 
         long hutStood = -1;
@@ -222,6 +236,7 @@ public sealed class HousesAreBuiltTests
 
         PaintHomeGround(world);
         MarkSomewhereNear(world, BuildingKind.Pile, world.Map.FoundingSite, 2);
+        MarkABuildersHut(world);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, world.Map.FoundingSite, 3);
 
         // A month in, exactly as somebody playing would: the founding looks settled, so you
@@ -368,6 +383,7 @@ public sealed class HousesAreBuiltTests
 
         PaintHomeGround(world);
         MarkSomewhereNear(world, BuildingKind.Pile, world.Map.FoundingSite, 2);
+        MarkABuildersHut(world);
         loop.Step(10);
         MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 4);
 

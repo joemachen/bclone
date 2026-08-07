@@ -626,26 +626,47 @@ public readonly record struct LabourQuota
     /// Hands the village wants raising the buildings the player has marked out (D43).
     /// </summary>
     /// <remarks>
-    /// Every seat at every unfinished site. Unlike the other quotas this is not derived
-    /// from a need the village worked out for itself — <b>it is the player's intent,
-    /// counted</b>. That is the whole difference placement makes: for the first time
-    /// the labour system is answering to somebody.
+    /// <para>
+    /// <b>Every seat at every builder's hut, and none at all when there is nothing marked
+    /// out</b> (D108). It used to count the seats at every unfinished <em>site</em>, because
+    /// a site was where builders worked; sites are errands now and the hut is the workplace,
+    /// so the seats are the hut's and the demand is whether there is anything to do.
+    /// </para>
+    /// <para>
+    /// Unlike the other quotas this is still not derived from a need the village worked out
+    /// for itself — <b>it is the player's intent, counted</b>, in two halves now: how many
+    /// hands they put in the hut, and whether they have marked anything.
+    /// </para>
+    /// <para>
+    /// <b>Two questions in one pass</b>, because this is asked on every labour pass and
+    /// <see cref="SimWorld.BuildQueue"/> sorts.
+    /// </para>
     /// </remarks>
     public static int BuildersWanted(SimWorld world)
     {
         ArgumentNullException.ThrowIfNull(world);
 
         int seats = 0;
+        bool anythingToBuild = false;
+
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
-            if (workplace.Kind == JobKind.Builder && workplace.Construction is { IsFinished: false })
+            if (workplace.Construction is { IsFinished: false })
+            {
+                anythingToBuild = true;
+            }
+            else if (workplace.Kind == JobKind.Builder)
             {
                 seats += workplace.Places;
             }
         }
 
-        return seats;
+        // NOTHING MARKED, NOBODY BUILDING. A hut is a livelihood somebody holds and there
+        // will be work at it again next spring — but staffing it while there is nothing to
+        // raise takes a hand off the berries for no yield at all, which is the make-work D52
+        // measured as costing the village a third of its population.
+        return anythingToBuild ? seats : 0;
     }
 
     /// <summary>
@@ -753,6 +774,13 @@ public readonly record struct LabourQuota
     }
 
     /// <summary>Every seat at every workplace of one kind.</summary>
+    /// <remarks>
+    /// <b>A construction site is not one of them</b> (D108). It has no seats and nobody is
+    /// ever assigned to it, and its <see cref="Workplace.Capacity"/> of zero already says so
+    /// — but the player can set a staffing number on anything, and a site counted here would
+    /// let a number typed at a footprint raise the ceiling on hands that can only ever sit in
+    /// a hut. Belt and braces, which is what the zero and this skip are together.
+    /// </remarks>
     public static int TotalCapacityFor(SimWorld world, JobKind kind)
     {
         ArgumentNullException.ThrowIfNull(world);
@@ -760,7 +788,7 @@ public readonly record struct LabourQuota
         int total = 0;
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
-            if (world.Workplaces[i].Kind == kind)
+            if (world.Workplaces[i].Kind == kind && !world.Workplaces[i].IsSite)
             {
                 total += world.Workplaces[i].Places;
             }

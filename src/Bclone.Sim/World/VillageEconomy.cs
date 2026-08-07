@@ -486,6 +486,42 @@ public static class VillageEconomy
         return CeilingDivide(firewood, FirewoodMadePerYearAtWorst(config));
     }
 
+    /// <summary>
+    /// Seats a builder's hut has — the hands the village can put on building (D108).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Stated target: a hut holds every hand the village could spare for building once
+    /// it has fed and heated itself.</b> That is not a new quantity — it is the two figures
+    /// the economy already budgets against, subtracted: <see cref="SpareHandsAt"/> is what
+    /// is left after everybody eats, and <see cref="HandsNeededForFuel"/> is what keeping
+    /// them warm costs. What remains is what building has ever been funded from, and the
+    /// hut's job is to be big enough to hold it.
+    /// </para>
+    /// <para>
+    /// <b>Derived rather than typed, and <c>woodcutter_hut_capacity</c> is why</b> (D16, D50).
+    /// That one was a hand-picked three from when a village was a dozen people; the yields
+    /// were re-derived when the horizon moved and the capacities were not, the village
+    /// physically could not make enough firewood however many hands were free, and
+    /// thirty-six people froze. A capacity is a consequence of the economy, so it is
+    /// computed from it.
+    /// </para>
+    /// <para>
+    /// <b>Never below one.</b> A hut with no seat in it is a building that can never do the
+    /// one thing it exists for, and — since D108 makes the hut the only path to any other
+    /// building — a village that could never build anything again.
+    /// </para>
+    /// </remarks>
+    public static int BuilderHutCapacity(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int households = config.EconomyHorizonHouseholds;
+        int afterFuel = SpareHandsAt(config, households) - HandsNeededForFuel(config, households);
+
+        return afterFuel < 1 ? 1 : afterFuel;
+    }
+
     /// <summary>Seats a tree stand needs, to keep those huts in logs and homes built.</summary>
     public static int RequiredTreeStandSeats(SimConfig config)
     {

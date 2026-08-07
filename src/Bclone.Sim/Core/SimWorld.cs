@@ -531,8 +531,49 @@ public sealed class SimWorld
             return;
         }
 
+        // ⭐ THE BUILDER'S HUT, AND IT IS WHY THIS METHOD TAKES A KIND (D108). The one
+        // workplace the player places that costs nothing — because it is the building every
+        // other building waits on, and charging timber for it is the circle the pile exists
+        // to avoid.
+        if (kind == BuildingKind.BuilderHut)
+        {
+            RaiseBuilderHut(position, name);
+            return;
+        }
+
         throw new ArgumentOutOfRangeException(
             nameof(kind), kind, "That kind of building is not free.");
+    }
+
+    /// <summary>Put a builder's hut into the world, with the seats the economy derives.</summary>
+    private void RaiseBuilderHut(GridPos position, string name) =>
+        Workplaces.Add(new Workplace
+        {
+            Id = NextWorkplaceId(),
+            Kind = JobKind.Builder,
+            Name = name,
+            Position = position,
+            Capacity = VillageEconomy.BuilderHutCapacity(Config),
+            CatchmentRadius = TravelCostField.TilesToCost(Config.ForagerCatchmentTiles),
+        });
+
+    /// <summary>Whether anyone in the village builds — that is, whether a hut stands.</summary>
+    /// <remarks>
+    /// <b>Asked of the world rather than remembered</b> (D66, D71): a flag is one more thing
+    /// that can be set and not cleared, and a village whose only hut was pulled down while a
+    /// flag still said otherwise would wait forever for a builder who is never coming.
+    /// </remarks>
+    public bool HasABuildersHut()
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind == JobKind.Builder && !Workplaces[i].IsSite)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Whether the village has already been told it has nowhere for a good.</summary>
@@ -1369,6 +1410,23 @@ public sealed class SimWorld
     {
         BuildingRecipe recipe = BuildingRecipe.For(BuildingKind.Home, Config);
 
+        // ⚠️ AND WHEN THAT PROMISE IS BROKEN, SAY SO (D110). `ChooseSite` is supposed to have
+        // found reachable ground, and in seed 11 of the twelve-seed arm it did not — a house
+        // at (-1,-5), on the far bank, which no builder could ever walk to. It cost that
+        // village its whole future and there was not one line in the log about it.
+        //
+        // Logged rather than refused, deliberately: refusing here would leave a roofless
+        // family with no site and no explanation, which is the worse of the two silences. The
+        // build queue skips what it cannot reach (see `NextToBuild`), so the damage is
+        // contained; this is what makes the cause findable rather than the symptom.
+        if (!TravelCost.CanReach(FirstHomeOrFoundingSite(), position))
+        {
+            Log(Logging.LogLevel.Warn, "placement",
+                $"A house was sited at {position} for household {householdId}, and there is no "
+                + $"route to it from the village — so nobody can ever build it. "
+                + $"{Clock.SeasonAndYear()}.");
+        }
+
         // The same rule every other site gets (D100): if something is standing here, the
         // village clears it, and nothing is built until it has.
         if (TerrainRules.Yields(Map.TerrainAt(position)) is not null)
@@ -1435,6 +1493,96 @@ public sealed class SimWorld
         });
 
         return queue;
+    }
+
+    /// <summary>
+    /// The site at the head of the build queue — what a builder walks out to (D108).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ The queue is what decides which site a builder goes to, and that is the whole
+    /// of the rule.</b> Sites stopped being staffed when the hut arrived, so something had
+    /// to say which one the crew works; making it the head of the queue means the player's
+    /// ▲ Sooner / ▼ Later (D105) still moves real hands, and D102's guarantee — what the
+    /// player marked before a house the village marked for itself — survives as marking
+    /// order rather than as a rank the allocator applied. <b>The whole crew works the front
+    /// of the queue</b>, which is what a queue means and what makes <em>"3rd of 5"</em> a
+    /// sentence a player can plan against.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ A SITE NOBODY CAN WALK TO IS SKIPPED, NOT QUEUED BEHIND.</b> Measured, and it
+    /// killed seed 11 of twelve: <c>ChooseSite</c> put a house at (-1,-5) on the far bank,
+    /// and because the whole crew works the head of the queue, <b>every builder spent a
+    /// century walking toward a place they could never arrive at</b> — eight sites behind it
+    /// never raised, four households of eleven ever roofed, thirteen hundred logs in the shed,
+    /// nobody starved, nobody frozen, the village simply aged out. That is the silent
+    /// unrecoverable death §0.1 rules out.
+    /// </para>
+    /// <para>
+    /// <b>It is the same question <see cref="CanBuildAt"/> refuses on</b>, asked from the same
+    /// anchor — so a site the player could never have marked cannot arrive by another door and
+    /// stop the village building. <b>The site that produced it should never have been marked</b>
+    /// (see <see cref="MarkHome"/>); skipping it here is the belt to that braces, because one
+    /// impossible footprint must not be able to cost a village its whole future.
+    /// </para>
+    /// <para>
+    /// <b>One pass and no allocation</b>, unlike <see cref="BuildQueue"/>, which sorts. This
+    /// is asked by every builder on every tick, and the suite has already been taught once
+    /// what a per-tick per-villager scan costs (D87 — four minutes to over ten).
+    /// </para>
+    /// </remarks>
+    public Workplace? NextToBuild()
+    {
+        Workplace? head = null;
+        GridPos village = FirstHomeOrFoundingSite();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+            if (candidate.Construction is not { IsFinished: false }
+                || !TravelCost.CanReach(village, candidate.Position))
+            {
+                continue;
+            }
+
+            // The same ordering BuildQueue sorts by, asked as a comparison: rank, then id,
+            // so a site nobody has touched sits where it was marked. Two orderings that must
+            // agree is the shape of half the bugs in this project's history, so this one is
+            // guarded by a test that walks the queue and asks for its head.
+            if (head is null
+                || candidate.EffectiveQueueRank < head.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == head.EffectiveQueueRank
+                    && candidate.Id < head.Id))
+            {
+                head = candidate;
+            }
+        }
+
+        return head;
+    }
+
+    /// <summary>An unfinished construction site standing on this tile, or null.</summary>
+    /// <remarks>
+    /// <b>The site is read from where the villager is standing, not from a field on them</b>
+    /// (D108). A builder walks to a site as an errand now, so the two legs of the job —
+    /// loading materials, then raising the building — can no longer re-derive it from
+    /// <c>WorkplaceOf(villager).Construction</c>, which is the hut and has none. A
+    /// <c>Villager.SiteId</c> would be exactly the set-and-not-cleared flag D66 and D71 argue
+    /// against, and would have to be hashed; asking the position is D87's rule, and the
+    /// position is already remembered as the errand they set off for.
+    /// </remarks>
+    public Workplace? SiteAt(GridPos position)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Position == position
+                && Workplaces[i].Construction is { IsFinished: false })
+            {
+                return Workplaces[i];
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -1533,6 +1681,16 @@ public sealed class SimWorld
 
     /// <summary>Put a construction site into the world. One place, for the same reason
     /// <see cref="RaiseStore"/> is one place.</summary>
+    /// <remarks>
+    /// <b>⭐ NO SEATS (D108).</b> A site used to be a workplace people were assigned to, with
+    /// <c>construction_site_capacity</c> hands at it. Joe: <em>"a construction site is a place
+    /// that builders should treat as errands"</em> — so builders hold their job at the hut and
+    /// walk out to whatever is at the head of the build queue, and a site is a job of work
+    /// rather than a livelihood. It stays a <see cref="Workplace"/> because that is what
+    /// carries its position, its name and its place in the queue; what it no longer carries is
+    /// anybody's employment. <c>construction_site_capacity</c> is deleted rather than zeroed,
+    /// on D98's rule that a number which is always zero is a lie waiting to be found.
+    /// </remarks>
     private void RaiseSiteFor(
         BuildingKind kind, GridPos position, string name, BuildingRecipe recipe, int forHouseholdId)
     {
@@ -1542,7 +1700,7 @@ public sealed class SimWorld
             Kind = JobKind.Builder,
             Name = $"{name} (building)",
             Position = position,
-            Capacity = Config.ConstructionSiteCapacity,
+            Capacity = 0,
             CatchmentRadius = TravelCostField.TilesToCost(Config.ForagerCatchmentTiles),
             Construction = new ConstructionSite
             {
@@ -1556,6 +1714,19 @@ public sealed class SimWorld
         Log(Logging.LogLevel.Info, "placement",
             $"{name} was marked out — {recipe.Logs} logs and {recipe.WorkTicks} ticks of work. " +
             $"{Clock.SeasonAndYear()}.");
+
+        // ⭐ AND IT SAYS SO WHEN NOBODY WILL COME (D108). A hut is the only path to a
+        // building now, so a village without one can mark out as much as it likes and watch
+        // none of it rise. **A silent stall is the one thing that would make this unfair
+        // rather than hard** — D93's ruling, and §1.1: a footprint that never moves and never
+        // explains itself is the untraceable outcome the whole design refuses. Narrated
+        // rather than logged, because it is a sentence about what the player should do next.
+        if (!HasABuildersHut())
+        {
+            Narrate($"{Capitalised(name)} is marked out, but nobody in the village builds — "
+                + $"a builder's hut costs nothing but the ground it stands on, and until one "
+                + $"is up and staffed, nothing will be raised. {Clock.SeasonAndYear()}.");
+        }
     }
 
     /// <summary>
@@ -2164,6 +2335,24 @@ public sealed class SimWorld
             FoundVillage(config, origin);
             return;
         }
+
+        // ⭐ THE BUILDER'S HUT, AND A WARM START HAS ONE (D108). Nothing is raised without
+        // it, so a founding that ships with a granary, a shed and a market must ship with
+        // the building that could have raised them — otherwise the fixture villages the
+        // whole suite is written against could never build a house again.
+        //
+        // Its seats are DERIVED (VillageEconomy.BuilderHutCapacity), not typed;
+        // `woodcutter_hut_capacity` is the recorded case where capacities were typed while
+        // the yields around them moved, and thirty-six people froze (D50).
+        Workplaces.Add(new Workplace
+        {
+            Id = nextWorkplaceId++,
+            Kind = JobKind.Builder,
+            Name = "the builder's hut",
+            Position = Offset(origin, config.BuilderHutX, config.BuilderHutY),
+            Capacity = VillageEconomy.BuilderHutCapacity(config),
+            CatchmentRadius = catchment,
+        });
 
         // The first workplace that consumes an input rather than only producing one
         // (D29). Logs in, firewood out - and it can stand idle for want of logs,

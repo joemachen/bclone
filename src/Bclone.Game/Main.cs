@@ -402,7 +402,15 @@ public partial class Main : Control
     private void RefreshInspector(SimWorld world)
     {
         // The staffing buttons belong to whatever is selected, so they follow it.
-        Workplace? staffable = SelectedWorkplace();
+        //
+        // ⚠️ EXCEPT A CONSTRUCTION SITE, WHICH IS NO LONGER STAFFABLE (D108). D104 made
+        // sites staffable on the grounds that "how many builders on this?" is the question a
+        // player most often wants to answer — and it still is, but the place to answer it is
+        // the builder's hut now. A −1/+1 on a footprint would set a number nothing reads,
+        // which is worse than a control that is not there.
+        Workplace? selected = SelectedWorkplace();
+        Workplace? staffable = selected is { IsSite: false } ? selected : null;
+
         _staffingRow.Visible = staffable is not null;
         if (staffable is not null)
         {
@@ -412,12 +420,14 @@ public partial class Main : Control
                     + $"{staffable.Capacity}:";
         }
 
-        // The queue controls only mean anything for something still being built.
-        _queueRow.Visible = staffable?.Construction is not null;
-        if (staffable?.Construction is not null)
+        // The queue controls only mean anything for something still being built — and they
+        // read `selected` rather than `staffable`, because a site is exactly what they are
+        // for and exactly what is no longer staffable.
+        _queueRow.Visible = selected is { IsSite: true };
+        if (selected is { IsSite: true })
         {
             _queueLabel.Text =
-                $"Build queue — {world.QueuePositionOf(staffable)} of {world.BuildQueue().Count}:";
+                $"Build queue — {world.QueuePositionOf(selected)} of {world.BuildQueue().Count}:";
         }
 
         if (_selectedTile is GridPos tile)
@@ -505,10 +515,11 @@ public partial class Main : Control
 
         // A standing workplace first, then a site — because the market is a store and a
         // workplace at one position (D36's seam) and a finished building is the more likely
-        // thing the player meant. A CONSTRUCTION SITE IS STAFFABLE TOO (Joe): "how many
-        // builders on this?" is the same question as "how many woodcutters in this hut?",
-        // and it is the one the player most often wants to answer, since a stalled site is
-        // solved by freeing somebody (D93).
+        // thing the player meant.
+        //
+        // ⚠️ A site is still SELECTABLE — it has a queue position and a materials line to
+        // read — but it is no longer STAFFABLE (D108). The caller decides which of those it
+        // is asking about; this only decides what the player clicked on.
         Workplace? site = null;
         foreach (Workplace workplace in _loop.World.Workplaces)
         {
@@ -517,7 +528,7 @@ public partial class Main : Control
                 continue;
             }
 
-            if (workplace.Construction is null)
+            if (!workplace.IsSite)
             {
                 return workplace;
             }
@@ -538,7 +549,7 @@ public partial class Main : Control
     private void ChangeStaffing(int delta)
     {
         Workplace? workplace = SelectedWorkplace();
-        if (workplace is null)
+        if (workplace is null || workplace.IsSite)
         {
             return;
         }
@@ -557,7 +568,7 @@ public partial class Main : Control
     private void LetTheVillageDecideStaffing()
     {
         Workplace? workplace = SelectedWorkplace();
-        if (workplace is not null)
+        if (workplace is { IsSite: false })
         {
             _loop.World.SetStaffing(workplace, null);
             RefreshInspector(_loop.World);
@@ -688,11 +699,22 @@ public partial class Main : Control
             {
                 lines.Add("Waiting: the ground it stands on is still being cleared.");
             }
+
+            // ⭐ A SITE HAS NOBODY POSTED TO IT ANY MORE (D108), so it must not go on to the
+            // staffing lines below — they would read "Nobody works here. Room for 0", which
+            // is true of a place nobody can ever be posted to and is the wrong answer to the
+            // question the player is asking. What they want to know is whether anybody is
+            // coming, and the honest answer is about the hut.
+            lines.Add(world.HasABuildersHut()
+                ? "Raised by the builders, who walk out to it from their hut — a site is an "
+                    + "errand, not a place anybody is posted to."
+                : "Nobody in the village builds, so nothing will be raised here. A builder's "
+                    + "hut costs nothing but the ground it stands on.");
+
+            return;
         }
-        else
-        {
-            lines.Add($"{workplace.Name} — a workplace ({Describe(workplace.Kind)})");
-        }
+
+        lines.Add($"{workplace.Name} — a workplace ({Describe(workplace.Kind)})");
 
         lines.Add(workplace.WorkerIds.Count == 0
             ? $"Nobody works here. Room for {workplace.Places}."
@@ -842,7 +864,8 @@ public partial class Main : Control
         JobKind.Forester => "trees are felled here",
         JobKind.Woodcutter => "logs are split into firewood here",
         JobKind.Marketer => "goods are handed out from here",
-        JobKind.Builder => "something is being raised here",
+        // The HUT, not the site — a site describes itself and never reaches this (D108).
+        JobKind.Builder => "the village's builders work from here",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -1638,6 +1661,12 @@ public partial class Main : Control
         // First in the row because it is first in the game (D76): a pile costs nothing but
         // the ground, and a village with nowhere to put things cannot begin.
         row.AddChild(BuildButton("Storage pile", BuildingKind.Pile));
+
+        // Second, because it is second in the game (D108): nothing else on this row is ever
+        // raised without it. Free and instant like the pile, and beside it for that reason —
+        // the two buildings that cost nothing but the ground they stand on are the two the
+        // player puts down before anything can begin.
+        row.AddChild(BuildButton("Builder's hut", BuildingKind.BuilderHut));
         row.AddChild(BuildButton("Granary", BuildingKind.Granary));
         row.AddChild(BuildButton("Shed", BuildingKind.Shed));
         row.AddChild(BuildButton("Market", BuildingKind.Market));

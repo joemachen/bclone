@@ -100,10 +100,23 @@ public sealed class StockLimitTests
     // arrived at t364 against a winter starting at t360, and the shipped guard read 2 alive
     // and 2 frozen. With it the hut is back to t129/t172/t249, exactly where it was.
     //
+    // ⭐ D108 MOVED BOTH AGAIN, and in one sentence: THE VILLAGE HAS A BUILDER'S HUT, AND A
+    // CONSTRUCTION SITE IS AN ERRAND ITS CREW WALKS OUT TO RATHER THAN A PLACE ANYBODY IS
+    // POSTED. Three things in that change the state hash, and all three are the point of it:
+    // the founding gains a workplace, every site carries no seats and no workers, and builder
+    // demand is the hut's seats rather than the sum of the sites'. Fifty years of a village
+    // that builds that way is genuinely different history — which is these goldens working.
+    //
+    // Measured on the way in, because the cold start is the knife edge everything here dies
+    // on: builders funded t121, hut logs t130, hut standing t173, staffed t241, first
+    // firewood t251, against a winter at t360 — the same five ticks as before to within one.
+    //
     //   before houses were built (D102): fixture 16616051083588314705,
     //                                    shipped 10176218336442890909
-    private const ulong FixtureFiftyYearHash = 16059676616951633422UL;
-    private const ulong ShippedFiftyYearHash = 15383236497282309390UL;
+    //   before the builder's hut (D108): fixture 16059676616951633422,
+    //                                    shipped 15383236497282309390
+    private const ulong FixtureFiftyYearHash = 8100668875656351515UL;
+    private const ulong ShippedFiftyYearHash = 10300327615504873654UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

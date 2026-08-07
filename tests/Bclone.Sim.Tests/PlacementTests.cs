@@ -189,7 +189,12 @@ public sealed class PlacementTests
         Assert.True(world.Mark(BuildingKind.Granary, spot).Allowed);
 
         Assert.Equal(granariesBefore, CountStores(world, StoreKind.Granary));
-        Assert.Contains(world.Workplaces, w => w.Kind == JobKind.Builder);
+
+        // ⚠️ `IsSite`, not `Kind == JobKind.Builder` (D108). That was the same question
+        // while a site was the only Builder workplace there was; the builder's hut is one
+        // too now, so the old spelling asks "does the village have a hut?" — which is true
+        // of every village and would make this guard vacuous.
+        Assert.Contains(world.Workplaces, w => w.IsSite);
     }
 
     [Fact]
@@ -225,7 +230,9 @@ public sealed class PlacementTests
             : "It was never built.");
 
         Assert.True(builtInYear > 0, "The village never raised the granary it was asked for.");
-        Assert.DoesNotContain(world.Workplaces, w => w.Kind == JobKind.Builder);
+
+        // The site is gone — and only the site. The hut it was raised from stands (D108).
+        Assert.DoesNotContain(world.Workplaces, w => w.IsSite);
     }
 
     [Fact]
@@ -326,7 +333,9 @@ public sealed class PlacementTests
         Workplace? site = null;
         foreach (Workplace workplace in world.Workplaces)
         {
-            if (workplace.Kind == JobKind.Builder)
+            // The SITE, not any Builder workplace — the hut is one of those now (D108),
+            // and picking it up here dereferenced a null Construction.
+            if (workplace.IsSite)
             {
                 site = workplace;
             }
@@ -344,7 +353,7 @@ public sealed class PlacementTests
 
         _output.WriteLine($"{delivered} logs were on site; store went {before} -> {world.LogsInSheds()}.");
         Assert.Equal(before + delivered, world.LogsInSheds());
-        Assert.DoesNotContain(world.Workplaces, w => w.Kind == JobKind.Builder);
+        Assert.DoesNotContain(world.Workplaces, w => w.IsSite);
     }
 
     [Fact]

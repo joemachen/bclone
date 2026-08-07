@@ -124,6 +124,16 @@ public sealed class LabourSystem : ISimSystem
         {
             Workplace workplace = world.Workplaces[i];
 
+            // A construction site is never manned now (D108) — builders hold their job at
+            // the hut and treat sites as errands — so every site the player has marked would
+            // report itself here, permanently and by design. That is the nag D42 refuses:
+            // an alert that is always on is an alert nobody reads. The build queue panel is
+            // where a waiting site says where it stands.
+            if (workplace.IsSite)
+            {
+                continue;
+            }
+
             // Only work the village actually wants done. A berry patch with nobody at
             // it in winter is not a problem, it is winter — and crying about it would
             // train the player to ignore the warning that matters.

@@ -233,6 +233,13 @@ public sealed class ColdStartTests
         // the ground it stands on and stands the tick it is marked (D98). The shed stays,
         // built out of the pile, because this guard is about a village that grows.
         MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
+
+        // ⭐ AND SOMEBODY TO BUILD (D108). The shed and the hut below are construction
+        // sites, and a site is an errand the builder's hut's crew walks out to rather than
+        // somewhere anybody is posted — so without a hut this village marks three buildings
+        // and raises none of them. Measured, before this line was added: 0 alive, 4 frozen,
+        // 0 homes. It costs nothing but the ground, which is exactly why it is free.
+        MarkSomewhereNear(world, BuildingKind.BuilderHut, site, 2);
         MarkSomewhereNear(world, BuildingKind.Shed, site, 2);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
 
@@ -686,7 +693,16 @@ public sealed class ColdStartTests
         // A pile costs the ground it stands on and goes up the tick it is marked (D98).
         MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
 
-        // 3. Something to make firewood with. Still no shed — the pile is the store.
+        // 3. ⭐ SOMEBODY TO BUILD, AND NOTHING IS RAISED WITHOUT ONE (D108). A construction
+        // site is an errand the hut's crew walks out to rather than a place anybody is
+        // assigned to, so a founding with no builder's hut can mark out a woodcutter's hut
+        // and two houses and watch all three sit at "0 of 25 logs" forever.
+        //
+        // It costs nothing but the ground, like the pile, and for the same reason: it is the
+        // building every other building waits on, so charging timber for it is a circle.
+        MarkSomewhereNear(world, BuildingKind.BuilderHut, site, 2);
+
+        // 4. Something to make firewood with. Still no shed — the pile is the store.
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
 
         // ⚠️ AND DELIBERATELY NO HARVEST PAINTING, which was tried here and measured as

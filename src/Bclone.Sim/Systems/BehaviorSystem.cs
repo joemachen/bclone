@@ -761,18 +761,38 @@ public sealed class BehaviorSystem : ISimSystem
     /// A builder's day: carry logs to the site until it has enough, then raise it.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The same two-legged shape as the marketer, and for the same reason — a building
     /// that appeared the instant it was paid for would make placement a menu
     /// transaction, and D14's whole argument is that things which happen in this
     /// village are work somebody does.
+    /// </para>
+    /// <para>
+    /// <b>⭐ The site is an errand, not a workplace (Joe, D108).</b> <em>"A construction site
+    /// is a place that builders should treat as errands. If there is an incomplete
+    /// construction site on the map and an active/staffed builder's hut, then the builders'
+    /// priority should be completing the construction site."</em> So the job passed in is the
+    /// <b>hut</b>, and which site they walk to is the head of the build queue — which keeps
+    /// the player's ▲ Sooner / ▼ Later (D105) meaning real hands, and keeps D102's
+    /// player-before-village guarantee as the marking order it became in D104.
+    /// </para>
     /// </remarks>
     /// <returns>
     /// False when there is nothing a builder can do here this tick, so the caller lets them
     /// fall through to the errands anybody spare may take (D87, D96).
     /// </returns>
-    private static bool WorkTheSite(SimWorld world, Villager villager, Workplace job)
+    private static bool WorkTheSite(SimWorld world, Villager villager)
     {
-        ConstructionSite site = job.Construction!;
+        Workplace? standing = world.NextToBuild();
+        if (standing is null)
+        {
+            // A builder with nothing marked out. Not idle — they fall through to the spare
+            // errands at the bottom of Decide, like the woodcutter with an empty yard.
+            villager.WorkNote = "Nothing is marked out to build.";
+            return false;
+        }
+
+        ConstructionSite site = standing.Construction!;
 
         // ⭐ NOTHING IS BUILT ON GROUND THAT IS STILL STANDING (Joe, D101). The trees under a
         // marked site come down first, and the mark is what asked for them (D100).
@@ -781,7 +801,7 @@ public sealed class BehaviorSystem : ISimSystem
         // where clearing painted ground is exactly the work that unblocks them. That is D87's
         // position rule paying for itself — the person waiting on a clearing is allowed to go
         // and do the clearing, and nobody had to write a rule saying so.
-        if (!world.GroundIsClearAt(job.Position))
+        if (!world.GroundIsClearAt(standing.Position))
         {
             villager.WorkNote =
                 $"{site.Name} cannot be started yet — the ground it stands on is still being "
@@ -793,7 +813,7 @@ public sealed class BehaviorSystem : ISimSystem
         if (villager.CarriedLogs > 0 || site.HasMaterials)
         {
             villager.WorkNote = string.Empty;
-            HeadFor(world, villager, job.Position, VillagerState.Building);
+            HeadFor(world, villager, standing.Position, VillagerState.Building);
             return true;
         }
 
@@ -836,10 +856,18 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>A builder at a shed, picking up as many logs as the site still wants.</summary>
+    /// <remarks>
+    /// <b>The site is asked for again rather than remembered</b> (D108). This used to read
+    /// <c>WorkplaceOf(villager).Construction</c>, which is the hut now and has none — a
+    /// builder would have walked to the shed, picked nothing up, walked to the site,
+    /// delivered nothing, and repeated it forever. Re-asking the queue is the same question
+    /// <see cref="WorkTheSite"/> asked when it sent them, so the answer is the same one
+    /// unless the player has reordered the queue mid-errand — in which case carrying for the
+    /// site they now want is the right outcome anyway.
+    /// </remarks>
     private static void LoadMaterials(SimWorld world, Villager villager)
     {
-        Workplace? job = WorkplaceOf(world, villager);
-        ConstructionSite? site = job?.Construction;
+        ConstructionSite? site = world.NextToBuild()?.Construction;
 
         if (site is null)
         {
@@ -875,9 +903,16 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>A builder at the site: put the logs down, then put a tick of work in.</summary>
+    /// <remarks>
+    /// <b>⭐ The site is read from where they are standing</b> (D108). They walked here
+    /// deliberately — <c>ErrandX/ErrandY</c> is the footprint <see cref="WorkTheSite"/> sent
+    /// them to — so the position is already the answer, and a <c>Villager.SiteId</c> would be
+    /// the set-and-not-cleared flag D66 and D71 argue against, and one more thing to hash.
+    /// That is D87's position rule again.
+    /// </remarks>
     private static void RaiseTheBuilding(SimWorld world, Villager villager)
     {
-        Workplace? job = WorkplaceOf(world, villager);
+        Workplace? job = world.SiteAt(villager.Position);
         ConstructionSite? site = job?.Construction;
 
         if (site is null)
@@ -1371,8 +1406,14 @@ public sealed class BehaviorSystem : ISimSystem
         // Raising a building the player marked out (D43). Materials first, then work:
         // a builder standing on an empty footprint has nothing to build WITH, and
         // making them fetch it is what stops construction being a purchase.
-        if (villager.CanWork && job?.Kind == JobKind.Builder && job.Construction is not null
-            && WorkTheSite(world, villager, job))
+        //
+        // The job is the HUT now (D108) — `!job.IsSite` rather than the old
+        // `job.Construction is not null`, which is the same test read the other way round
+        // and was true of exactly the workplaces that are no longer staffed. The hut is not
+        // passed on: which site they walk to comes from the build queue, not from where they
+        // hold their job.
+        if (villager.CanWork && job?.Kind == JobKind.Builder && !job.IsSite
+            && WorkTheSite(world, villager))
         {
             return;
         }

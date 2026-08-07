@@ -307,6 +307,26 @@
   // firewood heats. Drawn from the whole village, parents first.
   "logs_per_house": 30,
 
+  // ---- The builder's hut (D108) ------------------------------
+  // Where the village's builders work from. Nothing is raised without
+  // one: a construction site is an errand the hut's crew walks out to,
+  // not a place anybody is assigned to, so a village with no hut can
+  // mark out as much as it likes and watch none of it rise.
+  //
+  // Only a WARM start reads these. The game as it ships starts the
+  // founders in an empty valley, and placing the hut is the player's
+  // first act -- it costs nothing but the ground it stands on, because
+  // it is the building every other building waits on.
+  //
+  // How many hands fit in it is NOT here: it is derived from the economy
+  // (VillageEconomy.BuilderHutCapacity) -- the hands left over once the
+  // village has fed and heated itself, which is what building has always
+  // been funded from. A position is content; a capacity is a
+  // consequence, and woodcutter_hut_capacity below is the recorded case
+  // of what typing one costs.
+  "builder_hut_x": -1,
+  "builder_hut_y": -1,
+
   // ---- Firewood (decision D29) -------------------------------
   // The first workplace that CONSUMES an input rather than only
   // producing one. It can stand idle for want of logs, which is a state
@@ -482,7 +502,10 @@
   "hut_logs": 25,
   "hut_work_ticks": 40,
 
-  "construction_site_capacity": 3,
+  // construction_site_capacity is GONE (D108). A site had three seats and
+  // people were assigned to it; builders hold their job at the hut now and
+  // treat sites as errands, so the number would be permanently zero -- and
+  // a number that is always zero is a lie waiting to be found (D98).
 
   // How much painted ground one worker can keep (D86). The first limit in
   // this game that is not distance -- everything else asks how far somebody

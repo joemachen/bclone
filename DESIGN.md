@@ -463,13 +463,33 @@ the transition's first step is provably a no-op, which is what makes the next on
   what makes it the answer to D103 that no rule could be. Laborers are shown as a count;
   **capping the gatherers is what actually makes them**, measured.
 
-**In progress — the builder's hut** (`~/.claude/plans/`, D108, D109). Steps 1 and 2 are in and
-both were provable no-ops: **every silent default arm is named** (five of six would have
-mis-priced, mis-typed or mis-named a new building kind), and **free-and-instant is a shape**
-rather than a special case for the pile. Remaining: the hut itself, sites becoming errands,
-buildings finishing at 0 workers, and **D109's linked staffing** — which is the big one, because
-it retires auto-staffing and therefore needs a **scripted competent player** for the two
-unattended long-horizon guards.
+**In progress — the builder's hut** (`~/.claude/plans/`, D108, D109, D110).
+
+- **Steps 1 and 2** ✅, both provable no-ops: **every silent default arm is named** (five of six
+  would have mis-priced, mis-typed or mis-named a new building kind), and **free-and-instant is
+  a shape** rather than a special case for the pile.
+- **Step 3 — the hut exists and sites stop being staffed** ✅ (D110). Builders got the building
+  they were the last profession without, and **a construction site became an errand its crew
+  walks out to** rather than somewhere anybody is posted. **The hut is the only path to a
+  building and there is no fallback** — measured, a founding with no hut leaves three sites
+  waiting and 163 logs in store — so it is free and instant, and the village says so out loud
+  the first time something is marked with nobody to raise it. Seats are **derived** (eight, and
+  they follow the economy horizon); `construction_site_capacity` is deleted. D102's
+  player-before-village guarantee **relocated to the errand chooser** — the crew works the head
+  of the build queue, so ▲ Sooner / ▼ Later still moves real hands. **Both goldens re-taken
+  once, and the cold start's five ticks did not move** (t121 / t130 / t173 / t241 / t251
+  against a winter at t360). **The twelve-seed arm caught the one real defect in it** — a site
+  nobody could reach sat at the head of the queue and starved every site behind it for a
+  century, which `NextToBuild` now skips past. 525 tests green.
+
+  **⛔ Left open, found on the way and not this slice's to fix:** `Household.ChooseSite`
+  promised reachable ground and in seed 11 delivered a house on the far bank. `MarkHome` logs a
+  **warning** when that promise breaks, so the next session can find the cause; today the queue
+  merely refuses to be held hostage by the symptom.
+
+Remaining: buildings finishing at 0 workers with the founders arriving as laborers, then
+**D109's linked staffing** — which is the big one, because it retires auto-staffing — and then
+the unstaffed-building alert, `Demolish(Workplace)` and the view.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -625,6 +645,23 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D110 · 2026-08-07 · ⭐ THE BUILDER'S HUT EXISTS, AND A CONSTRUCTION SITE STOPS BEING SOMEWHERE ANYBODY WORKS.** Step 3 of D108's slice, and its two halves could not ship apart — a hut alone would have added Builder seats while sites still supplied demand, moving both goldens twice for a state nobody designed. Joe: *"A construction site is a place that builders should treat as errands. If there is an incomplete construction site on the map and an active/staffed builder's hut, then the builders' priority should be completing the construction site."*
+  - **⭐ The hut is the only path to a building, and there is deliberately no fallback.** No hut, nothing is raised — including the houses the village marks for itself, which is the harshest half of the rule and the whole of Joe's design. Measured on the shipped opening: **3 sites still waiting after a year and 163 logs standing in store**, against a woodcutter's hut and 17 firewood in the identical opening with a hut. **That is what makes the hut a decision rather than a formality, and it is why it costs nothing** — free and instant on cleared ground, like the pile, because charging timber for the building every other building waits on is the circle the pile exists to avoid.
+  - **And it says so, once, when nobody is coming.** *"…is marked out, but nobody in the village builds — a builder's hut costs nothing but the ground it stands on, and until one is up and staffed, nothing will be raised."* **A silent stall is the one thing that would make this unfair rather than hard** (D93, §1.1): a footprint that never moves and never explains itself is exactly the untraceable outcome the design refuses.
+  - **`VillageEconomy.BuilderHutCapacity` is derived, and `woodcutter_hut_capacity` is why** (D16, D50). Stated target: *a hut holds every hand the village could spare for building once it has fed and heated itself* — which is not a new quantity but two the economy already budgets against, subtracted. **Eight seats on both configs**, and it follows the horizon (twenty households → 8, forty → 17), which is the anti-vacuity guard. **`construction_site_capacity` is deleted rather than zeroed**, on D98's rule that a number always zero is a lie waiting to be found.
+  - **⭐ D102's guarantee relocated rather than being dropped.** `LabourAllocator.RankOf` is gone, and with it the `Rank` on every candidate: sites are not claims any more, so there is nothing to rank. **The queue head is the errand instead** — the whole crew works the front of `BuildQueue()` — so *"what the player marked before a house the village marked for itself"* survives as the marking order it became in D104, and **▲ Sooner / ▼ Later still moves real hands.**
+  - **⚠️ The hazard, named because it would not have been found by reading:** `LoadMaterials` and `RaiseTheBuilding` both re-derived the site as `WorkplaceOf(villager)?.Construction`, which is **null once a builder works from a hut** — the builder would have walked to the shed, picked up nothing, walked to the site, delivered nothing, forever. **Fixed with no new villager state:** `RaiseTheBuilding` reads the site *at the villager's position* (`SimWorld.SiteAt`), which is D87's position rule and is already where the errand sent them; `LoadMaterials` re-asks the queue. **A `Villager.SiteId` is the set-and-not-cleared flag D66 and D71 argue against**, and would have to be hashed.
+  - **Both goldens re-taken, once, old values kept beside them** — fixture `16059676616951633422` → `8100668875656351515`, shipped `15383236497282309390` → `10300327615504873654`. Three things in the change move them and all three are the point: the founding gains a workplace, every site carries no seats and no workers, and builder demand is the hut's seats rather than the sum of the sites'.
+  - **✅ The cold start's five ticks did not move.** Shipped config, winter at t360: **builder funded t121, hut logs t130, hut standing t173, staffed t241, first firewood t251** — the same to within a tick, and the founding reaches 2 houses by t211 and 4 alive at two years. **`free / 2` and `VillageIsShortOfFood` are untouched**, deliberately: D109 makes that question moot rather than solving it, and reaching for D103's fix now would be solving a problem that is about to stop existing.
+  - **⛔ AND THE TWELVE-SEED ARM EARNED ITS KEEP AGAIN — SEED 11 DIED, AND THE CAUSE WAS THE QUEUE BEING AN ORDER.** *"The whole crew works the front"* has a failure mode separate workplaces never had: **one site nobody can reach starves every site behind it, forever.** `Household.ChooseSite` put a house at **(-1,-5), on the far bank**, and every builder spent a century walking toward a place they could never arrive at — **eight sites never raised, four households of eleven ever roofed, thirteen hundred logs in the shed, nobody starved, nobody frozen, the village simply aged out at 0.** That is the silent unrecoverable death §0.1 rules out, and it was **invisible in the log**.
+    - **The fix is one clause: `NextToBuild` skips what the village cannot walk to**, asked from the same anchor `CanBuildAt` already refuses on — so a site the player could never have marked cannot arrive by another door and stop the village building. **Seed 11 goes from 0 alive to 48 at two hundred years**, in line with the other eleven (44–48).
+    - **⚠️ And the upstream bug is left standing, named, and now audible.** `MarkHome` skips `CanBuildAt` on the stated grounds that *"ChooseSite has already found painted, reachable, buildable ground and thrown if there was none"* — **and in seed 11 it demonstrably had not.** That promise is broken somewhere in `ChooseSite`, this slice does not fix it, and `MarkHome` now logs a **warning** when it is broken so the next session finds the cause rather than the symptom. **Skipping the site is the belt to that braces**, not a substitute for it.
+    - **This is the third time a guard has caught a change that helped ten villages and killed one** (D103's case, by name), and the second time in this session that a diagnosis reasoned from the code would have been wrong — the plan predicted the cause would be *lowered hut-seat demand*, and hut seats had nothing to do with it.
+  - **⚠️ The measurement worth carrying, and it cost a wrong diagnosis: the founding is still exquisitely placement-sensitive.** A guard of mine sited its three buildings on the nearest bare tiles — a tight cluster at (-1,-2), (0,-2), (0,-1) — and **all four founders died in year one**, with the hut standing and the woodcutter's site stuck at 24 of 25 logs. **That is D99's finding verbatim, down to the coordinate**, not anything the hut did. It is the strongest remaining argument for widening the opening's slack deliberately, which `specs/cold-start.md §7.2` says is Joe's call.
+  - *The code cites **D108** throughout, not D110 — it is one slice with one plan, and D108 is
+    where `BuildingKind.BuilderHut` and the free-and-instant shape were already recorded. This
+    entry is the step that made them do something.*
+  - **`Workplace.IsSite` is the seam, named before it ran to five instalments** (D76). Seven readers had to learn to skip sites — the allocator's candidates and its three *"why am I idle?"* queries, the capacity total, the unmanned-work alert and the panel — and **four test guards were using `Kind == JobKind.Builder` as a synonym for "a site"**, which it stopped being the moment builders got a building of their own.
 - **D109 · 2026-08-07 · ⚠️ PROVISIONAL, AND IT RETIRES A PILLAR ON PURPOSE: the village stops staffing itself. One number per profession, and the player owns it.** Joe: *"Global professions panel and per-building should be linked… each building has a 'workers associated with this building' number and a 'global workers in this profession' number."* Then, asked to price it: *"Can we go with full manual now and re-evaluate how to integrate 'let the village decide' in a later phase? I think manual for now will make debugging the core game easier."*
   - **⭐ There is one number, shown from two ends.** Set two builders globally with one hut and both go there; with two huts, one each, round-robin and capped by each hut's `Capacity`. Take one off hut 2 and it moves to hut 1 — **the global holds**, and drops only when no hut of that kind has room. Add one at a hut and the global rises. A full hut means the next worker needs another hut, which is what makes `Capacity` mean something.
   - **⭐ "Let the village decide" goes, and the reason is debuggability rather than fidelity.** Joe's words. A village that only moves when the player moves it has **one** source of truth for who is working; today there are two and they argue — **D103 is that argument**, and this makes it moot rather than solving it. Buildings finish at 0 workers (D108's rule, now with nothing to fall back to); the founders arrive as laborers.
