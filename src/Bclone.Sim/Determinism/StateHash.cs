@@ -229,10 +229,10 @@ public static class StateHash
         // Player intent, so it is sim state: a pile that is coming is a different world from
         // one that is not. Sparse and countless for the third time, so a village that has
         // marked none mixes nothing.
-        for (int i = 0; i < world.PilesWaitingOnTheGround.Count; i++)
+        for (int i = 0; i < world.BuildingsWaitingOnTheGround.Count; i++)
         {
-            hash = MixUInt32(hash, (uint)world.PilesWaitingOnTheGround[i].X);
-            hash = MixUInt32(hash, (uint)world.PilesWaitingOnTheGround[i].Y);
+            hash = MixUInt32(hash, (uint)world.BuildingsWaitingOnTheGround[i].X);
+            hash = MixUInt32(hash, (uint)world.BuildingsWaitingOnTheGround[i].Y);
         }
 
         return hash;

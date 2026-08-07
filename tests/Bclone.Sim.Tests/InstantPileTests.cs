@@ -169,14 +169,14 @@ public sealed class InstantPileTests
         PlacementVerdict verdict = world.Mark(BuildingKind.Pile, at);
         _output.WriteLine($"marked a pile on {at}: allowed={verdict.Allowed}, "
             + $"painted={world.Zones.IsHarvest(at)}, "
-            + $"waiting={world.PilesWaitingOnTheGround.Count}");
+            + $"waiting={world.BuildingsWaitingOnTheGround.Count}");
 
         Assert.True(verdict.Allowed);
         Assert.True(world.Zones.IsHarvest(at), "Marking did not ask for the ground to be cleared.");
 
         // Not standing yet — the ground is still wooded, and that is the cost.
         Assert.DoesNotContain(world.StoreBuildings, store => store.Kind == StoreKind.Pile);
-        Assert.Contains(at, world.PilesWaitingOnTheGround);
+        Assert.Contains(at, world.BuildingsWaitingOnTheGround);
     }
 
     /// <summary>⭐ And it goes up the moment the ground comes clear.</summary>
@@ -191,16 +191,16 @@ public sealed class InstantPileTests
 
         GridPos at = WoodedGroundNear(world)!.Value;
         world.Mark(BuildingKind.Pile, at);
-        Assert.Single(world.PilesWaitingOnTheGround);
+        Assert.Single(world.BuildingsWaitingOnTheGround);
 
         // Exactly what a laborer's finished day of work does to the tile.
         (Goods goods, int amount) = world.Harvest(at);
         _output.WriteLine($"cleared {at} for {amount} {goods}; "
-            + $"{world.PilesWaitingOnTheGround.Count} still waiting, "
+            + $"{world.BuildingsWaitingOnTheGround.Count} still waiting, "
             + $"{world.StoreBuildings.Count} stores");
 
         Assert.True(amount > 0);
-        Assert.Empty(world.PilesWaitingOnTheGround);
+        Assert.Empty(world.BuildingsWaitingOnTheGround);
         Assert.Contains(
             world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Position == at);
     }
@@ -225,10 +225,10 @@ public sealed class InstantPileTests
 
         _output.WriteLine(
             $"half a year after marking a pile on woodland: "
-            + $"{world.PilesWaitingOnTheGround.Count} waiting, terrain now "
+            + $"{world.BuildingsWaitingOnTheGround.Count} waiting, terrain now "
             + $"{world.Map.TerrainAt(at)}");
 
-        Assert.Empty(world.PilesWaitingOnTheGround);
+        Assert.Empty(world.BuildingsWaitingOnTheGround);
         Assert.Contains(
             world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Position == at);
     }
@@ -252,7 +252,7 @@ public sealed class InstantPileTests
 
         // …and the shed's site exists straight away, unlike a pile's.
         Assert.Contains(world.Workplaces, place => place.Construction?.Kind == BuildingKind.Shed);
-        Assert.Empty(world.PilesWaitingOnTheGround);
+        Assert.Empty(world.BuildingsWaitingOnTheGround);
     }
 
     /// <summary>⭐ …and no work goes into it until the ground is bare (Joe, D101).</summary>

@@ -430,53 +430,75 @@ public sealed class SimWorld
         GroundStacks.Add(new GroundStack { Position = position, Goods = goods, Amount = amount });
     }
 
-    private readonly List<GridPos> _pilesWaitingOnTheGround = new();
+    /// <summary>A free building the player marked, waiting for its ground to be cleared.</summary>
+    /// <remarks>
+    /// <b>The kind travels with the tile (D108).</b> This was a bare list of positions when the
+    /// pile was the only free building; the builder's hut is the second, and a list that
+    /// remembered only <em>where</em> would have raised a pile on ground somebody asked for a
+    /// hut on.
+    /// </remarks>
+    private readonly record struct PendingBuilding(GridPos Position, BuildingKind Kind);
+
+    private readonly List<PendingBuilding> _waitingOnTheGround = new();
 
     /// <summary>
-    /// Piles the player has marked whose ground is still being cleared (D100).
+    /// Free buildings the player has marked whose ground is still being cleared (D100, D108).
     /// </summary>
     /// <remarks>
     /// <para>
     /// <b>Player intent, so it is sim state and it is hashed</b> (D42's rule, D51's case): two
-    /// runs of one seed given the same marks must produce the same village, and a pile that is
-    /// coming is a different world from one that is not.
+    /// runs of one seed given the same marks must produce the same village, and a building that
+    /// is coming is a different world from one that is not.
     /// </para>
     /// <para>
     /// <b>Deliberately not a <see cref="ConstructionSite"/>.</b> A site needs a builder to tick
-    /// it, and the whole point of an instant pile is that it needs nobody — a site would put
+    /// it, and the whole point of a free building is that it needs nobody — a site would put
     /// the builder dependency back and re-open the window D95 died in. This is a waiting list,
     /// which is what it actually is.
     /// </para>
     /// </remarks>
-    public IReadOnlyList<GridPos> PilesWaitingOnTheGround => _pilesWaitingOnTheGround;
+    public IReadOnlyList<GridPos> BuildingsWaitingOnTheGround
+    {
+        get
+        {
+            var tiles = new List<GridPos>(_waitingOnTheGround.Count);
+            for (int i = 0; i < _waitingOnTheGround.Count; i++)
+            {
+                tiles.Add(_waitingOnTheGround[i].Position);
+            }
+
+            return tiles;
+        }
+    }
 
     /// <summary>
-    /// Raise any pile that was waiting for this tile to be cleared.
+    /// Raise any free building that was waiting for this tile to be cleared.
     /// </summary>
     /// <remarks>
     /// <b>Hung off <see cref="SetTerrain"/> — the one door terrain changes through (D85).</b>
     /// Hooking <c>Harvest</c> instead would have been the same thing today and wrong the day
     /// anything else clears ground; the rule that door exists for is that there is one place
-    /// to ask. Guarded by an empty-list compare, so a village that has marked no pending pile
+    /// to ask. Guarded by an empty-list compare, so a village that has marked nothing free
     /// pays nothing for the check.
     /// </remarks>
-    private void RaiseAnyPileWaitingOn(GridPos tile)
+    private void RaiseAnythingWaitingOn(GridPos tile)
     {
-        if (_pilesWaitingOnTheGround.Count == 0
+        if (_waitingOnTheGround.Count == 0
             || TerrainRules.Yields(Map.TerrainAt(tile)) is not null)
         {
             return;
         }
 
-        for (int i = 0; i < _pilesWaitingOnTheGround.Count; i++)
+        for (int i = 0; i < _waitingOnTheGround.Count; i++)
         {
-            if (_pilesWaitingOnTheGround[i] != tile)
+            if (_waitingOnTheGround[i].Position != tile)
             {
                 continue;
             }
 
-            _pilesWaitingOnTheGround.RemoveAt(i);
-            string name = NameFor(BuildingKind.Pile);
+            BuildingKind kind = _waitingOnTheGround[i].Kind;
+            _waitingOnTheGround.RemoveAt(i);
+            string name = NameFor(kind);
 
             // Something may have gone up here while the trees were coming down. Said out
             // loud rather than silently dropped: a mark the player made and never sees the
@@ -488,11 +510,29 @@ public sealed class SimWorld
                 return;
             }
 
-            RaiseStore(BuildingKind.Pile, tile, name);
+            RaiseFreeBuilding(kind, tile, name);
             Narrate($"{Capitalised(name)} was laid out on the ground the village just "
                 + $"cleared. {Clock.SeasonAndYear()}.");
             return;
         }
+    }
+
+    /// <summary>Put up a building that costs nothing — a store, or a workplace (D108).</summary>
+    /// <remarks>
+    /// One place, so the two ways a free building can arrive — marked on clear ground, or
+    /// raised later when its ground is cleared — cannot disagree about what it becomes. The
+    /// same argument <see cref="RaiseStore"/> makes about the two ways a store arrives.
+    /// </remarks>
+    private void RaiseFreeBuilding(BuildingKind kind, GridPos position, string name)
+    {
+        if (kind == BuildingKind.Pile)
+        {
+            RaiseStore(kind, position, name);
+            return;
+        }
+
+        throw new ArgumentOutOfRangeException(
+            nameof(kind), kind, "That kind of building is not free.");
     }
 
     /// <summary>Whether the village has already been told it has nowhere for a good.</summary>
@@ -1103,7 +1143,7 @@ public sealed class SimWorld
         }
 
         // Ground that has just been cleared may be ground a pile was waiting for (D100).
-        RaiseAnyPileWaitingOn(position);
+        RaiseAnythingWaitingOn(position);
 
         return true;
     }
@@ -1270,28 +1310,34 @@ public sealed class SimWorld
             Zones.SetHarvest(position, true);
         }
 
-        // ⭐ A PILE IS NOT A CONSTRUCTION SITE, AND THAT IS THE POINT (D96). It costs nothing
-        // and owes no work, so a site for one would be a builder walking over to a footprint
-        // to do nothing — and worse than pointless: D95 built the cart's refusal of logs on
-        // top of a pile that WAS a site, and the window between marking one and it standing
-        // left a forester with nowhere on earth to put a load. Nothing was built at all,
-        // 0 homes. Raising it here closes that window rather than narrowing it.
-        if (kind == BuildingKind.Pile)
+        // ⭐ A FREE BUILDING IS NOT A CONSTRUCTION SITE, AND THAT IS THE POINT (D96, D108). It
+        // costs nothing and owes no work, so a site for one would be a builder walking over to
+        // a footprint to do nothing — and worse than pointless: D95 built the cart's refusal of
+        // logs on top of a pile that WAS a site, and the window between marking one and it
+        // standing left a forester with nowhere on earth to put a load. Nothing was built at
+        // all, 0 homes. Raising it here closes that window rather than narrowing it.
+        //
+        // ASKED OF THE RECIPE, NOT OF THE KIND (D108). It read `kind == BuildingKind.Pile`,
+        // which was true while the pile was the only free building and would have been the
+        // sixth silent special case the day a second one arrived. "Does it cost anything?" is
+        // the question this branch is actually asking.
+        if (recipe.Logs == 0 && recipe.WorkTicks == 0)
         {
             // Clear ground: it stands now. Wooded ground: it stands the moment the wood is
             // gone, and THE CLEARING IS WHAT IT COSTS (D96) — which is still true, and is
             // now a price the village pays rather than an errand the player is sent on.
             if (!groundIsBusy)
             {
-                RaiseStore(kind, position, name);
+                RaiseFreeBuilding(kind, position, name);
                 Narrate($"{Capitalised(name)} was laid out on cleared ground. " +
                     $"{Clock.SeasonAndYear()}.");
                 return verdict;
             }
 
-            if (!_pilesWaitingOnTheGround.Contains(position))
+            var pending = new PendingBuilding(position, kind);
+            if (!_waitingOnTheGround.Contains(pending))
             {
-                _pilesWaitingOnTheGround.Add(position);
+                _waitingOnTheGround.Add(pending);
             }
 
             Narrate($"{Capitalised(name)} is marked out, and the ground is being cleared for "
