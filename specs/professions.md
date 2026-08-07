@@ -58,6 +58,53 @@ Optional sixth parts, each already with a precedent:
   at map selection, not discovered in year thirty.**
 - **A mode toggle** — the forester's plant/harvest. New UI concept; sim side is a field.
 
+### 3.0 ⭐ Staffing: one number per profession, two views of it (D109)
+
+**Joe:** *"Global professions panel and per-building should be linked. Staffing changes made in
+the global professions panel should also be made automatically in the related buildings…
+So each building has a 'workers associated with this building' number and a 'global workers in
+this profession' number."*
+
+There is **one** number per profession. The panel and the building show it from two ends.
+
+| The player does | What happens |
+|---|---|
+| Sets **2 builders** globally, one hut exists | both go to that hut |
+| Sets **2 builders** globally, two huts exist | one each — round-robin, capped by each hut's `Capacity` |
+| Removes the worker from hut 2 | it moves to hut 1 if hut 1 has room; **the global holds**. Only if no hut of that kind has room does the global drop |
+| Adds a worker at a hut | the global **rises** by one |
+| Fills a hut to its max | more of that profession needs another hut. `Capacity` is the per-hut max |
+
+**⭐ And there is no "let the village decide" any more (D109, Joe).** Every workplace carries an
+explicit number. A finished building arrives at **0** and does nothing until the player staffs
+it. The founders arrive as laborers.
+
+- **Joe's reason is debuggability, not fidelity:** *"I think manual for now will make debugging
+  the core game easier."* A village that only moves when the player moves it has one source of
+  truth for who is working; today there are two and they argue (D103 is that argument).
+- **`LabourQuota`'s derived demand survives as advice, not as a decision.** It still computes
+  what the village *would* want and the panel still shows it — *"the village suggests 3"* — which
+  is §1.1 working: the game explains itself and the player decides. It simply no longer binds.
+- **It makes D103 moot rather than solved.** Building was unreachable because it was funded from
+  leftover hands; now it is funded because the player said so.
+- **⚠️ It is explicitly provisional.** Joe: *"can we go with full manual now and re-evaluate how
+  to integrate 'let the village decide' in a later phase?"* Auto-staffing is deferred, not
+  refused. Nothing here should make it hard to put back — which is why the derived demand stays
+  alive rather than being deleted.
+
+**When a worker dies or ages out** (Joe): a laborer takes the empty seat if one is free.
+**If none is,** the building's number *and* the profession's global number drop by one, and the
+timeline says so — *"X, the woodcutter, died and no laborer was available to replace them."*
+Silence there would be a profession quietly draining away, which is the untraceable outcome
+§1.1 forbids.
+
+**⚠️ The cost, named: the two guards that have caught the most now decay by design.** The
+12-seed × 200-year arm and the 300-year acceptance run both play themselves. An unattended
+village grows, never adds gatherers, and starves — correctly. **They need a scripted competent
+player** that maintains staffing, and what they assert has to be re-derived against it. That is
+the largest single piece of work this model creates and it is not optional: without it there is
+no long-horizon guard at all.
+
 ### 3.1 Laborer is not one of them
 
 **A laborer is the absence of a job, and that is load-bearing** (D66). `Villager.IsLaborer` is a
