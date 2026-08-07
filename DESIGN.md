@@ -482,14 +482,17 @@ the transition's first step is provably a no-op, which is what makes the next on
   nobody could reach sat at the head of the queue and starved every site behind it for a
   century, which `NextToBuild` now skips past. 525 tests green.
 
-  **⛔ Left open, found on the way and not this slice's to fix:** `Household.ChooseSite`
-  promised reachable ground and in seed 11 delivered a house on the far bank. `MarkHome` logs a
-  **warning** when that promise breaks, so the next session can find the cause; today the queue
-  merely refuses to be held hostage by the symptom.
+  **⛔ Left open, found on the way — and now scheduled (Joe: *"fix choosesite after the staffing
+  work"*).** `Household.ChooseSite` promised reachable ground and in seed 11 delivered a house
+  on the far bank. `MarkHome` logs a **warning** when that promise breaks; today the queue
+  merely refuses to be held hostage by the symptom. **See D111 for the cause** — it is an
+  architecture violation rather than an oversight, and it moves both goldens, so it gets its own
+  slice after D109's staffing rather than being tangled into it.
 
 Remaining: buildings finishing at 0 workers with the founders arriving as laborers, then
 **D109's linked staffing** — which is the big one, because it retires auto-staffing — and then
-the unstaffed-building alert, `Demolish(Workplace)` and the view.
+the unstaffed-building alert, `Demolish(Workplace)` and the view. **Then D111** (`ChooseSite`),
+which Joe scheduled behind the staffing work because it moves both goldens on its own account.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -645,6 +648,12 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D111 · 2026-08-07 · ⛔ SCHEDULED, NOT FIXED: `ChooseSite` measures distance with a ruler where the rest of the game measures it by walking — and that is the "two competing travel-cost systems" `CLAUDE.md` forbids by name.** Found by the twelve-seed arm in D110. Joe: *"fix choosesite after the staffing work."*
+  - **The whole bug in one sentence.** `Household.ChooseSite` scores every painted tile on `ManhattanDistanceTo` the nearest berry patch plus `ManhattanDistanceTo` the nearest granary — grid distance, as the crow flies. **Nobody in this game is a crow.** Since D40 water is impassable and every real journey goes *round* the river on the shared `TravelCostField`, and `ChooseSite` never asks it. It checks that a tile **is not water**; it never checks that a tile is not **cut off by** water.
+  - **`PaintTheStarterZone` is the other half**, and it has the identical hole: it paints a diamond around the founding site skipping only water tiles, so in a valley where the river runs close it paints the far bank. That is how seed 11 got a beautifully-scoring, permanently unreachable house site at (-1,-5).
+  - **⭐ The player could never have made this mistake — only the village could.** `Mark` goes through `CanBuildAt`, which asks `TravelCost.CanReach` and refuses. `MarkHome` deliberately skips that check, on the written grounds that *"ChooseSite has already found painted, reachable, buildable ground"* — **a sentence that was simply not true and that nothing tested.** The asymmetry is why it survived so long: every path a human touches was already correct.
+  - **It was latent until D110 made it lethal.** An unreachable site used to be a workplace that quietly attracted nobody, because builders were matched per-site by catchment. Once the whole crew works the head of one queue, one unreachable site freezes all building in the village forever.
+  - **Deliberately scheduled after D109's staffing rather than folded into it.** The fix is small — ask the cost field instead of the ruler, in both `ChooseSite` and the starter zone — but **it re-sites houses, so it moves both 50-year goldens**, and a golden that moves for two reasons at once cannot be explained in one sentence. It also wants `MarkHome`'s skipped `CanBuildAt` revisited once the promise it relies on is actually kept.
 - **D110 · 2026-08-07 · ⭐ THE BUILDER'S HUT EXISTS, AND A CONSTRUCTION SITE STOPS BEING SOMEWHERE ANYBODY WORKS.** Step 3 of D108's slice, and its two halves could not ship apart — a hut alone would have added Builder seats while sites still supplied demand, moving both goldens twice for a state nobody designed. Joe: *"A construction site is a place that builders should treat as errands. If there is an incomplete construction site on the map and an active/staffed builder's hut, then the builders' priority should be completing the construction site."*
   - **⭐ The hut is the only path to a building, and there is deliberately no fallback.** No hut, nothing is raised — including the houses the village marks for itself, which is the harshest half of the rule and the whole of Joe's design. Measured on the shipped opening: **3 sites still waiting after a year and 163 logs standing in store**, against a woodcutter's hut and 17 firewood in the identical opening with a hut. **That is what makes the hut a decision rather than a formality, and it is why it costs nothing** — free and instant on cleared ground, like the pile, because charging timber for the building every other building waits on is the circle the pile exists to avoid.
   - **And it says so, once, when nobody is coming.** *"…is marked out, but nobody in the village builds — a builder's hut costs nothing but the ground it stands on, and until one is up and staffed, nothing will be raised."* **A silent stall is the one thing that would make this unfair rather than hard** (D93, §1.1): a footprint that never moves and never explains itself is exactly the untraceable outcome the design refuses.
