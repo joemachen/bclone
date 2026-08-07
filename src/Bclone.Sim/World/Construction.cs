@@ -48,6 +48,30 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     Home = 5,
+
+    /// <summary>
+    /// A builder's hut — where the village's builders work from (D64, D108).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>It changes what a construction site IS.</b> Joe: <em>"a construction site is a place
+    /// that builders should treat as errands. If there is an incomplete construction site on the
+    /// map and an active/staffed builder's hut, then the builders' priority should be completing
+    /// the construction site."</em> A site stops being somewhere people are assigned and becomes
+    /// a job of work the hut's crew walks out to, taken in build-queue order (D105).
+    /// </para>
+    /// <para>
+    /// <b>Free and instant, like the pile (Joe).</b> It is the one building that must exist
+    /// before any other can be raised, so charging timber for it would be the same circle the
+    /// pile exists to avoid. Its cost is the ground it stands on and the hands the player puts
+    /// in it.
+    /// </para>
+    /// <para>
+    /// <b>Appended, never renumbered</b> — the same rule <see cref="Goods"/> and
+    /// <see cref="JobKind"/> carry, for the same reason.
+    /// </para>
+    /// </remarks>
+    BuilderHut = 6,
 }
 
 /// <summary>What a building costs to raise.</summary>
@@ -92,7 +116,21 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
             // A house costs what it has always cost in timber (`logs_per_house`, which the
             // whole timber economy is derived against) and now owes work as well (D102).
             BuildingKind.Home => new BuildingRecipe(config.LogsPerHouse, config.HomeWorkTicks),
-            _ => new BuildingRecipe(config.HutLogs, config.HutWorkTicks),
+
+            // ⭐ FREE AND INSTANT, LIKE THE PILE (D108). The builder's hut is the one building
+            // that must exist before any other can be raised, so charging timber for it would
+            // be a circle exactly like charging the pile for somewhere to stack timber. It is
+            // the player's first act, and its cost is the ground and the hands they put in it.
+            BuildingKind.BuilderHut => new BuildingRecipe(0, 0),
+
+            BuildingKind.WoodcutterHut => new BuildingRecipe(config.HutLogs, config.HutWorkTicks),
+
+            // ⭐ NAMED RATHER THAN DEFAULTED, and this arm is why. It used to hand out the
+            // woodcutter's hut's recipe to anything it did not recognise — 25 logs and 40
+            // ticks — so a new kind silently cost a hut. `BuildingKind.Pile`'s own remarks
+            // were written about that trap. A kind nobody has priced is a bug, not a hut.
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building has no recipe."),
         };
     }
 }

@@ -1532,12 +1532,18 @@ public sealed class SimWorld
         //
         // The two buildings the player did not pay for return nothing, which is the honest
         // answer and the one the recipes already give: a pile's is (0, 0).
+        // Named rather than defaulted (D108): the cart is the other building nobody paid for,
+        // and a pile's recipe of (0, 0) is the right refund for both. An unknown store kind is
+        // a bug rather than a pile.
         BuildingKind kind = building.Kind switch
         {
             StoreKind.Granary => BuildingKind.Granary,
             StoreKind.Shed => BuildingKind.Shed,
             StoreKind.Market => BuildingKind.Market,
-            _ => BuildingKind.Pile,
+            StoreKind.Pile => BuildingKind.Pile,
+            StoreKind.Cart => BuildingKind.Pile,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(building), building.Kind, "That kind of store has no refund."),
         };
 
         int held = building.Store.Held;
@@ -1639,7 +1645,13 @@ public sealed class SimWorld
                 });
                 break;
 
-            default:
+            // ⭐ THE STORES, NAMED (D108). This was a `default:` arm, and it was two silent
+            // defaults deep: an unrecognised kind fell through to `RaiseStore`, whose own two
+            // switches then made it a market with a market's capacity. A building kind nobody
+            // taught this method about would have quietly become a market.
+            case BuildingKind.Granary:
+            case BuildingKind.Shed:
+            case BuildingKind.Market:
                 RaiseStore(plan.Kind, site.Position, plan.Name);
 
                 // A market is a place to work as well as a place to keep things (D14).
@@ -1657,6 +1669,12 @@ public sealed class SimWorld
                 }
 
                 break;
+
+            // A pile and a builder's hut are free and instant, so neither is ever a site and
+            // neither can reach this method. Said out loud rather than swallowed.
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(site), plan.Kind, "That kind of building is never raised from a site.");
         }
 
         RetireWorkplace(site);
@@ -1674,12 +1692,18 @@ public sealed class SimWorld
     /// </remarks>
     private StoreBuilding RaiseStore(BuildingKind kind, GridPos position, string name)
     {
+        // Both switches name the market rather than defaulting to it (D108). They were the
+        // second and third silent defaults on the path from `Complete`, and between them they
+        // would have turned any building kind nobody had taught this method about into a
+        // market with a market's capacity.
         StoreKind storeKind = kind switch
         {
             BuildingKind.Granary => StoreKind.Granary,
             BuildingKind.Shed => StoreKind.Shed,
             BuildingKind.Pile => StoreKind.Pile,
-            _ => StoreKind.Market,
+            BuildingKind.Market => StoreKind.Market,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building is not a store."),
         };
 
         int capacity = kind switch
@@ -1687,7 +1711,9 @@ public sealed class SimWorld
             BuildingKind.Granary => VillageEconomy.GranaryCapacity(Config),
             BuildingKind.Shed => VillageEconomy.ShedCapacity(Config),
             BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
-            _ => VillageEconomy.MarketCapacity(Config),
+            BuildingKind.Market => VillageEconomy.MarketCapacity(Config),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building has no store capacity."),
         };
 
         var building = new StoreBuilding
@@ -1793,7 +1819,13 @@ public sealed class SimWorld
         BuildingKind.Market => "a market",
         BuildingKind.Pile => "a storage pile",
         BuildingKind.Home => "a house",
-        _ => "a woodcutter's hut",
+        BuildingKind.BuilderHut => "a builder's hut",
+
+        // Named, because the default arm called every unrecognised building a woodcutter's
+        // hut — in the log, in the panel, and in every placement sentence (D108).
+        BuildingKind.WoodcutterHut => "a woodcutter's hut",
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(kind), kind, "That kind of building has no name."),
     };
 
     /// <summary>Any store of this kind, for naming things and for tests. Never for logic.</summary>
