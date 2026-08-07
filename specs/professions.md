@@ -100,10 +100,14 @@ Silence there would be a profession quietly draining away, which is the untracea
 
 **⚠️ The cost, named: the two guards that have caught the most now decay by design.** The
 12-seed × 200-year arm and the 300-year acceptance run both play themselves. An unattended
-village grows, never adds gatherers, and starves — correctly. **They need a scripted competent
-player** that maintains staffing, and what they assert has to be re-derived against it. That is
-the largest single piece of work this model creates and it is not optional: without it there is
-no long-horizon guard at all.
+village grows, never adds gatherers, and starves — correctly.
+
+**✅ Joe has declined a scripted player for now** — *"I'll debug manually for now. We can script
+a player later if we want."* So those runs are **re-pointed rather than replaced**: they stop
+asserting *"still standing at 300 years"* and start asserting something true about a village
+nobody is managing — that it decays gracefully, that nothing throws, that the log explains it.
+**The long-horizon net is genuinely thinner until a player is scripted**, and that is accepted
+rather than overlooked. D34, D79 and D89 were each caught by exactly these runs.
 
 ### 3.1 Laborer is not one of them
 
