@@ -463,6 +463,19 @@ the transition's first step is provably a no-op, which is what makes the next on
   what makes it the answer to D103 that no rule could be. Laborers are shown as a count;
   **capping the gatherers is what actually makes them**, measured.
 
+**⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
+Joe listed nine professions and asked to align on the shape before more is built. Every one is
+the same five things — a `JobKind`, a building the player places, seats, **a local store with a
+stated cap**, and a destination for its output. Four of those exist; the local store has been
+dead code since D30. Four questions settled with it: **the gatherer's hut waits for natural
+regrowth** (it removes the anchor the economy derives from *and* makes clearing your woods a
+starvation trap), **planting stays earned** (D43's loop survives), **fish and meat are
+`Goods.Food`**, and **the builder's hut goes first**.
+
+**Order:** builder's hut → the local store, proved on the forester and woodcutter → the
+fisherman → the forester's hut → natural regrowth, then the gatherer and the 7-tile
+re-derivation → hunter → tailor.
+
 **⛔ STILL OPEN (D103): building is unreachable for the village, not merely low priority.**
 D106 hands the player a way round it, which is the right shape — but the *default* is still
 that a village left alone barely builds.
@@ -604,6 +617,14 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D107 · 2026-08-07 · ⚠️ ALIGNMENT, NOT A SLICE. Every profession is the same five things, and four questions about the nine are settled.** Joe, listing nine roles: *"Before we proceed, I want to make sure we're aligned on how the roles will work in general. This is not an exhaustive list."* Written up as `specs/professions.md`.
+  - **⭐ The shape: a `JobKind`, a building the player places, seats, a local store with a stated cap, and a destination for the output.** Four of the five exist. **The fifth is the surprise: `Workplace.Store` has been there since D30, is uncapped, and is completely dead** — nothing in the sim has ever written to it, and the panel has a branch for it that can never be true. Producers carry output straight to a `StoreBuilding`. Wiring it up is the first real slice of the model.
+  - **A laborer is not one of them, and that stays load-bearing (D66).** It is the *absence* of a job — a reader, not a `JobKind`, because a job kind names a place and a laborer has none. Children coming of age become laborers because nothing has claimed them. So the panel reads laborers and does not set them, and — measured at D106 — the way to *make* them is to cap the gatherers.
+  - **⛔ The gatherer's hut waits for natural regrowth (Joe's call), for two reasons and the second is worse.** It removes the anchor the whole economy derives from — `MaxHomeToWorkTiles` is the forage ring radius plus jitter, and `gather_yield`, the timber budget, granary capacity and the population ceiling all hang off it (**this is §6's "7-tile bound", the largest re-derivation on the board**). And *no forest, no food* is a **starvation trap** while the harvest brush can clear every tree and nothing grows back: the one genuinely uncozy state §0.1 rules out, and exactly what D88 promoted regrowth above planting to prevent.
+  - **⛔ The forester plants only once it is earned (Joe's call), so D43's loop survives intact.** The hut fells and tends its ground from day one; **planting stays §2.7's headline unlock-by-doing node**. The toggle ships greyed with its reason on it — a control that explains why it is unavailable is legible; one that appears from nowhere two generations later is not.
+  - **✅ Fish and meat are `Goods.Food`, not goods of their own (Joe's call).** Nothing distinguishes them mechanically yet, `food-catalog.md §7` warns against a recipe tree, and `Goods` can be appended safely later. **The cost of the other choice settled it:** every reader of *how much food* — `TotalFood`, the birth gate, the quota, stock limits — would have to ask a capability question instead of naming a good, which is D76's seam on the one axis the whole economy is derived against. **`Leather` and `Clothing` are new goods**, both materials, both shed.
+  - **✅ Build order (Joe): the builder's hut first.** Then the local store proved on the two professions that already exist, then the fisherman (the cleanest new one, and it proves terrain-conditioned placement without touching the food derivation), then the forester's hut, then regrowth → the gatherer, then hunter → tailor.
+  - **⚠️ Two things this model needs that have no precedent in code.** Placement conditioned on terrain — `CanBuildAt` has no adjacency concept and never branches on kind — and a per-building mode toggle. `buildings-plan.md` wants terrain to bite this way; `tech-tree.md` attaches the condition that **an unavailable branch is stated at map selection, never discovered in year thirty**.
 - **D106 · 2026-08-04 · A professions panel: how many people on each kind of work, village-wide — and it is the answer to D103 that no rule could be.** Joe, with a Banished screenshot: *"provide the user with the option, globally, to set the number of laborers and builders."*
   - **`JobLimits` is `StockLimits` for labour**, and deliberately the same shape: null is *"let the village decide"*, null and zero are different states, both are hashed, and a village played without opening the panel is byte-identical to the one before the panel existed. **Three halves of one control now** — `StaffingOverride` says how many hands at *this building* (D51), a stock limit says *until when* (D62), and a job target says how many hands on *this kind of work anywhere*.
   - **⭐ It is allowed to ask for MORE than the village would choose, which is the whole point and the difference from a stock limit.** D103 measured building as funded from what is left after eating and heating, and what is left is **nothing for most of the year**; two attempts to fix that with a *rule* each killed a valley. **The village cannot fix it for itself without killing some villages. A player who can say "two builders" fixes the one in front of them** — which is §2.2's argument for why this is a management sim rather than an automated one.
