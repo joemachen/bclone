@@ -282,6 +282,40 @@ public sealed record SimConfig
     [JsonPropertyName("founding_clearing_radius_tiles")]
     public int FoundingClearingRadiusTiles { get; init; } = 4;
 
+    /// <summary>
+    /// How far a gatherer's hut reaches for food, as a diamond radius in tiles.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Content, and the most load-bearing piece of content in the game</b>
+    /// (`forests-and-gathering.md §3.2`). It is the ring the hut draws on the map, the ground
+    /// whose trees decide what a trip is worth, and — from slice 3 — <b>the distance the whole
+    /// food economy is derived against</b>, replacing the forage-site ring. A number the player
+    /// can see beats one that is an artefact of where a generator dropped a berry patch.
+    /// </para>
+    /// <para>
+    /// <b>Eight, and the eight is chosen to keep slice 3 small.</b> `MaxHomeToWorkTiles` is 7
+    /// today; moving the anchor to 8 changes the round trip by one tile rather than
+    /// re-deriving the economy from nothing, so the largest re-derivation on the board arrives
+    /// as an adjustment instead of a rewrite.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("gatherer_hut_ring_tiles")]
+    public int GathererHutRingTiles { get; init; } = 8;
+
+    /// <summary>What a gatherer's hut costs to raise.</summary>
+    /// <remarks>
+    /// A real building with a real price, unlike the pile and the builder's hut — neither of
+    /// those can be charged because nothing can be built without them, and a gatherer's hut has
+    /// no such circle to break.
+    /// </remarks>
+    [JsonPropertyName("gatherer_hut_logs")]
+    public int GathererHutLogs { get; init; } = 25;
+
+    /// <summary>Ticks of work a gatherer's hut owes.</summary>
+    [JsonPropertyName("gatherer_hut_work_ticks")]
+    public int GathererHutWorkTicks { get; init; } = 40;
+
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     /// <remarks>
     /// <b>A position is content; the hut's SEATS are not.</b> Where a building sits is a fact

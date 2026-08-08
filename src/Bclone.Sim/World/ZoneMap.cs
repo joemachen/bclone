@@ -253,8 +253,57 @@ public sealed class ZoneMap
 
         _harvest[index] = painted;
         HarvestTiles += painted ? 1 : -1;
+
+        if (painted)
+        {
+            // Kept in index order, which is map order — see PaintedHarvest.
+            int at = _paintedHarvest.BinarySearch(index);
+            _paintedHarvest.Insert(at < 0 ? ~at : at, index);
+        }
+        else
+        {
+            int at = _paintedHarvest.BinarySearch(index);
+            if (at >= 0)
+            {
+                _paintedHarvest.RemoveAt(at);
+            }
+        }
+
         return true;
     }
+
+    /// <summary>
+    /// The painted tiles themselves, in map order — so nobody has to walk the valley to find
+    /// them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ THIS IS D87'S TRAP, RE-ARMED BY A WOODED VALLEY.</b> `SimWorld.NearestHarvest` is
+    /// asked by every idle adult every tick and used to scan all 9,600 tiles, guarded by an
+    /// early-out for a village that had painted nothing — which was almost every village, so
+    /// the scan was free in practice. **Then the valley became woodland**
+    /// (`forests-and-gathering.md` slice 1): every house the village sites now lands on trees
+    /// and paints itself for clearing (D100), so the early-out stopped firing for anybody and
+    /// the full scan came back. **Measured: the twelve-seed arm went from about three minutes
+    /// to six, and the suite from six to ten and a half.** That is the same regression D87
+    /// records, arriving from worldgen rather than from the brush.
+    /// </para>
+    /// <para>
+    /// <b>Kept in index order, which is map order (row by row, left to right)</b> — exactly the
+    /// order the old scan visited tiles in. That is not tidiness: `NearestHarvest` keeps the
+    /// first tile of the lowest cost, so a different order would break ties differently and
+    /// move every golden for a change that is supposed to be a pure speed-up.
+    /// </para>
+    /// <para>
+    /// <b>Derived from <c>_harvest</c> and never hashed.</b> The bool array is the state; this
+    /// is an index into it, and two of anything that must agree is the shape of half the bugs
+    /// in this project — so it is written in exactly one place, immediately beside the array
+    /// itself.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<int> PaintedHarvest => _paintedHarvest;
+
+    private readonly List<int> _paintedHarvest = new();
 
     /// <summary>Every painted tile, in a fixed order — for hashing and for drawing.</summary>
     public IReadOnlyList<bool> Harvest => _harvest;
@@ -266,4 +315,13 @@ public sealed class ZoneMap
 
         return x < 0 || x >= _width || y < 0 || y >= _height ? -1 : (y * _width) + x;
     }
+
+    /// <summary><see cref="IndexOf"/> run backwards — the tile an index refers to.</summary>
+    /// <remarks>
+    /// Beside its inverse deliberately: two conversions between a position and an index that
+    /// live apart are two that can disagree, and every painted tile in the game is round-tripped
+    /// through this pair.
+    /// </remarks>
+    public GridPos PositionOf(int index) =>
+        new((index % _width) + _minX, (index / _width) + _minY);
 }

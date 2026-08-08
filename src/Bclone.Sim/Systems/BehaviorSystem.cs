@@ -2093,8 +2093,25 @@ public sealed class BehaviorSystem : ISimSystem
                 // ageing stops being a countdown and starts being something the
                 // player can watch: the same year's work yields less, so the
                 // seasonal trip count climbs and the winter margin thins.
-                int yield = world.FoodSource.YieldPerGather * villager.Vigour / 100;
-                if (yield < 1)
+                // ⭐ WHAT THE PLACE IS WORTH, THEN WHAT THE PERSON IS WORTH
+                // (`forests-and-gathering.md`). This read `world.FoodSource.YieldPerGather`
+                // flat, because every gathering job was a berry patch and every berry patch
+                // was the same. A gatherer's hut is worth what the trees in its ring say, so
+                // the place is asked first — and a berry patch still answers exactly what it
+                // always did, which is why this is a no-op until somebody builds a hut.
+                Workplace? patch = WorkplaceOf(world, villager);
+                int perTrip = patch is null
+                    ? world.FoodSource.YieldPerGather
+                    : world.GatherYieldAt(patch);
+
+                int yield = perTrip * villager.Vigour / 100;
+
+                // ⚠️ AND THE FLOOR OF ONE APPLIES TO VIGOUR, NOT TO THE GROUND. An old
+                // gatherer still brings something back; a hut with no trees in its ring
+                // brings back NOTHING, which is the whole of "no forest, no food" and the
+                // rule Joe asked for by name. Flooring both together would have quietly made
+                // a bald ring feed the village.
+                if (yield < 1 && perTrip > 0)
                 {
                     yield = 1;
                 }

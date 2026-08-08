@@ -151,8 +151,13 @@ Each leaves the suite green and is measured against the cold start's five ticks.
 1. **Forests are generated across the valley.** `PaintForest` is already the right primitive and
    the *"clusters, never scatter"* argument at `MapGenerator.cs:49` stands; what changes is what
    drives it. Tree stands stay for now, or foresters have nowhere to work.
-2. **The gatherer's hut**, with its ring and the density rule. **Forage sites still exist** — a new
-   profession moves no golden until somebody places its building (`professions.md §9.1`).
+2. **The gatherer's hut**, with its ring and the density rule. ✅ **Done.** `BuildingKind
+   .GathererHut = 7`, a real price in logs and work, seats derived as the ring priced in workers
+   (D86's rule reused — a ring of 8 gives 7 seats), and yield linear in the wooded fraction with
+   no floor. **Measured: 83 wooded tiles of 145 is a trip worth 26; fell 41 of them and it is
+   worth 13** — half the trees, half the food, to the integer. A bald ring yields zero.
+   **All three goldens unmoved**, because forage sites still exist and nothing places a hut
+   unless the player does — which is exactly what `professions.md §9.1` asks of a new profession.
 3. **The fences come down and the economy is re-derived.** Catchment deleted; `MaxHomeToWorkTiles`
    re-based on the ring and demoted to a budget; **the commute becomes readable** (§7.1).
 4. **The forester's hut, and planting ungated.** Its ground and worker-pricing are already built

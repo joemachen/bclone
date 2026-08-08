@@ -72,6 +72,31 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     BuilderHut = 6,
+
+    /// <summary>
+    /// A gatherer's hut — where food comes from, and the first building whose yield
+    /// depends on the ground around it (`specs/forests-and-gathering.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ It has a ring, and the trees inside it decide what a trip is worth</b> (Joe):
+    /// <em>"the gatherer's hut should have a maximum gatherable area in a ring and workers
+    /// cannot gather outside that ring — the number of trees/forest in the circle has a
+    /// relation to the volume of food gathered. Less trees = less food."</em>
+    /// </para>
+    /// <para>
+    /// <b>That is what makes the harvest brush cost something.</b> Until now felling was free
+    /// money — paint trees, get logs. Timber and food come out of the same wood now, so a
+    /// player clearing the ground beside their gatherers is spending food to get logs and can
+    /// see themselves doing it. §2.3's *"every escalating problem should be back-traceable to
+    /// something the player did"*, arriving out of a system built for another reason.
+    /// </para>
+    /// <para>
+    /// <b>Appended, never renumbered</b> — the same rule <see cref="Goods"/> and
+    /// <see cref="JobKind"/> carry, for the same reason.
+    /// </para>
+    /// </remarks>
+    GathererHut = 7,
 }
 
 /// <summary>What a building costs to raise.</summary>
@@ -124,6 +149,13 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
             BuildingKind.BuilderHut => new BuildingRecipe(0, 0),
 
             BuildingKind.WoodcutterHut => new BuildingRecipe(config.HutLogs, config.HutWorkTicks),
+
+            // Costs timber and work like every other real building. Deliberately NOT free:
+            // the pile and the builder's hut are free because nothing can be built without
+            // them, and a gatherer's hut has no such circle to break — it is the first thing
+            // the player spends logs on because they chose to eat better.
+            BuildingKind.GathererHut =>
+                new BuildingRecipe(config.GathererHutLogs, config.GathererHutWorkTicks),
 
             // ⭐ NAMED RATHER THAN DEFAULTED, and this arm is why. It used to hand out the
             // woodcutter's hut's recipe to anything it did not recognise — 25 logs and 40

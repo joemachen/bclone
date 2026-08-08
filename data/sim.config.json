@@ -343,6 +343,37 @@
   // the opening is not a clearing puzzle.
   "founding_clearing_radius_tiles": 4,
 
+  // ---- The gatherer's hut (forests-and-gathering.md) ---------
+  // Where food comes from, and the first building whose yield depends
+  // on the ground around it. The trees inside this ring decide what a
+  // trip is worth -- half the trees, half the food -- and nothing
+  // outside it counts for anything. No floor: a bald ring feeds nobody,
+  // which is "no forest, no food" and the rule Joe asked for by name.
+  // The safety is that it is VISIBLE on the hut's panel, not that it is
+  // softened.
+  //
+  // The ring is content and it is the most load-bearing content in the
+  // game: from slice 3 it also becomes the distance the whole food
+  // economy is derived against, replacing the forage-site ring. A
+  // number the player can see beats one that is an artefact of where a
+  // generator dropped a berry patch.
+  //
+  // EIGHT, and the eight is chosen to keep that slice small:
+  // MaxHomeToWorkTiles is 7 today, so moving the anchor to 8 changes
+  // the round trip by one tile rather than re-deriving from nothing.
+  //
+  // How many hands fit is NOT here -- it is the ring priced in workers
+  // (VillageEconomy.GathererHutCapacity), reusing D86's
+  // work_ground_tiles_per_worker rather than inventing a second number
+  // that could drift from it.
+  "gatherer_hut_ring_tiles": 8,
+
+  // What it costs. A real price, unlike the pile and the builder's hut
+  // -- neither of those can be charged, because nothing can be built
+  // without them, and a gatherer's hut has no such circle to break.
+  "gatherer_hut_logs": 25,
+  "gatherer_hut_work_ticks": 40,
+
   // ---- The builder's hut (D108) ------------------------------
   // Where the village's builders work from. Nothing is raised without
   // one: a construction site is an errand the hut's crew walks out to,

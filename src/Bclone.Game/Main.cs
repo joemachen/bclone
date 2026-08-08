@@ -730,6 +730,26 @@ public partial class Main : Control
             : $"Staffing: left to the village — it wants {LabourQuota.For(world).For(workplace.Kind)} " +
               $"on this kind of work. Room for {workplace.Capacity}.");
 
+        // ⭐ WHAT THE GROUND IS WORTH, AND THIS IS NOT POLISH (`forests-and-gathering.md`
+        // §7.1). A gatherer's hut whose ring has been felled brings back less and less, and a
+        // village thinning out with nothing on screen saying why is §1.1 failing — the one
+        // uncozy state §0.1 rules out. **The sentence is what makes "no forest, no food"
+        // fair**, exactly as D93 ruled about a stalled construction site, so it ships with the
+        // mechanic rather than after it.
+        if (workplace.GatheringRadius > 0)
+        {
+            int ring = VillageEconomy.TilesInRing(workplace.GatheringRadius);
+            int wooded = world.WoodedTilesAround(workplace);
+            int share = ring <= 0 ? 0 : wooded * 100 / ring;
+
+            lines.Add($"Ground: {wooded} wooded tiles of {ring} within {workplace.GatheringRadius}.");
+            lines.Add(wooded == 0
+                ? "Nothing grows here any more — its gatherers bring back nothing at all. "
+                    + "Plant it, or move the work."
+                : $"A trip brings back {world.GatherYieldAt(workplace)} food — {share}% of what "
+                    + "this hut would yield in full woodland.");
+        }
+
         // The buffer at the point of production (D30). Worth showing because it is how
         // you tell "idle for want of a worker" from "idle for want of logs" (D29).
         if (workplace.Store.Held > 0)
@@ -1667,6 +1687,7 @@ public partial class Main : Control
         // the two buildings that cost nothing but the ground they stand on are the two the
         // player puts down before anything can begin.
         row.AddChild(BuildButton("Builder's hut", BuildingKind.BuilderHut));
+        row.AddChild(BuildButton("Gatherer", BuildingKind.GathererHut));
         row.AddChild(BuildButton("Granary", BuildingKind.Granary));
         row.AddChild(BuildButton("Shed", BuildingKind.Shed));
         row.AddChild(BuildButton("Market", BuildingKind.Market));

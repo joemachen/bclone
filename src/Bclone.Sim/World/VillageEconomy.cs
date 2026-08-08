@@ -522,6 +522,43 @@ public static class VillageEconomy
         return afterFuel < 1 ? 1 : afterFuel;
     }
 
+    /// <summary>Tiles in a diamond of this radius — the shape every ring in this game is.</summary>
+    public static int TilesInRing(int radius) =>
+        radius < 0 ? 0 : (2 * radius * radius) + (2 * radius) + 1;
+
+    /// <summary>
+    /// Seats a gatherer's hut has — <b>its ring, priced in workers</b>
+    /// (`forests-and-gathering.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ D86's rule reused rather than a new one invented.</b> Work ground is already priced
+    /// in workers — <see cref="SimConfig.WorkGroundTilesPerWorker"/>, *"how much land one person
+    /// can look after"*, which D86 called the first limit in this game that is not distance. A
+    /// hut's ring is ground it keeps, so it is priced the same way. **One stated rule serving
+    /// two buildings beats two numbers that can drift apart.**
+    /// </para>
+    /// <para>
+    /// <b>Derived, because <c>woodcutter_hut_capacity</c> is the recorded case</b> (D16, D50):
+    /// yields were re-derived when the economy horizon moved and capacities were not, the
+    /// village could not physically make enough firewood however many hands were free, and
+    /// thirty-six people froze. A capacity is a consequence.
+    /// </para>
+    /// <para>
+    /// <b>Never below one</b>, on the same reasoning as the builder's hut: a building that can
+    /// never do the one thing it exists for is not a building.
+    /// </para>
+    /// </remarks>
+    public static int GathererHutCapacity(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int seats = CeilingDivide(
+            TilesInRing(config.GathererHutRingTiles), config.WorkGroundTilesPerWorker);
+
+        return seats < 1 ? 1 : seats;
+    }
+
     /// <summary>Seats a tree stand needs, to keep those huts in logs and homes built.</summary>
     public static int RequiredTreeStandSeats(SimConfig config)
     {

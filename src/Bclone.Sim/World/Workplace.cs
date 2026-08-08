@@ -129,6 +129,47 @@ public sealed class Workplace
     /// <summary>How far it is reasonable to travel here, in travel-cost units.</summary>
     public required int CatchmentRadius { get; init; }
 
+    /// <summary>
+    /// How far this place reaches for what it harvests, in tiles. Zero for everything that
+    /// does not (`specs/forests-and-gathering.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The gatherer's hut is the first building whose yield depends on the ground around
+    /// it</b> (Joe): the trees inside this ring decide what a trip is worth, and nothing
+    /// outside it counts for anything. Zero means *"this place has no ring"* — a berry patch,
+    /// a tree stand, a market — and those yield what they have always yielded.
+    /// </para>
+    /// <para>
+    /// <b>In tiles, not in travel cost</b>, unlike <see cref="CatchmentRadius"/>. Catchment is
+    /// about a walk and so must go round the river; a ring is about *area*, is drawn on the
+    /// map, and the player counts it in squares.
+    /// </para>
+    /// </remarks>
+    public int GatheringRadius { get; init; }
+
+    /// <summary>
+    /// Wooded tiles last counted in this place's ring, and the terrain it was counted against.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ Derived state, and deliberately NOT hashed.</b> It is a count of terrain, and
+    /// terrain is already hashed — hashing this too would mix the same fact twice and, worse,
+    /// would let a stale cache become a determinism failure instead of the performance bug it
+    /// actually is. <c>SimWorld.WoodedTilesAround</c> owns both fields; nothing else may
+    /// write them.
+    /// </para>
+    /// <para>
+    /// <b>It exists because the alternative is a per-gather O(R²) scan</b>, and D87 has already
+    /// taught this suite what a per-tick per-villager scan costs — the run went from four
+    /// minutes to over ten until a village that had painted nothing paid one integer compare.
+    /// </para>
+    /// </remarks>
+    internal int CachedWoodedTiles;
+
+    /// <summary>Which terrain generation <see cref="CachedWoodedTiles"/> was counted against.</summary>
+    internal int CachedAtTerrainGeneration = -1;
+
     /// <summary>Villagers currently holding a job here, in id order.</summary>
     public List<int> WorkerIds { get; } = new();
 

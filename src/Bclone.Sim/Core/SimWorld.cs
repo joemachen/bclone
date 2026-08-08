@@ -576,6 +576,99 @@ public sealed class SimWorld
         return false;
     }
 
+    /// <summary>Bumped whenever any tile changes, so cached counts of terrain know they are stale.</summary>
+    /// <remarks>
+    /// <b>Not hashed, and it must not be.</b> It is bookkeeping about a cache, not a fact about
+    /// the village — two runs of one seed that cleared the same tiles in the same order would
+    /// agree on it anyway, and two that did not have already diverged somewhere that IS hashed.
+    /// </remarks>
+    private int _terrainGeneration;
+
+    /// <summary>
+    /// Wooded tiles inside a workplace's ring — what its trips are worth
+    /// (`specs/forests-and-gathering.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Counted once per terrain change, not once per gather.</b> A ring of radius eight is a
+    /// hundred and forty-five tiles and this is asked by every gatherer on every trip; D87 is
+    /// the recorded case of what that costs. The count is kept on the workplace and thrown away
+    /// by <see cref="SetTerrain"/>.
+    /// </para>
+    /// <para>
+    /// <b>Water and rock count against the hut, and that is the design.</b> The denominator is
+    /// the whole ring, so a hut with the river through its ground genuinely feeds fewer people —
+    /// a real, visible trade-off about where you site it, rather than a hidden exemption.
+    /// </para>
+    /// </remarks>
+    public int WoodedTilesAround(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (workplace.GatheringRadius <= 0)
+        {
+            return 0;
+        }
+
+        if (workplace.CachedAtTerrainGeneration == _terrainGeneration)
+        {
+            return workplace.CachedWoodedTiles;
+        }
+
+        int radius = workplace.GatheringRadius;
+        int wooded = 0;
+
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            int span = radius - Math.Abs(dy);
+            for (int dx = -span; dx <= span; dx++)
+            {
+                var at = new GridPos(workplace.Position.X + dx, workplace.Position.Y + dy);
+                if (Map.Contains(at) && Map.TerrainAt(at) == Terrain.Forest)
+                {
+                    wooded++;
+                }
+            }
+        }
+
+        workplace.CachedWoodedTiles = wooded;
+        workplace.CachedAtTerrainGeneration = _terrainGeneration;
+        return wooded;
+    }
+
+    /// <summary>
+    /// What one gathering trip at this place is worth, before vigour.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Linear in the wooded fraction of the ring, and with no floor</b> (Joe:
+    /// *"less trees = less food available to gather"*). *"Half the trees, half the food"* is a
+    /// sentence a player can hold in their head while deciding whether to fell the wood beside
+    /// their hut, which is the whole point of the mechanic (§1.6). A floor would be kinder and
+    /// would make **no forest, no food** untrue, which is the rule Joe asked for by name.
+    /// </para>
+    /// <para>
+    /// <b>Zero trees yields zero food.</b> The safety is that it is <em>visible</em> — the hut's
+    /// panel says what its ring holds and what that is worth — not that it is softened.
+    /// </para>
+    /// <para>
+    /// A place with no ring — a berry patch — yields what it has always yielded, so this is a
+    /// no-op until somebody builds a hut.
+    /// </para>
+    /// </remarks>
+    public int GatherYieldAt(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (workplace.GatheringRadius <= 0)
+        {
+            return FoodSource.YieldPerGather;
+        }
+
+        int ring = VillageEconomy.TilesInRing(workplace.GatheringRadius);
+        return ring <= 0 ? 0 : FoodSource.YieldPerGather * WoodedTilesAround(workplace) / ring;
+    }
+
     /// <summary>Whether the village has already been told it has nowhere for a good.</summary>
     /// <remarks>
     /// <b>Gates narration and nothing else</b>, which is why it is not in the state hash: two
@@ -1014,30 +1107,35 @@ public sealed class SimWorld
         GridPos? best = null;
         int bestCost = int.MaxValue;
 
-        for (int y = Map.MinY; y < Map.MinY + Map.Height; y++)
+        // ⭐ THE PAINTED TILES THEMSELVES, NOT THE WHOLE VALLEY (`forests-and-gathering.md`).
+        // This walked all 9,600 tiles, guarded by the early-out above — which was enough while
+        // almost no village painted anything. A WOODED VALLEY BROKE THAT: every house the
+        // village sites now lands on trees and paints itself for clearing (D100), so the guard
+        // stopped firing for anybody and the full scan came back. Measured: the twelve-seed arm
+        // went from about three minutes to six.
+        //
+        // The list is in map order, so ties break exactly as they did and no golden moves for
+        // what is meant to be a pure speed-up. Copied first because un-painting a spent tile
+        // edits the list underneath us.
+        var painted = new List<int>(Zones.PaintedHarvest);
+
+        for (int i = 0; i < painted.Count; i++)
         {
-            for (int x = Map.MinX; x < Map.MinX + Map.Width; x++)
+            GridPos at = Zones.PositionOf(painted[i]);
+
+            // Painted ground whose tree has already gone stops being work. The
+            // village un-paints it rather than sending somebody to an empty tile.
+            if (!HasSomethingToHarvest(at))
             {
-                var at = new GridPos(x, y);
-                if (!Zones.IsHarvest(at))
-                {
-                    continue;
-                }
+                Zones.SetHarvest(at, false);
+                continue;
+            }
 
-                // Painted ground whose tree has already gone stops being work. The
-                // village un-paints it rather than sending somebody to an empty tile.
-                if (!HasSomethingToHarvest(at))
-                {
-                    Zones.SetHarvest(at, false);
-                    continue;
-                }
-
-                int cost = TravelCost.Cost(from, at);
-                if (cost < bestCost)
-                {
-                    best = at;
-                    bestCost = cost;
-                }
+            int cost = TravelCost.Cost(from, at);
+            if (cost < bestCost)
+            {
+                best = at;
+                bestCost = cost;
             }
         }
 
@@ -1171,6 +1269,16 @@ public sealed class SimWorld
         {
             TravelCost.Forget();
         }
+
+        // ⭐ AND EVERY RING'S TREE COUNT IS NOW STALE (`forests-and-gathering.md`). One
+        // integer, bumped through the one door terrain changes by (D85), which is the same
+        // hook `TravelCost.Forget()` hangs off and for the same reason: hooking `Harvest`
+        // instead would be identical today and wrong the day anything else clears ground.
+        //
+        // A generation counter rather than a sweep over the workplaces, because felling
+        // happens several times a year and there is no reason for one tile to cost a walk
+        // over every hut in the village.
+        _terrainGeneration++;
 
         if (Logs(LogLevel.Debug))
         {
@@ -1862,6 +1970,25 @@ public sealed class SimWorld
                 });
                 break;
 
+            // ⭐ A GATHERER'S HUT IS A FORAGER'S WORKPLACE WITH A RING (Joe,
+            // `forests-and-gathering.md`). `JobKind.Forager` is REUSED rather than added
+            // beside — the same argument D96 made for renaming `Logger` to `Forester`: a
+            // second kind means a second quota arm, a second slot in the allocator's scarcity
+            // order, a second plural, a second behaviour branch and a rule somewhere to stop
+            // the village staffing both. It is the same work, on ground somebody chose.
+            case BuildingKind.GathererHut:
+                Workplaces.Add(new Workplace
+                {
+                    Id = NextWorkplaceId(),
+                    Kind = JobKind.Forager,
+                    Name = plan.Name,
+                    Position = site.Position,
+                    Capacity = VillageEconomy.GathererHutCapacity(Config),
+                    CatchmentRadius = site.CatchmentRadius,
+                    GatheringRadius = Config.GathererHutRingTiles,
+                });
+                break;
+
             // ⭐ THE STORES, NAMED (D108). This was a `default:` arm, and it was two silent
             // defaults deep: an unrecognised kind fell through to `RaiseStore`, whose own two
             // switches then made it a market with a market's capacity. A building kind nobody
@@ -2037,6 +2164,7 @@ public sealed class SimWorld
         BuildingKind.Pile => "a storage pile",
         BuildingKind.Home => "a house",
         BuildingKind.BuilderHut => "a builder's hut",
+        BuildingKind.GathererHut => "a gatherer's hut",
 
         // Named, because the default arm called every unrecognised building a woodcutter's
         // hut — in the log, in the panel, and in every placement sentence (D108).

@@ -509,6 +509,35 @@ with ungated planting, forage sites retiring, and D109 landing on top.
   `forest_clump_radius_tiles: 4` and `founding_clearing_radius_tiles: 4` are **settled content**,
   and slice 2's yield derives against them rather than against numbers still in question.
 
+- **Slice 2 — the gatherer's hut** ✅ (D112). The first building in this game whose **yield
+  depends on the ground around it**: a ring of 8, and the trees inside it decide what a trip is
+  worth. **Measured: 83 wooded tiles of 145 is a trip worth 26; fell 41 and it is worth 13** —
+  half the trees, half the food, to the integer — and a bald ring yields **zero**, because the
+  rule Joe asked for by name has no floor under it. Seats are the **ring priced in workers**,
+  reusing D86's `work_ground_tiles_per_worker` rather than inventing a second number that could
+  drift from it. `JobKind.Forager` is **reused, not added to** (D96's argument). The tree count
+  is cached and dropped through `SetTerrain`, the one door terrain changes by (D85), and is
+  deliberately **not hashed** — it is a count of terrain, and terrain is hashed already.
+  **All three goldens unmoved**: forage sites still stand and nothing places a hut but the
+  player, which is what `professions.md §9.1` asks of a new profession. 539 tests green.
+  - ⚠️ **The panel sentence shipped with the mechanic, not after it**, because §7.1 of the spec
+    makes it the thing that keeps *no forest, no food* fair rather than cruel: *"Ground: 83
+    wooded tiles of 145 within 8. A trip brings back 26 food — 57% of what this hut would yield
+    in full woodland."* A village thinning out with nothing on screen saying why is §1.1 failing.
+  - **⏱️ AND A SUITE-TIME REGRESSION, CHASED PROPERLY AND ONLY HALF SOLVED.** The run went from
+    ~6½ minutes to ~10½ with the wooded valley. **A controlled experiment cleared slice 2**: with
+    the flat yield put back, the heavy tests timed identically, so the per-gather lookup is not
+    the cause. **The cause is slice 1, and it is D87's trap re-armed** — `NearestHarvest` walks
+    the valley for every idle adult every tick, guarded by an early-out for a village that has
+    painted nothing, and a wooded valley means **every house the village sites lands on trees and
+    paints itself** (D100), so the guard stopped firing for anybody. `ZoneMap` keeps an index of
+    painted tiles in map order now (map order, so ties break identically and no golden moves for
+    a speed-up), which took the twelve-seed arm from **6m10 to 5m21**.
+  - **⛔ The rest is the village genuinely doing more work and is NOT fixed.** A wooded valley
+    means laborers really do clear thousands of tiles. The suite sits at ~11 minutes against ~6½
+    before. **Recorded rather than tuned** — the honest options are trimming the twelve-seed
+    arm's horizon or accepting it, and that is Joe's call, not a thing to quietly optimise.
+
 Then, still ahead: **D111** (`ChooseSite`'s ruler), which slice 3 touches directly and may be
 cheapest to fold in there.
 
