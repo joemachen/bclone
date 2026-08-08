@@ -489,10 +489,24 @@ the transition's first step is provably a no-op, which is what makes the next on
   architecture violation rather than an oversight, and it moves both goldens, so it gets its own
   slice after D109's staffing rather than being tangled into it.
 
-Remaining: buildings finishing at 0 workers with the founders arriving as laborers, then
-**D109's linked staffing** — which is the big one, because it retires auto-staffing — and then
-the unstaffed-building alert, `Demolish(Workplace)` and the view. **Then D111** (`ChooseSite`),
-which Joe scheduled behind the staffing work because it moves both goldens on its own account.
+**⏸️ D109's staffing is PARKED, not abandoned** (Joe, D112). The whole change — explicit
+per-workplace numbers, the profession total as their sum, `JobLimits` deleted, the quota demoted
+to advice, the death rule — is committed and pushed on **`wip/d109-manual-staffing`**, compiling,
+516 of 522 green. **It is parked because one-number-per-building cannot put gatherers at the
+right berry patch**, which the forest work removes as a question rather than answers as a rule.
+
+**In progress — forests and gathering** (`specs/forests-and-gathering.md`, D112). Six slices:
+the wooded valley, the gatherer's hut and its ring, the fences coming down, the forester's hut
+with ungated planting, forage sites retiring, and D109 landing on top.
+
+- **Slice 1 — the valley is wooded** ✅ (D112). ~28% woodland in clumps against two stands and
+  fifty tiles before; **derived from a stated coverage** and appended to the draw order so no
+  seed's layout moved. **The founders settle a glade, measured rather than chosen** — without it
+  every opening building waited on a clearing and all four founders froze. All three goldens
+  re-taken; the cold start's five ticks unmoved. 531 tests green.
+
+Then, still ahead: **D111** (`ChooseSite`'s ruler), which slice 3 touches directly and may be
+cheapest to fold in there.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -648,6 +662,15 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D112 · 2026-08-08 · ⭐ A NEW DIRECTION FOR FOOD, AND THE VALLEY IS WOODED. `specs/forests-and-gathering.md`, slice 1 of six.** Joe, after playing a manually-staffed village to year 30: *"I want to go with no forest, no food. There should be generated forests on the map naturally, just like stone, iron, water… lots of them, actually. So the gatherer's hut can be placed/built as soon as the materials are ready… The gatherer's hut should have a maximum gatherable area in a ring and workers cannot gather outside that ring — the number of trees/forest in the circle has a relation to the volume of food gathered. Less trees = less food. But also foresters can plant trees/forests in a painted area."* And separately: **get rid of the ring and the distance restrictions.**
+  - **⭐ What it is for.** Food stops being a fact of the map and becomes a decision — six berry patches on a generated ring are the last placeholder in the economy. **Timber and food come to compete for the same trees**, so the harvest brush stops being free money, which is §2.3 arriving out of a system built for another reason. And it **dissolves D109's staffing problem**: one-number-per-building could not put gatherers at the right berry patch because nobody chose the patches, and a hut the player sited has no such question.
+  - **Three of Joe's calls, recorded so they are not re-litigated.** (1) **Forests first; D109 is parked** on `wip/d109-manual-staffing`, committed and pushed rather than stashed. (2) **Planting ships ungated** — which overturns `building-placement.md §12.5(3)` and `professions.md §6.2`, and **leaves §2.7's only designed node empty**, a debt taken on purpose rather than discovered. (3) **Catchment is deleted entirely.** ⚠️ That last one carries a condition rather than a caveat: deleting the fence makes a ruinous commute *silent*, so **the consequence must become readable in the same slice the fence is removed** — §1.1 is not optional, and D58's per-site yield is the mechanism.
+  - **Slice 1, landed: about 28% of the valley is woodland**, in clumps, against the two stands and fifty-odd tiles it had before. **Derived from a stated coverage, not a typed count** (D16) — and a *target* rather than a promise, since clumps overlap and may not fall on water or a seam, so 35% asked for lands at 26–29% and **what the valley actually gets is asserted by a measurement**.
+  - **Appended after every existing draw**, the same care D91 took with the seams: the river, the stands, the sites, the founding site and the soil are byte-identical, and a guard proves it by regenerating at zero coverage. **Over open grass only**, so woodland cannot take the stone and iron back out of the valley — both orderings are now pinned from both sides.
+  - **⭐ THE FOUNDERS SETTLE A GLADE, AND IT WAS MEASURED RATHER THAN CHOSEN.** The first run killed the village outright: 40 of the 81 tiles within four of the founding site were forest, so every building the opening marks waited on a clearing — **the pile stood at t67 instead of t1, the woodcutter's hut never stood at all, and all four founders froze**, against 4 alive and 2 roofed on bare ground. **That is D93's rule — any inserted hop kills winter 1 — arriving from worldgen rather than from labour**, which is a direction nobody had thought to guard.
+    - The glade is a **skip during the woodland pass, not a clearing afterwards**: clearing after the fact would strip the tree stands too, taking timber out of the valley. Skipping only ever declines to add trees, so everything else is untouched by construction.
+    - **With it the cold start did not move by a tick** — wooded and bare valleys give identical openings, t1 / t173 / t251 / t211 against a winter at t360.
+  - **All three goldens re-taken once**, old values kept beside them. **And one guard was corrected rather than re-tuned**: `SeamsAreLaidOnlyOverOpenGround` compared forest counts with and without ore, and since woodland is drawn after the seams over grass only, turning the seams off leaves *more* grass for woodland to claim — so the arms differed while the thing the guard is about was perfectly true. **When a guard goes red, ask what it actually measures.** 531 tests green.
 - **D111 · 2026-08-07 · ⛔ SCHEDULED, NOT FIXED: `ChooseSite` measures distance with a ruler where the rest of the game measures it by walking — and that is the "two competing travel-cost systems" `CLAUDE.md` forbids by name.** Found by the twelve-seed arm in D110. Joe: *"fix choosesite after the staffing work."*
   - **The whole bug in one sentence.** `Household.ChooseSite` scores every painted tile on `ManhattanDistanceTo` the nearest berry patch plus `ManhattanDistanceTo` the nearest granary — grid distance, as the crow flies. **Nobody in this game is a crow.** Since D40 water is impassable and every real journey goes *round* the river on the shared `TravelCostField`, and `ChooseSite` never asks it. It checks that a tile **is not water**; it never checks that a tile is not **cut off by** water.
   - **`PaintTheStarterZone` is the other half**, and it has the identical hole: it paints a diamond around the founding site skipping only water tiles, so in a valley where the river runs close it paints the far bank. That is how seed 11 got a beautifully-scoring, permanently unreachable house site at (-1,-5).
