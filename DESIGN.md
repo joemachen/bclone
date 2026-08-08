@@ -504,6 +504,10 @@ with ungated planting, forage sites retiring, and D109 landing on top.
   seed's layout moved. **The founders settle a glade, measured rather than chosen** — without it
   every opening building waited on a clearing and all four founders froze. All three goldens
   re-taken; the cold start's five ticks unmoved. 531 tests green.
+  **✅ Confirmed by Joe at the screen, which is the only bar worldgen has** (D11) — *"the forests
+  on the map looks good! everything works well in my test."* So `forest_coverage_percent: 35`,
+  `forest_clump_radius_tiles: 4` and `founding_clearing_radius_tiles: 4` are **settled content**,
+  and slice 2's yield derives against them rather than against numbers still in question.
 
 Then, still ahead: **D111** (`ChooseSite`'s ruler), which slice 3 touches directly and may be
 cheapest to fold in there.
