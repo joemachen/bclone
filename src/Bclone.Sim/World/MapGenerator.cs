@@ -146,6 +146,23 @@ public static class MapGenerator
             config.IronSeamCount, config.IronSeamRingTiles, config.IronSeamRadiusTiles,
             width, height, minX, minY);
 
+        // ---- 7. Woodland across the whole valley ---------------------
+        // ⭐ THE VALLEY IS WOODED NOW, NOT DOTTED WITH TWO STANDS (Joe,
+        // `specs/forests-and-gathering.md`). "There should be generated forests on the map
+        // naturally, just like stone, iron, water — lots of them, actually", so that a
+        // gatherer's hut can be sited in woodland from the first year.
+        //
+        // ⚠️ APPENDED AFTER EVERY EXISTING DRAW, for the reason §1 of this file gives and
+        // D91 already had to take care over: inserting these draws anywhere earlier would
+        // shift every subsequent value, and the river, the stands, the forage sites, the
+        // founding site, the soil and both seams would move for every seed ever written
+        // down. Added last, all of those are byte-identical and only trees differ.
+        //
+        // OVER OPEN GRASS ONLY, which is the same rule `PaintSeams` follows and here it
+        // matters in the other direction: woodland drawn over the seams would quietly take
+        // the stone and iron back out of the valley a slice after they were put in.
+        PaintWoodland(config, rng, terrain, founding, width, height, minX, minY);
+
         return new GeneratedMap(
             width, height, minX, minY, terrain, soil, forageSites, standCentres, founding);
     }
@@ -343,8 +360,118 @@ public static class MapGenerator
         }
     }
 
+    /// <summary>
+    /// How many woodland clumps this valley gets — <b>derived from a stated coverage</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The target is content; the count is a consequence</b> (D16). *"About this much of the
+    /// valley is wooded"* is a statement about what kind of place this is and a modder may
+    /// change it freely; how many clumps that takes is arithmetic, and typing it would mean a
+    /// bigger map quietly got a barer valley.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Clumps overlap, so the coverage actually achieved is lower than the target</b> —
+    /// they are dropped independently, and none may fall on water or a seam. That is why the
+    /// number is a *target* rather than a promise, and why what the valley really ends up with
+    /// is asserted by a measurement rather than by this arithmetic
+    /// (<c>MapGenerationTests</c>). Solving the overlap exactly wants logarithms, and floats
+    /// are banned from sim-critical paths (D2).
+    /// </para>
+    /// </remarks>
+    public static int ForestClumpCount(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int tiles = config.MapWidth * config.MapHeight;
+        int wanted = tiles * config.ForestCoveragePercent / 100;
+        int perClump = ClumpArea(config.ForestClumpRadiusTiles);
+
+        return perClump <= 0 ? 0 : VillageEconomy.CeilingDivide(wanted, perClump);
+    }
+
+    /// <summary>Tiles in a diamond of this radius — the shape <c>PaintForest</c> paints.</summary>
+    private static int ClumpArea(int radius) =>
+        radius < 0 ? 0 : (2 * radius * radius) + (2 * radius) + 1;
+
+    /// <summary>Scatter woodland clumps over the whole valley.</summary>
+    /// <remarks>
+    /// <b>Anywhere, unlike everything else in this file, and that is the point.</b> The stands,
+    /// the forage sites and the seams are all drawn on rings, because each is a small number of
+    /// places that had to be *spread* (D24) — four seams in one corner is a resource half the
+    /// village cannot reach. Woodland is the opposite problem: there is a lot of it, so
+    /// independent placement gives a valley with thick parts and thin parts, which is what
+    /// makes siting a gatherer's hut a decision.
+    /// </remarks>
+    private static void PaintWoodland(
+        SimConfig config,
+        DeterministicRandom rng,
+        Terrain[] terrain,
+        GridPos founding,
+        int width,
+        int height,
+        int minX,
+        int minY)
+    {
+        int count = ForestClumpCount(config);
+
+        for (int i = 0; i < count; i++)
+        {
+            // Two draws per clump, always — never a redraw. A rejection loop would make the
+            // number of random values consumed depend on the terrain, which is precisely the
+            // hidden coupling that stops a seed reproducing its world (see the forage sites).
+            var centre = new GridPos(
+                rng.NextInt(minX, minX + width),
+                rng.NextInt(minY, minY + height));
+
+            PaintForest(
+                terrain, centre, config.ForestClumpRadiusTiles, width, height, minX, minY,
+                onlyOverGrass: true,
+                keepClear: founding,
+                keepClearRadius: config.FoundingClearingRadiusTiles);
+        }
+    }
+
+    /// <summary>Paint a diamond of woodland.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b><c>onlyOverGrass</c> is true for the scattered woodland</b>, which is drawn
+    /// <em>after</em> the seams and must not take them back out of the valley; false for the
+    /// tree stands, which are drawn before anything else and may cover bare ground freely.
+    /// </para>
+    /// <para>
+    /// <b>⭐ <c>keepClear</c> is the founding glade, and it exists because the alternative was
+    /// measured as fatal.</b> With the valley wooded, 40 of the 81 tiles within four of the
+    /// founding site were forest — so the pile, the builder's hut and the woodcutter's hut all
+    /// waited on a clearing before anything could begin. Measured on the shipped opening:
+    /// <b>the pile stood at t67 instead of t1, the hut never stood at all, and all four
+    /// founders froze</b>, against 4 alive and 2 roofed in the same opening on bare ground.
+    /// That is D93's finding — <em>any inserted hop kills winter 1</em> — arriving from
+    /// worldgen rather than from labour.
+    /// </para>
+    /// <para>
+    /// <b>It is a skip during the woodland pass, not a clearing afterwards</b>, and the
+    /// difference matters: clearing after the fact would strip the tree stands drawn in step 2
+    /// as well, quietly taking timber out of the valley. Skipping only ever declines to add
+    /// trees, so the stands, the seams and the river are untouched by construction.
+    /// </para>
+    /// <para>
+    /// It is also the true picture: exiles arriving in a river valley settle a glade. The woods
+    /// begin a few tiles out, which is close enough for a gatherer's hut and far enough that
+    /// the opening is not a clearing puzzle.
+    /// </para>
+    /// </remarks>
     private static void PaintForest(
-        Terrain[] terrain, GridPos centre, int radius, int width, int height, int minX, int minY)
+        Terrain[] terrain,
+        GridPos centre,
+        int radius,
+        int width,
+        int height,
+        int minX,
+        int minY,
+        bool onlyOverGrass = false,
+        GridPos? keepClear = null,
+        int keepClearRadius = 0)
     {
         for (int dy = -radius; dy <= radius; dy++)
         {
@@ -366,10 +493,24 @@ public static class MapGenerator
 
                 // Trees do not grow in the river. Water wins, which also stops a stand
                 // from quietly bridging it.
-                if (terrain[index] != Terrain.Water)
+                if (terrain[index] == Terrain.Water)
                 {
-                    terrain[index] = Terrain.Forest;
+                    continue;
                 }
+
+                if (onlyOverGrass && terrain[index] != Terrain.Grass)
+                {
+                    continue;
+                }
+
+                if (keepClear is GridPos glade
+                    && glade.ManhattanDistanceTo(new GridPos(centre.X + dx, centre.Y + dy))
+                        <= keepClearRadius)
+                {
+                    continue;
+                }
+
+                terrain[index] = Terrain.Forest;
             }
         }
     }

@@ -80,10 +80,21 @@ public sealed class SeamsTests
     [InlineData(2024UL)]
     public void SeamsAreLaidOnlyOverOpenGround(ulong seed)
     {
-        SimConfig config = VillageFixtures.Village with { Seed = seed };
+        // ⚠️ BOTH ARMS ARE UNWOODED, AND THAT IS A CORRECTION TO THE MEASUREMENT RATHER THAN
+        // TO THE CLAIM (`forests-and-gathering.md`, slice 1). The scattered woodland is drawn
+        // AFTER the seams and only over open grass — so turning the seams off leaves more
+        // grass for woodland to claim, and the two arms ended up with different forest counts
+        // (2637 against 2654) while the thing this guard is about was still perfectly true.
+        //
+        // Setting coverage to zero in both arms puts the question back the way it was asked:
+        // the only forest left is the tree stands, drawn before the seams, and they must be
+        // untouched. **The other direction — woodland must not swallow the seams — is
+        // `MapGenerationTests.WoodlandDoesNotSwallowTheSeams`.** Between them both orderings
+        // are pinned.
+        SimConfig config = VillageFixtures.Village with { Seed = seed, ForestCoveragePercent = 0 };
 
         // The same valley with no seams at all — the forest must be identical.
-        SimWorld withOre = Build(seed);
+        SimWorld withOre = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
         SimWorld withoutOre = SimFactory.CreatePhase0(
             config with { StoneSeamCount = 0, IronSeamCount = 0 }, new InMemoryLogSink()).World;
 

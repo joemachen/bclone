@@ -235,6 +235,53 @@ public sealed record SimConfig
     //  Firewood (D29) — the woodcutter's hut
     // ---------------------------------------------------------------
 
+    /// <summary>
+    /// Roughly how much of the valley is wooded, as a percentage (`forests-and-gathering.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The target is content, the clump count is derived from it</b>
+    /// (<c>MapGenerator.ForestClumpCount</c>, D16). *"About this much of the valley is wooded"*
+    /// says what kind of place this is; how many clumps that takes is arithmetic, and typing
+    /// the count would mean a bigger map quietly got a barer valley.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A target, not a promise.</b> Clumps are dropped independently and overlap, and
+    /// none may fall on water or on a stone or iron seam — so the coverage actually achieved
+    /// is lower than this. What the valley really ends up with is asserted by a measurement.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("forest_coverage_percent")]
+    public int ForestCoveragePercent { get; init; } = 35;
+
+    /// <summary>How big one clump of woodland is, as a diamond radius in tiles.</summary>
+    /// <remarks>
+    /// Content — a fact about what a wood looks like, the same class of number as
+    /// <see cref="TreeStandRadiusTiles"/>. Small clumps give a mottled valley, large ones give
+    /// a few great forests; both are legitimate places to live and neither is derivable.
+    /// </remarks>
+    [JsonPropertyName("forest_clump_radius_tiles")]
+    public int ForestClumpRadiusTiles { get; init; } = 4;
+
+    /// <summary>How much open ground the founding site keeps around it.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Measured, not chosen, and the alternative was fatal.</b> With the valley wooded, 40
+    /// of the 81 tiles within four of the founding site were forest, so every building the
+    /// opening marks waited on a clearing first: the pile stood at <b>t67 instead of t1</b>, the
+    /// woodcutter's hut never stood at all, and <b>all four founders froze</b> — against 4 alive
+    /// and 2 roofed on bare ground. That is D93's rule (any inserted hop kills winter 1)
+    /// arriving from worldgen.
+    /// </para>
+    /// <para>
+    /// Exiles arriving in a river valley settle a glade; the woods begin a few tiles out, which
+    /// is close enough for a gatherer's hut and far enough that the opening is not a clearing
+    /// puzzle.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("founding_clearing_radius_tiles")]
+    public int FoundingClearingRadiusTiles { get; init; } = 4;
+
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     /// <remarks>
     /// <b>A position is content; the hut's SEATS are not.</b> Where a building sits is a fact

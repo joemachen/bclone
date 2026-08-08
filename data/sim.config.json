@@ -307,6 +307,42 @@
   // firewood heats. Drawn from the whole village, parents first.
   "logs_per_house": 30,
 
+  // ---- Woodland (forests-and-gathering.md) -------------------
+  // The valley is WOODED, not dotted with two stands. Joe: "there
+  // should be generated forests on the map naturally, just like stone,
+  // iron, water -- lots of them, actually", so a gatherer's hut can be
+  // sited in woodland from the first year.
+  //
+  // The coverage is the TARGET and is content; how many clumps that
+  // takes is derived from it and the map's area
+  // (MapGenerator.ForestClumpCount). Typing the count instead would
+  // mean a bigger map quietly got a barer valley.
+  //
+  // It is a target rather than a promise: clumps are dropped
+  // independently and overlap, and none may fall on water or on a
+  // stone or iron seam, so what the valley actually ends up with is
+  // lower than this -- and is asserted by a measurement rather than by
+  // the arithmetic.
+  "forest_coverage_percent": 35,
+
+  // How big one wood is. Content, like tree_stand_radius_tiles: small
+  // clumps give a mottled valley, large ones a few great forests.
+  "forest_clump_radius_tiles": 4,
+
+  // How much open ground the founding site keeps around it. MEASURED,
+  // not chosen: with the valley wooded, 40 of the 81 tiles within four
+  // of the founding site were forest, so every building the opening
+  // marks waited on a clearing first -- the pile stood at t67 instead
+  // of t1, the woodcutter's hut never stood at all, and ALL FOUR
+  // FOUNDERS FROZE, against 4 alive and 2 roofed on bare ground. That
+  // is D93's rule (any inserted hop kills winter 1) arriving from
+  // worldgen rather than from labour.
+  //
+  // Exiles arriving in a river valley settle a glade. The woods begin a
+  // few tiles out -- close enough for a gatherer's hut, far enough that
+  // the opening is not a clearing puzzle.
+  "founding_clearing_radius_tiles": 4,
+
   // ---- The builder's hut (D108) ------------------------------
   // Where the village's builders work from. Nothing is raised without
   // one: a construction site is an errand the hut's crew walks out to,

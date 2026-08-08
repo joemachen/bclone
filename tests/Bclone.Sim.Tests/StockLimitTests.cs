@@ -113,10 +113,21 @@ public sealed class StockLimitTests
     //
     //   before houses were built (D102): fixture 16616051083588314705,
     //                                    shipped 10176218336442890909
+    // ⭐ AND THE VALLEY IS WOODED NOW (`forests-and-gathering.md` slice 1), which is the
+    // plainest golden move of the lot: about 28% of the map is forest against the two stands
+    // and fifty-odd tiles it had before. Homes are sited differently, laborers have vastly more
+    // ground they could be asked to clear, and a village fifty years old has lived in a
+    // different place. **The founding site keeps a four-tile glade** — measured, because
+    // without it the pile stood at t67 instead of t1 and all four founders froze.
+    //
+    //   before houses were built (D102): fixture 16616051083588314705,
+    //                                    shipped 10176218336442890909
     //   before the builder's hut (D108): fixture 16059676616951633422,
     //                                    shipped 15383236497282309390
-    private const ulong FixtureFiftyYearHash = 8100668875656351515UL;
-    private const ulong ShippedFiftyYearHash = 10300327615504873654UL;
+    //   before the valley was wooded:    fixture 8100668875656351515,
+    //                                    shipped 10300327615504873654
+    private const ulong FixtureFiftyYearHash = 7753167381277072647UL;
+    private const ulong ShippedFiftyYearHash = 3051795578767497062UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

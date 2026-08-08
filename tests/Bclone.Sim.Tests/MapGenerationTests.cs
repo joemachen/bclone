@@ -84,8 +84,140 @@ public sealed class MapGenerationTests
     // site, the forage sites, the tree stands and the soil are all identical. Only the new
     // tiles differ.
     //
-    //   before the seams (D91): 2208871881858546589
-    private const ulong GoldenMapHash = 7476686338440514564UL;
+    // RE-TAKEN AGAIN, DELIBERATELY (`forests-and-gathering.md` slice 1): the valley is wooded
+    // now — about 28% of it, against the two stands it had before — so its fingerprint changes.
+    //
+    // And again this does NOT mean the draw order moved. The woodland is APPENDED after every
+    // existing draw, exactly as the seams were, and TheWoodlandWasAppendedToTheDrawOrder proves
+    // it by generating the same seed with the coverage set to zero and asserting the founding
+    // site, the forage sites, the tree stands and the soil are all identical. Only trees differ.
+    //
+    //   before the seams (D91):     2208871881858546589
+    //   before the valley was wooded: 7476686338440514564
+    private const ulong GoldenMapHash = 15355449050208049248UL;
+
+    // ---------------------------------------------------------------
+    //  Woodland — `specs/forests-and-gathering.md`
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ The valley is actually wooded, and the coverage is measured rather than assumed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The arithmetic cannot tell you this.</b> `ForestClumpCount` derives how many clumps a
+    /// stated coverage takes, but they are dropped independently and overlap, and none may fall
+    /// on water or a seam — so the target is a target and the achieved coverage is lower. The
+    /// config comment says so; this is what makes that claim checkable.
+    /// </para>
+    /// <para>
+    /// <b>A band, not a number</b>, and deliberately wide. The point of the guard is that the
+    /// valley is neither bare (which is the game before this change — two stands, about fifty
+    /// tiles) nor solid forest (which leaves nowhere to build). Tightening it to a single
+    /// figure would make it a golden by the back door, and it would fail for a jitter change
+    /// nobody cares about.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(1UL)]
+    [InlineData(7UL)]
+    [InlineData(12345UL)]
+    public void TheValleyIsActuallyWooded(ulong seed)
+    {
+        SimConfig config = Config;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+        GeneratedMap map = world.Map;
+
+        int forest = 0;
+        for (int y = 0; y < map.Height; y++)
+        {
+            for (int x = 0; x < map.Width; x++)
+            {
+                if (map.TerrainAt(new GridPos(map.MinX + x, map.MinY + y)) == Terrain.Forest)
+                {
+                    forest++;
+                }
+            }
+        }
+
+        int percent = forest * 100 / (map.Width * map.Height);
+        _output.WriteLine($"seed {seed}: {forest} wooded tiles, {percent}% of the valley, "
+            + $"from {MapGenerator.ForestClumpCount(config)} clumps targeting "
+            + $"{config.ForestCoveragePercent}%");
+
+        Assert.True(percent >= 15, $"The valley is barely wooded ({percent}%) — a gatherer's "
+            + "hut would have nowhere to stand.");
+        Assert.True(percent <= 50, $"The valley is {percent}% forest — there is nowhere to "
+            + "build and every site would wait on a clearing.");
+    }
+
+    /// <summary>
+    /// ⭐ The woodland was appended to the draw order, so no seed's valley moved for it.
+    /// </summary>
+    /// <remarks>
+    /// <b>The same guard the seams got (D91), and for the same reason.</b> Draw order is the
+    /// seed contract: a draw inserted in the middle shifts every subsequent value, so the
+    /// river, the sites, the stands, the founding site and the soil would all move for every
+    /// seed anybody has written down. Proved by generating the same seed with the coverage set
+    /// to zero and asserting everything except the trees is identical.
+    /// </remarks>
+    [Theory]
+    [InlineData(1UL)]
+    [InlineData(12345UL)]
+    public void TheWoodlandWasAppendedToTheDrawOrder(ulong seed)
+    {
+        SimConfig config = Config;
+
+        SimWorld wooded = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+        SimWorld bare = SimFactory.CreatePhase0(
+            config with { ForestCoveragePercent = 0 }, new InMemoryLogSink(), seed).World;
+
+        Assert.Equal(bare.Map.FoundingSite, wooded.Map.FoundingSite);
+        Assert.Equal(bare.Map.ForageSites, wooded.Map.ForageSites);
+        Assert.Equal(bare.Map.TreeStands, wooded.Map.TreeStands);
+        Assert.Equal(bare.Map.Soil, wooded.Map.Soil);
+    }
+
+    /// <summary>Woodland never takes the stone and iron back out of the valley.</summary>
+    /// <remarks>
+    /// It is drawn <em>after</em> the seams — it had to be, to keep the draw order — so unlike
+    /// the tree stands it paints over open grass only. Without that rule this slice would have
+    /// been a balance change hiding inside a worldgen change, which is the trap `PaintSeams`
+    /// already documents from the other direction.
+    /// </remarks>
+    [Fact]
+    public void WoodlandDoesNotSwallowTheSeams()
+    {
+        SimConfig config = Config;
+
+        int withWoods = CountSeams(SimFactory.CreatePhase0(config, new InMemoryLogSink(), 1UL).World);
+        int without = CountSeams(SimFactory.CreatePhase0(
+            config with { ForestCoveragePercent = 0 }, new InMemoryLogSink(), 1UL).World);
+
+        _output.WriteLine($"seam tiles: {without} bare, {withWoods} wooded");
+
+        Assert.True(without > 0, "This valley has no seams at all, so nothing was tested.");
+        Assert.Equal(without, withWoods);
+    }
+
+    private static int CountSeams(SimWorld world)
+    {
+        GeneratedMap map = world.Map;
+        int seams = 0;
+        for (int y = 0; y < map.Height; y++)
+        {
+            for (int x = 0; x < map.Width; x++)
+            {
+                Terrain terrain = map.TerrainAt(new GridPos(map.MinX + x, map.MinY + y));
+                if (terrain is Terrain.Rock or Terrain.IronDeposit)
+                {
+                    seams++;
+                }
+            }
+        }
+
+        return seams;
+    }
 
     [Fact]
     public void NoTwoPlacesInTheValleyShareAName()
