@@ -29,7 +29,7 @@ public sealed class VacancyTests
     public void ADeadWorkerNeverKeepsHoldingTheirJob()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         int worstStreak = 0;
@@ -74,7 +74,7 @@ public sealed class VacancyTests
     public void PeopleDoDieWhileWeAreWatching()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
 
         loop.Step(config.TicksPerYear * 120);
 
@@ -100,7 +100,7 @@ public sealed class VacancyTests
     public void WorkTheVillageWantsDoneAndNobodyIsDoingIsReported()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         loop.Step(config.TicksPerYear * 5);

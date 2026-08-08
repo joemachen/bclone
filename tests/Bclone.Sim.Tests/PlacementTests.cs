@@ -27,7 +27,7 @@ public sealed class PlacementTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static SimLoop Build(SimConfig config, ulong? seed = null) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+        ManagedVillage.Loop(config, new InMemoryLogSink(), seed);
 
     /// <summary>Somewhere legal to build, a few tiles from the village.</summary>
     private static GridPos SomewhereBuildable(SimWorld world, BuildingKind kind)
@@ -288,7 +288,7 @@ public sealed class PlacementTests
         // line in the log is exactly the untraceable outcome §1.1 forbids.
         SimConfig config = Config;
         var sink = new InMemoryLogSink();
-        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimLoop loop = ManagedVillage.Loop(config, sink);
         loop.Step(config.TicksPerYear * 10);
 
         SimWorld world = loop.World;

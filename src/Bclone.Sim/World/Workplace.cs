@@ -173,31 +173,39 @@ public sealed class Workplace
     /// </remarks>
     public Stockpile Store { get; } = new();
 
-    /// <summary>True when there is no room for anyone else.</summary>
     /// <summary>
-    /// How many hands the player has insisted on here, or null to let the village
-    /// decide (D51).
+    /// How many hands the player has put here. <b>Zero until they say otherwise</b> (D109).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Null is the default and must stay the default.</b> The pillar this sits
-    /// beside (§2.2) exists to delete Banished's slotting of N workers into a building,
-    /// and a game that opens with a number on every workplace is that game whatever the
-    /// numbers say. An override is opt-in: a player who never touches one plays the
-    /// village the quota describes.
+    /// <b>⭐ There is one number per profession and this is where it lives</b> (Joe, D109).
+    /// The professions panel shows the same number from the other end — it is the sum of this
+    /// across every building of a kind — so setting two builders globally with two huts puts
+    /// one in each, and adding one at a hut raises the global. Two views, one number, and
+    /// <b>no third place</b> for it to disagree with itself.
     /// </para>
     /// <para>
-    /// <b>What is overridden is the count, never the person.</b> The player says how
-    /// many; proximity, household and catchment still choose who, and every "why is
-    /// Elias here?" sentence stays true. That is D42's zoning pattern applied to
-    /// labour — you paint the neighbourhood, the sim picks the tile.
+    /// <b>⚠️ It used to be <c>int?</c>, where null meant "let the village decide" (D51), and
+    /// that state is deliberately gone.</b> The project defended the null≠zero distinction
+    /// three times and this spends it, knowingly: Joe's call is <em>"full manual now… manual
+    /// for now will make debugging the core game easier"</em>, and a village that only moves
+    /// when the player moves it has <b>one</b> source of truth for who is working. There were
+    /// two and they argued — D103 is that argument, and this makes it moot rather than solving
+    /// it. <b>It is explicitly provisional</b>; <see cref="LabourQuota"/> still computes what
+    /// the village would have chosen, so putting it back is a re-wiring rather than an
+    /// excavation.
+    /// </para>
+    /// <para>
+    /// <b>What the player sets is the count, never the person.</b> Proximity, household and
+    /// catchment still choose who, so every "why is Elias here?" sentence stays true. That is
+    /// the line §2.2 holds, and D15's removal of the name-a-villager API stands.
     /// </para>
     /// <para>
     /// Player intent, so it is sim state: hashed, deterministic, part of the seed
     /// contract, exactly as zones are.
     /// </para>
     /// </remarks>
-    public int? StaffingOverride { get; set; }
+    public int Staffing { get; set; }
 
     /// <summary>
     /// Where the player has asked this site to sit in the build queue, or null for
@@ -205,9 +213,10 @@ public sealed class Workplace
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Null and a number are different states, exactly as with
-    /// <see cref="StaffingOverride"/></b> — "I have not touched this" is not the same fact as
-    /// "I put it third", and the state hash keeps them apart. It also means the control is a
+    /// <b>Null and a number are different states</b> — "I have not touched this" is not the
+    /// same fact as "I put it third", and the state hash keeps them apart. (Staffing made the
+    /// opposite trade in D109 and paid for it out loud; this one keeps the distinction because
+    /// there is no *"the village decides"* half of it left to delete.) It also means the control is a
     /// provable no-op until somebody uses it: a village played without ever reordering
     /// anything hashes as though the control did not exist.
     /// </para>
@@ -222,20 +231,23 @@ public sealed class Workplace
     /// <summary>What this site sorts by in the build queue.</summary>
     public int EffectiveQueueRank => QueueRank ?? Id;
 
-    /// <summary>
-    /// Hands the village will actually staff here — the override if there is one,
-    /// otherwise what physically fits.
-    /// </summary>
+    /// <summary>True when every place the player asked for is taken.</summary>
     /// <remarks>
-    /// The single place the two are reconciled. Everything that used to ask
-    /// <see cref="Capacity"/> asks this instead, so an override cannot be honoured by
-    /// half the code and ignored by the other half — which is this project's most
-    /// repeated bug.
+    /// Against <see cref="Staffing"/>, not <see cref="Capacity"/>: a hut with eight seats and
+    /// two hands asked for is <em>full</em> at two. Capacity is what the building could hold;
+    /// staffing is what the player wants in it, and the second is what binds.
     /// </remarks>
-    public int Places => StaffingOverride ?? Capacity;
+    public bool IsFull => WorkerIds.Count >= Staffing;
 
-    public bool IsFull => WorkerIds.Count >= Places;
+    /// <summary>Places the player has asked for that nobody is standing in yet.</summary>
+    public int OpenPositions => Staffing - WorkerIds.Count;
 
-    /// <summary>Room still going spare.</summary>
-    public int OpenPositions => Places - WorkerIds.Count;
+    /// <summary>Places that physically exist here and are not spoken for.</summary>
+    /// <remarks>
+    /// The other half of the pair, and the one the professions panel needs: you may raise
+    /// staffing to <see cref="Capacity"/> and no further, because a full hut means the next
+    /// worker of that profession needs another hut (D109). That is what makes capacity mean
+    /// something now that the player sets the numbers.
+    /// </remarks>
+    public int RoomToStaff => Capacity - Staffing;
 }

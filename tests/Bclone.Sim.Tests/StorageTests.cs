@@ -26,7 +26,7 @@ public sealed class StorageTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static SimLoop Build(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ManagedVillage.Loop(config, new InMemoryLogSink());
 
     [Fact]
     public void TheVillageIsFoundedWithAGranaryAndAShed()

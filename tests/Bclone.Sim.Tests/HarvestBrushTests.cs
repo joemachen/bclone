@@ -32,7 +32,7 @@ public sealed class HarvestBrushTests
     public HarvestBrushTests(ITestOutputHelper output) => _output = output;
 
     private static SimWorld Build() =>
-        SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        ManagedVillage.Loop(VillageFixtures.Village, new InMemoryLogSink()).World;
 
     private static GridPos FindTile(SimWorld world, Terrain terrain)
     {

@@ -25,7 +25,7 @@ public sealed class ResidentialZoneTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static SimLoop Build(SimConfig config, ulong? seed = null) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+        ManagedVillage.Loop(config, new InMemoryLogSink(), seed);
 
     [Fact]
     public void TheExilesArriveHavingChosenWhereToLive()
@@ -139,7 +139,7 @@ public sealed class ResidentialZoneTests
         // rather than expecting the player to notice a couple quietly not moving out.
         SimConfig config = Config;
         var sink = new InMemoryLogSink();
-        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimLoop loop = ManagedVillage.Loop(config, sink);
         loop.Step(config.TicksPerYear * 10);
 
         SimWorld world = loop.World;

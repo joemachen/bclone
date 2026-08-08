@@ -27,7 +27,7 @@ public sealed class ShelterAndExposureTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static SimLoop Build(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ManagedVillage.Loop(config, new InMemoryLogSink());
 
     /// <summary>A world stepped to the first winter, so the hearth system is live.</summary>
     private static SimWorld InWinter(SimConfig config)

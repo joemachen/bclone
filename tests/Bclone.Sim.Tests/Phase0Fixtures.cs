@@ -107,7 +107,7 @@ public static class Phase0Fixtures
     public static (SimLoop Loop, InMemoryLogSink Log) Build(SimConfig config, ulong? seed = null)
     {
         var sink = new InMemoryLogSink();
-        return (SimFactory.CreatePhase0(config, sink, seed), sink);
+        return (ManagedVillage.Loop(config, sink, seed), sink);
     }
 
     /// <summary>Run until the villager dies, or give up after <paramref name="maxTicks"/>.</summary>

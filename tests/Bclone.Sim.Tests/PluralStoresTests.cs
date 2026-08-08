@@ -41,7 +41,7 @@ public sealed class PluralStoresTests
     /// </remarks>
     private static SimWorld WithASecondOfEach(SimConfig config, ulong seed = 12345UL)
     {
-        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+        SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink(), seed).World;
 
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
         StoreBuilding shed = world.AnyStoreOf(StoreKind.Shed);
@@ -199,7 +199,7 @@ public sealed class PluralStoresTests
         // every village that exists today — the plural helpers must give precisely the
         // answers the singular accessors used to. If they did not, this slice would
         // have changed behaviour while claiming not to.
-        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        SimWorld world = ManagedVillage.Loop(Config, new InMemoryLogSink()).World;
 
         Assert.Equal(world.AnyStoreOf(StoreKind.Granary).Store.Food, world.FoodInGranaries());
         Assert.Equal(world.AnyStoreOf(StoreKind.Shed).Store.Logs, world.LogsInSheds());
@@ -245,7 +245,7 @@ public sealed class PluralStoresTests
         // A granary across the river is not a long walk, it is no walk at all (D40).
         // Choosing one would send a villager on an errand they can never finish.
         SimConfig config = Config;
-        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink()).World;
 
         // A granary somewhere nobody can reach: the far edge of the valley, which the
         // river cuts off on this seed.

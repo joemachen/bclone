@@ -34,7 +34,7 @@ public sealed class AuditLogTests
     private static (SimLoop Loop, InMemoryLogSink Sink) Audited(SimConfig config)
     {
         var sink = new InMemoryLogSink(LogLevel.Debug);
-        return (SimFactory.CreatePhase0(config, sink), sink);
+        return (ManagedVillage.Loop(config, sink), sink);
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public sealed class AuditLogTests
         // it then throws away. The 300-year acceptance runs depend on this.
         SimConfig config = Config;
         var quiet = new InMemoryLogSink(LogLevel.Info);
-        SimLoop loop = SimFactory.CreatePhase0(config, quiet);
+        SimLoop loop = ManagedVillage.Loop(config, quiet);
         loop.Step(config.TicksPerYear * 5);
 
         foreach (LogEntry entry in quiet.Entries)

@@ -157,7 +157,7 @@ public sealed class ShippedConfigTests
     public void TheShippedVillageNeverStrandsLogsInALarder()
     {
         SimConfig config = Shipped;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         int worst = 0;
@@ -183,7 +183,7 @@ public sealed class ShippedConfigTests
     public void TheVillageTheGameLoadsHoldsForThreeCenturies()
     {
         SimConfig config = Shipped;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
 
         int lowest = int.MaxValue;
         int highest = 0;
@@ -230,7 +230,7 @@ public sealed class ShippedConfigTests
         // branched on the building's KIND rather than on what was wanted and what was
         // there.
         SimConfig config = Shipped;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
 
         int worstStreak = 0;
         int streak = 0;
@@ -281,7 +281,7 @@ public sealed class ShippedConfigTests
         // reasonable thing for a player to do in their first hour, so it should not be
         // fatal — and if it ever is, that should fail here rather than in Joe's game.
         SimConfig config = Shipped;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         loop.Step(config.TicksPerYear * 15);
 
         SimWorld world = loop.World;

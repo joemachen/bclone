@@ -29,7 +29,7 @@ public sealed class HousesAreBuiltTests
     public HousesAreBuiltTests(ITestOutputHelper output) => _output = output;
 
     private static SimLoop Loop(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ManagedVillage.Loop(config, new InMemoryLogSink());
 
     private static int HomeSites(SimWorld world)
     {

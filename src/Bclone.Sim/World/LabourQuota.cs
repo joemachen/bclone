@@ -24,6 +24,15 @@ namespace Bclone.Sim.World;
 /// Every number below comes from a count of people, so a village that grows changes
 /// its own mind about what it needs without anyone touching a config file.
 /// </para>
+/// <para>
+/// <b>⭐ IT IS ADVICE NOW, NOT A DECISION (D109).</b> The village used to staff itself from
+/// this; the player staffs it, one number per profession held on the buildings
+/// (<see cref="Workplace.Staffing"/>). Everything here still runs and the panel shows it —
+/// <em>"the village suggests 3"</em> — which is §1.1 working: the game explains itself and the
+/// player decides. <b>Deliberately kept alive rather than deleted</b>, because Joe called
+/// full-manual provisional, and re-admitting auto-staffing later must be a re-wiring rather
+/// than an excavation.
+/// </para>
 /// </remarks>
 public readonly record struct LabourQuota
 {
@@ -353,47 +362,15 @@ public readonly record struct LabourQuota
             foragers += free;
         }
 
-        // ⭐ AND THEN THE PLAYER HAS THE LAST WORD (D106). Everything above is the village
-        // deciding for itself; a profession target replaces its answer for that one kind.
-        //
-        // APPLIED AT THE END, DELIBERATELY, and it is the difference between a control and a
-        // suggestion. Folding a target into the middle would let the food floor and the
-        // `free / 2` building cap quietly overrule it — and overruling it is precisely what
-        // the player is reaching for the panel to stop. D103 is the case: building is funded
-        // from what is left, and measured, what is left is nothing for most of the year. The
-        // village cannot fix that for itself without killing some valleys (tried twice); a
-        // player who can say "two builders" fixes the one in front of them.
-        //
-        // STILL BOUNDED BY WHAT EXISTS — capacity, and the number of able adults. You may ask
-        // for six woodcutters; you may not conjure the seats or the people. That bound is not
-        // the game arguing back, it is the game not lying about what it did with your number.
-        foragers = Asked(world, JobKind.Forager, foragers, hands);
-        foresters = Asked(world, JobKind.Forester, foresters, hands);
-        woodcutters = Asked(world, JobKind.Woodcutter, woodcutters, hands);
-        marketers = Asked(world, JobKind.Marketer, marketers, hands);
-        builders = Asked(world, JobKind.Builder, builders, hands);
+        // ⚠️ AND THE PLAYER USED TO HAVE THE LAST WORD HERE (D106) — a profession target that
+        // replaced the village's answer for one kind. **That is gone, because the whole of
+        // this method is advice now (D109).** The player does not correct the village's
+        // number; the player's number is the only one there is, and it lives on the
+        // workplaces. Folding it back in would recreate exactly the two-sources-of-truth
+        // argument D109 deleted.
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders);
-    }
-
-    /// <summary>What the player asked for on this kind of work, or what the village decided.</summary>
-    /// <remarks>
-    /// <b>Bounded by the seats that exist and by the people who exist</b>, and by nothing else.
-    /// It is deliberately allowed to exceed what the village would have chosen — that is the
-    /// whole reason the control exists — and deliberately allowed to be zero, which is how a
-    /// player turns a profession's hands back into laborers.
-    /// </remarks>
-    private static int Asked(SimWorld world, JobKind kind, int decided, int hands)
-    {
-        if (world.JobLimits.For(kind) is not int asked)
-        {
-            return decided;
-        }
-
-        int seats = TotalCapacityFor(world, kind);
-        int bounded = asked < seats ? asked : seats;
-        return bounded < hands ? bounded : hands;
     }
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
@@ -658,7 +635,7 @@ public readonly record struct LabourQuota
             }
             else if (workplace.Kind == JobKind.Builder)
             {
-                seats += workplace.Places;
+                seats += workplace.Capacity;
             }
         }
 
@@ -773,13 +750,18 @@ public readonly record struct LabourQuota
         return world.TotalFood() < ration;
     }
 
-    /// <summary>Every seat at every workplace of one kind.</summary>
+    /// <summary>Every seat that physically exists at every workplace of one kind.</summary>
     /// <remarks>
+    /// <para>
+    /// <b>Capacity, not staffing</b> — how many the buildings could hold, which is the ceiling
+    /// the advice above is trimmed against. What the player has actually asked for is
+    /// <see cref="SimWorld.ProfessionTotal"/>, and keeping the two named apart is the point:
+    /// they were the same question while the village staffed itself and are two questions now.
+    /// </para>
+    /// <para>
     /// <b>A construction site is not one of them</b> (D108). It has no seats and nobody is
-    /// ever assigned to it, and its <see cref="Workplace.Capacity"/> of zero already says so
-    /// — but the player can set a staffing number on anything, and a site counted here would
-    /// let a number typed at a footprint raise the ceiling on hands that can only ever sit in
-    /// a hut. Belt and braces, which is what the zero and this skip are together.
+    /// ever assigned to it.
+    /// </para>
     /// </remarks>
     public static int TotalCapacityFor(SimWorld world, JobKind kind)
     {
@@ -790,7 +772,7 @@ public readonly record struct LabourQuota
         {
             if (world.Workplaces[i].Kind == kind && !world.Workplaces[i].IsSite)
             {
-                total += world.Workplaces[i].Places;
+                total += world.Workplaces[i].Capacity;
             }
         }
 

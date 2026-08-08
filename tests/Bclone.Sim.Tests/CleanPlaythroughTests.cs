@@ -36,7 +36,7 @@ public sealed class CleanPlaythroughTests
     {
         SimConfig config = VillageFixtures.Village;
         var log = new InMemoryLogSink(LogLevel.Warn);
-        SimLoop loop = SimFactory.CreatePhase0(config, log);
+        SimLoop loop = ManagedVillage.Loop(config, log);
 
         loop.Step(config.TicksPerYear * 150);
 
@@ -57,7 +57,7 @@ public sealed class CleanPlaythroughTests
         // it has to stay clean as well, or the claim that Phase 1 subsumes it is false.
         SimConfig config = Phase0Fixtures.Plenty;
         var log = new InMemoryLogSink(LogLevel.Warn);
-        SimLoop loop = SimFactory.CreatePhase0(config, log);
+        SimLoop loop = ManagedVillage.Loop(config, log);
 
         loop.Step(config.TicksPerYear * 60);
 

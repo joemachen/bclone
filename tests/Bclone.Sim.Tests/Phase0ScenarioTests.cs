@@ -177,7 +177,7 @@ public sealed class Phase0ScenarioTests
         foreach (SimConfig config in new[] { Phase0Fixtures.Plenty, Phase0Fixtures.Scarcity })
         {
             var sink = new InMemoryLogSink(LogLevel.Trace);
-            SimLoop loop = SimFactory.CreatePhase0(config, sink);
+            SimLoop loop = ManagedVillage.Loop(config, sink);
             Phase0Fixtures.RunUntilDeath(loop);
             loop.Step(1_000);   // and well past the death, too
 

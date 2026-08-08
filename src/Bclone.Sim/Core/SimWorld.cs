@@ -99,61 +99,88 @@ public sealed class SimWorld
     /// </remarks>
     public StockLimits StockLimits { get; } = new();
 
-    /// <summary>How many people the player wants on each kind of work (D106).</summary>
-    /// <remarks>
-    /// Banished's professions panel: the village decides for itself until the player says
-    /// otherwise, and then it does as it is told. See <see cref="JobLimits"/> for why this is
-    /// allowed to ask for <em>more</em> than the village would choose, where a stock limit may
-    /// only ask for less.
-    /// </remarks>
-    public JobLimits JobLimits { get; } = new();
-
     /// <summary>
-    /// Set or clear how many people should be on a kind of work, and say what it will cost.
+    /// How many people the player has put on a kind of work, anywhere in the village (D109).
     /// </summary>
     /// <remarks>
-    /// <b>Always obeyed, and warned about when it takes hands off something that keeps people
-    /// alive</b> — D62's shape exactly. A game that refuses the player's number is arguing with
-    /// them; one that obeys silently has killed them without saying so. The warning fires once,
-    /// when the number is set, rather than every tick the village is short (D42's rule about
-    /// the distance warning).
+    /// <b>⭐ Derived, not stored, and that is the whole of "one number shown from two ends".</b>
+    /// The buildings hold the numbers; this is their sum. So there is no global figure that can
+    /// disagree with the buildings under it — the disagreement that <c>JobLimits</c> (D106) made
+    /// possible and that D109 deleted the moment staffing became the only source of truth.
+    /// Construction sites are skipped: nobody is ever posted to one (D108).
     /// </remarks>
-    public PlacementVerdict SetJobLimit(JobKind kind, int? target)
+    public int ProfessionTotal(JobKind kind)
     {
-        if (!JobLimits.Set(kind, target))
-        {
-            return PlacementVerdict.Fine;
-        }
-
-        if (target is not int asked)
-        {
-            Log(Logging.LogLevel.Info, "labour",
-                $"{Describe(kind)} is left to the village again. {Clock.SeasonAndYear()}.");
-            return PlacementVerdict.Fine;
-        }
-
-        int seats = 0;
+        int total = 0;
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Kind == kind)
+            if (Workplaces[i].Kind == kind && !Workplaces[i].IsSite)
             {
-                seats += Workplaces[i].Capacity;
+                total += Workplaces[i].Staffing;
             }
         }
 
-        Log(Logging.LogLevel.Info, "labour",
-            $"You asked for {asked} on {Describe(kind)}. {Clock.SeasonAndYear()}.");
+        return total;
+    }
 
-        if (asked > seats)
+    /// <summary>Room left across every building of a kind — what the total may still rise to.</summary>
+    public int ProfessionCapacity(JobKind kind)
+    {
+        int total = 0;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind == kind && !Workplaces[i].IsSite)
+            {
+                total += Workplaces[i].Capacity;
+            }
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// Put <paramref name="wanted"/> people on a kind of work, spread across its buildings.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ The global end of the one number</b> (Joe, D109): <em>"Staffing changes made in the
+    /// global professions panel should also be made automatically in the related buildings."</em>
+    /// Round-robin in id order, capped by each building's <see cref="Workplace.Capacity"/> — so
+    /// two builders with two huts is one each, and a full hut means the next worker of that
+    /// profession needs another hut.
+    /// </para>
+    /// <para>
+    /// <b>Round-robin rather than fill-the-first</b>, because the buildings are in different
+    /// places and the allocator chooses people by distance: piling everyone into hut 1 would
+    /// quietly make hut 2 decorative, and the player would have to discover that by watching.
+    /// </para>
+    /// <para>
+    /// <b>Obeyed and said out loud</b>, which is D43's pattern and D62's: asking for more than
+    /// the village has room for is allowed and reported, never silently trimmed.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict SetProfession(JobKind kind, int wanted)
+    {
+        if (wanted < 0)
+        {
+            wanted = 0;
+        }
+
+        int placed = DistributeStaffing(kind, wanted);
+
+        Log(Logging.LogLevel.Info, "labour",
+            $"You asked for {wanted} on {Describe(kind)}. {Clock.SeasonAndYear()}.");
+
+        if (placed < wanted)
         {
             return PlacementVerdict.Yes(
-                $"There is only room for {seats} on {Describe(kind)}, so {asked} cannot all be "
+                $"There is only room for {placed} on {Describe(kind)}, so {wanted} cannot all be "
                 + "put to work. Build somewhere for them first.");
         }
 
         // The two that kill people if nobody does them (D45: hunger in six days, an unheated
         // house in twenty-five). Said plainly rather than refused.
-        if (asked == 0 && kind is JobKind.Forager or JobKind.Woodcutter)
+        if (wanted == 0 && kind is JobKind.Forager or JobKind.Woodcutter)
         {
             return PlacementVerdict.Yes(
                 $"Nobody will be put on {Describe(kind)} at all. The village will live on what "
@@ -2193,10 +2220,16 @@ public sealed class SimWorld
     /// philosophy, and the same trade D42 made for housing.
     /// </para>
     /// <para>
-    /// <b>Zero is meaningful and different from null.</b> Zero is "nobody works here,
-    /// I mean it"; null is "I have no opinion, do what you think best". The market has
-    /// shipped a switched-off setting since D36, so a workplace nobody staffs is a
-    /// supported state rather than a broken one.
+    /// <b>⭐ Taking somebody off a building does not lose them to the profession</b> (Joe,
+    /// D109). Remove the worker from hut 2 and they move to hut 1 if hut 1 has room —
+    /// <b>the global holds</b>, and it drops only when no building of that kind can take them.
+    /// That is what makes the panel and the building two views of one number rather than two
+    /// numbers that argue, and it is the behaviour a player expects when they are shuffling
+    /// crews between two huts rather than laying anybody off.
+    /// </para>
+    /// <para>
+    /// <b>Bounded by <see cref="Workplace.Capacity"/>, because a hut has a size.</b> Asking for
+    /// more than fits is trimmed and reported rather than silently obeyed.
     /// </para>
     /// <para>
     /// The village does not re-plan on the spot: the change lands at the next labour
@@ -2205,23 +2238,126 @@ public sealed class SimWorld
     /// one decision in this game that stops the world.
     /// </para>
     /// </remarks>
-    public void SetStaffing(Workplace workplace, int? places)
+    public PlacementVerdict SetStaffing(Workplace workplace, int places)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        if (places is int wanted && wanted < 0)
+        if (places < 0)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(places), places, "A workplace cannot be staffed by fewer than nobody.");
         }
 
-        workplace.StaffingOverride = places;
+        if (workplace.IsSite)
+        {
+            throw new ArgumentException(
+                $"{workplace.Name} is a construction site, and nobody is posted to one (D108).",
+                nameof(workplace));
+        }
 
-        Narrate(places is int n
-            ? $"{workplace.Name} is to be worked by {n} {(n == 1 ? "person" : "people")} " +
-              $"from now on. {Clock.SeasonAndYear()}."
-            : $"{workplace.Name} is left to the village to staff as it sees fit. " +
-              $"{Clock.SeasonAndYear()}.");
+        int wanted = places > workplace.Capacity ? workplace.Capacity : places;
+        int freed = workplace.Staffing - wanted;
+        workplace.Staffing = wanted;
+
+        int rehoused = freed > 0 ? SpreadAcrossTheRest(workplace, freed) : 0;
+
+        Narrate($"{workplace.Name} is to be worked by {wanted} "
+            + $"{(wanted == 1 ? "person" : "people")} from now on. {Clock.SeasonAndYear()}.");
+
+        if (rehoused > 0)
+        {
+            Narrate($"{rehoused} of them moved to other work of the same kind rather than "
+                + $"leaving it — the village still has "
+                + $"{ProfessionTotal(workplace.Kind)} on {Describe(workplace.Kind)}.");
+        }
+
+        return places > workplace.Capacity
+            ? PlacementVerdict.Yes(
+                $"{workplace.Name} only holds {workplace.Capacity}, so {places} cannot all work "
+                + "there. Another building of the same kind would take the rest.")
+            : PlacementVerdict.Fine;
+    }
+
+    /// <summary>
+    /// Spread a profession's hands across its buildings, round-robin in id order. Says nothing.
+    /// </summary>
+    /// <returns>How many were actually placed, which is fewer than asked if there is no room.</returns>
+    /// <remarks>
+    /// <b>The rule on its own, with no sentence attached</b>, so that the two things which need
+    /// it cannot drift apart: <see cref="SetProfession"/>, which is the player and therefore
+    /// speaks, and the test harness's stand-in for a player, which must not fill the village
+    /// log with a hundred years of its own clicking. Internal, because there is still no public
+    /// way to put a named villager anywhere (D15).
+    /// </remarks>
+    internal int DistributeStaffing(JobKind kind, int wanted)
+    {
+        var of = new List<Workplace>();
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind == kind && !Workplaces[i].IsSite)
+            {
+                of.Add(Workplaces[i]);
+            }
+        }
+
+        of.Sort(static (a, b) => a.Id.CompareTo(b.Id));
+
+        for (int i = 0; i < of.Count; i++)
+        {
+            of[i].Staffing = 0;
+        }
+
+        int placed = 0;
+        bool roomLeft = true;
+        while (placed < wanted && roomLeft)
+        {
+            roomLeft = false;
+            for (int i = 0; i < of.Count && placed < wanted; i++)
+            {
+                if (of[i].RoomToStaff > 0)
+                {
+                    of[i].Staffing++;
+                    placed++;
+                    roomLeft = true;
+                }
+            }
+        }
+
+        return placed;
+    }
+
+    /// <summary>Find room elsewhere in a profession for hands taken off one building.</summary>
+    /// <returns>How many were re-housed; the rest leave the profession.</returns>
+    private int SpreadAcrossTheRest(Workplace from, int hands)
+    {
+        var others = new List<Workplace>();
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind == from.Kind && !Workplaces[i].IsSite && Workplaces[i].Id != from.Id)
+            {
+                others.Add(Workplaces[i]);
+            }
+        }
+
+        others.Sort(static (a, b) => a.Id.CompareTo(b.Id));
+
+        int placed = 0;
+        bool roomLeft = true;
+        while (placed < hands && roomLeft)
+        {
+            roomLeft = false;
+            for (int i = 0; i < others.Count && placed < hands; i++)
+            {
+                if (others[i].RoomToStaff > 0)
+                {
+                    others[i].Staffing++;
+                    placed++;
+                    roomLeft = true;
+                }
+            }
+        }
+
+        return placed;
     }
 
     public Workplace? FindWorkplace(int id)

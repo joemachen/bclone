@@ -26,7 +26,7 @@ public sealed class FirewoodTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static SimLoop Build(SimConfig config, ulong? seed = null) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+        ManagedVillage.Loop(config, new InMemoryLogSink(), seed);
 
     [Fact]
     public void TheVillageActuallyMakesFirewood()
@@ -234,7 +234,7 @@ public sealed class FirewoodTests
         // but a baseline that dies can only mean the constants are wrong while there
         // is no player to blame for it.
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
 
         int lowestAfterSettling = int.MaxValue;
         int highestAfterSettling = 0;
@@ -312,7 +312,7 @@ public sealed class FirewoodTests
         // living couple and a long list of dead predecessors must still be able to
         // have a child.
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         loop.Step(config.TicksPerYear * 120);
 
         Household? withDead = null;

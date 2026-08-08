@@ -31,7 +31,7 @@ public sealed class InstantPileTests
     public InstantPileTests(ITestOutputHelper output) => _output = output;
 
     private static SimWorld World(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        ManagedVillage.Loop(config, new InMemoryLogSink()).World;
 
     /// <summary>A tile near the village with nothing standing on it.</summary>
     private static GridPos ClearGroundNear(SimWorld world)
@@ -215,7 +215,7 @@ public sealed class InstantPileTests
     public void TheVillageClearsTheGroundForAPileWithoutBeingAskedTwice()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         GridPos at = WoodedGroundNear(world)!.Value;
@@ -273,7 +273,7 @@ public sealed class InstantPileTests
     public void NoWorkGoesIntoASiteWhoseGroundIsStillStanding()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         GridPos at = WoodedGroundNear(world)!.Value;

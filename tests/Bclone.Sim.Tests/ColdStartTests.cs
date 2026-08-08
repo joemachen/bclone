@@ -37,7 +37,7 @@ public sealed class ColdStartTests
     };
 
     private static SimLoop Build(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ManagedVillage.Loop(config, new InMemoryLogSink());
 
     // ---------------------------------------------------------------
     //  What the founders actually get
@@ -86,7 +86,7 @@ public sealed class ColdStartTests
     public void TheFoundersBringToolsAndNotAtTheCostOfTheirFood()
     {
         SimConfig config = ShippedConfig.Load();
-        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink()).World;
 
         StoreBuilding cart = world.TheCart!;
         _output.WriteLine(
@@ -298,7 +298,7 @@ public sealed class ColdStartTests
     public void JoesOpeningSurvivesOnTheShippedConfig()
     {
         SimConfig config = ShippedConfig.Load();
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         Assert.False(config.FoundingBuildings, "This guard is meaningless on a warm start.");
@@ -338,7 +338,7 @@ public sealed class ColdStartTests
     public void TheOpeningGetsItsTimberFromTheTreesThePlayerPainted()
     {
         SimConfig config = ShippedConfig.Load();
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         PlayTheOpening(world);
@@ -398,7 +398,7 @@ public sealed class ColdStartTests
     public void TheOpeningStillHasAVillageFiveYearsLater()
     {
         SimConfig config = ShippedConfig.Load();
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         PlayTheOpening(world);
@@ -449,7 +449,7 @@ public sealed class ColdStartTests
     public void AVillageWithAPileAndNoGranaryStillWantsFood()
     {
         SimConfig config = ShippedConfig.Load();
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         MarkSomewhereNear(world, BuildingKind.Pile, world.Map.FoundingSite, 2);
@@ -484,7 +484,7 @@ public sealed class ColdStartTests
     public void TheOpeningFillsItsStores()
     {
         SimConfig config = ShippedConfig.Load();
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         PlayTheOpening(world);
@@ -528,7 +528,7 @@ public sealed class ColdStartTests
     public void NeitherFoundingHouseholdRestsWhileTheOtherWorks()
     {
         SimConfig config = ShippedConfig.Load();
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         PlayTheOpening(world);
@@ -602,7 +602,7 @@ public sealed class ColdStartTests
     public void AVillageGivenOnlyAPileOutlivesItsFounders()
     {
         SimConfig config = ShippedConfig.Load();
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         PlayTheOpening(world);

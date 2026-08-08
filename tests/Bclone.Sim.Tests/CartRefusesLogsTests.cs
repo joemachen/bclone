@@ -32,7 +32,7 @@ public sealed class CartRefusesLogsTests
     public CartRefusesLogsTests(ITestOutputHelper output) => _output = output;
 
     private static SimLoop Loop(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ManagedVillage.Loop(config, new InMemoryLogSink());
 
     private static void PaintHomes(SimWorld world)
     {
@@ -223,7 +223,7 @@ public sealed class CartRefusesLogsTests
     {
         SimConfig config = ShippedConfig.Load();
         var log = new InMemoryLogSink();
-        SimLoop loop = SimFactory.CreatePhase0(config, log);
+        SimLoop loop = ManagedVillage.Loop(config, log);
         SimWorld world = loop.World;
 
         PaintHomes(world);
@@ -250,7 +250,7 @@ public sealed class CartRefusesLogsTests
     {
         SimConfig config = ShippedConfig.Load();
         var log = new InMemoryLogSink();
-        SimLoop loop = SimFactory.CreatePhase0(config, log);
+        SimLoop loop = ManagedVillage.Loop(config, log);
         SimWorld world = loop.World;
 
         PaintHomes(world);

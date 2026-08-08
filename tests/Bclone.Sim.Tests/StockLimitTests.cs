@@ -150,7 +150,7 @@ public sealed class StockLimitTests
         // no-op, and it was captured before the cold start existed. ColdStartTests owns the
         // founding.
         SimConfig config = shipped ? ShippedConfig.Established() : VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
 
         loop.Step(config.TicksPerYear * 50);
 
@@ -178,9 +178,9 @@ public sealed class StockLimitTests
     {
         SimConfig config = VillageFixtures.Village;
 
-        SimWorld noOpinion = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        SimWorld noOpinion = ManagedVillage.Loop(config, new InMemoryLogSink()).World;
 
-        SimWorld explicitZero = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        SimWorld explicitZero = ManagedVillage.Loop(config, new InMemoryLogSink()).World;
         explicitZero.StockLimits.Set(Goods.Logs, 0);
 
         Assert.Null(noOpinion.StockLimits.For(Goods.Logs));
@@ -198,7 +198,7 @@ public sealed class StockLimitTests
     public void ClearingALimitLeavesNoTrace()
     {
         SimConfig config = VillageFixtures.Village;
-        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink()).World;
 
         ulong before = StateHash.Compute(world);
 
@@ -265,8 +265,8 @@ public sealed class StockLimitTests
     {
         SimConfig config = VillageFixtures.Village;
 
-        SimWorld without = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
-        SimWorld with = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        SimWorld without = ManagedVillage.Loop(config, new InMemoryLogSink()).World;
+        SimWorld with = ManagedVillage.Loop(config, new InMemoryLogSink()).World;
 
         StoreBuilding shed = with.AnyStoreOf(StoreKind.Shed);
         Assert.True(shed.Accepts(goods), $"A shed must hold {goods} — it is a material.");
@@ -323,7 +323,7 @@ public sealed class StockLimitTests
     public void ALaborerIsAnAbleAdultNobodyHasWorkFor()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         loop.Step(config.TicksPerYear * 30);
@@ -371,7 +371,7 @@ public sealed class StockLimitTests
     public void AFirewoodLimitStopsTheWoodcutters()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         // Let the village get on its feet first, then ask it to stop well below where it
@@ -420,7 +420,7 @@ public sealed class StockLimitTests
     public void TheUnlimitedVillageReallyWouldHavePassedThatLimit()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
 
         int peak = 0;
         for (int tick = 0; tick < config.TicksPerYear * 40; tick++)
@@ -454,7 +454,7 @@ public sealed class StockLimitTests
     public void ALimitBelowWhatTheVillageNeedsIsObeyedAndSaidOutLoud()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         loop.Step(config.TicksPerYear * 10);
@@ -476,7 +476,7 @@ public sealed class StockLimitTests
     public void AGenerousLimitPassesWithoutComment()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         loop.Step(config.TicksPerYear * 10);

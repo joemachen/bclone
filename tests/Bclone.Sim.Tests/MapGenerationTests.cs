@@ -50,9 +50,9 @@ public sealed class MapGenerationTests
         // The point of D18: quoting one number reproduces an entire run, world
         // included. Two worlds built from the same seed must agree about the valley
         // before anybody has taken a step.
-        SimWorld a = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seedOverride: 777UL).World;
-        SimWorld b = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seedOverride: 777UL).World;
-        SimWorld c = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seedOverride: 778UL).World;
+        SimWorld a = ManagedVillage.Loop(Config, new InMemoryLogSink(), seedOverride: 777UL).World;
+        SimWorld b = ManagedVillage.Loop(Config, new InMemoryLogSink(), seedOverride: 777UL).World;
+        SimWorld c = ManagedVillage.Loop(Config, new InMemoryLogSink(), seedOverride: 778UL).World;
 
         Assert.Equal(StateHash.MixMap(0UL, a.Map), StateHash.MixMap(0UL, b.Map));
         Assert.NotEqual(StateHash.MixMap(0UL, a.Map), StateHash.MixMap(0UL, c.Map));
@@ -109,7 +109,7 @@ public sealed class MapGenerationTests
 
         for (ulong seed = 1; seed <= 50; seed++)
         {
-            SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seed).World;
+            SimWorld world = ManagedVillage.Loop(Config, new InMemoryLogSink(), seed).World;
 
             var places = new Dictionary<string, GridPos>();
             bool tieBroken = false;
@@ -163,7 +163,7 @@ public sealed class MapGenerationTests
         // was called a *thicket* whatever it was, so a tree stand and a berry patch were
         // named alike — and a player told nobody was working "the southern eastern
         // thicket" could not tell whether the village was short of food or of timber.
-        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), 12345UL).World;
+        SimWorld world = ManagedVillage.Loop(Config, new InMemoryLogSink(), 12345UL).World;
 
         int thickets = 0;
         int woods = 0;
@@ -271,7 +271,7 @@ public sealed class MapGenerationTests
 
         for (ulong seed = 1; seed <= 30; seed++)
         {
-            SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+            SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink(), seed).World;
 
             foreach (Household household in world.Households)
             {
@@ -298,7 +298,7 @@ public sealed class MapGenerationTests
 
         for (ulong seed = 1; seed <= 12; seed++)
         {
-            SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+            SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink(), seed);
 
             int lowest = int.MaxValue;
             int peak = 0;
@@ -335,7 +335,7 @@ public sealed class MapGenerationTests
         // The regression this whole slice exists to prevent, asserted every tick
         // rather than inferred from the village surviving.
         SimConfig config = Config;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL);
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink(), seedOverride: 1UL);
 
         for (int i = 0; i < config.TicksPerYear * 60; i++)
         {
@@ -364,7 +364,7 @@ public sealed class MapGenerationTests
 
         for (ulong seed = 1; seed <= 20; seed++)
         {
-            SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+            SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink(), seed);
             loop.Step(config.TicksPerYear * 60);
             SimWorld world = loop.World;
 
@@ -400,7 +400,7 @@ public sealed class MapGenerationTests
 
         for (ulong seed = 1; seed <= 20; seed++)
         {
-            SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+            SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink(), seed).World;
             GridPos home = world.Households[0].Home();
 
             foreach (StoreBuilding store in world.StoreBuildings)
@@ -429,7 +429,7 @@ public sealed class MapGenerationTests
         // And the anti-vacuity twin below it — without that, a field that quietly
         // returned Manhattan distance everywhere would pass this happily.
         SimConfig config = Config;
-        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
+        SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink(), seedOverride: 1UL).World;
 
         GridPos from = world.Households[0].Home();
         int detoured = 0;
@@ -466,7 +466,7 @@ public sealed class MapGenerationTests
         // above would still pass. This pins the other end: with nothing in the way, a
         // real path and plain distance must agree exactly.
         SimConfig config = Config with { RiverWidthTiles = 0 };
-        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
+        SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink(), seedOverride: 1UL).World;
 
         GridPos from = world.Households[0].Home();
 
@@ -490,7 +490,7 @@ public sealed class MapGenerationTests
 
         for (ulong seed = 1; seed <= 3; seed++)
         {
-            SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+            SimWorld world = ManagedVillage.Loop(config, new InMemoryLogSink(), seed).World;
             _output.WriteLine($"---- seed {seed} ----");
             _output.WriteLine(Draw(world, radius: 14));
             _output.WriteLine(string.Empty);

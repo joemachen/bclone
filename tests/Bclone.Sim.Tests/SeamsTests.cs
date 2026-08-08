@@ -30,7 +30,7 @@ public sealed class SeamsTests
     public SeamsTests(ITestOutputHelper output) => _output = output;
 
     private static SimWorld Build(ulong seed) =>
-        SimFactory.CreatePhase0(
+        ManagedVillage.Loop(
             VillageFixtures.Village with { Seed = seed }, new InMemoryLogSink()).World;
 
     private static int Count(SimWorld world, Terrain terrain)
@@ -84,7 +84,7 @@ public sealed class SeamsTests
 
         // The same valley with no seams at all — the forest must be identical.
         SimWorld withOre = Build(seed);
-        SimWorld withoutOre = SimFactory.CreatePhase0(
+        SimWorld withoutOre = ManagedVillage.Loop(
             config with { StoneSeamCount = 0, IronSeamCount = 0 }, new InMemoryLogSink()).World;
 
         _output.WriteLine(
@@ -112,7 +112,7 @@ public sealed class SeamsTests
         SimConfig config = VillageFixtures.Village with { Seed = seed };
 
         SimWorld withOre = Build(seed);
-        SimWorld withoutOre = SimFactory.CreatePhase0(
+        SimWorld withoutOre = ManagedVillage.Loop(
             config with { StoneSeamCount = 0, IronSeamCount = 0 }, new InMemoryLogSink()).World;
 
         Assert.Equal(withoutOre.Map.FoundingSite, withOre.Map.FoundingSite);
@@ -209,7 +209,7 @@ public sealed class HarvestBrushModeTests
     public HarvestBrushModeTests(ITestOutputHelper output) => _output = output;
 
     private static SimWorld Build() =>
-        SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        ManagedVillage.Loop(VillageFixtures.Village, new InMemoryLogSink()).World;
 
     private static GridPos Find(SimWorld world, Terrain terrain)
     {

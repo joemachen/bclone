@@ -35,7 +35,7 @@ public sealed class BuildersHutTests
     public BuildersHutTests(ITestOutputHelper output) => _output = output;
 
     private static SimWorld World(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        ManagedVillage.Loop(config, new InMemoryLogSink()).World;
 
     /// <summary>A buildable tile near the village with nothing standing on it.</summary>
     private static GridPos ClearGroundNear(SimWorld world, BuildingKind kind)
@@ -198,7 +198,7 @@ public sealed class BuildersHutTests
     public void AConstructionSiteHasNoSeatsAndTakesNoWorkers()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         GridPos at = ClearGroundNear(world, BuildingKind.Granary);
@@ -355,7 +355,7 @@ public sealed class BuildersHutTests
 
         // And with something marked, the demand is the HUT's seats — not the site's, which
         // are zero, and not a number per site, which is what it used to count.
-        Assert.Equal(HutIn(world)!.Places, LabourQuota.BuildersWanted(world));
+        Assert.Equal(HutIn(world)!.Capacity, LabourQuota.BuildersWanted(world));
     }
 
     // ---------------------------------------------------------------
@@ -382,7 +382,7 @@ public sealed class BuildersHutTests
     {
         SimConfig config = ShippedConfig.Load();
         var sink = new InMemoryLogSink();
-        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimLoop loop = ManagedVillage.Loop(config, sink);
         SimWorld world = loop.World;
 
         GridPos site = world.Map.FoundingSite;
@@ -423,7 +423,7 @@ public sealed class BuildersHutTests
         // instead of (-3,-3) killed all four founders where the guard's own placement
         // survives comfortably." The founding is still exquisitely placement-sensitive, and
         // a guard about the hut must not accidentally be a guard about that.
-        SimLoop withHut = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop withHut = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld warm = withHut.World;
 
         for (int dy = -4; dy <= 4; dy++)

@@ -121,19 +121,11 @@ public static class StateHash
             }
         }
 
-        // Profession targets (D106), in the same shape and for the same reason: a village
-        // played without ever opening the panel mixes nothing at all, so the control is a
-        // provable no-op until somebody uses it. Null and zero diverge here too — "no opinion"
-        // and "nobody on this, I mean it" are different instructions.
-        for (int i = 0; i < JobLimits.Kinds.Count; i++)
-        {
-            int? target = world.JobLimits.For(JobLimits.Kinds[i]);
-            if (target is not null)
-            {
-                hash = MixUInt32(hash, (uint)i);
-                hash = MixUInt32(hash, (uint)target.Value);
-            }
-        }
+        // ⚠️ THE PROFESSION TARGETS THAT USED TO BE MIXED HERE ARE GONE (D109). `JobLimits`
+        // was a second, village-wide number that could disagree with the buildings under it;
+        // there is one number now and it lives on the workplaces, mixed below. Nothing was
+        // lost from the hash — the same intent is covered one loop down, in the place that
+        // actually holds it.
 
         // ---- Village ----
         // Every villager and every household, in id order. A hash that covered only
@@ -172,13 +164,16 @@ public static class StateHash
             Workplace workplace = world.Workplaces[i];
             hash = MixUInt32(hash, (uint)workplace.Id);
 
-            // Player intent is sim state (D42's rule, D51's case): an override changes
-            // who works where, so two runs of one seed that differ in it are different
-            // runs and must hash differently. Null hashes distinctly from any real
-            // count, so "let the village decide" is not the same state as "0".
-            hash = MixUInt32(hash, workplace.StaffingOverride is int places
-                ? (uint)places + 1u
-                : 0u);
+            // Player intent is sim state (D42's rule, D51's case): staffing decides who works
+            // where, so two runs of one seed that differ in it are different runs and must
+            // hash differently.
+            //
+            // ⚠️ IT USED TO BE NULLABLE, and null was mixed distinctly from every real count
+            // so that "let the village decide" was not the same state as "0". That state no
+            // longer exists (D109) — every workplace carries an explicit number — so the
+            // encoding is the number itself. **This is the one place the null≠zero distinction
+            // was actually enforced**, and it is spent knowingly rather than mislaid.
+            hash = MixUInt32(hash, (uint)workplace.Staffing);
             hash = MixUInt32(hash, (uint)workplace.WorkerIds.Count);
             for (int k = 0; k < workplace.WorkerIds.Count; k++)
             {

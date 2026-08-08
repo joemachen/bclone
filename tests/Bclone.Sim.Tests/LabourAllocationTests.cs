@@ -27,7 +27,7 @@ public sealed class LabourAllocationTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static SimLoop Build(SimConfig config, ulong? seed = null) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+        ManagedVillage.Loop(config, new InMemoryLogSink(), seed);
 
     /// <summary>
     /// Run whole years, then one more tick, so the last thing to have happened is a
@@ -251,29 +251,18 @@ public sealed class LabourAllocationTests
         int highestId = HighestIdWorker(world, JobKind.Forager)!.Id;
         _output.WriteLine($"furthest: {furthest.Name} (#{furthest.Id}); highest id: #{highestId}");
 
-        // Ask for exactly one fewer forager than the village currently has.
-        var quota = new LabourQuota(
-            hands: foraging,
-            mouths: world.Population,
-            foragersToFeedEveryone: 1,
-            foragers: foraging - 1,
-            foresters: CountWorking(world, JobKind.Forester),
-            woodcutters: CountWorking(world, JobKind.Woodcutter),
+        // ⚠️ ASKED OF THE PLAYER'S NUMBER, NOT OF A POSED QUOTA (D109). This used to hand
+        // `ShedSurplus` a hand-made `LabourQuota` with one fewer forager in it and every other
+        // kind set to what the village already held — because the quota was what bound. It is
+        // advice now: shedding reads what the player asked for, so the way to ask for one
+        // fewer forager is to ask for one fewer forager. Every other profession is left
+        // exactly as it stands, which is what keeps this test about the one thing it is named
+        // for; the old version had to say so in three paragraphs and can now simply not touch
+        // them.
+        world.SetProfession(JobKind.Forager, foraging - 1);
 
-            // Every other kind is asked for exactly what the village already has, so
-            // the forager is the only surplus and this test stays about the one thing
-            // it is named for. Omitting the marketers made the quota ask for none and
-            // shed the lot alongside the forager.
-            marketers: CountWorking(world, JobKind.Marketer),
-
-            // AND THE BUILDERS, for exactly the same reason and one decision later
-            // (D102). A forty-year village used to hold no builders at all, because
-            // nothing was ever marked; houses are construction sites now, so it holds
-            // some almost always — and leaving this at its default of zero shed all four
-            // of them alongside the forager.
-            builders: CountWorking(world, JobKind.Builder));
-
-        System.Collections.Generic.List<int> shed = LabourAllocator.ShedSurplus(world, quota);
+        System.Collections.Generic.List<int> shed =
+            LabourAllocator.ShedSurplus(world, LabourQuota.For(world));
 
         Assert.Single(shed);
         Assert.Equal(furthest.Id, shed[0]);
@@ -472,7 +461,7 @@ public sealed class LabourAllocationTests
         // without clicking anyone.
         var log = new InMemoryLogSink();
         SimConfig config = Config;
-        SimLoop loop = SimFactory.CreatePhase0(config, log);
+        SimLoop loop = ManagedVillage.Loop(config, log);
 
         loop.Step(config.TicksPerYear * 60);
 

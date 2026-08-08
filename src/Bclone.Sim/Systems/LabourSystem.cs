@@ -82,25 +82,96 @@ public sealed class LabourSystem : ISimSystem
         // state itself, so it is self-correcting and cannot drift. That matters more
         // than the loop costs: this project's recurring bug is code reading state from
         // where it used to live, and a bookkeeping flag is exactly that shape.
-        if (AnyVacancyLeftByTheDead(world))
+        List<(Villager Dead, Workplace Where)> vacancies = VacanciesLeftByTheDead(world);
+        if (vacancies.Count > 0)
         {
             LabourAllocator.TakeUpSlack(world);
+            FillOrGiveUpTheSeat(world, vacancies);
         }
     }
 
-    /// <summary>Whether a dead villager is still holding a job nobody has taken.</summary>
-    private static bool AnyVacancyLeftByTheDead(SimWorld world)
+    /// <summary>
+    /// ⭐ A dead worker's seat is taken by a free laborer — or the profession loses it, out
+    /// loud (Joe, D109).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe's rule, and the second half is the one that matters:</b> <em>"a free laborer
+    /// takes the empty seat; if there is none, the building's number AND the profession's
+    /// total drop by one — and the timeline says so."</em> Since D109 the player owns those
+    /// numbers, so a number that changes without anybody being told is the village quietly
+    /// editing the player's instructions behind their back, which is the untraceable outcome
+    /// §1.1 forbids. <b>Silence here would be a profession draining away over a generation
+    /// while the panel went on claiming it was staffed.</b>
+    /// </para>
+    /// <para>
+    /// <b>Only when there is nobody at all to take it.</b> A laborer who exists but cannot
+    /// reach the place leaves the seat open and the number standing — that is a catchment
+    /// problem the player can solve by building nearer, and dropping the number would hide it.
+    /// </para>
+    /// </remarks>
+    private static void FillOrGiveUpTheSeat(
+        SimWorld world, List<(Villager Dead, Workplace Where)> vacancies)
     {
+        for (int i = 0; i < vacancies.Count; i++)
+        {
+            (Villager dead, Workplace where) = vacancies[i];
+
+            // Somebody stepped in, or the place is gone entirely. Nothing to say.
+            if (where.OpenPositions <= 0 || world.FindWorkplace(where.Id) is null)
+            {
+                continue;
+            }
+
+            if (world.Laborers > 0)
+            {
+                continue;
+            }
+
+            where.Staffing--;
+
+            world.Narrate($"{dead.Name}, the {Describe(where.Kind)}, died and no laborer was "
+                + $"available to replace them — {where.Name} is down to {where.Staffing} "
+                + $"{(where.Staffing == 1 ? "hand" : "hands")}. {world.Clock.SeasonAndYear()}.");
+        }
+    }
+
+    private static string Describe(JobKind kind) => kind switch
+    {
+        JobKind.Forager => "gatherer",
+        JobKind.Forester => "forester",
+        JobKind.Woodcutter => "woodcutter",
+        JobKind.Marketer => "vendor",
+        JobKind.Builder => "builder",
+        _ => "worker",
+    };
+
+    /// <summary>Dead villagers still holding a job, and where they held it.</summary>
+    /// <remarks>
+    /// <b>Detected rather than signalled, deliberately.</b> Asking "is anyone dead still
+    /// holding a job?" needs no flag on the world, nothing to hash, and nothing that can be
+    /// set and not cleared — the question is answered from the state itself, so it is
+    /// self-correcting and cannot drift. That matters more than the loop costs: this project's
+    /// recurring bug is code reading state from where it used to live, and a bookkeeping flag
+    /// is exactly that shape.
+    /// </remarks>
+    private static List<(Villager Dead, Workplace Where)> VacanciesLeftByTheDead(SimWorld world)
+    {
+        var vacancies = new List<(Villager, Workplace)>();
+
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive && villager.HasJob)
+            if (!villager.Alive
+                && villager.HasJob
+                && world.FindWorkplace(villager.WorkplaceId) is Workplace where
+                && !where.IsSite)
             {
-                return true;
+                vacancies.Add((villager, where));
             }
         }
 
-        return false;
+        return vacancies;
     }
 
     /// <summary>

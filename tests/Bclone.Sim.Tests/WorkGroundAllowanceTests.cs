@@ -29,7 +29,7 @@ public sealed class WorkGroundAllowanceTests
     public WorkGroundAllowanceTests(ITestOutputHelper output) => _output = output;
 
     private static SimLoop Loop() =>
-        SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
+        ManagedVillage.Loop(VillageFixtures.Village, new InMemoryLogSink());
 
     /// <summary>A workplace with people actually assigned to it.</summary>
     private static Workplace AStaffedWorkplace(SimWorld world, out int hands)

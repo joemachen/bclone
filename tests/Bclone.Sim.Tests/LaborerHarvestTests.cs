@@ -31,7 +31,7 @@ public sealed class LaborerHarvestTests
     public LaborerHarvestTests(ITestOutputHelper output) => _output = output;
 
     private static SimLoop Loop(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ManagedVillage.Loop(config, new InMemoryLogSink());
 
     /// <summary>Paint every forest tile within a short walk of the village.</summary>
     private static int PaintForestNear(SimWorld world, int radius)

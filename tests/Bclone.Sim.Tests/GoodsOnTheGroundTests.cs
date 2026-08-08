@@ -34,7 +34,7 @@ public sealed class GoodsOnTheGroundTests
     public GoodsOnTheGroundTests(ITestOutputHelper output) => _output = output;
 
     private static SimLoop Loop(SimConfig config) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ManagedVillage.Loop(config, new InMemoryLogSink());
 
     private static int OnTheGround(SimWorld world)
     {

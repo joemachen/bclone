@@ -9,7 +9,7 @@ namespace Bclone.Sim.World;
 /// <b>The player says how much; the sim still says who.</b> A limit states a goal, never a
 /// person: proximity, household and catchment go on choosing the worker, so every
 /// <em>"why is Elias at the stand?"</em> sentence stays true. That is the line §2.2 actually
-/// holds, and this sits the same side of it as <see cref="Workplace.StaffingOverride"/>
+/// holds, and this sits the same side of it as <see cref="Workplace.Staffing"/>
 /// (D51) — <b>an override says how many hands, a limit says until when.</b> Two halves of
 /// one control.
 /// </para>

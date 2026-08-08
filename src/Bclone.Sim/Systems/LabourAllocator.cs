@@ -166,7 +166,7 @@ internal static class LabourAllocator
     /// </remarks>
     private static void Match(SimWorld world, LabourQuota quota, int[]? previousWorkplaces)
     {
-        JobKind[] order = KindsByScarcity(quota);
+        JobKind[] order = KindsByScarcity(world);
         for (int k = 0; k < order.Length; k++)
         {
             MatchOneKind(world, quota, previousWorkplaces, order[k]);
@@ -174,7 +174,12 @@ internal static class LabourAllocator
     }
 
     /// <summary>Job kinds, fewest wanted first; ties keep the declared order.</summary>
-    private static JobKind[] KindsByScarcity(LabourQuota quota)
+    /// <remarks>
+    /// Scarcity is measured against <b>what the player asked for</b> now (D109), not what the
+    /// village would have chosen — the two sorts must agree, or the rarest work would be
+    /// filled first by one rule and staffed by another.
+    /// </remarks>
+    private static JobKind[] KindsByScarcity(SimWorld world)
     {
         var order = new JobKind[KindsInOrder.Length];
         System.Array.Copy(KindsInOrder, order, KindsInOrder.Length);
@@ -183,7 +188,7 @@ internal static class LabourAllocator
         // does not quietly change the rule.
         for (int i = 1; i < order.Length; i++)
         {
-            for (int j = i; j > 0 && quota.For(order[j]) < quota.For(order[j - 1]); j--)
+            for (int j = i; j > 0 && world.ProfessionTotal(order[j]) < world.ProfessionTotal(order[j - 1]); j--)
             {
                 (order[j], order[j - 1]) = (order[j - 1], order[j]);
             }
@@ -210,10 +215,15 @@ internal static class LabourAllocator
             return byVillager != 0 ? byVillager : a.WorkplaceId.CompareTo(b.WorkplaceId);
         });
 
-        // Anyone who kept their job through an incremental pass already counts
-        // against the quota; after a reshuffle this starts at zero.
+        // ⭐ WHAT THE PLAYER ASKED FOR, NOT WHAT THE VILLAGE WOULD HAVE CHOSEN (D109). This
+        // read `quota.For(kind)` — the village's own derivation — and that is advice now. The
+        // binding number is the sum of what the player put in the buildings of this kind, and
+        // each building's own `IsFull` caps it per place. Two ends of one number.
+        //
+        // Anyone who kept their job through an incremental pass already counts against it;
+        // after a reshuffle this starts at zero.
         int held = CountHolding(world, kind);
-        int wanted = quota.For(kind);
+        int wanted = world.ProfessionTotal(kind);
 
         for (int i = 0; i < candidates.Count && held < wanted; i++)
         {
@@ -449,14 +459,24 @@ internal static class LabourAllocator
             // So: report the nearest place that is FULL AND STILL WANTED, because that
             // is the one the player can act on by building another. Only when no such
             // place exists does "we have enough hands" become the true answer.
-            reachable = NearestFullAndWanted(world, villager, quota) ?? reachable;
+            reachable = NearestFullAndWanted(world, villager) ?? reachable;
 
-            villager.JobReason = reachable.IsFull
-                ? $"No work: {reachable.Name} is full — it has its {reachable.Capacity} " +
-                  $"{(reachable.Capacity == 1 ? "hand" : "hands")}, and it is the nearest place " +
-                  $"within reach of home."
-                : $"No work: the village has all the hands it needs on the work that matters " +
-                  $"— {quota}";
+            // ⭐ AND THE SENTENCES CHANGED WITH WHO DECIDES (D109). There are three now
+            // rather than two, because "the nearest place has no room" and "the nearest place
+            // has no room BECAUSE YOU ASKED FOR NOBODY" are different facts with different
+            // next moves — build another one, versus raise the number on the one you have.
+            // Collapsing them would be the shrug §1.1 forbids, and under full manual staffing
+            // the second is by far the commoner case.
+            villager.JobReason = reachable.Staffing == 0
+                ? $"No work: nobody has been asked for at {reachable.Name}, the nearest place " +
+                  $"within reach of home. It has room for {reachable.Capacity}."
+                : reachable.IsFull
+                    ? $"No work: {reachable.Name} is full — it has the {reachable.Staffing} " +
+                      $"{(reachable.Staffing == 1 ? "hand" : "hands")} you asked for, and it is " +
+                      $"the nearest place within reach of home. It has room for " +
+                      $"{reachable.Capacity}."
+                    : $"No work: nothing within reach of home wants another pair of hands. " +
+                      $"The village would suggest {quota}";
 
             world.LogVillager(LogLevel.Debug, villager, "labour", villager.JobReason);
         }
@@ -559,7 +579,11 @@ internal static class LabourAllocator
         {
             JobKind kind = KindsInOrder[k];
             int held = CountHolding(world, kind);
-            int wanted = quota.For(kind);
+
+            // What the player asked for (D109), for the same reason MatchOneKind reads it:
+            // shedding against the village's advice while matching against the player's
+            // number would have the two passes fight each other every season.
+            int wanted = world.ProfessionTotal(kind);
 
             while (held > wanted)
             {
@@ -680,7 +704,7 @@ internal static class LabourAllocator
     /// still wants more of — the refusal a player can actually do something about.
     /// </summary>
     private static Workplace? NearestFullAndWanted(
-        SimWorld world, Villager villager, LabourQuota quota)
+        SimWorld world, Villager villager)
     {
         Workplace? best = null;
         int bestCost = int.MaxValue;
@@ -690,7 +714,7 @@ internal static class LabourAllocator
             Workplace workplace = world.Workplaces[i];
             if (workplace.IsSite
                 || !workplace.IsFull
-                || CountHolding(world, workplace.Kind) >= quota.For(workplace.Kind))
+                || CountHolding(world, workplace.Kind) >= world.ProfessionTotal(workplace.Kind))
             {
                 continue;
             }

@@ -33,7 +33,7 @@ public sealed class MutableTerrainTests
     public MutableTerrainTests(ITestOutputHelper output) => _output = output;
 
     private static SimWorld Build() =>
-        SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        ManagedVillage.Loop(VillageFixtures.Village, new InMemoryLogSink()).World;
 
     /// <summary>Find a tile of one kind, so a test does not hard-code a generated valley.</summary>
     private static GridPos FindTile(SimWorld world, Terrain terrain)
@@ -227,7 +227,7 @@ public sealed class MutableTerrainTests
     public void AVillageThatNeverChangesTheGroundIsUnaffected()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
 
         ulong mapBefore = StateHash.MixMap(0, loop.World.Map);
         loop.Step(config.TicksPerYear * 5);

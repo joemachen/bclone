@@ -26,7 +26,7 @@ public sealed class VillageTests
     private static (SimLoop Loop, InMemoryLogSink Log) Build(SimConfig config, ulong? seed = null)
     {
         var sink = new InMemoryLogSink();
-        return (SimFactory.CreatePhase0(config, sink, seed), sink);
+        return (ManagedVillage.Loop(config, sink, seed), sink);
     }
 
     [Fact]
@@ -456,7 +456,7 @@ public sealed class VillageTests
     public void AVillageRunsCleanForDecades()
     {
         var sink = new InMemoryLogSink(LogLevel.Trace);
-        SimLoop loop = SimFactory.CreatePhase0(Village, sink);
+        SimLoop loop = ManagedVillage.Loop(Village, sink);
         loop.Step(20_000);
 
         var bad = new List<LogEntry>();

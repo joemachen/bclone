@@ -42,7 +42,7 @@ public sealed class LogsNeverRestInLardersTests
     public void NoHouseholdEverHoldsLogs()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         int worstSeen = 0;
@@ -85,7 +85,7 @@ public sealed class LogsNeverRestInLardersTests
     public void TheVillageIsActuallyMovingTimberWhileWeWatch()
     {
         SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = ManagedVillage.Loop(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         loop.Step(config.TicksPerYear * 60);

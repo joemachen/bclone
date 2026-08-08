@@ -27,7 +27,7 @@ public sealed class WoodTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static SimLoop Build(SimConfig config, ulong? seed = null) =>
-        SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+        ManagedVillage.Loop(config, new InMemoryLogSink(), seed);
 
     [Fact]
     public void SpareWorkersTakeTheTreeStand()
