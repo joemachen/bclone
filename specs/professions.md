@@ -204,6 +204,27 @@ out**, and precisely what D88 promoted natural regrowth above planting to preven
 **So: natural regrowth first, then the gatherer's hut**, and the re-derivation gets its own
 session. Map-placed forage sites stay until then.
 
+### 6.2 ~~⛔ The forester plants only once it is earned~~ — ✅ OVERTURNED (Joe, 2026-08-08)
+
+> **⚠️ SUPERSEDED. Planting ships ungated** (`specs/forests-and-gathering.md`, D112). Asked
+> directly what should become of §2.7's node if planting arrives early, Joe chose *planting
+> ships, node gets new content.*
+>
+> **What moved it is that the gatherer's hut made planting load-bearing.** Once food comes from
+> the trees in a hut's ring and the thickets are gone, **a felled ring is a village with no
+> food** — so the recovery has to exist before the pressure does. That is §0.1's *recoverable by
+> design*, and it is the same argument D88 made when it promoted natural regrowth above planting;
+> with planting ungated, **planting is the recovery** and regrowth becomes optional rather than
+> load-bearing.
+>
+> **The cost, taken on purpose:** §2.7 names *"log a forest for two generations → managed
+> forestry"* as its headline unlock-by-doing example, and planting is what that node unlocked.
+> §2.7 is otherwise unbuilt, so the tech tree currently has **no designed content left**. The
+> node survives with different content — faster growth, larger rings, planting off your own
+> ground.
+>
+> The original reasoning is kept below, because it is what the change had to answer.
+
 ### 6.2 ⛔ The forester plants only once it is earned (Joe)
 
 The hut can fell and tend its ground from day one. **Planting stays gated behind the

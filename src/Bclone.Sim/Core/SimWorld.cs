@@ -669,6 +669,83 @@ public sealed class SimWorld
         return ring <= 0 ? 0 : FoodSource.YieldPerGather * WoodedTilesAround(workplace) / ring;
     }
 
+    /// <summary>
+    /// A tile of this workplace's own ground for it to work next, or null if there is none.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One question, two answers, decided by the mode</b> (`forests-and-gathering.md`): a
+    /// forester set to <see cref="WorkMode.Harvest"/> wants a wooded tile of its ground, and one
+    /// set to <see cref="WorkMode.Plant"/> wants a bare one. Written as one method because they
+    /// are the same walk to the same ground for the same person — two methods would be two
+    /// places to teach about a third mode.
+    /// </para>
+    /// <para>
+    /// <b>Nearest by travel cost, from where the worker stands</b> — the same rule every other
+    /// errand in this game uses, off the one shared cost field (§2.6), so a forester works
+    /// outward from where they are rather than criss-crossing their own wood.
+    /// </para>
+    /// <para>
+    /// <b>Walks the owned tiles, never the valley.</b> `ZoneMap` keeps a per-owner list, so a
+    /// hut with forty tiles looks at forty — not at 9,600, which is the mistake
+    /// <see cref="NearestHarvest"/> had to be rescued from when the valley became wooded.
+    /// </para>
+    /// </remarks>
+    public GridPos? NextGroundToWork(Workplace workplace, GridPos from)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(workplace.Id);
+        if (owned.Count == 0)
+        {
+            return null;
+        }
+
+        bool wantsTrees = workplace.Mode == WorkMode.Harvest;
+
+        GridPos? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < owned.Count; i++)
+        {
+            GridPos at = Zones.PositionOf(owned[i]);
+            bool wooded = Map.TerrainAt(at) == Terrain.Forest;
+
+            if (wooded != wantsTrees)
+            {
+                continue;
+            }
+
+            // Planting needs bare ground, and rock or water is not bare ground — it is
+            // ground nothing will ever grow on.
+            if (!wantsTrees && Map.TerrainAt(at) != Terrain.Grass)
+            {
+                continue;
+            }
+
+            int cost = TravelCost.Cost(from, at);
+            if (cost < bestCost)
+            {
+                best = at;
+                bestCost = cost;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>Put a tree back on a tile. The other half of <see cref="Harvest"/>.</summary>
+    /// <remarks>
+    /// <b>⭐ The first thing in this game that makes the valley richer than it found it.</b>
+    /// Everything else consumes or converts. Through <see cref="SetTerrain"/> like every other
+    /// change of ground (D85), so the flow-field cache and every hut's tree count learn about it
+    /// by the same door rather than by anybody remembering to tell them.
+    /// </remarks>
+    public bool Plant(GridPos tile)
+    {
+        return Map.TerrainAt(tile) == Terrain.Grass && SetTerrain(tile, Terrain.Forest);
+    }
+
     /// <summary>Whether the village has already been told it has nowhere for a good.</summary>
     /// <remarks>
     /// <b>Gates narration and nothing else</b>, which is why it is not in the state hash: two
@@ -1989,6 +2066,26 @@ public sealed class SimWorld
                 });
                 break;
 
+            // ⭐ A WOOD SOMEBODY KEEPS, RATHER THAN ONE THEY ONLY TAKE FROM (D86, Joe).
+            // `JobKind.Forester` is reused for the third time on this argument — it is the
+            // same work, on ground the player painted instead of at a stand the generator
+            // dropped, which is precisely what D96's rename was for.
+            //
+            // Its seats are `RequiredTreeStandSeats` — how many foresters the village needs to
+            // keep its huts in logs and its houses built. ⚠️ That name retires with the stands
+            // in the next slice; the derivation is what matters and it is unchanged.
+            case BuildingKind.ForesterHut:
+                Workplaces.Add(new Workplace
+                {
+                    Id = NextWorkplaceId(),
+                    Kind = JobKind.Forester,
+                    Name = plan.Name,
+                    Position = site.Position,
+                    Capacity = VillageEconomy.RequiredTreeStandSeats(Config),
+                    CatchmentRadius = site.CatchmentRadius,
+                });
+                break;
+
             // ⭐ THE STORES, NAMED (D108). This was a `default:` arm, and it was two silent
             // defaults deep: an unrecognised kind fell through to `RaiseStore`, whose own two
             // switches then made it a market with a market's capacity. A building kind nobody
@@ -2165,6 +2262,7 @@ public sealed class SimWorld
         BuildingKind.Home => "a house",
         BuildingKind.BuilderHut => "a builder's hut",
         BuildingKind.GathererHut => "a gatherer's hut",
+        BuildingKind.ForesterHut => "a forester's hut",
 
         // Named, because the default arm called every unrecognised building a woodcutter's
         // hut — in the log, in the panel, and in every placement sentence (D108).

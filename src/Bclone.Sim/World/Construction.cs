@@ -97,6 +97,33 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     GathererHut = 7,
+
+    /// <summary>
+    /// A forester's hut — a wood somebody keeps, rather than one they only ever take from
+    /// (`specs/forests-and-gathering.md`, D86).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ It is the first workplace that can PUT SOMETHING BACK.</b> Joe: <em>"foresters can
+    /// plant trees/forests in a painted area — this will allow the user to sculpt their forests
+    /// to their own desires."</em> Every other job in this game consumes or converts; a forester
+    /// with the planting mode on is the only one that makes the valley richer than they found
+    /// it.
+    /// </para>
+    /// <para>
+    /// <b>And that is what makes over-clearing recoverable rather than terminal</b>, which
+    /// §0.1 requires of any mistake: *"you lose villagers, not runs"*. It is the safety net that
+    /// has to exist before the thickets can retire, because after that a felled ring is a
+    /// village with no food.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Planting ships UNGATED (Joe), overturning `building-placement.md §12.5(3)` and
+    /// `professions.md §6.2`</b>, which held it behind the managed-forestry unlock. The cost is
+    /// named in `forests-and-gathering.md §6`: §2.7's headline unlock-by-doing example loses its
+    /// content, and the node survives with different content — a debt taken on purpose.
+    /// </para>
+    /// </remarks>
+    ForesterHut = 8,
 }
 
 /// <summary>What a building costs to raise.</summary>
@@ -156,6 +183,9 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
             // the player spends logs on because they chose to eat better.
             BuildingKind.GathererHut =>
                 new BuildingRecipe(config.GathererHutLogs, config.GathererHutWorkTicks),
+
+            BuildingKind.ForesterHut =>
+                new BuildingRecipe(config.ForesterHutLogs, config.ForesterHutWorkTicks),
 
             // ⭐ NAMED RATHER THAN DEFAULTED, and this arm is why. It used to hand out the
             // woodcutter's hut's recipe to anything it did not recognise — 25 logs and 40

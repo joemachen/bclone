@@ -195,6 +195,16 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)rank);
             }
 
+            // And what the place is set to do (`forests-and-gathering.md`). SILENT UNTIL
+            // SOMEBODY SWITCHES ONE, in the same shape and for the same reason as the queue
+            // rank above and the stock limits below: a village where nobody has ever touched a
+            // mode must hash exactly as it did before modes existed, which is what lets a new
+            // control ship without re-taking a single golden.
+            if (workplace.Mode != WorkMode.Harvest)
+            {
+                hash = MixUInt32(hash, (uint)workplace.Mode);
+            }
+
             hash = MixStore(hash, workplace.Store);
         }
 

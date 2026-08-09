@@ -374,6 +374,32 @@
   "gatherer_hut_logs": 25,
   "gatherer_hut_work_ticks": 40,
 
+  // ---- The forester's hut (forests-and-gathering.md) ---------
+  // A wood somebody KEEPS, rather than one they only ever take from.
+  // It fells the ground the player paints for it -- so timber has a
+  // location and a quantity, and the gap you made is on the map -- and
+  // with the mode switched it PUTS TREES BACK, which is the only thing
+  // in this game that makes the valley richer than it found it.
+  //
+  // That is what makes over-clearing recoverable rather than terminal,
+  // which is why it ships before the thickets retire: after that, a
+  // felled ring is a village with no food.
+  "forester_hut_logs": 25,
+  "forester_hut_work_ticks": 40,
+
+  // How much harder putting a tree back is than taking one down.
+  //
+  // CONTENT, and it is the number that decides whether over-clearing is
+  // a mistake or a shrug -- nothing in the economy can compute what a
+  // sapling is worth. What IS derived from it is the consequence:
+  // VillageEconomy.YearsToRewoodOnesGround, which a guard holds to
+  // about a generation.
+  //
+  // Three, so felling is a decision you can regret for years without
+  // regretting the run. One would make planting free and a cleared
+  // valley meaningless; ten would make it theoretical.
+  "planting_costs_this_much_more_than_felling": 3,
+
   // ---- The builder's hut (D108) ------------------------------
   // Where the village's builders work from. Nothing is raised without
   // one: a construction site is an errand the hut's crew walks out to,

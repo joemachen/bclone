@@ -160,8 +160,14 @@ Each leaves the suite green and is measured against the cold start's five ticks.
    unless the player does — which is exactly what `professions.md §9.1` asks of a new profession.
 3. **The fences come down and the economy is re-derived.** Catchment deleted; `MaxHomeToWorkTiles`
    re-based on the ring and demoted to a budget; **the commute becomes readable** (§7.1).
-4. **The forester's hut, and planting ungated.** Its ground and worker-pricing are already built
-   (D86, C3c). **Tree stands retire here.**
+4. **The forester's hut, and planting ungated.** ✅ **Done**, except that **tree stands retire in
+   slice 5, not here** — the hut lands beside them so that no golden moves, which is the pattern
+   slices 1 and 2 established and which held again. D86's work ground reached the player at last:
+   painted per workplace, priced in workers, with the overstretched warning it has computed since
+   C3c. Planting costs 3× felling (content), and the consequence is derived —
+   `YearsToRewoodOnesGround`, ~2 years for the ground one pair of hands keeps. **Planting carries
+   nothing home**, which is why it is a mode rather than a second job. Measured: 53 owned tiles
+   go 53 → 33 wooded in three years of felling, and 68 bare tiles go 0 → 22 in five of planting.
 5. **Forage sites retire.** *This is the slice where "no forest, no food" actually arrives*, so it
    ships only after §7.1's sentences and slice 4's planting are both in.
 6. **D109 lands on top**, cherry-picked back from `wip/d109-manual-staffing`.

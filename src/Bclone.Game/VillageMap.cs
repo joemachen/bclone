@@ -320,11 +320,24 @@ public partial class VillageMap : Control
     /// </remarks>
     private HarvestBrush? _harvestMode;
 
+    /// <summary>
+    /// The workplace whose ground is being painted, or 0 when the brush is not doing that.
+    /// </summary>
+    /// <remarks>
+    /// <b>The third brush, and the only one that belongs to a BUILDING rather than to the
+    /// village</b> (D86). Residential land is the village's and harvest paint is nobody's;
+    /// work ground has an owner, so the brush has to carry which one — and it is an id rather
+    /// than a reference so that a hut demolished mid-stroke stops the painting instead of
+    /// writing to a workplace that no longer exists.
+    /// </remarks>
+    private int _groundFor;
+
     /// <summary>Start or stop painting where the village may live (D42).</summary>
     public void BeginPainting(int direction)
     {
         _brush = direction;
         _harvestMode = null;
+        _groundFor = 0;
         _building = null;
         _demolishing = false;
         Announce();
@@ -336,6 +349,19 @@ public partial class VillageMap : Control
     {
         _brush = direction;
         _harvestMode = mode;
+        _groundFor = 0;
+        _building = null;
+        _demolishing = false;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Start or stop giving ground to one building (D86).</summary>
+    public void BeginPaintingGround(int workplaceId, int direction)
+    {
+        _brush = direction;
+        _harvestMode = null;
+        _groundFor = workplaceId;
         _building = null;
         _demolishing = false;
         Announce();
@@ -483,6 +509,37 @@ public partial class VillageMap : Control
                 }
 
                 var tile = new GridPos(centre.X + dx, centre.Y + dy);
+
+                // Ground given to one building (D86). Same stroke shape as the others — one
+                // sentence for the drag, never one per tile — and it stops rather than
+                // half-painting if the hut went away mid-stroke.
+                if (_groundFor != 0)
+                {
+                    Workplace? owner = _world!.FindWorkplace(_groundFor);
+                    if (owner is null)
+                    {
+                        _groundFor = 0;
+                        continue;
+                    }
+
+                    if (_brush < 0)
+                    {
+                        _world.EraseWorkGround(owner, tile);
+                        continue;
+                    }
+
+                    PlacementVerdict given = _world.PaintWorkGround(owner, tile);
+                    if (!given.Allowed)
+                    {
+                        refused = given.Reason;
+                    }
+                    else if (given.HasWarning)
+                    {
+                        warning = given.Warning;
+                    }
+
+                    continue;
+                }
 
                 if (_harvestMode is not null)
                 {

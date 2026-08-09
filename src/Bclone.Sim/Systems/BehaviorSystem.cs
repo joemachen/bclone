@@ -224,7 +224,18 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.TravelingToTrees:
-                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Cutting);
+                // To the tile they set off for when the hut owns ground, otherwise to the
+                // stand itself — the same rule as a marketer's leg (D86,
+                // `forests-and-gathering.md`). Re-deciding mid-walk would have a forester
+                // shuttle between two trees and fell neither.
+                Travel(
+                    world,
+                    villager,
+                    WorkplaceOf(world, villager) is { } trees
+                        && world.Zones.WorkGroundTiles(trees.Id) > 0
+                            ? new GridPos(villager.ErrandX, villager.ErrandY)
+                            : WorkplaceOf(world, villager)!.Position,
+                    VillagerState.Cutting);
                 return;
 
             case VillagerState.TravelingToHut:
@@ -1477,6 +1488,38 @@ public sealed class BehaviorSystem : ISimSystem
         // something to do in winter - which is part of why the job is worth holding.
         if (villager.CanWork && job?.Kind == JobKind.Forester)
         {
+            // ⭐ A FORESTER'S HUT WORKS ITS OWN GROUND (D86, `forests-and-gathering.md`), where
+            // a tree stand is an inexhaustible spot you stand on. So the question is which of
+            // MY tiles to work next — a wooded one to fell, or a bare one to plant, depending
+            // on the mode the player set. A hut with no ground painted yet falls through to the
+            // stand behaviour below, which is what keeps this a no-op until somebody paints.
+            if (world.Zones.WorkGroundTiles(job.Id) > 0)
+            {
+                if (world.NextGroundToWork(job, villager.Position) is GridPos ground)
+                {
+                    villager.WorkNote = string.Empty;
+                    villager.ErrandX = ground.X;
+                    villager.ErrandY = ground.Y;
+                    villager.State = VillagerState.TravelingToTrees;
+                    Travel(world, villager, ground, VillagerState.Cutting);
+                    return;
+                }
+
+                // Nothing of theirs left to do — every tile is already the way the mode wants
+                // it. Said out loud, because a forester standing about is otherwise the silent
+                // stall §1.1 forbids, and the fix is the player's: paint more, or switch mode.
+                villager.WorkNote = job.Mode == WorkMode.Plant
+                    ? $"Nothing bare left to plant at {job.Name} — its ground is wooded again."
+                    : $"No trees left on {job.Name}'s ground — plant it, or give it more.";
+
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
+                return;
+            }
+
             if (villager.Position == job.Position)
             {
                 villager.State = VillagerState.Cutting;
@@ -2057,7 +2100,15 @@ public sealed class BehaviorSystem : ISimSystem
         if (onArrival == VillagerState.Cutting)
         {
             villager.State = VillagerState.Cutting;
-            villager.ActionTicksRemaining = world.Config.CutTicks;
+
+            // ⭐ PUTTING A TREE BACK COSTS MORE THAN TAKING ONE DOWN
+            // (`forests-and-gathering.md`), which is the number that decides whether
+            // over-clearing is a mistake or a shrug. Stated as a multiple of felling rather
+            // than as a second tick count, so the two can never drift apart.
+            villager.ActionTicksRemaining =
+                WorkplaceOf(world, villager) is { Mode: WorkMode.Plant }
+                    ? VillageEconomy.PlantTicks(world.Config)
+                    : world.Config.CutTicks;
             return;
         }
 
@@ -2144,6 +2195,41 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.Cutting:
+                // ⭐ A FORESTER'S HUT WORKS A TILE; A TREE STAND IS A SPOT YOU STAND ON.
+                // (`forests-and-gathering.md`, D86.) The stand yields forever, which is the
+                // placeholder this replaces — its wood has a location and a quantity now, and
+                // felling it takes it off the map where the player can see the gap.
+                Workplace? wood_ = WorkplaceOf(world, villager);
+                if (wood_ is not null && world.Zones.WorkGroundTiles(wood_.Id) > 0)
+                {
+                    var tile = new GridPos(villager.ErrandX, villager.ErrandY);
+
+                    // ⭐ AND PLANTING IS THE ONLY THING IN THIS GAME THAT GIVES BACK (Joe).
+                    // It carries nothing home, which is why it is a mode rather than a job:
+                    // a forester who plants all year feeds nobody, and that is the trade the
+                    // player is making when they switch it.
+                    if (wood_.Mode == WorkMode.Plant)
+                    {
+                        world.Plant(tile);
+                        villager.State = VillagerState.Idle;
+                        return;
+                    }
+
+                    (Goods felled, int fromTheTile) = world.Harvest(tile);
+                    if (felled == Goods.Logs && fromTheTile > 0)
+                    {
+                        // Vigour scales what they carry home, the same way it scales a
+                        // gather and a stand's cut — an ageing forester fells the tree and
+                        // brings back less of it.
+                        int carried = fromTheTile * villager.Vigour / 100;
+                        villager.CarriedLogs += carried < 1 ? 1 : carried;
+                    }
+
+                    villager.State = VillagerState.HaulingToStore;
+                    HaulOrSetDown(world, villager);
+                    return;
+                }
+
                 // Vigour scales timber the same way it scales berries: an ageing
                 // woodcutter brings back less for the same day's walk.
                 int wood = world.TreeStand.YieldPerCut * villager.Vigour / 100;

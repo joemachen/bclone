@@ -316,6 +316,36 @@ public sealed record SimConfig
     [JsonPropertyName("gatherer_hut_work_ticks")]
     public int GathererHutWorkTicks { get; init; } = 40;
 
+    /// <summary>What a forester's hut costs to raise.</summary>
+    [JsonPropertyName("forester_hut_logs")]
+    public int ForesterHutLogs { get; init; } = 25;
+
+    /// <summary>Ticks of work a forester's hut owes.</summary>
+    [JsonPropertyName("forester_hut_work_ticks")]
+    public int ForesterHutWorkTicks { get; init; } = 40;
+
+    /// <summary>
+    /// How much harder putting a tree back is than taking one down.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Content, and it is the number that decides whether over-clearing is a mistake or a
+    /// shrug.</b> A design statement about the world — the same class as
+    /// <see cref="WorkGroundTilesPerWorker"/> — because nothing in the economy can compute how
+    /// much effort a sapling is worth. What is <em>derived</em> from it is the consequence:
+    /// <c>VillageEconomy.YearsToRewoodOnesGround</c>, which a guard holds to about a
+    /// generation (D16's split — state the fact, derive the outcome).
+    /// </para>
+    /// <para>
+    /// <b>Three, so felling is a decision you can regret for years without regretting the
+    /// run.</b> One would make planting free and a cleared valley meaningless; ten would make
+    /// it theoretical. §0.1: the mistake is real, visible and expensive, and the valley forgives
+    /// you slowly.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("planting_costs_this_much_more_than_felling")]
+    public int PlantingCostsThisMuchMoreThanFelling { get; init; } = 3;
+
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     /// <remarks>
     /// <b>A position is content; the hut's SEATS are not.</b> Where a building sits is a fact

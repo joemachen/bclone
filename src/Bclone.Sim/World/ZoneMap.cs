@@ -140,6 +140,28 @@ public sealed class ZoneMap
         _tilesByOwner.TryGetValue(ownerId, out int tiles) ? tiles : 0;
 
     /// <summary>
+    /// The tiles a building holds, as indices in map order — so nobody walks the valley to
+    /// find them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The same lesson `PaintedHarvest` was just taught, applied before it costs anything</b>
+    /// (`forests-and-gathering.md`). A forester asks *"which of my tiles do I work next?"* on
+    /// every trip; answering it by scanning 9,600 tiles is exactly the shape that took the suite
+    /// from six minutes to eleven, and it is cheaper to not write it than to find it later.
+    /// </para>
+    /// <para>
+    /// <b>In map order, and never hashed</b> — the owner array is the state and this is an
+    /// index into it, maintained in the same two methods that maintain the counts so there is
+    /// no third place for them to disagree.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<int> WorkGroundOf(int ownerId) =>
+        _groundByOwner.TryGetValue(ownerId, out List<int>? tiles) ? tiles : Array.Empty<int>();
+
+    private readonly Dictionary<int, List<int>> _groundByOwner = new();
+
+    /// <summary>
     /// Give one tile to a building, or take it back with <paramref name="ownerId"/> 0.
     /// Returns whether it changed anything.
     /// </summary>
@@ -185,11 +207,35 @@ public sealed class ZoneMap
             {
                 _tilesByOwner.Remove(current);
             }
+
+            if (_groundByOwner.TryGetValue(current, out List<int>? had))
+            {
+                int at = had.BinarySearch(index);
+                if (at >= 0)
+                {
+                    had.RemoveAt(at);
+                }
+
+                if (had.Count == 0)
+                {
+                    _groundByOwner.Remove(current);
+                }
+            }
         }
 
         if (ownerId != 0)
         {
             _tilesByOwner[ownerId] = WorkGroundTiles(ownerId) + 1;
+
+            if (!_groundByOwner.TryGetValue(ownerId, out List<int>? tiles))
+            {
+                tiles = new List<int>();
+                _groundByOwner[ownerId] = tiles;
+            }
+
+            // Kept in index order, which is map order — see WorkGroundOf.
+            int insertAt = tiles.BinarySearch(index);
+            tiles.Insert(insertAt < 0 ? ~insertAt : insertAt, index);
         }
 
         return true;
@@ -222,6 +268,7 @@ public sealed class ZoneMap
         }
 
         _tilesByOwner.Remove(ownerId);
+        _groundByOwner.Remove(ownerId);
         return freed;
     }
 

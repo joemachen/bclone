@@ -538,8 +538,36 @@ with ungated planting, forage sites retiring, and D109 landing on top.
     before. **Recorded rather than tuned** — the honest options are trimming the twelve-seed
     arm's horizon or accepting it, and that is Joe's call, not a thing to quietly optimise.
 
-Then, still ahead: **D111** (`ChooseSite`'s ruler), which slice 3 touches directly and may be
-cheapest to fold in there.
+- **The twelve-seed arm watches 120 years, and notices the slope** ✅ (Joe's call). It was
+  **five of the suite's eleven minutes on its own**; 11m6s → 6m8s. All twelve seeds kept —
+  *which* valleys are watched is what the guard is for, and seed 11 is the one that has failed.
+  **The shorter horizon is compensated rather than just taken**: D103's seed 11 aged out by year
+  160 and would now be missed, so the assertion notices the *slope* — a village that has fallen
+  to half its own peak is on its way out whether or not anybody is still standing. Every healthy
+  seed ends within a couple of its peak, so there is better than 2:1 headroom.
+
+- **Slice 4 — the forester's hut, and planting** ✅ (D112). **The first workplace in this game
+  that can put something back.** It fells the ground the player paints for it — so timber has a
+  location and a quantity, and the gap is on the map — and with the mode switched it **plants**.
+  Measured: 53 owned tiles go 53 → 33 wooded in three years of felling; 68 bare tiles go 0 → 22
+  wooded in five years of planting.
+  - **Planting costs three times what felling does** — content, because nothing in the economy
+    can compute what a sapling is worth; the **consequence** is derived
+    (`YearsToRewoodOnesGround`, ~2 years for the ground one pair of hands keeps) and guarded.
+  - **Planting carries nothing home**, which is why it is a *mode* and not a second job: a
+    forester who plants all year feeds nobody, and that is the trade the player is making.
+  - **⚠️ Ungated, overturning `building-placement.md §12.5(3)` and `professions.md §6.2`** —
+    and §2.7's headline unlock-by-doing example loses its content. **A debt taken on purpose.**
+  - **D86's work ground reached the player at last.** Painted per workplace, priced in workers,
+    with the overstretched warning it has computed since C3c — built and unused because until
+    now no building owned ground.
+  - **No golden moved**, which was the requirement: the hut lands *beside* the tree stands and
+    the mode is hashed sparsely, so a village where nobody has touched one is byte-identical.
+    545 tests green.
+
+Then: **step C** — thickets and tree stands retire, the distance fences come down, and the
+economy is re-derived against the hut's ring. **D111** (`ChooseSite`'s ruler) folds in there,
+because it is the slice that opens that method.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is

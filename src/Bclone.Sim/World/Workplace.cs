@@ -88,12 +88,28 @@ public enum JobKind
 /// themselves.
 /// </para>
 /// <para>
-/// <see cref="CatchmentRadius"/> is measured in <b>travel cost</b>, not tiles, and
+/// <see cref="Workplace.CatchmentRadius"/> is measured in <b>travel cost</b>, not tiles, and
 /// read from the one shared <see cref="TravelCostField"/>. That is what kills the
 /// villager who walks across the map for one log, and it is what will let a worn path
 /// widen a workplace's reach in Phase 3 without either system knowing about the other.
 /// </para>
 /// </remarks>
+/// <summary>What a workplace is currently set to do, where it can do more than one thing.</summary>
+/// <remarks>
+/// <b>`professions.md §3`'s "optional sixth part", arriving for the first time.</b> Every
+/// profession so far does exactly one thing; a forester's hut can take trees down or put them
+/// back, and which one is the player's standing instruction rather than something the village
+/// works out. <b>Appended, never renumbered</b> — it is hashed by position.
+/// </remarks>
+public enum WorkMode
+{
+    /// <summary>Take what is standing. The default, and what every other workplace does.</summary>
+    Harvest = 0,
+
+    /// <summary>Put trees back on bare ground this place owns (Joe, ungated).</summary>
+    Plant = 1,
+}
+
 public sealed class Workplace
 {
     public required int Id { get; init; }
@@ -169,6 +185,18 @@ public sealed class Workplace
 
     /// <summary>Which terrain generation <see cref="CachedWoodedTiles"/> was counted against.</summary>
     internal int CachedAtTerrainGeneration = -1;
+
+    /// <summary>
+    /// What this place is set to do — <see cref="WorkMode.Harvest"/> unless the player says
+    /// otherwise.
+    /// </summary>
+    /// <remarks>
+    /// <b>Player intent, so it is sim state and it is hashed</b> — but <b>sparsely</b>, in the
+    /// same shape and for the same reason as <see cref="QueueRank"/>: a village where nobody has
+    /// ever touched a mode mixes nothing at all, so the control is a provable no-op until
+    /// somebody uses it and no golden moves for its existing.
+    /// </remarks>
+    public WorkMode Mode { get; set; } = WorkMode.Harvest;
 
     /// <summary>Villagers currently holding a job here, in id order.</summary>
     public List<int> WorkerIds { get; } = new();

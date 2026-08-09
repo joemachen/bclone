@@ -559,6 +559,54 @@ public static class VillageEconomy
         return seats < 1 ? 1 : seats;
     }
 
+    /// <summary>Ticks a forester spends putting one tree back.</summary>
+    /// <remarks>
+    /// Felling, times the stated multiple. One number rather than a second tick count that
+    /// could drift away from <see cref="SimConfig.CutTicks"/> — planting is defined as *harder
+    /// than felling*, so it is written as harder than felling.
+    /// </remarks>
+    public static int PlantTicks(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int ticks = config.CutTicks * config.PlantingCostsThisMuchMoreThanFelling;
+        return ticks < 1 ? 1 : ticks;
+    }
+
+    /// <summary>
+    /// Years for one forester to re-wood the ground they keep — <b>the consequence, derived</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the number `building-placement.md §12.8` asks for</b>, restated for a world
+    /// where planting is not gated: *a valley cleared by a village should take about a
+    /// generation to come back.* The config states how much harder planting is than felling;
+    /// this says what that means in years, so the design target is checkable rather than hoped
+    /// for (D16).
+    /// </para>
+    /// <para>
+    /// One forester, the ground one pair of hands keeps
+    /// (<see cref="SimConfig.WorkGroundTilesPerWorker"/>), and the same gatherable-year budget
+    /// <see cref="TripsPerYear"/> uses — so felling, gathering and planting are all costed on
+    /// one basis rather than one of them being quietly cheaper.
+    /// </para>
+    /// </remarks>
+    public static int YearsToRewoodOnesGround(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        // The same round trip felling gets, with planting's cost in place of cutting's.
+        int travel = MaxHomeToWorkTiles(config) * config.TravelTicksPerUnit;
+        int perTree = (travel * 2) + PlantTicks(config);
+
+        int available = (config.TicksPerYear * 3 / 4) - (MealsPerYear(config) * 3 / 4);
+        int treesPerYear = available <= 0 ? 0 : available / perTree;
+
+        return treesPerYear <= 0
+            ? int.MaxValue
+            : CeilingDivide(config.WorkGroundTilesPerWorker, treesPerYear);
+    }
+
     /// <summary>Seats a tree stand needs, to keep those huts in logs and homes built.</summary>
     public static int RequiredTreeStandSeats(SimConfig config)
     {

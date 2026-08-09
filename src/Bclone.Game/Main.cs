@@ -60,6 +60,9 @@ public partial class Main : Control
     private Label _staffingLabel = null!;
     private HBoxContainer _queueRow = null!;
     private Label _queueLabel = null!;
+    private HBoxContainer _groundRow = null!;
+    private Label _groundLabel = null!;
+    private Button _modeButton = null!;
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
 
@@ -418,6 +421,21 @@ public partial class Main : Control
                 ? $"Staffing {staffable.Name} — you asked for {asked} of {staffable.Capacity}:"
                 : $"Staffing {staffable.Name} — village's choice, {staffable.Places} of "
                     + $"{staffable.Capacity}:";
+        }
+
+        // The ground controls belong to a building that keeps ground — a forester's hut
+        // today, and whatever else earns one later. Shown by whether the building CAN own
+        // ground rather than by what kind it is, so the next one needs no line here.
+        bool keepsGround = staffable is { Kind: JobKind.Forester };
+        _groundRow.Visible = keepsGround;
+        if (keepsGround)
+        {
+            int tiles = world.Zones.WorkGroundTiles(staffable!.Id);
+            int allowance = world.WorkGroundAllowanceFor(staffable);
+            _groundLabel.Text = $"Ground — {tiles} tiles, enough hands for {allowance}:";
+            _modeButton.Text = staffable.Mode == WorkMode.Plant
+                ? "Planting: ON"
+                : "Planting: off";
         }
 
         // The queue controls only mean anything for something still being built — and they
@@ -1158,6 +1176,55 @@ public partial class Main : Control
         var later = new Button { Text = "▼ Later" };
         later.Pressed += () => MoveSelectedInQueue(+1);
         _queueRow.AddChild(later);
+
+        // ⭐ THE GROUND A BUILDING KEEPS (D86), reaching the player at last. The sim side has
+        // been built and unused since C3c — painted per workplace, priced in workers, with the
+        // overstretched warning already written — because there was no building that owned
+        // ground until the forester's hut. It sits in the panel rather than on the toolbar for
+        // the reason D104 settled: a brush that belongs to ONE building needs to be beside the
+        // name of that building, or the player has to remember which one it will paint for.
+        _groundRow = new HBoxContainer { Visible = false };
+        _groundRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_groundRow);
+
+        _groundLabel = Muted("Ground:");
+        _groundRow.AddChild(_groundLabel);
+
+        var give = new Button { Text = "Give ground" };
+        give.Pressed += () => PaintGroundForSelection(1);
+        _groundRow.AddChild(give);
+
+        var takeBack = new Button { Text = "Take back" };
+        takeBack.Pressed += () => PaintGroundForSelection(-1);
+        _groundRow.AddChild(takeBack);
+
+        // ⭐ AND THE MODE — the first control in this game that tells a building to PUT
+        // SOMETHING BACK (Joe, ungated). It ships enabled rather than greyed behind managed
+        // forestry, which is the change `professions.md §6.2` records.
+        _modeButton = new Button { Text = "Planting: off" };
+        _modeButton.Pressed += ToggleSelectedMode;
+        _groundRow.AddChild(_modeButton);
+    }
+
+    /// <summary>Hand the ground brush to whichever building is selected (D86).</summary>
+    private void PaintGroundForSelection(int direction)
+    {
+        if (SelectedWorkplace() is { IsSite: false } workplace)
+        {
+            _map.BeginPaintingGround(workplace.Id, direction);
+        }
+    }
+
+    /// <summary>Switch a forester's hut between taking trees down and putting them back.</summary>
+    private void ToggleSelectedMode()
+    {
+        if (SelectedWorkplace() is not { IsSite: false } workplace)
+        {
+            return;
+        }
+
+        workplace.Mode = workplace.Mode == WorkMode.Plant ? WorkMode.Harvest : WorkMode.Plant;
+        RefreshInspector(_loop.World);
     }
 
     /// <summary>Move the selected construction site one place along the queue.</summary>
@@ -1688,6 +1755,7 @@ public partial class Main : Control
         // player puts down before anything can begin.
         row.AddChild(BuildButton("Builder's hut", BuildingKind.BuilderHut));
         row.AddChild(BuildButton("Gatherer", BuildingKind.GathererHut));
+        row.AddChild(BuildButton("Forester", BuildingKind.ForesterHut));
         row.AddChild(BuildButton("Granary", BuildingKind.Granary));
         row.AddChild(BuildButton("Shed", BuildingKind.Shed));
         row.AddChild(BuildButton("Market", BuildingKind.Market));
