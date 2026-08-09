@@ -1029,6 +1029,9 @@ public partial class Main : Control
         BuildRosterPanel();
         BuildLogPanel();
         BuildInspectorPanel();
+
+        // Last of the panels, because it lists the ones built before it.
+        BuildSettingsPanel();
         BuildControlPanel();
 
         SetSpeed(1.0);
@@ -1067,7 +1070,9 @@ public partial class Main : Control
     /// </summary>
     private void BuildStatusPanel()
     {
-        VBoxContainer body = InColumn(_leftColumn, 0);
+        // Titled, so it can be folded and switched off like everything else. It is Joe's
+        // area 1 and the panel he calls the Overview, so it is called that.
+        VBoxContainer body = InColumn(_leftColumn, 0, "Overview");
 
         _clockLabel = Heading(string.Empty);
         body.AddChild(_clockLabel);
@@ -1352,6 +1357,14 @@ public partial class Main : Control
         recentre.Pressed += () => _map.CentreOnTheVillage();
         controls.AddChild(recentre);
 
+        // ⭐ THE WAY BACK TO EVERY WINDOW YOU SWITCHED OFF (Joe). It lives on the control bar
+        // rather than in a panel, because the control bar is the one thing that is always
+        // there — a settings menu reachable only from a window you might have hidden would be
+        // a door that locks behind you.
+        var settings = new Button { Text = "Settings" };
+        settings.Pressed += () => _settingsPanel.Visible = !_settingsPanel.Visible;
+        controls.AddChild(settings);
+
         body.AddChild(BuildBuildMenu());
         body.AddChild(BuildHarvestMenu());
 
@@ -1511,7 +1524,16 @@ public partial class Main : Control
         //
         // A title is what makes a panel collapsible, which is why the control bar has none:
         // rolling up the thing you press to do anything would be a trap.
-        var contents = new VBoxContainer();
+        // ⚠️ AND IT EXPANDS, WHICH IS THE SAME BUG AS THE INSPECTOR ONE LEVEL DEEPER. A VBox
+        // child defaults to Fill, not ExpandFill — so this box took only its own minimum
+        // height, and anything inside it asking to expand was expanding into nothing. The
+        // roster is an `ItemList` doing exactly that: it was being filled with five villagers
+        // every frame and given no pixels to draw them in, which is Joe's *"there used to be a
+        // list of all villagers, but that list doesn't show up now"*.
+        //
+        // **The inspector only escaped because I had just given its label a minimum height** —
+        // a fix for the symptom that hid the cause. This is the cause.
+        var contents = new VBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         contents.AddThemeConstantOverride("separation", 4);
 
         if (title is not null)
@@ -1542,6 +1564,16 @@ public partial class Main : Control
         body.AddChild(contents);
         _panels.Add(panel);
 
+        // Every titled panel is something the player can switch off from Settings (Joe:
+        // *"that should be a menu the user can activate/deactivate from the settings menu —
+        // that's how the user should be able to show/hide all of these information windows"*).
+        // Registered here rather than listed by hand, so a panel added later appears in the
+        // menu the day it is written instead of the day somebody remembers.
+        if (title is not null)
+        {
+            _windows.Add((title, panel));
+        }
+
         // ⚠️ THE PANEL YOU CLICKED ON WINS THE CLICK. Panels are siblings, so the one added
         // last draws — and receives — on top, which made the order they happen to be built in
         // decide whether a control could be pressed at all. That is how a forester's "Give
@@ -1566,6 +1598,51 @@ public partial class Main : Control
 
     /// <summary>Every panel header, so one key can roll them all up.</summary>
     private readonly List<Button> _headers = new();
+
+    /// <summary>Every information window the player may switch off, by name.</summary>
+    private readonly List<(string Name, PanelContainer Panel)> _windows = new();
+
+    /// <summary>The settings panel itself, which is the one window not in that list.</summary>
+    private PanelContainer _settingsPanel = null!;
+
+    /// <summary>
+    /// Which information windows are on screen — Joe's answer to *"they are HUGE"*.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ The player decides what is on screen, permanently, rather than per moment.</b>
+    /// Collapsing (D113) answers *"not right now"*; this answers *"I never want to see that"*,
+    /// and they are different wants — which is why both exist rather than one standing in for
+    /// the other.
+    /// </para>
+    /// <para>
+    /// <b>It lists itself out of the list it draws</b>, and that is not tidiness: a settings
+    /// menu that could switch itself off is a menu the player cannot get back to.
+    /// </para>
+    /// </remarks>
+    private void BuildSettingsPanel()
+    {
+        VBoxContainer body = InColumn(_rightColumn, 0, "Settings");
+        _settingsPanel = _panels[^1];
+        _settingsPanel.Visible = false;
+
+        // Dropped from the list of switchable windows for the reason above, and from the
+        // headers list so `c` cannot fold the thing you opened to un-fold something else.
+        _windows.RemoveAt(_windows.Count - 1);
+        _headers.RemoveAt(_headers.Count - 1);
+
+        body.AddChild(Muted("Windows — what is on screen"));
+
+        foreach ((string name, PanelContainer panel) in _windows)
+        {
+            var shown = new CheckBox { Text = name, ButtonPressed = true };
+            shown.AddThemeFontSizeOverride("font_size", 12);
+            shown.Toggled += on => panel.Visible = on;
+            body.AddChild(shown);
+        }
+
+        body.AddChild(Muted("c folds every panel · h hides the lot"));
+    }
 
     /// <summary>
     /// Hide the furniture entirely, so the valley is the only thing on screen.
