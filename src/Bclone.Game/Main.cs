@@ -1013,11 +1013,22 @@ public partial class Main : Control
         _map.BuildingClicked += OnBuildingClicked;
         AddChild(_map);
 
+        // ⭐ TWO COLUMNS, AND PANELS LIVE IN THEM RATHER THAN BESIDE THEM. Joe: *"when the
+        // 'what the village is told' window is open, you can see 'the village' window
+        // underneath."* Every panel used to anchor itself to a corner at an offset somebody
+        // had to work out, so two panels growing toward each other overlapped — and once they
+        // were see-through, what showed through was another panel rather than the valley.
+        //
+        // **A column makes overlap impossible by construction** instead of by choosing sizes
+        // carefully, which is the only kind of fix that survives adding a seventh panel.
+        _leftColumn = Column(Corner.TopLeft);
+        _rightColumn = Column(Corner.TopRight);
+
         BuildStatusPanel();
-        BuildLogPanel();
-        BuildRosterPanel();
-        BuildInspectorPanel();
         BuildVillageOrdersPanel();
+        BuildRosterPanel();
+        BuildLogPanel();
+        BuildInspectorPanel();
         BuildControlPanel();
 
         SetSpeed(1.0);
@@ -1056,7 +1067,7 @@ public partial class Main : Control
     /// </summary>
     private void BuildStatusPanel()
     {
-        VBoxContainer body = Floating(Edge, Edge, StatusWidth, 0, Corner.TopLeft);
+        VBoxContainer body = InColumn(_leftColumn, 0);
 
         _clockLabel = Heading(string.Empty);
         body.AddChild(_clockLabel);
@@ -1091,7 +1102,7 @@ public partial class Main : Control
     /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
     private void BuildLogPanel()
     {
-        VBoxContainer body = Floating(Edge, Edge, LogWidth, LogHeight, Corner.TopRight, "Village log");
+        VBoxContainer body = InColumn(_rightColumn, LogHeight, "Village log");
 
         _villageLog = new RichTextLabel
         {
@@ -1105,8 +1116,7 @@ public partial class Main : Control
     /// <summary>Everyone alive, and what they are doing about it.</summary>
     private void BuildRosterPanel()
     {
-        VBoxContainer body = Floating(
-            Edge, ControlsReserve, RosterWidth, RosterHeight, Corner.BottomLeft, "The village");
+        VBoxContainer body = InColumn(_leftColumn, RosterHeight, "The village");
 
         _roster = new ItemList { SizeFlagsVertical = SizeFlags.ExpandFill };
         _roster.ItemSelected += OnVillagerSelected;
@@ -1134,18 +1144,26 @@ public partial class Main : Control
         // ⚠️ A busy selection can still reach the control bar. The z-order rule below stops
         // that being fatal; making panels small, movable and resizable is the real answer and
         // is its own piece of work.
-        VBoxContainer body = Floating(
-            Edge, Edge + LogHeight + Edge, InspectorWidth, 0,
-            Corner.TopRight, "Who they are, and why");
+        VBoxContainer body = InColumn(_rightColumn, 0, "Who they are, and why");
 
         // ScrollActive so a long reason scrolls rather than being cut off. The one panel
         // whose job is explaining a decision must never truncate the explanation.
-        // ScrollActive so a long reason scrolls rather than being cut off. The one panel
-        // whose job is explaining a decision must never truncate the explanation.
+        //
+        // ⚠️ AND IT NEEDS A HEIGHT OF ITS OWN, which is the whole of the bug Joe reported as
+        // *"I have selected the cart but none of the windows tell me what is in the cart."*
+        // A scrolling RichTextLabel has a minimum height of ZERO — it assumes something else
+        // is giving it room. That was true while the panel was pinned to 330 and stopped being
+        // true the moment the panel sized itself to its contents, so the label asked for
+        // nothing, got nothing, and every description in the game was rendered into a box no
+        // pixels tall. **The text was always there. There was nowhere to draw it.**
+        //
+        // A minimum rather than a fixed size, so the panel still grows for the staffing, queue
+        // and ground rows beneath it.
         _inspector = new RichTextLabel
         {
             BbcodeEnabled = false,
             ScrollActive = true,
+            CustomMinimumSize = new Vector2(0, 170),
             SizeFlagsVertical = SizeFlags.ExpandFill,
         };
         body.AddChild(_inspector);
@@ -1291,9 +1309,8 @@ public partial class Main : Control
         // valley. Open, it is tall enough to reach the roster and the control bar; closed, it
         // costs one line. Joe asked for less on screen, and a panel that is only there when it
         // is wanted is more of an answer than a smaller one that is always there.
-        VBoxContainer body = Floating(
-            Edge, Edge + StatusHeight, OrdersWidth, 0, Corner.TopLeft,
-            "What the village is told", startOpen: false);
+        VBoxContainer body = InColumn(
+            _leftColumn, 0, "What the village is told", startOpen: false);
 
         body.AddChild(BuildProfessionsMenu());
         body.AddChild(BuildStockLimitMenu());
@@ -1370,23 +1387,71 @@ public partial class Main : Control
     /// <summary>Which corner a floating panel is pinned to.</summary>
     private enum Corner { TopLeft, TopRight, BottomLeft, BottomRight }
 
+    private VBoxContainer _leftColumn = null!;
+    private VBoxContainer _rightColumn = null!;
+
     /// <summary>
-    /// A panel pinned to one corner, with a body for the caller to fill.
+    /// A stack of panels down one side of the screen, which is what stops them overlapping.
     /// </summary>
     /// <remarks>
+    /// <b>Pinned at the top and grown downward, never stretched to the full height.</b> A
+    /// column that filled the window would put an invisible mouse-blocker over the whole side
+    /// of the map; sized to its contents, it is exactly as tall as the panels in it and the
+    /// valley below them stays clickable.
+    /// </remarks>
+    private VBoxContainer Column(Corner corner)
+    {
+        var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        column.AddThemeConstantOverride("separation", Edge);
+
+        bool right = corner is Corner.TopRight or Corner.BottomRight;
+        column.AnchorLeft = column.AnchorRight = right ? 1f : 0f;
+        column.AnchorTop = column.AnchorBottom = 0f;
+        column.OffsetTop = Edge;
+        column.OffsetBottom = Edge;
+        column.OffsetLeft = right ? -(Edge + ColumnWidth) : Edge;
+        column.OffsetRight = right ? -Edge : Edge + ColumnWidth;
+        column.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
+        column.GrowVertical = GrowDirection.End;
+
+        AddChild(column);
+        return column;
+    }
+
+    /// <summary>How wide a column of panels is. One number, so the two sides match.</summary>
+    private const int ColumnWidth = 400;
+
+    /// <summary>A panel stacked into one of the side columns.</summary>
+    /// <remarks>
     /// <para>
-    /// A <paramref name="width"/> or <paramref name="height"/> of zero means <em>as big as
-    /// the contents need</em>: Godot clamps a control to its own minimum size, so a panel
-    /// asked for nothing grows to fit and then stops. That is what lets the status panel
-    /// swell by a line when the village starts asking for something.
+    /// <b>The ordinary way to add a panel now.</b> It takes no position at all — the column
+    /// decides that, which is the point: an offset somebody works out by hand is an overlap
+    /// waiting to happen the next time a panel is added or grows.
+    /// </para>
+    /// <para>
+    /// A <paramref name="height"/> of zero means <em>as big as the contents need</em>: Godot
+    /// clamps a control to its own minimum size, so a panel asked for nothing grows to fit and
+    /// then stops. That is what lets the status panel swell by a line when the village starts
+    /// asking for something.
     /// </para>
     /// <para>
     /// <b>Mouse filter set to Stop, explicitly.</b> A Container defaults to Pass, so every
-    /// click on a panel would have gone through to the map behind it — and the map now
-    /// covers the whole window, so "behind it" means placing a granary under the button
-    /// you just pressed.
+    /// click on a panel would have gone through to the map behind it — and the map covers the
+    /// whole window, so "behind it" means placing a granary under the button you just pressed.
     /// </para>
     /// </remarks>
+    private VBoxContainer InColumn(
+        VBoxContainer column, float height, string? title = null, bool startOpen = true)
+    {
+        var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
+        panel.AddThemeStyleboxOverride("panel", PanelSkin());
+        panel.CustomMinimumSize = new Vector2(0, height);
+
+        VBoxContainer contents = Dress(panel, title, startOpen);
+        column.AddChild(panel);
+        return contents;
+    }
+
     private VBoxContainer Floating(
         float x,
         float y,
@@ -1419,6 +1484,21 @@ public partial class Main : Control
         panel.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
         panel.GrowVertical = bottom ? GrowDirection.Begin : GrowDirection.End;
 
+        VBoxContainer floated = Dress(panel, title, startOpen);
+        AddChild(panel);
+        return floated;
+    }
+
+    /// <summary>
+    /// Give a panel its collapsible title and its contents box. <b>The one panel mechanism.</b>
+    /// </summary>
+    /// <remarks>
+    /// Shared by the columns and by the control bar deliberately: two ways of making a panel is
+    /// how two layouts come to disagree about what a panel is, and this project has a standing
+    /// record of what that costs (D76, five instalments).
+    /// </remarks>
+    private VBoxContainer Dress(PanelContainer panel, string? title, bool startOpen)
+    {
         var body = new VBoxContainer();
         body.AddThemeConstantOverride("separation", 4);
         panel.AddChild(body);
@@ -1460,7 +1540,6 @@ public partial class Main : Control
         }
 
         body.AddChild(contents);
-        AddChild(panel);
         _panels.Add(panel);
 
         // ⚠️ THE PANEL YOU CLICKED ON WINS THE CLICK. Panels are siblings, so the one added
@@ -1471,8 +1550,13 @@ public partial class Main : Control
         //
         // Raised on mouse-enter rather than by fixing a build order, because there is no build
         // order that is right for every selection: whichever panel the pointer is over is the
-        // one the player means.
-        panel.MouseEntered += () => MoveChild(panel, -1);
+        // one the player means. A panel inside a column raises its column, since that is what
+        // the root actually holds.
+        panel.MouseEntered += () =>
+        {
+            Node top = panel.GetParent() == this ? panel : panel.GetParent();
+            MoveChild(top, -1);
+        };
 
         return contents;
     }
