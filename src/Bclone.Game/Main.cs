@@ -403,6 +403,10 @@ public partial class Main : Control
         RefreshInspector(world);
         AppendNewLogLines();
 
+        // After the panels have been filled, because how tall a column wants to be depends on
+        // what was just put in it — an alert that grew to six lines this tick included.
+        FitColumns();
+
         // Alpha is the fraction of a tick elapsed, so villagers glide between tiles
         // instead of teleporting once a second.
         _map.Present(world, _driver.Alpha, _selectedVillagerId, _selectedTile, _detail);
@@ -1120,25 +1124,35 @@ public partial class Main : Control
     /// <summary>Where the panels sit, in pixels from the edge they are pinned to.</summary>
     private const int Edge = 14;
 
-    private const int StatusWidth = 560;
-    private const int LogWidth = 620;
-    private const int LogHeight = 210;
-    private const int RosterWidth = 330;
-    private const int RosterHeight = 280;
+    /// <summary>
+    /// How tall the two scrolling lists stand — the roster and the village log.
+    /// </summary>
+    /// <remarks>
+    /// They were 280 and 210, chosen separately and for no stated reason. One number, and a
+    /// smaller one, because the type came down (<see cref="RowSize"/>): 190 pixels is about
+    /// eleven names at 13-point, against ten at 16. <b>More list in less panel</b>, which is
+    /// the whole trade Joe asked for.
+    /// </remarks>
+    private const int ListHeight = 190;
 
     /// <summary>
     /// Room kept clear along the bottom for the controls, which are wider than the window.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The build menu is a long row and the roster is pinned to the same corner of the
-    /// screen, so the two overlapped and the controls drew straight over the names. The
-    /// roster stands off the bottom by this much instead. A measured constant rather than
-    /// a computed one because the controls' height is settled by their own contents, and
-    /// asking a container for its size during layout is how circular dependencies start.
+    /// screen, so the two overlapped and the controls drew straight over the names. A
+    /// measured constant rather than a computed one because the controls' height is settled
+    /// by their own contents, and asking a container for its size during layout is how
+    /// circular dependencies start.
+    /// </para>
+    /// <para>
+    /// <b>It is the columns' bottom edge now</b>, not just a gap the roster stood off by —
+    /// which is what makes "no panel is ever pushed off the screen" a property of the layout
+    /// rather than of how much anybody happens to have opened.
+    /// </para>
     /// </remarks>
     private const int ControlsReserve = 160;
-    private const int InspectorWidth = 400;
-    private const int InspectorHeight = 330;
 
     /// <summary>
     /// What the village is: the date, what it holds, and anything it is asking for.
@@ -1177,6 +1191,7 @@ public partial class Main : Control
         body.AddChild(_villageLabel);
 
         body.AddChild(BuildGoodsTable());
+        body.AddChild(BuildGoodsRoadmap());
 
         // STANDING ALERTS, AND THEY WRAP NOW.
         //
@@ -1247,12 +1262,24 @@ public partial class Main : Control
             _goodsReadouts.Add((goods, held));
         }
 
+        return table;
+    }
+
+    /// <summary>The goods that do not exist yet, behind a fold of their own.</summary>
+    private static VBoxContainer BuildGoodsRoadmap()
+    {
+        VBoxContainer inside = Foldaway(
+            $"Not here yet — {NotYetInTheValley.Length} more, and why", out VBoxContainer fold);
+
+        var table = new GridContainer { Columns = 3 };
+        table.AddThemeConstantOverride("h_separation", 10);
+        table.AddThemeConstantOverride("v_separation", 2);
+        inside.AddChild(table);
+
         foreach ((string name, string reason) in NotYetInTheValley)
         {
             table.AddChild(Chip(new Color(1, 1, 1, 0.10f)));
-
-            Label label = Muted(name);
-            table.AddChild(label);
+            table.AddChild(Muted(name));
 
             Label why = Muted(reason);
             why.HorizontalAlignment = HorizontalAlignment.Right;
@@ -1260,7 +1287,57 @@ public partial class Main : Control
             table.AddChild(why);
         }
 
-        return table;
+        return fold;
+    }
+
+    /// <summary>
+    /// A section that is rolled up until asked for. <b>A fold inside a fold, on purpose.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// D113 argued against exactly this — <em>"folding inside a fold is two clicks to reach the
+    /// number you opened the panel for"</em> — and that argument still holds for every number
+    /// in these panels. <b>It does not hold for the roadmap rows</b>, which are the one thing
+    /// here that is not a number you came for: <em>Coal — no mine to dig it</em> is consulted
+    /// once and then known.
+    /// </para>
+    /// <para>
+    /// <b>And they were most of the reason the columns overflowed</b> (Joe: <em>"when all
+    /// panels are open, the bottom panels go off screen"</em>) — nineteen rows between the two
+    /// panels, none of which changes from one century to the next. Folded, the roadmap costs
+    /// one line and still says how much is behind it, which is the part that must not be
+    /// hidden: a fold that does not announce its contents is just a missing feature.
+    /// </para>
+    /// </remarks>
+    private static VBoxContainer Foldaway(string caption, out VBoxContainer fold)
+    {
+        fold = new VBoxContainer();
+        fold.AddThemeConstantOverride("separation", 2);
+
+        var inside = new VBoxContainer { Visible = false };
+        inside.AddThemeConstantOverride("separation", 2);
+
+        var toggle = new Button
+        {
+            Text = $"▸ {caption}",
+            Flat = true,
+            Alignment = HorizontalAlignment.Left,
+            ToggleMode = true,
+        };
+
+        toggle.AddThemeFontSizeOverride("font_size", 12);
+        toggle.Modulate = new Color(1, 1, 1, 0.45f);
+
+        VBoxContainer opening = inside;
+        toggle.Toggled += open =>
+        {
+            opening.Visible = open;
+            toggle.Text = open ? $"▾ {caption}" : $"▸ {caption}";
+        };
+
+        fold.AddChild(toggle);
+        fold.AddChild(inside);
+        return inside;
     }
 
     /// <summary>
@@ -1330,7 +1407,7 @@ public partial class Main : Control
     /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
     private void BuildLogPanel()
     {
-        VBoxContainer body = InColumn(_rightColumn, LogHeight, "Village log");
+        VBoxContainer body = InColumn(_rightColumn, ListHeight, "Village log");
 
         _villageLog = new RichTextLabel
         {
@@ -1338,15 +1415,20 @@ public partial class Main : Control
             BbcodeEnabled = false,
             SizeFlagsVertical = SizeFlags.ExpandFill,
         };
+
+        // A RichTextLabel does not go through `Body`, so it kept Godot's 16 while everything
+        // around it shrank — which is exactly the panel Joe named first.
+        _villageLog.AddThemeFontSizeOverride("normal_font_size", RowSize);
         body.AddChild(_villageLog);
     }
 
     /// <summary>Everyone alive, and what they are doing about it.</summary>
     private void BuildRosterPanel()
     {
-        VBoxContainer body = InColumn(_leftColumn, RosterHeight, "The village");
+        VBoxContainer body = InColumn(_leftColumn, ListHeight, "The village");
 
         _roster = new ItemList { SizeFlagsVertical = SizeFlags.ExpandFill };
+        _roster.AddThemeFontSizeOverride("font_size", RowSize);
         _roster.ItemSelected += OnVillagerSelected;
         body.AddChild(_roster);
     }
@@ -1391,9 +1473,14 @@ public partial class Main : Control
         {
             BbcodeEnabled = false,
             ScrollActive = true,
-            CustomMinimumSize = new Vector2(0, 170),
+
+            // Smaller type, so the minimum comes down with it — 170 was eight lines at 16
+            // and is eleven at 13, which is more of a description in less of the screen.
+            CustomMinimumSize = new Vector2(0, 140),
             SizeFlagsVertical = SizeFlags.ExpandFill,
         };
+
+        _inspector.AddThemeFontSizeOverride("normal_font_size", RowSize);
         body.AddChild(_inspector);
 
         // ⭐ STAFFING WHERE THE BUILDING IS (Joe). It lived on the toolbar and acted on
@@ -1544,10 +1631,11 @@ public partial class Main : Control
         body.AddChild(BuildStockLimitMenu());
     }
 
-    private const int OrdersWidth = 360;
-
-    /// <summary>Room the status panel needs above this one. Generous — panels overlap safely now.</summary>
-    private const int StatusHeight = 290;
+    // Six hand-worked panel sizes used to live here and just above — a width and a height for
+    // the status panel, the log, the roster, the inspector and this one. Every last one was
+    // dead: since the columns arrived nothing reads a panel's position or size but the column
+    // it is in. Deleted rather than left, on D98's rule that a number nothing reads is a lie
+    // waiting to be found — and these were the exact numbers whose hand-tuning D113 replaced.
 
     /// <summary>Speed, what the map draws, and what the player can ask the village for.</summary>
     private void BuildControlPanel()
@@ -1630,28 +1718,92 @@ public partial class Main : Control
     /// A stack of panels down one side of the screen, which is what stops them overlapping.
     /// </summary>
     /// <remarks>
-    /// <b>Pinned at the top and grown downward, never stretched to the full height.</b> A
-    /// column that filled the window would put an invisible mouse-blocker over the whole side
-    /// of the map; sized to its contents, it is exactly as tall as the panels in it and the
-    /// valley below them stays clickable.
+    /// <para>
+    /// <b>⚠️ IT HAS A DEFINITE HEIGHT NOW, and that is Joe's <em>"when all panels are open,
+    /// the bottom panels go off screen."</em></b> It used to be pinned at the top and grown
+    /// downward, sized to its contents — which meant the contents decided how tall it was, and
+    /// once the overview grew a goods table there were more contents than window. A panel you
+    /// cannot see is the same bug as a button you cannot press (D113), arriving from the other
+    /// direction.
+    /// </para>
+    /// <para>
+    /// So the column runs from the top edge to just above the control bar, and the panels
+    /// inside it share <em>that</em>. The two list panels absorb the slack (see
+    /// <see cref="InColumn"/>), so there is always somewhere for the leftover height to go and
+    /// never a panel pushed past the bottom.
+    /// </para>
+    /// <para>
+    /// <b>Still not a mouse-blocker</b>, which was the original reason it was sized to its
+    /// contents: the filter is <c>Ignore</c>, so the column itself never takes a click and the
+    /// valley showing between the panels stays clickable. Only the panels stop clicks.
+    /// </para>
     /// </remarks>
     private VBoxContainer Column(Corner corner)
     {
-        var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
-        column.AddThemeConstantOverride("separation", Edge);
+        var scroll = new ScrollContainer
+        {
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
+            FollowFocus = false,
+        };
 
         bool right = corner is Corner.TopRight or Corner.BottomRight;
-        column.AnchorLeft = column.AnchorRight = right ? 1f : 0f;
-        column.AnchorTop = column.AnchorBottom = 0f;
-        column.OffsetTop = Edge;
-        column.OffsetBottom = Edge;
-        column.OffsetLeft = right ? -(Edge + ColumnWidth) : Edge;
-        column.OffsetRight = right ? -Edge : Edge + ColumnWidth;
-        column.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
-        column.GrowVertical = GrowDirection.End;
+        scroll.AnchorLeft = scroll.AnchorRight = right ? 1f : 0f;
+        scroll.AnchorTop = scroll.AnchorBottom = 0f;
+        scroll.OffsetTop = Edge;
+        scroll.OffsetBottom = Edge;
+        scroll.OffsetLeft = right ? -(Edge + ColumnWidth) : Edge;
+        scroll.OffsetRight = right ? -Edge : Edge + ColumnWidth;
+        scroll.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
+        scroll.GrowVertical = GrowDirection.End;
 
-        AddChild(column);
+        var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        column.AddThemeConstantOverride("separation", Edge);
+        column.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        scroll.AddChild(column);
+
+        AddChild(scroll);
+        _columns.Add((scroll, column));
         return column;
+    }
+
+    /// <summary>Each side's scroller and the stack of panels inside it.</summary>
+    private readonly List<(ScrollContainer Scroll, VBoxContainer Column)> _columns = new();
+
+    /// <summary>
+    /// Keep each column as tall as its panels, and never taller than the screen.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe: <em>"when all panels are open, the bottom panels go off screen."</em></b> The
+    /// column was sized to its contents and grown downward, so the contents decided how tall
+    /// it was — and once there were more contents than window, the panels at the bottom were
+    /// simply not on the screen. A panel you cannot see is the same bug as a button you cannot
+    /// press (D113), arriving from the other end.
+    /// </para>
+    /// <para>
+    /// <b>Sized to the panels, capped at the room available</b>, and the cap is the whole
+    /// design: below the cap the column is exactly as tall as what is in it, so the valley
+    /// underneath stays clickable and nothing has changed. At the cap it scrolls — which costs
+    /// the clicks under the column, but only in the state where the panels were covering that
+    /// strip anyway. <b>Nothing the player opens can become unreachable.</b>
+    /// </para>
+    /// <para>
+    /// Recomputed every frame rather than on a signal, because every one of the things that
+    /// changes it — folding a panel, switching one off in Settings, an alert growing by three
+    /// lines, resizing the window — would otherwise need its own hook, and the one that got
+    /// forgotten would be the bug. It is two container measurements a frame.
+    /// </para>
+    /// </remarks>
+    private void FitColumns()
+    {
+        float room = Size.Y - Edge - (Edge + ControlsReserve);
+
+        foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
+        {
+            float wanted = column.GetCombinedMinimumSize().Y;
+            scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(wanted, Mathf.Max(0f, room)));
+        }
     }
 
     /// <summary>How wide a column of panels is. One number, so the two sides match.</summary>
@@ -1681,9 +1833,18 @@ public partial class Main : Control
     {
         var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
         panel.AddThemeStyleboxOverride("panel", PanelSkin());
-        panel.CustomMinimumSize = new Vector2(0, height);
 
         VBoxContainer contents = Dress(panel, title, startOpen);
+
+        // ⚠️ THE HEIGHT BELONGS TO THE CONTENTS, NOT TO THE PANEL — and putting it on the
+        // panel is why "The village" and "Village log" **did not appear to fold at all**
+        // (Joe, playing). Folding hides the contents box; a minimum height on the panel
+        // outlives it, so both panels rolled up into a title strip with 280 and 210 pixels
+        // of empty bordered nothing hanging below it. The panel was folded and looked broken.
+        //
+        // On the contents, the height goes away with them, which is what "fold" means.
+        contents.CustomMinimumSize = new Vector2(0, height);
+
         column.AddChild(panel);
         return contents;
     }
@@ -2064,6 +2225,12 @@ public partial class Main : Control
         // ⛔ AND THE ONES THAT DO NOT EXIST, greyed and with a reason each — the same rule the
         // overview's goods table follows, for the same reason. A player who cannot see that
         // fishing is coming has no way to tell it apart from fishing being absent on purpose.
+        // Behind a fold, because eleven rows that never change were half of why this panel
+        // pushed the roster off the bottom of the screen.
+        VBoxContainer inside = Foldaway(
+            $"Not hired yet — {ProfessionsNotYetHired.Length} more, and why",
+            out VBoxContainer roadmap);
+
         foreach ((string name, string reason) in ProfessionsNotYetHired)
         {
             var row = new HBoxContainer();
@@ -2078,9 +2245,10 @@ public partial class Main : Control
             why.Modulate = new Color(1, 1, 1, 0.3f);
             row.AddChild(why);
 
-            rows.AddChild(row);
+            inside.AddChild(row);
         }
 
+        wrapper.AddChild(roadmap);
         return wrapper;
     }
 
@@ -2541,17 +2709,37 @@ public partial class Main : Control
         return more <= 0 ? list : $"{list} and {more} more";
     }
 
+    /// <summary>
+    /// The three type sizes the shell has. <b>Smaller than they were</b> (Joe, 2026-08-09).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing: <em>"the font size for the village log panel is too large. small. same
+    /// with the overview. and 'who they are and why'."</em></b> Heading 22 → 18 and body 16 →
+    /// 13, and the two scrolling labels are given <see cref="RowSize"/> explicitly rather than
+    /// inheriting Godot's default — which is 16 and is why the log and the inspector were the
+    /// two panels he named.
+    /// </para>
+    /// <para>
+    /// <b>Type size is the other half of D113's answer.</b> Panels were made see-through and
+    /// tighter so they cost attention rather than area; a panel set in 16-point costs area
+    /// again by being tall, and the overview grew a twelve-row goods table since. The
+    /// alternative — showing less — is the one Joe has repeatedly declined.
+    /// </para>
+    /// </remarks>
+    private const int RowSize = 13;
+
     private static Label Heading(string text)
     {
         var label = new Label { Text = text };
-        label.AddThemeFontSizeOverride("font_size", 22);
+        label.AddThemeFontSizeOverride("font_size", 18);
         return label;
     }
 
     private static Label Body(string text)
     {
         var label = new Label { Text = text };
-        label.AddThemeFontSizeOverride("font_size", 16);
+        label.AddThemeFontSizeOverride("font_size", RowSize);
         return label;
     }
 

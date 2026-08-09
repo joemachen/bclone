@@ -237,7 +237,12 @@ public partial class Minimap : Control
     // ---------------------------------------------------------------
 
     /// <summary>Pixels per tile. One number, because the valley is never stretched.</summary>
-    private float Scale()
+    /// <remarks>
+    /// Named for what it is rather than <c>Scale()</c>, which shadowed <c>Control.Scale</c> —
+    /// the node's own transform. A method that quietly hides a base member of a different
+    /// type is a compiler warning today and a very confusing hour later.
+    /// </remarks>
+    private float PixelsPerTile()
     {
         SimConfig config = _world!.Config;
         return Valley().Size.X / (config.MapMaxX - config.MapMinX + 1);
@@ -246,7 +251,7 @@ public partial class Minimap : Control
     private Vector2 TileToPixel(Vector2 tile)
     {
         SimConfig config = _world!.Config;
-        float scale = Scale();
+        float scale = PixelsPerTile();
         return Valley().Position + new Vector2(
             (tile.X - config.MapMinX + 0.5f) * scale,
             (tile.Y - config.MapMinY + 0.5f) * scale);
@@ -255,7 +260,7 @@ public partial class Minimap : Control
     private Vector2 PixelToTile(Vector2 pixel)
     {
         SimConfig config = _world!.Config;
-        float scale = Scale();
+        float scale = PixelsPerTile();
         Vector2 inside = pixel - Valley().Position;
         return new Vector2(
             (inside.X / scale) + config.MapMinX - 0.5f,
@@ -263,5 +268,5 @@ public partial class Minimap : Control
     }
 
     private Rect2 TilesToPixels(Rect2 tiles) =>
-        new(TileToPixel(tiles.Position), tiles.Size * Scale());
+        new(TileToPixel(tiles.Position), tiles.Size * PixelsPerTile());
 }
