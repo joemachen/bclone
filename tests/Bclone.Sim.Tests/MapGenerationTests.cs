@@ -419,6 +419,26 @@ public sealed class MapGenerationTests
         }
     }
 
+    /// <summary>How long each valley is watched for. See the note in the body — this is a trade.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⏱️ SHORTENED FROM 200 ON JOE'S CALL, AND IT IS A REAL TRADE RATHER THAN A TIDY-UP.</b>
+    /// Twelve valleys × 200 years was <b>five of the suite's eleven minutes on its own</b> — the
+    /// single most expensive thing in the project — and the suite is the tax on every change.
+    /// All twelve seeds are kept, because <em>which</em> valleys are watched is what this guard
+    /// is for; what shortens is how long each is watched.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ What it costs, said plainly:</b> this guard catches changes that help eleven
+    /// valleys and kill one, and it has done so twice — D103's seed 11 aged out to nothing
+    /// <em>by year 160</em>, and D110's died by year 106. <b>The second would still be caught at
+    /// 120 years and the first might not.</b> A slow ageing-out is exactly the shape that needs
+    /// the longest horizon, so if a change is ever suspected of causing one, <b>this number is
+    /// the first thing to raise</b> — temporarily and deliberately.
+    /// </para>
+    /// </remarks>
+    private const int SeedWatchYears = 120;
+
     [Fact]
     public void EverySeedProducesAValleyAVillageSurvivesIn()
     {
@@ -434,7 +454,7 @@ public sealed class MapGenerationTests
 
             int lowest = int.MaxValue;
             int peak = 0;
-            for (int year = 1; year <= 200; year++)
+            for (int year = 1; year <= SeedWatchYears; year++)
             {
                 loop.Step(config.TicksPerYear);
                 peak = Math.Max(peak, loop.World.Population);
@@ -449,6 +469,23 @@ public sealed class MapGenerationTests
             Assert.True(loop.World.Population >= config.StartingPopulation,
                 $"Seed {seed} died out — finished at {loop.World.Population}. " +
                 $"({string.Join("; ", results)})");
+
+            // ⭐ AND IT MUST NOT BE HALFWAY OUT THE DOOR EITHER — which is what compensates for
+            // the shorter horizon above.
+            //
+            // The failure this guard exists for is a village that AGES OUT: it peaks, then
+            // dwindles with nobody starved and nobody frozen, and is simply gone. D103's seed 11
+            // peaked at 32 and reached nothing by year 160; watching only 120 years, "is anybody
+            // left?" could still answer yes while the village was plainly finished. **So notice
+            // the slope rather than waiting for the end.**
+            //
+            // Half of peak is deliberately generous: every healthy seed today ends within a
+            // couple of its own peak (48 → 47), so this has better than two-to-one headroom and
+            // will not go off because a village had a hard decade.
+            Assert.True(loop.World.Population * 2 >= peak,
+                $"Seed {seed} is dwindling — it peaked at {peak} and finished at "
+                + $"{loop.World.Population}, so it is on its way out rather than living. "
+                + $"({string.Join("; ", results)})");
         }
 
         foreach (string line in results)
