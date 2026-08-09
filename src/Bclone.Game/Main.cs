@@ -240,6 +240,11 @@ public partial class Main : Control
             case Key.Key4: SetSpeed(10.0); break;
             case Key.Tab: CycleDetail(); break;
             case Key.Home: _map.CentreOnTheVillage(); break;
+
+            // H hides the furniture, C rolls it up. Two keys because they answer two different
+            // wants: "get out of the way, I am watching" and "I need more room to work".
+            case Key.H: ToggleFurniture(); break;
+            case Key.C: ToggleAllPanels(); break;
         }
     }
 
@@ -1012,6 +1017,7 @@ public partial class Main : Control
         BuildLogPanel();
         BuildRosterPanel();
         BuildInspectorPanel();
+        BuildVillageOrdersPanel();
         BuildControlPanel();
 
         SetSpeed(1.0);
@@ -1254,6 +1260,50 @@ public partial class Main : Control
         }
     }
 
+    /// <summary>
+    /// The two standing instructions the player gives the village: who works, and how much.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A panel rather than two slide-ups off the toolbar</b> (Joe: *"the professions and
+    /// stock limits slide-up menus suck for UX"*). The old shape had them unfold the control
+    /// bar <em>upward over the map</em>, which is the worst possible place for them: these are
+    /// the two controls whose whole purpose is watching what changes when you move them, and
+    /// they covered the thing that changes.
+    /// </para>
+    /// <para>
+    /// <b>Both, together, because they are one question asked twice.</b> A profession says how
+    /// many hands on this work; a stock limit says until when. D62 and D106 both call them
+    /// halves of one control, and putting them in one panel is that finally being true on
+    /// screen rather than only in the decisions log.
+    /// </para>
+    /// <para>
+    /// <b>Collapsible and left open by default</b> — they are standing orders, not a dialog you
+    /// dismiss, and the numbers beside them (*"200 · have 214"*) are worth watching while the
+    /// year runs.
+    /// </para>
+    /// </remarks>
+    private void BuildVillageOrdersPanel()
+    {
+        // ⚠️ ROLLED UP BY DEFAULT, and that is the whole point rather than a compromise. These
+        // are STANDING ORDERS — you set them and then watch the year — so the panel's resting
+        // state should be a strip of title, not eleven rows of numbers competing with the
+        // valley. Open, it is tall enough to reach the roster and the control bar; closed, it
+        // costs one line. Joe asked for less on screen, and a panel that is only there when it
+        // is wanted is more of an answer than a smaller one that is always there.
+        VBoxContainer body = Floating(
+            Edge, Edge + StatusHeight, OrdersWidth, 0, Corner.TopLeft,
+            "What the village is told", startOpen: false);
+
+        body.AddChild(BuildProfessionsMenu());
+        body.AddChild(BuildStockLimitMenu());
+    }
+
+    private const int OrdersWidth = 360;
+
+    /// <summary>Room the status panel needs above this one. Generous — panels overlap safely now.</summary>
+    private const int StatusHeight = 290;
+
     /// <summary>Speed, what the map draws, and what the player can ask the village for.</summary>
     private void BuildControlPanel()
     {
@@ -1287,8 +1337,12 @@ public partial class Main : Control
 
         body.AddChild(BuildBuildMenu());
         body.AddChild(BuildHarvestMenu());
-        body.AddChild(BuildProfessionsMenu());
-        body.AddChild(BuildStockLimitMenu());
+
+        // ⚠️ PROFESSIONS AND STOCK LIMITS HAVE LEFT THIS BAR (Joe: *"the professions and stock
+        // limits slide-up menus suck for UX"*). They were toggles that unfolded the control bar
+        // upward over the map — so the two controls you most want to watch the effect of were
+        // the two that hid the effect. They are their own collapsible panel now, on the left,
+        // where they can be left open while the village gets on with it.
 
         // The refusal or the warning, in the words the sim already produced — on its own
         // line rather than squeezed between the buttons. Same standard as JobReason: a
@@ -1305,7 +1359,8 @@ public partial class Main : Control
         _placementLabel.Visible = false;
 
         body.AddChild(Wrapped(Muted(
-            "space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · home recentre")));
+            "space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · home recentre · "
+            + "c fold panels · h hide them")));
     }
 
     // ---------------------------------------------------------------
@@ -1333,7 +1388,13 @@ public partial class Main : Control
     /// </para>
     /// </remarks>
     private VBoxContainer Floating(
-        float x, float y, float width, float height, Corner corner, string? title = null)
+        float x,
+        float y,
+        float width,
+        float height,
+        Corner corner,
+        string? title = null,
+        bool startOpen = true)
     {
         var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
         panel.AddThemeStyleboxOverride("panel", PanelSkin());
@@ -1359,15 +1420,48 @@ public partial class Main : Control
         panel.GrowVertical = bottom ? GrowDirection.Begin : GrowDirection.End;
 
         var body = new VBoxContainer();
-        body.AddThemeConstantOverride("separation", 6);
+        body.AddThemeConstantOverride("separation", 4);
         panel.AddChild(body);
+
+        // ⭐ A TITLE YOU CAN CLICK TO ROLL THE PANEL UP (Joe). The contents go in their own
+        // box so the header can hide everything below it and leave a strip of title behind —
+        // *"let me see more of what's happening in the game"* answered by letting the player
+        // choose what is on screen moment to moment, rather than by guessing which panel they
+        // wanted smaller.
+        //
+        // A title is what makes a panel collapsible, which is why the control bar has none:
+        // rolling up the thing you press to do anything would be a trap.
+        var contents = new VBoxContainer();
+        contents.AddThemeConstantOverride("separation", 4);
 
         if (title is not null)
         {
-            body.AddChild(Muted(title));
+            var header = new Button
+            {
+                Text = startOpen ? $"▾ {title}" : $"▸ {title}",
+                Flat = true,
+                Alignment = HorizontalAlignment.Left,
+                ToggleMode = true,
+                ButtonPressed = startOpen,
+            };
+
+            contents.Visible = startOpen;
+
+            header.AddThemeFontSizeOverride("font_size", 12);
+            header.Modulate = new Color(1, 1, 1, 0.55f);
+            header.Toggled += open =>
+            {
+                contents.Visible = open;
+                header.Text = open ? $"▾ {title}" : $"▸ {title}";
+            };
+
+            body.AddChild(header);
+            _headers.Add(header);
         }
 
+        body.AddChild(contents);
         AddChild(panel);
+        _panels.Add(panel);
 
         // ⚠️ THE PANEL YOU CLICKED ON WINS THE CLICK. Panels are siblings, so the one added
         // last draws — and receives — on top, which made the order they happen to be built in
@@ -1380,7 +1474,45 @@ public partial class Main : Control
         // one the player means.
         panel.MouseEntered += () => MoveChild(panel, -1);
 
-        return body;
+        return contents;
+    }
+
+    /// <summary>Every floating panel, so one key can put them all away.</summary>
+    private readonly List<PanelContainer> _panels = new();
+
+    /// <summary>Every panel header, so one key can roll them all up.</summary>
+    private readonly List<Button> _headers = new();
+
+    /// <summary>
+    /// Hide the furniture entirely, so the valley is the only thing on screen.
+    /// </summary>
+    /// <remarks>
+    /// <b>The whole point of a generational village-builder is watching it</b> (§1.5, and D49's
+    /// argument that a life is the unit that matters). Collapsing panels one at a time answers
+    /// *"I want more room"*; this answers *"get out of the way, I am watching"*, and they are
+    /// different wants. The control bar goes too — there is nothing to press while you watch.
+    /// </remarks>
+    private void ToggleFurniture()
+    {
+        _furnitureShown = !_furnitureShown;
+        foreach (PanelContainer panel in _panels)
+        {
+            panel.Visible = _furnitureShown;
+        }
+    }
+
+    private bool _furnitureShown = true;
+
+    /// <summary>Roll every panel up to its title, or open them all again.</summary>
+    private void ToggleAllPanels()
+    {
+        // Open them all unless they are all already open, so one press always does something
+        // rather than toggling half of them each way.
+        bool open = _headers.Exists(header => !header.ButtonPressed);
+        foreach (Button header in _headers)
+        {
+            header.ButtonPressed = open;
+        }
     }
 
     /// <summary>The look of every floating panel: dark, bordered, readable over a lit map.</summary>
@@ -1389,16 +1521,34 @@ public partial class Main : Control
     /// a panel whose text sits on grass one moment and on a roof the next, and the whole
     /// complaint that prompted this was that the information was hard to read.
     /// </remarks>
+    /// <summary>
+    /// How a panel is drawn — <b>see-through, and tight</b> (Joe, 2026-08-08).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: <em>"They are HUGE and take up so much real estate. Let's make them smaller so I
+    /// can see more of what's happening in the game."</em></b> Two of his three answers land
+    /// here: the panels let the valley through now (0.93 → 0.72), and their padding is closer
+    /// (10 → 6). Between them a panel costs attention rather than area, which is the point —
+    /// this is a game you <em>watch</em>, and a panel that hides the thing it is describing is
+    /// working against the reason it exists.
+    /// </para>
+    /// <para>
+    /// <b>Not fully transparent, deliberately.</b> The village log is small text over a moving
+    /// map, and legibility is the non-negotiable this whole layer serves (§1.1) — a panel you
+    /// cannot read is worse than one that covers something.
+    /// </para>
+    /// </remarks>
     private static StyleBoxFlat PanelSkin()
     {
         var skin = new StyleBoxFlat
         {
-            BgColor = new Color(0.08f, 0.09f, 0.10f, 0.93f),
-            BorderColor = new Color(0.58f, 0.53f, 0.40f, 0.70f),
+            BgColor = new Color(0.08f, 0.09f, 0.10f, 0.72f),
+            BorderColor = new Color(0.58f, 0.53f, 0.40f, 0.55f),
         };
 
         skin.SetBorderWidthAll(1);
-        skin.SetContentMarginAll(10);
+        skin.SetContentMarginAll(6);
         skin.SetCornerRadiusAll(3);
         return skin;
     }
@@ -1462,19 +1612,14 @@ public partial class Main : Control
         var wrapper = new VBoxContainer();
         wrapper.AddThemeConstantOverride("separation", 4);
 
-        var rows = new VBoxContainer { Visible = false };
+        // ⚠️ NO TOGGLE OF ITS OWN ANY MORE. It used to be a button that unfolded the control
+        // bar over the map; the panel it now lives in collapses by its own title, so a second
+        // level of folding would be two clicks to reach a number the player wants in front of
+        // them anyway. **A section label, not a control** — the rows are simply there.
+        var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 2);
 
-        // Left-aligned and sized to its own text: a VBox stretches its children, and a
-        // toggle spanning the whole panel reads as a section header rather than a button
-        // you press.
-        var toggleRow = new HBoxContainer();
-        var toggle = new Button { Text = "Stock limits", ToggleMode = true };
-        toggle.Toggled += on => rows.Visible = on;
-        toggleRow.AddChild(toggle);
-        toggleRow.AddChild(Muted("— how much to keep before the work stops"));
-
-        wrapper.AddChild(toggleRow);
+        wrapper.AddChild(Muted("Stock limits — how much to keep before the work stops"));
         wrapper.AddChild(rows);
 
         foreach (Goods goods in StockLimits.Kinds)
@@ -1507,16 +1652,13 @@ public partial class Main : Control
         var wrapper = new VBoxContainer();
         wrapper.AddThemeConstantOverride("separation", 4);
 
-        var rows = new VBoxContainer { Visible = false };
+        // A section label rather than a toggle, for the reason given in BuildStockLimitMenu:
+        // the panel this lives in already collapses, and folding inside a fold is two clicks
+        // to reach the number the player opened the panel for.
+        var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 2);
 
-        var toggleRow = new HBoxContainer();
-        var toggle = new Button { Text = "Professions", ToggleMode = true };
-        toggle.Toggled += on => rows.Visible = on;
-        toggleRow.AddChild(toggle);
-        toggleRow.AddChild(Muted("— how many people on each kind of work"));
-
-        wrapper.AddChild(toggleRow);
+        wrapper.AddChild(Muted("Professions — how many people on each kind of work"));
         wrapper.AddChild(rows);
 
         // Laborers first, as in Joe's screenshot, and as a readout: they are the remainder.
