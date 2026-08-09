@@ -775,6 +775,35 @@ public partial class VillageMap : Control
         return Mathf.Clamp(centre, min + halfView, max - halfView);
     }
 
+    /// <summary>
+    /// The stretch of valley on screen right now, in tiles — what the minimap boxes.
+    /// </summary>
+    /// <remarks>
+    /// Derived from the camera rather than stored beside it, so it cannot go stale: there is
+    /// one centre and one zoom, and this is arithmetic on them.
+    /// </remarks>
+    public Rect2 VisibleTiles
+    {
+        get
+        {
+            if (_pixelsPerTile <= 0f)
+            {
+                return new Rect2();
+            }
+
+            Vector2 span = Size / _pixelsPerTile;
+            return new Rect2(_centreTile - (span / 2f), span);
+        }
+    }
+
+    /// <summary>Put the camera over a tile — the minimap's whole reason for being clickable.</summary>
+    public void CentreOn(Vector2 tile)
+    {
+        _centreTile = tile;
+        ClampCentre();
+        QueueRedraw();
+    }
+
     private Vector2 ToScreen(Vector2 tile) => ((tile - _centreTile) * _pixelsPerTile) + (Size / 2f);
 
     private Vector2 ToScreen(GridPos tile) => ToScreen(new Vector2(tile.X, tile.Y));
@@ -1077,16 +1106,38 @@ public partial class VillageMap : Control
 
     /// <summary>What a kind of ground is drawn as.</summary>
     /// <remarks>
-    /// Grass never reaches here — it is the background, skipped by the caller so the
-    /// common case draws nothing at all.
+    /// <b>Grass never reaches here from the valley itself</b> — it is the background, skipped
+    /// by <see cref="DrawTerrain"/> so the common case draws nothing at all. It has an arm
+    /// anyway because the minimap bakes every tile into a texture and has no background to
+    /// skip against, and a <c>_ =></c> falling through to woodland would have painted the
+    /// whole valley as forest.
     /// </remarks>
-    private static Color ColourOf(Terrain terrain) => terrain switch
+    internal static Color ColourOf(Terrain terrain) => terrain switch
     {
         Terrain.Water => WaterColour,
         Terrain.Rock => RockColour,
         Terrain.IronDeposit => IronColour,
+        Terrain.Grass => Ground,
         _ => ForestColour,
     };
+
+    /// <summary>
+    /// The colours the minimap borrows, so there is one palette and not two.
+    /// </summary>
+    /// <remarks>
+    /// A second set of terrain colours would drift the first time one of these was tuned,
+    /// and then the small map and the big one would disagree about which green is a wood —
+    /// which is the whole job of a minimap failing.
+    /// </remarks>
+    internal static Color GroundColour => Ground;
+
+    internal static Color BeyondColour => Beyond;
+
+    internal static Color BuildingColour => HutColour;
+
+    internal static Color DwellingColour => HomeColour;
+
+    internal static Color StoreColour => GranaryColour;
 
     /// <summary>
     /// A line from where somebody lives to where they work.

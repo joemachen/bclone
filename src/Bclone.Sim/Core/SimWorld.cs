@@ -605,6 +605,17 @@ public sealed class SimWorld
     private int _terrainGeneration;
 
     /// <summary>
+    /// How many times the ground has changed. <b>For cache invalidation only.</b>
+    /// </summary>
+    /// <remarks>
+    /// Exposed so the view can bake the valley into a texture once instead of redrawing
+    /// nine thousand tiles a frame, and so it asks <em>the same</em> question the hut rings
+    /// ask rather than inventing a second way to notice a felled tree. Never a source of
+    /// truth about anything — see the field's own note for why it is not hashed.
+    /// </remarks>
+    public int TerrainGeneration => _terrainGeneration;
+
+    /// <summary>
     /// Wooded tiles inside a workplace's ring — what its trips are worth
     /// (`specs/forests-and-gathering.md`).
     /// </summary>
@@ -1376,6 +1387,10 @@ public sealed class SimWorld
         // happens several times a year and there is no reason for one tile to cost a walk
         // over every hut in the village.
         _terrainGeneration++;
+        // Every reader of terrain-derived cache is stale now, including the view's
+        // (`Minimap` bakes the valley into a texture rather than redrawing 9,600 tiles a
+        // frame). It reads the same counter the hut rings do, so there is one answer to
+        // "has the ground changed?" and not two.
 
         if (Logs(LogLevel.Debug))
         {

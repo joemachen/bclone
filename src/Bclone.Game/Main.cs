@@ -406,6 +406,10 @@ public partial class Main : Control
         // Alpha is the fraction of a tick elapsed, so villagers glide between tiles
         // instead of teleporting once a second.
         _map.Present(world, _driver.Alpha, _selectedVillagerId, _selectedTile, _detail);
+
+        // After the map, because the box it draws is the map's own camera and asking for it
+        // before the map has been told what frame this is would box the previous one.
+        _minimap.Present(world, _map.VisibleTiles);
     }
 
     private void RefreshRoster(SimWorld world)
@@ -1094,6 +1098,10 @@ public partial class Main : Control
         BuildStatusPanel();
         BuildVillageOrdersPanel();
         BuildRosterPanel();
+
+        // Top of the right-hand column, which is where Banished puts it and where Joe's
+        // screenshot has it — above the log, so the two things you glance at are together.
+        BuildMinimapPanel();
         BuildLogPanel();
         BuildInspectorPanel();
 
@@ -1300,6 +1308,24 @@ public partial class Main : Control
 
     /// <summary>Every goods row's amount label, so the tick can fill them in.</summary>
     private readonly List<(Goods Goods, Label Held)> _goodsReadouts = new();
+
+    /// <summary>The whole valley, small, with a box round what you are looking at.</summary>
+    /// <remarks>
+    /// <b>An ordinary panel</b>, so it collapses with <c>c</c>, hides with <c>h</c> and turns
+    /// off from Settings like everything else — the alternative was a control anchored to a
+    /// corner of its own, which is precisely the second panel mechanism D113 spent a session
+    /// arguing out of existence.
+    /// </remarks>
+    private void BuildMinimapPanel()
+    {
+        VBoxContainer body = InColumn(_rightColumn, 0, "The valley");
+
+        _minimap = new Minimap();
+        _minimap.LookAt += tile => _map.CentreOn(tile);
+        body.AddChild(_minimap);
+    }
+
+    private Minimap _minimap = null!;
 
     /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
     private void BuildLogPanel()

@@ -565,7 +565,7 @@ with ungated planting, forage sites retiring, and D109 landing on top.
     the mode is hashed sparsely, so a village where nobody has touched one is byte-identical.
     545 tests green.
 
-**In progress — the shell, rebuilt to Banished's shape** (D113, D114; the plan in
+**In progress — the shell, rebuilt to Banished's shape** (D113, D114, D115; the plan in
 `~/.claude/plans/`, six numbered areas from Joe's screenshot). Each slice is independently
 shippable and D113's `Floating`/`InColumn`/`Dress` is the one panel mechanism throughout.
 
@@ -597,7 +597,13 @@ shippable and D113's `Floating`/`InColumn`/`Dress` is the one panel mechanism th
   shows is `Narrate` → subsystem `life`, level `Info`**, all 31 call sites of it. There is one
   category, so filtering by it gives the player a single checkbox. Making it real means the
   sim classifying its own narration. Joe's call — see D114.
-- **Next:** the minimap, then per-building floating windows.
+- **Slice 6 — the minimap** ✅ (D115). The whole valley small, with a box round what the
+  camera can see, and click or drag it to look somewhere. **The terrain is baked into a
+  texture and invalidated through `SimWorld.TerrainGeneration`** — the same counter the hut
+  rings read — rather than 9,600 rects a frame, which is D87's and D112's per-frame full-map
+  walk arriving in the view.
+- **Next:** per-building floating windows (the one slice that needs a mechanism this
+  codebase has no precedent for), and event-log filtering once Joe rules on it.
 
 Then: **step C** — thickets and tree stands retire, the distance fences come down, and the
 economy is re-derived against the hut's ring. **D111** (`ChooseSite`'s ruler) folds in there,
@@ -757,6 +763,11 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D115 · 2026-08-09 · A minimap, and it refuses to be the shape of the box it is put in.** Slice 6 of the shell rebuild (Joe's area 5). The whole valley at one pixel per tile, the village as dots in the big map's own colours, an amber box round what the camera can see, and click or drag to look somewhere — which is the whole reason to draw it, and is how Banished's works.
+  - **⚠️ The terrain is baked into a texture, not redrawn.** 120 × 80 is **9,600 rects a frame**, which is the per-frame full-map walk this project has now been bitten by twice in the sim — D87's `NearestHarvest` and D112's ring scan, between them four minutes of suite time — and there was no reason for the view to make the mistake a third time. **The bake is invalidated through `SimWorld.TerrainGeneration`**, the counter D112 already added for the hut rings, exposed read-only: one answer to *"has the ground changed?"* rather than a second way for the view to notice a felled tree. Hooking anything else would be D85's one-door rule broken from outside the sim.
+  - **⭐ IT LETTERBOXES RATHER THAN STRETCHES, and the first version got this wrong in a way worth recording.** A panel inside a column is handed the *column's* width, not the width it asked for — so a minimap that asked for 250 × 167 was drawn at 490 × 167, and the valley rendered at **2.9:1 against its true 1.5:1**: the river flat across a squashed map. **A minimap that quietly takes the shape of its container is worse than none**, because every distance on it is wrong and the player has no way to know. Fixed twice over on purpose — the control shrinks rather than filling, *and* every tile-to-pixel conversion goes through one letterboxed rect, so a frame where those two disagree is a margin instead of a lie.
+  - **And it made the right-hand column too tall**, pushing the panel that describes whatever you clicked under the control bar. That is D113's complaint returning by a new route, and the fix is the same shape as D113's: **a minimap is a glance, not a view**, so it costs the column as little height as it can and still be read.
+  - **Nobody is drawn on it.** At a pixel per tile a villager is smaller than the dot marking the house they are standing in, so people would read as noise over the thing they are standing on. The big map is where the people are.
 - **D114 · 2026-08-09 · The valley has a name, the overview is a roadmap, and you can click a person at last.** Slice 2 of the shell rebuild, plus the one thing Joe asked for outside it. His three answers this round: *derive the town name from the seed*, *make villagers clickable on the map*, and the roster/Settings confirmation still outstanding.
   - **⭐ The town name is DERIVED from the seed, never DRAWN from it, and that distinction is the whole engineering content of it.** `names[Rng.Next(names.Count)]` is the line anybody would write and it would have been the most expensive line in the session: draw order is the seed contract, so one inserted draw shifts every subsequent value for every seed ever written down — the map golden, both 50-year hashes, and every measurement in this document that quotes a seed. `Seed % TownNames.Count` is the same run every time and costs the stream nothing. **A guard says so out loud** (`VillageNameTests.AskingTheValleyItsNameConsumesNoDraw`), because the cheap version of this mistake is a future session adding a *second* name — for a river, a household, a season — the easy way.
   - **Why a name at all.** A run you can quote by number is reproducible; a run you can *name* is one you can talk about, which is §1.4 applied to the place rather than to the people. It is the heading of the overview because it is the one word that says which run you are watching.
