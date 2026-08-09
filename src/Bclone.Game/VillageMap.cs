@@ -158,6 +158,17 @@ public partial class VillageMap : Control
     /// </remarks>
     public event System.Action<GridPos>? BuildingClicked;
 
+    /// <summary>
+    /// The player clicked on a person rather than on the ground (Joe, 2026-08-09).
+    /// </summary>
+    /// <remarks>
+    /// <b>A villager id, and here it can be one</b>, unlike the tile above: a person is a
+    /// single thing in a single list, and two of them standing on one tile are still two
+    /// people. The tile-not-id argument was about buildings sharing a position, which people
+    /// do all day and buildings do only at D36's seam.
+    /// </remarks>
+    public event System.Action<int>? VillagerClicked;
+
     private Vector2 _centreTile;
 
     /// <summary>Never zero, so the very first frame — before layout has given the
@@ -460,6 +471,14 @@ public partial class VillageMap : Control
         // because the player has one place they look to find out about a thing.
         if (click.ButtonIndex == MouseButton.Left)
         {
+            // Somebody standing there is what you meant; the ground is the fallback.
+            if (VillagerAt(click.Position) is Villager person)
+            {
+                VillagerClicked?.Invoke(person.Id);
+                AcceptEvent();
+                return;
+            }
+
             Vector2 hit = ToTile(click.Position);
             BuildingClicked?.Invoke(new GridPos(Mathf.RoundToInt(hit.X), Mathf.RoundToInt(hit.Y)));
             AcceptEvent();
@@ -1210,15 +1229,13 @@ public partial class VillageMap : Control
 
             stillAlive.Add(villager.Id);
 
+            // Where they are drawn this frame — and the click test asks the same method,
+            // so what the player aims at is what they hit (see DrawnCentre).
+            Vector2 centre = DrawnCentre(villager);
+            float radius = VillagerRadius;
+
             var current = new Vector2(villager.Position.X, villager.Position.Y);
             Vector2 previous = _previousTiles.TryGetValue(villager.Id, out Vector2 known) ? known : current;
-
-            // Lerp from where they were to where they are. If they moved more than a
-            // tile — being born, or moving house — snap instead, or they would glide
-            // across the map.
-            Vector2 drawTile = previous.DistanceSquaredTo(current) > 2f
-                ? current
-                : previous.Lerp(current, (float)_alpha);
 
             if (current != previous && _alpha >= 0.999)
             {
@@ -1228,9 +1245,6 @@ public partial class VillageMap : Control
             {
                 _previousTiles[villager.Id] = current;
             }
-
-            Vector2 centre = ToScreen(drawTile + FanOffset(villager));
-            float radius = Mathf.Max(3f, _pixelsPerTile * 0.2f);
 
             Color colour = villager.LifeStage switch
             {
@@ -1307,6 +1321,90 @@ public partial class VillageMap : Control
 
         float angle = Mathf.Tau * rank / here.Count;
         return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * FanRadiusTiles;
+    }
+
+    /// <summary>How big a person is drawn, in pixels. Never smaller than a clickable dot.</summary>
+    private float VillagerRadius => Mathf.Max(3f, _pixelsPerTile * 0.2f);
+
+    /// <summary>
+    /// Exactly where a villager is drawn on screen this frame.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One method, because drawing and clicking must agree.</b> A person is not drawn at
+    /// their sim tile: they glide between tiles as the tick plays out (<c>_alpha</c>) and they
+    /// are fanned off a crowded tile so a household reads as a household. A hit test written
+    /// against <c>villager.Position</c> would therefore miss by most of a tile for anybody
+    /// walking, and by the fan radius for anybody standing at home — which is to say, it would
+    /// miss whenever it mattered.
+    /// </para>
+    /// <para>
+    /// Pure: it reads the interpolation bookkeeping and never writes it, so asking where
+    /// somebody is drawn cannot move them.
+    /// </para>
+    /// </remarks>
+    private Vector2 DrawnCentre(Villager villager)
+    {
+        var current = new Vector2(villager.Position.X, villager.Position.Y);
+        Vector2 previous = _previousTiles.TryGetValue(villager.Id, out Vector2 known) ? known : current;
+
+        // Lerp from where they were to where they are. If they moved more than a
+        // tile — being born, or moving house — snap instead, or they would glide
+        // across the map.
+        Vector2 drawTile = previous.DistanceSquaredTo(current) > 2f
+            ? current
+            : previous.Lerp(current, (float)_alpha);
+
+        return ToScreen(drawTile + FanOffset(villager));
+    }
+
+    /// <summary>
+    /// Whoever the player just clicked on, or null if they clicked past everybody.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Clicking a villager on the map has never worked</b> — the map has only ever
+    /// hit-tested buildings, so the roster was the sole way to select a person. Joe asked for
+    /// it directly, and it is the obvious gesture: the people are the thing you are watching.
+    /// </para>
+    /// <para>
+    /// <b>A person beats the ground they stand on.</b> Villagers are small and drawn on top of
+    /// everything, and they stand on their own doorsteps constantly — so if the pointer is on
+    /// somebody, they are what was meant, and the tile underneath is a click away by aiming
+    /// anywhere else in it. The nearest of a crowd wins, which is what the fan is for.
+    /// </para>
+    /// <para>
+    /// A little forgiveness on the radius, because a person is a four-pixel dot when the
+    /// camera is out and a target you cannot hit is the same bug as a button behind a panel
+    /// (D113). Not so much that the slack itself swallows a tile.
+    /// </para>
+    /// </remarks>
+    private Villager? VillagerAt(Vector2 screen)
+    {
+        SimWorld world = _world!;
+        float reach = VillagerRadius + 4f;
+        float nearest = reach * reach;
+        Villager? hit = null;
+
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            // Strictly nearer, so a tie goes to the lower id and the selection does not
+            // flicker between two people standing on the same spot.
+            float distance = DrawnCentre(villager).DistanceSquaredTo(screen);
+            if (distance < nearest)
+            {
+                nearest = distance;
+                hit = villager;
+            }
+        }
+
+        return hit;
     }
 
     private bool InScope(int villagerId) =>

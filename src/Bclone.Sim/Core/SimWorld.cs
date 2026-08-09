@@ -256,6 +256,26 @@ public sealed class SimWorld
     /// </remarks>
     public int FirewoodInSheds() => TotalAccepting(Goods.Firewood, static store => store.Firewood);
 
+    /// <summary>
+    /// How much of any good the village's stores hold between them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The general form of the three named totals above</b>, added for the overview panel,
+    /// which lists every value of <see cref="Goods"/> rather than the three the economy
+    /// happens to be derived against. Driving that panel off the enum is what makes a new
+    /// good appear the day it is added instead of the day somebody remembers the panel.
+    /// </para>
+    /// <para>
+    /// <b>The named three stay</b>, and are not thin wrappers over this one: each carries a
+    /// hard-won argument about <em>which</em> stores count (D79's firewood, above), and
+    /// collapsing them into a general reader is how those arguments get lost. This answers a
+    /// different question — <em>what is standing in the stores?</em> — and callers that mean
+    /// one of the other three should keep saying so.
+    /// </para>
+    /// </remarks>
+    public int InStores(Goods goods) => TotalAccepting(goods, store => store[goods]);
+
     /// <summary>Sum a good across every store that will hold it, reachable or not.</summary>
     private int TotalAccepting(Goods goods, Func<Stockpile, int> read)
     {
@@ -2466,6 +2486,30 @@ public sealed class SimWorld
     /// <summary>Seed this run was created with — shown in the UI so a run that
     /// produced an interesting life can be reproduced exactly.</summary>
     public ulong Seed { get; }
+
+    /// <summary>
+    /// What this village is called — <b>derived from the seed, never drawn from it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A run you can quote by number is one thing; a run you can talk about is another, and
+    /// <em>"Ashbourne died at sixty"</em> is the sentence this game is for (§1.4). So the
+    /// valley gets a name, and it is a fact about the seed rather than a fact about the map.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It takes no draw, and that is the whole care in it.</b> Draw order is the seed
+    /// contract (<see cref="MapGenerator"/> §1) — a call to <c>Rng.Next</c> inserted anywhere
+    /// shifts every subsequent value for every seed anybody has ever written down. Arithmetic
+    /// on the seed is the same run every time and costs the stream nothing, so no golden
+    /// moves and no valley changes shape for a label.
+    /// </para>
+    /// <para>
+    /// Not hashed, for the same reason: it is a pure function of the seed, and the seed is
+    /// already what identifies a run. Two worlds that hash alike cannot be called differently.
+    /// </para>
+    /// </remarks>
+    public string Name =>
+        Config.TownNames[(int)(Seed % (ulong)Config.TownNames.Count)];
 
     private SimWorld(SimConfig config, ISimLogger logger, ulong seed)
     {

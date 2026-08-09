@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
@@ -288,17 +289,63 @@ public partial class Main : Control
         SimWorld world = _loop.World;
 
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
-        // Totals across every granary and shed, not the first of each (D38) — a village
-        // that has built a second one should see what is in it.
-        //
-        // "Food" is now everything the village has, granaries included, and says so. It
-        // used to be a households-only sum sitting next to "N in the granaries", which
-        // read as a total-and-its-largest-part but was neither: the two numbers did not
-        // overlap, so a village with 2,000 food in store showed a few hundred.
+
+        // WHO IS HERE, BROKEN DOWN BY LIFE STAGE (Joe's area 1). "17 villagers" is the
+        // number; "11 adults and 4 children" is the one that tells you whether the village
+        // is growing or ageing out, which is the question a generational game is about.
+        // Counted here rather than on the world: the roster already walks this list every
+        // frame, a village is tens of people, and a sim reader would be a second way of
+        // asking the same question.
+        int adults = 0;
+        int children = 0;
+        int elders = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager person = world.Villagers[i];
+            if (!person.Alive)
+            {
+                continue;
+            }
+
+            switch (person.LifeStage)
+            {
+                case LifeStage.Child: children++; break;
+                case LifeStage.Elder: elders++; break;
+                default: adults++; break;
+            }
+        }
+
+        // Two short lines rather than one long one: at this column width a single sentence
+        // wrapped mid-clause, which reads as an accident rather than as a layout.
         _villageLabel.Text =
-            $"{world.Population} villagers · {LivingHouseholds(world)} households · " +
-            $"{world.TotalFood()} food all told, {world.FoodInGranaries()} of it in the stores · " +
-            $"{world.LogsInSheds()} logs and {world.FirewoodInSheds()} firewood in the stores";
+            $"{world.Population} villagers in {LivingHouseholds(world)} households\n" +
+            $"{adults} adults · {children} children · {elders} elders";
+
+        // WHAT IS IN THE STORES, one row per good (D83). Totals across every granary and
+        // shed, not the first of each (D38) — a village that has built a second one should
+        // see what is in it.
+        //
+        // Food carries what is NOT in the stores in the same row rather than in a sentence
+        // of its own. The two numbers do not overlap, and showing them apart is how the old
+        // line read as a total and its largest part when it was neither. "Homes and huts"
+        // rather than "larders", because a workplace buffer is neither a store nor a larder
+        // and calling it one would be the kind of near-enough label D76 keeps punishing.
+        for (int i = 0; i < _goodsReadouts.Count; i++)
+        {
+            (Goods goods, Label held) = _goodsReadouts[i];
+            int inStores = world.InStores(goods);
+
+            if (goods == Goods.Food)
+            {
+                int elsewhere = world.TotalFood() - inStores;
+                held.Text = elsewhere > 0
+                    ? $"{inStores}  (+{elsewhere} in homes and huts)"
+                    : $"{inStores}";
+                continue;
+            }
+
+            held.Text = $"{inStores}";
+        }
 
         // What each limited good actually stands at, beside the number the player set —
         // so "nobody is splitting logs" and "you asked for 200 and there are 214" are the
@@ -523,7 +570,26 @@ public partial class Main : Control
     private void OnVillagerSelected(long index)
     {
         Variant metadata = _roster.GetItemMetadata((int)index);
-        _selectedVillagerId = metadata.AsInt32();
+        SelectVillager(metadata.AsInt32());
+    }
+
+    /// <summary>
+    /// The player clicked a person on the map — <b>which has never worked until now</b>.
+    /// </summary>
+    /// <remarks>
+    /// Straight into the same selection the roster sets, so there is one selected villager
+    /// and not two: the roster highlights whoever you clicked on the map, the inspector
+    /// describes them, and the map draws their route. Two ways in, one answer — which is the
+    /// distinction the roster and the panel got wrong in D80 and is worth not repeating.
+    /// </remarks>
+    private void OnVillagerClicked(int villagerId) => SelectVillager(villagerId);
+
+    private void SelectVillager(int villagerId)
+    {
+        _selectedVillagerId = villagerId;
+
+        // Clearing the tile is what makes the inspector describe the person rather than
+        // the doorstep they are standing on: RefreshInspector reads the tile first.
         _selectedTile = null;
         RefreshInspector(_loop.World);
     }
@@ -1011,6 +1077,7 @@ public partial class Main : Control
         _map = new VillageMap { ClipContents = true };
         _map.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         _map.BuildingClicked += OnBuildingClicked;
+        _map.VillagerClicked += OnVillagerClicked;
         AddChild(_map);
 
         // ⭐ TWO COLUMNS, AND PANELS LIVE IN THEM RATHER THAN BESIDE THEM. Joe: *"when the
@@ -1068,17 +1135,40 @@ public partial class Main : Control
     /// <summary>
     /// What the village is: the date, what it holds, and anything it is asking for.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe's area 1, rebuilt from his Banished notes.</b> It used to be two run-on
+    /// sentences — the date, then every total the village had, comma-separated. Reading
+    /// <em>how much firewood is there?</em> off that meant reading the whole line, which is
+    /// how a panel ends up "HUGE" (D113) without holding much.
+    /// </para>
+    /// <para>
+    /// <b>⭐ The goods are driven off the <see cref="Goods"/> enum, not listed by hand</b>,
+    /// which is the point of the slice rather than tidiness: a good appears here the day it
+    /// is added to the sim, not the day somebody remembers this method. Stone, tools and iron
+    /// have been in the enum since D82 and were in no panel until now, which is exactly the
+    /// failure being designed out.
+    /// </para>
+    /// </remarks>
     private void BuildStatusPanel()
     {
         // Titled, so it can be folded and switched off like everything else. It is Joe's
         // area 1 and the panel he calls the Overview, so it is called that.
         VBoxContainer body = InColumn(_leftColumn, 0, "Overview");
 
-        _clockLabel = Heading(string.Empty);
+        // ⭐ THE VALLEY HAS A NAME NOW, and it is the heading rather than a line in the
+        // middle: this is the one word that says which run you are watching. Derived from
+        // the seed and not drawn from it — see `SimWorld.Name` for why that distinction is
+        // load-bearing rather than pedantic.
+        body.AddChild(Heading(_loop.World.Name));
+
+        _clockLabel = Body(string.Empty);
         body.AddChild(_clockLabel);
 
         _villageLabel = Wrapped(Body(string.Empty));
         body.AddChild(_villageLabel);
+
+        body.AddChild(BuildGoodsTable());
 
         // STANDING ALERTS, AND THEY WRAP NOW.
         //
@@ -1103,6 +1193,113 @@ public partial class Main : Control
             $"seed {_loop.World.Seed}   ·   config: {_configSource}   ·   log: {_logPath}"));
         body.AddChild(_seedLabel);
     }
+
+    /// <summary>
+    /// What the village holds, one line per good — and one greyed line per good it has not
+    /// invented yet.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ A greyed row says WHY it is empty rather than showing a zero</b>, which is D98's
+    /// rule — <em>a number that is always zero is a lie waiting to be found</em> — applied to
+    /// a panel instead of a config key. "Coal 0" tells the player their village has run out
+    /// of something; "Coal — no mine to dig it" tells them the truth, which is that the game
+    /// has not got there yet. Joe asked for the overview to double as a roadmap, and that
+    /// only works if the roadmap is honest about which half is which.
+    /// </para>
+    /// <para>
+    /// <b>The greyed list is hand-written and is meant to be deleted, a row at a time.</b>
+    /// It cannot be driven off anything, because the whole point of a row here is that the
+    /// thing it names does not exist — there is no enum value to read. Each row's reason
+    /// therefore names what would have to be built, so the row deletes itself the day that
+    /// lands rather than sitting here going quietly stale.
+    /// </para>
+    /// <para>
+    /// Coloured chips rather than icons: the project ships no image assets (D26), and an
+    /// emoji glyph is at the mercy of whatever the default font happens to cover. A
+    /// <c>ColorRect</c> draws the same on every machine.
+    /// </para>
+    /// </remarks>
+    private GridContainer BuildGoodsTable()
+    {
+        var table = new GridContainer { Columns = 3 };
+        table.AddThemeConstantOverride("h_separation", 10);
+        table.AddThemeConstantOverride("v_separation", 2);
+
+        foreach (Goods goods in Enum.GetValues<Goods>())
+        {
+            table.AddChild(Chip(ChipColour(goods)));
+            table.AddChild(Body(GoodsName(goods)));
+
+            Label held = Body(string.Empty);
+            held.HorizontalAlignment = HorizontalAlignment.Right;
+            held.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            table.AddChild(held);
+
+            _goodsReadouts.Add((goods, held));
+        }
+
+        foreach ((string name, string reason) in NotYetInTheValley)
+        {
+            table.AddChild(Chip(new Color(1, 1, 1, 0.10f)));
+
+            Label label = Muted(name);
+            table.AddChild(label);
+
+            Label why = Muted(reason);
+            why.HorizontalAlignment = HorizontalAlignment.Right;
+            why.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            table.AddChild(why);
+        }
+
+        return table;
+    }
+
+    /// <summary>
+    /// The rows that are a roadmap rather than a readout. <b>Delete a row when it ships.</b>
+    /// </summary>
+    private static readonly (string Name, string Reason)[] NotYetInTheValley =
+    {
+        ("Coal", "no mine to dig it"),
+        ("Cloth", "waiting on livestock"),
+        ("Clothes", "waiting on cloth and leather"),
+        ("Ale", "no brewer, no barley"),
+        ("Medicine", "no physician"),
+        ("Health", "illness is not modelled"),
+        ("Happiness", "not modelled"),
+        ("Students", "no school"),
+    };
+
+    /// <summary>A small square of colour standing in for an icon.</summary>
+    private static ColorRect Chip(Color colour) => new()
+    {
+        Color = colour,
+        CustomMinimumSize = new Vector2(10, 10),
+        SizeFlagsVertical = SizeFlags.ShrinkCenter,
+    };
+
+    /// <summary>
+    /// What colour a good reads as. <b>Borrowed from the map where the map has one.</b>
+    /// </summary>
+    /// <remarks>
+    /// Logs and firewood are the timber colours, stone and iron the seam colours, so a chip
+    /// in this panel and a tile in the valley mean the same thing — which is the only reason
+    /// to colour them at all. Food has no tile of its own since the thickets started being
+    /// forest, so it takes the berry colour it had.
+    /// </remarks>
+    private static Color ChipColour(Goods goods) => goods switch
+    {
+        Goods.Food => new Color(0.82f, 0.35f, 0.38f),
+        Goods.Logs => new Color(0.45f, 0.33f, 0.20f),
+        Goods.Firewood => new Color(0.88f, 0.55f, 0.24f),
+        Goods.Stone => new Color(0.62f, 0.62f, 0.64f),
+        Goods.Tools => new Color(0.72f, 0.76f, 0.82f),
+        Goods.Iron => new Color(0.55f, 0.36f, 0.30f),
+        _ => new Color(1, 1, 1, 0.4f),
+    };
+
+    /// <summary>Every goods row's amount label, so the tick can fill them in.</summary>
+    private readonly List<(Goods Goods, Label Held)> _goodsReadouts = new();
 
     /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
     private void BuildLogPanel()
@@ -1838,37 +2035,98 @@ public partial class Main : Control
             rows.AddChild(BuildProfessionRow(kind));
         }
 
+        // ⛔ AND THE ONES THAT DO NOT EXIST, greyed and with a reason each — the same rule the
+        // overview's goods table follows, for the same reason. A player who cannot see that
+        // fishing is coming has no way to tell it apart from fishing being absent on purpose.
+        foreach ((string name, string reason) in ProfessionsNotYetHired)
+        {
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", 6);
+
+            Label label = Muted(name);
+            label.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
+            label.Modulate = new Color(1, 1, 1, 0.3f);
+            row.AddChild(label);
+
+            Label why = Muted(reason);
+            why.Modulate = new Color(1, 1, 1, 0.3f);
+            row.AddChild(why);
+
+            rows.AddChild(row);
+        }
+
         return wrapper;
     }
 
-    /// <summary>One profession: a name, a "village decides" tick, a number, and the places.</summary>
+    /// <summary>
+    /// The professions this village cannot hire yet. <b>Delete a row when it ships.</b>
+    /// </summary>
+    /// <remarks>
+    /// Hand-written and meant to be, because the whole point of a row here is that there is no
+    /// <see cref="JobKind"/> to read it off. Taken from <c>specs/professions.md §4</c> so the
+    /// panel and the spec say the same thing; the reason names what would have to be built, so
+    /// the row deletes itself the day that lands rather than going quietly stale.
+    /// </remarks>
+    private static readonly (string Name, string Reason)[] ProfessionsNotYetHired =
+    {
+        ("Fisherman", "no fishing hut — needs building beside water"),
+        ("Hunter", "no lodge, and leather is not a good yet"),
+        ("Tailor", "waiting on the hunter for leather"),
+        ("Farmer", "no fields, no crops"),
+        ("Herdsman", "no livestock"),
+        ("Miner", "iron is on the map; nothing digs it"),
+        ("Stonecutter", "stone is on the map; nothing quarries it"),
+        ("Blacksmith", "tools cannot be made, only brought"),
+        ("Brewer", "no barley"),
+        ("Teacher", "no school"),
+        ("Physician", "illness is not modelled"),
+    };
+
+    /// <summary>One column width for every profession name, real or promised.</summary>
+    private const int ProfessionNameWidth = 84;
+
+    /// <summary>
+    /// One profession: a name, a "village decides" tick, <b>− N +</b>, and the places.
+    /// </summary>
+    /// <remarks>
+    /// <b>± buttons rather than a spin box</b> — the same control the per-building staffing row
+    /// uses (D104), because they set the same number from two ends (`professions.md §3.0`) and
+    /// two different widgets for one quantity is how a player comes to believe they are two
+    /// quantities. It is also narrower, which is what Joe asked the whole panel for.
+    /// </remarks>
     private HBoxContainer BuildProfessionRow(JobKind kind)
     {
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
 
         Label name = Muted(ProfessionName(kind));
-        name.CustomMinimumSize = new Vector2(90, 0);
+        name.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
         row.AddChild(name);
 
+        // ⚠️ THE TICK STAYS, and it is not a spare click. Null and zero are different
+        // instructions — "no opinion" against "none, I mean it" — and the sim keeps them
+        // apart deliberately (D106). A number alone cannot say the first.
+        // Small type, because the words matter and the width does too: the panel a column
+        // sizes itself to is the widest row in it, and this row is the widest one there is.
         var auto = new CheckBox { Text = "village decides", ButtonPressed = true };
-        var amount = new SpinBox
-        {
-            MinValue = 0,
-            MaxValue = 999,
-            Step = 1,
-            Value = 0,
-            Editable = false,
-            CustomMinimumSize = new Vector2(90, 0),
-        };
+        auto.AddThemeFontSizeOverride("font_size", 12);
 
-        Label places = Muted(string.Empty);
-        places.CustomMinimumSize = new Vector2(150, 0);
+        int asked = 0;
+        Label amount = Muted("0");
+        amount.CustomMinimumSize = new Vector2(22, 0);
+        amount.HorizontalAlignment = HorizontalAlignment.Right;
+
+        var fewer = new Button { Text = "−", Flat = true };
+        var more = new Button { Text = "+", Flat = true };
 
         void Apply()
         {
-            amount.Editable = !auto.ButtonPressed;
-            int? target = auto.ButtonPressed ? null : (int)amount.Value;
+            fewer.Disabled = auto.ButtonPressed;
+            more.Disabled = auto.ButtonPressed;
+            amount.Modulate = new Color(1, 1, 1, auto.ButtonPressed ? 0.35f : 1f);
+            amount.Text = $"{asked}";
+
+            int? target = auto.ButtonPressed ? null : asked;
 
             PlacementVerdict verdict = _loop.World.SetJobLimit(kind, target);
             if (verdict.HasWarning)
@@ -1879,16 +2137,38 @@ public partial class Main : Control
         }
 
         auto.Toggled += _ => Apply();
-        amount.ValueChanged += _ => Apply();
+
+        // Clamped at zero, and with no ceiling of its own: the panel is allowed to ask for
+        // more than the village would choose — that is the whole difference from a stock
+        // limit (D106) — and the sim says out loud when it cannot honour the number.
+        fewer.Pressed += () =>
+        {
+            asked = System.Math.Max(0, asked - 1);
+            Apply();
+        };
+
+        more.Pressed += () =>
+        {
+            asked++;
+            Apply();
+        };
+
+        Label places = Muted(string.Empty);
+        places.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 
         row.AddChild(auto);
+        row.AddChild(fewer);
         row.AddChild(amount);
+        row.AddChild(more);
         row.AddChild(places);
+
+        Apply();
 
         _professionReadouts.Add((kind, places));
         return row;
     }
 
+    /// <summary>What a kind of work is called on screen. Every value named (D108).</summary>
     private static string ProfessionName(JobKind kind) => kind switch
     {
         JobKind.Forager => "Gatherer",
@@ -1896,7 +2176,8 @@ public partial class Main : Control
         JobKind.Woodcutter => "Woodcutter",
         JobKind.Marketer => "Vendor",
         JobKind.Builder => "Builder",
-        _ => kind.ToString(),
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(kind), kind, "That kind of work has no name on screen."),
     };
 
     /// <summary>One good's limit: a name, a "village decides" tick, a number, and the stock.</summary>
@@ -1999,12 +2280,23 @@ public partial class Main : Control
         };
     }
 
+    /// <summary>What a good is called on screen.</summary>
+    /// <remarks>
+    /// <b>Every value named, and the default throws</b> (D108's rule). This used to fall back
+    /// to <c>goods.ToString()</c>, which was harmless while three goods had limits and became
+    /// load-bearing the moment the overview listed all six — a new good would have shown up
+    /// under its enum spelling, which is the version of a name nobody chose.
+    /// </remarks>
     private static string GoodsName(Goods goods) => goods switch
     {
         Goods.Food => "Food",
         Goods.Logs => "Logs",
         Goods.Firewood => "Firewood",
-        _ => goods.ToString(),
+        Goods.Stone => "Stone",
+        Goods.Tools => "Tools",
+        Goods.Iron => "Iron",
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(goods), goods, "That good has no name on screen."),
     };
 
     /// <summary>
@@ -2069,49 +2361,74 @@ public partial class Main : Control
         return row;
     }
 
+    /// <summary>
+    /// Everything the player can put on the map, <b>in categories</b> (Joe's area 4).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The category caption sits ABOVE its buttons, not beside them</b>, and that is a
+    /// width decision rather than a taste one. This row already reached within thirty pixels
+    /// of the window edge, and D55 records what happens when it goes past: <em>"Market",
+    /// "Woodcutter" and "Demolish" clipped off the left edge — buttons that exist and cannot
+    /// be pressed.</em> Six captions beside their groups would have cost about four hundred
+    /// pixels the row has not got; above them they cost one line of height and nothing else.
+    /// </para>
+    /// <para>
+    /// <b>Grouping when a group holds one thing is the point, not an accident.</b> Food is a
+    /// single hut today and Works is a single hut; captioning them anyway is what makes it
+    /// visible that a village has one way to feed itself, which a flat row of eight buttons
+    /// never said.
+    /// </para>
+    /// </remarks>
     private HBoxContainer BuildBuildMenu()
     {
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 8);
+        row.AddThemeConstantOverride("separation", 10);
 
         row.AddChild(Muted("Build:"));
 
-        // First in the row because it is first in the game (D76): a pile costs nothing but
-        // the ground, and a village with nowhere to put things cannot begin.
-        row.AddChild(BuildButton("Storage pile", BuildingKind.Pile));
+        // Works first, because it is first in the game (D108): nothing anywhere on this row is
+        // ever raised without a builder's hut. The group will hold roads, bridges and fences
+        // when the builder gets them (`professions.md §4`).
+        row.AddChild(Category("Works", BuildButton("Builder's hut", BuildingKind.BuilderHut)));
 
-        // Second, because it is second in the game (D108): nothing else on this row is ever
-        // raised without it. Free and instant like the pile, and beside it for that reason —
-        // the two buildings that cost nothing but the ground they stand on are the two the
-        // player puts down before anything can begin.
-        row.AddChild(BuildButton("Builder's hut", BuildingKind.BuilderHut));
-        row.AddChild(BuildButton("Gatherer", BuildingKind.GathererHut));
-        row.AddChild(BuildButton("Forester", BuildingKind.ForesterHut));
-        row.AddChild(BuildButton("Granary", BuildingKind.Granary));
-        row.AddChild(BuildButton("Shed", BuildingKind.Shed));
-        row.AddChild(BuildButton("Market", BuildingKind.Market));
-        row.AddChild(BuildButton("Woodcutter", BuildingKind.WoodcutterHut));
+        row.AddChild(Category("Food", BuildButton("Gatherer", BuildingKind.GathererHut)));
 
-        var demolish = new Button { Text = "Demolish" };
-        demolish.Pressed += () => _map.BeginDemolishing();
-        row.AddChild(demolish);
+        row.AddChild(Category(
+            "Resources",
+            BuildButton("Forester", BuildingKind.ForesterHut),
+            BuildButton("Woodcutter", BuildingKind.WoodcutterHut)));
 
-        row.AddChild(new VSeparator());
+        // The pile leads its group because it leads the game (D76): it costs nothing but the
+        // ground, and a village with nowhere to put things cannot begin.
+        row.AddChild(Category(
+            "Storage & trade",
+            BuildButton("Storage pile", BuildingKind.Pile),
+            BuildButton("Granary", BuildingKind.Granary),
+            BuildButton("Shed", BuildingKind.Shed),
+            BuildButton("Market", BuildingKind.Market)));
 
-        // The brush (D42). Separated from the buildings because it is a different kind
-        // of decision: those place one thing, this says where a whole neighbourhood may
-        // grow — and the village decides which tiles, and when, and whether at all.
-        row.AddChild(Muted("Homes:"));
-
+        // The brush (D42). Its own category because it is a different kind of decision: the
+        // others place one thing, this says where a whole neighbourhood may grow — and the
+        // village decides which tiles, and when, and whether at all.
         var paint = new Button { Text = "Paint land" };
         paint.Pressed += () => _map.BeginPainting(1);
-        row.AddChild(paint);
 
         var erase = new Button { Text = "Take back" };
         erase.Pressed += () => _map.BeginPainting(-1);
-        row.AddChild(erase);
 
-        var stop = new Button { Text = "Cancel" };
+        row.AddChild(Category("Homes", paint, erase));
+
+        var demolish = new Button { Text = "Demolish" };
+        demolish.Pressed += () => _map.BeginDemolishing();
+        row.AddChild(Category("Removal", demolish));
+
+        row.AddChild(new VSeparator());
+
+        // Uncaptioned and on the end, because it belongs to no category — it puts down
+        // whichever tool is in your hand, including the harvest brushes on the row below.
+        // Bottom-aligned so it lines up with the buttons rather than with the captions.
+        var stop = new Button { Text = "Cancel", SizeFlagsVertical = SizeFlags.ShrinkEnd };
         stop.Pressed += () => _map.BeginBuilding(null);
         row.AddChild(stop);
 
@@ -2137,6 +2454,24 @@ public partial class Main : Control
         var button = new Button { Text = text };
         button.Pressed += () => _map.BeginBuilding(kind);
         return button;
+    }
+
+    /// <summary>One captioned group of build buttons.</summary>
+    private static VBoxContainer Category(string caption, params Button[] buttons)
+    {
+        var group = new VBoxContainer();
+        group.AddThemeConstantOverride("separation", 1);
+        group.AddChild(Muted(caption));
+
+        var line = new HBoxContainer();
+        line.AddThemeConstantOverride("separation", 4);
+        foreach (Button button in buttons)
+        {
+            line.AddChild(button);
+        }
+
+        group.AddChild(line);
+        return group;
     }
 
     private Button SpeedButton(string text, double multiplier)

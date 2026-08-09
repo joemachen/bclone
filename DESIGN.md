@@ -565,6 +565,40 @@ with ungated planting, forage sites retiring, and D109 landing on top.
     the mode is hashed sparsely, so a village where nobody has touched one is byte-identical.
     545 tests green.
 
+**In progress — the shell, rebuilt to Banished's shape** (D113, D114; the plan in
+`~/.claude/plans/`, six numbered areas from Joe's screenshot). Each slice is independently
+shippable and D113's `Floating`/`InColumn`/`Dress` is the one panel mechanism throughout.
+
+- **Slice 1 — the layout skeleton** ✅ (D113's follow-up). Two side columns, so panels push
+  each other instead of overlapping; the inspector's text got a height, which is why the cart
+  had nothing to say; and every titled panel registers itself in Settings, so a window added
+  later appears in the menu the day it is written.
+- **Slice 2 — the overview, and the valley has a name** ✅ (D114). Joe's area 1: the town
+  name as the heading, the date, who is here by life stage, and **one row per value of
+  `Goods` rather than a hand-written list** — which is how stone, tools and iron reached a
+  panel at last, three decisions after they reached the sim. Then **greyed rows that say why
+  they are empty** rather than showing a zero, so the overview doubles as the roadmap Joe
+  asked for. **The name is derived from the seed and never drawn from it**, so no golden
+  moved and no valley changed shape for a label.
+- **Villagers are clickable on the map** ✅ (D114, Joe's call). It had never worked — the map
+  hit-tested buildings only — and the fix is that the click asks the same method the draw
+  does, because a person is drawn gliding between tiles and fanned off a crowded one, so
+  their sim tile is not where they are.
+- **Slice 4 — the professions restyle** ✅ (D114). Compact **− N +** rows, the same control
+  the per-building staffing row uses, because they set the same number from two ends; the
+  *"village decides"* tick stays, because null and zero are different instructions (D106).
+  Plus eleven greyed professions with a reason each, taken from `professions.md §4`.
+- **Slice 5 — the build menu has categories** ✅ (D114). Works · Food · Resources · Storage &
+  trade · Homes · Removal. **The caption sits above its group rather than beside it**, which
+  is a width decision: the row already reached within thirty pixels of the window edge, and
+  D55 records what a build menu that runs off the edge costs.
+- **⛔ Slice 3 — event-log filtering — is BLOCKED on a design question, not on work.** The
+  plan assumed categories could be read off `LogEntry.Subsystem`; **every line the village log
+  shows is `Narrate` → subsystem `life`, level `Info`**, all 31 call sites of it. There is one
+  category, so filtering by it gives the player a single checkbox. Making it real means the
+  sim classifying its own narration. Joe's call — see D114.
+- **Next:** the minimap, then per-building floating windows.
+
 Then: **step C** — thickets and tree stands retire, the distance fences come down, and the
 economy is re-derived against the hut's ring. **D111** (`ChooseSite`'s ruler) folds in there,
 because it is the slice that opens that method.
@@ -723,6 +757,16 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D114 · 2026-08-09 · The valley has a name, the overview is a roadmap, and you can click a person at last.** Slice 2 of the shell rebuild, plus the one thing Joe asked for outside it. His three answers this round: *derive the town name from the seed*, *make villagers clickable on the map*, and the roster/Settings confirmation still outstanding.
+  - **⭐ The town name is DERIVED from the seed, never DRAWN from it, and that distinction is the whole engineering content of it.** `names[Rng.Next(names.Count)]` is the line anybody would write and it would have been the most expensive line in the session: draw order is the seed contract, so one inserted draw shifts every subsequent value for every seed ever written down — the map golden, both 50-year hashes, and every measurement in this document that quotes a seed. `Seed % TownNames.Count` is the same run every time and costs the stream nothing. **A guard says so out loud** (`VillageNameTests.AskingTheValleyItsNameConsumesNoDraw`), because the cheap version of this mistake is a future session adding a *second* name — for a river, a household, a season — the easy way.
+  - **Why a name at all.** A run you can quote by number is reproducible; a run you can *name* is one you can talk about, which is §1.4 applied to the place rather than to the people. It is the heading of the overview because it is the one word that says which run you are watching.
+  - **⭐ The goods table is driven off the `Goods` enum, and that is the point of the slice rather than tidiness.** `Goods.Stone`, `Goods.Tools` and `Goods.Iron` have been in the sim since **D82** and were in no panel at all — three decisions of invisible state — because every readout was a hand-written sentence. A row per enum value means a good appears the day it is added. `GoodsName`'s silent `_ => goods.ToString()` arm was named out at the same time (**D108**'s rule): a fallback that spells a new good the way the enum does is a name nobody chose.
+  - **⚠️ A greyed row says WHY it is empty rather than showing a zero.** *"Coal 0"* tells a player their village has run out of something; *"Coal — no mine to dig it"* tells them the truth, which is that the game has not got there yet. That is **D98**'s *a number always zero is a lie waiting to be found*, applied to a panel instead of a config key — and it is what lets Joe's *"greyed placeholders with a reason"* double as a roadmap. **The list is hand-written and is meant to be deleted a row at a time**; it cannot be driven off anything, because the whole point of a row there is that the thing it names does not exist.
+  - **⭐ Clicking a villager on the map has never worked in this project** — the map has only ever hit-tested buildings, so the roster was the sole way to select a person. **A feature, not a regression**, and Joe asked for it directly. **The fix is that the click asks the same method the draw does:** a person is not at their sim tile — they glide between tiles as a tick plays out and they are fanned off a crowded tile so a household reads as a household (D26), so a hit test written against `villager.Position` would miss by most of a tile for anybody walking and by the fan radius for anybody standing at home. That is to say it would miss whenever it mattered. **A person beats the ground they stand on**, because they are drawn on top and they stand on their own doorstep all day.
+  - **The professions rows became − N + , and eleven greyed ones joined them.** ± rather than a spin box because **it is the same control the per-building staffing row uses** (D104) and the two set *the same number from two ends* (`professions.md §3.0`) — two widgets for one quantity is how a player comes to believe they are two quantities. **The *"village decides"* tick survives the compaction**, because null and zero are different instructions and a number alone cannot say the first (D106). The greyed list comes from `professions.md §4`, so the panel and the spec cannot drift.
+  - **The build menu has categories, and the caption sits ABOVE its group rather than beside it.** Works · Food · Resources · Storage & trade · Homes · Removal. **That placement is a width decision, not a taste one:** the row already reached within thirty pixels of the window edge, and D55 records the cost of going past — *"Market", "Woodcutter" and "Demolish" clipped off the edge, buttons that exist and cannot be pressed.* Six captions beside their groups would have cost about four hundred pixels the row has not got; above them they cost one line of height. **Grouping when a group holds one thing is the point rather than an accident** — captioning *Food* over a single hut is what makes it visible that the village has one way to feed itself, which a flat row of eight buttons never said.
+  - **⛔ THE EVENT-LOG FILTER IS BLOCKED, AND THE PLAN'S PREMISE IS WHAT BROKE.** The plan said categories could come from *"the subsystem already stamped on every entry"*. **They cannot: every line the on-screen log shows is `SimWorld.Narrate` → subsystem `life`, level `Info`** — all 31 call sites of it — so filtering on `LogEntry.Subsystem` offers the player exactly one checkbox, called *life*. METHODOLOGY §4's stamping is real and is doing its job for the **audit file**, where `sim`, `labour`, `behavior`, `goods` and `needs` all appear; the *narration* channel is the one that collapsed them. Making the filter real means the sim classifying its own narration — an enum on `Narrate`, thirty-one call sites, sim work rather than view work. **Joe's call, and it is why the slice was skipped rather than faked**: pattern-matching the message text in the view would be the clever answer to a legibility problem, which is §1.6 exactly backwards.
+  - **⛔ AND A FINDING THAT IS NOT MINE TO FIX QUIETLY: the automated screenshot now photographs a dead valley.** `BCLONE_SCREENSHOT_YEARS` steps the sim with **no player at all**, and since **D110** *no hut means nothing is raised* — so an unattended shipped opening freezes all four founders in winter 1 and the picture is an empty map and a panel of zeros. **The cold-start gate is green** (14 tests, and `PlayTheOpening` scripts the player), so this is D109/D110's *"the guards that have caught the most now decay by design"* arriving early, in the one automated check the view has (METHODOLOGY §6, D11). Recorded rather than patched: teaching the screenshot harness to play the opening means a second copy of `PlayTheOpening` outside the test project, and that is Joe's call.
 - **D113 · 2026-08-09 · The panels get out of the way, and a button that could never be pressed is why.** Joe, playing: *"clicking 'give ground' in the forester's hut window seems to bring the bottom menu to the foreground and clicking on the map doesn't paint anything… perhaps it's time to revisit the windows. They are HUGE and take up so much real estate… the 'professions' and 'stock limits' slide-up menus suck for UX."*
   - **⭐ The bug and the complaint were the same thing.** The inspector was pinned to a fixed 400×330; once staffing, the build queue and a forester's ground rows went into it the content no longer fitted, and **a VBox does not clip** — so those rows drew *outside* their own panel, over the map and under the control bar, which is built later and therefore takes the click. **Joe was clicking the toolbar.** Panels sized by a number rather than by their contents is what made a layout problem into an unusable control.
   - **Three fixes that survive any later rework:** a panel sizes to what is in it, so a control can never be orphaned outside the panel that owns it; **whichever panel the pointer is over is raised**, because there is no build order that is right for every selection; and the ground brush stopped announcing *"drag to paint where the village may build homes"*, a sentence about the wrong tool that made a working brush look broken.

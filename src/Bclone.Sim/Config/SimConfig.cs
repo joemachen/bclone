@@ -1119,6 +1119,20 @@ public sealed record SimConfig
         "Thatcher", "Fletcher", "Cooper", "Mason", "Weaver", "Chandler",
     };
 
+    /// <summary>Names a valley can be settled under, one of which the seed picks.</summary>
+    /// <remarks>
+    /// <b>A pool, not a name</b>, and the seed indexes it arithmetically — see
+    /// <see cref="Core.SimWorld.Name"/> for why it must never be a draw. Content, so a
+    /// modder can swap the whole list for their own without touching code, exactly like
+    /// <see cref="HouseholdNames"/> and <see cref="VillagerNames"/>.
+    /// </remarks>
+    [JsonPropertyName("town_names")]
+    public IReadOnlyList<string> TownNames { get; init; } = new[]
+    {
+        "Ashbourne", "Millbrook", "Thornfield", "Elderwood", "Greyford", "Hollowmere",
+        "Ravenscar", "Willowdale", "Stonebridge", "Fernhollow", "Larkspur", "Oakhaven",
+    };
+
     /// <summary>Age founding adults start at.</summary>
     [JsonPropertyName("founder_age")]
     public int FounderAge { get; init; } = 20;
@@ -1464,6 +1478,14 @@ public sealed record SimConfig
         if (HouseholdNames is null || HouseholdNames.Count == 0)
         {
             throw new SimConfigException("household_names must contain at least one name.");
+        }
+
+        // An empty pool would divide by zero when the seed picks a name, and it would do it
+        // at the first frame that drew the header rather than here — METHODOLOGY §4's
+        // fail-loudly rule applied where the mistake actually is.
+        if (TownNames is null || TownNames.Count == 0)
+        {
+            throw new SimConfigException("town_names must contain at least one name.");
         }
 
         if (FounderAge < 0)
