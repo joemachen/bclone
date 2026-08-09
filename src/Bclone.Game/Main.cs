@@ -1112,8 +1112,24 @@ public partial class Main : Control
     {
         // Below the log on the right-hand edge, which is where Banished puts the panel
         // for the thing you have selected.
+        // ⚠️ SIZED TO ITS CONTENT, NOT PINNED TO A HEIGHT — and that was a real bug rather
+        // than a preference. Pinned at 330 the panel could not grow, so the rows added to the
+        // bottom of it (staffing, the build queue, and then a forester's ground) were drawn
+        // OUTSIDE the panel, on top of the map and underneath the control bar — which is added
+        // after it and therefore draws over it. Joe: *"clicking 'give ground' seems to bring
+        // the bottom menu to the foreground and clicking on the map doesn't paint anything."*
+        // The button was never receiving the click at all.
+        //
+        // A height of zero means "as tall as what is in you", so a control can never end up
+        // outside the panel that owns it — and with nothing selected the panel is a title bar
+        // rather than 330 pixels of reserved emptiness, which is a down payment on Joe's
+        // *"they are HUGE and take up so much real estate"*.
+        //
+        // ⚠️ A busy selection can still reach the control bar. The z-order rule below stops
+        // that being fatal; making panels small, movable and resizable is the real answer and
+        // is its own piece of work.
         VBoxContainer body = Floating(
-            Edge, Edge + LogHeight + Edge, InspectorWidth, InspectorHeight,
+            Edge, Edge + LogHeight + Edge, InspectorWidth, 0,
             Corner.TopRight, "Who they are, and why");
 
         // ScrollActive so a long reason scrolls rather than being cut off. The one panel
@@ -1352,6 +1368,18 @@ public partial class Main : Control
         }
 
         AddChild(panel);
+
+        // ⚠️ THE PANEL YOU CLICKED ON WINS THE CLICK. Panels are siblings, so the one added
+        // last draws — and receives — on top, which made the order they happen to be built in
+        // decide whether a control could be pressed at all. That is how a forester's "Give
+        // ground" button ended up under the control bar (D11: nothing here is testable, so it
+        // took Joe playing it to find).
+        //
+        // Raised on mouse-enter rather than by fixing a build order, because there is no build
+        // order that is right for every selection: whichever panel the pointer is over is the
+        // one the player means.
+        panel.MouseEntered += () => MoveChild(panel, -1);
+
         return body;
     }
 

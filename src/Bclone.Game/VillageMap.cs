@@ -643,6 +643,22 @@ public partial class VillageMap : Control
     /// <summary>Tell the shell what the cursor is currently over.</summary>
     private void Announce()
     {
+        // ⚠️ THE GROUND BRUSH FIRST, because it is a positive brush and the residential
+        // wording below would otherwise claim it. Joe saw exactly that: pressing "Give ground"
+        // announced *"drag to paint where the village may build homes"*, which is a sentence
+        // about the wrong tool and made a working brush look broken.
+        if (_groundFor != 0)
+        {
+            Workplace? owner = _world?.FindWorkplace(_groundFor);
+            string whose = owner?.Name ?? "this building";
+
+            PlacementMessageChanged?.Invoke(_brush < 0
+                ? $"Drag to take ground back from {whose}. Right-click to stop."
+                : $"Drag to give ground to {whose} — its people work what you paint. "
+                    + "Right-click to stop.");
+            return;
+        }
+
         if (_brush > 0)
         {
             PlacementMessageChanged?.Invoke(
