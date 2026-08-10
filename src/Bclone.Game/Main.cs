@@ -1802,7 +1802,21 @@ public partial class Main : Control
         foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
         {
             float wanted = column.GetCombinedMinimumSize().Y;
+            bool overflowing = wanted > room;
+
             scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(wanted, Mathf.Max(0f, room)));
+
+            // ⚠️ AND IT ONLY TAKES THE MOUSE WHEN IT HAS SOMETHING TO DO WITH IT. A
+            // ScrollContainer stops clicks, and this one covers the whole column — so the
+            // gaps *between* panels, which were click-through when the column was a plain
+            // box, started swallowing clicks meant for the valley behind them. A brush that
+            // does nothing because you happened to click in a fourteen-pixel gap is
+            // indistinguishable from a broken brush.
+            //
+            // Ignored while everything fits (the panels still stop their own clicks, which
+            // is all that was ever wanted), and Stop only when there is genuinely something
+            // to scroll.
+            scroll.MouseFilter = overflowing ? MouseFilterEnum.Stop : MouseFilterEnum.Ignore;
         }
     }
 

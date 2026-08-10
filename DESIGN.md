@@ -614,8 +614,11 @@ shippable and D113's `Floating`/`InColumn`/`Dress` is the one panel mechanism th
 - **And a fifth, from the terminal rather than the screen** ✅ (D117). Raise-on-hover counted
   the levels between a panel and the root; the scrolling columns added one, so every hover
   threw *"Child is not a child of this node"* and raised nothing. It walks now.
-- **Next:** per-building floating windows — the last slice, and the one that needs a
-  mechanism this codebase has no precedent for.
+- **And a sixth: the map never drew work ground** ✅ (D118). *"Give ground"* recorded the
+  tiles and the hut's panel counted them; nothing on the map changed, so the brush read as
+  dead. Drawn now — cool against the two warm washes, brighter for the selected building.
+- **Paused here on Joe's call.** Per-building floating windows are the last UI slice and stay
+  queued; **step C is next**.
 
 Then: **step C** — thickets and tree stands retire, the distance fences come down, and the
 economy is re-derived against the hut's ring. **D111** (`ChooseSite`'s ruler) folds in there,
@@ -775,6 +778,12 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D118 · 2026-08-09 · ⭐ "Give ground" was never broken. The map simply never drew the ground.** Joe, playing: *"can confirm that 'give ground' and 'take back' do paint/unpaint… they seem to do nothing."*
+  - **The brush worked the whole time.** `PaintWorkGround` recorded the tiles, `ZoneMap` owned them, the hut's own panel counted them — *"Ground — 27 tiles, enough hands for 24"* — and `VillageMap` drew **residential** zones and **harvest** zones and no third layer. So the one feedback the player actually looks at, the ground they just painted, never changed. **From the chair the brush was dead.**
+  - **⚠️ A zone you can paint and cannot see is worse than one you cannot paint.** §1.1 is about the game explaining itself, and a brush whose only evidence is a number in a row somewhere else explains nothing. This is D112 slice 4's real gap: the decision log recorded *"D86's work ground reached the player at last"* and it had reached the player's **panel**, not the player's **map**.
+  - **Cool where the other two washes are warm**, because the three overlap and mean different things — *the village may build here*, *this is coming down*, *a named building works this*. A distinction that survives peripheral vision and colour-blindness. **The selected building's ground is drawn brighter than everybody else's**, which answers *whose is this?* without a palette per hut.
+  - **And a second cause of "the brush does nothing" was fixed beside it, before anybody hit it.** D116's scrolling columns are `ScrollContainer`s, which stop clicks across the whole column — so the fourteen-pixel gaps *between* panels, click-through when the column was a plain box, began swallowing clicks meant for the valley. **A brush that does nothing because you clicked in a gap is indistinguishable from a broken brush**, so the scroller now takes the mouse only when it actually has something to scroll.
+  - **Verified by a throwaway that painted ground for two workplaces at start-up** and selected one — the harness cannot drag a brush, so the alternative was to ship it unseen again.
 - **D117 · 2026-08-09 · Raise-on-hover counted the levels between a panel and the root, and D116 added one.** Joe, running the game: four `ERROR: Child is not a child of this node` in the terminal, at `Dress`'s `MouseEntered` handler.
   - **The whole bug in one line.** `MoveChild` reorders *your own* children, so the handler raised `panel.GetParent() == this ? panel : panel.GetParent()` — correct while the chain was panel → column → root. **D116's scrolling columns made it panel → column → scroller → root**, so it handed the root a grandchild, threw, and raised nothing. Every hover over a panel in a column.
   - **It walks now rather than counting one more level**, because the next container somebody wraps a column in would break a count again and cannot break a walk. A panel that turns out not to be ours is left alone rather than throwing: *a panel nobody is holding cannot be raised above anything* is the honest answer, not an error.

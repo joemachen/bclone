@@ -102,6 +102,19 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color HarvestColour = new("#d8892f", 0.26f);
 
+    /// <summary>Ground a building has been given to work (D86).</summary>
+    /// <remarks>
+    /// <b>Cool, where the other two zone washes are warm</b>, because it means a different
+    /// kind of thing and the three overlap: residential says <em>the village may build
+    /// here</em>, harvest says <em>this is coming down</em>, and this says <em>a named
+    /// building works this</em>. Two warm washes and a cool one is a distinction that
+    /// survives being seen out of the corner of your eye, and being colour-blind.
+    /// </remarks>
+    private static readonly Color WorkGroundColour = new("#4a9ba8", 0.16f);
+
+    /// <summary>The selected building's own ground, brighter than everybody else's.</summary>
+    private static readonly Color WorkGroundMine = new("#5fc8d8", 0.30f);
+
     private static readonly Color GhostFine = new("#7fd48a");
     private static readonly Color GhostWarned = new("#e0b755");
     private static readonly Color GhostRefused = new("#d4685f");
@@ -1045,9 +1058,41 @@ public partial class VillageMap : Control
             }
         }
 
+        // ⭐ GROUND THAT BELONGS TO A BUILDING (D86, D112) — and this is the layer that was
+        // simply never drawn. Joe: *"'give ground' and 'take back' seem to do nothing."*
+        // They did exactly what they say: the sim recorded the tiles and the hut's panel
+        // counted them. **Nothing on the map changed, so from the chair the brush was dead.**
+        //
+        // A zone the player paints and cannot see is worse than one they cannot paint —
+        // §1.1 is about the game explaining itself, and a brush whose only feedback is a
+        // number in a row somewhere else is a brush that explains nothing.
+        //
+        // The selected building's ground is drawn stronger than everybody else's, which is
+        // how one colour answers *"whose is this?"* without inventing a palette per hut.
+        int selected = SelectedGroundOwner();
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                int owner = zones.WorkGroundOwner(tile);
+                if (owner == 0)
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, owner == selected ? WorkGroundMine : WorkGroundColour);
+            }
+        }
+
         // What the village has been told to take (D87). Drawn over the terrain rather
         // than replacing it, so a marked wood still reads as a wood — the paint is an
         // instruction about the ground, not a new kind of ground.
+        //
+        // Last of the three, because harvest is the one that says something is about to
+        // change and the other two say who may use ground that is staying as it is.
         for (int y = minY; y <= maxY; y++)
         {
             for (int x = minX; x <= maxX; x++)
@@ -1063,6 +1108,32 @@ public partial class VillageMap : Control
                 DrawRect(rect, HarvestColour);
             }
         }
+    }
+
+    /// <summary>
+    /// Which building's ground the player is looking at, or zero if none is selected.
+    /// </summary>
+    /// <remarks>
+    /// Asked of the selected <em>tile</em> rather than kept as state, for D49's reason: the
+    /// selection already lives in one place and a second copy of it is a second thing to keep
+    /// in step. A workplace that owns no ground answers the question harmlessly.
+    /// </remarks>
+    private int SelectedGroundOwner()
+    {
+        if (_selectedTile is not GridPos tile)
+        {
+            return 0;
+        }
+
+        foreach (Workplace workplace in _world!.Workplaces)
+        {
+            if (workplace.Position == tile && !workplace.IsSite)
+            {
+                return workplace.Id;
+            }
+        }
+
+        return 0;
     }
 
     /// <summary>
