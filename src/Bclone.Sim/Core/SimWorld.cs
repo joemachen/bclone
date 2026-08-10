@@ -1476,8 +1476,21 @@ public sealed class SimWorld
                     continue;
                 }
 
+                // ⚠️ NOT WATER IS NOT THE SAME AS NOT CUT OFF BY WATER (D111). This painted
+                // a diamond around the founding site skipping only water tiles — so in a
+                // valley where the river runs close it painted the **far bank**, and
+                // `ChooseSite` would then find a beautifully-scoring, permanently
+                // unreachable home site there. That is how seed 11 froze a whole village
+                // (D110): one house nobody could walk to sat at the head of the build queue
+                // and starved every site behind it for a century.
+                //
+                // Asked of the shared cost field, which is the one place in this game that
+                // knows the river goes round (§2.6). The starter zone is the village's own
+                // land, so *reachable from the founding site* is exactly the right question.
                 var tile = new GridPos(origin.X + dx, origin.Y + dy);
-                if (Map.Contains(tile) && Map.TerrainAt(tile) != Terrain.Water)
+                if (Map.Contains(tile)
+                    && Map.TerrainAt(tile) != Terrain.Water
+                    && TravelCost.CanReach(origin, tile))
                 {
                     Zones.SetResidential(tile, true);
                 }
@@ -1623,6 +1636,14 @@ public sealed class SimWorld
     /// It does not go through <see cref="CanBuildAt"/>: <c>ChooseSite</c> has already found
     /// painted, reachable, buildable ground and thrown if there was none, so asking again
     /// would be a second opinion that can only disagree.
+    /// </para>
+    /// <para>
+    /// <b>⭐ AND THAT SENTENCE IS TRUE AS OF D111, WHICH IT WAS NOT WHEN IT WAS WRITTEN.</b>
+    /// <c>ChooseSite</c> scored candidates with a ruler and only checked that a tile was not
+    /// water — never that it was not <em>cut off by</em> water — so "reachable" was a claim
+    /// nothing backed. It walks the shared cost field now, and the starter zone does too.
+    /// The warning below is kept as the guard on that promise rather than removed as
+    /// redundant: <b>it should never fire again, and that is exactly why it stays.</b>
     /// </para>
     /// </remarks>
     internal void MarkHome(int householdId, GridPos position)

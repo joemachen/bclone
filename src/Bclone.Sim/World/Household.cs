@@ -198,7 +198,9 @@ public sealed class Household
                 continue;
             }
 
-            int distance = from.ManhattanDistanceTo(store.Position);
+            // By walking, not by ruler (D111) — the same correction as NearestWorkDistance,
+            // and it has to be the same or a home's two scores measure different worlds.
+            int distance = WalkingTiles(world, from, store.Position);
             if (distance < nearest)
             {
                 nearest = distance;
@@ -221,13 +223,29 @@ public sealed class Household
         if (nearest == int.MaxValue)
         {
             GridPos fallback = world.TheCart?.Position ?? world.Map.FoundingSite;
-            nearest = from.ManhattanDistanceTo(fallback);
+            nearest = WalkingTiles(world, from, fallback);
         }
 
         return nearest;
     }
 
-    /// <summary>Distance to the nearest place a household could work.</summary>
+    /// <summary>
+    /// How far the nearest food is <b>by walking</b>, in tiles, or <c>int.MaxValue</c>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ THIS MEASURED WITH A RULER AND EVERY OTHER SYSTEM WALKS (D111)</b>, which is the
+    /// *"two competing travel-cost systems"* `CLAUDE.md` forbids by name. It scored candidate
+    /// tiles on <c>ManhattanDistanceTo</c> — grid distance, as the crow flies — while since
+    /// D40 water is impassable and every real journey goes round the river on the shared
+    /// <see cref="TravelCostField"/>. It checked that a tile <em>is not water</em>; it never
+    /// checked that a tile is not <em>cut off by</em> water.
+    /// <para>
+    /// <b>The player could never have made this mistake — only the village could.</b> `Mark`
+    /// goes through `CanBuildAt`, which asks the cost field and refuses. `MarkHome`
+    /// deliberately skips that check on the written grounds that ChooseSite has already found
+    /// reachable ground — a sentence that was simply not true, and that nothing tested.
+    /// </para>
+    /// </remarks>
     private static int NearestWorkDistance(Core.SimWorld world, GridPos from)
     {
         int nearest = int.MaxValue;
@@ -239,7 +257,7 @@ public sealed class Household
                 continue;
             }
 
-            int distance = from.ManhattanDistanceTo(workplace.Position);
+            int distance = WalkingTiles(world, from, workplace.Position);
             if (distance < nearest)
             {
                 nearest = distance;
@@ -247,6 +265,22 @@ public sealed class Household
         }
 
         return nearest;
+    }
+
+    /// <summary>
+    /// Tiles of actual walk between two points, or <c>int.MaxValue</c> if there is no walk.
+    /// </summary>
+    /// <remarks>
+    /// One helper for both of <see cref="ChooseSite"/>'s distances, so the two halves of a
+    /// home's score cannot come to disagree about what "far" means — which is the shape of
+    /// bug D111 was.
+    /// </remarks>
+    private static int WalkingTiles(Core.SimWorld world, GridPos from, GridPos to)
+    {
+        int cost = world.TravelCost.Cost(from, to);
+        return cost == TravelCostField.Unreachable
+            ? int.MaxValue
+            : cost / TravelCostField.BaseTileCost;
     }
 
     /// <summary>In-game year of the household's most recent birth. Zero if never.</summary>

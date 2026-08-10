@@ -640,9 +640,13 @@ there, because it is the slice that opens that method.
   re-taken. **§7.1's condition shipped with it**: `Villager.CommuteNote` says what a walk
   beyond the food budget costs, anchored on `MaxHomeToWorkTiles` after a first attempt pitched
   it so low that everybody got one.
+- **C-2 — D111 is fixed** ✅ (D121). `ChooseSite` and `PaintTheStarterZone` walk the shared
+  cost field instead of measuring with a ruler, through one helper. **Both goldens unmoved** —
+  Manhattan and walking distance agree on open ground and diverge only at the river, so the
+  fix is a no-op on the two valleys the goldens watch and a life-saver on the one that failed.
+  `MarkHome`'s promise is guarded by the twelve-seed arm now instead of asserted in a comment.
 - **Still to come in step C:** re-base `MaxHomeToWorkTiles` on the gatherer hut's ring and
-  demote it from refusal to budget; **D111** (`ChooseSite` and the starter zone walking the
-  cost field instead of measuring with a ruler); then the thickets and tree stands retire.
+  demote it from refusal to budget; then the thickets and tree stands retire.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -798,6 +802,11 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D121 · 2026-08-10 · ⭐ D111 IS FIXED, AND IT MOVES NO GOLDEN — which is the whole shape of the bug.** Step C's second slice. `Household.ChooseSite` scored every candidate tile with `ManhattanDistanceTo` — grid distance, as the crow flies — while since D40 water is impassable and every real journey goes round the river on the shared cost field. **That is the "two competing travel-cost systems" `CLAUDE.md` forbids by name**, and it has been in the project since D18.
+  - **It checked that a tile *is not water*; it never checked that a tile is not *cut off by* water.** `PaintTheStarterZone` had the identical hole — it painted a diamond around the founding site skipping only water tiles, so in a valley where the river runs close it painted the far bank. Both ask the cost field now, through **one helper**, so a home's two scores cannot come to measure different worlds.
+  - **⭐ THE PLAYER COULD NEVER HAVE MADE THIS MISTAKE — ONLY THE VILLAGE COULD.** `Mark` goes through `CanBuildAt`, which asks `TravelCost.CanReach` and refuses. `MarkHome` deliberately skips that check, on the written grounds that *"ChooseSite has already found painted, reachable, buildable ground"* — **a sentence that was simply not true and that nothing tested.** That asymmetry is why it survived six phases: every path a human touches was already correct.
+  - **⭐ AND BOTH 50-YEAR GOLDENS ARE UNMOVED, deliberately and informatively.** Manhattan distance and walking distance *agree on open ground* — they diverge only where the river intervenes — so the fix is a provable no-op on the two valleys the goldens watch, and a life-saver on the one that failed. **A bug that is invisible in your golden valleys and fatal in somebody else's is precisely what the twelve-seed arm exists for** (D110 found it, D103 before that).
+  - **The promise is guarded now rather than merely asserted in a comment.** `MarkHome` has logged a warning since D110 when it is handed unreachable ground, and **nothing was reading it**. The twelve-seed arm reads it — free, since those are the twelve valleys the promise has to hold in and they were already being run. `MarkHome`'s doc comment says the sentence is true *as of this slice*, and the warning stays as the guard on it: **it should never fire again, which is exactly why it is kept.**
 - **D120 · 2026-08-09 · ⭐ THE FENCE IS DOWN. Distance stops being a refusal and becomes a cost.** Step C's first slice (`forests-and-gathering.md §3`), and Joe's third call from D112: *"get rid of the ring and the distance restrictions."* `forager_catchment_tiles`, `Workplace.CatchmentRadius` and `TravelCostField.IsWithinCatchment` are **deleted, not zeroed** (D98).
   - **What replaces it is not a bigger number, it is a different kind of thing.** The allocator still sorts every hand in the village by travel cost, so the nearest are claimed first and nobody walks past nearer work; what has gone is the *refusal*. **The only thing that can now disqualify a workplace is `Unreachable`** — a fact about the valley (D40's river) rather than a rule about people. Keeping that check is not optional: dropping it would assign villagers to the far bank, which is D110's seed 11 arriving by another door.
   - **⭐ AND THE MEASUREMENT THAT CHANGES HOW I READ THE WHOLE THING: the ten-tile fence was not binding.** The furthest commute anybody actually holds at sixty years is **three tiles**. Cost-first matching plus homes sited with regard to work (D18) was doing all of the work; catchment was collecting the credit. **A guard I wrote asserting the opposite — *somebody works further than the fence allowed* — failed, and its failure is the finding.**

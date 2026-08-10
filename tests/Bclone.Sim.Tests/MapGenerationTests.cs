@@ -450,7 +450,8 @@ public sealed class MapGenerationTests
 
         for (ulong seed = 1; seed <= 12; seed++)
         {
-            SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+            var sink = new InMemoryLogSink();
+            SimLoop loop = SimFactory.CreatePhase0(config, sink, seed);
 
             int lowest = int.MaxValue;
             int peak = 0;
@@ -465,6 +466,22 @@ public sealed class MapGenerationTests
             }
 
             results.Add($"seed {seed,2}: peak {peak,3}, low {lowest,3}, final {loop.World.Population,3}");
+
+            // ⭐ D111's PROMISE, GUARDED AT LAST. `MarkHome` skips `CanBuildAt` on the
+            // written grounds that `ChooseSite` has already found reachable ground — and in
+            // seed 11 it demonstrably had not, siting a house on the far bank that no builder
+            // could ever walk to and freezing that village's whole future (D110). `MarkHome`
+            // logs a warning when the promise breaks; **nothing was reading it.**
+            //
+            // Free to check here, since these are the twelve valleys the promise has to hold
+            // in and they are already being run.
+            foreach (LogEntry entry in sink.Entries)
+            {
+                Assert.False(
+                    entry.Level >= LogLevel.Warn
+                        && entry.Message.Contains("no route to it", StringComparison.Ordinal),
+                    $"Seed {seed} sited a house nobody can walk to: {entry.Message}");
+            }
 
             Assert.True(loop.World.Population >= config.StartingPopulation,
                 $"Seed {seed} died out — finished at {loop.World.Population}. " +
