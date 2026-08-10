@@ -2,9 +2,7 @@
 
 A ground-up, generational village-builder / survival sim — a spiritual successor to *Banished*. You grow a town across generations against a world that pushes back. No combat, no traditional win condition. The game is watching a lineage survive.
 
-![The valley in Year 46 — 29 villagers across 6 households](screenshots/ss002-aug1-2026.png)
-
-*Year 46 of seed 12345. Everything on screen is explained by something you can click on: why Amos walks to that thicket rather than the nearer one, what the shed is holding, which work the village wants that nobody is doing.*
+Everything on screen is explained by something you can click on: why Amos walks to that thicket rather than the nearer one, what the shed is holding, which work the village wants that nobody is doing.
 
 **Design & process docs (read these first):**
 - [`DESIGN.md`](./DESIGN.md) — vision, pillars, architecture, build order, progress tracker *(the what)*. §6 is where the project actually is; §7 is why it got there.
@@ -40,7 +38,6 @@ src/Bclone.Game/      Godot view shell — NOT in bclone.sln, see below
 tests/                xUnit suite, including the P0 determinism test
 data/                 content and tunables (JSON, modder-editable)
 specs/                one spec per system, written before the code
-screenshots/          one per version (METHODOLOGY §5)
 ```
 
 ### ⚠️ `bclone.sln` does not contain the Godot project
@@ -65,17 +62,7 @@ Two Windows batch files wrap the commands and capture timestamped logs to `logs/
 
 Every run also writes a full audit trail to `logs/bclone-<timestamp>.log` — every villager state change, every load carried, every job taken and every refusal, tick-stamped. Together with the seed shown in the header, that is what reproduces and explains a run.
 
-### Screenshots
-
-Nothing in `src/Bclone.Game` can be unit-tested, so looking at it *is* the verification — and the game can take its own picture:
-
-```bash
-set BCLONE_SCREENSHOT=D:\Projects\bclone\screenshots\ss003-<date>.png
-set BCLONE_SCREENSHOT_YEARS=45
-<godot> --path src/Bclone.Game --resolution 1640x1050
-```
-
-It runs the sim forward the given number of years, draws, writes the PNG and quits. **Every version gets one** (METHODOLOGY §5) — a changelog says what changed, a screenshot says what it looked like.
+**Nothing in `src/Bclone.Game` can be unit-tested** (D11), so looking at it *is* the verification — there is no automated check on the view, and Joe's eyes are the test.
 
 ---
 

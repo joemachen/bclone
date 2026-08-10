@@ -75,7 +75,6 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
   - **The reason is that they are not the same document.** `DESIGN.md §7` answers *why we chose this, and what we measured*, for us and for the next session; a changelog answers *what changed since the version you had*, for somebody who downloaded a build. There is no such person yet, which is exactly why nobody was writing it. Maintaining both by hand means writing every slice up three times — commit, decisions log, changelog — and **the third copy is the one that rots.**
   - **So it is generated at the tag**, from the commit log and `DESIGN.md §6`, and rewritten to be *player-facing* rather than engineering-facing. That is half an hour at release time and produces something the decisions log never will.
 - **Version bump = a deliberate step:** write `CHANGELOG.md`'s new section, bump the version source, commit, then tag `vX.Y.Z`. The tag is what triggers the release build.
-- **Every version gets a screenshot**, committed to `screenshots/` and named `ssNNN-<date>.png` — `ss001-aug1-2026.png`, and up. A changelog says what changed; a screenshot says what it *looked* like, and a generational village-builder is a thing you watch. The README shows the most recent one. Take it with the hook in §6 rather than by hand, so the framing is repeatable.
 - **Not yet wired up, and deliberately so.** `VERSION` is read by nothing, there are no tags, and `src/Bclone.Game/export_presets.cfg` does not exist — which is a hard blocker on `release.yml` ever succeeding, since it exports the "Windows Desktop" preset from a clean checkout. All three are Phase 2's merge to deal with (Joe's call), and they are recorded here so the first tag is not a surprise.
 
 ---
@@ -84,15 +83,7 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 
 - **On every push & PR:** build + run the full test suite (including the determinism test). `main` must stay green.
 - **The Godot view is built separately, and it must be.** `Bclone.Game` is deliberately not in `bclone.sln` (D11 — a root Godot project globs `**/*.cs` and would swallow the sim and the tests into the game build). The cost is that `dotnet build bclone.sln` does **not** compile the view, so CI has its own step for it. Found the hard way: a build menu was written, wired up and never appeared, because nothing had compiled it and the assembly Godot ran was a day old. **If you are checking a view change by running the game, build `src/Bclone.Game/Bclone.Game.csproj` explicitly first** — a green solution build says nothing about it.
-- **Running the game, and screenshotting it.** `run.bat` builds the view and launches Godot; set `GODOT` if your editor lives somewhere other than the path it defaults to. **The view has no tests at all** (D11), so looking at it is the verification — and `BCLONE_SCREENSHOT` makes looking repeatable:
-
-  ```
-  set BCLONE_SCREENSHOT=D:\Projects\bclone\screenshots\ss002-aug1-2026.png
-  set BCLONE_SCREENSHOT_YEARS=45
-  <godot> --path src/Bclone.Game --resolution 1640x1050
-  ```
-
-  It runs the sim forward the given number of years, draws, writes the PNG and quits. The years matter: a village at tick 3 is four people on a doorstep and an empty log, which is a true picture and a useless one. This is also how the per-version screenshot in §5 is taken.
+- **Running the game.** `run.bat` builds the view and launches Godot; set `GODOT` if your editor lives somewhere other than the path it defaults to. **The view has no tests at all** (D11) and no automated screenshot hook either (D117) — looking at it *is* the verification, and Joe's eyes are the test.
 - **On version tag (`v*`):** `.github/workflows/release.yml` builds a **Windows `.exe`**, packages it, and attaches it to a GitHub Release with the changelog as the body. The Godot steps are written but have **never run** — see §5 for the missing export preset.
 
 ---

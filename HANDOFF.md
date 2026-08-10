@@ -36,13 +36,12 @@ appeared, because the assembly Godot ran was a day old.
   step for it, and `run.bat` does it before launching.
 - **Nothing in `src/Bclone.Game` can be unit-tested at all** (D11 puts it outside the
   solution). View changes are verified by running the game and by nothing else. Say so
-  when you report one.
-- **You can do better than "I ran it and it looked fine."** `BCLONE_SCREENSHOT` writes the
-  window to a PNG and quits; `BCLONE_SCREENSHOT_YEARS` runs the sim forward first, so the
-  shot shows a village that has lived. METHODOLOGY §6 has the invocation. To check that
-  something *stopped moving*, a `GD.Print` of a node's rect whenever it changes turns "does
-  the map still jump?" into a number — and **check the thing you are measuring actually
-  varies during the run**, or the guard is watching a case that never happens.
+  when you report one. **There is no automated screenshot hook any more** (D117 removed
+  it) — Joe's eyes are the only test.
+- To check that something *stopped moving*, a `GD.Print` of a node's rect whenever it
+  changes turns "does the map still jump?" into a number — and **check the thing you are
+  measuring actually varies during the run**, or the guard is watching a case that never
+  happens.
 
 ---
 
