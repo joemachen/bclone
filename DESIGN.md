@@ -620,9 +620,18 @@ shippable and D113's `Floating`/`InColumn`/`Dress` is the one panel mechanism th
 - **Paused here on Joe's call.** Per-building floating windows are the last UI slice and stay
   queued; **step C is next**.
 
-Then: **step C** — thickets and tree stands retire, the distance fences come down, and the
-economy is re-derived against the hut's ring. **D111** (`ChooseSite`'s ruler) folds in there,
-because it is the slice that opens that method.
+**In progress — step C** — thickets and tree stands retire, the distance fences come down, and
+the economy is re-derived against the hut's ring. **D111** (`ChooseSite`'s ruler) folds in
+there, because it is the slice that opens that method.
+
+- **The cold start is measured, before any code** ✅ (D119, METHODOLOGY §3). **Joe's stated
+  risk does not happen** — one hut on the shipped 25 logs stands t224 and is staffed t241
+  against a winter at t360, and twenty years later nobody has starved or frozen. **The finding
+  is that the village stalls instead**: 4 alive at year 20 against 13 with the thickets, on 61%
+  of the food. **A second hut in the opening freezes all four** (D105's shape), and **the arm
+  that should fix it — siting the hut in real woodland — is the one catchment forbids**, which
+  is the strongest evidence yet that the slice cannot be split. Re-measure once the fence is
+  down; the price does not move without Joe.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -778,6 +787,13 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D119 · 2026-08-09 · ⚠️ STEP C, MEASURED BEFORE IT IS BUILT: the opening does not die — it STALLS. And the two things a player would do about that both kill it.** Joe kept the gatherer's hut at 25 logs with the risk stated: once the thickets retire the founders have no food at all until it is standing. A throwaway probe on the shipped config, seven arms, twenty years each, before a line of step C was written (METHODOLOGY §3).
+  - **✅ Joe's stated risk does not happen.** One hut, marked in the opening beside the pile and the builder's hut, with forage sites removed: **stands t224, staffed t241, first firewood t251, winter at t360.** Twenty years later: **nobody starved, nobody froze.** The cart's 1,200 food covers the gap comfortably; the low point is **220 food in year 2**. **25 logs is affordable, and the price does not need to move.**
+  - **⛔ THE FINDING IS THE OTHER ONE: the village never grows again.** *4 alive at year 1, and 4 alive at year 20* — against **13** on the same seed with the thickets. Food produced over twenty years is **18,126 against 29,793, about 61%**. One hut feeds four founders and never clears the births gate. That is not a death and §0.1 does not forbid it, but *"four people, forever"* is not a game either.
+  - **⛔ A SECOND HUT IN THE OPENING FREEZES ALL FOUR IN WINTER 1.** Two huts: first firewood slips t251 → **t261**, and every founder is dead by the end of year one. Three is the same. **This is D105's finding arriving from a new direction** — *marking one more sensible building is not a mistake a player should have to know about* — and the obvious way out of the stall is exactly the move that kills you.
+  - **⚠️ AND SITING THE HUT IN THE WOODS KILLS THEM TOO — BUT THAT ARM IS MEASURING THE FENCE, NOT THE FOOD.** The best woodland ring is **14 tiles** from the founding site, `forager_catchment_tiles` is **10**, so the hut stood at t234 and was **never staffed at all**. That is precisely the fence step C deletes, which makes the arm unmeasurable until it is gone — **and it is the strongest evidence yet that step C cannot be split.** The hut in the glade is working a ring the founders deliberately cleared (D112); the whole mechanic is *"less trees, less food"*, and the only arm where the hut has trees is the one catchment forbids.
+  - **What it argues for:** build step C, then re-measure arms F and G. A hut in real woodland should yield several times what one in a clearing does, and if it does, the stall resolves itself. If it does not, the price or the ring is wrong and that is Joe's call, not a quiet tune.
+  - *Probe deleted; two pieces of scaffolding reverted with it — `forage_site_count`'s "at least one" guard, and `FoodSource` indexing site zero unconditionally, which throws on a valley with none. **Both are on step C's own deletion list**, so the probe found its first two call sites for free.*
 - **D118 · 2026-08-09 · ⭐ "Give ground" was never broken. The map simply never drew the ground.** Joe, playing: *"can confirm that 'give ground' and 'take back' do paint/unpaint… they seem to do nothing."*
   - **The brush worked the whole time.** `PaintWorkGround` recorded the tiles, `ZoneMap` owned them, the hut's own panel counted them — *"Ground — 27 tiles, enough hands for 24"* — and `VillageMap` drew **residential** zones and **harvest** zones and no third layer. So the one feedback the player actually looks at, the ground they just painted, never changed. **From the chair the brush was dead.**
   - **⚠️ A zone you can paint and cannot see is worse than one you cannot paint.** §1.1 is about the game explaining itself, and a brush whose only evidence is a number in a row somewhere else explains nothing. This is D112 slice 4's real gap: the decision log recorded *"D86's work ground reached the player at last"* and it had reached the player's **panel**, not the player's **map**.
