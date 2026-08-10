@@ -574,7 +574,6 @@ public sealed class SimWorld
             Name = name,
             Position = position,
             Capacity = VillageEconomy.BuilderHutCapacity(Config),
-            CatchmentRadius = TravelCostField.TilesToCost(Config.ForagerCatchmentTiles),
         });
 
     /// <summary>Whether anyone in the village builds — that is, whether a hut stands.</summary>
@@ -1921,7 +1920,6 @@ public sealed class SimWorld
             Name = $"{name} (building)",
             Position = position,
             Capacity = 0,
-            CatchmentRadius = TravelCostField.TilesToCost(Config.ForagerCatchmentTiles),
             Construction = new ConstructionSite
             {
                 Kind = kind,
@@ -2078,7 +2076,6 @@ public sealed class SimWorld
                     Name = plan.Name,
                     Position = site.Position,
                     Capacity = Config.WoodcutterHutCapacity,
-                    CatchmentRadius = site.CatchmentRadius,
                 });
                 break;
 
@@ -2096,7 +2093,6 @@ public sealed class SimWorld
                     Name = plan.Name,
                     Position = site.Position,
                     Capacity = VillageEconomy.GathererHutCapacity(Config),
-                    CatchmentRadius = site.CatchmentRadius,
                     GatheringRadius = Config.GathererHutRingTiles,
                 });
                 break;
@@ -2117,7 +2113,6 @@ public sealed class SimWorld
                     Name = plan.Name,
                     Position = site.Position,
                     Capacity = VillageEconomy.RequiredTreeStandSeats(Config),
-                    CatchmentRadius = site.CatchmentRadius,
                 });
                 break;
 
@@ -2140,7 +2135,6 @@ public sealed class SimWorld
                         Name = plan.Name,
                         Position = site.Position,
                         Capacity = Config.MarketCapacity,
-                        CatchmentRadius = site.CatchmentRadius,
                     });
                 }
 
@@ -2563,7 +2557,6 @@ public sealed class SimWorld
 
         TreeStand = new TreeStand { YieldPerCut = config.CutYield };
 
-        int catchment = TravelCostField.TilesToCost(config.ForagerCatchmentTiles);
         int nextWorkplaceId = 1;
 
         // Several sites, spread around the valley, so an outlying household has
@@ -2583,7 +2576,6 @@ public sealed class SimWorld
                 Name = forageNames[i],
                 Position = position,
                 Capacity = config.ForageSiteCapacity,
-                CatchmentRadius = catchment,
             });
         }
 
@@ -2601,7 +2593,6 @@ public sealed class SimWorld
                 Name = standNames[i],
                 Position = Map.TreeStands[i],
                 Capacity = config.TreeStandCapacity,
-                CatchmentRadius = catchment,
             });
         }
 
@@ -2636,7 +2627,6 @@ public sealed class SimWorld
             Name = "the builder's hut",
             Position = Offset(origin, config.BuilderHutX, config.BuilderHutY),
             Capacity = VillageEconomy.BuilderHutCapacity(config),
-            CatchmentRadius = catchment,
         });
 
         // The first workplace that consumes an input rather than only producing one
@@ -2649,7 +2639,6 @@ public sealed class SimWorld
             Name = "the woodcutter's hut",
             Position = Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY),
             Capacity = config.WoodcutterHutCapacity,
-            CatchmentRadius = catchment,
         });
 
         // Somewhere to put things (D30). Two buildings rather than one, because food
@@ -2713,7 +2702,6 @@ public sealed class SimWorld
                 Name = "the market",
                 Position = market,
                 Capacity = config.MarketCapacity,
-                CatchmentRadius = catchment,
             });
         }
 

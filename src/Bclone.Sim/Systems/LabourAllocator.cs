@@ -103,6 +103,10 @@ internal static class LabourAllocator
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             world.Villagers[i].WorkplaceId = 0;
+
+            // Cleared with the job, so a reshuffle that gives somebody a shorter walk does
+            // not leave last year's complaint about the road on them.
+            world.Villagers[i].CommuteNote = string.Empty;
         }
 
         Match(world, quota, before);
@@ -277,7 +281,23 @@ internal static class LabourAllocator
 
                 int cost = world.TravelCost.Cost(home, workplace.Position);
 
-                if (cost > workplace.CatchmentRadius)
+                // ⭐ THE FENCE IS GONE (`forests-and-gathering.md §3`, Joe's third call). This
+                // was `cost > workplace.CatchmentRadius`, a hard cutoff at ten tiles, and it
+                // is now *can they get there at all*.
+                //
+                // **Reachability is not the same fence made bigger.** Catchment said "too far
+                // is forbidden"; this says "no route is impossible", which is a fact about the
+                // valley rather than a rule about the village. What used to be a refusal is a
+                // cost now: the candidates are sorted cost-first, so a nearer workplace still
+                // wins — the walk shapes the answer instead of bounding it. **That is D58's
+                // settled mechanism arriving at last** (spec §3.2).
+                //
+                // ⚠️ The unreachable check must stay. Since D40 the river is impassable and
+                // `Unreachable` is a sentinel rather than a big number, so dropping this
+                // would not merely allow long walks — it would assign people to workplaces on
+                // the far bank they can never arrive at, which is D110's seed 11 by another
+                // door.
+                if (cost == TravelCostField.Unreachable)
                 {
                     continue;
                 }
@@ -328,12 +348,66 @@ internal static class LabourAllocator
         AppendRival(world, workplace, cost, candidates, index, reason);
 
         villager.JobReason = reason.ToString();
+        villager.CommuteNote = DescribeTheCommute(world, workplace, cost);
 
         // Into the audit log as well as onto the villager. The sentence on a villager
         // answers "why is she doing that?" for whoever is looking right now; the log
         // answers "why did the whole village rearrange itself in year 84?", which is a
         // question nobody can ask a UI panel a century later.
         world.LogVillager(LogLevel.Debug, villager, "labour", villager.JobReason);
+    }
+
+    /// <summary>
+    /// What the walk to work costs, said out loud — <b>and only when it costs enough</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ This is the condition Joe's third call carried</b> (D112, spec §7.1). Catchment
+    /// used to make a ruinous commute impossible; deleting it makes one <em>silent</em>, and a
+    /// village that thins out with nothing on screen saying why is §1.1 failing.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE THRESHOLD IS THE ECONOMY'S OWN BUDGET, AND THE FIRST VERSION GOT THIS BADLY
+    /// WRONG.</b> It said the walk was worth mentioning past a third of the working day, on
+    /// the assumption that would be rare — and measurement said otherwise: <b>a five-tile
+    /// commute is already 76% of the day</b>, because walking dominates gathering in this
+    /// economy. Every working villager got a note, which is a note that says nothing about
+    /// anybody.
+    /// </para>
+    /// <para>
+    /// So the anchor is <see cref="VillageEconomy.MaxHomeToWorkTiles"/> — <b>the walk the
+    /// village's food supply is actually derived against</b> (D16). Inside it there is
+    /// nothing to say: the economy planned for this person. Beyond it they are costing the
+    /// village more than it budgeted, which is precisely the consequence that deleting
+    /// catchment introduced and precisely what §7.1 requires be visible.
+    /// </para>
+    /// <para>
+    /// <b>And it says what it costs, not how far it is.</b> "Nineteen tiles" is a number the
+    /// player must convert into a consequence; <em>"brings back about a third of what a
+    /// nearer pair of hands would"</em> is the consequence. The same shape as the gatherer
+    /// hut's own sentence (D112), because it is the same kind of fact.
+    /// </para>
+    /// </remarks>
+    private static string DescribeTheCommute(SimWorld world, Workplace workplace, int cost)
+    {
+        int tiles = Tiles(cost);
+        int budget = VillageEconomy.MaxHomeToWorkTiles(world.Config);
+        if (tiles <= budget)
+        {
+            return string.Empty;
+        }
+
+        // Trips are what a year of work actually produces, and a trip is the walk there and
+        // back plus the work at the end. Somebody on the doorstep is the yardstick.
+        int walking = world.TravelCost.TicksForCost(cost) * 2;
+        int atTheDoor = world.Config.GatherTicks;
+        int theirs = walking + atTheDoor;
+
+        int share = theirs <= 0 ? 100 : atTheDoor * 100 / theirs;
+
+        return $"It is {tiles} tiles to {workplace.Name} — beyond the {budget} the village's "
+            + $"food is budgeted for, so they bring back about {share}% of what a pair of "
+            + "hands at the door would.";
     }
 
     /// <summary>
@@ -348,7 +422,7 @@ internal static class LabourAllocator
     private static void AppendNearerPlaceTheyDidNotGet(
         SimWorld world, Villager villager, Workplace taken, int cost, StringBuilder reason)
     {
-        Workplace? nearest = NearestInCatchment(world, villager, out int nearestCost);
+        Workplace? nearest = NearestReachable(world, villager, out int nearestCost);
         if (nearest is null || nearest.Id == taken.Id || nearestCost >= cost)
         {
             return;
@@ -420,15 +494,24 @@ internal static class LabourAllocator
                 continue;
             }
 
-            Workplace? reachable = NearestInCatchment(world, villager, out _);
+            Workplace? reachable = NearestReachable(world, villager, out _);
             if (reachable is null)
             {
-                Workplace? closest = NearestAnywhere(world, villager, out int closestCost);
+                // ⚠️ THE ONLY WAY TO REACH THIS SINCE THE FENCE CAME DOWN IS WATER. It used
+                // to mean "everything is further than its catchment"; now it means there is
+                // no walk at all from this doorstep to any workplace in the valley — rarer,
+                // and much more serious, so it says a different thing.
+                //
+                // ⚠️ And it quotes the distance a CROW would fly, deliberately. The nearest
+                // workplace here is by definition unreachable, so its travel cost is the
+                // `Unreachable` sentinel and printing it would put a nonsense number in a
+                // sentence whose whole job is being true.
+                Workplace? closest = NearestAnywhere(world, villager, out _);
                 villager.JobReason = closest is null
                     ? "No work: there is nowhere in the valley to work."
-                    : $"No work: nothing within reach of home — the nearest is {closest.Name}, " +
-                      $"{Tiles(closestCost)} tiles away and outside its catchment of " +
-                      $"{Tiles(closest.CatchmentRadius)} tiles.";
+                    : $"No work: there is no way to walk from home to any of it. The nearest, "
+                      + $"{closest.Name}, is {world.RestingPlaceOf(villager).ManhattanDistanceTo(closest.Position)} "
+                      + "tiles off in a straight line — and the water is in the way.";
                 continue;
             }
 
@@ -533,7 +616,7 @@ internal static class LabourAllocator
                 continue;
             }
 
-            if (!InCatchment(world, villager, workplace))
+            if (!CanReach(world, villager, workplace))
             {
                 workplace.WorkerIds.Remove(villager.Id);
                 Release(villager, $"No work: moved too far from {workplace.Name} to keep working there.");
@@ -618,6 +701,10 @@ internal static class LabourAllocator
     {
         villager.WorkplaceId = 0;
         villager.JobReason = why;
+
+        // Somebody with no job has no commute. Leaving the note behind would have the panel
+        // telling a resting villager how much of their day the road takes.
+        villager.CommuteNote = string.Empty;
     }
 
     // ---------------------------------------------------------------
@@ -650,7 +737,7 @@ internal static class LabourAllocator
     /// <em>"the granary (building) is full — it has its 0 hands"</em>: true of a place nobody
     /// can ever work, and useless to act on.
     /// </remarks>
-    private static Workplace? NearestInCatchment(SimWorld world, Villager villager, out int cost)
+    private static Workplace? NearestReachable(SimWorld world, Villager villager, out int cost)
     {
         Workplace? best = null;
         cost = int.MaxValue;
@@ -665,7 +752,7 @@ internal static class LabourAllocator
 
             int candidate = CostBetween(world, villager, workplace);
 
-            if (candidate <= workplace.CatchmentRadius && candidate < cost)
+            if (candidate != TravelCostField.Unreachable && candidate < cost)
             {
                 best = workplace;
                 cost = candidate;
@@ -696,7 +783,7 @@ internal static class LabourAllocator
             }
 
             int candidate = CostBetween(world, villager, workplace);
-            if (candidate <= workplace.CatchmentRadius && candidate < bestCost)
+            if (candidate != TravelCostField.Unreachable && candidate < bestCost)
             {
                 best = workplace;
                 bestCost = candidate;
@@ -754,8 +841,13 @@ internal static class LabourAllocator
     internal static int CostBetween(SimWorld world, Villager villager, Workplace workplace) =>
         world.TravelCost.Cost(world.RestingPlaceOf(villager), workplace.Position);
 
-    internal static bool InCatchment(SimWorld world, Villager villager, Workplace workplace) =>
-        CostBetween(world, villager, workplace) <= workplace.CatchmentRadius;
+    /// <summary>Whether any walk at all gets this villager from home to that work.</summary>
+    /// <remarks>
+    /// <b>This was <c>InCatchment</c></b>, and the rename is the change: since the fence came
+    /// down the only thing that disqualifies a workplace is having no route to it.
+    /// </remarks>
+    internal static bool CanReach(SimWorld world, Villager villager, Workplace workplace) =>
+        CostBetween(world, villager, workplace) != TravelCostField.Unreachable;
 
     private static int Tiles(int cost) => cost / TravelCostField.BaseTileCost;
 

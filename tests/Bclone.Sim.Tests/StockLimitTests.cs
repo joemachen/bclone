@@ -126,8 +126,21 @@ public sealed class StockLimitTests
     //                                    shipped 15383236497282309390
     //   before the valley was wooded:    fixture 8100668875656351515,
     //                                    shipped 10300327615504873654
-    private const ulong FixtureFiftyYearHash = 7753167381277072647UL;
-    private const ulong ShippedFiftyYearHash = 3051795578767497062UL;
+    //   before catchment was deleted:    fixture 7753167381277072647,
+    //                                    shipped 3051795578767497062
+    //
+    // ⭐ RE-TAKEN FOR THE FENCE COMING DOWN (`forests-and-gathering.md §3`, D120), and the
+    // one-sentence reason is: **a villager may now hold a job the ten-tile catchment used to
+    // forbid, so who works where changes and everything downstream of it follows.**
+    //
+    // ⚠️ Worth recording because it is not what I expected: **the furthest commute anybody
+    // actually holds is three tiles**, so no surviving villager is walking further than the
+    // fence allowed. The hash moves anyway, because the fence also removed candidates during
+    // matching — somebody previously left idle now takes a distant job, and fifty years of
+    // that is a different village. A golden that moves for a reason you cannot state is a
+    // wrong change; this one moved for a reason that took measuring to state correctly.
+    private const ulong FixtureFiftyYearHash = 8652554140921204871UL;
+    private const ulong ShippedFiftyYearHash = 2151271050042369210UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

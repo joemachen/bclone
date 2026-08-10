@@ -8,19 +8,25 @@ namespace Bclone.Game;
 
 /// <summary>How much explanation the map draws on top of the village.</summary>
 /// <remarks>
-/// One control for both the home-to-work routes and the catchment rings, because they
-/// answer the same question — <em>why is that person walking over there?</em> — and
-/// splitting them into two toggles would mean two controls for one thought.
+/// One control for both the home-to-work routes and the gathering rings, because they answer
+/// the same question — <em>why is that person walking over there?</em> — and splitting them
+/// into two toggles would mean two controls for one thought.
+/// <para>
+/// It used to draw <em>catchment</em> rings, which were the fence a workplace enforced on how
+/// far anybody could come from. That fence is deleted (`forests-and-gathering.md §3`), and a
+/// ring here is now a gatherer's hut's <b>gathering</b> radius — the ground its yield is
+/// computed from, which is a fact about the building rather than a rule about people.
+/// </para>
 /// </remarks>
 public enum MapDetail
 {
     /// <summary>Just the village. For watching rather than auditing.</summary>
     Off = 0,
 
-    /// <summary>The selected villager's route and their workplace's catchment.</summary>
+    /// <summary>The selected villager's route, and their workplace's ring if it has one.</summary>
     Selected = 1,
 
-    /// <summary>Everybody's route and every catchment. Busy, and meant to be.</summary>
+    /// <summary>Everybody's route and every ring. Busy, and meant to be.</summary>
     All = 2,
 }
 
@@ -1265,16 +1271,27 @@ public partial class VillageMap : Control
             Vector2 centre = ToScreen(workplace.Position);
             Color colour = ColourOf(workplace.Kind);
 
-            // Catchment as a faint ring: the "does not walk across the map" rule made
-            // visible rather than merely enforced. Scoped to the detail control,
-            // because seven overlapping rings drawn at all times was most of the
-            // clutter and none of the meaning.
+            // ⛔ THE CATCHMENT RING IS GONE WITH THE CATCHMENT. It drew *"how far it is
+            // reasonable to come from"* as a faint circle — the fence made visible rather
+            // than merely enforced — and there is no fence to draw
+            // (`forests-and-gathering.md §3`).
+            //
+            // **Nothing replaces it, deliberately.** The thing that decides who works where
+            // is a cost-first sort over every hand in the village, and there is no circle
+            // that says that: the honest picture of it is the route lines this map already
+            // draws, one per villager, which show the actual walk rather than a boundary
+            // nobody is subject to. Drawing a ring that no longer means anything would be
+            // worse than drawing nothing — it would still look like a rule.
+            //
+            // A gatherer's hut DOES still have a ring, and it is a different thing entirely:
+            // the ground its yield is computed from. That is `GatheringRadius`, and it is
+            // drawn below on the huts that have one.
             bool ringWanted = _detail == MapDetail.All
                 || (_detail == MapDetail.Selected && workplace.Id == selectedWorkplace);
 
-            if (ringWanted)
+            if (ringWanted && workplace.GatheringRadius > 0)
             {
-                float radius = workplace.CatchmentRadius / (float)TravelCostField.BaseTileCost * _pixelsPerTile;
+                float radius = workplace.GatheringRadius * _pixelsPerTile;
                 if (radius <= Mathf.Max(Size.X, Size.Y) * 2f)
                 {
                     DrawArc(centre, radius, 0f, Mathf.Tau, 64, colour with { A = 0.22f }, 1f);

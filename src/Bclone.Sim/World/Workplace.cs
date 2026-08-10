@@ -88,10 +88,12 @@ public enum JobKind
 /// themselves.
 /// </para>
 /// <para>
-/// <see cref="Workplace.CatchmentRadius"/> is measured in <b>travel cost</b>, not tiles, and
-/// read from the one shared <see cref="TravelCostField"/>. That is what kills the
-/// villager who walks across the map for one log, and it is what will let a worn path
-/// widen a workplace's reach in Phase 3 without either system knowing about the other.
+/// <b>It used to state how far it was reasonable to come from, and that fence is gone</b>
+/// (`forests-and-gathering.md §3`). Distance still decides who works where — the allocator
+/// sorts candidates by travel cost off the one shared <see cref="TravelCostField"/>, so the
+/// nearest hands are claimed first — but it no longer <em>refuses</em>. What used to kill the
+/// villager who walked across the map for one log is now the walk itself costing them their
+/// working year, which is a consequence rather than a rule, and one they can see.
 /// </para>
 /// </remarks>
 /// <summary>What a workplace is currently set to do, where it can do more than one thing.</summary>
@@ -142,8 +144,16 @@ public sealed class Workplace
     /// </remarks>
     public required int Capacity { get; init; }
 
-    /// <summary>How far it is reasonable to travel here, in travel-cost units.</summary>
-    public required int CatchmentRadius { get; init; }
+    // ⭐ `CatchmentRadius` IS DELETED (`forests-and-gathering.md §3`, Joe's third call).
+    // *"How far it is reasonable to travel here"* was a number the village enforced as a
+    // refusal — past ten tiles you simply could not hold the job. It is a **cost** now, not
+    // a fence: candidates are sorted cost-first, so a nearer workplace still wins, and a
+    // ruinous commute is a mistake the player can make, see and pay for.
+    //
+    // **Deleted rather than zeroed** (D98): a radius of zero would mean *nobody may work
+    // anywhere*, which is not what "no fence" means, and a number nothing reads is a lie
+    // waiting to be found. The only thing that disqualifies a workplace now is
+    // `TravelCostField.Unreachable`, which is a fact about the valley rather than a rule.
 
     /// <summary>
     /// How far this place reaches for what it harvests, in tiles. Zero for everything that
@@ -157,9 +167,9 @@ public sealed class Workplace
     /// a tree stand, a market — and those yield what they have always yielded.
     /// </para>
     /// <para>
-    /// <b>In tiles, not in travel cost</b>, unlike <see cref="CatchmentRadius"/>. Catchment is
-    /// about a walk and so must go round the river; a ring is about *area*, is drawn on the
-    /// map, and the player counts it in squares.
+    /// <b>In tiles, not in travel cost.</b> A ring is about *area* — it is drawn on the map
+    /// and the player counts it in squares — where every other distance in this game is a
+    /// walk that has to go round the river.
     /// </para>
     /// </remarks>
     public int GatheringRadius { get; init; }

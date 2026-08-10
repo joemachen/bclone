@@ -52,27 +52,12 @@ public sealed class TravelCostFieldTests
         Assert.Equal(15, slow.TicksBetween(new GridPos(0, 0), new GridPos(5, 0)));
     }
 
-    [Fact]
-    public void CatchmentIsMeasuredInCostNotTiles()
-    {
-        // The distinction that lets a road extend a workplace's reach later without
-        // catchment needing to know roads exist.
-        var field = Field;
-        var workplace = new GridPos(0, 0);
-        int radius = TravelCostField.TilesToCost(4);
-
-        Assert.True(field.IsWithinCatchment(workplace, new GridPos(4, 0), radius));
-        Assert.False(field.IsWithinCatchment(workplace, new GridPos(5, 0), radius));
-    }
-
-    [Fact]
-    public void CatchmentBoundaryIsInclusive()
-    {
-        var field = Field;
-        int radius = TravelCostField.TilesToCost(3);
-
-        Assert.True(field.IsWithinCatchment(new GridPos(0, 0), new GridPos(3, 0), radius));
-    }
+    // ⛔ `CatchmentIsMeasuredInCostNotTiles` and `CatchmentBoundaryIsInclusive` are deleted
+    // with `IsWithinCatchment` itself (`forests-and-gathering.md §3`). They tested a helper
+    // nothing in the sim called any more, named after a concept the game no longer has. The
+    // distinction they were protecting — that distance is measured in *cost*, so a road can
+    // extend a workplace's reach without either system knowing about the other — is intact
+    // and is still tested, by `CostAgreesWithTheDistanceUsedForMovement` below.
 
     [Fact]
     public void CostAgreesWithTheDistanceUsedForMovement()

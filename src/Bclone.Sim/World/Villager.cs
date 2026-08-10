@@ -133,6 +133,31 @@ public sealed class Villager
     public string WorkNote { get; set; } = string.Empty;
 
     /// <summary>
+    /// What this villager's commute costs them, when it costs enough to matter.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE CONDITION ON DELETING CATCHMENT, AND IT SHIPS IN THE SAME SLICE AS THE
+    /// DELETION</b> (D112, spec §7.1). A fence makes a ruinous commute impossible; removing
+    /// it makes a ruinous commute <em>silent</em>, and a village that thins out with nothing
+    /// on screen saying why is §1.1 failing and the one uncozy state §0.1 rules out.
+    /// </para>
+    /// <para>
+    /// So the walk is stated as what it actually takes: <em>"Elias walks 19 tiles to the
+    /// north hut — about two-fifths of his working year goes on the road."</em> A share of
+    /// the year rather than a distance, because tiles are a number and *most of your year*
+    /// is a decision. Empty when the walk is ordinary; a note that appears for everybody
+    /// says nothing about anybody.
+    /// </para>
+    /// <para>
+    /// <b>Not hashed, and not sim state in any meaningful sense</b> — the same standing as
+    /// <see cref="JobReason"/> and <see cref="WorkNote"/>. It is derived from the position
+    /// and the workplace, both of which are hashed already.
+    /// </para>
+    /// </remarks>
+    public string CommuteNote { get; set; } = string.Empty;
+
+    /// <summary>
     /// The in-game year they were born. Zero for founders, who arrive already grown
     /// and whose age therefore tracks the calendar directly.
     /// </summary>

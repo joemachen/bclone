@@ -81,7 +81,7 @@ public sealed class LabourAllocationTests
 
                 int otherCost = LabourAllocator.CostBetween(world, villager, other);
                 Assert.False(
-                    otherCost < heldCost && otherCost <= other.CatchmentRadius,
+                    otherCost < heldCost && otherCost != TravelCostField.Unreachable,
                     $"{villager.Name} walks to {held.Name} ({heldCost / 10} tiles) past " +
                     $"{other.Name} ({otherCost / 10} tiles), which had room.");
             }
@@ -209,13 +209,29 @@ public sealed class LabourAllocationTests
     }
 
     // ---------------------------------------------------------------
-    //  §7 — Catchment still binds
+    //  §7 — Nobody is ever given work they cannot walk to
     // ---------------------------------------------------------------
 
+    /// <summary>
+    /// The fence is gone, and <b>this is what replaced it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This was <c>NoAssignmentIsEverOutsideAWorkplacesCatchment</c>, run at a deliberately
+    /// tight five-tile catchment. Catchment is deleted (`forests-and-gathering.md §3`), so
+    /// the old claim is not merely unenforced — <b>it is no longer something the design
+    /// wants to be true</b>. A long walk is a mistake the player is now allowed to make.
+    /// </para>
+    /// <para>
+    /// <b>The claim that survives is the one about water</b> (D40): however far anybody is
+    /// sent, there must be a walk that gets them there. Losing this is D110's seed 11, where
+    /// a village spent a century walking toward a place it could never arrive at.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void NoAssignmentIsEverOutsideAWorkplacesCatchment()
+    public void NobodyIsEverGivenWorkTheyCannotWalkTo()
     {
-        SimLoop loop = Build(Config with { ForagerCatchmentTiles = 5 });
+        SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear * 60);
 
         foreach (Villager villager in loop.World.Villagers)
@@ -226,10 +242,25 @@ public sealed class LabourAllocationTests
             }
 
             Workplace workplace = loop.World.FindWorkplace(villager.WorkplaceId)!;
-            Assert.True(LabourAllocator.InCatchment(loop.World, villager, workplace),
-                $"{villager.Name} works at {workplace.Name} from outside its catchment.");
+            Assert.True(LabourAllocator.CanReach(loop.World, villager, workplace),
+                $"{villager.Name} holds a job at {workplace.Name} with no way to walk there.");
         }
     }
+
+    // ⛔ A GUARD I WROTE AND THEN DELETED, BECAUSE IT PASSED BY LUCK.
+    //
+    // It asserted that nobody ever ends up walking further than the food budget, having
+    // measured the furthest commute at year 60 as **three tiles against a budget of seven**.
+    // That measurement is real and is why deleting the fence was safe — cost-first matching
+    // plus homes sited with regard to work (D18) keeps people close without anything
+    // forbidding anything.
+    //
+    // **But it is not an invariant, and the test below proves it in the same run:** at a
+    // reshuffle boundary, six villagers are beyond the budget and are told so. Both are true;
+    // they are different moments. A guard that holds at one tick of one seed is a guard that
+    // will go red for a reason nobody can explain, which is worse than no guard —
+    // `TheCommuteNoteAppearsExactlyWhenTheWalkIsBeyondTheBudget` asserts the thing the design
+    // actually promises, at every tick it is run at.
 
     // ---------------------------------------------------------------
     //  §7 — Shedding takes the furthest first
@@ -291,7 +322,11 @@ public sealed class LabourAllocationTests
         // "No work available" would collapse three genuinely different situations —
         // build somewhere nearer, you need another site, you have more hands than
         // mouths — into a shrug. Each has a different next move for the player.
-        SimLoop loop = RunToAReshuffle(Config with { ForagerCatchmentTiles = 4 }, 60);
+        //
+        // It used to squeeze catchment to four tiles to guarantee some idleness; catchment
+        // is gone (`forests-and-gathering.md §3`) and a full village produces idle hands
+        // anyway, from quota and from capacity, which are the reasons that remain.
+        SimLoop loop = RunToAReshuffle(Config, 60);
 
         foreach (Villager villager in loop.World.Villagers)
         {
@@ -311,34 +346,72 @@ public sealed class LabourAllocationTests
         }
     }
 
-    [Fact]
-    public void CatchmentRefusalNamesTheDistanceAndTheReach()
-    {
-        // A catchment of one tile reaches nobody, so everyone is refused for exactly
-        // one reason and it had better be the right one.
-        SimLoop loop = RunToAReshuffle(Config with { ForagerCatchmentTiles = 1 }, 1);
+    // ⛔ `CatchmentRefusalNamesTheDistanceAndTheReach` IS DELETED, not re-pointed. It squeezed
+    // catchment to one tile and asserted the refusal named the distance and the reach —
+    // *"outside its catchment of 1 tiles"*. **There is no such refusal any more** and there
+    // is deliberately no replacement for it: being too far from work is not a thing the
+    // village says no to. What replaced it is the sentence below, which is about a walk
+    // somebody IS making rather than one they were forbidden.
 
-        // Whoever is out of reach, rather than villager zero. Homes are placed with
-        // regard to the work now (D18), so which particular founder ends up beside a
-        // patch — and therefore inside even a one-tile catchment — is a property of the
-        // valley. The message is what this test is about, not the casting.
-        Villager? villager = null;
-        foreach (Villager candidate in loop.World.Villagers)
+    /// <summary>
+    /// ⭐ The commute note says something exactly when there is something to say — <b>the
+    /// condition that let catchment be deleted</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// D112's third call carried this as a condition rather than a caveat: removing the fence
+    /// makes a long walk silent, and a village thinning out with nothing on screen saying why
+    /// is §1.1 failing.
+    /// </para>
+    /// <para>
+    /// <b>Asserted as an invariant rather than posed as a scenario</b>, because posing it is
+    /// how the first version of the threshold got through: it looked for *a* villager with a
+    /// note, found one, and never noticed that <em>everybody</em> had one. The rule is that a
+    /// note appears if and only if the walk is beyond the food budget, and both halves are
+    /// checked on every working villager.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheCommuteNoteAppearsExactlyWhenTheWalkIsBeyondTheBudget()
+    {
+        SimLoop loop = RunToAReshuffle(Config, 60);
+        int budget = VillageEconomy.MaxHomeToWorkTiles(Config);
+
+        int silent = 0;
+        int noted = 0;
+
+        foreach (Villager villager in loop.World.Villagers)
         {
-            if (!candidate.HasJob
-                && candidate.JobReason.Contains("nothing within reach", System.StringComparison.Ordinal))
+            if (!villager.HasJob)
             {
-                villager = candidate;
-                break;
+                continue;
+            }
+
+            Workplace workplace = loop.World.FindWorkplace(villager.WorkplaceId)!;
+            int tiles = LabourAllocator.CostBetween(loop.World, villager, workplace)
+                / TravelCostField.BaseTileCost;
+
+            if (tiles > budget)
+            {
+                noted++;
+                Assert.True(
+                    villager.CommuteNote.Length > 0,
+                    $"{villager.Name} walks {tiles} tiles against a budget of {budget} and "
+                    + "nothing says so.");
+            }
+            else
+            {
+                silent++;
+                Assert.True(
+                    villager.CommuteNote.Length == 0,
+                    $"{villager.Name} walks {tiles} tiles, inside the {budget} the village "
+                    + $"budgets for, and is complaining about it: \"{villager.CommuteNote}\"");
             }
         }
 
-        Assert.True(villager is not null,
-            "A one-tile catchment left nobody out of reach, so this guard is vacuous (D7).");
-        _output.WriteLine($"{villager!.Name}: {villager.JobReason}");
-
-        Assert.Contains("nothing within reach of home", villager.JobReason, System.StringComparison.Ordinal);
-        Assert.Contains("outside its catchment", villager.JobReason, System.StringComparison.Ordinal);
+        // Anti-vacuity (D7): if nobody is working, both halves above pass by never running.
+        _output.WriteLine($"{silent} affordable commutes, {noted} beyond the budget.");
+        Assert.True(silent > 0, "Nobody is working, so this guard checked nothing.");
     }
 
     [Fact]
@@ -495,19 +568,29 @@ public sealed class LabourAllocationTests
     //  §8 — Definition of Done
     // ---------------------------------------------------------------
 
+    /// <summary>
+    /// THE acceptance test (spec §8) — <b>and it now runs with no fence at all.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It was <c>TheVillageSurvivesAndGrowsWithCatchmentGenuinelyBinding</c>, and the binding
+    /// half of that claim is gone: catchment is deleted
+    /// (`forests-and-gathering.md §3`, Joe). What survives is the half that always mattered —
+    /// <b>the village lives and grows over 150 years</b> — and it is a stronger statement
+    /// without the fence than it was with it, because nothing is stopping a villager taking a
+    /// ruinous job any more except the cost-first sort.
+    /// </para>
+    /// <para>
+    /// <b>Its anti-vacuity moved rather than being dropped.</b> The old guard asserted that
+    /// some villager/workplace pairs were out of reach, which is what made the fence real;
+    /// <c>SomebodyWorksFurtherThanTheOldFenceWouldHaveAllowed</c> is the same idea from the
+    /// other side, and the pair-counting below now measures <em>reachability</em>, which is
+    /// the only thing left that can exclude anybody.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void TheVillageSurvivesAndGrowsWithCatchmentGenuinelyBinding()
+    public void TheVillageSurvivesAndGrowsWithNoDistanceFenceAtAll()
     {
-        // THE acceptance test (spec §8), and the thing none of the three previous
-        // attempts achieved. A catchment that binds means outlying households really
-        // are restricted to the sites near them — not a generous radius that reaches
-        // everything and therefore constrains nothing.
-        //
-        // Ten tiles is the shipped value, down from twelve. Below ten the village
-        // still dies, and the cause is not food: it is that the one tree stand
-        // becomes unreachable for most homes, so no timber is cut, no houses are
-        // built, and the settlement ages out. D19's argument about food sources
-        // applies to timber too, and that is the next piece of work.
         SimConfig config = Config;
         SimLoop loop = Build(config);
 
@@ -525,7 +608,7 @@ public sealed class LabourAllocationTests
 
             foreach (Workplace workplace in world.Workplaces)
             {
-                if (LabourAllocator.InCatchment(world, villager, workplace))
+                if (LabourAllocator.CanReach(world, villager, workplace))
                 {
                     reachable++;
                 }
@@ -538,21 +621,29 @@ public sealed class LabourAllocationTests
 
         _output.WriteLine(
             $"Year {world.Clock.Year}: {world.Population} alive in {world.Households.Count} houses. " +
-            $"Villager/workplace pairs — {reachable} within reach, {unreachable} out of reach.");
+            $"Villager/workplace pairs — {reachable} walkable, {unreachable} cut off.");
 
-        Assert.True(unreachable > 0,
-            "The catchment reaches every workplace from every home, so it constrains nothing.");
+        // ⚠️ NO CLAIM ABOUT `unreachable` ANY MORE, in either direction. It used to have to be
+        // positive, because a fence that reaches everything constrains nothing; with the fence
+        // gone the only thing that can cut a workplace off is water, and whether a given seed's
+        // river cuts anybody off is a property of that valley rather than of this design.
+        // Asserting either way would be asserting something about seed 12345's geography.
         Assert.True(world.Population > config.StartingPopulation,
-            $"The village did not survive a binding catchment: {world.Population} alive.");
+            $"The village did not survive without a distance fence: {world.Population} alive.");
     }
 
+    /// <summary>
+    /// Every household can <b>walk</b> to food. The fence is gone; the water is not.
+    /// </summary>
+    /// <remarks>
+    /// It was <c>ABindingCatchmentStillLetsEveryHouseholdReachSomewhere</c> and asked whether
+    /// a site lay inside the fence. The question that survives is D40's: a granary on the far
+    /// bank is not a long walk, it is no walk at all — and a household with no walk to any
+    /// food is the silent unrecoverable state §0.1 rules out.
+    /// </remarks>
     [Fact]
-    public void ABindingCatchmentStillLetsEveryHouseholdReachSomewhere()
+    public void EveryHouseholdCanWalkToFood()
     {
-        // Why several forage sites had to land first (D19): with one food source, a
-        // catchment tight enough to bind is a catchment that starves the outskirts.
-        // This is the property that makes the acceptance test above survivable rather
-        // than merely lucky.
         SimConfig config = Config;
         SimLoop loop = Build(config);
         loop.Step(config.TicksPerYear * 150);
@@ -570,8 +661,7 @@ public sealed class LabourAllocationTests
             foreach (Workplace workplace in loop.World.Workplaces)
             {
                 if (workplace.Kind == JobKind.Forager
-                    && loop.World.TravelCost.IsWithinCatchment(
-                        household.Home(), workplace.Position, workplace.CatchmentRadius))
+                    && loop.World.TravelCost.CanReach(household.Home(), workplace.Position))
                 {
                     anywhere = true;
                     break;
@@ -579,7 +669,8 @@ public sealed class LabourAllocationTests
             }
 
             Assert.True(anywhere,
-                $"The {household.Name} household at {household.Home()} has no forage site in reach.");
+                $"The {household.Name} household at {household.Home()} cannot walk to any "
+                + "food at all.");
         }
 
         // Anti-vacuity: a village that died leaves no occupied households, and the

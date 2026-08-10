@@ -983,25 +983,19 @@ public sealed record SimConfig
     [JsonPropertyName("labour_reshuffle_years")]
     public int LabourReshuffleYears { get; init; } = 1;
 
-    /// <summary>
-    /// How far, in tiles, it is reasonable to travel to forage.
-    /// </summary>
-    /// <remarks>
-    /// This is the "villager who walks across the map for one log" guard from
-    /// DESIGN.md §2.2. Stored in tiles for readability and converted to travel cost,
-    /// because catchment is measured in cost - that is what lets a worn path widen a
-    /// workplace's reach later without catchment knowing roads exist.
-    /// </remarks>
-    /// <remarks>
-    /// Ten, lowered from twelve once the forage sites were spread properly. At twelve
-    /// a home in the middle of the village could reach very nearly everything, so the
-    /// rule constrained almost nothing; at ten no home reaches every workplace and
-    /// outlying households really are restricted to what is near them. Lower than ten
-    /// still kills the village, and the cause is timber rather than food — see
-    /// <c>specs/labour-allocation.md §8</c>.
-    /// </remarks>
-    [JsonPropertyName("forager_catchment_tiles")]
-    public int ForagerCatchmentTiles { get; init; } = 10;
+    // ⭐ `forager_catchment_tiles` IS DELETED (`forests-and-gathering.md §3`, Joe: *"get rid
+    // of the ring and the distance restrictions"*). It was ten tiles, and past it a villager
+    // simply could not hold a job however much they wanted it.
+    //
+    // **What replaces it is not a bigger number, it is a different kind of thing.** The
+    // allocator sorts candidates by travel cost, so the nearest hands are still claimed
+    // first; what has gone is the *refusal*. A ruinous commute is now a mistake the player
+    // can make, watch and pay for, which is D58's settled mechanism and §2.3's argument that
+    // pressure should be traceable to something the player did.
+    //
+    // ⚠️ **Its removal carried a condition rather than a caveat** (D112): deleting the fence
+    // makes a ruinous commute *silent*, so the consequence had to become readable in the same
+    // slice — see `Villager.CommuteNote`.
 
     /// <summary>
     /// How many households the economy is derived to support.
@@ -1398,11 +1392,6 @@ public sealed record SimConfig
                 $"map_width and map_height must both be greater than zero (got {MapWidth}x{MapHeight}).");
         }
 
-        if (ForagerCatchmentTiles <= 0)
-        {
-            throw new SimConfigException(
-                $"forager_catchment_tiles must be greater than zero (got {ForagerCatchmentTiles}).");
-        }
 
         if (EconomyHorizonHouseholds <= 0)
         {

@@ -151,18 +151,16 @@ public sealed class TravelCostField
     /// <summary>Ticks to travel between two points. The form callers actually want.</summary>
     public int TicksBetween(GridPos from, GridPos to) => TicksForCost(Cost(from, to));
 
-    /// <summary>
-    /// Whether <paramref name="to"/> is inside a catchment of
-    /// <paramref name="radiusInCost"/> centred on <paramref name="from"/>.
-    /// </summary>
-    /// <remarks>
-    /// Catchment is measured in <em>cost</em>, not tiles — which is the whole point.
-    /// Once roads exist, a workplace at the end of a good trail reaches further than
-    /// one the same number of tiles away across rough ground, and neither system
-    /// needs special-casing for that to be true.
-    /// </remarks>
-    public bool IsWithinCatchment(GridPos from, GridPos to, int radiusInCost) =>
-        Cost(from, to) <= radiusInCost;
+    // ⛔ `IsWithinCatchment` IS DELETED with the catchment it was named for
+    // (`forests-and-gathering.md §3`). Nothing in the sim asked it any more: the allocator's
+    // only question is `CanReach`, and a workplace's reach is not a thing the village
+    // enforces. Deleted rather than renamed to something like `IsWithin`, on D98's rule —
+    // a general-purpose radius test with no caller is an invitation to reintroduce the fence
+    // by accident.
+    //
+    // The property it was protecting survives: distance is measured in *cost*, so a road can
+    // extend a workplace's reach later without either system knowing about the other. That is
+    // still true of `Cost` itself, and still tested.
 
     /// <summary>Convert a radius expressed in tiles into cost units.</summary>
     public static int TilesToCost(int tiles) => tiles * BaseTileCost;

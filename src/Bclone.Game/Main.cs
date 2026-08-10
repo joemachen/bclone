@@ -547,6 +547,17 @@ public partial class Main : Control
             lines.Add(villager.WorkNote);
         }
 
+        // ⭐ WHAT THE WALK COSTS THEM, and this panel is where deleting catchment is paid
+        // for (spec §7.1). The fence used to make a ruinous commute impossible; with it gone
+        // the village can quietly thin out because half its hands are on the road, and a
+        // sentence on the person doing the walking is the only thing that makes that fair
+        // rather than merely hard. Empty for an ordinary commute, so it means something when
+        // it is there.
+        if (!string.IsNullOrWhiteSpace(villager.CommuteNote))
+        {
+            lines.Add(villager.CommuteNote);
+        }
+
         if (villager.Stage != VigourStage.Prime)
         {
             lines.Add(villager.Stage == VigourStage.Frail

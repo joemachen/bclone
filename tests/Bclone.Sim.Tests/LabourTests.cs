@@ -149,65 +149,24 @@ public sealed class LabourTests
         }
     }
 
-    [Fact]
-    public void NobodyWalksAcrossTheMapForOneLog()
-    {
-        // The named failure mode in DESIGN.md §2.2. Catchment is the guard.
-        SimLoop loop = Build(Config with { ForagerCatchmentTiles = 6 });
-        loop.Step(30_000);
-
-        foreach (Villager villager in loop.World.Villagers)
-        {
-            if (!villager.HasJob)
-            {
-                continue;
-            }
-
-            Workplace workplace = loop.World.FindWorkplace(villager.WorkplaceId)!;
-            Assert.True(LabourAllocator.InCatchment(loop.World, villager, workplace),
-                $"{villager.Name} works at {workplace.Name} from outside its catchment.");
-        }
-    }
-
-    [Fact]
-    public void AVillagerTooFarAwayTakesNoWork()
-    {
-        // A catchment of one tile reaches almost nobody — but not literally nobody any
-        // more, and that change is the point. Homes are now placed with regard to the
-        // work (D18), so one of them can end up right beside a patch and legitimately
-        // reach it across a one-tile catchment. The old assertion, "every villager is
-        // jobless", was true only while homes were dropped on a spiral that ignored
-        // where the work was.
-        //
-        // So this asserts the invariant that actually matters and is stronger: nobody
-        // EVER holds a job outside their catchment. That is the rule §2.2 is about —
-        // no villager walks across the map for one log — and it cannot be satisfied by
-        // accident of layout.
-        SimConfig config = Config with { ForagerCatchmentTiles = 1 };
-        SimLoop loop = Build(config);
-        loop.Step(config.TicksPerSeason * 2);
-
-        int refused = 0;
-        foreach (Villager villager in loop.World.Villagers)
-        {
-            if (!villager.HasJob)
-            {
-                refused++;
-                continue;
-            }
-
-            Workplace held = loop.World.FindWorkplace(villager.WorkplaceId)!;
-            int cost = loop.World.TravelCost.Cost(
-                loop.World.RestingPlaceOf(villager), held.Position);
-
-            Assert.True(cost <= held.CatchmentRadius,
-                $"{villager.Name} holds {held.Name} at {cost} against a reach of " +
-                $"{held.CatchmentRadius}.");
-        }
-
-        _output.WriteLine($"{refused} of {loop.World.Villagers.Count} turned away by a one-tile reach.");
-        Assert.True(refused > 0, "A one-tile catchment turned nobody away, so it constrained nothing.");
-    }
+    // ⛔ TWO GUARDS DELETED HERE, AND THE DESIGN THEY GUARDED IS WHY.
+    //
+    // `NobodyWalksAcrossTheMapForOneLog` and `AVillagerTooFarAwayTakesNoWork` both asserted
+    // that a villager can never hold a job outside its catchment — squeezing the radius to
+    // six and to one to prove the fence bound. **Catchment is deleted**
+    // (`forests-and-gathering.md §3`, Joe: *"get rid of the ring and the distance
+    // restrictions"*), so they are not failing guards, they are guards about a rule the game
+    // no longer has.
+    //
+    // ⚠️ **§2.2's "villager who walks across the map for one log" is still refused — by a
+    // different mechanism**, and that is the part worth not losing. It used to be forbidden;
+    // it is now *unattractive and legible*: the allocator sorts candidates by travel cost so
+    // the nearest hands are claimed first, and a walk that eats the working day says so on
+    // the villager. Both halves are guarded in `LabourAllocationTests` —
+    // `EveryVillagerHoldsTheNearestWorkplaceWithRoom`, `ARuinousCommuteSaysSoOnTheVillager`
+    // and `SomebodyWorksFurtherThanTheOldFenceWouldHaveAllowed` between them say everything
+    // these two said, about the design that exists. Duplicating them here would be two
+    // copies to keep in step.
 
     // ---------------------------------------------------------------
     //  Legibility — the phase's actual deliverable
