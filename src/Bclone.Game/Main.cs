@@ -1966,15 +1966,43 @@ public partial class Main : Control
         //
         // Raised on mouse-enter rather than by fixing a build order, because there is no build
         // order that is right for every selection: whichever panel the pointer is over is the
-        // one the player means. A panel inside a column raises its column, since that is what
-        // the root actually holds.
-        panel.MouseEntered += () =>
-        {
-            Node top = panel.GetParent() == this ? panel : panel.GetParent();
-            MoveChild(top, -1);
-        };
+        // one the player means. What actually gets raised is whatever ancestor of the panel the
+        // root is holding, since `MoveChild` reorders a node's own children and nothing else.
+        //
+        // ⚠️ THIS COUNTED THE LEVELS RATHER THAN WALKING THEM, and D116's scrolling columns
+        // added one — panel → column → scroller → root, where it had been panel → column →
+        // root. So every hover on a panel in a column threw *"Child is not a child of this
+        // node"* into the terminal and raised nothing. Found by Joe running the game; a
+        // screenshot cannot hover, so nothing I can take would have caught it.
+        //
+        // Walking is the fix rather than counting one level more, because the next container
+        // somebody wraps a column in would break a count again and this cannot.
+        panel.MouseEntered += () => RaiseToTheFront(panel);
 
         return contents;
+    }
+
+    /// <summary>
+    /// Draw a panel — and whatever is carrying it — on top of everything else.
+    /// </summary>
+    /// <remarks>
+    /// Climbs to the ancestor this node actually holds, because that is the only thing
+    /// <see cref="Node.MoveChild"/> can reorder. If the panel is not under us at all it is
+    /// left alone rather than throwing, which is the honest answer to a question with no
+    /// answer: a panel nobody is holding cannot be raised above anything.
+    /// </remarks>
+    private void RaiseToTheFront(Control panel)
+    {
+        Node top = panel;
+        while (top.GetParent() is Node parent && parent != this)
+        {
+            top = parent;
+        }
+
+        if (top.GetParent() == this)
+        {
+            MoveChild(top, -1);
+        }
     }
 
     /// <summary>Every floating panel, so one key can put them all away.</summary>

@@ -592,11 +592,13 @@ shippable and D113's `Floating`/`InColumn`/`Dress` is the one panel mechanism th
   trade · Homes · Removal. **The caption sits above its group rather than beside it**, which
   is a width decision: the row already reached within thirty pixels of the window edge, and
   D55 records what a build menu that runs off the edge costs.
-- **⛔ Slice 3 — event-log filtering — is BLOCKED on a design question, not on work.** The
-  plan assumed categories could be read off `LogEntry.Subsystem`; **every line the village log
-  shows is `Narrate` → subsystem `life`, level `Info`**, all 31 call sites of it. There is one
-  category, so filtering by it gives the player a single checkbox. Making it real means the
-  sim classifying its own narration. Joe's call — see D114.
+- **⛔ Slice 3 — event-log filtering — is DROPPED** (Joe, 2026-08-09: *"drop the event log
+  filter for now"*). The plan assumed categories could be read off `LogEntry.Subsystem`;
+  **every line the village log shows is `Narrate` → subsystem `life`, level `Info`**, all 31
+  call sites of it, so filtering on it offers one checkbox. Making it real means the sim
+  classifying its own narration — 31 call sites of sim change for a view feature, which is not
+  what the slice was priced at. **Not refused, not scheduled**: the finding stands in D114 for
+  whoever wants it later.
 - **Slice 6 — the minimap** ✅ (D115). The whole valley small, with a box round what the
   camera can see, and click or drag it to look somewhere. **The terrain is baked into a
   texture and invalidated through `SimWorld.TerrainGeneration`** — the same counter the hut
@@ -609,8 +611,11 @@ shippable and D113's `Floating`/`InColumn`/`Dress` is the one panel mechanism th
   labels given the size explicitly — which is why *they* were the ones he named). The greyed
   roadmap rows fold away, reversing a D113 argument on purpose. **Settings show/hide and the
   fold are both verified by a forced state rather than assumed.**
-- **Next:** per-building floating windows (the one slice that needs a mechanism this
-  codebase has no precedent for), and event-log filtering once Joe rules on it.
+- **And a fifth, from the terminal rather than the screen** ✅ (D117). Raise-on-hover counted
+  the levels between a panel and the root; the scrolling columns added one, so every hover
+  threw *"Child is not a child of this node"* and raised nothing. It walks now.
+- **Next:** per-building floating windows — the last slice, and the one that needs a
+  mechanism this codebase has no precedent for.
 
 Then: **step C** — thickets and tree stands retire, the distance fences come down, and the
 economy is re-derived against the hut's ring. **D111** (`ChooseSite`'s ruler) folds in there,
@@ -770,6 +775,11 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D117 · 2026-08-09 · Raise-on-hover counted the levels between a panel and the root, and D116 added one.** Joe, running the game: four `ERROR: Child is not a child of this node` in the terminal, at `Dress`'s `MouseEntered` handler.
+  - **The whole bug in one line.** `MoveChild` reorders *your own* children, so the handler raised `panel.GetParent() == this ? panel : panel.GetParent()` — correct while the chain was panel → column → root. **D116's scrolling columns made it panel → column → scroller → root**, so it handed the root a grandchild, threw, and raised nothing. Every hover over a panel in a column.
+  - **It walks now rather than counting one more level**, because the next container somebody wraps a column in would break a count again and cannot break a walk. A panel that turns out not to be ours is left alone rather than throwing: *a panel nobody is holding cannot be raised above anything* is the honest answer, not an error.
+  - **⚠️ NOTHING I COULD HAVE TAKEN WOULD HAVE CAUGHT IT.** A screenshot cannot hover. Verified instead by a throwaway build that ran `RaiseToTheFront` over every panel at start-up — the exact call the hover makes — and checking the terminal was clean; before the fix that same path is what Joe's four errors came out of. **The terminal is evidence the screenshots are not**, and it is worth asking for it by default rather than only when something looks wrong.
+  - **The fifth defect Joe has found by playing this phase, against 550 green tests** (D11, and D116's four before it).
 - **D116 · 2026-08-09 · Four things Joe found by playing, and three of them were one number in the wrong place.** *"The village and the village log do not fold at all. When all panels are open, the bottom panels go off screen. The font size for the village log panel is too large… same with the overview. And 'who they are and why'."*
   - **⭐ THE FOLD BUG WAS A MINIMUM HEIGHT ON THE WRONG CONTROL, and it is D113's own bug one level out.** `InColumn` put the roster's 280 and the log's 210 on the **panel**; folding hides the **contents**. So both rolled up to a title strip with a couple of hundred pixels of empty bordered nothing hanging underneath, and from the player's chair the panel simply did not fold. **On the contents the height goes away with them**, which is what folding means. This is the third time this phase that a sizing number on the wrong node has produced a bug that looked like broken logic (the inspector's label, the roster's expand flag, and now this) — **if something looks broken, check the size flags before the logic** is now earning its place as a standing rule.
   - **⭐ The columns have a definite height and scroll at the cap.** They were sized to their contents and grown downward, so *the contents decided how tall the column was* — and once the overview grew a goods table there were more contents than window. **Below the cap the column is exactly as tall as its panels**, so the valley underneath stays clickable and nothing changes; at the cap it scrolls, which costs the clicks under the column *only in the state where panels were covering that strip anyway*. **Nothing the player opens can become unreachable**, which is the property that was missing rather than the pixels.
