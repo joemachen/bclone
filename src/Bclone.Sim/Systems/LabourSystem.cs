@@ -59,12 +59,14 @@ public sealed class LabourSystem : ISimSystem
         if (world.Tick % reshuffleInterval == 0UL)
         {
             LabourAllocator.Reshuffle(world);
+            SayIfWorkIsGoingUndone(world);
             return;
         }
 
         if (world.Tick % (ulong)config.TicksPerSeason == 0UL)
         {
             LabourAllocator.TakeUpSlack(world);
+            SayIfWorkIsGoingUndone(world);
             return;
         }
 
@@ -85,7 +87,100 @@ public sealed class LabourSystem : ISimSystem
         if (AnyVacancyLeftByTheDead(world))
         {
             LabourAllocator.TakeUpSlack(world);
+            SayIfWorkIsGoingUndone(world);
         }
+    }
+
+    /// <summary>
+    /// Tell the village log when work the village wants has nobody on it — <b>once</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe moved this out of the Overview panel and into the log</b> (2026-08-10), which
+    /// makes it an <em>event</em> where D47 built it as a standing <em>state</em>. So it
+    /// needs an edge: the panel could recompute the answer every frame and show it while it
+    /// was true, and a log line has to be written exactly at the moment it becomes true or
+    /// it is either missing or repeated four times a second.
+    /// </para>
+    /// <para>
+    /// <b>Said again when it clears</b>, and that is not symmetry for its own sake: a line
+    /// that only ever reports bad news leaves the player wondering whether they fixed it.
+    /// The pair is what makes the log answer <em>"is that still going on?"</em> without a
+    /// panel having to sit there saying so.
+    /// </para>
+    /// <para>
+    /// Checked only after a labour pass has actually moved somebody, so it costs a
+    /// <see cref="LabourQuota"/> on the ticks that were already doing one — never per tick.
+    /// </para>
+    /// </remarks>
+    private static void SayIfWorkIsGoingUndone(SimWorld world)
+    {
+        IReadOnlyList<Workplace> idle = UnmannedWork(world);
+
+        if (idle.Count == 0)
+        {
+            if (world.WorkIsGoingUndone)
+            {
+                world.WorkIsGoingUndone = false;
+                world.Narrate("Every job the village wants doing has somebody on it again.");
+            }
+
+            world.WorkSeenUndoneOnce = false;
+            return;
+        }
+
+        if (world.WorkIsGoingUndone)
+        {
+            return;
+        }
+
+        // ⚠️ SAID ON THE SECOND SIGHTING, NOT THE FIRST, AND THE FIRST VERSION OF THIS WAS
+        // MEASURED AS NOISE. Narrating the moment the state appeared put **56 lines into a
+        // 45-year life** — 28 begins and 28 clears — and tripped the guard that asks whether
+        // a life still reads as a story rather than a receipt (§1.4). It was catching a
+        // TRANSIENT: at a season boundary the quota jumps (a berry patch is wanted again in
+        // spring) and staffing catches up a pass later, so the village was reporting a
+        // problem it had already solved by the time anybody read it.
+        //
+        // One labour pass of patience costs nothing — a real shortage is still true next
+        // pass, and D47's whole point is the shortage nobody notices, which lasts. The flag
+        // resets whenever the work is covered, so two separate flickers never add up to a
+        // sighting.
+        if (!world.WorkSeenUndoneOnce)
+        {
+            world.WorkSeenUndoneOnce = true;
+            return;
+        }
+
+        world.WorkIsGoingUndone = true;
+        world.Narrate(
+            $"Nobody is working {NameThem(idle)} — and the village wants it done. "
+            + $"There is no one spare to send. {world.Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>
+    /// The idle workplaces, as something a person would say out loud.
+    /// </summary>
+    /// <remarks>
+    /// Moved down from the view with the alert. It named at most a few places and then said
+    /// "and N more", because a sentence listing eleven huts is a sentence nobody finishes.
+    /// </remarks>
+    private static string NameThem(IReadOnlyList<Workplace> idle)
+    {
+        const int MostToName = 4;
+
+        var names = new List<string>();
+        for (int i = 0; i < idle.Count && i < MostToName; i++)
+        {
+            names.Add(idle[i].Name);
+        }
+
+        string listed = names.Count == 1
+            ? names[0]
+            : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
+
+        int rest = idle.Count - names.Count;
+        return rest > 0 ? $"{listed} and {rest} more" : listed;
     }
 
     /// <summary>Whether a dead villager is still holding a job nobody has taken.</summary>

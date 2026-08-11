@@ -38,7 +38,6 @@ public partial class Main : Control
     /// a player told the village is short of hands does not need the full inventory to
     /// act on it.
     /// </remarks>
-    private const int MostPlacesToName = 4;
 
     private SimLoop _loop = null!;
     private FixedTimestepDriver _driver = null!;
@@ -52,7 +51,6 @@ public partial class Main : Control
 
     private Label _clockLabel = null!;
     private Label _villageLabel = null!;
-    private Label _alertLabel = null!;
     private Label _seedLabel = null!;
     private Label _speedLabel = null!;
     private ItemList _roster = null!;
@@ -369,35 +367,10 @@ public partial class Main : Control
 
         _laborerReadout.Text = $"{world.Laborers}";
 
-        // The standing alerts, into their own strip rather than onto the end of the
-        // header. Both are STATES rather than events — a couple is waiting right now, a
-        // workplace is empty right now — which is why they are here at all instead of
-        // only in the log: a line that scrolls away is a problem the player never learns
-        // they have. Both clear themselves the moment the village sorts them out.
-        var alerts = new List<string>();
-
-        // Somewhere to build (D42).
-        if (world.NeedsMoreResidentialLand)
-        {
-            alerts.Add(
-                "Somebody wants a home of their own and there is nowhere to put one — " +
-                "paint more land for houses.");
-        }
-
-        // Work the village wants doing that nobody is doing (D47).
-        IReadOnlyList<Workplace> unmanned = LabourSystem.UnmannedWork(world);
-        if (unmanned.Count > 0)
-        {
-            alerts.Add(
-                $"Nobody is working {NameThem(unmanned)} — and the village wants it done. " +
-                "There is no one spare to send.");
-        }
-
-        // Shown only when there is something to say, and no padding to a reserved height.
-        // The panel floats, so it can grow and shrink without moving anything on screen —
-        // which is the whole reason the layout changed.
-        _alertLabel.Text = string.Join("\n\n", alerts);
-        _alertLabel.Visible = alerts.Count > 0;
+        // The two standing alerts used to be composed here every frame and shown in the
+        // overview. They are narrated by the sim on their edges now and read in the village
+        // log like everything else that happens (Joe) — so the view no longer asks the
+        // question at all, which also takes a `LabourQuota.For` off every single frame.
 
         RefreshRoster(world);
         RefreshInspector(world);
@@ -1204,21 +1177,25 @@ public partial class Main : Control
         body.AddChild(BuildGoodsTable());
         body.AddChild(BuildGoodsRoadmap());
 
-        // STANDING ALERTS, AND THEY WRAP NOW.
+        // ⭐ THE STANDING ALERTS HAVE LEFT THIS PANEL AND GONE TO THE LOG (Joe, 2026-08-10,
+        // pointing at them in a screenshot: *"I don't want to see the part in the UI I've
+        // outlined… those should be in the village log window."*)
         //
-        // Both of them — nowhere to build (D42), work nobody is doing (D47) — are STATES
-        // rather than events, which is why they are here and not only in the log: a line
-        // that scrolls away is a problem the player never learns they have.
+        // **This reverses D42/D47's reasoning, and it is worth saying which part.** They were
+        // put here because both are STATES rather than events — *a couple is waiting right
+        // now, a workplace is empty right now* — on the argument that "a line that scrolls
+        // away is a problem the player never learns they have". That argument was made when
+        // the log was the only alternative and the overview was three lines long.
         //
-        // D54 had to give these a fixed two-line strip and cut them off with an ellipsis,
-        // because they lived in the same column as the map and any change in their height
-        // moved the world. Joe's next screenshot showed the cost of that: the sentence now
-        // ended in "There is no one spa…" instead of running off the edge, which is tidier
-        // and no more readable. In a floating panel neither problem exists — the text
-        // wraps, the panel grows, and nothing else on screen notices.
-        _alertLabel = Wrapped(Body(string.Empty));
-        _alertLabel.Modulate = new Color(1f, 0.78f, 0.35f);
-        body.AddChild(_alertLabel);
+        // What changed is the panel around them: the overview is now a dozen rows the player
+        // reads at a glance, and two wrapped amber paragraphs in the middle of it were the
+        // tallest and loudest thing on screen — permanently, because a state that is true
+        // stays true. **An alert that is always on is an alert nobody reads**, which is the
+        // nag D42 refuses in its own words.
+        //
+        // The state is not lost: both now narrate on the EDGE, when they begin and when they
+        // clear, so the log answers *"is that still going on?"* without a panel sitting there
+        // saying so. See `HouseholdSystem` for the first and `LabourSystem` for the second.
 
         // The seed and the audit log together, because they are the two things you need
         // to reproduce and explain a run: the seed says which world, the log says what
@@ -2728,39 +2705,10 @@ public partial class Main : Control
         return button;
     }
 
-    /// <summary>
-    /// The idle workplaces, as something a person would say out loud.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Joe's screen once read <em>"the berry patch, the southern western thicket, the
-    /// southern eastern thicket, the southern eastern thicket"</em> — the same phrase
-    /// twice, because a bearing has eight values and the village has six forage sites.
-    /// This method collapsed the repeat for a day.
-    /// </para>
-    /// <para>
-    /// <b>It does not any more, because it should never have been the view's job.</b>
-    /// <c>SimWorld</c> now guarantees that no two places share a name (D56), and a test
-    /// over fifty valleys says so — so a second copy of the rule here would be a second
-    /// place for it to be true, which is how two rules end up disagreeing. All that is
-    /// left is the count, which is a question about how much a person wants to read.
-    /// </para>
-    /// </remarks>
-    private static string NameThem(IReadOnlyList<Workplace> unmanned)
-    {
-        int shown = unmanned.Count < MostPlacesToName ? unmanned.Count : MostPlacesToName;
-
-        var said = new List<string>();
-        for (int i = 0; i < shown; i++)
-        {
-            said.Add(unmanned[i].Name);
-        }
-
-        string list = string.Join(", ", said);
-        int more = unmanned.Count - shown;
-
-        return more <= 0 ? list : $"{list} and {more} more";
-    }
+    // `NameThem` moved into `LabourSystem` with the alert it was written for. It listed at
+    // most four idle workplaces and then said "and N more", because a sentence naming eleven
+    // huts is a sentence nobody finishes — and that judgement belongs beside the sentence,
+    // which is now the sim's to write.
 
     /// <summary>
     /// The three type sizes the shell has. <b>Smaller than they were</b> (Joe, 2026-08-09).

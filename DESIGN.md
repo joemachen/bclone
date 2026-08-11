@@ -645,6 +645,17 @@ there, because it is the slice that opens that method.
   Manhattan and walking distance agree on open ground and diverge only at the river, so the
   fix is a no-op on the two valleys the goldens watch and a life-saver on the one that failed.
   `MarkHome`'s promise is guarded by the twelve-seed arm now instead of asserted in a comment.
+- **The standing alerts moved to the village log** ✅ (D123, Joe). Both narrate on their
+  edges — beginning and clearing — instead of sitting permanently in the Overview, which
+  had become the always-on alert D42 refuses by name.
+- **⏸️ C-4 — the thickets, woods and berry patches retire — is PARKED on
+  `wip/step-c-retire-thickets`** (Joe's ask, 2026-08-10). Sim and view both compile; 56 test
+  compile errors, three goldens and the UI naming remain. It carries C-3 with it, because
+  deleting `forage_site_ring_tiles` removes the anchor `MaxHomeToWorkTiles` was derived from.
+  **The finding that stopped it:** retiring the named places brings D56's collision straight
+  back from the other side — every building of a kind shares one name, so two gatherer's huts
+  both report as *"a gatherer's hut"*. `SimWorld.NamePlaces` is dead but deliberately kept,
+  to be re-pointed at player-placed buildings.
 - **⏸️ C-3 — the re-base — is PARKED on `wip/step-c-rebase`** (D122). It is done and it
   compiles: the bound reads `gatherer_hut_ring_tiles`, the distance bound is a budget rather
   than a refusal, and food and fuel are re-derived in that order (`gather_yield` 46 → 51,
@@ -810,6 +821,13 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D123 · 2026-08-10 · The standing alerts leave the Overview and become log entries, which reverses D42 and D47 on purpose.** Joe, with the two amber paragraphs outlined in a screenshot: *"for 'alerts' I don't want to see the part in the UI I've outlined. Those should be in the village log window."*
+  - **What is being reversed, stated plainly.** D42 and D47 put them in a panel *because* they are **states** rather than events — a couple is waiting right now, a workplace is empty right now — on the argument that *"a line that scrolls away is a problem the player never learns they have."* That argument was made when the log was the only alternative and the overview was three lines long.
+  - **⭐ What changed is the panel around them.** The overview is a dozen rows read at a glance now, and two wrapped amber paragraphs in the middle of it were the tallest and loudest thing on screen — **permanently, because a state that is true stays true.** *An alert that is always on is an alert nobody reads*, which is the nag D42 refuses in its own words. It had become the thing it was written to avoid.
+  - **The state is not lost; it becomes an EDGE.** Both narrate when they begin and again when they clear — *"Every job the village wants doing has somebody on it again"* — so the log answers *"is that still going on?"* without a panel sitting there saying so. The first already narrated on its rising edge (`HouseholdSystem`) and needed only the clearing half; the second needed both, and `SimWorld.WorkIsGoingUndone` is the flag that detects them. **Not hashed**, the same standing as `NeedsMoreResidentialLand` beside it: bookkeeping about narration, derived from workplaces and quotas that are hashed already.
+  - **`NameThem` moved from the view into the sim with the sentence it was written for.** Judging that four idle workplaces are enough to name belongs beside the sentence, and the sentence is the sim's to write now.
+  - **⚠️ THE FIRST VERSION WAS NOISE, AND THE GUARD CAUGHT IT.** Narrating the moment the state appeared put **56 lines into a 45-year life** — 28 begins and 28 clears — and tripped `TheLifeLogIsShortEnoughToRead`, which asks whether a life still reads as a story rather than a receipt (§1.4). Measured, every one of the 56 was a **transient**: at a season boundary the quota jumps (a berry patch is wanted again in spring) and staffing catches up a pass later, so the village was reporting a problem it had already solved. **Said on the second sighting instead of the first**, and the Phase 0 life goes to **zero** such lines while a real village over sixty years still gets 56 begins and 55 clears — live where it matters, silent where it was noise. *A panel could afford to flicker; a log cannot.*
+  - **And it takes a `LabourQuota.For` off every frame.** The view recomputed *"is any work unmanned?"* on every redraw to decide whether to show a paragraph; the sim now asks only on the ticks that were already running a labour pass.
 - **D122 · 2026-08-10 · ⏸️ PARKED, AND THE REASON IS NINETEEN PEOPLE FROZE: re-basing the economy's bound on the gatherer's ring makes the fuel chain too slow for the village that actually exists.** Step C's third slice — `MaxHomeToWorkTiles` from 7 to `gatherer_hut_ring_tiles` (8), the distance bound demoted from refusal to budget, and the economy re-derived. **Complete, compiling, 543 of 546 green, and parked on `wip/step-c-rebase` rather than merged**, on Joe's standing rule that a price is not changed quietly.
   - **The re-derivation itself went exactly as D112 predicted.** In the order the config file states — *food before fuel* — `gather_yield` 46 → 51, `firewood_per_split` 22 → 25, `stockpile_target` unchanged at 95. All three land exactly on their requirement and the shipped file now matches the fixture. **An adjustment, not a rewrite**, which is precisely what choosing a ring of 8 against the old 7 was supposed to buy.
   - **⛔ AND THE VILLAGE FREEZES.** `ColdStartTests.AVillageGivenOnlyAPileOutlivesItsFounders`, played opening, shipped config, measured both ways:

@@ -1425,6 +1425,28 @@ public sealed class SimWorld
     /// </remarks>
     public bool NeedsMoreResidentialLand { get; internal set; }
 
+    /// <summary>
+    /// Whether work the village wants done currently has nobody on it (D47).
+    /// </summary>
+    /// <remarks>
+    /// <b>An edge-detector, not a fact anybody reads.</b> It exists so the log line fires
+    /// once when the state begins and once when it ends, rather than every tick — the same
+    /// shape and the same reason as <see cref="NeedsMoreResidentialLand"/> beside it, and
+    /// like that one it is <b>not hashed</b>: it is bookkeeping about narration, derived
+    /// from workplaces and quotas that are hashed already.
+    /// </remarks>
+    public bool WorkIsGoingUndone { get; internal set; }
+
+    /// <summary>
+    /// Whether work was already seen unmanned at the previous labour pass.
+    /// </summary>
+    /// <remarks>
+    /// The patience half of the pair above: a shortage is only worth a line if it survives
+    /// one pass, because a season boundary produces one that does not. Not hashed, for the
+    /// same reason as its neighbours.
+    /// </remarks>
+    public bool WorkSeenUndoneOnce { get; internal set; }
+
     /// <summary>Distance from a tile to the nearest place anyone forages.</summary>
     private int NearestForageDistance(GridPos from)
     {
