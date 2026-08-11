@@ -652,10 +652,10 @@ there, because it is the slice that opens that method.
   `wip/step-c-retire-thickets`** (Joe's ask, 2026-08-10). Sim and view both compile; 56 test
   compile errors, three goldens and the UI naming remain. It carries C-3 with it, because
   deleting `forage_site_ring_tiles` removes the anchor `MaxHomeToWorkTiles` was derived from.
-  **The finding that stopped it:** retiring the named places brings D56's collision straight
-  back from the other side — every building of a kind shares one name, so two gatherer's huts
-  both report as *"a gatherer's hut"*. `SimWorld.NamePlaces` is dead but deliberately kept,
-  to be re-pointed at player-placed buildings.
+  **The finding that stopped it is now resolved** (D124, Joe): buildings are numbered —
+  *gatherer's hut 1, gatherer's hut 2* — until the player can rename them, so the naming
+  collision no longer blocks the retirement. `SimWorld.NamePlaces` and its bearing helpers
+  become genuinely dead when the thickets land and should be deleted there.
 - **⏸️ C-3 — the re-base — is PARKED on `wip/step-c-rebase`** (D122). It is done and it
   compiles: the bound reads `gatherer_hut_ring_tiles`, the distance bound is a budget rather
   than a refusal, and food and fuel are re-derived in that order (`gather_yield` 46 → 51,
@@ -821,6 +821,12 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D124 · 2026-08-10 · Buildings are numbered, which overturns D56 for the buildings and leaves it standing for the places.** Joe: *"name them numerically — gatherer's hut 1, gatherer's hut 2 — eventually we will let the user rename them."*
+  - **The collision it fixes.** Every building of a kind was called the same thing, so two gatherer's huts both reported as *"a gatherer's hut"* and no sentence in the game could tell them apart. That is exactly D56's problem arriving from the other side: the generated places it fixed with bearings are retiring, and the player-placed buildings replacing them never had names of their own.
+  - **⭐ Why a number beats a bearing here, which is the opposite of what I proposed.** D56 ruled that *"Forage Site 3 is a row in a table"* and gave places bearings instead — and it was right, **about places the generator dropped and the player had no relationship with.** A building the player sited needs no help being remembered. A bearing would also collide again (there are eight of them) and would be **wrong the moment renaming lands**, which Joe has already said is where this is going. *A number is the honest placeholder for a name somebody is going to type.*
+  - **⚠️ Counted per kind and never reused, and the obvious cheaper version is broken.** Numbering from how many are currently standing would christen a new hut *"hut 3"* alongside the hut 3 already there, as soon as hut 2 had been pulled down. A monotonic counter cannot, and the gap it leaves is the truth — hut 2 was demolished, and the log still says so.
+  - **A house keeps its article, deliberately.** Homes are identified by the family in them — *"the Thatcher household"* — which is a better name than any number and the one every sentence about a home already uses. *"House 47"* would be D56's row in a table, in the one place the objection still holds.
+  - **The founding buildings were routed through the same method** rather than keeping their hard-coded *"the granary"*, or a warm start would have run two naming schemes at once. **The market is named once and used twice**, because it is one building in two lists (D36's seam) — naming it in both places would have made the seam claim the village had two markets.
 - **D123 · 2026-08-10 · The standing alerts leave the Overview and become log entries, which reverses D42 and D47 on purpose.** Joe, with the two amber paragraphs outlined in a screenshot: *"for 'alerts' I don't want to see the part in the UI I've outlined. Those should be in the village log window."*
   - **What is being reversed, stated plainly.** D42 and D47 put them in a panel *because* they are **states** rather than events — a couple is waiting right now, a workplace is empty right now — on the argument that *"a line that scrolls away is a problem the player never learns they have."* That argument was made when the log was the only alternative and the overview was three lines long.
   - **⭐ What changed is the panel around them.** The overview is a dozen rows read at a glance now, and two wrapped amber paragraphs in the middle of it were the tallest and loudest thing on screen — **permanently, because a state that is true stays true.** *An alert that is always on is an alert nobody reads*, which is the nag D42 refuses in its own words. It had become the thing it was written to avoid.
