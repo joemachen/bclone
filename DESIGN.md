@@ -645,8 +645,16 @@ there, because it is the slice that opens that method.
   Manhattan and walking distance agree on open ground and diverge only at the river, so the
   fix is a no-op on the two valleys the goldens watch and a life-saver on the one that failed.
   `MarkHome`'s promise is guarded by the twelve-seed arm now instead of asserted in a comment.
-- **Still to come in step C:** re-base `MaxHomeToWorkTiles` on the gatherer hut's ring and
-  demote it from refusal to budget; then the thickets and tree stands retire.
+- **⏸️ C-3 — the re-base — is PARKED on `wip/step-c-rebase`** (D122). It is done and it
+  compiles: the bound reads `gatherer_hut_ring_tiles`, the distance bound is a budget rather
+  than a refusal, and food and fuel are re-derived in that order (`gather_yield` 46 → 51,
+  `firewood_per_split` 22 → 25). **It freezes nineteen people.** One tile on the bound costs a
+  woodcutter 27 firewood a year, and the played opening goes from 20 alive at forty years to
+  **0**. `firewood_per_split` is at its derived value throughout — the derivation solves for
+  twenty households and the village froze at six, **so a config the derivation certifies can
+  still freeze.** Joe's call; the price does not move without him.
+- **Still to come in step C:** whatever Joe decides about the bound, then the thickets and
+  tree stands retire.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -802,6 +810,19 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D122 · 2026-08-10 · ⏸️ PARKED, AND THE REASON IS NINETEEN PEOPLE FROZE: re-basing the economy's bound on the gatherer's ring makes the fuel chain too slow for the village that actually exists.** Step C's third slice — `MaxHomeToWorkTiles` from 7 to `gatherer_hut_ring_tiles` (8), the distance bound demoted from refusal to budget, and the economy re-derived. **Complete, compiling, 543 of 546 green, and parked on `wip/step-c-rebase` rather than merged**, on Joe's standing rule that a price is not changed quietly.
+  - **The re-derivation itself went exactly as D112 predicted.** In the order the config file states — *food before fuel* — `gather_yield` 46 → 51, `firewood_per_split` 22 → 25, `stockpile_target` unchanged at 95. All three land exactly on their requirement and the shipped file now matches the fixture. **An adjustment, not a rewrite**, which is precisely what choosing a ring of 8 against the old 7 was supposed to buy.
+  - **⛔ AND THE VILLAGE FREEZES.** `ColdStartTests.AVillageGivenOnlyAPileOutlivesItsFounders`, played opening, shipped config, measured both ways:
+
+    | | year 35 | year 40 | froze |
+    |---|---|---|---|
+    | bound 7 | 16 alive | **20 alive** | 0 |
+    | bound 8 | 16 alive | **0 alive** | **19** |
+
+    Identical to year 35, then it dies solid. One tile on the bound is a woodcutter making **220 firewood a year instead of 247**, and a firewood round trip of **26 ticks instead of 24**.
+  - **⭐ THE PART THAT MATTERS MORE THAN THE SLICE: `firewood_per_split` IS at its derived value and the derivation passes.** `RequiredFirewoodPerSplit` solves for `economy_horizon_households` — **twenty** — and this village froze at **six**. So the derivation is protecting a village larger than the one that exists, and **a config it certifies as correct can still freeze**. That is a hole in how this project derives numbers, not a tuning problem, and it will outlive this slice.
+  - **Two controlled experiments narrowed it, and both were needed.** Restoring `ChooseSite`'s refusal changed nothing — 0 alive either way, so the budget demotion is innocent. Putting the bound back to 7 while *keeping* the new config values restored the village to 20 — so the re-derived numbers are innocent too. **The bound itself is the cause.**
+  - **⚠️ And the failing test lied about why.** Its message says the village *"simply stopped having children"* — it asserts population and **never measures a cause**. Nineteen people froze. I believed it for two experiments. D98's rule about numbers that are always zero, applied to an assertion string: **a message that states a cause it did not measure is a lie waiting to be found.**
 - **D121 · 2026-08-10 · ⭐ D111 IS FIXED, AND IT MOVES NO GOLDEN — which is the whole shape of the bug.** Step C's second slice. `Household.ChooseSite` scored every candidate tile with `ManhattanDistanceTo` — grid distance, as the crow flies — while since D40 water is impassable and every real journey goes round the river on the shared cost field. **That is the "two competing travel-cost systems" `CLAUDE.md` forbids by name**, and it has been in the project since D18.
   - **It checked that a tile *is not water*; it never checked that a tile is not *cut off by* water.** `PaintTheStarterZone` had the identical hole — it painted a diamond around the founding site skipping only water tiles, so in a valley where the river runs close it painted the far bank. Both ask the cost field now, through **one helper**, so a home's two scores cannot come to measure different worlds.
   - **⭐ THE PLAYER COULD NEVER HAVE MADE THIS MISTAKE — ONLY THE VILLAGE COULD.** `Mark` goes through `CanBuildAt`, which asks `TravelCost.CanReach` and refuses. `MarkHome` deliberately skips that check, on the written grounds that *"ChooseSite has already found painted, reachable, buildable ground"* — **a sentence that was simply not true and that nothing tested.** That asymmetry is why it survived six phases: every path a human touches was already correct.
