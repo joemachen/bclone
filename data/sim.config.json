@@ -153,7 +153,15 @@
   // to a berry patch. Set to the DERIVED value, not merely to one that
   // passes - the guard only asks for "enough", and leaving it at 47
   // would have made food fractionally free for no stated reason.
-  "gather_yield": 46,
+  //
+  // 46 -> 51: the economy's bound stopped being an artefact of where a
+  // generator dropped a berry patch and became the gatherer hut's own
+  // ring, which the player can SEE (forests-and-gathering.md 3.2). Seven
+  // tiles to eight, so a round trip is 19 ticks instead of 17 and 17
+  // trips fit in a year instead of 19. Two fewer trips, each worth more.
+  // The ring was chosen as 8 against the old 7 precisely so this would be
+  // an adjustment rather than a rewrite, and it was.
+  "gather_yield": 51,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
@@ -465,7 +473,21 @@
   // haul to the shed got longer, then 141 -> 22 when hunger slowed. Fewer
   // meals means fewer ticks lost to eating, so a woodcutter fits far more
   // batches into a year and each one can be much smaller.
-  "firewood_per_split": 22,
+  //
+  // 22 -> 25 with the bound re-based on the gatherer's ring
+  // (forests-and-gathering.md 3.2).
+  //
+  // ORDER MATTERS HERE AND IT CAUGHT ME OUT. Read against the OLD
+  // gather_yield this key demanded 41; read again after food was
+  // re-derived to 51 it wanted only 25. Fuel is budgeted out of the hands
+  // the village has SPARE, and spare hands is a difference - hands, minus
+  // the hands it takes to feed everyone. Fix food first and the
+  // subtraction leaves more behind, so fuel gets cheaper. Setting 41
+  // would have over-configured firewood by 64% and called it derived.
+  //
+  // The header of this file already said "in the order the derivation
+  // runs (food before fuel)". It says it because of exactly this.
+  "firewood_per_split": 25,
 
   // Per household, not per member: a house costs the same to heat
   // whether two live in it or five. That makes SPRAWL the thing that
