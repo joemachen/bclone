@@ -364,6 +364,16 @@ public sealed record SimConfig
     [JsonPropertyName("builder_hut_y")]
     public int BuilderHutY { get; init; } = -1;
 
+    // ⚠️ THERE IS DELIBERATELY NO `gatherer_hut_x` / `gatherer_hut_y`, and I added the pair
+    // before measuring what they did. Every other founding building sits at a configured
+    // offset from the village, so a hut did too — and it landed **inside the founding glade**,
+    // the clearing D112 skips woodland over. A gatherer's hut in a clearing yields almost
+    // nothing (measured: 3 food a trip against 51), the warm-start village starved, and 105
+    // tests failed.
+    //
+    // A coordinate cannot know where the wood is. `SimWorld.WhereTheTreesAre` looks, which is
+    // what a player does and what the mechanic is about.
+
     /// <summary>Where logs are split into firewood.</summary>
     /// <remarks>
     /// Near the homes rather than near the stand. Logs are drawn village-wide, so the

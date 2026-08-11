@@ -52,15 +52,15 @@ public static class Phase0Fixtures
         StockpileTarget = 60,
 
         // Phase 0's world, expressed as generator rules now that the valley is
-        // generated (D18): ONE patch, five tiles out, and nothing random about it.
+        // generated (D18). It used to say ONE patch, five tiles out; the patches are
+        // retired and Phase 0's villager gathers at the warm start's gatherer's hut
+        // instead, which is the same slice — one person, one food source, one walk.
         //
         // Zero jitter and no river on purpose. Phase 0 is the vertical slice whose
         // whole point is that you can read why one villager lived or died, and a
-        // fixture that moved the berries a tile each seed would put noise in the one
-        // place the project most needs none. The village fixture is where varied
-        // valleys get exercised.
-        ForageSiteCount = 1,
-        ForageSiteRingTiles = 5,
+        // fixture that moved things a tile each seed would put noise in the one place
+        // the project most needs none. The village fixture is where varied valleys get
+        // exercised.
         SiteJitterTiles = 0,
         FoundingJitterTiles = 0,
         RiverWidthTiles = 0,
@@ -75,10 +75,15 @@ public static class Phase0Fixtures
     /// A world too thin to live in: a distant patch yielding almost nothing.
     /// Foraging cannot keep up with eating, so the villager dies young.
     /// </summary>
+    /// <remarks>
+    /// It used to push the patch out to twelve tiles as well as thinning the yield. The
+    /// distance lever is gone with the patches — the hut stands where the warm start puts
+    /// it — so scarcity is now purely what a trip is worth, which is the half that was
+    /// always doing the work.
+    /// </remarks>
     public static SimConfig Scarcity => Plenty with
     {
         GatherYield = 3,
-        ForageSiteRingTiles = 12,
         StockpileTarget = 60,
     };
 

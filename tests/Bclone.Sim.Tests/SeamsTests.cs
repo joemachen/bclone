@@ -127,8 +127,6 @@ public sealed class SeamsTests
             config with { StoneSeamCount = 0, IronSeamCount = 0 }, new InMemoryLogSink()).World;
 
         Assert.Equal(withoutOre.Map.FoundingSite, withOre.Map.FoundingSite);
-        Assert.Equal(withoutOre.Map.ForageSites, withOre.Map.ForageSites);
-        Assert.Equal(withoutOre.Map.TreeStands, withOre.Map.TreeStands);
         Assert.Equal(withoutOre.Map.Soil, withOre.Map.Soil);
     }
 

@@ -53,18 +53,13 @@ public static class VillageFixtures
                 // system for firewood to compete inside (D17, D29).
                 FirewoodPerWinterDay = 1,
 
-                // A real valley, generated (D18). Phase0Fixtures.Plenty deliberately
-                // describes a single fixed patch — that is Phase 0's world and it must
-                // stay legible — so the village puts the generator's rules back:
-                // several sites spread around a ring, which is what makes a binding
-                // catchment survivable rather than merely cruel (D19, D24), and enough
-                // jitter that two seeds are two places.
-                ForageSiteCount = 6,
-                ForageSiteRingTiles = 5,
+                // A real valley, generated (D18). The forage sites and the tree stands
+                // this used to ask for are retired — food comes from a hut the player
+                // sites in woodland, and the woodland is painted across the whole valley
+                // — so what is left of the generator's rules is the jitter that makes two
+                // seeds two places, and a river wide enough to be in the way.
                 SiteJitterTiles = 1,
                 FoundingJitterTiles = 2,
-                TreeStandCount = 2,
-                TreeStandRingTiles = 4,
                 RiverWidthTiles = 2,
             };
 

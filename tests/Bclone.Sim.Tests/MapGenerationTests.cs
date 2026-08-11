@@ -173,8 +173,6 @@ public sealed class MapGenerationTests
             config with { ForestCoveragePercent = 0 }, new InMemoryLogSink(), seed).World;
 
         Assert.Equal(bare.Map.FoundingSite, wooded.Map.FoundingSite);
-        Assert.Equal(bare.Map.ForageSites, wooded.Map.ForageSites);
-        Assert.Equal(bare.Map.TreeStands, wooded.Map.TreeStands);
         Assert.Equal(bare.Map.Soil, wooded.Map.Soil);
     }
 
@@ -337,16 +335,10 @@ public sealed class MapGenerationTests
         {
             GeneratedMap map = Generate(Config, seed);
 
-            foreach (GridPos site in map.ForageSites)
-            {
-                Assert.True(map.Contains(site), $"Seed {seed}: forage site {site} is off the map.");
-            }
-
-            foreach (GridPos stand in map.TreeStands)
-            {
-                Assert.True(map.Contains(stand), $"Seed {seed}: tree stand {stand} is off the map.");
-            }
-
+            // The forage sites and the tree stands were checked here too. They are retired,
+            // and the founding site is the one generated position left — which makes this
+            // guard narrower and no less load-bearing: a founding site off the map is a
+            // valley nobody can live in.
             Assert.True(map.Contains(map.FoundingSite), $"Seed {seed}: founding site is off the map.");
         }
     }
@@ -361,17 +353,26 @@ public sealed class MapGenerationTests
         }
     }
 
+    /// <summary>
+    /// ⭐ Woodland reaches every side of the village — <b>D24's guarantee, re-pointed</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This was <c>ForageSitesStaySpread</c>, and D24 is a record of what happens when food
+    /// is not spread: the extra patches all went out to the map edges, every home near the
+    /// middle competed for the one original patch, and the outskirts had nothing in reach.
+    /// </para>
+    /// <para>
+    /// <b>The patches are retired and the guarantee still matters</b>, because food still
+    /// comes from trees — it just comes from a hut the player sites in them. A valley whose
+    /// woodland is all on one side is a valley with one place worth living, which is D24's
+    /// failure wearing the new system's clothes. So the question moves from *where are the
+    /// six sites* to *is there wood on every side of the founding site*.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void ForageSitesStaySpread()
+    public void WoodlandReachesEverySideOfTheVillage()
     {
-        // D24, which is a record of what happens when they do not: the extra sites all
-        // went out to the map edges, every home near the middle competed for the one
-        // original patch, and tightening catchment left central families idle beside a
-        // full thicket while the outskirts had nothing in reach.
-        //
-        // The generator guarantees this by construction — evenly spaced slots with
-        // jitter, rather than free angles — so this asserts the guarantee rather than
-        // hoping the draw was kind.
         SimConfig config = Config;
 
         for (ulong seed = 1; seed <= 50; seed++)
@@ -379,25 +380,45 @@ public sealed class MapGenerationTests
             GeneratedMap map = Generate(config, seed);
 
             int east = 0, west = 0, north = 0, south = 0;
-            foreach (GridPos site in map.ForageSites)
+            for (int y = map.MinY; y < map.MinY + map.Height; y++)
             {
-                if (site.X > map.FoundingSite.X) east++;
-                if (site.X < map.FoundingSite.X) west++;
-                if (site.Y > map.FoundingSite.Y) south++;
-                if (site.Y < map.FoundingSite.Y) north++;
+                for (int x = map.MinX; x < map.MinX + map.Width; x++)
+                {
+                    if (map.TerrainAt(new GridPos(x, y)) != Terrain.Forest)
+                    {
+                        continue;
+                    }
+
+                    if (x > map.FoundingSite.X) east++;
+                    if (x < map.FoundingSite.X) west++;
+                    if (y > map.FoundingSite.Y) south++;
+                    if (y < map.FoundingSite.Y) north++;
+                }
             }
 
-            Assert.True(east > 0 && west > 0, $"Seed {seed}: sites are all on one side ({west}W/{east}E).");
-            Assert.True(north > 0 && south > 0, $"Seed {seed}: sites are all on one side ({north}N/{south}S).");
+            Assert.True(east > 0 && west > 0, $"Seed {seed}: wood is all on one side ({west}W/{east}E).");
+            Assert.True(north > 0 && south > 0, $"Seed {seed}: wood is all on one side ({north}N/{south}S).");
         }
     }
 
+    /// <summary>
+    /// Every valley leaves the village inside the walk its economy budgets for.
+    /// </summary>
+    /// <remarks>
+    /// <b>The subject changed and the guarantee did not.</b> It measured each home against
+    /// the nearest generated forage site; there are none, so it measures against the nearest
+    /// place anyone actually gathers — which in a warm start is the gatherer's hut. Same
+    /// question, asked of the thing that answers it now.
+    /// <para>
+    /// ⚠️ The budget is a budget rather than a fence since `forests-and-gathering.md §3.2`,
+    /// so this is no longer enforced by `ChooseSite` refusing. **That makes it worth
+    /// asserting more, not less**: nothing else would notice a valley where the founding
+    /// layout quietly puts every family beyond what the food economy pays for.
+    /// </para>
+    /// </remarks>
     [Fact]
     public void EveryValleyMeetsTheEconomysDistanceBudget()
     {
-        // The guarantee that replaces hand-placement's implicit one, asserted directly
-        // rather than through survival — so a failure says WHICH constraint broke
-        // rather than "the village died, good luck".
         SimConfig config = Config;
         int budget = VillageEconomy.MaxHomeToWorkTiles(config);
 
@@ -408,9 +429,13 @@ public sealed class MapGenerationTests
             foreach (Household household in world.Households)
             {
                 int nearest = int.MaxValue;
-                foreach (GridPos site in world.Map.ForageSites)
+                foreach (Workplace workplace in world.Workplaces)
                 {
-                    nearest = Math.Min(nearest, household.Home().ManhattanDistanceTo(site));
+                    if (workplace.Kind == JobKind.Forager && !workplace.IsSite)
+                    {
+                        nearest = Math.Min(
+                            nearest, household.Home().ManhattanDistanceTo(workplace.Position));
+                    }
                 }
 
                 Assert.True(nearest <= budget,

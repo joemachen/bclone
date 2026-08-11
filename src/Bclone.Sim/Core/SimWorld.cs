@@ -2354,6 +2354,161 @@ public sealed class SimWorld
     /// things, which is hashed already through the buildings themselves.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Where a warm start puts its gatherer's hut — <b>in the wood, not in the clearing</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ MEASURED, AND THE FIXED OFFSET IT REPLACES BROKE 105 TESTS.</b> The obvious way
+    /// to found a hut is at a configured offset from the village, the way every other founding
+    /// building is placed. That puts it <b>inside the founding glade</b> — the clearing D112
+    /// skips woodland over so the opening is not blocked by trees — and a gatherer's hut in a
+    /// clearing is worth almost nothing: measured, a ring of 145 tiles yielding <b>3 food a
+    /// trip against a full-woodland 51</b>. The village starved, and a hundred and five tests
+    /// failed with things like <em>"nobody ever split a log"</em>, because nobody had eaten.
+    /// </para>
+    /// <para>
+    /// <b>So it is sited the way a player would site it: where the trees are.</b> That is not
+    /// a workaround, it is the mechanic — <em>less trees, less food</em> is the whole rule, and
+    /// a warm start that ignored it would hand every test in the suite a village standing on a
+    /// special case the game itself does not have.
+    /// </para>
+    /// <para>
+    /// <b>Bounded by the economy's own budget</b>, so the hut cannot wander off to the finest
+    /// wood in the valley and leave the homes beyond the walk the food economy is derived
+    /// against. Deterministic and draw-free: a full scan with ties broken by distance and then
+    /// by position, so two runs of one seed cannot disagree (D15).
+    /// </para>
+    /// </remarks>
+    private GridPos WhereTheTreesAre(GridPos origin, SimConfig config)
+    {
+        int reach = VillageEconomy.MaxHomeToWorkTiles(config);
+        int ring = config.GathererHutRingTiles;
+
+        GridPos best = origin;
+        int bestTrees = -1;
+        int bestDistance = int.MaxValue;
+
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var at = new GridPos(origin.X + dx, origin.Y + dy);
+                int distance = origin.ManhattanDistanceTo(at);
+
+                // ⚠️ MANHATTAN, NOT PER-AXIS, and the difference is the whole point of the
+                // bound. Bounding dx and dy separately let the hut sit fourteen tiles from
+                // the village on a budget of eight — which is the economy's assumption about
+                // the walk to work being false before the first tick.
+                // ⚠️ THE REACHABILITY QUESTION IS ASKED THE OTHER WAY ROUND, AND IT IS THE
+                // DIFFERENCE BETWEEN ONE DIJKSTRA AND THREE HUNDRED. `TravelCost` caches a
+                // flow field per DESTINATION, so `CanReach(origin, at)` builds a fresh field
+                // for every candidate tile — 289 of them, on every world this suite
+                // constructs. Asked as `CanReach(at, origin)` it builds one field to the
+                // founding site and answers every candidate off it.
+                //
+                // Reachability is symmetric — passability is a property of the ground, not of
+                // the direction — so this is the same question, and it is the trap
+                // `building-placement.md` records `CanBuildAt` falling into at 22 seconds a
+                // test. **Rank on the cheap question first.**
+                if (distance > reach
+                    || !Map.Contains(at)
+                    || Map.TerrainAt(at) == Terrain.Water
+                    || SomethingStandsAt(at)
+                    || !TravelCost.CanReach(at, origin))
+                {
+                    continue;
+                }
+
+                int trees = WoodedTilesWithin(at, ring);
+
+                if (trees > bestTrees || (trees == bestTrees && distance < bestDistance))
+                {
+                    best = at;
+                    bestTrees = trees;
+                    bestDistance = distance;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Give a warm start's forester's hut the wood around it to work.
+    /// </summary>
+    /// <remarks>
+    /// <b>As much as its hands can actually keep, and no more</b> — the allowance D86 derives
+    /// (`WorkGroundAllowanceFor`), so a founded village is never born already overstretched
+    /// and carrying the warning that says so. Nearest wood first, in a fixed scan order, so
+    /// two runs of a seed give the hut the same ground.
+    /// </remarks>
+    private void GiveItTheWoodAroundIt(Workplace hut, SimConfig config)
+    {
+        // ⚠️ AGAINST THE SEATS, NOT AGAINST THE WORKERS. `WorkGroundAllowanceFor` prices
+        // ground by the hands **actually assigned** (D86), and at the founding a hut has
+        // none — so asking it here gave the forester **zero tiles**, and the measurement
+        // said so: the valley kept all 2,662 of its trees while the village dwindled to
+        // nothing for want of timber. It was not deforestation, it was a hut that had never
+        // been given anything to fell.
+        //
+        // The ground a FULL hut could keep is what a player would hand it, and the
+        // allowance check still applies from the next tick — so if the village never staffs
+        // it, the overstretched warning fires and says exactly that.
+        int allowance = hut.Capacity * config.WorkGroundTilesPerWorker;
+        int given = 0;
+
+        for (int radius = 1; radius <= config.GathererHutRingTiles && given < allowance; radius++)
+        {
+            for (int dy = -radius; dy <= radius && given < allowance; dy++)
+            {
+                for (int dx = -radius; dx <= radius && given < allowance; dx++)
+                {
+                    // Only the ring being added this pass, so nearer wood is always taken
+                    // before further wood.
+                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != radius)
+                    {
+                        continue;
+                    }
+
+                    var tile = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                    if (Map.TerrainAt(tile) != Terrain.Forest
+                        || Zones.WorkGroundOwner(tile) != 0)
+                    {
+                        continue;
+                    }
+
+                    Zones.SetWorkGround(tile, hut.Id);
+                    given++;
+                }
+            }
+        }
+    }
+
+    /// <summary>Wooded tiles inside a radius of a point. Counts the ground, not a cache.</summary>
+    private int WoodedTilesWithin(GridPos centre, int radius)
+    {
+        int count = 0;
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if ((dx * dx) + (dy * dy) > radius * radius)
+                {
+                    continue;
+                }
+
+                var tile = new GridPos(centre.X + dx, centre.Y + dy);
+                if (Map.Contains(tile) && Map.TerrainAt(tile) == Terrain.Forest)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
     private string NameFor(BuildingKind kind)
     {
         // A HOUSE IS NOT NUMBERED, and that is not an oversight. Homes are identified by the
@@ -2690,6 +2845,50 @@ public sealed class SimWorld
             Position = Offset(origin, config.BuilderHutX, config.BuilderHutY),
             Capacity = VillageEconomy.BuilderHutCapacity(config),
         });
+
+        // ⭐ A GATHERER'S HUT, BECAUSE A WARM START NOW HAS NO OTHER FOOD (slice 5). The
+        // berry patches used to be laid down by the generator before any building existed,
+        // so a warm start woke up able to eat. With them retired, a village founded with
+        // buildings and no hut is a village with **nothing to gather anywhere** — and every
+        // test in the suite that says "a village lives here" would have been asserting that
+        // four people can starve gracefully.
+        //
+        // Sited where the wood is, not at an offset — see `WhereTheTreesAre` for the 105
+        // tests that taught me the difference. The COLD start still has no hut at all, and
+        // that is Joe's *"no forest, no food"*: the player sites the first one, in woodland
+        // they picked, and it is the first real decision of a run.
+        Workplaces.Add(new Workplace
+        {
+            Id = nextWorkplaceId++,
+            Kind = JobKind.Forager,
+            Name = NameFor(BuildingKind.GathererHut),
+            Position = WhereTheTreesAre(origin, config),
+            Capacity = VillageEconomy.GathererHutCapacity(config),
+            GatheringRadius = config.GathererHutRingTiles,
+        });
+
+        // ⭐ AND A FORESTER'S HUT WITH GROUND, WHICH IS THE OTHER HALF OF THE SAME HOLE.
+        // Foresters worked the two generated tree stands; with those retired a warm start
+        // had timber-workers and nowhere to fell, so no logs reached the woodcutter and the
+        // suite reported *"nobody ever split a log"* — the fuel chain starved at its source
+        // rather than in the middle.
+        //
+        // ⚠️ **A hut alone would not have been enough, and that is the mechanic rather than
+        // an oversight.** A forester's hut fells the ground the player gives it (D86, D112);
+        // with no ground it is a building nobody can work. So the warm start gives it some,
+        // exactly as a player would — which is what makes this a village that already works
+        // rather than one holding a building it does not understand.
+        var forester = new Workplace
+        {
+            Id = nextWorkplaceId++,
+            Kind = JobKind.Forester,
+            Name = NameFor(BuildingKind.ForesterHut),
+            Position = WhereTheTreesAre(origin, config),
+            Capacity = VillageEconomy.RequiredTreeStandSeats(config),
+        };
+
+        Workplaces.Add(forester);
+        GiveItTheWoodAroundIt(forester, config);
 
         // The first workplace that consumes an input rather than only producing one
         // (D29). Logs in, firewood out - and it can stand idle for want of logs,
@@ -3060,157 +3259,18 @@ public sealed class SimWorld
         return false;
     }
 
-    /// <summary>
-    /// Place names for a set of sites — <b>distinct ones</b>, from where they are.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Two sites that share a name are two the game cannot explain.</b> Joe read this
-    /// off his own screen: <em>"Nobody is working the berry patch, the southern western
-    /// thicket, the southern eastern thicket, the southern eastern thicket"</em> — the
-    /// same phrase twice, because a bearing has eight values and this village has six
-    /// forage sites. Every name here ends up inside a sentence about why somebody walks
-    /// the way they do, and a name that points at two places answers nothing.
-    /// </para>
-    /// <para>
-    /// <b>Worse than the repeat, and the reason this is a sim fix rather than a view
-    /// one: the noun was wrong.</b> Every site past the first was called a *thicket*
-    /// whatever it was, so a tree stand and a berry patch were named alike — and a
-    /// player told nobody was working "the southern eastern thicket" could not tell
-    /// whether the village was short of food or of timber. Thickets are for foraging;
-    /// woods are for felling.
-    /// </para>
-    /// <para>
-    /// Collisions are broken by <em>distance</em>, because that is what a person would
-    /// reach for: the near one keeps the plain name and the ones behind it are the far,
-    /// farther and farthest. Ordered by travel distance and then by tile, so it is a
-    /// total order and no two runs can disagree (D15).
-    /// </para>
-    /// </remarks>
-    // ⚠️ DEAD RIGHT NOW, AND DELIBERATELY NOT DELETED. Its two callers were the forage sites
-    // and the tree stands, both retired in this slice — but the problem D56 solved has come
-    // straight back from the other side: **every building of a kind is named the same thing.**
-    // Build two gatherer's huts and the unmanned-work alert says *"nobody is working a
-    // gatherer's hut"* twice, which is exactly the *"the southern eastern thicket, the
-    // southern eastern thicket"* this method exists to prevent.
+    // ⭐ D56's PLACE-NAMING IS DELETED HERE, AND IT IS THE RIGHT KIND OF DELETION.
+    // `NamePlaces`, `Bearing`, `Further` and `TilesApart` gave the generated forage sites and
+    // tree stands distinct names — *"the south-western thicket"* — because a bearing has
+    // eight values and the valley had eight places, so two of them shared a phrase and the
+    // game could not say which it meant.
     //
-    // So it gets **re-pointed at player-placed buildings**, which is D56's mechanism finally
-    // doing the job it was written for. Deleting it and writing it again in a fortnight is
-    // the worse of the two.
-    private static List<string> NamePlaces(
-        IReadOnlyList<GridPos> sites, GridPos origin, string firstName, string noun)
-    {
-        var names = new List<string>(sites.Count);
-        for (int i = 0; i < sites.Count; i++)
-        {
-            // The first of each kind is the one the village started with, and it is
-            // named as such — "the berry patch", not "the southern thicket".
-            names.Add(i == 0 ? firstName : $"the {Bearing(sites[i], origin)} {noun}");
-        }
-
-        for (int i = 0; i < names.Count; i++)
-        {
-            var sharing = new List<int>();
-            for (int j = i; j < names.Count; j++)
-            {
-                if (names[j] == names[i])
-                {
-                    sharing.Add(j);
-                }
-            }
-
-            if (sharing.Count < 2)
-            {
-                continue;
-            }
-
-            sharing.Sort((a, b) =>
-            {
-                int byDistance = TilesApart(origin, sites[a]).CompareTo(TilesApart(origin, sites[b]));
-                if (byDistance != 0)
-                {
-                    return byDistance;
-                }
-
-                int byX = sites[a].X.CompareTo(sites[b].X);
-                return byX != 0 ? byX : sites[a].Y.CompareTo(sites[b].Y);
-            });
-
-            // The nearest keeps what it had; everyone behind it says how far behind.
-            for (int k = 1; k < sharing.Count; k++)
-            {
-                names[sharing[k]] = Further(names[sharing[k]], k);
-            }
-        }
-
-        return names;
-    }
-
-    /// <summary>Which way a site lies from the village, in words.</summary>
-    /// <remarks>
-    /// Relative to the village, not to the world origin — "the northern wood" has to mean
-    /// north of the people saying it, and once the valley is generated the settlement is
-    /// no longer at (0,0).
-    /// </remarks>
-    private static string Bearing(GridPos position, GridPos origin)
-    {
-        position = new GridPos(position.X - origin.X, position.Y - origin.Y);
-
-        string northSouth = position.Y < 0 ? "north" : position.Y > 0 ? "south" : string.Empty;
-        string eastWest = position.X < 0 ? "west" : position.X > 0 ? "east" : string.Empty;
-
-        // Hyphenated when both apply. It used to read "the northern eastern thicket",
-        // which is not a thing anybody says.
-        if (northSouth.Length > 0 && eastWest.Length > 0)
-        {
-            return $"{northSouth}-{eastWest}ern";
-        }
-
-        if (northSouth.Length > 0)
-        {
-            return $"{northSouth}ern";
-        }
-
-        return eastWest.Length > 0 ? $"{eastWest}ern" : "near";
-    }
-
-    /// <summary>
-    /// The same place name, said of somewhere further out.
-    /// </summary>
-    /// <remarks>
-    /// Three qualifiers, which is four sites in one bearing before it runs out — and if
-    /// it ever does run out the result is a duplicate, so there is a test that every
-    /// workplace in the village has a name of its own. A guard rather than a hope: the
-    /// alternative is this bug coming back silently the first time somebody raises
-    /// <c>forage_site_count</c>.
-    /// </remarks>
-    private static string Further(string name, int rank)
-    {
-        string qualifier = rank switch
-        {
-            1 => "far",
-            2 => "farther",
-            _ => "farthest",
-        };
-
-        // "the southern wood" becomes "the far southern wood".
-        return name.StartsWith("the ", StringComparison.Ordinal)
-            ? $"the {qualifier} {name[4..]}"
-            : $"{qualifier} {name}";
-    }
-
-    /// <summary>Straight-line-ish distance in tiles, integer only (D2).</summary>
-    /// <remarks>
-    /// Chebyshev rather than the travel-cost field, deliberately: names are settled while
-    /// the world is being built, before the cost field exists, and "which is further out"
-    /// is a question about the map rather than about the walk.
-    /// </remarks>
-    private static int TilesApart(GridPos from, GridPos to)
-    {
-        int dx = Math.Abs(to.X - from.X);
-        int dy = Math.Abs(to.Y - from.Y);
-        return dx > dy ? dx : dy;
-    }
+    // **Both halves of that problem are gone.** The generated places retired in this slice,
+    // and the player-placed buildings that replaced them are numbered (D124), which solves
+    // the same collision in the one way that survives the player renaming them later.
+    //
+    // A hundred and fifty lines removed, and the argument they were written for is recorded
+    // in D56 and D124 rather than in code nothing calls.
 
     /// <summary>
     /// What the tile at <paramref name="at"/> does for somebody standing on it in

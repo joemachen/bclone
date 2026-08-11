@@ -138,7 +138,7 @@ public sealed class LabourTests
     [Fact]
     public void AWorkplaceNeverExceedsItsCapacity()
     {
-        SimLoop loop = Build(Config with { ForageSiteCapacity = 3 });
+        SimLoop loop = Build(Config with { GathererHutRingTiles = 2 });
         loop.Step(30_000);
 
         foreach (Workplace workplace in loop.World.Workplaces)
@@ -259,8 +259,8 @@ public sealed class LabourTests
         // same villager must win it every single run, or the village desyncs.
         for (int attempt = 0; attempt < 5; attempt++)
         {
-            SimLoop a = Build(Config with { ForageSiteCapacity = 1 });
-            SimLoop b = Build(Config with { ForageSiteCapacity = 1 });
+            SimLoop a = Build(Config with { GathererHutRingTiles = 1 });
+            SimLoop b = Build(Config with { GathererHutRingTiles = 1 });
 
             a.Step(Config.TicksPerSeason);
             b.Step(Config.TicksPerSeason);

@@ -436,11 +436,22 @@ public sealed class VillageTests
                 continue;
             }
 
-            int cost = loop.World.TravelCost.TicksBetween(
-                household.Home(), loop.World.FoodSource.Position);
-            if (cost > worst)
+            // `world.FoodSource` was Phase 0's single berry patch and is deleted with the
+            // rest of them. The nearest place anyone actually gathers is the question this
+            // was always asking — it just used to have exactly one answer.
+            foreach (Workplace workplace in loop.World.Workplaces)
             {
-                worst = cost;
+                if (workplace.Kind != JobKind.Forager || workplace.IsSite)
+                {
+                    continue;
+                }
+
+                int cost = loop.World.TravelCost.TicksBetween(
+                    household.Home(), workplace.Position);
+                if (cost > worst)
+                {
+                    worst = cost;
+                }
             }
         }
 

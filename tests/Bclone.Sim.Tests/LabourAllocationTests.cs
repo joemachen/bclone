@@ -197,7 +197,10 @@ public sealed class LabourAllocationTests
     [Fact]
     public void NoSiteEverExceedsItsOwnCapacity()
     {
-        SimLoop loop = Build(Config with { ForageSiteCapacity = 2, TreeStandCapacity = 1 });
+        // Posed tight so the rule has something to bind on. `forage_site_capacity` was one
+        // of these levers and is retired — a gatherer's hut prices its own seats from its
+        // ring — so the two typed capacities left do the same job.
+        SimLoop loop = Build(Config with { TreeStandCapacity = 1, WoodcutterHutCapacity = 1 });
         loop.Step(Config.TicksPerYear * 60);
 
         foreach (Workplace workplace in loop.World.Workplaces)
@@ -420,17 +423,17 @@ public sealed class LabourAllocationTests
         // One seat per site and a village that outgrows them: the refusal has to say
         // "you need another site", not "no".
         //
-        // Posed directly rather than hoped for: one seat at the single patch, four
-        // founders. Three of them have nowhere to fit from the very first tick, so
-        // the message cannot be missed by a village that happened not to grow.
-        // One patch with room for one pair of hands, so somebody has to be turned
-        // away. Asked of the GENERATOR now — extra_forage_sites was a list of literal
-        // coordinates and stopped being read when the valley became generated (D18).
+        // Posed directly rather than hoped for: one seat everywhere, four founders.
+        // Three of them have nowhere to fit from the very first tick, so the message
+        // cannot be missed by a village that happened not to grow.
+        //
+        // The gathering seat is squeezed through the RING now rather than through a
+        // capacity key: a hut prices its own seats from the ground it can reach
+        // (`GathererHutCapacity`), so a ring of one tile is a hut with one pair of hands.
+        // That is the same posing done through the number that still exists.
         SimConfig config = Config with
         {
-            ForageSiteCount = 1,
-            ForageSiteCapacity = 1,
-            TreeStandCount = 1,
+            GathererHutRingTiles = 1,
             TreeStandCapacity = 1,
             WoodcutterHutCapacity = 1,
 
