@@ -659,7 +659,7 @@ public sealed class ColdStartTests
     /// fell it.
     /// </para>
     /// </remarks>
-    private static void PlayTheOpening(SimWorld world)
+    internal static void PlayTheOpening(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;
 
@@ -717,6 +717,21 @@ public sealed class ColdStartTests
         // decision the mechanic is about and the founders settle a glade (D112): a hut on
         // the doorstep is a hut in a clearing, and a hut in a clearing yields almost nothing.
         MarkInTheBestWoodland(world, site);
+
+        // 6. ⭐ AND TREES TO FELL, WHICH THE OPENING DELIBERATELY DID NOT PAINT UNTIL NOW.
+        //
+        // The old comment below is a measurement from a world that no longer exists: timber
+        // came from two generator-placed TREE STANDS, so the opening had a log supply without
+        // asking for one, and painting on top of it was harmful. **The stands are retired.**
+        // With no forester's hut and no painted ground, a cold start has *no source of logs
+        // at all* — measured, both huts stay sites for ever, no firewood is made, and all
+        // four founders freeze however much food is in the cart.
+        //
+        // This is Joe's own sentence arriving as a requirement rather than an option:
+        // *"the user can paint trees to get laborers to cut down forests until foresters are
+        // available."* The pile is already down to receive them, which is the arm D99
+        // measured as safe — it is *harvest with no pile* that was fatal.
+        PaintTheNearbyTrees(world, 6);
 
         // ⚠️ AND DELIBERATELY NO HARVEST PAINTING, which was tried here and measured as
         // harmful — see TheOpeningGetsItsTimberFromTheTreesThePlayerPainted, which paints
