@@ -731,7 +731,14 @@ public sealed class ColdStartTests
         // *"the user can paint trees to get laborers to cut down forests until foresters are
         // available."* The pile is already down to receive them, which is the arm D99
         // measured as safe — it is *harvest with no pile* that was fatal.
+        //
+        // ⚠️ SIX, WHICH IS THE RADIUS THAT WAS ACTUALLY MEASURED. Twelve was tried on the
+        // theory that more painted wood is more timber, and it is not obviously better —
+        // laborers spend the extra time clearing rather than building, which is the shape
+        // D99 measured as harmful. Six is the arm where first firewood lands t253–268
+        // against a winter at t360.
         PaintTheNearbyTrees(world, 6);
+
 
         // ⚠️ AND DELIBERATELY NO HARVEST PAINTING, which was tried here and measured as
         // harmful — see TheOpeningGetsItsTimberFromTheTreesThePlayerPainted, which paints
