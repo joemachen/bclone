@@ -150,30 +150,42 @@ public static class VillageEconomy
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// The furthest a home may ever be from its work.
+    /// The walk to work the economy budgets for — <b>the gatherer's own ring</b>.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>This is a guarantee, not an observation, and that inversion is the point.</b>
-    /// The economy used to be derived by scanning where a square spiral <em>happened</em>
-    /// to put twenty homes and taking the worst — so the budget was whatever the layout
-    /// gave it, and a generated valley could hand it a layout it could not afford.
-    /// Now <see cref="Household.ChooseSite"/> refuses to build beyond this distance, so
-    /// the budget holds by construction and the derivation has something firm to stand
-    /// on.
+    /// <b>⭐ IT IS A BUDGET NOW, NOT A FENCE</b> (`forests-and-gathering.md §3.2`). It used to
+    /// be a guarantee: <see cref="Household.ChooseSite"/> refused to build beyond it, so the
+    /// derivation stood on something the village could not break. Catchment is gone and the
+    /// refusal with it — building further out is allowed, warned about, and genuinely costs
+    /// food, because the villager really does walk further and really does make fewer trips.
+    /// <b>That is D58's settled mechanism: distance stops being a restriction and becomes a
+    /// consequence.</b>
     /// </para>
     /// <para>
-    /// Stated as: <b>a home is never further from work than the sites are from the
-    /// middle of the valley</b> — the ring radius, plus the worst the jitter can add.
-    /// A village that cannot honour that has run out of valley, which is a legible
-    /// thing to be told.
+    /// <b>⚠️ It could not simply be deleted, and that is why this number still exists.</b>
+    /// <see cref="RequiredGatherYield"/> solves <em>yield = need ÷ (trips × vigour)</em>
+    /// against the worst walk; widen that walk to the map diagonal and
+    /// <see cref="TripsPerYear"/> rounds to zero, at which point the economy has **no
+    /// solution at all** (`DESIGN.md §5`'s recorded finding). An anchor is required. The only
+    /// question was which.
+    /// </para>
+    /// <para>
+    /// <b>The anchor is <c>gatherer_hut_ring_tiles</c>, and three things recommend it.</b> It
+    /// is a number the player can <em>see on the map</em> — the ring the hut draws is also the
+    /// distance the economy assumes people live within, where the old 7 was an artefact of
+    /// where a generator happened to drop a berry patch and no player could ever have learned
+    /// it. The stated target barely changes: <em>one gatherer at a <b>fully wooded</b> hut, at
+    /// minimum vigour, feeds themselves and their dependants</em> — only the two bold words
+    /// are new. And the ring was chosen as 8 against the old 7 precisely so this re-derivation
+    /// would be an adjustment rather than a rewrite.
     /// </para>
     /// </remarks>
     public static int MaxHomeToWorkTiles(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        return config.ForageSiteRingTiles + (config.SiteJitterTiles * 2);
+        return config.GathererHutRingTiles;
     }
 
     /// <summary>How far a home may sit from the middle of the village.</summary>
