@@ -609,9 +609,51 @@ public static class VillageEconomy
     internal static int CeilingDivide(int numerator, int denominator) =>
         denominator <= 0 ? 0 : (numerator + denominator - 1) / denominator;
 
+    /// <summary>
+    /// How wooded the economy assumes a working hut's ring actually is.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE ECONOMY USED TO BE DERIVED FOR A VALLEY THAT DOES NOT EXIST</b> (Joe's call,
+    /// 2026-08-11). `forests-and-gathering.md §3.2` states the target as *"one gatherer at a
+    /// <b>fully wooded</b> hut feeds themselves and their dependants"*, and flagged those two
+    /// words as the only new ones. This is what they cost: **no real hut is ever fully
+    /// wooded.** Measured on the warm start, a well-sited hut yields **29 of a possible 51**
+    /// at founding and **19 by year twenty**, because the village clears its own ring as it
+    /// builds. The village starved at year thirty with 2,627 of the valley's 2,662 trees
+    /// still standing — the derivation was simply asking for food that no hut could produce.
+    /// </para>
+    /// <para>
+    /// <b>Anchored on <c>forest_coverage_percent</c>, which is a number that already exists
+    /// and is already stated.</b> The target becomes *one gatherer at a hut whose ring is as
+    /// wooded as the valley is* — true of an averagely-sited hut, and **conservative for a
+    /// well-sited one**, which is the right direction: siting a hut in thick wood should be
+    /// rewarded with slack, not required to break even. That is §0.1's *challenge in the
+    /// planning* — the decision pays off — rather than a tax for making it badly.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It does not soften "no forest, no food".</b> A bald ring still yields nothing;
+    /// what changed is what the village <em>budgets</em> for, not what a trip is worth.
+    /// </para>
+    /// </remarks>
+    public static int WorkingRingWoodedPercent(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        // Clamped above zero: a valley configured with no woodland at all cannot support a
+        // food economy, and the throw for that belongs in `RequiredGatherYield` where the
+        // impossibility is stated, not in a division here.
+        return config.ForestCoveragePercent < 1 ? 1 : config.ForestCoveragePercent;
+    }
+
     /// <summary>Food one adult gathers in a year at a given vigour.</summary>
+    /// <remarks>
+    /// Through <see cref="WorkingRingWoodedPercent"/>, so what the economy believes a trip is
+    /// worth and what <c>SimWorld.GatherYieldAt</c> actually hands over cannot drift apart.
+    /// </remarks>
     public static int FoodGatheredPerYear(SimConfig config, int vigourPercent) =>
-        TripsPerYear(config) * config.GatherYield * vigourPercent / 100;
+        TripsPerYear(config) * config.GatherYield * WorkingRingWoodedPercent(config) / 100
+            * vigourPercent / 100;
 
     /// <summary>Food one adult gathers in a year at their weakest.</summary>
     public static int FoodGatheredPerYearAtWorst(SimConfig config) =>
@@ -709,9 +751,14 @@ public static class VillageEconomy
                 "Config allows no foraging at all; no gather yield can sustain a village.");
         }
 
-        // yield * trips * vigour/100 >= needed, solved for yield and rounded up.
-        int denominator = trips * config.VigourMinPercent;
-        return ((needed * 100) + denominator - 1) / denominator;
+        // yield * wooded/100 * trips * vigour/100 >= needed, solved for yield, rounded up.
+        //
+        // The wooded fraction is the new term and it is why this number roughly trebles: the
+        // village is budgeting for the hut it will actually have rather than for a
+        // hypothetical one standing in unbroken forest.
+        int wooded = WorkingRingWoodedPercent(config);
+        int denominator = trips * config.VigourMinPercent * wooded;
+        return ((needed * 100 * 100) + denominator - 1) / denominator;
     }
 
     /// <summary>

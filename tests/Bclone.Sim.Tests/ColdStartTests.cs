@@ -705,6 +705,19 @@ public sealed class ColdStartTests
         // 4. Something to make firewood with. Still no shed — the pile is the store.
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
 
+        // 5. ⭐ SOMEWHERE TO GET FOOD, WHICH THE VALLEY NO LONGER PROVIDES BY ITSELF.
+        //
+        // Until the berry patches retired, the opening needed no food building: six of them
+        // were on the map before the founders arrived. Joe's *"no forest, no food"* means a
+        // cold start now begins with **nothing to gather anywhere**, so the first hut is part
+        // of the opening in the same way the pile and the builder's hut are — measured,
+        // without it four founders freeze and not one berry ever reaches the store.
+        //
+        // Sited IN WOODLAND rather than on the nearest bare tile, because that is the
+        // decision the mechanic is about and the founders settle a glade (D112): a hut on
+        // the doorstep is a hut in a clearing, and a hut in a clearing yields almost nothing.
+        MarkInTheBestWoodland(world, site);
+
         // ⚠️ AND DELIBERATELY NO HARVEST PAINTING, which was tried here and measured as
         // harmful — see TheOpeningGetsItsTimberFromTheTreesThePlayerPainted, which paints
         // for its own purpose and runs one year. Over forty years, four arms on the
@@ -772,6 +785,66 @@ public sealed class ColdStartTests
     /// The player clicks somewhere sensible and the village tells them if it will not do
     /// (D43). A test cannot click, so it tries a small ring and takes the first yes.
     /// </remarks>
+    /// <summary>
+    /// Put a gatherer's hut where the trees are, the way a player would.
+    /// </summary>
+    /// <remarks>
+    /// Bounded by the economy's own budget, so the opening never sites its food beyond the
+    /// walk the food economy is derived against — the same rule the warm start's
+    /// <c>WhereTheTreesAre</c> follows, expressed here through the public API a player has.
+    /// </remarks>
+    private static void MarkInTheBestWoodland(SimWorld world, GridPos site)
+    {
+        int reach = VillageEconomy.MaxHomeToWorkTiles(world.Config);
+        int ring = world.Config.GathererHutRingTiles;
+
+        GridPos? best = null;
+        int bestTrees = -1;
+
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var at = new GridPos(site.X + dx, site.Y + dy);
+                if (site.ManhattanDistanceTo(at) > reach
+                    || !world.CanBuildAt(BuildingKind.GathererHut, at).Allowed)
+                {
+                    continue;
+                }
+
+                int trees = 0;
+                for (int ry = -ring; ry <= ring; ry++)
+                {
+                    for (int rx = -ring; rx <= ring; rx++)
+                    {
+                        if ((rx * rx) + (ry * ry) > ring * ring)
+                        {
+                            continue;
+                        }
+
+                        var tile = new GridPos(at.X + rx, at.Y + ry);
+                        if (world.Map.Contains(tile)
+                            && world.Map.TerrainAt(tile) == Terrain.Forest)
+                        {
+                            trees++;
+                        }
+                    }
+                }
+
+                if (trees > bestTrees)
+                {
+                    bestTrees = trees;
+                    best = at;
+                }
+            }
+        }
+
+        if (best is GridPos chosen)
+        {
+            world.Mark(BuildingKind.GathererHut, chosen);
+        }
+    }
+
     private static void MarkSomewhereNear(
         SimWorld world, BuildingKind kind, GridPos site, int radius)
     {
