@@ -1421,6 +1421,28 @@ public sealed class SimWorld
     /// </remarks>
     public bool NeedsMoreResidentialLand { get; internal set; }
 
+    /// <summary>
+    /// Whether work the village wants done currently has nobody on it (D47).
+    /// </summary>
+    /// <remarks>
+    /// <b>An edge-detector, not a fact anybody reads.</b> It exists so the log line fires
+    /// once when the state begins and once when it ends, rather than every tick — the same
+    /// shape and the same reason as <see cref="NeedsMoreResidentialLand"/> beside it, and
+    /// like that one it is <b>not hashed</b>: it is bookkeeping about narration, derived
+    /// from workplaces and quotas that are hashed already.
+    /// </remarks>
+    public bool WorkIsGoingUndone { get; internal set; }
+
+    /// <summary>
+    /// Whether work was already seen unmanned at the previous labour pass.
+    /// </summary>
+    /// <remarks>
+    /// The patience half of the pair above: a shortage is only worth a line if it survives
+    /// one pass, because a season boundary produces one that does not. Not hashed, for the
+    /// same reason as its neighbours.
+    /// </remarks>
+    public bool WorkSeenUndoneOnce { get; internal set; }
+
     /// <summary>Distance from a tile to the nearest place anyone forages.</summary>
     private int NearestForageDistance(GridPos from)
     {
@@ -2299,23 +2321,76 @@ public sealed class SimWorld
         return max;
     }
 
-    private static string NameFor(BuildingKind kind) => kind switch
+    /// <summary>
+    /// What to call the next building of a kind — <b>numbered, and unique for the run</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe's call (2026-08-10): <em>"name them numerically — gatherer's hut 1,
+    /// gatherer's hut 2 — eventually we will let the user rename them."</em></b> Every
+    /// building of a kind used to be called the same thing, so two gatherer's huts both
+    /// reported as <em>"a gatherer's hut"</em> and no sentence in the game could tell them
+    /// apart. That is D56's collision arriving from the other side: the generated places it
+    /// fixed have retired, and the player-placed buildings that replaced them never had
+    /// names of their own.
+    /// </para>
+    /// <para>
+    /// <b>It overturns D56's "Forage Site 3 is a row in a table", and the difference is who
+    /// chose the place.</b> A bearing gave identity to somewhere the generator dropped and
+    /// the player had no relationship with. A building the player sited needs no help being
+    /// remembered — and a bearing would collide again anyway, since there are eight of them,
+    /// and would be wrong the moment renaming lands. <b>A number is the honest placeholder
+    /// for a name somebody is going to type.</b>
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Counted per kind and never reused, which is the whole correctness of it.</b>
+    /// Numbering from how many are currently standing looks simpler and is broken: pull down
+    /// hut 2 of three, build another, and it would be christened <em>hut 3</em> alongside the
+    /// hut 3 already there. A monotonic counter cannot do that, and the gap it leaves behind
+    /// is the truth — hut 2 was pulled down, and the log still says so.
+    /// </para>
+    /// <para>
+    /// Not hashed, like every other name: it is derived from the order the player marked
+    /// things, which is hashed already through the buildings themselves.
+    /// </para>
+    /// </remarks>
+    private string NameFor(BuildingKind kind)
     {
-        BuildingKind.Granary => "a granary",
-        BuildingKind.Shed => "a storage shed",
-        BuildingKind.Market => "a market",
-        BuildingKind.Pile => "a storage pile",
-        BuildingKind.Home => "a house",
-        BuildingKind.BuilderHut => "a builder's hut",
-        BuildingKind.GathererHut => "a gatherer's hut",
-        BuildingKind.ForesterHut => "a forester's hut",
+        // A HOUSE IS NOT NUMBERED, and that is not an oversight. Homes are identified by the
+        // family in them — "the Thatcher household" — which is a better name than any number
+        // and the one every sentence about a home already uses. "House 47" would be the row
+        // in a table D56 objected to, in the one place the objection still holds.
+        if (kind == BuildingKind.Home)
+        {
+            return "a house";
+        }
 
-        // Named, because the default arm called every unrecognised building a woodcutter's
-        // hut — in the log, in the panel, and in every placement sentence (D108).
-        BuildingKind.WoodcutterHut => "a woodcutter's hut",
-        _ => throw new ArgumentOutOfRangeException(
-            nameof(kind), kind, "That kind of building has no name."),
-    };
+        int index = (int)kind;
+        _buildingsNamed[index]++;
+
+        string what = kind switch
+        {
+            BuildingKind.Granary => "granary",
+            BuildingKind.Shed => "storage shed",
+            BuildingKind.Market => "market",
+            BuildingKind.Pile => "storage pile",
+            BuildingKind.BuilderHut => "builder's hut",
+            BuildingKind.GathererHut => "gatherer's hut",
+            BuildingKind.ForesterHut => "forester's hut",
+
+            // Named, because the default arm called every unrecognised building a woodcutter's
+            // hut — in the log, in the panel, and in every placement sentence (D108).
+            BuildingKind.WoodcutterHut => "woodcutter's hut",
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building has no name."),
+        };
+
+        return $"{what} {_buildingsNamed[index]}";
+    }
+
+    /// <summary>How many of each kind have ever been named. Never decremented.</summary>
+    private readonly int[] _buildingsNamed =
+        new int[Enum.GetValues<BuildingKind>().Length];
 
     /// <summary>Any store of this kind, for naming things and for tests. Never for logic.</summary>
     /// <remarks>
@@ -2611,7 +2686,7 @@ public sealed class SimWorld
         {
             Id = nextWorkplaceId++,
             Kind = JobKind.Builder,
-            Name = "the builder's hut",
+            Name = NameFor(BuildingKind.BuilderHut),
             Position = Offset(origin, config.BuilderHutX, config.BuilderHutY),
             Capacity = VillageEconomy.BuilderHutCapacity(config),
         });
@@ -2623,7 +2698,7 @@ public sealed class SimWorld
         {
             Id = nextWorkplaceId++,
             Kind = JobKind.Woodcutter,
-            Name = "the woodcutter's hut",
+            Name = NameFor(BuildingKind.WoodcutterHut),
             Position = Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY),
             Capacity = config.WoodcutterHutCapacity,
         });
@@ -2644,7 +2719,7 @@ public sealed class SimWorld
         {
             Id = 1,
             Kind = StoreKind.Granary,
-            Name = "the granary",
+            Name = NameFor(BuildingKind.Granary),
             Position = Offset(origin, config.GranaryX, config.GranaryY),
             Store = new Stockpile { Capacity = VillageEconomy.GranaryCapacity(config) },
         });
@@ -2653,7 +2728,7 @@ public sealed class SimWorld
         {
             Id = 2,
             Kind = StoreKind.Shed,
-            Name = "the storage shed",
+            Name = NameFor(BuildingKind.Shed),
             Position = Offset(origin, config.StorageShedX, config.StorageShedY),
             Store = new Stockpile { Capacity = VillageEconomy.ShedCapacity(config) },
         });
@@ -2667,11 +2742,17 @@ public sealed class SimWorld
         // seam is recorded there rather than left to be rediscovered.
         var market = Offset(origin, config.MarketX, config.MarketY);
 
+        // ⚠️ NAMED ONCE AND USED TWICE, because a market IS one building that happens to
+        // live in two lists (D36's seam). Calling `NameFor` again below would christen the
+        // store "market 1" and the workplace inside it "market 2", which is the seam telling
+        // a lie about how many markets the village has.
+        string marketName = NameFor(BuildingKind.Market);
+
         StoreBuildings.Add(new StoreBuilding
         {
             Id = 3,
             Kind = StoreKind.Market,
-            Name = "the market",
+            Name = marketName,
             Position = market,
             Store = new Stockpile { Capacity = VillageEconomy.MarketCapacity(config) },
         });
@@ -2686,7 +2767,7 @@ public sealed class SimWorld
             {
                 Id = nextWorkplaceId++,
                 Kind = JobKind.Marketer,
-                Name = "the market",
+                Name = marketName,
                 Position = market,
                 Capacity = config.MarketCapacity,
             });
