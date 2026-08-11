@@ -2147,13 +2147,14 @@ public sealed class BehaviorSystem : ISimSystem
                 // ⭐ WHAT THE PLACE IS WORTH, THEN WHAT THE PERSON IS WORTH
                 // (`forests-and-gathering.md`). This read `world.FoodSource.YieldPerGather`
                 // flat, because every gathering job was a berry patch and every berry patch
-                // was the same. A gatherer's hut is worth what the trees in its ring say, so
-                // the place is asked first — and a berry patch still answers exactly what it
-                // always did, which is why this is a no-op until somebody builds a hut.
+                // was the same. A gatherer's hut is worth what the trees in its ring say.
+                //
+                // **No workplace now means no food**, where it used to fall back to the
+                // patch's flat yield. With the patches retired there is nowhere to gather
+                // that is not a hut, so a gatherer with no hut is somebody standing in a
+                // field — and paying them for it would be the last of the free food.
                 Workplace? patch = WorkplaceOf(world, villager);
-                int perTrip = patch is null
-                    ? world.FoodSource.YieldPerGather
-                    : world.GatherYieldAt(patch);
+                int perTrip = patch is null ? 0 : world.GatherYieldAt(patch);
 
                 int yield = perTrip * villager.Vigour / 100;
 
@@ -2232,7 +2233,11 @@ public sealed class BehaviorSystem : ISimSystem
 
                 // Vigour scales timber the same way it scales berries: an ageing
                 // woodcutter brings back less for the same day's walk.
-                int wood = world.TreeStand.YieldPerCut * villager.Vigour / 100;
+                //
+                // Read from the config rather than from `world.TreeStand`, which is deleted
+                // with the stands (slice 5). It was always just `cut_yield` in a wrapper —
+                // one stand's worth, read by every forester in the village.
+                int wood = world.Config.CutYield * villager.Vigour / 100;
                 if (wood < 1)
                 {
                     wood = 1;

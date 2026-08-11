@@ -101,49 +101,12 @@ public static class VillageEconomy
         return (travel * 2) + config.GatherTicks;
     }
 
-    /// <summary>Distance from a home to the <em>nearest</em> forage site.</summary>
-    /// <remarks>
-    /// Nearest, not first. Several sites exist precisely so that an outlying household
-    /// has a short walk to one of them (D19), and an economy budgeting for the far
-    /// patch would throw that away — it would derive a yield generous enough that
-    /// catchment could never bind without the village getting rich, which is the
-    /// opposite of what the sites are for.
-    /// </remarks>
-    public static int NearestForageDistance(SimConfig config, GridPos from)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        // Against the CANONICAL valley — the jitter-free ring — plus the worst jitter
-        // the generator is allowed to add (D18).
-        //
-        // This is what keeps ONE economy for every seed. Deriving from the actual
-        // generated sites would make gather_yield a property of the seed, so two runs
-        // would have different physics and a shared seed would stop being comparable.
-        // Budgeting against the canonical layout and paying for the worst jitter up
-        // front means every valley the generator can produce fits inside the economy
-        // by construction — no reject-and-redraw, and no seed quietly unsurvivable.
-        List<GridPos> sites = MapGenerator.CanonicalForageSites(config);
-
-        int nearest = int.MaxValue;
-        for (int i = 0; i < sites.Count; i++)
-        {
-            int distance = from.ManhattanDistanceTo(sites[i]);
-            if (distance < nearest)
-            {
-                nearest = distance;
-            }
-        }
-
-        if (nearest == int.MaxValue)
-        {
-            throw new InvalidOperationException(
-                "The valley has no forage sites at all; no economy can be derived for it.");
-        }
-
-        // Jitter can only ever move a site further from a given home by this much, so
-        // paying for it here is the conservative reading.
-        return nearest + (config.SiteJitterTiles * 2);
-    }
+    // `NearestForageDistance` is deleted with the sites it measured (slice 5). It answered
+    // *"how far is a home from the nearest berry patch, in the canonical jitter-free
+    // valley?"*, which kept one economy across every seed — and it had **no callers left**
+    // even before this slice, because `MaxHomeToWorkTiles` stopped being derived from a ring
+    // of patches and became the gatherer hut's own ring. Deleted rather than kept against
+    // some future use (D98).
 
     // ---------------------------------------------------------------
     //  What placement guarantees, and what the economy is derived from
@@ -230,14 +193,13 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        // The canonical stand, furthest-out slot, plus worst-case jitter — same basis
-        // as the forage budget above, so neither kind of work is quietly cheaper.
-        List<GridPos> stands = MapGenerator.CanonicalTreeStands(config);
-        GridPos stand = stands.Count > 0
-            ? stands[stands.Count - 1]
-            : new GridPos(config.TreeStandRingTiles, 0);
-        stand = new GridPos(
-            stand.X + config.SiteJitterTiles, stand.Y + config.SiteJitterTiles);
+        // ⭐ WHERE THE TIMBER IS, NOW THAT NOBODY DROPS A STAND ON THE MAP (slice 5). This
+        // used to be the canonical stand's furthest slot plus worst-case jitter — a position
+        // the generator chose. A forester works **their own hut's painted ground** now, so
+        // the walk is the same walk everything else budgets for, and saying so here finally
+        // makes true the sentence this method has always carried: *same basis as the forage
+        // budget, so neither kind of work is quietly cheaper.*
+        var stand = new GridPos(MaxHomeToWorkTiles(config), 0);
 
         var shed = new GridPos(config.StorageShedX, config.StorageShedY);
 

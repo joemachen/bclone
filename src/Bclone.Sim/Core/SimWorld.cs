@@ -191,11 +191,10 @@ public sealed class SimWorld
         }
     }
 
-    /// <summary>The berry patch.</summary>
-    public FoodSource FoodSource { get; }
-
-    /// <summary>The stand of trees.</summary>
-    public TreeStand TreeStand { get; }
+    // `FoodSource` and `TreeStand` are deleted (`forests-and-gathering.md` slice 5). They
+    // were Phase 0's single berry patch and single stand of trees, and they outlived the
+    // plural lists that replaced them by five phases — a yield-per-gather and a
+    // yield-per-cut, read from one place while the village worked eight others.
 
     /// <summary>Every workplace, ordered by id.</summary>
     public List<Workplace> Workplaces { get; } = new();
@@ -682,21 +681,18 @@ public sealed class SimWorld
     /// panel says what its ring holds and what that is worth — not that it is softened.
     /// </para>
     /// <para>
-    /// A place with no ring — a berry patch — yields what it has always yielded, so this is a
-    /// no-op until somebody builds a hut.
+    /// <b>Every gathering place has a ring now</b> (slice 5). The arm for one that did not was
+    /// the berry patch, which yielded a flat <c>gather_yield</c> wherever it stood; with the
+    /// patches retired there is nothing left that gathers without a ring, so a radius of zero
+    /// is a hut with no reach and correctly worth nothing.
     /// </para>
     /// </remarks>
     public int GatherYieldAt(Workplace workplace)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        if (workplace.GatheringRadius <= 0)
-        {
-            return FoodSource.YieldPerGather;
-        }
-
         int ring = VillageEconomy.TilesInRing(workplace.GatheringRadius);
-        return ring <= 0 ? 0 : FoodSource.YieldPerGather * WoodedTilesAround(workplace) / ring;
+        return ring <= 0 ? 0 : Config.GatherYield * WoodedTilesAround(workplace) / ring;
     }
 
     /// <summary>
@@ -2570,59 +2566,29 @@ public sealed class SimWorld
         // the settlement still assembles itself correctly around the spot.
         GridPos origin = Map.FoundingSite;
 
-        FoodSource = new FoodSource
-        {
-            Position = Map.ForageSites[0],
-            YieldPerGather = config.GatherYield,
-        };
-
-        TreeStand = new TreeStand { YieldPerCut = config.CutYield };
-
         int nextWorkplaceId = 1;
 
-        // Several sites, spread around the valley, so an outlying household has
-        // somewhere near enough to work. This is what a binding catchment needs in
-        // order to be survivable rather than merely cruel (D19) — and the generator
-        // guarantees the spread by construction rather than hoping for it (D24).
-        List<string> forageNames = NamePlaces(Map.ForageSites, origin, "the berry patch", "thicket");
-
-        for (int i = 0; i < Map.ForageSites.Count; i++)
-        {
-            GridPos position = Map.ForageSites[i];
-
-            Workplaces.Add(new Workplace
-            {
-                Id = nextWorkplaceId++,
-                Kind = JobKind.Forager,
-                Name = forageNames[i],
-                Position = position,
-                Capacity = config.ForageSiteCapacity,
-            });
-        }
-
-        // Last ids, so that where ids break a tie the food comes first. The real
-        // "feed yourself before you build" rule is the quota, not the ordering -
-        // see LabourQuota - but there is no reason for the two to disagree.
-        List<string> standNames = NamePlaces(Map.TreeStands, origin, "the tree stand", "wood");
-
-        for (int i = 0; i < Map.TreeStands.Count; i++)
-        {
-            Workplaces.Add(new Workplace
-            {
-                Id = nextWorkplaceId++,
-                Kind = JobKind.Forester,
-                Name = standNames[i],
-                Position = Map.TreeStands[i],
-                Capacity = config.TreeStandCapacity,
-            });
-        }
+        // ⭐ THE BERRY PATCHES AND THE TREE STANDS ARE GONE, AND WITH THEM THE LAST WORK IN
+        // THIS GAME THAT NOBODY CHOSE (`forests-and-gathering.md` slice 5, Joe). Six forage
+        // sites and two stands used to be added here as workplaces before a single building
+        // existed — a village woke up on its first tick already owning eight jobs.
+        //
+        // **Every workplace in the valley is now a building somebody placed.** Food comes
+        // from a gatherer's hut sited in woodland the player can see, timber from a
+        // forester's hut on ground the player painted, and *both compete for the same
+        // trees.* That is §2.3's escalating pressure arriving out of the food system rather
+        // than being bolted on.
+        //
+        // `FoodSource` and `TreeStand` went with them: Phase 0's single berry patch and
+        // single stand, kept alive long after the plural lists replaced them.
 
         // EVERYTHING FROM HERE IS A BUILDING, AND THE COLD START HAS NONE (D70).
         //
-        // The workplaces above are not buildings and stay either way: a berry patch and a
-        // stand of trees are features of the valley and were always there. What follows —
-        // the hut, the granary, the shed, the market — is what somebody had to raise, and
-        // in the cold start that somebody is the player. The founders get their cart.
+        // That distinction used to matter because the berry patches and the stands were
+        // features of the valley and stayed either way. **There is nothing above any more**,
+        // so a cold start now begins with no work of any kind — which is the whole of Joe's
+        // *"no forest, no food"*. What follows — the hut, the granary, the shed, the market —
+        // is what somebody had to raise, and in the cold start that somebody is the player.
         // The founding happens here rather than at the end of the constructor, and only
         // because there is nothing left to wait for: the reason it normally goes last is
         // that ChooseSite wants the stores to exist, and in a cold start there are none.
@@ -3040,6 +3006,16 @@ public sealed class SimWorld
     /// total order and no two runs can disagree (D15).
     /// </para>
     /// </remarks>
+    // ⚠️ DEAD RIGHT NOW, AND DELIBERATELY NOT DELETED. Its two callers were the forage sites
+    // and the tree stands, both retired in this slice — but the problem D56 solved has come
+    // straight back from the other side: **every building of a kind is named the same thing.**
+    // Build two gatherer's huts and the unmanned-work alert says *"nobody is working a
+    // gatherer's hut"* twice, which is exactly the *"the southern eastern thicket, the
+    // southern eastern thicket"* this method exists to prevent.
+    //
+    // So it gets **re-pointed at player-placed buildings**, which is D56's mechanism finally
+    // doing the job it was written for. Deleting it and writing it again in a fortnight is
+    // the worse of the two.
     private static List<string> NamePlaces(
         IReadOnlyList<GridPos> sites, GridPos origin, string firstName, string noun)
     {

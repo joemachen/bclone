@@ -45,48 +45,24 @@ public static class MapGenerator
         // ---- 1. The river ------------------------------------------
         CarveRiver(config, rng, terrain, width, height);
 
-        // ---- 2. Forest stands --------------------------------------
-        // Clusters, never scatter: a stand is a place you walk to, and JobKind.Forester
-        // already assumes one. Scattered trees would be texture.
-        var standCentres = new List<GridPos>();
-        int stands = config.TreeStandCount;
-        for (int i = 0; i < stands; i++)
-        {
-            GridPos centre = DrawRingPosition(
-                rng, config.TreeStandRingTiles, config.SiteJitterTiles, i, stands);
-            centre = ClampInside(centre, config);
-            standCentres.Add(centre);
-            PaintForest(terrain, centre, config.TreeStandRadiusTiles, width, height, minX, minY);
-        }
-
-        // ---- 3. Forage sites ---------------------------------------
-        // Spread the way D24 requires — a ring at roughly settlement width, not a
-        // cluster. That decision is a record of what happened when the extra sites all
-        // went out to the map edges: every home near the middle competed for the one
-        // original patch, so tightening catchment left central families idle beside a
-        // full thicket and they starved.
-        var forageSites = new List<GridPos>();
-        int siteCount = config.ForageSiteCount;
-        for (int i = 0; i < siteCount; i++)
-        {
-            GridPos site = DrawRingPosition(
-                rng, config.ForageSiteRingTiles, config.SiteJitterTiles, i, siteCount);
-            forageSites.Add(ClampInside(site, config));
-        }
-
-        // Berries do not grow in the river. Nudged out rather than redrawn, and that
-        // is deliberate: a redraw would consume a variable number of random values,
-        // making the draw COUNT depend on the terrain — which is exactly the hidden
-        // coupling that stops a seed reproducing its world.
-        for (int i = 0; i < forageSites.Count; i++)
-        {
-            forageSites[i] = NudgeOutOfWater(terrain, forageSites[i], width, height, minX, minY);
-        }
-
-        for (int i = 0; i < standCentres.Count; i++)
-        {
-            standCentres[i] = NudgeOutOfWater(terrain, standCentres[i], width, height, minX, minY);
-        }
+        // ---- 2 and 3. THE STANDS AND THE BERRY PATCHES ARE GONE ------
+        //
+        // ⭐ Two ring-drawn tree stands and six ring-drawn forage sites used to be laid here,
+        // and with them went the last placeholder in the economy: food was a **fact of the
+        // map** rather than a decision (`forests-and-gathering.md`, Joe). The valley is
+        // wooded across its whole area now (step 7), the player sites a gatherer's hut in it,
+        // and *the trees in that hut's ring decide what a trip is worth.* **Timber and food
+        // compete for the same trees**, which is the whole point.
+        //
+        // ⚠️ THIS MOVES EVERY SEED AND THAT IS UNAVOIDABLE. Those two loops consumed random
+        // draws, so deleting them shifts every subsequent value: the founding site, the soil,
+        // both seams and the woodland are all different now for every seed ever written down.
+        // Draw order is the seed contract (§1) and this is the one kind of change that is
+        // allowed to break it — a slice that removes generated content rather than adding it.
+        // All three goldens are re-taken here, once, with the old values kept beside them.
+        //
+        // The nudge-out-of-water pass went with them. It existed because berries do not grow
+        // in the river; woodland is painted tile by tile over open grass and never needs it.
 
         // ---- 4. The founding site ----------------------------------
         // Where the first homes and the village's buildings go. Kept near the middle
@@ -110,7 +86,7 @@ public static class MapGenerator
         // (spec §6), so the founding site moves to the reachable side rather than the
         // map being redrawn. Costs no random draws, so the seed contract is untouched.
         GridPos founding = ChooseFoundingSite(
-            terrain, wanted, forageSites, standCentres, width, height, minX, minY);
+            terrain, wanted, width, height, minX, minY);
 
         // ---- 5. Soil ------------------------------------------------
         // Generated, hashed, and read by nothing yet — it is here so that when §2.3's
@@ -163,8 +139,7 @@ public static class MapGenerator
         // the stone and iron back out of the valley a slice after they were put in.
         PaintWoodland(config, rng, terrain, founding, width, height, minX, minY);
 
-        return new GeneratedMap(
-            width, height, minX, minY, terrain, soil, forageSites, standCentres, founding);
+        return new GeneratedMap(width, height, minX, minY, terrain, soil, founding);
     }
 
     /// <summary>
@@ -229,33 +204,11 @@ public static class MapGenerator
         return new GridPos(direction.X * reach, direction.Y * reach);
     }
 
-    /// <summary>The canonical forage sites — the layout the economy budgets against.</summary>
-    public static List<GridPos> CanonicalForageSites(SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        var sites = new List<GridPos>();
-        for (int i = 0; i < config.ForageSiteCount; i++)
-        {
-            sites.Add(RingSlot(i, config.ForageSiteRingTiles));
-        }
-
-        return sites;
-    }
-
-    /// <summary>The canonical tree stands.</summary>
-    public static List<GridPos> CanonicalTreeStands(SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        var stands = new List<GridPos>();
-        for (int i = 0; i < config.TreeStandCount; i++)
-        {
-            stands.Add(RingSlot(i, config.TreeStandRingTiles));
-        }
-
-        return stands;
-    }
+    // `CanonicalForageSites` and `CanonicalTreeStands` are deleted with the things they
+    // described (slice 5). They gave the economy a jitter-free layout to budget against, so
+    // that one derivation held for every seed rather than each valley having its own
+    // physics. **The bound is the gatherer hut's ring now** — a number, not a layout — which
+    // does the same job without needing a canonical map to consult.
 
     private static int DrawJitter(DeterministicRandom rng, int jitter) =>
         jitter <= 0 ? 0 : rng.NextInt(-jitter, jitter + 1);
@@ -535,8 +488,6 @@ public static class MapGenerator
     private static GridPos ChooseFoundingSite(
         Terrain[] terrain,
         GridPos wanted,
-        List<GridPos> forageSites,
-        List<GridPos> stands,
         int width,
         int height,
         int minX,
@@ -544,31 +495,31 @@ public static class MapGenerator
     {
         int[] component = LabelComponents(terrain, width, height);
 
-        // How much work each land mass can reach.
-        var sitesPerComponent = new Dictionary<int, int>();
-        var standsPerComponent = new Dictionary<int, int>();
-
-        foreach (GridPos site in forageSites)
+        // ⭐ THE BIGGEST PIECE OF WALKABLE GROUND, and it had to stop being "the most work"
+        // because there is no longer any work on the map to count (`forests-and-gathering.md`
+        // slice 5). This ranked land masses by the forage sites and tree stands they could
+        // reach; both are retired, and the thing that replaced them — woodland — **cannot be
+        // used here**, because `PaintWoodland` is drawn at step 7 and this is step 4. Asking
+        // about trees that do not exist yet would mean moving the woodland draw earlier, and
+        // draw order is the seed contract.
+        //
+        // **Size is the honest successor, and it is close to what the old rule measured
+        // anyway:** the sites were spread across the whole valley, so "the land mass with the
+        // most of them" was very nearly "the biggest land mass" already. It costs no draws,
+        // needs nothing that has not been generated yet, and states the thing the rule was
+        // always for — *the founders settle the largest ground they can walk across, and are
+        // never stranded on an island by a river they cannot cross* (D40, spec §6).
+        var tilesPerComponent = new Dictionary<int, int>();
+        for (int i = 0; i < component.Length; i++)
         {
-            int label = ComponentAt(component, site, width, height, minX, minY);
-            if (label >= 0)
+            if (component[i] >= 0)
             {
-                sitesPerComponent[label] = sitesPerComponent.GetValueOrDefault(label) + 1;
-            }
-        }
-
-        foreach (GridPos stand in stands)
-        {
-            int label = ComponentAt(component, stand, width, height, minX, minY);
-            if (label >= 0)
-            {
-                standsPerComponent[label] = standsPerComponent.GetValueOrDefault(label) + 1;
+                tilesPerComponent[component[i]] = tilesPerComponent.GetValueOrDefault(component[i]) + 1;
             }
         }
 
         GridPos best = wanted;
-        int bestSites = -1;
-        int bestStands = -1;
+        int bestRoom = -1;
         int bestDistance = int.MaxValue;
 
         for (int y = 0; y < height; y++)
@@ -581,21 +532,19 @@ public static class MapGenerator
                     continue;
                 }
 
-                int label = component[index];
-                int sites = sitesPerComponent.GetValueOrDefault(label);
-                int standCount = standsPerComponent.GetValueOrDefault(label);
+                int room = tilesPerComponent.GetValueOrDefault(component[index]);
                 var here = new GridPos(x + minX, y + minY);
                 int distance = here.ManhattanDistanceTo(wanted);
 
-                bool better = sites > bestSites
-                    || (sites == bestSites && standCount > bestStands)
-                    || (sites == bestSites && standCount == bestStands && distance < bestDistance);
+                // Ties to the tile nearest the spot the generator wanted, then by scan
+                // order — a total order, as before, so no two runs can disagree.
+                bool better = room > bestRoom
+                    || (room == bestRoom && distance < bestDistance);
 
                 if (better)
                 {
                     best = here;
-                    bestSites = sites;
-                    bestStands = standCount;
+                    bestRoom = room;
                     bestDistance = distance;
                 }
             }

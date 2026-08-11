@@ -273,6 +273,8 @@ public sealed class Household
     private static int NearestWorkDistance(Core.SimWorld world, GridPos from)
     {
         int nearest = int.MaxValue;
+        bool anyWorkAtAll = false;
+
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
@@ -281,6 +283,8 @@ public sealed class Household
                 continue;
             }
 
+            anyWorkAtAll = true;
+
             int distance = WalkingTiles(world, from, workplace.Position);
             if (distance < nearest)
             {
@@ -288,7 +292,21 @@ public sealed class Household
             }
         }
 
-        return nearest;
+        // ⚠️ NO GATHERING ANYWHERE IS "NO OPINION", NOT "REFUSE EVERYWHERE" — and getting
+        // this wrong would have stopped the village building a single house (slice 5). Until
+        // the thickets retired there was always somewhere to forage from the first tick, so
+        // this could not return "none"; now a cold start has no food source at all until the
+        // player raises a gatherer's hut, and every candidate tile would have scored
+        // `int.MaxValue`, been skipped, and thrown `NoRoomToBuildException` for ever.
+        //
+        // Zero, so the score falls back to the walk to the store alone — **exactly D72's
+        // fallback for a village with no granary**, and for the same reason: a term with
+        // nothing to measure should stop contributing, not veto.
+        //
+        // ⚠️ It is deliberately NOT the same as "work exists but this tile cannot reach it",
+        // which stays `int.MaxValue` and is still refused. One is an empty valley; the other
+        // is the far bank (D111).
+        return anyWorkAtAll ? nearest : 0;
     }
 
     /// <summary>

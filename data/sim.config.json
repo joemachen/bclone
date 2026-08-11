@@ -206,20 +206,23 @@
   // how far out, how wide the river - rather than the outcome, which
   // is the honest data-driven form once the world is generated.
   //
-  // Several places to forage is structural, not scenery (D19): a
-  // catchment radius that actually BINDS kills outlying households when
-  // there is only one food source, because those families have nothing
-  // within reach to work. And they have to be SPREAD (D24) - the first
-  // hand-placed attempt put them all out at the edges, which left every
-  // home near the middle competing for the one original patch, so
-  // tightening catchment just left people idle beside a full patch and
-  // their households starved. The generator guarantees the spread by
-  // construction: evenly spaced slots with jitter, never free angles.
-  "forage_site_count": 6,
-  "forage_site_ring_tiles": 5,
-  "tree_stand_count": 2,
-  "tree_stand_ring_tiles": 4,
-  "tree_stand_radius_tiles": 3,
+  // RETIRED: forage_site_count, forage_site_ring_tiles, tree_stand_count,
+  // tree_stand_ring_tiles, tree_stand_radius_tiles.
+  //
+  // Six berry patches and two stands of trees used to be drawn on a ring
+  // here, and they were the last placeholder in the economy: food was a
+  // FACT OF THE MAP rather than a decision. The valley is wooded across
+  // its whole area now, the player sites a gatherer's hut in it, and the
+  // trees inside that hut's ring decide what a trip is worth - so timber
+  // and food compete for the same trees
+  // (specs/forests-and-gathering.md, Joe: "no forest, no food").
+  //
+  // The old argument for several spread sites was about CATCHMENT - a
+  // binding radius starves outlying homes if there is one food source.
+  // Catchment is deleted too, and the argument went with it.
+  //
+  // See forest_coverage_percent and gatherer_hut_ring_tiles below: those
+  // two are what the food economy is made of now.
 
   // EVERY TILE OF THIS IS PAID FOR BY THE WHOLE ECONOMY. The food
   // budget assumes the worst case - a site jittered directly away from
@@ -249,17 +252,15 @@
   "soil_quality_min": 40,
   "soil_quality_max": 200,
 
-  // How many hands fit at one patch, and how far it is reasonable to
-  // walk to work. Capacity is a LOCAL fact about a place; how many
-  // foragers the village needs is a village-level question and lives in
-  // LabourQuota. Conflating the two is what specs/labour-allocation.md
-  // §3 is a record of.
+  // RETIRED: forage_site_capacity and forager_catchment_tiles.
   //
-  // Ten tiles, lowered from twelve now the sites are spread properly:
-  // at twelve a home in the middle could reach nearly everything, so the
-  // rule constrained nothing.
-  "forage_site_capacity": 4,
-  "forager_catchment_tiles": 10,
+  // The first was how many hands fit at one berry patch, and there are
+  // no patches. The second was how far it was reasonable to walk to
+  // work, enforced as a refusal - and it is a COST now rather than a
+  // fence: the allocator still claims the nearest hands first, but a
+  // ruinous commute is a mistake the player can make, see and pay for
+  // (D58, D120). Measured on the way out: the ten-tile fence was never
+  // binding anyway - the furthest commute anybody held was three.
 
   // The village shares out all its work again every three years, so
   // people drift toward the jobs nearest where they live (decision D20).
@@ -299,14 +300,19 @@
   // in winter. Nobody is spared for the stand while a household in the
   // village is going hungry - the village feeds itself before it
   // builds, and that is the whole labour policy in one sentence.
-  // Where the stands are is generator output now - see
-  // tree_stand_count and tree_stand_ring_tiles above.
+  //
+  // There are no stands any more: a forester works the ground their own
+  // hut was given, and cut_yield is what one tree of it is worth.
   "cut_yield": 12,
   "cut_ticks": 4,
   // DERIVED (VillageEconomy.RequiredTreeStandSeats), not picked. 3 -> 6.
   // Enough hands to keep the huts in logs and still leave one for
   // building - the "+1" in the derivation is what stops the village
   // heating itself and never growing.
+  //
+  // It sizes the FORESTER'S HUT now that the stands are gone, which is
+  // the same question wearing a different name: how many pairs of hands
+  // the village's timber needs in one place.
   "tree_stand_capacity": 6,
 
   // A home has to be built, out of LOGS. Wood is two resources now

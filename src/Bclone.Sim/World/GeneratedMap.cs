@@ -143,8 +143,6 @@ public sealed class GeneratedMap
         int minY,
         Terrain[] terrain,
         byte[] soilQuality,
-        IReadOnlyList<GridPos> forageSites,
-        IReadOnlyList<GridPos> treeStands,
         GridPos foundingSite)
     {
         ArgumentNullException.ThrowIfNull(terrain);
@@ -156,8 +154,6 @@ public sealed class GeneratedMap
         MinY = minY;
         _terrain = terrain;
         _soil = soilQuality;
-        ForageSites = forageSites ?? throw new ArgumentNullException(nameof(forageSites));
-        TreeStands = treeStands ?? throw new ArgumentNullException(nameof(treeStands));
         FoundingSite = foundingSite;
     }
 
@@ -171,11 +167,12 @@ public sealed class GeneratedMap
     /// <summary>Bottom edge of the valley in world coordinates.</summary>
     public int MinY { get; }
 
-    /// <summary>Where food is gathered. Spread, per D24 — never clustered in one place.</summary>
-    public IReadOnlyList<GridPos> ForageSites { get; }
-
-    /// <summary>Where timber is felled.</summary>
-    public IReadOnlyList<GridPos> TreeStands { get; }
+    // ⭐ `ForageSites` AND `TreeStands` ARE DELETED (`forests-and-gathering.md` slice 5).
+    // The map no longer says where food is gathered or where timber is felled, because
+    // **the map is no longer what decides that** — the player sites a gatherer's hut and a
+    // forester's hut, and the woodland the generator paints across the whole valley is what
+    // makes one spot better than another. A list of six berry patches was the last thing in
+    // this game that handed the player an economy instead of asking them to build one.
 
     /// <summary>Where the first homes and the village's buildings go.</summary>
     public GridPos FoundingSite { get; }

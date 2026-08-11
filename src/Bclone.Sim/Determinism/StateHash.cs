@@ -287,20 +287,11 @@ public static class StateHash
             hash = MixByte(hash, map.Soil[i]);
         }
 
-        hash = MixUInt32(hash, (uint)map.ForageSites.Count);
-        for (int i = 0; i < map.ForageSites.Count; i++)
-        {
-            hash = MixUInt32(hash, (uint)map.ForageSites[i].X);
-            hash = MixUInt32(hash, (uint)map.ForageSites[i].Y);
-        }
-
-        hash = MixUInt32(hash, (uint)map.TreeStands.Count);
-        for (int i = 0; i < map.TreeStands.Count; i++)
-        {
-            hash = MixUInt32(hash, (uint)map.TreeStands[i].X);
-            hash = MixUInt32(hash, (uint)map.TreeStands[i].Y);
-        }
-
+        // The forage sites and the tree stands were mixed in here, counts and all. They no
+        // longer exist (`forests-and-gathering.md` slice 5), so there is nothing to mix —
+        // and the woodland that replaced them is in `map.Tiles` above, which is where a fact
+        // about the ground belongs. **Every tree in the valley is still hashed**; what has
+        // gone is a list of eight positions that used to say which of them mattered.
         hash = MixUInt32(hash, (uint)map.FoundingSite.X);
         return MixUInt32(hash, (uint)map.FoundingSite.Y);
     }
