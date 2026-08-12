@@ -200,7 +200,13 @@ public static class StateHash
             // rank above and the stock limits below: a village where nobody has ever touched a
             // mode must hash exactly as it did before modes existed, which is what lets a new
             // control ship without re-taking a single golden.
-            if (workplace.Mode != WorkMode.Harvest)
+            // ⚠️ AGAINST THE DEFAULT, NOT AGAINST `Harvest` BY NAME (D136). This read
+            // `!= WorkMode.Harvest`, which was the same thing right up until Joe made planting
+            // the default — at which point every untouched forester's hut in the game would
+            // have started mixing, and every golden would have moved for a control nobody had
+            // used. The sentinel means *"the player has touched this"*, so it has to follow
+            // whatever untouched currently is.
+            if (workplace.Mode != Workplace.DefaultMode)
             {
                 hash = MixUInt32(hash, (uint)workplace.Mode);
             }

@@ -2383,12 +2383,21 @@ public partial class Main : Control
         // for who is working rather than two that argue — which is D109's whole argument,
         // arriving through the panel rather than through the sim.
         //
-        // ⚠️ SEEDED FROM WHAT THE VILLAGE WOULD HAVE CHOSEN, not from zero. Starting every
-        // row at nought would empty the village on the first tick and call it the player's
-        // decision; starting from the quota's own suggestion means nothing moves until
-        // somebody moves it, and the first thing the player sees is what the village was
-        // already doing.
-        int asked = LabourQuota.For(_loop.World).For(kind);
+        // ⭐ SEEDED AT NOUGHT — EVERYBODY STARTS A LABORER (Joe, D136). *"By default 4
+        // villagers are set as gatherer profession. The default should be laborers."*
+        //
+        // ⚠️ The comment this replaces argued the opposite and was right at the time: seeding
+        // from `LabourQuota.For(world).For(kind)` meant *"nothing moves until somebody moves
+        // it, and the first thing the player sees is what the village was already doing."*
+        // That reasoning belonged to a village that decided its own staffing. Since D109 the
+        // player always has an opinion and the quota no longer overrules one, so seeding from
+        // the quota is not a neutral starting point — it is the game silently making the
+        // first decision and attributing it to the player.
+        //
+        // A laborer is not an unemployed villager (§3.1): they clear painted ground, haul
+        // heaps and tidy. So an unstaffed founding is four people doing the work that is on
+        // the map, which is the honest opening — the player says what the village becomes.
+        int asked = 0;
 
         Label amount = Muted("0");
         amount.CustomMinimumSize = new Vector2(22, 0);
@@ -2454,24 +2463,36 @@ public partial class Main : Control
         name.CustomMinimumSize = new Vector2(74, 0);
         row.AddChild(name);
 
-        var auto = new CheckBox { Text = "village decides", ButtonPressed = true };
+        // ⭐ NO "VILLAGE DECIDES" TICK (Joe, D136): *"remove 'village decides' for stock
+        // limits. We'll revisit adding that later."* The same call he made for the professions,
+        // one panel along, and for the same reason — since D109 the player always has an
+        // opinion, so a control that hands the decision back is a second voice arguing with
+        // the first.
+        //
+        // ⚠️ "NO LIMIT" IS STILL REACHABLE, AND IT HAD TO BE. `null` is not the village
+        // deciding — it is *nobody has said*, which is the state every good starts in and the
+        // only one that means "do not cap this at all". Deleting the tick without replacing it
+        // would have forced a number onto every good at startup, and **a Food row defaulting to
+        // 200 would cap a granary that needs thousands** — the village quietly starved by a
+        // control the player never touched. So the tick becomes a button that clears.
         var amount = new SpinBox
         {
             MinValue = 0,
             MaxValue = 100_000,
             Step = 10,
             Value = 200,
-            Editable = false,
+            Editable = true,
             CustomMinimumSize = new Vector2(110, 0),
         };
+
+        var clear = new Button { Text = "no limit", Flat = true, Disabled = true };
 
         Label held = Muted(string.Empty);
         held.CustomMinimumSize = new Vector2(90, 0);
 
-        void Apply()
+        void Set(int? limit)
         {
-            amount.Editable = !auto.ButtonPressed;
-            int? limit = auto.ButtonPressed ? null : (int)amount.Value;
+            clear.Disabled = limit is null;
 
             // The sim's own sentence, in the channel that already carries the sim's own
             // sentences (D43's placement warnings). One voice, not two — and through `Warn`,
@@ -2479,11 +2500,11 @@ public partial class Main : Control
             Warn(_loop.World.SetStockLimit(goods, limit));
         }
 
-        auto.Toggled += _ => Apply();
-        amount.ValueChanged += _ => Apply();
+        amount.ValueChanged += _ => Set((int)amount.Value);
+        clear.Pressed += () => Set(null);
 
-        row.AddChild(auto);
         row.AddChild(amount);
+        row.AddChild(clear);
         row.AddChild(held);
 
         _stockLimitReadouts.Add((goods, held));

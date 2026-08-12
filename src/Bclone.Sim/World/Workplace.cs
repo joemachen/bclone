@@ -197,16 +197,50 @@ public sealed class Workplace
     internal int CachedAtTerrainGeneration = -1;
 
     /// <summary>
-    /// What this place is set to do — <see cref="WorkMode.Harvest"/> unless the player says
-    /// otherwise.
+    /// What this place is set to do — <see cref="WorkMode.Plant"/> unless the player says
+    /// otherwise (Joe, D136: <i>"forester planting should be ON by default"</i>).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <b>Player intent, so it is sim state and it is hashed</b> — but <b>sparsely</b>, in the
     /// same shape and for the same reason as <see cref="QueueRank"/>: a village where nobody has
     /// ever touched a mode mixes nothing at all, so the control is a provable no-op until
-    /// somebody uses it and no golden moves for its existing.
+    /// somebody uses it and no golden moves for its existing. <b>The sentinel in
+    /// <c>StateHash</c> tracks this default and must keep tracking it</b> — it tests against
+    /// whatever "untouched" means, not against <c>Harvest</c> by name.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE TWO MODES ARE EXCLUSIVE, and this default is worth understanding before
+    /// relying on it.</b> <c>SimWorld</c> picks the tiles by mode — <c>wantsTrees = Mode ==
+    /// Harvest</c> — so a hut set to <see cref="WorkMode.Plant"/> walks to <em>bare</em> ground
+    /// and puts saplings in it, and never fells anything. A new hut on fully wooded ground has
+    /// no bare tile to plant and so does nothing at all until the player switches it.
+    /// </para>
+    /// <para>
+    /// <b>⛔ SO PLANTING-BY-DEFAULT WAS TRIED AND REVERTED, AND THE MEASUREMENT IS THE REASON.</b>
+    /// Flipping this constant to <see cref="WorkMode.Plant"/> failed <b>eight tests</b> at once,
+    /// and the list says exactly what it does: <c>ItFellsItsOwnGroundAndTheWoodRecedes</c>,
+    /// <c>ItIsAForestersWorkplace</c>, and — the one that matters —
+    /// <c>ALogLimitAboveWhatTheVillageSpendsIsAnAmbitionAndNotAceiling</c>, the stockpile tool
+    /// Joe asked for in D130. **A village whose foresters plant by default has no timber
+    /// industry at all**, which is the opposite of the complaint driving this branch.
+    /// </para>
+    /// <para>
+    /// Held pending Joe's call, because the likely reading is the other one: <i>plant once
+    /// there is nothing left to fell on their own ground</i>. That is a change at the
+    /// tile-picking call site (<c>wantsTrees</c> in <c>SimWorld</c>) rather than a default here,
+    /// and it gives a forester who replants without ever stopping felling.
+    /// </para>
     /// </remarks>
-    public WorkMode Mode { get; set; } = WorkMode.Harvest;
+    public WorkMode Mode { get; set; } = DefaultMode;
+
+    /// <summary>
+    /// What a place is set to before anybody touches it. <see cref="Determinism.StateHash"/>
+    /// tests against this rather than against a named mode, so that changing the default cannot
+    /// silently move every golden in the suite — which is a trap that was walked into and out
+    /// of once already, and the constant is what stops the next attempt hitting it.
+    /// </summary>
+    public const WorkMode DefaultMode = WorkMode.Harvest;
 
     /// <summary>Villagers currently holding a job here, in id order.</summary>
     public List<int> WorkerIds { get; } = new();
