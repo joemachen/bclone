@@ -831,6 +831,18 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D131 · 2026-08-12 · ⛔ MEASURED, AND IT IS THE FINDING OF THE WHOLE BRANCH: the market does not scale, and that is what ages the village out.** Six long-horizon guards were failing and they all have this underneath them. Three centuries on the village fixture, **nobody starving and nobody freezing** — 100 deaths, all of old age:
+
+  | year | pop | households | fed enough to bear | granary held | marketers |
+  |---|---|---|---|---|---|
+  | 50 | 34 | 8 | **8 of 8** | 2,637 | 2 of 2 seats |
+  | 100 | 15 | 15 | 5 of 15 | 2,748 | 2 of 2 seats |
+  | 200 | 8 | 15 | 2 of 15 | 1,109 | 0 of 2 seats |
+  | 300 | 5 | 15 | 4 of 15 | **3,348 against a target of 380** | 0 of 2 seats |
+
+  - **Every household has a home and room in it.** Housing is not the bottleneck and neither is food — the granary ends holding nine times what it needs. **The food never reaches the larders**, and a household below `birth_food_percent` of its target cannot bear a child, so births stop and the founders' generation ages out together.
+  - **Two marketers, two seats, for ever.** At eight households two are enough and every larder is stocked; at fifteen they keep five. `market_capacity` does not grow with the village and the village never wants a second market. `TheVillageSurvivesWithTheMarketSwitchedOff` falls to **zero** at `MarketCapacity = 0`, which says how load-bearing distribution has quietly become — the opposite failure to D29, where goods sat in homes and the shed was empty.
+  - **⚠️ It is not obviously a bug, and that is why it is logged rather than fixed.** A player can mark a second market; an unattended village cannot. So this may be "your village outgrew its market" working as designed, or it may be that the quota should want another one. **Joe's call** — and it is the same question as D103's, one system along.
 - **D130 · 2026-08-12 · ⭐ A STOCK LIMIT SET ABOVE WHAT THE VILLAGE SPENDS IS AN AMBITION, NOT A CEILING** — the first control in the game that asks for *more* work. Joe: *"the village should want timber it isn't spending if the user sets a limit above what the village uses. That is a stockpile/growth play tool for the user."*
   - **Every reason to fell a tree was demand-driven,** so the village cut exactly what it was about to burn and could never accumulate. Joe hit the wall that leaves: he could not staff a forester because `forester's hut 1` sat at 21 of its 25 logs forever — no timber, so no hut, so no seats, so no timber.
   - **⛔ The obvious fix made it worse, and the measurement is the whole argument.** Raising `firewood_per_split` 7 → 50 (making fuel four times cheaper in logs) cut fuel from 60% of all timber to 41% — and *total production fell from 365 logs to 174*, with the village ending on 78 held instead of 137. Because the fuel chain was the only thing employing foresters at all, a cheaper habit is not a woodpile. **Nothing in the village was asking.**
