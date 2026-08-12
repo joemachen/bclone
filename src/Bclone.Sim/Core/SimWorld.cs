@@ -1232,11 +1232,17 @@ public sealed class SimWorld
         {
             GridPos at = Zones.PositionOf(painted[i]);
 
-            // Painted ground whose tree has already gone stops being work. The
-            // village un-paints it rather than sending somebody to an empty tile.
+            // ⭐ SKIPPED, NOT UN-PAINTED (Joe, D127). Empty painted ground used to have its
+            // paint taken off here, on the reasoning that a tree already gone stops being
+            // work. **That was true only while nothing grew back.** With regrowth, a bare
+            // painted tile is not finished work — it is work that is waiting, and the wood
+            // will be standing on it again within the year.
+            //
+            // So the village passes it over this tick and comes back when there is
+            // something there. A sapling answers no here too, which is exactly right: it is
+            // left to grow up rather than cut down the season it appears.
             if (!HasSomethingToHarvest(at))
             {
-                Zones.SetHarvest(at, false);
                 continue;
             }
 
@@ -1257,8 +1263,20 @@ public sealed class SimWorld
     /// <remarks>
     /// <b>The tile is spent</b> — this is D84's deposit rule, and the difference between
     /// the brush and the forester's hut in one method. Terrain goes through
-    /// <see cref="SetTerrain"/> so the routing cache hears about it, and the paint comes off
-    /// because the job is done.
+    /// <see cref="SetTerrain"/> so the routing cache hears about it.
+    /// <para>
+    /// <b>⭐ THE PAINT STAYS ON (Joe, D127).</b> It used to come off here, *because the job
+    /// is done* — and with regrowth the job is not done, it is due again. A painted patch is
+    /// now **a standing instruction rather than a one-off order**: the wood grows back and
+    /// the village fells it again, indefinitely, which turns the harvest brush from a queue
+    /// of chores into something closer to a coppice the player has designated.
+    /// </para>
+    /// <para>
+    /// <b>Only the player takes paint off</b>, with <em>Unmark</em>. That is the whole of
+    /// Joe's rule — <em>"it's up to the user to clear the paint if the area is empty"</em> —
+    /// and it is the same shape as every other zone in this game: the brush says what the
+    /// player wants, and the village keeps doing it until told otherwise.
+    /// </para>
     /// </remarks>
     public (Goods Goods, int Amount) Harvest(GridPos tile)
     {
@@ -1269,7 +1287,6 @@ public sealed class SimWorld
         }
 
         SetTerrain(tile, Terrain.Grass);
-        Zones.SetHarvest(tile, false);
 
         // One number per kind of ground, and the terrain is what says which — a new
         // harvestable kind is a row in TerrainRules.Yields and a key in config, not a

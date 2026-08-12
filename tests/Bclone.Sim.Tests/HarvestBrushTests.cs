@@ -134,11 +134,15 @@ public sealed class HarvestBrushTests
         Assert.Equal(VillageFixtures.Village.LogsPerForestTile, amount);
         Assert.Equal(Terrain.Grass, world.Map.TerrainAt(forest));
 
-        // And the paint comes off, because the job is done.
-        Assert.False(world.Zones.IsHarvest(forest));
-        Assert.Equal(0, world.Zones.HarvestTiles);
+        // ⭐ AND THE PAINT STAYS ON (D127). It used to come off here, *because the job is
+        // done* — and with regrowth the job is not done, it is due again. A painted patch is
+        // a standing instruction now, so the wood grows back and the village fells it again;
+        // only the player takes the paint off.
+        Assert.True(world.Zones.IsHarvest(forest));
+        Assert.Equal(1, world.Zones.HarvestTiles);
 
-        // Taking it twice yields nothing — the deposit is spent, not a tap.
+        // Taking it twice yields nothing — the deposit is spent, not a tap. What changed is
+        // that it refills in a year, not that it refills at once.
         Assert.Equal(0, world.Harvest(forest).Amount);
     }
 
@@ -192,16 +196,24 @@ public sealed class HarvestBrushTests
     }
 
     /// <summary>
-    /// ⭐ Paint over a tree that has already gone and the village quietly forgets it.
+    /// ⭐ Paint over bare ground is <b>waiting</b>, not an errand — and it keeps its paint.
     /// </summary>
     /// <remarks>
-    /// A forester's hut may fell ground the player also painted, and regrowth will one day
-    /// move trees about underneath the paint. <b>Stale paint must not become an errand</b> —
-    /// somebody walking across the valley to fell a field is the kind of thing that reads as
-    /// a broken sim rather than a stale zone.
+    /// <para>
+    /// <b>This guard reversed with D127 and it is the same danger either way.</b> It used to
+    /// say the village quietly <em>forgot</em> stale paint, because <b>stale paint must not
+    /// become an errand</b> — somebody walking across the valley to fell a field reads as a
+    /// broken sim. That half is unchanged and still asserted.
+    /// </para>
+    /// <para>
+    /// What changed is what happens to the paint. With regrowth, bare painted ground is not
+    /// finished work, it is work that is waiting: the wood will be standing there again
+    /// within the year and the village should fell it again. So the tile is <em>skipped</em>
+    /// rather than un-painted, and only the player takes the brush off.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void PaintOverGroundThatIsAlreadyClearedStopsBeingWork()
+    public void PaintOverBareGroundWaitsRatherThanBecomingAnErrand()
     {
         SimWorld world = Build();
         GridPos forest = FindTile(world, Terrain.Forest);
@@ -209,11 +221,18 @@ public sealed class HarvestBrushTests
         world.PaintHarvest(forest);
         Assert.Equal(1, world.Zones.HarvestTiles);
 
-        // Somebody else cleared it — a hut, or a road, or regrowth moving on.
+        // Somebody else cleared it — a hut, or a road, or a forester's own ground.
         world.SetTerrain(forest, Terrain.Grass);
 
+        // Nobody is sent: there is nothing standing there to fell.
         Assert.Null(world.NearestHarvest(world.Map.FoundingSite));
-        Assert.Equal(0, world.Zones.HarvestTiles);
+
+        // But the instruction stands, so the day it grows back it is work again.
+        Assert.True(world.Zones.IsHarvest(forest));
+        Assert.Equal(1, world.Zones.HarvestTiles);
+
+        world.SetTerrain(forest, Terrain.Forest);
+        Assert.Equal(forest, world.NearestHarvest(world.Map.FoundingSite));
     }
 
     // ---------------------------------------------------------------

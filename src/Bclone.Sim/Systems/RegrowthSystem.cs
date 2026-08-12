@@ -119,12 +119,15 @@ internal sealed class RegrowthSystem : ISimSystem
             return false;
         }
 
-        // Ground somebody has told the village to clear is ground the village wants clear.
-        if (world.Zones.IsHarvest(tile))
-        {
-            return false;
-        }
-
+        // ⚠️ PAINTED GROUND STILL GROWS, AND THIS LINE USED TO SAY THE OPPOSITE. Skipping
+        // harvest-painted tiles was right while paint came off the moment a tile was cleared:
+        // paint meant "clear this soon", and growing trees on it would have been an argument
+        // with the player. **Paint persists now (D127)** — it is a standing instruction, not a
+        // one-off order — so refusing to grow on it would mean a painted patch is felled once
+        // and then bare for ever, which is precisely the thing Joe asked for the paint to
+        // stop doing.
+        //
+        // A painted patch is a coppice: it grows back, and the village fells it again.
         return TouchesWood(world, tile);
     }
 
