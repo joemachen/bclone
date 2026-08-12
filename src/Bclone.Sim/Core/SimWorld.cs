@@ -419,6 +419,31 @@ public sealed class SimWorld
     /// </remarks>
     public List<GroundStack> GroundStacks { get; } = new();
 
+    /// <summary>How much of one good is lying in heaps across the valley.</summary>
+    /// <remarks>
+    /// <b>D134: the player could not see this, and it was the whole answer to a bug they could
+    /// see.</b> Joe: <i>"it still feels wrong — there's never enough wood but so many trees are
+    /// harvested."</i> Measured on his shape of village: **320 logs in store and 5,977 lying on
+    /// the ground**, because a valley has one timber store, it fills, and every load after that
+    /// is set down outside it and then correctly refused for pickup — there is still nowhere to
+    /// put it. The Overview read "Logs 320" and said nothing about the mountain in the yard.
+    /// A village drowning in timber that reports a shortage is a §1.1 failure, not a balance
+    /// one, so the number exists to be shown.
+    /// </remarks>
+    public int OnTheGround(Goods goods)
+    {
+        int total = 0;
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            if (GroundStacks[i].Goods == goods)
+            {
+                total += GroundStacks[i].Amount;
+            }
+        }
+
+        return total;
+    }
+
     /// <summary>
     /// Put a load down where somebody is standing. The one door in.
     /// </summary>

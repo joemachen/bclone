@@ -342,7 +342,14 @@ public partial class Main : Control
                 continue;
             }
 
-            held.Text = $"{inStores}";
+            // ⭐ AND WHAT IS LYING IN THE YARD (D134). A valley has one timber store, it fills,
+            // and everything hauled in after that is set down outside it — measured at 320 logs
+            // in store against 5,977 on the ground. Reading "Logs 320" while a mountain sits in
+            // the open is the village lying to the player about a shortage it does not have.
+            int inHeaps = world.OnTheGround(goods);
+            held.Text = inHeaps > 0
+                ? $"{inStores}  (+{inHeaps} on the ground — no room in store)"
+                : $"{inStores}";
         }
 
         // What each limited good actually stands at, beside the number the player set —

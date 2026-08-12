@@ -1872,6 +1872,22 @@ public sealed class BehaviorSystem : ISimSystem
         }
     }
 
+    /// <summary>
+    /// Timber a feller could not carry away stays on the tile rather than ceasing to exist.
+    /// </summary>
+    /// <remarks>
+    /// D133. Called from both felling paths, which had drifted into two copies of the same
+    /// arithmetic and the same leak. Goods move only by trips people make (D96) — so the
+    /// remainder is set down where it fell, and the tidy-ground errand brings it in.
+    /// </remarks>
+    private static void LeaveTheRestOnTheGround(SimWorld world, GridPos where, int logs)
+    {
+        if (logs > 0)
+        {
+            world.SetDown(where, Goods.Logs, logs);
+        }
+    }
+
     /// <summary>Is there anywhere in the village at all that will take timber?</summary>
     /// <remarks>
     /// <para>
@@ -2245,11 +2261,13 @@ public sealed class BehaviorSystem : ISimSystem
                     (Goods felled, int fromTheTile) = world.Harvest(tile);
                     if (felled == Goods.Logs && fromTheTile > 0)
                     {
-                        // Vigour scales what they carry home, the same way it scales a
-                        // gather and a stand's cut — an ageing forester fells the tree and
-                        // brings back less of it.
+                        // Vigour scales what they carry home in one go — the same way it
+                        // scales a gather — and WHAT THEY CANNOT CARRY STAYS ON THE TILE.
+                        // See the clearing case below for why the second half matters.
                         int carried = fromTheTile * villager.Vigour / 100;
-                        villager.CarriedLogs += carried < 1 ? 1 : carried;
+                        carried = carried < 1 ? 1 : carried;
+                        villager.CarriedLogs += carried;
+                        LeaveTheRestOnTheGround(world, tile, fromTheTile - carried);
                     }
 
                     villager.State = VillagerState.HaulingToStore;
@@ -2301,8 +2319,36 @@ public sealed class BehaviorSystem : ISimSystem
 
                 villager.CarriedLogs += goods == Goods.Logs ? taken : 0;
 
+                // ⭐ AND THE REST OF THE TREE STAYS WHERE IT FELL (D133).
+                //
+                // Joe, playing, after the larder leak was closed and it still felt wrong:
+                // *"it still feels wrong — there's never enough wood but so many trees are
+                // harvested."* This is why, and it was deliberate rather than a slip. The
+                // comment on the forester's copy of this said it out loud: *"an ageing
+                // forester fells the tree and brings back less of it."*
+                //
+                // **That reasoning is right for a gather and wrong for a fell, and the
+                // difference is whether the source survives.** Scaling a berry harvest by
+                // vigour is fine — the bush is still standing, and a tired picker simply
+                // picks fewer. `Harvest` has already set this tile to Grass. The tree is
+                // GONE from the map, so scaling what the villager carries did not mean they
+                // took less: it meant the remainder stopped existing.
+                //
+                // At `vigour_min_percent: 55` an old villager destroyed 45% of every tree
+                // they touched, and the player watched their woodland disappear into a
+                // trickle of logs. Nothing in the game showed the loss, because a number
+                // that is never written down cannot be read back.
+                //
+                // Vigour keeps its meaning — a weak villager still carries less in one
+                // armful — and D96's ground stacks are exactly the machinery for the other
+                // half: the timber lies on the tile until somebody fetches it.
+                int left = goods == Goods.Logs ? amount - taken : 0;
+                LeaveTheRestOnTheGround(world, cleared, left);
+
                 world.Log(LogLevel.Debug, "behavior",
-                    $"{villager.Name} cleared {cleared} for {taken} {goods} — {world.Clock}.");
+                    $"{villager.Name} cleared {cleared} for {taken} {goods}"
+                    + (left > 0 ? $", leaving {left} on the ground" : string.Empty)
+                    + $" — {world.Clock}.");
 
                 villager.State = VillagerState.HaulingToStore;
                 HaulOrSetDown(world, villager);
