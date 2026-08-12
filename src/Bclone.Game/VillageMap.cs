@@ -646,7 +646,27 @@ public partial class VillageMap : Control
 
         if (_demolishing)
         {
-            foreach (StoreBuilding building in _world!.StoreBuildings)
+            // ⭐ SITES AND HUTS TOO, WHICH THIS COULD NOT TOUCH BEFORE (Joe: *"I can't
+            // cancel/demolish a building that is under construction — demolish says nothing
+            // there to pull down"*). It only ever searched the stores, so a construction site
+            // and every hut in the game were permanent once marked. **A misplaced building
+            // the player cannot take back is the opposite of the brush's whole promise.**
+            //
+            // Workplaces first, because that is where the thing the player is most likely to
+            // be undoing lives: a site they have just marked in the wrong spot.
+            foreach (Workplace workplace in _world!.Workplaces)
+            {
+                if (workplace.Position == where)
+                {
+                    string name = workplace.Construction?.Name ?? workplace.Name;
+                    _world.Demolish(workplace);
+                    PlacementMessageChanged?.Invoke($"{name} is gone.");
+                    QueueRedraw();
+                    return;
+                }
+            }
+
+            foreach (StoreBuilding building in _world.StoreBuildings)
             {
                 if (building.Position == where)
                 {

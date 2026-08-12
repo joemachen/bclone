@@ -2068,6 +2068,92 @@ public sealed class SimWorld
             : $"{building.Name} was pulled down — {recovered} logs recovered. {Clock.SeasonAndYear()}.");
     }
 
+    /// <summary>
+    /// Pull down a standing workplace — a hut the player has finished with.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The gap `professions.md §7` listed and nothing had filled</b>, found by Joe trying
+    /// to use it: *"I can't cancel/demolish a building that is under construction. Demolish
+    /// says 'nothing there to pull down'."* The demolish tool only ever searched
+    /// <see cref="StoreBuildings"/>, so **no hut and no construction site in the game could
+    /// be removed at all** — every workplace the player has ever placed was permanent.
+    /// </para>
+    /// <para>
+    /// <b>Instant, like the marking that put it there.</b> A hut is not unbuilt by anybody;
+    /// it simply stops being. Making its removal a job would put a demolition errand in front
+    /// of a player whose reason for pulling it down is usually that they misplaced it.
+    /// </para>
+    /// <para>
+    /// <b>Refunded on what it cost, which is nothing for the free ones.</b> Half the recipe,
+    /// the same rule stores get — and a builder's hut and a pile have a recipe of zero logs,
+    /// so pulling one down pays nothing back. That is D98's free-timber press staying shut
+    /// without a special case for it.
+    /// </para>
+    /// </remarks>
+    public void Demolish(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (workplace.Construction is not null)
+        {
+            CancelConstruction(workplace);
+            return;
+        }
+
+        // ⚠️ A MARKET IS ONE BUILDING IN TWO LISTS (D36's seam), so pulling down its stall
+        // and leaving its store standing would be half a demolition — a granary-sized hole
+        // in the village that still holds goods and still shows on the map. The store's own
+        // demolition already takes the stall with it, so that is the one to run.
+        StoreBuilding? sameBuilding = null;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Position == workplace.Position)
+            {
+                sameBuilding = StoreBuildings[i];
+                break;
+            }
+        }
+
+        if (sameBuilding is not null)
+        {
+            Demolish(sameBuilding);
+            return;
+        }
+
+        BuildingKind kind = KindOf(workplace);
+        int back = BuildingRecipe.For(kind, Config).Logs * Config.DemolitionReturnsPercent / 100;
+
+        string name = workplace.Name;
+        RetireWorkplace(workplace);
+
+        StoreBuilding? shed = NearestStore(
+            workplace.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+        int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
+
+        Narrate(recovered > 0
+            ? $"{Capitalised(name)} was pulled down — {recovered} logs recovered. "
+                + $"{Clock.SeasonAndYear()}."
+            : $"{Capitalised(name)} was pulled down. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>Which kind of building a standing workplace is, for pricing its refund.</summary>
+    /// <remarks>
+    /// Named rather than defaulted (D108). A workplace kind nobody has taught this about is a
+    /// bug, not a woodcutter's hut — the default arm is exactly how six buildings came to be
+    /// mis-priced and mis-named before anybody noticed.
+    /// </remarks>
+    private static BuildingKind KindOf(Workplace workplace) => workplace.Kind switch
+    {
+        JobKind.Woodcutter => BuildingKind.WoodcutterHut,
+        JobKind.Forager => BuildingKind.GathererHut,
+        JobKind.Forester => BuildingKind.ForesterHut,
+        JobKind.Builder => BuildingKind.BuilderHut,
+        JobKind.Marketer => BuildingKind.Market,
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(workplace), workplace.Kind, "That kind of workplace has no building."),
+    };
+
     /// <summary>Abandon a site that has not been finished; its delivered logs come back.</summary>
     public void CancelConstruction(Workplace site)
     {
