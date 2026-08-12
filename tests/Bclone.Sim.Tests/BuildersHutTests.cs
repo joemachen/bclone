@@ -397,6 +397,11 @@ public sealed class BuildersHutTests
         MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
 
+        // Somewhere to gather and something to fell, in BOTH arms. A founding valley has held
+        // no workplaces at all since the thickets retired, so without this neither village
+        // builds anything and the comparison says nothing about builder's huts.
+        ColdStartTests.FeedTheFounding(world);
+
         Assert.Null(HutIn(world));
 
         Assert.Contains(sink.Entries, entry => entry.Message.Contains(
@@ -437,6 +442,7 @@ public sealed class BuildersHutTests
         MarkSomewhereNear(warm, BuildingKind.Pile, site, 2);
         MarkSomewhereNear(warm, BuildingKind.BuilderHut, site, 2);
         MarkSomewhereNear(warm, BuildingKind.WoodcutterHut, site, 3);
+        ColdStartTests.FeedTheFounding(warm);
 
         withHut.Step(config.TicksPerYear);
 

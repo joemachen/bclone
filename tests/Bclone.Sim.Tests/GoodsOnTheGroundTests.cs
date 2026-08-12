@@ -233,7 +233,20 @@ public sealed class GoodsOnTheGroundTests
             + $"logs in stores {inStoresBefore} -> {world.LogsInSheds()}");
 
         Assert.Equal(0, world.GroundStackAt(at, Goods.Logs));
-        Assert.Empty(world.GroundStacks);
+
+        // And it went into a shed rather than being shuffled to another patch of dirt.
+        Assert.True(
+            world.LogsInSheds() > inStoresBefore,
+            $"The heap left the ground but the stores still hold {world.LogsInSheds()}.");
+
+        // ⚠️ NOT `Assert.Empty(world.GroundStacks)` ANY MORE, which is a claim about the whole
+        // valley and was only ever true because the valley was quiet. A village that fells
+        // for a living has heaps in flight at almost any instant — a forester sets a load
+        // down, somebody comes for it — and after D126 and D127 the felling never stops, so
+        // the emptiness this asserted was the absence of work rather than the presence of
+        // hauling. It failed on a village doing its job.
+        //
+        // The claim in the title is about THIS heap, and that is what is checked above.
     }
 
     /// <summary>⭐ And nobody shuttles when there is nowhere to put it.</summary>

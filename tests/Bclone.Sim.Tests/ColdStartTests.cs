@@ -705,6 +705,32 @@ public sealed class ColdStartTests
     /// fell it.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The half of the opening that keeps anybody alive: somewhere to gather, something to fell.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Since the thickets retired, a founding valley contains no workplaces at all</b> —
+    /// measured on the shipped config: four laborers, zero food gathered, everybody dead
+    /// inside the first year. Food and timber both used to come free with the map, from berry
+    /// patches and tree stands the generator dropped, so a test about <em>building</em> could
+    /// mark a site and never think about either.
+    /// </para>
+    /// <para>
+    /// That is no longer true and it broke four guards at once, all of them reporting the
+    /// building failure rather than the starvation underneath it: a village with nobody
+    /// gathering does not raise anything, because there is nobody left to raise it. Any test
+    /// that runs the shipped opening for more than a season needs this, and it is deliberately
+    /// <em>not</em> the whole of <see cref="PlayTheOpening"/> — the builder's hut is left out,
+    /// because whether one is standing is precisely what several of those guards vary.
+    /// </para>
+    /// </remarks>
+    internal static void FeedTheFounding(SimWorld world)
+    {
+        MarkInTheBestWoodland(world, world.Map.FoundingSite);
+        PaintTheNearbyTrees(world, 6);
+    }
+
     internal static void PlayTheOpening(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;

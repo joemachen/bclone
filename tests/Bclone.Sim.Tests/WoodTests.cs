@@ -223,10 +223,22 @@ public sealed class WoodTests
         // the gate itself holds, so turning it on later is a config change.
         SimLoop loop = Build(Config with { LogsPerHouse = 1_000_000 });
         int founding = loop.World.Households.Count;
+        int foundingHomes = CountHomes(loop.World);
 
         loop.Step(30_000);
 
-        Assert.Equal(founding, loop.World.Households.Count);
+        _output.WriteLine(
+            $"a house priced at a million logs: households {founding} -> "
+            + $"{loop.World.Households.Count}, homes {foundingHomes} -> {CountHomes(loop.World)}");
+
+        // ⚠️ HOMES, NOT HOUSEHOLDS, and the difference is the whole claim. Counting households
+        // was a proxy for counting roofs and it stopped being one: it failed at 3 against the
+        // founding 2 because a THIRD HOUSEHOLD FORMED AND WENT ON WAITING — which is the gate
+        // working, not leaking. Step C re-derived the food economy against the wooded ring a
+        // gatherer's hut actually sits in (gather_yield 46 -> 145), so this village now feeds
+        // enough children to pair one more couple off inside thirty thousand ticks than it
+        // used to. A couple with nowhere to live is not a house built out of a million logs.
+        Assert.Equal(foundingHomes, CountHomes(loop.World));
     }
 
     [Fact]
@@ -308,6 +320,21 @@ public sealed class WoodTests
         }
 
         return count;
+    }
+
+    /// <summary>Households with a roof over them, which is what a log buys.</summary>
+    private static int CountHomes(SimWorld world)
+    {
+        int homes = 0;
+        foreach (Household household in world.Households)
+        {
+            if (household.HasHome)
+            {
+                homes++;
+            }
+        }
+
+        return homes;
     }
 
     private static int TotalLifetimeWood(SimWorld world)

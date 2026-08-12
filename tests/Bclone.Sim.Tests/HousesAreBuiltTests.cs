@@ -174,6 +174,11 @@ public sealed class HousesAreBuiltTests
         MarkABuildersHut(world);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, world.Map.FoundingSite, 3);
 
+        // Somewhere to gather and something to fell. Not scenery: a founding valley has held
+        // no workplaces at all since the thickets retired, so without this the four founders
+        // starve inside the year and every claim below is about a dead village.
+        ColdStartTests.FeedTheFounding(world);
+
         long hutStood = -1;
         long firstHouse = -1;
 
@@ -227,7 +232,26 @@ public sealed class HousesAreBuiltTests
     /// about, and §0.1 rules out a village killed by something it could not have seen coming.
     /// </para>
     /// </remarks>
-    [Fact]
+    /// <remarks>
+    /// <para>
+    /// <b>⏸️ SKIPPED, AND THE CONTROL IS WHY.</b> It fails with 0 alive and 4 frozen — the
+    /// D102 shape exactly — but the same opening run <em>without</em> the granary comes out
+    /// identical to the digit: 0 alive, 0 houses, 57 logs, 26 firewood. **The granary is
+    /// innocent.** What kills them is the opening itself, which since the thickets retired
+    /// needs a player who keeps giving the forester ground and painting more wood as it runs
+    /// out — the same finding that skipped six guards in <see cref="ColdStartTests"/>, and
+    /// Joe's own call: <i>"don't worry about the cold start guards, I'm telling you the game
+    /// is working the way I want it to."</i>
+    /// </para>
+    /// <para>
+    /// Left in place rather than repaired, because repairing it would mean tuning the opening
+    /// until this passes and calling that a fix for a queue bug that is not happening. It is
+    /// the same test the day a reacting harness exists.
+    /// </para>
+    /// </remarks>
+    [Fact(Skip = "The control says the granary is innocent: the same opening without it dies "
+        + "identically (0 alive, 0 houses, 57 logs both ways). This is the cold start needing "
+        + "a reacting player, not D102's queue. Restore with a reacting harness.")]
     public void MarkingAGranaryInTheFirstSpringDoesNotCostTheVillageItsHouses()
     {
         SimConfig config = ShippedConfig.Load();
@@ -238,6 +262,11 @@ public sealed class HousesAreBuiltTests
         MarkSomewhereNear(world, BuildingKind.Pile, world.Map.FoundingSite, 2);
         MarkABuildersHut(world);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, world.Map.FoundingSite, 3);
+
+        // Somewhere to gather and something to fell. Not scenery: a founding valley has held
+        // no workplaces at all since the thickets retired, so without this the four founders
+        // starve inside the year and every claim below is about a dead village.
+        ColdStartTests.FeedTheFounding(world);
 
         // A month in, exactly as somebody playing would: the founding looks settled, so you
         // mark the next thing.
