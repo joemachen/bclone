@@ -245,12 +245,39 @@ perfectly clothed village is 300 years of identical numbers. **The hunter change
 hunting is a non-livestock leather source (`food-catalog.md:53`) — so hunter before tailor, and
 clothing's own spec needs rewriting around a reason rather than an unlock.
 
-### 6.4 ⛔ Laborers carrying to sites is the thrice-reverted one
+### 6.4 ~~⛔ Laborers carrying to sites is the thrice-reverted one~~ — ✅ CLOSED, AND THE ANSWER IS NO (Joe, D135)
 
 D93. Three attempts, all dying at 0 alive / 4 frozen. The cause was measured and is not the
 wiring: **it inserts a hop** into a chain that had sixty ticks of slack. There is more slack now
 (~112 ticks) so it may well survive — but it is attempt four and wants the cold-start ticks
 measured before and after.
+
+**⭐ There will be no attempt four.** Joe settled it as a rule rather than as a tuning question:
+*"let's make builders 100% responsible for transporting construction material to the
+construction site. Laborers only bring materials to the storage building."*
+
+So the division is now stated, and it is the one the code already had:
+
+| leg | who | ends at |
+|---|---|---|
+| world → store | **laborer** — felling painted ground, tidying heaps, hauling | a store, always |
+| store → site | **builder**, and nobody else | the construction site |
+
+`WorkTheSite` has exactly one caller, gated on `JobKind.Builder`, and it is the only way into
+`FetchingMaterials` or `Building`. That is what makes the rule enforceable by inspection rather
+than by measurement, and it is why D93's fourth attempt is not worth taking: the thing it kept
+trying to add is the thing Joe has now ruled out.
+
+**A builder with nothing to fetch and nothing to build harvests instead of idling** — Joe's
+*"if there are no materials available, the builder should harvest materials and take them to
+storage"*. **Painted ground only, confirmed by Joe.** D87 is his own rule that the brush is the
+only way a tree comes down, and a builder felling unpainted woodland to unblock itself would be
+the one actor in the game allowed to reshape the valley uninstructed.
+
+**And the queue governs materials, not labour (D135).** A builder who cannot advance the head of
+the queue works the next site that *can* be advanced, rather than standing beside one waiting for
+timber that does not exist. Fetching still serves the head, so the player's priority still decides
+where scarce logs go — which is the half of D102 that must not be lost.
 
 ---
 

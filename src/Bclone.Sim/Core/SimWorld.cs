@@ -1837,6 +1837,59 @@ public sealed class SimWorld
     /// what a per-tick per-villager scan costs (D87 — four minutes to over ten).
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The first site in the queue that a builder could actually put a day's work into.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ D135, and it is head-of-line blocking.</b> <see cref="NextToBuild"/> answers *what
+    /// is first*, which is what the player's queue means and what materials should chase. Every
+    /// builder asked only that — so when the head was short of timber and no store had any,
+    /// **every builder in the village stood still**, however many sites behind it were stocked
+    /// and ready. Measured: *"a house — 30 logs delivered, 0 still wanted"* sat untouched for
+    /// three years while the builders shuttled for the site in front of it.
+    /// </para>
+    /// <para>
+    /// Joe watched the same thing and described it exactly: <i>"the builder shouldn't just sit
+    /// at the building waiting."</i> His woodcutter's hut was *"Queue: 1st of 3"* at 12 of 25
+    /// logs with *"Work: 0 of 40 ticks done"*, and two sites queued behind it.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THIS DOES NOT REORDER THE QUEUE, and that distinction is D102's.</b> Marking a
+    /// granary in the first spring once jumped it ahead of two houses and killed the village,
+    /// so the queue decides <em>where scarce timber goes</em> and still does — fetching always
+    /// serves the head. What this changes is only what a builder does with time they would
+    /// otherwise spend standing next to a site they cannot advance. Priority over materials,
+    /// not over labour.
+    /// </para>
+    /// </remarks>
+    public Workplace? NextBuildableSite()
+    {
+        Workplace? best = null;
+        GridPos village = FirstHomeOrFoundingSite();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+            if (candidate.Construction is not { IsFinished: false, HasMaterials: true }
+                || !GroundIsClearAt(candidate.Position)
+                || !TravelCost.CanReach(village, candidate.Position))
+            {
+                continue;
+            }
+
+            if (best is null
+                || candidate.EffectiveQueueRank < best.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == best.EffectiveQueueRank
+                    && candidate.Id < best.Id))
+            {
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
     public Workplace? NextToBuild()
     {
         Workplace? head = null;

@@ -497,4 +497,106 @@ public sealed class HousesAreBuiltTests
             }
         }
     }
+
+    /// <summary>
+    /// ⭐ A starved head of the queue does not stop the builders working behind it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>D135, and Joe watched it happen:</b> <i>"the builder shouldn't just sit at the
+    /// building waiting."</i> His woodcutter's hut was <em>"Queue: 1st of 3"</em> at 12 of 25
+    /// logs with <em>"Work: 0 of 40 ticks done"</em>, and two sites queued behind it. Measured
+    /// independently: a house reading <em>"30 logs delivered, 0 still wanted"</em> went
+    /// untouched for three years while the builders waited on the site in front of it.
+    /// </para>
+    /// <para>
+    /// Every builder asked <c>NextToBuild()</c>, which answers <em>what is first</em>. That is
+    /// the right question for where scarce timber should go and the wrong one for what a pair
+    /// of hands should do next.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE STORES ARE DRAINED EVERY TICK, and that is what makes this a discriminator
+    /// rather than a coincidence.</b> If any timber were allowed to reach a store the builders
+    /// would fetch it for the head, finish it, and reach the second site by ordinary queue
+    /// order — and the test would pass with the bug still in place. Holding the village at
+    /// zero timber for ever asks the one question that matters: <em>there is nothing to fetch
+    /// and one site is already stocked; does anybody build it?</em>
+    /// </para>
+    /// <para>
+    /// It deliberately does <b>not</b> assert that the head stays unbuilt. The queue governs
+    /// materials, not labour (D102), and a head that somehow got its logs SHOULD be built.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AStarvedHeadOfQueueDoesNotStopTheBuildersBehindIt()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        PaintHomeGround(world);
+        MarkABuildersHut(world);
+        loop.Step(config.TicksPerYear);
+
+        // Two sites, in queue order. The first will never see a log; the second is handed
+        // everything it needs up front.
+        MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 4);
+        MarkSomewhereNear(world, BuildingKind.Shed, world.Map.FoundingSite, 6);
+
+        Workplace? starved = null;
+        Workplace? stocked = null;
+        foreach (Workplace place in world.Workplaces)
+        {
+            if (place.Construction is not { IsFinished: false } site)
+            {
+                continue;
+            }
+
+            if (site.Kind == BuildingKind.Granary)
+            {
+                starved = place;
+            }
+            else if (site.Kind == BuildingKind.Shed)
+            {
+                stocked = place;
+            }
+        }
+
+        Assert.NotNull(starved);
+        Assert.NotNull(stocked);
+
+        stocked!.Construction!.Deliver(stocked.Construction.LogsStillNeeded);
+        Assert.True(stocked.Construction.HasMaterials);
+
+        // Anti-vacuity: the starved one must really be ahead of it, or nothing is blocked.
+        Assert.True(
+            starved!.EffectiveQueueRank < stocked.EffectiveQueueRank,
+            $"The granary ranks {starved.EffectiveQueueRank} against the shed's "
+            + $"{stocked.EffectiveQueueRank}, so nothing is in front of anything.");
+
+        for (int tick = 0; tick < config.TicksPerYear && !stocked.Construction.IsFinished; tick++)
+        {
+            loop.Step(1);
+
+            // Not one log anywhere, ever. There is nothing to fetch for the head.
+            foreach (StoreBuilding store in world.StoreBuildings)
+            {
+                if (store.Store.Logs > 0)
+                {
+                    store.Store.TryTake(Goods.Logs, store.Store.Logs);
+                }
+            }
+        }
+
+        _output.WriteLine(
+            $"a year with no timber anywhere: the stocked shed is "
+            + $"{(stocked.Construction.IsFinished ? "built" : "STILL A SITE")}, the starved "
+            + $"granary holds {starved.Construction!.LogsDelivered} logs.");
+
+        Assert.True(
+            stocked.Construction.IsFinished,
+            "A shed with every log it needs went unbuilt for a year because the site ahead of "
+            + "it in the queue was waiting on timber that does not exist. The queue is meant to "
+            + "decide where materials go, not to stop a pair of hands working.");
+    }
 }

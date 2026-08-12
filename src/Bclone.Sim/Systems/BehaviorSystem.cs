@@ -842,12 +842,42 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (shed is null)
         {
+            // ⭐ THE HEAD OF THE QUEUE IS STARVED — SO WORK A SITE THAT IS NOT (D135).
+            //
+            // Joe: *"the builder shouldn't just sit at the building waiting."* Until now every
+            // builder asked only `NextToBuild()`, which answers *what is first*, so a head with
+            // no timber and no timber anywhere to fetch stopped the whole trade — measured, a
+            // house standing at "30 logs delivered, 0 still wanted" went untouched for three
+            // years while the builders waited on the site in front of it.
+            //
+            // ⚠️ THE QUEUE IS NOT REORDERED, which is D102's line and it holds: fetching above
+            // still serves the head, so scarce timber goes where the player pointed. Only the
+            // builder's otherwise-idle time moves. Priority over materials, not over labour.
+            Workplace? ready = world.NextBuildableSite();
+            if (ready is not null && ready.Id != standing.Id)
+            {
+                villager.WorkNote =
+                    $"{site.Name} is waiting on {site.LogsStillNeeded} logs nobody has, so "
+                    + $"{ready.Construction!.Name} is getting the day instead.";
+                HeadFor(world, villager, ready.Position, VillagerState.Building);
+                return true;
+            }
+
             villager.WorkNote =
                 $"Nothing to build with — {site.Name} still wants {site.LogsStillNeeded} logs, " +
                 "and nowhere within reach has any.";
 
-            // Nothing to fetch and nothing to build: let them take whatever spare work there
-            // is rather than walking home to stand still.
+            // ⭐ AND NOTHING TO BUILD EITHER, so they go and MAKE materials rather than stand
+            // there — Joe's rule: *"if there are no materials available, the builder should
+            // harvest materials and take them to storage."* Returning false drops them through
+            // to `TryTidyGround` and `TryHelpWithHarvest` below, which is felling painted ground
+            // and carrying heaps to a store. Measured over three years: a builder blocked this
+            // way spends more ticks clearing than building.
+            //
+            // ⚠️ PAINTED ground only, and that is deliberate rather than a shortfall. D87 is
+            // Joe's own rule that the brush is the only way a tree comes down — a builder who
+            // felled unpainted woodland to unblock themselves would be the one actor in the
+            // game allowed to reshape the valley without being told to.
             return false;
         }
 
