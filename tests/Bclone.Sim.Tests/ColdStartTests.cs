@@ -731,6 +731,33 @@ public sealed class ColdStartTests
         PaintTheNearbyTrees(world, 6);
     }
 
+    /// <summary>
+    /// The opening as it stands before anybody builds a shed: a storage pile takes the timber.
+    /// </summary>
+    /// <remarks>
+    /// A pile accepts every kind of goods and is the one store that does, so this village has
+    /// somewhere for logs to go — which is precisely the arrangement D132 could not see. Kept
+    /// here beside the openings it is a variant of, rather than copied into the one test that
+    /// wants it.
+    /// </remarks>
+    internal static void PlayTheOpeningWithoutAShed(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+
+        for (int dy = -4; dy <= 4; dy++)
+        {
+            for (int dx = -4; dx <= 4; dx++)
+            {
+                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
+            }
+        }
+
+        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
+        MarkSomewhereNear(world, BuildingKind.BuilderHut, site, 2);
+        MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+        FeedTheFounding(world);
+    }
+
     internal static void PlayTheOpening(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;

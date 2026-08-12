@@ -2058,8 +2058,11 @@ public sealed class SimWorld
             }
         }
 
-        StoreBuilding? shed = NearestStore(
-            building.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // meant a refund vanished in a village that has only a storage pile — silently,
+        // because `shed` was simply null and the logs went nowhere.
+        StoreBuilding? shed = NearestStoreAccepting(
+            building.Position, Goods.Logs, static store => !store.Store.IsFull);
         int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
 
         Narrate(held > 0
@@ -2127,8 +2130,11 @@ public sealed class SimWorld
         string name = workplace.Name;
         RetireWorkplace(workplace);
 
-        StoreBuilding? shed = NearestStore(
-            workplace.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // meant a refund vanished in a village that has only a storage pile — silently,
+        // because `shed` was simply null and the logs went nowhere.
+        StoreBuilding? shed = NearestStoreAccepting(
+            workplace.Position, Goods.Logs, static store => !store.Store.IsFull);
         int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
 
         Narrate(recovered > 0
@@ -2167,8 +2173,11 @@ public sealed class SimWorld
         int back = site.Construction.Abandon();
         RetireWorkplace(site);
 
-        StoreBuilding? shed = NearestStore(
-            site.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // meant a refund vanished in a village that has only a storage pile — silently,
+        // because `shed` was simply null and the logs went nowhere.
+        StoreBuilding? shed = NearestStoreAccepting(
+            site.Position, Goods.Logs, static store => !store.Store.IsFull);
         shed?.Store.Receive(Goods.Logs, back);
 
         Narrate($"{site.Construction.Name} was abandoned before it was built — " +

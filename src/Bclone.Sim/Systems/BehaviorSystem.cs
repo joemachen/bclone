@@ -1451,7 +1451,7 @@ public sealed class BehaviorSystem : ISimSystem
             if (yard is null)
             {
                 villager.WorkNote =
-                    $"Nothing to split — no shed within reach of {job.Name} has the " +
+                    $"Nothing to split — no store within reach of {job.Name} has the " +
                     $"{config.LogsPerSplit} logs a batch needs.";
 
                 // Idle from their trade, so they may tidy or help clear (D87, D96). This
@@ -1858,25 +1858,51 @@ public sealed class BehaviorSystem : ISimSystem
         // The degenerate case, handled rather than assumed away: a village with no
         // shed at all has nowhere to put timber, and sending them to one that does not
         // exist would throw. Put it down and say so loudly — never silently (METHODOLOGY §4).
-        if (villager.CarriedLogs > 0 && !AnyShedStanding(world))
+        if (villager.CarriedLogs > 0 && !AnywhereToPutTimber(world))
         {
             world.Log(
                 LogLevel.Warn,
                 "goods",
                 $"{villager.Name} came home with {villager.CarriedLogs} logs and the village has " +
-                "no shed to put them in, so they are stranded in the larder where nothing can " +
-                "spend them. Build a shed.");
+                "nowhere to put them, so they are stranded in the larder where nothing can " +
+                "spend them. Build a storage pile or a shed.");
 
             larder.Receive(Goods.Logs, villager.CarriedLogs);
             villager.CarriedLogs = 0;
         }
     }
 
-    private static bool AnyShedStanding(SimWorld world)
+    /// <summary>Is there anywhere in the village at all that will take timber?</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ IT ASKS WHAT IT NEEDS TO KNOW, WHICH IS NOT "IS THERE A SHED" (D132).</b> This was
+    /// <c>AnyShedStanding</c> and it compared <c>Kind == StoreKind.Shed</c> — so a village with
+    /// a <b>storage pile and no shed</b> was told it had nowhere to put timber, and every
+    /// interrupted trip emptied its armful into a larder where nothing can spend it. **A pile
+    /// takes anything**; it is the one store that does.
+    /// </para>
+    /// <para>
+    /// <b>Joe caught it in his own game:</b> <i>"even with no one cutting wood, and laborers
+    /// clearing forest, I can barely get enough logs. Nothing extra is being built."</i> His
+    /// village held <b>31 logs in store and 50 in the Thatcher household's larder</b> — more
+    /// timber in one family's house than in the whole settlement — while the woodcutter sat
+    /// idle for want of the six logs a batch needs. The felling was fine and the hauling was
+    /// fine. This is the leak, and it is precisely the failure the comment above already
+    /// describes ("240 logs frozen in two houses for twenty years"), returning through a
+    /// predicate rather than through the code it guards.
+    /// </para>
+    /// <para>
+    /// <c>Accepts</c> is the question every other timber path already asks —
+    /// <see cref="SimWorld.LogsInSheds"/> counts by it, <c>HaulOrSetDown</c> falls back to it
+    /// (D76). This one place asked by name instead, and needed telling about each new kind of
+    /// store. Asking "what will take this?" needs telling about none of them.
+    /// </para>
+    /// </remarks>
+    private static bool AnywhereToPutTimber(SimWorld world)
     {
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
-            if (world.StoreBuildings[i].Kind == StoreKind.Shed)
+            if (world.StoreBuildings[i].Accepts(Goods.Logs))
             {
                 return true;
             }

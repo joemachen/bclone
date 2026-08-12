@@ -153,6 +153,15 @@ public sealed class ShippedConfigTests
     /// 90 and surviving it. A guard that only watches the fixture would have called
     /// this fixed.
     /// </remarks>
+    /// <remarks>
+    /// <b>⚠️ AND IT WAS PASSING ON A DEAD VILLAGE, which is how D132 shipped.</b> It ran the
+    /// bare shipped config — <c>founding_buildings: false</c>, nothing marked — so once the
+    /// thickets retired the settlement had no food source, died by season four, and never
+    /// felled a single log. <c>worst == 0</c> because nothing ever happened. Meanwhile Joe's
+    /// real game held 50 logs in one larder against 31 in the whole village's stores. **The
+    /// guard for the exact bug he hit was green throughout.** D7 is not a style rule: this is
+    /// the failure it names, and the anti-vacuity assert below is the whole repair.
+    /// </remarks>
     [Fact]
     public void TheShippedVillageNeverStrandsLogsInALarder()
     {
@@ -160,10 +169,17 @@ public sealed class ShippedConfigTests
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
+        // A pile and no shed, which is the arrangement that stranded them: a pile takes
+        // timber, so the village HAS somewhere to put logs, and the old predicate could not
+        // see it. This is also just what the opening looks like before anybody builds a shed.
+        ColdStartTests.PlayTheOpeningWithoutAShed(world);
+
         int worst = 0;
+        int everCut = 0;
         for (int year = 1; year <= 300; year++)
         {
             loop.Step(config.TicksPerYear);
+            everCut = System.Math.Max(everCut, world.LogsInSheds());
 
             for (int i = 0; i < world.Households.Count; i++)
             {
@@ -175,7 +191,17 @@ public sealed class ShippedConfigTests
             }
         }
 
-        _output.WriteLine($"300 years on the shipped config; most logs ever in a larder: {worst}.");
+        _output.WriteLine(
+            $"300 years on the shipped config; most logs ever in a larder: {worst}, "
+            + $"most ever in store: {everCut}.");
+
+        // ⭐ ANTI-VACUITY FIRST (D7). A village that never fells a log cannot strand one, and
+        // for several commits that is exactly what this was proving.
+        Assert.True(
+            everCut > 0,
+            "The village never got a log into a store in three centuries, so it never had one "
+            + "to strand and this guard is watching nothing.");
+
         Assert.True(worst == 0, $"A household held {worst} logs, which nothing can ever spend.");
     }
 
