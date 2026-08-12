@@ -260,7 +260,16 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        return config.FirewoodPerWinterDay * config.DaysPerSeason;
+        // Divided by the burn interval, so the budget follows the burn. Leaving this as
+        // "per day" while the hearth burned every fourth day would have had the village
+        // stocking four winters' fuel and calling it one — the exact doc-versus-reality
+        // drift D48, D49 and D50 were each an instance of.
+        //
+        // Rounded UP, deliberately: a winter that needs seven and a half burns needs eight
+        // logs, and a village that budgets seven is cold on the last day of it.
+        return CeilingDivide(
+            config.FirewoodPerWinterDay * config.DaysPerSeason,
+            config.FirewoodBurnIntervalDays < 1 ? 1 : config.FirewoodBurnIntervalDays);
     }
 
     /// <summary>

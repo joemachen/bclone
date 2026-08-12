@@ -341,7 +341,7 @@
   // It sizes the FORESTER'S HUT now that the stands are gone, which is
   // the same question wearing a different name: how many pairs of hands
   // the village's timber needs in one place.
-  "tree_stand_capacity": 6,
+  "tree_stand_capacity": 2,
 
   // A home has to be built, out of LOGS. Wood is two resources now
   // (D29): a logger fells logs, a woodcutter turns logs into firewood,
@@ -492,7 +492,7 @@
   //
   // Asserted against the shipped file now, not just the test fixture -
   // the two diverge, and this gap lived entirely in that divergence.
-  "woodcutter_hut_capacity": 8,
+  "woodcutter_hut_capacity": 2,
   "logs_per_split": 6,
   "split_ticks": 4,
 
@@ -527,7 +527,24 @@
   // whether two live in it or five. That makes SPRAWL the thing that
   // costs rather than population - a pressure that traces back to a
   // player decision (DESIGN.md §2.3).
+  //
+  // Still one log per burn, and still the switch that turns fuel off
+  // entirely when it is zero (Phase 0's world has no winter fuel).
   "firewood_per_winter_day": 1,
+
+  // How many days one burn lasts (Joe, 2026-08-11: "make firewood
+  // consumption take longer. like 4x longer. it goes too fast").
+  //
+  // The rate had to move HERE rather than in the amount above, because
+  // sim state is integer-only (D2) and a quarter of a log is not a
+  // number this game can hold. Four days per log is the same four-times
+  // slower burn expressed in a unit the sim has.
+  //
+  // The economy follows it: FirewoodPerHouseholdPerWinter divides by it,
+  // so a winter costs a household a quarter of what it did, and every
+  // number derived from that - the store target, the woodcutter seats,
+  // the foresters feeding them - comes down with it.
+  "firewood_burn_interval_days": 4,
 
   // ---- Cold is a place you are standing (D45) -----------------
   // freezing_ticks is GONE. It was one counter per household - "days

@@ -58,7 +58,11 @@ public sealed class HearthSystem : ISimSystem
             return;
         }
 
-        if (world.Tick % (ulong)config.TicksPerDay == 0UL)
+        // Every few days rather than every day (Joe: *"make firewood consumption take
+        // longer, like 4x longer"*). The interval carries the rate because sim state is
+        // integer-only and a quarter of a log is not a number this game can hold (D2).
+        ulong burnEvery = (ulong)config.TicksPerDay * (ulong)config.FirewoodBurnIntervalDays;
+        if (world.Tick % burnEvery == 0UL)
         {
             BurnADaysFirewood(world, config);
         }

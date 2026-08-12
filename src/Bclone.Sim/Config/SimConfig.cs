@@ -449,6 +449,26 @@ public sealed record SimConfig
     [JsonPropertyName("firewood_per_winter_day")]
     public int FirewoodPerWinterDay { get; init; } = 1;
 
+    /// <summary>
+    /// Days one burn of firewood lasts a household.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-08-11: <em>"make firewood consumption take longer. like 4x longer. it
+    /// goes too fast."</em></b> The rate had to move here rather than into
+    /// <see cref="FirewoodPerWinterDay"/> because sim state is integer-only (D2) and a
+    /// quarter of a log is not a number this game can hold. Four days per log is the same
+    /// four-times-slower burn, expressed in a unit the sim has.
+    /// </para>
+    /// <para>
+    /// <b>The economy follows it</b> — <c>FirewoodPerHouseholdPerWinter</c> divides by it, so
+    /// the winter store target, the woodcutter seats and the foresters feeding them all come
+    /// down together rather than the burn quietly getting cheaper than the budget.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("firewood_burn_interval_days")]
+    public int FirewoodBurnIntervalDays { get; init; } = 1;
+
     /// <summary>How much of anything one villager can carry in one trip.</summary>
     /// <remarks>
     /// What stops a fetch being a teleport with extra steps (D30). One trip brings
@@ -1299,6 +1319,13 @@ public sealed record SimConfig
             throw new SimConfigException(
                 $"logs_per_split, firewood_per_split and split_ticks must all be greater than zero " +
                 $"(got {LogsPerSplit}, {FirewoodPerSplit}, {SplitTicks}).");
+        }
+
+        if (FirewoodBurnIntervalDays < 1)
+        {
+            throw new SimConfigException(
+                "firewood_burn_interval_days must be at least one — a burn cannot happen more "
+                + $"than once a day (got {FirewoodBurnIntervalDays}).");
         }
 
         if (FirewoodPerWinterDay < 0)
