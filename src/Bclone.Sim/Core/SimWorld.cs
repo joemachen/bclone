@@ -769,7 +769,13 @@ public sealed class SimWorld
     /// </remarks>
     public bool Plant(GridPos tile)
     {
-        return Map.TerrainAt(tile) == Terrain.Grass && SetTerrain(tile, Terrain.Forest);
+        // ⭐ A SAPLING, NOT A TREE (Joe, D126). Planting used to produce full-grown woodland
+        // the instant the forester finished, which made a planted wood indistinguishable
+        // from an old one and gave the player no way to see the years they had bought.
+        // A planted tile now grows up on the same clock as one that came back by itself —
+        // *"sapling for the first six months, mature tree after a year"* — so the two kinds
+        // of recovery cost the same time and only differ in who started them.
+        return Map.TerrainAt(tile) == Terrain.Grass && SetTerrain(tile, Terrain.Sapling);
     }
 
     /// <summary>Whether the village has already been told it has nowhere for a good.</summary>

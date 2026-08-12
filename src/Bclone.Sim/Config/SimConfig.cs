@@ -469,6 +469,26 @@ public sealed record SimConfig
     [JsonPropertyName("firewood_burn_interval_days")]
     public int FirewoodBurnIntervalDays { get; init; } = 1;
 
+    /// <summary>
+    /// Days between sweeps of the valley for regrowth. <b>Zero switches it off.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One sweep is both stages of a tree: a sapling seen by a sweep has stood for one
+    /// period and becomes wood, and a grass tile touching wood becomes a sapling. So at
+    /// sixty days — half a year on the shipped calendar — a cleared tile is a sapling within
+    /// six months and a mature tree within a year, which is the rate Joe asked for.
+    /// </para>
+    /// <para>
+    /// It is also the cost control: the sweep examines one period's worth of tiles per tick,
+    /// so a longer period is cheaper per tick as well as slower. Zero is off, which is what
+    /// Phase 0's world wants — its spec describes a fixed valley and a fixture that grew
+    /// trees under the villager would put noise in the one place the project needs none.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("regrowth_period_days")]
+    public int RegrowthPeriodDays { get; init; }
+
     /// <summary>How much of anything one villager can carry in one trip.</summary>
     /// <remarks>
     /// What stops a fetch being a teleport with extra steps (D30). One trip brings

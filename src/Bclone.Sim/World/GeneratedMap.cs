@@ -45,6 +45,36 @@ public enum Terrain
     /// decision"</em>.
     /// </remarks>
     IronDeposit = 4,
+
+    /// <summary>
+    /// Young trees — <b>a wood on its way back, and worth nothing yet</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The counterweight the design was missing</b> (D125, Joe: <em>"trees should grow
+    /// over time… sapling for the first six months, mature tree after a year"</em>). Until
+    /// now the only thing that put trees back was a forester in planting mode, which is a
+    /// decision the <em>player</em> makes — so a village nobody was managing felled its own
+    /// gatherer's ring and starved beside a valley still 97% wooded.
+    /// </para>
+    /// <para>
+    /// <b>⭐ It is its own terrain rather than a timer on a grass tile, and that is the whole
+    /// reason it works.</b> A sapling is <em>visible</em>: the player can see their wood
+    /// coming back, see where it has not, and see that the ring they cleared last spring is
+    /// half-grown rather than gone. A hidden countdown would restore the food supply without
+    /// ever explaining itself, which is §1.1 failing in the player's favour — still failing.
+    /// </para>
+    /// <para>
+    /// <b>Worth nothing to anybody until it matures.</b> A gatherer's ring counts
+    /// <see cref="Forest"/>, so half a ring of saplings is half a ring of food — the same
+    /// "less trees, less food" rule, with the clock now running the other way as well.
+    /// </para>
+    /// <para>
+    /// <b>Appended, never renumbered</b> — terrain is hashed by value, so a new kind of
+    /// ground goes on the end or every seed ever written down changes meaning.
+    /// </para>
+    /// </remarks>
+    Sapling = 5,
 }
 
 /// <summary>What a kind of ground does to somebody trying to cross it.</summary>
@@ -155,6 +185,15 @@ public sealed class GeneratedMap
         _terrain = terrain;
         _soil = soilQuality;
         FoundingSite = foundingSite;
+
+        // The valley's natural woodland, recorded once. Everything the generator painted as
+        // forest is ground a wood may return to; everything else is meadow until somebody
+        // plants on it.
+        _everWooded = new bool[terrain.Length];
+        for (int i = 0; i < terrain.Length; i++)
+        {
+            _everWooded[i] = terrain[i] == Terrain.Forest;
+        }
     }
 
     public int Width { get; }
@@ -216,8 +255,53 @@ public sealed class GeneratedMap
         }
 
         _terrain[index] = terrain;
+
+        // Ground that has ever held trees remembers it — see `HasEverBeenWooded`.
+        if (terrain is Terrain.Forest or Terrain.Sapling)
+        {
+            _everWooded[index] = true;
+        }
+
         return true;
     }
+
+    /// <summary>
+    /// Whether trees have ever stood here — <b>the bound on where a wood may come back</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ MEASURED INTO EXISTENCE (D126).</b> Regrowth that spread wherever it touched wood
+    /// took the valley from 2,600 forest tiles to <b>9,257 of 9,600 in fifteen years</b> —
+    /// one solid wood, no meadow left, and <c>forest_coverage_percent</c> meaningless a few
+    /// years in. Requiring two wooded neighbours instead of one slowed it and did not stop
+    /// it: 85% of the valley, because clumps merge and every merge makes new concavities.
+    /// </para>
+    /// <para>
+    /// <b>The honest bound is not a rate, it is a place.</b> A wood grows back where a wood
+    /// was; it does not march across open meadow for ever. So regrowth reclaims only ground
+    /// that has held trees at some point — which heals a clearing completely, however big,
+    /// and leaves the grass that was always grass alone.
+    /// </para>
+    /// <para>
+    /// <b>Planting extends it deliberately</b>, because a planted tile passes through
+    /// <see cref="Terrain.Sapling"/> and is recorded here. That is Joe's *"foresters can plant
+    /// trees in a painted area — this will allow the user to sculpt their forests to their own
+    /// desires"*: the player may put a wood where there never was one, and once they have, it
+    /// comes back like any other.
+    /// </para>
+    /// <para>
+    /// <b>Not hashed, and it does not need to be.</b> It is a pure function of the terrain
+    /// history — the initial map plus every <c>SetTerrain</c> — and all of that is hashed
+    /// already. Two runs that agree on the terrain agree on this.
+    /// </para>
+    /// </remarks>
+    public bool HasEverBeenWooded(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index >= 0 && _everWooded[index];
+    }
+
+    private readonly bool[] _everWooded;
 
     /// <summary>Whether a tile is inside the valley at all.</summary>
     public bool Contains(GridPos position) =>

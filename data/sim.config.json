@@ -546,6 +546,21 @@
   // the foresters feeding them - comes down with it.
   "firewood_burn_interval_days": 4,
 
+  // ---- Regrowth (D125) ---------------------------------------
+  // The valley comes back. Measured before this existed: a village
+  // felled its own gatherer's ring simply by living in it - houses,
+  // sites and the forester's ground are all near the hut - and
+  // thirteen people starved beside a valley still 97% wooded.
+  //
+  // Sixty days is half a year, and one sweep is both stages of a
+  // tree: grass touching wood becomes a sapling, and a sapling that
+  // has stood a whole sweep becomes wood. So a cleared tile is a
+  // sapling within six months and a mature tree within a year, which
+  // is the rate Joe asked for ("it should come back every year").
+  //
+  // Zero switches it off.
+  "regrowth_period_days": 60,
+
   // ---- Cold is a place you are standing (D45) -----------------
   // freezing_ticks is GONE. It was one counter per household - "days
   // since this family ran out of firewood" - asked identically of

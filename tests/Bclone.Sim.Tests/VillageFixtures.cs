@@ -61,6 +61,12 @@ public static class VillageFixtures
                 SiteJitterTiles = 1,
                 FoundingJitterTiles = 2,
                 RiverWidthTiles = 2,
+
+                // ⭐ The valley comes back (D126). Not optional for the village fixture:
+                // without it a settlement fells its own gatherer's ring simply by living in
+                // it and starves at year 45 (D125), so every long-horizon guard here would
+                // be describing a world the shipped game does not have.
+                RegrowthPeriodDays = 60,
             };
 
             // Then derive the values the targets actually determine — food first,
