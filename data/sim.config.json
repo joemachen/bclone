@@ -302,12 +302,26 @@
   "vigour_min_percent": 55,
 
   // ---- Life --------------------------------------------------
-  // 45 +/- 5 => 40-50 year lives. At 80s per year on 4x (see
-  // target_ticks_per_second) that is roughly a 55-65 minute life -
-  // D49 states the pacing AS a life rather than as a year, because the
-  // generational loop is the core loop and a year is only its unit.
-  "lifespan_years_base": 45,
-  "lifespan_years_variance": 5,
+  // 67 +/- 12 => 55-79 year lives (Joe, 2026-08-11, watching Hattie die
+  // at 42: "42 feels too young to die. let's extend it to 55-80").
+  //
+  // 55-79 rather than 55-80 because the draw is base +/- variance, so the
+  // range is always an ODD number of years wide and 55-80 is 26. Erring
+  // inside what was asked for rather than over it.
+  //
+  // Was 45 +/- 5 => 40-50, which D49 set when the pacing target was
+  // stated as "an average life takes 60 real minutes at 4x". THAT TARGET
+  // MOVES WITH THIS: a life is half as long again, so at the current tick
+  // rate an average one runs about three hours at 4x rather than two.
+  // The life is the statement and the tick rate is only its unit
+  // (target_ticks_per_second is the number to argue with, not this one).
+  //
+  // It is not only pacing. Vigour declines from vigour_full_until_age to
+  // vigour_min_percent at death, so a longer life is MORE YEARS SPENT
+  // DECLINING - a village of the same size carries more low-vigour
+  // adults. The economy is re-derived against it below.
+  "lifespan_years_base": 67,
+  "lifespan_years_variance": 12,
 
   // ---- Timber (decision D17) ---------------------------------
   // Cuttable year-round, unlike berries, so a woodcutter still works
