@@ -2145,7 +2145,10 @@ public partial class Main : Control
     }
 
     /// <summary>What the cursor is over, or what just happened. Empty when not placing.</summary>
-    private Label _placementLabel = null!;
+    // ⚠️ Genuinely null until the control bar is built, and typed to say so. It was `null!`,
+    // which promised it was always there and cost a crash the first time a panel warned
+    // during construction — see `Warn`.
+    private Label? _placementLabel;
 
     /// <summary>
     /// The build menu (D43) — the first controls in the game that change the world
@@ -2310,7 +2313,43 @@ public partial class Main : Control
     private const int ProfessionNameWidth = 84;
 
     /// <summary>
-    /// One profession: a name, a "village decides" tick, <b>− N +</b>, and the places.
+    /// Show the sim's own warning, <b>if there is anywhere to show it yet</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ THE GUARD IS THE POINT, AND IT COST A CRASH TO LEARN.</b> <c>_placementLabel</c>
+    /// lives on the control bar, which is built <em>last</em> — and once the professions rows
+    /// started applying a real number at construction (rather than a null that changed
+    /// nothing), one of them returned <em>"there is only room for N on this kind of work"</em>
+    /// and wrote it to a label that did not exist yet. <c>BuildUi</c> threw halfway through,
+    /// so the roster was never created either, and every frame after that died on
+    /// <c>_roster.Clear()</c> — a null reference a long way from its cause.
+    /// </para>
+    /// <para>
+    /// Guarded rather than reordered: there is no build order that is right for every panel
+    /// somebody adds later, and a warning with nowhere to go is not worth a crash. It goes to
+    /// the console instead, so it is never simply lost.
+    /// </para>
+    /// </remarks>
+    private void Warn(PlacementVerdict verdict)
+    {
+        if (!verdict.HasWarning)
+        {
+            return;
+        }
+
+        if (_placementLabel is null)
+        {
+            GD.Print($"[placement] {verdict.Warning}");
+            return;
+        }
+
+        _placementLabel.Text = verdict.Warning;
+        _placementLabel.Visible = true;
+    }
+
+    /// <summary>
+    /// One profession: a name, <b>− N +</b>, and how many places there are.
     /// </summary>
     /// <remarks>
     /// <b>± buttons rather than a spin box</b> — the same control the per-building staffing row
@@ -2327,15 +2366,23 @@ public partial class Main : Control
         name.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
         row.AddChild(name);
 
-        // ⚠️ THE TICK STAYS, and it is not a spare click. Null and zero are different
-        // instructions — "no opinion" against "none, I mean it" — and the sim keeps them
-        // apart deliberately (D106). A number alone cannot say the first.
-        // Small type, because the words matter and the width does too: the panel a column
-        // sizes itself to is the widest row in it, and this row is the widest one there is.
-        var auto = new CheckBox { Text = "village decides", ButtonPressed = true };
-        auto.AddThemeFontSizeOverride("font_size", 12);
+        // ⭐ THE "VILLAGE DECIDES" TICK IS GONE (Joe, 2026-08-11: *"remove all of the village
+        // decides from the jobs. we want it user-decided only for now."*)
+        //
+        // It expressed the difference between *no opinion* (null) and *none, I mean it*
+        // (zero), which D106 was careful to keep apart and the sim still does. **What has
+        // changed is that the player is never without an opinion**: every profession now
+        // carries an explicit number from the first frame, so there is one source of truth
+        // for who is working rather than two that argue — which is D109's whole argument,
+        // arriving through the panel rather than through the sim.
+        //
+        // ⚠️ SEEDED FROM WHAT THE VILLAGE WOULD HAVE CHOSEN, not from zero. Starting every
+        // row at nought would empty the village on the first tick and call it the player's
+        // decision; starting from the quota's own suggestion means nothing moves until
+        // somebody moves it, and the first thing the player sees is what the village was
+        // already doing.
+        int asked = LabourQuota.For(_loop.World).For(kind);
 
-        int asked = 0;
         Label amount = Muted("0");
         amount.CustomMinimumSize = new Vector2(22, 0);
         amount.HorizontalAlignment = HorizontalAlignment.Right;
@@ -2345,22 +2392,9 @@ public partial class Main : Control
 
         void Apply()
         {
-            fewer.Disabled = auto.ButtonPressed;
-            more.Disabled = auto.ButtonPressed;
-            amount.Modulate = new Color(1, 1, 1, auto.ButtonPressed ? 0.35f : 1f);
             amount.Text = $"{asked}";
-
-            int? target = auto.ButtonPressed ? null : asked;
-
-            PlacementVerdict verdict = _loop.World.SetJobLimit(kind, target);
-            if (verdict.HasWarning)
-            {
-                _placementLabel.Text = verdict.Warning;
-                _placementLabel.Visible = true;
-            }
+            Warn(_loop.World.SetJobLimit(kind, asked));
         }
-
-        auto.Toggled += _ => Apply();
 
         // Clamped at zero, and with no ceiling of its own: the panel is allowed to ask for
         // more than the village would choose — that is the whole difference from a stock
@@ -2380,7 +2414,6 @@ public partial class Main : Control
         Label places = Muted(string.Empty);
         places.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 
-        row.AddChild(auto);
         row.AddChild(fewer);
         row.AddChild(amount);
         row.AddChild(more);
@@ -2433,14 +2466,10 @@ public partial class Main : Control
             amount.Editable = !auto.ButtonPressed;
             int? limit = auto.ButtonPressed ? null : (int)amount.Value;
 
-            PlacementVerdict verdict = _loop.World.SetStockLimit(goods, limit);
-            if (verdict.HasWarning)
-            {
-                // The sim's own sentence, in the channel that already carries the sim's own
-                // sentences (D43's placement warnings). One voice, not two.
-                _placementLabel.Text = verdict.Warning;
-                _placementLabel.Visible = true;
-            }
+            // The sim's own sentence, in the channel that already carries the sim's own
+            // sentences (D43's placement warnings). One voice, not two — and through `Warn`,
+            // so this cannot be the next thing to fire before the control bar exists.
+            Warn(_loop.World.SetStockLimit(goods, limit));
         }
 
         auto.Toggled += _ => Apply();
