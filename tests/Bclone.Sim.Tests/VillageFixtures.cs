@@ -86,9 +86,20 @@ public static class VillageFixtures
                 StockpileTarget = VillageEconomy.RequiredStockpilePerAdult(shape),
             };
 
+            // ⚠️ THE SHIPPED VALUE, NOT THE DERIVED MINIMUM, and the difference is enormous.
+            // `RequiredFirewoodPerSplit` answers *what is the least that works* — and using
+            // the least makes fuel maximally LOG-hungry, because a smaller batch means more
+            // batches and every batch costs `logs_per_split`. Measured over twelve years at
+            // the derived 7: **219 of the village's 365 logs went up the chimney, 60% of all
+            // timber produced**, and there was never enough left to raise anything.
+            //
+            // The shipped file sets 50 deliberately (Joe), which costs about 31 logs for the
+            // same heat. A fixture deriving to the minimum was not a stricter test, it was a
+            // different game — METHODOLOGY §3's drift, arriving through a derivation rather
+            // than through a typed number.
             SimConfig fuelled = fed with
             {
-                FirewoodPerSplit = VillageEconomy.RequiredFirewoodPerSplit(fed),
+                FirewoodPerSplit = ShippedConfig.Load().FirewoodPerSplit,
             };
 
             // And the buildings have to be big enough for the village the rest of

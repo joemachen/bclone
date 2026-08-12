@@ -515,4 +515,64 @@ public sealed class StockLimitTests
             string.IsNullOrWhiteSpace(verdict.Warning),
             $"A generous limit said: {verdict.Warning}");
     }
+
+    /// <summary>
+    /// A log limit set above what the village spends makes it want timber it is not spending.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// D130, and Joe's words for it: <i>"the village should want timber it isn't spending if
+    /// the user sets a limit above what the village uses — that is a stockpile/growth play
+    /// tool for the user."</i> Every other limit in this file is a <b>ceiling</b>; this is the
+    /// same number read as a <b>target</b>, and it is the only control in the game that asks
+    /// the village to do more work rather than less.
+    /// </para>
+    /// <para>
+    /// <b>It exists because a cheaper habit is not a woodpile.</b> Foresters were wanted only
+    /// to feed the fuel chain and the houses already marked, so the village cut exactly what
+    /// it was about to burn and never accumulated. Joe hit the wall this leaves — a forester's
+    /// hut stuck at 21 of its 25 logs, so no seats, so no foresters, so no logs. Making fuel
+    /// cheaper made it <em>worse</em>: quadrupling <c>firewood_per_split</c> cut fuel from 60%
+    /// of all timber to 41% and dropped total production 365 → 174, because the fuel chain was
+    /// the only thing employing foresters at all.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE POPULATION ASSERT IS NOT DECORATION.</b> Taken uncapped the ambition filled
+    /// every forester seat, and the hands it drank were never idle — they are the labourers
+    /// who carry food to the larders and firewood to the homes. The woodpile worked and the
+    /// village halved, ten alive down to four. So the ambition is capped at half the hands
+    /// left, the same margin building uses, and this guard fails if that cap is ever lifted.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ALogLimitAboveWhatTheVillageSpendsIsAnAmbitionAndNotAceiling()
+    {
+        SimConfig config = VillageFixtures.Village;
+        int years = config.TicksPerYear * 12;
+
+        SimLoop content = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        content.Step(years);
+
+        SimLoop ambitious = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ambitious.World.SetStockLimit(Goods.Logs, 200);
+        ambitious.Step(years);
+
+        int without = content.World.LogsInSheds();
+        int with = ambitious.World.LogsInSheds();
+        _output.WriteLine(
+            $"logs held after 12 years: {without} with no opinion, {with} asked for 200. "
+            + $"alive: {content.World.Population} and {ambitious.World.Population}.");
+
+        Assert.True(
+            with > without,
+            $"A village asked for 200 logs held {with}, no better than the {without} it "
+            + "would have kept anyway. The limit is still only a ceiling.");
+
+        // And the stockpile is a want, not a need: it must not be built out of the hands
+        // that keep everybody fed.
+        Assert.True(
+            ambitious.World.Population >= content.World.Population,
+            $"Stockpiling cost lives: {ambitious.World.Population} alive against "
+            + $"{content.World.Population} in the same village that never bothered.");
+    }
 }

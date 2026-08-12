@@ -220,65 +220,71 @@ public sealed class MapGenerationTests
     [Fact]
     public void NoTwoPlacesInTheValleyShareAName()
     {
-        // Joe read this off his own screen: "Nobody is working the berry patch, the
-        // southern western thicket, the southern eastern thicket, the southern eastern
-        // thicket" — the same phrase twice, because a bearing has eight values and this
-        // village has six forage sites. Every one of these names ends up inside a
-        // sentence about why somebody walks the way they do, and a name that points at
-        // two places answers nothing. That is §1.1, not tidiness.
+        // Joe read the original bug off his own screen: "Nobody is working the berry patch,
+        // the southern western thicket, the southern eastern thicket, the southern eastern
+        // thicket" — the same phrase twice, because a bearing has eight values and that
+        // village had six forage sites. Every one of these names ends up inside a sentence
+        // about why somebody walks the way they do, and a name that points at two places
+        // answers nothing. That is §1.1, not tidiness.
         //
-        // Stated as ONE NAME, ONE PLACE rather than as one name per building, and the
-        // difference is D36's seam: the market is deliberately both a store and a
-        // workplace at a single position, so those two sharing "the market" is the
-        // model being right rather than a collision. Two names at two different tiles
-        // is the thing that cannot happen.
+        // ⭐ THE PROPERTY SURVIVED ITS MECHANISM. Bearings are gone with the thickets, and
+        // D124 replaced them with a counter — *gatherer's hut 1, gatherer's hut 2* — until
+        // the player can rename them. So the collision this guards can no longer be produced
+        // by a seed, and the fifty-seed sweep it used to do proved nothing: with generated
+        // sites retired, a founding valley has almost no names in it to collide.
         //
-        // Fifty seeds rather than the usual twelve: this is a collision test, and
-        // collisions are exactly the case a small sample misses.
-        int seedsThatNeededTheTieBreak = 0;
+        // It watches the counter instead. **The player is the one who makes duplicates now**
+        // — marking the same kind of building over and over is the ordinary way to play —
+        // so that is what the fixture does.
+        //
+        // Still stated as ONE NAME, ONE PLACE rather than one name per building, because of
+        // D36's seam: the market is deliberately both a store and a workplace at a single
+        // position, so those two sharing "the market" is the model being right rather than a
+        // collision. Two names at two different tiles is the thing that cannot happen.
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), 12345UL).World;
 
-        for (ulong seed = 1; seed <= 50; seed++)
+        int marked = 0;
+        foreach (BuildingKind kind in new[]
+                 {
+                     BuildingKind.GathererHut, BuildingKind.GathererHut, BuildingKind.GathererHut,
+                     BuildingKind.WoodcutterHut, BuildingKind.WoodcutterHut,
+                     BuildingKind.Granary, BuildingKind.Granary,
+                 })
         {
-            SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seed).World;
-
-            var places = new Dictionary<string, GridPos>();
-            bool tieBroken = false;
-
-            foreach (Workplace workplace in world.Workplaces)
+            if (world.Mark(kind, SomewhereFree(world, kind)).Allowed)
             {
-                Check(seed, places, workplace.Name, workplace.Position);
-                tieBroken |= workplace.Name.Contains("far", System.StringComparison.Ordinal);
-            }
-
-            foreach (StoreBuilding store in world.StoreBuildings)
-            {
-                Check(seed, places, store.Name, store.Position);
-            }
-
-            if (tieBroken)
-            {
-                seedsThatNeededTheTieBreak++;
+                marked++;
             }
         }
 
-        // Anti-vacuity (D7), and it is the whole point here: if no seed ever puts two
-        // sites on the same bearing then this test passes over a generator that has no
-        // collisions to resolve, and the code that resolves them is dead. The bug Joe
-        // found was on seed 12345, so at least some seeds must still need the tie-break.
-        _output.WriteLine(
-            $"{seedsThatNeededTheTieBreak} of 50 valleys put two places on one bearing.");
+        var places = new Dictionary<string, GridPos>();
 
-        Assert.True(seedsThatNeededTheTieBreak > 0,
-            "No valley in fifty needed a name disambiguated, so this guard is watching a " +
-            "collision that never happens and the code that resolves them is never run.");
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            Check(places, workplace.Name, workplace.Position);
+        }
 
-        static void Check(ulong seed, Dictionary<string, GridPos> places, string name, GridPos at)
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            Check(places, store.Name, store.Position);
+        }
+
+        _output.WriteLine($"{marked} marked, {places.Count} distinct names: "
+            + string.Join(", ", places.Keys));
+
+        // Anti-vacuity (D7): if the marking did not take, this checks a valley with one
+        // building in it and the counter is never asked to disambiguate anything.
+        Assert.True(marked >= 5,
+            $"Only {marked} of seven buildings could be marked, so nothing here has a "
+            + "twin and the numbering is never exercised.");
+
+        static void Check(Dictionary<string, GridPos> places, string name, GridPos at)
         {
             if (places.TryGetValue(name, out GridPos already))
             {
                 Assert.True(already == at,
-                    $"Seed {seed}: \"{name}\" names both {already} and {at}. Nothing the village " +
-                    "says about either place can be acted on.");
+                    $"\"{name}\" names both {already} and {at}. Nothing the village "
+                    + "says about either place can be acted on.");
                 return;
             }
 
@@ -286,46 +292,26 @@ public sealed class MapGenerationTests
         }
     }
 
-    [Fact]
-    public void ForagingAndFellingAreNamedAsDifferentKindsOfPlace()
+    /// <summary>Somewhere clear of what is already down to put something else.</summary>
+    private static GridPos SomewhereFree(SimWorld world, BuildingKind kind)
     {
-        // The half of the bug that was worse than the repeat. Every site past the first
-        // was called a *thicket* whatever it was, so a tree stand and a berry patch were
-        // named alike — and a player told nobody was working "the southern eastern
-        // thicket" could not tell whether the village was short of food or of timber.
-        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), 12345UL).World;
-
-        int thickets = 0;
-        int woods = 0;
-
-        foreach (Workplace workplace in world.Workplaces)
+        GridPos site = world.Map.FoundingSite;
+        for (int radius = 1; radius < 20; radius++)
         {
-            if (workplace.Kind == JobKind.Forager)
+            for (int dy = -radius; dy <= radius; dy++)
             {
-                Assert.DoesNotContain("wood", workplace.Name, System.StringComparison.Ordinal);
-                thickets++;
-            }
-
-            if (workplace.Kind == JobKind.Forester)
-            {
-                Assert.DoesNotContain("thicket", workplace.Name, System.StringComparison.Ordinal);
-                woods++;
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (world.CanBuildAt(kind, at).Allowed)
+                    {
+                        return at;
+                    }
+                }
             }
         }
 
-        var said = new List<string>();
-        foreach (Workplace workplace in world.Workplaces)
-        {
-            said.Add(workplace.Name);
-        }
-
-        _output.WriteLine(
-            $"{thickets} places to forage and {woods} to fell, none of them named alike:");
-        _output.WriteLine("  " + string.Join(", ", said));
-
-        // Anti-vacuity (D7): a village with one of each proves nothing about the naming.
-        Assert.True(thickets > 1 && woods > 1,
-            "The fixture has too few sites for this to be testing anything.");
+        throw new Xunit.Sdk.XunitException($"Nowhere to put a {kind}.");
     }
 
     [Fact]

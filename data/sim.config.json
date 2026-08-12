@@ -521,7 +521,7 @@
   //
   // The header of this file already said "in the order the derivation
   // runs (food before fuel)". It says it because of exactly this.
-  "firewood_per_split": 25,
+  "firewood_per_split": 50,
 
   // Per household, not per member: a house costs the same to heat
   // whether two live in it or five. That makes SPRAWL the thing that

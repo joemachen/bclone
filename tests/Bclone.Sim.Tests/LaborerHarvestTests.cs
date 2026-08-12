@@ -109,21 +109,50 @@ public sealed class LaborerHarvestTests
         Assert.True(world.LogsInSheds() > before, "Cleared timber never reached a store.");
     }
 
-    /// <summary>Nothing painted, nothing cleared — the brush is the only way to fell.</summary>
+    /// <summary>Nothing painted, nobody clearing — the brush is the only way to fell.</summary>
     /// <remarks>
-    /// The anti-vacuity half (D7). A guard that watches the forest shrink means nothing
-    /// unless a village left alone leaves it standing.
+    /// <para>
+    /// The anti-vacuity half (D7). A guard that watches the forest shrink means nothing unless
+    /// a village left alone leaves it standing.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT WATCHES THE ERRAND NOW, NOT THE TREE COUNT, and that is a correction rather
+    /// than a loosening.</b> Comparing <c>CountForest</c> across a year was only ever a proxy,
+    /// and by now three legitimate things move that number with no paint anywhere: a
+    /// forester's hut fells the ground the <em>player gave it</em>, which is a different
+    /// instruction from the brush; building on a tile clears it; and D126 grows wood back
+    /// through <c>Sapling</c>, which is not yet <c>Forest</c>. It failed at 2,647 against
+    /// 2,662 — fifteen tiles of the village doing exactly what it is told.
+    /// </para>
+    /// <para>
+    /// The sentence the title makes is about <em>who fells what they were not asked to</em>,
+    /// so it asserts on <see cref="VillagerState.Clearing"/>: with nothing painted, nobody
+    /// should ever be on that errand. Checked every tick, because a stray clearer who starts
+    /// and finishes inside the year would leave a count-based guard none the wiser.
+    /// </para>
     /// </remarks>
     [Fact]
     public void UnpaintedForestIsLeftAlone()
     {
         SimConfig config = VillageFixtures.Village;
         SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
 
-        int before = CountForest(loop.World);
-        loop.Step(config.TicksPerYear);
+        Assert.True(CountForest(world) > 0, "A valley with no trees proves nothing here.");
+        Assert.Equal(0, world.Zones.HarvestTiles);
 
-        Assert.Equal(before, CountForest(loop.World));
+        for (int tick = 0; tick < config.TicksPerYear; tick++)
+        {
+            loop.Step(1);
+
+            foreach (Villager villager in world.Villagers)
+            {
+                Assert.True(
+                    !villager.Alive || villager.State != VillagerState.Clearing,
+                    $"Tick {world.Tick}: {villager.Name} is clearing ground with nothing "
+                    + "painted anywhere. The brush is meant to be the only way to fell.");
+            }
+        }
     }
 
     // ---------------------------------------------------------------
@@ -226,29 +255,57 @@ public sealed class LaborerHarvestTests
     //  The edges
     // ---------------------------------------------------------------
 
-    /// <summary>Painting a whole forest and letting it finish leaves nobody stuck.</summary>
+    /// <summary>Painted ground outlives its trees, and nobody gets stuck on it.</summary>
     /// <remarks>
-    /// The failure worth guarding: a villager who walks to a tile somebody else already
-    /// felled, and stands there. Runs long enough that the painted ground is exhausted and
-    /// the village has to go back to ordinary life.
+    /// <para>
+    /// The failure worth guarding has not changed: a villager who walks to a tile somebody
+    /// else already felled, and stands there. Ten years is long enough for every painted tree
+    /// to have come down at least once.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THIS GUARD USED TO ASSERT THE OPPOSITE OF THE GAME'S RULE, and it is worth saying
+    /// why rather than just fixing it.</b> It was called
+    /// <c>WhenThePaintedGroundRunsOutEverybodyGoesBackToWork</c> and it demanded
+    /// <c>HarvestTiles == 0</c> — painted ground was expected to consume itself as it was
+    /// worked. D127 makes paint a <em>standing instruction</em> in Joe's words: <i>"the paint
+    /// should remain and the area should be reharvested when it grows back. It's up to the
+    /// user to clear the paint."</i> So the old assert now fails on correct behaviour, and
+    /// leaving it would have meant deleting D127 to make a test pass.
+    /// </para>
+    /// <para>
+    /// With D126 growing the wood back, clearing is no longer a task that ends — it is
+    /// ordinary standing work, so "everybody goes back to work" is not a state this village
+    /// reaches and asserting nobody is <c>Clearing</c> would be asserting the paint had
+    /// stopped meaning anything. What still has to be true is that the instruction survives
+    /// its trees, that it is actually being <em>worked</em> rather than stared at, and that
+    /// ten years of it does not end the village.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void WhenThePaintedGroundRunsOutEverybodyGoesBackToWork()
+    public void PaintedGroundOutlivesItsTreesAndNobodyGetsStuck()
     {
         SimConfig config = VillageFixtures.Village;
         SimLoop loop = Loop(config);
         SimWorld world = loop.World;
 
-        PaintForestNear(world, 6);
+        int painted = PaintForestNear(world, 6);
         loop.Step(config.TicksPerYear * 10);
 
         _output.WriteLine(
-            $"{world.Zones.HarvestTiles} tiles still painted, {world.Population} alive");
+            $"{painted} painted, {world.Zones.HarvestTiles} still painted ten years on, "
+            + $"{world.Population} alive, {world.LogsInSheds()} logs in store");
 
-        Assert.Equal(0, world.Zones.HarvestTiles);
-        Assert.DoesNotContain(
-            world.Villagers,
-            villager => villager.Alive && villager.State == VillagerState.Clearing);
+        Assert.True(painted > 0, "Nothing was painted, so this proves nothing.");
+
+        // D127: harvesting does not rub the paint out. Only the player does.
+        Assert.Equal(painted, world.Zones.HarvestTiles);
+
+        // And it was worked rather than ignored — the timber has to have arrived somewhere.
+        Assert.True(
+            world.LogsInSheds() > 0,
+            "Ten years of painted woodland and not one log in the shed: the ground is "
+            + "painted and nobody is working it.");
+
         Assert.True(world.Population > 0);
     }
 

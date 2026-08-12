@@ -323,6 +323,40 @@ public readonly record struct LabourQuota
         int buildersAfforded = Math.Min(buildersWanted, free / 2);
         int builders = Take(ref free, Cap(buildersAfforded, TotalCapacityFor(world, JobKind.Builder)));
 
+        // ⭐ AND A LOG LIMIT SET ABOVE WHAT THE VILLAGE SPENDS IS AN AMBITION (D130). Joe:
+        // *"the village should want timber it isn't spending if the user sets a limit above
+        // what the village uses — that is a stockpile/growth play tool for the user."*
+        //
+        // **Every other reason to fell was demand-driven**, and that is the trap this fixes:
+        // foresters were wanted only to feed the fuel chain and the houses already marked, so
+        // the village could never save up for anything — it cut exactly what it was about to
+        // burn. Measured, and the measurement is the whole argument: making fuel cheaper made
+        // the shortage WORSE. `firewood_per_split` 7 → 50 dropped fuel from 60% of all timber
+        // to 41%, and total production fell 365 → 174 logs with the village holding 78 at the
+        // end instead of 137. A cheaper habit is not a woodpile. Nothing was ASKING.
+        //
+        // So an unmet log limit asks. It is the instruction a stock limit has always been —
+        // *how much to keep* — read in the direction nobody had built yet: a met limit stops
+        // the work, and now an unmet one starts it.
+        //
+        // ⚠️ AND IT MAY NEVER TAKE MORE THAN HALF THE HANDS THAT ARE LEFT, which cost a run to
+        // learn. Taken uncapped it filled every forester seat in the village, and the "free"
+        // hands it drank were never idle — they are the labourers who carry food to the
+        // larders and firewood to the homes. Twelve years at a 200-log ambition: the woodpile
+        // worked, 174 → 266 logs produced and 242 held, and **the population fell from ten to
+        // four**. A village that hauls nothing starves beside full sheds, which is D29's
+        // lesson arriving through the player's own number.
+        //
+        // Half is the margin building already uses (above) and for the same reason. Placed
+        // after building too, because a stockpile is the most discretionary want in the
+        // village: houses the player marked are a plan, and a number in a box is a wish.
+        if (limits.For(Goods.Logs) is int wantedInStore && world.LogsInSheds() < wantedInStore)
+        {
+            foresters += Take(
+                ref free,
+                Cap(free / 2, TotalCapacityFor(world, JobKind.Forester) - foresters));
+        }
+
         int marketers = Take(ref free, Cap(marketersWanted, TotalCapacityFor(world, JobKind.Marketer)));
 
         // Everyone still spare forages. Berries keep, and a hand that gathers nothing

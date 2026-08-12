@@ -177,13 +177,35 @@ public sealed class ForesterHutTests
         int woodedBefore = CountOwnedForest(world, hut);
         world.SetStaffing(hut, hut.Capacity);
 
-        loop.Step(config.TicksPerYear * 3);
+        // ⚠️ THE LOW-WATER MARK, NOT THE COUNT AT THE END, AND D126 IS WHY. This read the
+        // owned woodland after three years and asked whether it had shrunk — which was the
+        // right question in a valley where nothing grew back. It is the wrong one now: the
+        // ground is re-wooded in about a year, so three years of hard felling can finish on
+        // the same count it started with. **The test began failing because the valley got
+        // better, not because the forester stopped working.**
+        //
+        // What the claim actually is — *felling takes the wood off the map where the player
+        // can see the gap* — is a statement about the gap existing, not about it being
+        // permanent. So sample it: the wood must be visibly thinner at some point than the
+        // day the hut was staffed.
+        // Measured when this was written: 13 tiles given, 13 wooded at the start and 13 at
+        // the end — and **48 logs in the shed**. The felling was never in doubt.
+        int thinnest = woodedBefore;
+        for (int step = 0; step < config.TicksPerYear * 3; step += 10)
+        {
+            loop.Step(10);
+            int now = CountOwnedForest(world, hut);
+            if (now < thinnest)
+            {
+                thinnest = now;
+            }
+        }
 
-        int woodedAfter = CountOwnedForest(world, hut);
-        _output.WriteLine($"{given} tiles given; wooded {woodedBefore} → {woodedAfter} "
-            + $"after three years, {world.LogsInSheds()} logs in store");
+        _output.WriteLine($"{given} tiles given; wooded {woodedBefore} → thinnest {thinnest} → "
+            + $"{CountOwnedForest(world, hut)} after three years, "
+            + $"{world.LogsInSheds()} logs in store");
 
-        Assert.True(woodedAfter < woodedBefore,
+        Assert.True(thinnest < woodedBefore,
             "Three years of foresters and not one tree came down on their own ground.");
     }
 
