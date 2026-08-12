@@ -821,6 +821,18 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D125 · 2026-08-11 · ⛔ MEASURED: the village fells its own gatherer's ring and starves beside a valley that is still 97% wooded. `professions.md §6.1` predicted this in as many words, and D112 overruled it on an argument that does not hold.** Step C's long-horizon guards, warm start, 150 years:
+
+  | year | alive | hut yield | valley forest | food |
+  |---|---|---|---|---|
+  | 15 | 12 | 59 of 145 | 2,629 | 1,089 |
+  | 30 | 13 | **18** | 2,581 | 0 |
+  | 45 | **0** — 13 starved | 11 | 2,573 | 0 |
+
+  - **⭐ IT IS NOT DEFORESTATION. It is fifty-six trees in exactly the wrong place.** The valley loses 2% of its woodland and the hut loses 92% of its yield, because the ground a village clears — house footprints, construction sites, the forester's own owned ground — **is** the gatherer's ring. Both are near the village, and *"timber and food compete for the same trees"* is working precisely as designed. What is missing is any counterweight.
+  - **The spec called it.** `professions.md §6.1`: *"**no forest, no food** is a starvation trap while the valley cannot come back. The harvest brush can clear every tree; natural regrowth is not built. A player who clears their woods would lose their food supply with no way to restore it — **the one genuinely uncozy state §0.1 rules out**."* Its prescription was **natural regrowth first, then the gatherer's hut**.
+  - **⚠️ D112 overruled that, and the reason it gave has a hole in it.** *"With planting ungated, planting is the recovery and regrowth is optional."* **Planting is a player action.** A forester plants only when the player switches that hut's mode, so a village nobody is managing has no recovery at all — which is exactly the case every long-horizon guard in this project exercises, and exactly what the table above measures. The argument was sound about a *played* village and silent about an unplayed one.
+  - **Joe's own playthrough is not evidence against this**, and it is worth saying why: he reached year 11, and the collapse here begins at year 30. A human clearing and re-painting ground is doing by hand what regrowth would do by itself.
 - **D124 · 2026-08-10 · Buildings are numbered, which overturns D56 for the buildings and leaves it standing for the places.** Joe: *"name them numerically — gatherer's hut 1, gatherer's hut 2 — eventually we will let the user rename them."*
   - **The collision it fixes.** Every building of a kind was called the same thing, so two gatherer's huts both reported as *"a gatherer's hut"* and no sentence in the game could tell them apart. That is exactly D56's problem arriving from the other side: the generated places it fixed with bearings are retiring, and the player-placed buildings replacing them never had names of their own.
   - **⭐ Why a number beats a bearing here, which is the opposite of what I proposed.** D56 ruled that *"Forage Site 3 is a row in a table"* and gave places bearings instead — and it was right, **about places the generator dropped and the player had no relationship with.** A building the player sited needs no help being remembered. A bearing would also collide again (there are eight of them) and would be **wrong the moment renaming lands**, which Joe has already said is where this is going. *A number is the honest placeholder for a name somebody is going to type.*
