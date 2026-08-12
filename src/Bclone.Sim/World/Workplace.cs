@@ -210,26 +210,25 @@ public sealed class Workplace
     /// whatever "untouched" means, not against <c>Harvest</c> by name.
     /// </para>
     /// <para>
-    /// <b>⚠️ THE TWO MODES ARE EXCLUSIVE, and this default is worth understanding before
-    /// relying on it.</b> <c>SimWorld</c> picks the tiles by mode — <c>wantsTrees = Mode ==
-    /// Harvest</c> — so a hut set to <see cref="WorkMode.Plant"/> walks to <em>bare</em> ground
-    /// and puts saplings in it, and never fells anything. A new hut on fully wooded ground has
-    /// no bare tile to plant and so does nothing at all until the player switches it.
+    /// <b>⚠️ THE MODES USED TO BE EXCLUSIVE, AND FLIPPING THIS DEFAULT ON THAT READING FAILED
+    /// EIGHT TESTS.</b> <c>wantsTrees = Mode == Harvest</c> meant a hut set to
+    /// <see cref="WorkMode.Plant"/> walked to bare ground and <em>never felled anything</em> —
+    /// so the default flip broke <c>ItFellsItsOwnGroundAndTheWoodRecedes</c>,
+    /// <c>ItIsAForestersWorkplace</c> and, worst, D130's stockpile tool. A village whose
+    /// foresters plant by default had no timber industry at all.
     /// </para>
     /// <para>
-    /// <b>⛔ SO PLANTING-BY-DEFAULT WAS TRIED AND REVERTED, AND THE MEASUREMENT IS THE REASON.</b>
-    /// Flipping this constant to <see cref="WorkMode.Plant"/> failed <b>eight tests</b> at once,
-    /// and the list says exactly what it does: <c>ItFellsItsOwnGroundAndTheWoodRecedes</c>,
-    /// <c>ItIsAForestersWorkplace</c>, and — the one that matters —
-    /// <c>ALogLimitAboveWhatTheVillageSpendsIsAnAmbitionAndNotAceiling</c>, the stockpile tool
-    /// Joe asked for in D130. **A village whose foresters plant by default has no timber
-    /// industry at all**, which is the opposite of the complaint driving this branch.
+    /// <b>⭐ D137 fixed the reading rather than the default.</b> Joe's screenshot settled what he
+    /// meant — the per-building toggle reads <em>"Planting: off"</em> and he wants it on:
+    /// <i>"when the user builds a forester hut and paints the area, the hut toggle for planting
+    /// is off and I want it to be on by default."</i> That is a forester who <b>tends</b> a
+    /// wood — fells it, and puts it back — not one who stops felling. Planting is a second
+    /// errand now: trees first while any stand on their ground, bare tiles when none do.
     /// </para>
     /// <para>
-    /// Held pending Joe's call, because the likely reading is the other one: <i>plant once
-    /// there is nothing left to fell on their own ground</i>. That is a change at the
-    /// tile-picking call site (<c>wantsTrees</c> in <c>SimWorld</c>) rather than a default here,
-    /// and it gives a forester who replants without ever stopping felling.
+    /// Which is what makes this default safe, and what makes the toggle mean its label:
+    /// switching planting off now costs the replanting and nothing else, rather than silently
+    /// being the switch that decides whether the hut produces anything.
     /// </para>
     /// </remarks>
     public WorkMode Mode { get; set; } = DefaultMode;
@@ -240,7 +239,7 @@ public sealed class Workplace
     /// silently move every golden in the suite — which is a trap that was walked into and out
     /// of once already, and the constant is what stops the next attempt hitting it.
     /// </summary>
-    public const WorkMode DefaultMode = WorkMode.Harvest;
+    public const WorkMode DefaultMode = WorkMode.Plant;
 
     /// <summary>Villagers currently holding a job here, in id order.</summary>
     public List<int> WorkerIds { get; } = new();

@@ -127,7 +127,10 @@ public sealed class ForesterHutTests
 
         Assert.Equal(JobKind.Forester, hut.Kind);
         Assert.Equal(VillageEconomy.RequiredTreeStandSeats(Config), hut.Capacity);
-        Assert.Equal(WorkMode.Harvest, hut.Mode);
+        // D137: a new hut TENDS its wood — fells while trees stand, replants when none do.
+        // Joe: "the hut toggle for planting is off and I want it to be on by default."
+        Assert.Equal(WorkMode.Plant, hut.Mode);
+        Assert.Equal(Workplace.DefaultMode, hut.Mode);
     }
 
     /// <summary>Putting a tree back costs more than taking one down — and it is derived.</summary>
@@ -258,10 +261,16 @@ public sealed class ForesterHutTests
         hut.Mode = WorkMode.Plant;
         world.SetStaffing(hut, hut.Capacity);
 
+        // ⚠️ HALF A YEAR, NOT A YEAR, AND D137 IS WHY. The claim is that *the planting errand*
+        // yields nothing, and it still holds — but a tending forester now fells whatever is
+        // standing on their ground, and D126 grows a sapling into a tree inside a year. Run for
+        // a full year and the hut correctly plants its bare ground, waits for it, and starts
+        // felling it, so "planting brings nothing back" stops being a statement about planting
+        // and becomes a statement about how fast the valley grows.
         int logsBefore = world.TotalLogs();
-        loop.Step(config.TicksPerYear);
+        loop.Step(config.TicksPerYear / 2);
 
-        _output.WriteLine($"a year of planting: logs {logsBefore} → {world.TotalLogs()}");
+        _output.WriteLine($"half a year of planting: logs {logsBefore} → {world.TotalLogs()}");
 
         // Other people are still felling elsewhere, so this asserts the planters themselves
         // never turn up carrying anything.
@@ -292,8 +301,14 @@ public sealed class ForesterHutTests
 
         Assert.Equal(StateHash.Compute(untouched), StateHash.Compute(switched));
 
+        // ⚠️ SWITCHED TO `Harvest`, WHICH IS NOW THE NON-DEFAULT (D137). This set `Plant`,
+        // which was the switch until Joe made tending the default — after which "switching
+        // one" meant setting it to what it already was, and the hash correctly did not move.
+        // The guard is about the sentinel tracking the default, so it has to switch AWAY from
+        // whatever the default currently is.
         Workplace stand = switched.Workplaces.First(place => place.Kind == JobKind.Forester);
-        stand.Mode = WorkMode.Plant;
+        Assert.Equal(Workplace.DefaultMode, stand.Mode);
+        stand.Mode = WorkMode.Harvest;
 
         Assert.NotEqual(StateHash.Compute(untouched), StateHash.Compute(switched));
     }

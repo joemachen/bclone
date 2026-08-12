@@ -752,7 +752,36 @@ public sealed class SimWorld
             return null;
         }
 
-        bool wantsTrees = workplace.Mode == WorkMode.Harvest;
+        // ⭐ PLANTING IS SOMETHING A FORESTER ALSO DOES, NOT INSTEAD OF FELLING (Joe, D137).
+        //
+        // It used to be a straight either/or — `Mode == Harvest` picked wooded tiles, anything
+        // else picked bare ones — so a hut with planting switched on **never felled another
+        // tree**. Turning it on by default was tried on that reading and failed eight tests
+        // including D130's stockpile tool: a village whose foresters plant by default has no
+        // timber industry at all.
+        //
+        // Joe's actual ask, once the screenshot made it plain: *"when the user builds a
+        // forester hut and paints the area, the hut toggle for planting is off, and I want it
+        // to be on by default."* A forester who tends their wood — fells it, and puts it back.
+        // So planting is a SECOND ERRAND rather than a different job: **trees first while any
+        // are standing on their ground, bare tiles when none are.**
+        //
+        // That also makes the toggle mean what its label says. "Planting: off" now costs you
+        // the replanting and nothing else, instead of quietly being the only switch that
+        // decides whether the hut produces anything.
+        bool tendsTheWood = workplace.Mode == WorkMode.Plant;
+        bool anyStanding = false;
+
+        if (tendsTheWood)
+        {
+            for (int i = 0; i < owned.Count && !anyStanding; i++)
+            {
+                anyStanding = Map.TerrainAt(Zones.PositionOf(owned[i])) == Terrain.Forest;
+            }
+        }
+
+        // Fell while there is anything to fell; plant only once the ground is bare.
+        bool wantsTrees = !tendsTheWood || anyStanding;
 
         GridPos? best = null;
         int bestCost = int.MaxValue;

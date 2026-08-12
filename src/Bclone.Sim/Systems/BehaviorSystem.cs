@@ -2281,7 +2281,11 @@ public sealed class BehaviorSystem : ISimSystem
                     // It carries nothing home, which is why it is a mode rather than a job:
                     // a forester who plants all year feeds nobody, and that is the trade the
                     // player is making when they switch it.
-                    if (wood_.Mode == WorkMode.Plant)
+                    // ⭐ WHAT IS ON THE TILE DECIDES, NOT THE MODE (D137). `NextGroundToWork`
+                    // sends a tending forester to a standing tree while any remain and to bare
+                    // ground only when none do, so asking the mode here would plant on top of
+                    // the tree it just walked to. Bare ground gets a sapling; a tree gets felled.
+                    if (world.Map.TerrainAt(tile) != Terrain.Forest)
                     {
                         world.Plant(tile);
                         villager.State = VillagerState.Idle;
