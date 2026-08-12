@@ -53,6 +53,15 @@ public static class VillageFixtures
                 // system for firewood to compete inside (D17, D29).
                 FirewoodPerWinterDay = 1,
 
+                // ⚠️ AND THE BURN INTERVAL THE GAME ACTUALLY SHIPS. Found by a probe asking
+                // why a village was not breeding: the fixture wanted **43 firewood in every
+                // larder** before anybody could have a child, where the shipped file wants
+                // 11 — because the interval landed in `data/sim.config.json` and never here,
+                // so every test in the suite was running a fuel economy four times hungrier
+                // than the game. That gap is precisely what METHODOLOGY §3 exists for and
+                // what D48, D49 and D50 each were.
+                FirewoodBurnIntervalDays = 4,
+
                 // A real valley, generated (D18). The forage sites and the tree stands
                 // this used to ask for are retired — food comes from a hut the player
                 // sites in woodland, and the woodland is painted across the whole valley

@@ -379,10 +379,36 @@ public readonly record struct LabourQuota
 
     /// <summary>What the player asked for on this kind of work, or what the village decided.</summary>
     /// <remarks>
-    /// <b>Bounded by the seats that exist and by the people who exist</b>, and by nothing else.
-    /// It is deliberately allowed to exceed what the village would have chosen — that is the
-    /// whole reason the control exists — and deliberately allowed to be zero, which is how a
-    /// player turns a profession's hands back into laborers.
+    /// <para>
+    /// <b>Bounded by the seats that exist, the people who exist, and — since D128 — by a
+    /// stock limit that has been reached.</b> It is still deliberately allowed to exceed what
+    /// the village would have chosen, which is the whole reason the control exists, and still
+    /// allowed to be zero, which is how a player turns a profession's hands into laborers.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE STOCK LIMIT WAS BEING IGNORED, AND IT IS D127's CHANGE THAT EXPOSED IT.</b>
+    /// A limit works by zeroing the village's own figure above; the player's number was then
+    /// applied over the top, bounded only by seats and hands. That was harmless while every
+    /// profession defaulted to <em>"village decides"</em> and this method returned
+    /// <c>decided</c> — and the moment the tick came off the panel, every profession carried
+    /// an explicit number from the first frame and **no stock limit could stop any work
+    /// again**. Joe, playing: *"they are ignoring the limits for firewood. 452 at a limit of
+    /// 50 and they keep cutting more."*
+    /// </para>
+    /// <para>
+    /// <b>And it was two bugs wearing one coat.</b> Woodcutters that never stop turn every
+    /// log into firewood, so the same run had **452 firewood and 8 logs**, and no granary or
+    /// shed could ever be afforded — *"even when they clear half a forest every year, there
+    /// aren't enough logs to build."*
+    /// </para>
+    /// <para>
+    /// <b>A stock limit is a stop, not a preference</b>, which is what the panel says it is:
+    /// <em>how much to keep before the work stops</em>. So a limit that has been reached wins
+    /// over the staffing number. That is a narrow exception to D106's *applied last* rule,
+    /// and the distinction is worth keeping: D106 was protecting the player's number from the
+    /// food floor and the building cap — the village's own opinions — not from another
+    /// instruction the player gave.
+    /// </para>
     /// </remarks>
     private static int Asked(SimWorld world, JobKind kind, int decided, int hands)
     {
@@ -391,10 +417,30 @@ public readonly record struct LabourQuota
             return decided;
         }
 
+        // The village's figure is already zero when a limit has been met, so this is simply
+        // "a stop the player set outranks a number the player set".
+        if (decided == 0 && StoppedByAStockLimit(world, kind))
+        {
+            return 0;
+        }
+
         int seats = TotalCapacityFor(world, kind);
         int bounded = asked < seats ? asked : seats;
         return bounded < hands ? bounded : hands;
     }
+
+    /// <summary>Whether this kind of work is one a reached stock limit puts a stop to.</summary>
+    /// <remarks>
+    /// Only the two that make a good the player can cap. A gatherer is governed by the food
+    /// limit through the food floor rather than here, because stopping the food chain dead
+    /// is how a village starves with a full granary and an empty larder (D79).
+    /// </remarks>
+    private static bool StoppedByAStockLimit(SimWorld world, JobKind kind) => kind switch
+    {
+        JobKind.Woodcutter => world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInSheds()),
+        JobKind.Forester => world.StockLimits.IsMet(Goods.Logs, world.LogsInSheds()),
+        _ => false,
+    };
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
     private static int Take(ref int free, int wanted)
