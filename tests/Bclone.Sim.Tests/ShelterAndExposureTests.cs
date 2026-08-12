@@ -228,10 +228,23 @@ public sealed class ShelterAndExposureTests
         // not "somebody froze once in three hundred years" — it is "break the chain in a
         // way a player could cause, and people freeze."
         //
-        // A split yielding one firewood is a village whose woodcutter cannot keep up
-        // however many hands it puts on the hut.
-        SimConfig broken = Config with { FirewoodPerSplit = 1 };
+        // ⚠️ IT USED TO BREAK THE CHAIN WITH `FirewoodPerSplit = 1` — a village whose
+        // woodcutter cannot keep up however many hands it puts on the hut — and **that stopped
+        // freezing anybody**, which is worth reading as a result rather than a broken test.
+        // Joe asked for firewood to burn four times slower ("make firewood consumption take
+        // longer, like 4x longer") and `firewood_burn_interval_days: 4` delivered it. A trickle
+        // of one firewood per split is now enough to heat the village. The fuel chain got hard
+        // to break by starving its yield.
+        //
+        // ⭐ SO IT IS BROKEN THE WAY A PLAYER ACTUALLY BREAKS IT, which this guard's own words
+        // asked for all along — *"break the chain in a way a player could cause"*. A config
+        // constant no player can reach was always the weaker version of that. A firewood limit
+        // of zero is the strongest: the game warns and then obeys (D42, D62), the quota reads
+        // the limit as met and staffs nobody, and no firewood is ever made again. It is the
+        // one road to freezing that the player is genuinely driving down.
+        SimConfig broken = Config;
         SimLoop loop = Build(broken);
+        loop.World.SetStockLimit(Goods.Firewood, 0);
         loop.Step(broken.TicksPerYear * 100);
 
         int froze = 0;
@@ -243,7 +256,7 @@ public sealed class ShelterAndExposureTests
             }
         }
 
-        _output.WriteLine($"{froze} froze with a woodcutter who cannot keep up.");
+        _output.WriteLine($"{froze} froze in a village the player told to keep no firewood.");
 
         Assert.True(froze > 0,
             "Nobody froze in a village whose fuel chain cannot produce enough firewood to heat " +
