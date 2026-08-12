@@ -46,7 +46,23 @@ public static class Phase0Fixtures
         EatReducesHunger = 80,
         FoodPerMeal = 5,
         StarvationTicks = 24,
-        GatherYield = 28,
+        // ⚠️ 28 -> 80, AND IT IS THE SAME WORLD RATHER THAN A RICHER ONE. `gather_yield` is
+        // what a trip is worth at a FULLY WOODED ring now; what a villager actually brings
+        // home is that scaled by how wooded their hut's ring really is
+        // (`SimWorld.GatherYieldAt`). Phase 0's lone villager gathers at the warm start's
+        // gatherer's hut, whose ring is about as wooded as the valley — so 28 became about
+        // ten a trip and she starved at 37 instead of dying of old age at 45.
+        //
+        // 28 x 100/35 = 80 puts an AVERAGE ring back where it was — and 80 still starved
+        // seeds 99 and 777777, because how wooded a particular hut's ring is varies by
+        // valley and those two came in under the average. **This fixture is called `Plenty`
+        // and its job is that food is never the constraint** (`Scarcity` is where the other
+        // case lives), so it is set with real margin rather than to the mean: 120 is 28 a
+        // trip at a ring only 23% wooded.
+        //
+        // The arithmetic is written out rather than derived because Phase 0's target is its
+        // own — one villager, no dependants — and `VillageEconomy` solves for the village's.
+        GatherYield = 120,
         GatherTicks = 3,
         TravelTicksPerUnit = 1,
         StockpileTarget = 60,

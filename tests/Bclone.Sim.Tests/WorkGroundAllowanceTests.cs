@@ -31,19 +31,28 @@ public sealed class WorkGroundAllowanceTests
     private static SimLoop Loop() =>
         SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
 
-    /// <summary>A workplace with people actually assigned to it.</summary>
+    /// <summary>A workplace with people assigned to it and <b>no ground of its own yet</b>.</summary>
+    /// <remarks>
+    /// <b>The second condition is new and the tests here need it.</b> Every guard in this
+    /// class paints ground and then asks what the village makes of it, which assumes the
+    /// workplace started with none — and since the berry patches retired, the warm start
+    /// founds a forester's hut *with* ground, because a forester with nothing to fell is a
+    /// village with no timber. Picking that hut made "ground nobody painted" a hut already
+    /// holding 119 tiles, and three guards reported the founding rather than the mechanic.
+    /// </remarks>
     private static Workplace AStaffedWorkplace(SimWorld world, out int hands)
     {
         foreach (Workplace place in world.Workplaces)
         {
-            if (place.WorkerIds.Count > 0)
+            if (place.WorkerIds.Count > 0 && world.Zones.WorkGroundTiles(place.Id) == 0)
             {
                 hands = place.WorkerIds.Count;
                 return place;
             }
         }
 
-        throw new Xunit.Sdk.XunitException("No workplace in the village has anybody at it.");
+        throw new Xunit.Sdk.XunitException(
+            "No workplace in the village has anybody at it and no ground of its own.");
     }
 
     /// <summary>Tiles near the founding site that are not water, so painting takes.</summary>

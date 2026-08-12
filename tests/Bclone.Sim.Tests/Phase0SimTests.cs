@@ -180,7 +180,18 @@ public sealed class Phase0SimTests
         }
 
         Assert.Equal(1, loop.World.Villager.TotalGathers);
-        Assert.Equal(Config.GatherYield, loop.World.Villager.CarriedFood + loop.World.Stockpile.Food);
+
+        // ⚠️ AGAINST WHAT THIS HUT IS WORTH, NOT AGAINST THE CONFIG KEY. `gather_yield` is
+        // the value of a trip at a FULLY WOODED ring; what a villager actually carries home
+        // is that scaled by how wooded their own hut's ring is (`GatherYieldAt`), which is
+        // the whole of "less trees, less food". Comparing against the raw key asserted the
+        // yield of a hut standing in unbroken forest, which no hut ever is.
+        Workplace hut = loop.World.Workplaces.Single(
+            place => place.Kind == JobKind.Forager && !place.IsSite);
+
+        Assert.Equal(
+            loop.World.GatherYieldAt(hut),
+            loop.World.Villager.CarriedFood + loop.World.Stockpile.Food);
     }
 
     [Fact]
