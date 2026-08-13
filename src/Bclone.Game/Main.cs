@@ -1615,7 +1615,7 @@ public partial class Main : Control
     /// <summary>The store on the selected tile, if the selection is one.</summary>
     private StoreBuilding? SelectedStore()
     {
-        if (_map.SelectedTile is not GridPos tile)
+        if (_selectedTile is not GridPos tile)
         {
             return null;
         }
