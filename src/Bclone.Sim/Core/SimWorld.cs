@@ -1379,6 +1379,78 @@ public sealed class SimWorld
     /// learns to click past.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Tell a store whether it will take a kind of goods. The one door in (D141).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe: <i>"user should be able to set which materials are stored in which buildings."</i>
+    /// Routed through the world rather than set on the building, for the reason
+    /// <see cref="SetTerrain"/> is (D85): this is hashed state, and state the view can poke
+    /// directly is state nothing can guard.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT NARROWS ONLY.</b> Asking a granary to take logs is refused rather than obeyed —
+    /// what a kind can hold is the model (D32), not a preference. So the verdict says no, and
+    /// says why, instead of producing a granary full of timber.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict SetStoreAccepts(StoreBuilding store, Goods goods, bool accepted)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        // Start from "everything this kind can hold", so the first click narrows rather than
+        // wiping. A mask of zero means no opinion, and turning one good off has to leave the
+        // others on — otherwise the first click would empty the building.
+        int mask = store.AllowedGoods;
+        if (mask == 0)
+        {
+            for (int g = 0; g < Stockpile.Kinds; g++)
+            {
+                if (store.CanEverHold((Goods)g))
+                {
+                    mask |= 1 << g;
+                }
+            }
+        }
+
+        // The player has now spoken, and that has to be recorded separately from WHAT they
+        // said — otherwise switching off the last good lands back on zero, which means "no
+        // opinion", and the store silently starts accepting everything again.
+        mask |= StoreBuilding.Spoken;
+
+        int bit = 1 << (int)goods;
+
+        if (accepted)
+        {
+            // The kind is the authority on what is possible, and the player is not.
+            if (!store.CanEverHold(goods))
+            {
+                return PlacementVerdict.No(
+                    $"{store.Name} is a {store.Kind.ToString().ToLowerInvariant()}, and a "
+                    + $"{goods.ToString().ToLowerInvariant()} is not something it can hold.");
+            }
+
+            mask |= bit;
+        }
+        else
+        {
+            mask &= ~bit;
+        }
+
+        store.AllowedGoods = mask;
+
+        // Said once, when it is set, rather than nagged every tick — D42's rule.
+        if (mask == StoreBuilding.Spoken)
+        {
+            return PlacementVerdict.Yes(
+                $"{store.Name} will take nothing now. Anything carried to it will be set down "
+                + "on the ground instead.");
+        }
+
+        return PlacementVerdict.Yes(string.Empty);
+    }
+
     public PlacementVerdict SetStockLimit(Goods goods, int? limit)
     {
         if (!StockLimits.Set(goods, limit))

@@ -63,6 +63,7 @@ public partial class Main : Control
     private Label _groundLabel = null!;
     private Button _modeButton = null!;
     private HBoxContainer _storeRow = null!;
+    private HBoxContainer _acceptRow = null!;
     private Button _fullMarkerButton = null!;
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
@@ -506,6 +507,19 @@ public partial class Main : Control
             _fullMarkerButton.Text = _map.FullMarkerShownFor(store.Id)
                 ? "Marker: ON"
                 : "Marker: off";
+        }
+
+        _acceptRow.Visible = store is not null;
+        if (store is not null)
+        {
+            foreach ((Goods goods, Button button) in _acceptButtons)
+            {
+                // Shown only where the KIND could hold it — a granary is not offered "iron".
+                // Asked of a bare copy so the player's own filter does not hide the button
+                // that would turn it back on.
+                button.Visible = store.CanEverHold(goods);
+                button.ButtonPressed = store.Accepts(goods);
+            }
         }
 
         // The queue controls only mean anything for something still being built — and they
@@ -1598,6 +1612,43 @@ public partial class Main : Control
         _fullMarkerButton = new Button { Text = "Marker: ON" };
         _fullMarkerButton.Pressed += ToggleSelectedFullMarker;
         _storeRow.AddChild(_fullMarkerButton);
+
+        // ⭐ WHAT THIS BUILDING WILL TAKE (Joe, D141): *"a given storage pile will only accept
+        // logs, another only firewood, another only iron ore. Set at the building level."*
+        //
+        // One button per good, built once and shown or hidden by what the KIND can hold — so a
+        // granary offers "food" and nothing else, and the player is never presented with a
+        // choice the model would refuse. The refusal still exists in `SetStoreAccepts`, because
+        // a control that cannot be misused and a rule that cannot be broken are different
+        // things and only the second one survives somebody calling it from elsewhere.
+        _acceptRow = new HBoxContainer { Visible = false };
+        _acceptRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_acceptRow);
+
+        _acceptRow.AddChild(Muted("Takes:"));
+
+        for (int g = 0; g < Stockpile.Kinds; g++)
+        {
+            var goods = (Goods)g;
+            var button = new Button { Text = GoodsName(goods), ToggleMode = true };
+            button.Pressed += () => ToggleSelectedAccepts(goods);
+            _acceptRow.AddChild(button);
+            _acceptButtons.Add((goods, button));
+        }
+    }
+
+    private readonly List<(Goods Goods, Button Button)> _acceptButtons = new();
+
+    /// <summary>Turn one kind of goods on or off for the selected store.</summary>
+    private void ToggleSelectedAccepts(Goods goods)
+    {
+        if (SelectedStore() is not StoreBuilding store)
+        {
+            return;
+        }
+
+        Warn(_loop.World.SetStoreAccepts(store, goods, !store.Accepts(goods)));
+        RefreshInspector(_loop.World);
     }
 
     /// <summary>Silence, or restore, the full-store ring on the selected store.</summary>

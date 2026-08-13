@@ -220,6 +220,16 @@ public static class StateHash
         {
             hash = MixUInt32(hash, (uint)world.StoreBuildings[i].Id);
             hash = MixStore(hash, world.StoreBuildings[i].Store);
+
+            // And which goods the player has told this store to take (D141). SILENT UNTIL
+            // SOMEBODY SETS ONE, in the same shape and for the same reason as the queue rank
+            // and the work mode above: zero is "they have not said", which is every store in
+            // every village that has never used the control, so those hash exactly as they did
+            // before filters existed and not one golden moves for the feature landing.
+            if (world.StoreBuildings[i].AllowedGoods != 0)
+            {
+                hash = MixUInt32(hash, (uint)world.StoreBuildings[i].AllowedGoods);
+            }
         }
 
         // ---- Goods on the ground (D96) ----
