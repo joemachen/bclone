@@ -1512,6 +1512,29 @@ public sealed class BehaviorSystem : ISimSystem
         // the yard empty.
         if (villager.CanWork && job?.Kind == JobKind.Woodcutter)
         {
+            // ⭐ A MET LIMIT STOPS THE WORK, NOT JUST THE HIRING (D139). Joe: *"the woodcutter
+            // keeps making firewood way past the limit."* He was right, and the panel heading
+            // says what it should have been doing all along — *"how much to keep before the
+            // work stops"*.
+            //
+            // The limit only ever reached `LabourQuota`, which decides how many woodcutters the
+            // village ASKS for. Since D109 the player's number is the one that staffs the hut,
+            // so a woodcutter Joe posted himself went on splitting for ever and the limit never
+            // touched them. Measured once the shed was big enough to show it:
+            // **firewood settled at 401 against a limit of 40.**
+            //
+            // Checked here, where the work actually happens, so it holds however the villager
+            // came to be standing at the hut. Not an idle villager — they fall through to the
+            // spare work below, which is the same thing a woodcutter with no logs does.
+            if (world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInSheds()))
+            {
+                villager.WorkNote =
+                    $"Nothing to split — you asked the village to keep "
+                    + $"{world.StockLimits.For(Goods.Firewood)} firewood and it has "
+                    + $"{world.FirewoodInSheds()}.";
+            }
+            else
+            {
             // The nearest shed that actually has a batch in it. Naming THAT shed rather
             // than "the shed" is the point of the refusal: with more than one, "the
             // shed has no logs" would be a sentence the player could not check.
@@ -1547,6 +1570,16 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 villager.State = VillagerState.TravelingToHut;
                 Travel(world, villager, job.Position, VillagerState.MakingFirewood);
+            }
+
+            return;
+            }
+
+            // Held by the limit: idle from their trade, so they take spare work — the same
+            // ranking a woodcutter with an empty yard takes, for the same reason.
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            {
+                GoHome(world, villager);
             }
 
             return;

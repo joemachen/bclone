@@ -358,7 +358,25 @@ public partial class Main : Control
         for (int i = 0; i < _stockLimitReadouts.Count; i++)
         {
             (Goods goods, Label held) = _stockLimitReadouts[i];
-            held.Text = $"have {HeldFor(world, goods)}";
+
+            // ⭐ THE ROW SAYS WHETHER A LIMIT IS ACTUALLY IN FORCE (D139), and it did not.
+            //
+            // Joe: *"the woodcutter keeps making firewood way past the limit."* He was reading
+            // a spin box that said 200 beside a stock of 570 and concluding the sim ignored it.
+            // The sim was obeying perfectly — **there was no limit**. `SetStockLimit` is called
+            // from `ValueChanged`, so a row the player never touches shows its default number
+            // while the good is uncapped. He typed 2000 into Food, so Food bound; he left
+            // Firewood on its default, so Firewood was free.
+            //
+            // A number displayed as though it were a rule, which is not one, is the panel
+            // lying — and it is a regression I introduced removing the "village decides" tick,
+            // because that tick was the thing that used to say "this number is not in force".
+            // Read from the sim rather than from the widget: the label cannot drift from the
+            // state it describes.
+            int? limit = world.StockLimits.For(goods);
+            held.Text = limit is null
+                ? $"no limit · have {HeldFor(world, goods)}"
+                : $"stop at {limit.Value} · have {HeldFor(world, goods)}";
         }
 
         // The same glance for the professions: how many are actually on this work, and how
@@ -2485,10 +2503,12 @@ public partial class Main : Control
             CustomMinimumSize = new Vector2(110, 0),
         };
 
-        var clear = new Button { Text = "no limit", Flat = true, Disabled = true };
+        // "Clear" rather than "no limit", because the label beside it now REPORTS whether
+        // there is a limit and a button must not read like a state (D139).
+        var clear = new Button { Text = "clear", Flat = true, Disabled = true };
 
         Label held = Muted(string.Empty);
-        held.CustomMinimumSize = new Vector2(90, 0);
+        held.CustomMinimumSize = new Vector2(190, 0);
 
         void Set(int? limit)
         {

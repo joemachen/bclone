@@ -927,7 +927,26 @@ public static class VillageEconomy
         int logs = (households * FirewoodStoreWantedPerHousehold(config) * config.LogsPerSplit
             / (config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit)) + config.LogsPerHouse;
 
-        return firewood + logs;
+        // ⭐ AND NEVER LESS THAN A GRANARY (Joe, D139), which is this method's own stated
+        // intent finally enforced rather than assumed. The paragraph above promises the shed
+        // is *"deliberately more generous than the granary"*, because food is what regulates
+        // the village and a second ceiling fighting the first is Non-Negotiable 1 failing —
+        // the player cannot tell which constraint stopped them.
+        //
+        // ⛔ IT HAD INVERTED BY AN ORDER OF MAGNITUDE: 343 against the granary's 2,850. The
+        // derivation prices the logs needed to MAKE the winter's firewood, so raising
+        // `firewood_per_split` to 50 (Joe, chasing a different problem) divided that term by
+        // seven and quietly shrank the shed. A number derived from one lever moving under
+        // another is exactly what D134 then measured — a village at **Logs 15 in store and
+        // 1,968 on the ground**, capped from year five, which is what Joe played for
+        // twenty-seven years and read as "there's never enough wood".
+        //
+        // The floor is the granary's own capacity rather than a typed constant, so the two
+        // cannot drift apart again and the promise above stays true by construction.
+        int wanted = firewood + logs;
+        int floor = GranaryCapacity(config);
+
+        return wanted < floor ? floor : wanted;
     }
 
     /// <summary>
