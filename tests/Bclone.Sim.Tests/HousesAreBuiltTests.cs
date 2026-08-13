@@ -375,6 +375,124 @@ public sealed class HousesAreBuiltTests
         Assert.Equal(queue.Count - 1, world.QueuePositionOf(last));
     }
 
+    /// <summary>⭐ And the village actually builds it first — the control reaches the builders.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The gap this closes is the one D144 is about.</b> Everything else here tests
+    /// <em>queue order</em> — a predicate — and <c>TheHeadOfTheQueueIsWhatTheBuildersGoTo</c>
+    /// tests that builders serve the head. Between them the conclusion follows, and "follows"
+    /// is exactly what was true of the store filter for a day: five guards, all correct, none
+    /// of them ever making a villager put something down.
+    /// </para>
+    /// <para>
+    /// So this presses the button the player presses and then watches the valley: mark a
+    /// granary and then a shed, send the shed to the front, and the shed must be what gets
+    /// raised. <b>The anti-vacuity half is the arm that presses nothing</b> — the same village,
+    /// left alone, must finish the granary first, or this would pass on a queue that was never
+    /// reordered.
+    /// </para>
+    /// <para>
+    /// <b>On a living village rather than the founding, deliberately.</b> The first attempt used
+    /// the cold start, and both arms reported *"nothing finished in 12 years — 0 alive"*: the
+    /// founders die long before a granary is raised, so it was measuring a dead valley twice.
+    /// That is D143's ruling arriving as a test-design constraint — an unattended founding is
+    /// not a place to watch a twelve-year race.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void MovingASiteToTheFrontIsWhatTheVillageBuildsFirst()
+    {
+        SimConfig config = VillageFixtures.Village;
+
+        static BuildingKind? FirstRaised(SimConfig config, bool promote, ITestOutputHelper output)
+        {
+            SimLoop loop = Loop(config);
+            SimWorld world = loop.World;
+
+            // A village on its feet, with hands and timber, so the race is about the queue.
+            loop.Step(config.TicksPerYear * 20);
+
+            int granariesBefore = Granaries(world);
+            int shedsBefore = Sheds(world);
+
+            MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 5);
+            MarkSomewhereNear(world, BuildingKind.Shed, world.Map.FoundingSite, 7);
+
+            System.Collections.Generic.List<Workplace> queue = world.BuildQueue();
+            Assert.True(queue.Count >= 2, "Both sites must be queued for there to be a race.");
+
+            Workplace shed = queue[^1];
+            Assert.Equal(BuildingKind.Shed, shed.Construction!.Kind);
+
+            if (promote)
+            {
+                while (world.QueuePositionOf(shed) > 1)
+                {
+                    Assert.True(world.MoveInBuildQueue(shed, -1));
+                }
+            }
+
+            // Watch what FINISHES first, rather than what stands at the end of a horizon —
+            // a horizon would let both be built and say nothing about the order.
+            for (int tick = 0; tick < config.TicksPerYear * 12; tick++)
+            {
+                loop.StepOnce();
+
+                if (Sheds(world) > shedsBefore)
+                {
+                    output.WriteLine(
+                        $"{(promote ? "promoted" : "left alone")}: the shed finished first, "
+                        + $"year {world.Clock.Year}");
+                    return BuildingKind.Shed;
+                }
+
+                if (Granaries(world) > granariesBefore)
+                {
+                    output.WriteLine(
+                        $"{(promote ? "promoted" : "left alone")}: the granary finished first, "
+                        + $"year {world.Clock.Year}");
+                    return BuildingKind.Granary;
+                }
+            }
+
+            output.WriteLine(
+                $"{(promote ? "promoted" : "left alone")}: nothing finished in 12 years — "
+                + $"{world.Population} alive, {world.BuildQueue().Count} sites queued, "
+                + $"{world.TotalLogs()} logs");
+            return null;
+        }
+
+        BuildingKind? leftAlone = FirstRaised(config, promote: false, _output);
+        BuildingKind? promoted = FirstRaised(config, promote: true, _output);
+
+        Assert.True(leftAlone is not null && promoted is not null,
+            "Nothing was ever built in either village, so this guard proves nothing (D7).");
+
+        // Anti-vacuity: left alone, the queue must genuinely have raised the other one first.
+        Assert.Equal(BuildingKind.Granary, leftAlone!.Value);
+
+        Assert.Equal(BuildingKind.Shed, promoted!.Value);
+    }
+
+    private static int Granaries(SimWorld world) => StoresOfKind(world, StoreKind.Granary);
+
+    private static int Sheds(SimWorld world) => StoresOfKind(world, StoreKind.Shed);
+
+    private static int StoresOfKind(SimWorld world, StoreKind kind)
+    {
+        int count = 0;
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (store.Kind == kind)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+
     /// <summary>Nothing moves off either end, and the view is told so.</summary>
     [Fact]
     public void ASiteCannotBeMovedOffEitherEndOfTheQueue()

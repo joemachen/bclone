@@ -1589,6 +1589,39 @@ public sealed class BehaviorSystem : ISimSystem
         // something to do in winter - which is part of why the job is worth holding.
         if (villager.CanWork && job?.Kind == JobKind.Forester)
         {
+            // ⭐ A MET LIMIT STOPS THE WORK, NOT JUST THE HIRING — D139's rule, and D145 is the
+            // record that D139 only ever applied it to the woodcutter. `LabourQuota` has arms
+            // for BOTH timber jobs (`StoppedByAStockLimit`), so the planner obeyed a Logs limit
+            // while the doer had never heard of it: a forester the PLAYER posted felled for
+            // ever past the number in the box. Measured before the fix — **138 logs held
+            // against a limit of 68** — which is Joe's own D139 complaint, one job over, found
+            // by sweeping the controls rather than by him hitting it again.
+            //
+            // ⚠️ IT STOPS THE PLANTING TOO, AND THAT IS THE CHOICE RATHER THAN AN OVERSIGHT.
+            // A tending forester's second errand adds no logs, so it could have been allowed to
+            // continue — but planting costs `PlantTicks`, three times a fell, and freeing hands
+            // is half of what a limit is for (D130: *"free hands are not idle hands"*). A player
+            // who caps timber to get their labourers back would not expect the hut to go on
+            // spending them on saplings. The panel says *how much to keep before the work
+            // stops*, and this is the work stopping.
+            if (world.StockLimits.IsMet(Goods.Logs, world.LogsInSheds()))
+            {
+                villager.WorkNote =
+                    $"Nothing to fell — you asked the village to keep "
+                    + $"{world.StockLimits.For(Goods.Logs)} logs and it has "
+                    + $"{world.LogsInSheds()}.";
+
+                // Idle from their trade, so they take spare work — the same ranking, in the
+                // same order, that the woodcutter's own limit branch and the bottom of Decide
+                // take. Two copies of one ranking is how they come to disagree.
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
+                return;
+            }
+
             // ⭐ A FORESTER'S HUT WORKS ITS OWN GROUND (D86, `forests-and-gathering.md`), where
             // a tree stand is an inexhaustible spot you stand on. So the question is which of
             // MY tiles to work next — a wooded one to fell, or a bare one to plant, depending

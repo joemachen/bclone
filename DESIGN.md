@@ -705,7 +705,16 @@ there, because it is the slice that opens that method.
   it over twenty years** — and the five guards D141 shipped with all stopped at the predicate.
   **The lesson generalises: a control tested at its predicate and never at its deposit is a
   control nobody has tested.**
-- **Where the suite stands: 543 passing, 7 failing, 9 skipped of 559** (was 533 / 13 / 9 of 555
+- **Every player control swept for that gap** ✅ (D145, Joe's ask). Ten controls audited against
+  one question — *does the player's state reach the code that does the work?* **One more found:
+  a met Logs limit never reached the forester**, D139's fix one job over, measured at 138 logs
+  held against a limit of 68. The build queue was correct-by-composition and is now guarded end
+  to end; the food limit's guard was nearly vacuous and got a control arm. **The rule the clean
+  ones share: one door.** `WorkerIds.Add` has a single call site, `LabourQuota` is the
+  allocator's only source, and both `Harvest` call sites are player-instructed — a control is
+  safe when its state is read at a chokepoint, and at risk the moment there are two ways to do
+  the thing. **That is the check to run when the next control is designed, not after it ships.**
+- **Where the suite stands: 546 passing, 7 failing, 9 skipped of 562** (was 533 / 13 / 9 of 555
   at the start of the session). **Everything left is either a golden held back on purpose or
   already-queued work** — three hash goldens (`StockLimitTests` ×2 and `DrawOrderIsTheContract`),
   three map-generation guards, and `OldAgeCostsMoreWorkForTheSameFood`, which Joe parked.
@@ -873,6 +882,26 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D145 · 2026-08-13 · ⭐ EVERY PLAYER CONTROL SWEPT FOR D144'S GAP — one more found, one thin spot closed, and the rest are clean.** Joe: *"sweep the rest of the controls for the same gap."* The question asked of each: **does the player's state reach the code that does the work, or only a planner something else can bypass?** That is the shape of D128, D139, D142 and D144 — four bugs, one form.
+
+  | control | player state | reaches the doer? |
+  |---|---|---|
+  | Store filter | `AllowedGoods` | ⛔ → ✅ **D144** |
+  | Planting toggle | `Workplace.Mode` | ⛔ → ✅ **D142** |
+  | Stock limit — firewood | `StockLimits` | ✅ D139 |
+  | **Stock limit — logs** | `StockLimits` | ⛔ → ✅ **fixed here** |
+  | Stock limit — food | `StockLimits` | ✅ — and now guarded with a control arm |
+  | Staffing (− N +) | `StaffingOverride` | ✅ one door |
+  | Professions panel | `JobLimits` | ✅ via the quota, one door |
+  | Build queue ▲▼ | `QueueRank` | ✅ — thin, now guarded end to end |
+  | Harvest / work-ground / residential brushes | `ZoneMap` | ✅ |
+  | Full-store marker | `VillageMap` | ✅ view-only by design (D140) |
+
+  - **⛔ THE ONE FOUND IS D139'S BUG, ONE JOB OVER.** `LabourQuota.StoppedByAStockLimit` has arms for **both** timber jobs; the check D139 added to the *doer* exists only in the woodcutter's branch. So the planner obeyed a Logs limit and the forester had never heard of it — **measured, 138 logs held against a limit of 68**, a forester the player posted felling for ever past the number in the box. Fixed where the work happens, so it holds however the villager came to be at the hut.
+    - **⚠️ It stops the planting too, and that is a choice.** A tending forester's second errand adds no logs, so it could have gone on — but planting costs `PlantTicks`, three times a fell, and **freeing hands is half of what a limit is for** (D130: *"free hands are not idle hands"*). A player who caps timber to get their labourers back would not expect the hut to spend them on saplings.
+  - **⚠️ The food arm nearly shipped a vacuous guard, which is the same disease as D144 rather than a separate slip.** A one-armed *"a food limit stops a gatherer the player posted"* passed **before** any fix — because gathering is gated on `needsFood`, which asks whether the granary is below what the village has **ROOM** for. The granary's own capacity was doing the stopping, and the limit was proving nothing. It has a control arm now: an uncapped village must be shown to pass the limit first.
+  - **The thin spot: the build queue was correct by composition and untested end to end.** `MovingASiteUpTheQueueMovesItExactlyOnePlace` tests order, `TheHeadOfTheQueueIsWhatTheBuildersGoTo` tests that builders serve the head, and the conclusion *follows* — which is exactly what was true of the store filter for a day. Now pressed and watched: mark a granary then a shed, send the shed to the front, and the shed is what goes up; left alone, the granary is. **The first attempt at that guard measured a dead valley twice** (*"nothing finished in 12 years — 0 alive"*), which is D143's ruling arriving as a test-design constraint: an unattended founding is not a place to watch a twelve-year race.
+  - **What makes the clean ones clean is worth stating, because it is the design rule.** `StaffingOverride`, `JobLimits` and the brushes are safe for one reason: **there is exactly one door**. `WorkerIds.Add` has a single call site, guarded by `IsFull`; `LabourQuota` is the allocator's only source; both `world.Harvest` call sites are player-instructed (painted ground, and D138's builder clearing the tile a building was marked on). **A control is safe when its state is read at a chokepoint, and at risk the moment there are two ways to do the thing.** That is the thing to check when the next control is designed — before it ships, not after Joe plays it.
 - **D144 · 2026-08-13 · ⛔ THE STORE FILTER WAS ANSWERED BY THE PREDICATE AND IGNORED BY THE VILLAGE — D132'S BUG, ONE PREDICATE OVER, AND THE THIRD TIME A TIMBER PATH HAS DECIDED BY SOMETHING OTHER THAN WHAT A STORE WILL HOLD.** Joe, playing D141 the day after it landed: *"my logs-only storage pile allowed firewood. I set it to logs-only as soon as it was built."*
   - **⭐ THE REASON FIVE GUARDS MISSED IT IS THE FINDING.** `StoreFilterTests` had a test for turning one good off, for a granary refusing to be widened, for the empty case, and for the sparse hash — **and not one of them ever made a villager put anything down.** All five ask `Accepts` and get the right answer, because `Accepts` was never broken. **A feature tested at its predicate and never at its deposit is a feature nobody has tested**, and that is the shape to look for the next time a control ships with a full-looking file of guards.
   - **The woodcutter, and why Joe's pile in particular.** `MakingFirewood` splits out of the nearest store *holding logs* and puts the firewood straight back into it — asking only whether that store was **full**. So the one store guaranteed to be chosen was a store that takes logs, which is exactly what his filter was about. Measured against the broken code: **1,500 firewood into a shed refusing it over twenty years — every piece the village made.**

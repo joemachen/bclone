@@ -575,4 +575,134 @@ public sealed class StockLimitTests
             $"Stockpiling cost lives: {ambitious.World.Population} alive against "
             + $"{content.World.Population} in the same village that never bothered.");
     }
+
+    // ---------------------------------------------------------------
+    //  ⭐ A limit the player set outranks a hut the player staffed (D145)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Post somebody at every workplace of a kind, the way the player does, and hand back
+    /// how many seats were filled.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is the half the quota cannot reach, and it is where these bugs live.</b>
+    /// <c>LabourQuota</c> decides how many of a job the village <em>asks for</em>; since D109
+    /// the player's own number is what staffs the building. So every guard that runs an
+    /// unattended village is testing the planner, and the player is testing the doer.
+    /// </remarks>
+    private static int StaffEvery(SimWorld world, JobKind kind)
+    {
+        int seats = 0;
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Kind == kind && !workplace.IsSite)
+            {
+                world.SetStaffing(workplace, workplace.Capacity);
+                seats += workplace.Capacity;
+            }
+        }
+
+        return seats;
+    }
+
+    /// <summary>⭐ A met log limit stops a forester the player posted.</summary>
+    /// <remarks>
+    /// <b>D139's bug, one job over</b> — found by sweeping the controls after D144 rather than
+    /// by Joe hitting it. The check D139 added lives in the woodcutter's branch and nowhere
+    /// else, while <c>LabourQuota.StoppedByAStockLimit</c> has arms for <em>both</em> timber
+    /// jobs. So the planner obeys a Logs limit and the doer never heard of it, and a forester
+    /// the player staffed fells for ever past the number in the box.
+    /// </remarks>
+    [Fact]
+    public void ALogLimitStopsAForesterThePlayerPosted()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        loop.Step(config.TicksPerYear * 20);
+        Assert.True(StaffEvery(world, JobKind.Forester) > 0, "Nowhere to post a forester.");
+
+        int atTheLimit = world.LogsInSheds();
+        world.SetStockLimit(Goods.Logs, atTheLimit + 20);
+        loop.Step(config.TicksPerYear * 15);
+
+        int held = world.LogsInSheds();
+        _output.WriteLine(
+            $"logs in store: {atTheLimit} when the limit of {atTheLimit + 20} was set, "
+            + $"{held} fifteen years later.");
+
+        // Generous, for the reason AFirewoodLimitStopsTheWoodcutters gives: work in flight
+        // lands after the limit bites, so the stock overshoots a little and then holds.
+        Assert.True(held <= atTheLimit + 20 + (config.CutYield * 4),
+            $"Logs settled at {held} against a limit of {atTheLimit + 20}. A forester the "
+            + "player posted is still felling past the number in the box (D139, one job over).");
+    }
+
+    /// <summary>⭐ And a met food limit stops a gatherer the player posted.</summary>
+    /// <remarks>
+    /// <para>
+    /// The same gap on the third good. <c>LabourQuota</c> zeroes foragers outright when
+    /// <c>IsMet(Food, FoodInGranaries())</c>, so the intent that a food limit stops the
+    /// gathering is already the design — it simply never reached the branch where gathering
+    /// actually happens.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ And it is the one that can cost lives, so it is obeyed rather than argued with
+    /// (D42).</b> The saying-so happens once, when the limit is set — <c>SetStockLimit</c>
+    /// warns about a number below the survival floor and then does as it is told. A control
+    /// that quietly declines to work on the one good that matters is worse than one that
+    /// obeys: the player would have no way to tell it apart from a bug.
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// <b>⚠️ TWO ARMS, BECAUSE THIS ONE CAN PASS VACUOUSLY AND ALMOST DID.</b> Gathering is
+    /// gated on <c>needsFood</c> — my larder is short, <em>or</em> the granary is below what
+    /// the village has ROOM for — so a granary near its capacity stops the gatherers whatever
+    /// the player asked for. A one-armed version of this guard was green before the fix, and
+    /// it was green because <c>FoodTheVillageHasRoomFor</c> was already binding. **The control
+    /// arm is what makes the number mean the limit rather than the ceiling** — the same shape
+    /// as <c>TheUnlimitedVillageReallyWouldHavePassedThatLimit</c>, and D52's lesson that a
+    /// comparative test has two villages and either can be the broken one.
+    /// </remarks>
+    [Fact]
+    public void AFoodLimitStopsAGathererThePlayerPosted()
+    {
+        SimConfig config = VillageFixtures.Village;
+        int settle = config.TicksPerYear * 20;
+        int after = config.TicksPerYear * 10;
+
+        SimLoop capped = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        capped.Step(settle);
+        Assert.True(StaffEvery(capped.World, JobKind.Forager) > 0, "Nowhere to post a gatherer.");
+
+        int start = capped.World.FoodInGranaries();
+        int limit = start + 100;
+        capped.World.SetStockLimit(Goods.Food, limit);
+        capped.Step(after);
+
+        SimLoop free = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        free.Step(settle);
+        StaffEvery(free.World, JobKind.Forager);
+
+        int freePeak = 0;
+        for (int tick = 0; tick < after; tick++)
+        {
+            free.StepOnce();
+            freePeak = System.Math.Max(freePeak, free.World.FoodInGranaries());
+        }
+
+        _output.WriteLine(
+            $"food in granaries: {start} when the limit of {limit} was set, "
+            + $"{capped.World.FoodInGranaries()} ten years later; "
+            + $"the same village uncapped peaked at {freePeak}.");
+
+        Assert.True(freePeak > limit,
+            $"An uncapped village never got past {freePeak} against a limit of {limit}, so the "
+            + "limit bound nothing and this guard proves nothing (D7). The granary's own "
+            + "capacity is the thing to suspect — gathering is gated on room, not on the limit.");
+
+        Assert.True(capped.World.FoodInGranaries() <= limit + (config.GatherYield * 4),
+            $"Food settled at {capped.World.FoodInGranaries()} against a limit of {limit}.");
+    }
 }
