@@ -591,48 +591,74 @@ public sealed class LabourAllocationTests
     /// the only thing left that can exclude anybody.
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// <b>⚠️ MEASURED AT THE PEAK RATHER THAN AT YEAR 150 (D143).</b> Joe: <i>"an unattended
+    /// village should die out. The user needs to play the game at some point."</i> Nobody sites
+    /// a building or paints a tile in this run, so the headcount at year 150 says how long a
+    /// village coasts, not whether the allocator works. <b>Growth is the claim</b> — and the
+    /// pair-counting is read on the year the village was largest, where it means something,
+    /// rather than off the two survivors at the end.
+    /// </remarks>
     [Fact]
     public void TheVillageSurvivesAndGrowsWithNoDistanceFenceAtAll()
     {
         SimConfig config = Config;
         SimLoop loop = Build(config);
 
-        loop.Step(config.TicksPerYear * 150);
-        SimWorld world = loop.World;
-
+        int peak = 0;
+        int peakYear = 0;
         int reachable = 0;
         int unreachable = 0;
-        foreach (Villager villager in world.Villagers)
+
+        for (int year = 1; year <= 150; year++)
         {
-            if (!villager.Alive || !villager.CanWork)
+            loop.Step(config.TicksPerYear);
+            if (loop.World.Population <= peak)
             {
                 continue;
             }
 
-            foreach (Workplace workplace in world.Workplaces)
+            peak = loop.World.Population;
+            peakYear = year;
+            reachable = 0;
+            unreachable = 0;
+
+            foreach (Villager villager in loop.World.Villagers)
             {
-                if (LabourAllocator.CanReach(world, villager, workplace))
+                if (!villager.Alive || !villager.CanWork)
                 {
-                    reachable++;
+                    continue;
                 }
-                else
+
+                foreach (Workplace workplace in loop.World.Workplaces)
                 {
-                    unreachable++;
+                    if (LabourAllocator.CanReach(loop.World, villager, workplace))
+                    {
+                        reachable++;
+                    }
+                    else
+                    {
+                        unreachable++;
+                    }
                 }
             }
         }
 
+        SimWorld world = loop.World;
         _output.WriteLine(
-            $"Year {world.Clock.Year}: {world.Population} alive in {world.Households.Count} houses. " +
-            $"Villager/workplace pairs — {reachable} walkable, {unreachable} cut off.");
+            $"Peaked at {peak} in year {peakYear}; year {world.Clock.Year}: {world.Population} " +
+            $"alive in {world.Households.Count} houses. Villager/workplace pairs at the peak — " +
+            $"{reachable} walkable, {unreachable} cut off.");
 
         // ⚠️ NO CLAIM ABOUT `unreachable` ANY MORE, in either direction. It used to have to be
         // positive, because a fence that reaches everything constrains nothing; with the fence
         // gone the only thing that can cut a workplace off is water, and whether a given seed's
         // river cuts anybody off is a property of that valley rather than of this design.
         // Asserting either way would be asserting something about seed 12345's geography.
-        Assert.True(world.Population > config.StartingPopulation,
-            $"The village did not survive without a distance fence: {world.Population} alive.");
+        Assert.True(peak >= 25,
+            $"The village never grew without a distance fence: it peaked at {peak} from "
+            + $"{config.StartingPopulation} founders.");
+        Assert.True(reachable > 0, "Nobody could walk to any work at the village's largest.");
     }
 
     /// <summary>

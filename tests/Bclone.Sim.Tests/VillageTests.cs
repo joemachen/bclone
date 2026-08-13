@@ -396,22 +396,76 @@ public sealed class VillageTests
         }
     }
 
+    /// <summary>⭐ The derived economy feeds a village that grows, and never starves it.</summary>
+    /// <remarks>
+    /// <para>
+    /// The whole point of the derived economy. Before it, the village peaked around 18 people
+    /// and was extinct by year 91 — it grew, <b>starved</b>, and died out every single run.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT NO LONGER ASKS WHETHER ANYBODY IS ALIVE AT YEAR 150, AND THAT IS D143 RATHER
+    /// THAN A LOWERED BAR.</b> Joe: <i>"an unattended village should die out. The user needs to
+    /// play the game at some point."</i> Nobody has touched this village in a century and a
+    /// half — no hut sited, no ground painted, no second granary, no mode switched — so it
+    /// ageing out is the game working, not the economy failing. A guard that demanded otherwise
+    /// was quietly asserting that the game plays itself, and every time it went red somebody
+    /// went looking for a bug in the food chain.
+    /// </para>
+    /// <para>
+    /// <b>What survives is the claim it was actually written for</b>, and it is stronger than
+    /// the headcount ever was: the economy must carry the village <em>up</em> — measured peak
+    /// 47 from four founders — and <b>nobody may die of hunger or cold on the way</b>. That is
+    /// the failure this guard has always been about, it cannot pass vacuously, and it stays
+    /// false the moment the derivation breaks.
+    /// </para>
+    /// </remarks>
     [Fact]
     public void TheVillageSustainsItselfAcrossGenerations()
     {
-        // The whole point of the derived economy. Before it, the village peaked
-        // around 18 people and was extinct by year 91 - it grew, starved, and died
-        // out every single run.
         var (loop, _) = Build(GrowingVillage);
-        loop.Step(GrowingVillage.TicksPerYear * 150);
+
+        int peak = 0;
+        int peakYear = 0;
+        for (int year = 1; year <= 150; year++)
+        {
+            loop.Step(GrowingVillage.TicksPerYear);
+            if (loop.World.Population > peak)
+            {
+                peak = loop.World.Population;
+                peakYear = year;
+            }
+        }
+
+        int froze = 0;
+        int starved = 0;
+        int aged = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (villager.Alive)
+            {
+                continue;
+            }
+
+            switch (villager.CauseOfDeath)
+            {
+                case CauseOfDeath.Cold: froze++; break;
+                case CauseOfDeath.Starvation: starved++; break;
+                default: aged++; break;
+            }
+        }
 
         _output.WriteLine(
-            $"Year {loop.World.Clock.Year}: {loop.World.Population} alive in " +
-            $"{loop.World.Households.Count} households.");
+            $"Peaked at {peak} in year {peakYear} from {GrowingVillage.StartingPopulation} " +
+            $"founders; year {loop.World.Clock.Year}: {loop.World.Population} alive in " +
+            $"{loop.World.Households.Count} households. Deaths — {froze} froze, {starved} " +
+            $"starved, {aged} of old age.");
 
-        Assert.True(loop.World.Population > GrowingVillage.StartingPopulation,
-            $"Village is down to {loop.World.Population} from " +
-            $"{GrowingVillage.StartingPopulation} founders after 150 years.");
+        Assert.True(peak >= 25,
+            $"The village only ever reached {peak} from {GrowingVillage.StartingPopulation} " +
+            "founders, so the derived economy is not feeding a growing settlement.");
+
+        Assert.Equal(0, starved);
+        Assert.Equal(0, froze);
     }
 
     [Fact]

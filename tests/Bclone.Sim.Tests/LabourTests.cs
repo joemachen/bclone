@@ -304,20 +304,43 @@ public sealed class LabourTests
         Assert.NotEqual(before, StateHash.Compute(loop.World));
     }
 
+    /// <summary>Job-based foraging still feeds a growing village, and starves nobody.</summary>
+    /// <remarks>
+    /// Foraging is gated on holding a job. If assignment is too slow, too narrow, or drops
+    /// workers, the village starves — so the economy is the real test of the labour system.
+    /// <b>Measured on the way up rather than at year 150 (D143):</b> nobody has managed this
+    /// village for a century and a half, and Joe's ruling is that such a village <em>should</em>
+    /// age out. What the labour system owes is that everyone who is alive is fed — the peak,
+    /// and a death list with no hunger in it.
+    /// </remarks>
     [Fact]
     public void TheVillageStillSustainsItselfOnJobBasedForaging()
     {
-        // Foraging is now gated on holding a job. If assignment is too slow, too
-        // narrow, or drops workers, the village starves - so the economy is the
-        // real test of the labour system.
         SimLoop loop = Build(Config);
-        loop.Step(Config.TicksPerYear * 150);
+
+        int peak = 0;
+        for (int year = 1; year <= 150; year++)
+        {
+            loop.Step(Config.TicksPerYear);
+            peak = System.Math.Max(peak, loop.World.Population);
+        }
+
+        int starved = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (!villager.Alive && villager.CauseOfDeath == CauseOfDeath.Starvation)
+            {
+                starved++;
+            }
+        }
 
         _output.WriteLine(
-            $"Year {loop.World.Clock.Year}: {loop.World.Population} alive, " +
-            $"{loop.World.Workplaces[0].WorkerIds.Count} foraging.");
+            $"Peaked at {peak}; year {loop.World.Clock.Year}: {loop.World.Population} alive, " +
+            $"{loop.World.Workplaces[0].WorkerIds.Count} foraging, {starved} ever starved.");
 
-        Assert.True(loop.World.Population > Config.StartingPopulation);
+        Assert.True(peak >= 25,
+            $"Job-based foraging only ever fed {peak} people from {Config.StartingPopulation}.");
+        Assert.Equal(0, starved);
     }
 
     // ---------------------------------------------------------------

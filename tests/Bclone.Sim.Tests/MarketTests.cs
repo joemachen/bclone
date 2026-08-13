@@ -228,8 +228,10 @@ public sealed class MarketTests
 
         _output.WriteLine(
             $"household fetch-steps per 10,000 person-ticks: {withMarket.PerPersonTick} with a " +
-            $"market (mean population {withMarket.MeanPopulation}), {without.PerPersonTick} " +
-            $"without (mean population {without.MeanPopulation}).");
+            $"market (peak {withMarket.PeakPopulation}, mean {withMarket.MeanPopulation}, " +
+            $"{withMarket.LostToHungerOrCold} lost to hunger or cold), {without.PerPersonTick} " +
+            $"without (peak {without.PeakPopulation}, mean {without.MeanPopulation}, " +
+            $"{without.LostToHungerOrCold} lost).");
 
         Assert.True(without.Steps > 0, "Nobody ever fetched anything, so this guard is vacuous (D7).");
 
@@ -245,10 +247,30 @@ public sealed class MarketTests
         // it off may cost the village errands and stranded goods. Losing a quarter of
         // the people is not an inconvenience, it is the cliff §14.4 promises the market
         // is not — and whatever caused it will not be in this building.
-        Assert.True(without.MeanPopulation * 4 >= withMarket.MeanPopulation * 3,
-            $"The village without a market averaged {without.MeanPopulation} people against " +
-            $"{withMarket.MeanPopulation} with one. The market has become load-bearing (spec §14.4), " +
-            "and until that is fixed this test has no honest control to measure against.");
+        //
+        // ⚠️ THE RATIO AGAINST THE MARKET ARM IS GONE, AND IT IS D143 THAT RETIRES IT.
+        //
+        // It read `without.Mean * 4 >= withMarket.Mean * 3` — lose a quarter of the people and
+        // the market is load-bearing. Two things broke it, and neither is a market fault.
+        // **First, the mean stopped being about markets**: Joe's ruling is that an unattended
+        // village *should* die out, and both arms coast unmanaged for a century, so most of the
+        // mean is how fast each one runs down. Measured, they end 1 against 42 at year 150 with
+        // nothing between them but the stall — that is chaos, not a distribution finding.
+        // **Second, and worse, a ratio against the other arm fails this test when the market
+        // HELPS.** The arms now peak 47 against 33, so the better the stall does its job the
+        // redder this goes. A guard that punishes its own subject for working is the wrong
+        // shape however the numbers land.
+        //
+        // **So it asserts §14.4 in the currency §14.4 is written in.** *"Switching the market
+        // off costs the village convenience, never lives."* A smaller village is convenience;
+        // a buried one is not. Absolute, so no arm can move it, and it fires hard on the
+        // collapse the old bar was added for. Growth without a market is
+        // `TheVillageSurvivesWithTheMarketSwitchedOff`'s to guard, and it does.
+        Assert.Equal(0, without.LostToHungerOrCold);
+
+        Assert.True(without.PeakPopulation >= config.StartingPopulation * 4,
+            $"The control never got past {without.PeakPopulation} people, so it is not a living " +
+            "village and there is nothing honest to compare a market against.");
 
         // THE BAR IS DISTRIBUTION, NOT DISTANCE (D78, Joe's correction).
         //
@@ -293,8 +315,12 @@ public sealed class MarketTests
     /// <param name="Ticks">How long the run was.</param>
     /// <param name="DryHouseholdTicks">Household-ticks on an empty larder while stores held food.</param>
     /// <param name="HouseholdTicks">Living households summed over every tick — that denominator.</param>
+    /// <param name="PeakPopulation">The largest the village ever got.</param>
+    /// <param name="LostToHungerOrCold">Deaths from starvation or exposure over the run — the
+    /// only currency §14.4 says a village without a market may never be charged in.</param>
     private readonly record struct Fetching(
-        long Steps, long PersonTicks, int Ticks, long DryHouseholdTicks, long HouseholdTicks)
+        long Steps, long PersonTicks, int Ticks, long DryHouseholdTicks, long HouseholdTicks,
+        int PeakPopulation, int LostToHungerOrCold)
     {
         /// <summary>
         /// Share of household-time spent with an empty larder while the stores held food.
@@ -334,11 +360,13 @@ public sealed class MarketTests
         long personTicks = 0;
         long dry = 0;
         long householdTicks = 0;
+        int peak = 0;
         int ticks = config.TicksPerYear * 100;
 
         for (int i = 0; i < ticks; i++)
         {
             loop.StepOnce();
+            peak = System.Math.Max(peak, loop.World.Population);
 
             foreach (Villager villager in loop.World.Villagers)
             {
@@ -385,7 +413,17 @@ public sealed class MarketTests
             }
         }
 
-        return new Fetching(steps, personTicks, ticks, dry, householdTicks);
+        int lost = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (!villager.Alive
+                && villager.CauseOfDeath is CauseOfDeath.Starvation or CauseOfDeath.Cold)
+            {
+                lost++;
+            }
+        }
+
+        return new Fetching(steps, personTicks, ticks, dry, householdTicks, peak, lost);
     }
 
     [Fact]
