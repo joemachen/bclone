@@ -674,8 +674,28 @@ there, because it is the slice that opens that method.
   - **Everything that followed came from playing it, and every guess about this economy was
     wrong at least once:** lifespan 55–80 (Joe), regrowth (D126), persistent harvest paint
     (D127), stock limits repaired (D128), demolition (D129), and the log ambition (D130).
-- **Still to come in step C:** the three goldens re-taken **last**, one stated reason each; the
-  twelve-seed arm and the cold start re-measured; then merge back to `phase/2-wood-fuel-and-tools`.
+- **The six unattributed failures are attributed, and one of them was a real bug** ✅ (D142).
+  Six guards had gone red across D136–D141 with nobody able to say which change did it, and
+  reasoning by elimination had named the wrong commit. **Bisect and controlled reverts** —
+  each of these tests runs in ten seconds, so a real bisect was always cheaper than the
+  argument about it.
+  - **Four (`WorkGroundAllowanceTests`) were a fixture that searched for its own precondition**
+    and threw when the founded village stopped happening to satisfy it. It builds the condition
+    now; the forester behaviour is untouched.
+  - **One (`TheVillageSurvivesWithTheMarketSwitchedOff`) was D137 charging `PlantTicks` for
+    every fell** — 12 ticks against a `cut_ticks` of 4, village-wide, invisible. Fixed, and
+    both halves of the mode-versus-errand rule now live in one predicate with a guard each.
+    **⛔ And fixing it took the suite from 13 red to 14, on purpose**: the slow fell was
+    hiding what planting-by-default costs, and three long-horizon guards now say the village
+    falls to 1 by year 151. **Green again the moment planting is off by default — Joe's
+    call, and the top of the queue.**
+  - **One (`OldAgeCostsMoreWorkForTheSameFood`) has two causes, both of them things Joe asked
+    for** — planting-by-default and D139's shed floor — so it is a guard to re-base and it
+    needs his call. **See D142.**
+- **Still to come in step C:** `OldAgeCostsMoreWorkForTheSameFood` re-based (Joe's call); the
+  three map-generation guards and `FirewoodTests`' long-horizon swing; then the three goldens
+  re-taken **last**, one stated reason each; the twelve-seed arm and the cold start re-measured;
+  then merge back to `phase/2-wood-fuel-and-tools`.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -831,6 +851,14 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D142 · 2026-08-13 · ⛔⭐ EVERY FELL IN THE VILLAGE WAS BILLING THREE TIMES ITS OWN PRICE, because D137 changed two call sites and there were three.** Six guards went red across D136–D141 and none of them was attributed. Attributed here **by bisect and controlled reverts**, which is what the elimination reasoning in the handoff could not do — *"remaining suspect by elimination is D138"* was wrong, and D138 is exonerated.
+  - **D137 made planting a second errand rather than a different job** — *trees first while any stand on their ground, bare tiles when none do* — and its own commit named the two places that had to carry that. The third is the **action's duration**, which still read `Mode == Plant ? PlantTicks : CutTicks`. That was correct while the modes were exclusive and became wrong the moment tending was the default: from D137 on, a forester who walked to a **tree** and came home with **logs** was charged `PlantTicks`. **Measured: 12 ticks per fell against a `cut_ticks` of 4.** Nothing on the screen said so — the villager still felled, just slowly — which is why 550 tests and a played opening all missed it.
+  - **It cost D36's acceptance test.** `TheVillageSurvivesWithTheMarketSwitchedOff` fell to **0 alive at year 300**, and that guard exists precisely to say the market is a convenience and never load-bearing. Fixing the price alone restores it. *(D131's 5–47 swing is the fragility underneath; this is what pushed the trough through the floor.)*
+  - **And the other place kept only the other half.** The outcome asked the tile alone, so a hut reading *"Planting: off"* planted a sapling whenever the tree it had walked out to was gone by the time it arrived. That is the toggle silently not meaning its label — the exact thing D137 set out to fix. **Both halves now live in one predicate** (`IsPlantingErrand`), so the duration and the outcome cannot disagree about which job is being done.
+  - **⛔⭐ AND FIXING THE PRICE IS WHAT REVEALS D137'S REAL COST — the mispricing had been hiding it, and this is the finding Joe has to rule on.** A forester who fells at a third of the proper speed **almost never runs their ground bare**, so almost never reaches the planting errand. Price the fell correctly and they clear their ground quickly, then spend `PlantTicks` — three times a fell, carrying nothing home — putting it back. **Measured: the fixture village falls from 26 alive to 1 by year 151**, and with `DefaultMode` set back to `Harvest` and this fix in place, all of it is green again. `TheVillageSustainsItselfAcrossGenerations`, `TheVillageStillSustainsItselfOnJobBasedForaging` and `TheMarketKeepsLardersFromRunningDry` are the three that say so; nobody starves and nobody freezes, so it is D131's birth gate again rather than a famine.
+    - **The fix stays and the default is not touched.** A fell that bills three times its own price is indefensible whatever it does to a number, and leaving it in so the suite reads better is the exact trap this project keeps writing down. **Planting-by-default is Joe's, so what to do about the cost is Joe's** — off by default, or planting that yields while the village is short (the shape `NobodyWorksTheMarketWhileTheVillageIsShortOfFood` and D130's half-the-hands cap both already use), or something else.
+  - **⚠️ `AgeingTests.OldAgeCostsMoreWorkForTheSameFood` is NOT fixed by this, and it has two causes rather than one.** Removing *either* leaves it red; removing both makes it green. They are **D137's planting-by-default** — a forester tending its wood makes the gatherer's ring richer over a lifetime, so a trip in old age is worth *more* and the trip count falls — and **D139's shed floor**, which changes what the lone Phase 0 villager spends her years doing. Measured: 1.23 young against **1.09** old at HEAD, **1.14** with the shed floor removed, green with planting off as well. **Both are things Joe asked for, so this is a guard to re-base rather than a bug to fix, and it is his call.**
+  - **⚠️ The four `WorkGroundAllowanceTests` were a fixture, not a mechanic.** `AStaffedWorkplace` *searched* the founded village for a workplace with hands and no ground of its own and threw when none matched, so four guards about the allowance were really reporting on whichever buildings the allocator had staffed that morning. D137 changed that and they went red with nothing moving. It **creates** the condition now.
 - **D141 · 2026-08-13 · A store takes what the player tells it to, and can only ever be narrowed.** Joe, item 6: *"user should be able to set which materials are stored in which buildings — e.g. a given storage pile will only accept logs, another only firewood, another only iron ore. Set at the building level."*
   - **The kind stays the authority.** A granary holds food because that is what a granary is (D32); the player's mask filters what the kind already allows and can never widen it. So the control cannot produce a store that breaks the model, only one that declines part of what it could have held — and the refusal lives in `SimWorld.SetStoreAccepts` rather than only in the view, because a control that cannot be misused and a rule that cannot be broken are different things and only the second survives another caller.
   - **Sparsely hashed**, the same contract as `QueueRank` and `Mode`: zero is "they have not said", zero mixes nothing, and a village where nobody sets a filter hashes exactly as before. No golden moves for the feature landing.

@@ -284,6 +284,138 @@ public sealed class ForesterHutTests
     }
 
     // ---------------------------------------------------------------
+    //  ⭐ The toggle means its label, and only its label (D142)
+    // ---------------------------------------------------------------
+
+    /// <summary>⭐ With planting on, a fell is still priced as a fell.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>D137 made planting a second errand and the default, and the duration went on
+    /// asking the mode</b> — <c>Mode == Plant ? PlantTicks : CutTicks</c>, which was right
+    /// while the two were exclusive. From the moment tending became the default, <b>every
+    /// fell in the village billed three times its own price</b>, and nothing on screen said
+    /// so: the forester still walked to a tree and still came home with logs, just slowly.
+    /// </para>
+    /// <para>
+    /// It cost <c>TheVillageSurvivesWithTheMarketSwitchedOff</c> — the village fell to zero
+    /// — which is D36's promise that switching the market off costs convenience and never
+    /// lives. A guard on the duration is cheaper than a 300-year one.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFellIsPricedAsAFellEvenWithPlantingOn()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAHut(world, ClearGroundNear(world));
+        Assert.Equal(WorkMode.Plant, hut.Mode);
+        Assert.True(GiveGround(world, hut, 5, wooded: true) > 0, "The hut was given no woodland.");
+        world.SetStaffing(hut, hut.Capacity);
+
+        // Anti-vacuity (D7): if the two prices were the same this guard could not fail.
+        Assert.True(VillageEconomy.PlantTicks(config) > config.CutTicks);
+
+        int fells = 0;
+        int longest = 0;
+
+        for (int tick = 0; tick < config.TicksPerYear; tick++)
+        {
+            loop.StepOnce();
+
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive
+                    || villager.WorkplaceId != hut.Id
+                    || villager.State != VillagerState.Cutting)
+                {
+                    continue;
+                }
+
+                // Only the fells. A tending forester genuinely does plant once its ground
+                // is bare, and that errand is allowed to cost what planting costs.
+                var at = new GridPos(villager.ErrandX, villager.ErrandY);
+                if (world.Map.TerrainAt(at) != Terrain.Forest)
+                {
+                    continue;
+                }
+
+                fells++;
+                longest = System.Math.Max(longest, villager.ActionTicksRemaining);
+            }
+        }
+
+        _output.WriteLine($"{fells} felling ticks watched; longest {longest} against "
+            + $"cut {config.CutTicks} and plant {VillageEconomy.PlantTicks(config)}");
+
+        Assert.True(fells > 0, "Nobody felled anything in a year, so nothing was tested.");
+        Assert.Equal(config.CutTicks, longest);
+    }
+
+    /// <summary>⭐ A hut with planting switched off never plants, even when beaten to a tree.</summary>
+    /// <remarks>
+    /// <b>The other half of the same slip.</b> D137's outcome asked the tile alone — <em>bare
+    /// ground gets a sapling</em> — with no mention of the mode, so a hut reading
+    /// <em>"Planting: off"</em> planted whenever the tree it had walked out to was gone by the
+    /// time it arrived. Rare per fell and constant across a valley, and it is the toggle
+    /// silently not meaning its label, which is §1.1.
+    /// </remarks>
+    [Fact]
+    public void PlantingOffMeansItNeverPlants()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAHut(world, ClearGroundNear(world));
+        hut.Mode = WorkMode.Harvest;
+        Assert.True(GiveGround(world, hut, 5, wooded: true) > 0, "The hut was given no woodland.");
+        world.SetStaffing(hut, hut.Capacity);
+
+        // Walk them out to a tree, then take it down from under them — the race that made
+        // this happen by itself over three hundred years, forced in a dozen ticks.
+        Villager? walker = null;
+        var target = new GridPos(0, 0);
+
+        for (int tick = 0; tick < config.TicksPerYear && walker is null; tick++)
+        {
+            loop.StepOnce();
+
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive
+                    || villager.WorkplaceId != hut.Id
+                    || villager.State != VillagerState.TravelingToTrees)
+                {
+                    continue;
+                }
+
+                var at = new GridPos(villager.ErrandX, villager.ErrandY);
+                if (world.Map.TerrainAt(at) != Terrain.Forest)
+                {
+                    continue;
+                }
+
+                walker = villager;
+                target = at;
+                break;
+            }
+        }
+
+        Assert.NotNull(walker);
+        world.Harvest(target);
+        Assert.NotEqual(Terrain.Forest, world.Map.TerrainAt(target));
+
+        // Long enough for them to arrive, spend a felling action on nothing, and move on.
+        loop.Step(config.CutTicks + VillageEconomy.PlantTicks(config) + 40);
+
+        _output.WriteLine($"planting off; {target} left as {world.Map.TerrainAt(target)}");
+
+        Assert.NotEqual(Terrain.Sapling, world.Map.TerrainAt(target));
+    }
+
+    // ---------------------------------------------------------------
     //  It changes nothing until somebody uses it
     // ---------------------------------------------------------------
 

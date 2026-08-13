@@ -2248,10 +2248,17 @@ public sealed class BehaviorSystem : ISimSystem
             // (`forests-and-gathering.md`), which is the number that decides whether
             // over-clearing is a mistake or a shrug. Stated as a multiple of felling rather
             // than as a second tick count, so the two can never drift apart.
-            villager.ActionTicksRemaining =
-                WorkplaceOf(world, villager) is { Mode: WorkMode.Plant }
-                    ? VillageEconomy.PlantTicks(world.Config)
-                    : world.Config.CutTicks;
+            //
+            // ⚠️ AND IT IS THE ERRAND THAT COSTS THAT, NOT THE MODE (D142). This asked
+            // `Mode == Plant`, which was right while the modes were exclusive and became
+            // wrong the moment D137 made planting a second errand and the default: every
+            // fell in the village started billing three times its own price, and nobody
+            // could see it because the villager still walked to a tree and came back with
+            // logs. `IsPlantingErrand` is the one place that decides, so the duration and
+            // the outcome cannot disagree about which job is being done.
+            villager.ActionTicksRemaining = IsPlantingErrand(world, villager)
+                ? VillageEconomy.PlantTicks(world.Config)
+                : world.Config.CutTicks;
             return;
         }
 
@@ -2275,6 +2282,45 @@ public sealed class BehaviorSystem : ISimSystem
     {
         villager.State = VillagerState.Gathering;
         villager.ActionTicksRemaining = config.GatherTicks;
+    }
+
+    /// <summary>
+    /// Whether the errand this forester has walked out to is a <b>planting</b> one rather
+    /// than a fell.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Both halves, in one place (D142).</b> D137 made planting a second errand rather
+    /// than a different job — <em>trees first while any stand on their ground, bare tiles
+    /// when none do</em> — and it named the two call sites that had to carry that. There
+    /// were three, and the two that were changed each kept only half the rule:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>the <b>duration</b> asked the mode alone, so with planting on by default every
+    /// <em>fell</em> in the village was billed at <c>PlantTicks</c> — three times its own
+    /// price, invisibly, because the villager still walked to a tree and came back with
+    /// logs;</item>
+    /// <item>the <b>outcome</b> asked the tile alone, so a hut with planting switched
+    /// <em>off</em> planted a sapling whenever the tree it had walked to was gone by the
+    /// time it arrived.</item>
+    /// </list>
+    /// <para>
+    /// A hut with no ground of its own is the old tree-stand behaviour and never plants;
+    /// that is the same guard <c>CompleteAction</c> puts round the tile path, so the two
+    /// cannot disagree about which job is being done.
+    /// </para>
+    /// </remarks>
+    private static bool IsPlantingErrand(SimWorld world, Villager villager)
+    {
+        Workplace? hut = WorkplaceOf(world, villager);
+
+        if (hut is null || hut.Mode != WorkMode.Plant || world.Zones.WorkGroundTiles(hut.Id) == 0)
+        {
+            return false;
+        }
+
+        return world.Map.TerrainAt(new GridPos(villager.ErrandX, villager.ErrandY))
+            != Terrain.Forest;
     }
 
     /// <summary>Apply the effect of a timed action that just finished.</summary>
@@ -2352,11 +2398,14 @@ public sealed class BehaviorSystem : ISimSystem
                     // It carries nothing home, which is why it is a mode rather than a job:
                     // a forester who plants all year feeds nobody, and that is the trade the
                     // player is making when they switch it.
-                    // ⭐ WHAT IS ON THE TILE DECIDES, NOT THE MODE (D137). `NextGroundToWork`
-                    // sends a tending forester to a standing tree while any remain and to bare
-                    // ground only when none do, so asking the mode here would plant on top of
-                    // the tree it just walked to. Bare ground gets a sapling; a tree gets felled.
-                    if (world.Map.TerrainAt(tile) != Terrain.Forest)
+                    // ⭐ WHAT IS ON THE TILE DECIDES, AND SO DOES THE MODE (D137, corrected by
+                    // D142). The tile half is why this cannot ask the mode alone —
+                    // `NextGroundToWork` sends a tending forester to a standing tree while any
+                    // remain, so a mode-only test would plant on top of the tree it just walked
+                    // to. But the mode half went missing with it, and a hut reading
+                    // *"Planting: off"* planted every time it arrived at a tile whose tree had
+                    // gone in the meantime — the exact thing D137 set out to stop.
+                    if (IsPlantingErrand(world, villager))
                     {
                         world.Plant(tile);
                         villager.State = VillagerState.Idle;

@@ -168,6 +168,17 @@ Each leaves the suite green and is measured against the cold start's five ticks.
    `YearsToRewoodOnesGround`, ~2 years for the ground one pair of hands keeps. **Planting carries
    nothing home**, which is why it is a mode rather than a second job. Measured: 53 owned tiles
    go 53 → 33 wooded in three years of felling, and 68 bare tiles go 0 → 22 in five of planting.
+   - **⚠️ PLANTING IS AN ERRAND, NOT A MODE, AND THREE PLACES HAVE TO AGREE ABOUT THAT
+     (D137, corrected by D142).** A forester **tends**: trees first while any stand on their
+     ground, bare tiles when none do. So the mode alone never decides what is happening —
+     **the mode says whether replanting is allowed, the tile says which of the two errands
+     this is**, and both halves are needed every time. D137 changed the tile-picker and the
+     outcome and missed **the action's duration**, which went on asking the mode: from that
+     commit until D142, *every fell in the village was charged `PlantTicks`* — 12 ticks
+     against a `cut_ticks` of 4, invisibly, because the villager still walked to a tree and
+     still came home with logs. It cost `TheVillageSurvivesWithTheMarketSwitchedOff`. One
+     predicate (`BehaviorSystem.IsPlantingErrand`) answers the question now, and both guards
+     were checked against the broken code before being believed.
 5. **Forage sites retire.** *This is the slice where "no forest, no food" actually arrives*, so it
    ships only after §7.1's sentences and slice 4's planting are both in.
 6. **D109 lands on top**, cherry-picked back from `wip/d109-manual-staffing`.
