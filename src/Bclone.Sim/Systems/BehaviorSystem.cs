@@ -812,12 +812,50 @@ public sealed class BehaviorSystem : ISimSystem
         // where clearing painted ground is exactly the work that unblocks them. That is D87's
         // position rule paying for itself — the person waiting on a clearing is allowed to go
         // and do the clearing, and nobody had to write a rule saying so.
+        // ⭐ THE BUILDER CLEARS THEIR OWN SITE (D138), and it fixes a permanent stall.
+        //
+        // Joe, on a fresh build: *"the builder doesn't seem to fetch — he's just sitting there
+        // while there is construction material to move."* His screenshot ruled out D135 in one
+        // line — *"Queue: 1st of 1 — nothing is ahead of it"* — with 169 logs in store, one
+        // site, one builder, and **"Work: 0 of 45 ticks done"**.
+        //
+        // This branch is why, and it sits *above* the fetch, so a site whose ground is not
+        // clear never even looks for a store. The note said the ground *"is still being
+        // cleared"*, which was a comfortable lie: **nobody was clearing it and nobody ever
+        // would.** A site can be marked on a tile that still has a tree on it — measured, a
+        // shed marked near the founding site reported `clear ground False` the moment it was
+        // laid out — and laborers only fell PAINTED ground (D87). So unless the player happened
+        // to paint that exact tile, the site was stuck for the rest of the run.
+        //
+        // The comment this replaces claimed the position rule paid for itself, *"the person
+        // waiting on a clearing is allowed to go and do the clearing, and nobody had to write a
+        // rule saying so."* That only worked while the tile was painted. It is written down now.
+        //
+        // ⚠️ AND IT IS NOT A HOLE IN D87. The brush is the only way to fell woodland the player
+        // has not spoken about — but marking a building on a tile IS speaking about that tile,
+        // and it is the whole of what the mark means. The builder clears the ground they were
+        // sent to build on and nothing else, which is Joe's own division: builders own the site.
+        // ⚠️ ONLY WHEN NOBODY ELSE WILL, and the first version of this cost the opening.
+        // Clearing the site unconditionally made the builder duplicate work the laborers were
+        // already doing on painted ground and spend their fetching time on it: the woodcutter's
+        // hut in `TheHutThePlayerMarkedIsBuiltBeforeTheHousesTheVillageWants` went from
+        // standing at **t150 to t394**, past a winter that starts at t360. Painted ground has
+        // somebody coming for it; unpainted ground has nobody, for ever.
         if (!world.GroundIsClearAt(standing.Position))
         {
-            villager.WorkNote =
-                $"{site.Name} cannot be started yet — the ground it stands on is still being "
-                + "cleared.";
-            return false;
+            if (world.Zones.IsHarvest(standing.Position))
+            {
+                villager.WorkNote =
+                    $"{site.Name} cannot be started yet — the ground it stands on is still being "
+                    + "cleared.";
+                return false;
+            }
+
+            villager.WorkNote = $"Clearing the ground {site.Name} is to stand on.";
+            villager.ErrandX = standing.Position.X;
+            villager.ErrandY = standing.Position.Y;
+            HeadFor(world, villager, standing.Position, VillagerState.Clearing);
+            return true;
         }
 
         // Carrying logs, or the site already has what it needs: head for the site.
