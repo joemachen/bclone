@@ -62,6 +62,8 @@ public partial class Main : Control
     private HBoxContainer _groundRow = null!;
     private Label _groundLabel = null!;
     private Button _modeButton = null!;
+    private HBoxContainer _storeRow = null!;
+    private Button _fullMarkerButton = null!;
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
 
@@ -494,6 +496,16 @@ public partial class Main : Control
             _modeButton.Text = staffable.Mode == WorkMode.Plant
                 ? "Planting: ON"
                 : "Planting: off";
+        }
+
+        // The full-store marker belongs to a store, and every store can fill.
+        StoreBuilding? store = SelectedStore();
+        _storeRow.Visible = store is not null;
+        if (store is not null)
+        {
+            _fullMarkerButton.Text = _map.FullMarkerShownFor(store.Id)
+                ? "Marker: ON"
+                : "Marker: off";
         }
 
         // The queue controls only mean anything for something still being built — and they
@@ -1572,6 +1584,51 @@ public partial class Main : Control
         _modeButton = new Button { Text = "Planting: off" };
         _modeButton.Pressed += ToggleSelectedMode;
         _groundRow.AddChild(_modeButton);
+
+        // ⭐ THE PER-BUILDING HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which
+        // should be able to be disabled by building or globally."* Beside the store's own name
+        // for D104's reason — a control that belongs to ONE building has to sit next to that
+        // building, or the player has to remember which one it will act on.
+        _storeRow = new HBoxContainer { Visible = false };
+        _storeRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_storeRow);
+
+        _storeRow.AddChild(Muted("When full:"));
+
+        _fullMarkerButton = new Button { Text = "Marker: ON" };
+        _fullMarkerButton.Pressed += ToggleSelectedFullMarker;
+        _storeRow.AddChild(_fullMarkerButton);
+    }
+
+    /// <summary>Silence, or restore, the full-store ring on the selected store.</summary>
+    private void ToggleSelectedFullMarker()
+    {
+        if (SelectedStore() is not StoreBuilding store)
+        {
+            return;
+        }
+
+        _map.ToggleFullMarker(store.Id);
+        RefreshInspector(_loop.World);
+    }
+
+    /// <summary>The store on the selected tile, if the selection is one.</summary>
+    private StoreBuilding? SelectedStore()
+    {
+        if (_map.SelectedTile is not GridPos tile)
+        {
+            return null;
+        }
+
+        foreach (StoreBuilding store in _loop.World.StoreBuildings)
+        {
+            if (store.Position == tile)
+            {
+                return store;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Hand the ground brush to whichever building is selected (D86).</summary>
@@ -2081,6 +2138,17 @@ public partial class Main : Control
         }
 
         body.AddChild(Muted("c folds every panel · h hides the lot"));
+
+        // ⭐ THE GLOBAL HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which should
+        // be able to be disabled by building or globally."* The per-building half lives on the
+        // building's own panel, which is where you are already standing when one store is the
+        // one annoying you.
+        body.AddChild(Muted("On the map"));
+
+        var markers = new CheckBox { Text = "mark stores with no room", ButtonPressed = true };
+        markers.AddThemeFontSizeOverride("font_size", 12);
+        markers.Toggled += on => _map.ShowFullMarkers(on);
+        body.AddChild(markers);
     }
 
     /// <summary>

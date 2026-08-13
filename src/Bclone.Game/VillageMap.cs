@@ -93,6 +93,13 @@ public partial class VillageMap : Control
     /// <summary>The market (D14), which is both a workplace and a store.</summary>
     private static readonly Color MarketColour = new("#c98f4a");
 
+    /// <summary>The ring round a store with no room left (D140).</summary>
+    /// <remarks>
+    /// Warm amber rather than red. A full store is not a disaster — it is usually a village
+    /// doing well at something — and §1.1 wants the player to look, not to panic.
+    /// </remarks>
+    private static readonly Color FullStoreColour = new("#e8a13c");
+
     /// <summary>A building marked out but not yet raised (D43).</summary>
     private static readonly Color SiteColour = new("#8f9aa8");
 
@@ -989,8 +996,69 @@ public partial class VillageMap : Control
             };
             DrawRect(rect, colour with { A = 0.85f });
             DrawRect(rect, colour, filled: false, width: 2f);
+
+            // ⭐ A FULL STORE SAYS SO ON THE MAP (Joe, D140). D134 is the reason it has to:
+            // a village can sit at "Logs 15" with 1,968 stranded outside a shed that filled
+            // in year five, and every symptom of that reads as a shortage. The Overview line
+            // says it in words now; this is the same fact where the player is actually
+            // looking, on the building that is causing it.
+            //
+            // A ring rather than a badge, because it has to read at any zoom — the tile is
+            // eight pixels across when the valley is fitted to the window.
+            if (ShowsFullMarker(building) && building.Store.IsFull)
+            {
+                float halo = size * 0.85f;
+                DrawArc(
+                    centre,
+                    halo,
+                    0f,
+                    Mathf.Tau,
+                    24,
+                    FullStoreColour,
+                    width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
+            }
         }
     }
+
+    /// <summary>
+    /// Whether this building's full-marker is switched on — globally, and for itself.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ VIEW STATE, DELIBERATELY, AND IT MUST STAY THAT WAY.</b> Joe asked for the marker
+    /// to be dismissable *"by building or globally"*, which is a per-building fact and therefore
+    /// looks like it belongs on <see cref="StoreBuilding"/>. It does not: the sim is hashed and
+    /// replayed from a seed (D2), so putting a display preference in it would make two players
+    /// who merely disagree about what to look at diverge into different worlds. A marker nobody
+    /// can see must not change what anybody does.
+    /// </remarks>
+    private bool ShowsFullMarker(StoreBuilding building) =>
+        _showFullMarkers && !_fullMarkerMuted.Contains(building.Id);
+
+    private bool _showFullMarkers = true;
+    private readonly HashSet<int> _fullMarkerMuted = new();
+
+    /// <summary>Switch every full-store marker on or off at once.</summary>
+    public void ShowFullMarkers(bool shown)
+    {
+        _showFullMarkers = shown;
+        QueueRedraw();
+    }
+
+    /// <summary>Switch one building's marker on or off, and report where it landed.</summary>
+    public bool ToggleFullMarker(int buildingId)
+    {
+        bool nowShown = _fullMarkerMuted.Remove(buildingId);
+        if (!nowShown)
+        {
+            _fullMarkerMuted.Add(buildingId);
+        }
+
+        QueueRedraw();
+        return nowShown;
+    }
+
+    /// <summary>Whether one building's marker is switched on, ignoring the global switch.</summary>
+    public bool FullMarkerShownFor(int buildingId) => !_fullMarkerMuted.Contains(buildingId);
 
     private void DrawValley()
     {
