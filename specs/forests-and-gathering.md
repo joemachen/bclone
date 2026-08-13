@@ -168,6 +168,16 @@ Each leaves the suite green and is measured against the cold start's five ticks.
    `YearsToRewoodOnesGround`, ~2 years for the ground one pair of hands keeps. **Planting carries
    nothing home**, which is why it is a mode rather than a second job. Measured: 53 owned tiles
    go 53 → 33 wooded in three years of felling, and 68 bare tiles go 0 → 22 in five of planting.
+   - **⭐ THE TOGGLE IS FELLING, NOT PLANTING (Joe, D146).** Painting ground for a hut *is* the
+     instruction to keep it wooded, so planting is unconditional and what the player decides is
+     whether timber comes out. `WorkMode.PlantOnly` is a wood that is resting; `FellAndPlant`
+     is the default. **A met Logs limit is the same instruction at another distance** — felling
+     off for a while — and `SimWorld.MayFell` is the single place that answers both, so the
+     tile-picker, the action's duration and its outcome cannot disagree. A capped hut
+     **replants** until its painted ground is wooded again and only then becomes spare hands
+     (Joe's ordering); the demand that keeps it staffed is `ForesterSeatsWithGroundToPlant`,
+     because a staffing number is a ceiling and not a summons. **Fell-only is deleted** — that
+     is what the harvest brush is for (D87), and a forester's ground is a managed wood.
    - **⚠️ PLANTING IS AN ERRAND, NOT A MODE, AND THREE PLACES HAVE TO AGREE ABOUT THAT
      (D137, corrected by D142).** A forester **tends**: trees first while any stand on their
      ground, bare tiles when none do. So the mode alone never decides what is happening —

@@ -1589,39 +1589,20 @@ public sealed class BehaviorSystem : ISimSystem
         // something to do in winter - which is part of why the job is worth holding.
         if (villager.CanWork && job?.Kind == JobKind.Forester)
         {
-            // ⭐ A MET LIMIT STOPS THE WORK, NOT JUST THE HIRING — D139's rule, and D145 is the
-            // record that D139 only ever applied it to the woodcutter. `LabourQuota` has arms
-            // for BOTH timber jobs (`StoppedByAStockLimit`), so the planner obeyed a Logs limit
-            // while the doer had never heard of it: a forester the PLAYER posted felled for
-            // ever past the number in the box. Measured before the fix — **138 logs held
-            // against a limit of 68** — which is Joe's own D139 complaint, one job over, found
-            // by sweeping the controls rather than by him hitting it again.
+            // ⭐ A MET LIMIT STOPS THE FELLING AND NOT THE FORESTER (Joe, D146). D145 found that
+            // D139's rule — *a met limit stops the work, not just the hiring* — had only ever
+            // reached the woodcutter, and stopped the forester outright to match. Joe's
+            // correction: *"a capped hut can replant. Priority should be replant → extra-hands
+            // labour. It just shouldn't fell if it has met its cap."*
             //
-            // ⚠️ IT STOPS THE PLANTING TOO, AND THAT IS THE CHOICE RATHER THAN AN OVERSIGHT.
-            // A tending forester's second errand adds no logs, so it could have been allowed to
-            // continue — but planting costs `PlantTicks`, three times a fell, and freeing hands
-            // is half of what a limit is for (D130: *"free hands are not idle hands"*). A player
-            // who caps timber to get their labourers back would not expect the hut to go on
-            // spending them on saplings. The panel says *how much to keep before the work
-            // stops*, and this is the work stopping.
-            if (world.StockLimits.IsMet(Goods.Logs, world.LogsInSheds()))
-            {
-                villager.WorkNote =
-                    $"Nothing to fell — you asked the village to keep "
-                    + $"{world.StockLimits.For(Goods.Logs)} logs and it has "
-                    + $"{world.LogsInSheds()}.";
-
-                // Idle from their trade, so they take spare work — the same ranking, in the
-                // same order, that the woodcutter's own limit branch and the bottom of Decide
-                // take. Two copies of one ranking is how they come to disagree.
-                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
-                {
-                    GoHome(world, villager);
-                }
-
-                return;
-            }
-
+            // **So the cap is not handled here at all any more.** It lives in `SimWorld.MayFell`
+            // beside the felling toggle, because they are the same instruction at two distances,
+            // and `NextGroundToWork` then hands back bare tiles to plant instead of trees to
+            // fell. A capped hut works its way through its own ground putting it back, and only
+            // reaches the spare-work branch below — tidying, clearing, home — once there is
+            // nothing bare left. That ordering is Joe's, and it is the opposite of what I argued
+            // for in D145.
+            //
             // ⭐ A FORESTER'S HUT WORKS ITS OWN GROUND (D86, `forests-and-gathering.md`), where
             // a tree stand is an inexhaustible spot you stand on. So the question is which of
             // MY tiles to work next — a wooded one to fell, or a bare one to plant, depending
@@ -1639,12 +1620,38 @@ public sealed class BehaviorSystem : ISimSystem
                     return;
                 }
 
-                // Nothing of theirs left to do — every tile is already the way the mode wants
-                // it. Said out loud, because a forester standing about is otherwise the silent
-                // stall §1.1 forbids, and the fix is the player's: paint more, or switch mode.
-                villager.WorkNote = job.Mode == WorkMode.Plant
-                    ? $"Nothing bare left to plant at {job.Name} — its ground is wooded again."
-                    : $"No trees left on {job.Name}'s ground — plant it, or give it more.";
+                // Nothing of theirs left to do — every tile is already the way the player asked
+                // for it. Said out loud, because a forester standing about is otherwise the
+                // silent stall §1.1 forbids, and each of the three reasons has a different fix.
+                //
+                // ⚠️ THE ONE THAT NEEDED SAYING IS THE CAP (D146). A hut whose ground is fully
+                // wooded because the village stopped felling reads exactly like a hut that has
+                // run out of work, and the answer — *raise the limit* — is nowhere near the
+                // forester's panel unless the sentence points at it.
+                villager.WorkNote = !world.MayFell(job)
+                    ? job.Mode != WorkMode.FellAndPlant
+                        ? $"{job.Name} is resting its wood — felling is switched "
+                          + "off, and its ground is wooded again."
+                        : $"{job.Name} has stopped felling — you asked the village "
+                          + $"to keep {world.StockLimits.For(Goods.Logs)} logs and it has "
+                          + $"{world.LogsInSheds()}. Its ground is wooded again."
+                    : $"Nothing bare left to plant at {job.Name} — its ground is wooded again.";
+
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
+                return;
+            }
+
+            // No ground painted: the legacy stand behaviour, felling a flat yield where they
+            // stand. It answers to the same gate — a hut told not to fell does not fell here
+            // either, and with no ground of its own there is nothing for it to plant instead.
+            if (!world.MayFell(job))
+            {
+                villager.WorkNote =
+                    $"{job.Name} is not felling, and has no ground to tend.";
 
                 if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
@@ -2368,6 +2375,14 @@ public sealed class BehaviorSystem : ISimSystem
     /// time it arrived.</item>
     /// </list>
     /// <para>
+    /// <b>⭐ AND SINCE D146 THE TILE IS THE WHOLE ANSWER, because planting is no longer a mode
+    /// that can be off.</b> Felling is the toggle now, and a hut that may not fell is only ever
+    /// sent to bare ground — so <em>the errand is a plant exactly when the tile has no tree on
+    /// it</em>, whatever stopped the felling. The mode test that D142 added here is gone
+    /// because the state it guarded against no longer exists, and the guard that covered it
+    /// is now <c>FellingOffMeansItNeverFells</c>.
+    /// </para>
+    /// <para>
     /// A hut with no ground of its own is the old tree-stand behaviour and never plants;
     /// that is the same guard <c>CompleteAction</c> puts round the tile path, so the two
     /// cannot disagree about which job is being done.
@@ -2377,7 +2392,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         Workplace? hut = WorkplaceOf(world, villager);
 
-        if (hut is null || hut.Mode != WorkMode.Plant || world.Zones.WorkGroundTiles(hut.Id) == 0)
+        if (hut is null || world.Zones.WorkGroundTiles(hut.Id) == 0)
         {
             return false;
         }

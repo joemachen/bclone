@@ -195,7 +195,10 @@ public readonly record struct LabourQuota
         //   larder, and they starved. Funding fuel only from what was left after the
         //   food floor drained the woodpile a little every year until four households
         //   froze in one winter, with a full larder and a yard full of logs.
-        if (FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world))
+        bool foodComesFirst =
+            FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world);
+
+        if (foodComesFirst)
         {
             woodcutters = 0;
             forestersForHuts = 0;
@@ -254,7 +257,31 @@ public readonly record struct LabourQuota
 
         if (limits.IsMet(Goods.Logs, world.LogsInSheds()))
         {
-            forestersForHuts = 0;
+            // ⭐ A MET LOG LIMIT STOPS THE FELLING, NOT THE PROFESSION (Joe, D146). *"A capped
+            // hut can replant. Priority should be replant → extra-hands labour. It just
+            // shouldn't fell if it has met its cap."*
+            //
+            // ⛔ ZEROING BOTH ARMS MADE THAT IMPOSSIBLE, AND IT TOOK A MEASUREMENT TO SEE IT.
+            // `SimWorld.MayFell` sends a capped forester to bare ground instead of to a tree —
+            // but the hut had **nobody standing in it to send**: the quota wanted zero
+            // foresters, so the allocator emptied the building, and the replanting could never
+            // happen however the behaviour branch was written. `SetStaffing` is a ceiling, not
+            // a summons. Measured on a hut with 88 bare tiles and a limit of 0: *most hands
+            // ever at the hut 0 of 2, quota wants 0 foresters.*
+            //
+            // So the demand becomes the PLANTING demand — the seats at huts that still own
+            // ground to put back — which is derived rather than typed (D16) and falls to zero
+            // by itself once every painted tile is wooded again. That is Joe's ordering exactly:
+            // replant until the painted area is maxed out, then be spare hands.
+            //
+            // ⚠️ AND NEVER OVER THE FOOD GATE ABOVE. This is an assignment rather than a
+            // reduction, so on its own it would hand foresters back to a village that had just
+            // zeroed every non-food job because its larders were empty — planting outranking
+            // eating, which is §4a exactly backwards. Replanting is the least urgent thing in
+            // the game: it feeds nobody this year or next.
+            forestersForHuts = foodComesFirst ? 0 : world.ForesterSeatsWithGroundToPlant();
+
+            // The discretionary half stays zero: logs for houses is felling by another name.
             forestersForHouses = 0;
         }
 
@@ -472,7 +499,13 @@ public readonly record struct LabourQuota
     private static bool StoppedByAStockLimit(SimWorld world, JobKind kind) => kind switch
     {
         JobKind.Woodcutter => world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInSheds()),
-        JobKind.Forester => world.StockLimits.IsMet(Goods.Logs, world.LogsInSheds()),
+
+        // ⭐ AND A FORESTER IS ONLY STOPPED WHEN THERE IS NOTHING TO PUT BACK EITHER (D146).
+        // A met log limit stops the felling; a hut with bare ground of its own still has work,
+        // so a professions number the player typed must not be overruled while it does.
+        JobKind.Forester => world.StockLimits.IsMet(Goods.Logs, world.LogsInSheds())
+            && world.ForesterSeatsWithGroundToPlant() == 0,
+
         _ => false,
     };
 

@@ -127,9 +127,10 @@ public sealed class ForesterHutTests
 
         Assert.Equal(JobKind.Forester, hut.Kind);
         Assert.Equal(VillageEconomy.RequiredTreeStandSeats(Config), hut.Capacity);
-        // D137: a new hut TENDS its wood — fells while trees stand, replants when none do.
-        // Joe: "the hut toggle for planting is off and I want it to be on by default."
-        Assert.Equal(WorkMode.Plant, hut.Mode);
+        // D146: a new hut FELLS AND PLANTS — the toggle is felling, and planting is simply
+        // what owning painted ground means. Joe: "planting should be on by default for a
+        // painted area and felling should be the toggle on/off."
+        Assert.Equal(WorkMode.FellAndPlant, hut.Mode);
         Assert.Equal(Workplace.DefaultMode, hut.Mode);
     }
 
@@ -230,7 +231,6 @@ public sealed class ForesterHutTests
         Assert.True(given > 0, "The hut was given no bare ground, so nothing was tested.");
 
         int woodedBefore = CountOwnedForest(world, hut);
-        hut.Mode = WorkMode.Plant;
         world.SetStaffing(hut, hut.Capacity);
 
         loop.Step(config.TicksPerYear * 5);
@@ -258,7 +258,6 @@ public sealed class ForesterHutTests
 
         Workplace hut = RaiseAHut(world, ClearGroundNear(world));
         GiveGround(world, hut, 5, wooded: false);
-        hut.Mode = WorkMode.Plant;
         world.SetStaffing(hut, hut.Capacity);
 
         // ⚠️ HALF A YEAR, NOT A YEAR, AND D137 IS WHY. The claim is that *the planting errand*
@@ -310,7 +309,7 @@ public sealed class ForesterHutTests
         SimWorld world = loop.World;
 
         Workplace hut = RaiseAHut(world, ClearGroundNear(world));
-        Assert.Equal(WorkMode.Plant, hut.Mode);
+        Assert.Equal(WorkMode.FellAndPlant, hut.Mode);
         Assert.True(GiveGround(world, hut, 5, wooded: true) > 0, "The hut was given no woodland.");
         world.SetStaffing(hut, hut.Capacity);
 
@@ -353,66 +352,126 @@ public sealed class ForesterHutTests
         Assert.Equal(config.CutTicks, longest);
     }
 
-    /// <summary>⭐ A hut with planting switched off never plants, even when beaten to a tree.</summary>
+    /// <summary>⭐ Felling switched off means it never fells — the toggle means its label.</summary>
     /// <remarks>
-    /// <b>The other half of the same slip.</b> D137's outcome asked the tile alone — <em>bare
-    /// ground gets a sapling</em> — with no mention of the mode, so a hut reading
-    /// <em>"Planting: off"</em> planted whenever the tree it had walked out to was gone by the
-    /// time it arrived. Rare per fell and constant across a valley, and it is the toggle
-    /// silently not meaning its label, which is §1.1.
+    /// <para>
+    /// <b>This is D142's guard turned round, and the reason it had to turn is D146.</b> It was
+    /// <c>PlantingOffMeansItNeverPlants</c>, and there is no longer a state where a hut refuses
+    /// to plant: <em>painting ground for a hut is the instruction to keep it wooded</em>, so
+    /// planting is unconditional and <b>felling</b> is what the player toggles. The claim the
+    /// guard exists to make — <em>the toggle does what its label says</em> — is unchanged; only
+    /// which way round it points.
+    /// </para>
+    /// <para>
+    /// Measured over a year rather than posed, because the failure D142 found was a
+    /// <em>race</em> — the tile changing between choosing it and arriving — and a race wants a
+    /// run rather than a single arranged tick.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void PlantingOffMeansItNeverPlants()
+    public void FellingOffMeansItNeverFells()
     {
         SimConfig config = Config;
         SimLoop loop = Loop(config);
         SimWorld world = loop.World;
 
         Workplace hut = RaiseAHut(world, ClearGroundNear(world));
-        hut.Mode = WorkMode.Harvest;
-        Assert.True(GiveGround(world, hut, 5, wooded: true) > 0, "The hut was given no woodland.");
+        hut.Mode = WorkMode.PlantOnly;
+        Assert.False(world.MayFell(hut));
+
+        // ⚠️ WOODED **AND** BARE GROUND, AND THE FIRST VERSION OF THIS GUARD WAS VACUOUS
+        // WITHOUT IT. Given only woodland, a hut that may not fell has nothing to do — so
+        // `ForesterSeatsWithGroundToPlant` is zero, the village does not staff it, and "no tree
+        // came down" is true because nobody was there. Correct behaviour, useless test. With
+        // bare tiles to plant, the hut is genuinely worked all year and the standing trees have
+        // to survive somebody being sent past them.
+        int wooded = GiveGround(world, hut, 5, wooded: true);
+        int bare = GiveGround(world, hut, 5, wooded: false);
+        Assert.True(wooded > 0, "The hut was given no woodland, so nothing was tested.");
+        Assert.True(bare > 0, "The hut was given no bare ground, so nobody will work it.");
         world.SetStaffing(hut, hut.Capacity);
 
-        // Walk them out to a tree, then take it down from under them — the race that made
-        // this happen by itself over three hundred years, forced in a dozen ticks.
-        Villager? walker = null;
-        var target = new GridPos(0, 0);
+        int woodedAtTheStart = CountOwnedForest(world, hut);
+        int lowest = woodedAtTheStart;
+        int felled = 0;
+        int everStaffed = 0;
 
-        for (int tick = 0; tick < config.TicksPerYear && walker is null; tick++)
+        for (int tick = 0; tick < config.TicksPerYear; tick++)
         {
             loop.StepOnce();
+            lowest = System.Math.Min(lowest, CountOwnedForest(world, hut));
+            everStaffed = System.Math.Max(everStaffed, hut.WorkerIds.Count);
 
             foreach (Villager villager in world.Villagers)
             {
-                if (!villager.Alive
-                    || villager.WorkplaceId != hut.Id
-                    || villager.State != VillagerState.TravelingToTrees)
+                if (villager.Alive
+                    && villager.WorkplaceId == hut.Id
+                    && villager.State == VillagerState.Cutting
+                    && world.Map.TerrainAt(new GridPos(villager.ErrandX, villager.ErrandY))
+                        == Terrain.Forest)
                 {
-                    continue;
+                    felled++;
                 }
-
-                var at = new GridPos(villager.ErrandX, villager.ErrandY);
-                if (world.Map.TerrainAt(at) != Terrain.Forest)
-                {
-                    continue;
-                }
-
-                walker = villager;
-                target = at;
-                break;
             }
         }
 
-        Assert.NotNull(walker);
-        world.Harvest(target);
-        Assert.NotEqual(Terrain.Forest, world.Map.TerrainAt(target));
+        _output.WriteLine(
+            $"felling off: {wooded} wooded and {bare} bare tiles given, {woodedAtTheStart} "
+            + $"wooded at the start, lowest {lowest} over a year; {felled} felling ticks on a "
+            + $"standing tree; most hands ever at the hut {everStaffed}.");
 
-        // Long enough for them to arrive, spend a felling action on nothing, and move on.
-        loop.Step(config.CutTicks + VillageEconomy.PlantTicks(config) + 40);
+        // Anti-vacuity: somebody has to have been posted there, or nothing was tested.
+        Assert.True(everStaffed > 0, "Nobody ever worked the hut, so no tree was ever at risk.");
 
-        _output.WriteLine($"planting off; {target} left as {world.Map.TerrainAt(target)}");
+        Assert.Equal(0, felled);
+        Assert.True(lowest >= woodedAtTheStart,
+            $"The hut's woodland fell from {woodedAtTheStart} to {lowest} with felling switched off.");
+    }
 
-        Assert.NotEqual(Terrain.Sapling, world.Map.TerrainAt(target));
+    /// <summary>⭐ A capped hut replants; it does not go and do something else (Joe, D146).</summary>
+    /// <remarks>
+    /// <b>Joe's ordering, and it overturns what I argued in D145.</b> <i>"A capped hut can
+    /// replant. Priority should be replant → extra-hands labour. It just shouldn't fell if it
+    /// has met its cap."</i> D145 stopped the forester outright on the reasoning that freeing
+    /// hands is half of what a limit is for — which is true of the woodcutter, whose only errand
+    /// makes the good being capped, and wrong here: putting trees back adds no logs, and a wood
+    /// left half-felled because the shed filled is the state §0.1 spends its whole argument on.
+    /// </remarks>
+    [Fact]
+    public void ACappedHutPlantsRatherThanStopping()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAHut(world, ClearGroundNear(world));
+        int given = GiveGround(world, hut, 5, wooded: false);
+        Assert.True(given > 0, "The hut was given no bare ground, so nothing was tested.");
+
+        // Felling is ON, and the cap is what stops it — this is the state D145 got wrong.
+        Assert.Equal(WorkMode.FellAndPlant, hut.Mode);
+        world.SetStockLimit(Goods.Logs, 0);
+        Assert.False(world.MayFell(hut), "A met log limit must stop the felling.");
+
+        int woodedBefore = CountOwnedForest(world, hut);
+        world.SetStaffing(hut, hut.Capacity);
+
+        int everStaffed = 0;
+        for (int tick = 0; tick < config.TicksPerYear * 5; tick++)
+        {
+            loop.StepOnce();
+            everStaffed = System.Math.Max(everStaffed, hut.WorkerIds.Count);
+        }
+
+        int woodedAfter = CountOwnedForest(world, hut);
+        _output.WriteLine(
+            $"capped at 0 logs: {given} bare tiles given, wooded {woodedBefore} → {woodedAfter} "
+            + $"after five years; most hands ever at the hut {everStaffed} of {hut.Capacity}; "
+            + $"quota wants {Bclone.Sim.World.LabourQuota.For(world).Foresters} foresters");
+
+        Assert.True(woodedAfter > woodedBefore,
+            "A hut held by the log limit stood idle for five years instead of putting its "
+            + "ground back.");
     }
 
     // ---------------------------------------------------------------
@@ -433,14 +492,14 @@ public sealed class ForesterHutTests
 
         Assert.Equal(StateHash.Compute(untouched), StateHash.Compute(switched));
 
-        // ⚠️ SWITCHED TO `Harvest`, WHICH IS NOW THE NON-DEFAULT (D137). This set `Plant`,
+        // ⚠️ SWITCHED TO THE NON-DEFAULT, WHICHEVER THAT CURRENTLY IS (D137, D146). This set `Plant`,
         // which was the switch until Joe made tending the default — after which "switching
         // one" meant setting it to what it already was, and the hash correctly did not move.
         // The guard is about the sentinel tracking the default, so it has to switch AWAY from
         // whatever the default currently is.
         Workplace stand = switched.Workplaces.First(place => place.Kind == JobKind.Forester);
         Assert.Equal(Workplace.DefaultMode, stand.Mode);
-        stand.Mode = WorkMode.Harvest;
+        stand.Mode = WorkMode.PlantOnly;
 
         Assert.NotEqual(StateHash.Compute(untouched), StateHash.Compute(switched));
     }

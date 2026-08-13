@@ -200,12 +200,18 @@ public static class StateHash
             // rank above and the stock limits below: a village where nobody has ever touched a
             // mode must hash exactly as it did before modes existed, which is what lets a new
             // control ship without re-taking a single golden.
-            // ⚠️ AGAINST THE DEFAULT, NOT AGAINST `Harvest` BY NAME (D136). This read
+            // ⚠️ AGAINST THE DEFAULT, NEVER AGAINST A MODE BY NAME (D136). This read
             // `!= WorkMode.Harvest`, which was the same thing right up until Joe made planting
             // the default — at which point every untouched forester's hut in the game would
             // have started mixing, and every golden would have moved for a control nobody had
             // used. The sentinel means *"the player has touched this"*, so it has to follow
             // whatever untouched currently is.
+            //
+            // ⭐ AND IT IS WHAT MADE D146 FREE. The toggle became FELLING rather than planting,
+            // and the value `0` changed meaning from *fell only* to *plant only* — a rewrite of
+            // what the enum says, with the numbering untouched. Because this mixes nothing at
+            // all for an untouched hut, and no golden in the suite switches one, not a single
+            // stored hash depends on what `0` meant.
             if (workplace.Mode != Workplace.DefaultMode)
             {
                 hash = MixUInt32(hash, (uint)workplace.Mode);

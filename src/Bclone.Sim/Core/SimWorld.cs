@@ -725,11 +725,11 @@ public sealed class SimWorld
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>One question, two answers, decided by the mode</b> (`forests-and-gathering.md`): a
-    /// forester set to <see cref="WorkMode.Harvest"/> wants a wooded tile of its ground, and one
-    /// set to <see cref="WorkMode.Plant"/> wants a bare one. Written as one method because they
-    /// are the same walk to the same ground for the same person — two methods would be two
-    /// places to teach about a third mode.
+    /// <b>One question, two answers, decided by <see cref="MayFell"/></b>
+    /// (`forests-and-gathering.md`): a forester that may fell wants a wooded tile of its ground
+    /// while any is standing, and one that may not wants a bare one to put a tree back on.
+    /// Written as one method because they are the same walk to the same ground for the same
+    /// person — two methods would be two places to teach about a third mode.
     /// </para>
     /// <para>
     /// <b>Nearest by travel cost, from where the worker stands</b> — the same rule every other
@@ -742,6 +742,82 @@ public sealed class SimWorld
     /// <see cref="NearestHarvest"/> had to be rescued from when the valley became wooded.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Whether this workplace is allowed to take a tree down at this moment.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE ONE DOOR (D146), and it exists because D145 had just finished writing down why
+    /// controls need one.</b> Two separate things can stop a forester felling — the player's
+    /// per-hut toggle, and a met Logs limit — and they are the same instruction seen from two
+    /// distances: <em>stop taking timber out</em>. Answering them in one place is what stops the
+    /// tile-picker, the action's duration and its outcome from ever disagreeing about which job
+    /// is being done, which is the exact bug D142 spent a session on.
+    /// </para>
+    /// <para>
+    /// <b>Planting is not gated by either of them</b> (Joe): <i>"a capped hut can replant.
+    /// Priority should be replant → extra-hands labour. It just shouldn't fell if it has met its
+    /// cap."</i> So a hut that may not fell is not idle — it puts its ground back, and only
+    /// falls through to spare work once there is nothing bare left to plant.
+    /// </para>
+    /// </remarks>
+    public bool MayFell(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        return workplace.Mode == WorkMode.FellAndPlant
+            && !StockLimits.IsMet(Goods.Logs, LogsInSheds());
+    }
+
+    /// <summary>
+    /// Seats at forester's huts that still own ground with no tree on it — <b>the village's
+    /// demand for planting</b>, as opposed to for timber.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>What a capped hut is wanted for (D146).</b> When a Logs limit is met the village
+    /// stops wanting timber, and <c>LabourQuota</c> used to zero the foresters outright — which
+    /// left <see cref="MayFell"/> sending nobody to bare ground, because the allocator had
+    /// emptied the building. <b>A staffing number is a ceiling, not a summons</b>, so the
+    /// demand has to say what the hands are <em>for</em>.
+    /// </para>
+    /// <para>
+    /// <b>Derived, and it falls to zero by itself</b> (D16): once every painted tile is wooded
+    /// again there is nothing to plant, this is zero, and the hands become laborers — which is
+    /// Joe's ordering, <i>replant until the painted area is maxed out, then extra hands</i>,
+    /// expressed as a quantity rather than as a rule.
+    /// </para>
+    /// <para>
+    /// Counted in <see cref="Workplace.Places"/> rather than <c>Capacity</c>, so a hut the
+    /// player has turned down does not ask for hands it would refuse.
+    /// </para>
+    /// </remarks>
+    public int ForesterSeatsWithGroundToPlant()
+    {
+        int seats = 0;
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace workplace = Workplaces[i];
+            if (workplace.Kind != JobKind.Forester || workplace.IsSite)
+            {
+                continue;
+            }
+
+            IReadOnlyList<int> owned = Zones.WorkGroundOf(workplace.Id);
+            for (int t = 0; t < owned.Count; t++)
+            {
+                if (Map.TerrainAt(Zones.PositionOf(owned[t])) != Terrain.Forest)
+                {
+                    seats += workplace.Places;
+                    break;
+                }
+            }
+        }
+
+        return seats;
+    }
+
     public GridPos? NextGroundToWork(Workplace workplace, GridPos from)
     {
         ArgumentNullException.ThrowIfNull(workplace);
@@ -752,27 +828,18 @@ public sealed class SimWorld
             return null;
         }
 
-        // ⭐ PLANTING IS SOMETHING A FORESTER ALSO DOES, NOT INSTEAD OF FELLING (Joe, D137).
+        // ⭐ PLANTING IS ALWAYS ON; FELLING IS THE TOGGLE (Joe, D146). Painting ground for a hut
+        // is already the instruction to keep it wooded, so the question the player actually
+        // answers is whether they are taking timber out of this wood or letting it come back.
         //
-        // It used to be a straight either/or — `Mode == Harvest` picked wooded tiles, anything
-        // else picked bare ones — so a hut with planting switched on **never felled another
-        // tree**. Turning it on by default was tried on that reading and failed eight tests
-        // including D130's stockpile tool: a village whose foresters plant by default has no
-        // timber industry at all.
-        //
-        // Joe's actual ask, once the screenshot made it plain: *"when the user builds a
-        // forester hut and paints the area, the hut toggle for planting is off, and I want it
-        // to be on by default."* A forester who tends their wood — fells it, and puts it back.
-        // So planting is a SECOND ERRAND rather than a different job: **trees first while any
-        // are standing on their ground, bare tiles when none are.**
-        //
-        // That also makes the toggle mean what its label says. "Planting: off" now costs you
-        // the replanting and nothing else, instead of quietly being the only switch that
-        // decides whether the hut produces anything.
-        bool tendsTheWood = workplace.Mode == WorkMode.Plant;
+        // So: **fell while anything is standing, and plant the bare tiles whenever felling is
+        // not allowed or nothing is left to fell.** `MayFell` is the single place that answers
+        // "is felling allowed here, right now", and it folds the toggle together with a met
+        // Logs limit — a cap is simply felling switched off for a while.
+        bool mayFell = MayFell(workplace);
         bool anyStanding = false;
 
-        if (tendsTheWood)
+        if (mayFell)
         {
             for (int i = 0; i < owned.Count && !anyStanding; i++)
             {
@@ -780,8 +847,7 @@ public sealed class SimWorld
             }
         }
 
-        // Fell while there is anything to fell; plant only once the ground is bare.
-        bool wantsTrees = !tendsTheWood || anyStanding;
+        bool wantsTrees = mayFell && anyStanding;
 
         GridPos? best = null;
         int bestCost = int.MaxValue;

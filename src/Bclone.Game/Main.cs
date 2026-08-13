@@ -494,9 +494,18 @@ public partial class Main : Control
             int tiles = world.Zones.WorkGroundTiles(staffable!.Id);
             int allowance = world.WorkGroundAllowanceFor(staffable);
             _groundLabel.Text = $"Ground — {tiles} tiles, enough hands for {allowance}:";
-            _modeButton.Text = staffable.Mode == WorkMode.Plant
-                ? "Planting: ON"
-                : "Planting: off";
+            // ⭐ THE TOGGLE IS FELLING NOW, NOT PLANTING (Joe, D146). Painting ground for a hut
+            // is already the instruction to keep it wooded, so planting was never the
+            // interesting question — what the player decides is whether timber comes out.
+            //
+            // And it says when the village has stopped felling for a reason the player set
+            // somewhere else: a met Logs limit reads on this button rather than only on the
+            // stock panel, because this is the building that looks idle because of it.
+            _modeButton.Text = staffable.Mode != WorkMode.FellAndPlant
+                ? "Felling: off"
+                : world.MayFell(staffable)
+                    ? "Felling: ON"
+                    : "Felling: ON — held by the log limit";
         }
 
         // The full-store marker belongs to a store, and every store can fill.
@@ -1699,7 +1708,9 @@ public partial class Main : Control
             return;
         }
 
-        workplace.Mode = workplace.Mode == WorkMode.Plant ? WorkMode.Harvest : WorkMode.Plant;
+        workplace.Mode = workplace.Mode == WorkMode.FellAndPlant
+            ? WorkMode.PlantOnly
+            : WorkMode.FellAndPlant;
         RefreshInspector(_loop.World);
     }
 
