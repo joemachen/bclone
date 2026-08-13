@@ -705,6 +705,13 @@ there, because it is the slice that opens that method.
   it over twenty years** — and the five guards D141 shipped with all stopped at the predicate.
   **The lesson generalises: a control tested at its predicate and never at its deposit is a
   control nobody has tested.**
+- **A building that cannot do its job says so on the map** ✅ (D147, Joe). D140's ring, for
+  workplaces — and it earns its place because three times this session a hut looked idle because
+  of a number set on a **different panel**. **The design work is all in what does *not* light
+  up:** a hut the player emptied, a gatherer in winter, a forester replanting and a construction
+  site all stay silent, because a marker that fires for everything is the always-on alert D42 and
+  D123 deleted. `SimWorld.IdleNote` returns *the sentence or nothing*, so the ring and the panel
+  cannot disagree and every reason has to be sayable before it may light anything up.
 - **⭐ The toggle is felling, and a capped hut replants** ✅ (D146, Joe). *"Planting should be on
   by default for a painted area and felling should be the toggle on/off."* Painting ground for a
   hut is already the instruction to keep it wooded, so planting was never the question — and
@@ -722,7 +729,7 @@ there, because it is the slice that opens that method.
   allocator's only source, and both `Harvest` call sites are player-instructed — a control is
   safe when its state is read at a chokepoint, and at risk the moment there are two ways to do
   the thing. **That is the check to run when the next control is designed, not after it ships.**
-- **Where the suite stands: 547 passing, 7 failing, 9 skipped of 563** (was 533 / 13 / 9 of 555
+- **Where the suite stands: 554 passing, 7 failing, 9 skipped of 570** (was 533 / 13 / 9 of 555
   at the start of the session). **Everything left is either a golden held back on purpose or
   already-queued work** — three hash goldens (`StockLimitTests` ×2 and `DrawOrderIsTheContract`),
   three map-generation guards, and `OldAgeCostsMoreWorkForTheSameFood`, which Joe parked.
@@ -890,6 +897,17 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D147 · 2026-08-13 · ⭐ A BUILDING THAT CANNOT DO ITS JOB SAYS SO ON THE MAP — and the design work is entirely in what does *not* light up.** Joe: *"Idle huts should get an indicator like full storage buildings. What do you think?"*
+  - **⭐ IT IS WORTH MORE THAN THE STORAGE ONE, and this session is the evidence.** Three separate times a building looked idle because of a number set on a **different panel** — a met Logs limit (D145), a met Firewood limit (D139), ground nobody ever painted (D86). §1.1 is the whole argument: the player cannot answer a problem they cannot see, and *"the hut is just sitting there"* was Joe's own words on D138 as well.
+  - **⚠️ BUT "IDLE" IS NOT ONE FACT THE WAY "FULL" IS, WHICH IS THE ONLY REASON THIS NEEDED THINKING ABOUT.** A store is full or it is not. A workplace has half a dozen reasons for having nothing to do and **most of them are fine** — so a marker that lit up for all of them would be wallpaper, and an always-on alert is precisely what **D42 and D123 moved *out* of the Overview**. The rule is therefore narrow, and stated once in `SimWorld.IdleNote`: *this building cannot do its job, and the fix is the player's.*
+    - **Not flagged: a hut the player emptied on purpose.** `StaffingOverride == 0` is an instruction, not a fault (D42) — and this is the second time D136's fight to keep `null` and `0` different states has paid for itself.
+    - **Not flagged: a gatherer in winter.** Seasonal, expected, unfixable — the definition of a marker that teaches people to ignore markers.
+    - **Not flagged: a forester that is replanting.** It is working (D146).
+    - **Not flagged: a construction site.** It explains itself in the build queue, which is where the player is already looking.
+    - **⭐ Flagged: a met stock limit** — the one case where *"the player already knows"* is not good enough, because the number lives two windows away. That is the finding that made the feature worth building rather than a nicety.
+  - **A sentence, not a flag.** `IdleNote` returns the reason or `null`, so the ring on the map and the line in the panel cannot drift apart, and **every reason has to be sayable before it is allowed to light anything up** — which is what stopped the list growing.
+  - **Cool blue against the full-store amber**, so two different facts read apart without being read. Still not red: the fix is always a decision rather than an emergency (§0.1). Per-building and global switches, the same pair D140 shipped — and **the preference is view state**, for D140's stated reason: a display preference in a hashed, seed-replayed sim would make two players who merely disagree about what to look at diverge into different worlds.
+  - **The ring is untestable (D11) and the rule is not**, so the seven guards are almost all about what must stay silent.
 - **D146 · 2026-08-13 · ⭐⭐ THE TOGGLE IS FELLING, NOT PLANTING — and a capped hut replants instead of downing tools.** Joe, on D145's forester fix: *"A capped hut can replant. Priority should be replant → extra-hands labour. It just shouldn't fell if it has met its cap. It should replant until all painted planting area is maxed out if no logs are needed... I think planting should be on by default for a painted area and felling should be the toggle on/off now that I think about it."*
   - **⭐ HE IS RIGHT, AND THE REASON IS THAT PAINTING GROUND FOR A HUT IS ALREADY THE INSTRUCTION TO KEEP IT WOODED.** Planting was never the interesting question; what the player actually decides is whether they are *taking timber out of this wood* or letting it come back. Three readings of this control now — D137 made the modes non-exclusive, D142 found the reading had reached two of its three call sites, and this one finally makes the label match the decision.
   - **⭐ IT COLLAPSES TWO MECHANISMS INTO ONE, which is the part worth the rename.** A met Logs limit is simply *felling switched off for a while*. `SimWorld.MayFell` is the one place that answers it, and the toggle and the cap go through it together instead of being two rules that could disagree — **D145's own one-door finding, applied the day after it was written.**

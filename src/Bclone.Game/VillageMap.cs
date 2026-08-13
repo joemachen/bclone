@@ -100,6 +100,15 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color FullStoreColour = new("#e8a13c");
 
+    /// <summary>The ring round a workplace that cannot do its job (D147).</summary>
+    /// <remarks>
+    /// <b>Cool, where the full-store ring is warm</b>, because they are different facts and the
+    /// player should be able to tell them apart without reading anything. A full store is
+    /// usually a village doing well at something; an idle hut never is. Still not red — the fix
+    /// is always a decision rather than an emergency (§0.1).
+    /// </remarks>
+    private static readonly Color IdleWorkplaceColour = new("#7fb2d9");
+
     /// <summary>A building marked out but not yet raised (D43).</summary>
     private static readonly Color SiteColour = new("#8f9aa8");
 
@@ -1412,8 +1421,66 @@ public partial class VillageMap : Control
             }
 
             DrawCircle(centre, Mathf.Max(4f, _pixelsPerTile * 0.4f), colour);
+
+            // ⭐ AND A BUILDING THAT CANNOT DO ITS JOB SAYS SO (Joe, D147). The same shape as
+            // D140's full-store ring, for the same reason and with the same switches — and it
+            // earns its place because three times in one session a hut looked idle because of a
+            // number set on a different panel. `SimWorld.IdleNote` is the one place that decides
+            // what counts, so the ring and the sentence in the inspector cannot drift apart.
+            //
+            // A COOLER RING THAN THE FULL-STORE ONE, because they are different facts and a
+            // player should be able to tell them apart at a glance without reading anything: a
+            // full store is usually a village doing well at something, an idle hut never is.
+            if (ShowsIdleMarker(workplace) && world.IdleNote(workplace) is not null)
+            {
+                DrawArc(
+                    centre,
+                    Mathf.Max(7f, _pixelsPerTile * 0.7f),
+                    0f,
+                    Mathf.Tau,
+                    24,
+                    IdleWorkplaceColour,
+                    width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
+            }
         }
     }
+
+    /// <summary>
+    /// Whether this workplace's idle marker is switched on — globally, and for itself.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ VIEW STATE, for the reason D140 spells out on its own marker:</b> the sim is
+    /// hashed and replayed from a seed (D2), so a display preference living there would make
+    /// two players who merely disagree about what to look at diverge into different worlds.
+    /// </remarks>
+    private bool ShowsIdleMarker(Workplace workplace) =>
+        _showIdleMarkers && !_idleMarkerMuted.Contains(workplace.Id);
+
+    private bool _showIdleMarkers = true;
+    private readonly HashSet<int> _idleMarkerMuted = new();
+
+    /// <summary>Switch every idle-workplace marker on or off at once.</summary>
+    public void ShowIdleMarkers(bool shown)
+    {
+        _showIdleMarkers = shown;
+        QueueRedraw();
+    }
+
+    /// <summary>Switch one workplace's marker on or off, and report where it landed.</summary>
+    public bool ToggleIdleMarker(int workplaceId)
+    {
+        bool nowShown = _idleMarkerMuted.Remove(workplaceId);
+        if (!nowShown)
+        {
+            _idleMarkerMuted.Add(workplaceId);
+        }
+
+        QueueRedraw();
+        return nowShown;
+    }
+
+    /// <summary>Whether one workplace's marker is switched on, ignoring the global switch.</summary>
+    public bool IdleMarkerShownFor(int workplaceId) => !_idleMarkerMuted.Contains(workplaceId);
 
     private void DrawHomes()
     {

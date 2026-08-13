@@ -770,6 +770,130 @@ public sealed class SimWorld
     }
 
     /// <summary>
+    /// Why this workplace cannot do its job right now, or <c>null</c> if it can.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE MAP MARKER'S RULE, IN ONE PLACE (Joe, D147).</b> <i>"Idle huts should get an
+    /// indicator like full storage buildings."</i> D140 put an amber ring on a store with no
+    /// room; this is the same idea for a building that is not working — and it earns its place
+    /// because <b>three separate times this session a building looked idle for a reason set on
+    /// a different panel</b> (a log limit, a firewood limit, ground nobody ever painted). §1.1
+    /// is the whole argument: the player cannot answer a problem they cannot see.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ "IDLE" IS NOT ONE FACT THE WAY "FULL" IS, AND THAT IS WHAT THIS METHOD IS FOR.</b>
+    /// A store is full or it is not. A workplace has half a dozen reasons for having nothing to
+    /// do and most of them are fine — so a marker that lit up for all of them would be
+    /// wallpaper, which is exactly what D42 and D123 moved <em>out</em> of the Overview. The
+    /// rule is therefore narrow: <b>this building cannot do its job, and the fix is the
+    /// player's.</b>
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>Not flagged: a hut the player emptied on purpose.</b> <c>StaffingOverride == 0</c>
+    /// is an instruction, not a fault, and D42's rule is that an instruction is obeyed rather
+    /// than argued with. This is why the null-versus-zero distinction D136 fought for matters
+    /// here as well.</item>
+    /// <item><b>Not flagged: a gatherer in winter.</b> Seasonal, expected, and nothing the
+    /// player can do about it — the definition of a marker that teaches people to ignore
+    /// markers.</item>
+    /// <item><b>Not flagged: a forester that is replanting.</b> It is working (D146).</item>
+    /// <item><b>Flagged: a met stock limit.</b> The one case where "the player already knows"
+    /// is <em>not</em> a good enough answer, because the number lives on another panel
+    /// entirely — which is the finding that made this feature worth building.</item>
+    /// </list>
+    /// <para>
+    /// A sentence rather than a flag, so the panel and the marker cannot drift apart, and so
+    /// every reason has to be sayable before it is allowed to light anything up.
+    /// </para>
+    /// </remarks>
+    public string? IdleNote(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        // A site is not a workplace yet; the build queue is where it explains itself.
+        if (workplace.IsSite)
+        {
+            return null;
+        }
+
+        // "Nobody here" is an instruction when the player typed it (D136's null-versus-zero).
+        if (workplace.StaffingOverride == 0)
+        {
+            return null;
+        }
+
+        if (workplace.WorkerIds.Count == 0)
+        {
+            return $"Nobody is working {workplace.Name}.";
+        }
+
+        return workplace.Kind switch
+        {
+            JobKind.Forester => ForesterIdleNote(workplace),
+            JobKind.Woodcutter => WoodcutterIdleNote(workplace),
+            JobKind.Forager => ForagerIdleNote(workplace),
+
+            // Builders and marketers are idle whenever the village has nothing to build or
+            // move, which is the ordinary state of a settled village rather than a fault.
+            _ => null,
+        };
+    }
+
+    private string? ForesterIdleNote(Workplace hut)
+    {
+        if (Zones.WorkGroundTiles(hut.Id) == 0)
+        {
+            return $"{hut.Name} has no ground to work — paint some for it.";
+        }
+
+        // Still something to fell or something to plant: it is working.
+        if (NextGroundToWork(hut, hut.Position) is not null)
+        {
+            return null;
+        }
+
+        if (hut.Mode != WorkMode.PlantOnly && StockLimits.IsMet(Goods.Logs, LogsInSheds()))
+        {
+            return $"{hut.Name} has stopped — you asked the village to keep "
+                + $"{StockLimits.For(Goods.Logs)} logs and it has {LogsInSheds()}.";
+        }
+
+        return hut.Mode == WorkMode.PlantOnly
+            ? $"{hut.Name} is resting its wood, and its ground is wooded again."
+            : $"{hut.Name} has nothing left to fell or to plant on its ground.";
+    }
+
+    private string? WoodcutterIdleNote(Workplace hut)
+    {
+        if (StockLimits.IsMet(Goods.Firewood, FirewoodInSheds()))
+        {
+            return $"{hut.Name} has stopped — you asked the village to keep "
+                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodInSheds()}.";
+        }
+
+        return NearestStoreAccepting(
+                hut.Position, Goods.Logs, store => store.Store.Logs >= Config.LogsPerSplit)
+            is null
+            ? $"{hut.Name} has no logs to split — no store in reach holds the "
+                + $"{Config.LogsPerSplit} a batch needs."
+            : null;
+    }
+
+    private string? ForagerIdleNote(Workplace hut)
+    {
+        // Winter is not a fault, and marking it would teach the player to ignore the marker.
+        if (!FoodSource.IsGatherable(Clock.Season))
+        {
+            return null;
+        }
+
+        return GatherYieldAt(hut) == 0
+            ? $"{hut.Name} has no trees left in its ring, so a trip brings back nothing."
+            : null;
+    }
+
+    /// <summary>
     /// Seats at forester's huts that still own ground with no tree on it — <b>the village's
     /// demand for planting</b>, as opposed to for timber.
     /// </summary>

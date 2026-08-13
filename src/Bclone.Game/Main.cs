@@ -65,6 +65,9 @@ public partial class Main : Control
     private HBoxContainer _storeRow = null!;
     private HBoxContainer _acceptRow = null!;
     private Button _fullMarkerButton = null!;
+    private HBoxContainer _idleRow = null!;
+    private Label _idleLabel = null!;
+    private Button _idleMarkerButton = null!;
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
 
@@ -506,6 +509,19 @@ public partial class Main : Control
                 : world.MayFell(staffable)
                     ? "Felling: ON"
                     : "Felling: ON — held by the log limit";
+        }
+
+        // ⭐ AND THE IDLE MARKER, which belongs to a workplace the same way the full marker
+        // belongs to a store (Joe, D147). The sentence is `SimWorld.IdleNote`'s, so the panel
+        // and the ring on the map can never say different things about the same building.
+        _idleRow.Visible = staffable is not null;
+        if (staffable is not null)
+        {
+            string? why = world.IdleNote(staffable);
+            _idleLabel.Text = why ?? $"{staffable.Name} is working.";
+            _idleMarkerButton.Text = _map.IdleMarkerShownFor(staffable.Id)
+                ? "Marker: ON"
+                : "Marker: off";
         }
 
         // The full-store marker belongs to a store, and every store can fill.
@@ -1608,6 +1624,23 @@ public partial class Main : Control
         _modeButton.Pressed += ToggleSelectedMode;
         _groundRow.AddChild(_modeButton);
 
+        // ⭐ WHY THIS BUILDING IS NOT WORKING, AND A SWITCH TO STOP ASKING (Joe, D147). The
+        // same shape as the full-store marker below, and D140's per-building/global pair.
+        //
+        // The label is the whole point rather than decoration: the ring on the map says *look
+        // here* and this says *why*, and a hut held by a log limit set on the stock panel is
+        // exactly the case where the second half cannot be guessed from the first.
+        _idleRow = new HBoxContainer { Visible = false };
+        _idleRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_idleRow);
+
+        _idleLabel = Muted(string.Empty);
+        _idleRow.AddChild(_idleLabel);
+
+        _idleMarkerButton = new Button { Text = "Marker: ON" };
+        _idleMarkerButton.Pressed += ToggleSelectedIdleMarker;
+        _idleRow.AddChild(_idleMarkerButton);
+
         // ⭐ THE PER-BUILDING HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which
         // should be able to be disabled by building or globally."* Beside the store's own name
         // for D104's reason — a control that belongs to ONE building has to sit next to that
@@ -1657,6 +1690,18 @@ public partial class Main : Control
         }
 
         Warn(_loop.World.SetStoreAccepts(store, goods, !store.Accepts(goods)));
+        RefreshInspector(_loop.World);
+    }
+
+    /// <summary>Silence, or restore, the idle ring on the selected workplace.</summary>
+    private void ToggleSelectedIdleMarker()
+    {
+        if (SelectedWorkplace() is not { IsSite: false } workplace)
+        {
+            return;
+        }
+
+        _map.ToggleIdleMarker(workplace.Id);
         RefreshInspector(_loop.World);
     }
 
@@ -2211,6 +2256,13 @@ public partial class Main : Control
         markers.AddThemeFontSizeOverride("font_size", 12);
         markers.Toggled += on => _map.ShowFullMarkers(on);
         body.AddChild(markers);
+
+        // The global half of D147's idle ring, beside the global half of D140's, because they
+        // are the same kind of preference and a player looking for one will look for the other.
+        var idle = new CheckBox { Text = "mark buildings that cannot work", ButtonPressed = true };
+        idle.AddThemeFontSizeOverride("font_size", 12);
+        idle.Toggled += on => _map.ShowIdleMarkers(on);
+        body.AddChild(idle);
     }
 
     /// <summary>
