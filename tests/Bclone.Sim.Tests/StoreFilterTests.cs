@@ -112,6 +112,116 @@ public sealed class StoreFilterTests
     }
 
     /// <summary>
+    /// ⭐⭐ THE FILTER IS OBEYED BY THE VILLAGE, not merely answered by the predicate.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, playing D141 the day it landed: <i>"my logs-only storage pile allowed firewood. I
+    /// set it to logs-only as soon as it was built."</i> He was right, and <b>every guard above
+    /// this one passed while it was true</b> — they all ask <c>Accepts</c> and none of them ever
+    /// made a villager put something down. <b>A feature tested at its predicate and never at its
+    /// deposit is a feature nobody has tested</b> (D144).
+    /// </para>
+    /// <para>
+    /// Two paths were putting goods where they were not wanted, and the first is why his pile in
+    /// particular was hit. The woodcutter splits out of the nearest store <em>holding logs</em>
+    /// and puts the firewood back into it, asking only whether it was <b>full</b> — so the one
+    /// store guaranteed to be chosen was a pile that takes logs, which is exactly what his
+    /// filter said. The second: an armful of two goods walked to a store chosen for the first
+    /// and emptied both arms into it, because <c>Stockpile</c> is a dumb container and knows
+    /// nothing of the filter.
+    /// </para>
+    /// <para>
+    /// So this asserts the rule from the outside — <b>run the village and let it try</b> — which
+    /// is the only shape that would have caught either.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NothingTheVillageDoesPutsFirewoodInAStoreThatRefusesIt()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        StoreBuilding shed = ShedIn(loop.World);
+
+        // The moment it exists, exactly as Joe did it.
+        Assert.True(loop.World.SetStoreAccepts(shed, Goods.Firewood, accepted: false).Allowed);
+        Assert.True(shed.Accepts(Goods.Logs), "It must still take logs, or nothing is tested.");
+
+        int worst = 0;
+        int everMade = 0;
+        for (int tick = 0; tick < config.TicksPerYear * 20; tick++)
+        {
+            loop.StepOnce();
+            worst = System.Math.Max(worst, shed.Store.Firewood);
+            everMade = System.Math.Max(everMade, loop.World.TotalFirewood());
+        }
+
+        _output.WriteLine(
+            $"20 years: {shed.Name} held at most {worst} firewood while refusing it; the village "
+            + $"made {everMade} in all, and holds {loop.World.OnTheGround(Goods.Firewood)} "
+            + "on the ground.");
+
+        // ⚠️ ANTI-VACUITY FIRST (D7), and it is not decoration here: the guard for D132's bug
+        // was green for weeks because its village died before anybody felled a log. A shed
+        // that never sees firewood because none was ever made proves nothing at all.
+        Assert.True(everMade > 0, "Nobody ever split a log in twenty years, so this is vacuous.");
+        Assert.True(shed.Store.Logs > 0, "Nothing ever went into the store either.");
+
+        Assert.Equal(0, worst);
+    }
+
+    /// <summary>⭐ An armful of two goods leaves behind the one the store will not have.</summary>
+    /// <remarks>
+    /// <para>
+    /// The second path D144 fixed, and it needs posing directly: <c>StoreForTheLoad</c> chooses
+    /// on the <b>one</b> good it treats as the load — food, else logs, else firewood — so a
+    /// villager carrying two walked to a store picked for the first and emptied <em>both</em>
+    /// arms into it. <c>Stockpile</c> is a dumb container and has never heard of the filter.
+    /// </para>
+    /// <para>
+    /// <b>It is not covered by the twenty-year run above</b>, checked rather than assumed: with
+    /// this fix removed and the woodcutter's kept, that guard still passes. Whether anybody is
+    /// interrupted carrying two things depends on the seed, which makes a long run the wrong
+    /// instrument — so the case is posed in three lines and the refusal has to hold anyway
+    /// (D7 is about the guard being able to fail, and a guard that only sometimes exercises its
+    /// case can only sometimes fail).
+    /// </para>
+    /// <para>
+    /// And what the store will not have goes <b>on the ground</b>, not nowhere — D96's rule,
+    /// which is already the line under the deposit.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AnArmfulLeavesBehindWhatTheStoreWillNotHave()
+    {
+        SimWorld world = World();
+        StoreBuilding shed = ShedIn(world);
+
+        Assert.True(world.SetStoreAccepts(shed, Goods.Firewood, accepted: false).Allowed);
+
+        Villager carrier = world.Villagers[0];
+        carrier.Position = shed.Position;
+        carrier.CarriedFood = 0;
+        carrier.CarriedLogs = 5;
+        carrier.CarriedFirewood = 7;
+
+        int logsBefore = shed.Store.Logs;
+        Bclone.Sim.Systems.BehaviorSystem.ArriveWithALoadForTest(world, carrier);
+
+        _output.WriteLine(
+            $"{shed.Name} refusing firewood took {shed.Store.Logs - logsBefore} of 5 logs and "
+            + $"{shed.Store.Firewood} firewood; {world.OnTheGround(Goods.Firewood)} firewood is "
+            + "on the ground.");
+
+        Assert.Equal(logsBefore + 5, shed.Store.Logs);
+        Assert.Equal(0, shed.Store.Firewood);
+
+        // Conservation: the seven pieces still exist somewhere a villager can reach.
+        Assert.Equal(0, carrier.CarriedFirewood);
+        Assert.Equal(7, world.OnTheGround(Goods.Firewood));
+    }
+
+    /// <summary>
     /// ⭐ Filters are silent until somebody sets one — no golden moves for the feature landing.
     /// </summary>
     /// <remarks>

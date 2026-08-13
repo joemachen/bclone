@@ -1852,6 +1852,17 @@ public sealed class BehaviorSystem : ISimSystem
     internal static void CollectForTest(SimWorld world, Villager villager) =>
         CollectFromStore(world, villager);
 
+    /// <summary>Putting a load down at a store, exposed so a test can pose the case directly.</summary>
+    /// <remarks>
+    /// The same seam as <see cref="CollectForTest"/>, and for the same reason (D144). An
+    /// armful of <em>two</em> goods arriving at a store that will only have one of them is a
+    /// case the fixture village does not reliably produce — it depends on who is interrupted
+    /// carrying what — so a twenty-year run is not a guard for it. Posed directly, it is three
+    /// lines and cannot go vacuous.
+    /// </remarks>
+    internal static void ArriveWithALoadForTest(SimWorld world, Villager villager) =>
+        ArriveAt(world, villager, VillagerState.HaulingToStore);
+
     private static void CollectFromStore(SimWorld world, Villager villager)
     {
         Household household = world.HouseholdOf(villager);
@@ -2156,12 +2167,31 @@ public sealed class BehaviorSystem : ISimSystem
             // this zeroed the arms regardless, so a load that arrived at a full store was
             // destroyed. RaiseTheBuilding one screen up gets it right and says why:
             // "never dropped, per the conservation rule".
+            // ⚠️ AND EACH GOOD IS ASKED ABOUT SEPARATELY (D144). `StoreForTheLoad` chooses on
+            // the ONE good it treats as the load — food, else logs, else firewood — so a
+            // villager carrying two things walked to a store picked for the first and emptied
+            // both arms into it. `Stockpile` is a dumb container and knows nothing of the
+            // player's filter, so a pile set to logs-only took the firewood in the other arm.
+            // Whatever the destination will not have goes down where they stand, one line
+            // below, which is D96's rule already sitting here.
             if (StoreForTheLoad(world, villager) is StoreBuilding destination)
             {
                 Stockpile store = destination.Store;
-                villager.CarriedFood -= store.Add(Goods.Food, villager.CarriedFood);
-                villager.CarriedLogs -= store.Add(Goods.Logs, villager.CarriedLogs);
-                villager.CarriedFirewood -= store.Add(Goods.Firewood, villager.CarriedFirewood);
+
+                if (destination.Accepts(Goods.Food))
+                {
+                    villager.CarriedFood -= store.Add(Goods.Food, villager.CarriedFood);
+                }
+
+                if (destination.Accepts(Goods.Logs))
+                {
+                    villager.CarriedLogs -= store.Add(Goods.Logs, villager.CarriedLogs);
+                }
+
+                if (destination.Accepts(Goods.Firewood))
+                {
+                    villager.CarriedFirewood -= store.Add(Goods.Firewood, villager.CarriedFirewood);
+                }
             }
 
             if (villager.IsCarrying)
@@ -2537,15 +2567,48 @@ public sealed class BehaviorSystem : ISimSystem
                 // house is what froze the household next door (D29), and the daily
                 // sharing policy only existed to undo it.
                 //
-                // Back into the shed the logs came out of where there is room, so a
+                // Back into the shed the logs came out of where it will take them, so a
                 // woodyard stays one place rather than becoming a two-shed shuffle.
-                StoreBuilding wall = woodyard.Store.IsFull
-                    ? world.NearestStoreAccepting(
-                        villager.Position, Goods.Firewood, static store => !store.Store.IsFull)
-                        ?? woodyard
-                    : woodyard;
+                //
+                // ⛔ IT USED TO ASK ONLY WHETHER THE YARD WAS FULL, AND THAT PUT FIREWOOD IN
+                // A STORE THE PLAYER HAD JUST SAID WOULD NOT TAKE IT (D144). Joe, playing:
+                // *"my logs-only storage pile allowed firewood. I set it to logs-only as soon
+                // as it was built."* A pile that takes logs is exactly what `NearestStoreWithLogs`
+                // picks to split from, so the one store guaranteed to be chosen here was the one
+                // his filter was about — **80 firewood in a pile set to logs.** `Accepts` is the
+                // question, and this line asked `IsFull` instead: **D132's bug, one predicate
+                // over**, and the third time a timber path has decided by something other than
+                // what a store will hold.
+                //
+                // The fallback is the same one the full case always used, and it is now the
+                // fallback for both reasons a yard can refuse — no room, and not allowed.
+                StoreBuilding? wall =
+                    woodyard.Accepts(Goods.Firewood) && !woodyard.Store.IsFull
+                        ? woodyard
+                        : world.NearestStoreAccepting(
+                            villager.Position, Goods.Firewood, static store => !store.Store.IsFull);
 
-                wall.Store.Add(Goods.Firewood, firewood);
+                // ⚠️ AND WHAT WILL NOT FIT GOES ON THE GROUND RATHER THAN NOWHERE (D96). The
+                // return value of `Add` was discarded, so a batch that overflowed the last
+                // inch of a store was destroyed at the doorstep — the leak D96 closed for
+                // every other producer and never for this one. A village whose stores are all
+                // full or all filtered now has a visible heap of firewood beside the hut,
+                // which is the signal to build somewhere to put it (D134).
+                int stored = wall?.Store.Add(Goods.Firewood, firewood) ?? 0;
+                if (stored < firewood)
+                {
+                    world.SetDown(villager.Position, Goods.Firewood, firewood - stored);
+                }
+
+                if (world.Logs(LogLevel.Debug))
+                {
+                    world.Log(LogLevel.Debug, "behavior",
+                        $"{villager.Name} split {firewood} firewood — "
+                        + (stored > 0 ? $"{stored} into {wall!.Name}" : "no store would take it")
+                        + (stored < firewood ? $", {firewood - stored} set down" : string.Empty)
+                        + $" — {world.Clock}.");
+                }
+
                 villager.State = VillagerState.TravelingHome;
                 return;
 
