@@ -1,4 +1,5 @@
 using Bclone.Sim.Config;
+using Bclone.Sim.Core;
 using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
@@ -81,46 +82,142 @@ public sealed class AgeingTests
     //  The point of the whole exercise
     // ---------------------------------------------------------------
 
+    /// <summary>
+    /// ⭐ The same day's work brings back less when you are old — the flat-middle fix (D12).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// If a day in old age costs no more than a day in youth, ageing is just a countdown and
+    /// Phase 0 is a spreadsheet. This is the guard that says it shows up in a lived run rather
+    /// than only in <see cref="AgeingSystem.ComputeVigour"/>'s arithmetic.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT COUNTED FORAGING TRIPS PER SEASON, AND THAT METRIC CANNOT SEE THE THING (D151).</b>
+    /// Measured over a whole life on this fixture: <b>she forages once or twice a season, and
+    /// that is the floor.</b> `Plenty` is called `Plenty` — one trip is worth about 64 food and
+    /// a meal is 5 — so a trip still covers the season however frail she gets, and the trip
+    /// count simply cannot rise. The guard read <b>1.23 young against 1.09 old</b> and reported
+    /// a broken mechanic; the mechanic was fine and the ruler had two gradations.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ AND THE ATTRIBUTION I RECORDED IN D142 WAS WRONG, which is why this was measured
+    /// again rather than reasoned about.</b> I had it down to planting-by-default enriching her
+    /// hut's ring over her lifetime, plus D139's shed floor. **The ring is flat**: 110 wooded
+    /// tiles of 289 at year one and 105 at year forty-five, worth 66 a trip and then 62.
+    /// Nothing about the valley changed. Both of those decisions moved the number by moving
+    /// which years she happened to make a second trip in — noise in a metric that only had
+    /// ones and twos to say it with.
+    /// </para>
+    /// <para>
+    /// <b>So it measures what vigour actually does: food brought home per trip.</b> Unquantised,
+    /// and literally the claim in the test's own name — the same work, less food, so more work
+    /// for the same food. Measured across a life: <b>64 a trip through the prime years, 30 by
+    /// year forty-five.</b> The ring is asserted flat over the same window, so the fall is
+    /// attributable to <em>her</em> and not to the valley — the D142 lesson (two causes, either
+    /// sufficient) applied before it costs another session.
+    /// </para>
+    /// </remarks>
     [Fact]
     public void OldAgeCostsMoreWorkForTheSameFood()
     {
-        // The flat-middle fix. If a season in old age takes no more effort than a
-        // season in youth, ageing is still just a countdown and Phase 0 is still a
-        // spreadsheet.
-        var (loop, sink) = Phase0Fixtures.Build(Config);
-        Phase0Fixtures.RunUntilDeath(loop);
+        SimConfig config = Config;
+        var (loop, _) = Phase0Fixtures.Build(config);
+        SimWorld world = loop.World;
 
-        var youngSeasons = new List<int>();
-        var oldSeasons = new List<int>();
+        Workplace hut = TheGatherersHut(world);
 
-        foreach (string line in Phase0Fixtures.LifeLog(sink))
+        var young = new List<int>();
+        var old = new List<int>();
+        int ringYieldYoung = 0;
+        int ringYieldOld = 0;
+
+        int lastGathers = 0;
+        int lastFood = 0;
+
+        for (int year = 1; year <= 60 && world.Villager.Alive; year++)
         {
-            if (!line.Contains("foraged", StringComparison.Ordinal))
+            loop.Step(config.TicksPerYear);
+            if (!world.Villager.Alive)
+            {
+                break;
+            }
+
+            int gathers = world.Villager.TotalGathers - lastGathers;
+            int food = FoodBroughtIn(world) - lastFood;
+            lastGathers = world.Villager.TotalGathers;
+            lastFood = FoodBroughtIn(world);
+
+            if (gathers <= 0)
             {
                 continue;
             }
 
-            int year = ExtractYear(line);
-            int trips = ExtractTrips(line);
             if (year <= 15)
             {
-                youngSeasons.Add(trips);
+                young.Add(food / gathers);
+                ringYieldYoung = world.GatherYieldAt(hut);
             }
             else if (year >= 35)
             {
-                oldSeasons.Add(trips);
+                old.Add(food / gathers);
+                ringYieldOld = world.GatherYieldAt(hut);
             }
         }
 
-        Assert.NotEmpty(youngSeasons);
-        Assert.NotEmpty(oldSeasons);
+        Assert.NotEmpty(young);
+        Assert.NotEmpty(old);
 
-        double young = Average(youngSeasons);
-        double old = Average(oldSeasons);
-        _output.WriteLine($"Average foraging trips per season — young: {young:F2}, old: {old:F2}");
+        double youngTrip = Average(young);
+        double oldTrip = Average(old);
 
-        Assert.True(old > young,
-            $"Old age must cost more work: young {young:F2} trips/season vs old {old:F2}.");
+        _output.WriteLine(
+            $"food brought home per trip — young {youngTrip:F1}, old {oldTrip:F1}; "
+            + $"the hut's ring was worth {ringYieldYoung} a trip young and {ringYieldOld} old.");
+
+        // ⭐ AND THE VALLEY DID NOT MOVE, so the fall is hers. Without this the guard would pass
+        // just as happily on a villager in a wood that was quietly being felled around her,
+        // which is a statement about the map rather than about growing old.
+        Assert.True(ringYieldOld * 10 >= ringYieldYoung * 9,
+            $"The hut's ring fell from {ringYieldYoung} to {ringYieldOld} a trip over her life, "
+            + "so this is measuring the valley rather than her age.");
+
+        Assert.True(oldTrip < youngTrip * 0.8,
+            $"Old age brought home {oldTrip:F1} a trip against {youngTrip:F1} in her prime — "
+            + "not enough of a decline for a life to have a shape (D12).");
+    }
+
+    /// <summary>The one place Phase 0's villager gathers.</summary>
+    private static Workplace TheGatherersHut(SimWorld world)
+    {
+        foreach (Workplace place in world.Workplaces)
+        {
+            if (place.Kind == JobKind.Forager && !place.IsSite)
+            {
+                return place;
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("Phase 0's village has nowhere to gather.");
+    }
+
+    /// <summary>
+    /// Food anybody has <b>gathered</b> into the village, ever.
+    /// </summary>
+    /// <remarks>
+    /// <c>Produced</c> and not <c>Held</c>: the lifetime counters mean *this container received
+    /// this much fresh*, and <see cref="Stockpile.Receive"/> deliberately does not touch them
+    /// (see its remarks), so a fetch or a delivery cannot be counted as a second harvest. In
+    /// Phase 0 there is one villager, so every unit of it is hers.
+    /// </remarks>
+    private static int FoodBroughtIn(SimWorld world)
+    {
+        int total = world.HouseholdOf(world.Villager).Stockpile.Produced(Goods.Food);
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            total += store.Store.Produced(Goods.Food);
+        }
+
+        return total;
     }
 
     [Fact]
