@@ -412,13 +412,15 @@ public partial class Main : Control
                 ? $"nobody working of {seats} seats"
                 : $"{working} working of {seats} seats";
 
+            // Trimmed for a narrow column (D149) — "you asked for" became "asked", because the
+            // − N + control is on the line directly above and says whose number it is.
             places.Text = asked is int wanted && wanted != working
-                ? $"{count} — you asked for {wanted}, village wants {quota.For(kind)}"
-                : $"{count} — village wants {quota.For(kind)}";
+                ? $"{count} · asked {wanted} · village wants {quota.For(kind)}"
+                : $"{count} · village wants {quota.For(kind)}";
         }
 
         // And what the 1 is one OF, which is the whole of Joe's question.
-        _laborerReadout.Text = $"{world.Laborers} of {world.AbleAdults}";
+        _laborerReadout.Text = $"{world.Laborers} of {world.AbleAdults} able adults";
 
         // The two standing alerts used to be composed here every frame and shown in the
         // overview. They are narrated by the sim on their edges now and read in the village
@@ -1370,6 +1372,7 @@ public partial class Main : Control
             Label why = Muted(reason);
             why.HorizontalAlignment = HorizontalAlignment.Right;
             why.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            why.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             table.AddChild(why);
         }
 
@@ -1951,8 +1954,9 @@ public partial class Main : Control
         scroll.AnchorTop = scroll.AnchorBottom = 0f;
         scroll.OffsetTop = Edge;
         scroll.OffsetBottom = Edge;
-        scroll.OffsetLeft = right ? -(Edge + ColumnWidth) : Edge;
-        scroll.OffsetRight = right ? -Edge : Edge + ColumnWidth;
+        // A starting width only — FitColumns re-reads it against the window every frame.
+        scroll.OffsetLeft = right ? -(Edge + MaxColumnWidth) : Edge;
+        scroll.OffsetRight = right ? -Edge : Edge + MaxColumnWidth;
         scroll.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
         scroll.GrowVertical = GrowDirection.End;
 
@@ -1997,11 +2001,19 @@ public partial class Main : Control
     private void FitColumns()
     {
         float room = Size.Y - Edge - (Edge + ControlsReserve);
+        float wide = ColumnWidthFor(Size.X);
 
         foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
         {
             float wanted = column.GetCombinedMinimumSize().Y;
             bool overflowing = wanted > room;
+
+            // ⭐ AND AS WIDE AS THE WINDOW CAN SPARE, WHICH IT WAS NOT (Joe, D149). See
+            // `ColumnWidthFor`: a fixed 400 a side is a fifth of a big screen and four fifths
+            // of a small one, and Joe was playing on a small one.
+            bool right = scroll.AnchorLeft > 0.5f;
+            scroll.OffsetLeft = right ? -(Edge + wide) : Edge;
+            scroll.OffsetRight = right ? -Edge : Edge + wide;
 
             scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(wanted, Mathf.Max(0f, room)));
 
@@ -2019,8 +2031,44 @@ public partial class Main : Control
         }
     }
 
-    /// <summary>How wide a column of panels is. One number, so the two sides match.</summary>
-    private const int ColumnWidth = 400;
+    /// <summary>
+    /// How wide a column of panels is — <b>a share of the window, not a number</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ IT WAS A FIXED 400 A SIDE, AND THAT IS A FIFTH OF A BIG SCREEN AND FOUR FIFTHS OF
+    /// A SMALL ONE (Joe, D149).</b> <i>"The visible playing window is tiny."</i> He was playing
+    /// at about 990 logical pixels wide: two 400s and three gaps left the valley **190 pixels**
+    /// — under a fifth of the window — for a game whose whole proposition is watching a place.
+    /// D116 tuned the type down inside these panels and never asked how wide the panels were.
+    /// </para>
+    /// <para>
+    /// <b>A share with both ends nailed down.</b> The share is what fixes the small window; the
+    /// ceiling is what stops a 4K screen handing over 1,100 pixels a side to panels that have
+    /// nothing more to say; the floor is what stops the rows inside clipping into nonsense. At
+    /// 1920 it lands on 400 and nothing moves, so this is a no-op on a maximised window and a
+    /// rescue on a small one.
+    /// </para>
+    /// <para>
+    /// Read every frame in <see cref="FitColumns"/> for the reason recorded there: everything
+    /// that changes it would otherwise need its own hook, and the forgotten one is the bug.
+    /// </para>
+    /// </remarks>
+    private static float ColumnWidthFor(float windowWidth) =>
+        Mathf.Clamp(windowWidth * ColumnShareOfWindow, MinColumnWidth, MaxColumnWidth);
+
+    /// <summary>The share of the window one column of panels may take.</summary>
+    /// <remarks>
+    /// Two columns, so the panels never take more than 54% between them and the valley always
+    /// keeps the larger half of the window.
+    /// </remarks>
+    private const float ColumnShareOfWindow = 0.27f;
+
+    /// <summary>Narrow enough to leave a valley, wide enough that the rows inside still read.</summary>
+    private const float MinColumnWidth = 240f;
+
+    /// <summary>Where the share stops paying for itself. The old fixed width, kept as the cap.</summary>
+    private const float MaxColumnWidth = 400f;
 
     /// <summary>A panel stacked into one of the side columns.</summary>
     /// <remarks>
@@ -2256,7 +2304,7 @@ public partial class Main : Control
         _windows.RemoveAt(_windows.Count - 1);
         _headers.RemoveAt(_headers.Count - 1);
 
-        body.AddChild(Muted("Windows — what is on screen"));
+        body.AddChild(Caption("Windows — what is on screen"));
 
         foreach ((string name, PanelContainer panel) in _windows)
         {
@@ -2266,7 +2314,7 @@ public partial class Main : Control
             body.AddChild(shown);
         }
 
-        body.AddChild(Muted("c folds every panel · h hides the lot"));
+        body.AddChild(Caption("c folds every panel · h hides the lot"));
 
         // ⭐ THE GLOBAL HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which should
         // be able to be disabled by building or globally."* The per-building half lives on the
@@ -2426,7 +2474,7 @@ public partial class Main : Control
         var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 2);
 
-        wrapper.AddChild(Muted("Stock limits — how much to keep before the work stops"));
+        wrapper.AddChild(Caption("Stock limits — how much to keep before the work stops"));
         wrapper.AddChild(rows);
 
         foreach (Goods goods in StockLimits.Kinds)
@@ -2465,20 +2513,33 @@ public partial class Main : Control
         var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 2);
 
-        wrapper.AddChild(Muted("Professions — how many people on each kind of work"));
+        wrapper.AddChild(Caption("Professions — how many people on each kind of work"));
         wrapper.AddChild(rows);
 
         // Laborers first, as in Joe's screenshot, and as a readout: they are the remainder.
+        // Two lines like the professions below it (D149), so the sentence keeps the width.
+        var laborStack = new VBoxContainer();
+        laborStack.AddThemeConstantOverride("separation", 0);
+
         var laborRow = new HBoxContainer();
         laborRow.AddThemeConstantOverride("separation", 6);
         Label laborName = Muted("Laborer");
-        laborName.CustomMinimumSize = new Vector2(90, 0);
+        laborName.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
         laborRow.AddChild(laborName);
         _laborerReadout = Muted(string.Empty);
         laborRow.AddChild(_laborerReadout);
-        laborRow.AddChild(
-            Muted("able adults — whatever is spare: clearing, hauling, tidying"));
-        rows.AddChild(laborRow);
+        laborStack.AddChild(laborRow);
+
+        var laborUnder = new HBoxContainer();
+        laborUnder.AddThemeConstantOverride("separation", 0);
+        laborUnder.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
+        Label laborWhat = Muted("spare hands: clearing, hauling, tidying");
+        laborWhat.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        laborWhat.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        laborUnder.AddChild(laborWhat);
+        laborStack.AddChild(laborUnder);
+
+        rows.AddChild(laborStack);
 
         foreach (JobKind kind in JobLimits.Kinds)
         {
@@ -2506,6 +2567,8 @@ public partial class Main : Control
 
             Label why = Muted(reason);
             why.Modulate = new Color(1, 1, 1, 0.3f);
+            why.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            why.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             row.AddChild(why);
 
             inside.AddChild(row);
@@ -2587,10 +2650,20 @@ public partial class Main : Control
     /// two different widgets for one quantity is how a player comes to believe they are two
     /// quantities. It is also narrower, which is what Joe asked the whole panel for.
     /// </remarks>
-    private HBoxContainer BuildProfessionRow(JobKind kind)
+    private Control BuildProfessionRow(JobKind kind)
     {
+        // ⭐ TWO LINES, AND THE SECOND ONE IS WHY (D149). The readout used to share a line with
+        // the name and the − N + control, which left it about sixty pixels once the column
+        // became a share of the window rather than a fixed 400 — and sixty pixels is ten
+        // characters, which is not a sentence. D148 had just finished proving that the *words*
+        // are the whole fix here: "0 of 2" is what confused Joe and "nobody working of 2 seats"
+        // is what did not. So the sentence keeps the width and the row gives up the line.
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 0);
+
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
+        stack.AddChild(row);
 
         Label name = Muted(ProfessionName(kind));
         name.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
@@ -2650,19 +2723,32 @@ public partial class Main : Control
             Apply();
         };
 
-        Label places = Muted(string.Empty);
-        places.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-
         row.AddChild(fewer);
         row.AddChild(amount);
         row.AddChild(more);
-        row.AddChild(places);
+
+        // The sentence, on its own line and indented under the name so the eye can still tell
+        // which row it belongs to. Wrapped rather than clipped: a readout that runs off the
+        // edge of a narrow column is the same bug as a button you cannot press (D113).
+        var under = new HBoxContainer();
+        under.AddThemeConstantOverride("separation", 0);
+        under.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
+
+        Label places = Muted(string.Empty);
+        places.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        places.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        under.AddChild(places);
+
+        stack.AddChild(under);
 
         Apply();
 
         _professionReadouts.Add((kind, places));
-        return row;
+        return stack;
     }
+
+    /// <summary>How far the readout sits under its own profession's name.</summary>
+    private const int ProfessionIndent = 12;
 
     /// <summary>What a kind of work is called on screen. Every value named (D108).</summary>
     private static string ProfessionName(JobKind kind) => kind switch
@@ -2677,10 +2763,20 @@ public partial class Main : Control
     };
 
     /// <summary>One good's limit: a name, a "village decides" tick, a number, and the stock.</summary>
-    private HBoxContainer BuildStockLimitRow(Goods goods)
+    private Control BuildStockLimitRow(Goods goods)
     {
+        // ⭐ TWO LINES, AND MEASURING IS WHAT FOUND IT (D149). Making the columns a share of
+        // the window did nothing for the left one, because a column's minimum width is its
+        // widest child's — and a probe over the tree found **six of these rows at 438 pixels
+        // each**, holding the whole column at 450 however narrow the window was. A 190-pixel
+        // readout beside a 110-pixel spin box beside a name and a button does not fit a
+        // quarter of a small screen, and no amount of arithmetic outside it would have helped.
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 0);
+
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
+        stack.AddChild(row);
 
         Label name = Muted(GoodsName(goods));
         name.CustomMinimumSize = new Vector2(74, 0);
@@ -2712,8 +2808,10 @@ public partial class Main : Control
         // there is a limit and a button must not read like a state (D139).
         var clear = new Button { Text = "clear", Flat = true, Disabled = true };
 
+        // No minimum width any more: it wraps under the row instead of widening the column.
         Label held = Muted(string.Empty);
-        held.CustomMinimumSize = new Vector2(190, 0);
+        held.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        held.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 
         void Set(int? limit)
         {
@@ -2730,10 +2828,15 @@ public partial class Main : Control
 
         row.AddChild(amount);
         row.AddChild(clear);
-        row.AddChild(held);
+
+        var under = new HBoxContainer();
+        under.AddThemeConstantOverride("separation", 0);
+        under.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
+        under.AddChild(held);
+        stack.AddChild(under);
 
         _stockLimitReadouts.Add((goods, held));
-        return row;
+        return stack;
     }
 
     /// <summary>The "have N" labels, refreshed with everything else.</summary>
@@ -3023,6 +3126,25 @@ public partial class Main : Control
     {
         var label = new Label { Text = text };
         label.AddThemeFontSizeOverride("font_size", RowSize);
+        return label;
+    }
+
+    /// <summary>
+    /// A muted line that <b>wraps rather than widening its column</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ A LABEL THAT CANNOT WRAP SETS A FLOOR UNDER THE WHOLE COLUMN (D149).</b> The
+    /// column is a <see cref="ScrollContainer"/> with horizontal scrolling disabled, so its
+    /// minimum width is its widest child's — and one caption of forty-nine characters
+    /// (*"Professions — how many people on each kind of work"*) held the panel at 325 pixels
+    /// however narrow the window told it to be. Making the columns a share of the window
+    /// achieved nothing for the panel that needed it most until this landed with it.
+    /// </remarks>
+    private static Label Caption(string text)
+    {
+        Label label = Muted(text);
+        label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        label.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         return label;
     }
 
