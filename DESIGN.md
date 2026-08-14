@@ -740,7 +740,7 @@ there, because it is the slice that opens that method.
   allocator's only source, and both `Harvest` call sites are player-instructed — a control is
   safe when its state is read at a chokepoint, and at risk the moment there are two ways to do
   the thing. **That is the check to run when the next control is designed, not after it ships.**
-- **Where the suite stands: 558 passing, 4 failing, 9 skipped of 571** (was 533 / 13 / 9 of 555
+- **⭐ Where the suite stands: 562 passing, 0 failing, 9 skipped of 571 — GREEN** (was 533 / 13 / 9 of 555
   at the start of the session). **Everything left is either a golden held back on purpose or
   already-queued work** — three hash goldens (`StockLimitTests` ×2 and `DrawOrderIsTheContract`),
   three map-generation guards, and `OldAgeCostsMoreWorkForTheSameFood`, which Joe parked.
@@ -753,8 +753,14 @@ there, because it is the slice that opens that method.
   It counted trips per season, and she forages once or twice — **the metric was floored and
   could not see the mechanic**. It measures food brought home per trip now: **64 in her prime,
   30 at forty-five**. D142's attribution of it was wrong and is corrected in place.
-- **Still to come in step C:** **the goldens, re-taken last, one stated reason each** — three of
-  them, and they are now the only red left; the cold start re-measured; then merge back to
+- **The three goldens are re-taken** ✅ (D152, last as the rule says, one commit, one stated
+  reason each). **The map golden is the kind the guard exists for:** the tree stands and forage
+  sites were *deleted from the middle of the draw order*, which is save-breaking by construction
+  — unlike the seams and the woodland, which were appended and have their own guards proving it.
+  The two village goldens carry step C plus D142's fell mispricing and D144's destroyed
+  firewood. **D143, D145, D146, D148, D150 and D151 are not in them**, which is the sparse-hash
+  no-op contract holding for three separate controls.
+- **Still to come in step C:** the cold start re-measured, then merge back to
   `phase/2-wood-fuel-and-tools`.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**

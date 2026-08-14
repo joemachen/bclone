@@ -92,9 +92,23 @@ public sealed class MapGenerationTests
     // it by generating the same seed with the coverage set to zero and asserting the founding
     // site, the forage sites, the tree stands and the soil are all identical. Only trees differ.
     //
-    //   before the seams (D91):     2208871881858546589
+    // RE-TAKEN A THIRD TIME, DELIBERATELY (D152) — and this one is the kind of change the
+    // guard exists to make somebody say out loud. **The two ring-drawn tree stands and the six
+    // ring-drawn forage sites are deleted** (step C, D124–D130): food stopped being a fact of
+    // the map and became a decision. Those two loops consumed random draws, so removing them
+    // shifts every subsequent value — the founding site, the soil, both seams and the woodland
+    // are all different now for every seed ever written down.
+    //
+    // ⚠️ UNLIKE THE PREVIOUS TWO RE-TAKES, THE DRAW ORDER GENUINELY MOVED. The seams (D91) and
+    // the woodland were APPENDED, and their own guards prove it. This is deletion from the
+    // middle, which is save-breaking by construction — taken on purpose because the sites it
+    // removes are gone from the game, and recorded here so that no later reader mistakes it
+    // for the appended kind. `MapGenerator` says the same thing at the site of the deletion.
+    //
+    //   before the seams (D91):       2208871881858546589
     //   before the valley was wooded: 7476686338440514564
-    private const ulong GoldenMapHash = 15355449050208049248UL;
+    //   before the sites retired:     15355449050208049248
+    private const ulong GoldenMapHash = 3589830841205379371UL;
 
     // ---------------------------------------------------------------
     //  Woodland — `specs/forests-and-gathering.md`

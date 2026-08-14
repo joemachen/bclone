@@ -139,8 +139,30 @@ public sealed class StockLimitTests
     // matching — somebody previously left idle now takes a distant job, and fifty years of
     // that is a different village. A golden that moves for a reason you cannot state is a
     // wrong change; this one moved for a reason that took measuring to state correctly.
-    private const ulong FixtureFiftyYearHash = 8652554140921204871UL;
-    private const ulong ShippedFiftyYearHash = 2151271050042369210UL;
+    // ⭐ RE-TAKEN FOR STEP C AND FOR TWO BUGS FOUND INSIDE IT (D152). These were already red
+    // when this session opened — they carry everything step C did to the economy (D124–D141:
+    // the sites retiring, regrowth, persistent harvest paint, the shed ceiling, the log
+    // ambition) — and two more landed on top, both of which change every village whether or
+    // not anybody sets a limit:
+    //
+    //   D142 — **every fell in the village was billing three times its own price.** The
+    //          action's duration asked the mode rather than the errand, so from D137 a
+    //          forester who walked to a tree and came home with logs was charged `PlantTicks`:
+    //          12 ticks against a `cut_ticks` of 4. Fifty years of felling at the right speed
+    //          is a different village.
+    //   D144 — **firewood was destroyed once the woodyard filled.** `Add`'s return value was
+    //          discarded, so every batch after a store filled ceased to exist. It goes on the
+    //          ground now (D96's rule, which every other producer already had).
+    //
+    // D143, D145, D146, D148, D150 and D151 are NOT in these numbers, and it is worth saying
+    // why: three were test-only, and the other three are controls that do nothing until the
+    // player uses one — a met log limit, a felling toggle, a store filter — which is precisely
+    // the no-op contract this guard exists to hold them to. **It held.**
+    //
+    //   before the sites retired: fixture 8652554140921204871,
+    //                             shipped 2151271050042369210
+    private const ulong FixtureFiftyYearHash = 15720299932978060475UL;
+    private const ulong ShippedFiftyYearHash = 9131366701299548068UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
