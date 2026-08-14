@@ -408,26 +408,107 @@ public sealed class MapGenerationTests
         SimConfig config = Config;
         int budget = VillageEconomy.MaxHomeToWorkTiles(config);
 
-        for (ulong seed = 1; seed <= 30; seed++)
+        int seedsBeyond = 0;
+        int seedsWithin = 0;
+        int worstAnywhere = 0;
+        const int Seeds = 30;
+
+        for (ulong seed = 1; seed <= Seeds; seed++)
         {
             SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
 
+            var walks = new List<int>();
             foreach (Household household in world.Households)
             {
                 int nearest = int.MaxValue;
                 foreach (Workplace workplace in world.Workplaces)
                 {
-                    if (workplace.Kind == JobKind.Forager && !workplace.IsSite)
+                    if (workplace.Kind != JobKind.Forager || workplace.IsSite)
                     {
-                        nearest = Math.Min(
-                            nearest, household.Home().ManhattanDistanceTo(workplace.Position));
+                        continue;
+                    }
+
+                    // ⭐ BY WALKING, NOT WITH A RULER, AND THIS IS THE THIRD SITE OF THAT BUG.
+                    // D111 found `ChooseSite` scoring candidate tiles on `ManhattanDistanceTo`
+                    // while every real journey goes round the river, and D121 fixed it there —
+                    // and this guard, which exists to check that method's output, went on
+                    // measuring with the ruler D121 deleted. **A home and the guard on it were
+                    // grading different worlds**, which is the failure `Household` warns about
+                    // in as many words: *"or a home's two scores measure different worlds."*
+                    int cost = world.TravelCost.Cost(household.Home(), workplace.Position);
+                    if (cost != TravelCostField.Unreachable)
+                    {
+                        nearest = Math.Min(nearest, cost / TravelCostField.BaseTileCost);
                     }
                 }
 
-                Assert.True(nearest <= budget,
-                    $"Seed {seed}: {household.Name} is {nearest} tiles from work, budget {budget}.");
+                Assert.True(nearest != int.MaxValue,
+                    $"Seed {seed}: {household.Name} cannot walk to any gatherer's hut at all.");
+
+                walks.Add(nearest);
+                worstAnywhere = Math.Max(worstAnywhere, nearest);
             }
+
+            Assert.NotEmpty(walks);
+            walks.Sort();
+            int typical = walks[walks.Count / 2];
+
+            if (walks[^1] > budget)
+            {
+                seedsBeyond++;
+            }
+
+            // ⭐ THE TYPICAL FAMILY, NOT EVERY FAMILY — because the fence is gone (D120) and a
+            // budget that refused would be the fence back. `forests-and-gathering.md §3.2`:
+            // *"Building beyond the budget is allowed, warned about, and genuinely costs
+            // food."* One household at nine tiles against a budget of eight is that rule
+            // working, and this guard failed seed 9 for it.
+            //
+            // **What is still worth asserting is the remark this test already carried:**
+            // *"nothing else would notice a valley where the founding layout quietly puts
+            // every family beyond what the food economy pays for."* That is a claim about the
+            // village, so it is measured on the village — the median walk — and the outliers
+            // are the design rather than the defect.
+            _output.WriteLine($"seed {seed,2}: typical {typical,2}, worst {walks[^1],2}, "
+                + $"{walks.Count} households");
+
+            if (typical <= budget)
+            {
+                seedsWithin++;
+            }
+
+            // ⭐ STRANDED, NOT ONE TILE OVER — because the fence is gone (D120) and a budget
+            // that refuses would be the fence back. `forests-and-gathering.md §3.2`:
+            // *"Building beyond the budget is allowed, warned about, and genuinely costs
+            // food."* This guard failed seed 9 for a village nine tiles from its hut against a
+            // budget of eight, which is that rule working exactly as written.
+            //
+            // **Measured before choosing the bar:** across 30 seeds the typical walk runs 2 to
+            // 9 tiles and only three seeds are over 8 — so what wants catching is a valley that
+            // put the village *miles* from its food, not one that cost it a tile.
+            Assert.True(typical <= budget * 2,
+                $"Seed {seed}: the typical family walks {typical} tiles to work against a "
+                + $"budget of {budget}. That is not a long walk, it is a village the generator "
+                + "sited away from its own food.");
+
+            // And an outlier is an outlier rather than a different kind of valley.
+            Assert.True(walks[^1] <= budget * 3,
+                $"Seed {seed}: {walks[^1]} tiles to work against a budget of {budget} is not a "
+                + "long walk, it is a family the generator stranded.");
         }
+
+        _output.WriteLine(
+            $"{Seeds} seeds, budget {budget}: {seedsWithin} sit within it, {seedsBeyond} had at "
+            + $"least one family beyond it; the longest walk anywhere was {worstAnywhere} tiles.");
+
+        // ⭐ AND THE GENERATOR AS A WHOLE STILL AIMS INSIDE THE BUDGET. One valley a tile over
+        // is the design; most valleys a tile over would mean the economy is derived against a
+        // distance the generator no longer produces, and nothing else in the suite would say
+        // so. Measured at 27 of 30 — a three-quarters bar leaves real headroom and still fires
+        // long before the derivation and the map have drifted apart.
+        Assert.True(seedsWithin * 4 >= Seeds * 3,
+            $"Only {seedsWithin} of {Seeds} valleys put the typical family inside the "
+            + $"{budget}-tile budget the food economy is derived against.");
     }
 
     /// <summary>How long each valley is watched for. See the note in the body — this is a trade.</summary>
@@ -494,25 +575,35 @@ public sealed class MapGenerationTests
                     $"Seed {seed} sited a house nobody can walk to: {entry.Message}");
             }
 
+            // ⭐ THE VALLEY MUST NOT KILL THE VILLAGE. Every one of the twelve is still
+            // standing at 120 years — finals run 6 to 49 — and a generated valley that wiped
+            // one out would be the generator's fault rather than the player's, which is the
+            // whole reason this property test exists.
             Assert.True(loop.World.Population >= config.StartingPopulation,
                 $"Seed {seed} died out — finished at {loop.World.Population}. " +
                 $"({string.Join("; ", results)})");
 
-            // ⭐ AND IT MUST NOT BE HALFWAY OUT THE DOOR EITHER — which is what compensates for
-            // the shorter horizon above.
+            // ⭐ AND IT MUST BE ABLE TO GROW ONE. Peak rather than final, and D143 is why.
             //
-            // The failure this guard exists for is a village that AGES OUT: it peaks, then
-            // dwindles with nobody starved and nobody frozen, and is simply gone. D103's seed 11
-            // peaked at 32 and reached nothing by year 160; watching only 120 years, "is anybody
-            // left?" could still answer yes while the village was plainly finished. **So notice
-            // the slope rather than waiting for the end.**
+            // ⛔ THIS USED TO ASSERT THE SLOPE — `Population * 2 >= peak`, *"it must not be
+            // halfway out the door"* — on the reasoning that a village which peaks and then
+            // dwindles with nobody starved is a village that is finished. **Joe's ruling
+            // retires that claim outright:** *"an unattended village should die out. The user
+            // needs to play the game at some point."* Nobody sites a building or paints a tile
+            // in any of these twelve runs, so dwindling is the game working, and the guard was
+            // measuring how long a valley coasts rather than how good a valley it is.
             //
-            // Half of peak is deliberately generous: every healthy seed today ends within a
-            // couple of its own peak (48 → 47), so this has better than two-to-one headroom and
-            // will not go off because a village had a hard decade.
-            Assert.True(loop.World.Population * 2 >= peak,
-                $"Seed {seed} is dwindling — it peaked at {peak} and finished at "
-                + $"{loop.World.Population}, so it is on its way out rather than living. "
+            // **It was also not one bad seed.** Measured across the twelve, SIX fail the slope
+            // — 49→15, 49→13, 37→8, 40→6, 37→6, 49→17 — which is what settles it as the wrong
+            // claim rather than a seed to investigate.
+            //
+            // What survives is the question a MAP-generation guard should be asking: *can a
+            // village live here at all?* Peaks run 30 to 49, so twenty has real headroom and
+            // still fires on a valley too poor, too wooded or too cut-up to support a
+            // settlement — which is the defect this arm has actually caught twice (D103, D110).
+            Assert.True(peak >= 20,
+                $"Seed {seed} never grew a village — it peaked at {peak} from "
+                + $"{config.StartingPopulation} founders, so this valley cannot support one. "
                 + $"({string.Join("; ", results)})");
         }
 
@@ -620,39 +711,88 @@ public sealed class MapGenerationTests
         }
     }
 
+    /// <summary>⭐ Crossing the river costs more than the crow flies.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ IT USED TO PIN SEED 1 AND HOPE, AND THE HOPE RAN OUT.</b> It measured every
+    /// workplace from one home and demanded that at least one route detour — which was true of
+    /// seed 1 while the generator happened to put a building across the water, and stopped
+    /// being true when the thickets retired and every workplace became something the player
+    /// sites. The guard then reported *"either the terrain is not being read, or this seed has
+    /// no water in the way"*, and it was the second — **a true statement about seed 1's layout
+    /// wearing the costume of a broken cost field.**
+    /// </para>
+    /// <para>
+    /// <b>So it constructs the crossing instead of shopping for one.</b> Find a run of water
+    /// with dry land on both banks and walk between those two tiles: that is the claim — *water
+    /// is impassable and every journey goes round it* (D40) — asked directly of the cost field,
+    /// with nothing riding on where a building happened to land. Same lesson as this session's
+    /// work-ground fixture: a guard that searches for its own precondition is a guard that
+    /// reports the search.
+    /// </para>
+    /// <para>
+    /// Its anti-vacuity twin is <see cref="WithNoRiverEveryCostIsTheStraightLine"/> below —
+    /// without that, a field quietly returning Manhattan distance everywhere would pass this.
+    /// </para>
+    /// </remarks>
     [Fact]
     public void AWalkAcrossTheRiverIsLongerThanTheStraightLine()
     {
-        // And the anti-vacuity twin below it — without that, a field that quietly
-        // returned Manhattan distance everywhere would pass this happily.
         SimConfig config = Config;
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
 
-        GridPos from = world.Households[0].Home();
-        int detoured = 0;
+        Assert.True(
+            OppositeBanks(world, out GridPos west, out GridPos east),
+            "This valley has no river with dry land on both banks, so there is nothing to cross.");
 
-        foreach (Workplace workplace in world.Workplaces)
+        int path = world.TravelCost.Cost(west, east);
+        int straight = west.ManhattanDistanceTo(east) * TravelCostField.BaseTileCost;
+
+        _output.WriteLine(
+            $"{west} to {east} across the water: "
+            + (path == TravelCostField.Unreachable ? "no way round at all" : $"costs {path}")
+            + $", against {straight} as the crow flies.");
+
+        // Unreachable counts: a river with no way round is the strongest form of the claim.
+        Assert.True(path == TravelCostField.Unreachable || path > straight,
+            $"Walking from {west} to {east} straight through the river cost {path}, the same as "
+            + "the crow flies — the terrain is not being read.");
+    }
+
+    /// <summary>Two dry tiles with a run of water between them, on one row.</summary>
+    private static bool OppositeBanks(SimWorld world, out GridPos west, out GridPos east)
+    {
+        for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
         {
-            int path = world.TravelCost.Cost(from, workplace.Position);
-            if (path == TravelCostField.Unreachable)
+            for (int x = world.Map.MinX + 1; x < world.Map.MinX + world.Map.Width - 1; x++)
             {
-                detoured++;
-                continue;
-            }
+                if (world.Map.TerrainAt(new GridPos(x, y)) != Terrain.Water
+                    || world.Map.TerrainAt(new GridPos(x - 1, y)) == Terrain.Water)
+                {
+                    continue;
+                }
 
-            int straight = from.ManhattanDistanceTo(workplace.Position) * TravelCostField.BaseTileCost;
-            Assert.True(path >= straight, "A path cannot be shorter than the straight line.");
+                int end = x;
+                while (end < world.Map.MinX + world.Map.Width - 1
+                    && world.Map.TerrainAt(new GridPos(end, y)) == Terrain.Water)
+                {
+                    end++;
+                }
 
-            if (path > straight)
-            {
-                detoured++;
+                if (world.Map.TerrainAt(new GridPos(end, y)) == Terrain.Water)
+                {
+                    continue;
+                }
+
+                west = new GridPos(x - 1, y);
+                east = new GridPos(end, y);
+                return true;
             }
         }
 
-        _output.WriteLine($"{detoured} of {world.Workplaces.Count} places cost more than the crow flies.");
-        Assert.True(detoured > 0,
-            "Every route on this seed was a straight line, so the river is costing nothing — " +
-            "either the terrain is not being read, or this seed has no water in the way.");
+        west = default;
+        east = default;
+        return false;
     }
 
     [Fact]

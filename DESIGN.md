@@ -740,19 +740,19 @@ there, because it is the slice that opens that method.
   allocator's only source, and both `Harvest` call sites are player-instructed — a control is
   safe when its state is read at a chokepoint, and at risk the moment there are two ways to do
   the thing. **That is the check to run when the next control is designed, not after it ships.**
-- **Where the suite stands: 555 passing, 7 failing, 9 skipped of 571** (was 533 / 13 / 9 of 555
+- **Where the suite stands: 558 passing, 4 failing, 9 skipped of 571** (was 533 / 13 / 9 of 555
   at the start of the session). **Everything left is either a golden held back on purpose or
   already-queued work** — three hash goldens (`StockLimitTests` ×2 and `DrawOrderIsTheContract`),
   three map-generation guards, and `OldAgeCostsMoreWorkForTheSameFood`, which Joe parked.
-- **Still to come in step C:** `OldAgeCostsMoreWorkForTheSameFood` re-based (parked — one of its
-  two causes is planting-by-default, so it wants re-reading in D143's light); the three
-  map-generation guards — **and `EverySeedProducesAValleyAVillageSurvivesIn` is one D143
-  reframes rather than one to fix.** It fails a seed that *"has fallen to half its own peak"*,
-  which is now what every unmanaged village does; what it can still honestly say is that seed 3
-  behaves unlike seeds 1 and 2 over the same 120 years (37→13 against 49→44 and 48→47), so the
-  claim wants restating as *this valley is worse than its siblings* rather than *this village is
-  dying*. Then the goldens re-taken **last**, one stated reason each; the twelve-seed arm and
-  the cold start re-measured; then merge back to `phase/2-wood-fuel-and-tools`.
+- **The three map-generation guards are re-based** ✅ (D150). None was a generator bug: each was
+  a guard left pointing at a rule a later decision withdrew — the river one hunting for a
+  detour that step C removed, the budget one measuring with the ruler D121 deleted *and*
+  asserting the fence D120 deleted, and the twelve-seed arm's slope claim retired by D143 (six
+  of twelve fail it, which is what settles it).
+- **Still to come in step C:** `OldAgeCostsMoreWorkForTheSameFood` re-based (parked by Joe — one
+  of its two causes is planting-by-default, so it wants re-reading in D143's light); then **the
+  goldens, re-taken last, one stated reason each** — three of them, and they are now the only
+  red left; the cold start re-measured; then merge back to `phase/2-wood-fuel-and-tools`.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -908,6 +908,10 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D150 · 2026-08-14 · ⭐ THE THREE MAP-GENERATION GUARDS WERE ALL ASSERTING RULES THE DESIGN HAD ALREADY DELETED.** The last red on this branch that was neither parked nor held for last. **None of them was a bug in the generator** — each was a guard left pointing at a promise a later decision withdrew, which is the same shape as D143's six and worth noticing as a pattern: *a guard outlives the rule it was written for, and the failure looks like a regression.*
+  - **`AWalkAcrossTheRiverIsLongerThanTheStraightLine`** pinned seed 1 and demanded that at least one route from a home to a workplace detour. True while the generator placed workplaces; false once **every workplace became something the player sites** (step C), so the guard reported *"either the terrain is not being read, or this seed has no water in the way"* — and it was the second. **It constructs the crossing now**: find a run of water with dry land on both banks and walk between those two tiles, which asks the cost field the question directly with nothing riding on where a building landed. Same lesson as this session's work-ground fixture — *a guard that searches for its own precondition reports the search*.
+  - **`EveryValleyMeetsTheEconomysDistanceBudget`** failed seed 9 for a village nine tiles from its hut against a budget of eight. Two things were wrong. **It measured with a ruler** — `ManhattanDistanceTo` — which is the third site of D111's bug: D121 fixed `ChooseSite` to walk the shared cost field, and *the guard on that method* went on measuring with the ruler D121 deleted, so a home and its guard were grading different worlds. And **it asserted a fence** where D120 deleted the fence: §3.2 says building beyond the budget is *allowed, warned about, and genuinely costs food*. **Measured across 30 seeds before choosing a bar** — typical walks run 2 to 9 tiles and only three seeds exceed 8 — so it catches *stranded* (twice the budget) rather than *one tile over*, and adds the aggregate claim that was actually missing: **three quarters of valleys must still sit inside the budget the economy is derived against**, which fires if the generator and the derivation ever drift apart.
+  - **`EverySeedProducesAValleyAVillageSurvivesIn`** lost its slope check — *"it must not be halfway out the door"* — to D143 outright. **And it was not one bad seed: six of the twelve fail it** (49→15, 49→13, 37→8, 40→6, 37→6, 49→17), which is what settles it as the wrong claim rather than a seed to investigate. All twelve *survive*; what replaces the slope is the question a map-generation guard should ask — **can a village live here at all?** Peaks run 30 to 49, so a floor of twenty keeps the defect this arm has genuinely caught twice (D103, D110) and stops measuring how long an unmanaged village coasts.
 - **D149 · 2026-08-13 · ⛔ THE PANELS WERE A FIXED WIDTH, SO THE VALLEY GOT A FIFTH OF A SMALL SCREEN — and the fix that mattered was not the arithmetic.** Joe, on the same screenshot as D148: *"the text is long. The visible playing window is tiny. Maybe we need to refactor the UI size again?"*
   - **`ColumnWidth = 400`, a side, whatever the window.** On a maximised screen that is a fifth; Joe was playing at about **990 logical pixels wide**, where two columns and three gaps left the map **190 pixels — under a fifth of the window**, for a game whose whole proposition is watching a place. D116 tuned the *type* inside these panels and never asked how wide the panels were.
   - **A share with both ends nailed down:** 27% a side, floored at 240 and capped at the old 400. At 1920 it lands exactly on 400, so it is a **no-op on a maximised window and a rescue on a small one**.
