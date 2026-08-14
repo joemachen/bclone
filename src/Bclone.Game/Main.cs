@@ -388,15 +388,37 @@ public partial class Main : Control
         // The same glance for the professions: how many are actually on this work, and how
         // many places there are to be on it (D106). "0 of 2" is Joe's screenshot, and it is
         // what tells you whether asking for three would achieve anything.
+        // ⚠️ AND IT SAYS "WORKING", BECAUSE THE COLUMN HELD TWO MEANINGS AT ONCE (Joe, D148).
+        // He read *"Laborer 1"* against four villagers he had assigned to four jobs and asked
+        // why one was spare. The sim was right: the number in the − N + box is what he ASKED
+        // for, and the row beside it is who actually turned up — his woodcutter row said
+        // *"1"* in the box and *"0 of 2"* next to it, because firewood was at its limit. Two
+        // different meanings in one column, and the Laborer row's number is a third: a count.
+        //
+        // **That is D139's bug one panel over** — a number that reads like a fact and is not —
+        // and the fix is the same one: say the word. "0 of 2" becomes "nobody working of 2
+        // seats", and where the player's number is not being met the row says so out loud
+        // rather than leaving them to subtract.
         LabourQuota quota = LabourQuota.For(world);
         for (int i = 0; i < _professionReadouts.Count; i++)
         {
             (JobKind kind, Label places) = _professionReadouts[i];
-            places.Text = $"{WorkingAt(world, kind)} of {SeatsFor(world, kind)} — "
-                + $"village wants {quota.For(kind)}";
+
+            int working = WorkingAt(world, kind);
+            int seats = SeatsFor(world, kind);
+            int? asked = world.JobLimits.For(kind);
+
+            string count = working == 0
+                ? $"nobody working of {seats} seats"
+                : $"{working} working of {seats} seats";
+
+            places.Text = asked is int wanted && wanted != working
+                ? $"{count} — you asked for {wanted}, village wants {quota.For(kind)}"
+                : $"{count} — village wants {quota.For(kind)}";
         }
 
-        _laborerReadout.Text = $"{world.Laborers}";
+        // And what the 1 is one OF, which is the whole of Joe's question.
+        _laborerReadout.Text = $"{world.Laborers} of {world.AbleAdults}";
 
         // The two standing alerts used to be composed here every frame and shown in the
         // overview. They are narrated by the sim on their edges now and read in the village
@@ -2454,7 +2476,8 @@ public partial class Main : Control
         laborRow.AddChild(laborName);
         _laborerReadout = Muted(string.Empty);
         laborRow.AddChild(_laborerReadout);
-        laborRow.AddChild(Muted("— whatever is spare: clearing, hauling, tidying"));
+        laborRow.AddChild(
+            Muted("able adults — whatever is spare: clearing, hauling, tidying"));
         rows.AddChild(laborRow);
 
         foreach (JobKind kind in JobLimits.Kinds)

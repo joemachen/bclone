@@ -173,6 +173,33 @@ public sealed class SimWorld
         _ => kind.ToString().ToLowerInvariant(),
     };
 
+    /// <summary>
+    /// Everyone old enough and well enough to hold a job — the number
+    /// <see cref="Laborers"/> is the remainder of.
+    /// </summary>
+    /// <remarks>
+    /// <b>Beside <see cref="Laborers"/> on purpose (D148).</b> The professions panel showed
+    /// *"Laborer 1"* to a player with four villagers who had assigned all four, and there was
+    /// no figure anywhere saying what the 1 was one *of*. Keeping the two definitions adjacent
+    /// is what stops them drifting into disagreeing about who counts.
+    /// </remarks>
+    public int AbleAdults
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < Villagers.Count; i++)
+            {
+                if (Villagers[i].Alive && Villagers[i].CanWork)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
     /// <summary>Able adults with no job — the hands everything spare is done by (D63).</summary>
     public int Laborers
     {

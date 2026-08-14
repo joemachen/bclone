@@ -705,6 +705,11 @@ there, because it is the slice that opens that method.
   it over twenty years** — and the five guards D141 shipped with all stopped at the predicate.
   **The lesson generalises: a control tested at its predicate and never at its deposit is a
   control nobody has tested.**
+- **The professions panel's numbers reconcile** ✅ (D148, Joe playing). One column carried three
+  meanings — *what you asked for*, *who turned up*, and *a count* — all rendered as a bare
+  integer, so reading down it and adding gave the wrong answer. **D139's bug one panel over.**
+  The rows say the word now (*"nobody working of 2 seats — you asked for 1"*), and the sum is a
+  guard: every able adult is at work or is a laborer, checked every tick for twelve years.
 - **A building that cannot do its job says so on the map** ✅ (D147, Joe). D140's ring, for
   workplaces — and it earns its place because three times this session a hut looked idle because
   of a number set on a **different panel**. **The design work is all in what does *not* light
@@ -729,7 +734,7 @@ there, because it is the slice that opens that method.
   allocator's only source, and both `Harvest` call sites are player-instructed — a control is
   safe when its state is read at a chokepoint, and at risk the moment there are two ways to do
   the thing. **That is the check to run when the next control is designed, not after it ships.**
-- **Where the suite stands: 554 passing, 7 failing, 9 skipped of 570** (was 533 / 13 / 9 of 555
+- **Where the suite stands: 555 passing, 7 failing, 9 skipped of 571** (was 533 / 13 / 9 of 555
   at the start of the session). **Everything left is either a golden held back on purpose or
   already-queued work** — three hash goldens (`StockLimitTests` ×2 and `DrawOrderIsTheContract`),
   three map-generation guards, and `OldAgeCostsMoreWorkForTheSameFood`, which Joe parked.
@@ -897,6 +902,12 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D148 · 2026-08-13 · ⛔ THE PROFESSIONS COLUMN HELD THREE DIFFERENT MEANINGS AT ONCE — D139'S BUG, ONE PANEL OVER.** Joe, playing: *"why does it say there is one laborer when I only have 4 villagers and they are all assigned jobs? Is it because one is working at an 'idle' workplace? That is a bit confusing in the UI."*
+  - **The sim was right and the panel was not.** His woodcutter row read **`1`** in the − N + box and **`0 of 2 — village wants 0`** beside it: he had *asked for* one woodcutter, firewood was at its limit (229 against 200), so nobody was actually there. Two gatherers, one forester, no woodcutter — three at work of four adults, one spare. **The arithmetic was correct and invisible.**
+  - **⭐ THE FAULT IS THAT ONE COLUMN CARRIED THREE MEANINGS.** The `− N +` box is *what the player asked for*; the figure beside it is *who turned up*; and the Laborer row's number is *a count*. All three render as a bare integer in the same column, so reading down it and adding gives the wrong answer — which is exactly what a careful player does. **That is D139's finding one panel over** (*a number that reads like a rule and is not*), and it is the second time this project has shipped a readout whose meaning could not be told from its shape.
+  - **The fix is D139's too: say the word.** *"0 of 2"* becomes *"nobody working of 2 seats"*, and where the player's number is not being met the row says so rather than leaving them to subtract — *"nobody working of 2 seats — you asked for 1, village wants 0"*. The Laborer row says what the 1 is one **of**: *"1 of 4 able adults"*.
+  - **And the sum is a guard now** (`EveryAbleAdultIsEitherAtWorkOrALaborer`), checked every tick for twelve years: **every able adult is holding a job or is a laborer, and nobody is both or neither.** That is the arithmetic the panel presents, so if it ever stops reconciling a player is right to be confused before anybody has to notice it on a screenshot. `SimWorld.AbleAdults` sits beside `Laborers` so the two cannot drift about who counts.
+  - **⚠️ Joe's own guess was wrong in an interesting way** — *"is it because one is working at an idle workplace?"* No: an idle workplace has **nobody** at it, which is why D147's ring fires. The two features met, and the confusing one was the older panel rather than the new marker.
 - **D147 · 2026-08-13 · ⭐ A BUILDING THAT CANNOT DO ITS JOB SAYS SO ON THE MAP — and the design work is entirely in what does *not* light up.** Joe: *"Idle huts should get an indicator like full storage buildings. What do you think?"*
   - **⭐ IT IS WORTH MORE THAN THE STORAGE ONE, and this session is the evidence.** Three separate times a building looked idle because of a number set on a **different panel** — a met Logs limit (D145), a met Firewood limit (D139), ground nobody ever painted (D86). §1.1 is the whole argument: the player cannot answer a problem they cannot see, and *"the hut is just sitting there"* was Joe's own words on D138 as well.
   - **⚠️ BUT "IDLE" IS NOT ONE FACT THE WAY "FULL" IS, WHICH IS THE ONLY REASON THIS NEEDED THINKING ABOUT.** A store is full or it is not. A workplace has half a dozen reasons for having nothing to do and **most of them are fine** — so a marker that lit up for all of them would be wallpaper, and an always-on alert is precisely what **D42 and D123 moved *out* of the Overview**. The rule is therefore narrow, and stated once in `SimWorld.IdleNote`: *this building cannot do its job, and the fix is the player's.*
