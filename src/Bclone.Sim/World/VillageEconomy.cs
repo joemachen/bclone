@@ -383,8 +383,60 @@ public static class VillageEconomy
     public const int FuelMayCostThisShareOfSpareHands = 2;
 
     /// <summary>
+    /// How many souls a house of this kind will hold.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE ONE PLACE THAT ANSWERS "HOW MANY FIT IN THIS HOUSE" (Joe, D153).</b> The cap
+    /// is what limits how many children a couple can have, and Joe wants it to be a property of
+    /// the <em>house</em> rather than a global number — <i>"eventually an unlock/tech that
+    /// allows for larger homes/denser population."</i> This is the seam that unlock lands on: a
+    /// second arm, beside a `BuildingKind` appended to the enum, and every reader already asks
+    /// the right question.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ NO PER-HOUSE STATE YET, AND THAT IS DELIBERATE.</b> A house is not an entity in
+    /// this sim — it is a <c>GridPos?</c> on <see cref="Household"/>, with no id and no record
+    /// (<c>SimWorld.NameFor</c>: *"A HOUSE IS NOT NUMBERED"*). Recording a kind on the household
+    /// today would be a field that can only ever hold one value, which is D98's rule —
+    /// <c>construction_site_capacity</c> was <em>deleted rather than zeroed</em> on the grounds
+    /// that *"a number which is always zero is a lie waiting to be found."* The field arrives
+    /// with the second dwelling, when it has two values on its first day. It must then travel
+    /// with <c>HomePosition</c> through <c>HouseholdSystem</c>'s empty-house swap, which moves a
+    /// family into a standing empty home — that is the one place this design can go wrong.
+    /// </para>
+    /// <para>
+    /// <b>Content, not derivation, and D16 does not bite.</b> How many people fit under a roof
+    /// is a fact about the building — the same class as <c>work_ground_tiles_per_worker</c> —
+    /// so it lives in the config where a modder can change it. What must stay derived is the
+    /// <em>consequence</em>, which is <see cref="PopulationCeiling"/>.
+    /// </para>
+    /// </remarks>
+    public static int HouseholdCapacity(BuildingKind kind, SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return kind switch
+        {
+            BuildingKind.Home => config.MaxHouseholdSize,
+
+            // Named rather than defaulted, which is D108's rule: five of six silent default
+            // arms would have mis-priced or mis-named a new building kind, so every arm says
+            // what it means and a new one has to be added on purpose.
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building is not somewhere anybody lives."),
+        };
+    }
+
+    /// <summary>
     /// Hands a village of this many households can spare once everyone is fed.
     /// </summary>
+    /// <remarks>
+    /// <b>⚠️ Reads <c>MaxHouseholdSize</c> and not <see cref="HouseholdCapacity"/>, on purpose.</b>
+    /// This is a *budgeting worst case* — assume every household is full — feeding the derived
+    /// fuel target. It wants "the biggest a household can get", which stays a village-wide fact
+    /// even once individual houses differ.
+    /// </remarks>
     public static int SpareHandsAt(SimConfig config, int households)
     {
         ArgumentNullException.ThrowIfNull(config);

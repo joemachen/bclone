@@ -43,7 +43,10 @@ public static class VillageFixtures
                 AdultsPerHousehold = 2,
                 FounderAge = 20,
                 AdultAge = 15,
-                MaxHouseholdSize = 7,
+                // 7 -> 5 with the shipped file (D153). Kept in step deliberately: a cap that
+                // differed between the two would be METHODOLOGY §3's drift on the one number
+                // the birth gate turns on, and that has bitten five times (D48-D50, D128, D132).
+                MaxHouseholdSize = 5,
 
                 // A real village sprawls, and the furthest home sets the worst-case
                 // round trip that the whole economy has to afford.

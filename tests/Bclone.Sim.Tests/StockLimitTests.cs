@@ -161,8 +161,20 @@ public sealed class StockLimitTests
     //
     //   before the sites retired: fixture 8652554140921204871,
     //                             shipped 2151271050042369210
-    private const ulong FixtureFiftyYearHash = 15720299932978060475UL;
-    private const ulong ShippedFiftyYearHash = 9131366701299548068UL;
+    // ⭐ RE-TAKEN FOR THE BIRTH GATE (D153), and the one sentence is: **a house holds five
+    // people instead of seven, and births no longer ask a family's own larder or its own
+    // firewood.** Fifty years of a village that breeds on those terms is a different village.
+    //
+    // Measured before the change rather than after, which is what made it a decision: the two
+    // deleted terms refused 6-10% and 0-1% of household-years against the granary term's
+    // 42-70%, and **nobody starved or froze in any arm, before or after.** The cap moving 7 -> 5
+    // is the part that does the work — it takes the shipped village from **dying out entirely
+    // over 300 unattended years (final 0) to ending at 20**, still with nobody starving.
+    //
+    //   before the birth gate lost its household terms: fixture 15720299932978060475,
+    //                                                   shipped 9131366701299548068
+    private const ulong FixtureFiftyYearHash = 13172587746925380233UL;
+    private const ulong ShippedFiftyYearHash = 16713992210504644002UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

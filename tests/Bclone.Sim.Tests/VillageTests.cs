@@ -281,17 +281,43 @@ public sealed class VillageTests
         Assert.True(homegrown.CanWork);
     }
 
+    /// <summary>A village with an unreachable food bar never has a child.</summary>
+    /// <remarks>
+    /// <para>
+    /// A village that breeds into a famine is not telling a story, it is oscillating — and the
+    /// deaths would not trace back to any decision.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ RENAMED FROM <c>AHungryHouseholdDoesNotHaveChildren</c>, BECAUSE IT WAS ABOUT TO
+    /// START LYING (D153).</b> It set `birth_food_percent` absurdly high and asserted nobody is
+    /// born — and that constant used to scale <em>two</em> gates, the household's own larder and
+    /// the village's granary. With the household term deleted it would have gone on passing
+    /// while silently becoming a second granary test, under a name that says *household*.
+    /// **A guard quietly changing what it measures is the D7/D144 shape this project keeps
+    /// catching**, and the fix is a name that matches the one gate left.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void AHungryHouseholdDoesNotHaveChildren()
+    public void AVillageThatCannotFillItsGranaryNeverHasAChild()
     {
-        // A village that breeds into a famine is not telling a story, it is
-        // oscillating - and the deaths would not trace back to any decision.
         var (loop, _) = Build(GrowingVillage with { BirthFoodPercent = 100_000 });
         int founding = loop.World.Villagers.Count;
 
         loop.Step(30_000);
 
         Assert.Equal(founding, loop.World.Villagers.Count);
+
+        // Anti-vacuity: the same village with a reachable bar must actually breed, or this
+        // passes on a settlement that was never going to have children anyway.
+        var (fertile, _) = Build(GrowingVillage);
+        fertile.Step(30_000);
+
+        _output.WriteLine(
+            $"unreachable bar: {loop.World.Villagers.Count} ever born from {founding}; "
+            + $"the same village with the shipped bar: {fertile.World.Villagers.Count}.");
+
+        Assert.True(fertile.World.Villagers.Count > founding,
+            "The control village never had a child either, so the bar proved nothing.");
     }
 
     [Fact]
