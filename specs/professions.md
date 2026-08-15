@@ -161,10 +161,14 @@ D76's seam, on the one axis where the whole economy is derived.
 
 ## 5. The local store, and what it changes
 
-**`Workplace.Store` already exists (`Workplace.cs:155`), is uncapped, and is completely dead** —
-nothing in the sim ever writes to it. Its own comment describes *"the buffer at the point of
-production (D30)"*, which was never wired up: producers carry output straight to a
-`StoreBuilding`. The panel has a branch for it (`Main.cs:713`) that can never be true.
+**`Workplace.Store` already exists, is uncapped, and is completely dead** — nothing in the sim
+ever writes to it. Its own comment describes *"the buffer at the point of production (D30)"*,
+which was never wired up: producers carry output straight to a `StoreBuilding`. The panel has a
+branch for it that can never be true.
+
+> **⚠️ It is wired up on the farm (D161), not on the forester — see §11.2.** Joe's call:
+> `farm_store_cap: 100`. **The branch below that "can never be true" becomes reachable for the
+> first time, so it needs looking at rather than trusting** — it has never once rendered.
 
 Wiring it up is the first real slice of this model, and it means:
 
@@ -300,8 +304,13 @@ Each step leaves the suite green and is measured against the cold start's five t
      plus four test guards had to learn about it in one slice.
    - ⏳ Still to come in this slice: buildings finishing at **0 workers** with founders arriving
      as laborers, §3.0's linked staffing, then the unstaffed alert and `Demolish(Workplace)`.
-2. **The local store**, proved on the forester and woodcutter — the two professions that already
-   exist. Everything after lands on a pattern that works.
+2. **The local store** — ⚠️ **RE-AIMED (D161, Joe).** It was to be proved *"on the forester and
+   woodcutter, the two professions that already exist"*. It is proved on **the farm** instead
+   (`crops-and-orchards.md §3.1`, Phase 2's last slice), because Joe's call gives the farmhouse a
+   100-unit cap and a harvest is the case that actually needs a buffer: reaping is bursty, the
+   granary is across the village, and an armful-at-a-time farmer is D10's problem inverted. The
+   forester and woodcutter inherit the pattern once it works there. **Corrected here rather than
+   left to disagree with the other spec — that is D159's whole lesson.**
 3. **The fisherman** — the cleanest new profession, and the one that proves terrain-conditioned
    placement without touching the food derivation.
 4. **The forester's hut** — its ground and worker-pricing are already built (C3c).

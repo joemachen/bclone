@@ -71,11 +71,39 @@ felling as the toggle (D146). **A farm is the same object with a different verb.
 | Seats | `RequiredForesterSeats` | derived the same way |
 | Yield scales with | `WoodedTilesAround` | **sown tiles in the zone** |
 | Idle reason | `IdleNote` | **the same** — a farm with no ground says so |
+| Local store | ⚠️ dead | **✅ the first one that is real — see §3.1** |
 
 **What this buys, stated so it is not re-litigated:** work-ground allowance
 (`WorkGroundAllowanceFor`), the overstretched warning, the labour quota, the idle ring on the
 map (D147), refusal sentences (D43) and the build queue all apply on day one, because they are
 properties of *a workplace with painted ground* and not of forestry.
+
+### 3.1 ⭐ The farm's own store — and it wires up the fifth element of the role model
+
+Joe: *"the harvested goods go to the granary although the farm itself can store up to 100 of the
+harvest goods by default."*
+
+**That is bigger than a config default.** `professions.md §4` lists every profession as the same
+five things — a `JobKind`, a building the player places, seats, **a local store with a stated
+cap**, and a destination for its output — and records that the fifth *"exists and is dead"*:
+`Workplace.Store` has been on the type since D30, is uncapped, has **never been written to by
+anything in the sim**, and the building panel has a branch for it that can never be true. D107
+called wiring it up *"the first real slice of the model."*
+
+**The farm is where it gets wired up.** A harvest is exactly the case that needs it: reaping is
+bursty, the granary is across the village, and a farmer who walks every armful back individually
+is D10's teleport-with-extra-steps in reverse.
+
+- **`farm_store_cap: 100`**, in data, per D16 and because a modder should be able to touch it.
+- **The store is a buffer, not a destination.** The granary is still where food lives; the farm
+  holds a harvest until it is carried. **A full local store must not destroy the overflow** —
+  that is D96 and D144's shape exactly, twice-shipped, and §6 gives it a seam guard.
+- **⚠️ This changes `professions.md §11`'s stated order**, which planned to prove the local store
+  *"on the forester and woodcutter — the two professions that already have one."* It is proved
+  here instead, on Joe's call. That spec's ordering should be corrected rather than left to
+  disagree, which is D159's whole lesson.
+- **The dead panel branch becomes reachable**, so it needs looking at rather than trusting: it
+  has never once rendered.
 
 ---
 
@@ -98,6 +126,15 @@ regrowth sweep.
 - **No new `Goods`.** Crops are `Goods.Food`, consistent with `professions.md`'s ruling on fish
   and meat, and `food-catalog.md §7`'s warning against a recipe tree. Varieties of crop are
   flavour and unlock, not new goods.
+- **⭐ ONE CROP, IN A MODEL SHAPED FOR MANY** (Joe). The terrain triple says *what stage this
+  tile is at*; a **`CropId` per tile** says *what is growing on it*, and the crops themselves
+  live in **data** (`data/`), not in the enum — CLAUDE.md's rule, and the assumption that a
+  modder will want to touch them. **Exactly one crop is defined to begin with.** The cost of
+  deferring this is the thing being avoided: retrofitting an id onto a shipped terrain triple
+  means touching the hash, the goldens and every call site at once, where adding a *row to a
+  data file* later costs nothing.
+  - ⚠️ **The id is sim state, so it is hashed** (D51's rule) — and hashed **sparsely**, the way
+    zones and ground stacks are, so a village with no fields mixes nothing at all.
 - **The map golden does not move**, and this is checkable: the generator never produces these
   terrains, so a generated valley is byte-identical. **The two 50-year village goldens *will*
   move**, once, deliberately, in their own commit with a stated reason (D152).
@@ -124,9 +161,27 @@ nothing to farm, the marginal hand is worth more at the wood. That is §2.2's st
 arriving as a *consequence* rather than as a rule.
 
 **⚠️ Sowing missed is a year missed.** A village that fails to sow in spring does not get a
-second chance in summer — that is what makes spring a decision. It must be **said, loudly and
-early** (the village log, and the farm's `IdleNote`), because §1.1 forbids a village dying of
-something it could not have seen coming (D88).
+second chance in summer — that is what makes spring a decision. It must be **said, early**
+(the village log, and the farm's `IdleNote`), because §1.1 forbids a village dying of something
+it could not have seen coming (D88).
+
+### 5.1 ⭐ Use it or lose it — a ripe field nobody reaps rots over winter (Joe)
+
+**And the load-bearing half is the warning, not the loss.** Use-it-or-lose-it is only fair if the
+player could see it coming, so this is two things and the first matters more:
+
+1. **Before — while it can still be acted on.** Autumn, crop standing ripe, nobody reaping: the
+   farm says so on its panel, takes the idle ring on the map (D147), and the village log says it
+   **once, on the edge** (D123 — narrate on beginnings and clearings, never a permanent alert).
+2. **After — when winter takes it.** **One** village-log line naming how much food was lost. One
+   line for the event, *not one per tile*, or the log becomes the receipt roll Phase 1's QA
+   checklist rules out.
+
+**Why this gets a rule rather than a shrug: this project has shipped goods silently leaving the
+world twice.** D96 found 17,451 food deposited into a full granary and out of existence; D144
+found firewood being destroyed once the woodyard filled. Both were invisible, both were found by
+Joe playing rather than by the suite. **A rotting harvest is that same shape on purpose**, which
+is exactly why it must be the one case that says so out loud.
 
 ---
 
@@ -141,6 +196,7 @@ Crops meet four existing systems, and each meeting is where the bug will be.
 | **Crops × building placement** | A house or a hut marked on `Sown` ground destroys a year's food. Refuse, or warn loudly (D43's pattern). |
 | **Crops × the labour quota** | A farmer is wanted in spring and autumn and not in summer or winter. **`SetStaffing` is a ceiling, not a summons** (D146) — the quota has to *want* farmers seasonally, or the fields sit sown and unreaped. |
 | **Crops × the food economy** | `VillageEconomy` derives one `gather_yield` against a worst-case walk. A second food source with a different rhythm changes what "the village can feed itself" means, and the derivation has to be re-stated rather than quietly out-voted. |
+| **Crops × the farm's local store** | A full 100-cap store must **refuse** the overflow, not swallow it. `Stockpile.Add` returns what it actually took and **the caller has to read it** — D96 is precisely the bug of not reading it (17,451 food out of the world), and D144 is the same shape one deposit path over. This store has never been written to, so it has never been tested. |
 
 **Other failure modes:**
 - **A crafting minigame.** `food-catalog.md §7` is explicit. No recipes, no per-crop unlocks.
@@ -203,14 +259,25 @@ being asked to think past one lifetime. Building it here would spend it as a foo
    reason each (D152).
 7. `DESIGN.md` §6 and §7 updated.
 
-## 11. Open questions for Joe
+## 11. ✅ Resolved — the three questions (Joe, 2026-08-15)
 
-1. **Does a farm need a building at all, or is the zone enough?** §3 assumes a steading because
-   the labour allocator is built around workplaces. A zone with no building would need a new
-   answer to *"who works here and how far is it?"*, which is the one thing this design gets free.
-2. **One crop or several from the start?** §7 says one. If varieties matter to you early — they
-   are on your notes list under *variety* — that changes the data model from a terrain triple to
-   a terrain plus a crop id.
-3. **What happens to a ripe field nobody reaps?** It should rot back to `Field` over winter and
-   be *loudly* mourned; the alternative is that it waits, which makes autumn optional and undoes
-   the point of a calendar.
+1. **A farm has a building, and the field zone is painted and worked by the farmers** — sown and
+   reaped. **Harvest goes to the granary, and the farm holds up to 100 of it locally by
+   default.** §3 and §3.1. The local store is the answer with the longest reach: it wires up the
+   fifth element of `professions.md`'s role model, dead since D30.
+2. **One crop for now, structured to plan for many** — a `CropId` per tile from the start, crops
+   defined in data, exactly one of them defined. §4.
+3. **A ripe field nobody reaps rots over winter — use it or lose it.** §5.1, where *"loudly
+   mourned"* is replaced by something actionable: **a warning in autumn while it can still be
+   acted on**, then one log line when the loss happens.
+
+## 12. Still open
+
+- **Where the derived numbers land.** `farm_store_cap: 100` is Joe's stated default; the yield
+  per sown tile, the seats per farm and the work-ground allowance are all **derived** against
+  §1's target, not picked (D16), and none of them is derived yet. **Expect the fixture and the
+  shipped config to disagree at least once** — that has happened six times and METHODOLOGY §3
+  exists because of it.
+- **Whether the farmer is the reaper *and* the hauler**, or whether hauling to the granary is
+  laborer work. The local store makes this a real question rather than an implementation detail:
+  a 100-cap buffer that nobody empties is a farm that stops after one field.
