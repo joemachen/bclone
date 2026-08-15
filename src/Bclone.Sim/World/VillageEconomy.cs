@@ -642,8 +642,10 @@ public static class VillageEconomy
             : CeilingDivide(config.WorkGroundTilesPerWorker, treesPerYear);
     }
 
-    /// <summary>Seats a tree stand needs, to keep those huts in logs and homes built.</summary>
-    public static int RequiredTreeStandSeats(SimConfig config)
+    /// <summary>Seats a forester's hut needs, to keep the woodcutters in logs and homes built.</summary>
+    /// <remarks><b><c>RequiredTreeStandSeats</c> until D159</b> — the stands are gone and this
+    /// has sized the forester's hut since step C.</remarks>
+    public static int RequiredForesterSeats(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 

@@ -115,7 +115,7 @@ public static class VillageFixtures
             return fuelled with
             {
                 WoodcutterHutCapacity = VillageEconomy.RequiredWoodcutterSeats(fuelled),
-                TreeStandCapacity = VillageEconomy.RequiredTreeStandSeats(fuelled),
+                ForesterHutCapacity = VillageEconomy.RequiredForesterSeats(fuelled),
             };
         }
     }

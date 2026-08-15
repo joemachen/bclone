@@ -126,7 +126,7 @@ public sealed class ForesterHutTests
         Workplace hut = RaiseAHut(world, ClearGroundNear(world));
 
         Assert.Equal(JobKind.Forester, hut.Kind);
-        Assert.Equal(VillageEconomy.RequiredTreeStandSeats(Config), hut.Capacity);
+        Assert.Equal(VillageEconomy.RequiredForesterSeats(Config), hut.Capacity);
         // D146: a new hut FELLS AND PLANTS — the toggle is felling, and planting is simply
         // what owning painted ground means. Joe: "planting should be on by default for a
         // painted area and felling should be the toggle on/off."

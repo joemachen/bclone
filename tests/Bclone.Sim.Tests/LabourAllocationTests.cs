@@ -200,7 +200,7 @@ public sealed class LabourAllocationTests
         // Posed tight so the rule has something to bind on. `forage_site_capacity` was one
         // of these levers and is retired — a gatherer's hut prices its own seats from its
         // ring — so the two typed capacities left do the same job.
-        SimLoop loop = Build(Config with { TreeStandCapacity = 1, WoodcutterHutCapacity = 1 });
+        SimLoop loop = Build(Config with { ForesterHutCapacity = 1, WoodcutterHutCapacity = 1 });
         loop.Step(Config.TicksPerYear * 60);
 
         foreach (Workplace workplace in loop.World.Workplaces)
@@ -434,7 +434,7 @@ public sealed class LabourAllocationTests
         SimConfig config = Config with
         {
             GathererHutRingTiles = 1,
-            TreeStandCapacity = 1,
+            ForesterHutCapacity = 1,
             WoodcutterHutCapacity = 1,
 
             // No market either, so the only work anyone can reach is the one full

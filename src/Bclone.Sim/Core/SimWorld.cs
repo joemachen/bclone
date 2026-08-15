@@ -2753,7 +2753,7 @@ public sealed class SimWorld
             // same work, on ground the player painted instead of at a stand the generator
             // dropped, which is precisely what D96's rename was for.
             //
-            // Its seats are `RequiredTreeStandSeats` — how many foresters the village needs to
+            // Its seats are `RequiredForesterSeats` — how many foresters the village needs to
             // keep its huts in logs and its houses built. ⚠️ That name retires with the stands
             // in the next slice; the derivation is what matters and it is unchanged.
             case BuildingKind.ForesterHut:
@@ -2763,7 +2763,7 @@ public sealed class SimWorld
                     Kind = JobKind.Forester,
                     Name = plan.Name,
                     Position = site.Position,
-                    Capacity = VillageEconomy.RequiredTreeStandSeats(Config),
+                    Capacity = VillageEconomy.RequiredForesterSeats(Config),
                 });
                 break;
 
@@ -3497,7 +3497,7 @@ public sealed class SimWorld
             Kind = JobKind.Forester,
             Name = NameFor(BuildingKind.ForesterHut),
             Position = WhereTheTreesAre(origin, config),
-            Capacity = VillageEconomy.RequiredTreeStandSeats(config),
+            Capacity = VillageEconomy.RequiredForesterSeats(config),
         };
 
         Workplaces.Add(forester);

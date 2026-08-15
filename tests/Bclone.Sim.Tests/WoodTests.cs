@@ -30,9 +30,9 @@ public sealed class WoodTests
         SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
 
     [Fact]
-    public void SpareWorkersTakeTheTreeStand()
+    public void SpareWorkersTakeTheForestersHut()
     {
-        // The village keeps a woodpile, so the stand is worked whenever the store is
+        // The village keeps a woodpile, so the wood is worked whenever the store is
         // below what the next home will cost — which is most of the time. Sampled per
         // season rather than per year: a year boundary is the one instant where the
         // last reshuffle's cutting is finished and the next has not been decided.

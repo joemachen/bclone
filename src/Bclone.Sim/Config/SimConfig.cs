@@ -222,14 +222,23 @@ public sealed record SimConfig
     [JsonPropertyName("cut_ticks")]
     public int CutTicks { get; init; } = 4;
 
-    /// <summary>How many people can work one tree stand at once.</summary>
+    /// <summary>How many people can work one forester's hut at once.</summary>
     /// <remarks>
+    /// <para>
     /// A local fact about the place, not a statement about the village. What the
     /// village needs cut is decided by <c>LabourQuota</c>, which will happily leave
     /// this capacity unfilled in a year when there are barely enough hands to eat.
+    /// </para>
+    /// <para>
+    /// <b>This was <c>tree_stand_capacity</c> until D159.</b> Tree stands were deleted in
+    /// step C and this number never was, because it is load-bearing — it sizes the
+    /// <b>forester's hut</b>, which is the same question wearing a different name: how many
+    /// pairs of hands the village's timber needs in one place. A live setting named after a
+    /// deleted mechanic is the D56 and D148 shape, so it is named for what it does.
+    /// </para>
     /// </remarks>
-    [JsonPropertyName("tree_stand_capacity")]
-    public int TreeStandCapacity { get; init; } = 3;
+    [JsonPropertyName("forester_hut_capacity")]
+    public int ForesterHutCapacity { get; init; } = 3;
 
     // ---------------------------------------------------------------
     //  Firewood (D29) — the woodcutter's hut
@@ -1343,9 +1352,9 @@ public sealed record SimConfig
             throw new SimConfigException($"cut_ticks must be greater than zero (got {CutTicks}).");
         }
 
-        if (TreeStandCapacity <= 0)
+        if (ForesterHutCapacity <= 0)
         {
-            throw new SimConfigException($"tree_stand_capacity must be greater than zero (got {TreeStandCapacity}).");
+            throw new SimConfigException($"forester_hut_capacity must be greater than zero (got {ForesterHutCapacity}).");
         }
 
         if (WoodcutterHutCapacity <= 0)

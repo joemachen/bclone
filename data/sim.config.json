@@ -350,15 +350,15 @@
   // hut was given, and cut_yield is what one tree of it is worth.
   "cut_yield": 12,
   "cut_ticks": 4,
-  // DERIVED (VillageEconomy.RequiredTreeStandSeats), not picked. 3 -> 6.
-  // Enough hands to keep the huts in logs and still leave one for
+  // DERIVED (VillageEconomy.RequiredForesterSeats), not picked. 3 -> 6.
+  // Enough hands to keep the woodcutters in logs and still leave one for
   // building - the "+1" in the derivation is what stops the village
   // heating itself and never growing.
   //
-  // It sizes the FORESTER'S HUT now that the stands are gone, which is
-  // the same question wearing a different name: how many pairs of hands
-  // the village's timber needs in one place.
-  "tree_stand_capacity": 2,
+  // It sizes the FORESTER'S HUT, and was called tree_stand_capacity until
+  // D159 - the same question wearing the name of a mechanic that step C
+  // deleted. Renamed for what it does.
+  "forester_hut_capacity": 2,
 
   // A home has to be built, out of LOGS. Wood is two resources now
   // (D29): a logger fells logs, a woodcutter turns logs into firewood,

@@ -123,23 +123,24 @@ public sealed class ShippedConfigTests
     {
         SimConfig shipped = Shipped;
 
-        int hutSeats = VillageEconomy.RequiredWoodcutterSeats(shipped);
-        int standSeats = VillageEconomy.RequiredTreeStandSeats(shipped);
+        int woodcutterSeats = VillageEconomy.RequiredWoodcutterSeats(shipped);
+        int foresterSeats = VillageEconomy.RequiredForesterSeats(shipped);
 
         _output.WriteLine(
-            $"hut needs {hutSeats} seats (config {shipped.WoodcutterHutCapacity}); " +
-            $"stand needs {standSeats} (config {shipped.TreeStandCapacity}).");
+            $"woodcutter's hut needs {woodcutterSeats} seats " +
+            $"(config {shipped.WoodcutterHutCapacity}); forester's hut needs " +
+            $"{foresterSeats} (config {shipped.ForesterHutCapacity}).");
 
         Assert.True(
-            shipped.WoodcutterHutCapacity >= hutSeats,
+            shipped.WoodcutterHutCapacity >= woodcutterSeats,
             $"woodcutter_hut_capacity is {shipped.WoodcutterHutCapacity} but heating " +
-            $"{shipped.EconomyHorizonHouseholds} households needs {hutSeats} seats. The village " +
-            "would be unable to make more firewood however many hands were free.");
+            $"{shipped.EconomyHorizonHouseholds} households needs {woodcutterSeats} seats. The " +
+            "village would be unable to make more firewood however many hands were free.");
 
         Assert.True(
-            shipped.TreeStandCapacity >= standSeats,
-            $"tree_stand_capacity is {shipped.TreeStandCapacity} but keeping the huts in logs " +
-            $"and still leaving a hand to build needs {standSeats}.");
+            shipped.ForesterHutCapacity >= foresterSeats,
+            $"forester_hut_capacity is {shipped.ForesterHutCapacity} but keeping the woodcutters " +
+            $"in logs and still leaving a hand to build needs {foresterSeats}.");
     }
 
     /// <summary>
