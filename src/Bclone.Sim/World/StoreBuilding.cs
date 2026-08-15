@@ -136,13 +136,76 @@ public sealed class StoreBuilding
     /// </remarks>
     public Stockpile Store { get; init; } = new();
 
-    /// <summary>Whether this building will hold a given kind of goods.</summary>
+    /// <summary>
+    /// Which goods the player has told this building to take, as a bitmask. Zero means
+    /// they have not said, which is every building until somebody says otherwise.
+    /// </summary>
     /// <remarks>
-    /// The whole difference between the two buildings, in one method. Deliberately a
-    /// plain question rather than a set of flags: a modder adding a good should be able
-    /// to see at a glance where it can go.
+    /// <para>
+    /// <b>Joe, D141:</b> <i>"user should be able to set which materials are stored in which
+    /// buildings — e.g. a given storage pile will only accept logs, another only firewood,
+    /// another only iron ore. Set at the building level."</i>
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT CAN ONLY EVER NARROW, NEVER WIDEN, and that is the whole safety of it.</b> The
+    /// kind still decides what is possible — a granary holds food because that is what a
+    /// granary is (D32), and no amount of clicking makes one hold iron. The mask filters what
+    /// the kind already allows. So this control cannot produce a store that breaks the model,
+    /// only one that declines part of what it could have held.
+    /// </para>
+    /// <para>
+    /// <b>Player intent, so it is sim state and it is hashed</b> — but <b>sparsely</b>, the
+    /// same shape as <see cref="Workplace.QueueRank"/> and <see cref="Workplace.Mode"/>: zero
+    /// is "no opinion", zero mixes nothing, and a village where nobody has touched a filter
+    /// hashes exactly as it did before filters existed. No golden moves for its existing.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ An all-refusing store is allowed, and is the player's to make.</b> D42's rule is
+    /// that the game says so once and then obeys; goods with nowhere to go are set down on the
+    /// ground (D96) and now say so in the Overview and on the map (D134, D140), so the mistake
+    /// is visible and reversible rather than silent.
+    /// </para>
     /// </remarks>
-    public bool Accepts(Goods goods) => Kind switch
+    public int AllowedGoods { get; set; }
+
+    /// <summary>
+    /// Set on <see cref="AllowedGoods"/> the moment the player touches the filter, so that
+    /// "takes nothing" is a different state from "has not said".
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ WITHOUT THIS, SWITCHING OFF THE LAST GOOD SWITCHED EVERYTHING BACK ON.</b> Zero
+    /// means no opinion, so clearing the final bit landed straight back on the default and a
+    /// shed the player had just told to take nothing accepted everything again — while the
+    /// game had said out loud that it would take nothing. Caught by
+    /// <c>AStoreThatWillTakeNothingSaysSoOnce</c> on its first run, which is what that guard is
+    /// for: the empty case is exactly where a bitmask sentinel goes wrong.
+    /// </remarks>
+    public const int Spoken = 1 << 30;
+
+    /// <summary>Whether the player's filter permits this good. True when they have not said.</summary>
+    public bool PlayerAllows(Goods goods) =>
+        AllowedGoods == 0 || (AllowedGoods & (1 << (int)goods)) != 0;
+
+    /// <summary>Whether this building will hold a given kind of goods, here and now.</summary>
+    /// <remarks>
+    /// The whole difference between the buildings, in one method — narrowed by whatever the
+    /// player has said (D141). Deliberately a plain question rather than a set of flags: a
+    /// modder adding a good should be able to see at a glance where it can go.
+    /// </remarks>
+    public bool Accepts(Goods goods) => PlayerAllows(goods) && KindAccepts(goods);
+
+    /// <summary>
+    /// What this kind of building can hold at all, before the player narrows it (D141).
+    /// </summary>
+    /// <remarks>
+    /// Public because two callers need the question asked without the player's filter in the
+    /// way: <c>SetStoreAccepts</c>, to refuse widening past what the kind allows, and the view,
+    /// to decide which buttons to offer — a filter that hid its own "turn it back on" button
+    /// would be a one-way door.
+    /// </remarks>
+    public bool CanEverHold(Goods goods) => KindAccepts(goods);
+
+    private bool KindAccepts(Goods goods) => Kind switch
     {
         StoreKind.Granary => goods == Goods.Food,
 

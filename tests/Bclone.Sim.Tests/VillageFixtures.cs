@@ -42,8 +42,14 @@ public static class VillageFixtures
                 StartingHouseholds = 2,
                 AdultsPerHousehold = 2,
                 FounderAge = 20,
-                AdultAge = 15,
-                MaxHouseholdSize = 7,
+                // 15 -> 12 with the shipped file (D156) — an uneducated child works at
+                // twelve. Kept in step deliberately; this is the number the birth curve and
+                // the labour supply both turn on.
+                AdultAge = 12,
+                // 7 -> 5 with the shipped file (D153). Kept in step deliberately: a cap that
+                // differed between the two would be METHODOLOGY §3's drift on the one number
+                // the birth gate turns on, and that has bitten five times (D48-D50, D128, D132).
+                MaxHouseholdSize = 5,
 
                 // A real village sprawls, and the furthest home sets the worst-case
                 // round trip that the whole economy has to afford.
@@ -53,19 +59,29 @@ public static class VillageFixtures
                 // system for firewood to compete inside (D17, D29).
                 FirewoodPerWinterDay = 1,
 
-                // A real valley, generated (D18). Phase0Fixtures.Plenty deliberately
-                // describes a single fixed patch — that is Phase 0's world and it must
-                // stay legible — so the village puts the generator's rules back:
-                // several sites spread around a ring, which is what makes a binding
-                // catchment survivable rather than merely cruel (D19, D24), and enough
-                // jitter that two seeds are two places.
-                ForageSiteCount = 6,
-                ForageSiteRingTiles = 5,
+                // ⚠️ AND THE BURN INTERVAL THE GAME ACTUALLY SHIPS. Found by a probe asking
+                // why a village was not breeding: the fixture wanted **43 firewood in every
+                // larder** before anybody could have a child, where the shipped file wants
+                // 11 — because the interval landed in `data/sim.config.json` and never here,
+                // so every test in the suite was running a fuel economy four times hungrier
+                // than the game. That gap is precisely what METHODOLOGY §3 exists for and
+                // what D48, D49 and D50 each were.
+                FirewoodBurnIntervalDays = 4,
+
+                // A real valley, generated (D18). The forage sites and the tree stands
+                // this used to ask for are retired — food comes from a hut the player
+                // sites in woodland, and the woodland is painted across the whole valley
+                // — so what is left of the generator's rules is the jitter that makes two
+                // seeds two places, and a river wide enough to be in the way.
                 SiteJitterTiles = 1,
                 FoundingJitterTiles = 2,
-                TreeStandCount = 2,
-                TreeStandRingTiles = 4,
                 RiverWidthTiles = 2,
+
+                // ⭐ The valley comes back (D126). Not optional for the village fixture:
+                // without it a settlement fells its own gatherer's ring simply by living in
+                // it and starves at year 45 (D125), so every long-horizon guard here would
+                // be describing a world the shipped game does not have.
+                RegrowthPeriodDays = 60,
             };
 
             // Then derive the values the targets actually determine — food first,
@@ -76,9 +92,20 @@ public static class VillageFixtures
                 StockpileTarget = VillageEconomy.RequiredStockpilePerAdult(shape),
             };
 
+            // ⚠️ THE SHIPPED VALUE, NOT THE DERIVED MINIMUM, and the difference is enormous.
+            // `RequiredFirewoodPerSplit` answers *what is the least that works* — and using
+            // the least makes fuel maximally LOG-hungry, because a smaller batch means more
+            // batches and every batch costs `logs_per_split`. Measured over twelve years at
+            // the derived 7: **219 of the village's 365 logs went up the chimney, 60% of all
+            // timber produced**, and there was never enough left to raise anything.
+            //
+            // The shipped file sets 50 deliberately (Joe), which costs about 31 logs for the
+            // same heat. A fixture deriving to the minimum was not a stricter test, it was a
+            // different game — METHODOLOGY §3's drift, arriving through a derivation rather
+            // than through a typed number.
             SimConfig fuelled = fed with
             {
-                FirewoodPerSplit = VillageEconomy.RequiredFirewoodPerSplit(fed),
+                FirewoodPerSplit = ShippedConfig.Load().FirewoodPerSplit,
             };
 
             // And the buildings have to be big enough for the village the rest of

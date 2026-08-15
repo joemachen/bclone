@@ -174,6 +174,11 @@ public sealed class HousesAreBuiltTests
         MarkABuildersHut(world);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, world.Map.FoundingSite, 3);
 
+        // Somewhere to gather and something to fell. Not scenery: a founding valley has held
+        // no workplaces at all since the thickets retired, so without this the four founders
+        // starve inside the year and every claim below is about a dead village.
+        ColdStartTests.FeedTheFounding(world);
+
         long hutStood = -1;
         long firstHouse = -1;
 
@@ -227,6 +232,25 @@ public sealed class HousesAreBuiltTests
     /// about, and §0.1 rules out a village killed by something it could not have seen coming.
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// <para>
+    /// <b>▶️ UN-SKIPPED (D157), and the control that skipped it was reading a real corpse
+    /// with the wrong name on it.</b> It was parked because the same opening
+    /// <em>without</em> the granary died identically — 0 alive, 0 houses, 57 logs — which
+    /// correctly exonerated the granary and then wrongly convicted the harness: the note
+    /// said the opening *needs a player who keeps reacting*. It does not. Both arms died of
+    /// one cause neither of them varied, and it was not the queue and not the script — the
+    /// gatherer's hut stood on woodland whose ground the village would never clear, because
+    /// nearest-first clearing can never reach a footprint with regrowing coppice between it
+    /// and the village.
+    /// </para>
+    /// <para>
+    /// <b>⭐ Which is why "the control says X is innocent" is only half a finding.</b> An arm
+    /// that varies one thing and dies both ways has ruled that thing out and has said
+    /// nothing whatever about what did it. That is D142's and D151's mistake for the third
+    /// time, and this test carried the wrong cause in its own skip reason for two days.
+    /// </para>
+    /// </remarks>
     [Fact]
     public void MarkingAGranaryInTheFirstSpringDoesNotCostTheVillageItsHouses()
     {
@@ -238,6 +262,11 @@ public sealed class HousesAreBuiltTests
         MarkSomewhereNear(world, BuildingKind.Pile, world.Map.FoundingSite, 2);
         MarkABuildersHut(world);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, world.Map.FoundingSite, 3);
+
+        // Somewhere to gather and something to fell. Not scenery: a founding valley has held
+        // no workplaces at all since the thickets retired, so without this the four founders
+        // starve inside the year and every claim below is about a dead village.
+        ColdStartTests.FeedTheFounding(world);
 
         // A month in, exactly as somebody playing would: the founding looks settled, so you
         // mark the next thing.
@@ -345,6 +374,124 @@ public sealed class HousesAreBuiltTests
         Assert.True(world.MoveInBuildQueue(last, +1));
         Assert.Equal(queue.Count - 1, world.QueuePositionOf(last));
     }
+
+    /// <summary>⭐ And the village actually builds it first — the control reaches the builders.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The gap this closes is the one D144 is about.</b> Everything else here tests
+    /// <em>queue order</em> — a predicate — and <c>TheHeadOfTheQueueIsWhatTheBuildersGoTo</c>
+    /// tests that builders serve the head. Between them the conclusion follows, and "follows"
+    /// is exactly what was true of the store filter for a day: five guards, all correct, none
+    /// of them ever making a villager put something down.
+    /// </para>
+    /// <para>
+    /// So this presses the button the player presses and then watches the valley: mark a
+    /// granary and then a shed, send the shed to the front, and the shed must be what gets
+    /// raised. <b>The anti-vacuity half is the arm that presses nothing</b> — the same village,
+    /// left alone, must finish the granary first, or this would pass on a queue that was never
+    /// reordered.
+    /// </para>
+    /// <para>
+    /// <b>On a living village rather than the founding, deliberately.</b> The first attempt used
+    /// the cold start, and both arms reported *"nothing finished in 12 years — 0 alive"*: the
+    /// founders die long before a granary is raised, so it was measuring a dead valley twice.
+    /// That is D143's ruling arriving as a test-design constraint — an unattended founding is
+    /// not a place to watch a twelve-year race.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void MovingASiteToTheFrontIsWhatTheVillageBuildsFirst()
+    {
+        SimConfig config = VillageFixtures.Village;
+
+        static BuildingKind? FirstRaised(SimConfig config, bool promote, ITestOutputHelper output)
+        {
+            SimLoop loop = Loop(config);
+            SimWorld world = loop.World;
+
+            // A village on its feet, with hands and timber, so the race is about the queue.
+            loop.Step(config.TicksPerYear * 20);
+
+            int granariesBefore = Granaries(world);
+            int shedsBefore = Sheds(world);
+
+            MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 5);
+            MarkSomewhereNear(world, BuildingKind.Shed, world.Map.FoundingSite, 7);
+
+            System.Collections.Generic.List<Workplace> queue = world.BuildQueue();
+            Assert.True(queue.Count >= 2, "Both sites must be queued for there to be a race.");
+
+            Workplace shed = queue[^1];
+            Assert.Equal(BuildingKind.Shed, shed.Construction!.Kind);
+
+            if (promote)
+            {
+                while (world.QueuePositionOf(shed) > 1)
+                {
+                    Assert.True(world.MoveInBuildQueue(shed, -1));
+                }
+            }
+
+            // Watch what FINISHES first, rather than what stands at the end of a horizon —
+            // a horizon would let both be built and say nothing about the order.
+            for (int tick = 0; tick < config.TicksPerYear * 12; tick++)
+            {
+                loop.StepOnce();
+
+                if (Sheds(world) > shedsBefore)
+                {
+                    output.WriteLine(
+                        $"{(promote ? "promoted" : "left alone")}: the shed finished first, "
+                        + $"year {world.Clock.Year}");
+                    return BuildingKind.Shed;
+                }
+
+                if (Granaries(world) > granariesBefore)
+                {
+                    output.WriteLine(
+                        $"{(promote ? "promoted" : "left alone")}: the granary finished first, "
+                        + $"year {world.Clock.Year}");
+                    return BuildingKind.Granary;
+                }
+            }
+
+            output.WriteLine(
+                $"{(promote ? "promoted" : "left alone")}: nothing finished in 12 years — "
+                + $"{world.Population} alive, {world.BuildQueue().Count} sites queued, "
+                + $"{world.TotalLogs()} logs");
+            return null;
+        }
+
+        BuildingKind? leftAlone = FirstRaised(config, promote: false, _output);
+        BuildingKind? promoted = FirstRaised(config, promote: true, _output);
+
+        Assert.True(leftAlone is not null && promoted is not null,
+            "Nothing was ever built in either village, so this guard proves nothing (D7).");
+
+        // Anti-vacuity: left alone, the queue must genuinely have raised the other one first.
+        Assert.Equal(BuildingKind.Granary, leftAlone!.Value);
+
+        Assert.Equal(BuildingKind.Shed, promoted!.Value);
+    }
+
+    private static int Granaries(SimWorld world) => StoresOfKind(world, StoreKind.Granary);
+
+    private static int Sheds(SimWorld world) => StoresOfKind(world, StoreKind.Shed);
+
+    private static int StoresOfKind(SimWorld world, StoreKind kind)
+    {
+        int count = 0;
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (store.Kind == kind)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
 
     /// <summary>Nothing moves off either end, and the view is told so.</summary>
     [Fact]
@@ -467,5 +614,107 @@ public sealed class HousesAreBuiltTests
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// ⭐ A starved head of the queue does not stop the builders working behind it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>D135, and Joe watched it happen:</b> <i>"the builder shouldn't just sit at the
+    /// building waiting."</i> His woodcutter's hut was <em>"Queue: 1st of 3"</em> at 12 of 25
+    /// logs with <em>"Work: 0 of 40 ticks done"</em>, and two sites queued behind it. Measured
+    /// independently: a house reading <em>"30 logs delivered, 0 still wanted"</em> went
+    /// untouched for three years while the builders waited on the site in front of it.
+    /// </para>
+    /// <para>
+    /// Every builder asked <c>NextToBuild()</c>, which answers <em>what is first</em>. That is
+    /// the right question for where scarce timber should go and the wrong one for what a pair
+    /// of hands should do next.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE STORES ARE DRAINED EVERY TICK, and that is what makes this a discriminator
+    /// rather than a coincidence.</b> If any timber were allowed to reach a store the builders
+    /// would fetch it for the head, finish it, and reach the second site by ordinary queue
+    /// order — and the test would pass with the bug still in place. Holding the village at
+    /// zero timber for ever asks the one question that matters: <em>there is nothing to fetch
+    /// and one site is already stocked; does anybody build it?</em>
+    /// </para>
+    /// <para>
+    /// It deliberately does <b>not</b> assert that the head stays unbuilt. The queue governs
+    /// materials, not labour (D102), and a head that somehow got its logs SHOULD be built.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AStarvedHeadOfQueueDoesNotStopTheBuildersBehindIt()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        PaintHomeGround(world);
+        MarkABuildersHut(world);
+        loop.Step(config.TicksPerYear);
+
+        // Two sites, in queue order. The first will never see a log; the second is handed
+        // everything it needs up front.
+        MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 4);
+        MarkSomewhereNear(world, BuildingKind.Shed, world.Map.FoundingSite, 6);
+
+        Workplace? starved = null;
+        Workplace? stocked = null;
+        foreach (Workplace place in world.Workplaces)
+        {
+            if (place.Construction is not { IsFinished: false } site)
+            {
+                continue;
+            }
+
+            if (site.Kind == BuildingKind.Granary)
+            {
+                starved = place;
+            }
+            else if (site.Kind == BuildingKind.Shed)
+            {
+                stocked = place;
+            }
+        }
+
+        Assert.NotNull(starved);
+        Assert.NotNull(stocked);
+
+        stocked!.Construction!.Deliver(stocked.Construction.LogsStillNeeded);
+        Assert.True(stocked.Construction.HasMaterials);
+
+        // Anti-vacuity: the starved one must really be ahead of it, or nothing is blocked.
+        Assert.True(
+            starved!.EffectiveQueueRank < stocked.EffectiveQueueRank,
+            $"The granary ranks {starved.EffectiveQueueRank} against the shed's "
+            + $"{stocked.EffectiveQueueRank}, so nothing is in front of anything.");
+
+        for (int tick = 0; tick < config.TicksPerYear && !stocked.Construction.IsFinished; tick++)
+        {
+            loop.Step(1);
+
+            // Not one log anywhere, ever. There is nothing to fetch for the head.
+            foreach (StoreBuilding store in world.StoreBuildings)
+            {
+                if (store.Store.Logs > 0)
+                {
+                    store.Store.TryTake(Goods.Logs, store.Store.Logs);
+                }
+            }
+        }
+
+        _output.WriteLine(
+            $"a year with no timber anywhere: the stocked shed is "
+            + $"{(stocked.Construction.IsFinished ? "built" : "STILL A SITE")}, the starved "
+            + $"granary holds {starved.Construction!.LogsDelivered} logs.");
+
+        Assert.True(
+            stocked.Construction.IsFinished,
+            "A shed with every log it needs went unbuilt for a year because the site ahead of "
+            + "it in the queue was waiting on timber that does not exist. The queue is meant to "
+            + "decide where materials go, not to stop a pair of hands working.");
     }
 }

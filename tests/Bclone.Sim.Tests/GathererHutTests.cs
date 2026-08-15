@@ -182,14 +182,26 @@ public sealed class GathererHutTests
         Assert.Equal(JobKind.Forager, hut.Kind);
         Assert.Equal(Config.GathererHutRingTiles, hut.GatheringRadius);
 
-        // And a berry patch has no ring at all, which is what keeps this a no-op for them.
-        foreach (Workplace patch in world.Workplaces)
+        // ⚠️ THIS USED TO CHECK THE OPPOSITE, and the change is the branch rather than a
+        // slip. It asserted that every OTHER forager workplace has no ring at all — true when
+        // the other foragers were berry patches, which yield from the spot you stand on and
+        // so have nothing to a ring. Berry patches are retired. The only other forager
+        // workplace in the valley is the founding gatherer's hut, and it failed at 8 against
+        // an expected 0 by having exactly the ring this test exists to require.
+        //
+        // So it says the rule instead of the exception: a ring is what a gatherer's hut IS,
+        // and every one of them has the same one, however it got onto the map.
+        int huts = 0;
+        foreach (Workplace other in world.Workplaces)
         {
-            if (patch.Kind == JobKind.Forager && patch.Id != hut.Id)
+            if (other.Kind == JobKind.Forager)
             {
-                Assert.Equal(0, patch.GatheringRadius);
+                Assert.Equal(Config.GathererHutRingTiles, other.GatheringRadius);
+                huts++;
             }
         }
+
+        Assert.True(huts > 1, "Only the hut this test raised, so nothing was compared.");
     }
 
     // ---------------------------------------------------------------

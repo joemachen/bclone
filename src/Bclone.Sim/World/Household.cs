@@ -94,11 +94,12 @@ public sealed class Household
     /// list of plain conditions rather than a weighting nobody can explain (D15).
     /// </para>
     /// <para>
-    /// <b>The distance to work is a hard bound, not part of the score.</b> The economy
-    /// is derived from it (<see cref="VillageEconomy.MaxHomeToWorkTiles"/>), so a home
-    /// built beyond it is a family the village cannot feed — and letting the scorer
-    /// trade that away for a shorter walk to the granary is exactly how a settlement
-    /// ends up with an outlying house that quietly starves.
+    /// <b>The distance to work used to be a hard bound and is now part of the score</b>
+    /// (`forests-and-gathering.md §3.2`). The economy is still derived against
+    /// <see cref="VillageEconomy.MaxHomeToWorkTiles"/>, but that is a <em>budget</em> — a
+    /// home beyond it is a family the village feeds less well, not one it refuses to house.
+    /// The old reasoning feared the scorer trading a long walk to work for a short one to the
+    /// granary; the sum below cannot do that, because both walks are in it.
     /// </para>
     /// </remarks>
     public static GridPos ChooseSite(Core.SimWorld world, GridPos villageCentre)
@@ -106,7 +107,11 @@ public sealed class Household
         ArgumentNullException.ThrowIfNull(world);
 
         Config.SimConfig config = world.Config;
-        int reach = VillageEconomy.MaxHomeToWorkTiles(config);
+
+        // How far out to LOOK, which is the one bound that has to stay. Every tile in the
+        // valley would be correct and would scan nine thousand of them per house; this is
+        // the distance the economy budgets for, so it is the right place to stop looking
+        // even though it is no longer the place to stop building.
         int search = VillageEconomy.MaxHomeToVillageTiles(config);
 
         GridPos best = default;
@@ -133,8 +138,21 @@ public sealed class Household
                     continue;
                 }
 
+                // ⭐ THE BOUND IS A BUDGET NOW, NOT A REFUSAL (`forests-and-gathering.md
+                // §3.2`). This used to be `if (toWork > reach) continue;` — ground beyond the
+                // economy's budget was simply not offered, which is the same fence catchment
+                // was, applied to where you may live rather than where you may work.
+                //
+                // It still SCORES, which is what actually shapes a village: the sum below
+                // picks the nearest workable spot every time. What has gone is the cliff at
+                // the edge of the budget. **A home beyond it is allowed, and it costs food** —
+                // the villager really does walk further and really does make fewer trips, and
+                // `MarkResidential` already warns the player in exactly those terms (D43).
+                //
+                // ⚠️ Unreachable is still refused, and that is not the same thing: no walk at
+                // all is a fact about the valley, not a long walk (D111).
                 int toWork = NearestWorkDistance(world, candidate);
-                if (toWork > reach)
+                if (toWork == int.MaxValue)
                 {
                     continue;
                 }
@@ -181,9 +199,15 @@ public sealed class Household
         // Nowhere left in the painted land. A real and legible constraint, and the one
         // the brush exists to create: the village has filled the neighbourhood it was
         // given and needs the player to say where the next one goes (D42).
+        //
+        // ⚠️ IT MEANS SOMETHING NARROWER THAN IT USED TO, so it says something narrower.
+        // With the distance bound demoted to a budget, this is no longer "every spot within
+        // N tiles of work is taken" — distance cannot exclude a tile any more. What is left
+        // is genuinely full or genuinely unreachable, and telling the player to look at a
+        // distance would send them to fix the wrong thing.
         throw new NoRoomToBuildException(
-            $"no room left in the residential land — {world.Zones.ResidentialTiles} tiles painted, " +
-            $"and every spot within {reach} tiles of work is taken");
+            $"no room left in the residential land — {world.Zones.ResidentialTiles} tiles painted, "
+            + "and every one of them is already built on or cut off from the village");
     }
 
     /// <summary>Distance to the nearest store of a kind, or <c>int.MaxValue</c>.</summary>
@@ -249,6 +273,8 @@ public sealed class Household
     private static int NearestWorkDistance(Core.SimWorld world, GridPos from)
     {
         int nearest = int.MaxValue;
+        bool anyWorkAtAll = false;
+
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
@@ -257,6 +283,8 @@ public sealed class Household
                 continue;
             }
 
+            anyWorkAtAll = true;
+
             int distance = WalkingTiles(world, from, workplace.Position);
             if (distance < nearest)
             {
@@ -264,7 +292,21 @@ public sealed class Household
             }
         }
 
-        return nearest;
+        // ⚠️ NO GATHERING ANYWHERE IS "NO OPINION", NOT "REFUSE EVERYWHERE" — and getting
+        // this wrong would have stopped the village building a single house (slice 5). Until
+        // the thickets retired there was always somewhere to forage from the first tick, so
+        // this could not return "none"; now a cold start has no food source at all until the
+        // player raises a gatherer's hut, and every candidate tile would have scored
+        // `int.MaxValue`, been skipped, and thrown `NoRoomToBuildException` for ever.
+        //
+        // Zero, so the score falls back to the walk to the store alone — **exactly D72's
+        // fallback for a village with no granary**, and for the same reason: a term with
+        // nothing to measure should stop contributing, not veto.
+        //
+        // ⚠️ It is deliberately NOT the same as "work exists but this tile cannot reach it",
+        // which stays `int.MaxValue` and is still refused. One is an empty valley; the other
+        // is the far bank (D111).
+        return anyWorkAtAll ? nearest : 0;
     }
 
     /// <summary>

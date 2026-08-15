@@ -207,8 +207,22 @@ public sealed class ResidentialZoneTests
             }
         }
 
-        loop.Step(config.TicksPerYear * 40);
+        // ⚠️ FIFTEEN YEARS, NOT FORTY, AND D153 IS WHY. Long enough to prove the village is
+        // stalled — no land, so no new household, however many children grow up — and short
+        // enough that there is still somebody alive to answer when the player paints. At forty
+        // the squeezed village was down to **three people**, and three cannot form a household
+        // whatever you give them: the guard spent its setup killing the thing it measures, then
+        // reported the paint as having failed. It only surfaced when `max_household_size` went
+        // 7 -> 5 and the squeezed village got that much smaller, which is the guard having been
+        // one config change from vacuous all along.
+        loop.Step(config.TicksPerYear * 15);
         int stalled = world.Households.Count;
+
+        // So say it out loud rather than assuming it: a dead village proves nothing about land.
+        Assert.True(world.Population >= 4,
+            $"Only {world.Population} alive when the player painted, which is too few to form "
+            + "a household whatever the land says — this guard would be measuring the stall, "
+            + "not the answer to it.");
 
         // The player paints. Around the village, so it is land anyone can work from.
         GridPos village = world.Households[0].Home();

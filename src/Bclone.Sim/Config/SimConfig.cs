@@ -256,9 +256,9 @@ public sealed record SimConfig
 
     /// <summary>How big one clump of woodland is, as a diamond radius in tiles.</summary>
     /// <remarks>
-    /// Content — a fact about what a wood looks like, the same class of number as
-    /// <see cref="TreeStandRadiusTiles"/>. Small clumps give a mottled valley, large ones give
-    /// a few great forests; both are legitimate places to live and neither is derivable.
+    /// Content — a fact about what a wood looks like, and since the tree stands retired it is
+    /// the only number that says so. Small clumps give a mottled valley, large ones give a few
+    /// great forests; both are legitimate places to live and neither is derivable.
     /// </remarks>
     [JsonPropertyName("forest_clump_radius_tiles")]
     public int ForestClumpRadiusTiles { get; init; } = 4;
@@ -364,6 +364,16 @@ public sealed record SimConfig
     [JsonPropertyName("builder_hut_y")]
     public int BuilderHutY { get; init; } = -1;
 
+    // ⚠️ THERE IS DELIBERATELY NO `gatherer_hut_x` / `gatherer_hut_y`, and I added the pair
+    // before measuring what they did. Every other founding building sits at a configured
+    // offset from the village, so a hut did too — and it landed **inside the founding glade**,
+    // the clearing D112 skips woodland over. A gatherer's hut in a clearing yields almost
+    // nothing (measured: 3 food a trip against 51), the warm-start village starved, and 105
+    // tests failed.
+    //
+    // A coordinate cannot know where the wood is. `SimWorld.WhereTheTreesAre` looks, which is
+    // what a player does and what the mechanic is about.
+
     /// <summary>Where logs are split into firewood.</summary>
     /// <remarks>
     /// Near the homes rather than near the stand. Logs are drawn village-wide, so the
@@ -438,6 +448,46 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("firewood_per_winter_day")]
     public int FirewoodPerWinterDay { get; init; } = 1;
+
+    /// <summary>
+    /// Days one burn of firewood lasts a household.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-08-11: <em>"make firewood consumption take longer. like 4x longer. it
+    /// goes too fast."</em></b> The rate had to move here rather than into
+    /// <see cref="FirewoodPerWinterDay"/> because sim state is integer-only (D2) and a
+    /// quarter of a log is not a number this game can hold. Four days per log is the same
+    /// four-times-slower burn, expressed in a unit the sim has.
+    /// </para>
+    /// <para>
+    /// <b>The economy follows it</b> — <c>FirewoodPerHouseholdPerWinter</c> divides by it, so
+    /// the winter store target, the woodcutter seats and the foresters feeding them all come
+    /// down together rather than the burn quietly getting cheaper than the budget.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("firewood_burn_interval_days")]
+    public int FirewoodBurnIntervalDays { get; init; } = 1;
+
+    /// <summary>
+    /// Days between sweeps of the valley for regrowth. <b>Zero switches it off.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One sweep is both stages of a tree: a sapling seen by a sweep has stood for one
+    /// period and becomes wood, and a grass tile touching wood becomes a sapling. So at
+    /// sixty days — half a year on the shipped calendar — a cleared tile is a sapling within
+    /// six months and a mature tree within a year, which is the rate Joe asked for.
+    /// </para>
+    /// <para>
+    /// It is also the cost control: the sweep examines one period's worth of tiles per tick,
+    /// so a longer period is cheaper per tick as well as slower. Zero is off, which is what
+    /// Phase 0's world wants — its spec describes a fixed valley and a fixture that grew
+    /// trees under the villager would put noise in the one place the project needs none.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("regrowth_period_days")]
+    public int RegrowthPeriodDays { get; init; }
 
     /// <summary>How much of anything one villager can carry in one trip.</summary>
     /// <remarks>
@@ -856,51 +906,23 @@ public sealed record SimConfig
     [JsonPropertyName("logs_per_house")]
     public int LogsPerHouse { get; init; } = 30;
 
-    /// <summary>How many people can work one forage site at once.</summary>
-    /// <remarks>
-    /// <para>
-    /// A patch of berries only has so many berries within arm's reach. This is the
-    /// reason a growing village eventually has to find more sites rather than
-    /// crowding the one it started beside — and, since it is a local number, the
-    /// reason it can be said in one sentence when someone is turned away.
-    /// </para>
-    /// <para>
-    /// It is emphatically <em>not</em> "how many foragers the village needs". That
-    /// question is village-level and is answered by <c>LabourQuota</c>; putting it
-    /// here is the mistake <c>specs/labour-allocation.md §3</c> is a record of.
-    /// </para>
-    /// </remarks>
-    [JsonPropertyName("forage_site_capacity")]
-    public int ForageSiteCapacity { get; init; } = 4;
+    // `forage_site_capacity` is deleted with the patches. *"How many people can work one
+    // forage site at once"* has no subject any more: a gatherer's hut prices its seats from
+    // its own ring (D112), which is the same idea derived rather than typed.
 
     // ---------------------------------------------------------------
     //  Map generation (D18) — rules, not outcomes
     // ---------------------------------------------------------------
 
-    /// <summary>How many forage sites the valley gets.</summary>
-    /// <remarks>
-    /// These replaced the literal coordinates the world used to be typed in as. A
-    /// modder controls the <em>rules</em> of a valley — how many sites, how far out,
-    /// how wide the river — rather than the outcome, which is the honest data-driven
-    /// form once the world is generated.
-    /// </remarks>
-    [JsonPropertyName("forage_site_count")]
-    public int ForageSiteCount { get; init; } = 6;
-
-    /// <summary>
-    /// How far out the ring of forage sites sits, in tiles.
-    /// </summary>
-    /// <remarks>
-    /// <b>The economy reads this, which is why generation is bounded rather than
-    /// checked.</b> <see cref="World.VillageEconomy"/> derives the food economy from how
-    /// far the worst-placed home is from its nearest site, so a generator free to put
-    /// sites anywhere would make the food economy a property of the seed. Drawing
-    /// within a stated radius keeps one economy for every seed — which is what makes a
-    /// shared seed comparable — and the distance budget then holds by construction
-    /// rather than by a reject-and-redraw loop.
-    /// </remarks>
-    [JsonPropertyName("forage_site_ring_tiles")]
-    public int ForageSiteRingTiles { get; init; } = 5;
+    // ⭐ `forage_site_count` AND `forage_site_ring_tiles` ARE DELETED, and the second of them
+    // was the anchor the whole food economy hung off — *"the economy reads this, which is why
+    // generation is bounded rather than checked"*. The bound is `gatherer_hut_ring_tiles`
+    // now: a number the player can see drawn on the map, rather than the radius of a ring of
+    // berry patches no player could ever have learned (`forests-and-gathering.md §3.2`).
+    //
+    // What made them worth deleting is what they were FOR. They kept one economy across every
+    // seed, so a shared seed stayed comparable — and a single stated ring size does that job
+    // without also deciding where the village's food comes from.
 
     /// <summary>
     /// How far a site or stand may wander off its slot. What makes one valley differ
@@ -917,17 +939,9 @@ public sealed record SimConfig
     [JsonPropertyName("site_jitter_tiles")]
     public int SiteJitterTiles { get; init; } = 1;
 
-    /// <summary>How many stands of trees the valley gets.</summary>
-    [JsonPropertyName("tree_stand_count")]
-    public int TreeStandCount { get; init; } = 2;
-
-    /// <summary>How far out the tree stands sit.</summary>
-    [JsonPropertyName("tree_stand_ring_tiles")]
-    public int TreeStandRingTiles { get; init; } = 4;
-
-    /// <summary>How big a patch of forest a stand paints.</summary>
-    [JsonPropertyName("tree_stand_radius_tiles")]
-    public int TreeStandRadiusTiles { get; init; } = 3;
+    // `tree_stand_count`, `tree_stand_ring_tiles` and `tree_stand_radius_tiles` are deleted
+    // with the stands. Timber comes off ground a forester's hut was given, and the woodland
+    // it is given is painted across the whole valley by `forest_coverage_percent`.
 
     /// <summary>How far the founding site may sit from the middle of the ring.</summary>
     /// <remarks>
@@ -1086,8 +1100,38 @@ public sealed record SimConfig
     /// difference between a stable settlement and a boom-bust one (D31).
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ 80 -> 60 (Joe, D155), and it is the dial D153 deliberately left alone.</b> He
+    /// played a village that sat at **four people for eleven years** and asked why nobody was
+    /// having children. Nothing was broken: both households were housed in Year 1, and the bar
+    /// is <c>stockpile_target × population × this</c> — at four people that is **304 food**, and
+    /// his stores read **292**. The bar scales with the village, so a small settlement sits
+    /// just under it more or less permanently.
+    /// </para>
+    /// <para>
+    /// <b>Since D153 this is the ONLY food term in the birth gate</b>, and it is read in exactly
+    /// two places — the gate and <c>VillageEconomy.PopulationCeiling</c> — so lowering it
+    /// raises the derived ceiling by the same arithmetic. The formula does not approximate the
+    /// gate; it *is* the gate.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT BUYS GROWTH WITH HUNGER, MEASURED RATHER THAN HOPED.</b> This is the term the
+    /// deleted household gate was redundant against, and taking it down is the closest this
+    /// economy has come to the famine D153 records — *"bred to ninety-two, thirty-three starved
+    /// on the way back down."* The bar is what stops that, so it is lowered to where growth
+    /// arrives and starvation is still a minority of deaths, and no further.
+    /// </para>
+    /// <para>
+    /// <b>⛔ 70 WAS REFUSED THOUGH IT LOOKS BETTER.</b> It is the best row on the fixture — 48
+    /// alive, 4 starved over 300 years — and one of the worst on the shipped file: 16 alive, 27
+    /// starved. A setting that is excellent on one config and bad on the other is the divergence
+    /// that has bitten this project five times (D48, D49, D50, D128, D132), and is a number to
+    /// avoid rather than to tune toward.
+    /// </para>
+    /// </remarks>
     [JsonPropertyName("birth_food_percent")]
-    public int BirthFoodPercent { get; init; } = 80;
+    public int BirthFoodPercent { get; init; } = 60;
 
     /// <summary>Most people one household will hold before it stops growing.</summary>
     [JsonPropertyName("max_household_size")]
@@ -1327,6 +1371,13 @@ public sealed record SimConfig
                 $"(got {LogsPerSplit}, {FirewoodPerSplit}, {SplitTicks}).");
         }
 
+        if (FirewoodBurnIntervalDays < 1)
+        {
+            throw new SimConfigException(
+                "firewood_burn_interval_days must be at least one — a burn cannot happen more "
+                + $"than once a day (got {FirewoodBurnIntervalDays}).");
+        }
+
         if (FirewoodPerWinterDay < 0)
         {
             throw new SimConfigException(
@@ -1353,37 +1404,23 @@ public sealed record SimConfig
             throw new SimConfigException($"logs_per_house cannot be negative (got {LogsPerHouse}).");
         }
 
-        if (ForageSiteCapacity <= 0)
-        {
-            throw new SimConfigException(
-                $"forage_site_capacity must be greater than zero (got {ForageSiteCapacity}).");
-        }
-
         if (LabourReshuffleYears <= 0)
         {
             throw new SimConfigException(
                 $"labour_reshuffle_years must be greater than zero (got {LabourReshuffleYears}).");
         }
 
-        if (ForageSiteCount <= 0)
+        // The guards for forage_site_capacity, forage_site_count, tree_stand_count and
+        // forage_site_ring_tiles went with their keys. Two of them said something worth
+        // keeping — *"a valley with nowhere to forage cannot be lived in"* and *"nothing
+        // could be built without timber"* — and both are still true; what changed is that
+        // the answer is now `forest_coverage_percent`, which has its own guard below, and a
+        // hut the player has to build. **The valley owes the village trees; it no longer
+        // owes it jobs.**
+        if (SiteJitterTiles < 0)
         {
             throw new SimConfigException(
-                $"forage_site_count must be at least one (got {ForageSiteCount}) — a valley with " +
-                "nowhere to forage cannot be lived in.");
-        }
-
-        if (TreeStandCount <= 0)
-        {
-            throw new SimConfigException(
-                $"tree_stand_count must be at least one (got {TreeStandCount}) — nothing could be " +
-                "built without timber.");
-        }
-
-        if (ForageSiteRingTiles <= 0 || SiteJitterTiles < 0)
-        {
-            throw new SimConfigException(
-                $"forage_site_ring_tiles must be positive and site_jitter_tiles non-negative " +
-                $"(got {ForageSiteRingTiles}, {SiteJitterTiles}).");
+                $"site_jitter_tiles cannot be negative (got {SiteJitterTiles}).");
         }
 
         if (MapWidth <= 0 || MapHeight <= 0)

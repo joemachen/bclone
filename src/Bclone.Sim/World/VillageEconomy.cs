@@ -101,79 +101,54 @@ public static class VillageEconomy
         return (travel * 2) + config.GatherTicks;
     }
 
-    /// <summary>Distance from a home to the <em>nearest</em> forage site.</summary>
-    /// <remarks>
-    /// Nearest, not first. Several sites exist precisely so that an outlying household
-    /// has a short walk to one of them (D19), and an economy budgeting for the far
-    /// patch would throw that away — it would derive a yield generous enough that
-    /// catchment could never bind without the village getting rich, which is the
-    /// opposite of what the sites are for.
-    /// </remarks>
-    public static int NearestForageDistance(SimConfig config, GridPos from)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        // Against the CANONICAL valley — the jitter-free ring — plus the worst jitter
-        // the generator is allowed to add (D18).
-        //
-        // This is what keeps ONE economy for every seed. Deriving from the actual
-        // generated sites would make gather_yield a property of the seed, so two runs
-        // would have different physics and a shared seed would stop being comparable.
-        // Budgeting against the canonical layout and paying for the worst jitter up
-        // front means every valley the generator can produce fits inside the economy
-        // by construction — no reject-and-redraw, and no seed quietly unsurvivable.
-        List<GridPos> sites = MapGenerator.CanonicalForageSites(config);
-
-        int nearest = int.MaxValue;
-        for (int i = 0; i < sites.Count; i++)
-        {
-            int distance = from.ManhattanDistanceTo(sites[i]);
-            if (distance < nearest)
-            {
-                nearest = distance;
-            }
-        }
-
-        if (nearest == int.MaxValue)
-        {
-            throw new InvalidOperationException(
-                "The valley has no forage sites at all; no economy can be derived for it.");
-        }
-
-        // Jitter can only ever move a site further from a given home by this much, so
-        // paying for it here is the conservative reading.
-        return nearest + (config.SiteJitterTiles * 2);
-    }
+    // `NearestForageDistance` is deleted with the sites it measured (slice 5). It answered
+    // *"how far is a home from the nearest berry patch, in the canonical jitter-free
+    // valley?"*, which kept one economy across every seed — and it had **no callers left**
+    // even before this slice, because `MaxHomeToWorkTiles` stopped being derived from a ring
+    // of patches and became the gatherer hut's own ring. Deleted rather than kept against
+    // some future use (D98).
 
     // ---------------------------------------------------------------
     //  What placement guarantees, and what the economy is derived from
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// The furthest a home may ever be from its work.
+    /// The walk to work the economy budgets for — <b>the gatherer's own ring</b>.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>This is a guarantee, not an observation, and that inversion is the point.</b>
-    /// The economy used to be derived by scanning where a square spiral <em>happened</em>
-    /// to put twenty homes and taking the worst — so the budget was whatever the layout
-    /// gave it, and a generated valley could hand it a layout it could not afford.
-    /// Now <see cref="Household.ChooseSite"/> refuses to build beyond this distance, so
-    /// the budget holds by construction and the derivation has something firm to stand
-    /// on.
+    /// <b>⭐ IT IS A BUDGET NOW, NOT A FENCE</b> (`forests-and-gathering.md §3.2`). It used to
+    /// be a guarantee: <see cref="Household.ChooseSite"/> refused to build beyond it, so the
+    /// derivation stood on something the village could not break. Catchment is gone and the
+    /// refusal with it — building further out is allowed, warned about, and genuinely costs
+    /// food, because the villager really does walk further and really does make fewer trips.
+    /// <b>That is D58's settled mechanism: distance stops being a restriction and becomes a
+    /// consequence.</b>
     /// </para>
     /// <para>
-    /// Stated as: <b>a home is never further from work than the sites are from the
-    /// middle of the valley</b> — the ring radius, plus the worst the jitter can add.
-    /// A village that cannot honour that has run out of valley, which is a legible
-    /// thing to be told.
+    /// <b>⚠️ It could not simply be deleted, and that is why this number still exists.</b>
+    /// <see cref="RequiredGatherYield"/> solves <em>yield = need ÷ (trips × vigour)</em>
+    /// against the worst walk; widen that walk to the map diagonal and
+    /// <see cref="TripsPerYear"/> rounds to zero, at which point the economy has **no
+    /// solution at all** (`DESIGN.md §5`'s recorded finding). An anchor is required. The only
+    /// question was which.
+    /// </para>
+    /// <para>
+    /// <b>The anchor is <c>gatherer_hut_ring_tiles</c>, and three things recommend it.</b> It
+    /// is a number the player can <em>see on the map</em> — the ring the hut draws is also the
+    /// distance the economy assumes people live within, where the old 7 was an artefact of
+    /// where a generator happened to drop a berry patch and no player could ever have learned
+    /// it. The stated target barely changes: <em>one gatherer at a <b>fully wooded</b> hut, at
+    /// minimum vigour, feeds themselves and their dependants</em> — only the two bold words
+    /// are new. And the ring was chosen as 8 against the old 7 precisely so this re-derivation
+    /// would be an adjustment rather than a rewrite.
     /// </para>
     /// </remarks>
     public static int MaxHomeToWorkTiles(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        return config.ForageSiteRingTiles + (config.SiteJitterTiles * 2);
+        return config.GathererHutRingTiles;
     }
 
     /// <summary>How far a home may sit from the middle of the village.</summary>
@@ -218,14 +193,13 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        // The canonical stand, furthest-out slot, plus worst-case jitter — same basis
-        // as the forage budget above, so neither kind of work is quietly cheaper.
-        List<GridPos> stands = MapGenerator.CanonicalTreeStands(config);
-        GridPos stand = stands.Count > 0
-            ? stands[stands.Count - 1]
-            : new GridPos(config.TreeStandRingTiles, 0);
-        stand = new GridPos(
-            stand.X + config.SiteJitterTiles, stand.Y + config.SiteJitterTiles);
+        // ⭐ WHERE THE TIMBER IS, NOW THAT NOBODY DROPS A STAND ON THE MAP (slice 5). This
+        // used to be the canonical stand's furthest slot plus worst-case jitter — a position
+        // the generator chose. A forester works **their own hut's painted ground** now, so
+        // the walk is the same walk everything else budgets for, and saying so here finally
+        // makes true the sentence this method has always carried: *same basis as the forage
+        // budget, so neither kind of work is quietly cheaper.*
+        var stand = new GridPos(MaxHomeToWorkTiles(config), 0);
 
         var shed = new GridPos(config.StorageShedX, config.StorageShedY);
 
@@ -286,7 +260,16 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        return config.FirewoodPerWinterDay * config.DaysPerSeason;
+        // Divided by the burn interval, so the budget follows the burn. Leaving this as
+        // "per day" while the hearth burned every fourth day would have had the village
+        // stocking four winters' fuel and calling it one — the exact doc-versus-reality
+        // drift D48, D49 and D50 were each an instance of.
+        //
+        // Rounded UP, deliberately: a winter that needs seven and a half burns needs eight
+        // logs, and a village that budgets seven is cold on the last day of it.
+        return CeilingDivide(
+            config.FirewoodPerWinterDay * config.DaysPerSeason,
+            config.FirewoodBurnIntervalDays < 1 ? 1 : config.FirewoodBurnIntervalDays);
     }
 
     /// <summary>
@@ -400,8 +383,60 @@ public static class VillageEconomy
     public const int FuelMayCostThisShareOfSpareHands = 2;
 
     /// <summary>
+    /// How many souls a house of this kind will hold.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE ONE PLACE THAT ANSWERS "HOW MANY FIT IN THIS HOUSE" (Joe, D153).</b> The cap
+    /// is what limits how many children a couple can have, and Joe wants it to be a property of
+    /// the <em>house</em> rather than a global number — <i>"eventually an unlock/tech that
+    /// allows for larger homes/denser population."</i> This is the seam that unlock lands on: a
+    /// second arm, beside a `BuildingKind` appended to the enum, and every reader already asks
+    /// the right question.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ NO PER-HOUSE STATE YET, AND THAT IS DELIBERATE.</b> A house is not an entity in
+    /// this sim — it is a <c>GridPos?</c> on <see cref="Household"/>, with no id and no record
+    /// (<c>SimWorld.NameFor</c>: *"A HOUSE IS NOT NUMBERED"*). Recording a kind on the household
+    /// today would be a field that can only ever hold one value, which is D98's rule —
+    /// <c>construction_site_capacity</c> was <em>deleted rather than zeroed</em> on the grounds
+    /// that *"a number which is always zero is a lie waiting to be found."* The field arrives
+    /// with the second dwelling, when it has two values on its first day. It must then travel
+    /// with <c>HomePosition</c> through <c>HouseholdSystem</c>'s empty-house swap, which moves a
+    /// family into a standing empty home — that is the one place this design can go wrong.
+    /// </para>
+    /// <para>
+    /// <b>Content, not derivation, and D16 does not bite.</b> How many people fit under a roof
+    /// is a fact about the building — the same class as <c>work_ground_tiles_per_worker</c> —
+    /// so it lives in the config where a modder can change it. What must stay derived is the
+    /// <em>consequence</em>, which is <see cref="PopulationCeiling"/>.
+    /// </para>
+    /// </remarks>
+    public static int HouseholdCapacity(BuildingKind kind, SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return kind switch
+        {
+            BuildingKind.Home => config.MaxHouseholdSize,
+
+            // Named rather than defaulted, which is D108's rule: five of six silent default
+            // arms would have mis-priced or mis-named a new building kind, so every arm says
+            // what it means and a new one has to be added on purpose.
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building is not somewhere anybody lives."),
+        };
+    }
+
+    /// <summary>
     /// Hands a village of this many households can spare once everyone is fed.
     /// </summary>
+    /// <remarks>
+    /// <b>⚠️ Reads <c>MaxHouseholdSize</c> and not <see cref="HouseholdCapacity"/>, on purpose.</b>
+    /// This is a *budgeting worst case* — assume every household is full — feeding the derived
+    /// fuel target. It wants "the biggest a household can get", which stays a village-wide fact
+    /// even once individual houses differ.
+    /// </remarks>
     public static int SpareHandsAt(SimConfig config, int households)
     {
         ArgumentNullException.ThrowIfNull(config);
@@ -635,9 +670,51 @@ public static class VillageEconomy
     internal static int CeilingDivide(int numerator, int denominator) =>
         denominator <= 0 ? 0 : (numerator + denominator - 1) / denominator;
 
+    /// <summary>
+    /// How wooded the economy assumes a working hut's ring actually is.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE ECONOMY USED TO BE DERIVED FOR A VALLEY THAT DOES NOT EXIST</b> (Joe's call,
+    /// 2026-08-11). `forests-and-gathering.md §3.2` states the target as *"one gatherer at a
+    /// <b>fully wooded</b> hut feeds themselves and their dependants"*, and flagged those two
+    /// words as the only new ones. This is what they cost: **no real hut is ever fully
+    /// wooded.** Measured on the warm start, a well-sited hut yields **29 of a possible 51**
+    /// at founding and **19 by year twenty**, because the village clears its own ring as it
+    /// builds. The village starved at year thirty with 2,627 of the valley's 2,662 trees
+    /// still standing — the derivation was simply asking for food that no hut could produce.
+    /// </para>
+    /// <para>
+    /// <b>Anchored on <c>forest_coverage_percent</c>, which is a number that already exists
+    /// and is already stated.</b> The target becomes *one gatherer at a hut whose ring is as
+    /// wooded as the valley is* — true of an averagely-sited hut, and **conservative for a
+    /// well-sited one**, which is the right direction: siting a hut in thick wood should be
+    /// rewarded with slack, not required to break even. That is §0.1's *challenge in the
+    /// planning* — the decision pays off — rather than a tax for making it badly.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It does not soften "no forest, no food".</b> A bald ring still yields nothing;
+    /// what changed is what the village <em>budgets</em> for, not what a trip is worth.
+    /// </para>
+    /// </remarks>
+    public static int WorkingRingWoodedPercent(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        // Clamped above zero: a valley configured with no woodland at all cannot support a
+        // food economy, and the throw for that belongs in `RequiredGatherYield` where the
+        // impossibility is stated, not in a division here.
+        return config.ForestCoveragePercent < 1 ? 1 : config.ForestCoveragePercent;
+    }
+
     /// <summary>Food one adult gathers in a year at a given vigour.</summary>
+    /// <remarks>
+    /// Through <see cref="WorkingRingWoodedPercent"/>, so what the economy believes a trip is
+    /// worth and what <c>SimWorld.GatherYieldAt</c> actually hands over cannot drift apart.
+    /// </remarks>
     public static int FoodGatheredPerYear(SimConfig config, int vigourPercent) =>
-        TripsPerYear(config) * config.GatherYield * vigourPercent / 100;
+        TripsPerYear(config) * config.GatherYield * WorkingRingWoodedPercent(config) / 100
+            * vigourPercent / 100;
 
     /// <summary>Food one adult gathers in a year at their weakest.</summary>
     public static int FoodGatheredPerYearAtWorst(SimConfig config) =>
@@ -735,9 +812,14 @@ public static class VillageEconomy
                 "Config allows no foraging at all; no gather yield can sustain a village.");
         }
 
-        // yield * trips * vigour/100 >= needed, solved for yield and rounded up.
-        int denominator = trips * config.VigourMinPercent;
-        return ((needed * 100) + denominator - 1) / denominator;
+        // yield * wooded/100 * trips * vigour/100 >= needed, solved for yield, rounded up.
+        //
+        // The wooded fraction is the new term and it is why this number roughly trebles: the
+        // village is budgeting for the hut it will actually have rather than for a
+        // hypothetical one standing in unbroken forest.
+        int wooded = WorkingRingWoodedPercent(config);
+        int denominator = trips * config.VigourMinPercent * wooded;
+        return ((needed * 100 * 100) + denominator - 1) / denominator;
     }
 
     /// <summary>
@@ -897,7 +979,26 @@ public static class VillageEconomy
         int logs = (households * FirewoodStoreWantedPerHousehold(config) * config.LogsPerSplit
             / (config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit)) + config.LogsPerHouse;
 
-        return firewood + logs;
+        // ⭐ AND NEVER LESS THAN A GRANARY (Joe, D139), which is this method's own stated
+        // intent finally enforced rather than assumed. The paragraph above promises the shed
+        // is *"deliberately more generous than the granary"*, because food is what regulates
+        // the village and a second ceiling fighting the first is Non-Negotiable 1 failing —
+        // the player cannot tell which constraint stopped them.
+        //
+        // ⛔ IT HAD INVERTED BY AN ORDER OF MAGNITUDE: 343 against the granary's 2,850. The
+        // derivation prices the logs needed to MAKE the winter's firewood, so raising
+        // `firewood_per_split` to 50 (Joe, chasing a different problem) divided that term by
+        // seven and quietly shrank the shed. A number derived from one lever moving under
+        // another is exactly what D134 then measured — a village at **Logs 15 in store and
+        // 1,968 on the ground**, capped from year five, which is what Joe played for
+        // twenty-seven years and read as "there's never enough wood".
+        //
+        // The floor is the granary's own capacity rather than a typed constant, so the two
+        // cannot drift apart again and the promise above stays true by construction.
+        int wanted = firewood + logs;
+        int floor = GranaryCapacity(config);
+
+        return wanted < floor ? floor : wanted;
     }
 
     /// <summary>

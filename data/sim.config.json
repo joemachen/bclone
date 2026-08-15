@@ -18,9 +18,26 @@
   "starting_households": 2,
   "adults_per_household": 2,
   "founder_age": 20,
-  "adult_age": 15,
+  // ⭐ 15 -> 12 (Joe, D156). An uneducated child can work at twelve, which mirrors real life
+  // and is the honest state of a game with no schooling in it. **When education lands, the
+  // trade is that a schooled child starts LATER and is worth more when they do** — so this is
+  // the dial that pair of choices will pull against, not a number that stays put.
+  //
+  // ⚠️ It buys hands and costs food: below this a villager eats `child_food_share_percent` of
+  // a meal, so a twelve-year-old now eats a full one. Pairing and childbearing are NOT affected
+  // — `leave_home_age` (18) and `fertility_min_age` (18) gate those separately.
+  "adult_age": 12,
   "leave_home_age": 18,
-  "max_household_size": 7,
+  // ⭐ 7 -> 5 (Joe, D153). The house is what limits how many children a couple can have, and
+  // at seven it almost never bound: measured, it refused only 1-3% of household-years while
+  // the granary gate refused 42-70%. Five makes it a real lever and is the size the future
+  // "bigger homes" unlock pushes on.
+  //
+  // ⭐ AND IT FIXES THE SHIPPED VILLAGE DYING OUT, for free. Over 300 unattended years this
+  // config peaked at 27 and ended at ZERO, every death of old age; at five it ends at 20 with
+  // nobody starving and nobody freezing. Measured across caps 3-7: three is below replacement
+  // (extinct by year 30), and six or seven overrun the food.
+  "max_household_size": 5,
 
   // Homes cluster in a spiral rather than a line, and the economy is
   // derived for the FURTHEST home a village this size will build - the
@@ -153,7 +170,29 @@
   // to a berry patch. Set to the DERIVED value, not merely to one that
   // passes - the guard only asks for "enough", and leaving it at 47
   // would have made food fractionally free for no stated reason.
-  "gather_yield": 46,
+  //
+  // 46 -> 51: the economy's bound stopped being an artefact of where a
+  // generator dropped a berry patch and became the gatherer hut's own
+  // ring, which the player can SEE (forests-and-gathering.md 3.2). Seven
+  // tiles to eight, so a round trip is 19 ticks instead of 17 and 17
+  // trips fit in a year instead of 19. Two fewer trips, each worth more.
+  //
+  // 51 -> 145 (Joe, 2026-08-11), and this one is not an adjustment.
+  // The economy was derived for a FULLY WOODED ring, and no real hut is
+  // ever fully wooded: measured, a well-sited warm-start hut yields 29 of
+  // a possible 51 at founding and 19 by year twenty, because the village
+  // clears its own ring as it builds. The village starved at year thirty
+  // with 2,627 of the valley's 2,662 trees still standing.
+  //
+  // It is derived against forest_coverage_percent now - "one gatherer at
+  // a hut whose ring is as wooded as the valley is" - which is true of an
+  // averagely-sited hut and generous to a well-sited one. Siting a hut in
+  // thick wood should be rewarded with slack rather than required to
+  // break even.
+  //
+  // NOTE WHAT DID NOT CHANGE: a bald ring still yields nothing. This is
+  // what the village budgets for, not what a trip is worth.
+  "gather_yield": 145,
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
@@ -198,20 +237,23 @@
   // how far out, how wide the river - rather than the outcome, which
   // is the honest data-driven form once the world is generated.
   //
-  // Several places to forage is structural, not scenery (D19): a
-  // catchment radius that actually BINDS kills outlying households when
-  // there is only one food source, because those families have nothing
-  // within reach to work. And they have to be SPREAD (D24) - the first
-  // hand-placed attempt put them all out at the edges, which left every
-  // home near the middle competing for the one original patch, so
-  // tightening catchment just left people idle beside a full patch and
-  // their households starved. The generator guarantees the spread by
-  // construction: evenly spaced slots with jitter, never free angles.
-  "forage_site_count": 6,
-  "forage_site_ring_tiles": 5,
-  "tree_stand_count": 2,
-  "tree_stand_ring_tiles": 4,
-  "tree_stand_radius_tiles": 3,
+  // RETIRED: forage_site_count, forage_site_ring_tiles, tree_stand_count,
+  // tree_stand_ring_tiles, tree_stand_radius_tiles.
+  //
+  // Six berry patches and two stands of trees used to be drawn on a ring
+  // here, and they were the last placeholder in the economy: food was a
+  // FACT OF THE MAP rather than a decision. The valley is wooded across
+  // its whole area now, the player sites a gatherer's hut in it, and the
+  // trees inside that hut's ring decide what a trip is worth - so timber
+  // and food compete for the same trees
+  // (specs/forests-and-gathering.md, Joe: "no forest, no food").
+  //
+  // The old argument for several spread sites was about CATCHMENT - a
+  // binding radius starves outlying homes if there is one food source.
+  // Catchment is deleted too, and the argument went with it.
+  //
+  // See forest_coverage_percent and gatherer_hut_ring_tiles below: those
+  // two are what the food economy is made of now.
 
   // EVERY TILE OF THIS IS PAID FOR BY THE WHOLE ECONOMY. The food
   // budget assumes the worst case - a site jittered directly away from
@@ -241,17 +283,15 @@
   "soil_quality_min": 40,
   "soil_quality_max": 200,
 
-  // How many hands fit at one patch, and how far it is reasonable to
-  // walk to work. Capacity is a LOCAL fact about a place; how many
-  // foragers the village needs is a village-level question and lives in
-  // LabourQuota. Conflating the two is what specs/labour-allocation.md
-  // §3 is a record of.
+  // RETIRED: forage_site_capacity and forager_catchment_tiles.
   //
-  // Ten tiles, lowered from twelve now the sites are spread properly:
-  // at twelve a home in the middle could reach nearly everything, so the
-  // rule constrained nothing.
-  "forage_site_capacity": 4,
-  "forager_catchment_tiles": 10,
+  // The first was how many hands fit at one berry patch, and there are
+  // no patches. The second was how far it was reasonable to walk to
+  // work, enforced as a refusal - and it is a COST now rather than a
+  // fence: the allocator still claims the nearest hands first, but a
+  // ruinous commute is a mistake the player can make, see and pay for
+  // (D58, D120). Measured on the way out: the ten-tile fence was never
+  // binding anyway - the furthest commute anybody held was three.
 
   // The village shares out all its work again every three years, so
   // people drift toward the jobs nearest where they live (decision D20).
@@ -279,27 +319,46 @@
   "vigour_min_percent": 55,
 
   // ---- Life --------------------------------------------------
-  // 45 +/- 5 => 40-50 year lives. At 80s per year on 4x (see
-  // target_ticks_per_second) that is roughly a 55-65 minute life -
-  // D49 states the pacing AS a life rather than as a year, because the
-  // generational loop is the core loop and a year is only its unit.
-  "lifespan_years_base": 45,
-  "lifespan_years_variance": 5,
+  // 67 +/- 12 => 55-79 year lives (Joe, 2026-08-11, watching Hattie die
+  // at 42: "42 feels too young to die. let's extend it to 55-80").
+  //
+  // 55-79 rather than 55-80 because the draw is base +/- variance, so the
+  // range is always an ODD number of years wide and 55-80 is 26. Erring
+  // inside what was asked for rather than over it.
+  //
+  // Was 45 +/- 5 => 40-50, which D49 set when the pacing target was
+  // stated as "an average life takes 60 real minutes at 4x". THAT TARGET
+  // MOVES WITH THIS: a life is half as long again, so at the current tick
+  // rate an average one runs about three hours at 4x rather than two.
+  // The life is the statement and the tick rate is only its unit
+  // (target_ticks_per_second is the number to argue with, not this one).
+  //
+  // It is not only pacing. Vigour declines from vigour_full_until_age to
+  // vigour_min_percent at death, so a longer life is MORE YEARS SPENT
+  // DECLINING - a village of the same size carries more low-vigour
+  // adults. The economy is re-derived against it below.
+  "lifespan_years_base": 67,
+  "lifespan_years_variance": 12,
 
   // ---- Timber (decision D17) ---------------------------------
   // Cuttable year-round, unlike berries, so a woodcutter still works
   // in winter. Nobody is spared for the stand while a household in the
   // village is going hungry - the village feeds itself before it
   // builds, and that is the whole labour policy in one sentence.
-  // Where the stands are is generator output now - see
-  // tree_stand_count and tree_stand_ring_tiles above.
+  //
+  // There are no stands any more: a forester works the ground their own
+  // hut was given, and cut_yield is what one tree of it is worth.
   "cut_yield": 12,
   "cut_ticks": 4,
   // DERIVED (VillageEconomy.RequiredTreeStandSeats), not picked. 3 -> 6.
   // Enough hands to keep the huts in logs and still leave one for
   // building - the "+1" in the derivation is what stops the village
   // heating itself and never growing.
-  "tree_stand_capacity": 6,
+  //
+  // It sizes the FORESTER'S HUT now that the stands are gone, which is
+  // the same question wearing a different name: how many pairs of hands
+  // the village's timber needs in one place.
+  "tree_stand_capacity": 2,
 
   // A home has to be built, out of LOGS. Wood is two resources now
   // (D29): a logger fells logs, a woodcutter turns logs into firewood,
@@ -450,7 +509,7 @@
   //
   // Asserted against the shipped file now, not just the test fixture -
   // the two diverge, and this gap lived entirely in that divergence.
-  "woodcutter_hut_capacity": 8,
+  "woodcutter_hut_capacity": 2,
   "logs_per_split": 6,
   "split_ticks": 4,
 
@@ -465,13 +524,59 @@
   // haul to the shed got longer, then 141 -> 22 when hunger slowed. Fewer
   // meals means fewer ticks lost to eating, so a woodcutter fits far more
   // batches into a year and each one can be much smaller.
-  "firewood_per_split": 22,
+  //
+  // 22 -> 25 with the bound re-based on the gatherer's ring
+  // (forests-and-gathering.md 3.2).
+  //
+  // ORDER MATTERS HERE AND IT CAUGHT ME OUT. Read against the OLD
+  // gather_yield this key demanded 41; read again after food was
+  // re-derived to 51 it wanted only 25. Fuel is budgeted out of the hands
+  // the village has SPARE, and spare hands is a difference - hands, minus
+  // the hands it takes to feed everyone. Fix food first and the
+  // subtraction leaves more behind, so fuel gets cheaper. Setting 41
+  // would have over-configured firewood by 64% and called it derived.
+  //
+  // The header of this file already said "in the order the derivation
+  // runs (food before fuel)". It says it because of exactly this.
+  "firewood_per_split": 50,
 
   // Per household, not per member: a house costs the same to heat
   // whether two live in it or five. That makes SPRAWL the thing that
   // costs rather than population - a pressure that traces back to a
   // player decision (DESIGN.md §2.3).
+  //
+  // Still one log per burn, and still the switch that turns fuel off
+  // entirely when it is zero (Phase 0's world has no winter fuel).
   "firewood_per_winter_day": 1,
+
+  // How many days one burn lasts (Joe, 2026-08-11: "make firewood
+  // consumption take longer. like 4x longer. it goes too fast").
+  //
+  // The rate had to move HERE rather than in the amount above, because
+  // sim state is integer-only (D2) and a quarter of a log is not a
+  // number this game can hold. Four days per log is the same four-times
+  // slower burn expressed in a unit the sim has.
+  //
+  // The economy follows it: FirewoodPerHouseholdPerWinter divides by it,
+  // so a winter costs a household a quarter of what it did, and every
+  // number derived from that - the store target, the woodcutter seats,
+  // the foresters feeding them - comes down with it.
+  "firewood_burn_interval_days": 4,
+
+  // ---- Regrowth (D125) ---------------------------------------
+  // The valley comes back. Measured before this existed: a village
+  // felled its own gatherer's ring simply by living in it - houses,
+  // sites and the forester's ground are all near the hut - and
+  // thirteen people starved beside a valley still 97% wooded.
+  //
+  // Sixty days is half a year, and one sweep is both stages of a
+  // tree: grass touching wood becomes a sapling, and a sapling that
+  // has stood a whole sweep becomes wood. So a cleared tile is a
+  // sapling within six months and a mature tree within a year, which
+  // is the rate Joe asked for ("it should come back every year").
+  //
+  // Zero switches it off.
+  "regrowth_period_days": 60,
 
   // ---- Cold is a place you are standing (D45) -----------------
   // freezing_ticks is GONE. It was one counter per household - "days

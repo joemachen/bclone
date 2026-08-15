@@ -47,7 +47,7 @@ public sealed class TerrainCostFieldTests
 
         return new GeneratedMap(
             width, height, minX: 0, minY: 0, terrain, new byte[width * height],
-            new[] { new GridPos(0, 0) }, new[] { new GridPos(0, 0) }, new GridPos(0, 0));
+            new GridPos(0, 0));
     }
 
     [Fact]

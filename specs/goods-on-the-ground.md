@@ -248,6 +248,41 @@ auto-remove the resources if a building is placed on a resource."*
   point of an instant pile is that it needs nobody — a site would put the builder dependency
   back and re-open the window D95 died in. A waiting list is what this actually is.
 
+#### ⭐ 5.3a A blocked footprint is cleared before any coppice (D157)
+
+**"No new machinery" above was right about the parts and wrong about the order, and it cost a
+year's play to find out.** The brush, the errand and the deposit rule did all exist — but D127
+then turned harvest paint into a *standing* instruction whose wood grows back, and
+`NearestHarvest` picks the nearest painted tile. Between a village and a footprint eight tiles
+out there is always nearer coppice, and it always regrows before the laborers run out of it. So
+the tile this table promises will be cleared **is never the nearest tile, and never gets
+cleared at all.**
+
+Measured on the shipped opening: a gatherer's hut marked in real woodland is still standing on
+`Forest` after **forty years**, while the panel says *"Waiting: the ground it stands on is
+still being cleared"* — true, and never going to finish. All four founders freeze in winter 1.
+
+**The rule:** a laborer looking for painted ground takes a tile a marked building is waiting on
+before any other painted tile.
+
+- **Free buildings first, in marking order.** A pile and a builder's hut cost nothing but the
+  ground, they are not in the build queue, and until the pile stands there is nowhere to put a
+  felled log — so clearing anything else first makes timber the village cannot see (D95).
+- **Then construction sites, in the build queue's own order** — rank, then id, exactly as
+  `BuildQueue` sorts (Joe, D157). *Clearing defers to building.* The first cut of this took the
+  nearest blocked footprint, which is a second ordering over one list, and `NextToBuild`'s own
+  comment names two orderings that must agree as the shape of half the bugs here. A site the
+  player moves up the list moves its clearing with it, which is what the list is for.
+- **The paint is still required, so this is priority and not scope.** `Mark` and `MarkHome` put
+  it on; a player who takes it off is telling the village something. The set of clearable tiles
+  is identical — only the order moves.
+- **Reachability is asked of the villager, not the village.** A laborer who cannot walk to the
+  head of the queue falls through to work they can reach rather than standing still.
+- **Walked from the buildings, not from the paint.** Asking *"is a building waiting here?"*
+  per painted tile would be the whole workplace list × hundreds of tiles × every idle adult ×
+  every tick — the cost ruin `NearestHarvest`'s own comment records. A village has a handful of
+  unraised buildings; that is the short list.
+
 ### 5.2 The bug next door, found while reading `Demolish`
 
 ```csharp

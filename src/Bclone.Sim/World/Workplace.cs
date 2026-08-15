@@ -105,11 +105,23 @@ public enum JobKind
 /// </remarks>
 public enum WorkMode
 {
-    /// <summary>Take what is standing. The default, and what every other workplace does.</summary>
-    Harvest = 0,
+    /// <summary>
+    /// Put trees back and take none — the wood is resting.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ THIS SLOT MEANT THE OPPOSITE UNTIL D146, AND IT IS THE ONE PLACE THAT MATTERS.</b>
+    /// It was <c>Harvest</c> — <em>fell and never plant</em> — and it is now <em>plant and
+    /// never fell</em>. Renaming rather than appending keeps the numbering the remark below
+    /// promises, and it moves no golden because <c>Mode</c> is hashed <b>sparsely against
+    /// <see cref="Workplace.DefaultMode"/></b>: a village where nobody has touched a toggle
+    /// mixes nothing at all, and no golden in the suite touches one.
+    /// </remarks>
+    PlantOnly = 0,
 
-    /// <summary>Put trees back on bare ground this place owns (Joe, ungated).</summary>
-    Plant = 1,
+    /// <summary>
+    /// Fell what is standing on this hut's ground and put back what is not. The default.
+    /// </summary>
+    FellAndPlant = 1,
 }
 
 public sealed class Workplace
@@ -197,16 +209,55 @@ public sealed class Workplace
     internal int CachedAtTerrainGeneration = -1;
 
     /// <summary>
-    /// What this place is set to do — <see cref="WorkMode.Harvest"/> unless the player says
-    /// otherwise.
+    /// What this place is set to do — <see cref="WorkMode.FellAndPlant"/> unless the player
+    /// says otherwise.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <b>Player intent, so it is sim state and it is hashed</b> — but <b>sparsely</b>, in the
     /// same shape and for the same reason as <see cref="QueueRank"/>: a village where nobody has
     /// ever touched a mode mixes nothing at all, so the control is a provable no-op until
-    /// somebody uses it and no golden moves for its existing.
+    /// somebody uses it and no golden moves for its existing. <b>The sentinel in
+    /// <c>StateHash</c> tracks this default and must keep tracking it</b> — it tests against
+    /// whatever "untouched" means, never against a mode by name.
+    /// </para>
+    /// <para>
+    /// <b>⭐ THE TOGGLE IS FELLING, NOT PLANTING (Joe, D146), AND THAT IS THE THIRD READING OF
+    /// THIS CONTROL.</b> <i>"Planting should be on by default for a painted area, and felling
+    /// should be the toggle on/off now that I think about it."</i> He is right, and the reason
+    /// is that <b>painting ground for a hut is already the instruction to keep it wooded</b> —
+    /// so planting was never the interesting question. What the player actually decides is
+    /// whether they are <em>taking timber out of this wood</em> or letting it come back.
+    /// </para>
+    /// <para>
+    /// <b>It also collapses two mechanisms into one</b>, which is why it is worth the rename: a
+    /// met Logs limit is simply <em>felling off, temporarily</em>. `SimWorld.MayFell` is the one
+    /// place that answers it, and the toggle and the cap now go through it together instead of
+    /// being two rules that could disagree (D145's one-door finding, applied the day after).
+    /// </para>
+    /// <para>
+    /// <b>The state this deletes is fell-only</b>, and it is not missed: clearing a wood for
+    /// good is what the harvest brush does (D87), and the brush has been a standing instruction
+    /// since D127. A forester's ground is a <em>managed</em> wood by definition.
+    /// </para>
+    /// <para>
+    /// The two readings before this one, kept because each cost something. D137: the modes were
+    /// exclusive — <c>wantsTrees = Mode == Harvest</c> — so a hut set to plant never felled, and
+    /// flipping the default on that reading failed eight tests including D130's stockpile tool.
+    /// D137 fixed the reading rather than the default, giving a forester who <em>tends</em>.
+    /// D142 then found that the reading had reached two of its three call sites, and every fell
+    /// in the village had been billed at <c>PlantTicks</c> ever since.
+    /// </para>
     /// </remarks>
-    public WorkMode Mode { get; set; } = WorkMode.Harvest;
+    public WorkMode Mode { get; set; } = DefaultMode;
+
+    /// <summary>
+    /// What a place is set to before anybody touches it. <see cref="Determinism.StateHash"/>
+    /// tests against this rather than against a named mode, so that changing the default cannot
+    /// silently move every golden in the suite — which is a trap that was walked into and out
+    /// of once already, and the constant is what stops the next attempt hitting it.
+    /// </summary>
+    public const WorkMode DefaultMode = WorkMode.FellAndPlant;
 
     /// <summary>Villagers currently holding a job here, in id order.</summary>
     public List<int> WorkerIds { get; } = new();

@@ -195,7 +195,10 @@ public readonly record struct LabourQuota
         //   larder, and they starved. Funding fuel only from what was left after the
         //   food floor drained the woodpile a little every year until four households
         //   froze in one winter, with a full larder and a yard full of logs.
-        if (FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world))
+        bool foodComesFirst =
+            FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world);
+
+        if (foodComesFirst)
         {
             woodcutters = 0;
             forestersForHuts = 0;
@@ -254,7 +257,31 @@ public readonly record struct LabourQuota
 
         if (limits.IsMet(Goods.Logs, world.LogsInSheds()))
         {
-            forestersForHuts = 0;
+            // ⭐ A MET LOG LIMIT STOPS THE FELLING, NOT THE PROFESSION (Joe, D146). *"A capped
+            // hut can replant. Priority should be replant → extra-hands labour. It just
+            // shouldn't fell if it has met its cap."*
+            //
+            // ⛔ ZEROING BOTH ARMS MADE THAT IMPOSSIBLE, AND IT TOOK A MEASUREMENT TO SEE IT.
+            // `SimWorld.MayFell` sends a capped forester to bare ground instead of to a tree —
+            // but the hut had **nobody standing in it to send**: the quota wanted zero
+            // foresters, so the allocator emptied the building, and the replanting could never
+            // happen however the behaviour branch was written. `SetStaffing` is a ceiling, not
+            // a summons. Measured on a hut with 88 bare tiles and a limit of 0: *most hands
+            // ever at the hut 0 of 2, quota wants 0 foresters.*
+            //
+            // So the demand becomes the PLANTING demand — the seats at huts that still own
+            // ground to put back — which is derived rather than typed (D16) and falls to zero
+            // by itself once every painted tile is wooded again. That is Joe's ordering exactly:
+            // replant until the painted area is maxed out, then be spare hands.
+            //
+            // ⚠️ AND NEVER OVER THE FOOD GATE ABOVE. This is an assignment rather than a
+            // reduction, so on its own it would hand foresters back to a village that had just
+            // zeroed every non-food job because its larders were empty — planting outranking
+            // eating, which is §4a exactly backwards. Replanting is the least urgent thing in
+            // the game: it feeds nobody this year or next.
+            forestersForHuts = foodComesFirst ? 0 : world.ForesterSeatsWithGroundToPlant();
+
+            // The discretionary half stays zero: logs for houses is felling by another name.
             forestersForHouses = 0;
         }
 
@@ -323,6 +350,40 @@ public readonly record struct LabourQuota
         int buildersAfforded = Math.Min(buildersWanted, free / 2);
         int builders = Take(ref free, Cap(buildersAfforded, TotalCapacityFor(world, JobKind.Builder)));
 
+        // ⭐ AND A LOG LIMIT SET ABOVE WHAT THE VILLAGE SPENDS IS AN AMBITION (D130). Joe:
+        // *"the village should want timber it isn't spending if the user sets a limit above
+        // what the village uses — that is a stockpile/growth play tool for the user."*
+        //
+        // **Every other reason to fell was demand-driven**, and that is the trap this fixes:
+        // foresters were wanted only to feed the fuel chain and the houses already marked, so
+        // the village could never save up for anything — it cut exactly what it was about to
+        // burn. Measured, and the measurement is the whole argument: making fuel cheaper made
+        // the shortage WORSE. `firewood_per_split` 7 → 50 dropped fuel from 60% of all timber
+        // to 41%, and total production fell 365 → 174 logs with the village holding 78 at the
+        // end instead of 137. A cheaper habit is not a woodpile. Nothing was ASKING.
+        //
+        // So an unmet log limit asks. It is the instruction a stock limit has always been —
+        // *how much to keep* — read in the direction nobody had built yet: a met limit stops
+        // the work, and now an unmet one starts it.
+        //
+        // ⚠️ AND IT MAY NEVER TAKE MORE THAN HALF THE HANDS THAT ARE LEFT, which cost a run to
+        // learn. Taken uncapped it filled every forester seat in the village, and the "free"
+        // hands it drank were never idle — they are the labourers who carry food to the
+        // larders and firewood to the homes. Twelve years at a 200-log ambition: the woodpile
+        // worked, 174 → 266 logs produced and 242 held, and **the population fell from ten to
+        // four**. A village that hauls nothing starves beside full sheds, which is D29's
+        // lesson arriving through the player's own number.
+        //
+        // Half is the margin building already uses (above) and for the same reason. Placed
+        // after building too, because a stockpile is the most discretionary want in the
+        // village: houses the player marked are a plan, and a number in a box is a wish.
+        if (limits.For(Goods.Logs) is int wantedInStore && world.LogsInSheds() < wantedInStore)
+        {
+            foresters += Take(
+                ref free,
+                Cap(free / 2, TotalCapacityFor(world, JobKind.Forester) - foresters));
+        }
+
         int marketers = Take(ref free, Cap(marketersWanted, TotalCapacityFor(world, JobKind.Marketer)));
 
         // Everyone still spare forages. Berries keep, and a hand that gathers nothing
@@ -379,10 +440,36 @@ public readonly record struct LabourQuota
 
     /// <summary>What the player asked for on this kind of work, or what the village decided.</summary>
     /// <remarks>
-    /// <b>Bounded by the seats that exist and by the people who exist</b>, and by nothing else.
-    /// It is deliberately allowed to exceed what the village would have chosen — that is the
-    /// whole reason the control exists — and deliberately allowed to be zero, which is how a
-    /// player turns a profession's hands back into laborers.
+    /// <para>
+    /// <b>Bounded by the seats that exist, the people who exist, and — since D128 — by a
+    /// stock limit that has been reached.</b> It is still deliberately allowed to exceed what
+    /// the village would have chosen, which is the whole reason the control exists, and still
+    /// allowed to be zero, which is how a player turns a profession's hands into laborers.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE STOCK LIMIT WAS BEING IGNORED, AND IT IS D127's CHANGE THAT EXPOSED IT.</b>
+    /// A limit works by zeroing the village's own figure above; the player's number was then
+    /// applied over the top, bounded only by seats and hands. That was harmless while every
+    /// profession defaulted to <em>"village decides"</em> and this method returned
+    /// <c>decided</c> — and the moment the tick came off the panel, every profession carried
+    /// an explicit number from the first frame and **no stock limit could stop any work
+    /// again**. Joe, playing: *"they are ignoring the limits for firewood. 452 at a limit of
+    /// 50 and they keep cutting more."*
+    /// </para>
+    /// <para>
+    /// <b>And it was two bugs wearing one coat.</b> Woodcutters that never stop turn every
+    /// log into firewood, so the same run had **452 firewood and 8 logs**, and no granary or
+    /// shed could ever be afforded — *"even when they clear half a forest every year, there
+    /// aren't enough logs to build."*
+    /// </para>
+    /// <para>
+    /// <b>A stock limit is a stop, not a preference</b>, which is what the panel says it is:
+    /// <em>how much to keep before the work stops</em>. So a limit that has been reached wins
+    /// over the staffing number. That is a narrow exception to D106's *applied last* rule,
+    /// and the distinction is worth keeping: D106 was protecting the player's number from the
+    /// food floor and the building cap — the village's own opinions — not from another
+    /// instruction the player gave.
+    /// </para>
     /// </remarks>
     private static int Asked(SimWorld world, JobKind kind, int decided, int hands)
     {
@@ -391,10 +478,36 @@ public readonly record struct LabourQuota
             return decided;
         }
 
+        // The village's figure is already zero when a limit has been met, so this is simply
+        // "a stop the player set outranks a number the player set".
+        if (decided == 0 && StoppedByAStockLimit(world, kind))
+        {
+            return 0;
+        }
+
         int seats = TotalCapacityFor(world, kind);
         int bounded = asked < seats ? asked : seats;
         return bounded < hands ? bounded : hands;
     }
+
+    /// <summary>Whether this kind of work is one a reached stock limit puts a stop to.</summary>
+    /// <remarks>
+    /// Only the two that make a good the player can cap. A gatherer is governed by the food
+    /// limit through the food floor rather than here, because stopping the food chain dead
+    /// is how a village starves with a full granary and an empty larder (D79).
+    /// </remarks>
+    private static bool StoppedByAStockLimit(SimWorld world, JobKind kind) => kind switch
+    {
+        JobKind.Woodcutter => world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInSheds()),
+
+        // ⭐ AND A FORESTER IS ONLY STOPPED WHEN THERE IS NOTHING TO PUT BACK EITHER (D146).
+        // A met log limit stops the felling; a hut with bare ground of its own still has work,
+        // so a professions number the player typed must not be overruled while it does.
+        JobKind.Forester => world.StockLimits.IsMet(Goods.Logs, world.LogsInSheds())
+            && world.ForesterSeatsWithGroundToPlant() == 0,
+
+        _ => false,
+    };
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
     private static int Take(ref int free, int wanted)

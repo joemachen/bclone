@@ -31,19 +31,61 @@ public sealed class WorkGroundAllowanceTests
     private static SimLoop Loop() =>
         SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
 
-    /// <summary>A workplace with people actually assigned to it.</summary>
+    /// <summary>A workplace with people assigned to it and <b>no ground of its own yet</b>.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Built, not found.</b> Every guard in this class paints ground and then asks what
+    /// the village makes of it, so it needs a workplace that started with none and has hands
+    /// on it. This used to <em>search</em> the founded village for one and throw when no
+    /// workplace happened to match — which made four guards a report on whichever buildings
+    /// the allocator had staffed that morning rather than on the allowance. D137 changed
+    /// exactly that (a forester that tends rather than only fells is staffed differently) and
+    /// all four went red without the mechanic moving an inch.
+    /// </para>
+    /// <para>
+    /// So the condition is <b>created</b>: a hut of its own, at the founding site, with two
+    /// named villagers on it. Two rather than one because
+    /// <see cref="LosingAWorkerIsWhatMakesGroundTooMuch"/> takes one away and still wants
+    /// somebody there afterwards, and because an allowance of one worker's ground cannot tell
+    /// "per worker" from "per workplace".
+    /// </para>
+    /// </remarks>
     private static Workplace AStaffedWorkplace(SimWorld world, out int hands)
     {
-        foreach (Workplace place in world.Workplaces)
+        const int Hands = 2;
+
+        int id = 1;
+        foreach (Workplace standing in world.Workplaces)
         {
-            if (place.WorkerIds.Count > 0)
+            if (standing.Id >= id)
             {
-                hands = place.WorkerIds.Count;
-                return place;
+                id = standing.Id + 1;
             }
         }
 
-        throw new Xunit.Sdk.XunitException("No workplace in the village has anybody at it.");
+        var hut = new Workplace
+        {
+            Id = id,
+            Kind = JobKind.Forester,
+            Name = $"forester's hut {id}",
+            Position = world.Map.FoundingSite,
+            Capacity = Hands,
+        };
+
+        Assert.True(
+            world.Villagers.Count >= Hands,
+            "The fixture village must have somebody in it, or this proves nothing.");
+
+        for (int i = 0; i < Hands; i++)
+        {
+            hut.WorkerIds.Add(world.Villagers[i].Id);
+        }
+
+        world.Workplaces.Add(hut);
+        Assert.Equal(0, world.Zones.WorkGroundTiles(hut.Id));
+
+        hands = Hands;
+        return hut;
     }
 
     /// <summary>Tiles near the founding site that are not water, so painting takes.</summary>

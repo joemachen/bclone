@@ -812,12 +812,50 @@ public sealed class BehaviorSystem : ISimSystem
         // where clearing painted ground is exactly the work that unblocks them. That is D87's
         // position rule paying for itself — the person waiting on a clearing is allowed to go
         // and do the clearing, and nobody had to write a rule saying so.
+        // ⭐ THE BUILDER CLEARS THEIR OWN SITE (D138), and it fixes a permanent stall.
+        //
+        // Joe, on a fresh build: *"the builder doesn't seem to fetch — he's just sitting there
+        // while there is construction material to move."* His screenshot ruled out D135 in one
+        // line — *"Queue: 1st of 1 — nothing is ahead of it"* — with 169 logs in store, one
+        // site, one builder, and **"Work: 0 of 45 ticks done"**.
+        //
+        // This branch is why, and it sits *above* the fetch, so a site whose ground is not
+        // clear never even looks for a store. The note said the ground *"is still being
+        // cleared"*, which was a comfortable lie: **nobody was clearing it and nobody ever
+        // would.** A site can be marked on a tile that still has a tree on it — measured, a
+        // shed marked near the founding site reported `clear ground False` the moment it was
+        // laid out — and laborers only fell PAINTED ground (D87). So unless the player happened
+        // to paint that exact tile, the site was stuck for the rest of the run.
+        //
+        // The comment this replaces claimed the position rule paid for itself, *"the person
+        // waiting on a clearing is allowed to go and do the clearing, and nobody had to write a
+        // rule saying so."* That only worked while the tile was painted. It is written down now.
+        //
+        // ⚠️ AND IT IS NOT A HOLE IN D87. The brush is the only way to fell woodland the player
+        // has not spoken about — but marking a building on a tile IS speaking about that tile,
+        // and it is the whole of what the mark means. The builder clears the ground they were
+        // sent to build on and nothing else, which is Joe's own division: builders own the site.
+        // ⚠️ ONLY WHEN NOBODY ELSE WILL, and the first version of this cost the opening.
+        // Clearing the site unconditionally made the builder duplicate work the laborers were
+        // already doing on painted ground and spend their fetching time on it: the woodcutter's
+        // hut in `TheHutThePlayerMarkedIsBuiltBeforeTheHousesTheVillageWants` went from
+        // standing at **t150 to t394**, past a winter that starts at t360. Painted ground has
+        // somebody coming for it; unpainted ground has nobody, for ever.
         if (!world.GroundIsClearAt(standing.Position))
         {
-            villager.WorkNote =
-                $"{site.Name} cannot be started yet — the ground it stands on is still being "
-                + "cleared.";
-            return false;
+            if (world.Zones.IsHarvest(standing.Position))
+            {
+                villager.WorkNote =
+                    $"{site.Name} cannot be started yet — the ground it stands on is still being "
+                    + "cleared.";
+                return false;
+            }
+
+            villager.WorkNote = $"Clearing the ground {site.Name} is to stand on.";
+            villager.ErrandX = standing.Position.X;
+            villager.ErrandY = standing.Position.Y;
+            HeadFor(world, villager, standing.Position, VillagerState.Clearing);
+            return true;
         }
 
         // Carrying logs, or the site already has what it needs: head for the site.
@@ -842,12 +880,42 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (shed is null)
         {
+            // ⭐ THE HEAD OF THE QUEUE IS STARVED — SO WORK A SITE THAT IS NOT (D135).
+            //
+            // Joe: *"the builder shouldn't just sit at the building waiting."* Until now every
+            // builder asked only `NextToBuild()`, which answers *what is first*, so a head with
+            // no timber and no timber anywhere to fetch stopped the whole trade — measured, a
+            // house standing at "30 logs delivered, 0 still wanted" went untouched for three
+            // years while the builders waited on the site in front of it.
+            //
+            // ⚠️ THE QUEUE IS NOT REORDERED, which is D102's line and it holds: fetching above
+            // still serves the head, so scarce timber goes where the player pointed. Only the
+            // builder's otherwise-idle time moves. Priority over materials, not over labour.
+            Workplace? ready = world.NextBuildableSite();
+            if (ready is not null && ready.Id != standing.Id)
+            {
+                villager.WorkNote =
+                    $"{site.Name} is waiting on {site.LogsStillNeeded} logs nobody has, so "
+                    + $"{ready.Construction!.Name} is getting the day instead.";
+                HeadFor(world, villager, ready.Position, VillagerState.Building);
+                return true;
+            }
+
             villager.WorkNote =
                 $"Nothing to build with — {site.Name} still wants {site.LogsStillNeeded} logs, " +
                 "and nowhere within reach has any.";
 
-            // Nothing to fetch and nothing to build: let them take whatever spare work there
-            // is rather than walking home to stand still.
+            // ⭐ AND NOTHING TO BUILD EITHER, so they go and MAKE materials rather than stand
+            // there — Joe's rule: *"if there are no materials available, the builder should
+            // harvest materials and take them to storage."* Returning false drops them through
+            // to `TryTidyGround` and `TryHelpWithHarvest` below, which is felling painted ground
+            // and carrying heaps to a store. Measured over three years: a builder blocked this
+            // way spends more ticks clearing than building.
+            //
+            // ⚠️ PAINTED ground only, and that is deliberate rather than a shortfall. D87 is
+            // Joe's own rule that the brush is the only way a tree comes down — a builder who
+            // felled unpainted woodland to unblock themselves would be the one actor in the
+            // game allowed to reshape the valley without being told to.
             return false;
         }
 
@@ -957,6 +1025,41 @@ public sealed class BehaviorSystem : ISimSystem
             villager.WorkNote =
                 $"{site.Name} cannot be started yet — the ground it stands on is still being "
                 + "cleared.";
+            villager.State = VillagerState.Idle;
+            return;
+        }
+
+        // ⛔ AND IF THE SITE IS STILL SHORT OF TIMBER, GO AND GET IT (Joe, D154).
+        //
+        // *"The builder waits at the construction site for 13 more logs. Just idling there for
+        // hundreds of ticks. It says they are 'raising a building' but they are waiting for
+        // materials instead of picking them up."* His screenshot: **27 of 40 logs, 0 of 60 ticks
+        // done, 240 logs in store.**
+        //
+        // **`Construction.Work()` is a no-op while materials are short** — by design, it will
+        // not start a building that has not been paid for — and this fell straight through it
+        // into `State = Building`. A villager in `Building` travels to their errand tile each
+        // tick, is already standing on it, and arrives again: deliver nothing, work nothing,
+        // stay `Building`. **`Decide` is never reached, so they never look for a store.**
+        //
+        // ⭐ CONFIRMED IN JOE'S OWN AUDIT TRAIL rather than argued from the code (METHODOLOGY
+        // §4, which is what that file is for). Hattie #3 sat in `building` from t2057 to t2309
+        // — **250 unbroken ticks, eating every eleventh one and doing nothing else** — and what
+        // finally moved her was the cold, not the work:
+        //   [t 2309] Hattie is dangerously cold and is going in to get warm
+        //   [t 2309] Hattie #3: building -> going in to get warm at (1, -3)
+        //
+        // So it is not a deadlock — hunger, cold or the three-yearly reshuffle eventually
+        // knocks them out and the site does finish (Joe's granary: marked t1985, finished
+        // t2489). It is hundreds of ticks of a villager standing on a footprint under a label
+        // that says they are working, which is §1.1 failing as squarely as any wrong number.
+        //
+        // Idle rather than a fetch of its own, so `WorkTheSite` makes the choice next tick with
+        // everything it knows — including D135's *"work a site that is not starved"* arm.
+        if (!site.HasMaterials)
+        {
+            villager.WorkNote =
+                $"{site.Name} still wants {site.LogsStillNeeded} logs — going for them.";
             villager.State = VillagerState.Idle;
             return;
         }
@@ -1444,6 +1547,29 @@ public sealed class BehaviorSystem : ISimSystem
         // the yard empty.
         if (villager.CanWork && job?.Kind == JobKind.Woodcutter)
         {
+            // ⭐ A MET LIMIT STOPS THE WORK, NOT JUST THE HIRING (D139). Joe: *"the woodcutter
+            // keeps making firewood way past the limit."* He was right, and the panel heading
+            // says what it should have been doing all along — *"how much to keep before the
+            // work stops"*.
+            //
+            // The limit only ever reached `LabourQuota`, which decides how many woodcutters the
+            // village ASKS for. Since D109 the player's number is the one that staffs the hut,
+            // so a woodcutter Joe posted himself went on splitting for ever and the limit never
+            // touched them. Measured once the shed was big enough to show it:
+            // **firewood settled at 401 against a limit of 40.**
+            //
+            // Checked here, where the work actually happens, so it holds however the villager
+            // came to be standing at the hut. Not an idle villager — they fall through to the
+            // spare work below, which is the same thing a woodcutter with no logs does.
+            if (world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInSheds()))
+            {
+                villager.WorkNote =
+                    $"Nothing to split — you asked the village to keep "
+                    + $"{world.StockLimits.For(Goods.Firewood)} firewood and it has "
+                    + $"{world.FirewoodInSheds()}.";
+            }
+            else
+            {
             // The nearest shed that actually has a batch in it. Naming THAT shed rather
             // than "the shed" is the point of the refusal: with more than one, "the
             // shed has no logs" would be a sentence the player could not check.
@@ -1451,7 +1577,7 @@ public sealed class BehaviorSystem : ISimSystem
             if (yard is null)
             {
                 villager.WorkNote =
-                    $"Nothing to split — no shed within reach of {job.Name} has the " +
+                    $"Nothing to split — no store within reach of {job.Name} has the " +
                     $"{config.LogsPerSplit} logs a batch needs.";
 
                 // Idle from their trade, so they may tidy or help clear (D87, D96). This
@@ -1482,12 +1608,36 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             return;
+            }
+
+            // Held by the limit: idle from their trade, so they take spare work — the same
+            // ranking a woodcutter with an empty yard takes, for the same reason.
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            {
+                GoHome(world, villager);
+            }
+
+            return;
         }
 
         // Timber. Fellable year-round, unlike berries, so a logger still has
         // something to do in winter - which is part of why the job is worth holding.
         if (villager.CanWork && job?.Kind == JobKind.Forester)
         {
+            // ⭐ A MET LIMIT STOPS THE FELLING AND NOT THE FORESTER (Joe, D146). D145 found that
+            // D139's rule — *a met limit stops the work, not just the hiring* — had only ever
+            // reached the woodcutter, and stopped the forester outright to match. Joe's
+            // correction: *"a capped hut can replant. Priority should be replant → extra-hands
+            // labour. It just shouldn't fell if it has met its cap."*
+            //
+            // **So the cap is not handled here at all any more.** It lives in `SimWorld.MayFell`
+            // beside the felling toggle, because they are the same instruction at two distances,
+            // and `NextGroundToWork` then hands back bare tiles to plant instead of trees to
+            // fell. A capped hut works its way through its own ground putting it back, and only
+            // reaches the spare-work branch below — tidying, clearing, home — once there is
+            // nothing bare left. That ordering is Joe's, and it is the opposite of what I argued
+            // for in D145.
+            //
             // ⭐ A FORESTER'S HUT WORKS ITS OWN GROUND (D86, `forests-and-gathering.md`), where
             // a tree stand is an inexhaustible spot you stand on. So the question is which of
             // MY tiles to work next — a wooded one to fell, or a bare one to plant, depending
@@ -1505,12 +1655,38 @@ public sealed class BehaviorSystem : ISimSystem
                     return;
                 }
 
-                // Nothing of theirs left to do — every tile is already the way the mode wants
-                // it. Said out loud, because a forester standing about is otherwise the silent
-                // stall §1.1 forbids, and the fix is the player's: paint more, or switch mode.
-                villager.WorkNote = job.Mode == WorkMode.Plant
-                    ? $"Nothing bare left to plant at {job.Name} — its ground is wooded again."
-                    : $"No trees left on {job.Name}'s ground — plant it, or give it more.";
+                // Nothing of theirs left to do — every tile is already the way the player asked
+                // for it. Said out loud, because a forester standing about is otherwise the
+                // silent stall §1.1 forbids, and each of the three reasons has a different fix.
+                //
+                // ⚠️ THE ONE THAT NEEDED SAYING IS THE CAP (D146). A hut whose ground is fully
+                // wooded because the village stopped felling reads exactly like a hut that has
+                // run out of work, and the answer — *raise the limit* — is nowhere near the
+                // forester's panel unless the sentence points at it.
+                villager.WorkNote = !world.MayFell(job)
+                    ? job.Mode != WorkMode.FellAndPlant
+                        ? $"{job.Name} is resting its wood — felling is switched "
+                          + "off, and its ground is wooded again."
+                        : $"{job.Name} has stopped felling — you asked the village "
+                          + $"to keep {world.StockLimits.For(Goods.Logs)} logs and it has "
+                          + $"{world.LogsInSheds()}. Its ground is wooded again."
+                    : $"Nothing bare left to plant at {job.Name} — its ground is wooded again.";
+
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
+                return;
+            }
+
+            // No ground painted: the legacy stand behaviour, felling a flat yield where they
+            // stand. It answers to the same gate — a hut told not to fell does not fell here
+            // either, and with no ground of its own there is nothing for it to plant instead.
+            if (!world.MayFell(job))
+            {
+                villager.WorkNote =
+                    $"{job.Name} is not felling, and has no ground to tend.";
 
                 if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
@@ -1751,6 +1927,29 @@ public sealed class BehaviorSystem : ISimSystem
     internal static void CollectForTest(SimWorld world, Villager villager) =>
         CollectFromStore(world, villager);
 
+    /// <summary>Putting a load down at a store, exposed so a test can pose the case directly.</summary>
+    /// <remarks>
+    /// The same seam as <see cref="CollectForTest"/>, and for the same reason (D144). An
+    /// armful of <em>two</em> goods arriving at a store that will only have one of them is a
+    /// case the fixture village does not reliably produce — it depends on who is interrupted
+    /// carrying what — so a twenty-year run is not a guard for it. Posed directly, it is three
+    /// lines and cannot go vacuous.
+    /// </remarks>
+    internal static void ArriveWithALoadForTest(SimWorld world, Villager villager) =>
+        ArriveAt(world, villager, VillagerState.HaulingToStore);
+
+    /// <summary>A builder arriving at their site, posed directly (D154).</summary>
+    /// <remarks>
+    /// <b>The emergent case could not be reproduced, and that is the reason this seam exists.</b>
+    /// The stall needs a builder to arrive carrying less than the site wants, which depends on
+    /// what the nearest store happened to hold that tick — in the warm fixture the yard is
+    /// always stocked well enough for one trip to finish the job, so a synthetic run passes
+    /// however broken the branch is. Joe's audit trail is the evidence that it happens; this is
+    /// the invariant that stops it happening again, and unlike a long run it cannot go vacuous.
+    /// </remarks>
+    internal static void RaiseForTest(SimWorld world, Villager villager) =>
+        ArriveAt(world, villager, VillagerState.Building);
+
     private static void CollectFromStore(SimWorld world, Villager villager)
     {
         Household household = world.HouseholdOf(villager);
@@ -1858,25 +2057,67 @@ public sealed class BehaviorSystem : ISimSystem
         // The degenerate case, handled rather than assumed away: a village with no
         // shed at all has nowhere to put timber, and sending them to one that does not
         // exist would throw. Put it down and say so loudly — never silently (METHODOLOGY §4).
-        if (villager.CarriedLogs > 0 && !AnyShedStanding(world))
+        if (villager.CarriedLogs > 0 && !AnywhereToPutTimber(world))
         {
             world.Log(
                 LogLevel.Warn,
                 "goods",
                 $"{villager.Name} came home with {villager.CarriedLogs} logs and the village has " +
-                "no shed to put them in, so they are stranded in the larder where nothing can " +
-                "spend them. Build a shed.");
+                "nowhere to put them, so they are stranded in the larder where nothing can " +
+                "spend them. Build a storage pile or a shed.");
 
             larder.Receive(Goods.Logs, villager.CarriedLogs);
             villager.CarriedLogs = 0;
         }
     }
 
-    private static bool AnyShedStanding(SimWorld world)
+    /// <summary>
+    /// Timber a feller could not carry away stays on the tile rather than ceasing to exist.
+    /// </summary>
+    /// <remarks>
+    /// D133. Called from both felling paths, which had drifted into two copies of the same
+    /// arithmetic and the same leak. Goods move only by trips people make (D96) — so the
+    /// remainder is set down where it fell, and the tidy-ground errand brings it in.
+    /// </remarks>
+    private static void LeaveTheRestOnTheGround(SimWorld world, GridPos where, int logs)
+    {
+        if (logs > 0)
+        {
+            world.SetDown(where, Goods.Logs, logs);
+        }
+    }
+
+    /// <summary>Is there anywhere in the village at all that will take timber?</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ IT ASKS WHAT IT NEEDS TO KNOW, WHICH IS NOT "IS THERE A SHED" (D132).</b> This was
+    /// <c>AnyShedStanding</c> and it compared <c>Kind == StoreKind.Shed</c> — so a village with
+    /// a <b>storage pile and no shed</b> was told it had nowhere to put timber, and every
+    /// interrupted trip emptied its armful into a larder where nothing can spend it. **A pile
+    /// takes anything**; it is the one store that does.
+    /// </para>
+    /// <para>
+    /// <b>Joe caught it in his own game:</b> <i>"even with no one cutting wood, and laborers
+    /// clearing forest, I can barely get enough logs. Nothing extra is being built."</i> His
+    /// village held <b>31 logs in store and 50 in the Thatcher household's larder</b> — more
+    /// timber in one family's house than in the whole settlement — while the woodcutter sat
+    /// idle for want of the six logs a batch needs. The felling was fine and the hauling was
+    /// fine. This is the leak, and it is precisely the failure the comment above already
+    /// describes ("240 logs frozen in two houses for twenty years"), returning through a
+    /// predicate rather than through the code it guards.
+    /// </para>
+    /// <para>
+    /// <c>Accepts</c> is the question every other timber path already asks —
+    /// <see cref="SimWorld.LogsInSheds"/> counts by it, <c>HaulOrSetDown</c> falls back to it
+    /// (D76). This one place asked by name instead, and needed telling about each new kind of
+    /// store. Asking "what will take this?" needs telling about none of them.
+    /// </para>
+    /// </remarks>
+    private static bool AnywhereToPutTimber(SimWorld world)
     {
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
-            if (world.StoreBuildings[i].Kind == StoreKind.Shed)
+            if (world.StoreBuildings[i].Accepts(Goods.Logs))
             {
                 return true;
             }
@@ -2013,12 +2254,31 @@ public sealed class BehaviorSystem : ISimSystem
             // this zeroed the arms regardless, so a load that arrived at a full store was
             // destroyed. RaiseTheBuilding one screen up gets it right and says why:
             // "never dropped, per the conservation rule".
+            // ⚠️ AND EACH GOOD IS ASKED ABOUT SEPARATELY (D144). `StoreForTheLoad` chooses on
+            // the ONE good it treats as the load — food, else logs, else firewood — so a
+            // villager carrying two things walked to a store picked for the first and emptied
+            // both arms into it. `Stockpile` is a dumb container and knows nothing of the
+            // player's filter, so a pile set to logs-only took the firewood in the other arm.
+            // Whatever the destination will not have goes down where they stand, one line
+            // below, which is D96's rule already sitting here.
             if (StoreForTheLoad(world, villager) is StoreBuilding destination)
             {
                 Stockpile store = destination.Store;
-                villager.CarriedFood -= store.Add(Goods.Food, villager.CarriedFood);
-                villager.CarriedLogs -= store.Add(Goods.Logs, villager.CarriedLogs);
-                villager.CarriedFirewood -= store.Add(Goods.Firewood, villager.CarriedFirewood);
+
+                if (destination.Accepts(Goods.Food))
+                {
+                    villager.CarriedFood -= store.Add(Goods.Food, villager.CarriedFood);
+                }
+
+                if (destination.Accepts(Goods.Logs))
+                {
+                    villager.CarriedLogs -= store.Add(Goods.Logs, villager.CarriedLogs);
+                }
+
+                if (destination.Accepts(Goods.Firewood))
+                {
+                    villager.CarriedFirewood -= store.Add(Goods.Firewood, villager.CarriedFirewood);
+                }
             }
 
             if (villager.IsCarrying)
@@ -2105,10 +2365,17 @@ public sealed class BehaviorSystem : ISimSystem
             // (`forests-and-gathering.md`), which is the number that decides whether
             // over-clearing is a mistake or a shrug. Stated as a multiple of felling rather
             // than as a second tick count, so the two can never drift apart.
-            villager.ActionTicksRemaining =
-                WorkplaceOf(world, villager) is { Mode: WorkMode.Plant }
-                    ? VillageEconomy.PlantTicks(world.Config)
-                    : world.Config.CutTicks;
+            //
+            // ⚠️ AND IT IS THE ERRAND THAT COSTS THAT, NOT THE MODE (D142). This asked
+            // `Mode == Plant`, which was right while the modes were exclusive and became
+            // wrong the moment D137 made planting a second errand and the default: every
+            // fell in the village started billing three times its own price, and nobody
+            // could see it because the villager still walked to a tree and came back with
+            // logs. `IsPlantingErrand` is the one place that decides, so the duration and
+            // the outcome cannot disagree about which job is being done.
+            villager.ActionTicksRemaining = IsPlantingErrand(world, villager)
+                ? VillageEconomy.PlantTicks(world.Config)
+                : world.Config.CutTicks;
             return;
         }
 
@@ -2134,6 +2401,53 @@ public sealed class BehaviorSystem : ISimSystem
         villager.ActionTicksRemaining = config.GatherTicks;
     }
 
+    /// <summary>
+    /// Whether the errand this forester has walked out to is a <b>planting</b> one rather
+    /// than a fell.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Both halves, in one place (D142).</b> D137 made planting a second errand rather
+    /// than a different job — <em>trees first while any stand on their ground, bare tiles
+    /// when none do</em> — and it named the two call sites that had to carry that. There
+    /// were three, and the two that were changed each kept only half the rule:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>the <b>duration</b> asked the mode alone, so with planting on by default every
+    /// <em>fell</em> in the village was billed at <c>PlantTicks</c> — three times its own
+    /// price, invisibly, because the villager still walked to a tree and came back with
+    /// logs;</item>
+    /// <item>the <b>outcome</b> asked the tile alone, so a hut with planting switched
+    /// <em>off</em> planted a sapling whenever the tree it had walked to was gone by the
+    /// time it arrived.</item>
+    /// </list>
+    /// <para>
+    /// <b>⭐ AND SINCE D146 THE TILE IS THE WHOLE ANSWER, because planting is no longer a mode
+    /// that can be off.</b> Felling is the toggle now, and a hut that may not fell is only ever
+    /// sent to bare ground — so <em>the errand is a plant exactly when the tile has no tree on
+    /// it</em>, whatever stopped the felling. The mode test that D142 added here is gone
+    /// because the state it guarded against no longer exists, and the guard that covered it
+    /// is now <c>FellingOffMeansItNeverFells</c>.
+    /// </para>
+    /// <para>
+    /// A hut with no ground of its own is the old tree-stand behaviour and never plants;
+    /// that is the same guard <c>CompleteAction</c> puts round the tile path, so the two
+    /// cannot disagree about which job is being done.
+    /// </para>
+    /// </remarks>
+    private static bool IsPlantingErrand(SimWorld world, Villager villager)
+    {
+        Workplace? hut = WorkplaceOf(world, villager);
+
+        if (hut is null || world.Zones.WorkGroundTiles(hut.Id) == 0)
+        {
+            return false;
+        }
+
+        return world.Map.TerrainAt(new GridPos(villager.ErrandX, villager.ErrandY))
+            != Terrain.Forest;
+    }
+
     /// <summary>Apply the effect of a timed action that just finished.</summary>
     private static void CompleteAction(SimWorld world, Villager villager)
     {
@@ -2147,13 +2461,14 @@ public sealed class BehaviorSystem : ISimSystem
                 // ⭐ WHAT THE PLACE IS WORTH, THEN WHAT THE PERSON IS WORTH
                 // (`forests-and-gathering.md`). This read `world.FoodSource.YieldPerGather`
                 // flat, because every gathering job was a berry patch and every berry patch
-                // was the same. A gatherer's hut is worth what the trees in its ring say, so
-                // the place is asked first — and a berry patch still answers exactly what it
-                // always did, which is why this is a no-op until somebody builds a hut.
+                // was the same. A gatherer's hut is worth what the trees in its ring say.
+                //
+                // **No workplace now means no food**, where it used to fall back to the
+                // patch's flat yield. With the patches retired there is nowhere to gather
+                // that is not a hut, so a gatherer with no hut is somebody standing in a
+                // field — and paying them for it would be the last of the free food.
                 Workplace? patch = WorkplaceOf(world, villager);
-                int perTrip = patch is null
-                    ? world.FoodSource.YieldPerGather
-                    : world.GatherYieldAt(patch);
+                int perTrip = patch is null ? 0 : world.GatherYieldAt(patch);
 
                 int yield = perTrip * villager.Vigour / 100;
 
@@ -2208,7 +2523,14 @@ public sealed class BehaviorSystem : ISimSystem
                     // It carries nothing home, which is why it is a mode rather than a job:
                     // a forester who plants all year feeds nobody, and that is the trade the
                     // player is making when they switch it.
-                    if (wood_.Mode == WorkMode.Plant)
+                    // ⭐ WHAT IS ON THE TILE DECIDES, AND SO DOES THE MODE (D137, corrected by
+                    // D142). The tile half is why this cannot ask the mode alone —
+                    // `NextGroundToWork` sends a tending forester to a standing tree while any
+                    // remain, so a mode-only test would plant on top of the tree it just walked
+                    // to. But the mode half went missing with it, and a hut reading
+                    // *"Planting: off"* planted every time it arrived at a tile whose tree had
+                    // gone in the meantime — the exact thing D137 set out to stop.
+                    if (IsPlantingErrand(world, villager))
                     {
                         world.Plant(tile);
                         villager.State = VillagerState.Idle;
@@ -2218,11 +2540,13 @@ public sealed class BehaviorSystem : ISimSystem
                     (Goods felled, int fromTheTile) = world.Harvest(tile);
                     if (felled == Goods.Logs && fromTheTile > 0)
                     {
-                        // Vigour scales what they carry home, the same way it scales a
-                        // gather and a stand's cut — an ageing forester fells the tree and
-                        // brings back less of it.
+                        // Vigour scales what they carry home in one go — the same way it
+                        // scales a gather — and WHAT THEY CANNOT CARRY STAYS ON THE TILE.
+                        // See the clearing case below for why the second half matters.
                         int carried = fromTheTile * villager.Vigour / 100;
-                        villager.CarriedLogs += carried < 1 ? 1 : carried;
+                        carried = carried < 1 ? 1 : carried;
+                        villager.CarriedLogs += carried;
+                        LeaveTheRestOnTheGround(world, tile, fromTheTile - carried);
                     }
 
                     villager.State = VillagerState.HaulingToStore;
@@ -2232,7 +2556,11 @@ public sealed class BehaviorSystem : ISimSystem
 
                 // Vigour scales timber the same way it scales berries: an ageing
                 // woodcutter brings back less for the same day's walk.
-                int wood = world.TreeStand.YieldPerCut * villager.Vigour / 100;
+                //
+                // Read from the config rather than from `world.TreeStand`, which is deleted
+                // with the stands (slice 5). It was always just `cut_yield` in a wrapper —
+                // one stand's worth, read by every forester in the village.
+                int wood = world.Config.CutYield * villager.Vigour / 100;
                 if (wood < 1)
                 {
                     wood = 1;
@@ -2270,8 +2598,36 @@ public sealed class BehaviorSystem : ISimSystem
 
                 villager.CarriedLogs += goods == Goods.Logs ? taken : 0;
 
+                // ⭐ AND THE REST OF THE TREE STAYS WHERE IT FELL (D133).
+                //
+                // Joe, playing, after the larder leak was closed and it still felt wrong:
+                // *"it still feels wrong — there's never enough wood but so many trees are
+                // harvested."* This is why, and it was deliberate rather than a slip. The
+                // comment on the forester's copy of this said it out loud: *"an ageing
+                // forester fells the tree and brings back less of it."*
+                //
+                // **That reasoning is right for a gather and wrong for a fell, and the
+                // difference is whether the source survives.** Scaling a berry harvest by
+                // vigour is fine — the bush is still standing, and a tired picker simply
+                // picks fewer. `Harvest` has already set this tile to Grass. The tree is
+                // GONE from the map, so scaling what the villager carries did not mean they
+                // took less: it meant the remainder stopped existing.
+                //
+                // At `vigour_min_percent: 55` an old villager destroyed 45% of every tree
+                // they touched, and the player watched their woodland disappear into a
+                // trickle of logs. Nothing in the game showed the loss, because a number
+                // that is never written down cannot be read back.
+                //
+                // Vigour keeps its meaning — a weak villager still carries less in one
+                // armful — and D96's ground stacks are exactly the machinery for the other
+                // half: the timber lies on the tile until somebody fetches it.
+                int left = goods == Goods.Logs ? amount - taken : 0;
+                LeaveTheRestOnTheGround(world, cleared, left);
+
                 world.Log(LogLevel.Debug, "behavior",
-                    $"{villager.Name} cleared {cleared} for {taken} {goods} — {world.Clock}.");
+                    $"{villager.Name} cleared {cleared} for {taken} {goods}"
+                    + (left > 0 ? $", leaving {left} on the ground" : string.Empty)
+                    + $" — {world.Clock}.");
 
                 villager.State = VillagerState.HaulingToStore;
                 HaulOrSetDown(world, villager);
@@ -2306,15 +2662,48 @@ public sealed class BehaviorSystem : ISimSystem
                 // house is what froze the household next door (D29), and the daily
                 // sharing policy only existed to undo it.
                 //
-                // Back into the shed the logs came out of where there is room, so a
+                // Back into the shed the logs came out of where it will take them, so a
                 // woodyard stays one place rather than becoming a two-shed shuffle.
-                StoreBuilding wall = woodyard.Store.IsFull
-                    ? world.NearestStoreAccepting(
-                        villager.Position, Goods.Firewood, static store => !store.Store.IsFull)
-                        ?? woodyard
-                    : woodyard;
+                //
+                // ⛔ IT USED TO ASK ONLY WHETHER THE YARD WAS FULL, AND THAT PUT FIREWOOD IN
+                // A STORE THE PLAYER HAD JUST SAID WOULD NOT TAKE IT (D144). Joe, playing:
+                // *"my logs-only storage pile allowed firewood. I set it to logs-only as soon
+                // as it was built."* A pile that takes logs is exactly what `NearestStoreWithLogs`
+                // picks to split from, so the one store guaranteed to be chosen here was the one
+                // his filter was about — **80 firewood in a pile set to logs.** `Accepts` is the
+                // question, and this line asked `IsFull` instead: **D132's bug, one predicate
+                // over**, and the third time a timber path has decided by something other than
+                // what a store will hold.
+                //
+                // The fallback is the same one the full case always used, and it is now the
+                // fallback for both reasons a yard can refuse — no room, and not allowed.
+                StoreBuilding? wall =
+                    woodyard.Accepts(Goods.Firewood) && !woodyard.Store.IsFull
+                        ? woodyard
+                        : world.NearestStoreAccepting(
+                            villager.Position, Goods.Firewood, static store => !store.Store.IsFull);
 
-                wall.Store.Add(Goods.Firewood, firewood);
+                // ⚠️ AND WHAT WILL NOT FIT GOES ON THE GROUND RATHER THAN NOWHERE (D96). The
+                // return value of `Add` was discarded, so a batch that overflowed the last
+                // inch of a store was destroyed at the doorstep — the leak D96 closed for
+                // every other producer and never for this one. A village whose stores are all
+                // full or all filtered now has a visible heap of firewood beside the hut,
+                // which is the signal to build somewhere to put it (D134).
+                int stored = wall?.Store.Add(Goods.Firewood, firewood) ?? 0;
+                if (stored < firewood)
+                {
+                    world.SetDown(villager.Position, Goods.Firewood, firewood - stored);
+                }
+
+                if (world.Logs(LogLevel.Debug))
+                {
+                    world.Log(LogLevel.Debug, "behavior",
+                        $"{villager.Name} split {firewood} firewood — "
+                        + (stored > 0 ? $"{stored} into {wall!.Name}" : "no store would take it")
+                        + (stored < firewood ? $", {firewood - stored} set down" : string.Empty)
+                        + $" — {world.Clock}.");
+                }
+
                 villager.State = VillagerState.TravelingHome;
                 return;
 

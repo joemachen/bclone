@@ -139,8 +139,59 @@ public sealed class StockLimitTests
     // matching — somebody previously left idle now takes a distant job, and fifty years of
     // that is a different village. A golden that moves for a reason you cannot state is a
     // wrong change; this one moved for a reason that took measuring to state correctly.
-    private const ulong FixtureFiftyYearHash = 8652554140921204871UL;
-    private const ulong ShippedFiftyYearHash = 2151271050042369210UL;
+    // ⭐ RE-TAKEN FOR STEP C AND FOR TWO BUGS FOUND INSIDE IT (D152). These were already red
+    // when this session opened — they carry everything step C did to the economy (D124–D141:
+    // the sites retiring, regrowth, persistent harvest paint, the shed ceiling, the log
+    // ambition) — and two more landed on top, both of which change every village whether or
+    // not anybody sets a limit:
+    //
+    //   D142 — **every fell in the village was billing three times its own price.** The
+    //          action's duration asked the mode rather than the errand, so from D137 a
+    //          forester who walked to a tree and came home with logs was charged `PlantTicks`:
+    //          12 ticks against a `cut_ticks` of 4. Fifty years of felling at the right speed
+    //          is a different village.
+    //   D144 — **firewood was destroyed once the woodyard filled.** `Add`'s return value was
+    //          discarded, so every batch after a store filled ceased to exist. It goes on the
+    //          ground now (D96's rule, which every other producer already had).
+    //
+    // D143, D145, D146, D148, D150 and D151 are NOT in these numbers, and it is worth saying
+    // why: three were test-only, and the other three are controls that do nothing until the
+    // player uses one — a met log limit, a felling toggle, a store filter — which is precisely
+    // the no-op contract this guard exists to hold them to. **It held.**
+    //
+    //   before the sites retired: fixture 8652554140921204871,
+    //                             shipped 2151271050042369210
+    // ⭐ RE-TAKEN FOR THE BIRTH GATE (D153), and the one sentence is: **a house holds five
+    // people instead of seven, and births no longer ask a family's own larder or its own
+    // firewood.** Fifty years of a village that breeds on those terms is a different village.
+    //
+    // Measured before the change rather than after, which is what made it a decision: the two
+    // deleted terms refused 6-10% and 0-1% of household-years against the granary term's
+    // 42-70%, and **nobody starved or froze in any arm, before or after.** The cap moving 7 -> 5
+    // is the part that does the work — it takes the shipped village from **dying out entirely
+    // over 300 unattended years (final 0) to ending at 20**, still with nobody starving.
+    //
+    //   before the birth gate lost its household terms: fixture 15720299932978060475,
+    //                                                   shipped 9131366701299548068
+    // ⭐ RE-TAKEN AGAIN FOR THE FOOD GATE (D155): `birth_food_percent` 80 -> 60, so the village
+    // has children sooner and fifty years of it is a different history.
+    //
+    // ⚠️ AND ONLY THE SHIPPED ONE MOVED, WHICH IS WORTH RECORDING RATHER THAN SHRUGGING AT.
+    // The fixture's fifty years are byte-identical: it starts with buildings and a stocked
+    // cart, so its granary clears the old 80% bar early anyway and lowering the bar changes
+    // nothing it does in that window. The shipped file is a cold start — it spends those fifty
+    // years near the bar, which is exactly the state Joe was playing when he asked why nobody
+    // was having children.
+    //
+    //   before the food gate was loosened: shipped 16713992210504644002
+    // ⭐ RE-TAKEN FOR THE WORKING AGE (D156): `adult_age` 15 -> 12, so an uneducated child takes
+    // work three years earlier — and eats a full meal three years earlier too. Both arms move,
+    // because that changes who is available for every job in every one of the fifty years.
+    //
+    //   before children worked at twelve: fixture 13172587746925380233,
+    //                                     shipped 1066427617710206388
+    private const ulong FixtureFiftyYearHash = 11001298307494045081UL;
+    private const ulong ShippedFiftyYearHash = 10000897820648583606UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -514,5 +565,195 @@ public sealed class StockLimitTests
         Assert.True(
             string.IsNullOrWhiteSpace(verdict.Warning),
             $"A generous limit said: {verdict.Warning}");
+    }
+
+    /// <summary>
+    /// A log limit set above what the village spends makes it want timber it is not spending.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// D130, and Joe's words for it: <i>"the village should want timber it isn't spending if
+    /// the user sets a limit above what the village uses — that is a stockpile/growth play
+    /// tool for the user."</i> Every other limit in this file is a <b>ceiling</b>; this is the
+    /// same number read as a <b>target</b>, and it is the only control in the game that asks
+    /// the village to do more work rather than less.
+    /// </para>
+    /// <para>
+    /// <b>It exists because a cheaper habit is not a woodpile.</b> Foresters were wanted only
+    /// to feed the fuel chain and the houses already marked, so the village cut exactly what
+    /// it was about to burn and never accumulated. Joe hit the wall this leaves — a forester's
+    /// hut stuck at 21 of its 25 logs, so no seats, so no foresters, so no logs. Making fuel
+    /// cheaper made it <em>worse</em>: quadrupling <c>firewood_per_split</c> cut fuel from 60%
+    /// of all timber to 41% and dropped total production 365 → 174, because the fuel chain was
+    /// the only thing employing foresters at all.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE POPULATION ASSERT IS NOT DECORATION.</b> Taken uncapped the ambition filled
+    /// every forester seat, and the hands it drank were never idle — they are the labourers
+    /// who carry food to the larders and firewood to the homes. The woodpile worked and the
+    /// village halved, ten alive down to four. So the ambition is capped at half the hands
+    /// left, the same margin building uses, and this guard fails if that cap is ever lifted.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ALogLimitAboveWhatTheVillageSpendsIsAnAmbitionAndNotAceiling()
+    {
+        SimConfig config = VillageFixtures.Village;
+        int years = config.TicksPerYear * 12;
+
+        SimLoop content = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        content.Step(years);
+
+        SimLoop ambitious = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        ambitious.World.SetStockLimit(Goods.Logs, 200);
+        ambitious.Step(years);
+
+        int without = content.World.LogsInSheds();
+        int with = ambitious.World.LogsInSheds();
+        _output.WriteLine(
+            $"logs held after 12 years: {without} with no opinion, {with} asked for 200. "
+            + $"alive: {content.World.Population} and {ambitious.World.Population}.");
+
+        Assert.True(
+            with > without,
+            $"A village asked for 200 logs held {with}, no better than the {without} it "
+            + "would have kept anyway. The limit is still only a ceiling.");
+
+        // And the stockpile is a want, not a need: it must not be built out of the hands
+        // that keep everybody fed.
+        Assert.True(
+            ambitious.World.Population >= content.World.Population,
+            $"Stockpiling cost lives: {ambitious.World.Population} alive against "
+            + $"{content.World.Population} in the same village that never bothered.");
+    }
+
+    // ---------------------------------------------------------------
+    //  ⭐ A limit the player set outranks a hut the player staffed (D145)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Post somebody at every workplace of a kind, the way the player does, and hand back
+    /// how many seats were filled.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is the half the quota cannot reach, and it is where these bugs live.</b>
+    /// <c>LabourQuota</c> decides how many of a job the village <em>asks for</em>; since D109
+    /// the player's own number is what staffs the building. So every guard that runs an
+    /// unattended village is testing the planner, and the player is testing the doer.
+    /// </remarks>
+    private static int StaffEvery(SimWorld world, JobKind kind)
+    {
+        int seats = 0;
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Kind == kind && !workplace.IsSite)
+            {
+                world.SetStaffing(workplace, workplace.Capacity);
+                seats += workplace.Capacity;
+            }
+        }
+
+        return seats;
+    }
+
+    /// <summary>⭐ A met log limit stops a forester the player posted.</summary>
+    /// <remarks>
+    /// <b>D139's bug, one job over</b> — found by sweeping the controls after D144 rather than
+    /// by Joe hitting it. The check D139 added lives in the woodcutter's branch and nowhere
+    /// else, while <c>LabourQuota.StoppedByAStockLimit</c> has arms for <em>both</em> timber
+    /// jobs. So the planner obeys a Logs limit and the doer never heard of it, and a forester
+    /// the player staffed fells for ever past the number in the box.
+    /// </remarks>
+    [Fact]
+    public void ALogLimitStopsAForesterThePlayerPosted()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        loop.Step(config.TicksPerYear * 20);
+        Assert.True(StaffEvery(world, JobKind.Forester) > 0, "Nowhere to post a forester.");
+
+        int atTheLimit = world.LogsInSheds();
+        world.SetStockLimit(Goods.Logs, atTheLimit + 20);
+        loop.Step(config.TicksPerYear * 15);
+
+        int held = world.LogsInSheds();
+        _output.WriteLine(
+            $"logs in store: {atTheLimit} when the limit of {atTheLimit + 20} was set, "
+            + $"{held} fifteen years later.");
+
+        // Generous, for the reason AFirewoodLimitStopsTheWoodcutters gives: work in flight
+        // lands after the limit bites, so the stock overshoots a little and then holds.
+        Assert.True(held <= atTheLimit + 20 + (config.CutYield * 4),
+            $"Logs settled at {held} against a limit of {atTheLimit + 20}. A forester the "
+            + "player posted is still felling past the number in the box (D139, one job over).");
+    }
+
+    /// <summary>⭐ And a met food limit stops a gatherer the player posted.</summary>
+    /// <remarks>
+    /// <para>
+    /// The same gap on the third good. <c>LabourQuota</c> zeroes foragers outright when
+    /// <c>IsMet(Food, FoodInGranaries())</c>, so the intent that a food limit stops the
+    /// gathering is already the design — it simply never reached the branch where gathering
+    /// actually happens.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ And it is the one that can cost lives, so it is obeyed rather than argued with
+    /// (D42).</b> The saying-so happens once, when the limit is set — <c>SetStockLimit</c>
+    /// warns about a number below the survival floor and then does as it is told. A control
+    /// that quietly declines to work on the one good that matters is worse than one that
+    /// obeys: the player would have no way to tell it apart from a bug.
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// <b>⚠️ TWO ARMS, BECAUSE THIS ONE CAN PASS VACUOUSLY AND ALMOST DID.</b> Gathering is
+    /// gated on <c>needsFood</c> — my larder is short, <em>or</em> the granary is below what
+    /// the village has ROOM for — so a granary near its capacity stops the gatherers whatever
+    /// the player asked for. A one-armed version of this guard was green before the fix, and
+    /// it was green because <c>FoodTheVillageHasRoomFor</c> was already binding. **The control
+    /// arm is what makes the number mean the limit rather than the ceiling** — the same shape
+    /// as <c>TheUnlimitedVillageReallyWouldHavePassedThatLimit</c>, and D52's lesson that a
+    /// comparative test has two villages and either can be the broken one.
+    /// </remarks>
+    [Fact]
+    public void AFoodLimitStopsAGathererThePlayerPosted()
+    {
+        SimConfig config = VillageFixtures.Village;
+        int settle = config.TicksPerYear * 20;
+        int after = config.TicksPerYear * 10;
+
+        SimLoop capped = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        capped.Step(settle);
+        Assert.True(StaffEvery(capped.World, JobKind.Forager) > 0, "Nowhere to post a gatherer.");
+
+        int start = capped.World.FoodInGranaries();
+        int limit = start + 100;
+        capped.World.SetStockLimit(Goods.Food, limit);
+        capped.Step(after);
+
+        SimLoop free = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        free.Step(settle);
+        StaffEvery(free.World, JobKind.Forager);
+
+        int freePeak = 0;
+        for (int tick = 0; tick < after; tick++)
+        {
+            free.StepOnce();
+            freePeak = System.Math.Max(freePeak, free.World.FoodInGranaries());
+        }
+
+        _output.WriteLine(
+            $"food in granaries: {start} when the limit of {limit} was set, "
+            + $"{capped.World.FoodInGranaries()} ten years later; "
+            + $"the same village uncapped peaked at {freePeak}.");
+
+        Assert.True(freePeak > limit,
+            $"An uncapped village never got past {freePeak} against a limit of {limit}, so the "
+            + "limit bound nothing and this guard proves nothing (D7). The granary's own "
+            + "capacity is the thing to suspect — gathering is gated on room, not on the limit.");
+
+        Assert.True(capped.World.FoodInGranaries() <= limit + (config.GatherYield * 4),
+            $"Food settled at {capped.World.FoodInGranaries()} against a limit of {limit}.");
     }
 }

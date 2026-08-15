@@ -55,9 +55,15 @@ public sealed class ColdStartTests
 
         Assert.All(world.Households, household => Assert.False(household.HasHome));
 
-        // The valley's own features remain — a berry patch is not a building.
-        Assert.Contains(world.Workplaces, place => place.Kind == JobKind.Forager);
-        Assert.DoesNotContain(world.Workplaces, place => place.Kind == JobKind.Woodcutter);
+        // ⭐ AND THE VALLEY IS NOW GENUINELY EMPTY, WHICH MAKES THIS GUARD STRONGER.
+        // It used to say *"the valley's own features remain — a berry patch is not a
+        // building"* and assert that a Forager workplace existed before anybody built
+        // anything. Six of them did, laid down by the generator, and they were the last
+        // thing in this game that handed the player an economy instead of asking them to
+        // build one. **There is no work of any kind in the valley now** — which is the whole
+        // of Joe's *"no forest, no food"*, and the first real decision of a run is where the
+        // first gatherer's hut goes.
+        Assert.Empty(world.Workplaces);
 
         // And nowhere is painted: where to live is the player's first decision (D64).
         Assert.Equal(0, world.Zones.ResidentialTiles);
@@ -201,9 +207,10 @@ public sealed class ColdStartTests
     /// could not become a house.
     /// </para>
     /// <para>
-    /// The player's part is scripted here as the two things they can actually do on day one:
-    /// paint somewhere to live, and mark a woodcutter's hut. Everything after that is the
-    /// village's own machinery.
+    /// The player's part is scripted here as the things they can actually do on day one:
+    /// paint somewhere to live, mark a woodcutter's hut, and — since C-4 retired the berry
+    /// patches and the tree stands — say where the food and the timber are to come from.
+    /// Everything after that is the village's own machinery.
     /// </para>
     /// </remarks>
     [Fact]
@@ -242,6 +249,19 @@ public sealed class ColdStartTests
         MarkSomewhereNear(world, BuildingKind.BuilderHut, site, 2);
         MarkSomewhereNear(world, BuildingKind.Shed, site, 2);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+
+        // ⭐ AND SOMEWHERE TO GET FOOD AND TIMBER, WHICH THIS GUARD USED TO GET FREE FROM THE
+        // MAP (D157). The four moves above are the whole of the opening as it was written, and
+        // they were enough while the generator laid berry patches and tree stands down before
+        // the founders arrived. Since C-4 retired both, this village had **no food source and
+        // no source of logs anywhere in the valley** — the shed and the woodcutter's hut are
+        // construction sites with nothing to build them from, and the cart holds 0 logs by
+        // D90's rule. Measured without this line: 0 alive, 4 frozen, 0 homes.
+        //
+        // `FeedTheFounding` is the helper that exists for precisely this and is deliberately
+        // not the whole of `PlayTheOpening` — the builder's hut is marked above, because
+        // whether one is standing is what the note at line 243 is about.
+        FeedTheFounding(world);
 
         _output.WriteLine(
             $"painted {world.Zones.ResidentialTiles} tiles; cart holds "
@@ -659,7 +679,60 @@ public sealed class ColdStartTests
     /// fell it.
     /// </para>
     /// </remarks>
-    private static void PlayTheOpening(SimWorld world)
+    /// <summary>
+    /// The half of the opening that keeps anybody alive: somewhere to gather, something to fell.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Since the thickets retired, a founding valley contains no workplaces at all</b> —
+    /// measured on the shipped config: four laborers, zero food gathered, everybody dead
+    /// inside the first year. Food and timber both used to come free with the map, from berry
+    /// patches and tree stands the generator dropped, so a test about <em>building</em> could
+    /// mark a site and never think about either.
+    /// </para>
+    /// <para>
+    /// That is no longer true and it broke four guards at once, all of them reporting the
+    /// building failure rather than the starvation underneath it: a village with nobody
+    /// gathering does not raise anything, because there is nobody left to raise it. Any test
+    /// that runs the shipped opening for more than a season needs this, and it is deliberately
+    /// <em>not</em> the whole of <see cref="PlayTheOpening"/> — the builder's hut is left out,
+    /// because whether one is standing is precisely what several of those guards vary.
+    /// </para>
+    /// </remarks>
+    internal static void FeedTheFounding(SimWorld world)
+    {
+        MarkInTheBestWoodland(world, world.Map.FoundingSite);
+        PaintTheNearbyTrees(world, 6);
+    }
+
+    /// <summary>
+    /// The opening as it stands before anybody builds a shed: a storage pile takes the timber.
+    /// </summary>
+    /// <remarks>
+    /// A pile accepts every kind of goods and is the one store that does, so this village has
+    /// somewhere for logs to go — which is precisely the arrangement D132 could not see. Kept
+    /// here beside the openings it is a variant of, rather than copied into the one test that
+    /// wants it.
+    /// </remarks>
+    internal static void PlayTheOpeningWithoutAShed(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+
+        for (int dy = -4; dy <= 4; dy++)
+        {
+            for (int dx = -4; dx <= 4; dx++)
+            {
+                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
+            }
+        }
+
+        MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
+        MarkSomewhereNear(world, BuildingKind.BuilderHut, site, 2);
+        MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+        FeedTheFounding(world);
+    }
+
+    internal static void PlayTheOpening(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;
 
@@ -704,6 +777,41 @@ public sealed class ColdStartTests
 
         // 4. Something to make firewood with. Still no shed — the pile is the store.
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
+
+        // 5. ⭐ SOMEWHERE TO GET FOOD, WHICH THE VALLEY NO LONGER PROVIDES BY ITSELF.
+        //
+        // Until the berry patches retired, the opening needed no food building: six of them
+        // were on the map before the founders arrived. Joe's *"no forest, no food"* means a
+        // cold start now begins with **nothing to gather anywhere**, so the first hut is part
+        // of the opening in the same way the pile and the builder's hut are — measured,
+        // without it four founders freeze and not one berry ever reaches the store.
+        //
+        // Sited IN WOODLAND rather than on the nearest bare tile, because that is the
+        // decision the mechanic is about and the founders settle a glade (D112): a hut on
+        // the doorstep is a hut in a clearing, and a hut in a clearing yields almost nothing.
+        MarkInTheBestWoodland(world, site);
+
+        // 6. ⭐ AND TREES TO FELL, WHICH THE OPENING DELIBERATELY DID NOT PAINT UNTIL NOW.
+        //
+        // The old comment below is a measurement from a world that no longer exists: timber
+        // came from two generator-placed TREE STANDS, so the opening had a log supply without
+        // asking for one, and painting on top of it was harmful. **The stands are retired.**
+        // With no forester's hut and no painted ground, a cold start has *no source of logs
+        // at all* — measured, both huts stay sites for ever, no firewood is made, and all
+        // four founders freeze however much food is in the cart.
+        //
+        // This is Joe's own sentence arriving as a requirement rather than an option:
+        // *"the user can paint trees to get laborers to cut down forests until foresters are
+        // available."* The pile is already down to receive them, which is the arm D99
+        // measured as safe — it is *harvest with no pile* that was fatal.
+        //
+        // ⚠️ SIX, WHICH IS THE RADIUS THAT WAS ACTUALLY MEASURED. Twelve was tried on the
+        // theory that more painted wood is more timber, and it is not obviously better —
+        // laborers spend the extra time clearing rather than building, which is the shape
+        // D99 measured as harmful. Six is the arm where first firewood lands t253–268
+        // against a winter at t360.
+        PaintTheNearbyTrees(world, 6);
+
 
         // ⚠️ AND DELIBERATELY NO HARVEST PAINTING, which was tried here and measured as
         // harmful — see TheOpeningGetsItsTimberFromTheTreesThePlayerPainted, which paints
@@ -772,6 +880,66 @@ public sealed class ColdStartTests
     /// The player clicks somewhere sensible and the village tells them if it will not do
     /// (D43). A test cannot click, so it tries a small ring and takes the first yes.
     /// </remarks>
+    /// <summary>
+    /// Put a gatherer's hut where the trees are, the way a player would.
+    /// </summary>
+    /// <remarks>
+    /// Bounded by the economy's own budget, so the opening never sites its food beyond the
+    /// walk the food economy is derived against — the same rule the warm start's
+    /// <c>WhereTheTreesAre</c> follows, expressed here through the public API a player has.
+    /// </remarks>
+    private static void MarkInTheBestWoodland(SimWorld world, GridPos site)
+    {
+        int reach = VillageEconomy.MaxHomeToWorkTiles(world.Config);
+        int ring = world.Config.GathererHutRingTiles;
+
+        GridPos? best = null;
+        int bestTrees = -1;
+
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var at = new GridPos(site.X + dx, site.Y + dy);
+                if (site.ManhattanDistanceTo(at) > reach
+                    || !world.CanBuildAt(BuildingKind.GathererHut, at).Allowed)
+                {
+                    continue;
+                }
+
+                int trees = 0;
+                for (int ry = -ring; ry <= ring; ry++)
+                {
+                    for (int rx = -ring; rx <= ring; rx++)
+                    {
+                        if ((rx * rx) + (ry * ry) > ring * ring)
+                        {
+                            continue;
+                        }
+
+                        var tile = new GridPos(at.X + rx, at.Y + ry);
+                        if (world.Map.Contains(tile)
+                            && world.Map.TerrainAt(tile) == Terrain.Forest)
+                        {
+                            trees++;
+                        }
+                    }
+                }
+
+                if (trees > bestTrees)
+                {
+                    bestTrees = trees;
+                    best = at;
+                }
+            }
+        }
+
+        if (best is GridPos chosen)
+        {
+            world.Mark(BuildingKind.GathererHut, chosen);
+        }
+    }
+
     private static void MarkSomewhereNear(
         SimWorld world, BuildingKind kind, GridPos site, int radius)
     {

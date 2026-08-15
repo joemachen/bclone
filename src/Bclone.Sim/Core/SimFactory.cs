@@ -29,6 +29,7 @@ public static class SimFactory
         new LabourSystem(),     // 6. villagers take work themselves
         new BehaviorSystem(),   // 7. decide and act
         new MortalitySystem(),  // 8. old age, starvation, or cold
+        new RegrowthSystem(),   // 9. the valley grows back (D125)
     };
 
     /// <summary>Create a world and loop wired with the Phase 0 systems.</summary>

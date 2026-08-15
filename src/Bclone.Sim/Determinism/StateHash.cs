@@ -200,7 +200,19 @@ public static class StateHash
             // rank above and the stock limits below: a village where nobody has ever touched a
             // mode must hash exactly as it did before modes existed, which is what lets a new
             // control ship without re-taking a single golden.
-            if (workplace.Mode != WorkMode.Harvest)
+            // ⚠️ AGAINST THE DEFAULT, NEVER AGAINST A MODE BY NAME (D136). This read
+            // `!= WorkMode.Harvest`, which was the same thing right up until Joe made planting
+            // the default — at which point every untouched forester's hut in the game would
+            // have started mixing, and every golden would have moved for a control nobody had
+            // used. The sentinel means *"the player has touched this"*, so it has to follow
+            // whatever untouched currently is.
+            //
+            // ⭐ AND IT IS WHAT MADE D146 FREE. The toggle became FELLING rather than planting,
+            // and the value `0` changed meaning from *fell only* to *plant only* — a rewrite of
+            // what the enum says, with the numbering untouched. Because this mixes nothing at
+            // all for an untouched hut, and no golden in the suite switches one, not a single
+            // stored hash depends on what `0` meant.
+            if (workplace.Mode != Workplace.DefaultMode)
             {
                 hash = MixUInt32(hash, (uint)workplace.Mode);
             }
@@ -214,6 +226,16 @@ public static class StateHash
         {
             hash = MixUInt32(hash, (uint)world.StoreBuildings[i].Id);
             hash = MixStore(hash, world.StoreBuildings[i].Store);
+
+            // And which goods the player has told this store to take (D141). SILENT UNTIL
+            // SOMEBODY SETS ONE, in the same shape and for the same reason as the queue rank
+            // and the work mode above: zero is "they have not said", which is every store in
+            // every village that has never used the control, so those hash exactly as they did
+            // before filters existed and not one golden moves for the feature landing.
+            if (world.StoreBuildings[i].AllowedGoods != 0)
+            {
+                hash = MixUInt32(hash, (uint)world.StoreBuildings[i].AllowedGoods);
+            }
         }
 
         // ---- Goods on the ground (D96) ----
@@ -287,20 +309,11 @@ public static class StateHash
             hash = MixByte(hash, map.Soil[i]);
         }
 
-        hash = MixUInt32(hash, (uint)map.ForageSites.Count);
-        for (int i = 0; i < map.ForageSites.Count; i++)
-        {
-            hash = MixUInt32(hash, (uint)map.ForageSites[i].X);
-            hash = MixUInt32(hash, (uint)map.ForageSites[i].Y);
-        }
-
-        hash = MixUInt32(hash, (uint)map.TreeStands.Count);
-        for (int i = 0; i < map.TreeStands.Count; i++)
-        {
-            hash = MixUInt32(hash, (uint)map.TreeStands[i].X);
-            hash = MixUInt32(hash, (uint)map.TreeStands[i].Y);
-        }
-
+        // The forage sites and the tree stands were mixed in here, counts and all. They no
+        // longer exist (`forests-and-gathering.md` slice 5), so there is nothing to mix —
+        // and the woodland that replaced them is in `map.Tiles` above, which is where a fact
+        // about the ground belongs. **Every tree in the valley is still hashed**; what has
+        // gone is a list of eight positions that used to say which of them mattered.
         hash = MixUInt32(hash, (uint)map.FoundingSite.X);
         return MixUInt32(hash, (uint)map.FoundingSite.Y);
     }

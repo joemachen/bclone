@@ -93,6 +93,22 @@ public partial class VillageMap : Control
     /// <summary>The market (D14), which is both a workplace and a store.</summary>
     private static readonly Color MarketColour = new("#c98f4a");
 
+    /// <summary>The ring round a store with no room left (D140).</summary>
+    /// <remarks>
+    /// Warm amber rather than red. A full store is not a disaster — it is usually a village
+    /// doing well at something — and §1.1 wants the player to look, not to panic.
+    /// </remarks>
+    private static readonly Color FullStoreColour = new("#e8a13c");
+
+    /// <summary>The ring round a workplace that cannot do its job (D147).</summary>
+    /// <remarks>
+    /// <b>Cool, where the full-store ring is warm</b>, because they are different facts and the
+    /// player should be able to tell them apart without reading anything. A full store is
+    /// usually a village doing well at something; an idle hut never is. Still not red — the fix
+    /// is always a decision rather than an emergency (§0.1).
+    /// </remarks>
+    private static readonly Color IdleWorkplaceColour = new("#7fb2d9");
+
     /// <summary>A building marked out but not yet raised (D43).</summary>
     private static readonly Color SiteColour = new("#8f9aa8");
 
@@ -646,7 +662,27 @@ public partial class VillageMap : Control
 
         if (_demolishing)
         {
-            foreach (StoreBuilding building in _world!.StoreBuildings)
+            // ⭐ SITES AND HUTS TOO, WHICH THIS COULD NOT TOUCH BEFORE (Joe: *"I can't
+            // cancel/demolish a building that is under construction — demolish says nothing
+            // there to pull down"*). It only ever searched the stores, so a construction site
+            // and every hut in the game were permanent once marked. **A misplaced building
+            // the player cannot take back is the opposite of the brush's whole promise.**
+            //
+            // Workplaces first, because that is where the thing the player is most likely to
+            // be undoing lives: a site they have just marked in the wrong spot.
+            foreach (Workplace workplace in _world!.Workplaces)
+            {
+                if (workplace.Position == where)
+                {
+                    string name = workplace.Construction?.Name ?? workplace.Name;
+                    _world.Demolish(workplace);
+                    PlacementMessageChanged?.Invoke($"{name} is gone.");
+                    QueueRedraw();
+                    return;
+                }
+            }
+
+            foreach (StoreBuilding building in _world.StoreBuildings)
             {
                 if (building.Position == where)
                 {
@@ -969,8 +1005,69 @@ public partial class VillageMap : Control
             };
             DrawRect(rect, colour with { A = 0.85f });
             DrawRect(rect, colour, filled: false, width: 2f);
+
+            // ⭐ A FULL STORE SAYS SO ON THE MAP (Joe, D140). D134 is the reason it has to:
+            // a village can sit at "Logs 15" with 1,968 stranded outside a shed that filled
+            // in year five, and every symptom of that reads as a shortage. The Overview line
+            // says it in words now; this is the same fact where the player is actually
+            // looking, on the building that is causing it.
+            //
+            // A ring rather than a badge, because it has to read at any zoom — the tile is
+            // eight pixels across when the valley is fitted to the window.
+            if (ShowsFullMarker(building) && building.Store.IsFull)
+            {
+                float halo = size * 0.85f;
+                DrawArc(
+                    centre,
+                    halo,
+                    0f,
+                    Mathf.Tau,
+                    24,
+                    FullStoreColour,
+                    width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
+            }
         }
     }
+
+    /// <summary>
+    /// Whether this building's full-marker is switched on — globally, and for itself.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ VIEW STATE, DELIBERATELY, AND IT MUST STAY THAT WAY.</b> Joe asked for the marker
+    /// to be dismissable *"by building or globally"*, which is a per-building fact and therefore
+    /// looks like it belongs on <see cref="StoreBuilding"/>. It does not: the sim is hashed and
+    /// replayed from a seed (D2), so putting a display preference in it would make two players
+    /// who merely disagree about what to look at diverge into different worlds. A marker nobody
+    /// can see must not change what anybody does.
+    /// </remarks>
+    private bool ShowsFullMarker(StoreBuilding building) =>
+        _showFullMarkers && !_fullMarkerMuted.Contains(building.Id);
+
+    private bool _showFullMarkers = true;
+    private readonly HashSet<int> _fullMarkerMuted = new();
+
+    /// <summary>Switch every full-store marker on or off at once.</summary>
+    public void ShowFullMarkers(bool shown)
+    {
+        _showFullMarkers = shown;
+        QueueRedraw();
+    }
+
+    /// <summary>Switch one building's marker on or off, and report where it landed.</summary>
+    public bool ToggleFullMarker(int buildingId)
+    {
+        bool nowShown = _fullMarkerMuted.Remove(buildingId);
+        if (!nowShown)
+        {
+            _fullMarkerMuted.Add(buildingId);
+        }
+
+        QueueRedraw();
+        return nowShown;
+    }
+
+    /// <summary>Whether one building's marker is switched on, ignoring the global switch.</summary>
+    public bool FullMarkerShownFor(int buildingId) => !_fullMarkerMuted.Contains(buildingId);
 
     private void DrawValley()
     {
@@ -1324,8 +1421,66 @@ public partial class VillageMap : Control
             }
 
             DrawCircle(centre, Mathf.Max(4f, _pixelsPerTile * 0.4f), colour);
+
+            // ⭐ AND A BUILDING THAT CANNOT DO ITS JOB SAYS SO (Joe, D147). The same shape as
+            // D140's full-store ring, for the same reason and with the same switches — and it
+            // earns its place because three times in one session a hut looked idle because of a
+            // number set on a different panel. `SimWorld.IdleNote` is the one place that decides
+            // what counts, so the ring and the sentence in the inspector cannot drift apart.
+            //
+            // A COOLER RING THAN THE FULL-STORE ONE, because they are different facts and a
+            // player should be able to tell them apart at a glance without reading anything: a
+            // full store is usually a village doing well at something, an idle hut never is.
+            if (ShowsIdleMarker(workplace) && world.IdleNote(workplace) is not null)
+            {
+                DrawArc(
+                    centre,
+                    Mathf.Max(7f, _pixelsPerTile * 0.7f),
+                    0f,
+                    Mathf.Tau,
+                    24,
+                    IdleWorkplaceColour,
+                    width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
+            }
         }
     }
+
+    /// <summary>
+    /// Whether this workplace's idle marker is switched on — globally, and for itself.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ VIEW STATE, for the reason D140 spells out on its own marker:</b> the sim is
+    /// hashed and replayed from a seed (D2), so a display preference living there would make
+    /// two players who merely disagree about what to look at diverge into different worlds.
+    /// </remarks>
+    private bool ShowsIdleMarker(Workplace workplace) =>
+        _showIdleMarkers && !_idleMarkerMuted.Contains(workplace.Id);
+
+    private bool _showIdleMarkers = true;
+    private readonly HashSet<int> _idleMarkerMuted = new();
+
+    /// <summary>Switch every idle-workplace marker on or off at once.</summary>
+    public void ShowIdleMarkers(bool shown)
+    {
+        _showIdleMarkers = shown;
+        QueueRedraw();
+    }
+
+    /// <summary>Switch one workplace's marker on or off, and report where it landed.</summary>
+    public bool ToggleIdleMarker(int workplaceId)
+    {
+        bool nowShown = _idleMarkerMuted.Remove(workplaceId);
+        if (!nowShown)
+        {
+            _idleMarkerMuted.Add(workplaceId);
+        }
+
+        QueueRedraw();
+        return nowShown;
+    }
+
+    /// <summary>Whether one workplace's marker is switched on, ignoring the global switch.</summary>
+    public bool IdleMarkerShownFor(int workplaceId) => !_idleMarkerMuted.Contains(workplaceId);
 
     private void DrawHomes()
     {

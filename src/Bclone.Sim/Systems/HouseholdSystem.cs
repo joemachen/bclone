@@ -497,7 +497,18 @@ public sealed class HouseholdSystem : ISimSystem
         //
         // Every other occupancy question in the sim already asks LivingMembersOf. This
         // was the one place that did not.
-        if (world.LivingMembersOf(household) >= config.MaxHouseholdSize)
+        // ⭐ AND IT ASKS THE HOUSE, NOT A GLOBAL NUMBER (Joe, D153). *"Put a cap size on family
+        // homes to limit the number of children a couple can have — eventually an unlock/tech
+        // that allows for larger homes."* One house kind today, so this answers exactly what
+        // the constant did; the point is that the question is now asked of the building, so a
+        // larger dwelling is one arm in `HouseholdCapacity` rather than a hunt through callers.
+        //
+        // ⭐ IT ALSO MATTERS AGAIN, WHICH IT HAD STOPPED DOING. At seven this refused only
+        // 1-3% of household-years while the granary gate refused 42-70% — the cap was not a
+        // lever, it was scenery. At five it binds, and the shipped village stops dying out
+        // (300 unattended years: final 0 at seven, final 20 at five, nobody starving either way).
+        if (world.LivingMembersOf(household)
+            >= VillageEconomy.HouseholdCapacity(BuildingKind.Home, config))
         {
             return false;
         }
@@ -517,15 +528,33 @@ public sealed class HouseholdSystem : ISimSystem
             return false;
         }
 
-        // A share of THIS household's own target, which scales with how many mouths
-        // it already has. A flat number let a family of seven breed on a tenth of a
-        // full larder; scaling it is what stops the village outrunning its food.
-        if (household.Stockpile.Food < world.TargetFoodFor(household) * config.BirthFoodPercent / 100)
-        {
-            return false;
-        }
+        // ⛔ THE FAMILY'S OWN LARDER WAS CHECKED HERE, AND IT IS DELETED (Joe, D153).
+        //
+        // The rule was: *a share of THIS household's own target, which scales with how many
+        // mouths it already has* — a flat number let a family of seven breed on a tenth of a
+        // full larder, so scaling it was what stopped the village outrunning its food.
+        //
+        // **It was already all but toothless, and the granary gate below is why.** Before
+        // stores existed a larder reflected what that family could actually produce, so gating
+        // births on it was self-limiting. With a granary every larder is topped up from the
+        // village store, so this read "comfortable" until the store ran dry — which is exactly
+        // what the gate below was added to catch.
+        //
+        // ⭐ MEASURED BEFORE REMOVING IT, over four runs of 150 and 300 years on both configs:
+        // this term refused **6–10%** of household-years while the granary term refused
+        // **42–70%**. Taking it out moved the fixture's peak from 38 to 37 and the shipped
+        // village's from 31 to 27, and **nobody starved in any arm, before or after.**
+        //
+        // ⚠️ THE DISASTER IT WAS ADDED FOR IS NOW RECORDED IN `DESIGN.md` D153 AND NOWHERE
+        // ELSE, so it is written here too: the village once *"bred to ninety-two, outran what
+        // its forage sites could produce, and thirty-three people starved on the way back
+        // down."* That was an economy with no granary gate. This comment is the only surviving
+        // trace of it besides the decision entry — do not delete it with the code.
 
-        // AND the village as a whole has to be in surplus, not just this family.
+        // The village as a whole has to be in surplus. **Since D153 this is the only food
+        // brake on births**, which also means `birth_food_percent` now has exactly one
+        // meaning — it is read here and by `VillageEconomy.PopulationCeiling`, so the derived
+        // ceiling is no longer an approximation of the gate: it *is* the gate.
         //
         // The granary broke the household gate without anyone noticing. Before it, a
         // larder reflected what that family could actually produce, so gating births
@@ -546,26 +575,28 @@ public sealed class HouseholdSystem : ISimSystem
             return false;
         }
 
-        // AND a winter's fuel, on the same terms.
+        // ⛔ AND A WINTER'S FUEL WAS CHECKED HERE, AND IT IS DELETED TOO (Joe, D153).
         //
-        // Every constraint in this sim has, in turn, been the one the village grew
-        // until it hit and then died on: the forage sites, the log pile, the food
-        // economy. Each was fixed and the settlement simply grew to the next one.
-        // Food is the only one that ever SELF-LIMITED, because births are gated on it
-        // — so the village stopped having children before it starved rather than
-        // after.
+        // The rule was *you do not have a child you cannot keep warm* — the more diegetic of
+        // the two, and it gave cold the same brake hunger already had. **Its removal is the
+        // sharper half of D153, because unlike food there is no village-wide backstop**: cold
+        // can now kill a village that outgrows its fuel, and Joe took that deliberately.
         //
-        // Fuel had no such brake. The village grew to forty-eight people, outran what
-        // the woodcutter's hut was derived to heat, and sixty-seven of them froze.
-        // Gating births on firewood too gives cold the same brake hunger already has,
-        // and it is the more diegetic rule of the two: you do not have a child you
-        // cannot keep warm.
-        int firewoodWanted =
-            VillageEconomy.FirewoodStoreWantedPerHousehold(config) * config.BirthFoodPercent / 100;
-        if (config.FirewoodPerWinterDay > 0 && household.Stockpile.Firewood < firewoodWanted)
-        {
-            return false;
-        }
+        // ⭐ MEASURED, AND IT WAS ALMOST NEVER THE THING STOPPING A BIRTH: this term refused
+        // **0–1%** of household-years across 150- and 300-year runs on both configs, and
+        // **nobody froze in any arm, before or after removing it.** The disaster it was added
+        // for belongs to an older fuel economy.
+        //
+        // ⚠️ AND A VILLAGE-WIDE REPLACEMENT WAS CONSIDERED AND REFUSED, on the design's own
+        // grounds rather than on taste. `VillageEconomy.ShedCapacity` already rules it out by
+        // name: *"Food is what regulates the village… the shed binding as well would mean two
+        // constraints fighting for the same job, and the player could not tell which one was
+        // stopping them — which is non-negotiable 1 failing."* `SimWorld.FirewoodInSheds()` is
+        // what such a check would read, if this is ever revisited.
+        //
+        // ⚠️ THE DISASTER IT WAS ADDED FOR IS RECORDED IN `DESIGN.md` D153 AND NOWHERE ELSE,
+        // so it is written here too: the village once *"grew to forty-eight people, outran what
+        // the woodcutter's hut was derived to heat, and sixty-seven of them froze."*
 
         return HasFertileCouple(world, household, config);
     }

@@ -334,4 +334,59 @@ public sealed class ProfessionsTests
             $"Gathering was capped and the number of laborers went {before} -> "
             + $"{world.Laborers}.");
     }
+
+    /// <summary>⭐ The professions panel's arithmetic works out — laborers are the remainder.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The sum a player does in their head, made a guard (D148).</b> Joe, playing: <i>"why
+    /// does it say there is one laborer when I only have 4 villagers and they are all assigned
+    /// jobs?"</i> The sim was right — his woodcutter row read <c>1</c> in the staffing box and
+    /// <c>0 of 2</c> beside it, because firewood was at its limit and nobody was actually there
+    /// — but nothing on screen made the four add up, so the panel looked wrong.
+    /// </para>
+    /// <para>
+    /// <b>The invariant the panel now presents:</b> every able adult is either holding a job or
+    /// is a laborer, and nobody is both or neither. If that ever stops being true the numbers
+    /// stop reconciling and a player is right to be confused — so it is checked over a run
+    /// rather than at one instant, and across the seasons where hands move.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryAbleAdultIsEitherAtWorkOrALaborer()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        int checkedTicks = 0;
+        int mostEmployed = 0;
+
+        for (int tick = 0; tick < config.TicksPerYear * 12; tick++)
+        {
+            loop.StepOnce();
+
+            int employed = 0;
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Alive && villager.CanWork && villager.HasJob)
+                {
+                    employed++;
+                }
+            }
+
+            mostEmployed = System.Math.Max(mostEmployed, employed);
+            checkedTicks++;
+
+            Assert.Equal(world.AbleAdults, employed + world.Laborers);
+        }
+
+        _output.WriteLine(
+            $"{checkedTicks} ticks reconciled; at the end {world.AbleAdults} able adults = "
+            + $"{world.AbleAdults - world.Laborers} at work + {world.Laborers} spare "
+            + $"(most ever employed {mostEmployed}).");
+
+        // Anti-vacuity: a village where nobody ever held a job would reconcile trivially.
+        Assert.True(mostEmployed > 0, "Nobody ever held a job, so the sum proves nothing (D7).");
+        Assert.True(world.AbleAdults > 0, "Nobody was left alive to count.");
+    }
 }

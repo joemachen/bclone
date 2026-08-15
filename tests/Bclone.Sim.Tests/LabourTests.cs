@@ -138,7 +138,7 @@ public sealed class LabourTests
     [Fact]
     public void AWorkplaceNeverExceedsItsCapacity()
     {
-        SimLoop loop = Build(Config with { ForageSiteCapacity = 3 });
+        SimLoop loop = Build(Config with { GathererHutRingTiles = 2 });
         loop.Step(30_000);
 
         foreach (Workplace workplace in loop.World.Workplaces)
@@ -259,8 +259,8 @@ public sealed class LabourTests
         // same villager must win it every single run, or the village desyncs.
         for (int attempt = 0; attempt < 5; attempt++)
         {
-            SimLoop a = Build(Config with { ForageSiteCapacity = 1 });
-            SimLoop b = Build(Config with { ForageSiteCapacity = 1 });
+            SimLoop a = Build(Config with { GathererHutRingTiles = 1 });
+            SimLoop b = Build(Config with { GathererHutRingTiles = 1 });
 
             a.Step(Config.TicksPerSeason);
             b.Step(Config.TicksPerSeason);
@@ -304,20 +304,62 @@ public sealed class LabourTests
         Assert.NotEqual(before, StateHash.Compute(loop.World));
     }
 
+    /// <summary>Job-based foraging still feeds a growing village, and starves nobody.</summary>
+    /// <remarks>
+    /// Foraging is gated on holding a job. If assignment is too slow, too narrow, or drops
+    /// workers, the village starves — so the economy is the real test of the labour system.
+    /// <b>Measured on the way up rather than at year 150 (D143):</b> nobody has managed this
+    /// village for a century and a half, and Joe's ruling is that such a village <em>should</em>
+    /// age out. What the labour system owes is that everyone who is alive is fed — the peak,
+    /// and a death list with no hunger in it.
+    /// </remarks>
     [Fact]
     public void TheVillageStillSustainsItselfOnJobBasedForaging()
     {
-        // Foraging is now gated on holding a job. If assignment is too slow, too
-        // narrow, or drops workers, the village starves - so the economy is the
-        // real test of the labour system.
         SimLoop loop = Build(Config);
-        loop.Step(Config.TicksPerYear * 150);
+
+        int peak = 0;
+        for (int year = 1; year <= 150; year++)
+        {
+            loop.Step(Config.TicksPerYear);
+            peak = System.Math.Max(peak, loop.World.Population);
+        }
+
+        int starved = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (!villager.Alive && villager.CauseOfDeath == CauseOfDeath.Starvation)
+            {
+                starved++;
+            }
+        }
 
         _output.WriteLine(
-            $"Year {loop.World.Clock.Year}: {loop.World.Population} alive, " +
-            $"{loop.World.Workplaces[0].WorkerIds.Count} foraging.");
+            $"Peaked at {peak}; year {loop.World.Clock.Year}: {loop.World.Population} alive, " +
+            $"{loop.World.Workplaces[0].WorkerIds.Count} foraging, {starved} ever starved.");
 
-        Assert.True(loop.World.Population > Config.StartingPopulation);
+        Assert.True(peak >= 25,
+            $"Job-based foraging only ever fed {peak} people from {Config.StartingPopulation}.");
+
+        // ⚠️ HUNGER IS A MINORITY OF DEATHS, NOT ZERO (D155). This asserted nobody ever starved,
+        // which was true while the birth gate held the village well under what it could feed.
+        // Joe loosened that gate deliberately — the village grows to ~50 now instead of sitting
+        // at 20 — and the price he accepted is that some people go hungry on the way. **The
+        // claim that survives is the one that separates pressure from disaster:** most people
+        // must still die of old age, which is the same line `FirewoodTests` and
+        // `ShippedConfigTests` already draw.
+        int aged = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (!villager.Alive && villager.CauseOfDeath == CauseOfDeath.OldAge)
+            {
+                aged++;
+            }
+        }
+
+        Assert.True(aged > starved,
+            $"{starved} starved against {aged} of old age — hunger has stopped being pressure "
+            + "and become the normal way to die.");
     }
 
     // ---------------------------------------------------------------

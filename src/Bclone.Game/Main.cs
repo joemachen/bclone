@@ -62,6 +62,12 @@ public partial class Main : Control
     private HBoxContainer _groundRow = null!;
     private Label _groundLabel = null!;
     private Button _modeButton = null!;
+    private HBoxContainer _storeRow = null!;
+    private HBoxContainer _acceptRow = null!;
+    private Button _fullMarkerButton = null!;
+    private HBoxContainer _idleRow = null!;
+    private Label _idleLabel = null!;
+    private Button _idleMarkerButton = null!;
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
 
@@ -342,7 +348,14 @@ public partial class Main : Control
                 continue;
             }
 
-            held.Text = $"{inStores}";
+            // ⭐ AND WHAT IS LYING IN THE YARD (D134). A valley has one timber store, it fills,
+            // and everything hauled in after that is set down outside it — measured at 320 logs
+            // in store against 5,977 on the ground. Reading "Logs 320" while a mountain sits in
+            // the open is the village lying to the player about a shortage it does not have.
+            int inHeaps = world.OnTheGround(goods);
+            held.Text = inHeaps > 0
+                ? $"{inStores}  (+{inHeaps} on the ground — no room in store)"
+                : $"{inStores}";
         }
 
         // What each limited good actually stands at, beside the number the player set —
@@ -351,21 +364,63 @@ public partial class Main : Control
         for (int i = 0; i < _stockLimitReadouts.Count; i++)
         {
             (Goods goods, Label held) = _stockLimitReadouts[i];
-            held.Text = $"have {HeldFor(world, goods)}";
+
+            // ⭐ THE ROW SAYS WHETHER A LIMIT IS ACTUALLY IN FORCE (D139), and it did not.
+            //
+            // Joe: *"the woodcutter keeps making firewood way past the limit."* He was reading
+            // a spin box that said 200 beside a stock of 570 and concluding the sim ignored it.
+            // The sim was obeying perfectly — **there was no limit**. `SetStockLimit` is called
+            // from `ValueChanged`, so a row the player never touches shows its default number
+            // while the good is uncapped. He typed 2000 into Food, so Food bound; he left
+            // Firewood on its default, so Firewood was free.
+            //
+            // A number displayed as though it were a rule, which is not one, is the panel
+            // lying — and it is a regression I introduced removing the "village decides" tick,
+            // because that tick was the thing that used to say "this number is not in force".
+            // Read from the sim rather than from the widget: the label cannot drift from the
+            // state it describes.
+            int? limit = world.StockLimits.For(goods);
+            held.Text = limit is null
+                ? $"no limit · have {HeldFor(world, goods)}"
+                : $"stop at {limit.Value} · have {HeldFor(world, goods)}";
         }
 
         // The same glance for the professions: how many are actually on this work, and how
         // many places there are to be on it (D106). "0 of 2" is Joe's screenshot, and it is
         // what tells you whether asking for three would achieve anything.
+        // ⚠️ AND IT SAYS "WORKING", BECAUSE THE COLUMN HELD TWO MEANINGS AT ONCE (Joe, D148).
+        // He read *"Laborer 1"* against four villagers he had assigned to four jobs and asked
+        // why one was spare. The sim was right: the number in the − N + box is what he ASKED
+        // for, and the row beside it is who actually turned up — his woodcutter row said
+        // *"1"* in the box and *"0 of 2"* next to it, because firewood was at its limit. Two
+        // different meanings in one column, and the Laborer row's number is a third: a count.
+        //
+        // **That is D139's bug one panel over** — a number that reads like a fact and is not —
+        // and the fix is the same one: say the word. "0 of 2" becomes "nobody working of 2
+        // seats", and where the player's number is not being met the row says so out loud
+        // rather than leaving them to subtract.
         LabourQuota quota = LabourQuota.For(world);
         for (int i = 0; i < _professionReadouts.Count; i++)
         {
             (JobKind kind, Label places) = _professionReadouts[i];
-            places.Text = $"{WorkingAt(world, kind)} of {SeatsFor(world, kind)} — "
-                + $"village wants {quota.For(kind)}";
+
+            int working = WorkingAt(world, kind);
+            int seats = SeatsFor(world, kind);
+            int? asked = world.JobLimits.For(kind);
+
+            string count = working == 0
+                ? $"nobody working of {seats} seats"
+                : $"{working} working of {seats} seats";
+
+            // Trimmed for a narrow column (D149) — "you asked for" became "asked", because the
+            // − N + control is on the line directly above and says whose number it is.
+            places.Text = asked is int wanted && wanted != working
+                ? $"{count} · asked {wanted} · village wants {quota.For(kind)}"
+                : $"{count} · village wants {quota.For(kind)}";
         }
 
-        _laborerReadout.Text = $"{world.Laborers}";
+        // And what the 1 is one OF, which is the whole of Joe's question.
+        _laborerReadout.Text = $"{world.Laborers} of {world.AbleAdults} able adults";
 
         // The two standing alerts used to be composed here every frame and shown in the
         // overview. They are narrated by the sim on their edges now and read in the village
@@ -466,9 +521,54 @@ public partial class Main : Control
             int tiles = world.Zones.WorkGroundTiles(staffable!.Id);
             int allowance = world.WorkGroundAllowanceFor(staffable);
             _groundLabel.Text = $"Ground — {tiles} tiles, enough hands for {allowance}:";
-            _modeButton.Text = staffable.Mode == WorkMode.Plant
-                ? "Planting: ON"
-                : "Planting: off";
+            // ⭐ THE TOGGLE IS FELLING NOW, NOT PLANTING (Joe, D146). Painting ground for a hut
+            // is already the instruction to keep it wooded, so planting was never the
+            // interesting question — what the player decides is whether timber comes out.
+            //
+            // And it says when the village has stopped felling for a reason the player set
+            // somewhere else: a met Logs limit reads on this button rather than only on the
+            // stock panel, because this is the building that looks idle because of it.
+            _modeButton.Text = staffable.Mode != WorkMode.FellAndPlant
+                ? "Felling: off"
+                : world.MayFell(staffable)
+                    ? "Felling: ON"
+                    : "Felling: ON — held by the log limit";
+        }
+
+        // ⭐ AND THE IDLE MARKER, which belongs to a workplace the same way the full marker
+        // belongs to a store (Joe, D147). The sentence is `SimWorld.IdleNote`'s, so the panel
+        // and the ring on the map can never say different things about the same building.
+        _idleRow.Visible = staffable is not null;
+        if (staffable is not null)
+        {
+            string? why = world.IdleNote(staffable);
+            _idleLabel.Text = why ?? $"{staffable.Name} is working.";
+            _idleMarkerButton.Text = _map.IdleMarkerShownFor(staffable.Id)
+                ? "Marker: ON"
+                : "Marker: off";
+        }
+
+        // The full-store marker belongs to a store, and every store can fill.
+        StoreBuilding? store = SelectedStore();
+        _storeRow.Visible = store is not null;
+        if (store is not null)
+        {
+            _fullMarkerButton.Text = _map.FullMarkerShownFor(store.Id)
+                ? "Marker: ON"
+                : "Marker: off";
+        }
+
+        _acceptRow.Visible = store is not null;
+        if (store is not null)
+        {
+            foreach ((Goods goods, Button button) in _acceptButtons)
+            {
+                // Shown only where the KIND could hold it — a granary is not offered "iron".
+                // Asked of a bare copy so the player's own filter does not hide the button
+                // that would turn it back on.
+                button.Visible = store.CanEverHold(goods);
+                button.ButtonPressed = store.Accepts(goods);
+            }
         }
 
         // The queue controls only mean anything for something still being built — and they
@@ -1272,6 +1372,7 @@ public partial class Main : Control
             Label why = Muted(reason);
             why.HorizontalAlignment = HorizontalAlignment.Right;
             why.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            why.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             table.AddChild(why);
         }
 
@@ -1547,6 +1648,117 @@ public partial class Main : Control
         _modeButton = new Button { Text = "Planting: off" };
         _modeButton.Pressed += ToggleSelectedMode;
         _groundRow.AddChild(_modeButton);
+
+        // ⭐ WHY THIS BUILDING IS NOT WORKING, AND A SWITCH TO STOP ASKING (Joe, D147). The
+        // same shape as the full-store marker below, and D140's per-building/global pair.
+        //
+        // The label is the whole point rather than decoration: the ring on the map says *look
+        // here* and this says *why*, and a hut held by a log limit set on the stock panel is
+        // exactly the case where the second half cannot be guessed from the first.
+        _idleRow = new HBoxContainer { Visible = false };
+        _idleRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_idleRow);
+
+        _idleLabel = Muted(string.Empty);
+        _idleRow.AddChild(_idleLabel);
+
+        _idleMarkerButton = new Button { Text = "Marker: ON" };
+        _idleMarkerButton.Pressed += ToggleSelectedIdleMarker;
+        _idleRow.AddChild(_idleMarkerButton);
+
+        // ⭐ THE PER-BUILDING HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which
+        // should be able to be disabled by building or globally."* Beside the store's own name
+        // for D104's reason — a control that belongs to ONE building has to sit next to that
+        // building, or the player has to remember which one it will act on.
+        _storeRow = new HBoxContainer { Visible = false };
+        _storeRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_storeRow);
+
+        _storeRow.AddChild(Muted("When full:"));
+
+        _fullMarkerButton = new Button { Text = "Marker: ON" };
+        _fullMarkerButton.Pressed += ToggleSelectedFullMarker;
+        _storeRow.AddChild(_fullMarkerButton);
+
+        // ⭐ WHAT THIS BUILDING WILL TAKE (Joe, D141): *"a given storage pile will only accept
+        // logs, another only firewood, another only iron ore. Set at the building level."*
+        //
+        // One button per good, built once and shown or hidden by what the KIND can hold — so a
+        // granary offers "food" and nothing else, and the player is never presented with a
+        // choice the model would refuse. The refusal still exists in `SetStoreAccepts`, because
+        // a control that cannot be misused and a rule that cannot be broken are different
+        // things and only the second one survives somebody calling it from elsewhere.
+        _acceptRow = new HBoxContainer { Visible = false };
+        _acceptRow.AddThemeConstantOverride("separation", 6);
+        body.AddChild(_acceptRow);
+
+        _acceptRow.AddChild(Muted("Takes:"));
+
+        for (int g = 0; g < Stockpile.Kinds; g++)
+        {
+            var goods = (Goods)g;
+            var button = new Button { Text = GoodsName(goods), ToggleMode = true };
+            button.Pressed += () => ToggleSelectedAccepts(goods);
+            _acceptRow.AddChild(button);
+            _acceptButtons.Add((goods, button));
+        }
+    }
+
+    private readonly List<(Goods Goods, Button Button)> _acceptButtons = new();
+
+    /// <summary>Turn one kind of goods on or off for the selected store.</summary>
+    private void ToggleSelectedAccepts(Goods goods)
+    {
+        if (SelectedStore() is not StoreBuilding store)
+        {
+            return;
+        }
+
+        Warn(_loop.World.SetStoreAccepts(store, goods, !store.Accepts(goods)));
+        RefreshInspector(_loop.World);
+    }
+
+    /// <summary>Silence, or restore, the idle ring on the selected workplace.</summary>
+    private void ToggleSelectedIdleMarker()
+    {
+        if (SelectedWorkplace() is not { IsSite: false } workplace)
+        {
+            return;
+        }
+
+        _map.ToggleIdleMarker(workplace.Id);
+        RefreshInspector(_loop.World);
+    }
+
+    /// <summary>Silence, or restore, the full-store ring on the selected store.</summary>
+    private void ToggleSelectedFullMarker()
+    {
+        if (SelectedStore() is not StoreBuilding store)
+        {
+            return;
+        }
+
+        _map.ToggleFullMarker(store.Id);
+        RefreshInspector(_loop.World);
+    }
+
+    /// <summary>The store on the selected tile, if the selection is one.</summary>
+    private StoreBuilding? SelectedStore()
+    {
+        if (_selectedTile is not GridPos tile)
+        {
+            return null;
+        }
+
+        foreach (StoreBuilding store in _loop.World.StoreBuildings)
+        {
+            if (store.Position == tile)
+            {
+                return store;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Hand the ground brush to whichever building is selected (D86).</summary>
@@ -1566,7 +1778,9 @@ public partial class Main : Control
             return;
         }
 
-        workplace.Mode = workplace.Mode == WorkMode.Plant ? WorkMode.Harvest : WorkMode.Plant;
+        workplace.Mode = workplace.Mode == WorkMode.FellAndPlant
+            ? WorkMode.PlantOnly
+            : WorkMode.FellAndPlant;
         RefreshInspector(_loop.World);
     }
 
@@ -1740,8 +1954,9 @@ public partial class Main : Control
         scroll.AnchorTop = scroll.AnchorBottom = 0f;
         scroll.OffsetTop = Edge;
         scroll.OffsetBottom = Edge;
-        scroll.OffsetLeft = right ? -(Edge + ColumnWidth) : Edge;
-        scroll.OffsetRight = right ? -Edge : Edge + ColumnWidth;
+        // A starting width only — FitColumns re-reads it against the window every frame.
+        scroll.OffsetLeft = right ? -(Edge + MaxColumnWidth) : Edge;
+        scroll.OffsetRight = right ? -Edge : Edge + MaxColumnWidth;
         scroll.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
         scroll.GrowVertical = GrowDirection.End;
 
@@ -1786,11 +2001,19 @@ public partial class Main : Control
     private void FitColumns()
     {
         float room = Size.Y - Edge - (Edge + ControlsReserve);
+        float wide = ColumnWidthFor(Size.X);
 
         foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
         {
             float wanted = column.GetCombinedMinimumSize().Y;
             bool overflowing = wanted > room;
+
+            // ⭐ AND AS WIDE AS THE WINDOW CAN SPARE, WHICH IT WAS NOT (Joe, D149). See
+            // `ColumnWidthFor`: a fixed 400 a side is a fifth of a big screen and four fifths
+            // of a small one, and Joe was playing on a small one.
+            bool right = scroll.AnchorLeft > 0.5f;
+            scroll.OffsetLeft = right ? -(Edge + wide) : Edge;
+            scroll.OffsetRight = right ? -Edge : Edge + wide;
 
             scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(wanted, Mathf.Max(0f, room)));
 
@@ -1808,8 +2031,44 @@ public partial class Main : Control
         }
     }
 
-    /// <summary>How wide a column of panels is. One number, so the two sides match.</summary>
-    private const int ColumnWidth = 400;
+    /// <summary>
+    /// How wide a column of panels is — <b>a share of the window, not a number</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ IT WAS A FIXED 400 A SIDE, AND THAT IS A FIFTH OF A BIG SCREEN AND FOUR FIFTHS OF
+    /// A SMALL ONE (Joe, D149).</b> <i>"The visible playing window is tiny."</i> He was playing
+    /// at about 990 logical pixels wide: two 400s and three gaps left the valley **190 pixels**
+    /// — under a fifth of the window — for a game whose whole proposition is watching a place.
+    /// D116 tuned the type down inside these panels and never asked how wide the panels were.
+    /// </para>
+    /// <para>
+    /// <b>A share with both ends nailed down.</b> The share is what fixes the small window; the
+    /// ceiling is what stops a 4K screen handing over 1,100 pixels a side to panels that have
+    /// nothing more to say; the floor is what stops the rows inside clipping into nonsense. At
+    /// 1920 it lands on 400 and nothing moves, so this is a no-op on a maximised window and a
+    /// rescue on a small one.
+    /// </para>
+    /// <para>
+    /// Read every frame in <see cref="FitColumns"/> for the reason recorded there: everything
+    /// that changes it would otherwise need its own hook, and the forgotten one is the bug.
+    /// </para>
+    /// </remarks>
+    private static float ColumnWidthFor(float windowWidth) =>
+        Mathf.Clamp(windowWidth * ColumnShareOfWindow, MinColumnWidth, MaxColumnWidth);
+
+    /// <summary>The share of the window one column of panels may take.</summary>
+    /// <remarks>
+    /// Two columns, so the panels never take more than 54% between them and the valley always
+    /// keeps the larger half of the window.
+    /// </remarks>
+    private const float ColumnShareOfWindow = 0.27f;
+
+    /// <summary>Narrow enough to leave a valley, wide enough that the rows inside still read.</summary>
+    private const float MinColumnWidth = 240f;
+
+    /// <summary>Where the share stops paying for itself. The old fixed width, kept as the cap.</summary>
+    private const float MaxColumnWidth = 400f;
 
     /// <summary>A panel stacked into one of the side columns.</summary>
     /// <remarks>
@@ -2045,7 +2304,7 @@ public partial class Main : Control
         _windows.RemoveAt(_windows.Count - 1);
         _headers.RemoveAt(_headers.Count - 1);
 
-        body.AddChild(Muted("Windows — what is on screen"));
+        body.AddChild(Caption("Windows — what is on screen"));
 
         foreach ((string name, PanelContainer panel) in _windows)
         {
@@ -2055,7 +2314,25 @@ public partial class Main : Control
             body.AddChild(shown);
         }
 
-        body.AddChild(Muted("c folds every panel · h hides the lot"));
+        body.AddChild(Caption("c folds every panel · h hides the lot"));
+
+        // ⭐ THE GLOBAL HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which should
+        // be able to be disabled by building or globally."* The per-building half lives on the
+        // building's own panel, which is where you are already standing when one store is the
+        // one annoying you.
+        body.AddChild(Muted("On the map"));
+
+        var markers = new CheckBox { Text = "mark stores with no room", ButtonPressed = true };
+        markers.AddThemeFontSizeOverride("font_size", 12);
+        markers.Toggled += on => _map.ShowFullMarkers(on);
+        body.AddChild(markers);
+
+        // The global half of D147's idle ring, beside the global half of D140's, because they
+        // are the same kind of preference and a player looking for one will look for the other.
+        var idle = new CheckBox { Text = "mark buildings that cannot work", ButtonPressed = true };
+        idle.AddThemeFontSizeOverride("font_size", 12);
+        idle.Toggled += on => _map.ShowIdleMarkers(on);
+        body.AddChild(idle);
     }
 
     /// <summary>
@@ -2145,7 +2422,10 @@ public partial class Main : Control
     }
 
     /// <summary>What the cursor is over, or what just happened. Empty when not placing.</summary>
-    private Label _placementLabel = null!;
+    // ⚠️ Genuinely null until the control bar is built, and typed to say so. It was `null!`,
+    // which promised it was always there and cost a crash the first time a panel warned
+    // during construction — see `Warn`.
+    private Label? _placementLabel;
 
     /// <summary>
     /// The build menu (D43) — the first controls in the game that change the world
@@ -2194,7 +2474,7 @@ public partial class Main : Control
         var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 2);
 
-        wrapper.AddChild(Muted("Stock limits — how much to keep before the work stops"));
+        wrapper.AddChild(Caption("Stock limits — how much to keep before the work stops"));
         wrapper.AddChild(rows);
 
         foreach (Goods goods in StockLimits.Kinds)
@@ -2233,19 +2513,33 @@ public partial class Main : Control
         var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 2);
 
-        wrapper.AddChild(Muted("Professions — how many people on each kind of work"));
+        wrapper.AddChild(Caption("Professions — how many people on each kind of work"));
         wrapper.AddChild(rows);
 
         // Laborers first, as in Joe's screenshot, and as a readout: they are the remainder.
+        // Two lines like the professions below it (D149), so the sentence keeps the width.
+        var laborStack = new VBoxContainer();
+        laborStack.AddThemeConstantOverride("separation", 0);
+
         var laborRow = new HBoxContainer();
         laborRow.AddThemeConstantOverride("separation", 6);
         Label laborName = Muted("Laborer");
-        laborName.CustomMinimumSize = new Vector2(90, 0);
+        laborName.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
         laborRow.AddChild(laborName);
         _laborerReadout = Muted(string.Empty);
         laborRow.AddChild(_laborerReadout);
-        laborRow.AddChild(Muted("— whatever is spare: clearing, hauling, tidying"));
-        rows.AddChild(laborRow);
+        laborStack.AddChild(laborRow);
+
+        var laborUnder = new HBoxContainer();
+        laborUnder.AddThemeConstantOverride("separation", 0);
+        laborUnder.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
+        Label laborWhat = Muted("spare hands: clearing, hauling, tidying");
+        laborWhat.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        laborWhat.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        laborUnder.AddChild(laborWhat);
+        laborStack.AddChild(laborUnder);
+
+        rows.AddChild(laborStack);
 
         foreach (JobKind kind in JobLimits.Kinds)
         {
@@ -2273,6 +2567,8 @@ public partial class Main : Control
 
             Label why = Muted(reason);
             why.Modulate = new Color(1, 1, 1, 0.3f);
+            why.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            why.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             row.AddChild(why);
 
             inside.AddChild(row);
@@ -2310,7 +2606,43 @@ public partial class Main : Control
     private const int ProfessionNameWidth = 84;
 
     /// <summary>
-    /// One profession: a name, a "village decides" tick, <b>− N +</b>, and the places.
+    /// Show the sim's own warning, <b>if there is anywhere to show it yet</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ THE GUARD IS THE POINT, AND IT COST A CRASH TO LEARN.</b> <c>_placementLabel</c>
+    /// lives on the control bar, which is built <em>last</em> — and once the professions rows
+    /// started applying a real number at construction (rather than a null that changed
+    /// nothing), one of them returned <em>"there is only room for N on this kind of work"</em>
+    /// and wrote it to a label that did not exist yet. <c>BuildUi</c> threw halfway through,
+    /// so the roster was never created either, and every frame after that died on
+    /// <c>_roster.Clear()</c> — a null reference a long way from its cause.
+    /// </para>
+    /// <para>
+    /// Guarded rather than reordered: there is no build order that is right for every panel
+    /// somebody adds later, and a warning with nowhere to go is not worth a crash. It goes to
+    /// the console instead, so it is never simply lost.
+    /// </para>
+    /// </remarks>
+    private void Warn(PlacementVerdict verdict)
+    {
+        if (!verdict.HasWarning)
+        {
+            return;
+        }
+
+        if (_placementLabel is null)
+        {
+            GD.Print($"[placement] {verdict.Warning}");
+            return;
+        }
+
+        _placementLabel.Text = verdict.Warning;
+        _placementLabel.Visible = true;
+    }
+
+    /// <summary>
+    /// One profession: a name, <b>− N +</b>, and how many places there are.
     /// </summary>
     /// <remarks>
     /// <b>± buttons rather than a spin box</b> — the same control the per-building staffing row
@@ -2318,24 +2650,51 @@ public partial class Main : Control
     /// two different widgets for one quantity is how a player comes to believe they are two
     /// quantities. It is also narrower, which is what Joe asked the whole panel for.
     /// </remarks>
-    private HBoxContainer BuildProfessionRow(JobKind kind)
+    private Control BuildProfessionRow(JobKind kind)
     {
+        // ⭐ TWO LINES, AND THE SECOND ONE IS WHY (D149). The readout used to share a line with
+        // the name and the − N + control, which left it about sixty pixels once the column
+        // became a share of the window rather than a fixed 400 — and sixty pixels is ten
+        // characters, which is not a sentence. D148 had just finished proving that the *words*
+        // are the whole fix here: "0 of 2" is what confused Joe and "nobody working of 2 seats"
+        // is what did not. So the sentence keeps the width and the row gives up the line.
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 0);
+
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
+        stack.AddChild(row);
 
         Label name = Muted(ProfessionName(kind));
         name.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
         row.AddChild(name);
 
-        // ⚠️ THE TICK STAYS, and it is not a spare click. Null and zero are different
-        // instructions — "no opinion" against "none, I mean it" — and the sim keeps them
-        // apart deliberately (D106). A number alone cannot say the first.
-        // Small type, because the words matter and the width does too: the panel a column
-        // sizes itself to is the widest row in it, and this row is the widest one there is.
-        var auto = new CheckBox { Text = "village decides", ButtonPressed = true };
-        auto.AddThemeFontSizeOverride("font_size", 12);
-
+        // ⭐ THE "VILLAGE DECIDES" TICK IS GONE (Joe, 2026-08-11: *"remove all of the village
+        // decides from the jobs. we want it user-decided only for now."*)
+        //
+        // It expressed the difference between *no opinion* (null) and *none, I mean it*
+        // (zero), which D106 was careful to keep apart and the sim still does. **What has
+        // changed is that the player is never without an opinion**: every profession now
+        // carries an explicit number from the first frame, so there is one source of truth
+        // for who is working rather than two that argue — which is D109's whole argument,
+        // arriving through the panel rather than through the sim.
+        //
+        // ⭐ SEEDED AT NOUGHT — EVERYBODY STARTS A LABORER (Joe, D136). *"By default 4
+        // villagers are set as gatherer profession. The default should be laborers."*
+        //
+        // ⚠️ The comment this replaces argued the opposite and was right at the time: seeding
+        // from `LabourQuota.For(world).For(kind)` meant *"nothing moves until somebody moves
+        // it, and the first thing the player sees is what the village was already doing."*
+        // That reasoning belonged to a village that decided its own staffing. Since D109 the
+        // player always has an opinion and the quota no longer overrules one, so seeding from
+        // the quota is not a neutral starting point — it is the game silently making the
+        // first decision and attributing it to the player.
+        //
+        // A laborer is not an unemployed villager (§3.1): they clear painted ground, haul
+        // heaps and tidy. So an unstaffed founding is four people doing the work that is on
+        // the map, which is the honest opening — the player says what the village becomes.
         int asked = 0;
+
         Label amount = Muted("0");
         amount.CustomMinimumSize = new Vector2(22, 0);
         amount.HorizontalAlignment = HorizontalAlignment.Right;
@@ -2345,22 +2704,9 @@ public partial class Main : Control
 
         void Apply()
         {
-            fewer.Disabled = auto.ButtonPressed;
-            more.Disabled = auto.ButtonPressed;
-            amount.Modulate = new Color(1, 1, 1, auto.ButtonPressed ? 0.35f : 1f);
             amount.Text = $"{asked}";
-
-            int? target = auto.ButtonPressed ? null : asked;
-
-            PlacementVerdict verdict = _loop.World.SetJobLimit(kind, target);
-            if (verdict.HasWarning)
-            {
-                _placementLabel.Text = verdict.Warning;
-                _placementLabel.Visible = true;
-            }
+            Warn(_loop.World.SetJobLimit(kind, asked));
         }
-
-        auto.Toggled += _ => Apply();
 
         // Clamped at zero, and with no ceiling of its own: the panel is allowed to ask for
         // more than the village would choose — that is the whole difference from a stock
@@ -2377,20 +2723,32 @@ public partial class Main : Control
             Apply();
         };
 
-        Label places = Muted(string.Empty);
-        places.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-
-        row.AddChild(auto);
         row.AddChild(fewer);
         row.AddChild(amount);
         row.AddChild(more);
-        row.AddChild(places);
+
+        // The sentence, on its own line and indented under the name so the eye can still tell
+        // which row it belongs to. Wrapped rather than clipped: a readout that runs off the
+        // edge of a narrow column is the same bug as a button you cannot press (D113).
+        var under = new HBoxContainer();
+        under.AddThemeConstantOverride("separation", 0);
+        under.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
+
+        Label places = Muted(string.Empty);
+        places.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        places.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        under.AddChild(places);
+
+        stack.AddChild(under);
 
         Apply();
 
         _professionReadouts.Add((kind, places));
-        return row;
+        return stack;
     }
+
+    /// <summary>How far the readout sits under its own profession's name.</summary>
+    private const int ProfessionIndent = 12;
 
     /// <summary>What a kind of work is called on screen. Every value named (D108).</summary>
     private static string ProfessionName(JobKind kind) => kind switch
@@ -2405,53 +2763,80 @@ public partial class Main : Control
     };
 
     /// <summary>One good's limit: a name, a "village decides" tick, a number, and the stock.</summary>
-    private HBoxContainer BuildStockLimitRow(Goods goods)
+    private Control BuildStockLimitRow(Goods goods)
     {
+        // ⭐ TWO LINES, AND MEASURING IS WHAT FOUND IT (D149). Making the columns a share of
+        // the window did nothing for the left one, because a column's minimum width is its
+        // widest child's — and a probe over the tree found **six of these rows at 438 pixels
+        // each**, holding the whole column at 450 however narrow the window was. A 190-pixel
+        // readout beside a 110-pixel spin box beside a name and a button does not fit a
+        // quarter of a small screen, and no amount of arithmetic outside it would have helped.
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 0);
+
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
+        stack.AddChild(row);
 
         Label name = Muted(GoodsName(goods));
         name.CustomMinimumSize = new Vector2(74, 0);
         row.AddChild(name);
 
-        var auto = new CheckBox { Text = "village decides", ButtonPressed = true };
+        // ⭐ NO "VILLAGE DECIDES" TICK (Joe, D136): *"remove 'village decides' for stock
+        // limits. We'll revisit adding that later."* The same call he made for the professions,
+        // one panel along, and for the same reason — since D109 the player always has an
+        // opinion, so a control that hands the decision back is a second voice arguing with
+        // the first.
+        //
+        // ⚠️ "NO LIMIT" IS STILL REACHABLE, AND IT HAD TO BE. `null` is not the village
+        // deciding — it is *nobody has said*, which is the state every good starts in and the
+        // only one that means "do not cap this at all". Deleting the tick without replacing it
+        // would have forced a number onto every good at startup, and **a Food row defaulting to
+        // 200 would cap a granary that needs thousands** — the village quietly starved by a
+        // control the player never touched. So the tick becomes a button that clears.
         var amount = new SpinBox
         {
             MinValue = 0,
             MaxValue = 100_000,
             Step = 10,
             Value = 200,
-            Editable = false,
+            Editable = true,
             CustomMinimumSize = new Vector2(110, 0),
         };
 
+        // "Clear" rather than "no limit", because the label beside it now REPORTS whether
+        // there is a limit and a button must not read like a state (D139).
+        var clear = new Button { Text = "clear", Flat = true, Disabled = true };
+
+        // No minimum width any more: it wraps under the row instead of widening the column.
         Label held = Muted(string.Empty);
-        held.CustomMinimumSize = new Vector2(90, 0);
+        held.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        held.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 
-        void Apply()
+        void Set(int? limit)
         {
-            amount.Editable = !auto.ButtonPressed;
-            int? limit = auto.ButtonPressed ? null : (int)amount.Value;
+            clear.Disabled = limit is null;
 
-            PlacementVerdict verdict = _loop.World.SetStockLimit(goods, limit);
-            if (verdict.HasWarning)
-            {
-                // The sim's own sentence, in the channel that already carries the sim's own
-                // sentences (D43's placement warnings). One voice, not two.
-                _placementLabel.Text = verdict.Warning;
-                _placementLabel.Visible = true;
-            }
+            // The sim's own sentence, in the channel that already carries the sim's own
+            // sentences (D43's placement warnings). One voice, not two — and through `Warn`,
+            // so this cannot be the next thing to fire before the control bar exists.
+            Warn(_loop.World.SetStockLimit(goods, limit));
         }
 
-        auto.Toggled += _ => Apply();
-        amount.ValueChanged += _ => Apply();
+        amount.ValueChanged += _ => Set((int)amount.Value);
+        clear.Pressed += () => Set(null);
 
-        row.AddChild(auto);
         row.AddChild(amount);
-        row.AddChild(held);
+        row.AddChild(clear);
+
+        var under = new HBoxContainer();
+        under.AddThemeConstantOverride("separation", 0);
+        under.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
+        under.AddChild(held);
+        stack.AddChild(under);
 
         _stockLimitReadouts.Add((goods, held));
-        return row;
+        return stack;
     }
 
     /// <summary>The "have N" labels, refreshed with everything else.</summary>
@@ -2741,6 +3126,25 @@ public partial class Main : Control
     {
         var label = new Label { Text = text };
         label.AddThemeFontSizeOverride("font_size", RowSize);
+        return label;
+    }
+
+    /// <summary>
+    /// A muted line that <b>wraps rather than widening its column</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ A LABEL THAT CANNOT WRAP SETS A FLOOR UNDER THE WHOLE COLUMN (D149).</b> The
+    /// column is a <see cref="ScrollContainer"/> with horizontal scrolling disabled, so its
+    /// minimum width is its widest child's — and one caption of forty-nine characters
+    /// (*"Professions — how many people on each kind of work"*) held the panel at 325 pixels
+    /// however narrow the window told it to be. Making the columns a share of the window
+    /// achieved nothing for the panel that needed it most until this landed with it.
+    /// </remarks>
+    private static Label Caption(string text)
+    {
+        Label label = Muted(text);
+        label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        label.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         return label;
     }
 

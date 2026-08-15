@@ -173,6 +173,33 @@ public sealed class SimWorld
         _ => kind.ToString().ToLowerInvariant(),
     };
 
+    /// <summary>
+    /// Everyone old enough and well enough to hold a job — the number
+    /// <see cref="Laborers"/> is the remainder of.
+    /// </summary>
+    /// <remarks>
+    /// <b>Beside <see cref="Laborers"/> on purpose (D148).</b> The professions panel showed
+    /// *"Laborer 1"* to a player with four villagers who had assigned all four, and there was
+    /// no figure anywhere saying what the 1 was one *of*. Keeping the two definitions adjacent
+    /// is what stops them drifting into disagreeing about who counts.
+    /// </remarks>
+    public int AbleAdults
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < Villagers.Count; i++)
+            {
+                if (Villagers[i].Alive && Villagers[i].CanWork)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
     /// <summary>Able adults with no job — the hands everything spare is done by (D63).</summary>
     public int Laborers
     {
@@ -191,11 +218,10 @@ public sealed class SimWorld
         }
     }
 
-    /// <summary>The berry patch.</summary>
-    public FoodSource FoodSource { get; }
-
-    /// <summary>The stand of trees.</summary>
-    public TreeStand TreeStand { get; }
+    // `FoodSource` and `TreeStand` are deleted (`forests-and-gathering.md` slice 5). They
+    // were Phase 0's single berry patch and single stand of trees, and they outlived the
+    // plural lists that replaced them by five phases — a yield-per-gather and a
+    // yield-per-cut, read from one place while the village worked eight others.
 
     /// <summary>Every workplace, ordered by id.</summary>
     public List<Workplace> Workplaces { get; } = new();
@@ -419,6 +445,31 @@ public sealed class SimWorld
     /// </para>
     /// </remarks>
     public List<GroundStack> GroundStacks { get; } = new();
+
+    /// <summary>How much of one good is lying in heaps across the valley.</summary>
+    /// <remarks>
+    /// <b>D134: the player could not see this, and it was the whole answer to a bug they could
+    /// see.</b> Joe: <i>"it still feels wrong — there's never enough wood but so many trees are
+    /// harvested."</i> Measured on his shape of village: **320 logs in store and 5,977 lying on
+    /// the ground**, because a valley has one timber store, it fills, and every load after that
+    /// is set down outside it and then correctly refused for pickup — there is still nowhere to
+    /// put it. The Overview read "Logs 320" and said nothing about the mountain in the yard.
+    /// A village drowning in timber that reports a shortage is a §1.1 failure, not a balance
+    /// one, so the number exists to be shown.
+    /// </remarks>
+    public int OnTheGround(Goods goods)
+    {
+        int total = 0;
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            if (GroundStacks[i].Goods == goods)
+            {
+                total += GroundStacks[i].Amount;
+            }
+        }
+
+        return total;
+    }
 
     /// <summary>
     /// Put a load down where somebody is standing. The one door in.
@@ -682,21 +733,18 @@ public sealed class SimWorld
     /// panel says what its ring holds and what that is worth — not that it is softened.
     /// </para>
     /// <para>
-    /// A place with no ring — a berry patch — yields what it has always yielded, so this is a
-    /// no-op until somebody builds a hut.
+    /// <b>Every gathering place has a ring now</b> (slice 5). The arm for one that did not was
+    /// the berry patch, which yielded a flat <c>gather_yield</c> wherever it stood; with the
+    /// patches retired there is nothing left that gathers without a ring, so a radius of zero
+    /// is a hut with no reach and correctly worth nothing.
     /// </para>
     /// </remarks>
     public int GatherYieldAt(Workplace workplace)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        if (workplace.GatheringRadius <= 0)
-        {
-            return FoodSource.YieldPerGather;
-        }
-
         int ring = VillageEconomy.TilesInRing(workplace.GatheringRadius);
-        return ring <= 0 ? 0 : FoodSource.YieldPerGather * WoodedTilesAround(workplace) / ring;
+        return ring <= 0 ? 0 : Config.GatherYield * WoodedTilesAround(workplace) / ring;
     }
 
     /// <summary>
@@ -704,11 +752,11 @@ public sealed class SimWorld
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>One question, two answers, decided by the mode</b> (`forests-and-gathering.md`): a
-    /// forester set to <see cref="WorkMode.Harvest"/> wants a wooded tile of its ground, and one
-    /// set to <see cref="WorkMode.Plant"/> wants a bare one. Written as one method because they
-    /// are the same walk to the same ground for the same person — two methods would be two
-    /// places to teach about a third mode.
+    /// <b>One question, two answers, decided by <see cref="MayFell"/></b>
+    /// (`forests-and-gathering.md`): a forester that may fell wants a wooded tile of its ground
+    /// while any is standing, and one that may not wants a bare one to put a tree back on.
+    /// Written as one method because they are the same walk to the same ground for the same
+    /// person — two methods would be two places to teach about a third mode.
     /// </para>
     /// <para>
     /// <b>Nearest by travel cost, from where the worker stands</b> — the same rule every other
@@ -721,6 +769,206 @@ public sealed class SimWorld
     /// <see cref="NearestHarvest"/> had to be rescued from when the valley became wooded.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Whether this workplace is allowed to take a tree down at this moment.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE ONE DOOR (D146), and it exists because D145 had just finished writing down why
+    /// controls need one.</b> Two separate things can stop a forester felling — the player's
+    /// per-hut toggle, and a met Logs limit — and they are the same instruction seen from two
+    /// distances: <em>stop taking timber out</em>. Answering them in one place is what stops the
+    /// tile-picker, the action's duration and its outcome from ever disagreeing about which job
+    /// is being done, which is the exact bug D142 spent a session on.
+    /// </para>
+    /// <para>
+    /// <b>Planting is not gated by either of them</b> (Joe): <i>"a capped hut can replant.
+    /// Priority should be replant → extra-hands labour. It just shouldn't fell if it has met its
+    /// cap."</i> So a hut that may not fell is not idle — it puts its ground back, and only
+    /// falls through to spare work once there is nothing bare left to plant.
+    /// </para>
+    /// </remarks>
+    public bool MayFell(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        return workplace.Mode == WorkMode.FellAndPlant
+            && !StockLimits.IsMet(Goods.Logs, LogsInSheds());
+    }
+
+    /// <summary>
+    /// Why this workplace cannot do its job right now, or <c>null</c> if it can.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE MAP MARKER'S RULE, IN ONE PLACE (Joe, D147).</b> <i>"Idle huts should get an
+    /// indicator like full storage buildings."</i> D140 put an amber ring on a store with no
+    /// room; this is the same idea for a building that is not working — and it earns its place
+    /// because <b>three separate times this session a building looked idle for a reason set on
+    /// a different panel</b> (a log limit, a firewood limit, ground nobody ever painted). §1.1
+    /// is the whole argument: the player cannot answer a problem they cannot see.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ "IDLE" IS NOT ONE FACT THE WAY "FULL" IS, AND THAT IS WHAT THIS METHOD IS FOR.</b>
+    /// A store is full or it is not. A workplace has half a dozen reasons for having nothing to
+    /// do and most of them are fine — so a marker that lit up for all of them would be
+    /// wallpaper, which is exactly what D42 and D123 moved <em>out</em> of the Overview. The
+    /// rule is therefore narrow: <b>this building cannot do its job, and the fix is the
+    /// player's.</b>
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>Not flagged: a hut the player emptied on purpose.</b> <c>StaffingOverride == 0</c>
+    /// is an instruction, not a fault, and D42's rule is that an instruction is obeyed rather
+    /// than argued with. This is why the null-versus-zero distinction D136 fought for matters
+    /// here as well.</item>
+    /// <item><b>Not flagged: a gatherer in winter.</b> Seasonal, expected, and nothing the
+    /// player can do about it — the definition of a marker that teaches people to ignore
+    /// markers.</item>
+    /// <item><b>Not flagged: a forester that is replanting.</b> It is working (D146).</item>
+    /// <item><b>Flagged: a met stock limit.</b> The one case where "the player already knows"
+    /// is <em>not</em> a good enough answer, because the number lives on another panel
+    /// entirely — which is the finding that made this feature worth building.</item>
+    /// </list>
+    /// <para>
+    /// A sentence rather than a flag, so the panel and the marker cannot drift apart, and so
+    /// every reason has to be sayable before it is allowed to light anything up.
+    /// </para>
+    /// </remarks>
+    public string? IdleNote(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        // A site is not a workplace yet; the build queue is where it explains itself.
+        if (workplace.IsSite)
+        {
+            return null;
+        }
+
+        // "Nobody here" is an instruction when the player typed it (D136's null-versus-zero).
+        if (workplace.StaffingOverride == 0)
+        {
+            return null;
+        }
+
+        if (workplace.WorkerIds.Count == 0)
+        {
+            return $"Nobody is working {workplace.Name}.";
+        }
+
+        return workplace.Kind switch
+        {
+            JobKind.Forester => ForesterIdleNote(workplace),
+            JobKind.Woodcutter => WoodcutterIdleNote(workplace),
+            JobKind.Forager => ForagerIdleNote(workplace),
+
+            // Builders and marketers are idle whenever the village has nothing to build or
+            // move, which is the ordinary state of a settled village rather than a fault.
+            _ => null,
+        };
+    }
+
+    private string? ForesterIdleNote(Workplace hut)
+    {
+        if (Zones.WorkGroundTiles(hut.Id) == 0)
+        {
+            return $"{hut.Name} has no ground to work — paint some for it.";
+        }
+
+        // Still something to fell or something to plant: it is working.
+        if (NextGroundToWork(hut, hut.Position) is not null)
+        {
+            return null;
+        }
+
+        if (hut.Mode != WorkMode.PlantOnly && StockLimits.IsMet(Goods.Logs, LogsInSheds()))
+        {
+            return $"{hut.Name} has stopped — you asked the village to keep "
+                + $"{StockLimits.For(Goods.Logs)} logs and it has {LogsInSheds()}.";
+        }
+
+        return hut.Mode == WorkMode.PlantOnly
+            ? $"{hut.Name} is resting its wood, and its ground is wooded again."
+            : $"{hut.Name} has nothing left to fell or to plant on its ground.";
+    }
+
+    private string? WoodcutterIdleNote(Workplace hut)
+    {
+        if (StockLimits.IsMet(Goods.Firewood, FirewoodInSheds()))
+        {
+            return $"{hut.Name} has stopped — you asked the village to keep "
+                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodInSheds()}.";
+        }
+
+        return NearestStoreAccepting(
+                hut.Position, Goods.Logs, store => store.Store.Logs >= Config.LogsPerSplit)
+            is null
+            ? $"{hut.Name} has no logs to split — no store in reach holds the "
+                + $"{Config.LogsPerSplit} a batch needs."
+            : null;
+    }
+
+    private string? ForagerIdleNote(Workplace hut)
+    {
+        // Winter is not a fault, and marking it would teach the player to ignore the marker.
+        if (!FoodSource.IsGatherable(Clock.Season))
+        {
+            return null;
+        }
+
+        return GatherYieldAt(hut) == 0
+            ? $"{hut.Name} has no trees left in its ring, so a trip brings back nothing."
+            : null;
+    }
+
+    /// <summary>
+    /// Seats at forester's huts that still own ground with no tree on it — <b>the village's
+    /// demand for planting</b>, as opposed to for timber.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>What a capped hut is wanted for (D146).</b> When a Logs limit is met the village
+    /// stops wanting timber, and <c>LabourQuota</c> used to zero the foresters outright — which
+    /// left <see cref="MayFell"/> sending nobody to bare ground, because the allocator had
+    /// emptied the building. <b>A staffing number is a ceiling, not a summons</b>, so the
+    /// demand has to say what the hands are <em>for</em>.
+    /// </para>
+    /// <para>
+    /// <b>Derived, and it falls to zero by itself</b> (D16): once every painted tile is wooded
+    /// again there is nothing to plant, this is zero, and the hands become laborers — which is
+    /// Joe's ordering, <i>replant until the painted area is maxed out, then extra hands</i>,
+    /// expressed as a quantity rather than as a rule.
+    /// </para>
+    /// <para>
+    /// Counted in <see cref="Workplace.Places"/> rather than <c>Capacity</c>, so a hut the
+    /// player has turned down does not ask for hands it would refuse.
+    /// </para>
+    /// </remarks>
+    public int ForesterSeatsWithGroundToPlant()
+    {
+        int seats = 0;
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace workplace = Workplaces[i];
+            if (workplace.Kind != JobKind.Forester || workplace.IsSite)
+            {
+                continue;
+            }
+
+            IReadOnlyList<int> owned = Zones.WorkGroundOf(workplace.Id);
+            for (int t = 0; t < owned.Count; t++)
+            {
+                if (Map.TerrainAt(Zones.PositionOf(owned[t])) != Terrain.Forest)
+                {
+                    seats += workplace.Places;
+                    break;
+                }
+            }
+        }
+
+        return seats;
+    }
+
     public GridPos? NextGroundToWork(Workplace workplace, GridPos from)
     {
         ArgumentNullException.ThrowIfNull(workplace);
@@ -731,7 +979,26 @@ public sealed class SimWorld
             return null;
         }
 
-        bool wantsTrees = workplace.Mode == WorkMode.Harvest;
+        // ⭐ PLANTING IS ALWAYS ON; FELLING IS THE TOGGLE (Joe, D146). Painting ground for a hut
+        // is already the instruction to keep it wooded, so the question the player actually
+        // answers is whether they are taking timber out of this wood or letting it come back.
+        //
+        // So: **fell while anything is standing, and plant the bare tiles whenever felling is
+        // not allowed or nothing is left to fell.** `MayFell` is the single place that answers
+        // "is felling allowed here, right now", and it folds the toggle together with a met
+        // Logs limit — a cap is simply felling switched off for a while.
+        bool mayFell = MayFell(workplace);
+        bool anyStanding = false;
+
+        if (mayFell)
+        {
+            for (int i = 0; i < owned.Count && !anyStanding; i++)
+            {
+                anyStanding = Map.TerrainAt(Zones.PositionOf(owned[i])) == Terrain.Forest;
+            }
+        }
+
+        bool wantsTrees = mayFell && anyStanding;
 
         GridPos? best = null;
         int bestCost = int.MaxValue;
@@ -773,7 +1040,13 @@ public sealed class SimWorld
     /// </remarks>
     public bool Plant(GridPos tile)
     {
-        return Map.TerrainAt(tile) == Terrain.Grass && SetTerrain(tile, Terrain.Forest);
+        // ⭐ A SAPLING, NOT A TREE (Joe, D126). Planting used to produce full-grown woodland
+        // the instant the forester finished, which made a planted wood indistinguishable
+        // from an old one and gave the player no way to see the years they had bought.
+        // A planted tile now grows up on the same clock as one that came back by itself —
+        // *"sapling for the first six months, mature tree after a year"* — so the two kinds
+        // of recovery cost the same time and only differ in who started them.
+        return Map.TerrainAt(tile) == Terrain.Grass && SetTerrain(tile, Terrain.Sapling);
     }
 
     /// <summary>Whether the village has already been told it has nowhere for a good.</summary>
@@ -1211,6 +1484,27 @@ public sealed class SimWorld
             return null;
         }
 
+        // ⭐ A FOOTPRINT SOMEBODY IS WAITING ON COMES FIRST, BECAUSE NEAREST-FIRST NEVER GETS
+        // TO IT. D100 paints a marked building's tile for harvest and promises *the village
+        // clears the ground, the player does not have to*; D127 then made the paint a standing
+        // instruction whose wood grows back, so every tile nearer than the footprint returns as
+        // work before the footprint is ever reached. Measured on the shipped opening: a
+        // gatherer's hut marked eight tiles out in real woodland is still standing on Forest
+        // after forty years, while the panel says "the ground it stands on is still being
+        // cleared" — a sentence that was never going to come true.
+        //
+        // ⚠️ WALKED FROM THE BUILDINGS, NOT FROM THE PAINT, and that is a cost decision rather
+        // than a style one. Asking "is a building waiting on this tile?" inside the scan below
+        // is the whole workplace list per painted tile per idle adult per tick, which is the
+        // ruin this method's own comment already warns about. A village has a handful of
+        // unraised buildings and hundreds of painted tiles, so the short list is the one to
+        // walk.
+        GridPos? blocked = NextFootprintToClear(from);
+        if (blocked is not null)
+        {
+            return blocked;
+        }
+
         GridPos? best = null;
         int bestCost = int.MaxValue;
 
@@ -1230,11 +1524,17 @@ public sealed class SimWorld
         {
             GridPos at = Zones.PositionOf(painted[i]);
 
-            // Painted ground whose tree has already gone stops being work. The
-            // village un-paints it rather than sending somebody to an empty tile.
+            // ⭐ SKIPPED, NOT UN-PAINTED (Joe, D127). Empty painted ground used to have its
+            // paint taken off here, on the reasoning that a tree already gone stops being
+            // work. **That was true only while nothing grew back.** With regrowth, a bare
+            // painted tile is not finished work — it is work that is waiting, and the wood
+            // will be standing on it again within the year.
+            //
+            // So the village passes it over this tick and comes back when there is
+            // something there. A sapling answers no here too, which is exactly right: it is
+            // left to grow up rather than cut down the season it appears.
             if (!HasSomethingToHarvest(at))
             {
-                Zones.SetHarvest(at, false);
                 continue;
             }
 
@@ -1250,13 +1550,98 @@ public sealed class SimWorld
     }
 
     /// <summary>
+    /// The tile the next building in the queue is waiting on, or null if none is blocked (D100).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Both kinds of waiting building, because both stall the same way.</b> A free building
+    /// sits in <see cref="_waitingOnTheGround"/> and a costed one is a
+    /// <see cref="ConstructionSite"/> that <see cref="NextBuildableSite"/> refuses while
+    /// <see cref="GroundIsClearAt"/> is false — different machinery, one symptom.
+    /// </para>
+    /// <para>
+    /// <b>⭐ THE BUILD QUEUE'S ORDER, NOT THE NEAREST ONE (Joe, D157).</b> The first version of
+    /// this took the nearest blocked footprint, which is a second ordering over the same list —
+    /// and <see cref="NextToBuild"/>'s own comment names *two orderings that must agree* as the
+    /// shape of half the bugs in this project. So clearing defers to building: the ground gets
+    /// cleared in the order the village will actually raise things, rank then id, exactly as
+    /// <see cref="BuildQueue"/> sorts. A player who moves a site up the list moves its clearing
+    /// with it, which is the whole point of the list.
+    /// </para>
+    /// <para>
+    /// <b>Free buildings come before the queue, because they are not in it and everything else
+    /// waits on them.</b> A pile and a builder's hut cost nothing but the ground (D96, D108) —
+    /// and until the pile stands there is nowhere to put a felled log, so clearing anything
+    /// else first produces timber the village cannot see (D95). Marking order among them, which
+    /// is the order they were added.
+    /// </para>
+    /// <para>
+    /// <b>The paint is still required</b>, so this is a change of priority and not of scope:
+    /// <see cref="Mark"/> puts it on, and a player who deliberately takes it off is telling
+    /// the village something. What moves is only which painted tile is taken first.
+    /// </para>
+    /// </remarks>
+    private GridPos? NextFootprintToClear(GridPos from)
+    {
+        for (int i = 0; i < _waitingOnTheGround.Count; i++)
+        {
+            GridPos at = _waitingOnTheGround[i].Position;
+            if (NeedsClearing(at) && TravelCost.CanReach(from, at))
+            {
+                return at;
+            }
+        }
+
+        Workplace? head = null;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+
+            // ⚠️ Reachable FROM THE VILLAGER, not from the village. The queue asks whether the
+            // settlement can get there at all; this asks whether the person being sent can, and
+            // a laborer who cannot walk to the head of the queue must fall through to work they
+            // can reach rather than stand still.
+            if (candidate.Construction is not { IsFinished: false }
+                || !NeedsClearing(candidate.Position)
+                || !TravelCost.CanReach(from, candidate.Position))
+            {
+                continue;
+            }
+
+            if (head is null
+                || candidate.EffectiveQueueRank < head.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == head.EffectiveQueueRank
+                    && candidate.Id < head.Id))
+            {
+                head = candidate;
+            }
+        }
+
+        return head?.Position;
+
+        bool NeedsClearing(GridPos at) => Zones.IsHarvest(at) && HasSomethingToHarvest(at);
+    }
+
+    /// <summary>
     /// Take what is standing on a tile: the ground is cleared and the goods come out.
     /// </summary>
     /// <remarks>
     /// <b>The tile is spent</b> — this is D84's deposit rule, and the difference between
     /// the brush and the forester's hut in one method. Terrain goes through
-    /// <see cref="SetTerrain"/> so the routing cache hears about it, and the paint comes off
-    /// because the job is done.
+    /// <see cref="SetTerrain"/> so the routing cache hears about it.
+    /// <para>
+    /// <b>⭐ THE PAINT STAYS ON (Joe, D127).</b> It used to come off here, *because the job
+    /// is done* — and with regrowth the job is not done, it is due again. A painted patch is
+    /// now **a standing instruction rather than a one-off order**: the wood grows back and
+    /// the village fells it again, indefinitely, which turns the harvest brush from a queue
+    /// of chores into something closer to a coppice the player has designated.
+    /// </para>
+    /// <para>
+    /// <b>Only the player takes paint off</b>, with <em>Unmark</em>. That is the whole of
+    /// Joe's rule — <em>"it's up to the user to clear the paint if the area is empty"</em> —
+    /// and it is the same shape as every other zone in this game: the brush says what the
+    /// player wants, and the village keeps doing it until told otherwise.
+    /// </para>
     /// </remarks>
     public (Goods Goods, int Amount) Harvest(GridPos tile)
     {
@@ -1267,7 +1652,6 @@ public sealed class SimWorld
         }
 
         SetTerrain(tile, Terrain.Grass);
-        Zones.SetHarvest(tile, false);
 
         // One number per kind of ground, and the terrain is what says which — a new
         // harvestable kind is a row in TerrainRules.Yields and a key in config, not a
@@ -1306,6 +1690,78 @@ public sealed class SimWorld
     /// learns to click past.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Tell a store whether it will take a kind of goods. The one door in (D141).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe: <i>"user should be able to set which materials are stored in which buildings."</i>
+    /// Routed through the world rather than set on the building, for the reason
+    /// <see cref="SetTerrain"/> is (D85): this is hashed state, and state the view can poke
+    /// directly is state nothing can guard.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT NARROWS ONLY.</b> Asking a granary to take logs is refused rather than obeyed —
+    /// what a kind can hold is the model (D32), not a preference. So the verdict says no, and
+    /// says why, instead of producing a granary full of timber.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict SetStoreAccepts(StoreBuilding store, Goods goods, bool accepted)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        // Start from "everything this kind can hold", so the first click narrows rather than
+        // wiping. A mask of zero means no opinion, and turning one good off has to leave the
+        // others on — otherwise the first click would empty the building.
+        int mask = store.AllowedGoods;
+        if (mask == 0)
+        {
+            for (int g = 0; g < Stockpile.Kinds; g++)
+            {
+                if (store.CanEverHold((Goods)g))
+                {
+                    mask |= 1 << g;
+                }
+            }
+        }
+
+        // The player has now spoken, and that has to be recorded separately from WHAT they
+        // said — otherwise switching off the last good lands back on zero, which means "no
+        // opinion", and the store silently starts accepting everything again.
+        mask |= StoreBuilding.Spoken;
+
+        int bit = 1 << (int)goods;
+
+        if (accepted)
+        {
+            // The kind is the authority on what is possible, and the player is not.
+            if (!store.CanEverHold(goods))
+            {
+                return PlacementVerdict.No(
+                    $"{store.Name} is a {store.Kind.ToString().ToLowerInvariant()}, and a "
+                    + $"{goods.ToString().ToLowerInvariant()} is not something it can hold.");
+            }
+
+            mask |= bit;
+        }
+        else
+        {
+            mask &= ~bit;
+        }
+
+        store.AllowedGoods = mask;
+
+        // Said once, when it is set, rather than nagged every tick — D42's rule.
+        if (mask == StoreBuilding.Spoken)
+        {
+            return PlacementVerdict.Yes(
+                $"{store.Name} will take nothing now. Anything carried to it will be set down "
+                + "on the ground instead.");
+        }
+
+        return PlacementVerdict.Yes(string.Empty);
+    }
+
     public PlacementVerdict SetStockLimit(Goods goods, int? limit)
     {
         if (!StockLimits.Set(goods, limit))
@@ -1793,6 +2249,59 @@ public sealed class SimWorld
     /// what a per-tick per-villager scan costs (D87 — four minutes to over ten).
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The first site in the queue that a builder could actually put a day's work into.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ D135, and it is head-of-line blocking.</b> <see cref="NextToBuild"/> answers *what
+    /// is first*, which is what the player's queue means and what materials should chase. Every
+    /// builder asked only that — so when the head was short of timber and no store had any,
+    /// **every builder in the village stood still**, however many sites behind it were stocked
+    /// and ready. Measured: *"a house — 30 logs delivered, 0 still wanted"* sat untouched for
+    /// three years while the builders shuttled for the site in front of it.
+    /// </para>
+    /// <para>
+    /// Joe watched the same thing and described it exactly: <i>"the builder shouldn't just sit
+    /// at the building waiting."</i> His woodcutter's hut was *"Queue: 1st of 3"* at 12 of 25
+    /// logs with *"Work: 0 of 40 ticks done"*, and two sites queued behind it.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THIS DOES NOT REORDER THE QUEUE, and that distinction is D102's.</b> Marking a
+    /// granary in the first spring once jumped it ahead of two houses and killed the village,
+    /// so the queue decides <em>where scarce timber goes</em> and still does — fetching always
+    /// serves the head. What this changes is only what a builder does with time they would
+    /// otherwise spend standing next to a site they cannot advance. Priority over materials,
+    /// not over labour.
+    /// </para>
+    /// </remarks>
+    public Workplace? NextBuildableSite()
+    {
+        Workplace? best = null;
+        GridPos village = FirstHomeOrFoundingSite();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+            if (candidate.Construction is not { IsFinished: false, HasMaterials: true }
+                || !GroundIsClearAt(candidate.Position)
+                || !TravelCost.CanReach(village, candidate.Position))
+            {
+                continue;
+            }
+
+            if (best is null
+                || candidate.EffectiveQueueRank < best.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == best.EffectiveQueueRank
+                    && candidate.Id < best.Id))
+            {
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
     public Workplace? NextToBuild()
     {
         Workplace? head = null;
@@ -2039,8 +2548,11 @@ public sealed class SimWorld
             }
         }
 
-        StoreBuilding? shed = NearestStore(
-            building.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // meant a refund vanished in a village that has only a storage pile — silently,
+        // because `shed` was simply null and the logs went nowhere.
+        StoreBuilding? shed = NearestStoreAccepting(
+            building.Position, Goods.Logs, static store => !store.Store.IsFull);
         int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
 
         Narrate(held > 0
@@ -2048,6 +2560,95 @@ public sealed class SimWorld
               $"goods inside it were lost. {Clock.SeasonAndYear()}."
             : $"{building.Name} was pulled down — {recovered} logs recovered. {Clock.SeasonAndYear()}.");
     }
+
+    /// <summary>
+    /// Pull down a standing workplace — a hut the player has finished with.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The gap `professions.md §7` listed and nothing had filled</b>, found by Joe trying
+    /// to use it: *"I can't cancel/demolish a building that is under construction. Demolish
+    /// says 'nothing there to pull down'."* The demolish tool only ever searched
+    /// <see cref="StoreBuildings"/>, so **no hut and no construction site in the game could
+    /// be removed at all** — every workplace the player has ever placed was permanent.
+    /// </para>
+    /// <para>
+    /// <b>Instant, like the marking that put it there.</b> A hut is not unbuilt by anybody;
+    /// it simply stops being. Making its removal a job would put a demolition errand in front
+    /// of a player whose reason for pulling it down is usually that they misplaced it.
+    /// </para>
+    /// <para>
+    /// <b>Refunded on what it cost, which is nothing for the free ones.</b> Half the recipe,
+    /// the same rule stores get — and a builder's hut and a pile have a recipe of zero logs,
+    /// so pulling one down pays nothing back. That is D98's free-timber press staying shut
+    /// without a special case for it.
+    /// </para>
+    /// </remarks>
+    public void Demolish(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (workplace.Construction is not null)
+        {
+            CancelConstruction(workplace);
+            return;
+        }
+
+        // ⚠️ A MARKET IS ONE BUILDING IN TWO LISTS (D36's seam), so pulling down its stall
+        // and leaving its store standing would be half a demolition — a granary-sized hole
+        // in the village that still holds goods and still shows on the map. The store's own
+        // demolition already takes the stall with it, so that is the one to run.
+        StoreBuilding? sameBuilding = null;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Position == workplace.Position)
+            {
+                sameBuilding = StoreBuildings[i];
+                break;
+            }
+        }
+
+        if (sameBuilding is not null)
+        {
+            Demolish(sameBuilding);
+            return;
+        }
+
+        BuildingKind kind = KindOf(workplace);
+        int back = BuildingRecipe.For(kind, Config).Logs * Config.DemolitionReturnsPercent / 100;
+
+        string name = workplace.Name;
+        RetireWorkplace(workplace);
+
+        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // meant a refund vanished in a village that has only a storage pile — silently,
+        // because `shed` was simply null and the logs went nowhere.
+        StoreBuilding? shed = NearestStoreAccepting(
+            workplace.Position, Goods.Logs, static store => !store.Store.IsFull);
+        int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
+
+        Narrate(recovered > 0
+            ? $"{Capitalised(name)} was pulled down — {recovered} logs recovered. "
+                + $"{Clock.SeasonAndYear()}."
+            : $"{Capitalised(name)} was pulled down. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>Which kind of building a standing workplace is, for pricing its refund.</summary>
+    /// <remarks>
+    /// Named rather than defaulted (D108). A workplace kind nobody has taught this about is a
+    /// bug, not a woodcutter's hut — the default arm is exactly how six buildings came to be
+    /// mis-priced and mis-named before anybody noticed.
+    /// </remarks>
+    private static BuildingKind KindOf(Workplace workplace) => workplace.Kind switch
+    {
+        JobKind.Woodcutter => BuildingKind.WoodcutterHut,
+        JobKind.Forager => BuildingKind.GathererHut,
+        JobKind.Forester => BuildingKind.ForesterHut,
+        JobKind.Builder => BuildingKind.BuilderHut,
+        JobKind.Marketer => BuildingKind.Market,
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(workplace), workplace.Kind, "That kind of workplace has no building."),
+    };
 
     /// <summary>Abandon a site that has not been finished; its delivered logs come back.</summary>
     public void CancelConstruction(Workplace site)
@@ -2062,8 +2663,11 @@ public sealed class SimWorld
         int back = site.Construction.Abandon();
         RetireWorkplace(site);
 
-        StoreBuilding? shed = NearestStore(
-            site.Position, StoreKind.Shed, static store => !store.Store.IsFull);
+        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // meant a refund vanished in a village that has only a storage pile — silently,
+        // because `shed` was simply null and the logs went nowhere.
+        StoreBuilding? shed = NearestStoreAccepting(
+            site.Position, Goods.Logs, static store => !store.Store.IsFull);
         shed?.Store.Receive(Goods.Logs, back);
 
         Narrate($"{site.Construction.Name} was abandoned before it was built — " +
@@ -2358,6 +2962,161 @@ public sealed class SimWorld
     /// things, which is hashed already through the buildings themselves.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Where a warm start puts its gatherer's hut — <b>in the wood, not in the clearing</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ MEASURED, AND THE FIXED OFFSET IT REPLACES BROKE 105 TESTS.</b> The obvious way
+    /// to found a hut is at a configured offset from the village, the way every other founding
+    /// building is placed. That puts it <b>inside the founding glade</b> — the clearing D112
+    /// skips woodland over so the opening is not blocked by trees — and a gatherer's hut in a
+    /// clearing is worth almost nothing: measured, a ring of 145 tiles yielding <b>3 food a
+    /// trip against a full-woodland 51</b>. The village starved, and a hundred and five tests
+    /// failed with things like <em>"nobody ever split a log"</em>, because nobody had eaten.
+    /// </para>
+    /// <para>
+    /// <b>So it is sited the way a player would site it: where the trees are.</b> That is not
+    /// a workaround, it is the mechanic — <em>less trees, less food</em> is the whole rule, and
+    /// a warm start that ignored it would hand every test in the suite a village standing on a
+    /// special case the game itself does not have.
+    /// </para>
+    /// <para>
+    /// <b>Bounded by the economy's own budget</b>, so the hut cannot wander off to the finest
+    /// wood in the valley and leave the homes beyond the walk the food economy is derived
+    /// against. Deterministic and draw-free: a full scan with ties broken by distance and then
+    /// by position, so two runs of one seed cannot disagree (D15).
+    /// </para>
+    /// </remarks>
+    private GridPos WhereTheTreesAre(GridPos origin, SimConfig config)
+    {
+        int reach = VillageEconomy.MaxHomeToWorkTiles(config);
+        int ring = config.GathererHutRingTiles;
+
+        GridPos best = origin;
+        int bestTrees = -1;
+        int bestDistance = int.MaxValue;
+
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var at = new GridPos(origin.X + dx, origin.Y + dy);
+                int distance = origin.ManhattanDistanceTo(at);
+
+                // ⚠️ MANHATTAN, NOT PER-AXIS, and the difference is the whole point of the
+                // bound. Bounding dx and dy separately let the hut sit fourteen tiles from
+                // the village on a budget of eight — which is the economy's assumption about
+                // the walk to work being false before the first tick.
+                // ⚠️ THE REACHABILITY QUESTION IS ASKED THE OTHER WAY ROUND, AND IT IS THE
+                // DIFFERENCE BETWEEN ONE DIJKSTRA AND THREE HUNDRED. `TravelCost` caches a
+                // flow field per DESTINATION, so `CanReach(origin, at)` builds a fresh field
+                // for every candidate tile — 289 of them, on every world this suite
+                // constructs. Asked as `CanReach(at, origin)` it builds one field to the
+                // founding site and answers every candidate off it.
+                //
+                // Reachability is symmetric — passability is a property of the ground, not of
+                // the direction — so this is the same question, and it is the trap
+                // `building-placement.md` records `CanBuildAt` falling into at 22 seconds a
+                // test. **Rank on the cheap question first.**
+                if (distance > reach
+                    || !Map.Contains(at)
+                    || Map.TerrainAt(at) == Terrain.Water
+                    || SomethingStandsAt(at)
+                    || !TravelCost.CanReach(at, origin))
+                {
+                    continue;
+                }
+
+                int trees = WoodedTilesWithin(at, ring);
+
+                if (trees > bestTrees || (trees == bestTrees && distance < bestDistance))
+                {
+                    best = at;
+                    bestTrees = trees;
+                    bestDistance = distance;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Give a warm start's forester's hut the wood around it to work.
+    /// </summary>
+    /// <remarks>
+    /// <b>As much as its hands can actually keep, and no more</b> — the allowance D86 derives
+    /// (`WorkGroundAllowanceFor`), so a founded village is never born already overstretched
+    /// and carrying the warning that says so. Nearest wood first, in a fixed scan order, so
+    /// two runs of a seed give the hut the same ground.
+    /// </remarks>
+    private void GiveItTheWoodAroundIt(Workplace hut, SimConfig config)
+    {
+        // ⚠️ AGAINST THE SEATS, NOT AGAINST THE WORKERS. `WorkGroundAllowanceFor` prices
+        // ground by the hands **actually assigned** (D86), and at the founding a hut has
+        // none — so asking it here gave the forester **zero tiles**, and the measurement
+        // said so: the valley kept all 2,662 of its trees while the village dwindled to
+        // nothing for want of timber. It was not deforestation, it was a hut that had never
+        // been given anything to fell.
+        //
+        // The ground a FULL hut could keep is what a player would hand it, and the
+        // allowance check still applies from the next tick — so if the village never staffs
+        // it, the overstretched warning fires and says exactly that.
+        int allowance = hut.Capacity * config.WorkGroundTilesPerWorker;
+        int given = 0;
+
+        for (int radius = 1; radius <= config.GathererHutRingTiles && given < allowance; radius++)
+        {
+            for (int dy = -radius; dy <= radius && given < allowance; dy++)
+            {
+                for (int dx = -radius; dx <= radius && given < allowance; dx++)
+                {
+                    // Only the ring being added this pass, so nearer wood is always taken
+                    // before further wood.
+                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != radius)
+                    {
+                        continue;
+                    }
+
+                    var tile = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                    if (Map.TerrainAt(tile) != Terrain.Forest
+                        || Zones.WorkGroundOwner(tile) != 0)
+                    {
+                        continue;
+                    }
+
+                    Zones.SetWorkGround(tile, hut.Id);
+                    given++;
+                }
+            }
+        }
+    }
+
+    /// <summary>Wooded tiles inside a radius of a point. Counts the ground, not a cache.</summary>
+    private int WoodedTilesWithin(GridPos centre, int radius)
+    {
+        int count = 0;
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if ((dx * dx) + (dy * dy) > radius * radius)
+                {
+                    continue;
+                }
+
+                var tile = new GridPos(centre.X + dx, centre.Y + dy);
+                if (Map.Contains(tile) && Map.TerrainAt(tile) == Terrain.Forest)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
     private string NameFor(BuildingKind kind)
     {
         // A HOUSE IS NOT NUMBERED, and that is not an oversight. Homes are identified by the
@@ -2645,59 +3404,29 @@ public sealed class SimWorld
         // the settlement still assembles itself correctly around the spot.
         GridPos origin = Map.FoundingSite;
 
-        FoodSource = new FoodSource
-        {
-            Position = Map.ForageSites[0],
-            YieldPerGather = config.GatherYield,
-        };
-
-        TreeStand = new TreeStand { YieldPerCut = config.CutYield };
-
         int nextWorkplaceId = 1;
 
-        // Several sites, spread around the valley, so an outlying household has
-        // somewhere near enough to work. This is what a binding catchment needs in
-        // order to be survivable rather than merely cruel (D19) — and the generator
-        // guarantees the spread by construction rather than hoping for it (D24).
-        List<string> forageNames = NamePlaces(Map.ForageSites, origin, "the berry patch", "thicket");
-
-        for (int i = 0; i < Map.ForageSites.Count; i++)
-        {
-            GridPos position = Map.ForageSites[i];
-
-            Workplaces.Add(new Workplace
-            {
-                Id = nextWorkplaceId++,
-                Kind = JobKind.Forager,
-                Name = forageNames[i],
-                Position = position,
-                Capacity = config.ForageSiteCapacity,
-            });
-        }
-
-        // Last ids, so that where ids break a tie the food comes first. The real
-        // "feed yourself before you build" rule is the quota, not the ordering -
-        // see LabourQuota - but there is no reason for the two to disagree.
-        List<string> standNames = NamePlaces(Map.TreeStands, origin, "the tree stand", "wood");
-
-        for (int i = 0; i < Map.TreeStands.Count; i++)
-        {
-            Workplaces.Add(new Workplace
-            {
-                Id = nextWorkplaceId++,
-                Kind = JobKind.Forester,
-                Name = standNames[i],
-                Position = Map.TreeStands[i],
-                Capacity = config.TreeStandCapacity,
-            });
-        }
+        // ⭐ THE BERRY PATCHES AND THE TREE STANDS ARE GONE, AND WITH THEM THE LAST WORK IN
+        // THIS GAME THAT NOBODY CHOSE (`forests-and-gathering.md` slice 5, Joe). Six forage
+        // sites and two stands used to be added here as workplaces before a single building
+        // existed — a village woke up on its first tick already owning eight jobs.
+        //
+        // **Every workplace in the valley is now a building somebody placed.** Food comes
+        // from a gatherer's hut sited in woodland the player can see, timber from a
+        // forester's hut on ground the player painted, and *both compete for the same
+        // trees.* That is §2.3's escalating pressure arriving out of the food system rather
+        // than being bolted on.
+        //
+        // `FoodSource` and `TreeStand` went with them: Phase 0's single berry patch and
+        // single stand, kept alive long after the plural lists replaced them.
 
         // EVERYTHING FROM HERE IS A BUILDING, AND THE COLD START HAS NONE (D70).
         //
-        // The workplaces above are not buildings and stay either way: a berry patch and a
-        // stand of trees are features of the valley and were always there. What follows —
-        // the hut, the granary, the shed, the market — is what somebody had to raise, and
-        // in the cold start that somebody is the player. The founders get their cart.
+        // That distinction used to matter because the berry patches and the stands were
+        // features of the valley and stayed either way. **There is nothing above any more**,
+        // so a cold start now begins with no work of any kind — which is the whole of Joe's
+        // *"no forest, no food"*. What follows — the hut, the granary, the shed, the market —
+        // is what somebody had to raise, and in the cold start that somebody is the player.
         // The founding happens here rather than at the end of the constructor, and only
         // because there is nothing left to wait for: the reason it normally goes last is
         // that ChooseSite wants the stores to exist, and in a cold start there are none.
@@ -2724,6 +3453,50 @@ public sealed class SimWorld
             Position = Offset(origin, config.BuilderHutX, config.BuilderHutY),
             Capacity = VillageEconomy.BuilderHutCapacity(config),
         });
+
+        // ⭐ A GATHERER'S HUT, BECAUSE A WARM START NOW HAS NO OTHER FOOD (slice 5). The
+        // berry patches used to be laid down by the generator before any building existed,
+        // so a warm start woke up able to eat. With them retired, a village founded with
+        // buildings and no hut is a village with **nothing to gather anywhere** — and every
+        // test in the suite that says "a village lives here" would have been asserting that
+        // four people can starve gracefully.
+        //
+        // Sited where the wood is, not at an offset — see `WhereTheTreesAre` for the 105
+        // tests that taught me the difference. The COLD start still has no hut at all, and
+        // that is Joe's *"no forest, no food"*: the player sites the first one, in woodland
+        // they picked, and it is the first real decision of a run.
+        Workplaces.Add(new Workplace
+        {
+            Id = nextWorkplaceId++,
+            Kind = JobKind.Forager,
+            Name = NameFor(BuildingKind.GathererHut),
+            Position = WhereTheTreesAre(origin, config),
+            Capacity = VillageEconomy.GathererHutCapacity(config),
+            GatheringRadius = config.GathererHutRingTiles,
+        });
+
+        // ⭐ AND A FORESTER'S HUT WITH GROUND, WHICH IS THE OTHER HALF OF THE SAME HOLE.
+        // Foresters worked the two generated tree stands; with those retired a warm start
+        // had timber-workers and nowhere to fell, so no logs reached the woodcutter and the
+        // suite reported *"nobody ever split a log"* — the fuel chain starved at its source
+        // rather than in the middle.
+        //
+        // ⚠️ **A hut alone would not have been enough, and that is the mechanic rather than
+        // an oversight.** A forester's hut fells the ground the player gives it (D86, D112);
+        // with no ground it is a building nobody can work. So the warm start gives it some,
+        // exactly as a player would — which is what makes this a village that already works
+        // rather than one holding a building it does not understand.
+        var forester = new Workplace
+        {
+            Id = nextWorkplaceId++,
+            Kind = JobKind.Forester,
+            Name = NameFor(BuildingKind.ForesterHut),
+            Position = WhereTheTreesAre(origin, config),
+            Capacity = VillageEconomy.RequiredTreeStandSeats(config),
+        };
+
+        Workplaces.Add(forester);
+        GiveItTheWoodAroundIt(forester, config);
 
         // The first workplace that consumes an input rather than only producing one
         // (D29). Logs in, firewood out - and it can stand idle for want of logs,
@@ -3094,147 +3867,18 @@ public sealed class SimWorld
         return false;
     }
 
-    /// <summary>
-    /// Place names for a set of sites — <b>distinct ones</b>, from where they are.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Two sites that share a name are two the game cannot explain.</b> Joe read this
-    /// off his own screen: <em>"Nobody is working the berry patch, the southern western
-    /// thicket, the southern eastern thicket, the southern eastern thicket"</em> — the
-    /// same phrase twice, because a bearing has eight values and this village has six
-    /// forage sites. Every name here ends up inside a sentence about why somebody walks
-    /// the way they do, and a name that points at two places answers nothing.
-    /// </para>
-    /// <para>
-    /// <b>Worse than the repeat, and the reason this is a sim fix rather than a view
-    /// one: the noun was wrong.</b> Every site past the first was called a *thicket*
-    /// whatever it was, so a tree stand and a berry patch were named alike — and a
-    /// player told nobody was working "the southern eastern thicket" could not tell
-    /// whether the village was short of food or of timber. Thickets are for foraging;
-    /// woods are for felling.
-    /// </para>
-    /// <para>
-    /// Collisions are broken by <em>distance</em>, because that is what a person would
-    /// reach for: the near one keeps the plain name and the ones behind it are the far,
-    /// farther and farthest. Ordered by travel distance and then by tile, so it is a
-    /// total order and no two runs can disagree (D15).
-    /// </para>
-    /// </remarks>
-    private static List<string> NamePlaces(
-        IReadOnlyList<GridPos> sites, GridPos origin, string firstName, string noun)
-    {
-        var names = new List<string>(sites.Count);
-        for (int i = 0; i < sites.Count; i++)
-        {
-            // The first of each kind is the one the village started with, and it is
-            // named as such — "the berry patch", not "the southern thicket".
-            names.Add(i == 0 ? firstName : $"the {Bearing(sites[i], origin)} {noun}");
-        }
-
-        for (int i = 0; i < names.Count; i++)
-        {
-            var sharing = new List<int>();
-            for (int j = i; j < names.Count; j++)
-            {
-                if (names[j] == names[i])
-                {
-                    sharing.Add(j);
-                }
-            }
-
-            if (sharing.Count < 2)
-            {
-                continue;
-            }
-
-            sharing.Sort((a, b) =>
-            {
-                int byDistance = TilesApart(origin, sites[a]).CompareTo(TilesApart(origin, sites[b]));
-                if (byDistance != 0)
-                {
-                    return byDistance;
-                }
-
-                int byX = sites[a].X.CompareTo(sites[b].X);
-                return byX != 0 ? byX : sites[a].Y.CompareTo(sites[b].Y);
-            });
-
-            // The nearest keeps what it had; everyone behind it says how far behind.
-            for (int k = 1; k < sharing.Count; k++)
-            {
-                names[sharing[k]] = Further(names[sharing[k]], k);
-            }
-        }
-
-        return names;
-    }
-
-    /// <summary>Which way a site lies from the village, in words.</summary>
-    /// <remarks>
-    /// Relative to the village, not to the world origin — "the northern wood" has to mean
-    /// north of the people saying it, and once the valley is generated the settlement is
-    /// no longer at (0,0).
-    /// </remarks>
-    private static string Bearing(GridPos position, GridPos origin)
-    {
-        position = new GridPos(position.X - origin.X, position.Y - origin.Y);
-
-        string northSouth = position.Y < 0 ? "north" : position.Y > 0 ? "south" : string.Empty;
-        string eastWest = position.X < 0 ? "west" : position.X > 0 ? "east" : string.Empty;
-
-        // Hyphenated when both apply. It used to read "the northern eastern thicket",
-        // which is not a thing anybody says.
-        if (northSouth.Length > 0 && eastWest.Length > 0)
-        {
-            return $"{northSouth}-{eastWest}ern";
-        }
-
-        if (northSouth.Length > 0)
-        {
-            return $"{northSouth}ern";
-        }
-
-        return eastWest.Length > 0 ? $"{eastWest}ern" : "near";
-    }
-
-    /// <summary>
-    /// The same place name, said of somewhere further out.
-    /// </summary>
-    /// <remarks>
-    /// Three qualifiers, which is four sites in one bearing before it runs out — and if
-    /// it ever does run out the result is a duplicate, so there is a test that every
-    /// workplace in the village has a name of its own. A guard rather than a hope: the
-    /// alternative is this bug coming back silently the first time somebody raises
-    /// <c>forage_site_count</c>.
-    /// </remarks>
-    private static string Further(string name, int rank)
-    {
-        string qualifier = rank switch
-        {
-            1 => "far",
-            2 => "farther",
-            _ => "farthest",
-        };
-
-        // "the southern wood" becomes "the far southern wood".
-        return name.StartsWith("the ", StringComparison.Ordinal)
-            ? $"the {qualifier} {name[4..]}"
-            : $"{qualifier} {name}";
-    }
-
-    /// <summary>Straight-line-ish distance in tiles, integer only (D2).</summary>
-    /// <remarks>
-    /// Chebyshev rather than the travel-cost field, deliberately: names are settled while
-    /// the world is being built, before the cost field exists, and "which is further out"
-    /// is a question about the map rather than about the walk.
-    /// </remarks>
-    private static int TilesApart(GridPos from, GridPos to)
-    {
-        int dx = Math.Abs(to.X - from.X);
-        int dy = Math.Abs(to.Y - from.Y);
-        return dx > dy ? dx : dy;
-    }
+    // ⭐ D56's PLACE-NAMING IS DELETED HERE, AND IT IS THE RIGHT KIND OF DELETION.
+    // `NamePlaces`, `Bearing`, `Further` and `TilesApart` gave the generated forage sites and
+    // tree stands distinct names — *"the south-western thicket"* — because a bearing has
+    // eight values and the valley had eight places, so two of them shared a phrase and the
+    // game could not say which it meant.
+    //
+    // **Both halves of that problem are gone.** The generated places retired in this slice,
+    // and the player-placed buildings that replaced them are numbered (D124), which solves
+    // the same collision in the one way that survives the player renaming them later.
+    //
+    // A hundred and fifty lines removed, and the argument they were written for is recorded
+    // in D56 and D124 rather than in code nothing calls.
 
     /// <summary>
     /// What the tile at <paramref name="at"/> does for somebody standing on it in
