@@ -1303,8 +1303,9 @@ public partial class VillageMap : Control
     /// and then the small map and the big one would disagree about which green is a wood —
     /// which is the whole job of a minimap failing.
     /// </remarks>
-    internal static Color GroundColour => Ground;
-
+    // `GroundColour` was the third of these and is deleted (D159). The minimap borrows
+    // `BeyondColour` and `BuildingColour` and paints its ground from the terrain directly,
+    // so this one had been an accessor onto a colour nobody asked it for.
     internal static Color BeyondColour => Beyond;
 
     internal static Color BuildingColour => HutColour;

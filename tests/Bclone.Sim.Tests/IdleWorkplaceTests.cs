@@ -175,7 +175,7 @@ public sealed class IdleWorkplaceTests
         for (int tick = 0; tick < Config.TicksPerYear * 2 && !sawWinter; tick++)
         {
             loop.StepOnce();
-            if (FoodSource.IsGatherable(world.Clock.Season) || hut.WorkerIds.Count == 0)
+            if (SeasonRules.IsGatherable(world.Clock.Season) || hut.WorkerIds.Count == 0)
             {
                 continue;
             }

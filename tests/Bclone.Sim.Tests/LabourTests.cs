@@ -384,7 +384,7 @@ public sealed class LabourTests
                 loop.Step(Config.TicksPerSeason);
 
                 LabourQuota quota = LabourQuota.For(loop.World);
-                if (FoodSource.IsGatherable(loop.World.Clock.Season))
+                if (SeasonRules.IsGatherable(loop.World.Clock.Season))
                 {
                     continue;
                 }
@@ -437,7 +437,7 @@ public sealed class LabourTests
             }
 
             idleDemandSeen++;
-            if (!FoodSource.IsGatherable(loop.World.Clock.Season))
+            if (!SeasonRules.IsGatherable(loop.World.Clock.Season))
             {
                 inWinter++;
             }

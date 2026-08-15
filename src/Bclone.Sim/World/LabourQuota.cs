@@ -196,7 +196,7 @@ public readonly record struct LabourQuota
         //   food floor drained the woodpile a little every year until four households
         //   froze in one winter, with a full larder and a yard full of logs.
         bool foodComesFirst =
-            FoodSource.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world);
+            SeasonRules.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world);
 
         if (foodComesFirst)
         {
@@ -231,7 +231,7 @@ public readonly record struct LabourQuota
         // FoodSource.IsGatherable is false. A quarter of the working year, spent
         // resting, by whoever held the commonest job in the village — and no reshuffle
         // ever noticed, because the allocator had never heard of seasons.
-        bool canGather = FoodSource.IsGatherable(world.Clock.Season);
+        bool canGather = SeasonRules.IsGatherable(world.Clock.Season);
 
         // ---- The player's ceiling, applied on top of the derivation (D62) ----
         //

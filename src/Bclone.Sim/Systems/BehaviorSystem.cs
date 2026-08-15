@@ -182,7 +182,7 @@ public sealed class BehaviorSystem : ISimSystem
         // patch never returns there, so without this they forage straight through
         // winter — and the life log reports "Foraging stops" and then a gather on
         // the very next line. A log that contradicts itself is worse than no log.
-        if (!FoodSource.IsGatherable(world.Clock.Season) && IsForaging(villager.State))
+        if (!SeasonRules.IsGatherable(world.Clock.Season) && IsForaging(villager.State))
         {
             GoHome(world, villager);
             return;
@@ -690,7 +690,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         // Fuel only matters where it is burned. Hauling it about in spring is time not
         // spent on the food store that gets them to the winter they would burn it in.
-        if (FoodSource.IsGatherable(world.Clock.Season) && world.Clock.Season != Season.Fall)
+        if (SeasonRules.IsGatherable(world.Clock.Season) && world.Clock.Season != Season.Fall)
         {
             return null;
         }
@@ -753,7 +753,7 @@ public sealed class BehaviorSystem : ISimSystem
         // Firewood only matters where it is burned, so there is no point hauling fuel
         // about in spring instead of building the food store that gets them through
         // the winter they would be hauling it for.
-        if (FoodSource.IsGatherable(world.Clock.Season) && world.Clock.Season != Season.Fall)
+        if (SeasonRules.IsGatherable(world.Clock.Season) && world.Clock.Season != Season.Fall)
         {
             return null;
         }
@@ -1500,7 +1500,7 @@ public sealed class BehaviorSystem : ISimSystem
         Workplace? job = WorkplaceOf(world, villager);
         bool canForage = villager.CanWork
             && job?.Kind == JobKind.Forager
-            && FoodSource.IsGatherable(world.Clock.Season);
+            && SeasonRules.IsGatherable(world.Clock.Season);
 
         if (needsFood && canForage)
         {

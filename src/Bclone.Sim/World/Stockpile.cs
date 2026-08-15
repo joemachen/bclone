@@ -252,32 +252,8 @@ public sealed class Stockpile
     };
 }
 
-/// <summary>
-/// A stand of trees. Unlike the berry patch, timber can be cut year-round —
-/// which is exactly why it is worth having someone on it in winter.
-/// </summary>
-public sealed class TreeStand
-{
-    public required int YieldPerCut { get; init; }
-}
-
-/// <summary>Where food is foraged. Barren in winter.</summary>
-public sealed class FoodSource
-{
-    public required GridPos Position { get; init; }
-
-    public required int YieldPerGather { get; init; }
-
-    /// <summary>
-    /// Nothing can be picked in winter, which is what makes it the year's pressure.
-    /// </summary>
-    /// <remarks>
-    /// Food scarcity was winter's <em>only</em> weapon in Phase 0, whose spec ruled out
-    /// "a second overlapping death system" by name. D17 reversed that deliberately once
-    /// there were households to heat, so cold is now a second axis — see
-    /// <see cref="Villager.Cold"/> and <see cref="CauseOfDeath.Cold"/>. The half of the
-    /// Phase 0 reasoning that did not expire is that a death must never be ambiguous
-    /// between the two.
-    /// </remarks>
-    public static bool IsGatherable(Season season) => season != Season.Winter;
-}
+// ⭐ `TreeStand` AND `FoodSource` ARE DELETED HERE (D159), which three comments elsewhere in
+// this codebase had already claimed was true. Phase 0's single berry patch and the generator's
+// tree stands went in step C (`forests-and-gathering.md` slice 5); these two classes outlived
+// them because `FoodSource` was still holding one *static* predicate, and `TreeStand` was
+// holding nothing at all. The predicate is `SeasonRules.IsGatherable` now — see `Season.cs`.

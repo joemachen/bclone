@@ -352,17 +352,8 @@ public sealed class AgeingTests
         return int.Parse(line[start..end]);
     }
 
-    /// <summary>Pull the trip count out of "... foraged 4 times ...".</summary>
-    private static int ExtractTrips(string line)
-    {
-        const string Marker = "foraged ";
-        int start = line.IndexOf(Marker, StringComparison.Ordinal) + Marker.Length;
-        int end = start;
-        while (end < line.Length && char.IsDigit(line[end]))
-        {
-            end++;
-        }
-
-        return int.Parse(line[start..end]);
-    }
+    // `ExtractTrips` pulled the trip count out of "... foraged 4 times ..." and is deleted
+    // (D159). D151 re-based this guard off trips-per-season — a metric floored at 1–2, which
+    // is why it could not see the mechanic — and onto food brought home per trip, and left
+    // the old parser behind. An orphan from the session before this one.
 }

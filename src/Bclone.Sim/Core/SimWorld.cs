@@ -218,10 +218,14 @@ public sealed class SimWorld
         }
     }
 
-    // `FoodSource` and `TreeStand` are deleted (`forests-and-gathering.md` slice 5). They
-    // were Phase 0's single berry patch and single stand of trees, and they outlived the
+    // `world.FoodSource` and `world.TreeStand` went in `forests-and-gathering.md` slice 5.
+    // They were Phase 0's single berry patch and single stand of trees, and they outlived the
     // plural lists that replaced them by five phases — a yield-per-gather and a
     // yield-per-cut, read from one place while the village worked eight others.
+    //
+    // ⚠️ THE FIELDS WENT THERE; THE CLASSES DID NOT, AND THIS COMMENT SAID OTHERWISE FOR A
+    // MONTH (D159). `TreeStand` survived holding nothing at all and `FoodSource` survived
+    // holding one static predicate, which is now `SeasonRules.IsGatherable`. Both are gone.
 
     /// <summary>Every workplace, ordered by id.</summary>
     public List<Workplace> Workplaces { get; } = new();
@@ -910,7 +914,7 @@ public sealed class SimWorld
     private string? ForagerIdleNote(Workplace hut)
     {
         // Winter is not a fault, and marking it would teach the player to ignore the marker.
-        if (!FoodSource.IsGatherable(Clock.Season))
+        if (!SeasonRules.IsGatherable(Clock.Season))
         {
             return null;
         }
@@ -3417,8 +3421,9 @@ public sealed class SimWorld
         // trees.* That is §2.3's escalating pressure arriving out of the food system rather
         // than being bolted on.
         //
-        // `FoodSource` and `TreeStand` went with them: Phase 0's single berry patch and
-        // single stand, kept alive long after the plural lists replaced them.
+        // `world.FoodSource` and `world.TreeStand` went with them: Phase 0's single berry
+        // patch and single stand, kept alive long after the plural lists replaced them. The
+        // classes themselves outlived even that and went in D159.
 
         // EVERYTHING FROM HERE IS A BUILDING, AND THE COLD START HAS NONE (D70).
         //
@@ -4127,9 +4132,6 @@ public sealed class SimWorld
 
         return room;
     }
-
-    /// <summary>Where a villager lives, or null if their family has no house yet (D70).</summary>
-    public GridPos? HomeOf(Villager villager) => HouseholdOf(villager).HomePosition;
 
     /// <summary>
     /// Where a villager goes when there is nothing else to do — their house, or the cart.

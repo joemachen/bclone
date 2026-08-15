@@ -9,6 +9,37 @@ public enum Season
     Winter = 3,
 }
 
+/// <summary>What the calendar decides, asked of the season rather than listed at call sites.</summary>
+/// <remarks>
+/// <b>Deliberately the same shape as <see cref="TerrainRules"/></b>, which is this project's
+/// existing answer to the same problem: a rule about a value belongs with the value, not
+/// repeated at eleven call sites where one of them eventually gets it backwards.
+/// </remarks>
+public static class SeasonRules
+{
+    /// <summary>
+    /// Nothing can be picked in winter, which is what makes it the year's pressure.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Food scarcity was winter's <em>only</em> weapon in Phase 0, whose spec ruled out
+    /// "a second overlapping death system" by name. D17 reversed that deliberately once
+    /// there were households to heat, so cold is now a second axis — see
+    /// <see cref="Villager.Cold"/> and <see cref="CauseOfDeath.Cold"/>. The half of the
+    /// Phase 0 reasoning that did not expire is that a death must never be ambiguous
+    /// between the two.
+    /// </para>
+    /// <para>
+    /// <b>This was <c>FoodSource.IsGatherable</c> until D159</b>, and it was the only live
+    /// member of a class whose other half — a position and a yield — belonged to Phase 0's
+    /// single berry patch and had been dead since step C retired it. Reading
+    /// <c>FoodSource.IsGatherable(season)</c> asked a berry patch a question in a game that
+    /// no longer has berry patches.
+    /// </para>
+    /// </remarks>
+    public static bool IsGatherable(Season season) => season != Season.Winter;
+}
+
 /// <summary>What a villager is doing right now.</summary>
 public enum VillagerState
 {

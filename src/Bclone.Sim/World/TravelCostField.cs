@@ -161,7 +161,8 @@ public sealed class TravelCostField
     // The property it was protecting survives: distance is measured in *cost*, so a road can
     // extend a workplace's reach later without either system knowing about the other. That is
     // still true of `Cost` itself, and still tested.
-
-    /// <summary>Convert a radius expressed in tiles into cost units.</summary>
-    public static int TilesToCost(int tiles) => tiles * BaseTileCost;
+    //
+    // `TilesToCost` went the same way in D159, and for the same reason it should have gone
+    // with the fence: converting a radius in tiles into cost units is a question only the
+    // catchment ever asked, and it had sat here with no caller since D120.
 }
