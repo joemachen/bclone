@@ -98,6 +98,24 @@ is D10's teleport-with-extra-steps in reverse.
 - **The store is a buffer, not a destination.** The granary is still where food lives; the farm
   holds a harvest until it is carried. **A full local store must not destroy the overflow** —
   that is D96 and D144's shape exactly, twice-shipped, and §6 gives it a seam guard.
+
+### 3.2 Who carries it (Joe, 2026-08-15)
+
+1. **The farmer reaps and hauls to the nearest available storage.** Nearest *with room* — so the
+   farm's own store fills first because it is underfoot, and once it is full the walk gets
+   longer. **That is what makes the 100 mean something**: the buffer is free, and running it dry
+   is the market's job.
+2. **The marketer collects harvested goods from farm storage as well as granaries.** Its
+   destination is unchanged (households below target, D36); what widens is where it may *source*
+   from.
+3. **⛔ Laborers do not move farmed goods** — not to granaries, not to markets. Hauling stays
+   what it is today: building materials. **Farm food moves by farmer or by trader, or it sits.**
+
+**⚠️ The marketer cannot currently see a workplace store at all.** `NearestStoreAccepting` and
+`NearestStore` iterate `StoreBuildings` only; `Workplace.Store` is a different list. Ruling 2 is
+therefore a real change to the market's reach, not a config flip — and it must not become a
+second way to find a store (D145: *a control is safe when its state is read at a chokepoint, and
+at risk the moment there are two ways to do the thing*).
 - **⚠️ This changes `professions.md §11`'s stated order**, which planned to prove the local store
   *"on the forester and woodcutter — the two professions that already have one."* It is proved
   here instead, on Joe's call. That spec's ordering should be corrected rather than left to
@@ -188,7 +206,39 @@ is exactly why it must be the one case that says so out loud.
 ## 6. Failure modes, and the seams to guard
 
 **D161's rule: when two systems meet, the golden goes over the seam, not over either side.**
-Crops meet four existing systems, and each meeting is where the bug will be.
+Crops meet five existing systems, and each meeting is where the bug will be.
+
+### 6.1 ⛔⛔ THE ONE THAT WILL BITE: two food totals that have never disagreed, and are about to
+
+**Found while speccing, before a line of code — which is the whole argument for spec-first.**
+The village has two ways to ask how much food it has, and **writing to `Workplace.Store` for the
+first time in the project's history makes them diverge by up to `farm_store_cap` per farm.**
+
+| Reader | Source | Sees farm stores? |
+|---|---|---|
+| `FoodInGranaries()` → `TotalAccepting` | `StoreBuildings` only | ❌ **no** |
+| `TotalFood()` → `AllStores()` | households + **workplaces** + stores | ✅ yes |
+
+**Four load-bearing things read the blind one:**
+
+| Site | What it decides |
+|---|---|
+| `HouseholdSystem.cs:573` | **the birth gate** |
+| `BehaviorSystem.cs:1477` | whether the village has any reason to gather at all |
+| `LabourQuota.cs:293` | the food stock limit |
+| `SimWorld.FoodTheVillageHasRoomFor` | how much room there is for more |
+
+**So a village whose food is sitting in farm stores believes it is poorer than it is, and stops
+having children.** That is **D155's exact symptom** — Joe: *"They aren't having any kids?"* —
+arriving from a new direction, and **D81's exact bug**: one comparison asking two different
+questions, which cost a century of one household resting. D81 is recorded as *"D76's seam for the
+fifth time."* **This would be the sixth.**
+
+**The rule, and it is D81's own:** the question and the thing it is compared against must be the
+same question. *"How much food does the village have?"* includes a full farm store — the food is
+real, it is reachable, and a trader will come for it. **The four readers above must see workplace
+stores**, and the guard is a village with a full farm store and an empty granary that still
+passes its birth gate. **Checked red first**, against the current code, where it will fail.
 
 | Seam | The failure it invites |
 |---|---|
@@ -197,6 +247,7 @@ Crops meet four existing systems, and each meeting is where the bug will be.
 | **Crops × the labour quota** | A farmer is wanted in spring and autumn and not in summer or winter. **`SetStaffing` is a ceiling, not a summons** (D146) — the quota has to *want* farmers seasonally, or the fields sit sown and unreaped. |
 | **Crops × the food economy** | `VillageEconomy` derives one `gather_yield` against a worst-case walk. A second food source with a different rhythm changes what "the village can feed itself" means, and the derivation has to be re-stated rather than quietly out-voted. |
 | **Crops × the farm's local store** | A full 100-cap store must **refuse** the overflow, not swallow it. `Stockpile.Add` returns what it actually took and **the caller has to read it** — D96 is precisely the bug of not reading it (17,451 food out of the world), and D144 is the same shape one deposit path over. This store has never been written to, so it has never been tested. |
+| **Crops × the market** | The marketer must reach `Workplace.Store` (§3.2 ruling 2) **without becoming a second way to find a store**. One door, or it is D144's shape again — a rule answered by one path and ignored by another. |
 
 **Other failure modes:**
 - **A crafting minigame.** `food-catalog.md §7` is explicit. No recipes, no per-crop unlocks.
@@ -278,6 +329,8 @@ being asked to think past one lifetime. Building it here would spend it as a foo
   §1's target, not picked (D16), and none of them is derived yet. **Expect the fixture and the
   shipped config to disagree at least once** — that has happened six times and METHODOLOGY §3
   exists because of it.
-- **Whether the farmer is the reaper *and* the hauler**, or whether hauling to the granary is
-  laborer work. The local store makes this a real question rather than an implementation detail:
-  a 100-cap buffer that nobody empties is a farm that stops after one field.
+- **What a farm store full of food does to the winter forecast and the market's priorities.**
+  §6.1 makes the four blind readers see it; whether the *market* should prefer draining a farm
+  over a granary is a separate question and is not answered here.
+
+*(The hauling question — farmer versus laborer — was open here and is resolved in §3.2.)*
