@@ -1,9 +1,11 @@
 # Spec: Environment and seasons — the year stops being binary
 
-> Status: **✅ four of five slices built.** The building selection panel, the calendar
-> (D49), the buildings the economy had outgrown (D50), the idle winter (D44/D52) and
-> shelter-and-exposure (D45/D53) have all shipped; **clothing is blocked** (see
-> `specs/clothing.md`) and the **seasonal yield curve** is the last slice.
+> Status: **✅ four of five slices built, and the fifth left this spec.** The building
+> selection panel, the calendar (D49), the buildings the economy had outgrown (D50), the
+> idle winter (D44/D52) and shelter-and-exposure (D45/D53) have all shipped; **clothing is
+> blocked** (see `specs/clothing.md`); and the fifth slice — the **seasonal yield curve** —
+> **is superseded by `crops-and-orchards.md` (D161)**, which is where the last of Phase 2
+> now lives. §5.1 keeps the argument and the derived target; the mechanic moved.
 >
 > §10 was resolved by Joe 2026-07-31 and the answers moved the centre of gravity: the
 > yield curve is no longer first, and winter severity was replaced wholesale by the
@@ -104,7 +106,20 @@ same way: it gets its own slice, measured, before anything else in this spec lan
 
 ## 5. What changes — in order of how much they earn
 
-### 5.1 A seasonal yield curve (the one that carries the spec)
+### 5.1 A seasonal yield curve — ❌ **SUPERSEDED by `crops-and-orchards.md` (D161)**
+
+**Kept for the argument, not the mechanic** — the same treatment §5.2 got, and for a related
+reason. The curve's own account of what the player would see is *"a villager simply comes home
+with more in autumn"*, offered below as a virtue (*"it needs no new UI"*). **That is the
+objection.** It is a number going up where nobody can watch it, which is the shape D37 rejected
+spoilage for and D45 rejected winter severity for — *a value the player cannot act on or even
+see*. A crop is the same idea made visible: the field looks different in every season.
+
+**What survives and is carried forward verbatim:** the stated target below, which is how the
+numbers get derived rather than picked (D16), and the winter consequence — when there is nothing
+to farm, the marginal hand is worth more at the wood.
+
+*(Superseded text follows.)*
 
 Forage yield varies by season instead of being flat-then-zero:
 
