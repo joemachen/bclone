@@ -1484,6 +1484,27 @@ public sealed class SimWorld
             return null;
         }
 
+        // ⭐ A FOOTPRINT SOMEBODY IS WAITING ON COMES FIRST, BECAUSE NEAREST-FIRST NEVER GETS
+        // TO IT. D100 paints a marked building's tile for harvest and promises *the village
+        // clears the ground, the player does not have to*; D127 then made the paint a standing
+        // instruction whose wood grows back, so every tile nearer than the footprint returns as
+        // work before the footprint is ever reached. Measured on the shipped opening: a
+        // gatherer's hut marked eight tiles out in real woodland is still standing on Forest
+        // after forty years, while the panel says "the ground it stands on is still being
+        // cleared" — a sentence that was never going to come true.
+        //
+        // ⚠️ WALKED FROM THE BUILDINGS, NOT FROM THE PAINT, and that is a cost decision rather
+        // than a style one. Asking "is a building waiting on this tile?" inside the scan below
+        // is the whole workplace list per painted tile per idle adult per tick, which is the
+        // ruin this method's own comment already warns about. A village has a handful of
+        // unraised buildings and hundreds of painted tiles, so the short list is the one to
+        // walk.
+        GridPos? blocked = NextFootprintToClear(from);
+        if (blocked is not null)
+        {
+            return blocked;
+        }
+
         GridPos? best = null;
         int bestCost = int.MaxValue;
 
@@ -1526,6 +1547,79 @@ public sealed class SimWorld
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// The tile the next building in the queue is waiting on, or null if none is blocked (D100).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Both kinds of waiting building, because both stall the same way.</b> A free building
+    /// sits in <see cref="_waitingOnTheGround"/> and a costed one is a
+    /// <see cref="ConstructionSite"/> that <see cref="NextBuildableSite"/> refuses while
+    /// <see cref="GroundIsClearAt"/> is false — different machinery, one symptom.
+    /// </para>
+    /// <para>
+    /// <b>⭐ THE BUILD QUEUE'S ORDER, NOT THE NEAREST ONE (Joe, D157).</b> The first version of
+    /// this took the nearest blocked footprint, which is a second ordering over the same list —
+    /// and <see cref="NextToBuild"/>'s own comment names *two orderings that must agree* as the
+    /// shape of half the bugs in this project. So clearing defers to building: the ground gets
+    /// cleared in the order the village will actually raise things, rank then id, exactly as
+    /// <see cref="BuildQueue"/> sorts. A player who moves a site up the list moves its clearing
+    /// with it, which is the whole point of the list.
+    /// </para>
+    /// <para>
+    /// <b>Free buildings come before the queue, because they are not in it and everything else
+    /// waits on them.</b> A pile and a builder's hut cost nothing but the ground (D96, D108) —
+    /// and until the pile stands there is nowhere to put a felled log, so clearing anything
+    /// else first produces timber the village cannot see (D95). Marking order among them, which
+    /// is the order they were added.
+    /// </para>
+    /// <para>
+    /// <b>The paint is still required</b>, so this is a change of priority and not of scope:
+    /// <see cref="Mark"/> puts it on, and a player who deliberately takes it off is telling
+    /// the village something. What moves is only which painted tile is taken first.
+    /// </para>
+    /// </remarks>
+    private GridPos? NextFootprintToClear(GridPos from)
+    {
+        for (int i = 0; i < _waitingOnTheGround.Count; i++)
+        {
+            GridPos at = _waitingOnTheGround[i].Position;
+            if (NeedsClearing(at) && TravelCost.CanReach(from, at))
+            {
+                return at;
+            }
+        }
+
+        Workplace? head = null;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+
+            // ⚠️ Reachable FROM THE VILLAGER, not from the village. The queue asks whether the
+            // settlement can get there at all; this asks whether the person being sent can, and
+            // a laborer who cannot walk to the head of the queue must fall through to work they
+            // can reach rather than stand still.
+            if (candidate.Construction is not { IsFinished: false }
+                || !NeedsClearing(candidate.Position)
+                || !TravelCost.CanReach(from, candidate.Position))
+            {
+                continue;
+            }
+
+            if (head is null
+                || candidate.EffectiveQueueRank < head.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == head.EffectiveQueueRank
+                    && candidate.Id < head.Id))
+            {
+                head = candidate;
+            }
+        }
+
+        return head?.Position;
+
+        bool NeedsClearing(GridPos at) => Zones.IsHarvest(at) && HasSomethingToHarvest(at);
     }
 
     /// <summary>

@@ -740,10 +740,13 @@ there, because it is the slice that opens that method.
   allocator's only source, and both `Harvest` call sites are player-instructed — a control is
   safe when its state is read at a chokepoint, and at risk the moment there are two ways to do
   the thing. **That is the check to run when the next control is designed, not after it ships.**
-- **⭐ Where the suite stands: 562 passing, 0 failing, 9 skipped of 571 — GREEN** (was 533 / 13 / 9 of 555
-  at the start of the session). **Everything left is either a golden held back on purpose or
-  already-queued work** — three hash goldens (`StockLimitTests` ×2 and `DrawOrderIsTheContract`),
-  three map-generation guards, and `OldAgeCostsMoreWorkForTheSameFood`, which Joe parked.
+- **⭐ Where the suite stands: 570 passing, 0 failing, 2 skipped of 572 — GREEN** (was 533 / 13 / 9
+  of 555 at the start of the session, and 563 / 0 / 9 before D157 restored seven guards).
+  **The two that remain are skipped on rulings rather than on unfinished work:**
+  `TheVillageTheGameLoadsHoldsForThreeCenturies` runs an unattended village, which D143 says is
+  supposed to die out, and `CapacityIsWhatHoldsThePopulationFlat` is D134's — the granary stopped
+  being the binding cap. ⚠️ **Both still carry the wrong reason in their skip text** (they blame
+  D157's misattribution), which is a ten-minute tidy nobody should mistake for a finding.
 - **The three map-generation guards are re-based** ✅ (D150). None was a generator bug: each was
   a guard left pointing at a rule a later decision withdrew — the river one hunting for a
   detour that step C removed, the budget one measuring with the ruler D121 deleted *and*
@@ -780,8 +783,28 @@ there, because it is the slice that opens that method.
   The two village goldens carry step C plus D142's fell mispricing and D144's destroyed
   firewood. **D143, D145, D146, D148, D150 and D151 are not in them**, which is the sparse-hash
   no-op contract holding for three separate controls.
-- **Still to come in step C:** the cold start re-measured, then merge back to
-  `phase/2-wood-fuel-and-tools`.
+- **⛔⭐⭐ The cold start is re-measured, and the re-measure found the bug step C existed to
+  expose** ✅ (D157). **D119's stall is gone** — *"4 alive at year 20"* is now **12 at twenty and
+  22 at forty**, six homes, nobody starved and nobody frozen, which is D153/D155/D156 paying off.
+  Timeline against D119's: hut stands **t161** (was t224), staffed **t241** (unchanged), first
+  firewood **t133** (was t253), first house t297, winter at t360.
+  - **But the woodland arm — the one thing step C is *for* — was fatal, and not for an economic
+    reason.** A gatherer's hut marked in real woodland is still standing on `Forest` at year
+    forty and all four founders freeze in winter 1. **D100 promises the village clears a marked
+    building's ground; D127 made harvest paint a standing instruction whose wood regrows; and
+    `NearestHarvest` is cost-first** — so the footprint is never the nearest tile and is never
+    cleared at all. Two good decisions, and nobody standing on the seam between them.
+  - **Fixed as a priority rather than a scope change** (`specs/goods-on-the-ground.md §5.3a`):
+    a blocked footprint is taken before any coppice, free buildings first and then **the build
+    queue's own order — Joe's ruling, so clearing defers to building** instead of inventing a
+    second ordering over one list.
+  - **Seven guards came back with it, and their skip reason had the wrong cause on it.** They
+    were parked on *"`PlayTheOpening` never reacts"*; the arm that sites the hut on clear ground
+    is the same non-reacting script and grows a village to 21. Six go red without the fix and
+    green with it, **checked by disabling the priority pass rather than assumed**. The seventh
+    was a different bug — an opening that named no food or timber source at all since C-4.
+- **Still to come in step C:** the two village goldens re-taken (D157 moves history), then merge
+  back to `phase/2-wood-fuel-and-tools`.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -968,6 +991,16 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D157 · 2026-08-15 · ⛔⭐⭐ THE VILLAGE PROMISED TO CLEAR THE GROUND AND, FOR ANY BUILDING FURTHER OUT THAN ITS OWN COPPICE, NEVER DID — so a gatherer's hut sited in real woodland is the one thing step C exists for and the one thing that killed every village that tried it.** Found by re-measuring the cold start (the last item on step C's list) rather than by looking for it. Joe's ruling on the fix: *"clearing order should defer to the build queue."*
+  - **The symptom, on the shipped opening, forty years:** the hut is marked at (-9,-1) in the best woodland, **its tile is still `Forest` at year forty**, the hut never stands, no house is ever built, and all four founders freeze in winter 1 — with 83 logs in the pile and 126 on the ground the whole time. The panel says *"Waiting: the ground it stands on is still being cleared"* from t180 to the end. **The sentence was true and was never going to finish.**
+  - **⭐ THE CAUSE IS TWO GOOD DECISIONS MEETING.** D100 paints a marked building's footprint for harvest and promises *the village clears the ground, the player does not have to*; **D127** then made harvest paint a *standing* instruction whose wood grows back, so a painted coppice is permanent work. `NearestHarvest` is cost-first. Between the village and a footprint eight tiles out there is always nearer coppice, and it always regrows before the laborers exhaust it — so **the tile that gated the entire food supply was never once the nearest tile.** Neither decision is wrong; the seam between them had nobody standing on it.
+  - **The fix is a priority, not a scope change** (`specs/goods-on-the-ground.md §5.3a`). A laborer takes a tile a marked building is waiting on before any other painted tile: free buildings first in marking order, then construction sites **in the build queue's own order, rank then id** — Joe's call, and it makes clearing defer to building rather than inventing a second ordering over one list, which `NextToBuild`'s own comment names as the shape of half the bugs here. The paint is still required, so the set of clearable tiles is identical and only the order moves. Walked from the buildings, not from the paint, because the per-tile form is the cost ruin `NearestHarvest` already warns about.
+  - **Measured, same seed, four arms, forty years each.** Hut in woodland: **0 alive → 4 · 6 · 10 · 12 · 22** at years 1/5/10/20/40, six homes, nobody starved, nobody frozen. Coppice painted to radius 12: **0 alive → 20**. Hut on nearest clear ground: **20 → 20**, unmoved. **And the anti-vacuity arm still dies:** no painted coppice at all is 0 alive both ways, correctly — there is no timber in that valley to clear anything with.
+  - **⭐⭐ AND IT RE-DATES D119, WHICH IS THE REAL PRIZE.** The re-measure this came out of says Joe's stated risk still does not happen and **D119's stall is gone**: *"4 alive at year 20"* is now **12 at twenty and 22 at forty**, which is D153/D155/D156 paying off. Timeline against D119's: hut stands **t161** (was t224), staffed **t241** (unchanged), first firewood **t133** (was t253), first house t297, winter at t360.
+  - **⚠️ SEVEN GUARDS CAME BACK, AND THEIR SKIP REASON HAD THE WRONG CAUSE ON IT FOR TWO DAYS.** Six in `ColdStartTests` and one in `HousesAreBuiltTests` were parked on the finding that *"`PlayTheOpening` marks buildings once and never reacts"*. **That was a misattribution.** The arm that sites the hut on clear ground is the same script, fires once, never reacts — and grows a village to 21. What differed was never the reacting; it was where the hut stood. Six of the seven go red without this fix and green with it, checked by disabling the priority pass rather than assumed.
+  - **⚠️ The seventh was a different bug and is worth separating.** `AVillageThatIsPlayedSurvivesItsFirstWinter` passes either way: its opening marks a shed and a woodcutter's hut and **names no food or timber source at all**, which was free from the map until C-4 retired the berry patches and the tree stands. It needed `FeedTheFounding`, not the priority rule.
+  - **⚠️ THE GOLDENS DID NOT MOVE, AND THAT IS A GAP RATHER THAN A REASSURANCE.** Both were expected to, since forty years of history genuinely differs — so the reason was measured instead of assumed, and it is that **neither golden paints a single tile in its fifty years**: `Zones.HarvestTiles` is **0 on all 24,000 ticks** of both the fixture and the shipped run, so `NearestHarvest` early-returns and the changed code is never reached. Both goldens run an *established* village whose houses are already standing, so nothing is ever marked on wooded ground. **They are unmoved because they do not cover this, not because it is a no-op there.** Coverage for the rule is the seven restored guards, six of which were checked red against it. A golden over a village that clears ground is worth having and does not exist.
+  - **⭐ THE LESSON, AND IT IS D142'S AND D151'S FOR THE THIRD TIME.** `HousesAreBuiltTests`' skip ran a control, found the same opening died identically without the granary, and wrote down *"the granary is innocent"* — which was true — and then *"what kills them is the opening needing a reacting player"*, which it had not tested at all. **An arm that varies one thing and dies both ways has ruled that thing out and has said nothing whatever about the cause.** The cause was sitting in the builder's own `WorkNote`, in English, in the audit trail, for two days.
 - **D156 · 2026-08-15 · An uneducated child works at twelve.** Joe: *"Uneducated children can become laborers at age 12. When we get there, educated children will become laborers when older (and more efficient due to their education). No education is in game yet, so all of these uneducated children can start working earlier. Mirroring real life a bit."*
   - `adult_age` **15 → 12**, in the shipped file and the fixture together. **One reader** — `AgeingSystem` deciding `LifeStage` — so the blast radius is exactly two things: a twelve-year-old can hold a job, and eats a **full** meal instead of `child_food_share_percent` of one. It buys hands and costs food.
   - **⭐ Pairing and childbearing are untouched, checked rather than assumed.** `IsSeekingAHome` requires `AgeYears >= leave_home_age` (18) as well as not being a child, and `fertility_min_age` is 18. So this makes workers earlier without making parents earlier — which is the whole of what Joe asked for.

@@ -234,24 +234,24 @@ public sealed class HousesAreBuiltTests
     /// </remarks>
     /// <remarks>
     /// <para>
-    /// <b>⏸️ SKIPPED, AND THE CONTROL IS WHY.</b> It fails with 0 alive and 4 frozen — the
-    /// D102 shape exactly — but the same opening run <em>without</em> the granary comes out
-    /// identical to the digit: 0 alive, 0 houses, 57 logs, 26 firewood. **The granary is
-    /// innocent.** What kills them is the opening itself, which since the thickets retired
-    /// needs a player who keeps giving the forester ground and painting more wood as it runs
-    /// out — the same finding that skipped six guards in <see cref="ColdStartTests"/>, and
-    /// Joe's own call: <i>"don't worry about the cold start guards, I'm telling you the game
-    /// is working the way I want it to."</i>
+    /// <b>▶️ UN-SKIPPED (D157), and the control that skipped it was reading a real corpse
+    /// with the wrong name on it.</b> It was parked because the same opening
+    /// <em>without</em> the granary died identically — 0 alive, 0 houses, 57 logs — which
+    /// correctly exonerated the granary and then wrongly convicted the harness: the note
+    /// said the opening *needs a player who keeps reacting*. It does not. Both arms died of
+    /// one cause neither of them varied, and it was not the queue and not the script — the
+    /// gatherer's hut stood on woodland whose ground the village would never clear, because
+    /// nearest-first clearing can never reach a footprint with regrowing coppice between it
+    /// and the village.
     /// </para>
     /// <para>
-    /// Left in place rather than repaired, because repairing it would mean tuning the opening
-    /// until this passes and calling that a fix for a queue bug that is not happening. It is
-    /// the same test the day a reacting harness exists.
+    /// <b>⭐ Which is why "the control says X is innocent" is only half a finding.</b> An arm
+    /// that varies one thing and dies both ways has ruled that thing out and has said
+    /// nothing whatever about what did it. That is D142's and D151's mistake for the third
+    /// time, and this test carried the wrong cause in its own skip reason for two days.
     /// </para>
     /// </remarks>
-    [Fact(Skip = "The control says the granary is innocent: the same opening without it dies "
-        + "identically (0 alive, 0 houses, 57 logs both ways). This is the cold start needing "
-        + "a reacting player, not D102's queue. Restore with a reacting harness.")]
+    [Fact]
     public void MarkingAGranaryInTheFirstSpringDoesNotCostTheVillageItsHouses()
     {
         SimConfig config = ShippedConfig.Load();
