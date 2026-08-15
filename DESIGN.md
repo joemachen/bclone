@@ -202,45 +202,85 @@ winter) and grew, on Joe's calls, into everything the player touches:
 - **The shell** (D54, D55, D113–D116, D149) — rebuilt twice, on Banished's shape.
 
 **Definition of Done — the honest version, and it is not met:**
-1. The **seasonal yield curve**, or the crops-and-orchards slice that replaces it (see queue 2).
-2. A **QA playthrough against a written checklist** (METHODOLOGY §3) — Phase 1 has one, Phase 2
-   does not.
-3. **The release blockers cleared** (METHODOLOGY §5): `VERSION` wired into the build, and
-   `src/Bclone.Game/export_presets.cfg` committed, without which `release.yml` can never succeed.
-4. `CHANGELOG.md`'s header reconciled with METHODOLOGY §5, which deleted the practice it still
+1. **Crops and orchards** (`specs/crops-and-orchards.md`), which **replaces** the seasonal yield
+   curve in `environment-and-seasons.md §5.1` — three multipliers where this is a growth cycle you
+   can watch. What makes the year real and what the granary is *for*.
+2. **A golden over a village that clears ground** (D157). Both existing 50-year goldens paint
+   **zero** tiles across all 24,000 ticks, so step C's central mechanic has no drift guard at all.
+3. A **QA playthrough against a written checklist** (METHODOLOGY §3) — Phase 1 has one in its
+   spec, Phase 2 does not. **Walked by Joe, not by me.**
+4. **The release blockers cleared** (METHODOLOGY §5): `VERSION` wired into the build — nothing
+   reads it today — and `src/Bclone.Game/export_presets.cfg` committed, without which
+   `release.yml` can never succeed.
+5. `CHANGELOG.md`'s header reconciled with METHODOLOGY §5, which deleted the practice it still
    instructs.
 
-*(A fresh screenshot was item 4 until D160 deleted the hook that took them and withdrew the
+**⚠️ What is deliberately NOT on this list: the mid-game gap.** Crops lands in this phase and is
+the *rhythm* of those years, not the answer to them — see the section below. **Phase 2 does not
+get to claim that problem** (Joe, D161).
+
+*(A fresh screenshot was on this list until D160 deleted the hook that took them and withdrew the
 per-version rule with it. `ss001`/`ss002` stay as the record of 2026-08-01.)*
 
-### The queue after Phase 2
+### ⭐ THE MID-GAME GAP, AND WHAT ACTUALLY ANSWERS IT (D161)
+
+Joe: *"how to keep the game interesting between stabilising the village and the first children
+becoming laborers."* That window is about **twelve to sixteen years** (D156), and it is §2.3's
+dead-late-game question arriving early.
+
+**The answer is skill, not food, and the reframe is the whole of it (Joe, D161): stop treating
+those years as time to *fill* and start treating them as the years the founders become worth
+learning from.** That is a §2.1 statement — a farmer with twenty years in the fields is
+meaningfully better, and losing them is losing knowledge — so **the fix is Phase 3, not a
+content slice.**
+
+**⚠️ Crops is the *rhythm*, not the fix, and Phase 2's Definition of Done does not claim
+otherwise.** Sowing and harvesting gives the sixteen years an annual cycle and a decision each
+spring, which is worth having on its own terms. It does not make a founder worth learning from.
+**Do not declare this problem solved on the strength of a food system.**
+
+**The success test is written before anything is built for it**, because Phase 0 and Phase 1 both
+had one and both were how we knew when to stop: **play years 1 through 16 at normal speed,
+without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
+
+### The queue after Phase 2 (D161)
 
 *One list, in one order. This supersedes §6's "Next up", which was a competing queue.*
 
-1. **⛔ THE MID-GAME GAP — a first-class design problem, not a content gap.** Joe: *"how to keep
-   the game interesting between stabilising the village and the first children becoming
-   laborers."* That window is about **twelve years** (D156). It is §2.3's dead-late-game question
-   arriving early, and **nothing in the list below is aimed at it** — they are things that might
-   happen to fill it, which is not the same. Decide what the answer is before building the
-   answer.
-2. **Crops and orchards** — sown in spring, harvested in autumn. **Replaces the seasonal yield
-   curve** (`environment-and-seasons.md §5.1`), which is three multipliers where this is a growth
-   cycle you can watch. What makes the year real and what the granary is *for*.
-3. **A golden over a village that clears ground** (D157). Neither existing golden paints a single
-   tile in fifty years, so step C's central mechanic has no drift guard at all.
-4. **Surface the overstretched warning** — `SimWorld.IsOverstretched` is computed and used only
-   by tests, so the player never sees it. This project's own rule: a feature the player cannot
-   reach does not exist.
-5. **Per-site yield, and retiring the 7-tile bound** (D58, §5). The biggest payoff on the board
-   and the largest re-derivation. Give it a fresh session.
-6. **Clothing** (`clothing.md`) — blocked twice over, and **livestock is both its input and its
-   reason**. Joe's call whether livestock comes back off the parked list to unblock it.
-7. **Joe's notes, recorded 2026-08-15 and none of them designed yet** — a Banished-style **town
-   hall** (he has more detail to give); an Animal-Crossing-style **museum**; **real-time charts**
-   with 1/5/10/20-year lookbacks, gated behind the town hall; **variety** of fish, crops, trees,
-   game and livestock; **nomads**. §6 has the detail. The charts are the one with an argument
-   already made for them: D131, D142 and D153 were each found by plotting exactly those series in
-   a throwaway, and the player has no such tool.
+1. **Close Phase 2 and merge to `main`** — the Definition of Done above. **Phase 3 does not open
+   on an unmerged branch with an unmet DoD**; this project already has one instance of two
+   roadmaps disagreeing and it cost six weeks.
+2. **`specs/skills-catalog.md`** — catalogues before code (`buildings-plan.md`'s standing habit),
+   and **the prerequisite `tech-tree.md` silently assumes.** That spec is written entirely on top
+   of a proficiency model that **does not exist in the sim** — its load-bearing rule, *"a record
+   preserves the method, not the proficiency"*, is what stops the tree becoming a ratchet, and it
+   cannot be implemented against nothing.
+3. **Phase 3 — skill and apprenticeship** (§2.1). Proficiency, **personal time-on-task
+   (discharges D28)**, the inspector surface, the apprenticeship lever, and the anti-vacuity
+   guard that a run with no apprenticeships actually loses something. **The milestones panel
+   lands at the end of this phase**, not before — `tech-tree.md §10` lists eight and only about
+   three can fire until apprenticeship and records exist.
+4. **Phase 4 — the tech tree** (§2.7). Three states, records, scriptorium, library, school, the
+   knowledge screen — on a substrate that exists.
+
+*Then, unsequenced and unchanged:*
+
+- **Surface the overstretched warning** — `SimWorld.IsOverstretched` is computed and used only
+  by tests, so the player never sees it. This project's own rule: a feature the player cannot
+  reach does not exist.
+- **Per-site yield, and retiring the 7-tile bound** (D58, §5). The biggest payoff on the board
+  and the largest re-derivation. **Left where it is deliberately** — it wants a fresh session and
+  does not touch the mid-game problem.
+- **Clothing** (`clothing.md`) — blocked twice over, and **livestock is both its input and its
+  reason**. Joe's call whether livestock comes back off the parked list to unblock it.
+- **Make the river matter**, with **bridges** (D40) — which need the tech tree, so it follows
+  Phase 4.
+- **Joe's notes, recorded 2026-08-15 and none of them designed yet** — a Banished-style **town
+  hall** (he has more detail to give); an Animal-Crossing-style **museum**; **real-time charts**
+  with 1/5/10/20-year lookbacks, gated behind the town hall; **variety** of fish, crops, trees,
+  game and livestock; **nomads**. §6 has the detail. The charts are the one with an argument
+  already made for them: D131, D142 and D153 were each found by plotting exactly those series in
+  a throwaway, and the player has no such tool.
 
 ### The long-run arc (the pillars, unchanged)
 
@@ -1064,6 +1104,15 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D161 · 2026-08-15 · ⭐⭐ THE MID-GAME GAP IS A SKILL PROBLEM, NOT A CONTENT PROBLEM — and the ordering out to Phase 4 is settled.** Joe brought a proposed ordering; it was checked against the repo rather than adopted, and the checking changed two things in it.
+  - **⭐ THE REFRAME, WHICH IS THE DECISION:** *stop treating those sixteen years as time to fill and start treating them as the years the founders become worth learning from.* That is §2.1 in one sentence — a farmer with twenty years in the fields is meaningfully better, and losing them is losing knowledge — so **the answer is Phase 3, and no amount of content is a substitute.**
+  - **⚠️ WHICH MEANS CROPS IS THE RHYTHM AND NOT THE FIX, and the proposal's own through-line argued against its own ordering.** It placed crops as *"the window's main fix"* while also saying the years should be when founders become worth learning from; those are different claims and only the second is about skill. **Joe's ruling: skill is the answer, crops is the rhythm, and Phase 2's Definition of Done does not get to claim the gap.** Crops still ships in Phase 2 — an annual cycle and a decision each spring is worth having — it is simply not the thing being credited.
+  - **⭐ THE SUCCESS TEST IS WRITTEN BEFORE ANYTHING IS BUILT FOR IT**, because Phase 0 and Phase 1 both had one and both were how we knew when to stop, and this problem has read as unanswerable precisely because it had none. **Phase 3's: *play years 1 through 16 at normal speed, without fast-forwarding, and want to keep watching.*** Paired with a DoD table the way Phase 0 and 1 were, so a regression is detectable as well as felt.
+  - **The order: close Phase 2 → `specs/skills-catalog.md` → Phase 3 (skill and apprenticeship) → Phase 4 (the tech tree).** Phase 3 discharges **D28** (personal time-on-task), which §4 already scheduled there. **Phase 3 does not open on an unmerged branch with an unmet DoD** — this project has one instance of two roadmaps disagreeing and it cost six weeks (D159). Per-site yield (D58) stays where it is: biggest payoff, largest re-derivation, and it does not touch this problem.
+  - **⭐ THE SKILLS CATALOG IS A REAL PREREQUISITE, AND THE EVIDENCE IS STRONGER THAN THE ARGUMENT MADE FOR IT.** `specs/tech-tree.md` is written entirely on top of a **proficiency model that does not exist** — nothing in `src/Bclone.Sim` mentions skill, proficiency, apprenticeship or mastery, and a villager's only person-varying state is `LifespanYears`, `Vigour`, `Stage` and `TotalGathers`. Its load-bearing rule — *"a record preserves the method, not the proficiency"* (Joe's own call, and what stops the tree becoming a ratchet and re-creating §2.3's dead late game) — **is unimplementable against nothing**, and its open questions already ask *"whether skill retained from a record is zero or a small floor."*
+  - **⛔ TWO CLAIMS IN THE PROPOSAL WERE FALSE AND ARE RECORDED SO THEY ARE NOT RE-CITED.** *(i)* That my notes had flagged the skills catalog as the highest-priority missing one — **there is no such note**; the recommendation is right on the evidence above, but the provenance was invented, and a decision justified by a citation that does not exist is one a future session reverses when it goes looking. *(ii)* That D142, D151 and D157 are the same failure three times. **They are not.** D157 is a genuine seam (D100 × D127); D142 was a missed third call site; **D151 was not a bug at all** — the mechanic was fine and the guard's ruler had two gradations. The project already names the D142 family better, in D145: *does the player's state reach the code that does the work?* — D128, D139, D142, D144, four bugs, one form. **Two families, and merging them loses the more actionable one.**
+  - **The forward-looking half of that advice is adopted intact: when two systems meet, the golden goes over the seam rather than over either side.** Skill × apprenticeship × mortality is the next seam-rich area, and **a master dying mid-apprenticeship** is the case that will have no coverage. That guard gets written with the feature.
+  - **The milestones panel waits until the end of Phase 3** (Joe). `tech-tree.md §10` lists eight and is explicit that they are *"not mechanics — punctuation"*; only about three can fire today, the rest needing apprenticeship, records, stone or trade. A panel three-eighths full for two phases reads as an unfinished feature, and deferring it keeps scope off the slice that closes Phase 2.
 - **D160 · 2026-08-15 · ⛔ THE SCREENSHOT HOOK IS DELETED, NOT FIXED — and the view now has no automated verification of any kind.** Joe: *"delete the hook."* Rescued from `claude/sweet-ishizaka-571c5d`, where this had been decided once already and never merged (D159 found it); redone here because that branch numbered itself **D116/D117**, which are taken by other decisions on this branch, so it could not be merged as written.
   - **The hook was photographing a corpse.** `BCLONE_SCREENSHOT_YEARS` stepped an **unattended** founding before the first frame — and since **D110** no builder's hut means nothing is raised, so every automated shot since the shell rebuild has been of an empty valley. **D143 then turned that from a bug into the design**: an unattended village is *supposed* to die out. The hook could not be fixed without contradicting a ruling.
   - **The alternative was rejected on cost.** Teaching the harness to play the opening means moving `PlayTheOpening` out of the test project and into shipped code — real machinery, in the view, for a convenience.
