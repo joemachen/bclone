@@ -916,6 +916,37 @@ Then, unsequenced:
 them, and go back to being what D59 called them — optional food sources, taken when the
 village wants one.
 
+**⭐ JOE'S NOTES FOR LATER (2026-08-15), recorded here because chat is ephemeral.** Captured as
+he wrote them, with only the connections to existing decisions added — none of these is
+scheduled, and none has been designed.
+
+- **A town hall, in Banished's sense.** Joe has more detail to give. It is also the **unlock that
+  gates the charts below**, which makes it the first civic building whose payoff is *information*
+  rather than production — a `SCALE` node in `tech-tree.md §5` terms.
+- **A museum, in Animal Crossing's sense** — somewhere the player sees every animal, seed, crop,
+  fish and tree they have unlocked. *"Kind of like Animal Crossing / Stardew Valley."* Note this
+  is a **collection** rather than a store: it is the first building whose content is the record
+  of what the player has met, which is a different thing from anything in `buildings-plan.md`.
+- **⭐ Real-time charts, behind the town hall.** Line charts with 1 / 5 / 10 / 20-year lookback
+  windows: food produced against consumed, population, firewood produced against consumed, *"all
+  of the fun stats."* **Two things make this more than a nicety.** It is §1.1 at the scale of a
+  *century* rather than a tick — the generational loop is the core loop and nothing on screen
+  currently shows a trend. And this session is the argument for it: D131, D142 and D153 were each
+  found by writing a throwaway probe to plot exactly these series, and a player has no such tool.
+  **The gating is the interesting design bit** — the player earns the ability to see their own
+  history.
+- **Variety to unlock and trade for:** kinds of fish, crops, trees, hunting animals, livestock.
+  Feeds the museum above and `food-catalog.md`; note `professions.md` already rules that **fish
+  and meat are `Goods.Food`**, so variety has to be flavour and unlock rather than new goods.
+- **⛔ THE MID-GAME GAP, WHICH IS THE REAL DESIGN PROBLEM HERE.** *"Will have to determine how to
+  keep the game interesting between stabilising the village and the first children becoming
+  laborers."* That window is now roughly **twelve years** (D156). It is §2.3's dead-late-game
+  question arriving early, and it is worth treating as a first-class problem rather than
+  something the content list happens to fill.
+- **Nomads, and accepting or rejecting them.** Banished's mechanic. Interacts with the town hall
+  (where you would receive them), with housing (D153 — they need somewhere to live), and with
+  §2.4's living region.
+
 **Written ahead, waiting for its phase:**
 - **`specs/tech-tree.md`** — the knowledge-based tech tree (§2.7), *design settled, unbuilt*.
   Drafted on Joe's initiative so the pillar has settled content to build against rather than
@@ -937,6 +968,11 @@ village wants one.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D156 · 2026-08-15 · An uneducated child works at twelve.** Joe: *"Uneducated children can become laborers at age 12. When we get there, educated children will become laborers when older (and more efficient due to their education). No education is in game yet, so all of these uneducated children can start working earlier. Mirroring real life a bit."*
+  - `adult_age` **15 → 12**, in the shipped file and the fixture together. **One reader** — `AgeingSystem` deciding `LifeStage` — so the blast radius is exactly two things: a twelve-year-old can hold a job, and eats a **full** meal instead of `child_food_share_percent` of one. It buys hands and costs food.
+  - **⭐ Pairing and childbearing are untouched, checked rather than assumed.** `IsSeekingAHome` requires `AgeYears >= leave_home_age` (18) as well as not being a child, and `fertility_min_age` is 18. So this makes workers earlier without making parents earlier — which is the whole of what Joe asked for.
+  - **It is the dial education will pull against**, and that is why it is worth recording rather than just editing: the future trade is *a schooled child starts later and is worth more when they do*, so this number is one half of a choice rather than a setting.
+  - **⭐ AND IT SHARPENS A PROBLEM JOE NAMED IN THE SAME BREATH** — *"will have to determine how to keep the game interesting between stabilising the village and the first children becoming laborers."* That window is now about twelve years. It is §2.3's dead-late-game question arriving early, and it is filed with his other notes above as a first-class problem rather than something the content list happens to cover.
 - **D155 · 2026-08-15 · ⭐ THE FOOD GATE COMES DOWN, AND THE VILLAGE HAS CHILDREN AGAIN.** Joe, after playing D153: *"They aren't having any kids?"* — then, given the numbers: *"food gate loosened."*
   - **Nothing was broken, and saying so first mattered.** Both his households were housed in **Year 1** (the log has it: t231 and t276), so it was not D71's roof. The bar is `stockpile_target × population × birth_food_percent` — at four people that is **304 food**, and his stores read **292**. **The bar scales with the village**, so a small settlement sits just under it more or less permanently. His village had sat at four people for eleven years.
   - **`birth_food_percent` 80 → 60**, which is the dial D153 deliberately left alone so that only one thing moved at a time. It is the **only food term in the birth gate** since D153, and it is read in exactly two places — the gate and `PopulationCeiling` — so lowering it raises the derived ceiling by the same arithmetic.

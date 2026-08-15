@@ -42,7 +42,10 @@ public static class VillageFixtures
                 StartingHouseholds = 2,
                 AdultsPerHousehold = 2,
                 FounderAge = 20,
-                AdultAge = 15,
+                // 15 -> 12 with the shipped file (D156) — an uneducated child works at
+                // twelve. Kept in step deliberately; this is the number the birth curve and
+                // the labour supply both turn on.
+                AdultAge = 12,
                 // 7 -> 5 with the shipped file (D153). Kept in step deliberately: a cap that
                 // differed between the two would be METHODOLOGY §3's drift on the one number
                 // the birth gate turns on, and that has bitten five times (D48-D50, D128, D132).

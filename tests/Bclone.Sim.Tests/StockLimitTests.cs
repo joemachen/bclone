@@ -184,8 +184,14 @@ public sealed class StockLimitTests
     // was having children.
     //
     //   before the food gate was loosened: shipped 16713992210504644002
-    private const ulong FixtureFiftyYearHash = 13172587746925380233UL;
-    private const ulong ShippedFiftyYearHash = 1066427617710206388UL;
+    // ⭐ RE-TAKEN FOR THE WORKING AGE (D156): `adult_age` 15 -> 12, so an uneducated child takes
+    // work three years earlier — and eats a full meal three years earlier too. Both arms move,
+    // because that changes who is available for every job in every one of the fifty years.
+    //
+    //   before children worked at twelve: fixture 13172587746925380233,
+    //                                     shipped 1066427617710206388
+    private const ulong FixtureFiftyYearHash = 11001298307494045081UL;
+    private const ulong ShippedFiftyYearHash = 10000897820648583606UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
