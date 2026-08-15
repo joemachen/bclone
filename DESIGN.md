@@ -169,15 +169,90 @@ The whole game, shrunk to a single soul. **Gather food → eat → survive a win
 
 **Success test:** watching one villager live and die actually *means* something. If the spine doesn't give a chill with one villager, no amount of economy sim saves it. **Do not proceed to Phase 1 until this test passes.**
 
-### Phase 1+ — bolt systems onto the spine (rough order, re-order as learning dictates)
-1. Multiple agents + households + smart labor (2.2)
-2. Environment/seasons depth + biomes (2.5)
-3. Desire-path roads (2.6) — needs the shared cost field in place
-4. Skill growth + apprenticeship/knowledge transfer (2.1)
-   - **Carries a Phase 1 debt: make time-on-task personal (D28).** Vigour and skill should change *how long* a job takes, not only how much it yields. Villagers currently move in perfect lockstep — measured at 99.9% — because nothing distinguishes two people with the same home and the same job. Deliberately scheduled here rather than in Phase 1, because it is a §2.1 change and it forces the food economy to be re-derived.
-5. Knowledge-based tech tree (2.7) — depends on 2.1
-6. Systemic pressure: soil, resource exhaustion, climate drift, disease (2.3)
-7. Living region + trade economy (2.4)
+### Phase 1 — households and labour ✅ COMPLETE (2026-07-26)
+Multiple agents, households, and cost-first labour allocation (§2.2). Merged to `main` via PR #2.
+
+### Phase 2 — the village you can play 🔨 IN PROGRESS
+
+> **⚠️ THIS SECTION WAS REWRITTEN BY D159, AND THE REASON IS THE POINT.** The original build
+> order ran *households → environment+biomes → desire paths → skills → tech tree → systemic
+> pressure → living region*, and it stopped describing the work about six weeks ago. What
+> actually got built after Phase 1 is storage, markets, map generation, pathfinding, building
+> placement, the cold start, the builder's hut, stock limits, forests and gathering, and two UI
+> rebuilds — **none of which this list named.** The live queue had been living in §6 in a
+> different order, so the project had two roadmaps that disagreed. **The vision (§1, §2) never
+> moved; the roadmap stopped tracking it.** The seven-pillar arc below is still the long-run
+> shape.
+
+**What Phase 2 turned out to be:** the phase that made the village *playable* — where the
+player stopped watching and started deciding. It began as *wood as fuel* (§2.5's second axis for
+winter) and grew, on Joe's calls, into everything the player touches:
+
+- **Wood as fuel and the first processing chain** (D17, D29) — logs → firewood, and a workplace
+  that can be idle for want of an *input*, which every later chain inherits.
+- **Goods live in buildings** (D30–D36) — granary, shed, workplace buffers, household larders,
+  carried by trips people make; the manned market on top.
+- **A generated valley** (D18, D40, D41) — terrain, a river that is genuinely impassable, and one
+  shared cost field answering every "how far is that?" (§2.6's floor).
+- **The player builds** (D38, D42, D43, D108) — placement, the residential brush, the harvest
+  brush, work-ground painting, the builder's hut, a reorderable build queue.
+- **The cold start** (D70–D82) — four founders, a cart, an empty valley.
+- **Forests and gathering** (D112–D130, D157) — step C: the map stops handing you an economy.
+- **Environment and seasons** (D44, D45, D49, D53) — thirty-day seasons, shelter and exposure.
+- **The shell** (D54, D55, D113–D116, D149) — rebuilt twice, on Banished's shape.
+
+**Definition of Done — the honest version, and it is not met:**
+1. The **seasonal yield curve**, or the crops-and-orchards slice that replaces it (see queue 2).
+2. A **QA playthrough against a written checklist** (METHODOLOGY §3) — Phase 1 has one, Phase 2
+   does not.
+3. **The release blockers cleared** (METHODOLOGY §5): `VERSION` wired into the build, and
+   `src/Bclone.Game/export_presets.cfg` committed, without which `release.yml` can never succeed.
+4. A **fresh screenshot** — `ss001`/`ss002` predate both UI rebuilds and the thickets retiring.
+5. `CHANGELOG.md`'s header reconciled with METHODOLOGY §5, which deleted the practice it still
+   instructs.
+
+### The queue after Phase 2
+
+*One list, in one order. This supersedes §6's "Next up", which was a competing queue.*
+
+1. **⛔ THE MID-GAME GAP — a first-class design problem, not a content gap.** Joe: *"how to keep
+   the game interesting between stabilising the village and the first children becoming
+   laborers."* That window is about **twelve years** (D156). It is §2.3's dead-late-game question
+   arriving early, and **nothing in the list below is aimed at it** — they are things that might
+   happen to fill it, which is not the same. Decide what the answer is before building the
+   answer.
+2. **Crops and orchards** — sown in spring, harvested in autumn. **Replaces the seasonal yield
+   curve** (`environment-and-seasons.md §5.1`), which is three multipliers where this is a growth
+   cycle you can watch. What makes the year real and what the granary is *for*.
+3. **A golden over a village that clears ground** (D157). Neither existing golden paints a single
+   tile in fifty years, so step C's central mechanic has no drift guard at all.
+4. **Surface the overstretched warning** — `SimWorld.IsOverstretched` is computed and used only
+   by tests, so the player never sees it. This project's own rule: a feature the player cannot
+   reach does not exist.
+5. **Per-site yield, and retiring the 7-tile bound** (D58, §5). The biggest payoff on the board
+   and the largest re-derivation. Give it a fresh session.
+6. **Clothing** (`clothing.md`) — blocked twice over, and **livestock is both its input and its
+   reason**. Joe's call whether livestock comes back off the parked list to unblock it.
+7. **Joe's notes, recorded 2026-08-15 and none of them designed yet** — a Banished-style **town
+   hall** (he has more detail to give); an Animal-Crossing-style **museum**; **real-time charts**
+   with 1/5/10/20-year lookbacks, gated behind the town hall; **variety** of fish, crops, trees,
+   game and livestock; **nomads**. §6 has the detail. The charts are the one with an argument
+   already made for them: D131, D142 and D153 were each found by plotting exactly those series in
+   a throwaway, and the player has no such tool.
+
+### The long-run arc (the pillars, unchanged)
+
+Still the shape of the game, and still not to be built in parallel:
+**skill growth and apprenticeship (2.1)** → **knowledge-based tech tree (2.7, depends on 2.1)** →
+**systemic pressure: soil, exhaustion, climate drift, disease (2.3)** → **living region and trade
+(2.4)**. Desire-path roads (2.6) can land any time the cost field is worth extending. Biomes
+(2.5) are deferred by choice (`environment-and-seasons.md §5.4`).
+
+- **Carries a Phase 1 debt: make time-on-task personal (D28).** Vigour and skill should change
+  *how long* a job takes, not only how much it yields. Villagers move in perfect lockstep —
+  measured at 99.9% — because nothing distinguishes two people with the same home and the same
+  job. Scheduled with 2.1 because it is a §2.1 change and it forces the food economy to be
+  re-derived.
 
 Each phase should ship in a playable, legible state before the next begins.
 
@@ -900,45 +975,35 @@ What it needs, in order:
 
 **Then** D93 resumes at the quota probe, which is where D94 left it.
 
-**Next up** *(after the view — Joe's call)*:
-*Re-ordered by D62 — the previous queue was slices inherited from specs rather than the
-game Joe described.*
+**⛔ THE LIVE QUEUE IS `§4`, NOT THIS SECTION (D159).** This list and §4's build order were two
+roadmaps in two different orders, and this one is kept below **as history rather than as a
+plan** — it is the record of how the queue was reasoned about, which is worth keeping, and it is
+no longer what to work from. **Anything still outstanding has been folded into §4's queue.**
 
-**A → B → C is Joe's confirmed sequence (D64)** for the first three:
+*How it stood, and what became of each item:*
 
-**⚠️ Re-ordered again on Joe's call, 2026-08-01: C before B.** The winter-1 question is the
-more interesting one and stone is not a dependency of it — buildings cost logs today.
+**A → B → C was Joe's confirmed sequence (D64)**, re-ordered on his call 2026-08-01 to C before
+B, because the winter-1 question was the more interesting one and stone was not a dependency of
+it.
 
-- **A. Stock limits and laborers** (D62, D63, §2.2; `specs/stock-limits-and-laborers.md`) —
-  the player sets a target stock per good, production stops there, and the hands that frees
-  become laborers who haul. Derived floor, player ceiling. The missing player-facing
-  control, the honest answer to the idle winter, and what gives clothing a reason with no
-  animals and no trade.
-- **B. Stone and raw gathering** (D63) — the first new raw material, placed by the map
-  generator, and the half of laborer work that does not exist yet. Stone is what a building
-  past a log hut costs, so it unblocks the rest of Joe's list (iron, gold, silver, gems).
-- **C. The cold start** (D63, D64) — zero buildings, the founders' cart, the player brushing
-  the first zone and placing the first buildings. Last, because rebuilding the opening
-  before the control and the materials exist means rebuilding it twice.
+- **A. Stock limits and laborers** ✅ **BUILT** (D128, D141, D144) — the player sets a target
+  stock per good, production stops there, and the hands that frees become laborers who haul.
+- **B. Stone and raw gathering** ⏸️ **NOT BUILT, and no longer blocking anything.** Stone and
+  iron are in the valley as terrain (D91) and nothing mines them. It was queued as *what a
+  building past a log hut costs*; nothing has needed that yet.
+- **C. The cold start** ✅ **BUILT** (D70–D82, re-measured D119 and D157).
 
-Then, unsequenced:
+Then, unsequenced — *and here is what became of each:*
 
-1. **Clothing, starting from a founding stock that wears out** (D62). Unblocked by A;
-   `specs/clothing.md` needs rewriting around inheritance-that-decays rather than
-   unlock-you-build-toward.
-2. **Crops and orchards** — sown in spring, harvested in autumn, per-crop calendars.
-   **Replaces the seasonal yield curve** (`specs/environment-and-seasons.md §5.1`), which is
-   three multipliers where this is a growth cycle you can watch. This is what makes the year
-   real and what the granary is *for*.
-3. **The builder's hut** (D64) — builders assigned to a persistent workplace, sites as
-   errands, the marketer's shape. Wants to land near A, since it is the same conversation
-   about who does what work.
-4. **The 7-tile bound** — the biggest payoff on the board and the largest re-derivation.
-   **Mechanism settled (D58): per-site yield**, with richer distant sites as its other half.
-   Give it a fresh session.
-5. **Make the river matter** — water is impassable and provably so, but the generator steers
-   every village onto the side of the valley with the work on it, so nothing ever needs to
-   cross. Belongs with **bridges** (D40), which need the tech tree.
+1. **Clothing** (D62) — ⏸️ still blocked, still wants livestock. **§4 queue item 6.**
+2. **Crops and orchards** — 🔨 outstanding. **§4 queue item 2**, and it is what closes Phase 2's
+   Definition of Done.
+3. **The builder's hut** (D64) — ✅ **BUILT** (D108).
+4. **The 7-tile bound** — ⏸️ still the biggest payoff on the board. **§4 queue item 5.**
+5. **Make the river matter** — ⏸️ outstanding, and still true: water is impassable and provably
+   so, but the generator steers every village onto the side of the valley with the work on it,
+   so nothing ever needs to cross. Belongs with **bridges** (D40), which need the tech tree —
+   which is why it sits with the long-run arc in §4 rather than in the near queue.
 
 **Parked by D62, still good designs:** **livestock** (`specs/livestock.md`, D59–D61) and the
 **trade** dependency under it. They stop being urgent the moment clothing does not need

@@ -3,10 +3,23 @@
 You are helping build a ground-up, generational village-builder / survival sim (a spiritual successor to *Banished*). This file is your standing instructions for **how** to work. The **what** lives in `DESIGN.md`; the engineering **standards** live in `METHODOLOGY.md`.
 
 ## Before anything
-1. **Read `DESIGN.md` in full at the start of every session.** It is the source of truth for the design.
+1. **Read `DESIGN.md` §0–§5 in full at the start of every session** — what this is, the
+   Non-Negotiables, the pillars, the architecture, the build order, the open decisions. That is
+   the design, and it is short enough to actually read.
+   - **Then §6 (Progress Tracker)** for where the project is, and **the most recent ~20 entries
+     of §7 (Decisions Log)** for how it got there lately.
+   - **⚠️ §7 is 150+ entries of append-only history and is meant to be *searched*, not read front
+     to back** (D159 — the old instruction said "in full", and the doc outgrew it months ago).
+     When you touch a system, grep §7 for it: the reasoning behind almost every number in this
+     game is in there, and re-deriving it from scratch is how a decision gets quietly reversed.
 2. **Read `METHODOLOGY.md`** — it governs phasing, spec-first work, testing/QA, error logging, versioning, and CI. Follow it.
-3. Check the **Progress Tracker** (DESIGN.md §6) to see where we are before proposing work.
+3. **`§4` is the live roadmap and `§6` is the live status.** If they disagree, that is a bug in
+   the docs — say so. They disagreed for six weeks before D159 noticed.
 4. For any non-trivial system, read (or write) its spec in `specs/` before coding — spec first, then tests, then implementation (METHODOLOGY §2).
+   - **⚠️ Check the spec's status line against the suite, not just against itself.** Five specs
+     claimed "not started" or "in progress" for systems that had shipped, one of them for the
+     slice merged that morning (D159). A spec that lies about its own status is worse than no
+     spec, because it is read at exactly the moment a session is trying to orient.
 
 ## The prime directive
 The game has six **Non-Negotiables** (DESIGN.md §1) — legibility, meditative pace, no combat, people-not-spreadsheet stories, generational time as core loop, traceable-over-clever. **These are constraints on every feature.**
