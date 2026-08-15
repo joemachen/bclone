@@ -1029,6 +1029,41 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⛔ AND IF THE SITE IS STILL SHORT OF TIMBER, GO AND GET IT (Joe, D154).
+        //
+        // *"The builder waits at the construction site for 13 more logs. Just idling there for
+        // hundreds of ticks. It says they are 'raising a building' but they are waiting for
+        // materials instead of picking them up."* His screenshot: **27 of 40 logs, 0 of 60 ticks
+        // done, 240 logs in store.**
+        //
+        // **`Construction.Work()` is a no-op while materials are short** — by design, it will
+        // not start a building that has not been paid for — and this fell straight through it
+        // into `State = Building`. A villager in `Building` travels to their errand tile each
+        // tick, is already standing on it, and arrives again: deliver nothing, work nothing,
+        // stay `Building`. **`Decide` is never reached, so they never look for a store.**
+        //
+        // ⭐ CONFIRMED IN JOE'S OWN AUDIT TRAIL rather than argued from the code (METHODOLOGY
+        // §4, which is what that file is for). Hattie #3 sat in `building` from t2057 to t2309
+        // — **250 unbroken ticks, eating every eleventh one and doing nothing else** — and what
+        // finally moved her was the cold, not the work:
+        //   [t 2309] Hattie is dangerously cold and is going in to get warm
+        //   [t 2309] Hattie #3: building -> going in to get warm at (1, -3)
+        //
+        // So it is not a deadlock — hunger, cold or the three-yearly reshuffle eventually
+        // knocks them out and the site does finish (Joe's granary: marked t1985, finished
+        // t2489). It is hundreds of ticks of a villager standing on a footprint under a label
+        // that says they are working, which is §1.1 failing as squarely as any wrong number.
+        //
+        // Idle rather than a fetch of its own, so `WorkTheSite` makes the choice next tick with
+        // everything it knows — including D135's *"work a site that is not starved"* arm.
+        if (!site.HasMaterials)
+        {
+            villager.WorkNote =
+                $"{site.Name} still wants {site.LogsStillNeeded} logs — going for them.";
+            villager.State = VillagerState.Idle;
+            return;
+        }
+
         villager.WorkNote = string.Empty;
         site.Work();
         villager.State = VillagerState.Building;
@@ -1902,6 +1937,18 @@ public sealed class BehaviorSystem : ISimSystem
     /// </remarks>
     internal static void ArriveWithALoadForTest(SimWorld world, Villager villager) =>
         ArriveAt(world, villager, VillagerState.HaulingToStore);
+
+    /// <summary>A builder arriving at their site, posed directly (D154).</summary>
+    /// <remarks>
+    /// <b>The emergent case could not be reproduced, and that is the reason this seam exists.</b>
+    /// The stall needs a builder to arrive carrying less than the site wants, which depends on
+    /// what the nearest store happened to hold that tick — in the warm fixture the yard is
+    /// always stocked well enough for one trip to finish the job, so a synthetic run passes
+    /// however broken the branch is. Joe's audit trail is the evidence that it happens; this is
+    /// the invariant that stops it happening again, and unlike a long run it cannot go vacuous.
+    /// </remarks>
+    internal static void RaiseForTest(SimWorld world, Villager villager) =>
+        ArriveAt(world, villager, VillagerState.Building);
 
     private static void CollectFromStore(SimWorld world, Villager villager)
     {

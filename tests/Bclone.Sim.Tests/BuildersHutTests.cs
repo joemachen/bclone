@@ -358,6 +358,80 @@ public sealed class BuildersHutTests
         Assert.Equal(HutIn(world)!.Places, LabourQuota.BuildersWanted(world));
     }
 
+    /// <summary>
+    /// ⭐ A builder who delivers a part-load goes back for the rest.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing (D154):</b> <i>"The builder waits at the construction site for 13 more
+    /// logs. Just idling there for hundreds of ticks. It says they are 'raising a building' but
+    /// they are waiting for materials instead of picking them up."</i> His screenshot:
+    /// <c>granary 1 — Materials: 27 of 40 logs — 13 still to come. Work: 0 of 60 ticks done.
+    /// Queue: 1st of 1.</c> With **240 logs in store.**
+    /// </para>
+    /// <para>
+    /// <b>⛔ AND IT IS AN INFINITE LOOP, NOT A SLOW PATH.</b> <c>RaiseTheBuilding</c> delivers
+    /// whatever is in the builder's arms and then calls <c>site.Work()</c> — which is a **no-op
+    /// while materials are short** — and sets the state to <c>Building</c> anyway. A villager in
+    /// <c>Building</c> travels to their errand tile each tick, is already on it, and arrives
+    /// again: deliver nothing, work nothing, stay <c>Building</c>. **For ever.**
+    /// </para>
+    /// <para>
+    /// <b>It fires whenever the nearest store holds less than the recipe</b> — 27 of 40 in
+    /// Joe's case — which is why it survived: `carry_capacity` is 40 and a granary costs 40, so
+    /// a single well-stocked store completes it in one trip and the whole suite passed.
+    /// </para>
+    /// <para>
+    /// This is the third time a builder has been reported standing still (D135, D138), and
+    /// unlike those two it is not about which site they chose — it is about not going back.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ABuilderWhoDeliversAPartLoadGoesBackForTheRest()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        // Empty every store, so the only timber is what this test puts there.
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.TryTake(Goods.Logs, store.Store.Logs);
+        }
+
+        GridPos at = ClearGroundNear(world, BuildingKind.Granary);
+        Assert.True(world.Mark(BuildingKind.Granary, at).Allowed);
+
+        Workplace site = Assert.Single(
+            world.Workplaces, place => place.Construction?.Kind == BuildingKind.Granary);
+        int wanted = site.Construction!.Recipe.Logs;
+
+        // Less than the recipe, so the first trip cannot finish it — Joe's 27 of 40.
+        StoreBuilding yard = world.NearestStoreAccepting(
+            at, Goods.Logs, static _ => true)!;
+        yard.Store.Add(Goods.Logs, wanted - 13);
+
+        // ⚠️ ONE BUILDER, AND THAT IS WHY THE SUITE NEVER CAUGHT THIS. With a full hut the
+        // stuck builder is simply overtaken: a second one fetches the remaining logs and the
+        // site finishes, so every existing guard passes over the top of the bug. Joe's village
+        // has four people in it.
+        // Pose the arrival directly. A builder standing at a site that still wants timber
+        // must not be left in `Building` — that state re-arrives on the same tile every tick
+        // and never reaches `Decide`, so they never look for a store.
+        Villager builder = world.Villagers[0];
+        builder.Position = at;
+        builder.CarriedLogs = 0;
+        yard.Store.Add(Goods.Logs, 200);
+
+        Bclone.Sim.Systems.BehaviorSystem.RaiseForTest(world, builder);
+
+        _output.WriteLine(
+            $"site at {site.Construction!.LogsDelivered} of {wanted} logs; "
+            + $"the builder is now {builder.State}, note: \"{builder.WorkNote}\"");
+
+        Assert.False(site.Construction!.HasMaterials, "The site was not short, so nothing is tested.");
+        Assert.NotEqual(VillagerState.Building, builder.State);
+    }
     // ---------------------------------------------------------------
     //  ⭐ The hut is the only path to a building
     // ---------------------------------------------------------------
