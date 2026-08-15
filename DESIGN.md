@@ -803,8 +803,12 @@ there, because it is the slice that opens that method.
     is the same non-reacting script and grows a village to 21. Six go red without the fix and
     green with it, **checked by disabling the priority pass rather than assumed**. The seventh
     was a different bug — an opening that named no food or timber source at all since C-4.
-- **Still to come in step C:** the two village goldens re-taken (D157 moves history), then merge
-  back to `phase/2-wood-fuel-and-tools`.
+- **✅ STEP C IS DONE AND MERGED to `phase/2-wood-fuel-and-tools`.** The goldens needed no
+  re-taking (D157: they do not reach the changed code), and Joe's call was to take the golden
+  that would cover it **on the far side of the merge** rather than hold step C for it.
+- **⭐ First up on the other side: a golden over a village that clears ground.** D157's one open
+  hole — both existing goldens run an established village that never paints a tile, so the
+  clearing path has no drift guard at all. It is the mechanic step C is built on.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -991,6 +995,10 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D158 · 2026-08-15 · Three rulings from Joe, closing two things that had been open for three handoffs.**
+  - **⭐ HUNGER READS AS PRESSURE, NOT AS FAILURE** — Joe, asked directly after playing D155: *"hunger feels like pressure."* This is the open question D155 shipped with and could not answer from numbers: loosening `birth_food_percent` 80 → 60 gave the village children again and made hunger **10–21% of all deaths**, and whether that lands as tension or as the game breaking is a thing only the chair can tell you. **It lands as tension.** So the three guards D155 moved from *nobody starves* to *most people still die of old age* are at the right bar, and the ratio is now a design target rather than a number waiting for a verdict — if a later change drives hunger deaths well past a fifth, that is a regression against a stated intent instead of a matter of taste.
+  - **✅ `firewood_per_split` STAYS AT 50** — Joe: *"firewood is good where it is."* It has been an open question since the previous handoff and had accumulated two separate arguments against itself: D134 found that raising it to 50 divided the shed's derivation term by seven and quietly shrank the shed by an order of magnitude, and the fuel-ambition measurement found a cheaper habit *reduced* total timber production (365 logs to 174) because the fuel chain was the only thing employing foresters. **Both of those were fixed at their own site rather than by moving this number back** — the shed floors on `GranaryCapacity` by construction now, so the derivation cannot shrink it again. The number is settled; the two bugs it exposed are what it was really pointing at.
+  - **The missing golden waits for the next slice** (Joe: *"next"*). D157 records that neither existing golden paints a tile in fifty years, so nothing covers a village that clears ground. Not a merge blocker by Joe's call; it is the first item on the other side.
 - **D157 · 2026-08-15 · ⛔⭐⭐ THE VILLAGE PROMISED TO CLEAR THE GROUND AND, FOR ANY BUILDING FURTHER OUT THAN ITS OWN COPPICE, NEVER DID — so a gatherer's hut sited in real woodland is the one thing step C exists for and the one thing that killed every village that tried it.** Found by re-measuring the cold start (the last item on step C's list) rather than by looking for it. Joe's ruling on the fix: *"clearing order should defer to the build queue."*
   - **The symptom, on the shipped opening, forty years:** the hut is marked at (-9,-1) in the best woodland, **its tile is still `Forest` at year forty**, the hut never stands, no house is ever built, and all four founders freeze in winter 1 — with 83 logs in the pile and 126 on the ground the whole time. The panel says *"Waiting: the ground it stands on is still being cleared"* from t180 to the end. **The sentence was true and was never going to finish.**
   - **⭐ THE CAUSE IS TWO GOOD DECISIONS MEETING.** D100 paints a marked building's footprint for harvest and promises *the village clears the ground, the player does not have to*; **D127** then made harvest paint a *standing* instruction whose wood grows back, so a painted coppice is permanent work. `NearestHarvest` is cost-first. Between the village and a footprint eight tiles out there is always nearer coppice, and it always regrows before the laborers exhaust it — so **the tile that gated the entire food supply was never once the nearest tile.** Neither decision is wrong; the seam between them had nobody standing on it.
