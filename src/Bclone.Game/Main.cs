@@ -119,34 +119,21 @@ public partial class Main : Control
         _driver = new FixedTimestepDriver(config, sinks);
 
         BuildUi();
-        FastForwardForAScreenshot(config);
         Refresh();
     }
 
-    /// <summary>
-    /// Run the sim forward before drawing anything, when asked to
-    /// (<c>BCLONE_SCREENSHOT_YEARS</c>).
-    /// </summary>
-    /// <remarks>
-    /// A village at tick 3 has four people standing on their doorstep, an empty log and
-    /// nothing built — which is a true picture of the game and a useless one. This steps
-    /// the loop before the first frame so a screenshot can show a settlement that has
-    /// lived a while. It is also the quickest way to look at a state that takes an hour
-    /// to reach by playing: <c>BCLONE_SCREENSHOT_YEARS=80</c> and see what year 80 does
-    /// to the panels.
-    /// </remarks>
-    private void FastForwardForAScreenshot(SimConfig config)
-    {
-        if (!int.TryParse(
-                System.Environment.GetEnvironmentVariable("BCLONE_SCREENSHOT_YEARS"),
-                out int years)
-            || years <= 0)
-        {
-            return;
-        }
-
-        _loop.Step(config.TicksPerYear * years);
-    }
+    // ⛔ THE SCREENSHOT HOOK IS DELETED, NOT FIXED (D160, Joe's call). `BCLONE_SCREENSHOT` and
+    // `BCLONE_SCREENSHOT_YEARS` fast-forwarded an *unattended* founding and then photographed
+    // it — and since D110 an unattended founding raises nothing, so the hook had been
+    // photographing a dead valley ever since. D143 then made that correct rather than broken:
+    // an unattended village is supposed to die out.
+    //
+    // Teaching the harness to play the opening would mean moving `PlayTheOpening` out of the
+    // test project and into shipped code, which is a real cost for a convenience.
+    //
+    // ⚠️ THIS REOPENS D11'S WARNING RATHER THAN ANSWERING IT: `src/Bclone.Game` now has no
+    // automated verification of any kind. Looking at it is the verification, and Joe's eyes are
+    // the test.
 
     public override void _Process(double delta)
     {
@@ -158,67 +145,6 @@ public partial class Main : Control
         }
 
         Refresh();
-        MaybeTakeAScreenshot();
-    }
-
-    /// <summary>Frames to let the village run before a screenshot is taken.</summary>
-    /// <remarks>
-    /// Long enough for the map to frame itself and for the panels to have something in
-    /// them — a shot of tick 0 shows an empty log and a village that has not moved.
-    /// </remarks>
-    private const int FramesBeforeAScreenshot = 300;
-
-    private int _framesDrawn;
-
-    /// <summary>
-    /// Render the window to a PNG and quit, when asked to (<c>BCLONE_SCREENSHOT</c>).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>The only verification a view change has.</b> Nothing in <c>src/Bclone.Game</c>
-    /// can be unit-tested — D11 puts it outside the solution on purpose — so "does it
-    /// look right?" is answered by looking, and this is what makes looking repeatable.
-    /// It is also how the README's screenshot is taken, and how one gets captured for
-    /// each version (METHODOLOGY §5).
-    /// </para>
-    /// <para>
-    /// <b>Permanent rather than throwaway, deliberately.</b> This exact hook was written
-    /// and deleted twice while chasing a map that jumped and a panel that clipped, and
-    /// D54 recorded the conclusion: <em>the fact that it took throwaway code to make it
-    /// is the argument for giving the view a permanent way to do this.</em> It costs one
-    /// integer compare per frame when the variable is unset.
-    /// </para>
-    /// <para>
-    /// Environment rather than a command-line flag because Godot owns argument parsing
-    /// and would have to be taught to ignore an unknown one.
-    /// </para>
-    /// </remarks>
-    private void MaybeTakeAScreenshot()
-    {
-        if (++_framesDrawn != FramesBeforeAScreenshot)
-        {
-            return;
-        }
-
-        string? path = System.Environment.GetEnvironmentVariable("BCLONE_SCREENSHOT");
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return;
-        }
-
-        // Forced, because the texture otherwise holds whatever was drawn last frame —
-        // which on the frame a panel changes is the version without the change in it.
-        RenderingServer.ForceDraw();
-
-        Error saved = GetViewport().GetTexture().GetImage().SavePng(path);
-        if (saved != Error.Ok)
-        {
-            // Loudly (METHODOLOGY §4). A screenshot that silently did not happen is
-            // worse than none, because the file on disk is the previous run's.
-            GD.PushError($"bclone: could not write the screenshot to {path} — {saved}.");
-        }
-
-        GetTree().Quit();
     }
 
     /// <summary>Close the audit log cleanly when the window goes.</summary>

@@ -27,8 +27,8 @@ build does *not* cover it, D11).
 
 ## ⛔ START HERE
 
-**Write the golden that covers a village clearing ground.** It is the one hole this session
-opened and Joe's call was to take it on this side of the merge (D158).
+**Write the golden that covers a village clearing ground.** It is the one hole D157 opened and
+Joe's call was to take it on this side of the merge (D158).
 
 D157 measured that **neither existing 50-year golden paints a single tile** — `HarvestTiles` is
 **0 on all 24,000 ticks** of both the fixture and the shipped run, because both start from an

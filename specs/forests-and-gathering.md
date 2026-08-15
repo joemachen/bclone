@@ -293,8 +293,9 @@ which they do, since a hut's ring regrows and is worked continuously.
    ring cleared yields about half; a hut with a bald ring yields nothing and **says so**.
 4. **Anti-vacuity throughout (D7):** clearing a ring must change a number, or the guard is
    measuring a constant.
-5. **Screenshots after slices 1 and 2** — the forest and the ring are the two things only eyes can
-   check (D11). `BCLONE_SCREENSHOT` + `BCLONE_SCREENSHOT_YEARS`, METHODOLOGY §6.
+5. **Eyes on it after slices 1 and 2** — the forest and the ring are the two things only eyes can
+   check (D11). *This said to use `BCLONE_SCREENSHOT`; that hook is deleted (D160), so it means
+   playing the game and looking.*
 6. **A determinism guard on the density cache**: two runs of one seed that clear the same tiles
    must hash identically, or the cache has become a second source of truth.
 
