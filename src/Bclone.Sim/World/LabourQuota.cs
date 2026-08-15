@@ -290,7 +290,9 @@ public readonly record struct LabourQuota
         // silently has killed them without saying so. The saying-so happens once, when the
         // limit is set (SimWorld.SetStockLimit) — not once a tick, which is the nag D42
         // deliberately avoided.
-        bool foodIsEnough = limits.IsMet(Goods.Food, world.FoodInGranaries());
+        // What the village holds, not only what is in the granaries (D161): a player's food
+        // limit is about the village's stock, and a farm's buffer is part of it.
+        bool foodIsEnough = limits.IsMet(Goods.Food, world.FoodTheVillageHolds());
 
         int foragers = canGather && !foodIsEnough ? Take(ref free, toFeedEveryone) : 0;
         woodcutters = Take(ref free, Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter)));

@@ -1473,8 +1473,10 @@ public sealed class BehaviorSystem : ISimSystem
         // half used to be dead in a cold start — no granary, no room, so the only
         // reason to work was your own larder, and the household that filled theirs
         // first rested while their neighbours did everything.
+        // AND WHAT THE VILLAGE HOLDS, NOT WHAT IS IN THE GRANARIES (D161) — the same
+        // correction one store over: food buffered at a farm is food the village has.
         bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household)
-            || world.FoodInGranaries() < world.FoodTheVillageHasRoomFor();
+            || world.FoodTheVillageHolds() < world.FoodTheVillageHasRoomFor();
 
         // FETCH — before work, because a household with an empty larder has a more
         // pressing errand than its job.

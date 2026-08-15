@@ -105,9 +105,17 @@ is D10's teleport-with-extra-steps in reverse.
    farm's own store fills first because it is underfoot, and once it is full the walk gets
    longer. **That is what makes the 100 mean something**: the buffer is free, and running it dry
    is the market's job.
-2. **The marketer collects harvested goods from farm storage as well as granaries.** Its
-   destination is unchanged (households below target, D36); what widens is where it may *source*
-   from.
+2. **The marketer collects harvested goods from farm storage as well as granaries** — but
+   **the granary comes first, and a farm is only used if it happens to be nearer** (Joe):
+   *"focus on granary first and only grab from a farm if it happens to be near by — filling up
+   residential larders for example."* Its destination is unchanged (households below target,
+   D36); what widens is where it may *source* from.
+   - **The rule, expressed without a magic number:** a workplace store is a candidate **only
+     when it is strictly nearer than the nearest store building holding that good.** No
+     threshold, no new tunable, one comparison, deterministic — and it produces exactly the
+     behaviour asked for: a trader passing the farm on an errand uses it, a trader across the
+     village does not detour. **A tuned radius here would be a number nobody could derive**
+     (D16), and D112 already traded a fence for a consequence once.
 3. **⛔ Laborers do not move farmed goods** — not to granaries, not to markets. Hauling stays
    what it is today: building materials. **Farm food moves by farmer or by trader, or it sits.**
 
@@ -153,6 +161,17 @@ regrowth sweep.
   data file* later costs nothing.
   - ⚠️ **The id is sim state, so it is hashed** (D51's rule) — and hashed **sparsely**, the way
     zones and ground stacks are, so a village with no fields mixes nothing at all.
+  - **It lives beside `Terrain` and `Soil` on `GeneratedMap`, set through a door of its own the
+    way `SetTerrain` is** (D85). Two reasons: it is *a fact about the ground*, which `MixMap`'s
+    own comment names as the test for what belongs there; and the index arithmetic, bounds
+    handling and out-of-range read already exist, so a parallel structure would be a second way
+    to ask where a tile is — D145's *two ways to do the thing*.
+  - **⚠️ Appended, never renumbered.** `Terrain` values are hashed by position, so inserting
+    `Field`/`Sown`/`Ripe` anywhere but the end would silently reinterpret every golden and every
+    seed. The same rule `JobKind.Forester` is pinned to value 1 by.
+  - **The map golden is safe by construction and the claim is checkable:** the generator never
+    produces these values, so a generated valley hashes byte-identically. Anything else means
+    the change was not what it claimed to be.
 - **The map golden does not move**, and this is checkable: the generator never produces these
   terrains, so a generated valley is byte-identical. **The two 50-year village goldens *will*
   move**, once, deliberately, in their own commit with a stated reason (D152).
@@ -262,8 +281,15 @@ passes its birth gate. **Checked red first**, against the current code, where it
 
 - **Soil fertility, rotation and fallow.** `buildings-plan.md` lists rotation as a *knowledge
   node*, and §2.3 wants exhaustion as a pressure axis. **It needs the tech tree (Phase 4)** and
-  it would double this slice. The data model above leaves room: fertility is a per-tile number
-  when it arrives, which is `mutable-terrain.md`'s surface rule again.
+  it would double this slice.
+  - **⭐ AND THE GROUNDWORK IS ALREADY LAID, WHICH A FUTURE SESSION SHOULD NOT RE-DERIVE.**
+    `GeneratedMap.Soil` **already exists**: a byte of soil quality per tile, drawn from the
+    run's seed between `SoilQualityMin` and `SoilQualityMax`, **already mixed into the state
+    hash** — and **read by nothing in the sim**. `MapGenerator` says why in its own comment:
+    it was put in the draw order early *"so when soil depletion lands it does not have to
+    change the DRAW ORDER"*, which would move the founding site, the seams and every seed
+    anybody has written down. **So fertility already has a home and a place in the seed
+    contract; it is waiting for a reader, not for a design.**
 - **Orchards** — see §8.
 - **New crop varieties.** Wheat/barley/rye/roots/cabbage/flax are in `buildings-plan.md §4` and
   are **flavour and unlock**, not mechanics. One crop, well, first.
@@ -329,8 +355,9 @@ being asked to think past one lifetime. Building it here would spend it as a foo
   §1's target, not picked (D16), and none of them is derived yet. **Expect the fixture and the
   shipped config to disagree at least once** — that has happened six times and METHODOLOGY §3
   exists because of it.
-- **What a farm store full of food does to the winter forecast and the market's priorities.**
-  §6.1 makes the four blind readers see it; whether the *market* should prefer draining a farm
-  over a granary is a separate question and is not answered here.
+- **What a farm store full of food does to the winter forecast**, which reads `TotalFood()` via
+  `ClockSystem` and therefore already sees workplace stores — the one reader that will *not*
+  change in §6.1, and so the one that could end up disagreeing in the other direction.
 
-*(The hauling question — farmer versus laborer — was open here and is resolved in §3.2.)*
+*(Both questions that were open here are resolved in §3.2: the farmer hauls, and the market
+prefers the granary.)*

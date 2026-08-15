@@ -570,7 +570,11 @@ public sealed class HouseholdSystem : ISimSystem
         // singleton seam worth fixing before placement shipped. A second granary the
         // birth gate could not see would have been a building the player paid for that
         // did nothing at all.
-        if (world.FoodInGranaries() < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
+        // ⭐ AND IT ASKS WHAT THE VILLAGE *HOLDS*, NOT WHAT IS IN THE GRANARIES (D161). Those
+        // were the same number until the farm's local store landed; a village whose harvest
+        // sat at the farm would have read zero here and stopped having children, which is
+        // D155's symptom arriving from a new direction. See SimWorld.FoodTheVillageHolds.
+        if (world.FoodTheVillageHolds() < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
         {
             return false;
         }

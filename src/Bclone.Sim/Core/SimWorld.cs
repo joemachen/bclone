@@ -256,7 +256,50 @@ public sealed class SimWorld
     // would have let the ones nobody re-read keep the old answer.
 
     /// <summary>Total food across every granary in the village.</summary>
+    /// <remarks>
+    /// <b>⚠️ Literally what it says, and that is why it is no longer what decisions read.</b>
+    /// It counts <see cref="StoreBuildings"/> and nothing else. Use it for the panel, where the
+    /// player is being told what is in the buildings; use <see cref="FoodTheVillageHolds"/> for
+    /// any question of the form *does the village have enough food?*
+    /// </remarks>
     public int FoodInGranaries() => TotalAccepting(Goods.Food, static store => store.Food);
+
+    /// <summary>
+    /// ⭐ All the food the village is holding — its stores <em>and</em> its workplaces (D161).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This exists because <see cref="Workplace.Store"/> is about to be written to for the
+    /// first time.</b> It has been on the type since D30 and nothing has ever put anything in
+    /// it, so <see cref="FoodInGranaries"/> and <see cref="TotalFood"/> have never once
+    /// disagreed. The farm fills a local store (`crops-and-orchards.md §3.1`), and on that day
+    /// they diverge by up to a hundred food per farm — with the **birth gate**, the village-wide
+    /// reason to gather, and the food stock limit all reading the blind one.
+    /// </para>
+    /// <para>
+    /// <b>The failure it prevents is a village that quietly stops having children</b> because
+    /// its food is in the wrong building — D155's symptom from a new direction, and structurally
+    /// D81's bug: one comparison asking two different questions. D81 is recorded as *D76's seam
+    /// for the fifth time*. **Found by writing the spec, before the farm existed.**
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Larders are deliberately excluded, and that boundary is load-bearing.</b> This sits
+    /// between the two readers that already exist: wider than the granaries, narrower than
+    /// <see cref="TotalFood"/>. A household's larder is food already *distributed* — counting it
+    /// here would re-add the household term D153 deliberately removed from the birth gate.
+    /// </para>
+    /// </remarks>
+    public int FoodTheVillageHolds()
+    {
+        int total = FoodInGranaries();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            total += Workplaces[i].Store.Food;
+        }
+
+        return total;
+    }
 
     /// <summary>Total logs anywhere a household or a builder could fetch them from.</summary>
     public int LogsInSheds() => TotalAccepting(Goods.Logs, static store => store.Logs);
