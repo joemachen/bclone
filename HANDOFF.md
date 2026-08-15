@@ -1,109 +1,135 @@
 # Handoff — bclone
 
-Read `CLAUDE.md`, then **`DESIGN.md` §6 (Progress Tracker) and §7 (Decisions Log), D156 back to
-D142** — that range is this session — then `METHODOLOGY.md`, then the spec for whatever you are
-about to touch. New this session: `specs/housing-and-density.md`.
+Read `CLAUDE.md`, then **`DESIGN.md` §6 (Progress Tracker) and §7 (Decisions Log), D158 back to
+D142**, then `METHODOLOGY.md`, then the spec for whatever you are about to touch. The spec that
+matters most for what comes next is `specs/goods-on-the-ground.md` **§5.3 and §5.3a**.
 
 ---
 
 ## Where things are
 
-Branch **`wip/step-c-retire-thickets`**. Parent `phase/2-wood-fuel-and-tools` untouched.
+**Branch `phase/2-wood-fuel-and-tools`. Step C is merged and `wip/step-c-retire-thickets` is
+done with** — 53 commits, merged `--no-ff` as *"Step C: the thickets retire and the valley stops
+feeding you"*. The tree is clean.
 
-**Suite: 563 passing, 0 failing, 9 skipped of 572. Green. Everything is committed; the tree is
-clean.** It opened this session at 533 / 13 / 9 of 555.
+**Suite: 570 passing, 0 failing, 2 skipped of 572. Green.** It opened the session at
+533 / 13 / 9 of 555. **Both remaining skips are rulings, not debt** — an unattended village is
+supposed to die out (D143), and D134 retired the granary as the binding cap. ⚠️ Both still have
+the *wrong reason* typed in their skip text; that is a ten-minute tidy and not a finding.
 
-**The Godot view builds** (`dotnet build src/Bclone.Game/Bclone.Game.csproj` — the solution build
-does *not* cover it, D11).
+**The Godot view builds** (`dotnet build src/Bclone.Game/Bclone.Game.csproj` — the solution
+build does *not* cover it, D11).
+
+**Phase 2's Definition of Done is still not met**, which is why this branch is unmerged to
+`main`. The headline (environment and seasons) wants its last slice; see §6.
 
 ---
 
-## ⛔ START HERE — one item, then the merge
+## ⛔ START HERE
 
-**Re-measure the cold start, then merge step C back to `phase/2-wood-fuel-and-tools`.** That is
-the whole of what is left. `ColdStartTests` is the file; D119 is the last time it was measured
-(*"one hut on the shipped 25 logs stands t224 and is staffed t241 against a winter at t360"*),
-and **six of its guards are currently skipped** — check whether the economy has moved enough to
-un-skip any of them.
+**Write the golden that covers a village clearing ground.** It is the one hole this session
+opened and Joe's call was to take it on this side of the merge (D158).
 
-Everything else on step C's list is done: the goldens are re-taken (D152, D155, D156), the
-map-generation guards re-based (D150), the ageing guard re-based (D151).
-
-⚠️ **Nine ticks of the cold start have moved this session** and none has been re-measured:
-D153 (birth gate), D154 (builders no longer stall), D155 (`birth_food_percent` 80 → 60), D156
-(`adult_age` 15 → 12). Expect the numbers to differ from D119's and **state the new ones**.
+D157 measured that **neither existing 50-year golden paints a single tile** — `HarvestTiles` is
+**0 on all 24,000 ticks** of both the fixture and the shipped run, because both start from an
+*established* village whose houses already stand, so nothing is ever marked on wooded ground.
+The clearing path therefore has **no drift guard at all**, and it is the mechanic step C is
+built on. Do not re-take the two existing goldens — they are correct and unmoved; add a third
+over an opening that actually clears.
 
 ---
 
 ## What happened this session, in one line each
 
-Every one of these came from Joe playing, except D145 and D150–D152.
-
 | | |
 |---|---|
-| **D142** | Every fell in the village was billed `PlantTicks` — 12 ticks against a `cut_ticks` of 4 — since D137. Cost D36's market acceptance test. |
-| **D143** | ⭐⭐ **An unattended village is *supposed* to die out** (Joe). Six acceptance guards had been demanding the game play itself. Also settles the D103/D131/D134 "the village never asks for the second one" family as working-as-designed. |
-| **D144** | The store filter was answered by the predicate and ignored by two deposit paths — 1,500 firewood into a shed refusing it. Also found firewood being *destroyed* once the woodyard filled. |
-| **D145** | Swept every player control for D144's gap. Found one more: a met Logs limit never reached the forester. |
-| **D146** | The forester toggle is **felling**, not planting; a capped hut replants. `SetStaffing` is a ceiling, not a summons. |
-| **D147** | Idle buildings get a ring on the map, like D140's full stores. The design work is all in what does *not* light up. |
-| **D148** | The professions column carried three meanings at once. |
-| **D149** | Panel columns were a fixed 400px — 19% of Joe's window was map, now 45%. |
-| **D150–D152** | Three map guards re-based; the Phase 0 ageing guard re-based; the three goldens re-taken. |
-| **D153** | ⭐ Birth gate loses its two household terms; `max_household_size` 7 → 5. |
-| **D154** | A builder who delivered a part-load stood on the footprint for 250 ticks. |
-| **D155** | `birth_food_percent` 80 → 60 — the village has children again. |
-| **D156** | `adult_age` 15 → 12: an uneducated child works at twelve. |
+| **D157** | ⛔⭐⭐ The village promised to clear a marked building's ground and, for anything further out than its own coppice, **never did**. Cost every village that sited a hut in real woodland. |
+| **D158** | Joe's three rulings: hunger reads as **pressure**; `firewood_per_split` **stays at 50**; the missing golden waits for the next slice. |
+
+**D157 in full, because it is the shape to remember.** D100 paints a marked building's footprint
+for harvest and promises *the village clears the ground, the player does not have to*. D127 then
+made harvest paint a **standing** instruction whose wood grows back. `NearestHarvest` is
+cost-first. Put together: between the village and a footprint eight tiles out there is *always*
+nearer coppice, and it always regrows before the laborers exhaust it — **so the footprint is
+never the nearest tile and is never cleared at all.** A gatherer's hut marked in the best
+woodland was still standing on `Forest` at year forty, with the panel saying *"the ground it
+stands on is still being cleared"* the whole time, and all four founders frozen in winter 1.
+
+**Neither decision was wrong. Nobody was standing on the seam between them.**
+
+Fixed as a **priority, not a scope change**: a blocked footprint is taken before any coppice —
+free buildings first in marking order, then construction sites in **the build queue's own order,
+rank then id** (Joe: *"clearing order should defer to the build queue"*), so clearing defers to
+building instead of inventing a second ordering over one list.
+
+---
+
+## The cold start, re-measured — these are the current numbers
+
+Shipped config, founding site `(-1,-1)`, forty years. **Quote these, not D119's.**
+
+| | D119 | now |
+|---|---|---|
+| gatherer's hut stands | t224 | **t161** |
+| staffed | t241 | t241 |
+| first firewood | t253 | **t133** |
+| first house | — | t297 |
+| winter 1 | t360 | t360 |
+| alive at year 20 | 4 | **12** |
+| alive at year 40 | — | **22**, six homes |
+
+Nobody starved, nobody froze. **D119's stall — *"four people, forever"* — is gone**, and that is
+D153/D155/D156 rather than D157. Joe's original stated risk (no food until the hut stands) still
+does not happen; the cart covers it.
 
 ---
 
 ## Open with Joe — do not decide alone
 
-1. **His notes for later are in `DESIGN.md` §6**, recorded but not designed: a Banished-style
-   **town hall**; an Animal-Crossing-style **museum** of everything unlocked; **real-time charts**
-   (1/5/10/20-year lookbacks) gated behind the town hall; **variety** of fish, crops, trees, game
-   and livestock; **nomads** and accepting or rejecting them. He has more detail to give on the
-   town hall.
-2. **⛔ The mid-game gap is the real design problem in that list**, and it is his phrasing: *"how
-   to keep the game interesting between stabilising the village and the first children becoming
-   laborers."* That window is now about **twelve years**. It is §2.3's dead-late-game question
-   arriving early.
-3. **Hunger is now a real cause of death** (10–21% of deaths, D155). Joe has not yet played a
-   village long enough to say whether that *reads* as pressure or as failure. **Ask.**
-4. **`firewood_per_split: 50`** — still unresolved from the previous handoff.
+1. **⛔ The mid-game gap is still the real design problem**, in his words: *"how to keep the game
+   interesting between stabilising the village and the first children becoming laborers."* That
+   window is about **twelve years**. §2.3's dead-late-game question arriving early. Nothing has
+   been done about it.
+2. **His notes for later are in `DESIGN.md` §6**, recorded but not designed: a Banished-style
+   **town hall** (he has more detail to give); an Animal-Crossing-style **museum**; **real-time
+   charts** with 1/5/10/20-year lookbacks, gated behind the town hall; **variety** of fish, crops,
+   trees, game and livestock; **nomads**.
+3. **Two questions closed this session — do not reopen them.** Hunger at 10–21% of deaths *is*
+   the intent (so a later change pushing it well past a fifth is a regression against a stated
+   target, not a matter of taste), and `firewood_per_split: 50` is settled.
 
 ---
 
-## ⚠️ Traps this session paid for
+## ⚠️ Traps, carried forward and added to
 
-- **⭐ MEASURE, AND MEASURE THE RIGHT THING.** D142's attribution of the ageing guard was
-  **wrong** and stood for a day: it blamed planting-by-default and the shed floor, and D151 found
-  the metric was *trips per season*, which is floored at 1–2 in that fixture. **A measurement
-  that only distinguishes 1 from 2 will happily attribute itself to whatever you last changed.**
-- **A guard that searches for its own precondition reports the search.** Four `WorkGroundAllowance`
-  tests and the river guard both did this.
-- **⭐ Anti-vacuity is not optional and it caught real mistakes here.** *Three* guards I wrote this
-  session passed against the unfixed code and had to be rewritten — D154's twice. **Check every
-  new guard red before believing it.**
-- **A control tested at its predicate and never at its deposit is a control nobody has tested**
-  (D144). Five guards on the store filter all passed while it was ignored entirely.
-- **`SetStaffing` is a ceiling, not a summons** (D146). A test that raises the number and steps is
-  at the mercy of what the village happens to want that season. Pose the case directly.
-- **⭐ The audit trail is evidence and the suite is not.** D154 was found in
-  `src/Bclone.Game/logs/` — Hattie sat in `building` for 250 ticks — after I failed to reproduce
-  it synthetically. **Ask Joe for the log path from his header; it is in every screenshot.**
-- **`python` string replaces silently no-op on CRLF files.** Cost three wasted runs. Use the Edit
-  tool, or read with `newline=''` and assert the match.
-- **Fixture-vs-shipped divergence, now six times.** D155 refused a setting that was the *best* row
-  on the fixture and one of the worst on shipped.
-- **The full suite is ~13 minutes.** Background it. Do not trust `tail -120` to capture the
-  failure list — it truncates the early ones.
+- **⭐⭐ AN ARM THAT VARIES ONE THING AND DIES BOTH WAYS HAS RULED THAT THING OUT AND SAID
+  NOTHING ABOUT THE CAUSE.** This is the session's own lesson and it is D142's and D151's for the
+  third time. `HousesAreBuiltTests`' skip ran a control, correctly wrote *"the granary is
+  innocent"*, and then wrote *"what kills them is the opening needing a reacting player"* —
+  **which it had not tested at all.** That wrong cause sat in the skip text of seven guards for
+  two days. The right cause was in the builder's own `WorkNote`, in English, in the audit trail.
+- **⭐ THE AUDIT TRAIL IS EVIDENCE AND THE SUITE IS NOT** (carried from last session, paid for
+  again). D157 was found by printing villager `State` and `WorkNote` every thirty ticks, not by
+  a test. **Ask Joe for the log path from his header; it is in every screenshot.**
+- **⭐ Anti-vacuity is not optional.** Six of the seven restored guards were checked **red**
+  against the fix by stubbing the priority pass out. Do not believe a guard you have not seen
+  fail.
+- **A green golden can mean "not covered" rather than "no-op".** D157 expected both goldens to
+  move, and they did not — so the reason was *measured* rather than assumed, and it was that
+  neither reaches the code. **If a change should have moved a number and did not, find out why.**
+- **`python` string replaces silently no-op on CRLF files, and now also die on the emoji** —
+  `UnicodeDecodeError: 'charmap' codec`. Use the Edit tool. This cost a run again.
+- **`dotnet test` buffers stdout when redirected to a file**, so a background run looks frozen at
+  ten lines for eleven minutes. Check `testhost`'s CPU (`Get-Process testhost`) to tell working
+  from hung — it was at 6,187s when it looked dead.
+- **The full suite is ~11–13 minutes.** Background it. Do not trust `tail` to capture the failure
+  list.
+- **Fixture-vs-shipped divergence, now seven times.** METHODOLOGY §3 exists because of it.
 
 ---
 
 ## Working with Joe
 
-Technical, not a game/systems programmer. Casual, direct; push back honestly — he overruled me
-twice this session and was right both times (D146's capped hut replanting, and the residential
-brush in D153). **End every message with the explicit ask**, or he cannot tell who is blocking
-whom.
+Technical, not a game/systems programmer. Casual, direct; push back honestly — his call on
+build-queue ordering was better than my first cut, which had invented a second ordering over one
+list. **End every message with the explicit ask**, or he cannot tell who is blocking whom.
