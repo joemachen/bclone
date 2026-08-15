@@ -745,8 +745,10 @@ there, because it is the slice that opens that method.
   **The two that remain are skipped on rulings rather than on unfinished work:**
   `TheVillageTheGameLoadsHoldsForThreeCenturies` runs an unattended village, which D143 says is
   supposed to die out, and `CapacityIsWhatHoldsThePopulationFlat` is D134's — the granary stopped
-  being the binding cap. ⚠️ **Both still carry the wrong reason in their skip text** (they blame
-  D157's misattribution), which is a ten-minute tidy nobody should mistake for a finding.
+  being the binding cap, the timber shed did. ⚠️ **Corrected by D159: only the first carried a
+  wrong reason** — it had inherited D157's reacting-player misattribution. `StorageTests`' was
+  right all along and was left alone. The claim here that *both* were wrong was itself an
+  unchecked assertion, made the same afternoon as the finding about unchecked assertions.
 - **The three map-generation guards are re-based** ✅ (D150). None was a generator bug: each was
   a guard left pointing at a rule a later decision withdrew — the river one hunting for a
   detour that step C removed, the budget one measuring with the ruler D121 deleted *and*

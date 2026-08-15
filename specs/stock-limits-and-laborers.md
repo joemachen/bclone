@@ -1,7 +1,11 @@
 # Spec: Stock limits and laborers — the player says how much, and the spare hands haul
 
 **Decisions:** **D62**, **D63**, D64. Builds on D51 (staffing overrides) and D42 (zoning).
-**Slice:** A of Joe's confirmed A → B → C. **Status:** specced, not started.
+**Slice:** A of Joe's confirmed A → B → C. **Status:** ✅ **BUILT.** The limits, the laborers who
+haul when production stops, and the per-building store filter all ship (D128 repaired the limits
+after they were found not reaching the forester; D141 added the filter; D144 found it obeyed by
+the predicate and ignored by two deposit paths). Guarded by `StockLimitTests` and
+`StoreFilterTests`. Marked *"not started"* for a fortnight after it shipped; see D159.
 
 ---
 

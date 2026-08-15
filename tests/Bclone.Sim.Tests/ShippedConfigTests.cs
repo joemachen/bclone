@@ -218,17 +218,25 @@ public sealed class ShippedConfigTests
     /// </para>
     /// <para>
     /// So this is no longer a guard about three-century stability; it is a guard about whether
-    /// an empty valley feeds people, and the answer is deliberately no. Adding
-    /// <c>PlayTheOpening</c> would not rescue it either — that is exactly the arm that skipped
-    /// six guards in <see cref="ColdStartTests"/>, because an opening marked once and never
-    /// revisited does not survive. Restore it against a reacting harness, where "the village
-    /// the game loads" can mean a village somebody is actually playing.
+    /// an empty valley feeds people, and the answer is deliberately <b>no</b> — that is D143,
+    /// Joe's ruling, in as many words: <i>"an unattended village should die out. The user needs
+    /// to play the game at some point."</i>
+    /// </para>
+    /// <para>
+    /// <b>⚠️ CORRECTED BY D159.</b> This used to go on to say that adding <c>PlayTheOpening</c>
+    /// *"would not rescue it either — an opening marked once and never revisited does not
+    /// survive"*. **That was the misattribution D157 overturned**: a scripted opening that never
+    /// reacts grows a village to 21 people; what killed those runs was a footprint the village
+    /// would never clear. So the reason to restore this against a *played* opening is real and
+    /// the excuse for not doing it was not. It is a straightforward rewrite — give it
+    /// <c>PlayTheOpening</c> and assert the peak and the causes of death, the way D143 re-based
+    /// the other six long-horizon guards.
     /// </para>
     /// </remarks>
-    [Fact(Skip = "The shipped config sets founding_buildings: false and the thickets are "
-        + "retired, so an unattended valley now has no food source at all — four laborers, "
-        + "dead by season four. This measures the empty valley, not three-century stability. "
-        + "Restore with a reacting harness.")]
+    [Fact(Skip = "D143: an unattended village is supposed to die out, and this runs 300 years "
+        + "with nobody marking anything on a config that starts with no buildings — so it "
+        + "measures the empty valley, not three-century stability. Restore by giving it "
+        + "PlayTheOpening and asserting the peak and the causes of death (D143's re-base).")]
     public void TheVillageTheGameLoadsHoldsForThreeCenturies()
     {
         SimConfig config = Shipped;

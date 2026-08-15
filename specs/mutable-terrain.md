@@ -1,7 +1,11 @@
 # Spec: Mutable terrain — the foundation the harvest brush stands on
 
-**Decisions:** D18, D40, D41, D42, D84. **Slice C3a** — the first of C3, and the only part of
-it that is unblocked. **Status:** specced, in progress.
+**Decisions:** D18, D40, D41, D42, D84, D85. **Slice C3a** — the first of C3.
+**Status:** ✅ **BUILT** (D85). Terrain changes during a run and every system that cached an
+answer about it finds out, through `SetTerrain` as the one door — which is what D100's
+clear-the-ground-for-a-building rule was later hung off, and what D157's clearing priority
+depends on. Guarded by `MutableTerrainTests`. Marked *"in progress"* long after it finished; see
+D159.
 
 ---
 

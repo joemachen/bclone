@@ -14,8 +14,8 @@ feeding you"*. The tree is clean.
 
 **Suite: 570 passing, 0 failing, 2 skipped of 572. Green.** It opened the session at
 533 / 13 / 9 of 555. **Both remaining skips are rulings, not debt** — an unattended village is
-supposed to die out (D143), and D134 retired the granary as the binding cap. ⚠️ Both still have
-the *wrong reason* typed in their skip text; that is a ten-minute tidy and not a finding.
+supposed to die out (D143), and D134 retired the granary as the binding cap in favour of the
+timber shed. Both skip reasons now say the right thing (D159 fixed the one that did not).
 
 **The Godot view builds** (`dotnet build src/Bclone.Game/Bclone.Game.csproj` — the solution
 build does *not* cover it, D11).

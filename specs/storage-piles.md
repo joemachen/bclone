@@ -1,7 +1,11 @@
 # Spec: Storage piles, and asking for a store by what it holds
 
-**Decisions:** D64, D70–D75, and D76 to come. **Slice C1** of the Banished opening.
-**Status:** specced, in progress.
+**Decisions:** D64, D70–D76. **Slice C1** of the Banished opening.
+**Status:** ✅ **BUILT.** A store is asked for by what it holds rather than by which building it
+is (D76 — the seam that recurred five times), and a pile stands the tick it is marked on clear
+ground (D98). D90 made the pile load-bearing again by stopping the cart taking logs. Guarded by
+`InstantPileTests` and `PluralStoresTests`. Marked *"in progress"* long after it finished; see
+D159.
 
 ---
 

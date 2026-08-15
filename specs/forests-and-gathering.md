@@ -4,7 +4,19 @@
 Neighbours: D18, D19, D24, D40, D42, D43, D58, D84, D86, D87, D88, D107, D111.
 Supersedes in part: `building-placement.md §12.5(3)`, `§12.6`; `professions.md §6.1`, `§6.2`;
 `DESIGN.md §5`'s open "7-tile bound".
-**Status:** ⚠️ **Specced, not built.** Written before the code (METHODOLOGY §2).
+**Status:** ✅ **BUILT AND MERGED** to `phase/2-wood-fuel-and-tools`, 2026-08-15, as step C
+(D112–D130, then D142–D158). Written before the code (METHODOLOGY §2), and it stayed marked
+*"specced, not built"* for a week after it shipped — see D159.
+
+> ⭐ **What the build added that this document did not predict.** The distance fences came down
+> (D120: the catchment was never binding — the furthest commute anybody holds is three tiles),
+> `ChooseSite` moved onto the shared cost field (D121), harvest paint became a *standing*
+> instruction with regrowth rather than a one-off order (D126, D127), and buildings are numbered
+> rather than named by bearing (D124). **The last of those met the first in D157**: a marked
+> building's footprint is painted for clearing (D100), regrowing coppice is always nearer, and
+> nearest-first clearing therefore never reached the footprint — so a gatherer's hut sited in
+> real woodland, which is the whole point of this spec, could never be built. Clearing defers to
+> the build queue now. **The re-measured opening is 4 → 22 people over forty years.**
 
 ---
 

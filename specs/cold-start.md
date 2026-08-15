@@ -1,7 +1,10 @@
 # Spec: The cold start — the founders arrive with a cart and nothing else
 
 **Decisions:** **D63**, **D64**, **D69**. Slice **C** of Joe's A → B → C, pulled ahead of B
-(stone) on his call. **Status:** specced, not started.
+(stone) on his call. **Status:** ✅ **BUILT** (D70–D82), and re-measured against a valley with no
+free food or timber in it at all (D119, D157). Guarded by `ColdStartTests` — thirteen guards, six
+of which were skipped for a week on a wrong diagnosis and restored by D157. Marked *"not started"*
+for a month after it shipped; see D159.
 
 ---
 
