@@ -507,11 +507,11 @@ public sealed class VillageTests
     }
 
     [Fact]
-    public void EveryHouseholdCanReachTheFoodSourceInReasonableTime()
+    public void EveryHouseholdCanReachSomewhereToGatherInReasonableTime()
     {
         // The bug this guards was invisible and lethal: homes were placed in an
         // ever-lengthening line, so the ninth household sat three times further from
-        // the berry patch than the first and simply could not feed itself. Distance
+        // the nearest food than the first and simply could not feed itself. Distance
         // to work is not flavour - it is whether you eat, which is the whole premise
         // of catchment in DESIGN.md §2.2.
         var (loop, _) = Build(GrowingVillage);
