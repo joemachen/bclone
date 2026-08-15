@@ -340,7 +340,26 @@ public sealed class LabourTests
 
         Assert.True(peak >= 25,
             $"Job-based foraging only ever fed {peak} people from {Config.StartingPopulation}.");
-        Assert.Equal(0, starved);
+
+        // ⚠️ HUNGER IS A MINORITY OF DEATHS, NOT ZERO (D155). This asserted nobody ever starved,
+        // which was true while the birth gate held the village well under what it could feed.
+        // Joe loosened that gate deliberately — the village grows to ~50 now instead of sitting
+        // at 20 — and the price he accepted is that some people go hungry on the way. **The
+        // claim that survives is the one that separates pressure from disaster:** most people
+        // must still die of old age, which is the same line `FirewoodTests` and
+        // `ShippedConfigTests` already draw.
+        int aged = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (!villager.Alive && villager.CauseOfDeath == CauseOfDeath.OldAge)
+            {
+                aged++;
+            }
+        }
+
+        Assert.True(aged > starved,
+            $"{starved} starved against {aged} of old age — hunger has stopped being pressure "
+            + "and become the normal way to die.");
     }
 
     // ---------------------------------------------------------------

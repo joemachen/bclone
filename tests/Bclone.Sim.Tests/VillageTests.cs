@@ -490,7 +490,19 @@ public sealed class VillageTests
             $"The village only ever reached {peak} from {GrowingVillage.StartingPopulation} " +
             "founders, so the derived economy is not feeding a growing settlement.");
 
-        Assert.Equal(0, starved);
+        // ⚠️ HUNGER IS A MINORITY OF DEATHS, NOT ZERO (D155). This demanded nobody ever starved,
+        // which held while the birth gate kept the village well under what it could feed. Joe
+        // loosened that gate on purpose — this village peaks near 50 now instead of 37 — and
+        // accepted that some go hungry on the way. **What must stay true is the line between
+        // pressure and disaster:** most people still die of old age.
+        //
+        // Cold keeps its absolute zero. Nothing about D153 or D155 touches fuel, and every
+        // measurement across both configs and 300 years still reports nobody freezing — so a
+        // frozen villager here would be a real regression rather than a re-based expectation.
+        Assert.True(aged > starved,
+            $"{starved} starved against {aged} of old age — hunger has stopped being pressure "
+            + "and become the normal way to die.");
+
         Assert.Equal(0, froze);
     }
 

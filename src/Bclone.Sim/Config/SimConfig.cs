@@ -1100,8 +1100,38 @@ public sealed record SimConfig
     /// difference between a stable settlement and a boom-bust one (D31).
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ 80 -> 60 (Joe, D155), and it is the dial D153 deliberately left alone.</b> He
+    /// played a village that sat at **four people for eleven years** and asked why nobody was
+    /// having children. Nothing was broken: both households were housed in Year 1, and the bar
+    /// is <c>stockpile_target × population × this</c> — at four people that is **304 food**, and
+    /// his stores read **292**. The bar scales with the village, so a small settlement sits
+    /// just under it more or less permanently.
+    /// </para>
+    /// <para>
+    /// <b>Since D153 this is the ONLY food term in the birth gate</b>, and it is read in exactly
+    /// two places — the gate and <c>VillageEconomy.PopulationCeiling</c> — so lowering it
+    /// raises the derived ceiling by the same arithmetic. The formula does not approximate the
+    /// gate; it *is* the gate.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT BUYS GROWTH WITH HUNGER, MEASURED RATHER THAN HOPED.</b> This is the term the
+    /// deleted household gate was redundant against, and taking it down is the closest this
+    /// economy has come to the famine D153 records — *"bred to ninety-two, thirty-three starved
+    /// on the way back down."* The bar is what stops that, so it is lowered to where growth
+    /// arrives and starvation is still a minority of deaths, and no further.
+    /// </para>
+    /// <para>
+    /// <b>⛔ 70 WAS REFUSED THOUGH IT LOOKS BETTER.</b> It is the best row on the fixture — 48
+    /// alive, 4 starved over 300 years — and one of the worst on the shipped file: 16 alive, 27
+    /// starved. A setting that is excellent on one config and bad on the other is the divergence
+    /// that has bitten this project five times (D48, D49, D50, D128, D132), and is a number to
+    /// avoid rather than to tune toward.
+    /// </para>
+    /// </remarks>
     [JsonPropertyName("birth_food_percent")]
-    public int BirthFoodPercent { get; init; } = 80;
+    public int BirthFoodPercent { get; init; } = 60;
 
     /// <summary>Most people one household will hold before it stops growing.</summary>
     [JsonPropertyName("max_household_size")]

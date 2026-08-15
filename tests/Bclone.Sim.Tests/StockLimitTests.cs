@@ -173,8 +173,19 @@ public sealed class StockLimitTests
     //
     //   before the birth gate lost its household terms: fixture 15720299932978060475,
     //                                                   shipped 9131366701299548068
+    // ⭐ RE-TAKEN AGAIN FOR THE FOOD GATE (D155): `birth_food_percent` 80 -> 60, so the village
+    // has children sooner and fifty years of it is a different history.
+    //
+    // ⚠️ AND ONLY THE SHIPPED ONE MOVED, WHICH IS WORTH RECORDING RATHER THAN SHRUGGING AT.
+    // The fixture's fifty years are byte-identical: it starts with buildings and a stocked
+    // cart, so its granary clears the old 80% bar early anyway and lowering the bar changes
+    // nothing it does in that window. The shipped file is a cold start — it spends those fifty
+    // years near the bar, which is exactly the state Joe was playing when he asked why nobody
+    // was having children.
+    //
+    //   before the food gate was loosened: shipped 16713992210504644002
     private const ulong FixtureFiftyYearHash = 13172587746925380233UL;
-    private const ulong ShippedFiftyYearHash = 16713992210504644002UL;
+    private const ulong ShippedFiftyYearHash = 1066427617710206388UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
