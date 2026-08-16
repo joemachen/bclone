@@ -10,8 +10,8 @@ if you touch the crop numbers, and nothing else there needs you.
 
 **Branch `phase/2-wood-fuel-and-tools`.** The farm (D162) is in.
 
-**Suite: 612 passing, 0 failing, 2 skipped of 614. Green** (was 589 / 0 / 2 of 591). Both skips
-are rulings, not debt (D143's unattended village; D134's granary cap). **The full run is ~13
+**Suite: 614 passing, 0 failing, 2 skipped of 616. Green** (was 589 / 0 / 2 of 591). Both skips
+are rulings, not debt (D143's unattended village; D134's granary cap). **The full run is 12–17
 minutes.**
 
 **The Godot view builds** — `dotnet build src/Bclone.Game/Bclone.Game.csproj`. The solution build
