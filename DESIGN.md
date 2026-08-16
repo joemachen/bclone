@@ -929,6 +929,30 @@ there, because it is the slice that opens that method.
   hole — both existing goldens run an established village that never paints a tile, so the
   clearing path has no drift guard at all. It is the mechanic step C is built on.
 
+**🔨 In progress — crops (`specs/crops-and-orchards.md`), Phase 2's last slice.** Spec written
+first (D161), and the first two steps are in:
+
+- **✅ The food-reading seam, fixed before the farm could hit it** (D161). `Workplace.Store` has
+  been dead since D30, so `FoodInGranaries()` (stores only) and `TotalFood()` (everything) had
+  never once disagreed — and the **birth gate**, the reason-to-gather and the food stock limit
+  all read the blind one. A farm's 100-unit buffer would have made a village believe itself
+  poorer than it is and stop having children: **D155's symptom from a new direction, and D81's
+  bug, which is on record as *D76's seam for the fifth time*. This is the sixth.**
+  `FoodTheVillageHolds()` — stores plus workplaces, deliberately not larders — is what decisions
+  read now. **Found by writing the spec, not by playing**, and a no-op today: 573 green, both
+  goldens unmoved.
+  - ⚠️ **One of the three guards was vacuous on its first draft and passed against the broken
+    code**, caught only because disabling the fix produced two reds instead of three. Fourth
+    time this project has had that happen; the check is why it is not five.
+- **✅ The ground a crop grows on.** `Terrain.Field/Sown/Ripe` appended at 6/7/8 with the values
+  pinned by a test, and a **crop id per tile** on `GeneratedMap` beside terrain and soil, hashed
+  sparsely so a village that never farms mixes nothing. **`Terrain.Ripe` is deliberately not in
+  `TerrainRules.Yields`** — a ripe field is full of food and still answers *no* to *may the
+  harvest brush take this?*, because that question feeds `NearestHarvest` and D157's clearing
+  pass. That is the seam killed at the door rather than guarded after the fact.
+- **Next:** the calendar, then the farm and its store, then the crops × harvest-brush golden,
+  then the derived numbers.
+
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
 the same five things — a `JobKind`, a building the player places, seats, **a local store with a

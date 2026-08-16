@@ -75,6 +75,31 @@ public enum Terrain
     /// </para>
     /// </remarks>
     Sapling = 5,
+
+    // ---------------------------------------------------------------
+    //  The field, in its three states (D161, `crops-and-orchards.md §4`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐ THE SAPLING IS THE PRECEDENT, AND ITS ARGUMENT CARRIES ACROSS WHOLE. A crop is its
+    // own ground rather than a timer on a grass tile for exactly the reason above: it is
+    // VISIBLE. The player can see the year happen — bare in winter, sown in spring, standing
+    // in autumn — and that visibility is the entire case for crops over the seasonal yield
+    // curve they replace (`environment-and-seasons.md §5.1`), whose own description of what
+    // the player would see was "a villager simply comes home with more in autumn".
+    //
+    // ⚠️ APPENDED, NEVER RENUMBERED, for the third time and the same reason.
+    //
+    // ⚠️ AND DELIBERATELY NOT IN `TerrainRules.Yields` — see the note there. A ripe field is
+    // not something the harvest brush may take.
+
+    /// <summary>Ploughed and bare. Winter and early spring, and what a reaped field becomes.</summary>
+    Field = 6,
+
+    /// <summary>Sown. Nothing to take yet, and a whole year riding on it.</summary>
+    Sown = 7,
+
+    /// <summary>Standing crop, ready to reap. Rots back to <see cref="Field"/> if winter finds it.</summary>
+    Ripe = 8,
 }
 
 /// <summary>What a kind of ground does to somebody trying to cross it.</summary>
@@ -101,6 +126,18 @@ public static class TerrainRules
     /// <b>One question, answered in one place</b>, so a new harvestable kind is a row here
     /// rather than a fifth site to remember — which is the seam D76 spent five instalments
     /// learning to recognise. It is deliberately the terrain that knows, not the harvester.
+    /// </remarks>
+    /// <remarks>
+    /// <b>⛔ `Terrain.Ripe` IS NOT HERE, AND THAT IS THE DESIGN (D161).</b> A ripe field is
+    /// full of food and is still not something this answers yes to, because this question is
+    /// *"what may the harvest brush take?"* — and it is read by `HasSomethingToHarvest`,
+    /// `GroundIsClearAt`, `NearestHarvest` and D157's footprint-clearing pass. Saying yes here
+    /// would mean **a laborer clearing painted ground could reap the farm**, which is the seam
+    /// `crops-and-orchards.md §6` names as the one that will silently eat a harvest.
+    /// <para>
+    /// A crop is reaped by a farmer, through the farm's own path. Two verbs that look alike
+    /// and must not share a door — D145's rule, stated before the bug rather than after it.
+    /// </para>
     /// </remarks>
     public static Goods? Yields(Terrain terrain) => terrain switch
     {
@@ -166,6 +203,11 @@ public sealed class GeneratedMap
     private readonly Terrain[] _terrain;
     private readonly byte[] _soil;
 
+    // Which crop is sown where (D161). Not a generator output — the valley arrives with none,
+    // and it only ever becomes non-zero where a farmer sows. That is what lets it be hashed
+    // sparsely and stay invisible to every village that never farms.
+    private readonly byte[] _crop;
+
     public GeneratedMap(
         int width,
         int height,
@@ -184,6 +226,7 @@ public sealed class GeneratedMap
         MinY = minY;
         _terrain = terrain;
         _soil = soilQuality;
+        _crop = new byte[terrain.Length];
         FoundingSite = foundingSite;
 
         // The valley's natural woodland, recorded once. Everything the generator painted as
@@ -221,6 +264,57 @@ public sealed class GeneratedMap
     {
         int index = IndexOf(position);
         return index < 0 ? Terrain.Grass : _terrain[index];
+    }
+
+    /// <summary>
+    /// Which crop is sown on a tile, or <c>0</c> for none (D161).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Separate from <see cref="Terrain"/> because they answer different questions.</b> The
+    /// terrain says what *stage* a field is at — bare, sown, ripe — and this says *what is
+    /// growing on it*. Folding the two together would mean a terrain value per crop, which is
+    /// the combinatorial version of the same table and would put content in an enum.
+    /// </para>
+    /// <para>
+    /// <b>⭐ ONE CROP TO BEGIN WITH, IN A MODEL SHAPED FOR MANY</b> (Joe): *"one for now, but
+    /// structured to plan for many."* The crops themselves live in data, not here — CLAUDE.md's
+    /// rule, and the assumption that a modder will want to touch them. **The asymmetry is what
+    /// decided this**: retrofitting an id onto a shipped terrain triple would mean touching the
+    /// hash, both goldens and every call site at once, where adding a row to a data file later
+    /// costs nothing at all.
+    /// </para>
+    /// <para>
+    /// <b>Here rather than in a structure of its own</b>, because it is a fact about the ground
+    /// — which is the test <see cref="Determinism.StateHash.MixMap"/>'s own comment applies to
+    /// terrain — and because the index arithmetic, the bounds handling and the out-of-range
+    /// read already exist. A parallel array elsewhere would be a second way to ask where a tile
+    /// is, which is D145's *two ways to do the thing*.
+    /// </para>
+    /// </remarks>
+    public byte CropAt(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index < 0 ? (byte)0 : _crop[index];
+    }
+
+    /// <summary>Sow, or clear, the crop on a tile. Returns whether it changed anything.</summary>
+    /// <remarks>
+    /// <b>Its own door, beside <see cref="SetTerrain"/> and for the same reason</b> (D85): one
+    /// answer to *"who changed this tile?"*. It is deliberately **not** folded into
+    /// <c>SetTerrain</c> — a field is reaped (terrain changes, crop stays, because next spring
+    /// it is sown again) and a field is abandoned (crop clears) and those are different events.
+    /// </remarks>
+    public bool SetCrop(GridPos position, byte crop)
+    {
+        int index = IndexOf(position);
+        if (index < 0 || _crop[index] == crop)
+        {
+            return false;
+        }
+
+        _crop[index] = crop;
+        return true;
     }
 
     /// <summary>
@@ -315,5 +409,15 @@ public sealed class GeneratedMap
     public IReadOnlyList<Terrain> Tiles => _terrain;
 
     /// <summary>Soil, in the same order as <see cref="Tiles"/>.</summary>
+    /// <remarks>
+    /// <b>⚠️ Generated, hashed, and read by nothing in the sim</b> — deliberately. It is in the
+    /// draw order early so that when soil depletion lands (§2.3, `crops-and-orchards.md §7`) it
+    /// does not have to *change* the draw order, which would move the founding site, both seams
+    /// and every seed anybody has written down. **Fertility is waiting for a reader, not for a
+    /// design.**
+    /// </remarks>
     public IReadOnlyList<byte> Soil => _soil;
+
+    /// <summary>Crops, in the same order as <see cref="Tiles"/>. Zero means nothing sown.</summary>
+    public IReadOnlyList<byte> Crops => _crop;
 }
