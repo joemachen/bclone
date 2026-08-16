@@ -119,6 +119,13 @@ see*. A crop is the same idea made visible: the field looks different in every s
 numbers get derived rather than picked (D16), and the winter consequence — when there is nothing
 to farm, the marginal hand is worth more at the wood.
 
+> **✅ AND THE CROP IS BUILT (D162), so this is superseded in fact and not only on paper.** The
+> target survived one more turn of the argument: it turned out to be **underivable as stated**,
+> because *"a household working normally fills its winter store"* reads a farm's seats and the
+> seats derive from the yield. It is inherited instead — **gathering already meets it**, so a
+> farmer's year is worth a gatherer's year and the target is carried rather than restated. See
+> `crops-and-orchards.md §12`.
+
 *(Superseded text follows.)*
 
 Forage yield varies by season instead of being flat-then-zero:

@@ -341,6 +341,10 @@ public sealed class Villager
             VillagerState.Building => "raising a building",
             VillagerState.Clearing => "clearing trees the village marked",
             VillagerState.TidyingGround => "fetching a load left on the ground",
+            VillagerState.TravelingToField => $"walking out to the fields at {where}",
+            VillagerState.Sowing => "sowing a field",
+            VillagerState.Reaping => "reaping the harvest",
+            VillagerState.HaulingToFarm => "carrying the harvest to the farm",
             _ => State.ToString(),
         };
     }

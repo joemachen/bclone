@@ -75,6 +75,36 @@ public enum JobKind
     /// and then it stops.
     /// </remarks>
     Builder = 4,
+
+    /// <summary>
+    /// Sow a field in spring and reap it in autumn (`specs/crops-and-orchards.md`, D161).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE FIRST JOB THIS PROJECT HAS ADDED RATHER THAN RENAMED, and the bar it had to
+    /// clear is on record twice.</b> <c>Logger → Forester</c> (D96) and the gatherer's hut
+    /// (D112) both <em>reused</em> a kind, on the argument that a second value means a second
+    /// quota arm, a second slot in the scarcity order, a second plural, a second behaviour
+    /// branch and a rule to stop the village staffing both. **A farmer earns all five**, because
+    /// none of them is the same as a forager's: the work is on ground the player painted, it
+    /// happens in two seasons and not three, and it produces nothing at all in the other two.
+    /// Folding it into <see cref="Forager"/> would mean one job whose demand is seasonal in two
+    /// incompatible ways.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ AND THE ONE WITH TEETH IS THE DEMAND</b> (`crops-and-orchards.md §11b`).
+    /// <c>SetStaffing</c> is a ceiling and not a summons (D146), so if
+    /// <see cref="LabourQuota"/> does not actively <em>want</em> farmers when the fields are
+    /// ripe, the harvest stands until winter takes it and every guard blames
+    /// <c>CropSystem</c>, which will be working perfectly. That is D146's bug waiting one job
+    /// over, and it is why the seasonal arm was built and proved before a single tile could be
+    /// sown.
+    /// </para>
+    /// <para>
+    /// <b>Appended, never renumbered</b> — hashed by position, like every other value here.
+    /// </para>
+    /// </remarks>
+    Farmer = 5,
 }
 
 /// <summary>
@@ -296,12 +326,30 @@ public sealed class Workplace
     /// Goods held at this place.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A buffer at the point of production (D30): a few logs beside the stumps, a
     /// little firewood at the hut. Not the village's whole stock — that belongs in a
     /// granary or a shed, and carrying it there is the trip that makes distribution
     /// work somebody does rather than a rule the world enforces from nowhere.
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT WAS DEAD FROM D30 UNTIL THE FARM, and <c>init</c> is what woke it up.</b>
+    /// `professions.md §4` lists <em>a local store with a stated cap</em> as the fifth part of
+    /// every profession and records that this one *"exists and is dead"* — nothing in the sim
+    /// had ever written to it, and the building panel carried a branch that could never be
+    /// true. A farm holds up to <c>farm_store_cap</c> of its own harvest (Joe), so the store
+    /// now needs a capacity it can be given at construction rather than one fixed at
+    /// <see cref="int.MaxValue"/> for everything.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Everything else still gets the uncapped default</b>, which is exactly as dead as
+    /// it was — this is not the slice that gives the woodcutter a yard. `professions.md §11`
+    /// planned to prove the local store on the forester and the woodcutter and it is proved
+    /// here instead, on Joe's call; that spec's ordering is corrected rather than left to
+    /// disagree (D159's lesson).
+    /// </para>
     /// </remarks>
-    public Stockpile Store { get; } = new();
+    public Stockpile Store { get; init; } = new();
 
     /// <summary>True when there is no room for anyone else.</summary>
     /// <summary>

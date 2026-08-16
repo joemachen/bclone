@@ -44,7 +44,7 @@ interesting part of its slice and it gets argued there.
 | 1 | **A `JobKind`** | The work itself. Append-only — the enum is hashed by position (`Workplace.cs:38`). | exists |
 | 2 | **A building the player places** | Its hut. Gives the job a position, a catchment and a name — *"a building is a livelihood the player sited"* (D84). | exists (`BuildingKind`, `Mark`, `Complete`) |
 | 3 | **Seats** | `Capacity`, staffed per-building (D104) or village-wide (D106). | exists |
-| 4 | **A local store with a stated cap** | Output accumulates at the hut, then is carried to a village store. | ⚠️ **`Workplace.Store` exists and is dead — see §5** |
+| 4 | **A local store with a stated cap** | Output accumulates at the hut, then is carried to a village store. | ✅ **Alive on the farm (D162); still dead everywhere else — see §5** |
 | 5 | **A destination for its output** | Food → granary, materials → shed. Asked by good, never by building (D76). | exists (`StoreForTheLoad`) |
 
 Optional sixth parts, each already with a precedent:
@@ -166,9 +166,17 @@ ever writes to it. Its own comment describes *"the buffer at the point of produc
 which was never wired up: producers carry output straight to a `StoreBuilding`. The panel has a
 branch for it that can never be true.
 
-> **⚠️ It is wired up on the farm (D161), not on the forester — see §11.2.** Joe's call:
-> `farm_store_cap: 100`. **The branch below that "can never be true" becomes reachable for the
-> first time, so it needs looking at rather than trusting** — it has never once rendered.
+> **✅ IT IS ALIVE (D162), on the farm rather than on the forester — see §11.2.** Joe's call:
+> `farm_store_cap: 100`, in data. **The panel branch that "can never be true" now renders**, and
+> it was looked at rather than trusted: a farm says how much of its own harvest it is holding
+> *and out of how much*, because the buffer filling up is exactly what makes the farmer's walk
+> get longer. Everything else still gets the uncapped default and is still as dead as it was.
+>
+> ⚠️ **The one that mattered was the deposit, not the capacity.** `Stockpile.Add` returns what
+> it actually took and the new path reads it — not reading it is D96 (17,451 food out of the
+> world) and D144 one path over — and what will not fit stays in the arms and walks on to a
+> store rather than going on the ground, because a full buffer is a longer walk and not a
+> village with nowhere to put things.
 
 Wiring it up is the first real slice of this model, and it means:
 
@@ -304,7 +312,7 @@ Each step leaves the suite green and is measured against the cold start's five t
      plus four test guards had to learn about it in one slice.
    - ⏳ Still to come in this slice: buildings finishing at **0 workers** with founders arriving
      as laborers, §3.0's linked staffing, then the unstaffed alert and `Demolish(Workplace)`.
-2. **The local store** — ⚠️ **RE-AIMED (D161, Joe).** It was to be proved *"on the forester and
+2. **The local store** — ✅ **BUILT (D162)**, and ⚠️ **RE-AIMED (D161, Joe).** It was to be proved *"on the forester and
    woodcutter, the two professions that already exist"*. It is proved on **the farm** instead
    (`crops-and-orchards.md §3.1`, Phase 2's last slice), because Joe's call gives the farmhouse a
    100-unit cap and a harvest is the case that actually needs a buffer: reaping is bursty, the

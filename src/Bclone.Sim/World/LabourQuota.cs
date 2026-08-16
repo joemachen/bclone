@@ -40,7 +40,8 @@ public readonly record struct LabourQuota
         int foresters,
         int woodcutters,
         int marketers = 0,
-        int builders = 0)
+        int builders = 0,
+        int farmers = 0)
     {
         Builders = builders;
         Hands = hands;
@@ -50,6 +51,7 @@ public readonly record struct LabourQuota
         Foresters = foresters;
         Woodcutters = woodcutters;
         Marketers = marketers;
+        Farmers = farmers;
     }
 
     /// <summary>Villagers able to do a day's work.</summary>
@@ -84,6 +86,17 @@ public readonly record struct LabourQuota
     /// <summary>Hands the village wants raising what the player marked out (D43).</summary>
     public int Builders { get; }
 
+    /// <summary>
+    /// Hands the village wants sowing and reaping (`crops-and-orchards.md`, D161).
+    /// </summary>
+    /// <remarks>
+    /// <b>⛔ The arm with teeth.</b> See <see cref="Core.SimWorld.FarmerSeatsWithGroundToWork"/>
+    /// for why this must actively <em>want</em> people when the fields are standing:
+    /// <c>SetStaffing</c> is a ceiling and not a summons (D146), so a farm nobody is wanted at
+    /// is a harvest that rots while every guard blames the crop system.
+    /// </remarks>
+    public int Farmers { get; }
+
     /// <summary>The quota for one kind of work.</summary>
     public int For(JobKind kind) => kind switch
     {
@@ -92,6 +105,7 @@ public readonly record struct LabourQuota
         JobKind.Woodcutter => Woodcutters,
         JobKind.Marketer => Marketers,
         JobKind.Builder => Builders,
+        JobKind.Farmer => Farmers,
         _ => 0,
     };
 
@@ -295,6 +309,32 @@ public readonly record struct LabourQuota
         bool foodIsEnough = limits.IsMet(Goods.Food, world.FoodTheVillageHolds());
 
         int foragers = canGather && !foodIsEnough ? Take(ref free, toFeedEveryone) : 0;
+
+        // ⭐ THE FARM, AND IT SITS HERE FOR A STATED REASON (`crops-and-orchards.md`, D161).
+        //
+        // Immediately after the foraging floor and ahead of timber, because **farming is food**
+        // — the same class of work as gathering, and unlike a log, a standing crop is on a
+        // clock. A field sown in spring and not reaped in autumn is taken by winter (Joe, *use
+        // it or lose it*), so hands spared from the harvest are not deferred, they are spent.
+        //
+        // ⛔⛔ AND IT IS NOT ZEROED BY `foodComesFirst` ABOVE, deliberately: that gate exists to
+        // put every hand on FOOD when the village is short of it, and this IS the hand on food.
+        // Zeroing it would be the gate arguing with its own purpose.
+        //
+        // ⚠️ NOR IS IT ZEROED BY A MET FOOD LIMIT, and that is not an oversight either — the cap
+        // is folded in one level down, by `SimWorld.MaySow`, which stops the SOWING and leaves
+        // the REAPING alone. A capped village still brings its harvest in and simply does not
+        // commit next year's ground; leaving a standing crop to rot on a number the player set
+        // for another reason would spend a year of their work to obey them. (D146's *"a capped
+        // hut can replant"* one job over.)
+        //
+        // Bounded by what the year has work for, which is what makes it safe to place this
+        // high: `FarmerSeatsWithGroundToWork` is zero when nothing is sown and nothing is
+        // standing, so a village with no farm — or a farm in winter — spends nothing here.
+        int farmers = Take(
+            ref free,
+            Cap(world.FarmerSeatsWithGroundToWork(), TotalCapacityFor(world, JobKind.Farmer)));
+
         woodcutters = Take(ref free, Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter)));
         int foresters = Take(ref free, Cap(forestersForHuts, TotalCapacityFor(world, JobKind.Forester)));
 
@@ -435,9 +475,11 @@ public readonly record struct LabourQuota
         woodcutters = Asked(world, JobKind.Woodcutter, woodcutters, hands);
         marketers = Asked(world, JobKind.Marketer, marketers, hands);
         builders = Asked(world, JobKind.Builder, builders, hands);
+        farmers = Asked(world, JobKind.Farmer, farmers, hands);
 
         return new LabourQuota(
-            hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders);
+            hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
+            farmers);
     }
 
     /// <summary>What the player asked for on this kind of work, or what the village decided.</summary>
@@ -507,6 +549,13 @@ public readonly record struct LabourQuota
         // so a professions number the player typed must not be overruled while it does.
         JobKind.Forester => world.StockLimits.IsMet(Goods.Logs, world.LogsInSheds())
             && world.ForesterSeatsWithGroundToPlant() == 0,
+
+        // ⭐ AND A FARMER ONLY WHEN THERE IS NOTHING LEFT TO BRING IN. Exactly the forester's
+        // shape: a met food limit stops the sowing (`SimWorld.MaySow`), and a farm with a crop
+        // still standing has work a cap has no business cancelling — so a professions number
+        // the player typed must not be overruled while it does.
+        JobKind.Farmer => world.StockLimits.IsMet(Goods.Food, world.FoodTheVillageHolds())
+            && world.FarmerSeatsWithGroundToWork() == 0,
 
         _ => false,
     };

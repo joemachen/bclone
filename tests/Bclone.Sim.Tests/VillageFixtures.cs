@@ -92,6 +92,13 @@ public static class VillageFixtures
                 StockpileTarget = VillageEconomy.RequiredStockpilePerAdult(shape),
             };
 
+            // And the crop, which is derived AGAINST the gathering above rather than beside it
+            // (`crops-and-orchards.md`): a farmer's year is worth a gatherer's year, so this
+            // has to be taken after `GatherYield` is settled or it would be measured against
+            // the placeholder. One ordering mistake here and the fixture would ship a farm
+            // worth a fraction of a hut while the arithmetic still balanced.
+            fed = fed with { CropYieldPerTile = VillageEconomy.RequiredCropYield(fed) };
+
             // ⚠️ THE SHIPPED VALUE, NOT THE DERIVED MINIMUM, and the difference is enormous.
             // `RequiredFirewoodPerSplit` answers *what is the least that works* — and using
             // the least makes fuel maximally LOG-hungry, because a smaller batch means more

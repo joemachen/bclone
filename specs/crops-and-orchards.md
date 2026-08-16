@@ -8,7 +8,10 @@ Neighbours: `environment-and-seasons.md §5.1` (**superseded by this**), `buildi
 (which predicted this shape and left the choice open), `food-catalog.md §7` (do not build a
 recipe tree), `professions.md` (fish and meat are `Goods.Food`), `forests-and-gathering.md` (the
 mechanic this is a sibling of).
-**Status:** ⚠️ **Specced, not started.** Written before the code (METHODOLOGY §2).
+**Status:** ✅ **BUILT** (D162) — the farm, the field, the local store, the hauling and the
+market's widened reach are all in. Proved by `FarmDemandTests`, `FarmTests`, `FarmGoldenTests`,
+`CropCalendarTests`, `CropGroundTests`, `WorkplaceStoreTests` and `ShippedConfigTests`.
+**Orchards (§8) are still deferred to Phase 3**, with the reason unchanged.
 
 > **⚠️ This status line is load-bearing. Update it the day the slice merges** — D159 found five
 > specs claiming "not started" for systems that had shipped, one of them for the slice merged
@@ -263,7 +266,18 @@ passes its birth gate. **Checked red first**, against the current code, where it
 |---|---|
 | **Crops × the harvest brush** | `Yields(Ripe) => Food` makes a ripe field look like a wood to `NearestHarvest`. **A laborer clearing painted ground must not reap the farm**, and D157's footprint-priority pass must not target a field. |
 | **Crops × building placement** | ✅ **RESOLVED — warn and allow** (Joe). A house marked on sown ground destroys a year's food and is still permitted, because refusing would let a field *permanently block the village from housing itself*, and D42 already settled that the player picks the neighbourhood. D43's pattern: a decision with a consequence, stated. A **bare** `Field` says nothing — nothing is lost, and a warning that fired on any field terrain would be the always-on alert D42 and D123 deleted. |
-| **Crops × the labour quota** | A farmer is wanted in spring and autumn and not in summer or winter. **`SetStaffing` is a ceiling, not a summons** (D146) — the quota has to *want* farmers seasonally, or the fields sit sown and unreaped. |
+| **Crops × the labour quota** | A farmer is wanted in spring and autumn and not in summer or winter. **`SetStaffing` is a ceiling, not a summons** (D146) — the quota has to *want* farmers seasonally, or the fields sit sown and unreaped. ⚠️ **Corrected on building it (D162): summer is wanted too.** See below. |
+
+**⚠️ The quota's seasonality came out one season wider than this table says, and the reason is
+mechanical.** *Spring sows, summer tends, autumn reaps, winter nothing* is what a farmer
+**does**; turning it straight into *no farmers wanted in summer* is a trap.
+`LabourSystem` reshuffles the whole village every three years and `TakeUpSlack` fills openings
+only from villagers who are **idle**, so a reshuffle landing in July would empty the farm and
+autumn would find nobody free to put back in it — the harvest rotting for a scheduling reason
+nobody could see. **The standing crop is why the hands are wanted**, which is the truer sentence
+anyway: somebody has to be there in September, and the village settles that in June. Winter
+really is zero, and it costs nothing, because the forager quota is zero in winter too (D44) — so
+spring opens on a village full of idle hands and the scarce kinds are matched first.
 | **Crops × the food economy** | `VillageEconomy` derives one `gather_yield` against a worst-case walk. A second food source with a different rhythm changes what "the village can feed itself" means, and the derivation has to be re-stated rather than quietly out-voted. |
 | **Crops × the farm's local store** | A full 100-cap store must **refuse** the overflow, not swallow it. `Stockpile.Add` returns what it actually took and **the caller has to read it** — D96 is precisely the bug of not reading it (17,451 food out of the world), and D144 is the same shape one deposit path over. This store has never been written to, so it has never been tested. |
 | **Crops × the market** | The marketer must reach `Workplace.Store` (§3.2 ruling 2) **without becoming a second way to find a store**. One door, or it is D144's shape again — a rule answered by one path and ignored by another. |
@@ -367,16 +381,49 @@ things, and they are the checklist for the next session:
 if the quota does not actively *want* farmers when the fields are ripe, the harvest stands and
 rots and every guard blames the crop system. That is D146's bug waiting one job over.
 
-## 12. Still open
+## 12. ✅ Where the derived numbers landed (D162)
 
-- **Where the derived numbers land.** `farm_store_cap: 100` is Joe's stated default; the yield
-  per sown tile, the seats per farm and the work-ground allowance are all **derived** against
-  §1's target, not picked (D16), and none of them is derived yet. **Expect the fixture and the
-  shipped config to disagree at least once** — that has happened six times and METHODOLOGY §3
-  exists because of it.
-- **What a farm store full of food does to the winter forecast**, which reads `TotalFood()` via
-  `ClockSystem` and therefore already sees workplace stores — the one reader that will *not*
-  change in §6.1, and so the one that could end up disagreeing in the other direction.
+**All three came out, and two of them came out wrong first — both caught by a guard rather than
+by arithmetic, which is the whole argument for writing the seam golden *with* the feature.**
+
+| Number | Value | How |
+|---|---|---|
+| `farm_store_cap` | **100** | Joe's stated default, in data. |
+| `sow_ticks` / `reap_ticks` | **3 / 3** | Content, the same as `gather_ticks` — one person, one job, one tile. |
+| A farmer's field | **13 tiles** (radius 2) | `FieldTilesOneFarmerKeeps` — the biggest diamond one pair of hands can reap in one autumn. |
+| `crop_yield_per_tile` | **67** | `RequiredCropYield` — a farmer's year is worth a gatherer's year. |
+| Farmhouse seats | **1** | `RequiredFarmerSeats` — one farm keeps one household fed; scale is a second farm. |
+
+**⭐ The target had to be restated as a comparison before it was derivable at all.** The obvious
+form — *"enough yield that a farm's seats feed a household"* — reads the seats, and the seats are
+derived from the yield. That first draft produced **a farmhouse with fourteen seats and 173 food
+from a single tile**: arithmetically consistent, and describing nothing anybody would call
+farming. The fix is that gathering already meets §1's target, so **a farmer's year is worth a
+gatherer's year** and the target is inherited rather than restated. It is also the *right*
+comparison rather than a convenient one (D19): a farm worth materially less than a gatherer's hut
+is a building nobody rationally places, and one worth materially more deletes gathering.
+
+**⛔ And the second error was found by the seam golden, not by reasoning.** The first cost model
+charged a field one step per tile — *"a farmer walks out once and works along the rows"* — which
+is true of sowing and false of reaping, because **one tile of crop is already more than
+`carry_capacity`** and every reaped tile is a walk back to the steading. Measured on the golden:
+**84 tiles reaped in twenty years against 22 sown every spring.** The walk is charged where it
+happens now, and `reap_ticks` stopped being dearer than `sow_ticks` — the load was being billed
+twice.
+
+### ⚠️ Still open, and it is a measurement rather than a question
+
+**The derived field (13 tiles) is about twice what a farmer actually gets through (≈5.75 a
+year on the golden's scenario), and the direction of that error is the unsafe one.** Every
+budget in `VillageEconomy` is a worst case, but they are worst cases of *cost*; this one
+over-states *capacity*, so the village believes a farm feeds a household when it feeds rather
+less. The gap is the ordinary business of a working day — meals taken mid-field, a fetch for
+one's own larder, a walk in from the cold — the same gap `TripsPerYear` carries and never
+states. **Recorded rather than tuned** (D112's rule): the honest fixes are a season budget that
+charges the working day's interruptions, or a stated derating factor, and both are Joe's call
+rather than something to quietly fold in.
 
 *(Both questions that were open here are resolved in §3.2: the farmer hauls, and the market
-prefers the granary.)*
+prefers the granary. And the winter forecast reads `TotalFood()`, which has always seen
+workplace stores — §6.1 moved the other four readers to `FoodTheVillageHolds()`, so the two now
+agree.)*

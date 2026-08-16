@@ -116,6 +116,28 @@ public enum VillagerState
     /// for them this tick.
     /// </remarks>
     TidyingGround,
+
+    /// <summary>Walking out to a tile of the farm's own ground (`crops-and-orchards.md`).</summary>
+    TravelingToField,
+
+    /// <summary>Putting a tile of field under seed. Spring's one commitment.</summary>
+    Sowing,
+
+    /// <summary>Taking a tile of standing crop. What autumn is for.</summary>
+    Reaping,
+
+    /// <summary>
+    /// Carrying a harvest to the farm's own store, which is underfoot (`farm_store_cap`).
+    /// </summary>
+    /// <remarks>
+    /// <b>Its own state rather than a variant of <see cref="HaulingToStore"/>, because the
+    /// destination is a different kind of thing.</b> A <c>StoreBuilding</c> and a
+    /// <c>Workplace.Store</c> live in two lists with two id spaces (D36's seam), and
+    /// <c>StoreForTheLoad</c> answers only about the first. Folding them together would make
+    /// this a second way to find a store, which D145 names as the moment a control becomes
+    /// unsafe — so the two destinations stay two answers, chosen once, in one place.
+    /// </remarks>
+    HaulingToFarm,
 }
 
 /// <summary>

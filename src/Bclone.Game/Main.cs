@@ -857,9 +857,47 @@ public partial class Main : Control
                     + "this hut would yield in full woodland.");
         }
 
+        // ⭐ THE FIELD (`specs/crops-and-orchards.md`). Same argument as the gatherer's ring
+        // one screen up, and the same reason it ships with the mechanic rather than after it:
+        // *use it or lose it* is only fair if the player can see it coming, so a standing crop
+        // in autumn has to be readable off the panel while it can still be acted on.
+        if (workplace.Kind == JobKind.Farmer)
+        {
+            int ground = world.Zones.WorkGroundTiles(workplace.Id);
+            int standing = world.StandingCropTiles(workplace);
+
+            lines.Add(ground == 0
+                ? "Ground: none. Give it some with the work-ground brush and it will be "
+                    + "ploughed."
+                : $"Ground: {ground} tiles, {standing} of them under crop. Every hand here can "
+                    + $"keep {world.TilesOneWorkerKeeps(JobKind.Farmer)}.");
+
+            lines.Add(SeasonRules.IsSowing(world.Clock.Season)
+                ? "Spring: the year's one commitment. A field not sown now is a year missed."
+                : SeasonRules.IsReaping(world.Clock.Season)
+                    ? "Autumn: what is not reaped before winter rots where it stands."
+                    : world.Clock.Season == Season.Summer
+                        ? "Summer: the crop is growing. Its hands are held for the harvest."
+                        : "Winter: stubble. Its farmers are spare hands until spring.");
+        }
+
         // The buffer at the point of production (D30). Worth showing because it is how
         // you tell "idle for want of a worker" from "idle for want of logs" (D29).
-        if (workplace.Store.Held > 0)
+        //
+        // ⭐ AND IT HAD NEVER ONCE RENDERED UNTIL THE FARM. `Workplace.Store` has been on the
+        // type since D30 with nothing in the sim writing to it, so this branch could not be
+        // true — `professions.md §4`'s fifth element, *"exists and is dead"*. The farm is where
+        // it wakes up, which is also why the farm is the one that says its capacity: the buffer
+        // filling up is exactly what makes the farmer's walk get longer.
+        if (workplace.Kind == JobKind.Farmer)
+        {
+            lines.Add(workplace.Store.Held > 0
+                ? $"Holding: {DescribeGoods(workplace.Store)} — {workplace.Store.Held} of "
+                    + $"{workplace.Store.Capacity}. Past that, the harvest goes to a store."
+                : $"Holding: nothing. It keeps up to {workplace.Store.Capacity} of its own "
+                    + "harvest before the walk gets longer.");
+        }
+        else if (workplace.Store.Held > 0)
         {
             lines.Add($"Holding: {DescribeGoods(workplace.Store)}");
         }
@@ -913,6 +951,12 @@ public partial class Main : Control
         {
             Terrain.Water => "The river. Nobody can cross it and nothing can be built on it.",
             Terrain.Forest => "Woodland.",
+
+            // The field says which part of its year it is in, because that is the mechanic
+            // (`specs/crops-and-orchards.md`) rather than a label on one.
+            Terrain.Field => "Ploughed field, bare. It will be sown in spring.",
+            Terrain.Sown => "A sown field. It will stand ripe in autumn.",
+            Terrain.Ripe => "A ripe field, ready to reap. Winter will take what is left standing.",
             _ => "Open ground.",
         };
 
@@ -993,6 +1037,7 @@ public partial class Main : Control
         JobKind.Marketer => "goods are handed out from here",
         // The HUT, not the site — a site describes itself and never reaches this (D108).
         JobKind.Builder => "the village's builders work from here",
+        JobKind.Farmer => "the fields around it are sown and reaped from here",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -2518,7 +2563,10 @@ public partial class Main : Control
         ("Fisherman", "no fishing hut — needs building beside water"),
         ("Hunter", "no lodge, and leather is not a good yet"),
         ("Tailor", "waiting on the hunter for leather"),
-        ("Farmer", "no fields, no crops"),
+
+        // ⭐ The farmer moved OFF this list and into the real rows above
+        // (`specs/crops-and-orchards.md`, D161) — this is what a greyed roadmap entry is for:
+        // it names the gap while it is a gap, and then it goes away.
         ("Herdsman", "no livestock"),
         ("Miner", "iron is on the map; nothing digs it"),
         ("Stonecutter", "stone is on the map; nothing quarries it"),
@@ -2684,6 +2732,7 @@ public partial class Main : Control
         JobKind.Woodcutter => "Woodcutter",
         JobKind.Marketer => "Vendor",
         JobKind.Builder => "Builder",
+        JobKind.Farmer => "Farmer",
         _ => throw new ArgumentOutOfRangeException(
             nameof(kind), kind, "That kind of work has no name on screen."),
     };
@@ -2811,6 +2860,7 @@ public partial class Main : Control
             JobKind.Woodcutter => "woodcutter",
             JobKind.Marketer => "marketer",
             JobKind.Builder => "builder",
+            JobKind.Farmer => "farmer",
             _ => "working",
         };
     }
@@ -2927,7 +2977,15 @@ public partial class Main : Control
         // when the builder gets them (`professions.md §4`).
         row.AddChild(Category("Works", BuildButton("Builder's hut", BuildingKind.BuilderHut)));
 
-        row.AddChild(Category("Food", BuildButton("Gatherer", BuildingKind.GathererHut)));
+        // ⭐ THE FARM SHIPS WITH ITS BUTTON (`specs/crops-and-orchards.md`). Four slices of
+        // behaviour once landed with no controls at all, and D103's rule came out of it: a
+        // feature the player cannot reach is a feature that does not exist. Its ground is
+        // painted with the same work-ground brush the forester's hut already uses (D118), so
+        // the button is the only new thing the view owes it.
+        row.AddChild(Category(
+            "Food",
+            BuildButton("Gatherer", BuildingKind.GathererHut),
+            BuildButton("Farmhouse", BuildingKind.Farmhouse)));
 
         row.AddChild(Category(
             "Resources",

@@ -355,6 +355,96 @@ public sealed record SimConfig
     [JsonPropertyName("planting_costs_this_much_more_than_felling")]
     public int PlantingCostsThisMuchMoreThanFelling { get; init; } = 3;
 
+    // ---------------------------------------------------------------
+    //  The farm (`specs/crops-and-orchards.md`, D161)
+    // ---------------------------------------------------------------
+
+    /// <summary>What a farmhouse costs to raise.</summary>
+    [JsonPropertyName("farmhouse_logs")]
+    public int FarmhouseLogs { get; init; } = 25;
+
+    /// <summary>Ticks of work a farmhouse owes.</summary>
+    [JsonPropertyName("farmhouse_work_ticks")]
+    public int FarmhouseWorkTicks { get; init; } = 40;
+
+    /// <summary>Ticks a farmer spends putting one tile of ground under seed.</summary>
+    /// <remarks>
+    /// <para>
+    /// Content, in the same class as <see cref="CutTicks"/> and <see cref="GatherTicks"/>: how
+    /// long an action takes is a fact about the work, and nothing in the economy can compute
+    /// it. What is <em>derived</em> from it is the consequence — how big a field one pair of
+    /// hands can keep, which is what <c>VillageEconomy.FieldTilesOneFarmerKeeps</c> says and
+    /// what a farm's work-ground allowance is priced against.
+    /// </para>
+    /// <para>
+    /// <b>The same as <see cref="GatherTicks"/>, deliberately.</b> It is the same kind of thing
+    /// — one person doing one job on one tile — and pricing it differently would be a claim
+    /// about farming nobody could defend. <b>What makes farming expensive is the walking</b>,
+    /// and that is charged where it actually happens rather than folded into a swing of a
+    /// scythe.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("sow_ticks")]
+    public int SowTicks { get; init; } = 3;
+
+    /// <summary>Ticks a farmer spends taking one tile of standing crop.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ EQUAL TO <see cref="SowTicks"/> TODAY, AND STILL ITS OWN NUMBER.</b> The first
+    /// draft made this dearer <em>"because reaping is the half with the load in it"</em>, and
+    /// that reasoning was wrong twice over: the load is now charged as the walk it really is
+    /// (<c>VillageEconomy.FieldTileTicks</c>), and folding it in here as well billed it twice.
+    /// It stays a separate key because a modder changing what a crop costs to bring in should
+    /// not have to change what it costs to plant — two facts about the work, which happen to
+    /// have the same value.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("reap_ticks")]
+    public int ReapTicks { get; init; } = 3;
+
+    /// <summary>
+    /// Food one tile of ripe field gives up when it is reaped.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Typed here and derived against a target, exactly like <see cref="GatherYield"/></b>
+    /// (D16): <c>VillageEconomy.RequiredCropYield</c> says what it has to be for
+    /// `crops-and-orchards.md §1`'s surviving target to hold — <em>a household working normally
+    /// through spring, summer and autumn fills its winter store by the first day of winter</em>
+    /// — and a guard checks the shipped file against it as well as the fixture (METHODOLOGY §3,
+    /// and the six recorded times those two diverged).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("crop_yield_per_tile")]
+    public int CropYieldPerTile { get; init; } = 67;
+
+    /// <summary>
+    /// How much of its own harvest a farm may hold before the walk gets longer (Joe: 100).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ It is the first <c>Workplace.Store</c> in the project's history that anything
+    /// writes to</b> — `professions.md §4`'s fifth element, on the type since D30 and dead
+    /// ever since, with a branch in the building panel that could never be true. Joe: *"the
+    /// harvested goods go to the granary although the farm itself can store up to 100 of the
+    /// harvest goods by default."*
+    /// </para>
+    /// <para>
+    /// <b>A buffer, not a destination.</b> The granary is still where food lives; the farm
+    /// holds a harvest until somebody carries it. The 100 means something because the farmer
+    /// hauls to the nearest storage <em>with room</em> and the farm's own store is underfoot —
+    /// so it fills first and the walk lengthens once it is full.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ And a full store must REFUSE the overflow rather than swallow it.</b>
+    /// <c>Stockpile.Add</c> returns what it actually took and the caller has to read it: D96 is
+    /// precisely the bug of not reading it (17,451 food into a full granary and out of the
+    /// world) and D144 is the same shape one deposit path over.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("farm_store_cap")]
+    public int FarmStoreCap { get; init; } = 100;
+
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     /// <remarks>
     /// <b>A position is content; the hut's SEATS are not.</b> Where a building sits is a fact
@@ -1361,6 +1451,23 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"woodcutter_hut_capacity must be greater than zero (got {WoodcutterHutCapacity}).");
+        }
+
+        if (SowTicks <= 0 || ReapTicks <= 0 || CropYieldPerTile <= 0)
+        {
+            throw new SimConfigException(
+                "sow_ticks, reap_ticks and crop_yield_per_tile must all be greater than zero " +
+                $"(got {SowTicks}, {ReapTicks}, {CropYieldPerTile}).");
+        }
+
+        // A farm that may hold nothing is a farm whose every armful is a walk to the granary,
+        // which deletes the buffer the store exists to be. Zero is not "no buffer", it is a
+        // number that makes the deposit path unreachable and the guard on it vacuous (D98's
+        // rule: a number that is always zero is a lie waiting to be found).
+        if (FarmStoreCap <= 0)
+        {
+            throw new SimConfigException(
+                $"farm_store_cap must be greater than zero (got {FarmStoreCap}).");
         }
 
         if (GranaryFeedsPeople < StartingPopulation)

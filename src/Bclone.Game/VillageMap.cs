@@ -87,6 +87,36 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color IronColour = new("#7a4a33");
 
+    // ---------------------------------------------------------------
+    //  The field, in its three states (`specs/crops-and-orchards.md`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐⭐ THESE ARE THE MECHANIC, NOT A DECORATION, AND THAT IS THE WHOLE ARGUMENT FOR CROPS.
+    // `environment-and-seasons.md §5.1` proposed a seasonal yield CURVE — three multipliers on
+    // foraging — and its own account of what the player would see was *"a villager simply comes
+    // home with more in autumn"*, offered as a virtue because it needed no UI. That is the
+    // objection: it is a number going up where nobody can watch it. A field is bare, then sown,
+    // then standing, then bare again, and **the difference on the screen is the feature**.
+    //
+    // ⚠️ AND THEY HAD TO BE NAMED HERE OR THEY WOULD HAVE SHIPPED AS WOODLAND. `ColourOf`'s
+    // default arm is `ForestColour` — a deliberate choice for the sapling, and a trap for
+    // anything else appended to `Terrain`. Three new values would have drawn a farm as a wood
+    // in every season, which is D108's silent-default finding arriving in the view.
+
+    /// <summary>Ploughed and bare. Winter and early spring — turned earth, warm and dark.</summary>
+    private static readonly Color FieldColour = new("#4a3a2b");
+
+    /// <summary>Sown. Young growth: green, but paler and yellower than the woods.</summary>
+    private static readonly Color SownColour = new("#4a5c33");
+
+    /// <summary>Standing ripe. The one colour on the map that says "come and take this".</summary>
+    /// <remarks>
+    /// <b>Differs from <see cref="SownColour"/> in hue as well as lightness</b>, on the rule
+    /// D67 set for the two seams: the difference a player has to read at a glance is the one
+    /// that must survive being colour-blind.
+    /// </remarks>
+    private static readonly Color RipeColour = new("#b8933f");
+
     /// <summary>The woodcutter's hut — a workplace, not a stand of trees.</summary>
     private static readonly Color HutColour = new("#9a6b3f");
 
@@ -1292,6 +1322,9 @@ public partial class VillageMap : Control
         Terrain.Rock => RockColour,
         Terrain.IronDeposit => IronColour,
         Terrain.Grass => Ground,
+        Terrain.Field => FieldColour,
+        Terrain.Sown => SownColour,
+        Terrain.Ripe => RipeColour,
         _ => ForestColour,
     };
 

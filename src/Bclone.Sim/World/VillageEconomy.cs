@@ -656,6 +656,219 @@ public static class VillageEconomy
         return forHuts + 1;
     }
 
+    // ---------------------------------------------------------------
+    //  The farm (`specs/crops-and-orchards.md`, D161)
+    // ---------------------------------------------------------------
+
+    /// <summary>Ticks in one season that are actually available for work.</summary>
+    /// <remarks>
+    /// <b>A season, not a year, and that is the mechanic rather than a unit choice.</b> Sowing
+    /// happens in spring and only spring (<see cref="SeasonRules.IsSowing"/>) and reaping in
+    /// autumn and only autumn — a missed sowing is a missed year — so the budget that decides
+    /// how much ground a farm can really keep is a quarter of the calendar, less the meals
+    /// eaten in it and the one walk out from home.
+    /// </remarks>
+    public static int FieldSeasonTicks(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int commute = MaxHomeToWorkTiles(config) * config.TravelTicksPerUnit * 2;
+        int available = (config.TicksPerYear / 4) - (MealsPerYear(config) / 4) - commute;
+
+        return available < 0 ? 0 : available;
+    }
+
+    /// <summary>
+    /// Ticks one tile costs in a field of the given radius — <b>the work plus the walk it
+    /// actually makes</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ THE TWO SEASONS COST DIFFERENT WALKS, AND GETTING THAT WRONG WAS FOUND BY A GUARD
+    /// RATHER THAN BY ARITHMETIC.</b> Sowing carries nothing, so a farmer works along the rows
+    /// and pays one step between tiles. <b>Reaping carries an armful</b>, and one tile of crop
+    /// is already more than <c>carry_capacity</c> — so every reaped tile is a walk back to the
+    /// steading and out again. Charging both at a step derived a field three times the size a
+    /// farmer could actually bring in, and the symptom was a crop that mostly rotted: the seam
+    /// golden measured <b>84 tiles reaped in twenty years against 22 sown every spring</b>.
+    /// </para>
+    /// <para>
+    /// <b>Worst case within the field, not the mean</b>, on the same basis as everything else
+    /// in this file: the budget is what the village can promise, and promising the average
+    /// walk is how <see cref="RoundTripTicks"/> got it wrong twice in the other direction.
+    /// </para>
+    /// </remarks>
+    public static int FieldTileTicks(SimConfig config, int workTicks, int radius, bool carrying)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int walk = carrying
+            ? radius * config.TravelTicksPerUnit * 2
+            : config.TravelTicksPerUnit;
+
+        int cost = (workTicks < 1 ? 1 : workTicks) + walk;
+        return cost < 1 ? 1 : cost;
+    }
+
+    /// <summary>
+    /// Tiles one farmer keeps — <b>the biggest field they can bring in over one autumn</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ STATED AS A SHAPE, WHICH IS WHAT MAKES IT DERIVABLE AND WHAT MAKES IT LEGIBLE.</b>
+    /// A field is a diamond around its steading — <see cref="TilesInRing"/>, the shape every
+    /// ring in this game is — and this asks the only question that has a right answer:
+    /// <em>how big a diamond can one pair of hands reap in one autumn, walking each armful back
+    /// to the steading?</em> Grow the radius and you gain tiles faster than you lose time, until
+    /// the walk overtakes you; the last radius that still fits is the answer.
+    /// </para>
+    /// <para>
+    /// <b>Autumn binds, not spring</b>, and that is the mechanic rather than a convenience: a
+    /// tile sown and not reaped is worth nothing at all, because winter takes what is left
+    /// standing (Joe — <em>use it or lose it</em>). Deriving against the cheaper season would
+    /// have the village promise itself a harvest the autumn cannot physically bring in, and the
+    /// failure would read as a crop bug rather than as an arithmetic one.
+    /// </para>
+    /// <para>
+    /// <b>A search rather than a formula</b>, because the honest equation is quadratic in the
+    /// radius and this project has no floats in sim-critical paths (D2). Half a dozen integer
+    /// iterations, deterministic, and it says what it means at a glance — which is the whole of
+    /// §1.6.
+    /// </para>
+    /// </remarks>
+    public static int FieldTilesOneFarmerKeeps(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int budget = FieldSeasonTicks(config);
+        int best = 0;
+
+        // Bounded rather than open-ended: the walk grows with the radius and the tiles with its
+        // square, so this always terminates long before the bound — which is there so that a
+        // config with a pathological travel cost fails as a zero rather than as a hang.
+        for (int radius = 1; radius <= MaxHomeToWorkTiles(config); radius++)
+        {
+            int tiles = TilesInRing(radius);
+            int reaping = tiles * FieldTileTicks(config, config.ReapTicks, radius, carrying: true);
+            int sowing = tiles * FieldTileTicks(config, config.SowTicks, radius, carrying: false);
+
+            if (reaping > budget || sowing > budget)
+            {
+                break;
+            }
+
+            best = tiles;
+        }
+
+        return best;
+    }
+
+    /// <summary>Food one farmer brings in over a year, at their weakest.</summary>
+    /// <remarks>
+    /// <b>At their weakest, like every other yield in this file</b> — a farm sized against a
+    /// villager in their prime is a farm that stops feeding the village as its founders age,
+    /// which is D12's whole point arriving as an economy bug.
+    /// </remarks>
+    public static int FoodFarmedPerYearAtWorst(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int food = FieldTilesOneFarmerKeeps(config) * config.CropYieldPerTile
+            * config.VigourMinPercent / 100;
+
+        return food < 1 ? 1 : food;
+    }
+
+    /// <summary>
+    /// What <see cref="SimConfig.CropYieldPerTile"/> has to be for a farmer's year to be worth
+    /// as much as a gatherer's.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE TARGET IS A COMPARISON, AND THAT IS WHAT MAKES IT DERIVABLE AT ALL.</b>
+    /// `crops-and-orchards.md §1` inherits `environment-and-seasons.md §5.1`'s surviving
+    /// target — <em>a household working normally through spring, summer and autumn fills its
+    /// winter store by the first day of winter</em> — and the village already has one kind of
+    /// work that meets it: gathering, whose yield <see cref="RequiredGatherYield"/> derives
+    /// against exactly that sentence. <b>So a farmer's year must be worth a gatherer's year</b>,
+    /// and the target is inherited rather than restated.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ AND STATING IT ANY OTHER WAY IS CIRCULAR, which cost the first draft of this
+    /// method.</b> The obvious form — *"enough yield that a farm's seats feed a household"* —
+    /// reads the seats, and the seats are derived from the yield. It produced a farmhouse with
+    /// fourteen seats in it and no way to tell whether the yield or the capacity was the thing
+    /// that was wrong. Two numbers that define each other are not a derivation; they are a
+    /// fixed point nobody chose.
+    /// </para>
+    /// <para>
+    /// <b>Why it is the right comparison and not merely a convenient one (D19):</b> a second
+    /// raw food source exists so a distant household has <em>something</em> nearby to work. A
+    /// farm worth materially less than a gatherer's hut is a building nobody rationally places;
+    /// one worth materially more deletes gathering. Parity is what makes the choice about
+    /// <em>where the ground is</em>, which is the decision the slice is for.
+    /// </para>
+    /// </remarks>
+    public static int RequiredCropYield(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int tiles = FieldTilesOneFarmerKeeps(config);
+        if (tiles <= 0)
+        {
+            throw new InvalidOperationException(
+                "A farmer cannot work a single tile in a season — sow_ticks, reap_ticks or the "
+                + "walk to work make the crop impossible.");
+        }
+
+        // An ordinary adult on both sides, not the weakest one: the two kinds of work are
+        // compared at the same vigour, so the answer is about the work rather than about who
+        // happens to be doing it. Vigour then scales both identically at the point of use.
+        int gathered = FoodGatheredPerYear(config, TypicalVigourPercent(config));
+        int perTile = CeilingDivide(gathered * 100, tiles * TypicalVigourPercent(config));
+
+        return perTile < 1 ? 1 : perTile;
+    }
+
+    /// <summary>
+    /// Seats a farmhouse needs — <b>enough hands to keep one household in food</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Derived like <see cref="RequiredForesterSeats"/>: what is this work FOR, and how much
+    /// of it does one pair of hands do?</b> The forester's answer comes from the logs the huts
+    /// eat; a farm's comes from mouths. <c>woodcutter_hut_capacity</c> is the recorded case for
+    /// why a capacity must not be typed — yields were re-derived when the economy horizon
+    /// moved, capacities were not, and thirty-six people froze (D16, D50).
+    /// </para>
+    /// <para>
+    /// <b>⭐ ONE FARM FEEDS ONE FULL HOUSEHOLD, and the village-wide answer is "build another
+    /// one".</b> That is <c>granary_feeds_people</c>'s pattern deliberately reused (D39,
+    /// correcting D37): a stated unit the player can reason about, with scale bought by placing
+    /// a second building rather than by a number nobody can see. A farm is then legible on its
+    /// own — *"this one keeps a family fed"* — which a share-of-the-village figure never could
+    /// be.
+    /// </para>
+    /// <para>
+    /// <b>Asked in mouths rather than in food</b>, through
+    /// <see cref="MouthsFedByOneAdult"/>, so it reads off the same figure the forager quota's
+    /// floor does and cannot drift from it — and so it does <em>not</em> read
+    /// <see cref="SimConfig.CropYieldPerTile"/>, which is what keeps it out of the circle
+    /// <see cref="RequiredCropYield"/>'s remarks describe.
+    /// </para>
+    /// <para>
+    /// <b>Never below one</b>, on the same reasoning as the builder's and gatherer's huts: a
+    /// building that can never do the one thing it exists for is not a building.
+    /// </para>
+    /// </remarks>
+    public static int RequiredFarmerSeats(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int seats = CeilingDivide(config.MaxHouseholdSize, MouthsFedByOneAdult(config));
+        return seats < 1 ? 1 : seats;
+    }
+
     /// <summary>Hands the village may spend on staying warm — see
     /// <see cref="FuelMayCostThisShareOfSpareHands"/>.</summary>
     public static int FuelBudgetInHands(SimConfig config, int households) =>

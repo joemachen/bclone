@@ -190,6 +190,19 @@ public sealed class StockLimitTests
     //
     //   before children worked at twelve: fixture 13172587746925380233,
     //                                     shipped 1066427617710206388
+    //
+    // ⭐ NOT RE-TAKEN FOR THE FARM (D162), AND THE REASON IS THE INTERESTING PART. The handoff
+    // for that slice said in terms that **the goldens are supposed to move once a farmer sows**
+    // — every crop step before it had been provably invisible, and that was expected to end. It
+    // did not, and the explanation was measured rather than shrugged at: **neither of these
+    // villages ever places a farmhouse**, so nothing sows, no `Workplace.Store` is ever written
+    // to, and `LabourQuota`'s new arm takes zero hands because `FarmerSeatsWithGroundToWork` is
+    // zero with no farm in the world.
+    //
+    // ⚠️ SO THEY ARE UNMOVED BECAUSE THEY DO NOT COVER IT, NOT BECAUSE IT IS A NO-OP — which is
+    // D157's finding, restated by the very next slice. **A green golden can mean "not
+    // covered".** What covers the farm is `FarmGoldenTests`, which paints, clears, sows and
+    // reaps in one run and is the first guard in this suite ever to reach `NearestHarvest`.
     private const ulong FixtureFiftyYearHash = 11001298307494045081UL;
     private const ulong ShippedFiftyYearHash = 10000897820648583606UL;
 

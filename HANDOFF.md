@@ -1,181 +1,105 @@
-# Handoff — bclone: **build the farm**
+# Handoff — bclone: **Phase 2 is one QA pass and three chores from done**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D161 back to D142**, then
-`METHODOLOGY.md`, then **`specs/crops-and-orchards.md` in full** — that spec is this session's
-whole job and it already carries every ruling Joe has made about it.
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D162 back to D142**, then
+`METHODOLOGY.md`. `specs/crops-and-orchards.md` is now a **record** rather than a job — read §12
+if you touch the crop numbers, and nothing else there needs you.
 
 ---
 
 ## Where things are
 
-**Branch `phase/2-wood-fuel-and-tools`, pushed and in sync with `origin` at `80eadb0`.** Tree
-clean.
+**Branch `phase/2-wood-fuel-and-tools`.** The farm (D162) is in.
 
-**Suite: 589 passing, 0 failing, 2 skipped of 591. Green.** Both skips are rulings, not debt
+**Suite: 613 passing, 0 failing, 2 skipped of 615. Green.** Both skips are rulings, not debt
 (D143's unattended village; D134's granary cap).
 
-**The Godot view builds** — `dotnet build src/Bclone.Game/Bclone.Game.csproj`. The solution
-build does **not** cover it (D11), and since D160 the view has **no automated verification of any
+**The Godot view builds** — `dotnet build src/Bclone.Game/Bclone.Game.csproj`. The solution build
+does **not** cover it (D11), and since D160 the view has **no automated verification of any
 kind**: looking at it is the test.
 
-**Joe has played this build** — *"everything is going smoothly."*
-
 ---
 
-## ⛔ THE JOB: the farm. It is the last slice of Phase 2.
+## ⛔ THE JOB: close Phase 2 and merge it.
 
-Crops is **three-quarters built and entirely dormant** — nothing can sow yet, which is why the
-first three steps could ship without moving a golden. The farm is what turns it on.
+**`DESIGN.md §4`'s Definition of Done, and only two of five items are left that are yours.**
 
-### What already exists and is waiting for it
+1. ✅ **Crops** — D162. Built, guarded, documented.
+2. ✅ **A golden over a village that clears ground** — `FarmGoldenTests`, which does it and the
+   crop seam in one run. D157's hole is closed.
+3. ⛔ **A QA playthrough against a written checklist** — **Joe walks it, not you.** Phase 1 has
+   one in its spec and Phase 2 has none. **Writing the checklist is yours; walking it is his.**
+   Start from Phase 1's and add what Phase 2 built: the build queue, stock limits, the
+   professions panel, the brushes, the minimap, and now the farm.
+4. ⛔ **The release blockers** (METHODOLOGY §5): `VERSION` is read by nothing, and
+   `src/Bclone.Game/export_presets.cfg` does not exist — without which `release.yml` can never
+   succeed, because it exports the "Windows Desktop" preset from a clean checkout.
+5. ⛔ **`CHANGELOG.md`'s header** still instructs the practice METHODOLOGY §5 deleted (D160): it
+   says the `[Unreleased]` section accumulates as we work, and the rule is now that it is
+   written in one pass at the first tag.
 
-| Piece | Where | State |
-|---|---|---|
-| `Terrain.Field / Sown / Ripe` | `GeneratedMap.cs` | ✅ values pinned at 6/7/8 by a test |
-| A crop id per tile | `GeneratedMap.CropAt` / `SetCrop` | ✅ hashed sparsely |
-| Ripen in autumn, rot in winter | `Systems/CropSystem.cs` | ✅ tick-order step 2 |
-| `SeasonRules.IsSowing` / `IsReaping` | `World/Season.cs` | ✅ |
-| `FoodTheVillageHolds()` | `SimWorld` | ✅ the seam fix, see below |
-| Warn on building over a crop | `SimWorld.WarningForBuildingOverACrop` | ✅ |
-
-### The design, already settled — do not redesign it
-
-**A farm is a forester's hut with a different verb.** `buildings-plan.md §8.1` argued fields
-should be brushes and left the resolution open; `crops-and-orchards.md §3` closes it: **a
-workplace whose extent is painted work ground**. That means `PaintWorkGround`,
-`WorkGroundAllowanceFor`, the overstretched warning, the labour quota, the idle ring (D147), the
-refusal sentences (D43) and the build queue all apply on day one, because they are properties of
-*a workplace with painted ground* and not of forestry.
-
-Copy the forester's hut. It is the working example of every part of this.
-
-### ⚠️ The six things a new `JobKind` obliges
-
-**Measured, not guessed: `JobKind` has 93 references across 11 files.** Line numbers are as of
-`80eadb0` — search the symbol if they have drifted.
-
-| Where | What it owes |
-|---|---|
-| `SimWorld.cs:172` | the verb a villager is described by — *"farming"* |
-| `SimWorld.cs:2737` | the `JobKind` → `BuildingKind` map |
-| `LabourAllocator.cs:716` | membership of the scarcity-order set |
-| `LabourAllocator.cs:860` | the plural — *"farmers"* |
-| `LabourQuota.cs:94` | a demand accessor |
-| `LabourQuota` demand | **the seasonal arm — start here** |
-
-### ⛔⛔ The trap, and it will cost you a day if you meet it cold
-
-**`SetStaffing` is a ceiling, not a summons (D146).** If the quota does not *actively want*
-farmers in spring and autumn, the fields sit sown, the harvest stands, winter takes it — and
-**every guard you have written will blame `CropSystem`**, which will be working perfectly. That
-is D146's bug waiting one job over.
-
-**Build the seasonal demand arm first and prove it in isolation**, before sowing or reaping
-exists: assert that `LabourQuota` wants farmers in spring and autumn and does not in summer and
-winter. Then the rest of the farm has somewhere true to stand.
-
-### The order to build it in
-
-1. **The seasonal quota arm** (above), proved alone.
-2. `BuildingKind.Farmhouse` + `JobKind.Farmer` + the six plumbing points + recipe and seats
-   (`RequiredFarmerSeats`, derived like `VillageEconomy.RequiredForesterSeats`).
-3. **The 100-cap local store** — `farm_store_cap` in data. See the warning below.
-4. **Sowing and reaping** as work, on the farm's painted ground.
-5. **Hauling**: the farmer carries to the nearest storage *with room*, so the farm's own buffer
-   fills first and the walk lengthens once it is full.
-6. **The market reaching a workplace store** — granary first (see rulings).
-7. **The crops × harvest-brush golden**, written *with* the feature, not after.
-8. **Derive the numbers** (§5.1's surviving target), then **re-take the two village goldens
-   last**, one commit, one stated reason each (D152).
-
----
-
-## ⭐ The seam that is already fixed, and why you must not undo it
-
-`Workplace.Store` has existed since D30 and **nothing had ever written to it**, so
-`FoodInGranaries()` (store buildings only) and `TotalFood()` (everything) had never once
-disagreed. The farm's buffer makes them diverge — and **the birth gate**, the village-wide reason
-to gather and the food stock limit all read the blind one. A village whose harvest sat at the
-farm would have **quietly stopped having children**: D155's symptom from a new direction, and
-D81's bug, on record as *D76's seam for the fifth time*. **This was the sixth.**
-
-`FoodTheVillageHolds()` — stores **plus workplaces**, **deliberately not larders** — is what
-decisions read now. Larders are excluded because a family's larder is food already distributed,
-and counting it would re-add the household term D153 removed from the birth gate.
-
-**It was found by writing the spec, before the farm existed.** `WorkplaceStoreTests` guards it.
-
-⚠️ **When you fill the farm's store, `Stockpile.Add` returns what it actually took and the caller
-must read it.** Not reading it is D96 exactly — 17,451 food into a full granary and out of the
-world — and D144 is the same shape one deposit path over. **This store has never been written to,
-so that path has never been exercised.**
-
----
-
-## Joe's rulings on crops — settled, do not re-open
-
-1. **A farm has a building**, and the field zone is painted work ground the farmers sow and reap.
-2. **Harvest goes to the granary; the farm holds up to 100 locally.** This wires up the fifth
-   element of `professions.md`'s role model, dead since D30 — and re-aims it from the forester to
-   the farm, which is already corrected in that spec.
-3. **The farmer reaps and hauls** to the nearest storage *with room*.
-4. **The marketer may source from farm storage — granary first**, and a farm only when it is
-   *strictly nearer* than the nearest store building holding that good. No threshold, no new
-   tunable. ⚠️ `NearestStoreAccepting` iterates `StoreBuildings` only, so this is a real change to
-   the market's reach — and it must not become a **second way to find a store** (D145).
-5. **Laborers never move farmed goods.** Hauling stays building materials.
-6. **One crop now, in a model shaped for many** — the id exists; crops belong in data.
-7. **Use it or lose it.** Already built.
-8. **Building over a standing crop warns and is allowed.** Already built.
-
----
-
-## ⚠️ Traps — the first three are this session's own, all the same shape
-
-- **⭐⭐ CHECK EVERY GUARD RED, AND COUNT THE REDS.** Three near-misses in one session: a guard
-  that was **vacuous and passed against the broken code**; a guard whose **name claimed more than
-  its body proved**; and a **harness off-by-one that read as a broken feature**. The first was
-  caught *only* because disabling the fix produced **two** reds out of three instead of three.
-  **Counting matters as much as running.**
-- **`SimLoop` runs the systems and *then* advances the tick.** The moment `World.Clock` first
-  reports a new season, **no system has run on it yet**. A test that steps until the season
-  changes and then asserts is one tick early and looks exactly like a broken feature.
-- **⭐ A green golden can mean "not covered", not "no-op"** (D157) — both 50-year goldens paint
-  zero tiles in fifty years. **The clearing-path golden is still owed** and is on §4's queue.
-- **⭐ The goldens are SUPPOSED to move once a farmer sows.** Every crop step so far has been
-  provably invisible, which made verification easy; that ends here. Re-take them **last**, in
-  their own commit, with one stated reason each (D152). **If they move before you expect it,
-  something is wrong — say so rather than re-taking them.**
-- **The audit trail is evidence and the suite is not.** D154 and D157 both came out of
-  `src/Bclone.Game/logs/`. **Ask Joe for the log path from his header; it is in every screenshot.**
-- **A control tested at its predicate and never at its deposit is a control nobody has tested**
-  (D144, and D145's sweep). Both live risks for the farm's store and the market's new source.
-- **Assert against the shipped config, not only the fixture** — they have diverged six times, and
-  METHODOLOGY §3 exists because of it.
-- **`python` string edits die on this repo's CRLF *and* its emoji** (`UnicodeDecodeError:
-  charmap`). Use the Edit tool.
-- **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at ten lines
-  for a quarter of an hour. `Get-Process testhost` and look at CPU to tell working from hung.
-- **The full suite is ~13–17 minutes.** Background it.
-
----
-
-## After the farm — do not drift into these, they are Joe's calls
-
-Phase 2's Definition of Done is in **`DESIGN.md §4`** and the farm is item 1 of five. The rest:
-the clearing-path golden, a **QA checklist walked by Joe** (not by you), the release blockers
-(`VERSION` has no reader; `export_presets.cfg` does not exist), and `CHANGELOG.md`'s header.
 **Then merge to `main` via PR #3.**
 
-**The mid-game gap is NOT Phase 2's to claim** (D161). Crops is the *rhythm* of those sixteen
-years; **skill is the answer**, and that is Phase 3 — whose success test is already written:
-*play years 1 through 16 at normal speed, without fast-forwarding, and want to keep watching.*
+---
+
+## ⭐ What the farm slice left open, and both are Joe's calls
+
+### 1. ⚠️ The derived field is about twice what a farmer really gets through
+
+`FieldTilesOneFarmerKeeps` says **13 tiles**; the seam golden measures **≈5.75 reaped a year**.
+Every other budget in `VillageEconomy` is a worst case of *cost*; this one over-states
+*capacity*, which is the unsafe direction — the village believes a farm feeds a household when
+it feeds rather less. The gap is the ordinary business of a working day: meals taken mid-field, a
+fetch for one's own larder, a walk in from the cold. **`TripsPerYear` carries the same gap and
+has never stated it**, so this is a pattern rather than a farm bug.
+
+**Recorded rather than tuned** (D112's rule). The honest fixes are a season budget that charges
+the working day's interruptions, or a stated derating factor applied to all of them — and either
+one re-derives the whole food economy, so it wants Joe's word and a fresh session.
+
+### 2. The farm has one seat, and that is on purpose
+
+`RequiredFarmerSeats` = *one farm keeps one household fed*, which comes out at **1**. Scale is a
+second farmhouse — `granary_feeds_people`'s pattern deliberately reused (D39). **If Joe plays it
+and a one-seat building reads as broken rather than as small, that is the number to revisit**,
+and the derivation is where to do it rather than the config.
+
+---
+
+## ⚠️ Traps this session met, in the order they will cost you
+
+- **⭐⭐ CHECK EVERY GUARD RED, AND COUNT THE REDS.** Done twice for the demand arm: **3 of 5**
+  with it disabled, **2 of 5** with only the seasonality removed. The two that stay green both
+  times are the anti-vacuity guards that assert zero — which is what counting tells you and
+  running does not.
+- **⭐ `SimLoop` runs the systems and *then* advances the tick.** Third and fourth instances this
+  week. The seam golden's first run reported *"0 lost to winter, 344 vanished unexplained"* — a
+  harvest apparently being eaten by the harvest brush — and the bug was that the harness read
+  `Clock.Season` one tick to the right of the event. **An off-by-one in a harness reads exactly
+  like a broken feature**, and the temptation is to go and fix the feature.
+- **⭐ A GREEN GOLDEN CAN MEAN "NOT COVERED"** (D157) — and it did again. The plan said the two
+  50-year goldens were *supposed* to move once a farmer sowed. **They did not, because neither
+  village ever places a farmhouse.** Say which of the two it is, measured, before you believe
+  either.
+- **A derivation that reads a number derived from itself is not a derivation.** *"Enough yield
+  that a farm's seats feed a household"* produced a farmhouse with fourteen seats and 173 food
+  from one tile. State the target as a **comparison** against something already derived.
+- **A control tested at its predicate and never at its deposit is a control nobody has tested**
+  (D144). The market's widened reach needed the *loading* branch as well as the *choosing* one,
+  or traders walk to the farm and stand there.
+- **A new deposit path means a new leak.** `RetireWorkplace` had ignored `Workplace.Store` for
+  five phases — correctly, because nothing wrote to one. The farm's buffer made demolition
+  destroy up to 100 food silently. **Found by reading the method, not by a failing test.**
+- **`python` string edits die on this repo's CRLF *and* its emoji** (`UnicodeDecodeError:
+  charmap`), and `python` is not even on PATH here. Use the Edit tool.
+- **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at zero
+  lines for a quarter of an hour. `Get-Process testhost` and look at CPU to tell working from
+  hung.
+- **The full suite is ~25–30 minutes now.** Background it, and do not start a second one — the
+  first holds a lock on `Bclone.Sim.dll` and no test project will build until it exits.
 
 ---
 
 ## Working with Joe
 
-Technical, not a game/systems programmer. Casual, direct; **push back honestly** — his rulings
-were better than the proposals twice this session (build-queue order for clearing, and skill
-rather than crops as the mid-game answer). **End every message with the explicit ask**, or he
-cannot tell who is blocking whom.
+Technical, not a game/systems programmer. Casual, direct; **push back honestly**. **End every
+message with the explicit ask**, or he cannot tell who is blocking whom.

@@ -144,6 +144,58 @@ public sealed class ShippedConfigTests
     }
 
     /// <summary>
+    /// ⭐ The shipped crop is worth what the derivation says it has to be worth.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>`crops-and-orchards.md §1`'s target, checked against the file the game loads.</b>
+    /// <c>crop_yield_per_tile</c> is typed in <c>data/sim.config.json</c> and
+    /// <see cref="VillageEconomy.RequiredCropYield"/> says what it must be — the same
+    /// arrangement <c>gather_yield</c> has, and this guard is the reason that arrangement is
+    /// safe rather than merely tidy.
+    /// </para>
+    /// <para>
+    /// <b>METHODOLOGY §3, and the six recorded times these two configs diverged</b> — D48 (a
+    /// timber leak four times worse in the shipped file), D50 (three woodcutter seats where the
+    /// economy needed eight), D49 (thirty-day seasons that reached the game and not the tests).
+    /// The fixture derives this number; the shipped file states it, and a stated number is
+    /// exactly the kind that stops tracking the derivation it came from.
+    /// </para>
+    /// <para>
+    /// <b>Equality, not a floor</b>, unlike the capacities above. A farm worth materially more
+    /// than a gatherer's hut deletes gathering as a choice, and one worth materially less is a
+    /// building nobody rationally places — the target is parity, so both directions are wrong
+    /// and both should fail here.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheShippedCropIsWorthAGatherersYear()
+    {
+        SimConfig shipped = Shipped;
+
+        int required = VillageEconomy.RequiredCropYield(shipped);
+        int tiles = VillageEconomy.FieldTilesOneFarmerKeeps(shipped);
+
+        _output.WriteLine(
+            $"a farmer keeps {tiles} tiles; crop_yield_per_tile is {shipped.CropYieldPerTile} " +
+            $"and the derivation asks for {required}. One farmer's year: " +
+            $"{VillageEconomy.FoodFarmedPerYearAtWorst(shipped)} food at their weakest, against " +
+            $"a gatherer's {VillageEconomy.FoodGatheredPerYearAtWorst(shipped)}.");
+
+        Assert.Equal(required, shipped.CropYieldPerTile);
+
+        Assert.True(
+            tiles > 0,
+            "A farmer cannot work a single tile in a season, so a farm can never do anything.");
+
+        // And the seats have to be able to hold the hands the ground needs, or the farm is a
+        // building that is overstretched the day it is raised — D50's shape.
+        Assert.True(
+            VillageEconomy.RequiredFarmerSeats(shipped) >= 1,
+            "A farmhouse with no seats is not a building.");
+    }
+
+    /// <summary>
     /// The larder-logs invariant, asserted against the file the game actually loads.
     /// </summary>
     /// <remarks>

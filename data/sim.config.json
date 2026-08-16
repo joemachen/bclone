@@ -459,6 +459,68 @@
   // valley meaningless; ten would make it theoretical.
   "planting_costs_this_much_more_than_felling": 3,
 
+  // ---- The farm (crops-and-orchards.md, D161) ----------------
+  // A farm is a forester's hut with a different verb: a workplace
+  // whose extent is painted work ground, sown in spring and reaped
+  // in autumn. The year becomes something you watch happen instead
+  // of a number that changes.
+  //
+  // What it costs. Priced like its siblings and deliberately not
+  // free -- the pile and the builder's hut are free because nothing
+  // can be built without them, and a farm has no such circle.
+  "farmhouse_logs": 25,
+  "farmhouse_work_ticks": 40,
+
+  // How long a tile takes. CONTENT, in the same class as cut_ticks
+  // and gather_ticks: how long an action takes is a fact about the
+  // work. What IS derived from the pair is the consequence -- how big
+  // a field one pair of hands can keep
+  // (VillageEconomy.FieldTilesOneFarmerKeeps), which is what a farm's
+  // work-ground allowance is priced against.
+  //
+  // BOTH THE SAME AS gather_ticks, deliberately: it is the same kind
+  // of thing, one person doing one job on one tile, and pricing it
+  // differently would be a claim about farming nobody could defend.
+  // WHAT MAKES FARMING EXPENSIVE IS THE WALKING, and that is charged
+  // where it happens -- a reaped tile is an armful carried back to
+  // the steading, and one tile of crop is already more than
+  // carry_capacity.
+  //
+  // The first draft made reaping dearer "because it is the half with
+  // the load in it" and billed the load twice; the seam golden caught
+  // it, measuring 84 tiles reaped in twenty years against 22 sown
+  // every spring.
+  "sow_ticks": 3,
+  "reap_ticks": 3,
+
+  // Food one tile of ripe field gives up.
+  //
+  // DERIVED, not chosen -- VillageEconomy.RequiredCropYield says
+  // what it must be, and ShippedConfigTests checks this file against
+  // it. The target is a comparison and that is what makes it
+  // derivable at all: A FARMER'S YEAR IS WORTH A GATHERER'S YEAR.
+  // Gathering already meets environment-and-seasons.md 5.1's target
+  // (a household working normally fills its winter store by the
+  // first day of winter), so the crop inherits it rather than
+  // restating it.
+  //
+  // Stating it any other way is circular -- "enough that a farm's
+  // seats feed a household" reads the seats, and the seats are
+  // derived from the yield. That first draft produced a farmhouse
+  // with FOURTEEN seats and 173 food from a single tile.
+  "crop_yield_per_tile": 67,
+
+  // How much of its own harvest a farm holds before the walk gets
+  // longer (Joe: 100).
+  //
+  // It is the first Workplace.Store in the project's history that
+  // anything writes to -- professions.md 4's fifth element, on the
+  // type since D30 and dead ever since. A buffer, not a
+  // destination: the granary is still where food lives, and the 100
+  // means something because the farmer hauls to the nearest storage
+  // WITH ROOM, so the store underfoot fills first.
+  "farm_store_cap": 100,
+
   // ---- The builder's hut (D108) ------------------------------
   // Where the village's builders work from. Nothing is raised without
   // one: a construction site is an errand the hut's crew walks out to,

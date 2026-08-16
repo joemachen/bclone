@@ -124,6 +124,40 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     ForesterHut = 8,
+
+    /// <summary>
+    /// A farmhouse — the steading a painted field is worked from
+    /// (`specs/crops-and-orchards.md §3`, D161).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A FARM IS A FORESTER'S HUT WITH A DIFFERENT VERB, and that closes an open
+    /// question rather than dodging it.</b> `buildings-plan.md §8.1` argued fields should be
+    /// brushes rather than a building with a radius and left the resolution open —
+    /// <em>"likely a zone plus a small steading that is the workplace, worth deciding
+    /// deliberately rather than by default"</em>. Decided: exactly that, and it costs no new
+    /// mechanic, because a workplace whose extent is painted work ground already exists (D86,
+    /// D118) and its brush is already a standing instruction rather than a one-off order
+    /// (D127).
+    /// </para>
+    /// <para>
+    /// <b>What that buys on day one, stated so it is not re-litigated:</b> the work-ground
+    /// allowance, the overstretched warning, the labour quota, the idle ring (D147), the
+    /// refusal sentences (D43) and the build queue all apply, because they are properties of
+    /// <em>a workplace with painted ground</em> rather than of forestry.
+    /// </para>
+    /// <para>
+    /// <b>⭐ And it is where <c>Workplace.Store</c> comes alive</b> —
+    /// `professions.md §4`'s fifth element, on the type since D30 and never once written to.
+    /// A harvest is exactly the case that needs a local buffer: reaping is bursty and the
+    /// granary is across the village. See <c>SimConfig.FarmStoreCap</c>.
+    /// </para>
+    /// <para>
+    /// <b>Appended, never renumbered</b> — the same rule <see cref="Goods"/> and
+    /// <see cref="JobKind"/> carry, for the same reason.
+    /// </para>
+    /// </remarks>
+    Farmhouse = 9,
 }
 
 /// <summary>What a building costs to raise.</summary>
@@ -186,6 +220,13 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
 
             BuildingKind.ForesterHut =>
                 new BuildingRecipe(config.ForesterHutLogs, config.ForesterHutWorkTicks),
+
+            // Priced like its siblings, and deliberately not free: the pile and the builder's
+            // hut are free because nothing can be built without them, and a farm has no such
+            // circle to break — it is a thing the player spends logs on because they chose to
+            // eat differently.
+            BuildingKind.Farmhouse =>
+                new BuildingRecipe(config.FarmhouseLogs, config.FarmhouseWorkTicks),
 
             // ⭐ NAMED RATHER THAN DEFAULTED, and this arm is why. It used to hand out the
             // woodcutter's hut's recipe to anything it did not recognise — 25 logs and 40

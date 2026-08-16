@@ -202,11 +202,13 @@ winter) and grew, on Joe's calls, into everything the player touches:
 - **The shell** (D54, D55, D113–D116, D149) — rebuilt twice, on Banished's shape.
 
 **Definition of Done — the honest version, and it is not met:**
-1. **Crops and orchards** (`specs/crops-and-orchards.md`), which **replaces** the seasonal yield
-   curve in `environment-and-seasons.md §5.1` — three multipliers where this is a growth cycle you
-   can watch. What makes the year real and what the granary is *for*.
-2. **A golden over a village that clears ground** (D157). Both existing 50-year goldens paint
-   **zero** tiles across all 24,000 ticks, so step C's central mechanic has no drift guard at all.
+1. ✅ **Crops and orchards** (`specs/crops-and-orchards.md`, D162), which **replaces** the
+   seasonal yield curve in `environment-and-seasons.md §5.1` — three multipliers where this is a
+   growth cycle you can watch. What makes the year real and what the granary is *for*.
+   *(Orchards stay deferred to Phase 3 with the reason stated in §8 of that spec.)*
+2. ✅ **A golden over a village that clears ground** (D157) — landed as `FarmGoldenTests`,
+   which paints, clears, sows and reaps in one twenty-year run and is **the first guard in the
+   suite that ever reaches `NearestHarvest`**.
 3. A **QA playthrough against a written checklist** (METHODOLOGY §3) — Phase 1 has one in its
    spec, Phase 2 does not. **Walked by Joe, not by me.**
 4. **The release blockers cleared** (METHODOLOGY §5): `VERSION` wired into the build — nothing
@@ -925,9 +927,10 @@ there, because it is the slice that opens that method.
 - **✅ STEP C IS DONE AND MERGED to `phase/2-wood-fuel-and-tools`.** The goldens needed no
   re-taking (D157: they do not reach the changed code), and Joe's call was to take the golden
   that would cover it **on the far side of the merge** rather than hold step C for it.
-- **⭐ First up on the other side: a golden over a village that clears ground.** D157's one open
-  hole — both existing goldens run an established village that never paints a tile, so the
-  clearing path has no drift guard at all. It is the mechanic step C is built on.
+- **✅ First up on the other side: a golden over a village that clears ground** — **landed with
+  the farm** (D162, `FarmGoldenTests`), because the seam that slice needed to guard is a laborer
+  clearing painted ground *beside a ripe field*, and one run covers both. D157's one open hole
+  is closed: it is the first guard in the suite that ever reaches `NearestHarvest`.
 
 **🔨 In progress — crops (`specs/crops-and-orchards.md`), Phase 2's last slice.** Spec written
 first (D161), and the first two steps are in:
@@ -966,13 +969,32 @@ first (D161), and the first two steps are in:
   picks the neighbourhood. A **bare** field says nothing, because nothing is lost. Fixed
   alongside: `CanBuildAt` returned on the first warning, so a tile both sown *and* beyond the
   walking budget reported only one.
-- **Next: the farm.** ⚠️ **`JobKind` has 93 references across 11 files** and a new kind obliges
-  six specific things — the checklist is in `crops-and-orchards.md §11b`. **The one with teeth is
-  the seasonal demand arm**: `SetStaffing` is a ceiling and not a summons (D146), so a quota that
-  does not actively want farmers when the fields are ripe leaves the harvest to rot and every
-  guard blames the crop system. Then the crops × harvest-brush golden, then the derived numbers,
-  then the goldens re-taken last (D152). **The goldens are supposed to move once a farmer sows** —
-  every step so far has been provably invisible, and that stops being true here.
+- **✅ THE FARM** (D162) — the last slice, and **the year now happens to the ground**. A
+  farmhouse the player places, its field painted with the same work-ground brush the forester's
+  hut uses, sown in spring, standing ripe in autumn, reaped into the first live
+  `Workplace.Store` this project has ever had, and carried on to the granary once the buffer is
+  full. The market may take from a farm it happens to pass. **Everything a workplace with
+  painted ground already owns came for free** — the allowance, the overstretched warning, the
+  idle ring, the refusal sentences, the build queue.
+  - **The seasonal demand arm was built and proved first**, because `SetStaffing` is a ceiling
+    and not a summons (D146) — and it came out **one season wider than the calendar table**:
+    summer wants farmers too, because a reshuffle landing in July would empty the farm and
+    autumn would find nobody idle to put back. Checked red and **counted**: 3 of 5, then 2 of 5.
+  - **The derived numbers came out wrong twice and a guard found it both times** — the target
+    was circular (fourteen seats, 173 food a tile), and the cost model billed the reaper's load
+    twice. Settled at a **13-tile field**, `crop_yield_per_tile` **67**, **one seat per
+    farmhouse**, `farm_store_cap` **100**. ⚠️ **The field is about twice what a farmer really
+    gets through, which is the unsafe direction, and it is recorded rather than tuned** — Joe's
+    call.
+  - **The crops × harvest-brush golden closes D157's open hole as well**: it is the first guard
+    in the suite that ever reaches `NearestHarvest`. Twenty years of a village farming beside
+    painted woodland — **115 tiles reaped, 343 taken by winter, 0 unexplained.**
+  - **⚠️ AND THE TWO 50-YEAR GOLDENS DID NOT MOVE, WHICH WAS NOT THE EXPECTATION.** They were
+    supposed to, because every crop step before this one was provably invisible and that was to
+    end here. **Neither of those villages ever places a farmhouse**, so nothing sows and the
+    whole slice is unreachable from them. **They are unmoved because they do not cover it, not
+    because it is a no-op** — D157's finding, restated by the very next slice, and exactly why
+    the seam golden was written with the feature rather than after it.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
@@ -1149,6 +1171,19 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D162 · 2026-08-15 · ⭐⭐ THE FARM — Phase 2's last slice, and the first job this project has *added* rather than renamed.** `specs/crops-and-orchards.md` built end to end: `BuildingKind.Farmhouse`, `JobKind.Farmer`, painted field ground, sowing in spring, reaping in autumn, the first live `Workplace.Store`, the farmer's hauling, and the market's widened reach. **A farm is a forester's hut with a different verb** — a workplace whose extent is painted work ground — so the allowance, the overstretched warning, the idle ring (D147), the refusal sentences (D43) and the build queue all applied on day one, which is what `buildings-plan.md §8.1` left open and this closes.
+  - **⭐ `JobKind.Farmer` EARNS THE FIVE THINGS D96 AND D112 REFUSED TO SPEND.** Both of those *reused* a kind — `Logger → Forester`, and the gatherer's hut on `Forager` — on the argument that a new value means a second quota arm, a second slot in the scarcity order, a second plural, a second behaviour branch and a rule to stop the village staffing both. A farmer needs all five and none is a forager's: the work is on painted ground, it happens in two seasons rather than three, and it produces nothing in the other two. Folding it in would have made one job whose demand is seasonal in two incompatible ways.
+  - **⛔⛔ THE SEASONAL DEMAND ARM WAS BUILT AND PROVED BEFORE A TILE COULD BE SOWN, and it came out one season wider than the spec's own calendar table.** `SetStaffing` is a ceiling and not a summons (D146), so a quota that does not *actively want* farmers when the fields stand leaves the harvest to rot with every guard blaming `CropSystem`. **Summer is wanted too** — not because a farmer does anything in July, but because `LabourSystem` reshuffles every three years and `TakeUpSlack` fills openings only from villagers who are *idle*, so a July reshuffle would empty the farm and autumn would find nobody free. **The standing crop is why the hands are wanted.** Winter really is zero and costs nothing, because the forager quota is zero then too (D44). **Checked red and counted: 3 of 5 with the arm disabled, 2 of 5 with only the seasonality removed** — the two that stay green are the anti-vacuity guards that assert zero, which is what counting is for (D157's near-miss, third instance).
+  - **⭐ THE DERIVED NUMBERS CAME OUT WRONG TWICE, AND BOTH TIMES A GUARD FOUND IT RATHER THAN ARITHMETIC.** *(i)* The obvious target — *"enough yield that a farm's seats feed a household"* — **is circular**, because the seats derive from the yield; it produced **a farmhouse with fourteen seats and 173 food from a single tile**, consistent and describing nothing. Restated as a **comparison** it becomes derivable and inherits §5.1's target intact: gathering already meets it, so **a farmer's year is worth a gatherer's year**. *(ii)* The cost model then charged a field one step per tile — true of sowing, false of reaping, because **one tile of crop already exceeds `carry_capacity`** and every reaped tile is a walk back to the steading. **The seam golden measured it: 84 tiles reaped in twenty years against 22 sown every spring.** Settled at `sow_ticks`/`reap_ticks` **3/3** (the same as `gather_ticks` — one person, one job, one tile; what makes farming expensive is the walking), a farmer's field of **13 tiles**, `crop_yield_per_tile` **67**, and **one seat per farmhouse** — *one farm keeps one household fed*, with scale bought by building a second, which is `granary_feeds_people`'s pattern deliberately reused (D39).
+  - **⚠️ AND THE ONE THING LEFT OPEN IS A MEASUREMENT, NOT A QUESTION: the derived field is about twice what a farmer actually gets through** (13 against ≈5.75 a year on the golden). Every other budget in `VillageEconomy` is a worst case of *cost*; this one over-states *capacity*, which is the unsafe direction. The gap is the ordinary business of a working day, the same one `TripsPerYear` carries and never states. **Recorded rather than tuned** — the honest fixes are a season budget that charges interruptions, or a stated derating factor, and both are Joe's call.
+  - **⭐ `Workplace.Store` IS ALIVE AFTER FIVE PHASES OF BEING DEAD.** `professions.md §4`'s fifth element, on the type since D30, never written to by anything, with a branch in the building panel that could not be true. **`Stockpile.Add`'s return value is read at the new deposit path** — not reading it is D96 exactly (17,451 food out of the world) and D144 one path over — and what will not fit stays in the arms and walks on to a store, which is what makes `farm_store_cap: 100` mean something: the buffer is underfoot, so it fills first and the walk lengthens once it is full. **This corrects `professions.md §11`'s stated order**, which planned to prove the local store on the forester and the woodcutter.
+  - **⭐ THE MARKET REACHES A FARM ONLY WHEN THE FARM IS ON THE WAY** (Joe). Stated as a comparison rather than a radius — *a workplace store is a candidate only when strictly nearer than the nearest store building holding that good* — so there is no threshold, no new tunable, and nothing anybody would have to derive (D16). **And the pickup shipped with the predicate**, which is D144's whole finding: five guards asked `Accepts` and not one made a villager put anything down, so a widened reach without the loading branch would send traders to the farm to stand there.
+  - **⭐ THE CROPS × HARVEST-BRUSH SEAM IS GUARDED OVER A LIVE RUN, AND IT ALSO CLOSES D157'S OPEN HOLE.** `TerrainRules.Yields` still refuses `Terrain.Ripe`, so the brush cannot paint a field at all — killed at the door rather than guarded after the fact — and `FarmGoldenTests` runs twenty years of a village farming *beside* painted woodland and counts every tile of crop that disappears: **115 reaped, 343 taken by winter, 0 unexplained.** Because the scenario paints and clears, it is also **the first guard in the suite that ever reaches `NearestHarvest`** — D158's *"first item on the other side"*, arriving with the slice that needed it anyway.
+  - **⚠️ AND THE GUARD'S FIRST RUN REPORTED A BUG THAT WAS IN THE HARNESS.** *0 lost to winter, 344 vanished unexplained* — because `SimLoop` runs the systems and *then* advances the tick, so reading `Clock.Season` after `StepOnce` looks one tick to the right of the event. **Second time this session's crop work has hit that exact off-by-one**, and it reads exactly like a broken feature both times.
+  - **⚠️ AND THE TWO 50-YEAR GOLDENS DID NOT MOVE, AGAINST THE STATED EXPECTATION.** The plan for this slice said in terms that *the goldens are supposed to move once a farmer sows*, and that **neither of those villages ever places a farmhouse** — so nothing sows, `Workplace.Store` is never written to, and the quota's new arm takes zero hands. **They are unmoved because they do not cover it, not because it is a no-op.** That is D157's own finding arriving one slice later, and it is the whole reason `FarmGoldenTests` was written with the feature rather than after it. The map golden is unmoved too, and that one *is* a real no-op: the generator produces none of the three field terrains, which `CropGroundTests` already proved.
+  - **The view shipped with it** (D103's rule: a feature the player cannot reach does not exist): a Farmhouse button under Food, the three field terrains given colours of their own — **they would otherwise have drawn as woodland**, because `ColourOf`'s default arm is forest green — a panel that names the season and what it means for this farm, and the Farmer row moving off the greyed *"not hired yet"* list.
+  - **⛔ ONE LEAK FOUND BY READING RATHER THAN BY A FAILING TEST, and it is the same family a third time.** `RetireWorkplace` had ignored `Workplace.Store` for five phases — **correctly**, because nothing wrote to one — so **demolishing a full farmhouse would have destroyed up to 100 food silently**: D96's shape (17,451 food out of the world) and D144's (firewood destroyed once the woodyard filled), both of which were found by Joe playing rather than by the suite. It goes on the ground where the farm stood and says so. **The rule generalises: a new deposit path is a new leak, and the place to look is wherever the old code was right to ignore the field.**
+  - **Where the suite stands: 613 passing, 0 failing, 2 skipped of 615 — GREEN** (was 589/0/2 of 591). The two skips are unchanged rulings: D143's unattended village and D134's granary cap.
 - **D161 · 2026-08-15 · ⭐⭐ THE MID-GAME GAP IS A SKILL PROBLEM, NOT A CONTENT PROBLEM — and the ordering out to Phase 4 is settled.** Joe brought a proposed ordering; it was checked against the repo rather than adopted, and the checking changed two things in it.
   - **⭐ THE REFRAME, WHICH IS THE DECISION:** *stop treating those sixteen years as time to fill and start treating them as the years the founders become worth learning from.* That is §2.1 in one sentence — a farmer with twenty years in the fields is meaningfully better, and losing them is losing knowledge — so **the answer is Phase 3, and no amount of content is a substitute.**
   - **⚠️ WHICH MEANS CROPS IS THE RHYTHM AND NOT THE FIX, and the proposal's own through-line argued against its own ordering.** It placed crops as *"the window's main fix"* while also saying the years should be when founders become worth learning from; those are different claims and only the second is about skill. **Joe's ruling: skill is the answer, crops is the rhythm, and Phase 2's Definition of Done does not get to claim the gap.** Crops still ships in Phase 2 — an annual cycle and a decision each spring is worth having — it is simply not the thing being credited.

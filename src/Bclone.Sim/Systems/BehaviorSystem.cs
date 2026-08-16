@@ -115,8 +115,24 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.Building => "building",
         VillagerState.Clearing => "clearing painted ground",
         VillagerState.TidyingGround => "fetching a load off the ground",
+        VillagerState.TravelingToField => "walking out to the field",
+        VillagerState.Sowing => "sowing",
+        VillagerState.Reaping => "reaping",
+        VillagerState.HaulingToFarm => "carrying the harvest to the farm",
         _ => state.ToString(),
     };
+
+    /// <summary>
+    /// The one crop that is defined — <b>one crop, in a model shaped for many</b> (Joe, D161).
+    /// </summary>
+    /// <remarks>
+    /// A tile carries a crop id beside its terrain, and the crops themselves belong in data
+    /// (CLAUDE.md's rule, and the assumption that a modder will want to touch them). Exactly
+    /// one is defined, and the cost of deferring the <em>id</em> is what is being avoided:
+    /// retrofitting one onto a shipped terrain triple means touching the hash, both goldens
+    /// and every call site at once, where adding a row to a data file later costs nothing.
+    /// </remarks>
+    private const byte TheOneCrop = 1;
 
     private static string Change(int delta, string what) =>
         delta == 0 ? string.Empty : $"{(delta > 0 ? "+" : string.Empty)}{delta} {what} ";
@@ -295,6 +311,32 @@ public sealed class BehaviorSystem : ISimSystem
                     VillagerState.DeliveringToHome);
                 return;
 
+            case VillagerState.TravelingToField:
+            case VillagerState.Sowing:
+            case VillagerState.Reaping:
+                // To the tile they set off for, same rule as clearing and the market's leg:
+                // the nearest tile is judged from where somebody is standing, so re-deciding
+                // mid-walk lets them shuttle between two rows for ever and reach neither.
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    villager.State == VillagerState.TravelingToField
+                        ? (SeasonRules.IsReaping(world.Clock.Season)
+                            ? VillagerState.Reaping
+                            : VillagerState.Sowing)
+                        : villager.State);
+                return;
+
+            case VillagerState.HaulingToFarm:
+                if (WorkplaceOf(world, villager) is not Workplace barn)
+                {
+                    // Their farm was demolished while their arms were full. Not an error —
+                    // the load is still real, so it goes to a store or on to the ground.
+                    HaulOrSetDown(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, barn.Position, VillagerState.HaulingToFarm);
+                return;
+
             case VillagerState.TravelingHome:
                 Travel(world, villager, world.RestingPlaceOf(villager), VillagerState.Idle);
                 return;
@@ -318,9 +360,13 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsBuilding(VillagerState state) =>
         state is VillagerState.FetchingMaterials or VillagerState.Building;
 
+    private static bool IsFarming(VillagerState state) =>
+        state is VillagerState.TravelingToField or VillagerState.Sowing or VillagerState.Reaping
+            or VillagerState.HaulingToFarm;
+
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsCutting(state) || IsSplitting(state) || IsTrading(state)
-        || IsBuilding(state);
+        || IsBuilding(state) || IsFarming(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -352,6 +398,11 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsBuilding(state))
         {
             return JobKind.Builder;
+        }
+
+        if (IsFarming(state))
+        {
+            return JobKind.Farmer;
         }
 
         return IsSplitting(state) ? JobKind.Woodcutter : null;
@@ -1191,6 +1242,25 @@ public sealed class BehaviorSystem : ISimSystem
                 // OUT: somebody has to bring them some. Pick up wherever it is
                 // cheapest to reach from here.
                 StoreBuilding? source = NearestStoreHolding(world, villager.Position, goods);
+
+                // ⭐ AND A FARM COUNTS, BUT ONLY IF IT HAPPENS TO BE NEARER (Joe, D161):
+                // *"focus on granary first and only grab from a farm if it happens to be near
+                // by — filling up residential larders for example."*
+                //
+                // Expressed without a magic number, which is the whole of the design: a
+                // workplace store is a candidate **only when it is strictly nearer than the
+                // nearest store building holding that good**. No threshold, no new tunable, one
+                // comparison, deterministic — and it produces exactly the behaviour asked for,
+                // a trader passing the farm using it and a trader across the village not
+                // detouring. A tuned radius here would be a number nobody could derive (D16),
+                // and D112 has already traded a fence for a consequence once.
+                Workplace? farm = NearerWorkplaceStore(world, villager.Position, goods, source);
+                if (farm is not null)
+                {
+                    Offer(farm.Position, household.Id, goods, delivering: true);
+                    return;
+                }
+
                 if (source is null)
                 {
                     return;
@@ -1249,6 +1319,61 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 bestCost = cost;
                 best = store;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// A workplace store holding this good that is <b>strictly nearer</b> than the nearest
+    /// store building holding it, or null.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ The whole of §3.2's ruling 2, in one comparison.</b> The granary comes first and a
+    /// farm is used only when it happens to be on the way — stated as a comparison rather than
+    /// as a radius, so there is no number to tune and no number anybody would have to derive.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ AND IT IS DELIBERATELY NOT A SECOND WAY TO FIND A STORE</b> (D145: *a control is
+    /// safe when its state is read at a chokepoint, and at risk the moment there are two ways
+    /// to do the thing*). <see cref="NearestStoreHolding"/> still answers *"where does the
+    /// village keep this?"* and is untouched; this answers a different question — *"is there a
+    /// buffer between me and it?"* — and its answer is only ever compared against that one.
+    /// Making <c>NearestStoreHolding</c> itself iterate workplaces would have put a
+    /// <c>Workplace</c> into every caller that expects a <c>StoreBuilding</c>, which is D36's
+    /// seam widening rather than being crossed once.
+    /// </para>
+    /// <para>
+    /// <b>A null <paramref name="nearest"/> means nothing in the village's stores has it</b>,
+    /// and then any farm holding it qualifies — a village whose granary is empty and whose
+    /// farm is full should not have its larders go short over a technicality.
+    /// </para>
+    /// </remarks>
+    private static Workplace? NearerWorkplaceStore(
+        SimWorld world, GridPos from, Goods goods, StoreBuilding? nearest)
+    {
+        int beat = nearest is null
+            ? int.MaxValue
+            : world.TravelCost.TicksBetween(from, nearest.Position);
+
+        Workplace? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.IsSite || HeldOf(workplace.Store, goods) <= 0)
+            {
+                continue;
+            }
+
+            int cost = world.TravelCost.TicksBetween(from, workplace.Position);
+            if (cost < beat && cost < bestCost)
+            {
+                best = workplace;
+                bestCost = cost;
             }
         }
 
@@ -1614,6 +1739,67 @@ public sealed class BehaviorSystem : ISimSystem
 
             // Held by the limit: idle from their trade, so they take spare work — the same
             // ranking a woodcutter with an empty yard takes, for the same reason.
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            {
+                GoHome(world, villager);
+            }
+
+            return;
+        }
+
+        // ⭐ THE FARM (`specs/crops-and-orchards.md`). Sow in spring, reap in autumn, and be a
+        // spare pair of hands the rest of the year.
+        //
+        // Placed beside the forester because it is the same shape — a workplace whose extent
+        // is painted ground, asking *which of my tiles do I work next?* — and below the
+        // gathering branch because a family with an empty larder still forages first.
+        //
+        // ⚠️ THE SEASON IS ANSWERED BY `NextFieldToWork`, NOT HERE, and that is deliberate:
+        // the same question decides the errand and the quota's demand
+        // (`SimWorld.FarmerSeatsWithGroundToWork`), so the village cannot want farmers for
+        // work the farmer would decline, nor decline work the village wanted. Two copies of
+        // one ranking is how they come to disagree (D142's three call sites).
+        if (villager.CanWork && job?.Kind == JobKind.Farmer)
+        {
+            if (world.Zones.WorkGroundTiles(job.Id) == 0)
+            {
+                villager.WorkNote = $"{job.Name} has no ground to work — paint some for it.";
+            }
+            else if (world.NextFieldToWork(job, villager.Position) is GridPos field)
+            {
+                villager.WorkNote = string.Empty;
+                villager.ErrandX = field.X;
+                villager.ErrandY = field.Y;
+                villager.State = VillagerState.TravelingToField;
+                Travel(
+                    world,
+                    villager,
+                    field,
+                    SeasonRules.IsReaping(world.Clock.Season)
+                        ? VillagerState.Reaping
+                        : VillagerState.Sowing);
+                return;
+            }
+            else
+            {
+                // Nothing for them this tick, and each reason has a different fix — so each
+                // gets its own sentence rather than one shrug (§1.1). The order matters: a
+                // met limit is the reason the player cannot see from the farm's own panel,
+                // which is D147's finding and why that marker was worth building.
+                villager.WorkNote = !world.MaySow() && SeasonRules.IsSowing(world.Clock.Season)
+                    ? $"Nothing to sow at {job.Name} — you asked the village to keep "
+                      + $"{world.StockLimits.For(Goods.Food)} food and it has "
+                      + $"{world.FoodTheVillageHolds()}."
+                    : SeasonRules.IsSowing(world.Clock.Season)
+                        ? $"Every tile at {job.Name} is already sown."
+                        : SeasonRules.IsReaping(world.Clock.Season)
+                            ? $"Nothing standing to reap at {job.Name}."
+                            : $"{job.Name} is out of season — nothing to sow or reap.";
+            }
+
+            // Idle from their trade, so they tidy or help clear — the same ranking the
+            // bottom of this method uses, and the same one a woodcutter with an empty yard
+            // takes. Two copies of it is how they come to disagree, so it is the same order.
             if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
             {
                 GoHome(world, villager);
@@ -2174,6 +2360,41 @@ public sealed class BehaviorSystem : ISimSystem
             break;
         }
 
+        // ⭐ OR STANDING AT A WORKPLACE WHOSE BUFFER THEY CAME FOR (§3.2 ruling 2, D161).
+        //
+        // ⛔ THIS IS THE HALF THAT WOULD HAVE BEEN MISSED, AND D144 IS THE RECORD OF MISSING
+        // IT. *"A control tested at its predicate and never at its deposit is a control nobody
+        // has tested"* — five guards asked `Accepts` and got the right answer, and not one of
+        // them ever made a villager put anything down. Here the predicate is
+        // `NearerWorkplaceStore` and this is the deposit: widen the market's reach without
+        // this loop and a trader walks to the farm, finds nothing they know how to pick up,
+        // and goes home empty-handed for ever.
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.IsSite || workplace.Position != villager.Position)
+            {
+                continue;
+            }
+
+            Household? family = world.FindHousehold(villager.ErrandHouseholdId);
+            if (family is null)
+            {
+                break;
+            }
+
+            int shortOf = world.TargetFoodFor(family) - family.Stockpile.Food;
+            int fromTheBuffer = Smallest(shortOf, load, workplace.Store.Food);
+            if (fromTheBuffer > 0 && workplace.Store.TryTake(Goods.Food, fromTheBuffer))
+            {
+                villager.CarriedFood += fromTheBuffer;
+                villager.State = VillagerState.DeliveringToHome;
+                return;
+            }
+
+            break;
+        }
+
         // Otherwise they are standing at a home, collecting what it does not need —
         // the direction that unsticks a dead family's larder (spec §14.3).
         for (int i = 0; i < world.Households.Count; i++)
@@ -2359,6 +2580,18 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival is VillagerState.Sowing or VillagerState.Reaping)
+        {
+            ArriveInTheField(world, villager, onArrival);
+            return;
+        }
+
+        if (onArrival == VillagerState.HaulingToFarm)
+        {
+            PutTheHarvestInTheFarm(world, villager);
+            return;
+        }
+
         if (onArrival == VillagerState.Cutting)
         {
             villager.State = VillagerState.Cutting;
@@ -2401,6 +2634,126 @@ public sealed class BehaviorSystem : ISimSystem
     {
         villager.State = VillagerState.Gathering;
         villager.ActionTicksRemaining = config.GatherTicks;
+    }
+
+    // ---------------------------------------------------------------
+    //  The farm (`specs/crops-and-orchards.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Standing on the tile they set off for: start the work, or find another.</summary>
+    /// <remarks>
+    /// <b>The ground is re-asked on arrival, and every errand in this file that walks to a tile
+    /// has learnt to do that.</b> A season can turn mid-walk, another farmer can take the row
+    /// first, and a building can be marked over a standing crop (Joe's warn-and-allow ruling) —
+    /// so the tile they set off for may not be the tile they find. Not an error: they go and
+    /// find another, exactly as the clearing errand does.
+    /// </remarks>
+    private static void ArriveInTheField(SimWorld world, Villager villager, VillagerState work)
+    {
+        var tile = new GridPos(villager.ErrandX, villager.ErrandY);
+        Terrain here = world.Map.TerrainAt(tile);
+
+        bool stillTheWork = work == VillagerState.Sowing
+            ? SimWorld.IsSowable(here) && SeasonRules.IsSowing(world.Clock.Season)
+            : here == Terrain.Ripe && SeasonRules.IsReaping(world.Clock.Season);
+
+        if (!stillTheWork)
+        {
+            villager.ErrandX = 0;
+            villager.ErrandY = 0;
+            Decide(world, villager);
+            return;
+        }
+
+        villager.State = work;
+        villager.ActionTicksRemaining = work == VillagerState.Sowing
+            ? world.Config.SowTicks
+            : world.Config.ReapTicks;
+    }
+
+    /// <summary>
+    /// Put a harvest into the farm's own store — <b>the first write to
+    /// <see cref="Workplace.Store"/> in the project's history</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ <c>Stockpile.Add</c> RETURNS WHAT IT ACTUALLY TOOK, AND THIS READS IT.</b> Not
+    /// reading it is D96 exactly — 17,451 food deposited into a full granary and out of the
+    /// world over fifty years — and D144 is the same shape one deposit path over, where every
+    /// batch of firewood after the woodyard filled was destroyed at the doorstep. Both were
+    /// invisible, and both were found by Joe playing rather than by the suite. <b>This path had
+    /// never been exercised by anything</b>, so it has never had the chance to be got wrong,
+    /// and it is the reason `crops-and-orchards.md §6` gives the farm's store a seam of its
+    /// own.
+    /// </para>
+    /// <para>
+    /// <b>What will not fit stays in their arms and walks on to a store</b> rather than going on
+    /// the ground here. The farm buffer is a convenience; a full one is not a village with
+    /// nowhere to put things, it is a village with a longer walk — which is exactly the
+    /// behaviour <c>farm_store_cap</c> exists to create.
+    /// </para>
+    /// </remarks>
+    private static void PutTheHarvestInTheFarm(SimWorld world, Villager villager)
+    {
+        if (WorkplaceOf(world, villager) is Workplace farm)
+        {
+            villager.CarriedFood -= farm.Store.Add(Goods.Food, villager.CarriedFood);
+        }
+
+        if (villager.CarriedFood > 0 || villager.IsCarrying)
+        {
+            HaulOrSetDown(world, villager);
+            return;
+        }
+
+        // Empty-handed and standing at the farm: straight back to the rows.
+        Decide(world, villager);
+    }
+
+    /// <summary>
+    /// Set off with an armful of harvest — <b>to the nearest storage with room</b> (Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THIS IS WHAT MAKES <c>farm_store_cap</c> MEAN SOMETHING.</b> Joe: *"the farmer
+    /// reaps and hauls to the nearest available storage"* — nearest <em>with room</em>. The
+    /// farm's own store is underfoot, so it wins while it has space and the walk is short;
+    /// once it is full the granary is the nearest storage with room and the walk lengthens.
+    /// The buffer is free, and running it dry is the market's job (§3.2).
+    /// </para>
+    /// <para>
+    /// <b>One place decides, and that is the point.</b> A workplace store and a store building
+    /// live in two lists with two id spaces (D36's seam), so the comparison has to be made
+    /// somewhere; making it here — once, on the way out — is what stops it becoming a second
+    /// way to find a store, which D145 names as the moment a control stops being safe.
+    /// </para>
+    /// </remarks>
+    private static void HaulTheHarvest(SimWorld world, Villager villager, Workplace farm)
+    {
+        int toTheFarm = farm.Store.IsFull
+            ? int.MaxValue
+            : world.TravelCost.Cost(villager.Position, farm.Position);
+
+        StoreBuilding? store = world.NearestStoreAccepting(
+            villager.Position, Goods.Food, static place => !place.Store.IsFull);
+
+        int toAStore = store is null
+            ? int.MaxValue
+            : world.TravelCost.Cost(villager.Position, store.Position);
+
+        // Ties go to the farm, which is the reading that matches the sentence: the buffer is
+        // underfoot, so "nearest with room" means the farm whenever the farm will have it.
+        if (toTheFarm != int.MaxValue && toTheFarm <= toAStore)
+        {
+            villager.State = VillagerState.HaulingToFarm;
+            Travel(world, villager, farm.Position, VillagerState.HaulingToFarm);
+            return;
+        }
+
+        // Everything full, or no store at all: the ordinary path, which ends in a heap on the
+        // ground rather than in goods leaving the world (D96).
+        villager.State = VillagerState.HaulingToStore;
+        HaulOrSetDown(world, villager);
     }
 
     /// <summary>
@@ -2571,6 +2924,66 @@ public sealed class BehaviorSystem : ISimSystem
                 // Picked up, not banked. The logs go to the shed on the way home,
                 // which is what makes them the village's rather than this family's.
                 villager.CarriedLogs += wood;
+                villager.State = VillagerState.HaulingToStore;
+                HaulOrSetDown(world, villager);
+                return;
+
+            case VillagerState.Sowing:
+                // ⭐ THE YEAR IS COMMITTED. Nothing is carried and nothing is produced — this
+                // is the one action in the game whose whole payoff is two seasons away, which
+                // is what makes spring a decision rather than a chore.
+                //
+                // The crop id is written beside the terrain (`crops-and-orchards.md §4`): the
+                // triple says what STAGE the tile is at, the id says WHAT is growing on it,
+                // and exactly one crop is defined so far. A field remembers what it grows.
+                var sown = new GridPos(villager.ErrandX, villager.ErrandY);
+                if (SimWorld.IsSowable(world.Map.TerrainAt(sown)))
+                {
+                    world.SetTerrain(sown, Terrain.Sown);
+                    world.Map.SetCrop(sown, TheOneCrop);
+                }
+
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                villager.State = VillagerState.Idle;
+                return;
+
+            case VillagerState.Reaping:
+                // ⭐ AND THE HARVEST COMES IN. The tile goes back to bare `Field` and KEEPS ITS
+                // CROP ID, so next spring knows what to put in it — the reaping and the
+                // abandoning of a field are different events and only the second clears the id
+                // (`GeneratedMap.SetCrop`).
+                //
+                // ⛔ IT DOES NOT GO THROUGH `world.Harvest`, AND THAT IS THE SEAM. `Harvest`
+                // answers the harvest BRUSH — *what may a laborer clearing painted ground
+                // take?* — and `Terrain.Ripe` is deliberately absent from
+                // `TerrainRules.Yields` so that a laborer can never reap the farm. Two verbs
+                // that look alike and must not share a door (`crops-and-orchards.md §6`).
+                var reaped = new GridPos(villager.ErrandX, villager.ErrandY);
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+
+                if (world.Map.TerrainAt(reaped) != Terrain.Ripe)
+                {
+                    // Beaten to it, or built over between arriving and finishing. Not an error.
+                    Decide(world, villager);
+                    return;
+                }
+
+                world.SetTerrain(reaped, Terrain.Field);
+
+                // Vigour scales what a day's work brings home, the same way it scales a gather
+                // and a fell — so a farm run by an ageing household feeds fewer people, which
+                // is D12 arriving in the newest food source rather than being forgotten by it.
+                int crop = world.Config.CropYieldPerTile * villager.Vigour / 100;
+                villager.CarriedFood += crop < 1 ? 1 : crop;
+
+                if (WorkplaceOf(world, villager) is Workplace theirFarm)
+                {
+                    HaulTheHarvest(world, villager, theirFarm);
+                    return;
+                }
+
                 villager.State = VillagerState.HaulingToStore;
                 HaulOrSetDown(world, villager);
                 return;

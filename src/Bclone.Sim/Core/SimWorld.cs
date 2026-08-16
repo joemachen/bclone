@@ -170,6 +170,7 @@ public sealed class SimWorld
         JobKind.Woodcutter => "splitting firewood",
         JobKind.Marketer => "the market",
         JobKind.Builder => "building",
+        JobKind.Farmer => "farming",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -907,11 +908,90 @@ public sealed class SimWorld
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
             JobKind.Forager => ForagerIdleNote(workplace),
+            JobKind.Farmer => FarmIdleNote(workplace),
 
             // Builders and marketers are idle whenever the village has nothing to build or
             // move, which is the ordinary state of a settled village rather than a fault.
             _ => null,
         };
+    }
+
+    /// <summary>Why a farm has nothing to do, when that is something the player can fix.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>D147's rule, and the design work is all in what does NOT light up.</b> A workplace
+    /// has half a dozen reasons for having nothing to do and most of them are fine; a marker
+    /// that fired for all of them would be the always-on alert D42 and D123 deleted. So:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>Not flagged: summer and winter.</b> Seasonal, expected and unfixable — the
+    /// definition of a marker that teaches people to ignore markers, exactly as a gatherer in
+    /// winter is not flagged.</item>
+    /// <item><b>Flagged: no ground.</b> A farmhouse with nothing painted for it is a building
+    /// that cannot do its job, and the fix is one brush stroke away.</item>
+    /// <item><b>⭐ Flagged: a standing harvest nobody is reaping.</b>
+    /// `crops-and-orchards.md §5.1` makes this the load-bearing half of use-it-or-lose-it —
+    /// the loss is only fair if it could be seen coming, and it has to be sayable
+    /// <em>while it can still be acted on</em>.</item>
+    /// <item><b>⭐ Flagged: a met food limit.</b> D147's own finding — the one case where
+    /// *"the player already knows"* is not good enough, because the number lives two windows
+    /// away from the building that stopped.</item>
+    /// </list>
+    /// </remarks>
+    private string? FarmIdleNote(Workplace farm)
+    {
+        if (Zones.WorkGroundTiles(farm.Id) == 0)
+        {
+            return $"{farm.Name} has no ground to work — paint some for it.";
+        }
+
+        // Still a tile to sow or a tile to reap: it is working.
+        if (NextFieldToWork(farm, farm.Position) is not null)
+        {
+            return null;
+        }
+
+        // ⭐ THE MET LIMIT, AND IT IS D147'S OWN FINDING: the one case where "the player
+        // already knows" is not good enough, because the number lives two windows away from
+        // the building that stopped. Said only in the season it actually stops anything —
+        // sowing is spring's work, and a farm idle in July is idle because it is July.
+        if (SeasonRules.IsSowing(Clock.Season) && !MaySow())
+        {
+            return $"{farm.Name} has stopped sowing — you asked the village to keep "
+                + $"{StockLimits.For(Goods.Food)} food and it has {FoodTheVillageHolds()}.";
+        }
+
+        // ⚠️ A HARVEST STANDING IN AUTUMN WITH NOBODY TAKING IT. The one sentence in this
+        // method that is about a loss rather than about idleness, and it is the reason the
+        // method is worth having: winter takes what is left, and this is the last window in
+        // which the player can do anything about it.
+        if (SeasonRules.IsReaping(Clock.Season) && StandingCropTiles(farm) > 0)
+        {
+            return $"{farm.Name} has a crop standing and nobody reaping it — winter will "
+                + "take what is left.";
+        }
+
+        // Summer and winter are not faults, and neither is a farm that has finished.
+        return null;
+    }
+
+    /// <summary>Tiles of this farm's ground with a crop standing on them.</summary>
+    public int StandingCropTiles(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(farm.Id);
+        int standing = 0;
+
+        for (int i = 0; i < owned.Count; i++)
+        {
+            if (IsStandingCrop(Map.TerrainAt(Zones.PositionOf(owned[i]))))
+            {
+                standing++;
+            }
+        }
+
+        return standing;
     }
 
     private string? ForesterIdleNote(Workplace hut)
@@ -1063,6 +1143,198 @@ public sealed class SimWorld
             // Planting needs bare ground, and rock or water is not bare ground — it is
             // ground nothing will ever grow on.
             if (!wantsTrees && Map.TerrainAt(at) != Terrain.Grass)
+            {
+                continue;
+            }
+
+            int cost = TravelCost.Cost(from, at);
+            if (cost < bestCost)
+            {
+                best = at;
+                bestCost = cost;
+            }
+        }
+
+        return best;
+    }
+
+    // ---------------------------------------------------------------
+    //  The farm (`specs/crops-and-orchards.md`, D161)
+    // ---------------------------------------------------------------
+
+    /// <summary>Whether a farm could put this ground under seed.</summary>
+    /// <remarks>
+    /// <b>Two terrains, and they are the same fact wearing two faces.</b>
+    /// <see cref="Terrain.Field"/> is ground a farm has already broken;
+    /// <see cref="Terrain.Grass"/> is ground it has not got to yet — a tile the laborers
+    /// cleared after the brush went over it, or one the plough at painting time could not
+    /// take. Both are bare ground a farm owns, and asking the question once is what stops
+    /// the two answers drifting apart (D76's seam, named before it could open).
+    /// </remarks>
+    public static bool IsSowable(Terrain terrain) =>
+        terrain is Terrain.Field or Terrain.Grass;
+
+    /// <summary>Whether this ground has a crop standing on it — this year's food, unreaped.</summary>
+    public static bool IsStandingCrop(Terrain terrain) =>
+        terrain is Terrain.Sown or Terrain.Ripe;
+
+    /// <summary>Break ground for a field. The farm's answer to <see cref="Plant"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Through <see cref="SetTerrain"/> like every other change of ground</b> (D85), so
+    /// the flow-field cache and every hut's tree count hear about it by the one door rather
+    /// than by somebody remembering to tell them.
+    /// </para>
+    /// <para>
+    /// <b>Grass only, on the same restraint <see cref="Plant"/> keeps.</b> A farm does not
+    /// plough up a wood, a sapling, a rock or a river — it takes the ground that is already
+    /// open. What happens to the rest is the player's business: paint it for harvest and the
+    /// laborers will clear it, and it becomes ploughable then (D87, D100).
+    /// </para>
+    /// </remarks>
+    public bool Plough(GridPos tile) =>
+        Map.TerrainAt(tile) == Terrain.Grass && SetTerrain(tile, Terrain.Field);
+
+    /// <summary>
+    /// Whether the village may put more ground under seed right now.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ONE DOOR, THE WAY <see cref="MayFell"/> IS ONE DOOR (D145, D146).</b> A met food
+    /// limit is simply <em>sowing switched off for a while</em>, and putting the cap and the
+    /// season through one predicate is what stops them becoming two rules that can disagree —
+    /// which is the shape of D128, D139, D142 and D144, four bugs and one form.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ AND IT STOPS THE SOWING ONLY, NEVER THE REAPING, which is the interesting half.</b>
+    /// A limit is an instruction about how much to keep; leaving a standing harvest to rot
+    /// because the granary is presently full would spend a year of the player's work on a
+    /// number they set for a different reason — and `crops-and-orchards.md §5.1`'s
+    /// use-it-or-lose-it is meant to punish inattention, not obedience. So a capped village
+    /// still brings its crop in, and simply does not commit next year's ground until it wants
+    /// the food. That is D146's *"a capped hut can replant"* one job over: the cap stops the
+    /// work that <em>makes</em> the good, not the work that rescues what is already made.
+    /// </para>
+    /// <para>
+    /// <b>What it reads is what the village HOLDS</b> (D161) — stores plus workplaces — because
+    /// a farm's own buffer is food the village has, and comparing a limit against a total that
+    /// cannot see it is D81's seam for the seventh time.
+    /// </para>
+    /// </remarks>
+    public bool MaySow() => !StockLimits.IsMet(Goods.Food, FoodTheVillageHolds());
+
+    /// <summary>
+    /// Seats at farmhouses the year still has work for — <b>the village's demand for farmers</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ THIS IS THE ONE WITH TEETH, and it was built and proved before a single tile
+    /// could be sown</b> (`crops-and-orchards.md §11b`). <c>SetStaffing</c> is a ceiling and
+    /// not a summons (D146): if the village does not <em>actively want</em> farmers when the
+    /// fields are ripe, the harvest stands until winter takes it, and every guard written for
+    /// the crop blames <see cref="Systems.CropSystem"/> — which will be working perfectly.
+    /// That is D146's bug waiting one job over.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ AND SUMMER IS WANTED TOO, WHICH IS A CORRECTION TO THE OBVIOUS READING OF THE
+    /// CALENDAR.</b> `crops-and-orchards.md §5` says a farmer *tends* in summer and is *a
+    /// spare hand* in winter — so the seasonal fact is what a farmer <em>does</em>, not
+    /// whether the village wants one. Making the demand zero in summer looks right and is a
+    /// trap: <see cref="Systems.LabourSystem"/> reshuffles the whole village every three years
+    /// and <c>TakeUpSlack</c> only ever fills openings from villagers who are <em>idle</em>, so
+    /// a reshuffle landing in July would empty the farm and autumn would find nobody free to
+    /// put back in it. <b>The standing crop is why the hands are wanted</b>, which is a truer
+    /// sentence anyway — somebody has to be there in September, and the village decides that
+    /// in June.
+    /// </para>
+    /// <para>
+    /// <b>Winter is the one season it really is zero</b>, and that costs nothing: the forager
+    /// quota is zero in winter too (D44), so the village is full of idle hands when spring
+    /// comes and the scarce kinds are matched first.
+    /// </para>
+    /// <para>
+    /// Derived and falling to zero by itself (D16), counted in <see cref="Workplace.Places"/>
+    /// rather than <c>Capacity</c> so a farm the player has turned down does not ask for hands
+    /// it would refuse — both exactly as <see cref="ForesterSeatsWithGroundToPlant"/> does.
+    /// </para>
+    /// </remarks>
+    public int FarmerSeatsWithGroundToWork()
+    {
+        bool sowing = SeasonRules.IsSowing(Clock.Season) && MaySow();
+        int seats = 0;
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace farm = Workplaces[i];
+            if (farm.Kind != JobKind.Farmer || farm.IsSite)
+            {
+                continue;
+            }
+
+            IReadOnlyList<int> owned = Zones.WorkGroundOf(farm.Id);
+            for (int t = 0; t < owned.Count; t++)
+            {
+                Terrain here = Map.TerrainAt(Zones.PositionOf(owned[t]));
+
+                // Bare ground in spring is a year waiting to be committed; a standing crop
+                // in any season is this year's food, and somebody has to be here to take it.
+                if ((sowing && IsSowable(here)) || IsStandingCrop(here))
+                {
+                    seats += farm.Places;
+                    break;
+                }
+            }
+        }
+
+        return seats;
+    }
+
+    /// <summary>The tile a farmer should walk to next, or null if the farm has nothing to do.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The same shape as <see cref="NextGroundToWork"/>, and deliberately not the same
+    /// method.</b> A forester asks *tree or bare?*; a farm asks *what season is it?* — and the
+    /// two verbs must not share a door, which is the rule `crops-and-orchards.md §6` states
+    /// about the harvest brush and is worth keeping one level up as well.
+    /// </para>
+    /// <para>
+    /// <b>Nearest first, off the one shared cost field</b> (§2.6), so a farmer works outward
+    /// from where they are standing rather than in the order the tiles were painted.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Sowing is spring and only spring</b> (<see cref="SeasonRules.IsSowing"/>): a
+    /// missed sowing is a missed year, and that is what makes spring a decision rather than a
+    /// deadline that slides. Reaping is autumn and only autumn, because winter takes what is
+    /// left standing (Joe — use it or lose it).
+    /// </para>
+    /// </remarks>
+    public GridPos? NextFieldToWork(Workplace farm, GridPos from)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(farm.Id);
+        if (owned.Count == 0)
+        {
+            return null;
+        }
+
+        bool sowing = SeasonRules.IsSowing(Clock.Season) && MaySow();
+        bool reaping = SeasonRules.IsReaping(Clock.Season);
+        if (!sowing && !reaping)
+        {
+            return null;
+        }
+
+        GridPos? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < owned.Count; i++)
+        {
+            GridPos at = Zones.PositionOf(owned[i]);
+            Terrain here = Map.TerrainAt(at);
+
+            bool wanted = sowing ? IsSowable(here) : here == Terrain.Ripe;
+            if (!wanted)
             {
                 continue;
             }
@@ -1319,8 +1591,34 @@ public sealed class SimWorld
     public int WorkGroundAllowanceFor(Workplace workplace)
     {
         ArgumentNullException.ThrowIfNull(workplace);
-        return workplace.WorkerIds.Count * Config.WorkGroundTilesPerWorker;
+        return workplace.WorkerIds.Count * TilesOneWorkerKeeps(workplace.Kind);
     }
+
+    /// <summary>
+    /// How much ground one pair of hands can look after, given what they are doing to it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ IT USED TO BE ONE NUMBER FOR EVERYTHING, AND THE FARM IS WHERE THAT STOPPED BEING
+    /// HONEST.</b> D86 priced work ground in workers — <c>work_ground_tiles_per_worker</c>,
+    /// *"how much land one person can look after"* — and D112 reused it for the gatherer's
+    /// ring on the stated grounds that <em>one rule serving two buildings beats two numbers
+    /// that can drift apart</em>. That argument still holds and this does not break it, because
+    /// the second figure is <b>derived rather than typed</b> and therefore cannot drift.
+    /// </para>
+    /// <para>
+    /// <b>The difference is mechanical.</b> A forester visits each of their tiles once, at any
+    /// time of year. A farmer must visit each tile <em>twice</em> — sowing it in spring and
+    /// reaping it in autumn — and both visits are confined to one season. So the ground one
+    /// farmer keeps is what <see cref="VillageEconomy.FieldTilesOneFarmerKeeps"/> says, and
+    /// pretending otherwise would have the overstretched warning call a farm comfortable while
+    /// most of its field lay fallow every year — a control saying the opposite of what is
+    /// happening, which is D148's bug and D139's.
+    /// </para>
+    /// </remarks>
+    public int TilesOneWorkerKeeps(JobKind kind) => kind == JobKind.Farmer
+        ? VillageEconomy.FieldTilesOneFarmerKeeps(Config)
+        : Config.WorkGroundTilesPerWorker;
 
     /// <summary>Whether a workplace has been given more ground than it has hands for.</summary>
     /// <remarks>
@@ -1379,6 +1677,22 @@ public sealed class SimWorld
 
         Zones.SetWorkGround(tile, workplace.Id);
 
+        // ⭐ A FARM BREAKS THE GROUND IT IS GIVEN, AND THE PLAYER SEES THE FIELD APPEAR.
+        //
+        // The one thing a farm's brush does that a forester's does not, and it is here rather
+        // than in the farmer's work for a legibility reason (§1.1): paint a field in autumn and
+        // nothing would happen until the following spring, so the player would have no way to
+        // tell a farm they had given ground from one they had not.
+        //
+        // ⚠️ It is not load-bearing, deliberately. Sowing takes `Grass` as readily as `Field`
+        // (`IsSowable`), so a tile this could not plough — one still under trees when the brush
+        // went over it — joins the field the moment the laborers clear it, with no second rule
+        // to remember. The plough is what the player can see; the sowing is what is true.
+        if (workplace.Kind == JobKind.Farmer)
+        {
+            Plough(tile);
+        }
+
         int tiles = Zones.WorkGroundTiles(workplace.Id);
         int allowance = WorkGroundAllowanceFor(workplace);
         if (tiles > allowance)
@@ -1387,7 +1701,7 @@ public sealed class SimWorld
             return PlacementVerdict.Yes(
                 hands == 0
                     ? $"{Capitalised(workplace.Name)} has {tiles} tiles and nobody working it. "
-                      + $"Every hand there can keep {Config.WorkGroundTilesPerWorker}."
+                      + $"Every hand there can keep {TilesOneWorkerKeeps(workplace.Kind)}."
                     : $"{Capitalised(workplace.Name)} has {tiles} tiles and {hands} "
                       + $"{(hands == 1 ? "pair of hands" : "pairs of hands")} to keep them — "
                       + $"enough for {allowance}. The rest will go untended.");
@@ -2736,6 +3050,7 @@ public sealed class SimWorld
         JobKind.Forester => BuildingKind.ForesterHut,
         JobKind.Builder => BuildingKind.BuilderHut,
         JobKind.Marketer => BuildingKind.Market,
+        JobKind.Farmer => BuildingKind.Farmhouse,
         _ => throw new ArgumentOutOfRangeException(
             nameof(workplace), workplace.Kind, "That kind of workplace has no building."),
     };
@@ -2853,6 +3168,27 @@ public sealed class SimWorld
                 });
                 break;
 
+            // ⭐ A FARM IS A FORESTER'S HUT WITH A DIFFERENT VERB (`crops-and-orchards.md §3`).
+            // Same painted work ground, same allowance, same overstretched warning, same idle
+            // ring — a farmhouse sows what the forester's hut fells, and everything that is a
+            // property of *a workplace with painted ground* comes for free.
+            //
+            // ⭐ AND IT IS THE FIRST WORKPLACE IN THE PROJECT WITH A REAL LOCAL STORE. The cap
+            // is Joe's stated 100, in data; what makes it mean anything is that the farmer
+            // hauls to the nearest storage WITH ROOM, so the buffer underfoot fills first and
+            // the walk lengthens once it is full.
+            case BuildingKind.Farmhouse:
+                Workplaces.Add(new Workplace
+                {
+                    Id = NextWorkplaceId(),
+                    Kind = JobKind.Farmer,
+                    Name = plan.Name,
+                    Position = site.Position,
+                    Capacity = VillageEconomy.RequiredFarmerSeats(Config),
+                    Store = new Stockpile { Capacity = Config.FarmStoreCap },
+                });
+                break;
+
             // ⭐ THE STORES, NAMED (D108). This was a `default:` arm, and it was two silent
             // defaults deep: an unrecognised kind fell through to `RaiseStore`, whose own two
             // switches then made it a market with a market's capacity. A building kind nobody
@@ -2964,6 +3300,37 @@ public sealed class SimWorld
     private void RetireWorkplace(Workplace workplace)
     {
         ReleaseWorkers(workplace);
+
+        // ⛔⛔ AND WHATEVER WAS IN ITS OWN STORE GOES ON THE GROUND (D162). This method did
+        // nothing about `Workplace.Store` for five phases and was right not to, because
+        // **nothing in the sim had ever written to one** — and the farm's 100-unit buffer is
+        // the moment that stopped being true. Pulling down a full farmhouse would have
+        // destroyed up to `farm_store_cap` of food silently, which is D96 exactly (17,451 food
+        // into a full granary and out of the world) and D144 one path over. Both were
+        // invisible, and both were found by Joe playing rather than by the suite.
+        //
+        // On the ground rather than into a store, deliberately: D96's rule is that goods
+        // nothing will take go down where they are and somebody carries them in, and a village
+        // that has just demolished a full farm is exactly a village that may have nowhere to
+        // put a hundred food. It is on the map, it can be fetched, and it counts in no total
+        // until it is (`GroundStack`).
+        int spilled = 0;
+        for (int g = 0; g < Stockpile.Kinds; g++)
+        {
+            var goods = (Goods)g;
+            int held = workplace.Store[goods];
+            if (held > 0 && workplace.Store.TryTake(goods, held))
+            {
+                SetDown(workplace.Position, goods, held);
+                spilled += held;
+            }
+        }
+
+        if (spilled > 0)
+        {
+            Narrate($"{Capitalised(workplace.Name)} came down with {spilled} still in it — "
+                + $"it is on the ground where it stood. {Clock.SeasonAndYear()}.");
+        }
 
         int freed = Zones.ReleaseWorkGround(workplace.Id);
         if (freed > 0)
@@ -3230,6 +3597,7 @@ public sealed class SimWorld
             BuildingKind.BuilderHut => "builder's hut",
             BuildingKind.GathererHut => "gatherer's hut",
             BuildingKind.ForesterHut => "forester's hut",
+            BuildingKind.Farmhouse => "farmhouse",
 
             // Named, because the default arm called every unrecognised building a woodcutter's
             // hut — in the log, in the panel, and in every placement sentence (D108).
