@@ -38,6 +38,23 @@ public static class SeasonRules
     /// </para>
     /// </remarks>
     public static bool IsGatherable(Season season) => season != Season.Winter;
+
+    /// <summary>Spring, and only spring — the year's one commitment (D161).</summary>
+    /// <remarks>
+    /// <b>⚠️ A missed sowing is a missed year, and that is the mechanic rather than a
+    /// harshness.</b> If a field could be sown in summer, spring would stop being a decision
+    /// and the calendar would stop having a shape — which is the whole thing
+    /// <c>crops-and-orchards.md</c> exists to give the year. It is only fair because the
+    /// village says so early and loudly (§5.1, §1.1, D88).
+    /// </remarks>
+    public static bool IsSowing(Season season) => season == Season.Spring;
+
+    /// <summary>Autumn, and only autumn. What fall is <em>for</em>.</summary>
+    /// <remarks>
+    /// The counterweight to <see cref="IsSowing"/>: a standing crop that is not taken in autumn
+    /// is taken by winter instead (Joe — *use it or lose it*).
+    /// </remarks>
+    public static bool IsReaping(Season season) => season == Season.Fall;
 }
 
 /// <summary>What a villager is doing right now.</summary>

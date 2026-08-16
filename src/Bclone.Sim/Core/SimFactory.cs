@@ -22,15 +22,27 @@ public static class SimFactory
     public static IReadOnlyList<ISimSystem> CreatePhase0Systems() => new ISimSystem[]
     {
         new ClockSystem(),      // 1. advance the calendar, narrate season/year turns
-        new AgeingSystem(),     // 2. age becomes declining vigour and life stage
-        new HouseholdSystem(),  // 3. households grow
-        new NeedsSystem(),      // 4. hunger rises
-        new HearthSystem(),     // 5. homes burn firewood; cold homes chill their people
-        new LabourSystem(),     // 6. villagers take work themselves
-        new BehaviorSystem(),   // 7. decide and act
-        new MortalitySystem(),  // 8. old age, starvation, or cold
-        new RegrowthSystem(),   // 9. the valley grows back (D125)
+        new CropSystem(),       // 2. and the ground answers it: autumn ripens, winter rots (D161)
+        new AgeingSystem(),     // 3. age becomes declining vigour and life stage
+        new HouseholdSystem(),  // 4. households grow
+        new NeedsSystem(),      // 5. hunger rises
+        new HearthSystem(),     // 6. homes burn firewood; cold homes chill their people
+        new LabourSystem(),     // 7. villagers take work themselves
+        new BehaviorSystem(),   // 8. decide and act
+        new MortalitySystem(),  // 9. old age, starvation, or cold
+        new RegrowthSystem(),   // 10. the valley grows back (D125)
     };
+
+    // ⭐ WHY THE CROPS TURN AT STEP 2 AND NOT AT THE END (D161). The order is part of the
+    // determinism contract (D5), so a new system's position is a decision rather than a
+    // detail. It goes directly after the calendar because the causal sentence is *the season
+    // turned, so the ground changed, so people acted on it* — which means a farmer reaching
+    // BehaviorSystem on the first tick of autumn finds the fields already ripe and can reap
+    // that same day. Placed after BehaviorSystem it would be a day late every year, and the
+    // village would spend the first day of winter reaping a harvest that had already rotted.
+    //
+    // It is a no-op for every village that has never sown, so adding it moves no golden —
+    // which is the property that let it ship before farming did.
 
     /// <summary>Create a world and loop wired with the Phase 0 systems.</summary>
     public static SimLoop CreatePhase0(SimConfig config, ISimLogger? logger = null, ulong? seedOverride = null)
