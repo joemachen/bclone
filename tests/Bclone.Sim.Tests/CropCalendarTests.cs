@@ -180,6 +180,50 @@ public sealed class CropCalendarTests
         }
     }
 
+    /// <summary>⭐ Building over a standing crop is allowed, and the village says what it costs.</summary>
+    /// <remarks>
+    /// Joe's ruling — warn and allow, not refuse. Refusing would let a field permanently block
+    /// the village from housing itself, and D42 already settled that the player picks the
+    /// neighbourhood. D43's pattern: a decision with a consequence, stated.
+    /// </remarks>
+    [Theory]
+    [InlineData(Terrain.Sown, "sown")]
+    [InlineData(Terrain.Ripe, "ripe")]
+    public void BuildingOverAStandingCropIsAllowedAndWarned(Terrain standing, string expected)
+    {
+        SimWorld world = Build().World;
+        var tile = new GridPos(world.Map.FoundingSite.X + 2, world.Map.FoundingSite.Y + 2);
+
+        world.Map.SetTerrain(tile, standing);
+        world.Map.SetCrop(tile, 1);
+
+        PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Granary, tile);
+        _output.WriteLine($"on {standing}: allowed={verdict.Allowed} warning=\"{verdict.Warning}\"");
+
+        Assert.True(verdict.Allowed, "A standing crop must not refuse a building (Joe's call).");
+        Assert.Contains(expected, verdict.Warning, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Ploughed-and-empty ground says nothing, because nothing is lost.</summary>
+    /// <remarks>
+    /// The anti-vacuity companion (D7): a warning that fired on any field terrain would pass
+    /// the guard above while being the always-on alert D42 and D123 deleted.
+    /// </remarks>
+    [Fact]
+    public void ABareFieldIsNotWorthAWarning()
+    {
+        SimWorld world = Build().World;
+        var tile = new GridPos(world.Map.FoundingSite.X + 2, world.Map.FoundingSite.Y + 2);
+
+        world.Map.SetTerrain(tile, Terrain.Field);
+
+        PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Granary, tile);
+        _output.WriteLine($"on bare Field: allowed={verdict.Allowed} warning=\"{verdict.Warning}\"");
+
+        Assert.True(verdict.Allowed);
+        Assert.Empty(verdict.Warning);
+    }
+
     // ---------------------------------------------------------------
 
     /// <summary>Put one sown tile on the map, without waiting for a farmer to exist.</summary>

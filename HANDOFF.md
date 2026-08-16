@@ -1,135 +1,121 @@
 # Handoff — bclone
 
-Read `CLAUDE.md`, then **`DESIGN.md` §6 (Progress Tracker) and §7 (Decisions Log), D158 back to
-D142**, then `METHODOLOGY.md`, then the spec for whatever you are about to touch. The spec that
-matters most for what comes next is `specs/goods-on-the-ground.md` **§5.3 and §5.3a**.
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D161 back to D142**, then
+`METHODOLOGY.md`, then **`specs/crops-and-orchards.md`** — that spec is the work in flight and
+it carries every ruling Joe has made about it.
 
 ---
 
 ## Where things are
 
-**Branch `phase/2-wood-fuel-and-tools`. Step C is merged and `wip/step-c-retire-thickets` is
-done with** — 53 commits, merged `--no-ff` as *"Step C: the thickets retire and the valley stops
-feeding you"*. The tree is clean.
+**Branch `phase/2-wood-fuel-and-tools`.** Tree clean. **Eight commits ahead of `origin`** —
+Joe has pushed once this session and has not asked again since.
 
-**Suite: 570 passing, 0 failing, 2 skipped of 572. Green.** It opened the session at
-533 / 13 / 9 of 555. **Both remaining skips are rulings, not debt** — an unattended village is
-supposed to die out (D143), and D134 retired the granary as the binding cap in favour of the
-timber shed. Both skip reasons now say the right thing (D159 fixed the one that did not).
+**Suite: 589 passing, 0 failing, 2 skipped of 591. Green.** Both remaining skips are rulings,
+not debt (D143's unattended village; D134's granary cap).
 
 **The Godot view builds** (`dotnet build src/Bclone.Game/Bclone.Game.csproj` — the solution
-build does *not* cover it, D11).
+build does *not* cover it, D11). It has **no automated verification of any kind** since D160
+deleted the screenshot hook: looking at it is the test.
 
-**Phase 2's Definition of Done is still not met**, which is why this branch is unmerged to
-`main`. The headline (environment and seasons) wants its last slice; see §6.
-
----
-
-## ⛔ START HERE
-
-**Write the golden that covers a village clearing ground.** It is the one hole D157 opened and
-Joe's call was to take it on this side of the merge (D158).
-
-D157 measured that **neither existing 50-year golden paints a single tile** — `HarvestTiles` is
-**0 on all 24,000 ticks** of both the fixture and the shipped run, because both start from an
-*established* village whose houses already stand, so nothing is ever marked on wooded ground.
-The clearing path therefore has **no drift guard at all**, and it is the mechanic step C is
-built on. Do not re-take the two existing goldens — they are correct and unmoved; add a third
-over an opening that actually clears.
+**Joe has played the merged build** — *"everything is going smoothly"* — so step C and the
+house-cleaning are both confirmed at the screen.
 
 ---
 
-## What happened this session, in one line each
+## ⛔ START HERE — the farm
+
+Crops is Phase 2's last slice and **three of its four steps are done**. What remains is the farm
+itself, and `specs/crops-and-orchards.md §11b` has the reconnaissance already done:
+**`JobKind` has 93 references across 11 files**, and a new kind obliges exactly six things —
+the verb (`SimWorld:172`), the kind→building map (`SimWorld:2694`), the scarcity order
+(`LabourAllocator:716`), the plural (`LabourAllocator:860`), a demand accessor
+(`LabourQuota:94`), and **the seasonal demand arm**.
+
+**⚠️ That last one is the one with teeth.** `SetStaffing` is a ceiling, not a summons (D146), so
+if the quota does not actively *want* farmers when the fields are ripe, **the harvest stands and
+rots and every guard will blame the crop system.** That is D146's bug waiting one job over.
+
+The rest of the farm: `BuildingKind.Farmhouse`, seats derived like `RequiredForesterSeats`,
+sowing and reaping as work, hauling to the nearest storage *with room*, and the **100-cap local
+store** — which is the first time anything has written to `Workplace.Store` (see below).
+
+**Then:** the crops × harvest-brush golden, then derive the numbers, then re-take the two
+village goldens **last** (D152), then Phase 2's remaining Definition of Done in `DESIGN.md §4`.
+
+---
+
+## What crops has landed, in one line each
 
 | | |
 |---|---|
-| **D157** | ⛔⭐⭐ The village promised to clear a marked building's ground and, for anything further out than its own coppice, **never did**. Cost every village that sited a hut in real woodland. |
-| **D158** | Joe's three rulings: hunger reads as **pressure**; `firewood_per_split` **stays at 50**; the missing golden waits for the next slice. |
+| **The food-reading seam** (`e9c2d9d`) | The village's food is what it *holds*, not what is in the granaries. |
+| **The ground** (`0684fcd`) | `Terrain.Field/Sown/Ripe` + a crop id per tile, hashed sparsely. |
+| **The year** (`399f04b`) | `CropSystem` at tick-order step 2: autumn ripens, winter rots. |
+| **Warn and allow** | Building over a standing crop is permitted and says what it costs. |
 
-**D157 in full, because it is the shape to remember.** D100 paints a marked building's footprint
-for harvest and promises *the village clears the ground, the player does not have to*. D127 then
-made harvest paint a **standing** instruction whose wood grows back. `NearestHarvest` is
-cost-first. Put together: between the village and a footprint eight tiles out there is *always*
-nearer coppice, and it always regrows before the laborers exhaust it — **so the footprint is
-never the nearest tile and is never cleared at all.** A gatherer's hut marked in the best
-woodland was still standing on `Forest` at year forty, with the panel saying *"the ground it
-stands on is still being cleared"* the whole time, and all four founders frozen in winter 1.
+**⭐ The seam is the one worth understanding before you touch anything.** `Workplace.Store` has
+existed since D30 and **nothing had ever written to it**, so `FoodInGranaries()` (stores only)
+and `TotalFood()` (everything) had never once disagreed. The farm's 100-cap buffer makes them
+diverge — and the **birth gate**, the village-wide reason to gather and the food stock limit all
+read the blind one. A village whose harvest sat at the farm would have **quietly stopped having
+children**: D155's symptom from a new direction, and D81's bug, on record as *D76's seam for the
+fifth time*. This is the sixth. `FoodTheVillageHolds()` is what decisions read now — stores plus
+workplaces, **deliberately not larders**, because a larder is food already distributed and
+counting it would re-add the term D153 removed.
 
-**Neither decision was wrong. Nobody was standing on the seam between them.**
-
-Fixed as a **priority, not a scope change**: a blocked footprint is taken before any coppice —
-free buildings first in marking order, then construction sites in **the build queue's own order,
-rank then id** (Joe: *"clearing order should defer to the build queue"*), so clearing defers to
-building instead of inventing a second ordering over one list.
-
----
-
-## The cold start, re-measured — these are the current numbers
-
-Shipped config, founding site `(-1,-1)`, forty years. **Quote these, not D119's.**
-
-| | D119 | now |
-|---|---|---|
-| gatherer's hut stands | t224 | **t161** |
-| staffed | t241 | t241 |
-| first firewood | t253 | **t133** |
-| first house | — | t297 |
-| winter 1 | t360 | t360 |
-| alive at year 20 | 4 | **12** |
-| alive at year 40 | — | **22**, six homes |
-
-Nobody starved, nobody froze. **D119's stall — *"four people, forever"* — is gone**, and that is
-D153/D155/D156 rather than D157. Joe's original stated risk (no food until the hut stands) still
-does not happen; the cart covers it.
+**It was found by writing the spec, before the farm existed.** That is the argument for
+spec-first in one sentence.
 
 ---
 
-## Open with Joe — do not decide alone
+## Joe's rulings on crops — do not re-open these
 
-1. **⛔ The mid-game gap is still the real design problem**, in his words: *"how to keep the game
-   interesting between stabilising the village and the first children becoming laborers."* That
-   window is about **twelve years**. §2.3's dead-late-game question arriving early. Nothing has
-   been done about it.
-2. **His notes for later are in `DESIGN.md` §6**, recorded but not designed: a Banished-style
-   **town hall** (he has more detail to give); an Animal-Crossing-style **museum**; **real-time
-   charts** with 1/5/10/20-year lookbacks, gated behind the town hall; **variety** of fish, crops,
-   trees, game and livestock; **nomads**.
-3. **Two questions closed this session — do not reopen them.** Hunger at 10–21% of deaths *is*
-   the intent (so a later change pushing it well past a fifth is a regression against a stated
-   target, not a matter of taste), and `firewood_per_split: 50` is settled.
+1. **A farm has a building**, and the field zone is painted work ground the farmers sow and reap.
+2. **Harvest goes to the granary; the farm holds up to 100 locally** (`farm_store_cap`). This
+   wires up the fifth element of `professions.md`'s role model, dead since D30 — and re-aims it
+   from the forester to the farm, which is corrected in that spec.
+3. **The farmer reaps and hauls** to the nearest storage *with room*, so the farm's own buffer
+   fills first and the walk lengthens once it is full.
+4. **The marketer may source from farm storage — granary first**, and a farm only when it is
+   *strictly nearer* than the nearest store holding the good. No threshold, no new tunable.
+5. **Laborers never move farmed goods.** Hauling stays building materials.
+6. **One crop now, in a model shaped for many** — a crop id per tile, crops defined in data.
+7. **Use it or lose it**: a ripe field nobody reaps rots over winter, warned in autumn while it
+   can still be acted on, then one log line when it goes.
+8. **Building over a standing crop warns and is allowed**, never refused.
 
 ---
 
-## ⚠️ Traps, carried forward and added to
+## ⚠️ Traps — the first one is this session's own
 
-- **⭐⭐ AN ARM THAT VARIES ONE THING AND DIES BOTH WAYS HAS RULED THAT THING OUT AND SAID
-  NOTHING ABOUT THE CAUSE.** This is the session's own lesson and it is D142's and D151's for the
-  third time. `HousesAreBuiltTests`' skip ran a control, correctly wrote *"the granary is
-  innocent"*, and then wrote *"what kills them is the opening needing a reacting player"* —
-  **which it had not tested at all.** That wrong cause sat in the skip text of seven guards for
-  two days. The right cause was in the builder's own `WorkNote`, in English, in the audit trail.
-- **⭐ THE AUDIT TRAIL IS EVIDENCE AND THE SUITE IS NOT** (carried from last session, paid for
-  again). D157 was found by printing villager `State` and `WorkNote` every thirty ticks, not by
-  a test. **Ask Joe for the log path from his header; it is in every screenshot.**
-- **⭐ Anti-vacuity is not optional.** Six of the seven restored guards were checked **red**
-  against the fix by stubbing the priority pass out. Do not believe a guard you have not seen
-  fail.
-- **A green golden can mean "not covered" rather than "no-op".** D157 expected both goldens to
-  move, and they did not — so the reason was *measured* rather than assumed, and it was that
-  neither reaches the code. **If a change should have moved a number and did not, find out why.**
-- **`python` string replaces silently no-op on CRLF files, and now also die on the emoji** —
-  `UnicodeDecodeError: 'charmap' codec`. Use the Edit tool. This cost a run again.
-- **`dotnet test` buffers stdout when redirected to a file**, so a background run looks frozen at
-  ten lines for eleven minutes. Check `testhost`'s CPU (`Get-Process testhost`) to tell working
-  from hung — it was at 6,187s when it looked dead.
-- **The full suite is ~11–13 minutes.** Background it. Do not trust `tail` to capture the failure
-  list.
-- **Fixture-vs-shipped divergence, now seven times.** METHODOLOGY §3 exists because of it.
+- **⭐⭐ CHECK EVERY GUARD RED, AND COUNT THE REDS.** Three separate near-misses today: a guard
+  that was **vacuous and passed against the broken code** (its middle term was zero either way);
+  a guard whose **name claimed to prove the sparse-hash contract** when its body only proved
+  round-trip identity; and a **harness off-by-one that read as a broken feature**. The first was
+  caught only because disabling the fix produced *two* reds out of three instead of three.
+  **Counting matters as much as running.**
+- **`SimLoop` runs the systems and *then* advances the tick.** So the moment `World.Clock` first
+  reports a new season, **no system has run on it yet**. A test that steps until the season
+  changes and then asserts is one tick early, and it looks exactly like a broken feature.
+- **⭐ A green golden can mean "not covered" rather than "no-op"** (D157). Both 50-year goldens
+  paint zero tiles in fifty years, which is why the clearing-path golden is still owed.
+- **The audit trail is evidence and the suite is not.** D154 and D157 both came out of
+  `src/Bclone.Game/logs/`. **Ask Joe for the log path from his header; it is in every screenshot.**
+- **A control tested at its predicate and never at its deposit is a control nobody has tested**
+  (D144), and **`SetStaffing` is a ceiling, not a summons** (D146). Both are live risks for the
+  farm.
+- **`python` string edits die on this repo's CRLF *and* its emoji** (`UnicodeDecodeError:
+  charmap`). Use the Edit tool.
+- **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at ten lines
+  for a quarter of an hour. `Get-Process testhost` and look at CPU to tell working from hung.
+- **The full suite is ~13–15 minutes.** Background it.
 
 ---
 
 ## Working with Joe
 
-Technical, not a game/systems programmer. Casual, direct; push back honestly — his call on
-build-queue ordering was better than my first cut, which had invented a second ordering over one
-list. **End every message with the explicit ask**, or he cannot tell who is blocking whom.
+Technical, not a game/systems programmer. Casual, direct; push back honestly — his rulings this
+session were better than my proposals twice (build-queue ordering for clearing, and skill rather
+than crops as the mid-game answer). **End every message with the explicit ask**, or he cannot
+tell who is blocking whom.

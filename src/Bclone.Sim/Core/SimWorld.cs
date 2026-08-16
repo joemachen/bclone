@@ -2065,23 +2065,66 @@ public sealed class SimWorld
             return PlacementVerdict.No("There is no route to there from the village.");
         }
 
-        // Legal, but perhaps unwise — and that is the player's call to make (D43).
+        // Legal, but perhaps unwise — and that is the player's call to make (D43). Two
+        // things can be unwise about one tile, so they are collected rather than returned
+        // from the first `if`: losing the distance warning because the ground also happened
+        // to be sown would be the quieter half of a two-part mistake.
+        string? standingCrop = WarningForBuildingOverACrop(position);
+
         int walk = TravelCost.Cost(village, position) / TravelCostField.BaseTileCost;
         int budget = VillageEconomy.MaxHomeToVillageTiles(Config);
-        if (walk > budget)
+        string? tooFar = walk > budget
+            ? $"That is {walk} tiles from the village; it budgets {budget}. "
+                + "People will spend their days walking to it."
+            : null;
+
+        if (standingCrop is null && tooFar is null)
         {
-            return PlacementVerdict.Yes(
-                $"That is {walk} tiles from the village; it budgets {budget}. " +
-                "People will spend their days walking to it.");
+            return PlacementVerdict.Fine;
         }
 
-        return PlacementVerdict.Fine;
+        return PlacementVerdict.Yes(
+            standingCrop is not null && tooFar is not null
+                ? $"{standingCrop} {tooFar}"
+                : standingCrop ?? tooFar!);
     }
+
+    /// <summary>
+    /// ⭐ Building over a standing crop is allowed, and it is said out loud (Joe, D161).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Warned, not refused, and Joe ruled it that way.</b> The alternative was tempting — a
+    /// sown field is a year of food and a house on it destroys the lot — but refusing would let
+    /// a field <em>permanently block the village from housing itself</em>, and D42 already
+    /// settled that the player picks the neighbourhood. So this is D43's pattern exactly: a
+    /// decision with a consequence, stated, rather than an error.
+    /// </para>
+    /// <para>
+    /// <b>A bare <see cref="Terrain.Field"/> says nothing</b>, because nothing is lost — the
+    /// ground is ploughed and empty. Only a crop actually standing is worth a sentence, which
+    /// is the restraint D147 applies to the idle ring: a marker that fires for everything is
+    /// the always-on alert D42 and D123 deleted.
+    /// </para>
+    /// </remarks>
+    private string? WarningForBuildingOverACrop(GridPos position) =>
+        Map.TerrainAt(position) switch
+        {
+            Terrain.Sown =>
+                "That ground is sown — building here loses this year's crop from it.",
+            Terrain.Ripe =>
+                "That ground is standing ripe — building here loses the harvest on it.",
+            _ => null,
+        };
 
     /// <summary>
     /// Mark out a building. It exists as a site, not a building, until somebody raises it.
     /// </summary>
     /// <returns>The verdict; the site is only created when it allows.</returns>
+    /// <remarks>
+    /// ⭐ <b>Building over a standing crop is allowed and said out loud</b> — see
+    /// <see cref="WarningForBuildingOverACrop"/>.
+    /// </remarks>
     public PlacementVerdict Mark(BuildingKind kind, GridPos position)
     {
         PlacementVerdict verdict = CanBuildAt(kind, position);

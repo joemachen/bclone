@@ -262,7 +262,7 @@ passes its birth gate. **Checked red first**, against the current code, where it
 | Seam | The failure it invites |
 |---|---|
 | **Crops × the harvest brush** | `Yields(Ripe) => Food` makes a ripe field look like a wood to `NearestHarvest`. **A laborer clearing painted ground must not reap the farm**, and D157's footprint-priority pass must not target a field. |
-| **Crops × building placement** | A house or a hut marked on `Sown` ground destroys a year's food. Refuse, or warn loudly (D43's pattern). |
+| **Crops × building placement** | ✅ **RESOLVED — warn and allow** (Joe). A house marked on sown ground destroys a year's food and is still permitted, because refusing would let a field *permanently block the village from housing itself*, and D42 already settled that the player picks the neighbourhood. D43's pattern: a decision with a consequence, stated. A **bare** `Field` says nothing — nothing is lost, and a warning that fired on any field terrain would be the always-on alert D42 and D123 deleted. |
 | **Crops × the labour quota** | A farmer is wanted in spring and autumn and not in summer or winter. **`SetStaffing` is a ceiling, not a summons** (D146) — the quota has to *want* farmers seasonally, or the fields sit sown and unreaped. |
 | **Crops × the food economy** | `VillageEconomy` derives one `gather_yield` against a worst-case walk. A second food source with a different rhythm changes what "the village can feed itself" means, and the derivation has to be re-stated rather than quietly out-voted. |
 | **Crops × the farm's local store** | A full 100-cap store must **refuse** the overflow, not swallow it. `Stockpile.Add` returns what it actually took and **the caller has to read it** — D96 is precisely the bug of not reading it (17,451 food out of the world), and D144 is the same shape one deposit path over. This store has never been written to, so it has never been tested. |
@@ -347,6 +347,25 @@ being asked to think past one lifetime. Building it here would spend it as a foo
 3. **A ripe field nobody reaps rots over winter — use it or lose it.** §5.1, where *"loudly
    mourned"* is replaced by something actionable: **a warning in autumn while it can still be
    acted on**, then one log line when the loss happens.
+
+## 11b. ⭐ What the farm will cost to wire in — measured, not guessed
+
+**Reconnaissance done before building it, because `JobKind` has 93 references across 11 files
+and that is a diff nobody should discover halfway through.** A new job kind obliges exactly six
+things, and they are the checklist for the next session:
+
+| Where | What it owes |
+|---|---|
+| `SimWorld:172` | the verb a villager is described by — *"farming"* |
+| `SimWorld:2694` | the `JobKind` → `BuildingKind` map |
+| `LabourAllocator:716` | membership of the scarcity order |
+| `LabourAllocator:860` | the plural — *"farmers"* |
+| `LabourQuota:94` | a demand accessor |
+| `LabourQuota` (demand) | **the seasonal arm** — wanted in spring and autumn, not in summer or winter |
+
+**The last one is the one with teeth.** `SetStaffing` is a ceiling and not a summons (D146), so
+if the quota does not actively *want* farmers when the fields are ripe, the harvest stands and
+rots and every guard blames the crop system. That is D146's bug waiting one job over.
 
 ## 12. Still open
 

@@ -950,8 +950,29 @@ first (D161), and the first two steps are in:
   `TerrainRules.Yields`** — a ripe field is full of food and still answers *no* to *may the
   harvest brush take this?*, because that question feeds `NearestHarvest` and D157's clearing
   pass. That is the seam killed at the door rather than guarded after the fact.
-- **Next:** the calendar, then the farm and its store, then the crops × harvest-brush golden,
-  then the derived numbers.
+- **✅ The year happens to a field.** `CropSystem` at **tick-order step 2** — directly after the
+  clock, so a farmer reaching `BehaviorSystem` on the first day of autumn finds the fields
+  already ripe. Placed after, reaping would be a day late every year. Autumn ripens, winter takes
+  what nobody reaped (**use it or lose it**, Joe) and says so in **one line for the event, not
+  one per tile** — the rule exists because D96 and D144 both shipped goods silently leaving the
+  world, and a rotting harvest is that shape on purpose.
+  - ⚠️ **The bug this step surfaced was in the harness, not the feature.** `SimLoop` runs the
+    systems and *then* advances the tick, so the moment `World.Clock` first reports a new season
+    nothing has run on it yet. Three guards reported a field that never ripened. **An off-by-one
+    in a test harness reads exactly like a broken feature**, and the temptation is to go and fix
+    the feature.
+- **✅ Building over a standing crop warns and is allowed** (Joe). Refusing would let a field
+  permanently block the village from housing itself, and D42 already settled that the player
+  picks the neighbourhood. A **bare** field says nothing, because nothing is lost. Fixed
+  alongside: `CanBuildAt` returned on the first warning, so a tile both sown *and* beyond the
+  walking budget reported only one.
+- **Next: the farm.** ⚠️ **`JobKind` has 93 references across 11 files** and a new kind obliges
+  six specific things — the checklist is in `crops-and-orchards.md §11b`. **The one with teeth is
+  the seasonal demand arm**: `SetStaffing` is a ceiling and not a summons (D146), so a quota that
+  does not actively want farmers when the fields are ripe leaves the harvest to rot and every
+  guard blames the crop system. Then the crops × harvest-brush golden, then the derived numbers,
+  then the goldens re-taken last (D152). **The goldens are supposed to move once a farmer sows** —
+  every step so far has been provably invisible, and that stops being true here.
 
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
