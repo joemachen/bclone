@@ -209,13 +209,19 @@ winter) and grew, on Joe's calls, into everything the player touches:
 2. ✅ **A golden over a village that clears ground** (D157) — landed as `FarmGoldenTests`,
    which paints, clears, sows and reaps in one twenty-year run and is **the first guard in the
    suite that ever reaches `NearestHarvest`**.
-3. A **QA playthrough against a written checklist** (METHODOLOGY §3) — Phase 1 has one in its
-   spec, Phase 2 does not. **Walked by Joe, not by me.**
-4. **The release blockers cleared** (METHODOLOGY §5): `VERSION` wired into the build — nothing
-   reads it today — and `src/Bclone.Game/export_presets.cfg` committed, without which
-   `release.yml` can never succeed.
-5. `CHANGELOG.md`'s header reconciled with METHODOLOGY §5, which deleted the practice it still
-   instructs.
+3. 🔨 **A QA playthrough against a written checklist** (METHODOLOGY §3). ✅ **The checklist is
+   written** — `specs/phase-2-the-village-you-can-play.md`, 45 checks in the order the game is
+   played. ⛔ **It is walked by Joe, not by me**, and that is the item still open.
+4. ✅ **The release blockers cleared** (METHODOLOGY §5) — and **clearing them turned up a third
+   nobody had listed.** `VERSION` is read by the build at last and shows in the shell beside the
+   seed; `export_presets.cfg` is committed and verified as far as a machine without export
+   templates allows; and `setup-godot`'s **`include-templates` defaults to false**, so the
+   workflow would have failed at the export step even with a perfect preset — a failure that
+   could only ever have surfaced at the first `v*` tag.
+5. ✅ `CHANGELOG.md`'s header reconciled with METHODOLOGY §5, which deleted the practice it still
+   instructed. The accumulated `[Unreleased]` body is kept and **labelled as the partial record
+   it is** — it stops at 2026-08-07 and names none of storage, markets, map generation,
+   placement, the cold start, stock limits, forests, two UI rebuilds or crops.
 
 **⚠️ What is deliberately NOT on this list: the mid-game gap.** Crops lands in this phase and is
 the *rhythm* of those years, not the answer to them — see the section below. **Phase 2 does not
@@ -1171,6 +1177,13 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D164 · 2026-08-16 · ⭐ PHASE 2'S DEFINITION OF DONE, CLOSED DOWN TO ONE ITEM — and clearing the release blockers turned up a third nobody had listed.**
+  - **✅ The QA checklist is written** — `specs/phase-2-the-village-you-can-play.md`, the document Phase 1 had and Phase 2 did not (D159 caught that). **45 checks in the order the game is played**, from the four founders in an empty valley through building, work, goods, limits, the year and the shell. Its organising rule is the only thing a QA pass can really measure: **not "does it work" but "does it answer"** (§1.1). ⛔ **Joe walks it, not me** — since D160 the view has no automated verification of any kind, and nine of the ten cold-start bugs surfaced because he played it against three wrong diagnoses reasoned from the code the same evening.
+  - **✅ `VERSION` is read by the build.** METHODOLOGY §5 has called it *the single source of version truth* since Phase 0 and recorded in the same paragraph that *"nothing reads it yet"* — **a single source of truth with no consumers is a text file**, which is D98's rule one level up. `Directory.Build.props` loads it into `$(Version)`, so every assembly carries it including the Godot view (MSBuild reaches it even though D11 keeps it out of the solution), and the shell prints it beside the seed and the log path — because a bug report quoting those two is worth much less if nobody can say which build made them. **`VersionTests` fails the build if the wiring comes undone**, which matters because an unwired build does not error: it silently reports .NET's default `1.0.0.0`.
+  - **✅ `export_presets.cfg` is committed, and verified rather than asserted.** Running the workflow's exact `--export-release "Windows Desktop"` line locally gets past preset lookup and parsing and stops only at the missing export templates — which rules out both things that could have been wrong in it: a name not matching the workflow's literal string, and a malformed file.
+  - **⛔⭐ AND THAT IS HOW THE THIRD BLOCKER TURNED UP.** `chickensoft-games/setup-godot`'s **`include-templates` input defaults to `false`**, so `release.yml` would have failed at the export step *even with a perfect preset*, with exactly the error the local run produced. **It could only ever have surfaced at the first `v*` tag**, because nothing else in this repo runs an export — the same shape as every other bug this project has found late: *a path nothing exercises*. Fixed in the workflow, with the default written down beside it so nobody has to re-learn it.
+  - **⚠️ Still unverified end to end, and said so in the workflow itself:** nobody has run a real export, so the .exe is untested, and `body_path: CHANGELOG.md` would today ship the stale partial record. Per METHODOLOGY §5 the changelog is written in one pass at the tag, so that is a tag-time fix rather than a now fix.
+  - **✅ `CHANGELOG.md`'s header reconciled.** It instructed *"log everything under [Unreleased] as you go"* — the practice METHODOLOGY §5 withdrew on 2026-08-07. The accumulated body is **kept and labelled as the partial record it is** rather than deleted: it stops at Phase 1 and names none of storage, markets, map generation, placement, the cold start, stock limits, forests, two UI rebuilds or crops. Deleting somebody's history to tidy a document is not a call to make quietly; **saying plainly what it is and is not** costs nothing and is honest.
 - **D163 · 2026-08-15 · ⛔⭐⭐ THE JITTER IS A MAN FREEZING BESIDE A LIT FIRE BECAUSE HIS ARMS WERE FULL — three findings from Joe playing D162, and the first has been in the game since shelter shipped.**
   - **⛔⛔ THE BOUNCE HE HAS WATCHED FOR MONTHS IS REAL, AND IT IS FATAL RATHER THAN COSMETIC.** Joe: *"sometimes a villager will seem to 'jitter' between two map tiles… bouncing back and forth between being in the house and outside for a lot of ticks. it happens often, but not predictably."* **Found in his audit trail in four lines** — the same file D154 came out of, and the same shape:
     ```

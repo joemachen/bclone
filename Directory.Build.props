@@ -4,6 +4,24 @@
        Keeps the individual .csproj files small and stops the
        determinism-critical flags from drifting apart. -->
 
+  <!-- ⭐ THE VERSION FILE IS READ HERE, AND UNTIL NOW NOTHING READ IT AT ALL.
+       METHODOLOGY §5 calls `VERSION` the single source of version truth and then
+       recorded, for months, that "nothing reads it yet" — so the single source of
+       truth was a text file with no consumers, which is D98's rule about a number
+       that is always zero, one level up. Every assembly in the repo carries it now,
+       including the Godot view (MSBuild walks up from the project directory, so
+       `src/Bclone.Game` inherits this even though D11 keeps it out of the solution).
+
+       A guard in `VersionTests` compares the built assembly against the file, so if
+       this ever stops being read the build fails rather than the release. -->
+  <PropertyGroup>
+    <VersionFile>$(MSBuildThisFileDirectory)VERSION</VersionFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="Exists('$(VersionFile)')">
+    <Version>$([System.IO.File]::ReadAllText('$(VersionFile)').Trim())</Version>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>12.0</LangVersion>

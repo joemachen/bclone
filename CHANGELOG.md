@@ -5,17 +5,42 @@ All notable changes to **bclone** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **Pre-1.0:** the game is in active development. `v1.0.0` will be the first
-> real public release (see `METHODOLOGY.md §5`). Until then, log everything
-> under **[Unreleased]** as you go; at release time, move those entries under
-> a stamped `## [X.Y.Z] - YYYY-MM-DD` heading and start a fresh Unreleased block.
+> **⛔ Pre-1.0: THIS FILE IS DORMANT, and nothing is written here as we work**
+> (Joe, 2026-08-07 — `METHODOLOGY.md §5`). It used to say the opposite, and
+> practice had quietly diverged from it for a dozen commits, which is the
+> doc-versus-reality drift D48, D49 and D50 were each an instance of.
+>
+> **The reason is that this and `DESIGN.md §7` are not the same document.**
+> The decisions log answers *why we chose this, and what we measured*, for us
+> and for the next session; a changelog answers *what changed since the version
+> you had*, for somebody who downloaded a build. There is no such person yet,
+> which is exactly why nobody was writing it. Maintaining both by hand means
+> writing every slice up three times — commit, decisions log, changelog — and
+> **the third copy is the one that rots.**
+>
+> **So it is generated at the first tag**, in one pass, from the commit log and
+> `DESIGN.md §6`, and rewritten to be *player-facing* rather than
+> engineering-facing. That is half an hour at release time and produces
+> something the decisions log never will.
 
-Categories (only include the ones you use): **Added**, **Changed**,
-**Deprecated**, **Removed**, **Fixed**, **Security**.
+Categories, for when it is written (only the ones used): **Added**,
+**Changed**, **Deprecated**, **Removed**, **Fixed**, **Security**.
 
 ---
 
 ## [Unreleased]
+
+> **⚠️ WHAT FOLLOWS IS A PARTIAL RECORD THAT STOPPED BEING MAINTAINED ON
+> 2026-08-07**, when the practice above was withdrawn. It covers Phase 0 and
+> the early part of Phase 1 and then simply stops; everything after it —
+> storage, markets, map generation, pathfinding, building placement, the cold
+> start, the builder's hut, stock limits, forests and gathering, two UI
+> rebuilds and crops — is **not** here.
+>
+> **It is kept rather than deleted because it is a record of what was written,
+> not because it is accurate as a summary of the project.** It will be replaced
+> wholesale at the first tag rather than extended. Do not add to it, and do not
+> read it as a list of what the game does — `DESIGN.md §6` is that.
 
 ### Added
 - Project scaffolding: `DESIGN.md` (vision, pillars, architecture, build order),

@@ -32,6 +32,14 @@ jobs:
           version: 4.7.1        # keep pinned; bump deliberately (match your local editor)
           use-dotnet: true
 
+          # ⛔ REQUIRED, AND IT DEFAULTS TO FALSE. Without the export templates the
+          # export step below fails with "No export template found at the expected
+          # path: .../windows_release_x86_64.exe" — which is a failure that could
+          # only ever have surfaced at the first `v*` tag, because nothing else in
+          # this repo runs an export. Found by running the export locally against
+          # the newly committed preset and hitting exactly that error.
+          include-templates: true
+
       # Godot needs its export templates and a one-time import pass before
       # a headless export will succeed.
       - name: Import project
@@ -54,8 +62,26 @@ jobs:
           prerelease: false
 
 # ------------------------------------------------------------------
-#  NOTE: the Godot steps above are written but UNVERIFIED — the view
-#  project (src/Bclone.Game) does not exist yet and arrives with
-#  Phase 0. Expect to adjust the export preset name and paths the
-#  first time this actually runs, which is not before v1.0.0.
+#  STATUS (2026-08-16, Phase 2's merge). This note used to read "the
+#  view project does not exist yet and arrives with Phase 0", which
+#  had been false for months.
+#
+#  ✅ VERIFIED as far as a machine without export templates allows:
+#     `src/Bclone.Game/export_presets.cfg` is committed and Godot 4.7.1
+#     accepts it — running the exact `--export-release "Windows Desktop"`
+#     line above locally gets past preset lookup and parsing and stops
+#     only at the missing templates. So the two things that could be
+#     wrong in the preset — its NAME not matching the string above, and
+#     the file being malformed — are both ruled out.
+#
+#  ✅ FIXED as a consequence: `include-templates: true`. It defaults to
+#     false, so this workflow would have failed at the export step even
+#     with a perfect preset.
+#
+#  ⛔ STILL UNVERIFIED END TO END, and honestly so: nobody has run a
+#     real export. What remains untested is the export itself producing
+#     a working .exe, and `body_path: CHANGELOG.md` — which today would
+#     ship the stale partial record that file now warns about. Per
+#     METHODOLOGY §5 the changelog is written in one pass at the tag, so
+#     the fix is to write it then, not to change this line now.
 # ------------------------------------------------------------------

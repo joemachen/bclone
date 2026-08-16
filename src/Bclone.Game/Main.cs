@@ -49,6 +49,22 @@ public partial class Main : Control
 
     private string _configSource = string.Empty;
 
+    /// <summary>Which build this is, read off the assembly rather than typed anywhere.</summary>
+    /// <remarks>
+    /// <b>It comes from the <c>VERSION</c> file by way of <c>Directory.Build.props</c></b>, so
+    /// there is one number and no second place to forget to update — which is the whole point of
+    /// METHODOLOGY §5's "single source of version truth", and was not true of it until now.
+    /// `VersionTests` fails the build if the wiring ever comes undone.
+    /// </remarks>
+    private static string BuildVersion
+    {
+        get
+        {
+            System.Version? v = typeof(Main).Assembly.GetName().Version;
+            return v is null ? "?" : $"v{v.Major}.{v.Minor}.{v.Build}";
+        }
+    }
+
     private Label _clockLabel = null!;
     private Label _villageLabel = null!;
     private Label _seedLabel = null!;
@@ -1290,8 +1306,15 @@ public partial class Main : Control
         // The seed and the audit log together, because they are the two things you need
         // to reproduce and explain a run: the seed says which world, the log says what
         // happened in it.
+        //
+        // ⭐ AND THE BUILD, which is the third (METHODOLOGY §5). `VERSION` has been the
+        // "single source of version truth" since Phase 0 with **nothing reading it**; it
+        // reaches every assembly now, and putting it here is what makes that checkable
+        // rather than merely true — a bug report quoting a seed and a log is worth much
+        // less if nobody can say which build produced them.
         _seedLabel = Wrapped(Muted(
-            $"seed {_loop.World.Seed}   ·   config: {_configSource}   ·   log: {_logPath}"));
+            $"bclone {BuildVersion}   ·   seed {_loop.World.Seed}   ·   "
+            + $"config: {_configSource}   ·   log: {_logPath}"));
         body.AddChild(_seedLabel);
     }
 

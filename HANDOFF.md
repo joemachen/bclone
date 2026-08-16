@@ -1,8 +1,9 @@
-# Handoff — bclone: **Phase 2 is one QA pass and three chores from done**
+# Handoff — bclone: **Phase 2 is one QA pass from done, and it is Joe's**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D162 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D164 back to D142**, then
 `METHODOLOGY.md`. `specs/crops-and-orchards.md` is now a **record** rather than a job — read §12
 if you touch the crop numbers, and nothing else there needs you.
+`specs/phase-2-the-village-you-can-play.md` is the checklist waiting on him.
 
 ---
 
@@ -10,7 +11,7 @@ if you touch the crop numbers, and nothing else there needs you.
 
 **Branch `phase/2-wood-fuel-and-tools`.** The farm (D162) is in.
 
-**Suite: 614 passing, 0 failing, 2 skipped of 616. Green** (was 589 / 0 / 2 of 591). Both skips
+**Suite: 617 passing, 0 failing, 2 skipped of 619. Green** (was 589 / 0 / 2 of 591). Both skips
 are rulings, not debt (D143's unattended village; D134's granary cap). **The full run is 12–17
 minutes.**
 
@@ -20,27 +21,39 @@ kind**: looking at it is the test.
 
 ---
 
-## ⛔ THE JOB: close Phase 2 and merge it.
+## ⛔ THE JOB: one item, and it is not yours.
 
-**`DESIGN.md §4`'s Definition of Done, and only two of five items are left that are yours.**
+**`DESIGN.md §4`'s Definition of Done — four of five are closed (D162, D163, D164).**
 
 1. ✅ **Crops** — D162. Built, guarded, documented.
 2. ✅ **A golden over a village that clears ground** — `FarmGoldenTests`, which does it and the
    crop seam in one run. D157's hole is closed.
-3. ⛔ **A QA playthrough against a written checklist** — **Joe walks it, not you.** Phase 1 has
-   one in its spec and Phase 2 has none. **Writing the checklist is yours; walking it is his.**
-   Start from Phase 1's and add what Phase 2 built: the build queue, stock limits, the
-   professions panel, the brushes, the minimap, and now the farm.
-4. ⛔ **The release blockers** (METHODOLOGY §5): `VERSION` is read by nothing, and
-   `src/Bclone.Game/export_presets.cfg` does not exist — without which `release.yml` can never
-   succeed, because it exports the "Windows Desktop" preset from a clean checkout.
-5. ⛔ **`CHANGELOG.md`'s header** still instructs the practice METHODOLOGY §5 deleted (D160): it
-   says the `[Unreleased]` section accumulates as we work, and the rule is now that it is
-   written in one pass at the first tag.
+3. ⛔ **A QA playthrough against a written checklist.** ✅ The checklist is written —
+   `specs/phase-2-the-village-you-can-play.md`, 45 checks in the order the game is played.
+   **⛔ JOE WALKS IT. Not you.** Since D160 the view has no automated verification of any kind,
+   and his eyes are the test. **This is the only thing standing between the branch and PR #3.**
+4. ✅ **The release blockers** — and clearing them found a third nobody had listed. See D164.
+5. ✅ **`CHANGELOG.md`'s header** reconciled; the stale body kept and labelled.
 
-**Then merge to `main` via PR #3.**
+**Then merge to `main` via PR #3.** Nothing else in the DoD is waiting on code.
+
+### If Joe's walk turns up findings
+
+That is the expected outcome, not a setback — **the last four bugs that mattered (D154, D157,
+D162's leak, D163's jitter) were three-from-playing and one-from-reading, and none from the
+suite.** Fix what he names, then merge. Do not start Phase 3 on an unmerged branch (D161).
 
 ---
+
+## ⭐ Open, and all of these are Joe's calls
+
+### 0. Two answers still outstanding from the last session
+
+- **"Village decides" → I replaced it with "Clear" rather than deleting it** (D163), because
+  `StaffingOverride` null-vs-number are different hashed states and deleting the control strands
+  anyone who sets one. **He may have meant delete it outright** — if so, he needs to say how a
+  player un-sets a number.
+- **Whether the jitter looks fixed on screen.** The log says it is; nobody has watched it.
 
 ## ⭐ What the farm slice left open, and both are Joe's calls
 
@@ -109,9 +122,14 @@ and the derivation is where to do it rather than the config.
 - **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at zero
   lines for a quarter of an hour. `Get-Process testhost` and look at CPU to tell working from
   hung.
-- **The full suite is ~13 minutes.** Background it, and **do not start a second one** — the first
-  holds a lock on `Bclone.Sim.dll` and no test project will build until it exits, so a second run
-  fails on the copy step and wastes the wait.
+- **⭐ A DEFAULT YOU DID NOT SET IS STILL A DECISION SOMEBODY MADE.** `setup-godot`'s
+  `include-templates` defaults to **false**, so `release.yml` would have failed at the export step
+  even with a perfect preset — and only at the first `v*` tag, because nothing else runs an
+  export. **Found by running the export locally instead of trusting that committing the preset
+  was enough.** When you clear a blocker, try the thing it was blocking.
+- **The full suite is 12–17 minutes.** Background it, and **do not start a second one** — the
+  first holds a lock on `Bclone.Sim.dll` and no test project will build until it exits, so a
+  second run fails on the copy step and wastes the wait.
 
 ---
 
