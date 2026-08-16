@@ -122,6 +122,14 @@ and the derivation is where to do it rather than the config.
 - **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at zero
   lines for a quarter of an hour. `Get-Process testhost` and look at CPU to tell working from
   hung.
+- **⚠️ AND DO NOT WRITE A WAIT-LOOP FOR A RUN THAT IS ALREADY IN THE BACKGROUND.** It is
+  redundant — the completion notification arrives by itself — and it adds a failure mode that
+  cost this session two shells spinning for thirteen hours. The loops waited for `Passed!`
+  against a file produced with `--logger "console;verbosity=detailed"`, which ends with
+  **`Test Run Successful.`** instead. **The two output formats end with different strings**, so
+  the condition could never be true. *A wait-loop whose condition cannot be met is a vacuous
+  guard wearing a different hat: it looks like it is watching something and it is watching
+  nothing.*
 - **⭐ A DEFAULT YOU DID NOT SET IS STILL A DECISION SOMEBODY MADE.** `setup-godot`'s
   `include-templates` defaults to **false**, so `release.yml` would have failed at the export step
   even with a perfect preset — and only at the first `v*` tag, because nothing else runs an
