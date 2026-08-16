@@ -10,8 +10,9 @@ if you touch the crop numbers, and nothing else there needs you.
 
 **Branch `phase/2-wood-fuel-and-tools`.** The farm (D162) is in.
 
-**Suite: 613 passing, 0 failing, 2 skipped of 615. Green.** Both skips are rulings, not debt
-(D143's unattended village; D134's granary cap).
+**Suite: 612 passing, 0 failing, 2 skipped of 614. Green** (was 589 / 0 / 2 of 591). Both skips
+are rulings, not debt (D143's unattended village; D134's granary cap). **The full run is ~13
+minutes.**
 
 **The Godot view builds** — `dotnet build src/Bclone.Game/Bclone.Game.csproj`. The solution build
 does **not** cover it (D11), and since D160 the view has **no automated verification of any
@@ -94,8 +95,9 @@ and the derivation is where to do it rather than the config.
 - **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at zero
   lines for a quarter of an hour. `Get-Process testhost` and look at CPU to tell working from
   hung.
-- **The full suite is ~25–30 minutes now.** Background it, and do not start a second one — the
-  first holds a lock on `Bclone.Sim.dll` and no test project will build until it exits.
+- **The full suite is ~13 minutes.** Background it, and **do not start a second one** — the first
+  holds a lock on `Bclone.Sim.dll` and no test project will build until it exits, so a second run
+  fails on the copy step and wastes the wait.
 
 ---
 
