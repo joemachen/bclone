@@ -68,10 +68,16 @@ and the derivation is where to do it rather than the config.
 
 ## ⚠️ Traps this session met, in the order they will cost you
 
-- **⭐⭐ CHECK EVERY GUARD RED, AND COUNT THE REDS.** Done twice for the demand arm: **3 of 5**
-  with it disabled, **2 of 5** with only the seasonality removed. The two that stay green both
-  times are the anti-vacuity guards that assert zero — which is what counting tells you and
-  running does not.
+- **⭐⭐ CHECK EVERY GUARD RED, AND COUNT THE REDS.** Three times this session, and **the third
+  time it caught a guard that proved nothing.** The demand arm: **3 of 5** with it disabled,
+  **2 of 5** with only the seasonality removed — the two that stay green both times are the
+  anti-vacuity guards that assert zero. Then D163's jitter: two guards written, both green, and
+  disabling the fix produced **one red of fifteen**. The emergent one read zero against the
+  broken code too and was deleted. **Running says green; counting says which half of your
+  green means anything.**
+- **⭐ A LONG RUN IS THE WRONG INSTRUMENT FOR A COINCIDENCE** (D154, and D163 again). The jitter
+  needs somebody cold *and* holding logs at the instant they arrive; the fixture village is warm
+  and well stocked, so a whole winter of it never produces the case. Pose it through a seam.
 - **⭐ `SimLoop` runs the systems and *then* advances the tick.** Third and fourth instances this
   week. The seam golden's first run reported *"0 lost to winter, 344 vanished unexplained"* — a
   harvest apparently being eaten by the harvest brush — and the bug was that the harness read
@@ -90,6 +96,14 @@ and the derivation is where to do it rather than the config.
 - **A new deposit path means a new leak.** `RetireWorkplace` had ignored `Workplace.Store` for
   five phases — correctly, because nothing wrote to one. The farm's buffer made demolition
   destroy up to 100 food silently. **Found by reading the method, not by a failing test.**
+- **⭐ THE AUDIT TRAIL IS EVIDENCE AND THE SUITE IS NOT.** D154, D157 and now **D163** all came
+  out of `src/Bclone.Game/logs/`. Joe's log path is in his header in every screenshot, and the
+  files are on disk — **read them.** D163 took four lines of one to diagnose a bug that had been
+  in the game since D45 and that the whole suite had never once noticed.
+- **A comment promising the code is general, over code that names a kind.** The farm shipped
+  with no work-ground brush because `Main.cs` read `Kind: JobKind.Forester` under a comment
+  saying *"so the next one needs no line here"*. **When you add a thing, grep for the comments
+  that claim they already cover it.**
 - **`python` string edits die on this repo's CRLF *and* its emoji** (`UnicodeDecodeError:
   charmap`), and `python` is not even on PATH here. Use the Edit tool.
 - **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at zero

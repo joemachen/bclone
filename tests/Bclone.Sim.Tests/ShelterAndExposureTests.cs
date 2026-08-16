@@ -406,6 +406,107 @@ public sealed class ShelterAndExposureTests
         Assert.Equal(StateHash.Compute(a.World), StateHash.Compute(b.World));
     }
 
+    // ---------------------------------------------------------------
+    //  ⛔⛔ The jitter — a villager who came in to get warm stays in
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⛔⛔ A cold villager carrying logs stays at the fire instead of walking straight out.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-08-15, on a thing he has watched since shelter shipped:</b> *"sometimes a
+    /// villager will seem to 'jitter' between two map tiles… they were bouncing back and forth
+    /// between being in the house and outside for a lot of ticks."*
+    /// </para>
+    /// <para>
+    /// <b>⭐ FOUND IN HIS AUDIT TRAIL, NOT IN THIS SUITE — the same file D154 came out of, and
+    /// the same shape.</b> <c>TrySeekWarmth</c> has hysteresis on purpose: *"once they are here
+    /// they stay until they are properly warm, not merely until they are back under the line
+    /// they came in over."* <c>ArriveAt</c> overwrote that one line later — anyone arriving
+    /// still holding logs was flipped to <see cref="VillagerState.HaulingToStore"/> and walked
+    /// back out on the very next tick:
+    /// </para>
+    /// <code>
+    ///   [t 425] Otto: hauling to a store -&gt; going in to get warm at (-1, -1)
+    ///   [t 426] Otto: going in to get warm -&gt; hauling to a store at (-1, 0)
+    ///   [t 437] Otto: hauling to a store -&gt; going in to get warm at (-1, -1)
+    ///   [t 438] Otto: going in to get warm -&gt; hauling to a store at (-1, 0)
+    /// </code>
+    /// <para>
+    /// <b>One tick at the fire, every time, for the whole of winter.</b> On the map that is the
+    /// bounce Joe describes; in the sim it is a man freezing beside a lit hearth because his
+    /// arms were full — so this is a survival bug wearing a visual symptom, which is why it is
+    /// guarded rather than tidied.
+    /// </para>
+    /// <para>
+    /// <b>Posed directly through a seam</b>, exactly as D154's was and for the same reason: the
+    /// case needs somebody both cold and loaded at the instant they arrive, which a long run
+    /// produces only on some seeds. Four lines, and it cannot go vacuous.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void SomebodyWhoCameInToGetWarmStaysInsteadOfWalkingStraightOut()
+    {
+        SimWorld world = InWinter(Config);
+        Villager villager = world.Villagers[0];
+
+        villager.Cold = world.Config.ExposureThreshold / 2;
+        villager.CarriedLogs = 5;
+        villager.State = VillagerState.SeekingShelter;
+
+        BehaviorSystem.ArriveAtAFireForTest(world, villager);
+
+        _output.WriteLine(
+            $"{villager.Name} arrived at a fire cold={villager.Cold} carrying "
+            + $"{villager.CarriedLogs} logs, and is now {villager.State}");
+
+        Assert.Equal(VillagerState.SeekingShelter, villager.State);
+        Assert.Equal(5, villager.CarriedLogs);
+    }
+
+    /// <summary>
+    /// The anti-vacuity companion (D7): arriving home with logs <em>does</em> still turn round.
+    /// </summary>
+    /// <remarks>
+    /// Without this, a fix that simply stopped the <c>HaulingToStore</c> re-route for everybody
+    /// would pass the guard above while reviving the leak D30 records: a log in a larder is a
+    /// log nobody can ever spend, and twenty years of that emptied the village's timber.
+    /// </remarks>
+    [Fact]
+    public void AndArrivingHomeWithLogsStillSendsThemToAStore()
+    {
+        SimWorld world = InWinter(Config);
+        Villager villager = world.Villagers[0];
+
+        villager.Cold = 0;
+        villager.CarriedLogs = 5;
+        villager.Position = world.RestingPlaceOf(villager);
+
+        BehaviorSystem.ArriveHomeForTest(world, villager);
+
+        _output.WriteLine($"{villager.Name} arrived home with logs and is now {villager.State}");
+        Assert.Equal(VillagerState.HaulingToStore, villager.State);
+    }
+
+    // ⛔ AND A THIRD GUARD WAS WRITTEN HERE AND DELETED, WHICH IS THE POINT OF COUNTING.
+    //
+    // `NobodyBouncesInAndOutOfAFireAcrossAWinter` stepped the fixture village through a whole
+    // winter and counted how often anybody went `SeekingShelter → something → SeekingShelter`
+    // inside three ticks — the shape of the bounce, measured emergently rather than posed. It
+    // read **0 bounces** and looked like the better of the two guards.
+    //
+    // **It read 0 against the BROKEN code as well.** Disabling the fix produced **one red out
+    // of fifteen**, not two: the fixture village is warm and well stocked, so the coincidence
+    // the bug needs — somebody cold *and* holding logs at the instant they arrive — does not
+    // arise there. A long run is the wrong instrument for it, exactly as D154 found when two
+    // attempts at an emergent guard for the stalled builder were both vacuous.
+    //
+    // ⭐ **Counting is what caught it.** Running the guards said "green"; counting the reds said
+    // "one of the two proves nothing". A guard that passes against the code it was written to
+    // catch is worse than no guard, because it is a green tick standing where a real one should
+    // be — so it is deleted rather than kept for comfort, and the posed seam above is the guard.
+
     /// <summary>A tile with no building on it, for measuring what open ground costs.</summary>
     private static GridPos FarFromAnyBuilding(SimWorld world)
     {

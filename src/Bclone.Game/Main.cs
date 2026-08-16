@@ -431,22 +431,30 @@ public partial class Main : Control
         _staffingRow.Visible = staffable is not null;
         if (staffable is not null)
         {
+            // ⚠️ AND THE LABEL LOSES THE PHRASE TOO, not just the button. Saying *"village's
+            // choice"* beside a row whose control is called "Clear" would be the same leftover
+            // one word further along — and the row's job since D136 is to state whether the
+            // number is in force, which is exactly what "nobody has set one" says without
+            // reviving a mode that no longer exists.
             _staffingLabel.Text = staffable.StaffingOverride is int asked
                 ? $"Staffing {staffable.Name} — you asked for {asked} of {staffable.Capacity}:"
-                : $"Staffing {staffable.Name} — village's choice, {staffable.Places} of "
+                : $"Staffing {staffable.Name} — nobody has set a number; {staffable.Places} of "
                     + $"{staffable.Capacity}:";
         }
 
-        // The ground controls belong to a building that keeps ground — a forester's hut
-        // today, and whatever else earns one later. Shown by whether the building CAN own
-        // ground rather than by what kind it is, so the next one needs no line here.
-        bool keepsGround = staffable is { Kind: JobKind.Forester };
+        // The ground controls belong to a building that keeps ground. ⭐ ASKED OF THE SIM NOW
+        // (`SimWorld.KeepsWorkGround`) RATHER THAN BY NAMING A KIND — this line used to read
+        // `Kind: JobKind.Forester` under a comment promising it did not, and the farmhouse
+        // shipped with no brush because of it. Joe placed a farm, read *"give it some with the
+        // work-ground brush"* on its own panel, and there was no brush.
+        bool keepsGround = staffable is not null && SimWorld.KeepsWorkGround(staffable.Kind);
         _groundRow.Visible = keepsGround;
         if (keepsGround)
         {
             int tiles = world.Zones.WorkGroundTiles(staffable!.Id);
             int allowance = world.WorkGroundAllowanceFor(staffable);
             _groundLabel.Text = $"Ground — {tiles} tiles, enough hands for {allowance}:";
+
             // ⭐ THE TOGGLE IS FELLING NOW, NOT PLANTING (Joe, D146). Painting ground for a hut
             // is already the instruction to keep it wooded, so planting was never the
             // interesting question — what the player decides is whether timber comes out.
@@ -454,11 +462,19 @@ public partial class Main : Control
             // And it says when the village has stopped felling for a reason the player set
             // somewhere else: a met Logs limit reads on this button rather than only on the
             // stock panel, because this is the building that looks idle because of it.
-            _modeButton.Text = staffable.Mode != WorkMode.FellAndPlant
-                ? "Felling: off"
-                : world.MayFell(staffable)
-                    ? "Felling: ON"
-                    : "Felling: ON — held by the log limit";
+            //
+            // ⚠️ FORESTER ONLY. A farm keeps ground too, and there is nothing on it to fell —
+            // a "Felling: ON" button beside a field is a control that acts on nothing, which is
+            // worse than one that is missing.
+            _modeButton.Visible = staffable.Kind == JobKind.Forester;
+            if (_modeButton.Visible)
+            {
+                _modeButton.Text = staffable.Mode != WorkMode.FellAndPlant
+                    ? "Felling: off"
+                    : world.MayFell(staffable)
+                        ? "Felling: ON"
+                        : "Felling: ON — held by the log limit";
+            }
         }
 
         // ⭐ AND THE IDLE MARKER, which belongs to a workplace the same way the full marker
@@ -646,12 +662,14 @@ public partial class Main : Control
         return site;
     }
 
-    /// <summary>Nudge the selected workplace's staffing, or hand it back to the village.</summary>
+    /// <summary>Nudge the selected workplace's staffing, or clear the number you set.</summary>
     /// <remarks>
     /// Buttons rather than a spinner, because the numbers are small and a click is
-    /// cheaper to reach for than a text field. "Let the village decide" is a first-class
-    /// control and not a magic value like -1: reverting is a thing players do often, and
-    /// it has to be as easy as setting.
+    /// cheaper to reach for than a text field. <b>Clearing is a first-class control and not a
+    /// magic value like -1</b>: reverting is a thing players do often, and it has to be as easy
+    /// as setting. It was called <em>"Village decides"</em> until Joe pointed out that the
+    /// phrase had been removed everywhere else in the game (D136, D148) and this row was the
+    /// last place still using it.
     /// </remarks>
     private void ChangeStaffing(int delta)
     {
@@ -672,7 +690,8 @@ public partial class Main : Control
         RefreshInspector(_loop.World);
     }
 
-    private void LetTheVillageDecideStaffing()
+    /// <summary>Take back the number the player set here, leaving no opinion at all.</summary>
+    private void ClearStaffing()
     {
         Workplace? workplace = SelectedWorkplace();
         if (workplace is { IsSite: false })
@@ -1568,9 +1587,23 @@ public partial class Main : Control
         more.Pressed += () => ChangeStaffing(+1);
         _staffingRow.AddChild(more);
 
-        var auto = new Button { Text = "Village decides" };
-        auto.Pressed += LetTheVillageDecideStaffing;
-        _staffingRow.AddChild(auto);
+        // ⛔ "VILLAGE DECIDES" IS GONE FROM THIS ROW (Joe, 2026-08-15): *"the farm detail window
+        // has a 'let village decide' function, which was removed from the game. remove it
+        // please."* He is right that it was a leftover — D136 took that phrase off the stock
+        // limit rows and D148 took it off the professions panel, and this row was the last
+        // place still offering it as a named mode.
+        //
+        // ⚠️ IT IS "CLEAR", NOT NOTHING, and the distinction is the one D136 already settled.
+        // `StaffingOverride` is `null` or a number, and those are genuinely different states
+        // (D51, D136) — null is *"I have no opinion"* and zero is *"nobody here, I mean it"*,
+        // both hashed, both part of the seed contract. Deleting the control outright would
+        // leave the player able to reach a state they could never leave. So the *phrase* goes
+        // and the *capability* stays, wearing the same word the stock limit rows already use:
+        // one vocabulary for one idea, which is what made the leftover jarring in the first
+        // place.
+        var clear = new Button { Text = "Clear" };
+        clear.Pressed += ClearStaffing;
+        _staffingRow.AddChild(clear);
 
         // ⭐ AND THE BUILD QUEUE, WHICH IS JOE'S OWN ANSWER TO HIS VILLAGE FREEZING:
         // "I think this is solved by letting the user increase/decrease the priority level of

@@ -2138,6 +2138,26 @@ public sealed class BehaviorSystem : ISimSystem
     internal static void RaiseForTest(SimWorld world, Villager villager) =>
         ArriveAt(world, villager, VillagerState.Building);
 
+    /// <summary>A villager reaching a hearth to thaw, posed directly.</summary>
+    /// <remarks>
+    /// <b>The same seam as <see cref="RaiseForTest"/>, for the same reason and off the same
+    /// evidence.</b> Joe's audit trail shows the jitter plainly — one tick at the fire, out
+    /// again the next, for the whole of a winter — and the case needs a villager who is both
+    /// cold and holding logs at the moment they arrive, which is a coincidence a long run
+    /// produces only on some seeds. Posed directly it is four lines and cannot go vacuous.
+    /// </remarks>
+    internal static void ArriveAtAFireForTest(SimWorld world, Villager villager) =>
+        ArriveAt(world, villager, VillagerState.SeekingShelter);
+
+    /// <summary>Arriving at one's own door, posed directly — the anti-vacuity half.</summary>
+    /// <remarks>
+    /// Paired with <see cref="ArriveAtAFireForTest"/>: the fire rule is only worth anything if
+    /// the <em>home</em> rule still holds, and a fix that stopped re-routing timber for
+    /// everybody would revive D30's leak — a log in a larder is a log nobody can spend.
+    /// </remarks>
+    internal static void ArriveHomeForTest(SimWorld world, Villager villager) =>
+        ArriveAt(world, villager, VillagerState.Idle);
+
     private static void CollectFromStore(SimWorld world, Villager villager)
     {
         Household household = world.HouseholdOf(villager);
@@ -2611,6 +2631,38 @@ public sealed class BehaviorSystem : ISimSystem
             villager.ActionTicksRemaining = IsPlantingErrand(world, villager)
                 ? VillageEconomy.PlantTicks(world.Config)
                 : world.Config.CutTicks;
+            return;
+        }
+
+        // ⛔⛔ SOMEBODY WHO CAME IN TO GET WARM STAYS IN, AND THIS IS THE JITTER JOE HAS
+        // WATCHED SINCE SHELTER SHIPPED (D45).
+        //
+        // **Found in his own audit trail, not in the suite** — the same file D154 came out of,
+        // and the same shape. `TrySeekWarmth` has hysteresis on purpose: *"once they are here
+        // they stay until they are properly warm, not merely until they are back under the line
+        // they came in over."* **That promise was being overwritten one line later.** A villager
+        // arriving at a hearth fell through to the tail of this method, and anyone still holding
+        // logs was flipped straight to `HaulingToStore` and walked back out on the very next
+        // tick — so they never thawed at all:
+        //
+        //   [t 425] Otto: hauling to a store -> going in to get warm at (-1, -1)
+        //   [t 426] Otto: going in to get warm -> hauling to a store at (-1, 0)
+        //   [t 437] Otto: hauling to a store -> going in to get warm at (-1, -1)
+        //   [t 438] Otto: going in to get warm -> hauling to a store at (-1, 0)
+        //
+        // **One tick at the fire, every time, for the whole of winter.** On the map that is a
+        // villager bouncing between two tiles; in the sim it is a man freezing to death beside
+        // a lit hearth because his arms were full. Hattie crossed the seek-shelter line upward
+        // **every two ticks for sixty ticks** in the same run.
+        //
+        // ⚠️ AND IT ALSO UNLOADED INTO THE WRONG LARDER. `NearestFire` returns *any* household's
+        // hearth (§4.3 — a neighbour with a fire does not turn a freezing man away), while
+        // `UnloadAtHome` posts to the villager's OWN household wherever they are standing. So
+        // warming up at a neighbour's fire teleported an armful home. Both bugs die here,
+        // because the answer to both is the same: **arriving at a fire is not arriving home.**
+        if (onArrival == VillagerState.SeekingShelter)
+        {
+            villager.State = VillagerState.SeekingShelter;
             return;
         }
 

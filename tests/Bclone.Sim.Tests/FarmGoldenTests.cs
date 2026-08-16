@@ -63,7 +63,16 @@ public sealed class FarmGoldenTests
     // will move it are the crop economy (`crop_yield_per_tile`, `sow_ticks`, `reap_ticks`,
     // `farm_store_cap`) and anything that changes what a laborer does with painted ground —
     // which is exactly the pair of systems it is watching.
-    private const ulong SeamGoldenHash = 7924144676203476477UL;
+    //
+    // ⭐ RE-TAKEN FOR THE JITTER (D163), one commit after it was first taken, and **it moved for
+    // a third reason neither of those** — which is worth recording rather than shrugging at. A
+    // villager who came in to get warm now stays until they are warm, instead of being flipped
+    // back out on the next tick with their arms still full. This run spans twenty years and
+    // twenty winters, and everybody in it now spends ticks at a hearth they used to spend
+    // walking, so the whole history downstream differs.
+    //
+    //   before the jitter was fixed: 7924144676203476477
+    private const ulong SeamGoldenHash = 12419260555584221460UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

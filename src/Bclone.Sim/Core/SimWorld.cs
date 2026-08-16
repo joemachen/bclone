@@ -1620,6 +1620,29 @@ public sealed class SimWorld
         ? VillageEconomy.FieldTilesOneFarmerKeeps(Config)
         : Config.WorkGroundTilesPerWorker;
 
+    /// <summary>
+    /// Whether this kind of work is done on ground the player paints for it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THE VIEW ASKED THIS BY NAMING A KIND, AND THE FARM SHIPPED WITH NO BRUSH BECAUSE OF
+    /// IT.</b> `Main.cs` read <c>staffable is { Kind: JobKind.Forester }</c> under a comment
+    /// promising the opposite — *"shown by whether the building CAN own ground rather than by
+    /// what kind it is, so the next one needs no line here"*. The next one was the farmhouse,
+    /// and it needed a line: Joe placed a farm, read <em>"give it some with the work-ground
+    /// brush"</em> on its own panel, and **there was no brush**. A feature the player cannot
+    /// reach does not exist (D103), and a comment describing code that does something else is
+    /// D159's finding in miniature.
+    /// </para>
+    /// <para>
+    /// <b>So the question lives here, once, where both the sim and the view can ask it</b> —
+    /// and the promise the comment made is now true: the third building that owns ground adds
+    /// a value to this line and nothing else anywhere.
+    /// </para>
+    /// </remarks>
+    public static bool KeepsWorkGround(JobKind kind) =>
+        kind is JobKind.Forester or JobKind.Farmer;
+
     /// <summary>Whether a workplace has been given more ground than it has hands for.</summary>
     /// <remarks>
     /// <b>A state, not just a moment.</b> The warning fires when land is painted, but the

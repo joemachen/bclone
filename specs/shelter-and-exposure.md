@@ -8,6 +8,14 @@ system; read it before changing any number here.
 
 ---
 
+> **⛔⭐ D163 (2026-08-15): the hysteresis in §4.3 was written, shipped, and never once ran.**
+> *"Once they are here they stay until they are properly warm"* was overwritten one line later
+> in `BehaviorSystem.ArriveAt` — anyone reaching a hearth still carrying logs was flipped to
+> `HaulingToStore` and walked back out on the next tick. **A villager whose arms were full could
+> not warm up at all**, for the whole of every winter since this spec shipped. Found in Joe's
+> audit trail, four lines of it; guarded by a posed seam, because an emergent guard over a whole
+> winter was measured **vacuous** against the broken code.
+
 ## 1. Goal
 
 Replace `HearthSystem`'s household bookkeeping with a **positional** model of cold.

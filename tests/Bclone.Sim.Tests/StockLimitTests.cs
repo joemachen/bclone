@@ -203,8 +203,25 @@ public sealed class StockLimitTests
     // D157's finding, restated by the very next slice. **A green golden can mean "not
     // covered".** What covers the farm is `FarmGoldenTests`, which paints, clears, sows and
     // reaps in one run and is the first guard in this suite ever to reach `NearestHarvest`.
-    private const ulong FixtureFiftyYearHash = 11001298307494045081UL;
-    private const ulong ShippedFiftyYearHash = 10000897820648583606UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE JITTER (D163), AND THIS IS THE KIND OF MOVE THE GUARD EXISTS FOR.
+    // **A villager who came in to get warm now stays until they are warm.** Since D45 anyone
+    // reaching a hearth still carrying logs was flipped straight back to `HaulingToStore` and
+    // walked out on the next tick — one tick at the fire, every time, for the whole of every
+    // winter — so nobody with their arms full ever thawed at all. Fifty years of villages that
+    // warm up properly is a different fifty years: they spend ticks indoors they used to spend
+    // walking, their loads arrive later, and every downstream decision follows.
+    //
+    // **⭐ It is also the answer to the question the farm slice left hanging.** D162 recorded
+    // these two as *unmoved because they do not cover the farm* — and one commit later they
+    // moved for a change that touches every villager in every winter, which is the same guard
+    // saying the opposite thing correctly both times. That is what a golden is for: it is
+    // silent about what it does not reach and loud about what it does.
+    //
+    //   before the jitter was fixed: fixture 11001298307494045081,
+    //                                shipped 10000897820648583606
+    private const ulong FixtureFiftyYearHash = 17969363278213194222UL;
+    private const ulong ShippedFiftyYearHash = 17964703903020390741UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
