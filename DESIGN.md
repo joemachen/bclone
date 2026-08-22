@@ -273,16 +273,22 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
    contract** of what Phase 4 may assume exists, and `tech-tree.md`'s header now points back at
    it so the two cannot drift.
    - **⭐ Its load-bearing decision is §3.2, and Joe settled it in D174: today's behaviour is the
-     NOVICE FLOOR.** The founders are novices, **nobody is ever worse than today**, and mastery is
-     headroom above, gated behind a tech-tree node. **The derivation is a survival floor (§2.2)
-     and the novice is that floor**, so no derived number moves and the cold start becomes a
-     no-op to *prove* rather than a risk to survive.
+     NOVICE FLOOR.** **Nobody is ever worse than today**, and mastery is headroom above. **The
+     derivation is a survival floor (§2.2) and the novice is that floor**, so no derived number
+     moves.
    - **⭐ Mastery is twenty years on the task, narrated in the village log when it happens**
      (D174) — and a child born in year 1 masters at thirty-two, so **mastery and the first
      grandchildren arrive together.**
-   - **⚠️ What the floor creates instead**: the founding stays in lockstep (**D28 only half
-     discharged**), and a Phase-4-gated mastery means Phase 3 ships a system with **no mechanical
-     effect** — D56's shape. Both are open in that spec's §12.
+   - **⭐ The founders arrive as a mix of tiers, and every villager gets a seeded rhythm at
+     birth** (D175). Together they **close D28 at the opening** rather than a century later, and
+     they make the four founders people rather than units. ⚠️ **They also mean the founding is no
+     longer today's founding — it gets *easier*** — so `cold-start.md` is re-measured and the
+     goldens move once. The floor's byte-identical guard relocates to a **posed all-novice
+     village**.
+   - **⚠️ Open in that spec's §12**: whether mastery bites in Phase 3 or waits for a tech node
+     (a Phase-4 gate means Phase 3 ships a system with **no mechanical effect** — D56's shape),
+     and **whether anything should be able to take mastery from the village as a whole rather
+     than only from the person who dies.**
 3. **⭐ Per-site yield, and retiring the 7-tile bound** (D58, §5) — **scheduled at last, and
    Joe placed it here: *"per-site yield behind skills-catalog"*** (2026-08-22, D172). It left the
    unsequenced list because **a second system has now walked into it independently**: a farm ten
@@ -1322,6 +1328,13 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D175 · 2026-08-22 · ⭐⭐ THE FOUNDERS ARRIVE AS A MIX OF TIERS, AND EVERY VILLAGER GETS A SEEDED RHYTHM AT BIRTH — which together close D28 at the opening rather than a century later.** Joe: *"I would like a seeded personal rhythm at birth. Maybe the founders could be a mix of masters, mids — whatever that is — and novices? Could be a master woodcutter or gatherer or apprentice forester, know what I mean?"*
+  - **⭐⭐ THE MIXED FOUNDING IS THE BEST IDEA IN THE SKILLS DESIGN, AND IT DOES THREE THINGS AT ONCE.** **(1) It makes the four founders *people* in the first frame of a new game** — *"Otto, master woodcutter; Agnes, apprentice forester; Hattie and Wendell, who have never done any of this"* is §1.4 arriving before the player has done anything at all, against four identical units with different names. **(2) It gives the opening a shape to read**: a party with a master woodcutter and nobody who can farm is a *different* opening, which is the argument §2.5 already makes for seeded maps — *a second playthrough is a different place, not the same place played again*. **(3) It finishes the lockstep fix**, because founders at different tiers do different work in different numbers of ticks from day one.
+  - **✅ AND THE SEEDED RHYTHM STOPS BEING A STOPGAP.** D28 ranked it second behind personal time-on-task and called it *"treats the symptom rather than the cause"* — **but under D174's floor, skill breaks symmetry only over decades**, so the opening Joe watched at 4× would have stayed synchronised without it. **It is now half the fix rather than a consolation**, with a hard bound: *if the offset changes what anybody produces across a year, it is too big*.
+  - **⛔ THE HONEST COST, WHICH IS THE OPPOSITE OF THE ONE D174 REMOVED: the founding is no longer today's founding, and it gets EASIER.** A party with a master in it starts **above** the floor, so **`cold-start.md`'s five measured ticks will move and the goldens move once.** D174's byte-identical guard survives but **relocates to a posed all-novice village** — the thing that actually tests the floor rule — and **a guard that tries to assert it about the real opening will fail, with the temptation to weaken it rather than pose it properly.** ⚠️ **The unmeasured arm is whether a master gatherer makes the opening trivial**; probe before implementing (METHODOLOGY §3).
+  - **⭐ TIERS ARE A READING OF ONE NUMBER, NOT A SECOND STORED THING** — *"master woodcutter" is a sentence and "proficiency 73" is a spreadsheet* (§1.1). Proposed ladder **novice → apprentice → journeyman → master**, where **"journeyman" is the word for Joe's *"mid"***, the one tier with no plain-English name — which is presumably why he wrote *"whatever that is"*. Two sources of truth for one fact is D148's bug and D76's seam.
+  - **⚠️ RECOMMENDED: FIXED COMPOSITION, SEEDED TRADES.** Always the same *shape* of party; **which trades they hold comes from the seed.** A seed that hands you four novices and one that hands you two masters are not two playthroughs, they are a good run and a bad one — and **whether you survive should not be decided before you press play** (§0.1: *the challenge is in the planning, never in the punishment*). Joe's call.
+  - **⚠️ AND A QUESTION I ASKED BADLY.** *"Can the mastery node re-lock?"* meant nothing to Joe, and rightly — it presumed a reading of his own sentence. `tech-tree.md`'s rule is that a technique known only by living people is **lost when the last of them dies untaught**; if a node *gates* mastery, one badly-timed death could switch mastery off for the whole village including people who spent twenty years earning it. **But *"we introduce mastery along with a node of the tech tree"* reads equally as *ships in the same slice as*, which has no such problem.** §12 now asks the plain version: **should anything be able to take mastery away from the village as a whole, or only from the person who dies?**
 - **D174 · 2026-08-22 · ⭐⭐ TODAY'S BEHAVIOUR IS THE NOVICE FLOOR, NOT A MID-CAREER REFERENCE — Joe's answer is better than the spec's, and it deletes the risk the spec had named as Phase 3's biggest.** Joe: *"can today's behaviour be the novice floor? i.e. the founders are novices? and we introduce mastery — skill improvement numbers — along with a node of the tech tree?"* And: *"twenty years sounds good, and it should be noted in the event log when someone achieves mastery."*
   - **⭐⭐ THE FLOOR BEATS THE SPREAD, AND THE REASON IS ONE SENTENCE ALREADY IN §2.2.** D173 proposed skill as a *spread* around today's behaviour, reference at a working life's average — which held the economy still but paid for it by making **a village of novices poorer than today's**, so the founding got harder and `cold-start.md` needed re-deriving. **Joe's floor deletes that cost outright**: a novice behaves exactly as villagers behave today, nobody is ever worse, and mastery is headroom above. **And it fits the architecture better than the draft did** — §2.2 already says *`VillageEconomy` derives the **survival floor**; the player sets the ceiling above it*. **The derivation is a floor and the novice is the floor**, so it goes on answering *what must one pair of hands bring back so the village does not die* about the least skilled person in the valley, which is the honest worst case a survival number should be solved against.
   - **⭐ AND IT TURNS A TOLERANCE INTO A HASH.** D173's guard had to assert that a reference village produced *within a stated tolerance* of today's. Under the floor it is stronger and simpler: **a village of novices is byte-identical to today's, and the cold start's five measured ticks do not move.** A no-op to be proved rather than a risk to be survived.
