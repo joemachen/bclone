@@ -11,7 +11,7 @@ if you touch the crop numbers, and nothing else there needs you.
 
 **Branch `phase/2-wood-fuel-and-tools`.** The farm (D162) is in.
 
-**Suite: see the D165 run.** Green (was 589 / 0 / 2 of 591). Both skips
+**Suite: 618 passing, 0 failing, 2 skipped of 620. Green** (was 589 / 0 / 2 of 591). Both skips
 are rulings, not debt (D143's unattended village; D134's granary cap). **The full run is 12–17
 minutes.**
 
