@@ -172,7 +172,7 @@ The whole game, shrunk to a single soul. **Gather food → eat → survive a win
 ### Phase 1 — households and labour ✅ COMPLETE (2026-07-26)
 Multiple agents, households, and cost-first labour allocation (§2.2). Merged to `main` via PR #2.
 
-### Phase 2 — the village you can play ✅ DEFINITION OF DONE MET (2026-08-22), awaiting PR #4
+### Phase 2 — the village you can play ✅ COMPLETE (2026-08-22). Merged to `main` via PR #4.
 
 > **⚠️ THIS SECTION WAS REWRITTEN BY D159, AND THE REASON IS THE POINT.** The original build
 > order ran *households → environment+biomes → desire paths → skills → tech tree → systemic
@@ -262,9 +262,10 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
 
 *One list, in one order. This supersedes §6's "Next up", which was a competing queue.*
 
-1. **Close Phase 2 and merge to `main`** — the Definition of Done above. **Phase 3 does not open
-   on an unmerged branch with an unmet DoD**; this project already has one instance of two
-   roadmaps disagreeing and it cost six weeks.
+1. ✅ **DONE — Phase 2 closed and merged to `main`** via PR #4, 2026-08-22 (D172). The rule it
+   was protecting stands for next time: **a phase does not open on an unmerged branch with an
+   unmet Definition of Done**; this project already has one instance of two roadmaps disagreeing
+   and it cost six weeks.
 2. **`specs/skills-catalog.md`** — catalogues before code (`buildings-plan.md`'s standing habit),
    and **the prerequisite `tech-tree.md` silently assumes.** That spec is written entirely on top
    of a proficiency model that **does not exist in the sim** — its load-bearing rule, *"a record
@@ -429,9 +430,11 @@ Each phase should ship in a playable, legible state before the next begins.
 
 > Update this section as work proceeds. Keep it honest — it's how we both know where we are.
 
-**Current phase:** **Phase 2 (branch `phase/2-wood-fuel-and-tools`)**, re-ordered by Joe's call — §4 invites that. Wood-as-fuel (D17/D29) was taken before the environment work because winter needed a second axis to bite on, and storage (D30/D32/D33) after it because every goods bug so far has been "the right stuff in the wrong place". **Environment and seasons (§2.5) is the phase's headline and is most of the way through it** — the calendar, the building capacities, the idle winter and shelter-and-exposure are all built; biomes are deferred by choice (§5.4 of the seasons spec) and the seasonal yield curve is the last slice.
+**Current phase:** **between phases.** Phase 2 is complete and merged; **nothing is in progress.** Next up is §4's queue in its stated order — **`specs/skills-catalog.md`**, then **per-site yield** (D172), then **Phase 3, skill and apprenticeship**. `main` is the place to branch from.
 
-**Phase 2's Definition of Done is MET as of 2026-08-22** (D169) — Joe walked the QA checklist, which was the last of the five. The branch is unmerged only until PR #4 goes up (⚠️ #4, not #3 — that number went to the closed screenshot-hook PR D160 rescued); `main` will become a completed phase rather than a checkpoint, which is the whole reason it waited.
+**✅ PHASE 2 IS COMPLETE AND MERGED (2026-08-22, D169/D172)** — 248 commits, merged to `main` via [PR #4](https://github.com/joemachen/bclone/pull/4) (⚠️ **#4, not #3**: that number went to the closed screenshot-hook PR D160 rescued, and every document said #3 for a day). **All five Definition-of-Done items met**, the last of them Joe's QA walk. **630 passing, 0 failing, 2 skipped of 632**, CI green on the merged head.
+
+**⛔ One thing is known-open and it is not a Definition-of-Done item:** a farm's harvest falls off sharply with distance from its store — **93% brought in next door, 46% at ten ticks, 25% at twenty-two** (D170, D171). That is §5's per-site-yield decision arriving in a second system after gathering, and it is now scheduled (D172).
 
 **Phase 0: ✅ COMPLETE.** Success Test passed 2026-07-25.
 
