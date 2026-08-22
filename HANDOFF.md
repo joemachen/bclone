@@ -1,6 +1,6 @@
 # Handoff — bclone: **Phase 2 merged, the skills catalogue written. Next is per-site yield.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D173 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D174 back to D142**, then
 `METHODOLOGY.md`.
 
 ---
@@ -45,13 +45,18 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
 
 1. ✅ Phase 2 merged, and the branch deleted (it was fully merged; tip was `9b9f410`).
-2. ✅ **`specs/skills-catalog.md` WRITTEN** (D173), docs-only on `main`. **Nothing in it is
-   built** and its status line says so. Two things to know before touching Phase 3:
-   - **⭐ Its load-bearing decision is §3.2 — skill is a *spread around today's behaviour*, not a
-     bonus on top of it.** Every derived number in the game is solved against a villager with no
-     skill concept, so a multiplier above one moves all of them at once.
-   - **⚠️ Its stated risk is the founding.** A village of novices is *poorer* than today's, so
-     `cold-start.md` must be re-measured. **Probe before building** (METHODOLOGY §3).
+2. ✅ **`specs/skills-catalog.md` WRITTEN** (D173, D174), docs-only on `main`. **Nothing in it is
+   built** and its status line says so. What to know before touching Phase 3:
+   - **⭐ §3.2, settled by Joe (D174): today's behaviour is the NOVICE FLOOR.** Founders are
+     novices, **nobody is ever worse than today**, mastery is headroom above and gated behind a
+     tech-tree node. **The derivation is a survival floor (§2.2) and the novice is that floor**,
+     so no derived number moves and **the cold start is a no-op to prove, not a risk to survive**.
+   - **⭐ Mastery is twenty years on the task**, narrated in the village log when it happens —
+     Joe asked for that line by name, and it is the first thing here the player will feel.
+   - **⚠️ Two things the floor creates, both open in that spec's §12**: the founding **stays in
+     lockstep** (D28 only half discharged, and its seeded-rhythm stopgap may be worth taking
+     anyway), and Phase-4-gated mastery means Phase 3 ships a system with **no mechanical
+     effect** — D56's shape, and the anti-vacuity guard must be written knowing it.
    - **§6 is a contract** with `tech-tree.md`, whose header now points back at it.
 3. **⭐ NEXT: Per-site yield, and retiring the 7-tile bound** (D58, D172, Joe: *"per-site yield
    behind skills-catalog"*). **This is the next thing to do.** See below.

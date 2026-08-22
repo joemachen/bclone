@@ -82,40 +82,80 @@ the same argument §2.7 makes when it refuses a Civ-style research bar. It is al
 rows all say what somebody *did*; a villager panel reading *"nineteen years in the fields"* is the
 same voice.
 
-### 3.2 ⭐⭐ THE REFERENCE IS A COMPETENT VILLAGER — and this is the rule that keeps the economy standing
+### 3.2 ⭐⭐ TODAY'S BEHAVIOUR IS THE NOVICE FLOOR — the founders are novices, and mastery is headroom above them
 
-**This is the most important decision in the document and the one most likely to be got wrong.**
+**This is the most important decision in the document. Joe's call, 2026-08-22 (D174):**
 
-Every derived number in this game — `gather_yield`, `firewood_per_split`, `crop_yield_per_tile`,
-`MaxHomeToWorkTiles`, the fuel budget — is solved against **a villager with no skill concept at
-all**, because that is the only villager the sim has ever had. `VillageEconomy` asks *how much
-must one pair of hands bring back so that the village does not die?* and answers it against
-today's flat behaviour.
+> *"Can today's behaviour be the novice floor? i.e. the founders are novices? And we introduce
+> mastery — skill improvement numbers — along with a node of the tech tree?"*
 
-**So if skill multiplies output above today's baseline, every one of those numbers is wrong the
-day skill ships** — the village gets richer for free, the birth gate opens sooner, and the
-economy has to be re-derived from the bottom. **D122 froze nineteen people the last time that
-chain moved**, and it moved by one tile.
+**Yes, and it is a better answer than the draft it replaced.** This spec first proposed skill as
+a *spread* around today's behaviour, with the reference at a working life's average. That kept the
+economy still, but it bought the stillness by making **a village of novices poorer than today's**
+— so the founding got harder and `cold-start.md` had to be re-derived. **The floor model deletes
+that cost outright.**
 
-**The rule: skill is a spread around the present behaviour, not a bonus on top of it.**
+**The rule: a novice behaves exactly as villagers behave today. Nobody is ever worse.**
 
-- **A villager at the reference proficiency behaves exactly as villagers behave today.**
-- A novice is **worse** than that; a master is **better**.
-- **The reference is placed so that a working life's average sits on it** — which is what makes
-  the existing derivation still true of the village as a whole.
+- **Four founders who have never done the work are today's four founders**, to the tick and the
+  unit. **The cold start does not move.**
+- Proficiency only ever makes somebody **better than that**.
+- **Mastery is an unlock, not a birthright** — gated behind a tech-tree node (§3.2b).
 
-**What this buys, stated so it is not re-litigated:** losing a master is a real loss and gaining
-one is a real gain, **without a single derived number moving**. The economy keeps its meaning,
-the guards keep their bars, and the goldens move once for behaviour rather than for arithmetic.
-**The alternative — skill as a multiplier above one — is an economy-wide re-derivation wearing a
-character system's clothes.**
+#### ⭐ Why this is not the "multiplier above one" this document warned against
 
-> ⚠️ **The honest cost of this choice:** a village of nothing but novices is *poorer* than
-> today's village, so **the founding gets harder**. Four founders who have never done the work
-> are exactly the opening `cold-start.md` measures, and that measurement has to be re-run.
-> **This is the single biggest risk in Phase 3 and it should be probed before anything is built**
-> (METHODOLOGY §3 — *probe a mechanic before building it*), the way D53's cold model and D56's
-> clothing were both measured as no-ops before a line was written. See §12.
+That warning was aimed at a *silent* raise: skill quietly inflating output, the birth gate
+opening sooner, and every derived number wrong with no event anybody could point at.
+
+**A floor plus a gated unlock is a different object, and `DESIGN.md §2.2` already draws the
+line it sits on:**
+
+> *`VillageEconomy` goes on deriving the **survival floor** — what the village must produce not
+> to die — and the player sets the **ceiling** above it. Derived floor, player ceiling.*
+
+**The derivation is a floor, and the novice is the floor.** So it stays exactly as true as it is
+today: it still answers *what must one pair of hands bring back so the village does not die*,
+about the least skilled person in the valley — which is the honest worst case a survival number
+should be solved against. **Mastery is headroom, and headroom above a floor is what progression
+*is*.**
+
+#### ⭐⭐ And the surplus has somewhere to go, which is what stops it inflating
+
+A masterful village does not produce infinite food, because **stock limits already stop
+production at what the player asked for** (D62, D128, D141). So mastery cashes out as **the same
+output from fewer hands** — and the hands it frees become laborers (D63, D66).
+
+**That is D161's mid-game answer arriving through the front door.** Joe's own framing of the gap
+was *"stop treating those years as time to fill and start treating them as the years the founders
+become worth learning from"* — and this is that sentence with a mechanism under it: the founders
+get good, the village needs fewer of them on food, and the spare hands are what the player builds
+with.
+
+#### 3.2b ⚠️ Three things this creates that the spread model did not
+
+**Named here rather than discovered in Phase 3.**
+
+1. **⛔ THE FOUNDING STAYS IN LOCKSTEP, AND THAT IS THE THING JOE ORIGINALLY NOTICED.** If every
+   founder starts at the floor, they start *identical* — and D28's lockstep is a symmetry
+   problem, not a variability one (§5's measurement: same tile 99.9% of ticks, identical hunger
+   100%). **Skill now breaks it late instead of immediately**, over decades, and the opening —
+   which is what he was watching at 4× — is unchanged. **D28 is therefore only half discharged by
+   this design**, and the stopgap it already names is still on the table: *a seeded personal
+   rhythm, drawn once at birth*. See §12.
+2. **⚠️ A WHOLE PHASE OF A SYSTEM WITH NO MECHANICAL EFFECT.** If mastery is gated behind a Phase
+   4 node, then Phase 3 ships proficiency that **accrues, is visible, and changes nothing** —
+   and **this project has shipped a decorative system before and only found out by measuring**
+   (D56: clothing, a perfectly-clothed village being 300 years of identical numbers). It is
+   survivable *only* because the legibility half is real from day one — the years on the panel,
+   the mastery line in the log (§7), the at-risk warning — but **the anti-vacuity guard in §10
+   must be written knowing that, or it will assert something that cannot be true until Phase 4.**
+   The alternative is to let mastery bite in Phase 3 and have the node raise the ceiling
+   *further*. **Joe's call — §12.**
+3. **⚠️ CAN THE MASTERY NODE RE-LOCK?** `tech-tree.md §3` says a `Known` node re-locks when the
+   last knower dies unapprenticed. **If the node that grants mastery can re-lock, a village loses
+   every master at once** — a cliff, and exactly the *"unfair because unforeseeable"* failure
+   §2.1 names. Most likely it wants to be **`Established`-only or civic-gated** rather than an
+   ordinary `PEOPLE` node. **Joe's call — §12.**
 
 ### 3.3 What skill changes: **time first, yield second** — which discharges D28
 
@@ -143,6 +183,37 @@ spread cancels across a village. The Phase 3 slice must assert that, not assume 
 **Yield may also be scaled, and it is the second lever rather than the first**, for a legibility
 reason: a villager who is *out longer* is visible on the map, and one who *brings back less* is
 only visible in a panel.
+
+### 3.3b ⭐ Mastery is twenty years on the task, and the village says so out loud
+
+**Joe's call, 2026-08-22 (D174): *"twenty years sounds good, and it should be noted in the event
+log when someone achieves mastery."***
+
+**Twenty years**, against a working life of about **fifty-five** — twelve (`adult_age`, D156) to
+a lifespan of 55–79 (`lifespan_years_base: 67`, variance 12). **A bit over a third of a career**,
+which means:
+
+- **A founder who sticks to one trade masters it, and is a master for the back half of their
+  life.** That is §2.1's own example — *"a farmer with 20 years in the fields is meaningfully
+  better than a fresh laborer"* — meeting the sim's own lifespan numbers rather than a number
+  picked to fit.
+- **A generation is the unit.** A child born in year 1 works at twelve and masters at
+  thirty-two — so **mastery and the first grandchildren arrive together**, which is the
+  generational loop (§1.5) doing the pacing rather than a timer.
+- **It is content, not derivation** — the class `farmhouse_seats` and `granary_feeds_people` are
+  in (D165's split: *a stated fact about the world, with the consequence derived*). It goes in
+  `data/`, per §4.1, and a modder can move it.
+
+**⭐ AND IT IS A LIFE EVENT, NARRATED WHEN IT HAPPENS** — Joe asked for this by name, and it is
+the sentence `DESIGN.md`'s opening paragraph promises the game will produce:
+
+> *"Hattie has farmed these fields for twenty years. There is nothing about this ground she does
+> not know."*
+
+**One line, in the village log, on the edge** — the shape D123 settled and D147 restated: narrated
+when it changes, never a standing banner. **It is the first thing in this design the player will
+feel**, and it works from the day the substrate lands, whether or not mastery is doing anything
+mechanical yet (§3.2b, point 2).
 
 ### 3.4 Skill decays — slowly, and only off the task
 
@@ -314,6 +385,11 @@ shape twice already (D37's spoilage, `environment-and-seasons.md §5.1`'s yield 
   Overview: D42, D123 and D147 all settled that an always-on alert is one the player stops
   reading, and D147's rule is the model — `IdleNote` returns *the sentence or nothing*, so the
   marker and the panel cannot disagree.
+- **⭐⭐ The mastery line, which Joe asked for by name** (§3.3b) — *"Hattie has farmed these fields
+  for twenty years. There is nothing about this ground she does not know."* **One line, on the
+  edge, when it happens.** It is the first thing in this whole design the player will *feel*, and
+  it works from the day the substrate lands whether or not mastery is doing anything mechanical
+  yet — which is most of what makes §3.2b's decorative-phase risk survivable.
 - **In the life log** — apprenticeship is a life event. *"Mabel took Wren to the fields."* This
   is the sentence DESIGN.md's opening paragraph promises the game will produce.
 
@@ -361,19 +437,29 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
   told apart when something breaks.
 - **⭐ Growth is time-on-task and nothing else** — a villager moved off a trade stops gaining in
   it the same tick, and one who never holds it never gains.
-- **⭐⭐ The reference rule holds (§3.2)** — a village whose villagers sit at the reference
-  produces **within a stated tolerance of today's village** over fifty years. **This is the guard
-  that decides whether the economy still stands**, and it must be written before the curve is
-  tuned rather than after.
+- **⭐⭐ THE FLOOR IS EXACTLY TODAY (§3.2)** — a village of novices produces **byte-identically** to
+  today's village over fifty years, and **the cold start's five measured ticks do not move**
+  (t161 / t241 / t133 / t297 against a winter at t360, `cold-start.md`). **This is the guard that
+  decides whether the economy still stands**, and the floor model makes it a *hash* comparison
+  rather than a tolerance — which is far stronger, and is the whole reason Joe's answer is better
+  than the spread this document first proposed.
 - **⭐⭐ Anti-vacuity (§5.3)** — a run with no apprenticeships **loses** proficiency the village
   had, measurably, against a run with them. *If nothing is ever lost, the pillar is decorative.*
+  ⚠️ **Write this knowing §3.2b point 2:** if mastery is gated behind a Phase 4 node, this guard
+  **cannot pass in Phase 3** and must either be written against the *proficiency* that is lost
+  rather than its effect, or land with the node. **A guard that cannot be true yet is worse than
+  no guard**, because it will be "fixed" by weakening it.
 - **Decay is gentle** — a villager moved by D46's three-year reshuffle and moved back has not
   lost a career.
-- **Lockstep is broken (D28)** — two adults of one household holding one job are on the same tile
-  **far less** than the measured 99.9%. **The number to beat is on record**, which is what makes
-  this guard falsifiable rather than a vibe.
-- **Legibility** — every apprenticeship and every at-risk transition emits exactly one narrative
-  line naming the person.
+- **⚠️ Lockstep (D28) — and the bar must match the floor model.** Two adults of one household
+  holding one job are on the same tile **99.9%** of ticks today. Under §3.2 they start
+  *identical* and diverge over decades, so **the founding will not improve and the guard must not
+  claim it does**: assert the divergence over a long run, and say plainly that the opening is
+  unchanged. **The number to beat is on record**, which is what makes this falsifiable rather
+  than a vibe.
+- **Legibility** — every apprenticeship, every mastery (§3.3b) and every at-risk transition emits
+  **exactly one** narrative line naming the person. **Mastery is the one Joe asked for by name**,
+  and it must fire on the edge rather than every tick the condition holds (D123, D147).
 - **Shipped config, not only the fixture** (METHODOLOGY §3) — `ShippedConfigTests` runs the real
   file, and the drift between the two has produced D48, D49 and D50.
 
@@ -383,36 +469,60 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
 
 1. This spec current, and its status line true.
 2. The substrate lands as a **provable no-op**: goldens unmoved, determinism green.
-3. Growth, decay and the reference rule guarded, each **checked red and counted** — the standing
+3. Growth, decay and **the floor rule** guarded, each **checked red and counted** — the standing
    rule, and it has caught a vacuous guard four times.
-4. **D28 discharged**, with the lockstep measurement re-run and quoted.
-5. **The cold start re-measured** (§3.2's stated risk) — a founding of novices either survives or
-   the reference moves, and either way the number comes from a run.
-6. The at-risk warning reachable by the player, because *a feature the player cannot reach does
+4. **⭐ The cold start unmoved, from a run** (§3.2) — a founding of novices is today's founding,
+   and its five measured ticks are quoted rather than assumed. **Under the floor model this is a
+   no-op to be proved, not a risk to be survived**, which is the difference Joe's answer made.
+5. **D28 addressed honestly** — the lockstep measurement re-run and quoted, and **whether the
+   founding is still in lockstep stated plainly either way** (§3.2b point 1). If the answer is
+   *yes, until people diverge*, that is a finding to record, not a failure to hide.
+6. **⭐ The mastery line fires** (§3.3b, Joe's ask) — once, on the edge, naming the person, and
+   visible in the village log without the player going looking.
+7. The at-risk warning reachable by the player, because *a feature the player cannot reach does
    not exist* (D103).
-7. `DESIGN.md §6` and §7 updated; goldens re-taken last, one commit, one stated reason (D152).
+8. `DESIGN.md §6` and §7 updated; goldens re-taken last, one commit, one stated reason (D152).
 
 ---
 
 ## 12. Open — Joe's calls, and the things that want a running sim
 
-**Design questions for Joe:**
+**✅ Answered by Joe, 2026-08-22 (D174):**
 
-- **⭐ How much better is a master than a novice?** This is the whole feel of the pillar. A narrow
-  spread makes skill a footnote; a wide one makes a village of novices unviable and the founding
-  brutal. **§3.2's reference rule holds either way** — this is choosing the *width*, not the
-  centre.
-- **⭐ How long is "a master"?** §2.1's own example says *twenty years in the fields*, against a
-  working life of about fifty-five (twelve to a lifespan of 55–79). **Twenty is a third of a
-  career and it feels right, but it is content, not derivation** — the same class of number as
-  `farmhouse_seats` and `granary_feeds_people` (D165's split).
+- **✅ Where the baseline sits — today's behaviour is the NOVICE FLOOR** (§3.2), not a mid-career
+  reference. The founders are novices, nobody is ever worse than today, and mastery is headroom
+  above. **This deleted the draft's biggest stated risk**: the founding no longer gets harder and
+  `cold-start.md` does not need re-deriving.
+- **✅ Mastery is twenty years on the task** (§3.3b), against a working life of about fifty-five.
+  Content, not derivation, and it lives in `data/`.
+- **✅ It is narrated when it happens** — one line in the village log, on the edge (§7).
+
+**⭐ Still open, and the first two are new — they exist *because* of the floor model:**
+
+- **⛔ Does mastery bite in Phase 3, or wait for its tech node?** (§3.2b, point 2.) Gating it
+  behind Phase 4 means Phase 3 ships proficiency that accrues, is visible and **changes
+  nothing** — and D56's clothing is this project's record of shipping a system that measured as a
+  no-op. The alternative is that skill bites immediately and the node raises the ceiling
+  *further*. **The legibility half is real either way**, which is what makes waiting survivable
+  rather than pointless.
+- **⛔ Can the mastery node re-lock?** (§3.2b, point 3.) `tech-tree.md §3`'s ordinary rule would
+  take **every master in the village at once** when the last knower dies unapprenticed — a cliff,
+  and precisely the *unfair because unforeseeable* failure §2.1 names. It probably wants to be
+  `Established`-only or civic-gated rather than a `PEOPLE` node.
+- **⚠️ Is D28 still owed its stopgap?** The floor model breaks lockstep **late** rather than
+  immediately (§3.2b, point 1), so the founding — which is where Joe watched it at 4× — is
+  unchanged. D28's own second candidate is *a seeded personal rhythm, drawn once at birth*, and
+  it is cheap. **It may be worth taking anyway.**
 - **Does skill scale yield as well as duration** (§3.3), or duration alone in the first slice?
 - **Should the apprenticeship policy be a village-wide slider or per-workplace?** §5.3 argues
   coarse; the professions panel is where a village-wide one would live.
 
 **Tuning, which wants a running sim and must not be guessed:**
 
-- The growth curve's shape, and where the reference sits on it.
+- **The growth curve's shape between the novice floor and mastery at twenty years — and how much
+  better a master actually is.** §3.2 fixed the bottom end; this is the *width*, and it is the
+  whole feel of the pillar. Narrow makes skill a footnote; wide makes a mature village so much
+  richer than a young one that the founding reads as a punishment for being new.
 - The decay rate, derived against `labour_reshuffle_years: 3`.
 - How much an apprentice's growth is accelerated, and whether the master pays for it in output.
 - Whether proficiency retained from a record is zero or a small floor
