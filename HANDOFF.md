@@ -24,7 +24,7 @@ it had **0 commits not on `main`**. Its tip was `9b9f410` if it is ever wanted b
 **SUITE, FROM A RUN:**
 
 ```
-630 passed, 0 failed, 2 skipped of 632 — about 17–19 minutes
+641 passed, 0 failed, 2 skipped of 643 — about 2m30s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -34,7 +34,7 @@ die out) and **D134** (the granary stopped being the binding cap; the timber she
 dotnet test bclone.sln --nologo -v q
 ```
 
-**Background it and wait for the notification. Do not start a second run while one is going** —
+**It is fast enough to run in the foreground now** (D179 took it from nineteen minutes to two and a half). **Do not start a second run while one is going** —
 and **check `Get-Process testhost` first**: one session found the *previous* session's run still
 alive on thirteen cores, holding the lock on `Bclone.Sim.dll`, with nobody left to read its
 output. Note the CPU figure is summed across cores, so a healthy run shows far more CPU-seconds

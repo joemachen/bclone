@@ -92,7 +92,6 @@ public sealed class TerrainCostField
         int width = map.Width;
         int height = map.Height;
         var cost = new int[width * height];
-        var settled = new bool[width * height];
 
         for (int i = 0; i < cost.Length; i++)
         {
@@ -113,26 +112,57 @@ public sealed class TerrainCostField
 
         cost[start] = 0;
 
-        while (true)
+        // ⭐⭐ A BREADTH-FIRST SWEEP, BECAUSE EVERY EDGE COSTS THE SAME (D179).
+        //
+        // This was a textbook Dijkstra: for each of the valley's tiles, scan ALL of them for
+        // the cheapest unsettled one. That is O(n²) — **about 92 million iterations for a
+        // 120×80 valley, per field** — and it was measured at **99 ms a field, 41 fields per
+        // founding, four seconds to build a world**, which is very nearly the entire test
+        // suite (`DESIGN.md` D179).
+        //
+        // ⭐ THE PRIORITY QUEUE IS NOT NEEDED, WHICH IS THE WHOLE TRICK. Dijkstra earns its
+        // keep when edges have *different* weights; here every step costs `baseTileCost` and
+        // movement is four-way, so **the cheapest unsettled tile is always simply the next one
+        // out of a FIFO queue.** With uniform weights, Dijkstra *is* breadth-first search.
+        //
+        // ⚠️ AND THE RESULT IS PROVABLY IDENTICAL, WHICH IS WHY THIS IS SAFE TO DO TO A P0.
+        // Shortest-path distance is a property of the graph, not of the order it is explored
+        // in — so `cost[]` comes out byte-for-byte the same, and `StepFrom` reads nothing but
+        // `cost[]` in a fixed neighbour order. **The old comment about ties being broken by
+        // tile order was describing something that could not affect the answer**: two tiles at
+        // equal cost settle in either order and both get the same number either way.
+        //
+        // A tile enters the queue exactly once — the first relaxation is always the cheapest,
+        // because BFS reaches tiles in non-decreasing cost — so the queue never needs to hold
+        // more than one entry per tile and no tile is ever re-examined.
+        //
+        // ⛔⛔ AND HERE IS THE TRAP, FOR WHOEVER BUILDS DESIRE-PATH ROADS (§2.6).
+        //
+        // **This is correct ONLY while every passable tile costs the same to cross.** §2.6 is
+        // a planned pillar and it says, in as many words, that crossing thresholds *"shifts
+        // the tile visually and **lowers pathfinding cost**, creating a reinforcement loop"*.
+        // **The day a worn path is cheaper than grass, breadth-first search silently returns
+        // wrong answers** — it will keep the first route it finds rather than the cheapest,
+        // and nothing here will throw.
+        //
+        // **What to do then:** go back to a priority queue — `PriorityQueue<int, long>` keyed
+        // on `((long)cost << 20) | index`, which keeps the tie-break this file used to
+        // describe and stays O(E log V) rather than the O(n²) scan that cost four seconds a
+        // world. **Do not go back to the scan.**
+        //
+        // ⚠️ It will not announce itself. Every guard in the suite would still pass on the day
+        // roads land, because they all describe a valley where the rule still holds — and the
+        // symptom would be villagers taking scenic routes for a phase before anybody noticed.
+        // *That is why this paragraph is here rather than in a decision nobody greps for.*
+        var queue = new int[cost.Length];
+        int head = 0;
+        int tail = 0;
+        queue[tail++] = start;
+
+        while (head < tail)
         {
-            // Cheapest unsettled tile, ties broken by tile order — see the remarks.
-            int current = -1;
-            int currentCost = Unreachable;
-            for (int i = 0; i < cost.Length; i++)
-            {
-                if (!settled[i] && cost[i] < currentCost)
-                {
-                    current = i;
-                    currentCost = cost[i];
-                }
-            }
-
-            if (current < 0)
-            {
-                break;
-            }
-
-            settled[current] = true;
+            int current = queue[head++];
+            int currentCost = cost[current];
 
             int x = current % width;
             int y = current / width;
@@ -149,6 +179,14 @@ public sealed class TerrainCostField
                     return;
                 }
 
+                int index = (ny * width) + nx;
+                if (cost[index] != Unreachable)
+                {
+                    // Already reached, and by a route that cannot be beaten: BFS arrives in
+                    // non-decreasing cost, so the first arrival is the cheapest one.
+                    return;
+                }
+
                 var neighbour = new GridPos(nx + map.MinX, ny + map.MinY);
                 if (!TerrainRules.IsPassable(map.TerrainAt(neighbour)))
                 {
@@ -157,12 +195,8 @@ public sealed class TerrainCostField
                     return;
                 }
 
-                int index = (ny * width) + nx;
-                int candidate = currentCost + baseTileCost;
-                if (candidate < cost[index])
-                {
-                    cost[index] = candidate;
-                }
+                cost[index] = currentCost + baseTileCost;
+                queue[tail++] = index;
             }
         }
 

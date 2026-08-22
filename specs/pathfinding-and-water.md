@@ -2,6 +2,10 @@
 
 > Status: **built 2026-07-28 — see §12** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements **D40**; slice 2 of `specs/seeded-map-generation.md §11`.
+>
+> **⭐⭐ THE FIELD IS A BREADTH-FIRST SWEEP SINCE D179, AND THAT CARRIES ONE CONDITION.** It was an O(n²) Dijkstra — a full scan of the valley for the cheapest unsettled tile, per tile — measured at **99 ms a field, 41 fields per founding, four seconds to build a world**, which was very nearly the whole test suite (**18m52s → 2m30s** when it changed). **Dijkstra earns its keep only when edges have different weights; here every step costs `travel_ticks_per_unit`, so the cheapest unsettled tile is always simply the next one out of a FIFO queue.** The result is provably identical — shortest-path distance is a property of the graph, not of the order it is explored in — and the proof is that **all four goldens and the determinism test were unmoved.**
+>
+> **⛔ THE CONDITION, AND IT IS AIMED AT `DESIGN.md §2.6`:** desire-path roads say that crossing thresholds *"lowers pathfinding cost, creating a reinforcement loop."* **The day a worn path is cheaper than grass, breadth-first search silently returns wrong answers** — it keeps the first route rather than the cheapest, and nothing throws. **Go back to a priority queue then** (`PriorityQueue<int, long>` keyed on `((long)cost << 20) | index`), **never to the scan.** ⚠️ **No guard in the suite would catch it**, because they all describe a valley where the rule still holds.
 
 ---
 
