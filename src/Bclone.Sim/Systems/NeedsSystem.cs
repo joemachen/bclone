@@ -6,7 +6,7 @@ using Bclone.Sim.World;
 namespace Bclone.Sim.Systems;
 
 /// <summary>
-/// Step 2 of the tick order: hunger rises.
+/// Step 4 of the tick order: hunger rises.
 /// </summary>
 /// <remarks>
 /// Also tracks how long the villager has sat at maximum hunger, which is what

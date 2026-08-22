@@ -32,25 +32,43 @@ public sealed class LabourTests
     [Fact]
     public void NoPublicApiLetsACallerAssignAVillagerToAWorkplace()
     {
-        // The Banished pattern being deleted is slotting N workers into a building.
-        // The surest way not to drift back toward it is to make it unexpressible, so
-        // this asserts the absence of the API rather than trusting nobody adds one.
+        // The Banished pattern being deleted is slotting a NAMED WORKER into a
+        // building. The surest way not to drift back toward it is to make it
+        // unexpressible, so this asserts the absence of the API rather than trusting
+        // nobody adds one.
+        //
+        // NARROWED FOR D51, deliberately and with the line restated. The player may now
+        // say how many hands a workplace gets — SimWorld.SetStaffing — and that is not
+        // this pattern: it sets a COUNT, and proximity, household and catchment still
+        // choose the person, so every "why is Elias here?" sentence stays true. What
+        // must remain impossible is naming a villager and binding them to a workplace.
+        // So the guard now tests the signature rather than the verb: no public method
+        // may take both a villager and a workplace.
         var offenders = new List<string>();
 
         foreach (Type type in typeof(SimWorld).Assembly.GetExportedTypes())
         {
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
-                string name = method.Name;
-                bool soundsLikeAssignment =
-                    name.Contains("Assign", StringComparison.OrdinalIgnoreCase)
-                    || name.Contains("Hire", StringComparison.OrdinalIgnoreCase)
-                    || name.Contains("SetJob", StringComparison.OrdinalIgnoreCase)
-                    || name.Contains("SetWorker", StringComparison.OrdinalIgnoreCase);
-
-                if (soundsLikeAssignment)
+                if (method.ReturnType != typeof(void))
                 {
-                    offenders.Add($"{type.Name}.{name}");
+                    // A method that hands something back is answering a question, not
+                    // issuing an order — "how far is Elias from the stand?" is a reader,
+                    // whatever its parameters are.
+                    continue;
+                }
+
+                bool takesAVillager = false;
+                bool takesAWorkplace = false;
+                foreach (ParameterInfo parameter in method.GetParameters())
+                {
+                    takesAVillager |= parameter.ParameterType == typeof(Villager);
+                    takesAWorkplace |= parameter.ParameterType == typeof(Workplace);
+                }
+
+                if (takesAVillager && takesAWorkplace)
+                {
+                    offenders.Add($"{type.Name}.{method.Name}");
                 }
             }
         }
@@ -120,7 +138,7 @@ public sealed class LabourTests
     [Fact]
     public void AWorkplaceNeverExceedsItsCapacity()
     {
-        SimLoop loop = Build(Config with { ForageSiteCapacity = 3 });
+        SimLoop loop = Build(Config with { GathererHutRingTiles = 2 });
         loop.Step(30_000);
 
         foreach (Workplace workplace in loop.World.Workplaces)
@@ -131,39 +149,24 @@ public sealed class LabourTests
         }
     }
 
-    [Fact]
-    public void NobodyWalksAcrossTheMapForOneLog()
-    {
-        // The named failure mode in DESIGN.md §2.2. Catchment is the guard.
-        SimLoop loop = Build(Config with { ForagerCatchmentTiles = 6 });
-        loop.Step(30_000);
-
-        foreach (Villager villager in loop.World.Villagers)
-        {
-            if (!villager.HasJob)
-            {
-                continue;
-            }
-
-            Workplace workplace = loop.World.FindWorkplace(villager.WorkplaceId)!;
-            Assert.True(LabourSystem.InCatchment(loop.World, villager, workplace),
-                $"{villager.Name} works at {workplace.Name} from outside its catchment.");
-        }
-    }
-
-    [Fact]
-    public void AVillagerTooFarAwayTakesNoWork()
-    {
-        // A catchment of one tile reaches nobody: every home is further than that
-        // from the berry patch.
-        SimLoop loop = Build(Config with { ForagerCatchmentTiles = 1 });
-        loop.Step(Config.TicksPerSeason * 2);
-
-        foreach (Villager villager in loop.World.Villagers)
-        {
-            Assert.False(villager.HasJob);
-        }
-    }
+    // ⛔ TWO GUARDS DELETED HERE, AND THE DESIGN THEY GUARDED IS WHY.
+    //
+    // `NobodyWalksAcrossTheMapForOneLog` and `AVillagerTooFarAwayTakesNoWork` both asserted
+    // that a villager can never hold a job outside its catchment — squeezing the radius to
+    // six and to one to prove the fence bound. **Catchment is deleted**
+    // (`forests-and-gathering.md §3`, Joe: *"get rid of the ring and the distance
+    // restrictions"*), so they are not failing guards, they are guards about a rule the game
+    // no longer has.
+    //
+    // ⚠️ **§2.2's "villager who walks across the map for one log" is still refused — by a
+    // different mechanism**, and that is the part worth not losing. It used to be forbidden;
+    // it is now *unattractive and legible*: the allocator sorts candidates by travel cost so
+    // the nearest hands are claimed first, and a walk that eats the working day says so on
+    // the villager. Both halves are guarded in `LabourAllocationTests` —
+    // `EveryVillagerHoldsTheNearestWorkplaceWithRoom`, `ARuinousCommuteSaysSoOnTheVillager`
+    // and `SomebodyWorksFurtherThanTheOldFenceWouldHaveAllowed` between them say everything
+    // these two said, about the design that exists. Duplicating them here would be two
+    // copies to keep in step.
 
     // ---------------------------------------------------------------
     //  Legibility — the phase's actual deliverable
@@ -196,7 +199,13 @@ public sealed class LabourTests
         Villager worker = loop.World.Villagers[0];
         _output.WriteLine($"{worker.Name}: {worker.JobReason}");
 
-        Assert.Contains("berry patch", worker.JobReason, StringComparison.OrdinalIgnoreCase);
+        // The place they ACTUALLY hold, not "the berry patch" by name. The valley is
+        // generated now (D18), so which of several thickets is nearest to villager
+        // zero is a property of the seed — and a test that pinned the name was
+        // asserting the map rather than the sentence.
+        Workplace? held = loop.World.FindWorkplace(worker.WorkplaceId);
+        Assert.NotNull(held);
+        Assert.Contains(held!.Name, worker.JobReason, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("tiles", worker.JobReason, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -250,8 +259,8 @@ public sealed class LabourTests
         // same villager must win it every single run, or the village desyncs.
         for (int attempt = 0; attempt < 5; attempt++)
         {
-            SimLoop a = Build(Config with { ForageSiteCapacity = 1 });
-            SimLoop b = Build(Config with { ForageSiteCapacity = 1 });
+            SimLoop a = Build(Config with { GathererHutRingTiles = 1 });
+            SimLoop b = Build(Config with { GathererHutRingTiles = 1 });
 
             a.Step(Config.TicksPerSeason);
             b.Step(Config.TicksPerSeason);
@@ -295,19 +304,158 @@ public sealed class LabourTests
         Assert.NotEqual(before, StateHash.Compute(loop.World));
     }
 
+    /// <summary>Job-based foraging still feeds a growing village, and starves nobody.</summary>
+    /// <remarks>
+    /// Foraging is gated on holding a job. If assignment is too slow, too narrow, or drops
+    /// workers, the village starves — so the economy is the real test of the labour system.
+    /// <b>Measured on the way up rather than at year 150 (D143):</b> nobody has managed this
+    /// village for a century and a half, and Joe's ruling is that such a village <em>should</em>
+    /// age out. What the labour system owes is that everyone who is alive is fed — the peak,
+    /// and a death list with no hunger in it.
+    /// </remarks>
     [Fact]
     public void TheVillageStillSustainsItselfOnJobBasedForaging()
     {
-        // Foraging is now gated on holding a job. If assignment is too slow, too
-        // narrow, or drops workers, the village starves - so the economy is the
-        // real test of the labour system.
         SimLoop loop = Build(Config);
-        loop.Step(Config.TicksPerYear * 150);
+
+        int peak = 0;
+        for (int year = 1; year <= 150; year++)
+        {
+            loop.Step(Config.TicksPerYear);
+            peak = System.Math.Max(peak, loop.World.Population);
+        }
+
+        int starved = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (!villager.Alive && villager.CauseOfDeath == CauseOfDeath.Starvation)
+            {
+                starved++;
+            }
+        }
 
         _output.WriteLine(
-            $"Year {loop.World.Clock.Year}: {loop.World.Population} alive, " +
-            $"{loop.World.Workplaces[0].WorkerIds.Count} foraging.");
+            $"Peaked at {peak}; year {loop.World.Clock.Year}: {loop.World.Population} alive, " +
+            $"{loop.World.Workplaces[0].WorkerIds.Count} foraging, {starved} ever starved.");
 
-        Assert.True(loop.World.Population > Config.StartingPopulation);
+        Assert.True(peak >= 25,
+            $"Job-based foraging only ever fed {peak} people from {Config.StartingPopulation}.");
+
+        // ⚠️ HUNGER IS A MINORITY OF DEATHS, NOT ZERO (D155). This asserted nobody ever starved,
+        // which was true while the birth gate held the village well under what it could feed.
+        // Joe loosened that gate deliberately — the village grows to ~50 now instead of sitting
+        // at 20 — and the price he accepted is that some people go hungry on the way. **The
+        // claim that survives is the one that separates pressure from disaster:** most people
+        // must still die of old age, which is the same line `FirewoodTests` and
+        // `ShippedConfigTests` already draw.
+        int aged = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (!villager.Alive && villager.CauseOfDeath == CauseOfDeath.OldAge)
+            {
+                aged++;
+            }
+        }
+
+        Assert.True(aged > starved,
+            $"{starved} starved against {aged} of old age — hunger has stopped being pressure "
+            + "and become the normal way to die.");
+    }
+
+    // ---------------------------------------------------------------
+    //  Winter (D44, D52)
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void NobodyIsStaffedToABerryPatchInWinter()
+    {
+        // D44's bug, asserted. The quota had no idea what season it was, so the food
+        // floor was staffed all winter and every spare hand was poured into foraging
+        // on top of it — onto patches with nothing on them. BehaviorSystem then sent
+        // the lot of them home. A quarter of the working year, resting, by whoever
+        // held the commonest job in the village.
+        SimLoop loop = Build(Config);
+
+        int wintersSeen = 0;
+        for (int year = 1; year <= 20; year++)
+        {
+            for (int season = 0; season < 4; season++)
+            {
+                loop.Step(Config.TicksPerSeason);
+
+                LabourQuota quota = LabourQuota.For(loop.World);
+                if (SeasonRules.IsGatherable(loop.World.Clock.Season))
+                {
+                    continue;
+                }
+
+                wintersSeen++;
+                Assert.True(quota.Foragers == 0,
+                    $"The village wants {quota.Foragers} foraging in " +
+                    $"{loop.World.Clock.SeasonAndYear()}, when there is nothing to pick.");
+            }
+        }
+
+        _output.WriteLine($"{wintersSeen} winter readings, none of them staffing a berry patch.");
+        Assert.True(wintersSeen > 0, "No winter was ever sampled, so this guard is vacuous (D7).");
+    }
+
+    [Fact]
+    public void NobodyIsPutOnTheStandWhenNoOneWantsTheTimber()
+    {
+        // D52, and the reason the first idle-winter fix was wrong. Spare winter hands
+        // were sent to the woods, bounded only by the tree stands' seats and by "is any
+        // shed not yet full?" — which bounds the SHED, not the work. Demand for timber
+        // is answered twice over in LabourQuota.For, by ForestersWanted for the houses
+        // and by the hut chain for firewood, and both are funded before that fill ran.
+        // So when BOTH said nobody, the fill still staffed every seat.
+        //
+        // What it cost, because a staffing bug is never only a staffing bug: THE SHED
+        // IS ONE ROOM (D33), logs and firewood share its capacity, so timber nobody
+        // wanted crowded out the fuel. The birth gate reads a household's own firewood,
+        // and the village quietly stopped having children — a mean population of 14
+        // against 22 without the fill, with a full larder, a full shed, nobody starving
+        // and nobody freezing.
+        //
+        // Asserted against the two demand questions rather than against the shed,
+        // because the shed is downstream. A shed legitimately fills; what must never
+        // happen is a hand being spent on a good the village has no use for.
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+
+        int idleDemandSeen = 0;
+        int inWinter = 0;
+
+        for (int season = 1; season <= 200 * 4; season++)
+        {
+            loop.Step(config.TicksPerSeason);
+
+            if (LabourQuota.ForestersWanted(loop.World) > 0
+                || LabourQuota.WoodcuttersWanted(loop.World) > 0)
+            {
+                continue;
+            }
+
+            idleDemandSeen++;
+            if (!SeasonRules.IsGatherable(loop.World.Clock.Season))
+            {
+                inWinter++;
+            }
+
+            LabourQuota quota = LabourQuota.For(loop.World);
+            Assert.True(quota.Foresters == 0,
+                $"The village wants {quota.Foresters} at the stand in " +
+                $"{loop.World.Clock.SeasonAndYear()}, with no house waiting on timber and no " +
+                $"firewood wanted. It already holds {loop.World.TotalLogs()} logs.");
+        }
+
+        _output.WriteLine(
+            $"{idleDemandSeen} seasons wanted no timber at all, {inWinter} of them winters.");
+
+        // Anti-vacuity (D7), and the winter half matters on its own: the fill only ever
+        // ran in winter, so a run that never sampled one would prove nothing about it.
+        Assert.True(inWinter > 0,
+            "The village never once went a winter with no use for timber, so this guard is " +
+            "vacuous (D7) — the case it exists for did not happen.");
     }
 }

@@ -36,17 +36,26 @@ public sealed class HouseholdSystem : ISimSystem
             return;
         }
 
-        // Neighbours help every season. Annually was far too coarse - a household
-        // can go from full to empty inside a single winter, so the yearly check
-        // arrived months after the funerals.
-        if (world.Tick % (ulong)config.TicksPerSeason == 0UL)
-        {
-            ShareFood(world, config);
-        }
-
         // Births and household formation resolve only on a year boundary - a
         // household does not reconsider four times a day, and it keeps the log to
         // one line per event.
+        // THE ROOFLESS ARE ANSWERED EVERY DAY, NOT EVERY NEW YEAR (D72).
+        //
+        // Everything else here is deliberately annual — a household does not reconsider
+        // having children four times a day, and the annual cadence keeps the log to one
+        // line per event. Housing a family that is standing in the open cannot wait that
+        // long: the founders arrive in spring, the next year boundary is after winter, and
+        // measured, they freeze to death before the pass that would have housed them ever
+        // runs. A family in the open does not wait for New Year's Day to be given the
+        // house the village can already afford.
+        //
+        // Cheap to run: it walks the households and leaves immediately once they all have
+        // roofs, which is every tick of an established village.
+        if (world.Tick % (ulong)config.TicksPerDay == 0UL)
+        {
+            HouseTheRoofless(world, config);
+        }
+
         if (world.Tick % (ulong)config.TicksPerYear != 0UL)
         {
             return;
@@ -66,96 +75,6 @@ public sealed class HouseholdSystem : ISimSystem
         {
             TryBirth(world, world.Households[i], config, year);
         }
-    }
-
-    /// <summary>
-    /// Households with a surplus give to households that are short.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This is the sharing policy decision D14 promised alongside per-household
-    /// stores, and without it the village dies of a specific and repeatable cause: a
-    /// parent dies, and the widowed survivor has to feed the children alone on
-    /// declining vigour. One worker cannot support a house that two built. Thirteen
-    /// of twenty-four villagers starved that way while their neighbours had food.
-    /// </para>
-    /// <para>
-    /// <b>This is a placeholder for a building.</b> The intended form is a manned
-    /// market or food stall that redistributes within its catchment — distribution
-    /// as a job someone does, not a rule the world enforces from nowhere (D14,
-    /// DESIGN.md §2.2). Keeping it deliberately simple here makes it easy to delete
-    /// when the market arrives.
-    /// </para>
-    /// <para>
-    /// Givers and receivers are both walked in household-id order, and each transfer
-    /// is capped by what the giver can spare — so no household is ever pushed into
-    /// need by its own generosity, and the order of transfers is fixed.
-    /// </para>
-    /// </remarks>
-    private static void ShareFood(SimWorld world, SimConfig config)
-    {
-        for (int r = 0; r < world.Households.Count; r++)
-        {
-            Household needy = world.Households[r];
-            int need = ShortfallOf(world, needy, config);
-            if (need <= 0)
-            {
-                continue;
-            }
-
-            for (int g = 0; g < world.Households.Count && need > 0; g++)
-            {
-                Household giver = world.Households[g];
-                if (giver.Id == needy.Id)
-                {
-                    continue;
-                }
-
-                int spare = SurplusOf(world, giver, config);
-                if (spare <= 0)
-                {
-                    continue;
-                }
-
-                int gift = spare < need ? spare : need;
-                if (!giver.Stockpile.TryTake(gift))
-                {
-                    continue;
-                }
-
-                needy.Stockpile.Add(gift);
-                need -= gift;
-
-                world.Narrate(
-                    $"The {giver.Name} household shared {gift} food with the {needy.Name} household " +
-                    $"— {world.Clock.SeasonAndYear()}.");
-            }
-        }
-    }
-
-    /// <summary>How far below a survivable store a household is.</summary>
-    private static int ShortfallOf(SimWorld world, Household household, SimConfig config)
-    {
-        if (world.LivingMembersOf(household) == 0)
-        {
-            return 0;
-        }
-
-        int floor = world.TargetFoodFor(household) * config.SharingNeedPercent / 100;
-        return floor - household.Stockpile.Food;
-    }
-
-    /// <summary>What a household can give away without going short itself.</summary>
-    private static int SurplusOf(SimWorld world, Household household, SimConfig config)
-    {
-        if (world.LivingMembersOf(household) == 0)
-        {
-            // A house whose family has died keeps nothing back.
-            return household.Stockpile.Food;
-        }
-
-        int keep = world.TargetFoodFor(household) * config.SharingKeepPercent / 100;
-        return household.Stockpile.Food - keep;
     }
 
     /// <summary>
@@ -181,6 +100,88 @@ public sealed class HouseholdSystem : ISimSystem
     /// a parent or a sibling.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Raise a house for a family that has one already and lives in the open (D72).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The path the cold start needed and did not have.</b> Until D70 there was exactly
+    /// one way for a house to get built — an unpaired adult finds a partner and the pair
+    /// moves out — so <em>wanting a house</em> and <em>forming a couple</em> were the same
+    /// event. The founders are already paired and already a household; they simply have no
+    /// roof, which was a state the sim could not previously represent and therefore could
+    /// not answer.
+    /// </para>
+    /// <para>
+    /// <b>Found by playing it, not by reasoning about it.</b> Joe's first cold start: all
+    /// four founders froze in winter 1 without a single log being cut, and the tree stand
+    /// read <em>"the village wants 0 on this kind of work"</em> — because
+    /// <c>ForestersWanted</c> counted only unpaired seekers, and because even with timber
+    /// nothing would have spent it. Two halves of one gap.
+    /// </para>
+    /// <para>
+    /// Ordered before <see cref="FormNewHouseholds"/>: a family in the open has a better
+    /// claim on the village's timber than a couple wanting to move out of a house that
+    /// already exists.
+    /// </para>
+    /// </remarks>
+    private static void HouseTheRoofless(SimWorld world, SimConfig config)
+    {
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (household.HasHome || world.LivingMembersOf(household) == 0)
+            {
+                continue;
+            }
+
+            // An empty house is a house — the same rule new couples get, and for the same
+            // reason: standing among your own empty homes while felling more trees is an
+            // absurdity, not a hard decision.
+            Household? standingEmpty = FindAnEmptyHome(world);
+            if (standingEmpty is not null)
+            {
+                household.HomePosition = standingEmpty.HomePosition;
+                standingEmpty.HomePosition = null;
+                world.Narrate(
+                    $"The {household.Name} household moved into the empty house at "
+                    + $"{household.HomePosition} — {world.Clock.SeasonAndYear()}.");
+                continue;
+            }
+
+            // ⭐ A HOUSE IS MARKED OUT, NOT CONJURED (D102). It used to take the timber
+            // straight out of the stores and set HomePosition in the same tick, which is the
+            // inconsistency `specs/cold-start.md §7.1b` has been carrying since Joe watched
+            // it: "immediate builds, not a visual timed thing like other buildings."
+            //
+            // No timber is taken here now. A builder hauls it, like every other site — which
+            // is D43's rule about construction not being a purchase, finally applied to the
+            // building the village raises most often.
+            if (world.HomeSiteFor(household.Id) is not null)
+            {
+                // Already being built for them. Asked rather than flagged, so a cancelled
+                // site cannot leave a family waiting for a house forever.
+                continue;
+            }
+
+            try
+            {
+                world.MarkHome(household.Id, Household.ChooseSite(world, world.Map.FoundingSite));
+                world.NeedsMoreResidentialLand = false;
+            }
+            catch (Household.NoRoomToBuildException)
+            {
+                if (!world.NeedsMoreResidentialLand)
+                {
+                    world.NeedsMoreResidentialLand = true;
+                    world.Narrate(
+                        $"The {household.Name} household has nowhere to build — "
+                        + "paint some land for houses.");
+                }
+            }
+        }
+    }
+
     private static void FormNewHouseholds(SimWorld world, SimConfig config, int year)
     {
         // Snapshot: a villager who pairs this year must not also be considered as
@@ -201,15 +202,59 @@ public sealed class HouseholdSystem : ISimSystem
                 continue;
             }
 
-            // A home has to be BUILT. Until the two families between them have the
-            // timber, the couple waits - which is what makes cutting wood matter,
-            // and ties how fast the village spreads to how it spends its labour.
-            if (!TryTakeBuildingTimber(world, seeker, partner, config, out int timber))
+            // An empty house is a house. A couple moves into one that has outlived its
+            // family rather than felling thirty logs to raise another beside it.
+            //
+            // Measured, and it was killing the village at about year 125: the
+            // settlement held steady at eleven people but had built FIFTEEN houses,
+            // and every one of them cost logs that firewood needed. The log pile grew
+            // to a thousand, then drained to nothing, and once there were no logs
+            // there was no firewood and people froze. A village standing among its own
+            // empty houses while it fells more trees to build another is not a hard
+            // decision, it is an absurdity.
+            Household? standingEmpty = FindAnEmptyHome(world);
+            if (standingEmpty is not null)
             {
+                MoveInTogether(world, seeker, partner, standingEmpty, config);
                 continue;
             }
 
-            Pair(world, seeker, partner, config, timber);
+            // Otherwise a home has to be BUILT — marked out and raised by somebody, like
+            // every other building (D102). The couple pairs off now and waits for the roof,
+            // which is what ties how fast the village spreads to how it spends its labour.
+            //
+            // No timber is drawn here any more: a builder hauls it to the site.
+            try
+            {
+                Pair(world, seeker, partner, config);
+
+                // Somebody got their home, so the village is no longer asking. Cleared
+                // here rather than by the view noticing free land: the request means "a
+                // couple is waiting", and the honest answer to "are they still waiting?"
+                // is whether one of them has since moved out.
+                world.NeedsMoreResidentialLand = false;
+            }
+            catch (Household.NoRoomToBuildException noRoom)
+            {
+                // The painted land is full. Nothing to hand back — no timber is drawn until
+                // a builder carries it to the site (D102).
+
+                // AND THE VILLAGE ASKS FOR MORE LAND. This is the other half of the
+                // brush (D42): the game says when a decision is due rather than
+                // expecting the player to notice a couple quietly not moving out.
+                // Narrated once, so it reads as people waiting rather than as an error
+                // repeating every year until somebody dies.
+                if (!world.NeedsMoreResidentialLand)
+                {
+                    world.NeedsMoreResidentialLand = true;
+                    world.Narrate(
+                        $"{seeker.Name} and {partner.Name} want a home of their own and there is " +
+                        $"nowhere to put one — {noRoom.Message}. The village needs somewhere new " +
+                        $"to build. {world.Clock.SeasonAndYear()}.");
+                }
+
+                continue;
+            }
         }
     }
 
@@ -250,100 +295,66 @@ public sealed class HouseholdSystem : ISimSystem
         return null;
     }
 
-    /// <summary>
-    /// Draw the timber for a new house — the two parent households first, then the
-    /// rest of the village — or take nothing.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// All-or-nothing on purpose: half-taken timber would leave the givers poorer with
-    /// no house to show for it, and the couple would try again next year and pay
-    /// twice.
-    /// </para>
-    /// <para>
-    /// <b>The village makes up the difference, and it has to.</b> Drawing from the two
-    /// parent households alone looked right — the families provide for their children
-    /// — but timber is cut by whoever lives nearest the stand, who is very often
-    /// nobody's parent. So the village would cut wood year after year, pile it in the
-    /// woodcutter's own house where it could not be spent, and no home would ever get
-    /// built. Every settlement stalled at a handful of houses and aged out without a
-    /// single villager starving. Raising a house is communal work; the store it comes
-    /// out of is the village's.
-    /// </para>
-    /// </remarks>
-    private static bool TryTakeBuildingTimber(
-        SimWorld world, Villager a, Villager b, SimConfig config, out int taken)
+    // `TryTakeBuildingTimber` WAS HERE AND IS GONE (D102). It drew a house's timber straight
+    // out of the village's stores in one tick, which is what made a house instant — and it was
+    // itself the fix for something worse (D25's sweep across every household's private pile).
+    //
+    // A builder hauls the logs to the site now, exactly as they do for a granary, so the
+    // question "where does the timber come from?" has one answer for every building rather
+    // than two. Deleted rather than left unused, per D57: a method nobody calls is a method
+    // somebody re-reads and believes.
+    /// <summary>The lowest-id house nobody lives in any more, or null.</summary>
+    /// <remarks>Lowest id, so which house a couple takes is a fact about the village
+    /// rather than about iteration — and it means the oldest empty home fills first,
+    /// which is also how a village would actually do it.</remarks>
+    private static Household? FindAnEmptyHome(SimWorld world)
     {
-        taken = 0;
-        if (config.WoodPerHouse == 0)
-        {
-            return true;
-        }
-
-        Household homeA = world.HouseholdOf(a);
-        Household homeB = world.HouseholdOf(b);
-
-        if (TotalWood(world) < config.WoodPerHouse)
-        {
-            return false;
-        }
-
-        // Parents first, then everyone else in household-id order, so who paid for a
-        // house is a fixed fact rather than an artifact of iteration.
-        taken += TakeUpTo(homeA, config.WoodPerHouse - taken);
-        taken += TakeUpTo(homeB, config.WoodPerHouse - taken);
-
-        for (int i = 0; i < world.Households.Count && taken < config.WoodPerHouse; i++)
-        {
-            Household other = world.Households[i];
-            if (other.Id == homeA.Id || other.Id == homeB.Id)
-            {
-                continue;
-            }
-
-            taken += TakeUpTo(other, config.WoodPerHouse - taken);
-        }
-
-        return taken >= config.WoodPerHouse;
-    }
-
-    private static int TakeUpTo(Household household, int wanted)
-    {
-        if (wanted <= 0)
-        {
-            return 0;
-        }
-
-        int available = household.Stockpile.Wood < wanted ? household.Stockpile.Wood : wanted;
-        return household.Stockpile.TryTakeWood(available) ? available : 0;
-    }
-
-    /// <summary>Every stick of timber the village has between it.</summary>
-    private static int TotalWood(SimWorld world)
-    {
-        int total = 0;
         for (int i = 0; i < world.Households.Count; i++)
         {
-            total += world.Households[i].Stockpile.Wood;
+            if (world.LivingMembersOf(world.Households[i]) == 0)
+            {
+                return world.Households[i];
+            }
         }
 
-        return total;
+        return null;
     }
 
-    private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config, int timber)
+    private static void Pair(SimWorld world, Villager a, Villager b, SimConfig config)
     {
-        Household oldHome = world.HouseholdOf(a);
-        Household partnerHome = world.HouseholdOf(b);
-
-        GridPos home = Household.PlacementFor(
-            world.Households.Count, config.HomeX, config.HomeY, config.HouseholdSpacing);
+        // Chosen with regard to where the work is, rather than the next spot on a
+        // spiral (see Household.ChooseSite). This is what makes a generated valley
+        // habitable by construction instead of by a lucky ring radius. It throws if the
+        // painted land is full, BEFORE the household exists — so a couple is never left
+        // half-formed by a site that could not be found.
+        GridPos site = Household.ChooseSite(world, world.Map.FoundingSite);
 
         var household = new Household
         {
             Id = NextHouseholdId(world),
             Name = config.HouseholdNames[world.Households.Count % config.HouseholdNames.Count],
-            HomePosition = home,
+
+            // ⭐ NO ROOF YET (D102). The house is marked out below and somebody has to build
+            // it; until then this couple is homeless, which is a state the sim has had since
+            // the cold start (`specs/cold-start.md §3`) and which D71 already attaches a rule
+            // to: no roof, no children.
+            HomePosition = null,
         };
+
+        world.Households.Add(household);
+        MoveInTogether(world, a, b, household, config);
+        world.MarkHome(household.Id, site);
+    }
+
+    private static void MoveInTogether(
+        SimWorld world, Villager a, Villager b, Household household, SimConfig config)
+    {
+        Household oldHome = world.HouseholdOf(a);
+        Household partnerHome = world.HouseholdOf(b);
+
+        // A house if there is one — a couple taking over one standing empty — and null if
+        // theirs is still being built (D102). Homeless is a real state, not an error.
+        GridPos? home = household.HomePosition;
 
         // Each family sends their child off with a share of the larder. Without it a
         // new household starts on empty and can be wiped out by its first winter
@@ -357,13 +368,16 @@ public sealed class HouseholdSystem : ISimSystem
         a.PartnerId = b.Id;
         b.PartnerId = a.Id;
 
-        household.Stockpile.Add(dowry);
-        world.Households.Add(household);
+        // A dowry is goods changing hands, not goods produced.
+        household.Stockpile.Receive(Goods.Food, dowry);
 
-        world.Narrate(
-            $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
-            $"built a home of their own - the {household.Name} household, {world.Clock.SeasonAndYear()}. " +
-            $"{timber} timber and {dowry} food between them.");
+        world.Narrate(home is null
+            ? $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
+              $"started the {household.Name} household - {world.Clock.SeasonAndYear()}. " +
+              $"{dowry} food between them, and a house being raised for them."
+            : $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
+              $"took over the empty {household.Name} house - {world.Clock.SeasonAndYear()}. " +
+              $"{dowry} food between them, and no trees felled for it.");
     }
 
     /// <summary>
@@ -378,14 +392,22 @@ public sealed class HouseholdSystem : ISimSystem
             share = config.StockpileTarget;
         }
 
-        return from.Stockpile.TryTake(share) ? share : 0;
+        return from.Stockpile.TryTake(Goods.Food, share) ? share : 0;
     }
 
-    private static void MoveIn(SimWorld world, Villager villager, Household household, GridPos home)
+    private static void MoveIn(
+        SimWorld world, Villager villager, Household household, GridPos? home)
     {
         world.HouseholdOf(villager).RemoveMember(villager.Id);
         villager.HouseholdId = household.Id;
-        villager.Position = home;
+
+        // Only if there is a door to stand at. A couple whose house is still being built
+        // stays where they are and rests wherever RestingPlaceOf sends them (D102).
+        if (home is GridPos doorstep)
+        {
+            villager.Position = doorstep;
+        }
+
         household.AddMember(villager.Id);
     }
 
@@ -429,7 +451,12 @@ public sealed class HouseholdSystem : ISimSystem
             AgeYears = 0,
             LifeStage = LifeStage.Child,
             HouseholdId = household.Id,
-            Position = household.HomePosition,
+
+            // Born at home, and there is always one: IsReadyForAChild refuses a household
+            // with no roof (D71), so a child cannot be born into the open.
+            Position = household.HomePosition
+                ?? throw new InvalidOperationException(
+                    $"A child was born to the {household.Name} household, which has no house."),
         };
 
         household.AddMember(child.Id);
@@ -452,7 +479,46 @@ public sealed class HouseholdSystem : ISimSystem
     /// </remarks>
     public static bool IsReadyForAChild(SimWorld world, Household household, SimConfig config, int year)
     {
-        if (household.MemberIds.Count >= config.MaxHouseholdSize)
+        // ROOM IN THE HOUSE MEANS LIVING PEOPLE UNDER THE ROOF.
+        //
+        // This read MemberIds.Count, which is everyone who has EVER belonged to this
+        // household: RemoveMember is called when somebody moves out and never when
+        // somebody dies, so the dead stay on the list forever. A household that had
+        // seen seven people pass through it was therefore permanently barred from
+        // having another child — even with a young couple in it and every other
+        // condition met, and even once all seven were in the ground.
+        //
+        // That is what was killing every village. Households ratchet one way into
+        // sterility as their dead accumulate, so a settlement always dies out about a
+        // century in, whatever its food or fuel is doing — measured extinct by year
+        // 180 in every configuration, including with storage capacity switched off.
+        // It reads as a slow demographic decline, which is why it survived so long:
+        // it looks exactly like the population wave it happens to coincide with.
+        //
+        // Every other occupancy question in the sim already asks LivingMembersOf. This
+        // was the one place that did not.
+        // ⭐ AND IT ASKS THE HOUSE, NOT A GLOBAL NUMBER (Joe, D153). *"Put a cap size on family
+        // homes to limit the number of children a couple can have — eventually an unlock/tech
+        // that allows for larger homes."* One house kind today, so this answers exactly what
+        // the constant did; the point is that the question is now asked of the building, so a
+        // larger dwelling is one arm in `HouseholdCapacity` rather than a hunt through callers.
+        //
+        // ⭐ IT ALSO MATTERS AGAIN, WHICH IT HAD STOPPED DOING. At seven this refused only
+        // 1-3% of household-years while the granary gate refused 42-70% — the cap was not a
+        // lever, it was scenery. At five it binds, and the shipped village stops dying out
+        // (300 unattended years: final 0 at seven, final 20 at five, nobody starving either way).
+        if (world.LivingMembersOf(household)
+            >= VillageEconomy.HouseholdCapacity(BuildingKind.Home, config))
+        {
+            return false;
+        }
+
+        // NO ROOF, NO CHILDREN (Joe's call, D71). A homeless family has neither a larder
+        // nor a hearth, so on the gates below they could never qualify anyway — but saying
+        // it here rather than letting it fall out of two arithmetic checks is the
+        // difference between a rule and an accident, and this one is load-bearing: it is
+        // what makes the first house urgent at the founding rather than optional.
+        if (!household.HasHome)
         {
             return false;
         }
@@ -462,10 +528,79 @@ public sealed class HouseholdSystem : ISimSystem
             return false;
         }
 
-        if (household.Stockpile.Food < config.BirthFoodThreshold)
+        // ⛔ THE FAMILY'S OWN LARDER WAS CHECKED HERE, AND IT IS DELETED (Joe, D153).
+        //
+        // The rule was: *a share of THIS household's own target, which scales with how many
+        // mouths it already has* — a flat number let a family of seven breed on a tenth of a
+        // full larder, so scaling it was what stopped the village outrunning its food.
+        //
+        // **It was already all but toothless, and the granary gate below is why.** Before
+        // stores existed a larder reflected what that family could actually produce, so gating
+        // births on it was self-limiting. With a granary every larder is topped up from the
+        // village store, so this read "comfortable" until the store ran dry — which is exactly
+        // what the gate below was added to catch.
+        //
+        // ⭐ MEASURED BEFORE REMOVING IT, over four runs of 150 and 300 years on both configs:
+        // this term refused **6–10%** of household-years while the granary term refused
+        // **42–70%**. Taking it out moved the fixture's peak from 38 to 37 and the shipped
+        // village's from 31 to 27, and **nobody starved in any arm, before or after.**
+        //
+        // ⚠️ THE DISASTER IT WAS ADDED FOR IS NOW RECORDED IN `DESIGN.md` D153 AND NOWHERE
+        // ELSE, so it is written here too: the village once *"bred to ninety-two, outran what
+        // its forage sites could produce, and thirty-three people starved on the way back
+        // down."* That was an economy with no granary gate. This comment is the only surviving
+        // trace of it besides the decision entry — do not delete it with the code.
+
+        // The village as a whole has to be in surplus. **Since D153 this is the only food
+        // brake on births**, which also means `birth_food_percent` now has exactly one
+        // meaning — it is read here and by `VillageEconomy.PopulationCeiling`, so the derived
+        // ceiling is no longer an approximation of the gate: it *is* the gate.
+        //
+        // The granary broke the household gate without anyone noticing. Before it, a
+        // larder reflected what that family could actually produce, so gating births
+        // on it made growth self-limiting: households stopped having children before
+        // they starved. With a granary, every larder is topped up from the village
+        // store, so the gate reads "comfortable" right up until the moment the store
+        // runs dry. Measured: the village bred to ninety-two, outran what its forage
+        // sites could produce, and thirty-three people starved on the way back down.
+        //
+        // So the question moved to where the answer now lives. A village with a shared
+        // store can only afford a child if the STORE can afford one.
+        // Every granary the village has (D38) — and this is THE call site that made the
+        // singleton seam worth fixing before placement shipped. A second granary the
+        // birth gate could not see would have been a building the player paid for that
+        // did nothing at all.
+        // ⭐ AND IT ASKS WHAT THE VILLAGE *HOLDS*, NOT WHAT IS IN THE GRANARIES (D161). Those
+        // were the same number until the farm's local store landed; a village whose harvest
+        // sat at the farm would have read zero here and stopped having children, which is
+        // D155's symptom arriving from a new direction. See SimWorld.FoodTheVillageHolds.
+        if (world.FoodTheVillageHolds() < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
         {
             return false;
         }
+
+        // ⛔ AND A WINTER'S FUEL WAS CHECKED HERE, AND IT IS DELETED TOO (Joe, D153).
+        //
+        // The rule was *you do not have a child you cannot keep warm* — the more diegetic of
+        // the two, and it gave cold the same brake hunger already had. **Its removal is the
+        // sharper half of D153, because unlike food there is no village-wide backstop**: cold
+        // can now kill a village that outgrows its fuel, and Joe took that deliberately.
+        //
+        // ⭐ MEASURED, AND IT WAS ALMOST NEVER THE THING STOPPING A BIRTH: this term refused
+        // **0–1%** of household-years across 150- and 300-year runs on both configs, and
+        // **nobody froze in any arm, before or after removing it.** The disaster it was added
+        // for belongs to an older fuel economy.
+        //
+        // ⚠️ AND A VILLAGE-WIDE REPLACEMENT WAS CONSIDERED AND REFUSED, on the design's own
+        // grounds rather than on taste. `VillageEconomy.ShedCapacity` already rules it out by
+        // name: *"Food is what regulates the village… the shed binding as well would mean two
+        // constraints fighting for the same job, and the player could not tell which one was
+        // stopping them — which is non-negotiable 1 failing."* `SimWorld.FirewoodInSheds()` is
+        // what such a check would read, if this is ever revisited.
+        //
+        // ⚠️ THE DISASTER IT WAS ADDED FOR IS RECORDED IN `DESIGN.md` D153 AND NOWHERE ELSE,
+        // so it is written here too: the village once *"grew to forty-eight people, outran what
+        // the woodcutter's hut was derived to heat, and sixty-seven of them froze."*
 
         return HasFertileCouple(world, household, config);
     }

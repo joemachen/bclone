@@ -36,6 +36,10 @@ Testing is not optional and not an afterthought.
 - **QA pass per phase:** before merging a phase, do a manual playthrough against a written QA checklist for that phase (does it stay legible? can you read *why* things happen? does it hold the meditative pace?). Legibility is a QA criterion, not just a design goal.
 - Tests run locally via `test.bat` and in CI on every push/PR.
 
+**Assert against the shipped config, not only the fixture.** `VillageFixtures.Village` derives its numbers; `data/sim.config.json` is typed in by hand and is what the game actually loads. The two drift, and the gap is where bugs live — it has produced D48 (a timber leak four times worse in the shipped file), D50 (three woodcutter seats where the economy needed eight), and D49 (thirty-day seasons that reached the game and not the tests, for four commits). `ShippedConfigTests` runs a real village on the real file; anything the economy depends on gets a guard there as well as against the fixture.
+
+**Probe a mechanic before building it.** The cheapest place to find out a design is wrong is before it exists. A throwaway measurement against the live sim costs ten minutes and has twice now overturned a decision that would have cost a day — D53's cold model was measured to kill nobody before a line of it was written, and D56's clothing turned out to be a no-op the same way. If a change is supposed to move a number, measure the number first.
+
 **Definition of Done (per phase/feature):**
 1. Spec written and current.
 2. Unit tests written and passing.
@@ -53,6 +57,9 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 - **In-app structured logger** is the primary mechanism (the `.bat` log capture is just a convenience wrapper).
 - **Levels:** `TRACE` / `DEBUG` / `INFO` / `WARN` / `ERROR`. Configurable minimum level; verbose in dev, quieter in release.
 - **Write to a timestamped file** under `logs/` **and** to console in dev builds.
+- **The game writes a full audit trail every run.** Two sinks, fanned out by `CompositeLogSink`: the on-screen village log stays at `INFO` (the story — D8/D9), and `logs/bclone-<timestamp>.log` takes everything down to `DEBUG`. That file is the answer to *"what actually happened?"* — every state change, every load carried, every job taken and every refusal, each stamped with a tick and attributed to a subsystem. The path is shown in the header beside the seed, because together they are what reproduces and explains a run.
+- **Guard `DEBUG` lines with `world.Logs(level)`.** The trail is detailed enough that building its messages unconditionally costs real time in the 300-year acceptance runs, where the sink discards them all — string interpolation happens before the sink gets a say. `LogVillager` guards itself; anything building a string by hand should check first.
+- **Villager events are logged from one place**, not per branch. `BehaviorSystem.Execute` takes a before-and-after of each villager's state, position and load, so a new branch is covered the day it is written rather than the day somebody notices the gap while debugging it.
 - **Context on every entry:** timestamp, level, subsystem (sim/render/pathing/economy/etc.), and the current **sim tick** — so any log line can be tied back to an exact simulation state. This is the legibility non-negotiable applied to the codebase.
 - **Never swallow exceptions silently.** Catch → log with context → handle or fail loudly.
 - **Sim assertions:** in debug builds, assert invariants (no negative resources, population counts reconcile, no orphaned jobs). A tripped assertion logs full context.
@@ -62,17 +69,36 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 ## 5. Versioning & Releases (active from v1)
 
 - **Semantic Versioning** (`MAJOR.MINOR.PATCH`). Pre-1.0 the game is in-development; `v1.0.0` is the first real release.
-- **Single source of version truth** (a `VERSION` file or the project/manifest file) — CI reads it; don't hand-edit in multiple places.
-- **Release notes:** maintain `CHANGELOG.md` in [Keep a Changelog](https://keepachangelog.com/) style — an `## [Unreleased]` section accumulates entries as you work, and gets stamped with the version + date at release time.
-- **Version bump = a deliberate step:** update `CHANGELOG.md`, bump the version source, commit, then tag `vX.Y.Z`. The tag is what triggers the release build.
+- **Single source of version truth** — the `VERSION` file, and ✅ **it is finally read** (2026-08-16, Phase 2's merge). `Directory.Build.props` loads it into `$(Version)`, so every assembly in the repo carries it — including the Godot view, which MSBuild reaches even though D11 keeps it out of the solution. The shell prints it beside the seed and the log path, because a bug report quoting those two is worth much less if nobody can say which build produced them. **`VersionTests` fails the build if the wiring comes undone**, which matters more than it sounds: an unwired build does not error, it silently reports .NET's default `1.0.0.0`, and nobody would notice until a release shipped the wrong number. *This bullet said "nothing reads it yet" for five phases — a single source of truth with no consumers is a text file.*
+- **Release notes:** `CHANGELOG.md` in [Keep a Changelog](https://keepachangelog.com/) style, stamped with the version + date at release time.
+  - **⚠️ It is DORMANT until the first tag, and its `[Unreleased]` section is written in one pass then — not accumulated as we work** (Joe, 2026-08-07). This section used to promise the opposite, and practice had quietly diverged from it for a dozen commits, which is the doc-versus-reality drift D48, D49 and D50 were each an instance of. **Saying what we actually do is the point of writing it down.**
+  - **The reason is that they are not the same document.** `DESIGN.md §7` answers *why we chose this, and what we measured*, for us and for the next session; a changelog answers *what changed since the version you had*, for somebody who downloaded a build. There is no such person yet, which is exactly why nobody was writing it. Maintaining both by hand means writing every slice up three times — commit, decisions log, changelog — and **the third copy is the one that rots.**
+  - **So it is generated at the tag**, from the commit log and `DESIGN.md §6`, and rewritten to be *player-facing* rather than engineering-facing. That is half an hour at release time and produces something the decisions log never will.
+- **Version bump = a deliberate step:** write `CHANGELOG.md`'s new section, bump the version source, commit, then tag `vX.Y.Z`. The tag is what triggers the release build.
+- **⛔ The per-version screenshot rule is withdrawn (D160, Joe's call).** It used to read *"every version gets a screenshot… take it with the hook in §6 rather than by hand, so the framing is repeatable"* — and the hook it depended on is deleted, because it fast-forwarded an **unattended** founding and D110 plus D143 make that a dead valley by construction. `screenshots/ss001` and `ss002` stay as the record of what the game looked like on 2026-08-01; nothing is obliged to add to them. If a release wants a picture, somebody takes one by playing.
+- **✅ The release blockers are cleared** (2026-08-16, Phase 2's merge — `DESIGN.md §4` DoD item 4). Two of the three were as recorded; **the third was found while clearing them and nobody had it on a list.**
+  - ✅ `VERSION` is read — see above.
+  - ✅ `src/Bclone.Game/export_presets.cfg` is committed, and **verified as far as a machine without export templates allows**: running the workflow's exact `--export-release "Windows Desktop"` line locally gets past preset lookup and parsing and stops only at the missing templates, which rules out the two things that could have been wrong in it (a name not matching the workflow's literal string, and a malformed file).
+  - ⛔ **AND THAT IS HOW THE THIRD ONE TURNED UP:** `chickensoft-games/setup-godot`'s **`include-templates` input defaults to `false`**, so `release.yml` would have failed at the export step *even with a perfect preset* — with exactly the error reproduced locally. Fixed in the workflow. **It could only ever have surfaced at the first `v*` tag**, because nothing else in the repo runs an export.
+  - ⚠️ **Still unverified end to end, and honestly so:** nobody has run a real export, so the .exe itself is untested. `release.yml` carries a status note saying which parts are proved and which are not.
+- **There are still no tags**, and that is unchanged: the workflow is dormant until the first `v*` push.
 
 ---
 
 ## 6. CI / GitHub Actions
 
 - **On every push & PR:** build + run the full test suite (including the determinism test). `main` must stay green.
-- **On version tag (`v*`):** `.github/workflows/release.yml` builds a **Windows `.exe`**, packages it, and attaches it to a GitHub Release with the changelog section as the body.
-- The release workflow is **tag-gated**, so it stays dormant until you push your first `v1.0.0` tag. **Its build steps are placeholders until the stack is chosen** — fill in the Godot export command or `cargo build --release` at that point (comments in the file show both).
+- **The Godot view is built separately, and it must be.** `Bclone.Game` is deliberately not in `bclone.sln` (D11 — a root Godot project globs `**/*.cs` and would swallow the sim and the tests into the game build). The cost is that `dotnet build bclone.sln` does **not** compile the view, so CI has its own step for it. Found the hard way: a build menu was written, wired up and never appeared, because nothing had compiled it and the assembly Godot ran was a day old. **If you are checking a view change by running the game, build `src/Bclone.Game/Bclone.Game.csproj` explicitly first** — a green solution build says nothing about it.
+- **Running the game.** `run.bat` builds the view and launches Godot; set `GODOT` if your editor lives somewhere other than the path it defaults to.
+- **⚠️ THE VIEW HAS NO AUTOMATED VERIFICATION OF ANY KIND** (D11, and D160 took the last of it). There are no tests, and the `BCLONE_SCREENSHOT` hook is gone — it stepped an *unattended* founding, which since D110 raises nothing and since D143 is **supposed** to die out, so it had been photographing a corpse. Teaching it to play would mean moving `PlayTheOpening` out of the test project into shipped code, which is a real cost for a convenience. **So looking at the view is the verification, and Joe's eyes are the test.** This is a known, accepted hole rather than an oversight — if a view regression ships, this is why.
+- **⭐ THE ONE THING THE VIEW CAN BE MEASURED FOR IS ITS OWN WIDTH: `BCLONE_PROBE_WIDTHS`** (D169). Set it and the game walks the control tree, prints what every panel and every inspector row is claiming as a **minimum width**, and quits — headless, in about two seconds:
+
+  ```bash
+  BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
+  ```
+
+  **This exists because the question has now been asked three times and hand-rolled twice** (D149, then D169), and because it is genuinely un-guessable from the layout code: **a column can never be narrower than its widest child**, so `ColumnWidthFor` hands out 27% of the window and Godot overrules it. D149 found six stock-limit rows at 438 pinning a column at 450; D169 found the inspector's idle row wanting **733** on a 267-pixel column. **It is a measurement, not a hook that plays the game** — which is the distinction D160 drew when it deleted `BCLONE_SCREENSHOT` — and it is verified as of 2026-08-22 rather than assumed, having been run four times that day.
+- **On version tag (`v*`):** `.github/workflows/release.yml` builds a **Windows `.exe`**, packages it, and attaches it to a GitHub Release with the changelog as the body. The Godot steps are written but have **never run** — see §5 for the missing export preset.
 
 ---
 

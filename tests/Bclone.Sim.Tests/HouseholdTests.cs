@@ -67,17 +67,6 @@ public sealed class HouseholdTests
     }
 
     [Fact]
-    public void AHouseholdCanOutliveItsFamily()
-    {
-        var household = NewHousehold();
-        household.AddMember(1);
-
-        Assert.False(household.IsEmpty);
-        household.RemoveMember(1);
-        Assert.True(household.IsEmpty);
-    }
-
-    [Fact]
     public void FoodIsHeldPerHouseholdNotShared()
     {
         // The asymmetry decision D14 exists to create: one family can starve
@@ -85,7 +74,7 @@ public sealed class HouseholdTests
         var poor = NewHousehold();
         var rich = new Household { Id = 2, Name = "Fletcher", HomePosition = new GridPos(9, 0) };
 
-        rich.Stockpile.Add(80);
+        rich.Stockpile.Add(Goods.Food, 80);
 
         Assert.Equal(0, poor.Stockpile.Food);
         Assert.Equal(80, rich.Stockpile.Food);

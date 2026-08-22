@@ -39,3 +39,15 @@ jobs:
 
       - name: Test
         run: dotnet test bclone.sln --configuration Release --no-build --verbosity normal
+
+      # The view is NOT in bclone.sln, deliberately (D11: a root Godot project
+      # globs **/*.cs and would swallow the sim and the tests into the game
+      # build). The cost of that separation is that nothing was compiling
+      # Bclone.Game at all — a broken view sailed through a green CI, and it
+      # did: a build menu was written, wired up, and never appeared, because
+      # the assembly Godot ran was a day old and nobody had asked the compiler.
+      #
+      # It builds without Godot installed — Godot.NET.Sdk comes from NuGet —
+      # so this costs one restore and keeps the engine-free promise intact.
+      - name: Build the Godot view
+        run: dotnet build src/Bclone.Game/Bclone.Game.csproj --configuration Release

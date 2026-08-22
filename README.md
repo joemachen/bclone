@@ -2,55 +2,29 @@
 
 A ground-up, generational village-builder / survival sim — a spiritual successor to *Banished*. You grow a town across generations against a world that pushes back. No combat, no traditional win condition. The game is watching a lineage survive.
 
+![The valley in Year 46 — 29 villagers across 6 households](screenshots/ss002-aug1-2026.png)
+
+*Year 46 of seed 12345, **as the game looked on 2026-08-01**. Everything on screen is explained by something you can click on: what the shed is holding, which work the village wants that nobody is doing, and why a villager walks to the wood they walk to. The shell has been rebuilt twice since (D54/D55, D149) and the generated forage sites this shot shows were retired in step C — it is kept as the record of that date rather than as a current picture (D160).*
+
 **Design & process docs (read these first):**
-- [`DESIGN.md`](./DESIGN.md) — vision, pillars, architecture, build order, progress tracker *(the what)*
+- [`DESIGN.md`](./DESIGN.md) — vision, pillars, architecture, build order, progress tracker *(the what)*. §6 is where the project actually is; §7 is why it got there.
 - [`CLAUDE.md`](./CLAUDE.md) — working agreement for AI-assisted development *(the how)*
 - [`METHODOLOGY.md`](./METHODOLOGY.md) — phasing, specs, testing/QA, logging, versioning, CI *(the standards)*
+- [`specs/`](./specs) — one spec per system, written before the code
 
 ---
 
-## First-time GitHub setup
+## Where it is
 
-The remote is **https://github.com/joemachen/bclone**. From this working directory:
+**Phases 0 and 1 are merged to `main`.** Phase 2 — wood as fuel, goods that live in buildings, a generated valley, building placement, and seasons with teeth — is on `phase/2-wood-fuel-and-tools` and unmerged until its Definition of Done is met. `DESIGN.md` §6 has the detail.
 
-```bash
-# 1. Initialize (skip if already a git repo)
-git init
-git branch -M main
-
-# 2. Stage and commit the scaffold
-git add .
-git commit -m "Initial scaffold: design docs, tooling, gitignore"
-
-# 3. Connect the remote
-git remote add origin https://github.com/joemachen/bclone.git
-
-# 4. Push
-git push -u origin main
-```
-
-**If you created the repo on GitHub with a README/license already**, the first push will be rejected (remote has commits you don't). Reconcile first:
-
-```bash
-git pull --rebase origin main
-git push -u origin main
-```
-
-**Auth:** use the [GitHub CLI](https://cli.github.com/) (`gh auth login`) — simplest — or an HTTPS Personal Access Token, or set up an SSH key and swap the remote for `git@github.com:joemachen/bclone.git`.
-
----
-
-## Branch strategy
-
-- `main` — always buildable and test-passing. Never commit broken code here.
-- `phase/<n>-<name>` or `feat/<name>` — one branch per phase or feature (e.g. `phase/0-vertical-slice`).
-- Merge to `main` via PR once the phase's Definition of Done (see `METHODOLOGY.md`) is met and CI is green. Solo PRs are still worth it — they give CI a gate and leave a paper trail.
+The game runs. A village founds itself, feeds itself, cuts timber, builds, has children, freezes if you let the woodpile fail, and dies out if you get it badly wrong — and every one of those outcomes can be traced back to a decision by clicking on the people it happened to.
 
 ---
 
 ## Tech stack
 
-**C# (.NET 8) + Godot 4** (`DESIGN.md` §7, decisions D1–D3). Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0); Godot 4 (.NET build) is only needed once the view layer exists in Phase 0.
+**C# (.NET 8) + Godot 4.7.1** (`DESIGN.md` §7, D1–D3). You need the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) to build and test, and Godot 4 (the .NET/Mono build) to run the game.
 
 The simulation lives in `src/Bclone.Sim`, a plain class library with **zero Godot references** — headlessly testable, fast in CI, and portable if the shell ever needs replacing. Godot is the render/UI/input layer only, and never mutates sim state.
 
@@ -60,23 +34,51 @@ src/Bclone.Sim/       simulation core (engine-free)
   Determinism/        DeterministicRandom (PCG32), StateHash
   Logging/            tick-stamped structured logger
   Config/             JSON-backed tunables
-src/Bclone.Game/      Godot view shell — arrives in Phase 0
+  Systems/            one file per tick-order step
+  World/              villagers, households, workplaces, stores, the map
+src/Bclone.Game/      Godot view shell — NOT in bclone.sln, see below
 tests/                xUnit suite, including the P0 determinism test
 data/                 content and tunables (JSON, modder-editable)
 specs/                one spec per system, written before the code
+screenshots/          one per version (METHODOLOGY §5)
 ```
+
+### ⚠️ `bclone.sln` does not contain the Godot project
+
+This is the first thing that will bite you. `src/Bclone.Game` is deliberately outside the solution (D11 — a root Godot project globs `**/*.cs` and would swallow the sim and the tests into the game build). So:
+
+```bash
+dotnet build bclone.sln                              # sim + tests. NOT the view.
+dotnet build src/Bclone.Game/Bclone.Game.csproj      # the view.
+```
+
+A green solution build says nothing about whether the game compiles. CI has a separate step for it, and `run.bat` builds it before launching. Found the hard way: a build menu was written, wired up, and never appeared, because the assembly Godot ran was a day old.
+
+---
 
 ## Running & testing locally
 
-Two Windows batch files wrap the build/run/test commands and capture timestamped logs to `logs/`:
+Two Windows batch files wrap the commands and capture timestamped logs to `logs/`:
 
-- **`test.bat`** — runs the full suite (`dotnet test`), determinism test included.
-- **`run.bat`** — launches the game. **Nothing to run yet:** the tick loop is a headless library, so the Godot project arrives with Phase 0. Use `test.bat` until then.
+- **`test.bat`** — the full suite, determinism test included.
+- **`run.bat`** — builds the view, then launches Godot. Set `GODOT` to your editor executable if it is not at `D:\Projects\Godot\Godot_v4.7.1-stable_mono_win64\`.
 
-See `METHODOLOGY.md` for the logging and testing standards.
+Every run also writes a full audit trail to `logs/bclone-<timestamp>.log` — every villager state change, every load carried, every job taken and every refusal, tick-stamped. Together with the seed shown in the header, that is what reproduces and explains a run.
+
+### ⚠️ The view has no automated verification
+
+Nothing in `src/Bclone.Game` can be unit-tested (D11), and as of D160 there is no screenshot hook either — it fast-forwarded an *unattended* founding, which the game is designed to let die (D143), so it had been photographing an empty valley. **Looking at the game is the verification.** This is a known hole, not an oversight.
+
+---
+
+## Branch strategy
+
+- `main` — always buildable and test-passing. Never commit broken code here.
+- `phase/<n>-<name>` or `feat/<name>` — one branch per phase or feature.
+- Merge to `main` via PR once the phase's Definition of Done (`METHODOLOGY.md`) is met and CI is green. Solo PRs are still worth it — they give CI a gate and leave a paper trail.
 
 ---
 
 ## Releases (from v1)
 
-Release automation lives in `.github/workflows/release.yml`. It is **tag-triggered** and does nothing until you push a version tag (`vX.Y.Z`), which is the v1 moment. See `METHODOLOGY.md` → *Versioning & Releases* for the full process.
+Release automation lives in `.github/workflows/release.yml`. It is **tag-triggered** and has never run: there are no tags yet, `VERSION` is not wired into the build, and the Godot export preset is not committed. See `METHODOLOGY.md` → *Versioning & Releases* for what the first tag needs.

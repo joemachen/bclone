@@ -4,6 +4,24 @@
        Keeps the individual .csproj files small and stops the
        determinism-critical flags from drifting apart. -->
 
+  <!-- ⭐ THE VERSION FILE IS READ HERE, AND UNTIL NOW NOTHING READ IT AT ALL.
+       METHODOLOGY §5 calls `VERSION` the single source of version truth and then
+       recorded, for months, that "nothing reads it yet" — so the single source of
+       truth was a text file with no consumers, which is D98's rule about a number
+       that is always zero, one level up. Every assembly in the repo carries it now,
+       including the Godot view (MSBuild walks up from the project directory, so
+       `src/Bclone.Game` inherits this even though D11 keeps it out of the solution).
+
+       A guard in `VersionTests` compares the built assembly against the file, so if
+       this ever stops being read the build fails rather than the release. -->
+  <PropertyGroup>
+    <VersionFile>$(MSBuildThisFileDirectory)VERSION</VersionFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="Exists('$(VersionFile)')">
+    <Version>$([System.IO.File]::ReadAllText('$(VersionFile)').Trim())</Version>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>12.0</LangVersion>
@@ -14,6 +32,17 @@
          Fail the build rather than let it scroll past. -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Turned on to make the XML doc comments compile rather than merely exist.
+         With TreatWarningsAsErrors above, a broken <see cref="..."/> or a malformed
+         block is now a build failure. Several had accumulated unnoticed, including
+         summaries left sitting above the wrong member after a method moved.
+
+         CS1591 stays off: this codebase documents what needs explaining, not every
+         public member, and demanding a comment on `public int Year { get; }` would
+         produce exactly the noise the real comments are trying to be heard over. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
 
     <!-- Deterministic compilation: identical sources produce identical
          binaries. Unrelated to sim determinism, but the same spirit. -->

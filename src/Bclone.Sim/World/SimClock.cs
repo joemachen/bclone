@@ -22,7 +22,6 @@ namespace Bclone.Sim.World;
 public readonly record struct SimClock(
     ulong Tick,
     int DayOfSeason,
-    int DayOfYear,
     Season Season,
     int Year)
 {
@@ -41,7 +40,6 @@ public readonly record struct SimClock(
         return new SimClock(
             Tick: tick,
             DayOfSeason: (int)(dayOfYear % daysPerSeason) + 1,
-            DayOfYear: (int)dayOfYear + 1,
             Season: (Season)(dayOfYear / daysPerSeason),
             Year: (int)(totalDays / daysPerYear) + 1);
     }

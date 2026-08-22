@@ -8,19 +8,25 @@ namespace Bclone.Game;
 
 /// <summary>How much explanation the map draws on top of the village.</summary>
 /// <remarks>
-/// One control for both the home-to-work routes and the catchment rings, because they
-/// answer the same question — <em>why is that person walking over there?</em> — and
-/// splitting them into two toggles would mean two controls for one thought.
+/// One control for both the home-to-work routes and the gathering rings, because they answer
+/// the same question — <em>why is that person walking over there?</em> — and splitting them
+/// into two toggles would mean two controls for one thought.
+/// <para>
+/// It used to draw <em>catchment</em> rings, which were the fence a workplace enforced on how
+/// far anybody could come from. That fence is deleted (`forests-and-gathering.md §3`), and a
+/// ring here is now a gatherer's hut's <b>gathering</b> radius — the ground its yield is
+/// computed from, which is a fact about the building rather than a rule about people.
+/// </para>
 /// </remarks>
 public enum MapDetail
 {
     /// <summary>Just the village. For watching rather than auditing.</summary>
     Off = 0,
 
-    /// <summary>The selected villager's route and their workplace's catchment.</summary>
+    /// <summary>The selected villager's route, and their workplace's ring if it has one.</summary>
     Selected = 1,
 
-    /// <summary>Everybody's route and every catchment. Busy, and meant to be.</summary>
+    /// <summary>Everybody's route and every ring. Busy, and meant to be.</summary>
     All = 2,
 }
 
@@ -35,6 +41,12 @@ public enum MapDetail
 /// this keeps each villager's previous tile — <em>view-side only</em>, never in sim
 /// state — and lerps toward the current one using
 /// <see cref="FixedTimestepDriver.Alpha"/>.
+/// </para>
+/// <para>
+/// <b>⚠️ That bookkeeping rolls forward on the sim's tick and on nothing else</b>
+/// (<see cref="AdvanceInterpolation"/>). Alpha says how far through a tick we are; it can
+/// never say that a tick ended, and reading it as though it could is what put the jitter
+/// Joe watched for months on the screen (D169).
 /// </para>
 /// <para>
 /// <b>People who are standing on the same tile are fanned apart.</b> Four adults
@@ -54,8 +66,116 @@ public partial class VillageMap : Control
     private static readonly Color ValleyEdge = new("#485453");
     private static readonly Color GridLine = new("#343d3d");
     private static readonly Color HomeColour = new("#b98a52");
+    private static readonly Color GranaryColour = new("#d8c56a");
+    private static readonly Color ShedColour = new("#8a7a63");
     private static readonly Color BerryColour = new("#5aa04a");
     private static readonly Color TreeColour = new("#2f6b3a");
+
+    /// <summary>The generated river (D18).</summary>
+    /// <remarks>
+    /// Deliberately the most distinct colour on the map. Water is about to become the
+    /// one thing a villager cannot walk over (D40), so it needs to read as an obstacle
+    /// at a glance and long before a bridge exists to argue with it.
+    /// </remarks>
+    private static readonly Color WaterColour = new("#2f5f7a");
+
+    /// <summary>Generated woodland. Quieter than the tree stand that stands in it.</summary>
+    private static readonly Color ForestColour = new("#2a3d2c");
+
+    /// <summary>A stone seam — pale and dry against the grass, so it reads as bare ground.</summary>
+    private static readonly Color RockColour = new("#6b6459");
+
+    /// <summary>An iron seam. Rusted, and warmer than the stone so the two never blur.</summary>
+    /// <remarks>
+    /// <b>Two seams a player must tell apart at a glance</b> (D67: you go after a seam
+    /// because you can see it), so they differ in hue rather than only in lightness —
+    /// which is also the one difference that survives being colour-blind.
+    /// </remarks>
+    private static readonly Color IronColour = new("#7a4a33");
+
+    // ---------------------------------------------------------------
+    //  The field, in its three states (`specs/crops-and-orchards.md`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐⭐ THESE ARE THE MECHANIC, NOT A DECORATION, AND THAT IS THE WHOLE ARGUMENT FOR CROPS.
+    // `environment-and-seasons.md §5.1` proposed a seasonal yield CURVE — three multipliers on
+    // foraging — and its own account of what the player would see was *"a villager simply comes
+    // home with more in autumn"*, offered as a virtue because it needed no UI. That is the
+    // objection: it is a number going up where nobody can watch it. A field is bare, then sown,
+    // then standing, then bare again, and **the difference on the screen is the feature**.
+    //
+    // ⚠️ AND THEY HAD TO BE NAMED HERE OR THEY WOULD HAVE SHIPPED AS WOODLAND. `ColourOf`'s
+    // default arm is `ForestColour` — a deliberate choice for the sapling, and a trap for
+    // anything else appended to `Terrain`. Three new values would have drawn a farm as a wood
+    // in every season, which is D108's silent-default finding arriving in the view.
+
+    /// <summary>Ploughed and bare. Winter and early spring — turned earth, warm and dark.</summary>
+    private static readonly Color FieldColour = new("#4a3a2b");
+
+    /// <summary>Sown. Young growth: green, but paler and yellower than the woods.</summary>
+    private static readonly Color SownColour = new("#4a5c33");
+
+    /// <summary>Standing ripe. The one colour on the map that says "come and take this".</summary>
+    /// <remarks>
+    /// <b>Differs from <see cref="SownColour"/> in hue as well as lightness</b>, on the rule
+    /// D67 set for the two seams: the difference a player has to read at a glance is the one
+    /// that must survive being colour-blind.
+    /// </remarks>
+    private static readonly Color RipeColour = new("#b8933f");
+
+    /// <summary>The woodcutter's hut — a workplace, not a stand of trees.</summary>
+    private static readonly Color HutColour = new("#9a6b3f");
+
+    /// <summary>The market (D14), which is both a workplace and a store.</summary>
+    private static readonly Color MarketColour = new("#c98f4a");
+
+    /// <summary>The ring round a store with no room left (D140).</summary>
+    /// <remarks>
+    /// Warm amber rather than red. A full store is not a disaster — it is usually a village
+    /// doing well at something — and §1.1 wants the player to look, not to panic.
+    /// </remarks>
+    private static readonly Color FullStoreColour = new("#e8a13c");
+
+    /// <summary>The ring round a workplace that cannot do its job (D147).</summary>
+    /// <remarks>
+    /// <b>Cool, where the full-store ring is warm</b>, because they are different facts and the
+    /// player should be able to tell them apart without reading anything. A full store is
+    /// usually a village doing well at something; an idle hut never is. Still not red — the fix
+    /// is always a decision rather than an emergency (§0.1).
+    /// </remarks>
+    private static readonly Color IdleWorkplaceColour = new("#7fb2d9");
+
+    /// <summary>A building marked out but not yet raised (D43).</summary>
+    private static readonly Color SiteColour = new("#8f9aa8");
+
+    /// <summary>Land the player has painted for housing (D42). Faint on purpose.</summary>
+    private static readonly Color ResidentialColour = new("#b98a52", 0.14f);
+
+    /// <summary>Ground the village has been told to clear (D87).</summary>
+    /// <remarks>
+    /// <b>Warmer and stronger than the residential wash</b>, because the two overlap on the
+    /// map and mean opposite things — one says *you may build here*, the other says *this is
+    /// coming down*. Still translucent: it is an instruction about the ground, not a new kind
+    /// of ground, and a marked wood must still read as a wood.
+    /// </remarks>
+    private static readonly Color HarvestColour = new("#d8892f", 0.26f);
+
+    /// <summary>Ground a building has been given to work (D86).</summary>
+    /// <remarks>
+    /// <b>Cool, where the other two zone washes are warm</b>, because it means a different
+    /// kind of thing and the three overlap: residential says <em>the village may build
+    /// here</em>, harvest says <em>this is coming down</em>, and this says <em>a named
+    /// building works this</em>. Two warm washes and a cool one is a distinction that
+    /// survives being seen out of the corner of your eye, and being colour-blind.
+    /// </remarks>
+    private static readonly Color WorkGroundColour = new("#4a9ba8", 0.16f);
+
+    /// <summary>The selected building's own ground, brighter than everybody else's.</summary>
+    private static readonly Color WorkGroundMine = new("#5fc8d8", 0.30f);
+
+    private static readonly Color GhostFine = new("#7fd48a");
+    private static readonly Color GhostWarned = new("#e0b755");
+    private static readonly Color GhostRefused = new("#d4685f");
     private static readonly Color AdultColour = new("#e8e2d4");
     private static readonly Color ChildColour = new("#8fc7e8");
     private static readonly Color ElderColour = new("#d9a05b");
@@ -85,15 +205,55 @@ public partial class VillageMap : Control
     /// <summary>How far apart people on the same tile are drawn, in tiles.</summary>
     private const float FanRadiusTiles = 0.30f;
 
-    private readonly Dictionary<int, Vector2> _previousTiles = new();
+    /// <summary>
+    /// The two ends of this frame's glide for each villager: the tile they were on last
+    /// tick, and the tile they are on now.
+    /// </summary>
+    /// <remarks>
+    /// <b>Both ends are kept because only the sim knows when a tick happened.</b> Alpha says
+    /// how far through a tick we are; it never says that one ended. Advancing this on a
+    /// reading of alpha is what D169 fixed.
+    /// </remarks>
+    private readonly Dictionary<int, (Vector2 Previous, Vector2 Current)> _tiles = new();
 
     /// <summary>Reused each frame so a busy village does not allocate per redraw.</summary>
     private readonly Dictionary<GridPos, List<int>> _byTile = new();
 
+    /// <summary>
+    /// The sim tick <see cref="_tiles"/> was last advanced for. <see cref="ulong.MaxValue"/>
+    /// until the first frame, which cannot collide with a real tick.
+    /// </summary>
+    private ulong _interpolatedThroughTick = ulong.MaxValue;
+
     private SimWorld? _world;
     private double _alpha;
     private int _selectedVillagerId;
+    private GridPos? _selectedTile;
     private MapDetail _detail = MapDetail.Selected;
+
+    /// <summary>
+    /// Raised when the player clicks the map while not placing anything.
+    /// </summary>
+    /// <remarks>
+    /// <b>A tile, not a building id.</b> The three things that can stand on a tile —
+    /// a store, a workplace and a home — live in three lists with three independent id
+    /// spaces, and the market is deliberately <em>both</em> a store and a workplace at
+    /// one position (D36's known seam). Selecting a tile and asking the sim what is
+    /// there describes the market correctly without having to pick which of its two
+    /// halves the player meant.
+    /// </remarks>
+    public event System.Action<GridPos>? BuildingClicked;
+
+    /// <summary>
+    /// The player clicked on a person rather than on the ground (Joe, 2026-08-09).
+    /// </summary>
+    /// <remarks>
+    /// <b>A villager id, and here it can be one</b>, unlike the tile above: a person is a
+    /// single thing in a single list, and two of them standing on one tile are still two
+    /// people. The tile-not-id argument was about buildings sharing a position, which people
+    /// do all day and buildings do only at D36's seam.
+    /// </remarks>
+    public event System.Action<int>? VillagerClicked;
 
     private Vector2 _centreTile;
 
@@ -111,11 +271,13 @@ public partial class VillageMap : Control
     }
 
     /// <summary>Hand the map the state to draw. Called every frame by <see cref="Main"/>.</summary>
-    public void Present(SimWorld world, double alpha, int selectedVillagerId, MapDetail detail)
+    public void Present(
+        SimWorld world, double alpha, int selectedVillagerId, GridPos? selectedTile, MapDetail detail)
     {
         _world = world;
         _alpha = alpha;
         _selectedVillagerId = selectedVillagerId;
+        _selectedTile = selectedTile;
         _detail = detail;
 
         if (!_framed && Size.X > 0f)
@@ -158,7 +320,14 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            var home = new Vector2(household.HomePosition.X, household.HomePosition.Y);
+            // A family with no house yet (D70) has nothing to frame — they are standing at
+            // the cart, which the founding site already accounts for.
+            if (household.HomePosition is not GridPos standing)
+            {
+                continue;
+            }
+
+            var home = new Vector2(standing.X, standing.Y);
             min = min.Min(home);
             max = max.Max(home);
             homes++;
@@ -217,10 +386,188 @@ public partial class VillageMap : Control
         QueueRedraw();
     }
 
+    // ---------------------------------------------------------------
+    //  Build mode (D43)
+    // ---------------------------------------------------------------
+
+    /// <summary>What the player is about to put down, or null when just looking.</summary>
+    private BuildingKind? _building;
+
+    /// <summary>True when the next click pulls a building down instead of raising one.</summary>
+    private bool _demolishing;
+
+    /// <summary>Painting homes: 0 not, 1 painting, -1 erasing.</summary>
+    private int _brush;
+
+    /// <summary>How wide the brush is, in tiles either side.</summary>
+    /// <remarks>
+    /// A brush rather than a single tile, because a residential area is a
+    /// <em>neighbourhood</em> — asking the player to paint it a tile at a time would be
+    /// exactly the click-farm zoning exists to avoid (D42).
+    /// </remarks>
+    private const int BrushRadius = 2;
+
+    /// <summary>
+    /// Which harvest mode the brush is set to, or null when it is painting homes.
+    /// </summary>
+    /// <remarks>
+    /// <b>Modes of one tool</b> (D92, Joe): the mode decides which tiles take the paint and
+    /// is then forgotten. So the view holds the setting and the sim holds one layer — there
+    /// is no per-material state anywhere, which is what made the sim side free.
+    /// </remarks>
+    private HarvestBrush? _harvestMode;
+
+    /// <summary>
+    /// The workplace whose ground is being painted, or 0 when the brush is not doing that.
+    /// </summary>
+    /// <remarks>
+    /// <b>The third brush, and the only one that belongs to a BUILDING rather than to the
+    /// village</b> (D86). Residential land is the village's and harvest paint is nobody's;
+    /// work ground has an owner, so the brush has to carry which one — and it is an id rather
+    /// than a reference so that a hut demolished mid-stroke stops the painting instead of
+    /// writing to a workplace that no longer exists.
+    /// </remarks>
+    private int _groundFor;
+
+    /// <summary>Start or stop painting where the village may live (D42).</summary>
+    public void BeginPainting(int direction)
+    {
+        _brush = direction;
+        _harvestMode = null;
+        _groundFor = 0;
+        _building = null;
+        _demolishing = false;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Start or stop marking what the village means to take (D87, D92).</summary>
+    public void BeginHarvesting(HarvestBrush mode, int direction)
+    {
+        _brush = direction;
+        _harvestMode = mode;
+        _groundFor = 0;
+        _building = null;
+        _demolishing = false;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Start or stop giving ground to one building (D86).</summary>
+    public void BeginPaintingGround(int workplaceId, int direction)
+    {
+        _brush = direction;
+        _harvestMode = null;
+        _groundFor = workplaceId;
+        _building = null;
+        _demolishing = false;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>The tile under the cursor, and what the sim says about building on it.</summary>
+    private GridPos _hovered;
+    private PlacementVerdict _verdict = PlacementVerdict.Fine;
+
+    /// <summary>Raised whenever the ghost's verdict changes, so the shell can say it.</summary>
+    public event System.Action<string>? PlacementMessageChanged;
+
+    /// <summary>Start marking out a building. Null stops.</summary>
+    public void BeginBuilding(BuildingKind? kind)
+    {
+        _building = kind;
+        _demolishing = false;
+        _brush = 0;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Next click pulls a building down.</summary>
+    public void BeginDemolishing()
+    {
+        _building = null;
+        _demolishing = true;
+        _brush = 0;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Whether the player is in the middle of placing, demolishing or painting.</summary>
+    public bool IsPlacing => _building is not null || _demolishing || _brush != 0;
+
     public override void _GuiInput(InputEvent @event)
     {
-        if (_world is null || @event is not InputEventMouseButton { Pressed: true } click)
+        if (_world is null)
         {
+            return;
+        }
+
+        // The ghost follows the cursor, and the verdict is recomputed as it moves.
+        // CanBuildAt is pure, so asking it every frame costs nothing and changes
+        // nothing — which is what lets the answer be shown BEFORE anybody commits.
+        if (@event is InputEventMouseMotion motion && IsPlacing)
+        {
+            Vector2 tile = ToTile(motion.Position);
+            var over = new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
+            if (over != _hovered)
+            {
+                _hovered = over;
+                if (_building is not null)
+                {
+                    _verdict = _world.CanBuildAt(_building.Value, _hovered);
+                }
+
+                // Drag to paint. A neighbourhood is a shape you draw, not a sequence of
+                // clicks — the brush exists so that deciding where people live costs one
+                // gesture rather than forty (D42).
+                if (_brush != 0 && motion.ButtonMask.HasFlag(MouseButtonMask.Left))
+                {
+                    PaintAround(_hovered);
+                }
+
+                Announce();
+                QueueRedraw();
+            }
+
+            return;
+        }
+
+        if (@event is not InputEventMouseButton { Pressed: true } click)
+        {
+            return;
+        }
+
+        if (IsPlacing && click.ButtonIndex == MouseButton.Right)
+        {
+            BeginBuilding(null);
+            _demolishing = false;
+            AcceptEvent();
+            return;
+        }
+
+        if (IsPlacing && click.ButtonIndex == MouseButton.Left)
+        {
+            PlaceOrPullDown(click.Position);
+            AcceptEvent();
+            return;
+        }
+
+        // Not placing anything, so a click is a question rather than an instruction:
+        // "what is that?". The shell answers it in the same panel the villagers use,
+        // because the player has one place they look to find out about a thing.
+        if (click.ButtonIndex == MouseButton.Left)
+        {
+            // Somebody standing there is what you meant; the ground is the fallback.
+            if (VillagerAt(click.Position) is Villager person)
+            {
+                VillagerClicked?.Invoke(person.Id);
+                AcceptEvent();
+                return;
+            }
+
+            Vector2 hit = ToTile(click.Position);
+            BuildingClicked?.Invoke(new GridPos(Mathf.RoundToInt(hit.X), Mathf.RoundToInt(hit.Y)));
+            AcceptEvent();
             return;
         }
 
@@ -242,6 +589,233 @@ public partial class VillageMap : Control
         ClampCentre();
         QueueRedraw();
         AcceptEvent();
+    }
+
+    /// <summary>Act on a click while in build or demolish mode.</summary>
+    /// <remarks>
+    /// <b>The game does not pause for this</b> (D43, Joe's call). The village carries on
+    /// while you decide, because pausing would make placement a modal act — the world
+    /// stopping to wait on you — and nothing here is urgent enough to stop the clock
+    /// for. That is a claim about what kind of decision building is.
+    /// </remarks>
+    /// <summary>Paint or erase a brushful of residential land.</summary>
+    private void PaintAround(GridPos centre)
+    {
+        string? warning = null;
+        string? refused = null;
+
+        for (int dy = -BrushRadius; dy <= BrushRadius; dy++)
+        {
+            for (int dx = -BrushRadius; dx <= BrushRadius; dx++)
+            {
+                if (Mathf.Abs(dx) + Mathf.Abs(dy) > BrushRadius)
+                {
+                    continue;
+                }
+
+                var tile = new GridPos(centre.X + dx, centre.Y + dy);
+
+                // Ground given to one building (D86). Same stroke shape as the others — one
+                // sentence for the drag, never one per tile — and it stops rather than
+                // half-painting if the hut went away mid-stroke.
+                if (_groundFor != 0)
+                {
+                    Workplace? owner = _world!.FindWorkplace(_groundFor);
+                    if (owner is null)
+                    {
+                        _groundFor = 0;
+                        continue;
+                    }
+
+                    if (_brush < 0)
+                    {
+                        _world.EraseWorkGround(owner, tile);
+                        continue;
+                    }
+
+                    PlacementVerdict given = _world.PaintWorkGround(owner, tile);
+                    if (!given.Allowed)
+                    {
+                        refused = given.Reason;
+                    }
+                    else if (given.HasWarning)
+                    {
+                        warning = given.Warning;
+                    }
+
+                    continue;
+                }
+
+                if (_harvestMode is not null)
+                {
+                    if (_brush < 0)
+                    {
+                        _world!.EraseHarvest(tile);
+                        continue;
+                    }
+
+                    // Refusals are silent per tile and counted for the stroke: a drag
+                    // across mixed ground is MEANT to skip what the mode does not take,
+                    // and forty sentences would bury the one that matters (D42, D92).
+                    PlacementVerdict marked = _world!.PaintHarvest(tile, _harvestMode.Value);
+                    if (!marked.Allowed)
+                    {
+                        refused = marked.Reason;
+                    }
+                    else if (marked.HasWarning)
+                    {
+                        warning = marked.Warning;
+                    }
+
+                    continue;
+                }
+
+                if (_brush < 0)
+                {
+                    _world!.EraseResidential(tile);
+                    continue;
+                }
+
+                PlacementVerdict verdict = _world!.PaintResidential(tile);
+                if (verdict.HasWarning)
+                {
+                    warning = verdict.Warning;
+                }
+            }
+        }
+
+        // One warning for the stroke, not one per tile — which is the entire reason
+        // zoning was a better answer than placing houses one at a time (D42).
+        // A warning outranks a refusal: "you painted more than your hands can keep" is
+        // something to act on, where "some of that was the wrong kind of ground" is the
+        // brush doing exactly what the mode asked of it.
+        if (warning is not null)
+        {
+            PlacementMessageChanged?.Invoke(warning);
+        }
+        else if (refused is not null)
+        {
+            PlacementMessageChanged?.Invoke(refused);
+        }
+    }
+
+    private void PlaceOrPullDown(Vector2 at)
+    {
+        Vector2 tile = ToTile(at);
+        var where = new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
+
+        if (_brush != 0)
+        {
+            PaintAround(where);
+            QueueRedraw();
+            return;
+        }
+
+        if (_demolishing)
+        {
+            // ⭐ SITES AND HUTS TOO, WHICH THIS COULD NOT TOUCH BEFORE (Joe: *"I can't
+            // cancel/demolish a building that is under construction — demolish says nothing
+            // there to pull down"*). It only ever searched the stores, so a construction site
+            // and every hut in the game were permanent once marked. **A misplaced building
+            // the player cannot take back is the opposite of the brush's whole promise.**
+            //
+            // Workplaces first, because that is where the thing the player is most likely to
+            // be undoing lives: a site they have just marked in the wrong spot.
+            foreach (Workplace workplace in _world!.Workplaces)
+            {
+                if (workplace.Position == where)
+                {
+                    string name = workplace.Construction?.Name ?? workplace.Name;
+                    _world.Demolish(workplace);
+                    PlacementMessageChanged?.Invoke($"{name} is gone.");
+                    QueueRedraw();
+                    return;
+                }
+            }
+
+            foreach (StoreBuilding building in _world.StoreBuildings)
+            {
+                if (building.Position == where)
+                {
+                    _world.Demolish(building);
+                    PlacementMessageChanged?.Invoke($"{building.Name} is coming down.");
+                    QueueRedraw();
+                    return;
+                }
+            }
+
+            PlacementMessageChanged?.Invoke("Nothing there to pull down.");
+            return;
+        }
+
+        PlacementVerdict verdict = _world!.Mark(_building!.Value, where);
+        if (!verdict.Allowed)
+        {
+            // Stay in build mode: a refusal is information, not a dismissal, and
+            // making the player reopen the menu to try one tile over would be a
+            // punishment for exploring.
+            PlacementMessageChanged?.Invoke(verdict.Reason);
+            return;
+        }
+
+        PlacementMessageChanged?.Invoke(verdict.HasWarning
+            ? $"Marked out. {verdict.Warning}"
+            : "Marked out. The village will raise it when it can spare the hands.");
+
+        QueueRedraw();
+    }
+
+    /// <summary>Tell the shell what the cursor is currently over.</summary>
+    private void Announce()
+    {
+        // ⚠️ THE GROUND BRUSH FIRST, because it is a positive brush and the residential
+        // wording below would otherwise claim it. Joe saw exactly that: pressing "Give ground"
+        // announced *"drag to paint where the village may build homes"*, which is a sentence
+        // about the wrong tool and made a working brush look broken.
+        if (_groundFor != 0)
+        {
+            Workplace? owner = _world?.FindWorkplace(_groundFor);
+            string whose = owner?.Name ?? "this building";
+
+            PlacementMessageChanged?.Invoke(_brush < 0
+                ? $"Drag to take ground back from {whose}. Right-click to stop."
+                : $"Drag to give ground to {whose} — its people work what you paint. "
+                    + "Right-click to stop.");
+            return;
+        }
+
+        if (_brush > 0)
+        {
+            PlacementMessageChanged?.Invoke(
+                "Drag to paint where the village may build homes. Right-click to stop.");
+            return;
+        }
+
+        if (_brush < 0)
+        {
+            PlacementMessageChanged?.Invoke(
+                "Drag to take land back. Houses already standing stay put. Right-click to stop.");
+            return;
+        }
+
+        if (_demolishing)
+        {
+            PlacementMessageChanged?.Invoke("Click a building to pull it down. Right-click to stop.");
+            return;
+        }
+
+        if (_building is null)
+        {
+            PlacementMessageChanged?.Invoke(string.Empty);
+            return;
+        }
+
+        PlacementMessageChanged?.Invoke(_verdict switch
+        {
+            { Allowed: false } => _verdict.Reason,
+            { HasWarning: true } => _verdict.Warning,
+            _ => "Click to mark it out. Right-click to stop.",
+        });
     }
 
     private void SetZoom(float pixelsPerTile)
@@ -307,6 +881,35 @@ public partial class VillageMap : Control
         return Mathf.Clamp(centre, min + halfView, max - halfView);
     }
 
+    /// <summary>
+    /// The stretch of valley on screen right now, in tiles — what the minimap boxes.
+    /// </summary>
+    /// <remarks>
+    /// Derived from the camera rather than stored beside it, so it cannot go stale: there is
+    /// one centre and one zoom, and this is arithmetic on them.
+    /// </remarks>
+    public Rect2 VisibleTiles
+    {
+        get
+        {
+            if (_pixelsPerTile <= 0f)
+            {
+                return new Rect2();
+            }
+
+            Vector2 span = Size / _pixelsPerTile;
+            return new Rect2(_centreTile - (span / 2f), span);
+        }
+    }
+
+    /// <summary>Put the camera over a tile — the minimap's whole reason for being clickable.</summary>
+    public void CentreOn(Vector2 tile)
+    {
+        _centreTile = tile;
+        ClampCentre();
+        QueueRedraw();
+    }
+
     private Vector2 ToScreen(Vector2 tile) => ((tile - _centreTile) * _pixelsPerTile) + (Size / 2f);
 
     private Vector2 ToScreen(GridPos tile) => ToScreen(new Vector2(tile.X, tile.Y));
@@ -338,9 +941,184 @@ public partial class VillageMap : Control
         // the things that move must never be hidden behind the things that do not.
         DrawRoutes();
         DrawWorkplaces();
+        DrawStores();
         DrawHomes();
+
+        // Over the buildings so it is not hidden by one, under the people so it never
+        // hides them — the same rule the rest of this method follows.
+        DrawSelectedTile();
         DrawVillagers();
+
+        // The ghost last, over everything, because it is the thing being decided.
+        DrawTheGhost();
     }
+
+    /// <summary>
+    /// The building about to be placed, under the cursor, coloured by what the sim says.
+    /// </summary>
+    /// <remarks>
+    /// Three colours for three answers, and the middle one is the point (D43): green is
+    /// fine, <b>amber is allowed but unwise</b>, red is impossible. The player may build
+    /// on amber. The words alongside say why it is amber, because a colour on its own
+    /// is the shrug this project keeps refusing.
+    /// </remarks>
+    private void DrawTheGhost()
+    {
+        if (_building is null)
+        {
+            return;
+        }
+
+        // WHERE THE AMBER STARTS, drawn only while placing.
+        //
+        // The warning fires past a distance the player cannot see, which makes it
+        // undiscoverable — Joe placed several buildings and never met one. A ring at
+        // exactly that radius turns a hidden constant into a line on the map, so
+        // "people will spend their days walking to it" arrives as confirmation of
+        // something already visible rather than as a surprise.
+        //
+        // Only while the build menu is open: it is a placement aid, not furniture.
+        SimWorld world = _world!;
+        GridPos village = world.FirstHomeOrFoundingSite();
+
+        float comfortable = VillageEconomy.MaxHomeToVillageTiles(world.Config) * _pixelsPerTile;
+        DrawArc(ToScreen(village), comfortable, 0f, Mathf.Tau, 96, GhostWarned with { A = 0.35f }, 1f);
+
+        if (!world.Map.Contains(_hovered))
+        {
+            return;
+        }
+
+        Vector2 centre = ToScreen(_hovered);
+        float size = Mathf.Max(10f, _pixelsPerTile * 0.9f);
+        var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+        Color colour = _verdict switch
+        {
+            { Allowed: false } => GhostRefused,
+            { HasWarning: true } => GhostWarned,
+            _ => GhostFine,
+        };
+
+        DrawRect(rect, colour with { A = 0.35f });
+        DrawRect(rect, colour, filled: false, width: 2f);
+    }
+
+    /// <summary>
+    /// The granary and the materials shed.
+    /// </summary>
+    /// <remarks>
+    /// Drawn as squares like homes, because they are the same sort of thing — a place
+    /// that holds goods — and a different shape would imply a distinction that is not
+    /// there. Distinguished by colour, and outlined so a store never reads as just
+    /// another house: "why is nobody fetching food?" has to be answerable by looking.
+    /// </remarks>
+    /// <summary>A square around whatever the player last clicked.</summary>
+    /// <remarks>
+    /// A square rather than the ring villagers get, so the two selections never read as
+    /// the same thing: people are round on this map and buildings are square, and the
+    /// highlight should agree with that rather than argue with it.
+    /// </remarks>
+    private void DrawSelectedTile()
+    {
+        if (_selectedTile is not GridPos tile)
+        {
+            return;
+        }
+
+        Vector2 centre = ToScreen(tile);
+        float side = _pixelsPerTile * 0.92f;
+
+        DrawRect(
+            new Rect2(centre - (new Vector2(side, side) / 2f), new Vector2(side, side)),
+            SelectedRing,
+            filled: false,
+            width: 2f);
+    }
+
+    private void DrawStores()
+    {
+        SimWorld world = _world!;
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding building = world.StoreBuildings[i];
+
+            Vector2 centre = ToScreen(building.Position);
+            float size = Mathf.Max(8f, _pixelsPerTile * 0.8f);
+            var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+            Color colour = building.Kind switch
+            {
+                StoreKind.Granary => GranaryColour,
+                StoreKind.Shed => ShedColour,
+                _ => MarketColour,
+            };
+            DrawRect(rect, colour with { A = 0.85f });
+            DrawRect(rect, colour, filled: false, width: 2f);
+
+            // ⭐ A FULL STORE SAYS SO ON THE MAP (Joe, D140). D134 is the reason it has to:
+            // a village can sit at "Logs 15" with 1,968 stranded outside a shed that filled
+            // in year five, and every symptom of that reads as a shortage. The Overview line
+            // says it in words now; this is the same fact where the player is actually
+            // looking, on the building that is causing it.
+            //
+            // A ring rather than a badge, because it has to read at any zoom — the tile is
+            // eight pixels across when the valley is fitted to the window.
+            if (ShowsFullMarker(building) && building.Store.IsFull)
+            {
+                float halo = size * 0.85f;
+                DrawArc(
+                    centre,
+                    halo,
+                    0f,
+                    Mathf.Tau,
+                    24,
+                    FullStoreColour,
+                    width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether this building's full-marker is switched on — globally, and for itself.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ VIEW STATE, DELIBERATELY, AND IT MUST STAY THAT WAY.</b> Joe asked for the marker
+    /// to be dismissable *"by building or globally"*, which is a per-building fact and therefore
+    /// looks like it belongs on <see cref="StoreBuilding"/>. It does not: the sim is hashed and
+    /// replayed from a seed (D2), so putting a display preference in it would make two players
+    /// who merely disagree about what to look at diverge into different worlds. A marker nobody
+    /// can see must not change what anybody does.
+    /// </remarks>
+    private bool ShowsFullMarker(StoreBuilding building) =>
+        _showFullMarkers && !_fullMarkerMuted.Contains(building.Id);
+
+    private bool _showFullMarkers = true;
+    private readonly HashSet<int> _fullMarkerMuted = new();
+
+    /// <summary>Switch every full-store marker on or off at once.</summary>
+    public void ShowFullMarkers(bool shown)
+    {
+        _showFullMarkers = shown;
+        QueueRedraw();
+    }
+
+    /// <summary>Switch one building's marker on or off, and report where it landed.</summary>
+    public bool ToggleFullMarker(int buildingId)
+    {
+        bool nowShown = _fullMarkerMuted.Remove(buildingId);
+        if (!nowShown)
+        {
+            _fullMarkerMuted.Add(buildingId);
+        }
+
+        QueueRedraw();
+        return nowShown;
+    }
+
+    /// <summary>Whether one building's marker is switched on, ignoring the global switch.</summary>
+    public bool FullMarkerShownFor(int buildingId) => !_fullMarkerMuted.Contains(buildingId);
 
     private void DrawValley()
     {
@@ -353,13 +1131,6 @@ public partial class VillageMap : Control
         var valley = new Rect2(topLeft, bottomRight - topLeft);
 
         DrawRect(valley, Ground);
-        DrawRect(valley, ValleyEdge, filled: false, width: 2f);
-
-        // Only worth drawing while tiles are big enough to read.
-        if (_pixelsPerTile < 6f)
-        {
-            return;
-        }
 
         // Clipped to what is actually on screen: at full zoom-in a loop over 120
         // columns is mostly wasted, and at full zoom-out it is 120 lines a pixel apart.
@@ -370,6 +1141,21 @@ public partial class VillageMap : Control
         int maxX = Mathf.Min(config.MapMaxX + 1, Mathf.CeilToInt(last.X));
         int minY = Mathf.Max(config.MapMinY, Mathf.FloorToInt(first.Y));
         int maxY = Mathf.Min(config.MapMaxY + 1, Mathf.CeilToInt(last.Y));
+
+        // THE GENERATED TERRAIN (D18). Drawn under everything else, because it is the
+        // ground the rest of the village stands on — and because without it a
+        // generated valley is invisible, which makes "is this seed worth playing?"
+        // a question nobody can answer by looking.
+        DrawTerrain(minX, maxX, minY, maxY);
+        DrawResidentialLand(minX, maxX, minY, maxY);
+
+        DrawRect(valley, ValleyEdge, filled: false, width: 2f);
+
+        // Only worth drawing the grid while tiles are big enough to read.
+        if (_pixelsPerTile < 6f)
+        {
+            return;
+        }
 
         for (int x = minX; x <= maxX; x++)
         {
@@ -389,6 +1175,198 @@ public partial class VillageMap : Control
                 1f);
         }
     }
+
+    /// <summary>
+    /// Where the player has said the village may live (D42).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Drawn always, not only while painting. A residential zone is a standing decision
+    /// — it is the answer to "why did that house go there?" and to "why has nobody
+    /// moved out in twenty years?" — so it has to be visible when you are not thinking
+    /// about it, which is exactly when those questions occur to you.
+    /// </para>
+    /// <para>
+    /// Faint, though. It is ground the village <em>may</em> use, not something built,
+    /// and it should never compete with the people standing on it.
+    /// </para>
+    /// </remarks>
+    private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
+    {
+        ZoneMap zones = _world!.Zones;
+        float size = _pixelsPerTile * 1.02f;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (!zones.IsResidential(tile))
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, ResidentialColour);
+            }
+        }
+
+        // ⭐ GROUND THAT BELONGS TO A BUILDING (D86, D112) — and this is the layer that was
+        // simply never drawn. Joe: *"'give ground' and 'take back' seem to do nothing."*
+        // They did exactly what they say: the sim recorded the tiles and the hut's panel
+        // counted them. **Nothing on the map changed, so from the chair the brush was dead.**
+        //
+        // A zone the player paints and cannot see is worse than one they cannot paint —
+        // §1.1 is about the game explaining itself, and a brush whose only feedback is a
+        // number in a row somewhere else is a brush that explains nothing.
+        //
+        // The selected building's ground is drawn stronger than everybody else's, which is
+        // how one colour answers *"whose is this?"* without inventing a palette per hut.
+        int selected = SelectedGroundOwner();
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                int owner = zones.WorkGroundOwner(tile);
+                if (owner == 0)
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, owner == selected ? WorkGroundMine : WorkGroundColour);
+            }
+        }
+
+        // What the village has been told to take (D87). Drawn over the terrain rather
+        // than replacing it, so a marked wood still reads as a wood — the paint is an
+        // instruction about the ground, not a new kind of ground.
+        //
+        // Last of the three, because harvest is the one that says something is about to
+        // change and the other two say who may use ground that is staying as it is.
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (!zones.IsHarvest(tile))
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, HarvestColour);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Which building's ground the player is looking at, or zero if none is selected.
+    /// </summary>
+    /// <remarks>
+    /// Asked of the selected <em>tile</em> rather than kept as state, for D49's reason: the
+    /// selection already lives in one place and a second copy of it is a second thing to keep
+    /// in step. A workplace that owns no ground answers the question harmlessly.
+    /// </remarks>
+    private int SelectedGroundOwner()
+    {
+        if (_selectedTile is not GridPos tile)
+        {
+            return 0;
+        }
+
+        foreach (Workplace workplace in _world!.Workplaces)
+        {
+            if (workplace.Position == tile && !workplace.IsSite)
+            {
+                return workplace.Id;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// The river and the woods, as generated from the run's seed (D18).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One filled rect per non-grass tile, clipped to the visible window. Grass is
+    /// skipped rather than drawn, because it is already the valley's base colour and
+    /// filling ninety per cent of the screen with rectangles of the colour underneath
+    /// them is a lot of work to change nothing.
+    /// </para>
+    /// <para>
+    /// A tile is drawn a hair over one tile wide. At fractional zoom, exactly-one-tile
+    /// rects leave seams between neighbours where the rounding falls differently, and
+    /// a river with gaps in it reads as a bug rather than as a river.
+    /// </para>
+    /// </remarks>
+    private void DrawTerrain(int minX, int maxX, int minY, int maxY)
+    {
+        GeneratedMap map = _world!.Map;
+        float size = _pixelsPerTile * 1.02f;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                Terrain terrain = map.TerrainAt(tile);
+                if (terrain == Terrain.Grass)
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, ColourOf(terrain));
+            }
+        }
+    }
+
+    /// <summary>What a kind of ground is drawn as.</summary>
+    /// <remarks>
+    /// <b>Grass never reaches here from the valley itself</b> — it is the background, skipped
+    /// by <see cref="DrawTerrain"/> so the common case draws nothing at all. It has an arm
+    /// anyway because the minimap bakes every tile into a texture and has no background to
+    /// skip against, and a <c>_ =></c> falling through to woodland would have painted the
+    /// whole valley as forest.
+    /// </remarks>
+    internal static Color ColourOf(Terrain terrain) => terrain switch
+    {
+        Terrain.Water => WaterColour,
+        Terrain.Rock => RockColour,
+        Terrain.IronDeposit => IronColour,
+        Terrain.Grass => Ground,
+        Terrain.Field => FieldColour,
+        Terrain.Sown => SownColour,
+        Terrain.Ripe => RipeColour,
+        _ => ForestColour,
+    };
+
+    /// <summary>
+    /// The colours the minimap borrows, so there is one palette and not two.
+    /// </summary>
+    /// <remarks>
+    /// A second set of terrain colours would drift the first time one of these was tuned,
+    /// and then the small map and the big one would disagree about which green is a wood —
+    /// which is the whole job of a minimap failing.
+    /// </remarks>
+    // `GroundColour` was the third of these and is deleted (D159). The minimap borrows
+    // `BeyondColour` and `BuildingColour` and paints its ground from the terrain directly,
+    // so this one had been an accessor onto a colour nobody asked it for.
+    internal static Color BeyondColour => Beyond;
+
+    internal static Color BuildingColour => HutColour;
+
+    internal static Color DwellingColour => HomeColour;
+
+    internal static Color StoreColour => GranaryColour;
 
     /// <summary>
     /// A line from where somebody lives to where they work.
@@ -427,7 +1405,7 @@ public partial class VillageMap : Control
             bool selected = villager.Id == _selectedVillagerId;
 
             DrawLine(
-                ToScreen(world.HomeOf(villager)),
+                ToScreen(world.RestingPlaceOf(villager)),
                 ToScreen(workplace.Position),
                 colour with { A = selected ? 0.75f : 0.3f },
                 selected ? 2f : 1f);
@@ -445,25 +1423,119 @@ public partial class VillageMap : Control
             Vector2 centre = ToScreen(workplace.Position);
             Color colour = ColourOf(workplace.Kind);
 
-            // Catchment as a faint ring: the "does not walk across the map" rule made
-            // visible rather than merely enforced. Scoped to the detail control,
-            // because seven overlapping rings drawn at all times was most of the
-            // clutter and none of the meaning.
+            // ⛔ THE CATCHMENT RING IS GONE WITH THE CATCHMENT. It drew *"how far it is
+            // reasonable to come from"* as a faint circle — the fence made visible rather
+            // than merely enforced — and there is no fence to draw
+            // (`forests-and-gathering.md §3`).
+            //
+            // **Nothing replaces it, deliberately.** The thing that decides who works where
+            // is a cost-first sort over every hand in the village, and there is no circle
+            // that says that: the honest picture of it is the route lines this map already
+            // draws, one per villager, which show the actual walk rather than a boundary
+            // nobody is subject to. Drawing a ring that no longer means anything would be
+            // worse than drawing nothing — it would still look like a rule.
+            //
+            // A gatherer's hut DOES still have a ring, and it is a different thing entirely:
+            // the ground its yield is computed from. That is `GatheringRadius`, and it is
+            // drawn below on the huts that have one.
             bool ringWanted = _detail == MapDetail.All
                 || (_detail == MapDetail.Selected && workplace.Id == selectedWorkplace);
 
-            if (ringWanted)
+            if (ringWanted && workplace.GatheringRadius > 0)
             {
-                float radius = workplace.CatchmentRadius / (float)TravelCostField.BaseTileCost * _pixelsPerTile;
+                float radius = workplace.GatheringRadius * _pixelsPerTile;
                 if (radius <= Mathf.Max(Size.X, Size.Y) * 2f)
                 {
                     DrawArc(centre, radius, 0f, Mathf.Tau, 64, colour with { A = 0.22f }, 1f);
                 }
             }
 
+            // A construction site is drawn as an outline that fills in as it is built,
+            // rather than as a dot like the workplaces. A half-raised granary should be
+            // legible on the map — that is one of the three things D43 says paying for
+            // buildings with labour buys, and it is the one you can actually see.
+            if (workplace.Construction is { } site)
+            {
+                float size = Mathf.Max(10f, _pixelsPerTile * 0.8f);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+                int total = System.Math.Max(1, site.Recipe.Logs + site.Recipe.WorkTicks);
+                float done = (site.LogsDelivered + site.WorkDone) / (float)total;
+
+                DrawRect(rect, SiteColour with { A = 0.18f });
+                if (done > 0f)
+                {
+                    var filled = new Rect2(
+                        rect.Position + new Vector2(0f, rect.Size.Y * (1f - done)),
+                        new Vector2(rect.Size.X, rect.Size.Y * done));
+                    DrawRect(filled, SiteColour with { A = 0.55f });
+                }
+
+                DrawRect(rect, SiteColour, filled: false, width: 2f);
+                continue;
+            }
+
             DrawCircle(centre, Mathf.Max(4f, _pixelsPerTile * 0.4f), colour);
+
+            // ⭐ AND A BUILDING THAT CANNOT DO ITS JOB SAYS SO (Joe, D147). The same shape as
+            // D140's full-store ring, for the same reason and with the same switches — and it
+            // earns its place because three times in one session a hut looked idle because of a
+            // number set on a different panel. `SimWorld.IdleNote` is the one place that decides
+            // what counts, so the ring and the sentence in the inspector cannot drift apart.
+            //
+            // A COOLER RING THAN THE FULL-STORE ONE, because they are different facts and a
+            // player should be able to tell them apart at a glance without reading anything: a
+            // full store is usually a village doing well at something, an idle hut never is.
+            if (ShowsIdleMarker(workplace) && world.IdleNote(workplace) is not null)
+            {
+                DrawArc(
+                    centre,
+                    Mathf.Max(7f, _pixelsPerTile * 0.7f),
+                    0f,
+                    Mathf.Tau,
+                    24,
+                    IdleWorkplaceColour,
+                    width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
+            }
         }
     }
+
+    /// <summary>
+    /// Whether this workplace's idle marker is switched on — globally, and for itself.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ VIEW STATE, for the reason D140 spells out on its own marker:</b> the sim is
+    /// hashed and replayed from a seed (D2), so a display preference living there would make
+    /// two players who merely disagree about what to look at diverge into different worlds.
+    /// </remarks>
+    private bool ShowsIdleMarker(Workplace workplace) =>
+        _showIdleMarkers && !_idleMarkerMuted.Contains(workplace.Id);
+
+    private bool _showIdleMarkers = true;
+    private readonly HashSet<int> _idleMarkerMuted = new();
+
+    /// <summary>Switch every idle-workplace marker on or off at once.</summary>
+    public void ShowIdleMarkers(bool shown)
+    {
+        _showIdleMarkers = shown;
+        QueueRedraw();
+    }
+
+    /// <summary>Switch one workplace's marker on or off, and report where it landed.</summary>
+    public bool ToggleIdleMarker(int workplaceId)
+    {
+        bool nowShown = _idleMarkerMuted.Remove(workplaceId);
+        if (!nowShown)
+        {
+            _idleMarkerMuted.Add(workplaceId);
+        }
+
+        QueueRedraw();
+        return nowShown;
+    }
+
+    /// <summary>Whether one workplace's marker is switched on, ignoring the global switch.</summary>
+    public bool IdleMarkerShownFor(int workplaceId) => !_idleMarkerMuted.Contains(workplaceId);
 
     private void DrawHomes()
     {
@@ -474,7 +1546,13 @@ public partial class VillageMap : Control
             Household household = world.Households[i];
             bool occupied = world.LivingMembersOf(household) > 0;
 
-            Vector2 centre = ToScreen(household.HomePosition);
+            // Nothing to draw for a family that has not built yet (D70).
+            if (household.HomePosition is not GridPos site)
+            {
+                continue;
+            }
+
+            Vector2 centre = ToScreen(site);
             float size = Mathf.Max(6f, _pixelsPerTile * 0.62f);
             var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
 
@@ -490,6 +1568,11 @@ public partial class VillageMap : Control
 
         GroupByTile(world);
 
+        // Before anybody is drawn, because DrawnCentre reads what this writes and the click
+        // test asks DrawnCentre too — one answer per frame, or the dot and the hit test
+        // would disagree by a tile.
+        AdvanceInterpolation(world);
+
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -500,27 +1583,10 @@ public partial class VillageMap : Control
 
             stillAlive.Add(villager.Id);
 
-            var current = new Vector2(villager.Position.X, villager.Position.Y);
-            Vector2 previous = _previousTiles.TryGetValue(villager.Id, out Vector2 known) ? known : current;
-
-            // Lerp from where they were to where they are. If they moved more than a
-            // tile — being born, or moving house — snap instead, or they would glide
-            // across the map.
-            Vector2 drawTile = previous.DistanceSquaredTo(current) > 2f
-                ? current
-                : previous.Lerp(current, (float)_alpha);
-
-            if (current != previous && _alpha >= 0.999)
-            {
-                _previousTiles[villager.Id] = current;
-            }
-            else if (!_previousTiles.ContainsKey(villager.Id))
-            {
-                _previousTiles[villager.Id] = current;
-            }
-
-            Vector2 centre = ToScreen(drawTile + FanOffset(villager));
-            float radius = Mathf.Max(3f, _pixelsPerTile * 0.2f);
+            // Where they are drawn this frame — and the click test asks the same method,
+            // so what the player aims at is what they hit (see DrawnCentre).
+            Vector2 centre = DrawnCentre(villager);
+            float radius = VillagerRadius;
 
             Color colour = villager.LifeStage switch
             {
@@ -538,6 +1604,70 @@ public partial class VillageMap : Control
         }
 
         PruneTheDead(stillAlive);
+    }
+
+    /// <summary>
+    /// Roll each villager's glide forward when — and only when — the sim has actually
+    /// taken a tick.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⭐⭐ THIS IS THE JITTER (D169), and it was never in the sim.</b> The glide used to
+    /// advance on <c>_alpha &gt;= 0.999</c>. <see cref="FixedTimestepDriver.Alpha"/> is the
+    /// accumulator remainder in <c>[0,1)</c>, sampled once a frame, so that condition asks a
+    /// frame to land in the last thousandth of a tick — which at any speed the game is
+    /// actually watched at is a coin flip nobody wins for tens of seconds at a time. So
+    /// <c>Previous</c> froze on a tile from some while ago.
+    /// </para>
+    /// <para>
+    /// <b>What a frozen <c>Previous</c> looks like on screen is exactly what Joe described.</b>
+    /// While the villager is more than a tile away from it, <see cref="DrawnCentre"/> snaps and
+    /// nothing is wrong. The moment they are standing within one tile of it — which is most of
+    /// the time for <em>a farmer working a small field or a forester working painted ground</em>
+    /// — the lerp runs from the stale tile instead, so the dot jumps back to it as alpha resets
+    /// at each tick and glides forward again: <b>a bounce between two tiles, once a tick, for as
+    /// long as they stay put</b>. Nothing in the audit trail shows it, because nothing in the sim
+    /// did it: a sweep of the whole of <c>bclone-20260822-000011.log</c> for a villager returning
+    /// to a tile they had just left finds <b>15 in 10,476 ticks</b>, none of them a farmer at
+    /// work.
+    /// </para>
+    /// <para>
+    /// <b>The tick is the thing to watch, so watch the tick.</b> Alpha says how far through a
+    /// tick we are and can never say that one ended.
+    /// </para>
+    /// </remarks>
+    private void AdvanceInterpolation(SimWorld world)
+    {
+        bool tickAdvanced = world.Tick != _interpolatedThroughTick;
+        _interpolatedThroughTick = world.Tick;
+
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            var current = new Vector2(villager.Position.X, villager.Position.Y);
+
+            // First sight of somebody — born, or the first frame of the run. They start
+            // standing still rather than gliding in from nowhere.
+            if (!_tiles.TryGetValue(villager.Id, out (Vector2 Previous, Vector2 Current) known))
+            {
+                _tiles[villager.Id] = (current, current);
+                continue;
+            }
+
+            if (!tickAdvanced)
+            {
+                continue;
+            }
+
+            // `known.Current` is where they were on the previous frame, and a sim position
+            // only changes on a tick boundary — so it is where they stood last tick.
+            _tiles[villager.Id] = (known.Current, current);
+        }
     }
 
     /// <summary>Everyone alive, bucketed by the tile they are standing on.</summary>
@@ -599,22 +1729,121 @@ public partial class VillageMap : Control
         return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * FanRadiusTiles;
     }
 
+    /// <summary>How big a person is drawn, in pixels. Never smaller than a clickable dot.</summary>
+    private float VillagerRadius => Mathf.Max(3f, _pixelsPerTile * 0.2f);
+
+    /// <summary>
+    /// Exactly where a villager is drawn on screen this frame.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One method, because drawing and clicking must agree.</b> A person is not drawn at
+    /// their sim tile: they glide between tiles as the tick plays out (<c>_alpha</c>) and they
+    /// are fanned off a crowded tile so a household reads as a household. A hit test written
+    /// against <c>villager.Position</c> would therefore miss by most of a tile for anybody
+    /// walking, and by the fan radius for anybody standing at home — which is to say, it would
+    /// miss whenever it mattered.
+    /// </para>
+    /// <para>
+    /// Pure: it reads the interpolation bookkeeping and never writes it, so asking where
+    /// somebody is drawn cannot move them.
+    /// </para>
+    /// </remarks>
+    private Vector2 DrawnCentre(Villager villager)
+    {
+        var current = new Vector2(villager.Position.X, villager.Position.Y);
+        Vector2 previous =
+            _tiles.TryGetValue(villager.Id, out (Vector2 Previous, Vector2 Current) known)
+                ? known.Previous
+                : current;
+
+        // Lerp from where they were to where they are. If they moved more than a
+        // tile — being born, moving house, or several ticks passing inside one frame at
+        // 10× — snap instead, or they would glide across the map.
+        Vector2 drawTile = previous.DistanceSquaredTo(current) > 2f
+            ? current
+            : previous.Lerp(current, (float)_alpha);
+
+        return ToScreen(drawTile + FanOffset(villager));
+    }
+
+    /// <summary>
+    /// Whoever the player just clicked on, or null if they clicked past everybody.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Clicking a villager on the map has never worked</b> — the map has only ever
+    /// hit-tested buildings, so the roster was the sole way to select a person. Joe asked for
+    /// it directly, and it is the obvious gesture: the people are the thing you are watching.
+    /// </para>
+    /// <para>
+    /// <b>A person beats the ground they stand on.</b> Villagers are small and drawn on top of
+    /// everything, and they stand on their own doorsteps constantly — so if the pointer is on
+    /// somebody, they are what was meant, and the tile underneath is a click away by aiming
+    /// anywhere else in it. The nearest of a crowd wins, which is what the fan is for.
+    /// </para>
+    /// <para>
+    /// A little forgiveness on the radius, because a person is a four-pixel dot when the
+    /// camera is out and a target you cannot hit is the same bug as a button behind a panel
+    /// (D113). Not so much that the slack itself swallows a tile.
+    /// </para>
+    /// </remarks>
+    private Villager? VillagerAt(Vector2 screen)
+    {
+        SimWorld world = _world!;
+        float reach = VillagerRadius + 4f;
+        float nearest = reach * reach;
+        Villager? hit = null;
+
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            // Strictly nearer, so a tie goes to the lower id and the selection does not
+            // flicker between two people standing on the same spot.
+            float distance = DrawnCentre(villager).DistanceSquaredTo(screen);
+            if (distance < nearest)
+            {
+                nearest = distance;
+                hit = villager;
+            }
+        }
+
+        return hit;
+    }
+
     private bool InScope(int villagerId) =>
         _detail == MapDetail.All || (_detail == MapDetail.Selected && villagerId == _selectedVillagerId);
 
-    private static Color ColourOf(JobKind kind) => kind == JobKind.Forager ? BerryColour : TreeColour;
+    /// <remarks>
+    /// A switch rather than "forager, else assume trees". That shortcut was correct
+    /// while there were two kinds of work; with four it drew the woodcutter's hut and
+    /// the market as tree stands, so the map claimed the village had woodland it did
+    /// not have.
+    /// </remarks>
+    private static Color ColourOf(JobKind kind) => kind switch
+    {
+        JobKind.Forager => BerryColour,
+        JobKind.Forester => TreeColour,
+        JobKind.Woodcutter => HutColour,
+        _ => MarketColour,
+    };
 
     /// <summary>Forget interpolation state for the dead, so ids can never be confused
     /// and the dictionary does not grow for the whole run.</summary>
     private void PruneTheDead(HashSet<int> stillAlive)
     {
-        if (_previousTiles.Count <= stillAlive.Count)
+        if (_tiles.Count <= stillAlive.Count)
         {
             return;
         }
 
         var gone = new List<int>();
-        foreach (KeyValuePair<int, Vector2> entry in _previousTiles)
+        foreach (KeyValuePair<int, (Vector2 Previous, Vector2 Current)> entry in _tiles)
         {
             if (!stillAlive.Contains(entry.Key))
             {
@@ -624,7 +1853,7 @@ public partial class VillageMap : Control
 
         foreach (int id in gone)
         {
-            _previousTiles.Remove(id);
+            _tiles.Remove(id);
         }
     }
 }

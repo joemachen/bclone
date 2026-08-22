@@ -30,21 +30,27 @@ public sealed class WoodTests
         SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
 
     [Fact]
-    public void SpareWorkersTakeTheTreeStand()
+    public void SpareWorkersTakeTheForestersHut()
     {
-        // The village keeps a woodpile, so the stand is worked whenever the store is
+        // The village keeps a woodpile, so the wood is worked whenever the store is
         // below what the next home will cost — which is most of the time. Sampled per
         // season rather than per year: a year boundary is the one instant where the
         // last reshuffle's cutting is finished and the next has not been decided.
         SimLoop loop = Build(Config);
 
+        // ⚠️ ACROSS EVERY STAND, NOT THE FIRST ONE IN THE LIST (D102). This read
+        // `FindStand(...).WorkerIds.Count`, which is one of the fixture's TWO stands — so it
+        // was asserting that the village staffs a particular thicket rather than that it cuts
+        // wood at all. Houses becoming construction sites moved where people live and
+        // therefore which stand is nearest, and the guard went red while the village went on
+        // felling exactly as much timber: measured, up to 2 foresters at once over the same
+        // forty years. **The old pass was luck, and the test's own name says what it means.**
         int mostAtOnce = 0;
         for (int season = 0; season < 40 * 4; season++)
         {
             loop.Step(Config.TicksPerSeason);
-            Workplace stand = FindStand(loop.World);
-            mostAtOnce = System.Math.Max(mostAtOnce, stand.WorkerIds.Count);
-            Assert.Equal(JobKind.Woodcutter, stand.Kind);
+            mostAtOnce = System.Math.Max(mostAtOnce, CountWorking(loop.World, JobKind.Forester));
+            Assert.Equal(JobKind.Forester, FindStand(loop.World).Kind);
         }
 
         _output.WriteLine($"most at the stand at once, over 40 years: {mostAtOnce}");
@@ -77,11 +83,7 @@ public sealed class WoodTests
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear * 40);
 
-        int wood = 0;
-        foreach (Household household in loop.World.Households)
-        {
-            wood += household.Stockpile.LifetimeWoodCut;
-        }
+        int wood = loop.World.LifetimeLogsFelled();
 
         _output.WriteLine($"{wood} wood cut in three years");
         Assert.True(wood > 0, "Nobody cut any timber.");
@@ -107,10 +109,11 @@ public sealed class WoodTests
             loop.StepOnce();
         }
 
-        foreach (Household household in loop.World.Households)
-        {
-            household.Stockpile.TryTakeWood(household.Stockpile.Wood);
-        }
+        // Empty the SHED, not the houses — logs live in a building now (D30), so
+        // emptying household piles leaves the village its whole woodpile and no
+        // reason to fell anything.
+        loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTake(Goods.Logs, loop.World.AnyStoreOf(StoreKind.Shed).Store.Logs);
+        loop.World.AnyStoreOf(StoreKind.Shed).Store.TryTake(Goods.Firewood, loop.World.AnyStoreOf(StoreKind.Shed).Store.Firewood);
 
         int before = TotalLifetimeWood(loop.World);
         while (loop.World.Clock.IsWinter)
@@ -141,7 +144,7 @@ public sealed class WoodTests
             loop.StepOnce();
             foreach (Household household in loop.World.Households)
             {
-                Assert.True(household.Stockpile.Wood >= 0);
+                Assert.True(household.Stockpile.Logs >= 0);
             }
         }
     }
@@ -160,30 +163,82 @@ public sealed class WoodTests
     }
 
     [Fact]
-    public void TheHashCoversWood()
+    public void TheHashCoversLogs()
     {
-        // Anti-vacuity: a hash blind to wood would let timber desync silently.
+        // Anti-vacuity: a hash blind to logs would let timber desync silently.
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Households[0].Stockpile.AddWood(1);
+        loop.World.Households[0].Stockpile.Add(Goods.Logs, 1);
 
         Assert.NotEqual(before, StateHash.Compute(loop.World));
+    }
+
+    [Fact]
+    public void TheHashCoversFirewood()
+    {
+        // Firewood is a separate resource from logs (D29), so it needs its own guard.
+        // Splitting one hashed field into two is exactly where a field quietly stops
+        // being covered — the hash still changes when logs change, and nobody notices
+        // the other half was never mixed in.
+        SimLoop loop = Build(Config);
+        loop.Step(Config.TicksPerYear);
+
+        ulong before = StateHash.Compute(loop.World);
+        loop.World.Households[0].Stockpile.Add(Goods.Firewood, 1);
+
+        Assert.NotEqual(before, StateHash.Compute(loop.World));
+    }
+
+    [Fact]
+    public void LogsAndFirewoodAreGenuinelyDifferentResources()
+    {
+        // Guards against the split being cosmetic — one backing field with two names
+        // would pass every other test in this file.
+        SimLoop loop = Build(Config);
+        Stockpile store = loop.World.Households[0].Stockpile;
+
+        store.Add(Goods.Logs, 10);
+        store.Add(Goods.Firewood, 3);
+
+        Assert.Equal(10, store.Logs);
+        Assert.Equal(3, store.Firewood);
+
+        Assert.True(store.TryTake(Goods.Logs, 10));
+        Assert.Equal(0, store.Logs);
+        Assert.Equal(3, store.Firewood);
+
+        // Spending logs must not spend firewood, and the woodcutter's conversion in
+        // slice 2 is the ONLY thing that should ever turn one into the other.
+        Assert.False(store.TryTake(Goods.Firewood, 4));
+        Assert.Equal(3, store.Firewood);
     }
 
     [Fact]
     public void HousingCanBeGatedOnTimber()
     {
         // The mechanic works; it is disabled by default because it cannot pay off
-        // until labour demand is dynamic (see SimConfig.WoodPerHouse). This proves
+        // until labour demand is dynamic (see SimConfig.LogsPerHouse). This proves
         // the gate itself holds, so turning it on later is a config change.
-        SimLoop loop = Build(Config with { WoodPerHouse = 1_000_000 });
+        SimLoop loop = Build(Config with { LogsPerHouse = 1_000_000 });
         int founding = loop.World.Households.Count;
+        int foundingHomes = CountHomes(loop.World);
 
         loop.Step(30_000);
 
-        Assert.Equal(founding, loop.World.Households.Count);
+        _output.WriteLine(
+            $"a house priced at a million logs: households {founding} -> "
+            + $"{loop.World.Households.Count}, homes {foundingHomes} -> {CountHomes(loop.World)}");
+
+        // ⚠️ HOMES, NOT HOUSEHOLDS, and the difference is the whole claim. Counting households
+        // was a proxy for counting roofs and it stopped being one: it failed at 3 against the
+        // founding 2 because a THIRD HOUSEHOLD FORMED AND WENT ON WAITING — which is the gate
+        // working, not leaking. Step C re-derived the food economy against the wooded ring a
+        // gatherer's hut actually sits in (gather_yield 46 -> 145), so this village now feeds
+        // enough children to pair one more couple off inside thirty thousand ticks than it
+        // used to. A couple with nowhere to live is not a house built out of a million logs.
+        Assert.Equal(foundingHomes, CountHomes(loop.World));
     }
 
     [Fact]
@@ -214,8 +269,8 @@ public sealed class WoodTests
         // homes cost timber, but still spread. A gate that stops growth dead is the
         // failure this spent a whole iteration on; a gate that changes nothing is
         // decorative.
-        SimLoop gated = Build(Config with { WoodPerHouse = 30 });
-        SimLoop free = Build(Config with { WoodPerHouse = 0 });
+        SimLoop gated = Build(Config with { LogsPerHouse = 30 });
+        SimLoop free = Build(Config with { LogsPerHouse = 0 });
 
         gated.Step(Config.TicksPerYear * 120);
         free.Step(Config.TicksPerYear * 120);
@@ -227,8 +282,15 @@ public sealed class WoodTests
         Assert.True(gated.World.Households.Count > Config.StartingHouseholds,
             "Timber cost stopped the village building at all.");
         Assert.True(gated.World.Population > 0, "Timber cost killed the village.");
-        Assert.True(gated.World.Households.Count <= free.World.Households.Count,
-            "Timber cost should not make the village build FASTER.");
+
+        // There used to be a third assertion here — that the gated village never built
+        // MORE houses than the free one. It has been dropped rather than relaxed,
+        // because house count stopped being a measure of growth the moment couples
+        // began taking over empty homes instead of raising new ones. Two runs whose
+        // populations differ at all then diverge chaotically, and the gated run
+        // finishing one house ahead says nothing about the gate. What the test is
+        // actually for — the gate neither stops growth nor kills the village — is
+        // asserted above and still holds.
     }
 
     /// <summary>The tree stand, found by kind. Its index moves as forage sites are
@@ -237,7 +299,7 @@ public sealed class WoodTests
     {
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
-            if (world.Workplaces[i].Kind == JobKind.Woodcutter)
+            if (world.Workplaces[i].Kind == JobKind.Forester)
             {
                 return world.Workplaces[i];
             }
@@ -260,14 +322,23 @@ public sealed class WoodTests
         return count;
     }
 
-    private static int TotalLifetimeWood(SimWorld world)
+    /// <summary>Households with a roof over them, which is what a log buys.</summary>
+    private static int CountHomes(SimWorld world)
     {
-        int total = 0;
-        for (int i = 0; i < world.Households.Count; i++)
+        int homes = 0;
+        foreach (Household household in world.Households)
         {
-            total += world.Households[i].Stockpile.LifetimeWoodCut;
+            if (household.HasHome)
+            {
+                homes++;
+            }
         }
 
-        return total;
+        return homes;
+    }
+
+    private static int TotalLifetimeWood(SimWorld world)
+    {
+        return world.LifetimeLogsFelled();
     }
 }

@@ -102,11 +102,13 @@ public sealed class Phase0SimTests
         var (loop, _) = Phase0Fixtures.Build(Config);
         SimWorld world = loop.World;
 
-        // Run until the first meal is taken.
+        // Run until the first meal is taken. Measured against food the villager can
+        // reach — larder plus what is in their arms — because a meal may now come out
+        // of either, and a villager carrying food while starving eats it (D30).
         int foodBefore = 0;
         for (int i = 0; i < 500; i++)
         {
-            foodBefore = world.Stockpile.Food;
+            foodBefore = world.Stockpile.Food + world.Villager.CarriedFood;
             loop.StepOnce();
             if (world.Villager.JustAte)
             {
@@ -115,7 +117,9 @@ public sealed class Phase0SimTests
         }
 
         Assert.True(world.Villager.JustAte, "Expected the villager to eat within 500 ticks.");
-        Assert.Equal(foodBefore - Config.FoodPerMeal, world.Stockpile.Food);
+        Assert.Equal(
+            foodBefore - Config.FoodPerMeal,
+            world.Stockpile.Food + world.Villager.CarriedFood);
         Assert.True(world.Villager.Hunger < Config.EatThreshold);
     }
 
@@ -163,17 +167,31 @@ public sealed class Phase0SimTests
     {
         var (loop, _) = Phase0Fixtures.Build(Config);
 
+        // Food is carried now rather than banked where it is picked (D30), so the
+        // yield lands in the villager's arms first and in the larder when they get
+        // home. Both are the same gather; this waits for it to arrive.
         for (int i = 0; i < 100; i++)
         {
             loop.StepOnce();
-            if (loop.World.Stockpile.Food > 0)
+            if (loop.World.Villager.TotalGathers > 0)
             {
                 break;
             }
         }
 
-        Assert.Equal(Config.GatherYield, loop.World.Stockpile.Food);
         Assert.Equal(1, loop.World.Villager.TotalGathers);
+
+        // ⚠️ AGAINST WHAT THIS HUT IS WORTH, NOT AGAINST THE CONFIG KEY. `gather_yield` is
+        // the value of a trip at a FULLY WOODED ring; what a villager actually carries home
+        // is that scaled by how wooded their own hut's ring is (`GatherYieldAt`), which is
+        // the whole of "less trees, less food". Comparing against the raw key asserted the
+        // yield of a hut standing in unbroken forest, which no hut ever is.
+        Workplace hut = loop.World.Workplaces.Single(
+            place => place.Kind == JobKind.Forager && !place.IsSite);
+
+        Assert.Equal(
+            loop.World.GatherYieldAt(hut),
+            loop.World.Villager.CarriedFood + loop.World.Stockpile.Food);
     }
 
     [Fact]
@@ -196,8 +214,13 @@ public sealed class Phase0SimTests
         while (loop.World.Clock.IsWinter)
         {
             loop.StepOnce();
-            Assert.True(loop.World.Stockpile.Food <= atWinterStart,
-                $"Store grew during winter at tick {loop.World.Tick}.");
+
+            // The rule is that nobody GATHERS in winter — not that the larder can
+            // never rise. Since goods are carried rather than banked where they are
+            // picked (D30), a villager who was walking home when the season turned
+            // arrives with an autumn armful and puts it away, which is honest. The
+            // store growing is the delivery; what must not happen is a new gather.
+            Assert.Equal(gathersAtWinterStart, loop.World.Villager.TotalGathers);
         }
 
         Assert.Equal(gathersAtWinterStart, loop.World.Villager.TotalGathers);
@@ -351,13 +374,24 @@ public sealed class Phase0SimTests
     [Fact]
     public void Villager_StaysWithinTheirWorld()
     {
+        // Inside the valley, which is what "their world" means and what the villager
+        // must never leave. It used to assert they stayed between home and the berry
+        // patch, which was true when those were the only two places anyone went —
+        // there is a granary and a shed to walk to now, and both are on the other side
+        // of home.
         var (loop, _) = Phase0Fixtures.Build(Config);
+        SimConfig config = Config;
 
         for (int i = 0; i < 3_000; i++)
         {
             loop.StepOnce();
-            int x = loop.World.Villager.Position.X;
-            Assert.InRange(x, Config.HomeX, Config.FoodSourceX);
+            GridPos where = loop.World.Villager.Position;
+
+            Assert.InRange(where.X, config.MapMinX, config.MapMaxX);
+            Assert.InRange(where.Y, config.MapMinY, config.MapMaxY);
+
+            // And never on the water (D40), which is the stronger claim.
+            Assert.NotEqual(Terrain.Water, loop.World.Map.TerrainAt(where));
         }
     }
 

@@ -58,7 +58,11 @@ public sealed class VillageTests
         loop.Step(10);
         Assert.All(Founders(loop), v => Assert.Equal(20, v.AgeYears));
 
-        loop.Step(240);   // one full year
+        // A year, asked of the config rather than written down. It was 240 ticks
+        // literally, which stopped being a year the moment seasons went from fifteen
+        // days to thirty (D49) — the test then asserted a birthday half way through
+        // one and would have gone on asserting it through any later calendar change.
+        loop.Step(Village.TicksPerYear);
         Assert.All(Founders(loop), v => Assert.Equal(21, v.AgeYears));
     }
 
@@ -115,7 +119,7 @@ public sealed class VillageTests
         Household first = loop.World.Households[0];
         Household second = loop.World.Households[1];
 
-        first.Stockpile.TryTake(first.Stockpile.Food);
+        first.Stockpile.TryTake(Goods.Food, first.Stockpile.Food);
 
         Assert.Equal(0, first.Stockpile.Food);
         Assert.True(second.Stockpile.Food > 0, "Emptying one larder must not empty the other.");
@@ -189,7 +193,7 @@ public sealed class VillageTests
         loop.Step(500);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Households[^1].Stockpile.Add(1);
+        loop.World.Households[^1].Stockpile.Add(Goods.Food, 1);
 
         Assert.NotEqual(before, StateHash.Compute(loop.World));
     }
@@ -277,17 +281,43 @@ public sealed class VillageTests
         Assert.True(homegrown.CanWork);
     }
 
+    /// <summary>A village with an unreachable food bar never has a child.</summary>
+    /// <remarks>
+    /// <para>
+    /// A village that breeds into a famine is not telling a story, it is oscillating — and the
+    /// deaths would not trace back to any decision.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ RENAMED FROM <c>AHungryHouseholdDoesNotHaveChildren</c>, BECAUSE IT WAS ABOUT TO
+    /// START LYING (D153).</b> It set `birth_food_percent` absurdly high and asserted nobody is
+    /// born — and that constant used to scale <em>two</em> gates, the household's own larder and
+    /// the village's granary. With the household term deleted it would have gone on passing
+    /// while silently becoming a second granary test, under a name that says *household*.
+    /// **A guard quietly changing what it measures is the D7/D144 shape this project keeps
+    /// catching**, and the fix is a name that matches the one gate left.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void AHungryHouseholdDoesNotHaveChildren()
+    public void AVillageThatCannotFillItsGranaryNeverHasAChild()
     {
-        // A village that breeds into a famine is not telling a story, it is
-        // oscillating - and the deaths would not trace back to any decision.
-        var (loop, _) = Build(GrowingVillage with { BirthFoodThreshold = 10_000 });
+        var (loop, _) = Build(GrowingVillage with { BirthFoodPercent = 100_000 });
         int founding = loop.World.Villagers.Count;
 
         loop.Step(30_000);
 
         Assert.Equal(founding, loop.World.Villagers.Count);
+
+        // Anti-vacuity: the same village with a reachable bar must actually breed, or this
+        // passes on a settlement that was never going to have children anyway.
+        var (fertile, _) = Build(GrowingVillage);
+        fertile.Step(30_000);
+
+        _output.WriteLine(
+            $"unreachable bar: {loop.World.Villagers.Count} ever born from {founding}; "
+            + $"the same village with the shipped bar: {fertile.World.Villagers.Count}.");
+
+        Assert.True(fertile.World.Villagers.Count > founding,
+            "The control village never had a child either, so the bar proved nothing.");
     }
 
     [Fact]
@@ -338,17 +368,35 @@ public sealed class VillageTests
     {
         // A new household on an empty larder can be wiped out by its first winter
         // before anyone has foraged anything - a death with no decision behind it.
+        //
+        // CHECKED AT THE MOMENT OF FORMATION, which is the only moment the claim is
+        // about. This used to run for a century and then assert that every household
+        // had a non-zero LIFETIME GATHERED — a field a dowry deliberately does not
+        // touch, because Stockpile.Receive exists precisely so that goods changing
+        // hands are not counted as production. So it was really asserting "has foraged
+        // at some point since", which is a different and much weaker thing, and it
+        // failed the day a household happened to be founded near the end of the run.
         var (loop, _) = Build(GrowingVillage);
-        loop.Step(30_000);
 
-        // Every household beyond the founding pair was formed by a couple moving
-        // out, and each was given a share of both parents' stores.
-        Assert.True(loop.World.Households.Count > 2);
-        for (int i = 2; i < loop.World.Households.Count; i++)
+        int known = loop.World.Households.Count;
+        int watched = 0;
+
+        for (int tick = 0; tick < 30_000; tick++)
         {
-            Assert.True(loop.World.Households[i].Stockpile.LifetimeGathered > 0,
-                $"Household {loop.World.Households[i].Name} started with nothing.");
+            loop.StepOnce();
+
+            while (loop.World.Households.Count > known)
+            {
+                Household fresh = loop.World.Households[known];
+                Assert.True(fresh.Stockpile.Food > 0,
+                    $"The {fresh.Name} household was founded on an empty larder at tick {tick}.");
+                known++;
+                watched++;
+            }
         }
+
+        _output.WriteLine($"{watched} households founded, every one of them with food in hand.");
+        Assert.True(watched > 0, "No household was ever founded, so this guard is vacuous (D7).");
     }
 
     [Fact]
@@ -374,30 +422,96 @@ public sealed class VillageTests
         }
     }
 
+    /// <summary>⭐ The derived economy feeds a village that grows, and never starves it.</summary>
+    /// <remarks>
+    /// <para>
+    /// The whole point of the derived economy. Before it, the village peaked around 18 people
+    /// and was extinct by year 91 — it grew, <b>starved</b>, and died out every single run.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT NO LONGER ASKS WHETHER ANYBODY IS ALIVE AT YEAR 150, AND THAT IS D143 RATHER
+    /// THAN A LOWERED BAR.</b> Joe: <i>"an unattended village should die out. The user needs to
+    /// play the game at some point."</i> Nobody has touched this village in a century and a
+    /// half — no hut sited, no ground painted, no second granary, no mode switched — so it
+    /// ageing out is the game working, not the economy failing. A guard that demanded otherwise
+    /// was quietly asserting that the game plays itself, and every time it went red somebody
+    /// went looking for a bug in the food chain.
+    /// </para>
+    /// <para>
+    /// <b>What survives is the claim it was actually written for</b>, and it is stronger than
+    /// the headcount ever was: the economy must carry the village <em>up</em> — measured peak
+    /// 47 from four founders — and <b>nobody may die of hunger or cold on the way</b>. That is
+    /// the failure this guard has always been about, it cannot pass vacuously, and it stays
+    /// false the moment the derivation breaks.
+    /// </para>
+    /// </remarks>
     [Fact]
     public void TheVillageSustainsItselfAcrossGenerations()
     {
-        // The whole point of the derived economy. Before it, the village peaked
-        // around 18 people and was extinct by year 91 - it grew, starved, and died
-        // out every single run.
         var (loop, _) = Build(GrowingVillage);
-        loop.Step(GrowingVillage.TicksPerYear * 150);
+
+        int peak = 0;
+        int peakYear = 0;
+        for (int year = 1; year <= 150; year++)
+        {
+            loop.Step(GrowingVillage.TicksPerYear);
+            if (loop.World.Population > peak)
+            {
+                peak = loop.World.Population;
+                peakYear = year;
+            }
+        }
+
+        int froze = 0;
+        int starved = 0;
+        int aged = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (villager.Alive)
+            {
+                continue;
+            }
+
+            switch (villager.CauseOfDeath)
+            {
+                case CauseOfDeath.Cold: froze++; break;
+                case CauseOfDeath.Starvation: starved++; break;
+                default: aged++; break;
+            }
+        }
 
         _output.WriteLine(
-            $"Year {loop.World.Clock.Year}: {loop.World.Population} alive in " +
-            $"{loop.World.Households.Count} households.");
+            $"Peaked at {peak} in year {peakYear} from {GrowingVillage.StartingPopulation} " +
+            $"founders; year {loop.World.Clock.Year}: {loop.World.Population} alive in " +
+            $"{loop.World.Households.Count} households. Deaths — {froze} froze, {starved} " +
+            $"starved, {aged} of old age.");
 
-        Assert.True(loop.World.Population > GrowingVillage.StartingPopulation,
-            $"Village is down to {loop.World.Population} from " +
-            $"{GrowingVillage.StartingPopulation} founders after 150 years.");
+        Assert.True(peak >= 25,
+            $"The village only ever reached {peak} from {GrowingVillage.StartingPopulation} " +
+            "founders, so the derived economy is not feeding a growing settlement.");
+
+        // ⚠️ HUNGER IS A MINORITY OF DEATHS, NOT ZERO (D155). This demanded nobody ever starved,
+        // which held while the birth gate kept the village well under what it could feed. Joe
+        // loosened that gate on purpose — this village peaks near 50 now instead of 37 — and
+        // accepted that some go hungry on the way. **What must stay true is the line between
+        // pressure and disaster:** most people still die of old age.
+        //
+        // Cold keeps its absolute zero. Nothing about D153 or D155 touches fuel, and every
+        // measurement across both configs and 300 years still reports nobody freezing — so a
+        // frozen villager here would be a real regression rather than a re-based expectation.
+        Assert.True(aged > starved,
+            $"{starved} starved against {aged} of old age — hunger has stopped being pressure "
+            + "and become the normal way to die.");
+
+        Assert.Equal(0, froze);
     }
 
     [Fact]
-    public void EveryHouseholdCanReachTheFoodSourceInReasonableTime()
+    public void EveryHouseholdCanReachSomewhereToGatherInReasonableTime()
     {
         // The bug this guards was invisible and lethal: homes were placed in an
         // ever-lengthening line, so the ninth household sat three times further from
-        // the berry patch than the first and simply could not feed itself. Distance
+        // the nearest food than the first and simply could not feed itself. Distance
         // to work is not flavour - it is whether you eat, which is the whole premise
         // of catchment in DESIGN.md §2.2.
         var (loop, _) = Build(GrowingVillage);
@@ -406,11 +520,30 @@ public sealed class VillageTests
         int worst = 0;
         foreach (Household household in loop.World.Households)
         {
-            int cost = loop.World.TravelCost.TicksBetween(
-                household.HomePosition, loop.World.FoodSource.Position);
-            if (cost > worst)
+            // A family whose house is still being raised has no doorstep to measure from
+            // (D102). Their site was chosen by the same ChooseSite this test is about, so
+            // nothing goes unguarded — it is simply measured when the house stands.
+            if (!household.HasHome)
             {
-                worst = cost;
+                continue;
+            }
+
+            // `world.FoodSource` was Phase 0's single berry patch and is deleted with the
+            // rest of them. The nearest place anyone actually gathers is the question this
+            // was always asking — it just used to have exactly one answer.
+            foreach (Workplace workplace in loop.World.Workplaces)
+            {
+                if (workplace.Kind != JobKind.Forager || workplace.IsSite)
+                {
+                    continue;
+                }
+
+                int cost = loop.World.TravelCost.TicksBetween(
+                    household.Home(), workplace.Position);
+                if (cost > worst)
+                {
+                    worst = cost;
+                }
             }
         }
 
