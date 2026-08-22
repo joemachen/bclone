@@ -1,6 +1,6 @@
 # Handoff — bclone: **Phase 2 merged, the skills catalogue written. Next is per-site yield.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D176 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D177 back to D142**, then
 `METHODOLOGY.md`.
 
 ⭐ **The town hall is designed now** (D176, `specs/tech-tree.md §7f`) — the fourth knowledge
@@ -48,7 +48,7 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
 
 1. ✅ Phase 2 merged, and the branch deleted (it was fully merged; tip was `9b9f410`).
-2. ✅ **`specs/skills-catalog.md` WRITTEN** (D173–D175), docs-only on `main`. **Nothing in it is
+2. ✅ **`specs/skills-catalog.md` WRITTEN** (D173–D177), docs-only on `main`. **Nothing in it is
    built** and its status line says so. What to know before touching Phase 3:
    - **⭐ §3.2 (D174): today's behaviour is the NOVICE FLOOR.** **Nobody is ever worse than
      today**, mastery is headroom above. **The derivation is a survival floor (§2.2) and the
@@ -69,11 +69,21 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
      **technique** (the village's, re-locks exactly as `tech-tree.md` already said) and **a
      record of achievement** (permanent, **grants nothing**), the question dissolves.
      **Mastery-the-tier is not a node and cannot be taken from the village.**
-   - **⚠️ Still open in §12**: whether mastery bites in Phase 3 or waits for a node — a Phase-4
-     gate means Phase 3 ships a system with **no mechanical effect**, D56's shape.
+   - **✅ MASTERY BITES IN PHASE 3, GATED BY NOTHING (D177).** A later node may raise the ceiling
+     further; none permits it. **That is what keeps Phase 3 from shipping D56's shape** — a
+     system that accrues, is visible and changes nothing.
+   - **⭐ PHASE 3 LANDS IN THREE PIECES AND ONLY THE FIRST IS A NO-OP** (§11): the **substrate**
+     (goldens unmoved), then **mastery biting** (moves them), then **the mixed founding and the
+     seeded rhythm together** (moves them once more). *Landing them apart is what makes a
+     regression attributable.*
+   - **✅ Milestones are LOG LINES in Phase 3** (D177) and gain their collections home in the
+     town hall in Phase 4. **There is no milestones panel.**
    - **§6 is a contract** with `tech-tree.md`, whose header now points back at it, and §6.6–6.7
      are guarantees Phase 4 may rely on: **no record ever restores proficiency**, and **no
      knowledge state may gate mastery**.
+   - **⚠️ What is left in §12 is tuning, not design**: the width between novice and master, the
+     founding party's composition, the tier names, and whether skill scales yield as well as
+     duration. **Every one wants a probe before an implementation.**
 3. **⭐ NEXT: Per-site yield, and retiring the 7-tile bound** (D58, D172, Joe: *"per-site yield
    behind skills-catalog"*). **This is the next thing to do.** See below.
 4. **Phase 3 — skill and apprenticeship** (§2.1), which is also the real answer to the mid-game

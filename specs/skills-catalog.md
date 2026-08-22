@@ -146,15 +146,18 @@ with.
    was watching at 4× — unchanged. **Both halves of the fix are now decided: a seeded personal
    rhythm at birth (§3.5) and a founding party of mixed tiers (§3.2c).** Together they mean **no
    two founders run the same program from tick 0**, which is what D28 actually asked for.
-2. **⚠️ A WHOLE PHASE OF A SYSTEM WITH NO MECHANICAL EFFECT.** If mastery is gated behind a Phase
-   4 node, then Phase 3 ships proficiency that **accrues, is visible, and changes nothing** —
-   and **this project has shipped a decorative system before and only found out by measuring**
-   (D56: clothing, a perfectly-clothed village being 300 years of identical numbers). It is
-   survivable *only* because the legibility half is real from day one — the years on the panel,
-   the mastery line in the log (§7), the at-risk warning — but **the anti-vacuity guard in §10
-   must be written knowing that, or it will assert something that cannot be true until Phase 4.**
-   The alternative is to let mastery bite in Phase 3 and have the node raise the ceiling
-   *further*. **Joe's call — §12.**
+2. **✅ RESOLVED — MASTERY BITES IN PHASE 3, GATED BY NOTHING** (D177, Joe: *"mastery in phase
+   3"*). The risk this raised was that gating mastery behind a Phase 4 node would leave Phase 3
+   shipping proficiency that **accrues, is visible and changes nothing** — **the exact shape of
+   D56's clothing**, a system that measured as a no-op over 300 years and was blocked for it.
+   **That does not happen now.**
+   - **No tech node gates mastery** — reinforced as a guarantee in §6.7 and as a failure-mode row
+     in `tech-tree.md §11`. Twenty years on the task is twenty years on the task.
+   - **A later node may raise the ceiling *further***, which is the version of Joe's *"along with
+     a node of the tech tree"* that survives: the tree extends mastery rather than permitting it.
+   - **⭐ And it makes the anti-vacuity guard writable in the phase that ships the feature**
+     (§10), rather than asserting something that could not be true until Phase 4. **A guard that
+     cannot pass yet is worse than no guard, because it gets "fixed" by being weakened.**
 3. **✅ RESOLVED — THERE IS NO CLIFF, BECAUSE MASTERY IS NOT A NODE** (D176, Joe: *"only from the
    person who dies"*). This once asked whether a tech node granting mastery could **re-lock** —
    `tech-tree.md`'s rule that a technique held only in living heads is lost when the last of them
@@ -612,10 +615,10 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
   produces across a year, it is a second invisible hand on the economy rather than a stagger.*
 - **⭐⭐ Anti-vacuity (§5.3)** — a run with no apprenticeships **loses** proficiency the village
   had, measurably, against a run with them. *If nothing is ever lost, the pillar is decorative.*
-  ⚠️ **Write this knowing §3.2b point 2:** if mastery is gated behind a Phase 4 node, this guard
-  **cannot pass in Phase 3** and must either be written against the *proficiency* that is lost
-  rather than its effect, or land with the node. **A guard that cannot be true yet is worse than
-  no guard**, because it will be "fixed" by weakening it.
+  **✅ Writable in the phase that ships the feature** (D177): mastery bites in Phase 3, so this
+  can assert the **effect** and not merely the bookkeeping — *a village that never teaches
+  produces measurably less than one that does.* **That is the assertion that decides whether any
+  of this is real**, and it is the one D56's clothing failed.
 - **Decay is gentle** — a villager moved by D46's three-year reshuffle and moved back has not
   lost a career.
 - **⭐⭐ Lockstep (D28) — and it must be asserted about the OPENING, which is where Joe saw it.**
@@ -635,9 +638,14 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
 ## 11. Definition of Done
 
 1. This spec current, and its status line true.
-2. **The proficiency substrate lands as a provable no-op** — goldens unmoved, determinism green.
-   ⚠️ **The mixed founding (§3.2c) and the seeded rhythm (§3.5) are the opposite of a no-op and
-   must land in their own commit, together**, so one golden move covers both.
+2. **⭐ THREE LANDINGS, IN THIS ORDER, AND THE FIRST IS THE ONLY NO-OP** (D177):
+   1. **The proficiency substrate** — accrues, is hashed, is visible. **Provable no-op**: goldens
+      unmoved, determinism green.
+   2. **Mastery bites** — duration first, yield second (§3.3). **Moves the goldens.**
+   3. **The mixed founding (§3.2c) and the seeded rhythm (§3.5), together in one commit**, so one
+      golden move covers both.
+   *Landing them apart is what makes a regression attributable — the standing habit, and D157's
+   own lesson about hashes being evidence only about the code they execute.*
 3. Growth, decay and **the floor rule** guarded, each **checked red and counted** — the standing
    rule, and it has caught a vacuous guard four times.
 4. **⭐ The floor proved against a posed all-novice village** (§3.2), and **the shipped founding
@@ -680,15 +688,15 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
   (D176). The village learns by doing without one; the log narrates discoveries as they happen,
   and the town hall is where the whole roster becomes browsable. *Anecdote → archive.* See
   `tech-tree.md §7f`.
+- **✅ Mastery bites in Phase 3, gated by nothing** (D177). No node permits it; a later node may
+  raise the ceiling *further*. **This is what keeps Phase 3 from shipping D56's shape** — a
+  system that accrues, is visible and changes nothing — and it makes the anti-vacuity guard
+  writable in the phase that ships the feature.
+- **✅ Milestones ship as log lines** (D177), gaining their collections home when the town hall
+  lands in Phase 4. **There is no milestones *panel* in Phase 3.**
 
 **⭐ Still open:**
 
-- **⛔ Does mastery bite in Phase 3, or wait for its tech node?** (§3.2b, point 2.) Gating it
-  behind Phase 4 means Phase 3 ships proficiency that accrues, is visible and **changes
-  nothing** — and D56's clothing is this project's record of shipping a system that measured as a
-  no-op. The alternative is that skill bites immediately and the node raises the ceiling
-  *further*. **The legibility half is real either way**, which is what makes waiting survivable
-  rather than pointless.
 - **⭐ The founding party's composition** (§3.2c) — how many masters, journeymen and novices, and
   **fixed shape with seeded trades** (recommended) versus a fully seeded roll. *Whether you
   survive should not be decided before you press play* (§0.1).

@@ -369,6 +369,13 @@ The events that should produce a log line worth screenshotting. Not mechanics �
 its edge when it happens, whether or not a town hall stands; the town hall is where they are kept
 together afterwards.
 
+> **✅ SETTLED (D177, Joe: *"milestones as log lines"*).** They ship **as log lines in Phase 3**
+> and gain their collections home in Phase 4 with the town hall. **There is no milestones panel in
+> Phase 3** — which resolves the clash D176 flagged between `DESIGN.md §4`'s queue (panel at the
+> end of Phase 3) and the town hall being a Phase 4 building. It is also the better shape on its
+> own terms: D161 deferred the panel because *"a panel three-eighths full for two phases reads as
+> an unfinished feature"*, and **a log line is never three-eighths full.**
+
 - **First winter nobody went hungry.** The camp becomes a village.
 - **⭐ First master.** Twenty years on one task (`skills-catalog.md §3.3b`) — *"Hattie has farmed
   these fields for twenty years. There is nothing about this ground she does not know."* **Joe
