@@ -1079,7 +1079,14 @@ first (D161), and the first two steps are in:
 
 **✅ PHASE 2 IS DONE (D169, 2026-08-22).** All five Definition-of-Done items are met: Joe walked
 the QA checklist, which was the last one open. **The branch is waiting on PR #3 and nothing
-else.**
+else.** ✅ **Joe confirmed the jitter fix and the panel widths at the screen** — *"the jitter is
+gone - yay! right column looks good for now"* — which is the only bar the view has (D160).
+
+**⛔ AND ONE THING IS OPEN, FOUND BY THE SAME PLAYTHROUGH: the farm reaps eight of the thirteen
+tiles it sows** (D170). The sowing cap is correct; the *walk* is not what the economy budgeted,
+because the farm's own buffer holds one load a year and everything else goes to the granary.
+**It is a decision on a locked number or an unbuilt slice, so it waits for Joe** — and it is not
+a Phase 2 Definition-of-Done item.
 
 - **The jitter is fixed, and it was in the view the whole time** ✅ (D169). D163 found a cold
   villager who could not warm up and D166 found a one-tile fetch loop; both were real and both
@@ -1096,6 +1103,7 @@ else.**
   rather than *go untended* (the forester's word). Still a warning, never a refusal. **3 reds of
   3** against the old wording, with the eight existing allowance guards green throughout.
   **629 tests, 627 passing, 2 skipped.**
+- **The staffing row says who turned up** ✅ (D170). `Places` is a ceiling, not a count, so a farm with two seats and one farmer read *"2 of 2"* directly above *"1 pair of hands can sow 13"*. D148's bug one panel over, in the vocabulary the professions panel already had.
 - **The panels stopped deciding how wide the window is** ✅ (D169). D149 gave each column 27% of
   the window and **Godot overruled it**, because a column is never narrower than its widest
   child. Measured with a probe that is now kept (`BCLONE_PROBE_WIDTHS`, METHODOLOGY §6): the
@@ -1278,6 +1286,14 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D170 · 2026-08-22 · ⛔⭐⭐ THE FARM'S OWN BUFFER IS WHAT THE DERIVATION ASSUMES AND IT TAKES ONE LOAD A YEAR — so a farmer reaps eight tiles of the thirteen the economy promised.** Joe, on the D169 build: *"the jitter is gone - yay! right column looks good for now. i think the farming is working correctly? the farmer cant harvest as much as it sows, but it seems okay?"* **It is not okay, and his uncertainty was the panel's fault as much as the sim's.**
+  - **⛔ THE PANEL WAS CONTRADICTING ITSELF, WHICH IS WHY HE HEDGED.** His screenshot reads *"Staffing farmhouse 1 — 2 of 2"* and, four lines below, *"1 pair of hands can sow 13"*. **Both true and they cannot both be about the same thing:** `Places => StaffingOverride ?? Capacity` is a **ceiling**, while `WorkGroundAllowanceFor` counts `WorkerIds` on purpose (D86 — a hut whose worker dies is overstretched that moment). The farm has two seats and one person, because the village has four adults and three other jobs. **D148's bug, one panel over** — and the professions panel already had the vocabulary, so the staffing row says *"1 working of 2 seats"* now.
+  - **⭐ WHAT THE RUN MEASURES, AND THE SOWING CAP IS NOT THE PROBLEM.** One farmer, sowing capped at **exactly 13** every spring — D167 working — and reaping **8, 7 and 3** over three years, with the rot lines (5 and 6 fields) matching to the tile. **46% brought in, against `AFarmBringsInMostOfWhatItSows`, which demands 75% and is green.** *A measurement that disagrees with a guard has found a bug in one of them* (D165, in this very method).
+  - **⛔⭐⭐ THE GAP IS THE WALK, AND THE DERIVATION SAYS SO IN ITS OWN REMARKS.** `FieldTileTicks` charges `reap_ticks + radius × travel_ticks_per_unit × 2` — **7 ticks a tile** at radius 2 — and describes it as *"walking each armful back to the steading."* Measured off his trail, the round trips are **10, 10, 11, 12, 14 and 16 ticks**, lengthening through the season. 120 ticks of autumn at ~13 is nine tiles; he got eight. At the budgeted seven it is seventeen, and the field is thirteen. **The derivation and the behaviour describe two different farms.**
+  - **⛔ BECAUSE THE BUFFER IS NOT A BUFFER.** In 27 hauls, the farm's own store took **nothing**. And even where it works it can only ever take **one load**: `farm_store_cap` is 100 and `crop_yield_per_tile` is 67, so after one deposit 33 free is less than a whole armful (D165's *"room for the whole load"*, correctly) and every later load walks on to the granary. **Nothing drains it** — the market can, and a four-adult village has no marketer.
+  - **⚠️ AND THE GUARD IS SATISFIED BY THAT ONE LOAD.** `TheHarvestFillsTheFarmsOwnStoreFirst` asserts `Store.Food > 0` after an autumn, which one deposit out of thirteen passes. **The happy path is guarded; the *throughput* the number exists to create is not.** D167's shape exactly — *a mechanism can be correct at every step and wrong as a year* — arriving in the step D167 did not look at.
+  - **⛔ WHY HIS TOOK ZERO RATHER THAN ONE IS NOT ESTABLISHED, AND IT IS DELIBERATELY LEFT THAT WAY.** Reasoning it out from a log excerpt is what cost D163 and D166 a round each, and this session caught itself doing it twice — once claiming the happy path had no guard when `TheHarvestFillsTheFarmsOwnStoreFirst` was ten lines above, and once reading a probe whose *"reaped"* column was counting winter rot. **So `HaulTheHarvest` writes its reason now** — free space, both costs, which store won — per METHODOLOGY §4's rule that every refusal says why. Two autumns on the new build answer it in one grep.
+  - **⛔ NOT FIXED, AND THE FIX IS JOE'S.** `farm_store_cap` is on his do-not-change list, raising it alone only buys one good year (nothing empties it either way), and the diegetic answer — **somebody hauls the buffer to the granary** — is D63's laborer work, which is named in §2.2 and unbuilt. **A fourth option was already tried and rejected**: re-deriving the budget against the granary walk is what D165 did, and it produced a four-tile field and 216 food from one tile.
 - **D169 · 2026-08-22 · ⭐⭐ PHASE 2'S DEFINITION OF DONE IS MET, AND D168'S THREE OPEN ITEMS ARE CLOSED — the jitter was never in the sim, and the panels were never obeying their own width.** Joe: *"I've walked the QA checklist and approved the document."*
   - **✅ DoD ITEM 3 IS CLOSED, AND ASKING PLAINLY IS WHAT CLOSED IT.** D164 and D168 both declined to tick it off on *"QA checklist is good"*, because the **document** and the **walk** are different things and only the second is the item. Two decisions spent holding that line, and one sentence settled it. **All five items are now met, and what stands between this branch and PR #3 is a merge rather than a task.** The three things Joe found *while* walking it are Phase 2 polish, not checks that failed.
   - **⛔⭐⭐ THE JITTER IS A VIEW BUG, AND IT HAS BEEN ONE ALL ALONG — the third cause is not a third sim bug.** `VillageMap` advanced its glide bookkeeping on `_alpha >= 0.999`, and `FixedTimestepDriver.Alpha` is *the accumulator remainder in `[0,1)`, sampled once a frame*. That condition asks a frame to land in the last **thousandth** of a tick — at 10× the alpha step is about 0.17, so it is a condition nobody wins for tens of seconds at a stretch. **So the glide's start point froze on a tile from some while ago.**

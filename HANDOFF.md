@@ -1,6 +1,6 @@
-# Handoff — bclone: **Phase 2 is done. The only thing left is PR #3, and it is Joe's call.**
+# Handoff — bclone: **Phase 2 is done and confirmed. PR #3 is Joe's call; the farm is one open bug.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D169 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D170 back to D142**, then
 `METHODOLOGY.md`. `specs/crops-and-orchards.md` is a **record** rather than a job — read §12 only
 if you touch the crop numbers, and **do not touch them**.
 
@@ -8,13 +8,13 @@ if you touch the crop numbers, and **do not touch them**.
 
 ## Where things are
 
-**Branch `phase/2-wood-fuel-and-tools`**, thirteen commits, tree clean, **not pushed**. Head is
-`0dd19c1` — *"The farm's brush speaks farming, and the panels stop eating the map"*.
+**Branch `phase/2-wood-fuel-and-tools`**, fifteen commits, tree clean, **not pushed**. Head is
+`2c331f9` — *"The staffing row says who turned up, and the haul says why it chose"*.
 
 **SUITE IS CONFIRMED GREEN, FROM A RUN:**
 
 ```
-627 passed, 0 failed, 2 skipped of 629 — 12m12s
+627 passed, 0 failed, 2 skipped of 629 — 12m44s
 ```
 
 ⚠️ **The previous handoff said "expect 626 passing" and 626 was the *total*.** Fourth time this
@@ -35,28 +35,72 @@ All five items. Joe walked the QA checklist on 2026-08-22 — *"I've walked the 
 approved the document"* — which was the last one open. `DESIGN.md §4`, `§6`, and
 `specs/phase-2-the-village-you-can-play.md` all say so now.
 
-### ⛔ WHAT IS BLOCKING, AND IT IS NOT A TASK
+✅ **And Joe confirmed two of the three at the screen**, which is the only bar the view has
+(D160): *"the jitter is gone - yay! right column looks good for now."*
 
-**`PR #3` has NOT been opened and the branch has NOT been pushed.** That is deliberate: **all
-three fixes this session are view changes, and the view has no tests at all.** The numbers behind
-them are real and measured, but *nobody has looked at the game*. **Joe looking is the last check
-before the merge**, and it is the same bar D160 set.
+### ⛔ WHAT IS BLOCKING, AND IT IS A DECISION, NOT A TASK
 
-**What to ask him to look at** — the three things he reported, in the order he reported them:
-
-1. **The jitter** — watch a farmer sow and reap a field, and a forester work painted ground, at
-   4× and 10×. That is the exact case he named.
-2. **The farm's brush** — paint a field bigger than its farmers can work. He should get a
-   sentence naming *fallow* and both remedies, on the stroke and again on the farm's own panel.
-   Painting must still be allowed.
-3. **The panel widths** — select a building and watch the right-hand column. It should no longer
-   grow when a long sentence appears in the inspector.
-
-If he says yes: push, open PR #3, merge. **Do not open Phase 3 on an unmerged branch** (D161).
+**`PR #3` has NOT been opened and the branch has NOT been pushed** — waiting on Joe's word, not
+on work. The Definition of Done does not include D170's farm bug, so **the merge is not gated on
+it**; whether he wants it in the same PR is his call. **Do not open Phase 3 on an unmerged
+branch** (D161).
 
 ---
 
-## What landed this session (D169)
+## ⛔⭐⭐ THE ONE OPEN BUG: the farm reaps eight of the thirteen it sows (D170)
+
+Joe: *"i think the farming is working correctly? the farmer cant harvest as much as it sows, but
+it seems okay?"* **It is not okay.** Measured off `logs/bclone-20260822-125708.log`:
+
+| year | sown | reaped | rot |
+|---|---|---|---|
+| 6 | 13 | 8 | 5 |
+| 7 | 13 | 7 | 6 |
+| 8 | 13 | 3 | — |
+
+**D167's sowing cap is working perfectly** — 13 is exactly the allowance. **46% brought in,
+against `AFarmBringsInMostOfWhatItSows`, which demands 75% and is green.**
+
+**The gap is the walk, and the derivation names its own assumption.** `FieldTileTicks` charges
+`reap_ticks + radius × travel_ticks_per_unit × 2` — **7 ticks a tile** — and its remarks say
+*"walking each armful back to the steading."* His measured round trips are **10, 10, 11, 12, 14,
+16**, lengthening through the season. 120 ticks of autumn at ~13 is nine tiles; he got eight.
+
+**Because the buffer is not a buffer.** In 27 hauls the farm's own store took **nothing**, and
+even where it works it can take **one load**: `farm_store_cap` 100 against `crop_yield_per_tile`
+67, so after one deposit 33 free is less than a whole armful and everything after walks to the
+granary. Nothing drains it — the market can, and a four-adult village has no marketer.
+⚠️ `TheHarvestFillsTheFarmsOwnStoreFirst` asserts `Store.Food > 0` and **is satisfied by that one
+load**, which is why the suite has no opinion.
+
+**⛔ WHY HIS TOOK ZERO RATHER THAN ONE IS NOT ESTABLISHED, AND DO NOT GUESS.** That is D163's and
+D166's mistake, and this session caught itself doing it twice — once claiming the happy path had
+no guard when one was ten lines above, once reading a probe whose *"reaped"* column was counting
+winter rot. **`HaulTheHarvest` writes its reason now** (free space, both costs, which store won).
+Two autumns on this build and:
+
+```bash
+grep "food from the field" src/Bclone.Game/logs/<newest>.log
+```
+
+**The fix is Joe's, and three of the four options are already constrained:** `farm_store_cap` is
+on his locked list; raising it alone buys one good year because nothing empties it either way;
+re-deriving the budget against the granary walk **was tried and rejected in D165** (a four-tile
+field and 216 food from one tile). **The diegetic answer is somebody hauling the buffer to the
+granary — D63's laborer work, named in §2.2 and unbuilt.**
+
+---
+
+## What landed this session (D169, D170)
+
+### 0. ✅ The staffing row says who turned up (D170)
+
+His screenshot read *"Staffing farmhouse 1 — 2 of 2"* four lines above *"1 pair of hands can sow
+13"*. Both true: `Places => StaffingOverride ?? Capacity` is a **ceiling**, and the ground
+allowance counts `WorkerIds` on purpose (D86). Two seats, one person, because the village has
+four adults and three other jobs. **D148's bug one panel over**, fixed in the vocabulary the
+professions panel already had.
+
 
 ### 1. ✅ The jitter was in the VIEW, and it was never in the sim
 
@@ -141,7 +185,7 @@ anything** (`BuildingKind`, `JobKind`, `Goods` and `Terrain` are four C# enums h
   sessions hunted a rendering bug in `BehaviorSystem` because the trail is the best instrument
   this project has and it was pointed at the wrong half of the codebase. **Ask which half the
   symptom lives in before opening the log.**
-- **⭐⭐ FINDING A CAUSE IS NOT FINDING THE CAUSE** (D163, D166, D169 — three rounds).
+- **⭐⭐ FINDING A CAUSE IS NOT FINDING THE CAUSE** (D163, D166, D169 — three rounds, and D170 caught itself starting a fourth).
   **Sweep the whole trail and count the shapes** before believing any one of them.
 - **⭐ A LAYOUT YOU CAN READ IS NOT A LAYOUT YOU CAN PREDICT.** A column is never narrower than
   its widest child, so every width in `Main.BuildUi` is a *request*. **Probe, do not reason.**
