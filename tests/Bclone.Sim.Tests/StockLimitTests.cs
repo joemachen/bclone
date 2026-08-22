@@ -229,8 +229,23 @@ public sealed class StockLimitTests
     //
     //   before "worth the trip": fixture 17969363278213194222,
     //                            shipped 17964703903020390741
-    private const ulong FixtureFiftyYearHash = 13985157942708541633UL;
-    private const ulong ShippedFiftyYearHash = 17566836300829537614UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR PER-SITE YIELD (D178) — AND THE REASON IS NOT THE ONE THE SPEC EXPECTED,
+    // WHICH IS WORTH THE THREE LINES. `per-site-yield.md §6` predicted these two would NOT move:
+    // **neither village ever places a farmhouse** (D162), so nothing here reaches the crop yield
+    // or the sowing cap. That reasoning was right and it was not the whole story.
+    //
+    // **They move because soil does.** `StateHash` mixes the map into every village hash, so a
+    // change to the ground moves every history in the game whether or not anybody farms it. The
+    // spec asked the question in advance and said *"if they do, that is a finding, not a
+    // nuisance"* — this is the finding, and it is D157's rule from the other side: **a golden is
+    // silent about what it does not reach and loud about what it does**, and what these two
+    // reach is the valley itself.
+    //
+    //   before ground was worth going to: fixture 13985157942708541633,
+    //                                     shipped 17566836300829537614
+    private const ulong FixtureFiftyYearHash = 18149215200660116896UL;
+    private const ulong ShippedFiftyYearHash = 2960234095731849111UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

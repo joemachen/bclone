@@ -267,6 +267,36 @@ public sealed class GeneratedMap
     }
 
     /// <summary>
+    /// How good the ground is on a tile, 0–255 — <b>what makes one site worth more than
+    /// another</b> (`specs/per-site-yield.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Off the map returns <see cref="World.VillageEconomy.ReferenceSoil"/>'s own anchor
+    /// rather than zero, for the reason <see cref="TerrainAt"/> returns <c>Grass</c>: a
+    /// query about somewhere that does not exist should answer *ordinary*, not *ruinous*, or
+    /// every off-map read becomes a silent penalty. **Callers that care about the edge should
+    /// ask <see cref="Contains"/>**, which is the same contract terrain has.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The value is regional, not per-tile</b> (`per-site-yield.md §3.1`) — neighbouring
+    /// tiles are alike, so a field's soil is a property of *where the field is* rather than a
+    /// thirteen-sample average that comes out the same everywhere.
+    /// </para>
+    /// </remarks>
+    public int SoilAt(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index < 0 ? DefaultSoil : _soil[index];
+    }
+
+    /// <summary>
+    /// What an off-map soil query answers. The midpoint of a byte, which is what
+    /// <see cref="World.VillageEconomy.ReferenceSoil"/> lands on for any symmetric config.
+    /// </summary>
+    private const int DefaultSoil = 120;
+
+    /// <summary>
     /// Which crop is sown on a tile, or <c>0</c> for none (D161).
     /// </summary>
     /// <remarks>

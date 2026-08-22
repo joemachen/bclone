@@ -817,6 +817,78 @@ public static class VillageEconomy
     /// <em>where the ground is</em>, which is the decision the slice is for.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The haul <see cref="FieldTilesOneFarmerKeeps"/> pays for — <b>a round trip to the
+    /// steading, in ticks</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Stated so a farm can compare its own walk against it</b> (`per-site-yield.md §4.2`).
+    /// <see cref="FieldTileTicks"/> charges <c>radius × travel × 2</c> and its own remarks call
+    /// it *"walking each armful back to the steading"* — this is that number, pulled out where
+    /// <c>SimWorld.ReapableShareAt</c> can read it instead of re-deriving it. **Two copies of
+    /// one sum is how they come to disagree** (D142's three call sites, D148's two meanings).
+    /// </para>
+    /// <para>
+    /// At the radius the derivation settles on, so it is the haul of the farm the economy is
+    /// actually solved for rather than of some other one.
+    /// </para>
+    /// </remarks>
+    public static int FieldHaulTicksBudgeted(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int budget = FieldSeasonTicks(config);
+
+        for (int radius = 1; radius <= MaxHomeToWorkTiles(config); radius++)
+        {
+            int tiles = TilesInRing(radius);
+            int reaping = tiles * FieldTileTicks(config, config.ReapTicks, radius, carrying: true);
+            int sowing = tiles * FieldTileTicks(config, config.SowTicks, radius, carrying: false);
+
+            if (reaping > budget || sowing > budget)
+            {
+                // One short of the radius that no longer fits — the same last-radius-that-fits
+                // rule `FieldTilesOneFarmerKeeps` uses, and read from the same loop so the two
+                // cannot drift.
+                int settled = radius - 1 < 1 ? 1 : radius - 1;
+                return settled * config.TravelTicksPerUnit * 2;
+            }
+        }
+
+        return MaxHomeToWorkTiles(config) * config.TravelTicksPerUnit * 2;
+    }
+
+    /// <summary>
+    /// The ground <c>crop_yield_per_tile</c> describes — <b>average ground</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THIS IS WHAT LETS SOIL MATTER WITHOUT RE-DERIVING ANYTHING</b>
+    /// (`specs/per-site-yield.md §4.1`). <c>crop_yield_per_tile</c> is on Joe's locked list, so
+    /// soil is a multiplier <em>around</em> it rather than a replacement: a field on average
+    /// ground yields exactly what it yields today, better ground yields more and worse ground
+    /// less. **The locked 67 is untouched and acquires a precise meaning it never had — it is
+    /// the yield on average ground.**
+    /// </para>
+    /// <para>
+    /// <b>Derived from the generator's own range, never typed</b> (D16). A second number here
+    /// would be one that could drift away from the soil the map actually contains, which is the
+    /// two-sources-of-truth shape D76 and D148 both record.
+    /// </para>
+    /// <para>
+    /// It is the same device <c>skills-catalog.md §3.2</c> uses one system over, and for the
+    /// same reason: <b>a multiplier that averages to one leaves every derived number standing</b>,
+    /// where one that averages above it silently inflates the whole economy.
+    /// </para>
+    /// </remarks>
+    public static int ReferenceSoil(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return (config.SoilQualityMin + config.SoilQualityMax) / 2;
+    }
+
     public static int RequiredCropYield(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);

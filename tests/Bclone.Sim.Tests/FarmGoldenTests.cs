@@ -103,7 +103,14 @@ public sealed class FarmGoldenTests
     // food and the new leg is never offered. Silent about what they do not reach (D157, D162).
     //
     //   before the market ran the buffer dry: 11489388314243111802
-    private const ulong SeamGoldenHash = 5832742735958199009UL;
+    //
+    // ⭐ RE-TAKEN FOR PER-SITE YIELD (D178) — and this village moves for BOTH of its halves.
+    // The soil under its field decides what a tile is worth (`CropYieldAt`), and the walk to
+    // its store decides how much ground it commits in spring (`ReapableShareAt`). It is the
+    // one golden in the suite that reaches a farm at all, so it is the one that can see them.
+    //
+    //   before ground was worth going to: 5832742735958199009
+    private const ulong SeamGoldenHash = 4486163041401162495UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

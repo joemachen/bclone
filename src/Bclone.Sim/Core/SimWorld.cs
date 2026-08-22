@@ -797,6 +797,42 @@ public sealed class SimWorld
     }
 
     /// <summary>
+    /// What one tile of crop is worth <b>on this ground</b> — the farm's half of per-site
+    /// yield (`specs/per-site-yield.md §4.1`, D178).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE SIBLING OF <see cref="GatherYieldAt"/>, AND DELIBERATELY THE SAME SHAPE.</b> A
+    /// gatherer's hut has been worth what the trees around it are worth since D112; this is the
+    /// farm finally getting the same treatment, on the axis a field actually varies by. Two
+    /// buildings, one idea: **what a site produces depends on where it is.**
+    /// </para>
+    /// <para>
+    /// <b>⛔ <c>crop_yield_per_tile</c> IS LOCKED AND THIS DOES NOT TOUCH IT.</b> Soil is a
+    /// multiplier <em>around</em> <see cref="VillageEconomy.ReferenceSoil"/>, so a field on
+    /// average ground yields exactly what it yielded before this existed. The locked number is
+    /// unchanged and now means something precise: **the yield on average ground.**
+    /// </para>
+    /// <para>
+    /// <b>Never zero.</b> Poor ground is poor, not barren — a farm the player sited badly should
+    /// disappoint them, not fail silently and look broken. That is the same call `GatherYieldAt`
+    /// deliberately made the *other* way, and the difference is the point: **a bald ring has no
+    /// trees in it, while thin soil still grows something.**
+    /// </para>
+    /// </remarks>
+    public int CropYieldAt(GridPos tile)
+    {
+        int reference = VillageEconomy.ReferenceSoil(Config);
+        if (reference <= 0)
+        {
+            return Config.CropYieldPerTile;
+        }
+
+        int yield = Config.CropYieldPerTile * Map.SoilAt(tile) / reference;
+        return yield < 1 ? 1 : yield;
+    }
+
+    /// <summary>
     /// A tile of this workplace's own ground for it to work next, or null if there is none.
     /// </summary>
     /// <remarks>
@@ -986,15 +1022,86 @@ public sealed class SimWorld
     /// should commit less ground the following spring, and a farm nobody works should commit
     /// none. <b>Floored at one where anybody is standing in it</b>, so a single farmer is never
     /// told their field is too big to start.
+    /// <para>
+    /// <b>⭐⭐ AND IT ASKS *THIS* FARM'S WALK, NOT THE AVERAGE FARM'S</b> (D178,
+    /// `per-site-yield.md §4.2`). <see cref="VillageEconomy.FieldTilesOneFarmerKeeps"/> charges
+    /// *"a round trip to the steading"* in its own words and is **one number for every farm in
+    /// the valley** — so a farm ten ticks from the store it actually hauls to was committing
+    /// ground a farm next door could reap, and rotting the difference. Measured over ten years
+    /// (D171): **93–96% brought in next door, 46% at ten ticks, 25% at twenty-two.**
+    /// </para>
+    /// <para>
+    /// <b>The derivation keeps its meaning — <em>what a well-sited farm manages</em> — and a
+    /// badly-sited one now commits less</b> rather than committing the same and losing it to
+    /// winter. ⭐ **That is what makes the rot line honest**, which is the whole of D167's
+    /// argument: rot meant *you over-painted* or *you lost a farmer*, and **distance was a third
+    /// cause the game could not say.** A rot line the player cannot act on is weather.
+    /// </para>
+    /// <para>
+    /// ⛔ <b><c>farm_store_cap</c> is not the lever and is untouched</b> — measured at nought to
+    /// seven points across one armful against thirteen (D171).
+    /// </para>
     /// </remarks>
     public int HarvestOneFarmCanBringIn(Workplace farm)
     {
         ArgumentNullException.ThrowIfNull(farm);
 
         int hands = farm.WorkerIds.Count;
-        int tiles = hands * VillageEconomy.FieldTilesOneFarmerKeeps(Config);
+        int tiles = hands * VillageEconomy.FieldTilesOneFarmerKeeps(Config)
+            * ReapableShareAt(farm) / 100;
 
         return hands > 0 && tiles < 1 ? 1 : tiles;
+    }
+
+    /// <summary>
+    /// What share of a well-sited farm's autumn <em>this</em> farm can actually manage, as a
+    /// percentage — <b>the distance half of per-site yield</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The derivation budgets a round trip to the steading</b>
+    /// (<see cref="VillageEconomy.FieldTileTicks"/>), and that is true right up until the farm's
+    /// own buffer is full — after which every armful walks to the granary instead
+    /// (`crops-and-orchards.md §3.2a`). So the honest question is *how much longer is this
+    /// farm's real haul than the one the economy paid for?*, and the answer scales the ground
+    /// it may commit.
+    /// </para>
+    /// <para>
+    /// <b>Measured against the nearest store that takes food</b>, because that is where the
+    /// harvest actually ends up once the buffer fills. A farm with its granary next door is
+    /// unaffected — which is why <see cref="VillageEconomy.FieldTilesOneFarmerKeeps"/> keeps its
+    /// meaning as *what a well-sited farm manages* and needs no re-derivation.
+    /// </para>
+    /// <para>
+    /// <b>Never below a tenth.</b> A farm at the far edge of the valley should be a poor idea,
+    /// not an impossible one — D43 and D86's standing rule that the player is warned and never
+    /// refused. And **never above 100**: being nearer than the budget is already worth
+    /// something (fewer wasted ticks), and letting it *raise* the cap would quietly re-derive
+    /// the economy upward, which is the trap `skills-catalog.md §3.2` names.
+    /// </para>
+    /// </remarks>
+    public int ReapableShareAt(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        StoreBuilding? store = NearestStoreAccepting(
+            farm.Position, Goods.Food, static place => place.CanEverHold(Goods.Food));
+
+        if (store is null)
+        {
+            return 100;
+        }
+
+        int haul = TravelCost.TicksBetween(farm.Position, store.Position);
+        int budgeted = VillageEconomy.FieldHaulTicksBudgeted(Config);
+
+        if (haul <= budgeted || budgeted <= 0)
+        {
+            return 100;
+        }
+
+        int share = budgeted * 100 / haul;
+        return share < 10 ? 10 : share;
     }
 
     /// <summary>Tiles of this farm's ground with a crop standing on them.</summary>

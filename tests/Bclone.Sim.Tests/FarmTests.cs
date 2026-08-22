@@ -489,36 +489,58 @@ public sealed class FarmTests
     /// for every farm in the valley, so a distant farm sows what a near one could reap.
     /// </para>
     /// <para>
-    /// <b>⚠️ THIS GUARD CHARACTERISES RATHER THAN DEMANDS, DELIBERATELY.</b> A bar of *"a
-    /// distant farm must also bring in 75%"* would be asserting a fix nobody has designed yet.
-    /// What it holds is the shape: a distant farm brings in **materially less** than a near one
-    /// and **more than nothing** — so the day per-site yield lands, this is where the numbers
-    /// move, and until then it cannot silently get worse.
+    /// <b>✅ AND PER-SITE YIELD LANDED, SO THIS GUARD IS RE-BASED (D178).</b> It used to
+    /// *characterise* the bug — asserting only that a distant farm brought in **less** — and it
+    /// said in as many words that a bar of *"a distant farm must also bring in 75%"* would be
+    /// asserting a fix nobody had designed. **That fix now exists**, so the guard went red for
+    /// the best possible reason: **a farm ten ticks out brings in 96%, the same as one next
+    /// door.** *A guard that outlives the rule it was written for looks exactly like a
+    /// regression* (D150), and the honest response is to re-base it rather than relax it.
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ IT ASSERTS BOTH HALVES OF D58 NOW, AND THE SECOND ONE IS THE ONE THAT CAN BE
+    /// LOST.</b> The rot is gone — a distant farm commits less ground instead of committing the
+    /// same and losing the difference to winter — **and distance still costs**, because that
+    /// farm reaps fewer tiles in total and therefore feeds fewer people. **Without the second
+    /// assertion the fix would read as "distance is free"**, which is the opposite of the
+    /// mechanism D58 settled on and would delete the decision this whole slice exists to create.
     /// </para>
     /// </remarks>
     [Fact]
     public void AFarmsHarvestFallsOffWithDistanceFromItsStore()
     {
-        int near = BroughtInWithTheGranary(walkAway: 1, out int nearWalk);
-        int far = BroughtInWithTheGranary(walkAway: 10, out int farWalk);
+        int near = BroughtInWithTheGranary(walkAway: 1, out int nearWalk, out int nearTiles);
+        int far = BroughtInWithTheGranary(walkAway: 10, out int farWalk, out int farTiles);
 
-        _output.WriteLine($"{nearWalk} ticks out: {near}% brought in");
-        _output.WriteLine($"{farWalk} ticks out: {far}% brought in");
+        _output.WriteLine($"{nearWalk} ticks out: {near}% brought in, {nearTiles} tiles reaped");
+        _output.WriteLine($"{farWalk} ticks out: {far}% brought in, {farTiles} tiles reaped");
 
         Assert.True(farWalk > nearWalk, "Both farms landed the same distance out.");
-        Assert.True(far > 0, "The distant farm reaped nothing at all, which is a different bug.");
+
+        // ⭐ THE ROT IS GONE — a distant farm no longer commits ground it cannot bring in.
         Assert.True(
-            near > far,
-            $"A farm {nearWalk} ticks from its store brought in {near}% and one {farWalk} ticks "
-            + $"out brought in {far}% — distance stopped costing anything, which means either "
-            + "the walk is no longer charged or this guard has stopped measuring it.");
+            far >= 75,
+            $"A farm {farWalk} ticks from its store brought in only {far}% of what it sowed. "
+            + "The sowing cap is meant to ask THIS farm's haul, so a distant farm commits less "
+            + "ground rather than committing the same and rotting the difference (D178).");
+        Assert.True(near >= 75, $"Even the near farm only brought in {near}%.");
+
+        // ⛔ AND DISTANCE STILL COSTS, WHICH IS THE HALF THAT MUST NOT BE LOST. The distant
+        // farm wastes nothing and still feeds fewer people, because it commits less ground.
+        // Without this the fix would read as "distance is free", which is the opposite of
+        // D58's mechanism and would delete the decision the whole slice exists to create.
+        Assert.True(
+            farTiles < nearTiles,
+            $"A farm {farWalk} ticks out reaped {farTiles} tiles against a near farm's "
+            + $"{nearTiles} — distance stopped costing anything. Per-site yield without a cost "
+            + "for distance is not the mechanism D58 settled on.");
     }
 
     /// <summary>
     /// Ten years of a farm sited as close as possible to <paramref name="walkAway"/> ticks from
     /// the granary; returns the percentage of what it sowed that it reaped.
     /// </summary>
-    private static int BroughtInWithTheGranary(int walkAway, out int walk)
+    private static int BroughtInWithTheGranary(int walkAway, out int walk, out int tilesReaped)
     {
         SimConfig config = Config;
         SimLoop loop = Loop(config);
@@ -580,6 +602,7 @@ public sealed class FarmTests
             }
         }
 
+        tilesReaped = reaped;
         return sown == 0 ? 0 : reaped * 100 / sown;
     }
 

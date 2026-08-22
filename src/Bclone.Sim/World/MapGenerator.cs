@@ -89,13 +89,29 @@ public static class MapGenerator
             terrain, wanted, width, height, minX, minY);
 
         // ---- 5. Soil ------------------------------------------------
-        // Generated, hashed, and read by nothing yet — it is here so that when §2.3's
-        // soil depletion lands it does not have to change the DRAW ORDER, which would
-        // invalidate every seed already written down.
+        // ⭐⭐ GROUND THAT IS WORTH GOING TO (`specs/per-site-yield.md`, D178). Soil was
+        // laid down here — generated, hashed, read by nothing — precisely so that the day
+        // something read it, the DRAW ORDER would not have to move. **This is that day, and
+        // the foresight paid for itself: the draw count below is unchanged, so the river,
+        // the woodland, the forage sites, the founding site, the stone and the iron are all
+        // byte-identical for every seed ever written down.** Only the soil VALUES differ.
+        //
+        // ⛔ AND PER-TILE NOISE IS THE WRONG SHAPE, WHICH IS D67'S OWN ARGUMENT ABOUT ORE:
+        // *"seams, not scatter — you can see a seam, so going after it is a decision rather
+        // than a lottery. Scattered ore would be texture."* A field is thirteen tiles, and
+        // thirteen uniform samples average to the same thing everywhere, so scattered soil
+        // gives per-TILE variance and almost no per-SITE variance — which is the one thing
+        // per-site yield needs.
         for (int i = 0; i < soil.Length; i++)
         {
             soil[i] = (byte)rng.NextInt(config.SoilQualityMin, config.SoilQualityMax + 1);
         }
+
+        // ⭐ Regions, from the draws already made. See `MakeSoilRegional`.
+        MakeSoilRegional(soil, width, height, config.SoilRegionScale);
+
+        // ⭐ And the founders settle for safety, not for richness. See `CapFoundingGround`.
+        CapFoundingGround(config, soil, founding, width, height, minX, minY);
 
         // ---- 6. Stone and iron --------------------------------------
         // ⭐ APPENDED AFTER EVERY EXISTING DRAW, AND THAT IS THE WHOLE OF THE CARE HERE.
@@ -212,6 +228,139 @@ public static class MapGenerator
 
     private static int DrawJitter(DeterministicRandom rng, int jitter) =>
         jitter <= 0 ? 0 : rng.NextInt(-jitter, jitter + 1);
+
+    /// <summary>
+    /// Turn per-tile soil noise into <b>regions</b> — good ground and poor ground you can
+    /// point at — without drawing a single extra value.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ VALUE NOISE: sample the already-drawn array on a coarse lattice and interpolate
+    /// between the samples.</b> Lattice points keep the full drawn amplitude, and the
+    /// interpolation supplies the structure. It reads the array it is about to overwrite, so
+    /// the lattice is copied out first.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE FIRST ALGORITHM THIS SLICE PROPOSED WAS SMOOTHING, AND THE PROBE KILLED IT
+    /// BEFORE A LINE SHIPPED</b> (`per-site-yield.md §3.1`, METHODOLOGY §3). Averaging noise
+    /// regresses everything toward the mean: it <em>destroys</em> amplitude rather than
+    /// creating structure. Measured across 104 candidate thirteen-tile fields on the shipped
+    /// valley — <b>p90÷p10 of 134% raw, 113% after eight smoothing passes, and 200% under
+    /// value noise at lattice 8.</b> The mechanism intended to raise site-to-site variance
+    /// was reducing it, and only a measurement could have said so.
+    /// </para>
+    /// <para>
+    /// <b>Scale 8 is measured, not picked</b> (D16): 4 averages out across a thirteen-tile
+    /// field, 24 leaves too few distinct regions, and 8 is a couple of fields across — which
+    /// is a region a player can see and choose to walk to. That is D67's <em>seam</em> rather
+    /// than its <em>scatter</em>.
+    /// </para>
+    /// <para>
+    /// <b>Integer bilinear throughout</b> (D2). One divide per tile; no floats anywhere near
+    /// sim-critical state.
+    /// </para>
+    /// </remarks>
+    private static void MakeSoilRegional(byte[] soil, int width, int height, int scale)
+    {
+        if (scale < 2)
+        {
+            // A scale of one is "no regions at all", and is the honest way to switch this
+            // off in config rather than a special case anybody has to remember.
+            return;
+        }
+
+        // The lattice, read out before anything is overwritten.
+        byte[] lattice = (byte[])soil.Clone();
+
+        for (int y = 0; y < height; y++)
+        {
+            int y0 = y / scale * scale;
+            int y1 = Math.Min(y0 + scale, height - 1);
+            int fy = y - y0;
+
+            for (int x = 0; x < width; x++)
+            {
+                int x0 = x / scale * scale;
+                int x1 = Math.Min(x0 + scale, width - 1);
+                int fx = x - x0;
+
+                int topLeft = lattice[(y0 * width) + x0];
+                int topRight = lattice[(y0 * width) + x1];
+                int bottomLeft = lattice[(y1 * width) + x0];
+                int bottomRight = lattice[(y1 * width) + x1];
+
+                int top = (topLeft * (scale - fx)) + (topRight * fx);
+                int bottom = (bottomLeft * (scale - fx)) + (bottomRight * fx);
+
+                soil[(y * width) + x] = (byte)(((top * (scale - fy)) + (bottom * fy))
+                    / (scale * scale));
+            }
+        }
+    }
+
+    /// <summary>
+    /// The founders settled where they could live through the first winter, not where the
+    /// ground was best — so the ground they settled is <b>ordinary at best</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THIS IS REQUIRED RATHER THAN DECORATIVE, AND ONLY A MEASUREMENT SAID SO.</b>
+    /// <see cref="ChooseFoundingSite"/> runs at step 4 and soil at step 5, so the founding
+    /// site is picked with **no knowledge of soil whatsoever** — from which this slice first
+    /// inferred that the founding ground was therefore already unremarkable. **It is not.**
+    /// Chosen without knowledge means the percentile is *uniformly random*: across eight
+    /// seeds the founding ground came out at the **99th, 93rd, 91st and 83rd** percentile in
+    /// four of them. **Half of all games would have had the valley's best ground on the
+    /// doorstep**, which deletes the entire point of ground being worth going to (D58's
+    /// *frontier homestead beside a rich patch*).
+    /// </para>
+    /// <para>
+    /// <b>⭐ It is a CAP, and the cap is the reference itself</b>
+    /// (<see cref="VillageEconomy.ReferenceSoil"/>). So it can only ever take away, never add:
+    /// ground that is already poor is untouched, and this can never quietly make a hard seed
+    /// easier. And it gives the opening a property worth having — <b>the founders' fields
+    /// yield at most exactly <c>crop_yield_per_tile</c></b>, which is the locked number and is
+    /// defined as the yield on average ground. **The opening can never be better than the one
+    /// that was measured and played.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It does not promise the opening is unchanged.</b> A seed whose founding ground was
+    /// below the mean now farms below-reference ground and has a harder time of it, which is
+    /// why `per-site-yield.md §9.5` re-measures the cold start from a run rather than asserting
+    /// it — and why the cap gains a floor if that measurement asks for one.
+    /// </para>
+    /// </remarks>
+    private static void CapFoundingGround(
+        SimConfig config, byte[] soil, GridPos founding, int width, int height, int minX, int minY)
+    {
+        int radius = config.FoundingOrdinaryRadiusTiles;
+        if (radius <= 0)
+        {
+            return;
+        }
+
+        var cap = (byte)VillageEconomy.ReferenceSoil(config);
+
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                int x = founding.X - minX + dx;
+                int y = founding.Y - minY + dy;
+
+                if (x < 0 || y < 0 || x >= width || y >= height)
+                {
+                    continue;
+                }
+
+                int index = (y * width) + x;
+                if (soil[index] > cap)
+                {
+                    soil[index] = cap;
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Cut a river along the valley's long axis, wandering as it goes.

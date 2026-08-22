@@ -108,7 +108,20 @@ public sealed class MapGenerationTests
     //   before the seams (D91):       2208871881858546589
     //   before the valley was wooded: 7476686338440514564
     //   before the sites retired:     15355449050208049248
-    private const ulong GoldenMapHash = 3589830841205379371UL;
+    //
+    // ⭐ RE-TAKEN FOR SOIL BECOMING REGIONAL (D178), and this one is the APPENDED kind rather
+    // than the deletion above — in fact it is gentler still. **Not one tile of terrain moved.**
+    // Soil is drawn at step 5 and the reshaping into regions consumes NO draws, so the river,
+    // the woodland, both seams and the founding site are byte-identical for every seed ever
+    // written down; only the soil bytes differ, and `MixMap` hashes them.
+    //
+    // ⚠️ THAT CLAIM IS GUARDED RATHER THAN ASSERTED —
+    // `PerSiteYieldTests.MakingSoilRegionalMovedNoOtherTileInTheValley` pins terrain
+    // fingerprints taken from `main` BEFORE the change, across three seeds. **That guard is
+    // what licenses this hash to move alone.**
+    //
+    //   before ground was worth going to: 3589830841205379371
+    private const ulong GoldenMapHash = 11099415282837858114UL;
 
     // ---------------------------------------------------------------
     //  Woodland — `specs/forests-and-gathering.md`

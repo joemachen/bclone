@@ -1101,13 +1101,52 @@ public sealed record SimConfig
     [JsonPropertyName("river_width_tiles")]
     public int RiverWidthTiles { get; init; } = 2;
 
-    /// <summary>Poorest ground the generator will produce, 0–255. Reserved for §2.3.</summary>
+    /// <summary>Poorest ground the generator will produce, 0–255.</summary>
+    /// <remarks>
+    /// <b>No longer "reserved"</b> — a farm's yield reads the ground under its field
+    /// (`specs/per-site-yield.md §4.1`). ⚠️ **This pair is the tuning lever for how much
+    /// siting a farm matters**, and at the shipped values a well-sited field is worth about
+    /// twice a badly-sited one. The algorithm is not the lever; these are.
+    /// </remarks>
     [JsonPropertyName("soil_quality_min")]
     public int SoilQualityMin { get; init; } = 40;
 
-    /// <summary>Best ground the generator will produce, 0–255. Reserved for §2.3.</summary>
+    /// <summary>Best ground the generator will produce, 0–255.</summary>
     [JsonPropertyName("soil_quality_max")]
     public int SoilQualityMax { get; init; } = 200;
+
+    /// <summary>
+    /// How many tiles across a patch of comparable ground is — <b>the size of a soil region</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Measured, not picked</b> (D16, `per-site-yield.md §3.1`). Across 104 candidate
+    /// thirteen-tile fields: scale 4 averages out over a field, scale 24 leaves too few
+    /// distinct regions, and <b>scale 8 gives a p90÷p10 of 200%</b> — a genuine two-to-one
+    /// between good ground and poor. Eight tiles is a couple of fields across, which is a
+    /// region a player can see and choose to walk to rather than a lottery per tile (D67).
+    /// </para>
+    /// <para>
+    /// <b>1 switches regions off</b> and returns the per-tile noise this replaced, which is
+    /// the honest way to disable it rather than a special case somebody has to remember.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("soil_region_scale")]
+    public int SoilRegionScale { get; init; } = 8;
+
+    /// <summary>
+    /// How far around the founding site the ground is capped at ordinary
+    /// (<see cref="World.VillageEconomy.ReferenceSoil"/>). 0 switches it off.
+    /// </summary>
+    /// <remarks>
+    /// <b>The founders settled for safety, not for richness.</b> Without this the founding
+    /// ground's quality is a coin flip — measured at the 99th, 93rd, 91st and 83rd percentile
+    /// in four seeds of eight — and half of all games would start on the best ground in the
+    /// valley, which deletes the reason to go anywhere (`per-site-yield.md §3.2`). It only
+    /// ever caps, so it cannot make a poor start poorer.
+    /// </remarks>
+    [JsonPropertyName("founding_ordinary_radius_tiles")]
+    public int FoundingOrdinaryRadiusTiles { get; init; } = 10;
 
     /// <summary>
     /// Years between the village sharing out its work again from scratch.

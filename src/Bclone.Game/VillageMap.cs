@@ -173,6 +173,18 @@ public partial class VillageMap : Control
     /// <summary>The selected building's own ground, brighter than everybody else's.</summary>
     private static readonly Color WorkGroundMine = new("#5fc8d8", 0.30f);
 
+    /// <summary>Ground better than ordinary, on the soil overlay (D178).</summary>
+    /// <remarks>
+    /// <b>Green for rich and brown for thin</b> — the one place in this palette where the
+    /// obvious colours are the right ones, because they are what soil actually looks like.
+    /// Both are keyed off <see cref="VillageEconomy.ReferenceSoil"/>, so the eye reads
+    /// *distance from ordinary* rather than an absolute nobody could calibrate.
+    /// </remarks>
+    private static readonly Color RichGround = new("#6fbf5f", 0.55f);
+
+    /// <summary>Ground worse than ordinary, on the soil overlay (D178).</summary>
+    private static readonly Color ThinGround = new("#9a7448", 0.55f);
+
     private static readonly Color GhostFine = new("#7fd48a");
     private static readonly Color GhostWarned = new("#e0b755");
     private static readonly Color GhostRefused = new("#d4685f");
@@ -1147,6 +1159,10 @@ public partial class VillageMap : Control
         // generated valley is invisible, which makes "is this seed worth playing?"
         // a question nobody can answer by looking.
         DrawTerrain(minX, maxX, minY, maxY);
+
+        // Under the zone washes, because soil is a property of the ground while the zones
+        // are instructions about it (D178).
+        DrawSoil(minX, maxX, minY, maxY);
         DrawResidentialLand(minX, maxX, minY, maxY);
 
         DrawRect(valley, ValleyEdge, filled: false, width: 2f);
@@ -1191,6 +1207,75 @@ public partial class VillageMap : Control
     /// and it should never compete with the people standing on it.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// How good the ground is — <b>the overlay that turns per-site yield from a lottery into a
+    /// decision</b> (`specs/per-site-yield.md §5`, D178).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ WITHOUT THIS THE WHOLE SLICE IS AN INVISIBLE MULTIPLIER.</b> A farm on good ground
+    /// out-yields one on thin ground by two to one, and if the player cannot see which is which
+    /// then siting a farm is a lottery — which is precisely what D67 refused for ore
+    /// (*"you can see a seam, so going after it is a decision rather than a lottery"*) and what
+    /// §1.1 refuses in general. **This project has rejected an invisible number three times**
+    /// (D37's spoilage, the seasonal yield curve, `skills-catalog.md §7`); shipping the yield
+    /// without the overlay would be the fourth.
+    /// </para>
+    /// <para>
+    /// <b>Off by default and behind its own control</b>, because it is a question the player
+    /// asks occasionally — *where is the good ground?* — rather than something to look at all
+    /// the time. An always-on wash over the whole valley is the standing alert D42 and D123
+    /// deleted, in a different medium.
+    /// </para>
+    /// <para>
+    /// <b>Green for rich, bare for thin</b>, keyed on
+    /// <see cref="VillageEconomy.ReferenceSoil"/> so the midpoint is *"ordinary"* and the eye
+    /// reads distance from it rather than an absolute. Under the zone washes, because soil is a
+    /// property of the ground while the zones are instructions about it.
+    /// </para>
+    /// </remarks>
+    private void DrawSoil(int minX, int maxX, int minY, int maxY)
+    {
+        if (!_showSoil)
+        {
+            return;
+        }
+
+        SimWorld world = _world!;
+        int reference = VillageEconomy.ReferenceSoil(world.Config);
+        if (reference <= 0)
+        {
+            return;
+        }
+
+        float size = _pixelsPerTile * 1.02f;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (!world.Map.Contains(tile) || world.Map.TerrainAt(tile) == Terrain.Water)
+                {
+                    continue;
+                }
+
+                // How far from ordinary, as a share. Clamped so a config with a wild soil
+                // range cannot drive the alpha out of its own bounds.
+                int soil = world.Map.SoilAt(tile);
+                float away = Mathf.Clamp((soil - reference) / (float)reference, -1f, 1f);
+
+                Color wash = away >= 0f
+                    ? RichGround with { A = RichGround.A * away }
+                    : ThinGround with { A = ThinGround.A * -away };
+
+                Vector2 centre = ToScreen(tile);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                DrawRect(rect, wash);
+            }
+        }
+    }
+
     private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
     {
         ZoneMap zones = _world!.Zones;
@@ -1536,6 +1621,19 @@ public partial class VillageMap : Control
 
     /// <summary>Whether one workplace's marker is switched on, ignoring the global switch.</summary>
     public bool IdleMarkerShownFor(int workplaceId) => !_idleMarkerMuted.Contains(workplaceId);
+
+    /// <summary>Whether the soil overlay is being drawn (D178).</summary>
+    public bool SoilShown => _showSoil;
+
+    /// <summary>Show or hide the soil overlay.</summary>
+    /// <remarks>
+    /// <b>Off by default</b> — it answers a question the player asks occasionally (*where is
+    /// the good ground?*) rather than one they want answered continuously, and a permanent
+    /// wash over the whole valley is the standing alert D42 and D123 deleted in another medium.
+    /// </remarks>
+    public void ShowSoil(bool shown) => _showSoil = shown;
+
+    private bool _showSoil;
 
     private void DrawHomes()
     {

@@ -89,6 +89,7 @@ public partial class Main : Control
     private VillageMap _map = null!;
 
     private Button _detailButton = null!;
+    private Button _soilButton = null!;
 
     private int _renderedLogEntries;
     private int _selectedVillagerId;
@@ -370,6 +371,8 @@ public partial class Main : Control
             MapDetail.Selected => "Routes: selected",
             _ => "Routes: all",
         };
+
+        _soilButton.Text = _map.SoilShown ? "Ground: ON" : "Ground: off";
     }
 
     /// <summary>
@@ -2096,6 +2099,15 @@ public partial class Main : Control
         _detailButton = new Button { CustomMinimumSize = new Vector2(140, 0) };
         _detailButton.Pressed += CycleDetail;
         controls.AddChild(_detailButton);
+
+        // ⭐ WHERE THE GOOD GROUND IS (D178). Without it, per-site yield is an invisible
+        // multiplier and siting a farm is a lottery — which is what D67 refused for ore and
+        // what §1.1 refuses in general. Off by default: it answers a question the player asks
+        // occasionally, and a permanent wash over the valley is D42's standing alert in
+        // another medium.
+        _soilButton = new Button { CustomMinimumSize = new Vector2(110, 0) };
+        _soilButton.Pressed += () => _map.ShowSoil(!_map.SoilShown);
+        controls.AddChild(_soilButton);
 
         // With a valley this size and free panning, getting lost is easy and a way
         // back is not optional.
