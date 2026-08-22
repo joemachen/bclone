@@ -172,7 +172,7 @@ The whole game, shrunk to a single soul. **Gather food → eat → survive a win
 ### Phase 1 — households and labour ✅ COMPLETE (2026-07-26)
 Multiple agents, households, and cost-first labour allocation (§2.2). Merged to `main` via PR #2.
 
-### Phase 2 — the village you can play 🔨 IN PROGRESS
+### Phase 2 — the village you can play ✅ DEFINITION OF DONE MET (2026-08-22), awaiting PR #3
 
 > **⚠️ THIS SECTION WAS REWRITTEN BY D159, AND THE REASON IS THE POINT.** The original build
 > order ran *households → environment+biomes → desire paths → skills → tech tree → systemic
@@ -201,7 +201,11 @@ winter) and grew, on Joe's calls, into everything the player touches:
 - **Environment and seasons** (D44, D45, D49, D53) — thirty-day seasons, shelter and exposure.
 - **The shell** (D54, D55, D113–D116, D149) — rebuilt twice, on Banished's shape.
 
-**Definition of Done — the honest version, and it is not met:**
+**Definition of Done — ✅ ALL FIVE ITEMS MET (2026-08-22, D169).** Item 3 was the last one
+open and it was Joe's to close, which is why it stayed open for two decisions. **What is left
+between this branch and PR #3 is a merge, not a task** — and the three things Joe found while
+walking it (D168) are Phase 2 polish rather than DoD items, so whether they ride in the same
+PR is his call, not a gate.
 1. ✅ **Crops and orchards** (`specs/crops-and-orchards.md`, D162), which **replaces** the
    seasonal yield curve in `environment-and-seasons.md §5.1` — three multipliers where this is a
    growth cycle you can watch. What makes the year real and what the granary is *for*.
@@ -209,9 +213,12 @@ winter) and grew, on Joe's calls, into everything the player touches:
 2. ✅ **A golden over a village that clears ground** (D157) — landed as `FarmGoldenTests`,
    which paints, clears, sows and reaps in one twenty-year run and is **the first guard in the
    suite that ever reaches `NearestHarvest`**.
-3. 🔨 **A QA playthrough against a written checklist** (METHODOLOGY §3). ✅ **The checklist is
-   written** — `specs/phase-2-the-village-you-can-play.md`, 45 checks in the order the game is
-   played. ⛔ **It is walked by Joe, not by me**, and that is the item still open.
+3. ✅ **A QA playthrough against a written checklist** (METHODOLOGY §3).
+   `specs/phase-2-the-village-you-can-play.md`, 45 checks in the order the game is played —
+   **written, and now walked by Joe** (2026-08-22: *"I've walked the QA checklist and approved
+   the document"*). D164 and D168 both refused to tick this off on *"QA checklist is good"*,
+   because the document and the walk are different things and only the second is the item.
+   **Asking plainly is what closed it.**
 4. ✅ **The release blockers cleared** (METHODOLOGY §5) — and **clearing them turned up a third
    nobody had listed.** `VERSION` is read by the build at last and shows in the shell beside the
    seed; `export_presets.cfg` is committed and verified as far as a machine without export
@@ -412,7 +419,7 @@ Each phase should ship in a playable, legible state before the next begins.
 
 **Current phase:** **Phase 2 (branch `phase/2-wood-fuel-and-tools`)**, re-ordered by Joe's call — §4 invites that. Wood-as-fuel (D17/D29) was taken before the environment work because winter needed a second axis to bite on, and storage (D30/D32/D33) after it because every goods bug so far has been "the right stuff in the wrong place". **Environment and seasons (§2.5) is the phase's headline and is most of the way through it** — the calendar, the building capacities, the idle winter and shelter-and-exposure are all built; biomes are deferred by choice (§5.4 of the seasons spec) and the seasonal yield curve is the last slice.
 
-**Phase 2's Definition of Done is not met**, which is why this branch is unmerged: `main` would become a checkpoint rather than a completed phase.
+**Phase 2's Definition of Done is MET as of 2026-08-22** (D169) — Joe walked the QA checklist, which was the last of the five. The branch is unmerged only until PR #3 goes up; `main` will become a completed phase rather than a checkpoint, which is the whole reason it waited.
 
 **Phase 0: ✅ COMPLETE.** Success Test passed 2026-07-25.
 
@@ -1070,6 +1077,32 @@ first (D161), and the first two steps are in:
     because it is a no-op** — D157's finding, restated by the very next slice, and exactly why
     the seam golden was written with the feature rather than after it.
 
+**✅ PHASE 2 IS DONE (D169, 2026-08-22).** All five Definition-of-Done items are met: Joe walked
+the QA checklist, which was the last one open. **The branch is waiting on PR #3 and nothing
+else.**
+
+- **The jitter is fixed, and it was in the view the whole time** ✅ (D169). D163 found a cold
+  villager who could not warm up and D166 found a one-tile fetch loop; both were real and both
+  stay fixed, and **neither was what Joe was watching.** `VillageMap` rolled its glide forward on
+  `_alpha >= 0.999` — a condition on a value that is *the accumulator remainder in `[0,1)`,
+  sampled once a frame* — so the start of the glide froze on a tile from tens of seconds ago,
+  and anybody standing within one tile of it was drawn snapping back to it once a tick. **Which
+  is exactly a farmer on a field and a forester on painted ground**, the two cases he named. It
+  watches `World.Tick` now. **The sim never had a jitter**: a sweep of his own run for a villager
+  returning to a tile they just left finds **15 in 10,476 ticks**, one of them in a field.
+- **The farm's brush speaks farming, and names both remedies** ✅ (D169). The sentence lives in
+  `SimWorld.OverstretchedNote` — one door, so the brush and the panel cannot disagree — and a
+  field that outruns its farmers is told it will **lie fallow** (true since D167's sowing cap)
+  rather than *go untended* (the forester's word). Still a warning, never a refusal. **3 reds of
+  3** against the old wording, with the eight existing allowance guards green throughout.
+  **629 tests, 627 passing, 2 skipped.**
+- **The panels stopped deciding how wide the window is** ✅ (D169). D149 gave each column 27% of
+  the window and **Godot overruled it**, because a column is never narrower than its widest
+  child. Measured with a probe that is now kept (`BCLONE_PROBE_WIDTHS`, METHODOLOGY §6): the
+  inspector's idle row wanted **733 pixels** on Joe's 267-pixel column, the ground row 548, the
+  queue row 459. Every row is *caption above, controls flowing below* now — wrapped text and an
+  `HFlowContainer` — and **every one of them wants 120.**
+
 **⭐ THE ROLE MODEL IS AGREED (D107, `specs/professions.md`), and it sets the queue below.**
 Joe listed nine professions and asked to align on the shape before more is built. Every one is
 the same five things — a `JobKind`, a building the player places, seats, **a local store with a
@@ -1245,6 +1278,30 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D169 · 2026-08-22 · ⭐⭐ PHASE 2'S DEFINITION OF DONE IS MET, AND D168'S THREE OPEN ITEMS ARE CLOSED — the jitter was never in the sim, and the panels were never obeying their own width.** Joe: *"I've walked the QA checklist and approved the document."*
+  - **✅ DoD ITEM 3 IS CLOSED, AND ASKING PLAINLY IS WHAT CLOSED IT.** D164 and D168 both declined to tick it off on *"QA checklist is good"*, because the **document** and the **walk** are different things and only the second is the item. Two decisions spent holding that line, and one sentence settled it. **All five items are now met, and what stands between this branch and PR #3 is a merge rather than a task.** The three things Joe found *while* walking it are Phase 2 polish, not checks that failed.
+  - **⛔⭐⭐ THE JITTER IS A VIEW BUG, AND IT HAS BEEN ONE ALL ALONG — the third cause is not a third sim bug.** `VillageMap` advanced its glide bookkeeping on `_alpha >= 0.999`, and `FixedTimestepDriver.Alpha` is *the accumulator remainder in `[0,1)`, sampled once a frame*. That condition asks a frame to land in the last **thousandth** of a tick — at 10× the alpha step is about 0.17, so it is a condition nobody wins for tens of seconds at a stretch. **So the glide's start point froze on a tile from some while ago.**
+    - **What a frozen start point draws is precisely what he described.** More than a tile away, `DrawnCentre` snaps and nothing looks wrong. **Within one tile of it, the lerp runs from the stale tile** — so the dot jumps back to it every time alpha resets at a tick boundary and glides forward again: *a bounce between two tiles, once a tick, for as long as they stay put.* **Which is why it is a farmer on a field and a forester on painted ground**: those are the two jobs that spend run after run of ticks inside one or two tiles.
+    - **⭐ MEASURED BEFORE BELIEVED, WHICH IS THE WHOLE LESSON OF D163 AND D166.** A sweep of the entire run from his screenshot (`logs/bclone-20260822-000011.log`, 10,476 ticks, 4,629 behaviour transitions) for **a villager returning to a tile they had just left** finds **15**, of which exactly **one** is anybody in a field. **The audit trail shows no jitter because the sim does not have one** — and the handoff's standing hypothesis, that `NextFieldToWork` sends a worker back and forth between two owned tiles, is **not supported**: a sower walks a clean serpentine and turns around once at the end of a row.
+    - ⚠️ **D163 and D166 were both real bugs and both stay fixed.** Three rounds, three causes, and only the third was the one on the screen — *finding a cause is not finding the cause*, for the third time, and this time the cause was in the half of the codebase with no tests at all.
+  - **⭐ THE FARM'S BRUSH SPEAKS FARMING NOW, AND NAMES BOTH REMEDIES** (Joe: *"at this size you dont have enough farmers to utilize the land — add more farmers or make your field smaller… which the user can choose to ignore and 'waste' land if they want"*). The sentence moved out of `PaintWorkGround` into **`SimWorld.OverstretchedNote` — one door, D147's shape** — so the brush (once per stroke, D42) and the building's own panel (for as long as the state lasts, D86) cannot describe one state two ways.
+    - **⭐ *Untended* was not merely the wrong tone, it was untrue.** Since D167 a farm sows only what its hands can bring in, from the same headcount the allowance is read from — so surplus ground is not tended badly, **it is never sown at all**. *Fallow* is the true word and it is the one that makes the remedy obvious. Still a warning and never a refusal (D86, D43), because he said so outright.
+    - **⭐⭐ AND COUNTING THE REDS IS WHAT MADE THE GUARD WORTH HAVING — 3 of 3.** The guard that matters is not *"the farm's sentence mentions farmers"*; a generic template with the farm's name in it passes that. It is **`AFarmAndAForesterDoNotShareOneSentence`**, which reads both and requires them to differ with the names masked out. Checked against the old wording: **3 red of 3, and the eight existing allowance guards stayed green**, so the new sentence keeps the old contract.
+  - **⛔⭐⭐ THE PANELS WERE NEVER OBEYING THE 27% — AND THE PROBE SAID SO IN TWO SECONDS** (Joe: *"look at the attached screenshot to see how dumb the width of the windows on the right side of the screen are"*). D149 set each column to a share of the window; **a column can never be narrower than its widest child**, so Godot overruled it the instant the player selected a building. **Measured, not guessed:**
+
+    | inspector row | wanted | of which the label |
+    |---|---|---|
+    | idle — *"Nothing to sow at …"* | **733** | 629 |
+    | ground | 548 | 240 |
+    | build queue | 459 | 299 |
+    | staffing | 365 | 299 |
+
+    Against a column that is **267** on his window. **One sentence was deciding over half his screen.**
+    - **The fix is two facts about minimum widths, not a redesign.** An `HBoxContainer`'s minimum width is the **sum** of its children's; an `HFlowContainer`'s is its **widest single child**. So every inspector row became *caption above, controls flowing below* — the caption wrapped, the buttons stacking when they will not fit. **Every row now wants 120 instead of 733/548/459/365**, and the right column's floor drops from 733 to 262 (the minimap). A wide window draws them exactly as before.
+    - **⚠️ AND THE HELPER TO DO IT ALREADY EXISTED.** `Main.Wrapped` had been applied to five labels while *every sentence in the inspector* went into a bare `Label` inside an `HBox`. **The fix was not a new idea; it was an existing one reaching the panels that needed it** — and D114 had already written the principle down for the build menu: *"the caption sits above its group rather than beside it, which is a width decision."*
+    - **⭐ `BCLONE_PROBE_WIDTHS` IS KEPT** (METHODOLOGY §6). Three sessions have asked this question and two hand-rolled the same throwaway. It is a **measurement, not a hook that plays the game** — which is the distinction D160 drew when it deleted `BCLONE_SCREENSHOT` — and it runs headless in two seconds. **The view still has no automated verification; it now has one repeatable measurement.**
+  - ⚠️ **NONE OF THE THREE IS VERIFIED ON A SCREEN.** All three are view changes, the view has no tests (D160), and looking at it is the test. **Sim untouched by the first and third; the second is 627 passing / 0 failing / 2 skipped of 629, from a run.**
+  - ⚠️ **AND THE HANDOFF'S OWN TRAP CAUGHT IT A FOURTH TIME.** *"Expect 626 passing / 0 failing / 2 skipped"* — 626 was the **total**, and the run says 624 passed with 2 skipped. A number that goes into a document comes from a run, including when the document is the one warning you about it.
 - **D168 · 2026-08-22 · Four rulings from Joe playing D167, and two of them are open work.**
   - **⛔ THE JITTER HAS A THIRD CAUSE, AND HE NAMED IT PRECISELY:** *"when a farmer is sowing/harvesting a field it seems to 'bounce' between two tiles for a few ticks. same with a forester planting/harvesting trees."* **D163's cause (a cold villager with full arms) and D166's (a fetch from a store next door) are both genuinely fixed** — this is a worker on painted ground, which is neither. **Open**, with the run from his screenshot on disk at `logs/bclone-20260822-000011.log`. ⚠️ **The standing lesson applies to it: sweep the whole trail and count the shapes before believing any one of them** — declaring a cause after four log lines is what cost the two previous rounds.
   - **⭐ THE FARM'S BRUSH SHOULD SAY WHEN THE FIELD OUTRUNS ITS FARMERS** — *"at this size you dont have enough farmers to utilize the land - add more farmers or make your field smaller"* — **and it must stay ignorable**: *"which the user can choose to ignore and 'waste' land if they want."* That is D86 and D43's rule restated by the person they were written for, and most of the machinery is already there: `PaintWorkGround` returns the verdict, D42 makes a brush speak once per stroke, and the only thing missing is that the sentence is written for a forester. **Open**, and small.

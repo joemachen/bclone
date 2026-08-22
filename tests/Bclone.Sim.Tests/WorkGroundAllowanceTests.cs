@@ -252,6 +252,173 @@ public sealed class WorkGroundAllowanceTests
     }
 
     // ---------------------------------------------------------------
+    //  ⭐ What the sentence actually says (D169, Joe)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ A field that outruns its farmers is told so in farming words, and both remedies
+    /// are named.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, painting a farm: <em>"it would be helpful if, when painting the farm size, the UI
+    /// told the user 'at this size you dont have enough farmers to utilize the land — add more
+    /// farmers or make your field smaller' (which the user can choose to ignore and 'waste'
+    /// land if they want)."</em>
+    /// </para>
+    /// <para>
+    /// <b>The remedies are the half that was missing.</b> The old sentence stated the problem
+    /// and stopped — and a warning naming no action is the always-on alert D42 and D123
+    /// deleted, arriving one control along.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFieldTooBigForItsFarmersIsToldSoInFarmingWords()
+    {
+        SimLoop loop = Loop();
+        loop.Step(VillageFixtures.Village.TicksPerYear);
+        SimWorld world = loop.World;
+
+        Workplace farm = AStaffedFarm(world, out int hands);
+        int allowance = world.WorkGroundAllowanceFor(farm);
+
+        PlacementVerdict last = PlacementVerdict.Fine;
+        foreach (GridPos tile in DryGround(world, allowance + 3))
+        {
+            PlacementVerdict verdict = world.PaintWorkGround(farm, tile);
+            Assert.True(verdict.Allowed, "Over-painting a field must never be refused (Joe).");
+            if (verdict.HasWarning)
+            {
+                last = verdict;
+            }
+        }
+
+        _output.WriteLine($"{hands} farmers, allowance {allowance}");
+        _output.WriteLine(last.Warning);
+
+        Assert.True(last.HasWarning, "The village said nothing about a field it cannot work.");
+
+        // It is about farming, not forestry.
+        Assert.Contains("farmer", last.Warning, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("field", last.Warning, System.StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("untended", last.Warning, System.StringComparison.OrdinalIgnoreCase);
+
+        // And it names both of the two things the player can do about it.
+        Assert.Contains("another farmer", last.Warning, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("smaller field", last.Warning, System.StringComparison.OrdinalIgnoreCase);
+
+        // The ground is painted anyway, because wasting land is a decision the player is
+        // allowed to make.
+        Assert.True(world.IsOverstretched(farm));
+        Assert.Equal(allowance + 3, world.Zones.WorkGroundTiles(farm.Id));
+    }
+
+    /// <summary>
+    /// ⛔ The anti-vacuity companion: a farm and a forester do not share one sentence.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is the guard that fails against the code Joe was playing</b>, and the one above
+    /// is not. The old wording was a single template with the building's name substituted in,
+    /// so a farm was told its field would <em>"go untended"</em> — the forester's word, and the
+    /// wrong one for ground that since D167 is simply never sown. A guard that only reads the
+    /// farm's sentence cannot tell a farm-shaped warning from a generic one that happens to
+    /// contain the farm's name; reading both and requiring them to differ can.
+    /// </remarks>
+    [Fact]
+    public void AFarmAndAForesterDoNotShareOneSentence()
+    {
+        SimLoop loop = Loop();
+        loop.Step(VillageFixtures.Village.TicksPerYear);
+        SimWorld world = loop.World;
+
+        Workplace hut = AStaffedWorkplace(world, out _);
+        foreach (GridPos tile in DryGround(world, world.WorkGroundAllowanceFor(hut) + 2))
+        {
+            world.PaintWorkGround(hut, tile);
+        }
+
+        Workplace farm = AStaffedFarm(world, out _);
+        foreach (GridPos tile in DryGround(world, world.WorkGroundAllowanceFor(farm) + 2))
+        {
+            world.PaintWorkGround(farm, tile);
+        }
+
+        string? forestry = world.OverstretchedNote(hut);
+        string? farming = world.OverstretchedNote(farm);
+
+        _output.WriteLine($"forester: {forestry}");
+        _output.WriteLine($"farm:     {farming}");
+
+        Assert.NotNull(forestry);
+        Assert.NotNull(farming);
+
+        // Not the same sentence with a different name in it.
+        Assert.NotEqual(
+            forestry!.Replace(hut.Name, "X", System.StringComparison.OrdinalIgnoreCase),
+            farming!.Replace(farm.Name, "X", System.StringComparison.OrdinalIgnoreCase));
+
+        Assert.Contains("forester", forestry, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("farmer", farming, System.StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("fallow", forestry, System.StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("untended", farming, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// A field nobody farms is told that nobody is on it — not shown an allowance of zero.
+    /// </summary>
+    /// <remarks>
+    /// <b>"Enough hands for 0" is arithmetic, not a sentence</b> (§1.1). It reads as though the
+    /// ground itself were worthless, where what is true is that nobody has been put on it —
+    /// a different thing, and one the player can go and fix.
+    /// </remarks>
+    [Fact]
+    public void AFieldNobodyFarmsIsToldNobodyIsOnItRatherThanShownAZero()
+    {
+        SimLoop loop = Loop();
+        loop.Step(VillageFixtures.Village.TicksPerYear);
+        SimWorld world = loop.World;
+
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        Assert.Empty(farm.WorkerIds);
+
+        foreach (GridPos tile in DryGround(world, 4))
+        {
+            world.PaintWorkGround(farm, tile);
+        }
+
+        string? note = world.OverstretchedNote(farm);
+        _output.WriteLine(note);
+
+        Assert.NotNull(note);
+        Assert.Contains("nobody", note!, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("put a farmer on", note, System.StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(" 0 ", note, System.StringComparison.Ordinal);
+    }
+
+    /// <summary>A farm with people on it and no ground of its own yet.</summary>
+    /// <remarks>
+    /// <see cref="AStaffedWorkplace"/>'s twin, and built rather than found for the same reason
+    /// that one is: a guard that searches a founded village for a staffed farm is a report on
+    /// what the allocator did that morning.
+    /// </remarks>
+    private static Workplace AStaffedFarm(SimWorld world, out int hands)
+    {
+        const int Hands = 2;
+
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        Assert.Empty(farm.WorkerIds);
+        Assert.True(world.Villagers.Count >= Hands);
+
+        for (int i = 0; i < Hands; i++)
+        {
+            farm.WorkerIds.Add(world.Villagers[i].Id);
+        }
+
+        hands = Hands;
+        return farm;
+    }
+
+    // ---------------------------------------------------------------
     //  What the brush refuses
     // ---------------------------------------------------------------
 

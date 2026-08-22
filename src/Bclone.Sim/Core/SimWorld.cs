@@ -1700,6 +1700,73 @@ public sealed class SimWorld
         Zones.WorkGroundTiles(workplace.Id) > WorkGroundAllowanceFor(workplace);
 
     /// <summary>
+    /// Why this workplace's ground is more than its hands can keep, in a sentence — or
+    /// <c>null</c> when it is not.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ONE DOOR FOR THE SENTENCE (D147's shape, and D145's rule).</b> The brush says it
+    /// once per stroke (D42) and the panel says it for as long as the state lasts, and those
+    /// are two places, so the sentence is written here rather than in either of them. A
+    /// warning composed twice is a warning that can disagree with itself — which is D148's
+    /// bug, one panel over.
+    /// </para>
+    /// <para>
+    /// <b>⭐ AND A FARM SAYS IT DIFFERENTLY, WHICH IS THE POINT</b> (Joe, 2026-08-22:
+    /// *"at this size you dont have enough farmers to utilize the land — add more farmers or
+    /// make your field smaller"*). The old sentence was written for a forester and a farm
+    /// inherited it word for word: *"…and 1 pair of hands to keep them — enough for 24. The
+    /// rest will go untended."* **Untended is the wrong word for a field**, and not merely a
+    /// stylistic one: since D167 a farm sows only what its hands can bring in
+    /// (<see cref="HarvestOneFarmCanBringIn"/>, the same headcount this allowance is read
+    /// from), so the surplus is not tended badly — <b>it is never sown at all</b>. Saying
+    /// *fallow* is the true word and it is also the one that makes the remedy obvious.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT NAMES THE TWO REMEDIES AND REFUSES NOTHING</b> (D86, D43, and Joe saying so
+    /// outright: *"which the user can choose to ignore and 'waste' land if they want"*).
+    /// Painting big and hiring afterwards is an ordinary way to play; wasting land on purpose
+    /// is a decision the player is allowed to make. This is a sentence, never a gate.
+    /// </para>
+    /// </remarks>
+    public string? OverstretchedNote(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (!IsOverstretched(workplace))
+        {
+            return null;
+        }
+
+        string name = Capitalised(workplace.Name);
+        int tiles = Zones.WorkGroundTiles(workplace.Id);
+        int allowance = WorkGroundAllowanceFor(workplace);
+        int hands = workplace.WorkerIds.Count;
+
+        if (workplace.Kind == JobKind.Farmer)
+        {
+            return hands == 0
+                ? $"{name} is {tiles} tiles of field with nobody farming it, so none of it "
+                  + "will be sown. Put a farmer on, or paint a smaller field."
+                : $"{name} is {tiles} tiles of field and {Hands(hands)} can sow "
+                  + $"{allowance} of them. The other {tiles - allowance} will lie fallow — "
+                  + "put another farmer on, or paint a smaller field.";
+        }
+
+        return hands == 0
+            ? $"{name} has {tiles} tiles and nobody working it, so none of it will be kept. "
+              + $"Put a forester on, or paint less — one pair of hands keeps "
+              + $"{TilesOneWorkerKeeps(workplace.Kind)}."
+            : $"{name} has {tiles} tiles and {Hands(hands)} to keep them — enough for "
+              + $"{allowance}. The other {tiles - allowance} will go untended — put another "
+              + "forester on, or paint less.";
+    }
+
+    /// <summary>"1 pair of hands" / "2 pairs of hands", so the sentences read as English.</summary>
+    private static string Hands(int hands) =>
+        hands == 1 ? "1 pair of hands" : $"{hands} pairs of hands";
+
+    /// <summary>
     /// Give one tile of ground to a workplace, and say so if it is now more than its
     /// hands can keep.
     /// </summary>
@@ -1763,21 +1830,11 @@ public sealed class SimWorld
             Plough(tile);
         }
 
-        int tiles = Zones.WorkGroundTiles(workplace.Id);
-        int allowance = WorkGroundAllowanceFor(workplace);
-        if (tiles > allowance)
-        {
-            int hands = workplace.WorkerIds.Count;
-            return PlacementVerdict.Yes(
-                hands == 0
-                    ? $"{Capitalised(workplace.Name)} has {tiles} tiles and nobody working it. "
-                      + $"Every hand there can keep {TilesOneWorkerKeeps(workplace.Kind)}."
-                    : $"{Capitalised(workplace.Name)} has {tiles} tiles and {hands} "
-                      + $"{(hands == 1 ? "pair of hands" : "pairs of hands")} to keep them — "
-                      + $"enough for {allowance}. The rest will go untended.");
-        }
-
-        return PlacementVerdict.Fine;
+        // The sentence is `OverstretchedNote`'s, not this method's, so the brush and the
+        // building's own panel can never describe the same state two different ways.
+        return OverstretchedNote(workplace) is string note
+            ? PlacementVerdict.Yes(note)
+            : PlacementVerdict.Fine;
     }
 
     /// <summary>Take one tile of ground back from a workplace.</summary>

@@ -71,17 +71,18 @@ public partial class Main : Control
     private Label _speedLabel = null!;
     private ItemList _roster = null!;
     private RichTextLabel _inspector = null!;
-    private HBoxContainer _staffingRow = null!;
+    private VBoxContainer _staffingRow = null!;
     private Label _staffingLabel = null!;
-    private HBoxContainer _queueRow = null!;
+    private VBoxContainer _queueRow = null!;
     private Label _queueLabel = null!;
-    private HBoxContainer _groundRow = null!;
+    private VBoxContainer _groundRow = null!;
     private Label _groundLabel = null!;
+    private Label _groundNote = null!;
     private Button _modeButton = null!;
-    private HBoxContainer _storeRow = null!;
-    private HBoxContainer _acceptRow = null!;
+    private VBoxContainer _storeRow = null!;
+    private VBoxContainer _acceptRow = null!;
     private Button _fullMarkerButton = null!;
-    private HBoxContainer _idleRow = null!;
+    private VBoxContainer _idleRow = null!;
     private Label _idleLabel = null!;
     private Button _idleMarkerButton = null!;
     private RichTextLabel _villageLog = null!;
@@ -161,7 +162,162 @@ public partial class Main : Control
         }
 
         Refresh();
+        ProbeColumnWidths();
     }
+
+    /// <summary>
+    /// Print what every control in the two panel columns is claiming as a minimum width,
+    /// then quit. Off unless <c>BCLONE_PROBE_WIDTHS</c> is set.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE THIRD TIME THIS QUESTION HAS BEEN ASKED, SO IT STOPS BEING A THROWAWAY.</b>
+    /// D149 wrote this probe by hand to find that <em>"six stock-limit rows at 438 held a
+    /// column at 450"</em>; D169 wrote it again for Joe's *"how dumb the width of the windows
+    /// on the right side of the screen are."* Both times the answer was invisible from the
+    /// layout code, because <b>a column is never narrower than its widest child</b> —
+    /// <see cref="ColumnWidthFor"/> can hand a <see cref="ScrollContainer"/> whatever
+    /// <c>Offset</c> it likes and Godot will overrule it.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ The inspector's rows are empty and hidden until something is selected</b>, so a
+    /// probe of a fresh village would report them at nothing and miss the ones that matter.
+    /// The second pass poses the longest sentence each row can really hold and asks what it
+    /// would then want — which is the number that decides the column the moment the player
+    /// clicks a building.
+    /// </para>
+    /// <para>
+    /// Diagnostic output only: it never changes what the game does and it is not a hook with
+    /// a side effect, which is the distinction D160 drew when it deleted the screenshot one.
+    /// </para>
+    /// </remarks>
+    private void ProbeColumnWidths()
+    {
+        if (_probed || System.Environment.GetEnvironmentVariable("BCLONE_PROBE_WIDTHS") is null)
+        {
+            return;
+        }
+
+        // A few frames in, so the containers have been laid out at least once.
+        if (++_probeFrames < 20)
+        {
+            return;
+        }
+
+        _probed = true;
+
+        GD.Print($"[widths] window {Size.X:F0} x {Size.Y:F0}, "
+            + $"share {ColumnShareOfWindow:P0} = {ColumnWidthFor(Size.X):F0} a side");
+
+        foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
+        {
+            string side = scroll.AnchorLeft > 0.5f ? "right" : "left";
+            GD.Print($"[widths] --- {side} column: scroller wants "
+                + $"{scroll.GetCombinedMinimumSize().X:F0}, is {scroll.Size.X:F0} ---");
+            PrintWidths(column, side, 0);
+        }
+
+        ProbeTheInspectorRows();
+
+        GD.Print("[widths] done.");
+        GetTree().Quit();
+    }
+
+    /// <summary>
+    /// What the inspector's rows will want once the player selects something — posed, because
+    /// they are empty until then.
+    /// </summary>
+    private void ProbeTheInspectorRows()
+    {
+        GD.Print("[widths] --- inspector rows, with the longest sentence each can hold ---");
+
+        Pose(_staffingRow, _staffingLabel, "Staffing the south-western forester's hut 2 — 2 of 3:");
+        Pose(_groundRow, _groundLabel, "Ground — 128 tiles, enough hands for 26:");
+        Pose(_queueRow, _queueLabel, "3rd in the queue, after a granary and a storage pile:");
+        Pose(
+            _idleRow,
+            _idleLabel,
+            "Nothing to sow at the south-western farmhouse 2 — you asked the village to keep "
+            + "2000 food and it has 1834.");
+        Pose(
+            null,
+            _groundNote,
+            "The south-western farmhouse 2 is 128 tiles of field and 2 pairs of hands can sow "
+            + "26 of them. The other 102 will lie fallow — put another farmer on, or paint a "
+            + "smaller field.");
+
+        void Pose(Container? row, Label label, string worst)
+        {
+            string was = label.Text;
+            label.Text = worst;
+
+            float wants = row is null
+                ? label.GetCombinedMinimumSize().X
+                : row.GetCombinedMinimumSize().X;
+
+            GD.Print($"[widths] right   {(row is null ? "note" : "row ")} wants {wants:F0} — \"{worst}\"");
+
+            // ⭐ AND WHAT IN THE ROW IS ASKING FOR IT. A row's minimum width is the sum of its
+            // children's, so the total says a column is being held open and says nothing about
+            // by what — which is the question the fix turns on.
+            if (row is not null)
+            {
+                foreach (Node child in row.GetChildren())
+                {
+                    if (child is Control part)
+                    {
+                        string what = part switch
+                        {
+                            Label inner => $"Label \"{Shorten(inner.Text)}\"",
+                            Button button => $"Button \"{button.Text}\"",
+                            _ => part.GetType().Name,
+                        };
+
+                        GD.Print($"[widths] right       {part.GetCombinedMinimumSize().X,4:F0}  {what}");
+                    }
+                }
+            }
+
+            label.Text = was;
+        }
+    }
+
+    /// <summary>One line per control: how wide it insists on being, and what it is.</summary>
+    private static void PrintWidths(Node node, string side, int depth)
+    {
+        foreach (Node child in node.GetChildren())
+        {
+            if (child is Control control)
+            {
+                float wants = control.GetCombinedMinimumSize().X;
+
+                // Only the ones that could actually be pinning a column open. A tree of
+                // four hundred lines is the same as no answer at all.
+                if (wants >= 200f)
+                {
+                    string text = control switch
+                    {
+                        Label label => label.Text,
+                        Button button => button.Text,
+                        _ => string.Empty,
+                    };
+
+                    GD.Print($"[widths] {side} {new string(' ', depth * 2)}{control.GetType().Name} "
+                        + $"wants {wants:F0}{(control.Visible ? string.Empty : " (hidden)")}"
+                        + $"{(text.Length == 0 ? string.Empty : $" — \"{text}\"")}");
+                }
+            }
+
+            PrintWidths(child, side, depth + 1);
+        }
+    }
+
+    /// <summary>Enough of a sentence to recognise it in a probe line.</summary>
+    private static string Shorten(string text) =>
+        text.Length <= 40 ? text : text[..40] + "…";
+
+    private bool _probed;
+    private int _probeFrames;
 
     /// <summary>Close the audit log cleanly when the window goes.</summary>
     /// <remarks>
@@ -463,11 +619,27 @@ public partial class Main : Control
         // work-ground brush"* on its own panel, and there was no brush.
         bool keepsGround = staffable is not null && SimWorld.KeepsWorkGround(staffable.Kind);
         _groundRow.Visible = keepsGround;
+        _groundNote.Visible = false;
         if (keepsGround)
         {
             int tiles = world.Zones.WorkGroundTiles(staffable!.Id);
             int allowance = world.WorkGroundAllowanceFor(staffable);
-            _groundLabel.Text = $"Ground — {tiles} tiles, enough hands for {allowance}:";
+
+            // ⚠️ "ENOUGH HANDS FOR 0" IS ARITHMETIC, NOT A SENTENCE. An unstaffed building
+            // reads as though the ground itself were worthless; what is true is that nobody
+            // is on it, and that is a different thing to go and fix.
+            _groundLabel.Text = staffable.WorkerIds.Count == 0
+                ? $"Ground — {tiles} tiles, nobody working it:"
+                : $"Ground — {tiles} tiles, enough hands for {allowance}:";
+
+            // The sentence is the sim's (`SimWorld.OverstretchedNote`), the same one the
+            // brush says on the stroke — so the panel and the brush cannot describe one
+            // state two ways (D147's rule for the idle marker, one control over).
+            if (world.OverstretchedNote(staffable) is string stretched)
+            {
+                _groundNote.Text = stretched;
+                _groundNote.Visible = true;
+            }
 
             // ⭐ THE TOGGLE IS FELLING NOW, NOT PLANTING (Joe, D146). Painting ground for a hut
             // is already the instruction to keep it wooded, so planting was never the
@@ -1585,20 +1757,16 @@ public partial class Main : Control
         // reasoning ("a button that comes and goes is a button you hunt for") — and the
         // reason it is safe to reverse is that the buttons now sit inside the panel that
         // says what they would act on. A control with no subject is worse than an absent one.
-        _staffingRow = new HBoxContainer { Visible = false };
-        _staffingRow.AddThemeConstantOverride("separation", 6);
-        body.AddChild(_staffingRow);
-
         _staffingLabel = Muted("Staffing:");
-        _staffingRow.AddChild(_staffingLabel);
+        (_staffingRow, HFlowContainer staffingControls) = InspectorRow(body, _staffingLabel);
 
         var fewer = new Button { Text = "−1" };
         fewer.Pressed += () => ChangeStaffing(-1);
-        _staffingRow.AddChild(fewer);
+        staffingControls.AddChild(fewer);
 
         var more = new Button { Text = "+1" };
         more.Pressed += () => ChangeStaffing(+1);
-        _staffingRow.AddChild(more);
+        staffingControls.AddChild(more);
 
         // ⛔⛔ "VILLAGE DECIDES" IS GONE FROM THE WHOLE GAME (Joe, 2026-08-16): *"i want
         // village decides gone entirely from all aspects of the game for now."* D136 took the
@@ -1618,20 +1786,16 @@ public partial class Main : Control
         // a building under construction." It is — and it is better than any rule about which
         // KIND of building matters most, because the village cannot know whether this winter
         // needs a granary or a roof and the player can.
-        _queueRow = new HBoxContainer { Visible = false };
-        _queueRow.AddThemeConstantOverride("separation", 6);
-        body.AddChild(_queueRow);
-
         _queueLabel = Muted("Build queue:");
-        _queueRow.AddChild(_queueLabel);
+        (_queueRow, HFlowContainer queueControls) = InspectorRow(body, _queueLabel);
 
         var sooner = new Button { Text = "▲ Sooner" };
         sooner.Pressed += () => MoveSelectedInQueue(-1);
-        _queueRow.AddChild(sooner);
+        queueControls.AddChild(sooner);
 
         var later = new Button { Text = "▼ Later" };
         later.Pressed += () => MoveSelectedInQueue(+1);
-        _queueRow.AddChild(later);
+        queueControls.AddChild(later);
 
         // ⭐ THE GROUND A BUILDING KEEPS (D86), reaching the player at last. The sim side has
         // been built and unused since C3c — painted per workplace, priced in workers, with the
@@ -1639,27 +1803,30 @@ public partial class Main : Control
         // ground until the forester's hut. It sits in the panel rather than on the toolbar for
         // the reason D104 settled: a brush that belongs to ONE building needs to be beside the
         // name of that building, or the player has to remember which one it will paint for.
-        _groundRow = new HBoxContainer { Visible = false };
-        _groundRow.AddThemeConstantOverride("separation", 6);
-        body.AddChild(_groundRow);
-
         _groundLabel = Muted("Ground:");
-        _groundRow.AddChild(_groundLabel);
+        (_groundRow, HFlowContainer groundControls) = InspectorRow(body, _groundLabel);
 
         var give = new Button { Text = "Give ground" };
         give.Pressed += () => PaintGroundForSelection(1);
-        _groundRow.AddChild(give);
+        groundControls.AddChild(give);
 
         var takeBack = new Button { Text = "Take back" };
         takeBack.Pressed += () => PaintGroundForSelection(-1);
-        _groundRow.AddChild(takeBack);
+        groundControls.AddChild(takeBack);
 
         // ⭐ AND THE MODE — the first control in this game that tells a building to PUT
         // SOMETHING BACK (Joe, ungated). It ships enabled rather than greyed behind managed
         // forestry, which is the change `professions.md §6.2` records.
         _modeButton = new Button { Text = "Planting: off" };
         _modeButton.Pressed += ToggleSelectedMode;
-        _groundRow.AddChild(_modeButton);
+        groundControls.AddChild(_modeButton);
+
+        // ⭐ AND THE OVERSTRETCHED SENTENCE, WHICH IS A STATE AND NOT JUST A MOMENT (D86).
+        // The brush says it once per stroke; this says it for as long as it is true, so
+        // losing a farmer in summer is readable in autumn.
+        _groundNote = Wrapped(Muted(string.Empty));
+        _groundNote.Visible = false;
+        _groundRow.AddChild(_groundNote);
 
         // ⭐ WHY THIS BUILDING IS NOT WORKING, AND A SWITCH TO STOP ASKING (Joe, D147). The
         // same shape as the full-store marker below, and D140's per-building/global pair.
@@ -1667,30 +1834,22 @@ public partial class Main : Control
         // The label is the whole point rather than decoration: the ring on the map says *look
         // here* and this says *why*, and a hut held by a log limit set on the stock panel is
         // exactly the case where the second half cannot be guessed from the first.
-        _idleRow = new HBoxContainer { Visible = false };
-        _idleRow.AddThemeConstantOverride("separation", 6);
-        body.AddChild(_idleRow);
-
         _idleLabel = Muted(string.Empty);
-        _idleRow.AddChild(_idleLabel);
+        (_idleRow, HFlowContainer idleControls) = InspectorRow(body, _idleLabel);
 
         _idleMarkerButton = new Button { Text = "Marker: ON" };
         _idleMarkerButton.Pressed += ToggleSelectedIdleMarker;
-        _idleRow.AddChild(_idleMarkerButton);
+        idleControls.AddChild(_idleMarkerButton);
 
         // ⭐ THE PER-BUILDING HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which
         // should be able to be disabled by building or globally."* Beside the store's own name
         // for D104's reason — a control that belongs to ONE building has to sit next to that
         // building, or the player has to remember which one it will act on.
-        _storeRow = new HBoxContainer { Visible = false };
-        _storeRow.AddThemeConstantOverride("separation", 6);
-        body.AddChild(_storeRow);
-
-        _storeRow.AddChild(Muted("When full:"));
+        (_storeRow, HFlowContainer storeControls) = InspectorRow(body, Muted("When full:"));
 
         _fullMarkerButton = new Button { Text = "Marker: ON" };
         _fullMarkerButton.Pressed += ToggleSelectedFullMarker;
-        _storeRow.AddChild(_fullMarkerButton);
+        storeControls.AddChild(_fullMarkerButton);
 
         // ⭐ WHAT THIS BUILDING WILL TAKE (Joe, D141): *"a given storage pile will only accept
         // logs, another only firewood, another only iron ore. Set at the building level."*
@@ -1700,21 +1859,66 @@ public partial class Main : Control
         // choice the model would refuse. The refusal still exists in `SetStoreAccepts`, because
         // a control that cannot be misused and a rule that cannot be broken are different
         // things and only the second one survives somebody calling it from elsewhere.
-        _acceptRow = new HBoxContainer { Visible = false };
-        _acceptRow.AddThemeConstantOverride("separation", 6);
-        body.AddChild(_acceptRow);
-
-        _acceptRow.AddChild(Muted("Takes:"));
+        (_acceptRow, HFlowContainer acceptControls) = InspectorRow(body, Muted("Takes:"));
 
         for (int g = 0; g < Stockpile.Kinds; g++)
         {
             var goods = (Goods)g;
             var button = new Button { Text = GoodsName(goods), ToggleMode = true };
             button.Pressed += () => ToggleSelectedAccepts(goods);
-            _acceptRow.AddChild(button);
+            acceptControls.AddChild(button);
             _acceptButtons.Add((goods, button));
         }
     }
+
+    /// <summary>
+    /// One row of the inspector: what it is about on its own wrapped line, and the controls
+    /// that act on it flowing underneath.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⭐⭐ THIS IS WHY THE PANELS ATE THE MAP (D169, Joe: *"look at the attached screenshot
+    /// to see how dumb the width of the windows on the right side of the screen are"*).</b>
+    /// Every one of these rows used to be an <see cref="HBoxContainer"/> holding a sentence and
+    /// some buttons, and <b>an HBox's minimum width is the sum of its children's</b> while a
+    /// column's is its widest child's. So <see cref="ColumnWidthFor"/> could hand the column
+    /// 27% of the window and Godot would overrule it the instant the player selected a
+    /// building. <b>Measured with the probe rather than guessed</b>
+    /// (<see cref="ProbeColumnWidths"/>): the idle row wanted <b>733</b> pixels, the ground row
+    /// 548 and the build-queue row 459, against a column that is 267 on Joe's window. **Over
+    /// half his screen, decided by one sentence.**
+    /// </para>
+    /// <para>
+    /// <b>Two changes, and both are about minimum width rather than about layout.</b> The
+    /// caption <em>wraps</em>, so a long sentence grows downwards; and the controls sit in an
+    /// <see cref="HFlowContainer"/>, whose minimum width is its <em>widest single child</em>
+    /// rather than the sum — so three buttons that will not fit side by side stack instead of
+    /// forcing the column open. A wide window still draws them on one line and looks exactly as
+    /// it did.
+    /// </para>
+    /// <para>
+    /// <b>D114 reached this answer once already</b>, for the build menu: *"the caption sits
+    /// above its group rather than beside it, which is a width decision."* It was right, and it
+    /// was applied to one panel.
+    /// </para>
+    /// </remarks>
+    private static (VBoxContainer Row, HFlowContainer Controls) InspectorRow(
+        Control parent, Label caption)
+    {
+        var row = new VBoxContainer { Visible = false };
+        row.AddThemeConstantOverride("separation", 4);
+
+        row.AddChild(Wrapped(caption));
+
+        var controls = new HFlowContainer();
+        controls.AddThemeConstantOverride("h_separation", 6);
+        controls.AddThemeConstantOverride("v_separation", 4);
+        row.AddChild(controls);
+
+        parent.AddChild(row);
+        return (row, controls);
+    }
+
 
     private readonly List<(Goods Goods, Button Button)> _acceptButtons = new();
 
@@ -2426,12 +2630,34 @@ public partial class Main : Control
     /// would move the map; inside a floating panel it moves nothing, so the sentence the
     /// game took the trouble to write can be read to the end.
     /// </remarks>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ AND IT IS ALSO THE ANSWER TO D169, WHICH IS WORTH SAYING OUT LOUD:</b> this helper
+    /// existed, did the right thing, and had been applied to five labels while <em>every
+    /// sentence in the inspector</em> went into a bare <c>Label</c> inside an
+    /// <see cref="HBoxContainer"/> — which is a minimum width, which is a column width, which
+    /// is why Joe's map was a strip. **The fix was not a new idea; it was this one, reaching
+    /// the panels that needed it.**
+    /// </para>
+    /// <para>
+    /// The minimum is deliberately small and not zero: at zero a column could be squeezed to a
+    /// sliver of one word per line, and <see cref="MinColumnWidth"/> is the floor that is
+    /// supposed to decide how narrow a column gets.
+    /// </para>
+    /// </remarks>
     private static Label Wrapped(Label label)
     {
         label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        label.CustomMinimumSize = new Vector2(120, 0);
+        label.CustomMinimumSize = new Vector2(WrappedTextMinWidth, 0);
+
+        // Take the leftover width rather than only the minimum, so a sentence in a row that
+        // has room uses it instead of wrapping early into a tall thin block.
+        label.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         return label;
     }
+
+    /// <summary>How narrow a wrapped sentence may be asked to get.</summary>
+    private const float WrappedTextMinWidth = 120f;
 
     /// <summary>What the cursor is over, or what just happened. Empty when not placing.</summary>
     // ⚠️ Genuinely null until the control bar is built, and typed to say so. It was `null!`,

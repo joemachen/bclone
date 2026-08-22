@@ -1,8 +1,10 @@
 # Spec: Phase 2 — the village you can play
 
 **Decisions:** D159 (which named this phase for what it became), D161/D162 (crops, its last slice),
-D163 (the jitter). **Status:** 🔨 **Definition of Done met on items 1, 2 and 5; item 3 — this
-checklist — is written and waits to be walked; item 4 is engineering.**
+D163/D166/D169 (the jitter, three causes deep). **Status:** ✅ **WALKED. All five Definition-of-Done
+items are met** — Joe walked this checklist on 2026-08-22 (D169) and approved the document, which
+was the last one open. What he found while walking it is D168's four rulings, and those are
+Phase 2 polish rather than checks that failed.
 
 > **⚠️ THIS DOCUMENT EXISTS BECAUSE PHASE 1 HAD ONE AND PHASE 2 DID NOT.** METHODOLOGY §3
 > requires a manual playthrough against a **written** checklist before a phase merges, and
