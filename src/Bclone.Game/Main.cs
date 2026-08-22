@@ -608,8 +608,25 @@ public partial class Main : Control
             // anything: `Places => StaffingOverride ?? Capacity` means an untouched building is
             // worked by everyone who fits. One number either way now, because the difference
             // the old wording drew is a difference the sim does not make.
-            _staffingLabel.Text =
-                $"Staffing {staffable.Name} — {staffable.Places} of {staffable.Capacity}:";
+            //
+            // ⛔⭐ AND IT WAS STILL LYING, BECAUSE `Places` IS A CEILING AND NOT A COUNT — D148'S
+            // BUG, ONE PANEL OVER, AND JOE READ IT (2026-08-22). His farm said *"Staffing
+            // farmhouse 1 — 2 of 2"* directly above *"1 pair of hands can sow 13"*: two true
+            // sentences that cannot both be about the same thing. The farm has two seats and
+            // one person in it, because the village has four adults and three other jobs.
+            //
+            // The allowance is read off `WorkerIds` on purpose (D86 — a hut whose forester dies
+            // is overstretched that moment), so the fix is not to change what the ground line
+            // counts. **It is for the staffing line to say who turned up**, in the vocabulary
+            // the professions panel already learned in D148.
+            int working = staffable.WorkerIds.Count;
+            string turnout = working == 0
+                ? $"nobody working of {staffable.Capacity} seats"
+                : $"{working} working of {staffable.Capacity} seats";
+
+            _staffingLabel.Text = staffable.Places == working
+                ? $"Staffing {staffable.Name} — {turnout}:"
+                : $"Staffing {staffable.Name} — {turnout} · asked {staffable.Places}:";
         }
 
         // The ground controls belong to a building that keeps ground. ⭐ ASKED OF THE SIM NOW

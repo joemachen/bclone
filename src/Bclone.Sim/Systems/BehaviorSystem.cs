@@ -2891,6 +2891,27 @@ public sealed class BehaviorSystem : ISimSystem
             ? int.MaxValue
             : world.TravelCost.Cost(villager.Position, store.Position);
 
+        // ⭐ AND IT SAYS WHY, BECAUSE THIS CHOICE IS INVISIBLE AND IT DECIDES THE HARVEST
+        // (Joe, 2026-08-22: *"the farmer cant harvest as much as it sows"*). His run made
+        // **27 hauls and not one of them to the farm** — and nothing in the trail said whether
+        // the buffer was full, farther away, or never consulted, so answering it meant reading
+        // the code and guessing. METHODOLOGY §4's rule is that every refusal writes its own
+        // reason; this is a refusal.
+        //
+        // ⚠️ Guarded, because it is one line per reaped tile and the long acceptance runs
+        // discard it (METHODOLOGY §4 — interpolation happens before the sink gets a say).
+        if (world.Logs(LogLevel.Debug))
+        {
+            world.Log(
+                LogLevel.Debug,
+                "goods",
+                $"{villager.Name} #{villager.Id}: {villager.CarriedFood} food from the field — "
+                + $"{farm.Name} has {farm.Store.FreeSpace} free of {farm.Store.Capacity} "
+                + $"(cost {(toTheFarm == int.MaxValue ? "no room" : toTheFarm.ToString())}), "
+                + $"nearest store {(store is null ? "none" : store.Name)} "
+                + $"(cost {(toAStore == int.MaxValue ? "unreachable" : toAStore.ToString())}).");
+        }
+
         // Ties go to the farm, which is the reading that matches the sentence: the buffer is
         // underfoot, so "nearest with room" means the farm whenever the farm will have it.
         if (toTheFarm != int.MaxValue && toTheFarm <= toAStore)
