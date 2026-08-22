@@ -15,7 +15,8 @@ only if you touch the crop numbers, and **do not touch them** (see below).
 commit was **621 passing / 3 failing / 2 skipped of 626**, and the three failures were the three
 goldens — which were then **re-taken and verified green individually** (both arms of
 `AVillagePlayedWithoutLimits` and all of `FarmGoldenTests`, 5 of 5). A confirming full-suite run
-was still going when this session ended.
+was started and **produced no result** — its output stops after two lines, so the process ended
+without reporting. **Nothing is being claimed from it.**
 
 ```bash
 dotnet test bclone.sln --nologo -v q
