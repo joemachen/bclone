@@ -101,10 +101,11 @@ public sealed class SimWorld
 
     /// <summary>How many people the player wants on each kind of work (D106).</summary>
     /// <remarks>
-    /// Banished's professions panel: the village decides for itself until the player says
-    /// otherwise, and then it does as it is told. See <see cref="JobLimits"/> for why this is
-    /// allowed to ask for <em>more</em> than the village would choose, where a stock limit may
-    /// only ask for less.
+    /// Banished's professions panel. <b>The player always has an opinion</b> — every
+    /// profession carries an explicit number from the first frame (D136), and since
+    /// 2026-08-16 there is no *"village decides"* anywhere in the game to hand one back to.
+    /// See <see cref="JobLimits"/> for why this is allowed to ask for <em>more</em> than the
+    /// village would choose, where a stock limit may only ask for less.
     /// </remarks>
     public JobLimits JobLimits { get; } = new();
 
@@ -3796,11 +3797,11 @@ public sealed class SimWorld
     /// one decision in this game that stops the world.
     /// </para>
     /// </remarks>
-    public void SetStaffing(Workplace workplace, int? places)
+    public void SetStaffing(Workplace workplace, int places)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        if (places is int wanted && wanted < 0)
+        if (places < 0)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(places), places, "A workplace cannot be staffed by fewer than nobody.");
@@ -3808,11 +3809,8 @@ public sealed class SimWorld
 
         workplace.StaffingOverride = places;
 
-        Narrate(places is int n
-            ? $"{workplace.Name} is to be worked by {n} {(n == 1 ? "person" : "people")} " +
-              $"from now on. {Clock.SeasonAndYear()}."
-            : $"{workplace.Name} is left to the village to staff as it sees fit. " +
-              $"{Clock.SeasonAndYear()}.");
+        Narrate($"{workplace.Name} is to be worked by {places} " +
+            $"{(places == 1 ? "person" : "people")} from now on. {Clock.SeasonAndYear()}.");
     }
 
     public Workplace? FindWorkplace(int id)

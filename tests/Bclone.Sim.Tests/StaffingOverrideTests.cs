@@ -36,7 +36,7 @@ public sealed class StaffingOverrideTests
     private static SimConfig Config => VillageFixtures.Village;
 
     [Fact]
-    public void EveryWorkplaceStartsWithNoOpinionFromThePlayer()
+    public void EveryWorkplaceStartsStaffedByEveryoneWhoFits()
     {
         SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
 
@@ -66,8 +66,29 @@ public sealed class StaffingOverrideTests
         Assert.True(world.Population > 0, "Closing one tree stand should not end the village.");
     }
 
+    /// <summary>
+    /// ⛔ Raising a closed workplace off zero opens it again — <b>and that is the only way
+    /// back, because "village decides" is gone</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This test used to be <c>HandingItBackRestoresTheVillagesOwnJudgement</c></b> and it
+    /// called <c>SetStaffing(stand, null)</c>. Joe, 2026-08-16: *"i want village decides gone
+    /// entirely from all aspects of the game for now."* There is no control that does that any
+    /// more and <c>SetStaffing</c> no longer takes a null, so the test turns round rather than
+    /// being deleted — <b>the claim it was really making survives intact</b>: a workplace the
+    /// player closed must become available again when they change their mind.
+    /// </para>
+    /// <para>
+    /// Asserted on the MECHANISM, not on the village's appetite, and that correction is worth
+    /// keeping. An earlier version demanded the stand be staffed again within a few years and
+    /// failed — correctly. The village only wants foresters when it wants wood, so a given hut
+    /// may honestly go decades unused; demanding otherwise would assert that the quota is
+    /// broken.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void HandingItBackRestoresTheVillagesOwnJudgement()
+    public void RaisingAClosedWorkplaceOffZeroOpensItAgain()
     {
         SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
         SimWorld world = loop.World;
@@ -77,24 +98,15 @@ public sealed class StaffingOverrideTests
 
         world.SetStaffing(stand, 0);
         Assert.Equal(0, stand.Places);
+        Assert.True(stand.IsFull, "A closed workplace must never accept a worker.");
 
-        world.SetStaffing(stand, null);
-        Assert.Null(stand.StaffingOverride);
+        world.SetStaffing(stand, stand.Capacity);
+
         Assert.Equal(stand.Capacity, stand.Places);
-
-        // Asserted on the MECHANISM, not on the village's appetite, and that is a
-        // correction worth recording. The first version of this test demanded the stand
-        // be staffed again within a few years and failed — correctly. There are two tree
-        // stands and the village only wants foresters when it wants wood, so this
-        // particular one may honestly go decades unused. Demanding otherwise would have
-        // been asserting that the quota is broken.
-        //
-        // What handing back must guarantee is that the stand is AVAILABLE again: at
-        // override 0 it was permanently full and could never take anyone, and now it can.
         Assert.False(
             stand.IsFull,
-            "An empty stand handed back to the village still reads as full, so nobody can " +
-            "ever be sent there — the override was not really cleared.");
+            "A workplace opened back up still reads as full, so nobody can ever be sent " +
+            "there — the number did not really change.");
         Assert.True(stand.OpenPositions > 0);
     }
 
@@ -102,13 +114,15 @@ public sealed class StaffingOverrideTests
     /// Player intent is sim state, so it has to be in the hash (D42's rule, D51's case).
     /// </summary>
     /// <remarks>
-    /// And <b>null must hash differently from zero</b>. "I have no opinion" and "nobody
-    /// works here, I mean it" are different states of the world that produce different
-    /// histories, and a hash that conflated them would let a determinism test pass
-    /// across a real divergence — the vacuity D7 exists to prevent.
+    /// And <b>untouched must hash differently from zero</b>. "Nobody has turned this down" and
+    /// "nobody works here, I mean it" are different states of the world that produce different
+    /// histories, and a hash that conflated them would let a determinism test pass across a
+    /// real divergence — the vacuity D7 exists to prevent. <b>The player can no longer reach
+    /// the first state deliberately</b> (2026-08-16), but every workplace still starts in it,
+    /// so the distinction is as load-bearing as it ever was.
     /// </remarks>
     [Fact]
-    public void TheHashCoversStaffingAndTellsNullFromZero()
+    public void TheHashCoversStaffingAndTellsUntouchedFromZero()
     {
         SimLoop untouched = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
         SimLoop closed = SimFactory.CreatePhase0(Config, new InMemoryLogSink());

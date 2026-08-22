@@ -1,6 +1,6 @@
 # Handoff — bclone: **Phase 2 is one QA pass from done, and it is Joe's**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D164 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D165 back to D142**, then
 `METHODOLOGY.md`. `specs/crops-and-orchards.md` is now a **record** rather than a job — read §12
 if you touch the crop numbers, and nothing else there needs you.
 `specs/phase-2-the-village-you-can-play.md` is the checklist waiting on him.
@@ -11,7 +11,7 @@ if you touch the crop numbers, and nothing else there needs you.
 
 **Branch `phase/2-wood-fuel-and-tools`.** The farm (D162) is in.
 
-**Suite: 617 passing, 0 failing, 2 skipped of 619. Green** (was 589 / 0 / 2 of 591). Both skips
+**Suite: see the D165 run.** Green (was 589 / 0 / 2 of 591). Both skips
 are rulings, not debt (D143's unattended village; D134's granary cap). **The full run is 12–17
 minutes.**
 
@@ -23,7 +23,7 @@ kind**: looking at it is the test.
 
 ## ⛔ THE JOB: one item, and it is not yours.
 
-**`DESIGN.md §4`'s Definition of Done — four of five are closed (D162, D163, D164).**
+**`DESIGN.md §4`'s Definition of Done — four of five are closed (D162–D165).**
 
 1. ✅ **Crops** — D162. Built, guarded, documented.
 2. ✅ **A golden over a village that clears ground** — `FarmGoldenTests`, which does it and the
@@ -47,35 +47,24 @@ suite.** Fix what he names, then merge. Do not start Phase 3 on an unmerged bran
 
 ## ⭐ Open, and all of these are Joe's calls
 
-### 0. Two answers still outstanding from the last session
+### 0. Still outstanding
 
-- **"Village decides" → I replaced it with "Clear" rather than deleting it** (D163), because
-  `StaffingOverride` null-vs-number are different hashed states and deleting the control strands
-  anyone who sets one. **He may have meant delete it outright** — if so, he needs to say how a
-  player un-sets a number.
 - **Whether the jitter looks fixed on screen.** The log says it is; nobody has watched it.
+- **⭐ Whether a 26-tile field and a two-seat farm read right in the hand.** The numbers are
+  consistent and measured; whether a farm *feels* like a farm is a chair question.
 
-## ⭐ What the farm slice left open, and both are Joe's calls
+*("Village decides" is closed — gone from the game entirely, D165.)*
 
-### 1. ⚠️ The derived field is about twice what a farmer really gets through
+### ✅ What the farm slice left open — closed by D165
 
-`FieldTilesOneFarmerKeeps` says **13 tiles**; the seam golden measures **≈5.75 reaped a year**.
-Every other budget in `VillageEconomy` is a worst case of *cost*; this one over-states
-*capacity*, which is the unsafe direction — the village believes a farm feeds a household when
-it feeds rather less. The gap is the ordinary business of a working day: meals taken mid-field, a
-fetch for one's own larder, a walk in from the cold. **`TripsPerYear` carries the same gap and
-has never stated it**, so this is a pattern rather than a farm bug.
+**The field was not over-derived; the code was walking twice.** `HaulTheHarvest` asked the farm
+store `IsFull` instead of whether it had room for the load, so every reap made two long walks.
+Fixed, a farmer reaps the 13 tiles the derivation always promised, and `crop_yield_per_tile`
+stays at 67. **The farmhouse has two seats**, stated in data rather than derived.
 
-**Recorded rather than tuned** (D112's rule). The honest fixes are a season budget that charges
-the working day's interruptions, or a stated derating factor applied to all of them — and either
-one re-derives the whole food economy, so it wants Joe's word and a fresh session.
-
-### 2. The farm has one seat, and that is on purpose
-
-`RequiredFarmerSeats` = *one farm keeps one household fed*, which comes out at **1**. Scale is a
-second farmhouse — `granary_feeds_people`'s pattern deliberately reused (D39). **If Joe plays it
-and a one-seat building reads as broken rather than as small, that is the number to revisit**,
-and the derivation is where to do it rather than the config.
+⚠️ **The guard that would have caught it first time now exists** —
+`AFarmerCanActuallyReapTheFieldTheDerivationGivesThem`. Every other farm guard asked whether the
+sums were self-consistent; none asked whether they described the village.
 
 ---
 
@@ -103,6 +92,13 @@ and the derivation is where to do it rather than the config.
 - **A derivation that reads a number derived from itself is not a derivation.** *"Enough yield
   that a farm's seats feed a household"* produced a farmhouse with fourteen seats and 173 food
   from one tile. State the target as a **comparison** against something already derived.
+- **⭐⭐ AND THE MIRROR OF THIS PROJECT'S USUAL RULE, WHICH COST A ROUND TRIP TO LEARN (D165).**
+  *Measure, do not reason from the code* is right — but **a measurement that disagrees with a
+  derivation has found a bug in one of them, and it is worth knowing which before rewriting the
+  other.** A farmer measured at 5 tiles against 13 budgeted looked like a bad budget; it was
+  `HaulTheHarvest` asking `IsFull` instead of *room for the load* and walking twice per tile.
+  The budget was rewritten to fit the bug, produced 216 food from one tile, and had to be put
+  back. **Ask what would have to be true for the derivation to be right, and go and look.**
 - **A control tested at its predicate and never at its deposit is a control nobody has tested**
   (D144). The market's widened reach needed the *loading* branch as well as the *choosing* one,
   or traders walk to the farm and stand there.

@@ -2782,7 +2782,17 @@ public sealed class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void HaulTheHarvest(SimWorld world, Villager villager, Workplace farm)
     {
-        int toTheFarm = farm.Store.IsFull
+        // ⛔ "WITH ROOM" MEANS ROOM FOR THE WHOLE LOAD, AND ASKING `IsFull` INSTEAD COST A
+        // MEASUREMENT TO FIND. A tile of crop yields more than the buffer's entire capacity, so
+        // a farm with one unit of space left counted as "not full", took that one unit, and the
+        // farmer walked on to the granary with the rest — **two long walks for one tile**, and a
+        // measured throughput of one tile a year against the four the economy budgets for.
+        //
+        // The spec's own words are *"the nearest available storage — nearest WITH ROOM"*, and
+        // room for a fraction of an armful is not room. Asking the honest question makes the
+        // buffer do what `farm_store_cap` was described as doing: it absorbs whole loads while
+        // it can, and when it cannot the walk is long ONCE rather than one-and-a-half times.
+        int toTheFarm = farm.Store.FreeSpace < villager.CarriedFood
             ? int.MaxValue
             : world.TravelCost.Cost(villager.Position, farm.Position);
 

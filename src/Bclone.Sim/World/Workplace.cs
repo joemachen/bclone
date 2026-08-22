@@ -358,7 +358,21 @@ public sealed class Workplace
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Null is the default and must stay the default.</b> The pillar this sits
+    /// <b>⛔ NULL IS NO LONGER REACHABLE FROM THE GAME, AND THE IDEA IT NAMED IS GONE</b>
+    /// (Joe, 2026-08-16: *"i want village decides gone entirely from all aspects of the game
+    /// for now"*). It survives as one thing only: <em>nobody has turned this building down
+    /// yet</em>, which is why <see cref="Places"/> falls back to <see cref="Capacity"/>. There
+    /// is no control that returns a building to it, and no label that mentions it.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It is kept rather than replaced with an explicit seed for one measured reason:</b>
+    /// the state hash mixes it <em>sparsely</em>, so a village nobody has staffed by hand
+    /// hashes exactly as it did before this control existed. Seeding every workplace at its
+    /// capacity would be behaviourally identical (that is what the fallback already does) and
+    /// would move every golden in the suite for no change in the game — a cost with no payoff.
+    /// </para>
+    /// <para>
+    /// <b>Null was the default and stays the default.</b> The pillar this sits
     /// beside (§2.2) exists to delete Banished's slotting of N workers into a building,
     /// and a game that opens with a number on every workplace is that game whatever the
     /// numbers say. An override is opt-in: a player who never touches one plays the

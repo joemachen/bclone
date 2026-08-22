@@ -72,7 +72,17 @@ public sealed class FarmGoldenTests
     // walking, so the whole history downstream differs.
     //
     //   before the jitter was fixed: 7924144676203476477
-    private const ulong SeamGoldenHash = 12419260555584221460UL;
+    //
+    // ⭐ RE-TAKEN AGAIN FOR THE HAUL (D165), and **it is the only golden in the suite that
+    // moved** — which is the pattern working exactly as it should. `HaulTheHarvest` asked the
+    // farm store `IsFull` rather than whether it had room for the load, so every reaped tile
+    // made two long walks instead of one; a farmer now brings in thirteen tiles an autumn
+    // against five. The two fifty-year village goldens and the map golden are all unmoved,
+    // because **none of them has a farm in it** — silent about what they do not reach, loud
+    // about what they do.
+    //
+    //   before "with room" meant room for the load: 12419260555584221460
+    private const ulong SeamGoldenHash = 12068547528605544516UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

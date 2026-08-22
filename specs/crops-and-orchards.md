@@ -71,7 +71,7 @@ felling as the toggle (D146). **A farm is the same object with a different verb.
 |---|---|---|
 | Workplace | ✅ exists | `JobKind.Farmer`, `BuildingKind.Farmhouse` |
 | Extent | painted work ground | **the same** `PaintWorkGround` |
-| Seats | `RequiredForesterSeats` | derived the same way |
+| Seats | `RequiredForesterSeats` | `farmhouse_seats` — **content, not derived** (D165) |
 | Yield scales with | `WoodedTilesAround` | **sown tiles in the zone** |
 | Idle reason | `IdleNote` | **the same** — a farm with no ground says so |
 | Local store | ⚠️ dead | **✅ the first one that is real — see §3.1** |
@@ -80,6 +80,16 @@ felling as the toggle (D146). **A farm is the same object with a different verb.
 (`WorkGroundAllowanceFor`), the overstretched warning, the labour quota, the idle ring on the
 map (D147), refusal sentences (D43) and the build queue all apply on day one, because they are
 properties of *a workplace with painted ground* and not of forestry.
+
+> **⛔ D165: "with room" means room for the WHOLE load, and asking `IsFull` instead cost a
+> round trip through the economy.** A tile yields more than `farm_store_cap`, so a buffer with
+> one unit of space took that unit and the farmer walked on to the granary — two long walks per
+> tile, and a throughput of five tiles an autumn against the thirteen the economy budgets.
+> **The measurement was mistaken for a bad derivation and the derivation was rewritten to fit
+> it**, producing a four-tile field and 216 food from a single tile, before the real cause
+> turned up in one word of `HaulTheHarvest`. Guarded now by
+> `FarmTests.AFarmerCanActuallyReapTheFieldTheDerivationGivesThem`, which paints exactly the
+> derived field and fails if reality falls short of it.
 
 ### 3.1 ⭐ The farm's own store — and it wires up the fifth element of the role model
 
@@ -392,7 +402,7 @@ by arithmetic, which is the whole argument for writing the seam golden *with* th
 | `sow_ticks` / `reap_ticks` | **3 / 3** | Content, the same as `gather_ticks` — one person, one job, one tile. |
 | A farmer's field | **13 tiles** (radius 2) | `FieldTilesOneFarmerKeeps` — the biggest diamond one pair of hands can reap in one autumn. |
 | `crop_yield_per_tile` | **67** | `RequiredCropYield` — a farmer's year is worth a gatherer's year. |
-| Farmhouse seats | **1** | `RequiredFarmerSeats` — one farm keeps one household fed; scale is a second farm. |
+| Farmhouse seats | **2** | `farmhouse_seats`, content rather than a derivation (D165) — deriving it gave 1, which is a bad building. |
 
 **⭐ The target had to be restated as a comparison before it was derivable at all.** The obvious
 form — *"enough yield that a farm's seats feed a household"* — reads the seats, and the seats are
@@ -411,17 +421,21 @@ is true of sowing and false of reaping, because **one tile of crop is already mo
 happens now, and `reap_ticks` stopped being dearer than `sow_ticks` — the load was being billed
 twice.
 
-### ⚠️ Still open, and it is a measurement rather than a question
+### ✅ Closed (D165): the field was right and the code was walking twice
 
-**The derived field (13 tiles) is about twice what a farmer actually gets through (≈5.75 a
-year on the golden's scenario), and the direction of that error is the unsafe one.** Every
-budget in `VillageEconomy` is a worst case, but they are worst cases of *cost*; this one
-over-states *capacity*, so the village believes a farm feeds a household when it feeds rather
-less. The gap is the ordinary business of a working day — meals taken mid-field, a fetch for
-one's own larder, a walk in from the cold — the same gap `TripsPerYear` carries and never
-states. **Recorded rather than tuned** (D112's rule): the honest fixes are a season budget that
-charges the working day's interruptions, or a stated derating factor, and both are Joe's call
-rather than something to quietly fold in.
+**The open item here said the derived field (13 tiles) was about twice what a farmer really
+achieved (≈5).** It was not. `HaulTheHarvest` asked the farm store `IsFull` rather than whether
+it had room for the load, and a tile yields more than `farm_store_cap` — so the buffer took a
+sliver and the farmer carried the rest on to the granary, **two long walks per tile**. With that
+fixed a farmer reaps **13 a year**, which is exactly what this derivation always said.
+
+**⚠️ The detour is the lesson.** The measurement was believed over the derivation, the budget was
+rewritten to fit it, and the result was a four-tile field and **216 food from a single tile** —
+balanced, and describing nothing anybody would call farming. *A measurement that disagrees with a
+derivation has found a bug in one of them, and it is worth knowing which before rewriting the
+other.* `FarmTests.AFarmerCanActuallyReapTheFieldTheDerivationGivesThem` is the guard that would
+have pointed at the code first: it paints exactly the derived field and fails if reality falls
+short.
 
 *(Both questions that were open here are resolved in §3.2: the farmer hauls, and the market
 prefers the granary. And the winter forecast reads `TotalFood()`, which has always seen

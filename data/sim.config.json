@@ -499,15 +499,16 @@
   // what it must be, and ShippedConfigTests checks this file against
   // it. The target is a comparison and that is what makes it
   // derivable at all: A FARMER'S YEAR IS WORTH A GATHERER'S YEAR.
-  // Gathering already meets environment-and-seasons.md 5.1's target
-  // (a household working normally fills its winter store by the
-  // first day of winter), so the crop inherits it rather than
-  // restating it.
   //
-  // Stating it any other way is circular -- "enough that a farm's
-  // seats feed a household" reads the seats, and the seats are
-  // derived from the yield. That first draft produced a farmhouse
-  // with FOURTEEN seats and 173 food from a single tile.
+  // IT IS A BIG NUMBER BECAUSE A REAPED TILE IS A WALK. farm_store_cap
+  // is 100 and a tile yields more than half of it, so the buffer takes
+  // the first armful of an autumn and every reap after it is a trip to
+  // the granary -- measured, a farmer brings in about five tiles a
+  // season whatever the size of the field. Four tiles times two seats
+  // is an eight-tile field, and that field feeds about two households.
+  //
+  // The lever if this reads wrong is farm_store_cap or letting a
+  // farmer fill their arms before walking, not this number.
   "crop_yield_per_tile": 67,
 
   // How much of its own harvest a farm holds before the walk gets
@@ -519,6 +520,15 @@
   // destination: the granary is still where food lives, and the 100
   // means something because the farmer hauls to the nearest storage
   // WITH ROOM, so the store underfoot fills first.
+  // How many people fit in a farmhouse. CONTENT, not a
+  // derivation, and it used to be the other way round: deriving it
+  // from max_household_size / MouthsFedByOneAdult gave 1, which is
+  // arithmetically fine and a bad building — a workplace with one
+  // seat reads as broken rather than as small. How many pairs of
+  // hands fit in a steading is a fact about the world; what they
+  // produce is what gets derived.
+  "farmhouse_seats": 2,
+
   "farm_store_cap": 100,
 
   // ---- The builder's hut (D108) ------------------------------

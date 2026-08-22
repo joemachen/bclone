@@ -684,18 +684,25 @@ public static class VillageEconomy
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⚠️ THE TWO SEASONS COST DIFFERENT WALKS, AND GETTING THAT WRONG WAS FOUND BY A GUARD
-    /// RATHER THAN BY ARITHMETIC.</b> Sowing carries nothing, so a farmer works along the rows
-    /// and pays one step between tiles. <b>Reaping carries an armful</b>, and one tile of crop
-    /// is already more than <c>carry_capacity</c> — so every reaped tile is a walk back to the
-    /// steading and out again. Charging both at a step derived a field three times the size a
-    /// farmer could actually bring in, and the symptom was a crop that mostly rotted: the seam
-    /// golden measured <b>84 tiles reaped in twenty years against 22 sown every spring</b>.
+    /// <b>Sowing carries nothing</b>, so a farmer works along the rows and pays one step between
+    /// tiles. <b>Reaping carries an armful</b> to the steading and comes back, so it pays the
+    /// field's own radius twice.
     /// </para>
     /// <para>
-    /// <b>Worst case within the field, not the mean</b>, on the same basis as everything else
-    /// in this file: the budget is what the village can promise, and promising the average
-    /// walk is how <see cref="RoundTripTicks"/> got it wrong twice in the other direction.
+    /// <b>⛔⭐ THIS MODEL WAS ACCUSED OF BEING WRONG AND WAS NOT — THE CODE WAS.</b> Measured, a
+    /// farmer reaped 5.3 tiles an autumn against the 13 budgeted here, and reaping saturated at
+    /// 5–6 whatever the size of the field. That looked exactly like a budget charging a
+    /// two-tile hop for a cross-village walk, and it was rewritten to charge
+    /// <see cref="MaxHomeToWorkTiles"/> — which fitted the measurement and produced a four-tile
+    /// field and a yield of 216 from one tile.
+    /// </para>
+    /// <para>
+    /// <b>The real cause was one word in <c>BehaviorSystem.HaulTheHarvest</c>.</b> It asked the
+    /// farm's store <c>IsFull</c> rather than whether it had room for the load, so a buffer with
+    /// one unit of space took one unit and the farmer carried the rest on to the granary —
+    /// <b>two long walks per tile</b>. Fix that and a farmer reaps 13 a year, which is what this
+    /// model said all along. <b>A measurement that disagrees with a derivation has found a bug
+    /// in one of them, and it is worth knowing which before rewriting the other.</b>
     /// </para>
     /// </remarks>
     public static int FieldTileTicks(SimConfig config, int workTicks, int radius, bool carrying)
@@ -726,14 +733,14 @@ public static class VillageEconomy
     /// <b>Autumn binds, not spring</b>, and that is the mechanic rather than a convenience: a
     /// tile sown and not reaped is worth nothing at all, because winter takes what is left
     /// standing (Joe — <em>use it or lose it</em>). Deriving against the cheaper season would
-    /// have the village promise itself a harvest the autumn cannot physically bring in, and the
-    /// failure would read as a crop bug rather than as an arithmetic one.
+    /// have the village promise itself a harvest the autumn cannot physically bring in.
     /// </para>
     /// <para>
-    /// <b>A search rather than a formula</b>, because the honest equation is quadratic in the
-    /// radius and this project has no floats in sim-critical paths (D2). Half a dozen integer
-    /// iterations, deterministic, and it says what it means at a glance — which is the whole of
-    /// §1.6.
+    /// <b>⭐ AND IT IS CHECKED AGAINST THE GAME, NOT ONLY AGAINST ITSELF</b>
+    /// (<c>FarmTests.AFarmerCanActuallyReapTheFieldTheDerivationGivesThem</c>). That guard did
+    /// not exist when this was first written, which is why a code bug spent a slice being
+    /// mistaken for an arithmetic one — every other guard asked whether the sums were
+    /// self-consistent rather than whether they described the village.
     /// </para>
     /// </remarks>
     public static int FieldTilesOneFarmerKeeps(SimConfig config)
@@ -762,6 +769,7 @@ public static class VillageEconomy
 
         return best;
     }
+
 
     /// <summary>Food one farmer brings in over a year, at their weakest.</summary>
     /// <remarks>
@@ -831,43 +839,40 @@ public static class VillageEconomy
     }
 
     /// <summary>
-    /// Seats a farmhouse needs — <b>enough hands to keep one household in food</b>.
+    /// Seats a farmhouse has — <b>two, and it is content rather than a derivation</b> (Joe).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Derived like <see cref="RequiredForesterSeats"/>: what is this work FOR, and how much
-    /// of it does one pair of hands do?</b> The forester's answer comes from the logs the huts
-    /// eat; a farm's comes from mouths. <c>woodcutter_hut_capacity</c> is the recorded case for
-    /// why a capacity must not be typed — yields were re-derived when the economy horizon
-    /// moved, capacities were not, and thirty-six people froze (D16, D50).
+    /// <b>⚠️ IT WAS DERIVED AND CAME OUT AT ONE, AND ONE WAS THE WRONG ANSWER TO A QUESTION
+    /// ARITHMETIC CANNOT SETTLE.</b> The first version asked <em>how many hands does it take to
+    /// keep one household in food?</em> — <c>ceil(max_household_size / MouthsFedByOneAdult)</c>
+    /// — and got <c>ceil(5/6) = 1</c>. That is a defensible number and a bad building: a
+    /// workplace with a single seat is not somewhere people work, it is somewhere a person
+    /// works, and it reads on the panel as broken rather than as small.
     /// </para>
     /// <para>
-    /// <b>⭐ ONE FARM FEEDS ONE FULL HOUSEHOLD, and the village-wide answer is "build another
-    /// one".</b> That is <c>granary_feeds_people</c>'s pattern deliberately reused (D39,
-    /// correcting D37): a stated unit the player can reason about, with scale bought by placing
-    /// a second building rather than by a number nobody can see. A farm is then legible on its
-    /// own — *"this one keeps a family fed"* — which a share-of-the-village figure never could
-    /// be.
+    /// <b>⭐ So it moves to the same class as <c>work_ground_tiles_per_worker</c> and
+    /// <c>granary_feeds_people</c>: a stated fact about the world, with the consequence
+    /// derived</b> (D16's real split — state the fact, derive the outcome). How many people fit
+    /// in a steading is not something <see cref="MouthsFedByOneAdult"/> knows; what two pairs of
+    /// hands then produce is, and that is <see cref="FoodFarmedPerYearAtWorst"/> times the
+    /// seats. **A farm keeps about two households fed, and the village-wide answer to wanting
+    /// more is to build another one** — <c>granary_feeds_people</c>'s pattern (D39).
     /// </para>
     /// <para>
-    /// <b>Asked in mouths rather than in food</b>, through
-    /// <see cref="MouthsFedByOneAdult"/>, so it reads off the same figure the forager quota's
-    /// floor does and cannot drift from it — and so it does <em>not</em> read
-    /// <see cref="SimConfig.CropYieldPerTile"/>, which is what keeps it out of the circle
-    /// <see cref="RequiredCropYield"/>'s remarks describe.
-    /// </para>
-    /// <para>
-    /// <b>Never below one</b>, on the same reasoning as the builder's and gatherer's huts: a
-    /// building that can never do the one thing it exists for is not a building.
+    /// <b>It reads <c>farmhouse_seats</c> rather than returning a literal</b>, so a modder can
+    /// touch it and so the number lives with the rest of the content (DESIGN.md §3). Floored at
+    /// one for the same reason as the builder's and gatherer's huts: a building that can never
+    /// do the one thing it exists for is not a building.
     /// </para>
     /// </remarks>
     public static int RequiredFarmerSeats(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int seats = CeilingDivide(config.MaxHouseholdSize, MouthsFedByOneAdult(config));
-        return seats < 1 ? 1 : seats;
+        return config.FarmhouseSeats < 1 ? 1 : config.FarmhouseSeats;
     }
+
 
     /// <summary>Hands the village may spend on staying warm — see
     /// <see cref="FuelMayCostThisShareOfSpareHands"/>.</summary>

@@ -447,15 +447,13 @@ public partial class Main : Control
         _staffingRow.Visible = staffable is not null;
         if (staffable is not null)
         {
-            // ⚠️ AND THE LABEL LOSES THE PHRASE TOO, not just the button. Saying *"village's
-            // choice"* beside a row whose control is called "Clear" would be the same leftover
-            // one word further along — and the row's job since D136 is to state whether the
-            // number is in force, which is exactly what "nobody has set one" says without
-            // reviving a mode that no longer exists.
-            _staffingLabel.Text = staffable.StaffingOverride is int asked
-                ? $"Staffing {staffable.Name} — you asked for {asked} of {staffable.Capacity}:"
-                : $"Staffing {staffable.Name} — nobody has set a number; {staffable.Places} of "
-                    + $"{staffable.Capacity}:";
+            // ⭐ THE LABEL SAYS WHAT IS TRUE, WHICH IS NOT WHAT IT USED TO SAY. It read
+            // "village.s choice" for an untouched building — and the village never chose
+            // anything: `Places => StaffingOverride ?? Capacity` means an untouched building is
+            // worked by everyone who fits. One number either way now, because the difference
+            // the old wording drew is a difference the sim does not make.
+            _staffingLabel.Text =
+                $"Staffing {staffable.Name} — {staffable.Places} of {staffable.Capacity}:";
         }
 
         // The ground controls belong to a building that keeps ground. ⭐ ASKED OF THE SIM NOW
@@ -681,11 +679,14 @@ public partial class Main : Control
     /// <summary>Nudge the selected workplace's staffing, or clear the number you set.</summary>
     /// <remarks>
     /// Buttons rather than a spinner, because the numbers are small and a click is
-    /// cheaper to reach for than a text field. <b>Clearing is a first-class control and not a
-    /// magic value like -1</b>: reverting is a thing players do often, and it has to be as easy
-    /// as setting. It was called <em>"Village decides"</em> until Joe pointed out that the
-    /// phrase had been removed everywhere else in the game (D136, D148) and this row was the
-    /// last place still using it.
+    /// cheaper to reach for than a text field.
+    /// <para>
+    /// <b>⛔ There is no way back to "untouched" and that is deliberate</b> (Joe, 2026-08-16).
+    /// The row briefly carried a "Village decides" button and then a "Clear" one; both are
+    /// gone, because the whole idea is. An untouched building is staffed by everyone who fits
+    /// — a fact about the building — and the moment the player states a number, that number is
+    /// the answer from then on.
+    /// </para>
     /// </remarks>
     private void ChangeStaffing(int delta)
     {
@@ -704,17 +705,6 @@ public partial class Main : Control
 
         _loop.World.SetStaffing(workplace, wanted);
         RefreshInspector(_loop.World);
-    }
-
-    /// <summary>Take back the number the player set here, leaving no opinion at all.</summary>
-    private void ClearStaffing()
-    {
-        Workplace? workplace = SelectedWorkplace();
-        if (workplace is { IsSite: false })
-        {
-            _loop.World.SetStaffing(workplace, null);
-            RefreshInspector(_loop.World);
-        }
     }
 
     private void OnBuildingClicked(GridPos tile)
@@ -1610,23 +1600,18 @@ public partial class Main : Control
         more.Pressed += () => ChangeStaffing(+1);
         _staffingRow.AddChild(more);
 
-        // ⛔ "VILLAGE DECIDES" IS GONE FROM THIS ROW (Joe, 2026-08-15): *"the farm detail window
-        // has a 'let village decide' function, which was removed from the game. remove it
-        // please."* He is right that it was a leftover — D136 took that phrase off the stock
-        // limit rows and D148 took it off the professions panel, and this row was the last
-        // place still offering it as a named mode.
+        // ⛔⛔ "VILLAGE DECIDES" IS GONE FROM THE WHOLE GAME (Joe, 2026-08-16): *"i want
+        // village decides gone entirely from all aspects of the game for now."* D136 took the
+        // phrase off the stock-limit rows and off the professions panel; this row was the last
+        // place still offering it, first as a mode and then (briefly, D163) as a "Clear" button
+        // that put a building back to it. Both are gone.
         //
-        // ⚠️ IT IS "CLEAR", NOT NOTHING, and the distinction is the one D136 already settled.
-        // `StaffingOverride` is `null` or a number, and those are genuinely different states
-        // (D51, D136) — null is *"I have no opinion"* and zero is *"nobody here, I mean it"*,
-        // both hashed, both part of the seed contract. Deleting the control outright would
-        // leave the player able to reach a state they could never leave. So the *phrase* goes
-        // and the *capability* stays, wearing the same word the stock limit rows already use:
-        // one vocabulary for one idea, which is what made the leftover jarring in the first
-        // place.
-        var clear = new Button { Text = "Clear" };
-        clear.Pressed += ClearStaffing;
-        _staffingRow.AddChild(clear);
+        // ⭐ AND THE DEFAULT WAS NEVER REALLY "THE VILLAGE DECIDES" — the label was lying.
+        // `Places => StaffingOverride ?? Capacity`, so an untouched building has always been
+        // staffed by **everyone who fits**. That is a fact about the building, not a decision
+        // anybody made, and saying so is what actually removes the idea rather than hiding it.
+        // There is no longer any way to reach the untouched state once you leave it, which is
+        // the same bargain the professions panel struck: the player always has an opinion.
 
         // ⭐ AND THE BUILD QUEUE, WHICH IS JOE'S OWN ANSWER TO HIS VILLAGE FREEZING:
         // "I think this is solved by letting the user increase/decrease the priority level of

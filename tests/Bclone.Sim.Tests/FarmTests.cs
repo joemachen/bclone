@@ -297,6 +297,78 @@ public sealed class FarmTests
         Assert.Equal(Config.FarmStoreCap, spilled);
     }
 
+    /// <summary>
+    /// ⛔⭐ The derived field is one a farmer can actually bring in — <b>measured, not assumed</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the guard the first derivation did not have, and the reason it was wrong for
+    /// a slice.</b> <c>FieldTilesOneFarmerKeeps</c> promised 13 tiles and a farmer reaped 5.3 —
+    /// and nothing in the suite noticed, because every other guard asked whether the arithmetic
+    /// was self-consistent rather than whether it described the game. **A budget that
+    /// over-states capacity is the dangerous direction**: the village believes a farm feeds a
+    /// household when it feeds half of one, and the symptom is a harvest that rots.
+    /// </para>
+    /// <para>
+    /// <b>The field is painted at exactly the derived size</b>, so this measures the claim the
+    /// derivation actually makes rather than an over-painted farm — which is what the earlier
+    /// 5.75 figure was, and why it took a controlled run to tell the two apart.
+    /// </para>
+    /// <para>
+    /// <b>Asserted as a floor, not an equality.</b> The derivation is deliberately conservative
+    /// — it charges every reaped tile a walk to a store, while the farm's own buffer really does
+    /// absorb the first armful — so reality should beat it. What must never happen again is
+    /// reality falling <em>short</em>.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFarmerCanActuallyReapTheFieldTheDerivationGivesThem()
+    {
+        SimConfig config = Config;
+        int promised = VillageEconomy.FieldTilesOneFarmerKeeps(config);
+
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+
+        // ⚠️ ONE FARMER, STATED RATHER THAN LEFT TO THE QUOTA. The derivation's claim is
+        // per-farmer, and a farm staffed by two would have this measuring a pair sharing one
+        // field against a promise made about one pair of hands — apples against oranges, and
+        // the first draft of this guard passed that way while the derivation was still short.
+        world.SetStaffing(farm, 1);
+
+        int painted = FarmFixtures.GiveItGround(world, farm, reach: 2);
+        Assert.True(painted >= promised, $"Could not paint {promised} tiles; only got {painted}.");
+
+        const int Years = 4;
+        int reaped = 0;
+        for (int i = 0; i < config.TicksPerYear * Years; i++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Alive
+                    && villager.WorkplaceId == farm.Id
+                    && villager.State == VillagerState.Reaping
+                    && villager.ActionTicksRemaining == 1)
+                {
+                    reaped++;
+                }
+            }
+        }
+
+        int perYear = reaped / Years;
+        _output.WriteLine(
+            $"the derivation promises {promised} tiles a farmer; over {Years} years the farm's "
+            + $"{farm.Places} seat(s) reaped {reaped} — {perYear} a year");
+
+        Assert.True(
+            perYear >= promised,
+            $"The derivation promises {promised} tiles a year and the farm reaped {perYear}. "
+            + "A budget that over-states capacity is how a harvest comes to rot while every "
+            + "guard says the arithmetic is fine.");
+    }
+
     // ---------------------------------------------------------------
     //  ⛔ The seam: crops × the harvest brush
     // ---------------------------------------------------------------

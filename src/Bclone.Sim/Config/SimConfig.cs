@@ -442,6 +442,18 @@ public sealed record SimConfig
     /// world) and D144 is the same shape one deposit path over.
     /// </para>
     /// </remarks>
+    /// <summary>How many people fit in a farmhouse — <b>two</b> (Joe, 2026-08-16).</summary>
+    /// <remarks>
+    /// <b>Content, not a derivation, and it used to be the other way round.</b> Deriving it
+    /// from <c>max_household_size / MouthsFedByOneAdult</c> gave <c>1</c> — arithmetically fine
+    /// and a bad building, because a workplace with one seat reads as broken rather than as
+    /// small. How many pairs of hands fit in a steading is a fact about the world, in the same
+    /// class as <c>work_ground_tiles_per_worker</c>; <b>what they produce is what gets derived</b>
+    /// (D16 — state the fact, derive the outcome).
+    /// </remarks>
+    [JsonPropertyName("farmhouse_seats")]
+    public int FarmhouseSeats { get; init; } = 2;
+
     [JsonPropertyName("farm_store_cap")]
     public int FarmStoreCap { get; init; } = 100;
 
@@ -1468,6 +1480,13 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"farm_store_cap must be greater than zero (got {FarmStoreCap}).");
+        }
+
+        if (FarmhouseSeats <= 0)
+        {
+            throw new SimConfigException(
+                $"farmhouse_seats must be greater than zero (got {FarmhouseSeats}) — "
+                + "a farm nobody can work is not a building.");
         }
 
         if (GranaryFeedsPeople < StartingPopulation)
