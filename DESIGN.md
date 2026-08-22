@@ -266,11 +266,18 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
    was protecting stands for next time: **a phase does not open on an unmerged branch with an
    unmet Definition of Done**; this project already has one instance of two roadmaps disagreeing
    and it cost six weeks.
-2. **`specs/skills-catalog.md`** — catalogues before code (`buildings-plan.md`'s standing habit),
-   and **the prerequisite `tech-tree.md` silently assumes.** That spec is written entirely on top
-   of a proficiency model that **does not exist in the sim** — its load-bearing rule, *"a record
-   preserves the method, not the proficiency"*, is what stops the tree becoming a ratchet, and it
-   cannot be implemented against nothing.
+2. ✅ **WRITTEN — `specs/skills-catalog.md`** (D173), docs-only on `main` per Joe. It is the
+   prerequisite `tech-tree.md` silently assumed: that spec is written on top of a proficiency
+   model that **does not exist in the sim**, and its load-bearing rule — *"a record preserves the
+   method, not the proficiency"* — cannot be implemented against nothing. **§6 is a stated
+   contract** of what Phase 4 may assume exists, and `tech-tree.md`'s header now points back at
+   it so the two cannot drift.
+   - **⭐ Its load-bearing decision is §3.2: skill is a *spread around today's behaviour*, not a
+     bonus on top of it.** Every derived number in the game is solved against a villager with no
+     skill concept, so a multiplier above one would move all of them at once — **D122 froze
+     nineteen people the last time that chain moved, and it moved by one tile.**
+   - **⚠️ Its stated risk is the founding**: a village of novices is poorer than today's, so
+     `cold-start.md` has to be re-measured. **Probe before building** (METHODOLOGY §3).
 3. **⭐ Per-site yield, and retiring the 7-tile bound** (D58, §5) — **scheduled at last, and
    Joe placed it here: *"per-site yield behind skills-catalog"*** (2026-08-22, D172). It left the
    unsequenced list because **a second system has now walked into it independently**: a farm ten
@@ -430,7 +437,7 @@ Each phase should ship in a playable, legible state before the next begins.
 
 > Update this section as work proceeds. Keep it honest — it's how we both know where we are.
 
-**Current phase:** **between phases.** Phase 2 is complete and merged; **nothing is in progress.** Next up is §4's queue in its stated order — **`specs/skills-catalog.md`**, then **per-site yield** (D172), then **Phase 3, skill and apprenticeship**. `main` is the place to branch from.
+**Current phase:** **between phases.** Phase 2 is complete and merged; **no code slice is in progress.** §4's queue item 2 — **`specs/skills-catalog.md`** — is ✅ **written** (D173, docs-only on `main`). Next up is **per-site yield** (D172, queue item 3), then **Phase 3, skill and apprenticeship**, which is what builds the catalogue. `main` is the place to branch from.
 
 **✅ PHASE 2 IS COMPLETE AND MERGED (2026-08-22, D169/D172)** — 248 commits, merged to `main` via [PR #4](https://github.com/joemachen/bclone/pull/4) (⚠️ **#4, not #3**: that number went to the closed screenshot-hook PR D160 rescued, and every document said #3 for a day). **All five Definition-of-Done items met**, the last of them Joe's QA walk. **630 passing, 0 failing, 2 skipped of 632**, CI green on the merged head.
 
@@ -1310,6 +1317,13 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D173 · 2026-08-22 · ⭐⭐ `specs/skills-catalog.md` IS WRITTEN, AND ITS LOAD-BEARING DECISION IS THAT SKILL IS A SPREAD RATHER THAN A BONUS.** Joe: *"skills-catalog as docs-only on main."* Queue item 2 done; nothing is built and the spec says so in its status line.
+  - **⭐ WHY IT HAD TO COME FIRST, RESTATED FROM THE OTHER SIDE.** `tech-tree.md` is written entirely on top of a proficiency model **that does not exist**: `Villager` has `Vigour` and `VigourStage` and no concept of skill at all, there is no apprenticeship and no teaching. Its anti-ratchet rule — *"a record preserves the method, not the proficiency"* — needs a zero to start near and a *there* to have been. **§6 is now a stated contract** of what Phase 4 may assume, and `tech-tree.md`'s header points back at it, because a promise made in one document and read in another is exactly where D159 found five specs lying.
+  - **⭐⭐ THE DECISION THAT MATTERS: THE REFERENCE IS A COMPETENT VILLAGER (§3.2).** Every derived number in this game — `gather_yield`, `firewood_per_split`, `crop_yield_per_tile`, `MaxHomeToWorkTiles`, the fuel budget — is solved against a villager with **no skill concept**, because that is the only villager the sim has ever had. **If skill multiplies output above that baseline, every one of them is wrong the day it ships.** So skill is a *spread*: the reference behaves exactly as villagers behave today, novices are worse, masters are better, and a working life's average sits on the reference. **Losing a master hurts and gaining one helps, without a single derived number moving** — against the alternative, which is *an economy-wide re-derivation wearing a character system's clothes*. **D122 froze nineteen people the last time that chain moved, and it moved by one tile.**
+  - **⚠️ AND THE HONEST COST IS WRITTEN DOWN RATHER THAN DISCOVERED: a village of novices is poorer than today's, so the founding gets harder.** Four founders who have never done the work are exactly what `cold-start.md` measures. **It is named as the single biggest risk in Phase 3 and as a probe-before-building item** (METHODOLOGY §3), the way D53's cold model and D56's clothing were both measured as no-ops before a line was written.
+  - **⭐ SKILL SCALES DURATION FIRST AND YIELD SECOND, WHICH DISCHARGES D28** — open since 2026-07-26. Today *only* yield is scaled, in six places, all `x * villager.Vigour / 100`; **nothing anywhere scales duration**, which is why two adults of one household holding one job are on the same tile **99.9% of ticks**. Two people who take different numbers of ticks to do the same thing stop arriving together and never re-synchronise. **The 99.9% is on record, so the guard is falsifiable rather than a vibe.**
+  - **⭐ SKILLS ARE DATA ROWS, NOT ENUM VALUES — D168's discipline applied at the first opportunity since it was written.** A skill is an id, a name, the work that grows it and whether it can be written down; nothing switches on a skill by name. **Six on day one, one per job that exists**, and ⛔ **none for laborers**, because D66 already ruled a laborer is a position in the priority order rather than a trade — *a skill in being spare is a contradiction*, and it would quietly make the fallback a career.
+  - **⚠️ Four things refused by name**, so they are not re-proposed: **no talent or birth-luck** (it would make the most important thing about a person unforeseeable, which is §2.3's failure mode wearing a character sheet); **no skill-gated job refusal** (D120 deleted the last fence in this game and traded it for a consequence — skill may make somebody a better choice, never an ineligible one); **no per-pair apprenticeship screen** (that is a slotting UI on the one axis the whole game refuses it — the lever is a policy); and **no numbers that want a running sim**.
 - **D172 · 2026-08-22 · ⭐⭐ PHASE 2 IS MERGED, AND PER-SITE YIELD IS SCHEDULED AT LAST.** Joe: *"merge once it passes, per-site yield behind skills-catalog."*
   - **✅ Phase 2 closed and merged to `main` via [PR #4](https://github.com/joemachen/bclone/pull/4)** — ⚠️ **#4, not #3**, which every document said for a day: number 3 went to the closed screenshot-hook PR that D160 rescued and redid. **A doc that names an artefact by number should be checked against the artefact**, which is D159's lesson in miniature and cost nothing to fix here only because it was caught the same hour.
   - **⭐ PER-SITE YIELD MOVES OUT OF THE UNSEQUENCED LIST AND INTO THE QUEUE AT POSITION 3**, behind `skills-catalog.md` and ahead of Phase 3. It has been *"the biggest payoff on the board"* since D58 and unscheduled ever since, on the honest grounds that it wants a fresh session — and **what changed is that a second system walked into it independently.** D171 measured a farm ten ticks from its store bringing in **46% against 93% next door**, for the same reason gathering has: `FieldTilesOneFarmerKeeps`, like `gather_yield` before it, is **one number for every site in the valley**. *Two systems arriving at the same missing mechanic is the signal that it is a mechanic and not a tuning problem.*

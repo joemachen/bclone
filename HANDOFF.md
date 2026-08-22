@@ -1,6 +1,6 @@
-# Handoff — bclone: **Phase 2 is merged. `main` is a completed phase, and nothing is in progress.**
+# Handoff — bclone: **Phase 2 merged, the skills catalogue written. Next is per-site yield.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D172 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D173 back to D142**, then
 `METHODOLOGY.md`.
 
 ---
@@ -15,8 +15,8 @@ items met, the last of them Joe's QA walk against
 ⚠️ **It is #4, not #3.** Number 3 went to the closed screenshot-hook PR D160 rescued, and every
 document in the repo said #3 for a day before anyone checked.
 
-**`phase/2-wood-fuel-and-tools` is merged and still exists**, deliberately — nobody has been
-asked whether to delete it.
+**`phase/2-wood-fuel-and-tools` is deleted**, local and remote, on Joe's call and after checking
+it had **0 commits not on `main`**. Its tip was `9b9f410` if it is ever wanted back.
 
 **SUITE, FROM A RUN:**
 
@@ -44,14 +44,17 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
 
-1. ✅ Phase 2 merged.
-2. **`specs/skills-catalog.md`** — catalogues before code, and **the prerequisite `tech-tree.md`
-   silently assumes.** That spec is written entirely on top of a proficiency model that does not
-   exist in the sim; its load-bearing rule — *"a record preserves the method, not the
-   proficiency"* — is what stops the tree becoming a ratchet, and it cannot be implemented
-   against nothing.
-3. **⭐ Per-site yield, and retiring the 7-tile bound** (D58, D172, Joe: *"per-site yield behind
-   skills-catalog"*). **Scheduled at last**, after a phase on the unsequenced list. See below.
+1. ✅ Phase 2 merged, and the branch deleted (it was fully merged; tip was `9b9f410`).
+2. ✅ **`specs/skills-catalog.md` WRITTEN** (D173), docs-only on `main`. **Nothing in it is
+   built** and its status line says so. Two things to know before touching Phase 3:
+   - **⭐ Its load-bearing decision is §3.2 — skill is a *spread around today's behaviour*, not a
+     bonus on top of it.** Every derived number in the game is solved against a villager with no
+     skill concept, so a multiplier above one moves all of them at once.
+   - **⚠️ Its stated risk is the founding.** A village of novices is *poorer* than today's, so
+     `cold-start.md` must be re-measured. **Probe before building** (METHODOLOGY §3).
+   - **§6 is a contract** with `tech-tree.md`, whose header now points back at it.
+3. **⭐ NEXT: Per-site yield, and retiring the 7-tile bound** (D58, D172, Joe: *"per-site yield
+   behind skills-catalog"*). **This is the next thing to do.** See below.
 4. **Phase 3 — skill and apprenticeship** (§2.1), which is also the real answer to the mid-game
    gap (D161). Its success test is already written: *play years 1–16 at normal speed, without
    fast-forwarding, and want to keep watching.*

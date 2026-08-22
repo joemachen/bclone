@@ -3,6 +3,8 @@
 > Status: **design settled, unbuilt** · Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.7`
 > Format per `METHODOLOGY.md §2`. Written ahead of the build phase so there is settled content to implement against rather than content invented mid-implementation.
 >
+> **⭐ ITS SUBSTRATE IS NOW SPECCED: `specs/skills-catalog.md` (D173).** This document is written entirely on top of a proficiency model that **does not exist in the sim** — §3a's *"a record preserves the method, not the proficiency"* is the rule that stops this tree becoming a ratchet, and it cannot be implemented against nothing. That spec's **§6 is the contract** stating exactly what this one may assume exists: a per-villager per-skill integer proficiency, a stated reference level, years-in-practice, a `Recordable` flag, and a *who still knows this and how old are they* query. **It is queue item 2 and this is item 5** (`DESIGN.md §4`). ⚠️ **§12's open question about whether skill retained from a record is zero or a small floor is the same question `skills-catalog.md §12` asks from the other side — they must be answered together, or the two documents will disagree**, which is precisely what D159 spent a session unpicking.
+>
 > **This document is foundational guidance, not prescription.** It fixes the *shape* of the system — states, mechanisms, buildings, the rules that make it legible — and sketches the content that fills it. Node lists, prerequisites, and every number here are expected to change once the thing is running and testable. What should **not** drift without a recorded decision: the three knowledge states, the record-preserves-method rule, the hard library cap, and the agency levers. Those are load-bearing; the rest is furniture.
 
 ---
