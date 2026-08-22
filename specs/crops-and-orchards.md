@@ -9,9 +9,16 @@ Neighbours: `environment-and-seasons.md §5.1` (**superseded by this**), `buildi
 recipe tree), `professions.md` (fish and meat are `Goods.Food`), `forests-and-gathering.md` (the
 mechanic this is a sibling of).
 **Status:** ✅ **BUILT** (D162) — the farm, the field, the local store, the hauling and the
-market's widened reach are all in. Proved by `FarmDemandTests`, `FarmTests`, `FarmGoldenTests`,
-`CropCalendarTests`, `CropGroundTests`, `WorkplaceStoreTests` and `ShippedConfigTests`.
+market's widened reach are all in; **§3.2a (the market runs the buffer dry) landed in D171**.
+Proved by `FarmDemandTests`, `FarmTests`, `FarmGoldenTests`, `CropCalendarTests`,
+`CropGroundTests`, `WorkplaceStoreTests` and `ShippedConfigTests`.
 **Orchards (§8) are still deferred to Phase 3**, with the reason unchanged.
+⛔ **One thing is known-open and it is not a crop bug:** a farm's harvest falls off sharply with
+**distance from its store** — 93% next door, **46% at ten ticks**, 25% at twenty-two — because
+`FieldTilesOneFarmerKeeps` is one number for every farm in the valley. That is `DESIGN.md §5`'s
+per-site-yield decision (D171). **`farm_store_cap` was measured as near-irrelevant to it: one
+armful against thirteen moves the harvest by nought to seven points. Do not reach for that
+number.**
 
 > **⚠️ This status line is load-bearing. Update it the day the slice merges** — D159 found five
 > specs claiming "not started" for systems that had shipped, one of them for the slice merged
@@ -131,6 +138,60 @@ is D10's teleport-with-extra-steps in reverse.
      (D16), and D112 already traded a fence for a consequence once.
 3. **⛔ Laborers do not move farmed goods** — not to granaries, not to markets. Hauling stays
    what it is today: building materials. **Farm food moves by farmer or by trader, or it sits.**
+
+### 3.2a ⛔⭐⭐ RUNNING THE BUFFER DRY IS THE MARKET'S JOB, AND ONLY HALF OF IT WAS BUILT (D171)
+
+**Ruling 1 above says the buffer is free and *"running it dry is the market's job"*. Nothing ever
+ran it dry.** Ruling 2 built the market's *sourcing* half — a trader may take from a farm to fill
+a household's larder — and there is no errand anywhere that exists to **empty** a workplace
+buffer for its own sake. Measured in Joe's own run (D170): **27 hauls, none of them to the farm**,
+and a farm that reaps eight of the thirteen tiles it sows.
+
+**Why that costs the harvest rather than merely being untidy.** `VillageEconomy.FieldTileTicks`
+budgets a reaped tile at `reap_ticks + radius × travel_ticks_per_unit × 2` — 7 ticks — and its own
+remarks say *"walking each armful back to the steading."* **`FieldTilesOneFarmerKeeps` is
+therefore derived on the assumption that the buffer takes every load.** A buffer that takes one
+load a year makes the derivation describe a farm nobody is running, which is D165's finding in
+the same method.
+
+**Joe's design, 2026-08-22, and it is the one the code was already reaching for:**
+
+> *"can we add a storage component to the farm itself so farmers have less of a walk? … the
+> vendor can collect the food from the farm's stores (which aren't huge — don't want to eliminate
+> the granary — just minimize the farmers walking distance) and move it to the market (or the
+> granary if the market is full)."*
+
+**Three parts, and two of them are already built:**
+
+1. **A third marketer errand: clear a workplace buffer.** Ranked against the other legs by travel
+   cost through the same `Offer` mechanism, so a trader passing the farm clears it and a trader
+   across the village does not detour — **the same shape ruling 2 chose, for the same reason.**
+2. **When is a buffer worth clearing? When it can no longer take a whole load.** Stated as
+   `FreeSpace < crop_yield_per_tile` — **derived, not tuned**, and it is *exactly* the condition
+   that lengthens the farmer's walk. No new number, which is what ruling 2 already established as
+   the standard here (D16, D112).
+3. **Where it goes is the existing path and deliberately not a new one.** A collecting marketer
+   already ends in `HaulingToStore` → `HaulOrSetDown` → *the nearest store with room*. On Joe's
+   layout that is the market, and when the market is full it is the granary — which is what he
+   asked for, reached without a second way to find a store (D145: *a control is safe when its
+   state is read at a chokepoint, and at risk the moment there are two ways to do the thing*).
+
+**⚠️ The buffer must hold more than one armful or none of this helps.** `farm_store_cap` 100
+against `crop_yield_per_tile` 67 means one deposit leaves 33 free, which is less than a whole
+load, so the second tile of every autumn already walks to the granary. Joe's constraint is
+*"aren't huge — don't want to eliminate the granary"*, so the cap is stated as **a few armfuls
+while somebody comes for them** rather than as a season's harvest.
+
+**⚠️ AND ONE MARKETER CANNOT KEEP UP WITH ONE FARMER, WHICH IS FINE AND SHOULD BE SAID.** A
+farmer produces `crop_yield_per_tile` every ~7 ticks; a trader moves `carry_capacity` a round
+trip. **The farm will still overflow to the granary in a heavy autumn** — that is the granary
+doing its job, and it is why Joe asked for a small buffer rather than a big one. **The claim this
+slice may make is that the first armfuls are short walks, not that the walk is abolished.**
+Measure the fraction brought in; do not assert 100%.
+
+**⛔ Do not "fix" this by letting the farmer part-fill the buffer.** D165 removed exactly that
+(`IsFull` → room for the whole load) after measuring it as two long walks per tile and a
+throughput of one tile a year.
 
 **⚠️ The marketer cannot currently see a workplace store at all.** `NearestStoreAccepting` and
 `NearestStore` iterate `StoreBuildings` only; `Workplace.Store` is a different list. Ruling 2 is

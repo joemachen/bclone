@@ -1269,6 +1269,47 @@ public sealed class BehaviorSystem : ISimSystem
             Consider(household, occupied, Goods.Firewood, household.Stockpile.Firewood, fuelWanted);
         }
 
+        // ⭐⭐ AND THE THIRD LEG: A WORKPLACE BUFFER THAT CAN NO LONGER TAKE A WHOLE LOAD
+        // (§3.2a, D171). `crops-and-orchards.md §3.2` ruling 1 has said since the farm shipped
+        // that the buffer is free and *"running it dry is the market's job"* — and nothing ever
+        // ran it dry. Ruling 2 built the market's *sourcing* half only, so a trader would take
+        // from a farm to fill a hungry larder and never to empty one.
+        //
+        // ⛔ WHY THAT COSTS THE HARVEST RATHER THAN BEING UNTIDY. `VillageEconomy.FieldTileTicks`
+        // budgets a reaped tile at the work plus a round trip *to the steading*, in its own
+        // words — so `FieldTilesOneFarmerKeeps` is derived on the assumption that the buffer
+        // takes every load. A buffer that takes one load a year makes the derivation describe a
+        // farm nobody is running, which is D165's finding in the same method. Measured in Joe's
+        // village: 27 hauls, none of them to the farm, eight of thirteen tiles brought in.
+        //
+        // ⭐ THE CONDITION IS DERIVED, NOT TUNED (D16, and ruling 2's own standard). A buffer is
+        // worth clearing exactly when it can no longer take a whole armful — which is precisely
+        // when `HaulTheHarvest` stops choosing it and starts sending the farmer to the granary.
+        // No threshold, no new number, one comparison.
+        //
+        // ⚠️ AND IT IS OFFERED, NOT PRIORITISED. It competes with every other leg on travel cost
+        // through the same `Offer`, so a trader passing the farm clears it and a trader across
+        // the village does not detour — the same shape ruling 2 chose, for the same reason.
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.IsSite || workplace.Store.Food <= 0)
+            {
+                continue;
+            }
+
+            // A workplace with no store of its own has `int.MaxValue` capacity, so this is
+            // also what keeps every other building out of the loop without naming a kind.
+            if (workplace.Store.FreeSpace >= config.CropYieldPerTile)
+            {
+                continue;
+            }
+
+            // Household 0 is the errand saying *nobody is waiting for this* — the same
+            // sentinel a stranded-larder collection already uses.
+            Offer(workplace.Position, 0, Goods.Food, delivering: false);
+        }
+
         return best;
 
         void Consider(Household household, bool occupied, Goods goods, int held, int wanted)
@@ -2460,6 +2501,28 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             Household? family = world.FindHousehold(villager.ErrandHouseholdId);
+
+            // ⭐⭐ NO HOUSEHOLD MEANS THEY CAME TO CLEAR THE BUFFER, NOT TO FILL A LARDER
+            // (§3.2a, D171). Joe: *"the vendor can collect the food from the farm's stores…
+            // and move it to the market (or the granary if the market is full)."*
+            //
+            // ⛔ WHERE IT GOES IS THE EXISTING PATH AND DELIBERATELY NOT A NEW ONE. Falling
+            // out of this method carrying something ends in `HaulingToStore` → `HaulOrSetDown`
+            // → *the nearest store with room*, which is the market when the market has room and
+            // the granary when it does not. Writing a second store-finding rule here to say the
+            // same thing is D145's *two ways to do the thing*, and D36's seam is exactly where
+            // this project has paid for that before.
+            if (family is null && villager.ErrandHouseholdId == 0)
+            {
+                int clearing = Smallest(load, load, workplace.Store.Food);
+                if (clearing > 0 && workplace.Store.TryTake(Goods.Food, clearing))
+                {
+                    villager.CarriedFood += clearing;
+                }
+
+                break;
+            }
+
             if (family is null)
             {
                 break;

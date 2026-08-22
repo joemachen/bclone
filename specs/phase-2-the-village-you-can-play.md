@@ -163,7 +163,7 @@ From `DESIGN.md §4`, honestly:
    succeed, because it exports the "Windows Desktop" preset from a clean checkout.
 5. ✅ **`CHANGELOG.md`'s header** reconciled with METHODOLOGY §5.
 
-**Then merge to `main` via PR #3.**
+**Then merge to `main` via [PR #4](https://github.com/joemachen/bclone/pull/4)** — #3 was taken by the closed screenshot-hook PR.
 
 ---
 

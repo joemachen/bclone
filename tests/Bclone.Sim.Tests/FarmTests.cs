@@ -459,6 +459,131 @@ public sealed class FarmTests
     }
 
     /// <summary>
+    /// ⛔⭐⭐ A farm's harvest falls off sharply with how far it stands from its store — and
+    /// <see cref="AFarmBringsInMostOfWhatItSows"/> cannot see that at all.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THE GUARD ABOVE REPORTS 93% AND JOE'S VILLAGE WAS AT 46%, AND BOTH NUMBERS ARE
+    /// HONEST</b> (D171). <see cref="FarmFixtures.ClearGroundNear"/> puts the farm on the first
+    /// buildable tile beside the founding site — a few steps from the stores — so the walk the
+    /// derivation budgets and the walk the farmer takes are the same walk. **It was unmoved
+    /// because it does not cover the case**, which is D157's finding restated.
+    /// </para>
+    /// <para>
+    /// <b>Measured across distances, ten years each, and this is the finding:</b>
+    /// </para>
+    /// <code>
+    /// farm → granary   brought in
+    /// next door               93%
+    /// 6 ticks                 52%
+    /// 10 ticks                46%   ← Joe's village, to the point
+    /// 22 ticks                25%
+    /// </code>
+    /// <para>
+    /// <b>⭐ AND THE BUFFER IS NOT THE LEVER, WHICH IS WHY <c>farm_store_cap</c> WAS LEFT
+    /// ALONE.</b> Raising it from one armful to thirteen moves those numbers by nought to seven
+    /// points. **Distance dominates**, and that puts this bug where `DESIGN.md §5` has been
+    /// pointing for a phase: *"the fix is not a bigger number: it is to stop having one global
+    /// yield — let yield be a property of the site."* `FieldTilesOneFarmerKeeps` is one number
+    /// for every farm in the valley, so a distant farm sows what a near one could reap.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THIS GUARD CHARACTERISES RATHER THAN DEMANDS, DELIBERATELY.</b> A bar of *"a
+    /// distant farm must also bring in 75%"* would be asserting a fix nobody has designed yet.
+    /// What it holds is the shape: a distant farm brings in **materially less** than a near one
+    /// and **more than nothing** — so the day per-site yield lands, this is where the numbers
+    /// move, and until then it cannot silently get worse.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFarmsHarvestFallsOffWithDistanceFromItsStore()
+    {
+        int near = BroughtInWithTheGranary(walkAway: 1, out int nearWalk);
+        int far = BroughtInWithTheGranary(walkAway: 10, out int farWalk);
+
+        _output.WriteLine($"{nearWalk} ticks out: {near}% brought in");
+        _output.WriteLine($"{farWalk} ticks out: {far}% brought in");
+
+        Assert.True(farWalk > nearWalk, "Both farms landed the same distance out.");
+        Assert.True(far > 0, "The distant farm reaped nothing at all, which is a different bug.");
+        Assert.True(
+            near > far,
+            $"A farm {nearWalk} ticks from its store brought in {near}% and one {farWalk} ticks "
+            + $"out brought in {far}% — distance stopped costing anything, which means either "
+            + "the walk is no longer charged or this guard has stopped measuring it.");
+    }
+
+    /// <summary>
+    /// Ten years of a farm sited as close as possible to <paramref name="walkAway"/> ticks from
+    /// the granary; returns the percentage of what it sowed that it reaped.
+    /// </summary>
+    private static int BroughtInWithTheGranary(int walkAway, out int walk)
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        GridPos site = world.Map.FoundingSite;
+        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+
+        GridPos best = FarmFixtures.ClearGroundNear(world);
+        walk = world.TravelCost.TicksBetween(best, granary.Position);
+
+        for (int dy = -10; dy <= 10; dy++)
+        {
+            for (int dx = -10; dx <= 10; dx++)
+            {
+                var at = new GridPos(site.X + dx, site.Y + dy);
+                if (world.HasSomethingToHarvest(at)
+                    || !world.CanBuildAt(BuildingKind.Farmhouse, at).Allowed)
+                {
+                    continue;
+                }
+
+                int cost = world.TravelCost.TicksBetween(at, granary.Position);
+                if (cost != TravelCostField.Unreachable
+                    && System.Math.Abs(cost - walkAway) < System.Math.Abs(walk - walkAway))
+                {
+                    best = at;
+                    walk = cost;
+                }
+            }
+        }
+
+        Workplace farm = FarmFixtures.RaiseAFarm(world, best);
+        FarmFixtures.GiveItGround(world, farm, reach: 3);
+
+        int sown = 0;
+        int reaped = 0;
+
+        for (int i = 0; i < config.TicksPerYear * 10; i++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive
+                    || villager.WorkplaceId != farm.Id
+                    || villager.ActionTicksRemaining != 1)
+                {
+                    continue;
+                }
+
+                if (villager.State == VillagerState.Sowing)
+                {
+                    sown++;
+                }
+                else if (villager.State == VillagerState.Reaping)
+                {
+                    reaped++;
+                }
+            }
+        }
+
+        return sown == 0 ? 0 : reaped * 100 / sown;
+    }
+
+    /// <summary>
     /// The anti-vacuity companion (D7): a farm nobody works commits no ground at all.
     /// </summary>
     /// <remarks>
@@ -549,6 +674,121 @@ public sealed class FarmTests
     // ---------------------------------------------------------------
     //  ⭐ The seam: crops × the market
     // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ A trader runs the farm's buffer dry, so the next armful is a short walk again.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>§3.2 ruling 1 has always said *"running it dry is the market's job"* and nothing ever
+    /// did it</b> (D170, D171). The market's reach into a farm was built for *sourcing* — a
+    /// trader filling a hungry larder may take from a farm that happens to be nearer — and there
+    /// was no errand whose purpose was to <em>empty</em> a buffer. Measured in Joe's run: 27
+    /// hauls, none of them to the farm, and eight of thirteen tiles brought in.
+    /// </para>
+    /// <para>
+    /// <b>The state that matters is "cannot take another whole load"</b>, because that is
+    /// exactly when <c>HaulTheHarvest</c> stops choosing the buffer and starts sending the
+    /// farmer to the granary. Derived from <c>crop_yield_per_tile</c>, not tuned (D16).
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// <b>⚠️ A YEAR, NOT A SEASON, AND THE STAFFING IS LEFT TO THE VILLAGE.</b> The first draft
+    /// forced a villager onto the stall and ran one season, and it failed against working code:
+    /// the quota wants <em>no</em> marketers in the opening and the allocator puts a forced hand
+    /// straight back. Waiting for the village to want a trader is both honest and what actually
+    /// happens.
+    /// </remarks>
+    [Fact]
+    public void AMarketerRunsTheFarmsBufferDry()
+    {
+        SimLoop loop = Loop(Config);
+        SimWorld world = loop.World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+
+        // Full enough that it can no longer take a whole armful — the exact state that
+        // lengthens the farmer's walk, and the reason this errand exists.
+        farm.Store.Add(Goods.Food, Config.FarmStoreCap);
+        Assert.True(
+            farm.Store.FreeSpace < Config.CropYieldPerTile,
+            "The buffer can still take a whole load, so there is nothing here to clear.");
+
+        int before = farm.Store.Food;
+        loop.Step(Config.TicksPerYear);
+
+        _output.WriteLine(
+            $"{farm.Name} held {before} of {farm.Store.Capacity}, now {farm.Store.Food}; "
+            + $"the village holds {world.FoodTheVillageHolds()}");
+
+        Assert.True(
+            farm.Store.Food < before,
+            "A year passed and the farm's buffer never moved — §3.2's \"running it dry is the "
+            + "market's job\" is still unbuilt.");
+
+        Assert.True(
+            farm.Store.FreeSpace >= Config.CropYieldPerTile,
+            "The buffer was nibbled but still cannot take a whole armful, so the farmer's walk "
+            + "is no shorter and the clearing achieved nothing.");
+    }
+
+    /// <summary>
+    /// ⛔ And the condition, both arms: a buffer is worth clearing only once it can no longer
+    /// take an armful.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Without this the rule could be "traders always strip farms", which passes the guard
+    /// above</b> — and that is the churn D34 records killing a village: marketers took "surplus"
+    /// from living households, families fetched it straight back, the granary stopped filling
+    /// and the settlement died out at five people.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ ASSERTED AS ARITHMETIC RATHER THAN AS BEHAVIOUR, AND THE REASON MATTERS.</b> The
+    /// obvious behavioural form — *a farm with room is never touched over a year* — <b>asserts
+    /// something the design contradicts</b>: §3.2 ruling 2 lets a trader source from a farm that
+    /// happens to be nearer than the granary, whatever room it has. Its first draft passed only
+    /// because one season was too short for that to happen, which would have made it a guard
+    /// that went red the day somebody moved a granary. Same reasoning, and same restating, as
+    /// <see cref="NearerFarm"/> a few methods down.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFarmsBufferIsOnlyWorthClearingWhenItCannotTakeAnArmful()
+    {
+        SimWorld world = Loop(Config).World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+
+        Assert.False(WorthClearing(world, farm), "An empty buffer is nothing to clear.");
+
+        int seed = Config.FarmStoreCap - Config.CropYieldPerTile;
+        Assert.True(seed > 0, "The cap cannot hold even one armful, so this proves nothing.");
+        farm.Store.Add(Goods.Food, seed);
+
+        _output.WriteLine(
+            $"holding {farm.Store.Food} of {farm.Store.Capacity}, {farm.Store.FreeSpace} free "
+            + $"against an armful of {Config.CropYieldPerTile}");
+
+        Assert.False(
+            WorthClearing(world, farm),
+            "A buffer that can still take a whole armful is doing its job, and clearing it is "
+            + "the churn that killed the village in D34.");
+
+        farm.Store.Add(Goods.Food, Config.FarmStoreCap);
+
+        _output.WriteLine(
+            $"holding {farm.Store.Food} of {farm.Store.Capacity}, {farm.Store.FreeSpace} free");
+
+        Assert.True(WorthClearing(world, farm));
+    }
+
+    /// <summary>
+    /// The clearing rule, restated: a workplace holding food that can no longer take a whole
+    /// armful.
+    /// </summary>
+    private static bool WorthClearing(SimWorld world, Workplace workplace) =>
+        !workplace.IsSite
+        && workplace.Store.Food > 0
+        && workplace.Store.FreeSpace < world.Config.CropYieldPerTile;
 
     /// <summary>
     /// ⭐ A trader sources from a farm only when the farm is nearer than the granary.

@@ -90,7 +90,20 @@ public sealed class FarmGoldenTests
     // own crop every year; it brings in 93% now.
     //
     //   before the farm stopped rotting its crop: 12068547528605544516
-    private const ulong SeamGoldenHash = 11489388314243111802UL;
+    //
+    // ⭐ RE-TAKEN FOR §3.2a — THE MARKET RUNS THE FARM'S BUFFER DRY (D171). `crops-and-orchards.md
+    // §3.2` ruling 1 has said since the farm shipped that the buffer is free and *"running it dry
+    // is the market's job"*, and nothing ever ran it dry: a trader could take from a farm to fill
+    // a hungry larder and never to empty one. A third leg does it now, offered against every other
+    // leg on travel cost, and gated on the derived condition that the buffer can no longer take a
+    // whole armful.
+    //
+    // ⚠️ AND THE TWO FIFTY-YEAR GOLDENS DID NOT MOVE, WHICH IS THE CONTRACT HOLDING RATHER THAN A
+    // SURPRISE: neither village ever places a farmhouse, so no workplace store in them ever holds
+    // food and the new leg is never offered. Silent about what they do not reach (D157, D162).
+    //
+    //   before the market ran the buffer dry: 11489388314243111802
+    private const ulong SeamGoldenHash = 5832742735958199009UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
