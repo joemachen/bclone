@@ -43,6 +43,12 @@ public enum MapDetail
 /// <see cref="FixedTimestepDriver.Alpha"/>.
 /// </para>
 /// <para>
+/// <b>⚠️ That bookkeeping rolls forward on the sim's tick and on nothing else</b>
+/// (<see cref="AdvanceInterpolation"/>). Alpha says how far through a tick we are; it can
+/// never say that a tick ended, and reading it as though it could is what put the jitter
+/// Joe watched for months on the screen (D169).
+/// </para>
+/// <para>
 /// <b>People who are standing on the same tile are fanned apart.</b> Four adults
 /// resting at one house are four people, and drawing them at one point makes them look
 /// like one. This is the whole phase's Success Test in miniature — "watching twelve
@@ -199,10 +205,25 @@ public partial class VillageMap : Control
     /// <summary>How far apart people on the same tile are drawn, in tiles.</summary>
     private const float FanRadiusTiles = 0.30f;
 
-    private readonly Dictionary<int, Vector2> _previousTiles = new();
+    /// <summary>
+    /// The two ends of this frame's glide for each villager: the tile they were on last
+    /// tick, and the tile they are on now.
+    /// </summary>
+    /// <remarks>
+    /// <b>Both ends are kept because only the sim knows when a tick happened.</b> Alpha says
+    /// how far through a tick we are; it never says that one ended. Advancing this on a
+    /// reading of alpha is what D169 fixed.
+    /// </remarks>
+    private readonly Dictionary<int, (Vector2 Previous, Vector2 Current)> _tiles = new();
 
     /// <summary>Reused each frame so a busy village does not allocate per redraw.</summary>
     private readonly Dictionary<GridPos, List<int>> _byTile = new();
+
+    /// <summary>
+    /// The sim tick <see cref="_tiles"/> was last advanced for. <see cref="ulong.MaxValue"/>
+    /// until the first frame, which cannot collide with a real tick.
+    /// </summary>
+    private ulong _interpolatedThroughTick = ulong.MaxValue;
 
     private SimWorld? _world;
     private double _alpha;
@@ -1547,6 +1568,11 @@ public partial class VillageMap : Control
 
         GroupByTile(world);
 
+        // Before anybody is drawn, because DrawnCentre reads what this writes and the click
+        // test asks DrawnCentre too — one answer per frame, or the dot and the hit test
+        // would disagree by a tile.
+        AdvanceInterpolation(world);
+
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -1561,18 +1587,6 @@ public partial class VillageMap : Control
             // so what the player aims at is what they hit (see DrawnCentre).
             Vector2 centre = DrawnCentre(villager);
             float radius = VillagerRadius;
-
-            var current = new Vector2(villager.Position.X, villager.Position.Y);
-            Vector2 previous = _previousTiles.TryGetValue(villager.Id, out Vector2 known) ? known : current;
-
-            if (current != previous && _alpha >= 0.999)
-            {
-                _previousTiles[villager.Id] = current;
-            }
-            else if (!_previousTiles.ContainsKey(villager.Id))
-            {
-                _previousTiles[villager.Id] = current;
-            }
 
             Color colour = villager.LifeStage switch
             {
@@ -1590,6 +1604,70 @@ public partial class VillageMap : Control
         }
 
         PruneTheDead(stillAlive);
+    }
+
+    /// <summary>
+    /// Roll each villager's glide forward when — and only when — the sim has actually
+    /// taken a tick.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⭐⭐ THIS IS THE JITTER (D169), and it was never in the sim.</b> The glide used to
+    /// advance on <c>_alpha &gt;= 0.999</c>. <see cref="FixedTimestepDriver.Alpha"/> is the
+    /// accumulator remainder in <c>[0,1)</c>, sampled once a frame, so that condition asks a
+    /// frame to land in the last thousandth of a tick — which at any speed the game is
+    /// actually watched at is a coin flip nobody wins for tens of seconds at a time. So
+    /// <c>Previous</c> froze on a tile from some while ago.
+    /// </para>
+    /// <para>
+    /// <b>What a frozen <c>Previous</c> looks like on screen is exactly what Joe described.</b>
+    /// While the villager is more than a tile away from it, <see cref="DrawnCentre"/> snaps and
+    /// nothing is wrong. The moment they are standing within one tile of it — which is most of
+    /// the time for <em>a farmer working a small field or a forester working painted ground</em>
+    /// — the lerp runs from the stale tile instead, so the dot jumps back to it as alpha resets
+    /// at each tick and glides forward again: <b>a bounce between two tiles, once a tick, for as
+    /// long as they stay put</b>. Nothing in the audit trail shows it, because nothing in the sim
+    /// did it: a sweep of the whole of <c>bclone-20260822-000011.log</c> for a villager returning
+    /// to a tile they had just left finds <b>15 in 10,476 ticks</b>, none of them a farmer at
+    /// work.
+    /// </para>
+    /// <para>
+    /// <b>The tick is the thing to watch, so watch the tick.</b> Alpha says how far through a
+    /// tick we are and can never say that one ended.
+    /// </para>
+    /// </remarks>
+    private void AdvanceInterpolation(SimWorld world)
+    {
+        bool tickAdvanced = world.Tick != _interpolatedThroughTick;
+        _interpolatedThroughTick = world.Tick;
+
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            var current = new Vector2(villager.Position.X, villager.Position.Y);
+
+            // First sight of somebody — born, or the first frame of the run. They start
+            // standing still rather than gliding in from nowhere.
+            if (!_tiles.TryGetValue(villager.Id, out (Vector2 Previous, Vector2 Current) known))
+            {
+                _tiles[villager.Id] = (current, current);
+                continue;
+            }
+
+            if (!tickAdvanced)
+            {
+                continue;
+            }
+
+            // `known.Current` is where they were on the previous frame, and a sim position
+            // only changes on a tick boundary — so it is where they stood last tick.
+            _tiles[villager.Id] = (known.Current, current);
+        }
     }
 
     /// <summary>Everyone alive, bucketed by the tile they are standing on.</summary>
@@ -1674,11 +1752,14 @@ public partial class VillageMap : Control
     private Vector2 DrawnCentre(Villager villager)
     {
         var current = new Vector2(villager.Position.X, villager.Position.Y);
-        Vector2 previous = _previousTiles.TryGetValue(villager.Id, out Vector2 known) ? known : current;
+        Vector2 previous =
+            _tiles.TryGetValue(villager.Id, out (Vector2 Previous, Vector2 Current) known)
+                ? known.Previous
+                : current;
 
         // Lerp from where they were to where they are. If they moved more than a
-        // tile — being born, or moving house — snap instead, or they would glide
-        // across the map.
+        // tile — being born, moving house, or several ticks passing inside one frame at
+        // 10× — snap instead, or they would glide across the map.
         Vector2 drawTile = previous.DistanceSquaredTo(current) > 2f
             ? current
             : previous.Lerp(current, (float)_alpha);
@@ -1756,13 +1837,13 @@ public partial class VillageMap : Control
     /// and the dictionary does not grow for the whole run.</summary>
     private void PruneTheDead(HashSet<int> stillAlive)
     {
-        if (_previousTiles.Count <= stillAlive.Count)
+        if (_tiles.Count <= stillAlive.Count)
         {
             return;
         }
 
         var gone = new List<int>();
-        foreach (KeyValuePair<int, Vector2> entry in _previousTiles)
+        foreach (KeyValuePair<int, (Vector2 Previous, Vector2 Current)> entry in _tiles)
         {
             if (!stillAlive.Contains(entry.Key))
             {
@@ -1772,7 +1853,7 @@ public partial class VillageMap : Control
 
         foreach (int id in gone)
         {
-            _previousTiles.Remove(id);
+            _tiles.Remove(id);
         }
     }
 }
