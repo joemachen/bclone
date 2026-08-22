@@ -270,12 +270,24 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
    of a proficiency model that **does not exist in the sim** — its load-bearing rule, *"a record
    preserves the method, not the proficiency"*, is what stops the tree becoming a ratchet, and it
    cannot be implemented against nothing.
-3. **Phase 3 — skill and apprenticeship** (§2.1). Proficiency, **personal time-on-task
+3. **⭐ Per-site yield, and retiring the 7-tile bound** (D58, §5) — **scheduled at last, and
+   Joe placed it here: *"per-site yield behind skills-catalog"*** (2026-08-22, D172). It left the
+   unsequenced list because **a second system has now walked into it independently**: a farm ten
+   ticks from its store brings in 46% of what it sows against 93% next door, and rots the
+   difference every autumn, because `FieldTilesOneFarmerKeeps` is one number for every farm in
+   the valley (D171). Gathering has said the same thing since D58. **It is still the largest
+   re-derivation on the board** — it reopens `gather_yield`, `MaxHomeToWorkTiles` and the fuel
+   budget together — which is why it sits *behind* the catalogue rather than in front of it: the
+   catalogue is writing, this is measuring.
+   - **⚠️ It also owes the player a sentence.** D167 made the rot line mean *you over-painted* or
+     *you lost a farmer*; **distance is a third cause it cannot yet say**, and a rot line the
+     player cannot act on is the weather D167 spent a decision removing.
+4. **Phase 3 — skill and apprenticeship** (§2.1). Proficiency, **personal time-on-task
    (discharges D28)**, the inspector surface, the apprenticeship lever, and the anti-vacuity
    guard that a run with no apprenticeships actually loses something. **The milestones panel
    lands at the end of this phase**, not before — `tech-tree.md §10` lists eight and only about
    three can fire until apprenticeship and records exist.
-4. **Phase 4 — the tech tree** (§2.7). Three states, records, scriptorium, library, school, the
+5. **Phase 4 — the tech tree** (§2.7). Three states, records, scriptorium, library, school, the
    knowledge screen — on a substrate that exists.
 
 *Then, unsequenced and unchanged:*
@@ -1295,6 +1307,11 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D172 · 2026-08-22 · ⭐⭐ PHASE 2 IS MERGED, AND PER-SITE YIELD IS SCHEDULED AT LAST.** Joe: *"merge once it passes, per-site yield behind skills-catalog."*
+  - **✅ Phase 2 closed and merged to `main` via [PR #4](https://github.com/joemachen/bclone/pull/4)** — ⚠️ **#4, not #3**, which every document said for a day: number 3 went to the closed screenshot-hook PR that D160 rescued and redid. **A doc that names an artefact by number should be checked against the artefact**, which is D159's lesson in miniature and cost nothing to fix here only because it was caught the same hour.
+  - **⭐ PER-SITE YIELD MOVES OUT OF THE UNSEQUENCED LIST AND INTO THE QUEUE AT POSITION 3**, behind `skills-catalog.md` and ahead of Phase 3. It has been *"the biggest payoff on the board"* since D58 and unscheduled ever since, on the honest grounds that it wants a fresh session — and **what changed is that a second system walked into it independently.** D171 measured a farm ten ticks from its store bringing in **46% against 93% next door**, for the same reason gathering has: `FieldTilesOneFarmerKeeps`, like `gather_yield` before it, is **one number for every site in the valley**. *Two systems arriving at the same missing mechanic is the signal that it is a mechanic and not a tuning problem.*
+  - **⚠️ Behind the catalogue rather than in front of it, and the reason is the shape of the work.** `skills-catalog.md` is writing; per-site yield is measuring, and it reopens `gather_yield`, `MaxHomeToWorkTiles` and the fuel budget together — D122 froze nineteen people the last time that chain moved. **A re-derivation wants a session with nothing else in it.**
+  - **⚠️ And it owes the player a sentence when it lands.** D167 made the rot line mean *you over-painted* or *you lost a farmer*; **distance is a third cause the game cannot yet say**, and a rot line nobody can act on is exactly the weather D167 spent a decision deleting.
 - **D171 · 2026-08-22 · ⛔⭐⭐ THE FARM'S SHORTFALL IS DISTANCE, NOT THE BUFFER — and that puts Joe's bug on top of §5's biggest open decision.** Joe, given D170's diagnosis: *"can we add a storage component to the farm itself so farmers have less of a walk? … the vendor can collect the food from the farm's stores (which aren't huge — don't want to eliminate the granary) and move it to the market (or the granary if the market is full)."*
   - **✅ THE MARKET RUNS THE BUFFER DRY AT LAST, WHICH `crops-and-orchards.md §3.2` HAS PROMISED SINCE THE FARM SHIPPED.** Ruling 1 said *"the buffer is free, and running it dry is the market's job"*; ruling 2 built only the market's **sourcing** half, so a trader would take from a farm to fill a hungry larder and never to empty one. A third leg now offers **clearing a workplace buffer**, ranked against every other leg on travel cost through the same `Offer` — so a trader passing the farm clears it and one across the village does not detour, which is ruling 2's own shape.
     - **The condition is derived, not tuned** (D16): a buffer is worth clearing exactly when it **can no longer take a whole armful**, which is precisely when `HaulTheHarvest` stops choosing it. No threshold, no new number.
