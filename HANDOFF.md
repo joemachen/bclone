@@ -1,202 +1,164 @@
-# Handoff — bclone: **Joe's five, and Phase 2 waiting on one QA walk**
+# Handoff — bclone: **Phase 2 is done. The only thing left is PR #3, and it is Joe's call.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D167 back to D142**, then
-`METHODOLOGY.md`. `specs/crops-and-orchards.md` is a **record** rather than a job now — read §12
-only if you touch the crop numbers, and **do not touch them** (see below).
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D169 back to D142**, then
+`METHODOLOGY.md`. `specs/crops-and-orchards.md` is a **record** rather than a job — read §12 only
+if you touch the crop numbers, and **do not touch them**.
 
 ---
 
 ## Where things are
 
-**Branch `phase/2-wood-fuel-and-tools`**, eleven commits, tree clean, **not pushed**. Head is
-`567028f` — *"The farm stops throwing away most of its own crop"*.
+**Branch `phase/2-wood-fuel-and-tools`**, thirteen commits, tree clean, **not pushed**. Head is
+`0dd19c1` — *"The farm's brush speaks farming, and the panels stop eating the map"*.
 
-**⚠️ SUITE STATE IS UNCONFIRMED AND THAT IS THE FIRST THING TO DO.** The run before the last
-commit was **621 passing / 3 failing / 2 skipped of 626**, and the three failures were the three
-goldens — which were then **re-taken and verified green individually** (both arms of
-`AVillagePlayedWithoutLimits` and all of `FarmGoldenTests`, 5 of 5). A confirming full-suite run
-was started and **produced no result** — its output stops after two lines, so the process ended
-without reporting. **Nothing is being claimed from it.**
+**SUITE IS CONFIRMED GREEN, FROM A RUN:**
 
-```bash
-dotnet test bclone.sln --nologo -v q
+```
+627 passed, 0 failed, 2 skipped of 629 — 12m12s
 ```
 
-**Expect 626 passing / 0 failing / 2 skipped.** If anything else is red it is from D166/D167 —
-the fetch bar, the mixed armful, the farm sowing cap, reapers returning to the rows — and the
-audit trail is the place to look, not the code.
+⚠️ **The previous handoff said "expect 626 passing" and 626 was the *total*.** Fourth time this
+project has put a count in a document without a run behind it. `dotnet test bclone.sln --nologo
+-v q` takes about **twelve and a half minutes**; background it and wait for the notification.
+**Do not start a second run while one is going** — and check `Get-Process testhost` first: this
+session found the *previous* session's run still alive on thirteen cores, holding the lock, with
+nobody left to read its output.
 
 **The Godot view builds separately** — `dotnet build src/Bclone.Game/Bclone.Game.csproj` (D11).
-Since D160 the view has **no automated verification of any kind**: looking at it is the test.
+It has **no automated verification** (D160); looking at it is the test.
 
 ---
 
-## JOE'S FIVE, from 2026-08-22. Three are open.
+## ⭐⭐ PHASE 2'S DEFINITION OF DONE IS MET (D169)
 
-### 1. ⛔ THE JITTER IS STILL THERE — *"a little bit"*, and he has now named the exact case
+All five items. Joe walked the QA checklist on 2026-08-22 — *"I've walked the QA checklist and
+approved the document"* — which was the last one open. `DESIGN.md §4`, `§6`, and
+`specs/phase-2-the-village-you-can-play.md` all say so now.
 
-> *"when a farmer is sowing/harvesting a field it seems to 'bounce' between two tiles for a few
-> ticks. same with a forester planting/harvesting trees."*
+### ⛔ WHAT IS BLOCKING, AND IT IS NOT A TASK
 
-**This is the third distinct cause, and the first two are genuinely fixed** — do not re-fix them:
+**`PR #3` has NOT been opened and the branch has NOT been pushed.** That is deliberate: **all
+three fixes this session are view changes, and the view has no tests at all.** The numbers behind
+them are real and measured, but *nobody has looked at the game*. **Joe looking is the last check
+before the merge**, and it is the same bar D160 set.
 
-| | cause | fixed in |
-|---|---|---|
-| 1 | a cold villager holding logs was flipped out of the house the tick after arriving | D163 |
-| 2 | a household fetch from a store one tile from the door | D166 |
-| 3 | **a worker on painted ground bouncing between two tiles — OPEN** | — |
+**What to ask him to look at** — the three things he reported, in the order he reported them:
 
-**READ THE NEW LOG FIRST: `src/Bclone.Game/logs/bclone-20260822-000011.log`.** It is the run from
-his screenshot and it is on disk. **D163's mistake was diagnosing from four lines and declaring it
-*the* jitter** — sweep the whole file, count how often each shape occurs, and only then believe
-one. The extraction that found cause 2 is written out in `DESIGN.md` D166 and is worth reusing:
-scan the `DEBUG behavior` lines for a villager whose position returns to where it was two entries
-ago within three ticks, then group the hits by what they were doing.
+1. **The jitter** — watch a farmer sow and reap a field, and a forester work painted ground, at
+   4× and 10×. That is the exact case he named.
+2. **The farm's brush** — paint a field bigger than its farmers can work. He should get a
+   sentence naming *fallow* and both remedies, on the stroke and again on the farm's own panel.
+   Painting must still be allowed.
+3. **The panel widths** — select a building and watch the right-hand column. It should no longer
+   grow when a long sentence appears in the inspector.
 
-**Standing hypothesis, unverified.** `NextGroundToWork` (forester) and `NextFieldToWork` (farmer)
-both pick *the nearest owned tile from where the villager is standing*. A forester in
-`FellAndPlant` fells the last tree at A, walks to B, finds nothing to fell there, and is sent back
-to plant A — genuinely alternating between two adjacent tiles. **A sower carries nothing and
-should simply walk a row, so if a sower bounces there is a second thing going on** — and the
-sowing case is the cleaner one to diagnose, because it has no hauling in it at all.
-
-### 2. ⛔ THE FARM'S BRUSH SHOULD SAY WHEN THE FIELD IS TOO BIG FOR ITS FARMERS
-
-> *"it would be helpful if, when painting the farm size, the UI told the user 'at this size you
-> dont have enough farmers to utilize the land - add more farmers or make your field smaller'
-> (which the user can choose to ignore and 'waste' land if they want)."*
-
-**Most of this exists already, which makes it a small job.** `SimWorld.PaintWorkGround` returns a
-`PlacementVerdict.Yes(...)` carrying a sentence once tiles exceed `WorkGroundAllowanceFor`, and
-D42's rule is that a brush speaks **once per stroke**. What is missing is that the sentence is
-written for a forester — *"…and 1 pair of hands to keep them — enough for 24. The rest will go
-untended."*
-
-**Give it a farm-shaped wording naming the two remedies**, as he asked. It must stay a **warning
-and never a refusal** (D86, D43) — he said so explicitly: *"the user can choose to ignore and
-waste land."* The panel line (`Ground — 33 tiles, enough hands for 0`) also reads badly at zero
-hands and is worth a sentence rather than a fragment.
-
-### 3. ⛔ A UI REFACTOR — the right-hand columns are far too wide
-
-> *"we're going to have to do another UI refactor. look at the attached screenshot to see how
-> dumb the width of the windows on the right side of the screen are"*
-
-**In his screenshot the right column takes over half the window** while the map is a narrow strip
-in the middle — and D149 set each column to **27% of the window, floored and capped**. So either
-that share is not reaching the right column, or **a wide child is holding it open**, which is
-D149's own finding: *"a column's minimum width is its widest child's, and a probe over the control
-tree found six stock-limit rows at 438 holding it at 450."*
-
-**Start with the same probe D149 used** — walk the control tree and print every child's minimum
-width — rather than guessing at the layout. Likely culprits are the village-log lines and the
-*Who they are, and why* sentences, which are long and may not be wrapping.
-
-**D55 and D149 are both records of this exact area biting.** Read them before touching `BuildUi`.
-
-### 4. ✅ MODS — Joe went further than §3 does
-
-> *"modders should be able to add buildings, essentially add anything to the game."*
-
-Recorded in `DESIGN.md §4`. **This is stronger than the existing promise** and it changes what
-data-driven has to mean: `BuildingKind`, `JobKind`, `Goods` and `Terrain` are **C# enums, hashed
-by position and pinned by every golden**, so today a modder can change numbers and cannot add a
-building. `crops-and-orchards.md §4` is the one place done right — *one crop, in a model shaped
-for many*, with the crop id in data — **and that is the template.**
-
-**Nothing to do now.** Standing discipline: **when you add a new kind of thing, ask whether it
-wants to be an enum value or a row in a data file.** Cheap at the time; retrofitting means
-touching the hash, the goldens and every call site at once.
-
-### 5. ✅ THE QA CHECKLIST IS GOOD — *"QA checklist is good"*
-
-`specs/phase-2-the-village-you-can-play.md`, 45 checks. ⚠️ **It is not clear whether he has WALKED
-it or approved the document.** DoD item 3 is the walk, so **ask him plainly** and do not tick the
-item off on this evidence.
+If he says yes: push, open PR #3, merge. **Do not open Phase 3 on an unmerged branch** (D161).
 
 ---
 
-## What landed this session (D162–D167)
+## What landed this session (D169)
 
-- **The farm** (D162) — farmhouse, painted field, sow and reap, the first live `Workplace.Store`,
-  the hauling, the market's widened reach, and the crops-by-brush golden that also closed D157's
-  open hole.
-- **The jitter, twice** (D163, D166) — see the table above.
-- **Phase 2's Definition of Done** (D164) — QA checklist written, `VERSION` wired into the build
-  and shown in the shell, `export_presets.cfg` committed, **and a third release blocker nobody had
-  listed**: `setup-godot`'s `include-templates` defaults to false, so `release.yml` would have
-  failed at the export step at the first tag.
-- **"Village decides" gone from the game** (D165), and the farmhouse at two seats.
-- **The farm stops rotting its crop** (D167) — about 30% brought in, now 93%.
+### 1. ✅ The jitter was in the VIEW, and it was never in the sim
 
-**⛔ THE CROP NUMBERS ARE LOCKED** — Joe: *"farmer is good now - dont change the yield."* Do not
-re-derive `crop_yield_per_tile`, `sow_ticks`, `reap_ticks`, `farmhouse_seats` or `farm_store_cap`
-without him.
+`VillageMap` advanced its glide bookkeeping on `_alpha >= 0.999`, and
+`FixedTimestepDriver.Alpha` is *the accumulator remainder in `[0,1)`, sampled once a frame* — a
+condition that is essentially never true. So the glide's start point froze on a tile from tens of
+seconds ago, and anybody standing **within one tile of it** was drawn snapping back to it at every
+tick boundary. That is a bounce between two tiles, once a tick, for as long as they stand still —
+**which is a farmer on a field and a forester on painted ground**, the two cases Joe named. It
+watches `World.Tick` now.
+
+**⭐ The handoff's standing hypothesis was wrong and the sweep is why we know.** Scanning the whole
+of `logs/bclone-20260822-000011.log` (10,476 ticks, 4,629 behaviour transitions) for a villager
+returning to a tile they had just left finds **15**, of which **one** is anybody in a field. A
+sower walks a clean serpentine and turns round once at the end of a row. `NextFieldToWork` is not
+the problem. **D163's and D166's fixes were both real and both stand** — three rounds, three
+causes, and only the third was on the screen.
+
+### 2. ✅ The farm's brush speaks farming and names both remedies
+
+`SimWorld.OverstretchedNote` — **one door**, so the brush (once per stroke, D42) and the panel
+(for as long as the state lasts, D86) cannot disagree. A field that outruns its farmers **lies
+fallow**, which is true since D167 capped sowing at what the hands can bring in; *untended* was
+the forester's word. Still a warning, never a refusal. **3 reds of 3** against the old wording,
+eight existing allowance guards green throughout.
+
+### 3. ✅ The panels stopped deciding how wide the window is
+
+D149 gave each column 27% and **Godot overruled it**, because a column is never narrower than its
+widest child. Measured with `BCLONE_PROBE_WIDTHS` (see below): the inspector's idle row wanted
+**733 px** on Joe's 267-px column; ground 548, queue 459, staffing 365. Every row is
+**caption-above, controls-flowing-below** now — wrapped text plus an `HFlowContainer`, whose
+minimum width is its widest single child rather than the sum. **Every row wants 120.** The right
+column's floor drops from 733 to 262 (the minimap).
+
+### ⭐ And a tool that is kept: `BCLONE_PROBE_WIDTHS`
+
+```bash
+BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
+```
+
+Walks the control tree, prints every minimum width including the inspector rows posed with their
+worst-case sentence, and quits. Two seconds. **Three sessions have asked this question and two
+hand-rolled the same throwaway** (D149, D169). METHODOLOGY §6 has it. It is a *measurement*, not a
+hook that plays the game — the distinction D160 drew when it deleted `BCLONE_SCREENSHOT`.
 
 ---
 
-## Phase 2's Definition of Done — one item
+## ⛔ THE CROP NUMBERS ARE LOCKED
 
-`DESIGN.md §4`. Items 1, 2, 4 and 5 are closed. **Item 3 is a QA playthrough walked by Joe**, and
-it is the only thing between this branch and **PR #3**. Do not open Phase 3 on an unmerged branch
-(D161).
+Joe: *"farmer is good now - dont change the yield."* Do not re-derive `crop_yield_per_tile`,
+`sow_ticks`, `reap_ticks`, `farmhouse_seats` or `farm_store_cap` without him.
+
+---
+
+## The queue after the merge (`DESIGN.md §4`, unchanged)
+
+1. **`specs/skills-catalog.md`** — catalogues before code, and the prerequisite `tech-tree.md`
+   silently assumes.
+2. **Phase 3 — skill and apprenticeship** (§2.1), which is also the real answer to the mid-game
+   gap (D161). Its success test is already written: *play years 1–16 at normal speed, without
+   fast-forwarding, and want to keep watching.*
+3. **Phase 4 — the tech tree** (§2.7).
+
+**Two directions Joe set, neither scheduled, both in `DESIGN.md §4`:** **gridless** (the largest
+architectural statement anybody has made about this project — the first question when it is taken
+is whether the *sim* goes continuous or only the *presentation*), and **mods that can add
+anything** (`BuildingKind`, `JobKind`, `Goods` and `Terrain` are four C# enums hashed by position;
+`crops-and-orchards.md §4` is the template for doing it right). Standing discipline for the second:
+**when you add a new kind of thing, ask whether it wants to be an enum value or a data row.**
 
 ---
 
 ## Traps, in the order they will cost you
 
-- **⭐⭐ CHECK EVERY GUARD RED, AND COUNT THE REDS.** Five times this session, and **twice it caught
-  a guard that proved nothing.** D163's emergent jitter guard read zero against the broken code too
-  (1 red of 15, not the 2 expected) and was deleted. D166's first bar guard was aimed at **food**,
-  which has a stronger gate, and scored **0 reds of 2** until it was re-aimed at firewood.
-  *Running says green; counting says which half of your green means anything.*
-- **⭐⭐ A MECHANISM CAN BE CORRECT AT EVERY STEP AND WRONG AS A YEAR** (D167). Every farm guard
-  asked *does sowing work? does reaping work? does the store fill?* — all green — while the farm
-  threw away two thirds of its food every autumn. **Assert the outcome over a cycle, not only the
-  steps.**
-- **⭐⭐ A MEASUREMENT THAT DISAGREES WITH A DERIVATION HAS FOUND A BUG IN ONE OF THEM** (D165), and
-  it is worth knowing which before rewriting the other. A farmer measured at 5 tiles against 13
-  budgeted looked like a bad budget; it was one word in `HaulTheHarvest`. The budget was rewritten
-  to fit the bug, produced 216 food from a single tile, and had to be put back.
-- **⭐⭐ FINDING A CAUSE IS NOT FINDING THE CAUSE** (D163, then D166, still open). Diagnosing from
-  one excerpt and declaring it solved has cost two rounds of Joe re-reporting the same symptom.
-- **⭐ THE AUDIT TRAIL IS EVIDENCE AND THE SUITE IS NOT.** D154, D157, D163, D166 and D167 all came
-  out of `src/Bclone.Game/logs/`. The files are on disk and the path is in his header.
-- **A comment promising the code is general, over code that names a kind.** The farm shipped with
-  no work-ground brush because `Main.cs` read `Kind: JobKind.Forester` under a comment saying *"so
-  the next one needs no line here"*.
-- **A new deposit path means a new leak.** `RetireWorkplace` ignored `Workplace.Store` for five
-  phases — correctly, until the farm wrote to one.
-- **⭐ A DEFAULT YOU DID NOT SET IS STILL A DECISION SOMEBODY MADE** — `include-templates: false`.
-  When you clear a blocker, **try the thing it was blocking**.
+- **⭐⭐ CHECK EVERY GUARD RED, AND COUNT THE REDS.** Three times this session's predecessors it
+  caught a guard that proved nothing. This session: 3 of 3 on the brush wording, and the guard
+  that actually catches the bug is not the obvious one — *"the farm's sentence says farmer"*
+  passes against a generic template with the farm's name in it. **The one that works reads both
+  sentences with the names masked out and requires them to differ.**
+- **⭐⭐ THE SIM'S AUDIT TRAIL IS EVIDENCE ABOUT THE SIM AND SAYS NOTHING ABOUT THE VIEW.** Two
+  sessions hunted a rendering bug in `BehaviorSystem` because the trail is the best instrument
+  this project has and it was pointed at the wrong half of the codebase. **Ask which half the
+  symptom lives in before opening the log.**
+- **⭐⭐ FINDING A CAUSE IS NOT FINDING THE CAUSE** (D163, D166, D169 — three rounds).
+  **Sweep the whole trail and count the shapes** before believing any one of them.
+- **⭐ A LAYOUT YOU CAN READ IS NOT A LAYOUT YOU CAN PREDICT.** A column is never narrower than
+  its widest child, so every width in `Main.BuildUi` is a *request*. **Probe, do not reason.**
+- **⭐ THE HELPER YOU NEED MAY ALREADY EXIST.** `Main.Wrapped` had been doing exactly the right
+  thing on five labels for two UI rebuilds while every sentence in the inspector went into a bare
+  `Label` in an `HBox`. Grep before writing.
+- **⚠️ IF A NUMBER GOES INTO A DOCUMENT, IT COMES FROM A RUN.** Four for four now, the fourth
+  being the previous handoff's own warning about it.
 - **`python` is not on PATH**, and string edits die on this repo's CRLF and its emoji. Use
-  `perl -0777`, or the Edit/Write tools for anything with quoting in it — a heredoc containing an
-  `awk` one-liner cost this session two attempts.
-- **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at zero lines.
-  `Get-Process testhost` and watch CPU to tell working from hung.
-- **⚠️ DO NOT START A SECOND SUITE RUN WHILE ONE IS GOING.** The first holds a lock on
-  `Bclone.Sim.dll` and **no test project will build until it exits** — this session lost time to
-  it twice, the second time after writing the warning down.
-- **⚠️ DO NOT WRITE A WAIT-LOOP FOR A BACKGROUNDED RUN.** It is redundant, the completion
-  notification arrives by itself, and two such loops spun for thirteen hours here waiting for
-  `Passed!` in a file written by `--logger console;verbosity=detailed`, which ends
-  `Test Run Successful.` instead.
-- **⚠️ IF A NUMBER GOES INTO A DOCUMENT, IT COMES FROM A RUN.** Three suite counts were written
-  from arithmetic before the run finished this session; all three were wrong.
-
----
-
-## Two directions Joe set — `DESIGN.md §4` has the detail, neither is scheduled
-
-- **GRIDLESS, like Foundation** — any-angle placement, no tile map, paths that bend. **The largest
-  architectural statement anybody has made about this project.** It touches the tile map, the one
-  shared cost field, all three zone layers, the state hash and every unit the economy is derived
-  in — and the real constraint is **determinism**: integer-only sim state (D2) is currently
-  guaranteed *by* the grid. Fixed-point `Fixed` (Q32.32) is the door left open for it.
-  **Desire-path roads (§2.6) is the one pillar that would gain outright.** Do not start it inside a
-  phase; the first question when it is taken is whether the *sim* goes continuous or only the
-  *presentation*, and those are very different costs.
-- **MODS THAT CAN ADD ANYTHING** — see item 4 above.
+  `perl -0777`, or the Edit/Write tools for anything with quoting in it.
+- **`dotnet test` buffers stdout when redirected**, so a background run looks frozen at zero
+  lines. `Get-Process testhost` and watch CPU to tell working from hung — and note the CPU figure
+  is summed across cores, so a healthy run shows *far* more CPU-seconds than wall-clock.
+- **⚠️ DO NOT START A SECOND SUITE RUN WHILE ONE IS GOING**, and **check for an orphan from the
+  last session first**. It holds the lock on `Bclone.Sim.dll` and no test project will build.
+- **⚠️ DO NOT WRITE A WAIT-LOOP FOR A BACKGROUNDED RUN.** The completion notification arrives by
+  itself.
 
 ---
 
@@ -204,5 +166,6 @@ it is the only thing between this branch and **PR #3**. Do not open Phase 3 on a
 
 Technical, not a game or systems programmer. Casual, direct; **push back honestly**. **End every
 message with the explicit ask**, or he cannot tell who is blocking whom. **His play is the best
-bug-finder this project has** — of the last six bugs that mattered, five came from him playing and
-one from reading code. None came from the suite.
+bug-finder this project has** — and D169 is the sharpest case yet: he reported one symptom three
+times across three sessions, and it took all three to get from the two real bugs it was hiding to
+the one that was actually on his screen.
