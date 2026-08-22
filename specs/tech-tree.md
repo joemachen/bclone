@@ -48,6 +48,16 @@ When the last master smith dies with the technique written down, the village doe
 
 This is settled and load-bearing: *a written record never fully replaces a living knower.* It protects the late game permanently, because the skill half of every technique stays mortal no matter how good the library is.
 
+> **⭐ REINFORCED, NOT WEAKENED, BY D176 — and `skills-catalog.md §5.4` is where the words were finally separated.** Joe asked how *"mastery is lost only from the person who dies"* squares with the library, and the answer is that **"mastery" was doing two jobs**. There are **three** distinct things and only the middle one is what this document is about:
+>
+> | | Held by | Lost when | Written? |
+> |---|---|---|---|
+> | **Proficiency** — Mabel's twenty-five years | one person | **she dies, always** | ⛔ never |
+> | **Technique** — crop rotation, which she worked out *because* of those years | the village | last knower dies untaught and no record — §5's re-lock | ✅ → `Established` |
+> | **Record of achievement** — *"this village once had a master farmer"* | the town hall's collections (§7f) | **never** | it *is* the writing |
+>
+> **So a record still preserves the method and never the proficiency.** The collections say *that it happened*; they never hand anybody years they did not work. ⛔ **And mastery-the-tier is not a node**: it is twenty years on the task, no knowledge state may gate it, and it therefore cannot re-lock. *A village can forget crop rotation. It cannot forget that people get good at things.*
+
 ### 3b. Unwritable knowledge
 
 Some nodes are flagged **tacit** and can never be recorded. They pass person-to-person or not at all: a midwife's hands, an eye for soil, knowing when the fish run.
@@ -181,11 +191,61 @@ The one place ADJ is **structural** rather than bonus. Enforced at placement, us
 
 The consequence is that the knowledge quarter of the town becomes a real place with a real footprint.
 
+### 7f. ⭐⭐ Town hall — where the village reads its own memory (D176, Joe)
+
+**The fourth building, and the only one that does not touch a technique.** The scriptorium
+**writes**, the library **stores**, the school **teaches** — and the town hall is where the
+village **reads what it has become**. Joe: *"added to the 'collections' tab of the town hall along
+with all of the other unlockables… I wonder if building the town hall is what unlocks the tech
+tree?"*
+
+**⛔ IT GATES THE SCREEN, NOT THE TREE — and that distinction is the whole design.**
+
+- **The village goes on learning with or without one.** Gating the *tree* behind a building the
+  player chooses to raise would convert DOING, CRISIS and SEREN from emergence into a menu
+  unlock, and **§7a's best argument would die with it**: *"the player does not set out to invent
+  writing — they set out not to starve, and writing is what a well-run granary eventually
+  produces."* A granary keeper who invents notation must not be waiting on a civic permit.
+- **It would also flatten the early game**, which is the mid-game gap (`DESIGN.md §4`, D161)
+  made worse rather than better.
+- **Before a town hall, nothing is invisible**: every discovery, apprenticeship, mastery and
+  at-risk warning is **narrated on its edge in the village log** as it happens (§8, D123, D147).
+  The player hears their history.
+- **After it, the whole roster is browsable** — who knows what, who is the best knower, what is
+  written and where, what is at risk. **The progression is *anecdote → archive***, and that is a
+  real payoff for a civic building rather than a tax on progression.
+
+**Singleton** (D38; `building-placement.md` lists the town hall as *the* example of a build-once
+building). It is also where Joe's **charts** live (`DESIGN.md §4`), which is the same idea one
+level up: the town hall is the building whose product is *information about yourself*.
+
+#### 7f.1 The collections — and why they are permanent
+
+Every crop, tree, fish, animal, technique and **first master** the village has ever met. Joe's
+Animal-Crossing museum note (`DESIGN.md §4`) lands here rather than as a separate building,
+because `buildings-plan.md` already says what a town hall is: *"Records, census, lineage. **Not a
+stats screen** — the place where the village's memory is kept."*
+
+**⛔ THE COLLECTIONS GRANT NOTHING, AND THAT IS LOAD-BEARING RATHER THAN A CHOICE OF SCOPE.**
+This is the one place Joe's *"they can't ever lose it"* had to be handled with care: applied to
+**capability**, permanence breaks three of the four guards §11 uses against the ratchet — hard
+shelf capacity, decay and fire. Applied to a **record of what happened**, it breaks nothing.
+
+- A collections entry is **memory, not machinery.** It says the village once had a master farmer;
+  it does not make the next farmer better.
+- **A lost technique still shows in the collections** — *we knew this once* — which is `§5`'s
+  wreckage rule expressed as a sentence instead of a ruined building. **That is the best thing
+  the collections do**: they are how a village remembers what it can no longer do.
+- ⛔ **The day an entry confers a bonus, this becomes the ratchet §11 exists to prevent.** Written
+  down on both sides (§11, and `skills-catalog.md §5.4`) so nobody later "improves" it into one.
+
 ---
 
 ## 8. Legibility: the knowledge screen
 
 **The tree is not a graph of icons to click.** It is a roster of what the village knows and who knows it. If the tree and the population pyramid are the same object, the interface should make that literally true.
+
+> **⭐ THIS SCREEN IS THE TOWN HALL'S INTERIOR (§7f, D176), and it is reachable only once one stands.** Before that the village log carries the same information as it happens, one line per event on its edge — so **nothing is ever hidden, it is simply not yet collected**. *Anecdote → archive.* ⚠️ **The at-risk line (below) is the exception and must narrate from day one**, town hall or no town hall: §2.1 requires knowledge-at-risk to be *visible and actionable*, and a warning nobody can see is the funeral surprise this design refuses.
 
 One row per node:
 
@@ -305,7 +365,14 @@ This branch is deliberately the most tacit-heavy. Health knowledge should be the
 
 The events that should produce a log line worth screenshotting. Not mechanics — punctuation.
 
+**⭐ A log line first, a collections entry second** (§7f.1, D176). Every one of these narrates on
+its edge when it happens, whether or not a town hall stands; the town hall is where they are kept
+together afterwards.
+
 - **First winter nobody went hungry.** The camp becomes a village.
+- **⭐ First master.** Twenty years on one task (`skills-catalog.md §3.3b`) — *"Hattie has farmed
+  these fields for twenty years. There is nothing about this ground she does not know."* **Joe
+  asked for this line by name**, and it is the earliest of these the player will see.
 - **First apprenticeship completed.** Knowledge becomes heritable at all.
 - **First person to live an entire life here, birth to old age.** A generation closed.
 - **First stone building.** The settlement now outlives its founders.
@@ -321,6 +388,8 @@ The events that should produce a log line worth screenshotting. Not mechanics �
 | Failure | Symptom | Guard |
 |---|---|---|
 | **Ratchet / dead late game** | Once everything is written, tension ends | Record = method not proficiency; hard cap; decay; fire |
+| **⭐ The collections become a ratchet** (D176) | A permanent, never-lost list starts conferring permanent, never-lost benefits | **They grant nothing — they are memory, not machinery** (§7f.1). Permanence is only safe because it buys nothing. Stated on both sides, here and in `skills-catalog.md §5.4`, so it is not "improved" into one later |
+| **⭐ Mastery gated by knowledge** (D176) | A villager works twenty years and is told they may not be a master because the village forgot something | **Mastery-the-tier is not a node and no knowledge state may gate it** (`skills-catalog.md §6.7`). Techniques re-lock; competence does not |
 | **The library is mandatory** | Writing everything down is always correct, so it is not a decision | Hard capacity; scribe *and* master off work for seasons; tacit nodes that cannot be written at all |
 | **Re-lock feels unfair** | Player loses a technique they had no warning about | The at-risk line (§8), surfaced years ahead |
 | **Emergence without agency** | The tree becomes weather — it happens *to* the player | The four levers (§6). Choice is allocation and commitment. |
@@ -343,7 +412,7 @@ Deliberately unspecified. These need a running sim to answer, and inventing numb
 - Fire probability per library tier — high enough to matter, low enough not to feel punitive.
 - Re-discovery cost multiplier for a lost art with wreckage present.
 - How many policy slots at which civic thresholds.
-- Whether skill retained from a record is zero or a small floor.
+- Whether skill retained from a record is zero or a small floor. ⚠️ **Bounded by D176: it is at most a *floor*, never restoration** — `skills-catalog.md §6.6` guarantees no record, school or policy hands anybody years they did not work. The same question is asked from the other side in `skills-catalog.md §12`, and **the two must be answered together or the documents will disagree** (D159).
 
 ---
 

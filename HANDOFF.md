@@ -1,7 +1,10 @@
 # Handoff — bclone: **Phase 2 merged, the skills catalogue written. Next is per-site yield.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D175 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D176 back to D142**, then
 `METHODOLOGY.md`.
+
+⭐ **The town hall is designed now** (D176, `specs/tech-tree.md §7f`) — the fourth knowledge
+building, holding the knowledge screen and the collections. **It gates the screen, not the tree.**
 
 ---
 
@@ -61,11 +64,16 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
      all-novice village*** — a guard aimed at the real opening will fail, and the temptation will
      be to weaken it rather than pose it properly.
    - **⚠️ Unmeasured**: does a master gatherer make the opening trivial? Probe first.
-   - **⚠️ Open in §12**: whether mastery bites in Phase 3 or waits for a node (a Phase-4 gate
-     means Phase 3 ships a system with **no mechanical effect** — D56's shape), and whether
-     anything should be able to take mastery from the *village* rather than only from the person
-     who dies.
-   - **§6 is a contract** with `tech-tree.md`, whose header now points back at it.
+   - **✅ §5.4 (D176): WHAT CAN ACTUALLY BE LOST.** *Mastery* was one word doing two jobs. Split
+     into **proficiency** (one person's years — dies with them, always, never writable),
+     **technique** (the village's, re-locks exactly as `tech-tree.md` already said) and **a
+     record of achievement** (permanent, **grants nothing**), the question dissolves.
+     **Mastery-the-tier is not a node and cannot be taken from the village.**
+   - **⚠️ Still open in §12**: whether mastery bites in Phase 3 or waits for a node — a Phase-4
+     gate means Phase 3 ships a system with **no mechanical effect**, D56's shape.
+   - **§6 is a contract** with `tech-tree.md`, whose header now points back at it, and §6.6–6.7
+     are guarantees Phase 4 may rely on: **no record ever restores proficiency**, and **no
+     knowledge state may gate mastery**.
 3. **⭐ NEXT: Per-site yield, and retiring the 7-tile bound** (D58, D172, Joe: *"per-site yield
    behind skills-catalog"*). **This is the next thing to do.** See below.
 4. **Phase 3 — skill and apprenticeship** (§2.1), which is also the real answer to the mid-game

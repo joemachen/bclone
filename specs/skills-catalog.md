@@ -155,23 +155,19 @@ with.
    must be written knowing that, or it will assert something that cannot be true until Phase 4.**
    The alternative is to let mastery bite in Phase 3 and have the node raise the ceiling
    *further*. **Joe's call — §12.**
-3. **⚠️ IF MASTERY IS GATED BY A TECH NODE, THAT NODE CAN GO BACKWARDS — and the question is
-   whether it should.** Spelled out, because the short version of it was unreadable:
-   - **In `tech-tree.md §3`, every node is `Unknown`, `Known` or `Established`.** `Known` means
-     *at least one living person knows it*, and **it goes back to `Unknown` when the last knower
-     dies without having taught anyone.** That backwards step is called **re-locking**, and it is
-     deliberate — it is what stops the tech tree being a ratchet where the village only ever
-     gains. `Established` (written down, or held by enough people) is the state that cannot be
-     lost to one funeral.
-   - **So: if "the village can produce masters" is an ordinary `Known` node, then one badly-timed
-     death could switch mastery off for the whole village** — including people who already spent
-     twenty years earning it. **That is a cliff**, and it is exactly the *unfair because
-     unforeseeable* failure §2.1 names.
-   - **⚠️ AND THE QUESTION MAY REST ON MISREADING JOE.** *"We introduce mastery along with a node
-     of the tech tree"* reads two ways: **(a)** a node *gates* mastery, or **(b)** the mastery
-     numbers simply *ship in the same slice as* some node. **(b) has no re-lock problem at all**,
-     and is the smaller change. **Joe's call, and §12 asks it as the plain question rather than
-     this one.**
+3. **✅ RESOLVED — THERE IS NO CLIFF, BECAUSE MASTERY IS NOT A NODE** (D176, Joe: *"only from the
+   person who dies"*). This once asked whether a tech node granting mastery could **re-lock** —
+   `tech-tree.md`'s rule that a technique held only in living heads is lost when the last of them
+   dies untaught — and therefore switch mastery off for a whole village, including people who had
+   already spent twenty years earning it.
+   - **It cannot, because mastery-the-tier is not a node at all** (§5.4). It is time on the task,
+     and a village cannot forget that people get good at things. **What re-locks is a
+     *technique*** — crop rotation, not competence — and that is exactly where the fragility
+     should live.
+   - **⚠️ The question was also asked badly**, presuming that *"we introduce mastery along with a
+     node of the tech tree"* meant a node **gates** mastery, when it reads equally as *ships in
+     the same slice as*. **The plain version — *should anything take mastery from the village as
+     a whole, or only from the person who dies?* — is the one that got an answer.**
 
 ### 3.2c ⭐⭐ THE FOUNDERS ARRIVE AS A MIX OF TIERS — and it is the best idea in this document
 
@@ -420,9 +416,10 @@ it.** The lever is a *policy* — see §5.3.
 ### 5.2 What a record gives, and what it does not — the tech-tree contract
 
 Restating `tech-tree.md §3a` in this document's terms, because this is the side that has to
-implement it:
+implement it. **Read the columns as §5.4's *technique* and *proficiency*** — they are two
+different objects and the whole of Joe's question was that one word was doing both jobs:
 
-| | The method | The proficiency |
+| | The technique | The proficiency |
 |---|---|---|
 | **A living knower dies, node written** | ✅ kept — node stays `Established` | ⛔ **lost with them** |
 | **A living knower dies, node unwritten** | ⛔ lost — node re-locks | ⛔ lost |
@@ -452,6 +449,46 @@ That is a decision about staffing, which is a control that already exists.
 > whole pillar is decoration — and this project has shipped a decorative system before and only
 > found out by measuring (D56's clothing, a no-op over 300 years).
 
+### 5.4 ⭐⭐ WHAT CAN ACTUALLY BE LOST — three things, named apart (D176)
+
+**Joe, 2026-08-22:** *"Mastery — only from the person who dies… but how does that interplay with
+the library and knowledge transfer? Maybe from the whole village until they have writing, and then
+mastery achieved after writing goes into the library and they can't ever lose it."*
+
+**The question exposed one word doing two jobs.** "Mastery" has been used for both *a person's
+years* and *what that person worked out*, and almost every apparent contradiction here is that
+collision. **Split them and the design falls out — and most of what Joe described turns out to be
+`tech-tree.md`'s existing state machine, independently re-derived.**
+
+| | What it is | Who holds it | Lost when | Writable? |
+|---|---|---|---|---|
+| **Proficiency** | Mabel's twenty-five years | **One person** | **She dies. Always.** | ⛔ Never |
+| **Technique** | Crop rotation, which she worked out *because* of those years | **The village** | Last knower dies untaught **and** no record — `tech-tree.md §5`'s re-lock | ✅ → `Established` |
+| **Record of achievement** | *"This village once had a master farmer"* | The town hall's **collections** | **Never** | n/a — it *is* the writing |
+
+**⭐ Mastery-the-tier is never lost village-wide** (Joe's call). It is twenty years on the task
+(§3.3b), and **a village cannot forget that people get good at things.** Anyone who puts in the
+years reaches it, whatever the village does or does not know. **This is what closes the "cliff"
+worry §3.2b raised**: there is no state in which a villager works for twenty years and is told
+they may not be a master.
+
+**⭐ Techniques are where fragility lives, and that is already the design.** Joe's *"from the whole
+village until they have writing"* **is** `Known` → `Established`: a technique held only in living
+heads dies with the last head; one in a library survives the funeral. Nothing new is needed for
+it, which is the strongest possible sign the shape was right.
+
+**⭐⭐ And the collections are permanent *precisely because they grant nothing.*** This is the one
+place Joe's *"can't ever lose it"* had to be handled carefully: applied to **capability** it
+breaks three of the four guards `tech-tree.md §11` uses against the ratchet that kills the late
+game (hard shelf capacity, decay, fire). Applied to a **record of what happened** it breaks
+nothing at all — and `buildings-plan.md` already describes the town hall as exactly that:
+*"Records, census, lineage. **Not a stats screen** — the place where the village's memory is
+kept."*
+
+⛔ **So the collections must stay inert.** The day an entry confers a bonus, this becomes the
+ratchet — see `tech-tree.md §7f` and §11, where the rule is written down on the other side too so
+nobody later "improves" it into one.
+
 ---
 
 ## 6. ⭐ The contract with `tech-tree.md`
@@ -473,9 +510,20 @@ where D159 found five specs lying.
 5. **A "who still knows this, and how old are they" query**, which is what the at-risk warning
    (§7) and the tree's re-lock rule are both made of.
 
+**⭐ And two guarantees the tree may rely on absolutely** (D176, §5.4) — stated as guarantees
+rather than as behaviour, because Phase 4 will build the library against them:
+
+6. **Proficiency is NEVER restorable from a record.** No node, no library, no school and no
+   policy can hand anybody years they did not work. A school produces *readers* and a record
+   produces *method*; only a life produces proficiency. **This is `tech-tree.md §3a`'s
+   anti-ratchet rule, and this document is the side that enforces it.**
+7. **Mastery-the-tier is ALWAYS reachable by time on the task**, whatever the village knows,
+   has written, or has lost. **No knowledge state may gate it.** A villager who works twenty
+   years is a master even in a village that has forgotten every technique it ever had.
+
 **⛔ What the tree must NOT assume:** that a skill maps to exactly one `JobKind` (§4.3), that
-proficiency is bounded above by anything the tree knows, or that a record can restore
-proficiency (§5.2).
+proficiency is bounded above by anything the tree knows, that a record can restore
+proficiency (§5.2, §6.6), or that anything it does can prevent somebody becoming a master (§6.7).
 
 ---
 
@@ -608,7 +656,7 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
 
 ## 12. Open — Joe's calls, and the things that want a running sim
 
-**✅ Answered by Joe, 2026-08-22 (D174, D175):**
+**✅ Answered by Joe, 2026-08-22 (D174, D175, D176):**
 
 - **✅ Where the baseline sits — today's behaviour is the NOVICE FLOOR** (§3.2), not a mid-career
   reference. Nobody is ever worse than today, and mastery is headroom above. **This deleted the
@@ -623,6 +671,15 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
   apprentice forester"*. **The other half of the lockstep fix**, and the thing that makes the
   four founders people rather than units. ⚠️ **It also means the founding is no longer today's
   founding**, so `cold-start.md` is re-measured and the goldens move once.
+- **✅ Mastery is lost only from the person who dies** (D176, §5.4). **Mastery-the-tier is not a
+  node and cannot re-lock**; what re-locks is a *technique*. Joe's *"whole village until they
+  have writing"* turned out to be `Known` → `Established` exactly as already specced, and his
+  **collections tab** is a record of achievement — **permanent because it grants nothing**, which
+  is the only reading that does not break `tech-tree.md §11`'s ratchet guard.
+- **✅ The town hall gates the knowledge SCREEN and the collections, not the tree's operation**
+  (D176). The village learns by doing without one; the log narrates discoveries as they happen,
+  and the town hall is where the whole roster becomes browsable. *Anecdote → archive.* See
+  `tech-tree.md §7f`.
 
 **⭐ Still open:**
 
@@ -632,13 +689,6 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
   no-op. The alternative is that skill bites immediately and the node raises the ceiling
   *further*. **The legibility half is real either way**, which is what makes waiting survivable
   rather than pointless.
-- **⛔ Did *"along with a node of the tech tree"* mean the node GATES mastery, or that mastery
-  simply SHIPS ALONGSIDE a node?** (§3.2b, point 3.) **If it gates**, that node can *re-lock* —
-  `tech-tree.md`'s rule that a technique known by only living people is lost when the last of
-  them dies untaught — and a village could lose every master at once, including people who spent
-  twenty years earning it. **If it merely ships alongside, there is no such problem** and the
-  change is smaller. **The plain question: should anything be able to take mastery away from the
-  village as a whole, or only from the person who dies?**
 - **⭐ The founding party's composition** (§3.2c) — how many masters, journeymen and novices, and
   **fixed shape with seeded trades** (recommended) versus a fully seeded roll. *Whether you
   survive should not be decided before you press play* (§0.1).

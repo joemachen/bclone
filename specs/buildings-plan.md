@@ -139,7 +139,7 @@ Requires scale, accumulated knowledge, or both.
 | **Trading post / dock** | Placed | Civic | — | §2.4, currently unbuilt in any form. Dock if on navigable water; post if not. |
 | **Church** | Singleton | Civic | — | The grown chapel. |
 | **Tavern** | Placed | Civic | — | Consumes ale, wine, food. Happiness and, later, the vector along which news and disease both travel. |
-| **Town hall** | Singleton | Civic | — | Records, census, lineage. **Not a stats screen** — the place where the village's memory is kept. |
+| **Town hall** | Singleton | Civic | ✓ | Records, census, lineage. **Not a stats screen** — the place where the village's memory is kept. **⭐ Given its job by D176:** it holds the **knowledge screen** (`tech-tree.md §8`) and the **collections** — every crop, tree, fish, technique and first master the village has met, including the ones it has since lost. ⛔ **It gates the screen, not the tree**: the village learns by doing with or without one, and the log narrates as it happens. *Anecdote → archive.* The charts (`DESIGN.md §4`) live here for the same reason — this is the building whose product is information about yourself. |
 | **Vineyard + press house** | Zoned + Placed | By knowledge | ✓ | Grapes → wine; apples → cider. One press, two inputs. |
 | **Apiary** | Placed | By doing | — | Honey and wax. Also pollination, if orchards are worth linking to it. |
 | **Physician's house / monastery** | Placed | By knowledge | ✓ | The late, bundled form of medicine — infirmary plus herb garden plus copying. Arrives *after* the herbalist, not instead of. |

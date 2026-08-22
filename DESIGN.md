@@ -285,10 +285,14 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
      longer today's founding — it gets *easier*** — so `cold-start.md` is re-measured and the
      goldens move once. The floor's byte-identical guard relocates to a **posed all-novice
      village**.
-   - **⚠️ Open in that spec's §12**: whether mastery bites in Phase 3 or waits for a tech node
-     (a Phase-4 gate means Phase 3 ships a system with **no mechanical effect** — D56's shape),
-     and **whether anything should be able to take mastery from the village as a whole rather
-     than only from the person who dies.**
+   - **✅ WHAT CAN BE LOST IS SETTLED (D176), and it designed the town hall on the way.** *Mastery*
+     was one word doing two jobs; split into **proficiency** (dies with the person, always),
+     **technique** (the village's, and re-lockable exactly as `tech-tree.md` already says) and
+     **a record of achievement** (permanent, grants nothing), the question dissolves.
+     **Mastery-the-tier is not a node and cannot be taken from the village.**
+   - **⚠️ Still open in that spec's §12**: whether mastery bites in Phase 3 or waits for a tech
+     node — a Phase-4 gate means Phase 3 ships a system with **no mechanical effect**, D56's
+     shape.
 3. **⭐ Per-site yield, and retiring the 7-tile bound** (D58, §5) — **scheduled at last, and
    Joe placed it here: *"per-site yield behind skills-catalog"*** (2026-08-22, D172). It left the
    unsequenced list because **a second system has now walked into it independently**: a farm ten
@@ -306,8 +310,15 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
    guard that a run with no apprenticeships actually loses something. **The milestones panel
    lands at the end of this phase**, not before — `tech-tree.md §10` lists eight and only about
    three can fire until apprenticeship and records exist.
+   - **⚠️ AND D176 PUT A SEQUENCING QUESTION ON THAT PANEL, WHICH IS OPEN.** The collections now
+     live in the **town hall**, a Phase 4 building — so either milestones ship here as **log
+     lines** and gain their collections home in Phase 4, or **the panel itself moves to Phase 4**.
+     **Joe's call.** Left visible rather than settled quietly, because two documents disagreeing
+     about sequencing is what D159 spent a session unpicking.
 5. **Phase 4 — the tech tree** (§2.7). Three states, records, scriptorium, library, school, the
-   knowledge screen — on a substrate that exists.
+   knowledge screen — on a substrate that exists. **⭐ And the town hall** (D176,
+   `tech-tree.md §7f`): the fourth knowledge building, holding the knowledge screen and the
+   collections. **It gates the screen, not the tree.**
 
 *Then, unsequenced and unchanged:*
 
@@ -1277,16 +1288,29 @@ them, and go back to being what D59 called them — optional food sources, taken
 village wants one.
 
 **⭐ JOE'S NOTES FOR LATER (2026-08-15), recorded here because chat is ephemeral.** Captured as
-he wrote them, with only the connections to existing decisions added — none of these is
-scheduled, and none has been designed.
+he wrote them, with only the connections to existing decisions added. **None is scheduled**, and
+**two of them are now designed** — the town hall and the museum, which turned out to be one
+building (D176, `specs/tech-tree.md §7f`). The rest are still notes.
 
-- **A town hall, in Banished's sense.** Joe has more detail to give. It is also the **unlock that
-  gates the charts below**, which makes it the first civic building whose payoff is *information*
-  rather than production — a `SCALE` node in `tech-tree.md §5` terms.
-- **A museum, in Animal Crossing's sense** — somewhere the player sees every animal, seed, crop,
-  fish and tree they have unlocked. *"Kind of like Animal Crossing / Stardew Valley."* Note this
-  is a **collection** rather than a store: it is the first building whose content is the record
-  of what the player has met, which is a different thing from anything in `buildings-plan.md`.
+- **✅ A town hall, in Banished's sense — DESIGNED (D176), and it is `specs/tech-tree.md §7f`.**
+  The fourth knowledge building: the scriptorium **writes**, the library **stores**, the school
+  **teaches**, and the town hall is where the village **reads what it has become**. It holds the
+  **knowledge screen** and the **collections**, and the charts below live there for the same
+  reason — *this is the building whose product is information about yourself*.
+  **⛔ It gates the screen, not the tree.** The village goes on learning by doing without one;
+  gating the tree itself would turn DOING, CRISIS and SEREN from emergence into a menu unlock and
+  kill §7a's own argument that *"the player does not set out to invent writing — they set out not
+  to starve."* Before it, the log narrates every discovery on its edge. **Anecdote → archive.**
+- **✅ A museum, in Animal Crossing's sense — FOLDED INTO THE TOWN HALL as its collections tab**
+  (D176). Every animal, seed, crop, fish, tree, technique and **first master** the village has
+  met — *"kind of like Animal Crossing / Stardew Valley."* It is a **collection** rather than a
+  store, which is what `buildings-plan.md` already meant by *"records, census, lineage — not a
+  stats screen."*
+  **⛔ It grants nothing, and that is load-bearing rather than a scoping decision.** Permanence is
+  only safe because it buys nothing: applied to *capability*, a never-lost list breaks three of
+  the four guards `tech-tree.md §11` uses against the ratchet that kills the late game. **A lost
+  technique still appears** — *we knew this once* — which is the wreckage rule as a sentence, and
+  the best thing the collections do.
 - **⭐ Real-time charts, behind the town hall.** Line charts with 1 / 5 / 10 / 20-year lookback
   windows: food produced against consumed, population, firewood produced against consumed, *"all
   of the fun stats."* **Two things make this more than a nicety.** It is §1.1 at the scale of a
@@ -1328,6 +1352,14 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D176 · 2026-08-22 · ⭐⭐ ONE WORD WAS DOING TWO JOBS, AND SPLITTING IT DESIGNS THE TOWN HALL.** Joe: *"Mastery — only from the person who dies… but how does that interplay with the library and knowledge transfer/writing? Maybe from the whole village until they have writing, and then achieved mastery that occurs after having writing/library will put that mastery knowledge into the library and they can't ever lose it (and it is added to the 'collections' tab of the town hall along with all of the other unlockables… hmm I wonder if building the town hall is what unlocks the tech tree?)"*
+  - **⭐⭐ THE FINDING IS LEXICAL, AND IT DISSOLVES MOST OF THE QUESTION. "Mastery" has been used for both *a person's years* and *what that person worked out*.** Split into three and the design falls out: **proficiency** (Mabel's twenty-five years — one person, dies with her, never writable), **a technique** (crop rotation, which she worked out *because* of those years — the village's, and exactly what `tech-tree.md`'s `Known`/`Established` states already govern), and **a record of achievement** (*"this village once had a master farmer"* — permanent, and grants nothing). `skills-catalog.md §5.4` is the table; `tech-tree.md §3a` carries it as an annotation.
+  - **⭐ AND MOST OF WHAT JOE DESCRIBED WAS THE TECH TREE'S OWN STATE MACHINE, RE-DERIVED INDEPENDENTLY.** *"From the whole village until they have writing"* **is** `Known` → `Established`: a technique held only in living heads dies with the last head, one in a library survives the funeral. **Nothing new was needed for it**, which is the strongest available evidence the shape was right the first time.
+  - **✅ WHAT IS LOST WHEN A MASTER DIES: the technique, never the tier** (Joe's call). **Mastery-the-tier is not a node and cannot re-lock** — it is twenty years on the task, and *a village can forget crop rotation but it cannot forget that people get good at things*. **That closes D175's cliff**: there is no state in which somebody works twenty years and is told they may not be a master. Written as a guarantee in `skills-catalog.md §6.7` and as a failure-mode row in `tech-tree.md §11`, because it is the kind of rule a later slice would break by accident.
+  - **⭐⭐ THE TOWN HALL GATES THE KNOWLEDGE *SCREEN*, NOT THE TREE — and that distinction is the whole design** (`tech-tree.md §7f`). Gating the tree behind a building the player chooses to raise would convert DOING, CRISIS and SEREN from emergence into a menu unlock, and **would kill §7a's own best argument**: *"the player does not set out to invent writing — they set out not to starve, and writing is what a well-run granary eventually produces."* A granary keeper inventing notation must not be waiting on a civic permit. It would also flatten the early game, which is D161's gap made worse. **So: before a town hall the village log narrates every discovery on its edge; after it, the whole roster is browsable. *Anecdote → archive*** — a real payoff for a civic building instead of a tax on progression. ⚠️ **The at-risk warning is the stated exception and narrates from day one**, because §2.1 requires knowledge-at-risk to be visible and actionable and a warning nobody can see is the funeral surprise this design refuses.
+  - **✅ THE MUSEUM IS THE TOWN HALL'S COLLECTIONS TAB**, not a separate building — which is what `buildings-plan.md` already meant by *"records, census, lineage — **not a stats screen**, the place where the village's memory is kept."* Two of Joe's 2026-08-15 notes turned out to be one building.
+  - **⛔ AND THE COLLECTIONS GRANT NOTHING, WHICH IS LOAD-BEARING RATHER THAN A SCOPING CHOICE.** This is the one place *"they can't ever lose it"* needed care: applied to **capability**, permanence breaks three of the four guards `tech-tree.md §11` uses against the ratchet that kills the late game — hard shelf capacity, decay and fire. Applied to a **record of what happened**, it breaks nothing at all. **A lost technique still appears in the collections** — *we knew this once* — which is §5's wreckage rule expressed as a sentence rather than a ruined building, and is the best thing they do.
+  - **⚠️ LEFT OPEN DELIBERATELY, AND IT IS A SEQUENCING CLASH RATHER THAN A DESIGN ONE.** §4's queue puts **the milestones panel at the end of Phase 3**, while the town hall — which now owns the collections — is a **Phase 4** civic building. The honest options are *milestones ship as log lines in Phase 3 and gain their collections home in Phase 4*, or *the panel moves to Phase 4 entirely*. **Joe's call, and flagged rather than settled quietly**: two documents disagreeing about sequencing is exactly what D159 spent a session unpicking.
 - **D175 · 2026-08-22 · ⭐⭐ THE FOUNDERS ARRIVE AS A MIX OF TIERS, AND EVERY VILLAGER GETS A SEEDED RHYTHM AT BIRTH — which together close D28 at the opening rather than a century later.** Joe: *"I would like a seeded personal rhythm at birth. Maybe the founders could be a mix of masters, mids — whatever that is — and novices? Could be a master woodcutter or gatherer or apprentice forester, know what I mean?"*
   - **⭐⭐ THE MIXED FOUNDING IS THE BEST IDEA IN THE SKILLS DESIGN, AND IT DOES THREE THINGS AT ONCE.** **(1) It makes the four founders *people* in the first frame of a new game** — *"Otto, master woodcutter; Agnes, apprentice forester; Hattie and Wendell, who have never done any of this"* is §1.4 arriving before the player has done anything at all, against four identical units with different names. **(2) It gives the opening a shape to read**: a party with a master woodcutter and nobody who can farm is a *different* opening, which is the argument §2.5 already makes for seeded maps — *a second playthrough is a different place, not the same place played again*. **(3) It finishes the lockstep fix**, because founders at different tiers do different work in different numbers of ticks from day one.
   - **✅ AND THE SEEDED RHYTHM STOPS BEING A STOPGAP.** D28 ranked it second behind personal time-on-task and called it *"treats the symptom rather than the cause"* — **but under D174's floor, skill breaks symmetry only over decades**, so the opening Joe watched at 4× would have stayed synchronised without it. **It is now half the fix rather than a consolation**, with a hard bound: *if the offset changes what anybody produces across a year, it is too big*.
@@ -1486,7 +1518,7 @@ scheduled, and none has been designed.
   - **⭐ THE SKILLS CATALOG IS A REAL PREREQUISITE, AND THE EVIDENCE IS STRONGER THAN THE ARGUMENT MADE FOR IT.** `specs/tech-tree.md` is written entirely on top of a **proficiency model that does not exist** — nothing in `src/Bclone.Sim` mentions skill, proficiency, apprenticeship or mastery, and a villager's only person-varying state is `LifespanYears`, `Vigour`, `Stage` and `TotalGathers`. Its load-bearing rule — *"a record preserves the method, not the proficiency"* (Joe's own call, and what stops the tree becoming a ratchet and re-creating §2.3's dead late game) — **is unimplementable against nothing**, and its open questions already ask *"whether skill retained from a record is zero or a small floor."*
   - **⛔ TWO CLAIMS IN THE PROPOSAL WERE FALSE AND ARE RECORDED SO THEY ARE NOT RE-CITED.** *(i)* That my notes had flagged the skills catalog as the highest-priority missing one — **there is no such note**; the recommendation is right on the evidence above, but the provenance was invented, and a decision justified by a citation that does not exist is one a future session reverses when it goes looking. *(ii)* That D142, D151 and D157 are the same failure three times. **They are not.** D157 is a genuine seam (D100 × D127); D142 was a missed third call site; **D151 was not a bug at all** — the mechanic was fine and the guard's ruler had two gradations. The project already names the D142 family better, in D145: *does the player's state reach the code that does the work?* — D128, D139, D142, D144, four bugs, one form. **Two families, and merging them loses the more actionable one.**
   - **The forward-looking half of that advice is adopted intact: when two systems meet, the golden goes over the seam rather than over either side.** Skill × apprenticeship × mortality is the next seam-rich area, and **a master dying mid-apprenticeship** is the case that will have no coverage. That guard gets written with the feature.
-  - **The milestones panel waits until the end of Phase 3** (Joe). `tech-tree.md §10` lists eight and is explicit that they are *"not mechanics — punctuation"*; only about three can fire today, the rest needing apprenticeship, records, stone or trade. A panel three-eighths full for two phases reads as an unfinished feature, and deferring it keeps scope off the slice that closes Phase 2.
+  - **The milestones panel waits until the end of Phase 3** (Joe). `tech-tree.md §10` lists eight and is explicit that they are *"not mechanics — punctuation"*; only about three can fire today, the rest needing apprenticeship, records, stone or trade. A panel three-eighths full for two phases reads as an unfinished feature, and deferring it keeps scope off the slice that closes Phase 2. — ⚠️ **Complicated by D176**, which put the collections in the **town hall**, a Phase 4 building: milestones may ship here as **log lines** and gain their home later, or the panel may move to Phase 4 outright. **Open, and Joe's call.**
 - **D160 · 2026-08-15 · ⛔ THE SCREENSHOT HOOK IS DELETED, NOT FIXED — and the view now has no automated verification of any kind.** Joe: *"delete the hook."* Rescued from `claude/sweet-ishizaka-571c5d`, where this had been decided once already and never merged (D159 found it); redone here because that branch numbered itself **D116/D117**, which are taken by other decisions on this branch, so it could not be merged as written.
   - **The hook was photographing a corpse.** `BCLONE_SCREENSHOT_YEARS` stepped an **unattended** founding before the first frame — and since **D110** no builder's hut means nothing is raised, so every automated shot since the shell rebuild has been of an empty valley. **D143 then turned that from a bug into the design**: an unattended village is *supposed* to die out. The hook could not be fixed without contradicting a ruling.
   - **The alternative was rejected on cost.** Teaching the harness to play the opening means moving `PlayTheOpening` out of the test project and into shipped code — real machinery, in the view, for a convenience.
