@@ -774,6 +774,38 @@ public sealed class BehaviorSystem : ISimSystem
         return false;
     }
 
+    /// <summary>
+    /// Whether a shortfall is big enough to be worth walking for (Joe, 2026-08-16).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THIS IS THE JITTER JOE WATCHED FOR MONTHS, ANSWERED AT ITS CAUSE.</b> A fetch used
+    /// to fire the instant a larder dipped below its floor, so a household two firewood short
+    /// sent somebody out for two firewood — and with a store one tile from the door that is a
+    /// villager bouncing between two squares. D166 measured it in his own audit trail: runs of
+    /// four to six flips every thirty-odd ticks, for ever.
+    /// </para>
+    /// <para>
+    /// <b>The smaller of two bars, and both are needed.</b> An armful says what a trip is worth
+    /// carrying; the good's own target says what the household is trying to keep. The armful
+    /// alone would set a bar of ten on firewood a household only wants eleven of — nobody would
+    /// fetch fuel until they were nearly out, in winter, which is how people freeze.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Never below one</b>, or a village with a tiny target would stop fetching entirely
+    /// — the degenerate case D98 keeps warning about, where a derived number reaches zero and
+    /// silently switches a system off.
+    /// </para>
+    /// </remarks>
+    private static bool WorthTheTrip(SimConfig config, int shortfall, int wanted)
+    {
+        int byArmful = config.CarryCapacity * config.FetchWorthThisSharePercent / 100;
+        int byTarget = wanted * config.FetchWorthThisSharePercent / 100;
+
+        int bar = byArmful < byTarget ? byArmful : byTarget;
+        return shortfall >= (bar < 1 ? 1 : bar);
+    }
+
     private static StoreBuilding? PlanFetch(SimWorld world, Villager villager)
     {
         Household household = world.HouseholdOf(villager);
@@ -791,8 +823,10 @@ public sealed class BehaviorSystem : ISimSystem
         // so a stocked one shortens the errand rather than merely duplicating it. With
         // no market, or an empty one, this is the granary again and nothing changes —
         // which is the property spec §14.4 turns into a test.
-        int foodFloor = world.TargetFoodFor(household) * config.SharingKeepPercent / 100;
-        if (household.Stockpile.Food < foodFloor)
+        int foodWanted = world.TargetFoodFor(household);
+        int foodFloor = foodWanted * config.SharingKeepPercent / 100;
+        if (household.Stockpile.Food < foodFloor
+            && WorthTheTrip(config, foodWanted - household.Stockpile.Food, foodWanted))
         {
             StoreBuilding? source = NearestStoreHolding(world, villager.Position, Goods.Food);
             if (source is not null)
@@ -810,7 +844,9 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         int firewoodFloor = VillageEconomy.FirewoodStoreWantedPerHousehold(config);
-        return household.Stockpile.Firewood < firewoodFloor
+        int firewoodShort = firewoodFloor - household.Stockpile.Firewood;
+
+        return firewoodShort > 0 && WorthTheTrip(config, firewoodShort, firewoodFloor)
             ? NearestStoreHolding(world, villager.Position, Goods.Firewood)
             : null;
     }
@@ -2112,6 +2148,11 @@ public sealed class BehaviorSystem : ISimSystem
     /// asserting on its own, because getting it wrong starves a village quietly and
     /// takes a hundred years of simulation to show up in an acceptance test.
     /// </remarks>
+    /// <summary>Whether a fetch is planned at all, exposed so the "worth the trip" bar can
+    /// be asserted without waiting for a household to happen to dip.</summary>
+    internal static StoreBuilding? PlanFetchForTest(SimWorld world, Villager villager) =>
+        PlanFetch(world, villager);
+
     internal static void CollectForTest(SimWorld world, Villager villager) =>
         CollectFromStore(world, villager);
 
@@ -2191,11 +2232,31 @@ public sealed class BehaviorSystem : ISimSystem
         //
         // Food first where both are short, for the same reason PlanFetch prefers it:
         // hunger kills in six days and an unheated house in twenty-five (D45).
+        //
+        // ⛔⭐ BUT FIRST IS NOT INSTEAD OF, AND CONFLATING THE TWO COST A WHOLE TRIP IN THREE.
+        // This used to `return` the moment it had taken any food, so a villager who filled
+        // fifteen of their forty carrying food walked home with a free hand and came straight
+        // back for two firewood. **Found in Joe's audit trail, in the jitter he reported
+        // twice:** Otto fetching 40 food, then 25 food, then 2 firewood from a store one tile
+        // from his door — six ticks of a man visibly bouncing between two squares.
+        //
+        // Priority and exclusivity are different rules and only one of them was wanted. That is
+        // D142's shape exactly — a rule that reached some of its call sites — and the fix is
+        // the same: both halves in one place, with the second reading what the first left.
         int foodShort = world.TargetFoodFor(household) - household.Stockpile.Food;
         int food = Smallest(foodShort, load, target.Store.Food);
         if (food > 0 && target.Store.TryTake(Goods.Food, food))
         {
             villager.CarriedFood += food;
+            load -= food;
+        }
+
+        // ⚠️ A FREE HAND, NOT A FREE TRIP. If food took the whole armful there is nothing left
+        // to carry and this does nothing — the second trip is then carry capacity doing its
+        // job (D32), which is the inequality distant households are supposed to feel, and not
+        // something to optimise away.
+        if (load <= 0)
+        {
             return;
         }
 
@@ -2207,6 +2268,7 @@ public sealed class BehaviorSystem : ISimSystem
             villager.CarriedFirewood += firewood;
         }
     }
+
 
     private static int Smallest(int a, int b, int c)
     {
@@ -2529,8 +2591,34 @@ public sealed class BehaviorSystem : ISimSystem
                 SetDownWhereTheyStand(world, villager);
             }
 
+            // ⭐⭐ A FARMER GOES BACK TO THE ROWS, NOT HOME (Joe, 2026-08-16: *"2x farmers
+            // planted 20 fields in the spring, and harvested only 9 in the fall — review the
+            // efficiencies with planting and harvesting"*).
+            //
+            // **Measured in his own audit trail, and the circuit is the whole story.** A whole
+            // autumn contained exactly five reaping cycles, each of them
+            // `home → field → reap → store → home → rest`. **They walked all the way home
+            // between every single tile**, and the home leg does nothing at all: `Decide` runs
+            // there and sends them straight back out. Five round trips is a hundred and twenty
+            // ticks, so the farm brought in five tiles of the seventeen it had sown.
+            //
+            // ⚠️ **Scoped to the harvest deliberately, and not made a general rule.** Going home
+            // between loads is D30's trip model and it is what makes distance cost something
+            // for every other job; a forester who felled one tree has no reason to be at the
+            // stand again this instant. **A field is different because the work is a block of
+            // ground the farmer is part-way through**, and a season is the deadline — a reaper
+            // who stops for the walk home after every armful is not a reaper.
+            if (SeasonRules.IsReaping(world.Clock.Season)
+                && WorkplaceOf(world, villager) is { Kind: JobKind.Farmer } farm
+                && world.NextFieldToWork(farm, villager.Position) is not null)
+            {
+                Decide(world, villager);
+                return;
+            }
+
             villager.State = VillagerState.TravelingHome;
             return;
+
         }
 
         if (onArrival == VillagerState.FetchingFromStore)

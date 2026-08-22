@@ -220,8 +220,17 @@ public sealed class StockLimitTests
     //
     //   before the jitter was fixed: fixture 11001298307494045081,
     //                                shipped 10000897820648583606
-    private const ulong FixtureFiftyYearHash = 17969363278213194222UL;
-    private const ulong ShippedFiftyYearHash = 17964703903020390741UL;
+    //
+    // ⭐ RE-TAKEN FOR THE FETCH (D166), and the one sentence is: **nobody walks to a store for a
+    // trivial amount any more, and a fetch fills the armful instead of coming back for the
+    // firewood.** Both reach every household in every village, which is why these two moved and
+    // why the fix was worth making — measured over thirty years, fetch legs fall 153 → 81 and
+    // tile flips 211 → 143, with the population identical and nobody starving or freezing.
+    //
+    //   before "worth the trip": fixture 17969363278213194222,
+    //                            shipped 17964703903020390741
+    private const ulong FixtureFiftyYearHash = 13985157942708541633UL;
+    private const ulong ShippedFiftyYearHash = 17566836300829537614UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

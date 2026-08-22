@@ -1,7 +1,9 @@
+using System.Linq;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
 using Bclone.Sim.Logging;
+using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
@@ -297,4 +299,192 @@ public sealed class StorageTests
             }
         }
     }
+    /// <summary>
+    /// ⭐ A fetch fills the armful — food first, then firewood with what is left.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Found in Joe's audit trail, in the jitter he reported twice.</b> Otto fetched 40 food,
+    /// then 25 food, then <em>2 firewood</em> from a store one tile from his door — three trips
+    /// and six ticks of a man visibly bouncing between two squares. The third was pure waste:
+    /// <c>CollectFromStore</c> returned the moment it had taken any food, so a villager carrying
+    /// 25 of a possible 40 walked home with a free hand and came straight back.
+    /// </para>
+    /// <para>
+    /// <b>Priority and exclusivity are different rules, and only one of them was wanted</b> —
+    /// D142's shape, where a rule reached some of its call sites and not others. Food still goes
+    /// first, because hunger kills in six days and an unheated house in twenty-five (D45).
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It is a free hand, not a free trip.</b> When food takes the whole armful there is
+    /// no room left and the second journey still happens — that is <c>carry_capacity</c> doing
+    /// its job (D32), the inequality a distant household is supposed to feel, and not something
+    /// to optimise away.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFetchCarriesFirewoodHomeIfTheArmfulHasRoomForIt()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        loop.Step(Config.TicksPerYear);
+
+        Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
+        Household home = world.HouseholdOf(villager);
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+
+        // A household short of a little of each, and a store standing at the villager's feet
+        // holding both — the case Otto was in.
+        home.Stockpile.TryTake(Goods.Food, home.Stockpile.Food);
+        home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
+        home.Stockpile.Receive(Goods.Food, world.TargetFoodFor(home) - 5);
+        market.Store.Receive(Goods.Food, 200);
+        market.Store.Receive(Goods.Firewood, 200);
+
+        villager.CarriedFood = 0;
+        villager.CarriedFirewood = 0;
+        villager.Position = market.Position;
+
+        BehaviorSystem.CollectForTest(world, villager);
+
+        _output.WriteLine(
+            $"{villager.Name} came away with {villager.CarriedFood} food and "
+            + $"{villager.CarriedFirewood} firewood, of a {Config.CarryCapacity} armful");
+
+        Assert.True(villager.CarriedFood > 0, "They did not take the food they came for.");
+        Assert.True(
+            villager.CarriedFirewood > 0,
+            "They walked home with a free hand and will come straight back for the firewood — "
+            + "which is the trip Joe watched as jitter.");
+        Assert.True(
+            villager.CarriedFood + villager.CarriedFirewood <= Config.CarryCapacity,
+            "A fetch must still be one armful (D32).");
+    }
+
+    /// <summary>
+    /// The anti-vacuity companion (D7): a full armful of food still makes a second trip.
+    /// </summary>
+    /// <remarks>
+    /// Without this, a fix that simply took both goods regardless of room would pass the guard
+    /// above while deleting <c>carry_capacity</c> — and carry capacity is what stops a fetch
+    /// being a teleport with extra steps, which is the whole of D32's inequality.
+    /// </remarks>
+    [Fact]
+    public void ButAFullArmfulOfFoodLeavesTheFirewoodBehind()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        loop.Step(Config.TicksPerYear);
+
+        Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
+        Household home = world.HouseholdOf(villager);
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+
+        // Short of far more food than one person can carry.
+        home.Stockpile.TryTake(Goods.Food, home.Stockpile.Food);
+        home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
+        market.Store.Receive(Goods.Food, 500);
+        market.Store.Receive(Goods.Firewood, 200);
+
+        villager.CarriedFood = 0;
+        villager.CarriedFirewood = 0;
+        villager.Position = market.Position;
+
+        BehaviorSystem.CollectForTest(world, villager);
+
+        _output.WriteLine(
+            $"{villager.Name} came away with {villager.CarriedFood} food and "
+            + $"{villager.CarriedFirewood} firewood");
+
+        Assert.Equal(Config.CarryCapacity, villager.CarriedFood);
+        Assert.Equal(0, villager.CarriedFirewood);
+    }
+
+    /// <summary>
+    /// ⭐ Nobody walks to a store for a trivial amount — <b>"worth the trip"</b> (Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the jitter, answered at its cause.</b> A fetch used to fire the instant a
+    /// larder dipped below its floor, so a household two firewood short sent somebody out for
+    /// two firewood — and with a store one tile from the door that is a villager visibly
+    /// bouncing between two squares every thirty ticks (D166, measured in Joe's audit trail).
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT IS ASSERTED ON FIREWOOD, AND THE FIRST DRAFT WAS ASSERTED ON FOOD AND WAS
+    /// VACUOUS.</b> Food already has a stronger gate: a fetch needs the larder below
+    /// <c>sharing_keep_percent</c> of its target, so by the time it fires the household is a
+    /// fifth of a winter's store short and the bar is never the thing that stopped them.
+    /// **Firewood has no such margin** — its floor <em>is</em> its target — so any dip at all
+    /// used to send somebody, and that is the arm the bar exists for. The food arm is kept
+    /// because the two gates are independent and <c>sharing_keep_percent</c> can move, but it
+    /// is not what this guards.
+    /// </para>
+    /// <para>
+    /// <b>Measured over thirty years, both ways:</b> fetch legs fall from 153 to 81 and tile
+    /// flips from 211 to 143, with the population identical at 14 and <b>nobody starving or
+    /// freezing in either arm</b> — the half that had to be checked, because a rule that stops
+    /// people fetching is a rule that can kill them.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NobodyWalksToAStoreForATrivialAmount()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        while (loop.World.Clock.Season != Season.Winter)
+        {
+            loop.StepOnce();
+        }
+
+        Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
+        Household home = world.HouseholdOf(villager);
+        StoreBuilding shed = world.AnyStoreOf(StoreKind.Shed);
+        shed.Store.Receive(Goods.Firewood, 500);
+
+        // Full of food, so only the fuel arm is in play.
+        home.Stockpile.Receive(Goods.Food, world.TargetFoodFor(home));
+
+        int wanted = VillageEconomy.FirewoodStoreWantedPerHousehold(Config);
+        home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
+        home.Stockpile.Receive(Goods.Firewood, wanted - 1);
+
+        _output.WriteLine(
+            $"{home.Name} is 1 firewood short of {wanted}; "
+            + $"fetch planned: {BehaviorSystem.PlanFetchForTest(world, villager) is not null}");
+
+        Assert.Null(BehaviorSystem.PlanFetchForTest(world, villager));
+    }
+
+    /// <summary>
+    /// The anti-vacuity companion (D7): a household genuinely short still sends somebody.
+    /// </summary>
+    /// <remarks>
+    /// Without this, a threshold set absurdly high — or a predicate accidentally inverted —
+    /// would pass the guard above while quietly switching fetching off, and a village that
+    /// never fetches freezes beside a full shed.
+    /// </remarks>
+    [Fact]
+    public void ButAHouseholdThatIsGenuinelyShortStillSendsSomebody()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        while (loop.World.Clock.Season != Season.Winter)
+        {
+            loop.StepOnce();
+        }
+
+        Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
+        Household home = world.HouseholdOf(villager);
+        StoreBuilding shed = world.AnyStoreOf(StoreKind.Shed);
+        shed.Store.Receive(Goods.Firewood, 500);
+
+        home.Stockpile.Receive(Goods.Food, world.TargetFoodFor(home));
+        home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
+
+        _output.WriteLine($"{home.Name} has no firewood at all in winter; a fetch must be planned.");
+        Assert.NotNull(BehaviorSystem.PlanFetchForTest(world, villager));
+    }
+
+
 }

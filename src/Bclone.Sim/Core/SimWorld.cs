@@ -976,6 +976,27 @@ public sealed class SimWorld
         return null;
     }
 
+    /// <summary>
+    /// Tiles of crop this farm can actually reap in one autumn — <b>what it may commit in
+    /// spring</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>The hands that are there, not the seats that exist</b>, exactly as
+    /// <see cref="WorkGroundAllowanceFor"/> does it: a farm that loses somebody in summer
+    /// should commit less ground the following spring, and a farm nobody works should commit
+    /// none. <b>Floored at one where anybody is standing in it</b>, so a single farmer is never
+    /// told their field is too big to start.
+    /// </remarks>
+    public int HarvestOneFarmCanBringIn(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        int hands = farm.WorkerIds.Count;
+        int tiles = hands * VillageEconomy.FieldTilesOneFarmerKeeps(Config);
+
+        return hands > 0 && tiles < 1 ? 1 : tiles;
+    }
+
     /// <summary>Tiles of this farm's ground with a crop standing on them.</summary>
     public int StandingCropTiles(Workplace farm)
     {
@@ -1322,6 +1343,31 @@ public sealed class SimWorld
         bool sowing = SeasonRules.IsSowing(Clock.Season) && MaySow();
         bool reaping = SeasonRules.IsReaping(Clock.Season);
         if (!sowing && !reaping)
+        {
+            return null;
+        }
+
+        // ⭐⭐ A FARM SOWS ONLY WHAT IT CAN BRING IN (Joe, 2026-08-16: *"2x farmers planted 20
+        // fields in the spring, and harvested only 9 in the fall"*).
+        //
+        // **It was worse than he saw: measured over his own run, every year was ~17 sown and
+        // ~5 reaped, with twelve to sixteen fields rotting — for ever.** Sowing is cheap (a
+        // step between rows, carrying nothing) and reaping is dear (an armful to a store), so
+        // a spring will always commit two or three times the ground an autumn can take. The
+        // economy already knows the number — `FieldTilesOneFarmerKeeps` takes the SMALLER of
+        // the two seasons for exactly this reason — but nothing was enforcing it on the
+        // sowing, so the derivation described a farm nobody was running.
+        //
+        // ⚠️ **This is what makes use-it-or-lose-it mean anything** (`crops-and-orchards.md
+        // §5.1`). A rot line every single year by construction is weather, not a consequence;
+        // the player cannot act on it and learns to ignore it. Rot should say *you over-painted,
+        // or you lost a farmer* — which it now does, because a farm that is within its hands
+        // sows within its hands.
+        //
+        // Counted in `WorkerIds` rather than `Places`, like `WorkGroundAllowanceFor`: the crop
+        // a farm can bring in depends on who is actually standing in it, so losing a farmer in
+        // summer correctly means next spring commits less ground (D86's live-allowance rule).
+        if (sowing && StandingCropTiles(farm) >= HarvestOneFarmCanBringIn(farm))
         {
             return null;
         }

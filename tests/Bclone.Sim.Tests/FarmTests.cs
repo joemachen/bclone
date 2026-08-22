@@ -369,6 +369,119 @@ public sealed class FarmTests
             + "guard says the arithmetic is fine.");
     }
 
+    /// <summary>
+    /// ⭐⭐ A farm brings in most of what it sows — <b>the harvest is not mostly rot</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing (2026-08-16): *"2x farmers planted 20 fields in the spring, and harvested
+    /// only 9 in the fall — review the efficiencies with planting and harvesting for
+    /// farmers."*</b> His audit trail said it was worse and permanent: **every year ~17 sown and
+    /// ~5 reaped, with twelve to sixteen fields rotting, for ever.**
+    /// </para>
+    /// <para>
+    /// <b>Two causes, and neither was the yield</b> (which he asked to leave alone):
+    /// </para>
+    /// <list type="number">
+    /// <item><b>Nothing capped the sowing.</b> Sowing is cheap — a step between rows, carrying
+    /// nothing — and reaping is dear, an armful to a store, so a spring always commits two or
+    /// three times what an autumn can take. <c>FieldTilesOneFarmerKeeps</c> already takes the
+    /// smaller of the two seasons for exactly this reason; nothing enforced it.</item>
+    /// <item><b>They walked home between every tile.</b> The autumn cycle was
+    /// <c>home → field → reap → store → home → rest</c>, five times in a season — and the home
+    /// leg does nothing at all, because <c>Decide</c> runs there and sends them straight back
+    /// out.</item>
+    /// </list>
+    /// <para>
+    /// <b>Measured over ten years, same setup: 150 sown and 140 reaped — 93% brought in, against
+    /// roughly 30% in Joe's run.</b>
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Asserted as a share rather than a count</b>, because the count depends on how much
+    /// ground the player painted and how many hands the village spared, and neither is this
+    /// guard's business. What must stay true is that **a farm's own spring does not condemn its
+    /// own autumn** — which is also what makes use-it-or-lose-it mean anything: a rot line every
+    /// year by construction is weather, and the player cannot act on weather.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFarmBringsInMostOfWhatItSows()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+
+        // Deliberately more ground than the hands can keep — the case Joe was playing, and the
+        // one where an uncapped spring does the damage.
+        int painted = FarmFixtures.GiveItGround(world, farm, reach: 3);
+        Assert.True(painted > VillageEconomy.FieldTilesOneFarmerKeeps(config) * farm.Capacity,
+            "The farm was not over-painted, so this measures nothing.");
+
+        const int Years = 10;
+        int sown = 0;
+        int reaped = 0;
+
+        for (int i = 0; i < config.TicksPerYear * Years; i++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive
+                    || villager.WorkplaceId != farm.Id
+                    || villager.ActionTicksRemaining != 1)
+                {
+                    continue;
+                }
+
+                if (villager.State == VillagerState.Sowing)
+                {
+                    sown++;
+                }
+                else if (villager.State == VillagerState.Reaping)
+                {
+                    reaped++;
+                }
+            }
+        }
+
+        int broughtIn = sown == 0 ? 0 : reaped * 100 / sown;
+        _output.WriteLine(
+            $"over {Years} years on {painted} painted tiles: sown {sown}, reaped {reaped} "
+            + $"— {broughtIn}% brought in");
+
+        Assert.True(sown > 0, "Nothing was sown, so the guard measures nothing.");
+        Assert.True(
+            broughtIn >= 75,
+            $"Only {broughtIn}% of what the farm sowed was ever reaped. A spring that commits "
+            + "ground the autumn cannot take turns use-it-or-lose-it from a consequence into "
+            + "weather, and the player cannot act on weather.");
+    }
+
+    /// <summary>
+    /// The anti-vacuity companion (D7): a farm nobody works commits no ground at all.
+    /// </summary>
+    /// <remarks>
+    /// Without this, a cap that simply refused to sow anything would score a perfect 100% above
+    /// and would have quietly deleted farming — the degenerate pass D98 keeps warning about,
+    /// where a rule reaches zero and switches a system off instead of bounding it.
+    /// </remarks>
+    [Fact]
+    public void ButAFarmNobodyWorksSowsNothingAtAll()
+    {
+        SimWorld world = Loop(Config).World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        FarmFixtures.GiveItGround(world, farm, reach: 2);
+
+        world.SetStaffing(farm, 0);
+
+        _output.WriteLine(
+            $"{farm.Name} has {farm.WorkerIds.Count} hands and may commit "
+            + $"{world.HarvestOneFarmCanBringIn(farm)} tiles");
+
+        Assert.Equal(0, world.HarvestOneFarmCanBringIn(farm));
+    }
+
     // ---------------------------------------------------------------
     //  ⛔ The seam: crops × the harvest brush
     // ---------------------------------------------------------------

@@ -290,6 +290,66 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
   already made for them: D131, D142 and D153 were each found by plotting exactly those series in
   a throwaway, and the player has no such tool.
 
+### ⭐⭐ TWO DIRECTIONS JOE SET ON 2026-08-16 — recorded here because chat is ephemeral
+
+Neither is scheduled, neither is designed, and **neither is a Phase 2 concern.** They are written
+down because they change what "later" looks like, and a session that does not know them will make
+choices that cost more to undo than to avoid.
+
+#### 1. ⭐ THE GAME SHOULD BE GRIDLESS — *"like the game Foundation"*
+
+> Joe: *"ultimately i want this game to be 'gridless' in that buildings can be placed facing any
+> direction, there isn't a grid map, paths aren't straight lines unless appropriate."*
+
+**This is the largest single statement anybody has made about this project's architecture**, and
+it should be treated as a direction rather than a task. What it touches, honestly:
+
+- **`GeneratedMap` is a tile array**, and terrain, soil and the crop id are all indexed by it.
+- **`TravelCostField` is a per-building Dijkstra flow field over tiles** (D41), and it is the one
+  shared cost field every "how far is that?" in the game reads (§2.6).
+- **`ZoneMap`** — residential, work ground and harvest paint — is three tile layers.
+- **`StateHash` mixes tiles**, so the grid is in the seed contract and in every golden.
+- **The whole economy is derived in tiles** (`MaxHomeToWorkTiles`, `work_ground_tiles_per_worker`,
+  `FieldTilesOneFarmerKeeps`, the gatherer's ring).
+- **Determinism (§3) is the constraint that makes this hard rather than merely large.** A grid is
+  what currently guarantees integer-only sim state (D2); free placement and non-straight paths
+  mean angles and curves, and floats in sim-critical paths are banned for a reason. **Fixed-point
+  `Fixed` (Q32.32) already exists in the design for exactly this kind of need** — that is the
+  door, and it was left open deliberately.
+
+**What it is NOT: a reskin.** Desire-path roads (§2.6) are the one existing pillar that would
+*gain* from it — a path that bends where people actually walk is the whole idea, and a grid
+forces it into staircases. **The honest sequencing is that this is a v2-shaped change, or a
+deliberate re-founding, and it should not be started inside a phase.** When it is taken, the
+first question is whether the sim goes continuous or stays discrete under a continuous
+*presentation* — those are very different costs and only the first is what Joe described.
+
+#### 2. ⭐ MODS ARE A GOAL, NOT A NICETY — and §3 already promises it
+
+> Joe: *"I also want the game to allow for mods eventually, for users to be able to increase the
+> longevity of the game and build new and cool things into it."*
+
+**This restates a principle §3 has carried since day one** — *"first-class modding API from the
+start… Banished is alive in 2026 because of its mods"* — so the value of writing it down is the
+**audit against where the project actually is**:
+
+- ✅ **Content is data.** `data/sim.config.json` holds every tunable, with comments and trailing
+  commas allowed so it stays readable for modders (D3).
+- ⛔ **But content is not *content*.** Buildings, jobs, goods and terrain are **C# enums**, and
+  every one of them is hashed by position and pinned by a golden. A modder cannot add a building
+  today; they can only change the numbers on the ones that exist. `crops-and-orchards.md §4` is
+  the one place this was designed around properly — *one crop, in a model shaped for many*, with
+  the crop id in data rather than in the enum — and that pattern is the template for the rest.
+- ⛔ **There is no documented hook of any kind**, and no loader beyond the config.
+- ⚠️ **The determinism contract is the thing a mod API has to respect** and the thing most likely
+  to be broken by one. Whatever ships must keep *same seed + same content ⇒ same history*, which
+  means mod content has to enter the state hash in a stated order.
+
+**Nothing to do now.** The useful discipline in the meantime is the one the crop id already
+followed: **when a new kind of thing is added, ask whether it wants to be an enum value or a row
+in a data file** — the second is nearly free at the time and expensive to retrofit, because
+retrofitting means touching the hash, the goldens and every call site at once.
+
 ### The long-run arc (the pillars, unchanged)
 
 Still the shape of the game, and still not to be built in parallel:
@@ -1177,6 +1237,29 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D167 · 2026-08-22 · ⛔⭐⭐ THE FARM WAS ROTTING SEVENTY PER CENT OF ITS OWN CROP, EVERY YEAR, BY CONSTRUCTION.** Joe, playing: *"2x farmers planted 20 fields in the spring, and harvested only 9 in the fall. review the efficiencies with planting and harvesting for farmers."*
+  - **⚠️ HIS AUDIT TRAIL SAID IT WAS WORSE AND PERMANENT.** Not one bad year — **every** year: sown 17 / reaped 7, 21 / 5, 17 / 5, 17 / 5, 17 / 5, with the village log dutifully reporting *"Winter took 16 fields of unreaped crop"* for ever. **About 30% brought in.** The suite had 620 tests and no opinion about it, because every farm guard asked whether a mechanism worked and none asked whether the year added up.
+  - **⛔ CAUSE ONE — NOTHING CAPPED THE SOWING, AND THE ECONOMY ALREADY KNEW THE NUMBER.** Sowing is cheap (a step between rows, carrying nothing) and reaping is dear (an armful to a store), so **a spring will always commit two or three times the ground an autumn can take**. `FieldTilesOneFarmerKeeps` takes the *smaller* of the two seasons for precisely this reason — and nothing enforced it on the sowing, so the derivation was describing a farm nobody was running. A farm now sows only what its hands can bring in, counted from `WorkerIds` like `WorkGroundAllowanceFor` so losing a farmer in summer means next spring commits less.
+  - **⛔ CAUSE TWO — THEY WALKED ALL THE WAY HOME BETWEEN EVERY SINGLE TILE.** The autumn cycle in his trail is `home → field → reap → store → home → rest`, **five times in a whole season** — and the home leg does nothing at all, because `Decide` runs there and sends them straight back out. A reaper goes back to the rows now. **⚠️ Scoped to the harvest deliberately and NOT made a general rule:** going home between loads is D30's trip model and it is what makes distance cost something for every other job. A field is different — it is a block of ground the farmer is part-way through, with a season as the deadline.
+  - **⭐ Measured, same setup, ten years: 150 sown and 140 reaped — 93% brought in, against ~30%.** With only the sowing cap removed it falls to 66%, so both halves carry weight. **The yield is untouched**, per Joe's *"dont change the yield"*.
+  - **⭐⭐ AND THIS IS WHAT MAKES USE-IT-OR-LOSE-IT MEAN ANYTHING.** `crops-and-orchards.md §5.1` sold the rot as a consequence the player could act on. **A rot line every year by construction is weather**, and a player cannot act on weather — they learn to ignore the line, which is the always-on alert D42 and D123 deleted, arriving through a mechanic instead of a panel. Rot now says *you over-painted* or *you lost a farmer*.
+  - **⚠️ The guard that was missing is the shape worth naming.** Every farm guard asked *does sowing work? does reaping work? does the store fill?* — all yes, all green, while the farm threw away two thirds of its food. **A mechanism can be correct at every step and wrong as a year.** `AFarmBringsInMostOfWhatItSows` asserts the year.
+- **D166 · 2026-08-16 · ⛔⭐ THE JITTER IS STILL THERE, AND D163 FIXED A REAL BUG THAT WAS NOT THE ONE JOE WAS WATCHING.** Joe, on the D163 build: *"i can still see the jitter happening."*
+  - **⚠️ D163 WAS NOT WRONG — IT WAS INCOMPLETE, AND SAYING SO MATTERS.** A cold villager holding logs really was flipped out of the house on the tick after arriving, really could not warm up, and that fix stands. **But it was diagnosed from four log lines and then declared to be *the* jitter**, which is a bigger claim than the evidence supported. The lesson is D157's own, one level up: *an arm that varies one thing and dies both ways has ruled that thing out and said nothing about the cause* — and finding **a** cause is not finding **the** cause.
+  - **⭐ WHAT HE IS ACTUALLY WATCHING, MEASURED THIS TIME RATHER THAN INFERRED FROM ONE EXCERPT.** A sweep of the whole audit trail for positions repeating within three ticks finds the same pattern over and over, and it is not cold at all — **it is a household fetch from a store one tile from the door**:
+    ```
+    t1350 Otto: resting -> walking home @(-1,-1)   carrying +40 food
+    t1351 Otto: walking home -> resting @(-1, 0)   carrying -40 food
+    t1352 Otto: resting -> walking home @(-1,-1)   carrying +25 food
+    t1353 Otto: walking home -> resting @(-1, 0)   carrying -25 food
+    t1354 Otto: resting -> walking home @(-1,-1)   carrying  +2 firewood
+    t1355 Otto: walking home -> resting @(-1, 0)   carrying  -2 firewood
+    ```
+    **Runs of four to six flips, about ten ticks, recurring every thirty-odd** — which at 10× is roughly a second of visible vibration every four seconds, for ever. That is the thing on the screen.
+  - **⛔ ONE TRIP IN THREE WAS PURE WASTE, AND IT IS D142'S SHAPE.** `CollectFromStore` **returned** the moment it had taken any food, so a villager carrying 25 of a possible 40 walked home with a free hand and came straight back for two firewood. Food-first is right — hunger kills in six days and an unheated house in twenty-five (D45) — but **first is not instead of**, and conflating priority with exclusivity is exactly the rule-that-reached-some-of-its-call-sites shape D142 records. A fetch fills the armful now. **Checked red and counted: 1 of 2**, the anti-vacuity companion staying green.
+  - **⚠️ AND THE REST OF IT IS WORKING AS DESIGNED, WHICH IS JOE'S CALL AND NOT A BUG TO FIX QUIETLY.** Two trips to carry 65 food is `carry_capacity` doing its job — D32's inequality, the thing that stops a fetch being a teleport with extra steps and makes a distant household genuinely eat worse. **It only reads as vibration because the store is one tile from the door**, and a one-tile round trip drawn at speed is a twitch rather than an errand. Nothing in the sim is wrong there. The levers, all of them design rather than repair: a "worth the trip" threshold so nobody walks for two firewood; a larger `carry_capacity`; or a view that does not animate a one-tile round trip as a glide. **Recorded rather than chosen** (D112's rule).
+  - **✅ AND JOE CHOSE THE FIRST LEVER — *"do 1"* — so `fetch_worth_this_share_percent: 25` is in.** A fetch now needs the shortfall to clear **the smaller of a quarter-armful and a quarter of what the household wants of that good**, and both halves are load-bearing: the armful alone would put a bar of ten on firewood a household only keeps fourteen of, so nobody would fetch fuel until they were nearly out, in winter, which is how people freeze. **Measured over thirty years, both ways: fetch legs 153 → 81, tile flips 211 → 143, population identical at 14, nobody starving or freezing in either arm** — the half that had to be checked, because a rule that stops people fetching is a rule that can kill them. `TryEmergencyRestock` still sits above work in the priority order, so the bar delays a convenience errand and can never block a desperate one (D77).
+  - **⛔⭐ AND COUNTING THE REDS CAUGHT A VACUOUS GUARD FOR THE SECOND TIME IN TWO DECISIONS.** The first draft asserted the bar on **food** and passed against the disabled code — **zero reds of two** — because food already has a stronger gate: a fetch needs the larder below `sharing_keep_percent` of its target, so by the time one fires the household is a fifth of a winter's store short and the bar was never what stopped them. **The bar only ever binds on firewood**, whose floor *is* its target. Re-aimed at that arm it is 1 red of 2. *A guard pointed at the wrong arm of a rule is indistinguishable from a passing one until you disable the rule.*
 - **D165 · 2026-08-16 · ⭐⭐ THREE OF JOE'S CALLS, AND THE MIDDLE ONE WENT WRONG IN AN INSTRUCTIVE WAY.** *"i want village decides gone entirely from all aspects of the game for now / re-derive farm's yield / adjust to 2-seat farmhouse."*
   - **✅ "VILLAGE DECIDES" IS GONE FROM THE GAME.** D136 had already taken it off the stock-limit rows and the professions panel — where every profession now carries an explicit number from the first frame — and the per-building staffing row was the last survivor, first as a mode and then briefly as D163's "Clear". Both are gone, `SetStaffing` no longer accepts a null, and **the labels stopped saying it too**: *"village's choice"* and *"left to the village"* are both replaced by a plain count.
     - **⭐ AND THE DEFAULT WAS NEVER REALLY "THE VILLAGE DECIDES" — the label had been lying for phases.** `Places => StaffingOverride ?? Capacity`, so an untouched building has always been staffed by **everyone who fits**: a fact about the building, not a decision anybody took. Saying so is what actually removes the idea rather than hiding it.

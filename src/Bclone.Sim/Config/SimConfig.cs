@@ -451,6 +451,34 @@ public sealed record SimConfig
     /// class as <c>work_ground_tiles_per_worker</c>; <b>what they produce is what gets derived</b>
     /// (D16 — state the fact, derive the outcome).
     /// </remarks>
+    /// <summary>
+    /// How much a household must be short before somebody walks to a store for it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ "WORTH THE TRIP" (Joe, 2026-08-16), and it is the jitter he watched for months.</b>
+    /// A fetch fired the moment a larder dipped below its floor, so a household two firewood
+    /// short sent somebody out for two firewood — and with a store one tile from the door that
+    /// is a villager visibly bouncing between two squares every thirty ticks. D166 measured it:
+    /// runs of four to six flips, about a second of vibration every four seconds at 10x.
+    /// </para>
+    /// <para>
+    /// <b>A percentage, because the bar is taken against two different things and the smaller
+    /// wins.</b> An armful (<see cref="CarryCapacity"/>) says what a trip is worth carrying; the
+    /// good's own target says what the household is actually trying to keep. Using the armful
+    /// alone would set a bar of ten on firewood a household only wants eleven of — nobody would
+    /// fetch fuel until they were nearly out, in winter, which is how people freeze. Taking the
+    /// smaller keeps the rule honest for a good the village holds very little of.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It is never a reason to starve or freeze.</b> `TryEmergencyRestock` sits ABOVE work
+    /// in the priority order and fires when a household is nearly out regardless of this — so
+    /// the bar delays a convenience errand and can never block a desperate one (D77).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fetch_worth_this_share_percent")]
+    public int FetchWorthThisSharePercent { get; init; } = 25;
+
     [JsonPropertyName("farmhouse_seats")]
     public int FarmhouseSeats { get; init; } = 2;
 

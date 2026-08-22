@@ -82,7 +82,15 @@ public sealed class FarmGoldenTests
     // about what they do.
     //
     //   before "with room" meant room for the load: 12419260555584221460
-    private const ulong SeamGoldenHash = 12068547528605544516UL;
+    //
+    // ⭐ RE-TAKEN FOR THE FETCH AND THE FARM (D166, D167) — three changes at once, and each
+    // reaches this run: nobody walks to a store for a trivial amount, a fetch fills the armful,
+    // and **a farm sows only what it can bring in while its reapers go back to the rows instead
+    // of walking home between every tile.** The farm was throwing away seventy per cent of its
+    // own crop every year; it brings in 93% now.
+    //
+    //   before the farm stopped rotting its crop: 12068547528605544516
+    private const ulong SeamGoldenHash = 11489388314243111802UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

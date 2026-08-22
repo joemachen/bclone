@@ -1,6 +1,6 @@
 # Handoff — bclone: **Phase 2 is one QA pass from done, and it is Joe's**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D165 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D167 back to D142**, then
 `METHODOLOGY.md`. `specs/crops-and-orchards.md` is now a **record** rather than a job — read §12
 if you touch the crop numbers, and nothing else there needs you.
 `specs/phase-2-the-village-you-can-play.md` is the checklist waiting on him.
@@ -49,9 +49,22 @@ suite.** Fix what he names, then merge. Do not start Phase 3 on an unmerged bran
 
 ### 0. Still outstanding
 
-- **Whether the jitter looks fixed on screen.** The log says it is; nobody has watched it.
-- **⭐ Whether a 26-tile field and a two-seat farm read right in the hand.** The numbers are
-  consistent and measured; whether a farm *feels* like a farm is a chair question.
+- **✅ THE FARM STOPPED ROTTING ITS OWN CROP** (D167). Joe: *"2x farmers planted 20 fields in
+  the spring, and harvested only 9 in the fall."* His trail said every year was ~17 sown / ~5
+  reaped. Two causes — nothing capped the sowing, and reapers walked home between every tile.
+  **150 sown / 140 reaped now, 93% against ~30%.** Yield untouched, per his instruction.
+- **✅ THE JITTER IS ANSWERED — but by the third fix, not the first.** D163 fixed a real bug
+  (a cold villager with full arms could never warm up) that was **not** what Joe was watching.
+  **D166 measured the actual one**: a household fetch from a store one tile from the door,
+  four to six flips every thirty-odd ticks. Two changes: a fetch now fills the armful (food
+  first, then firewood with what is left — one trip in three was pure waste), and
+  `fetch_worth_this_share_percent: 25` stops anybody walking out for a trivial amount.
+  **Measured: fetch legs 153 → 81, tile flips 211 → 143, nobody starving or freezing.**
+  ⛔ **Not confirmed on screen** — Joe has said twice that it still looked wrong, so the only
+  evidence that counts is him watching it again.
+
+*(The farm is settled — Joe, 2026-08-16: "farmer is good now - dont change the yield." **The
+crop numbers are locked; do not re-derive them without him.**)*
 
 *("Village decides" is closed — gone from the game entirely, D165.)*
 
@@ -65,6 +78,25 @@ stays at 67. **The farmhouse has two seats**, stated in data rather than derived
 ⚠️ **The guard that would have caught it first time now exists** —
 `AFarmerCanActuallyReapTheFieldTheDerivationGivesThem`. Every other farm guard asked whether the
 sums were self-consistent; none asked whether they described the village.
+
+---
+
+## ⭐⭐ Two directions Joe set, neither scheduled — `DESIGN.md §4` has the detail
+
+- **GRIDLESS, like Foundation** — buildings placed at any angle, no tile map, paths that bend.
+  **The largest architectural statement anybody has made about this project.** It touches the
+  tile map, the one shared cost field, all three zone layers, the state hash and every unit the
+  economy is derived in — and the real constraint is **determinism**: integer-only sim state
+  (D2) is currently guaranteed *by* the grid. Fixed-point `Fixed` (Q32.32) is the door left
+  open for it. **Do not start this inside a phase**; the first question when it is taken is
+  whether the *sim* goes continuous or only the *presentation*, and those are very different
+  costs.
+- **MODS** — §3 has promised this since day one. The audit: content *values* are data ✅, but
+  buildings, jobs, goods and terrain are **C# enums, hashed by position and pinned by goldens**,
+  so a modder can change numbers and not add a building. **The standing discipline meanwhile:
+  when you add a new kind of thing, ask whether it wants to be an enum value or a row in a data
+  file.** The crop id is the one done right (*one crop, in a model shaped for many*), and
+  retrofitting the others means touching the hash, the goldens and every call site at once.
 
 ---
 
@@ -89,6 +121,10 @@ sums were self-consistent; none asked whether they described the village.
   50-year goldens were *supposed* to move once a farmer sowed. **They did not, because neither
   village ever places a farmhouse.** Say which of the two it is, measured, before you believe
   either.
+- **⭐⭐ A MECHANISM CAN BE CORRECT AT EVERY STEP AND WRONG AS A YEAR** (D167). Every farm guard
+  asked *does sowing work? does reaping work? does the store fill?* — all yes, all green — while
+  the farm threw away two thirds of its food every autumn for ever. **Assert the outcome over a
+  cycle, not only the steps.** `AFarmBringsInMostOfWhatItSows` is that guard.
 - **A derivation that reads a number derived from itself is not a derivation.** *"Enough yield
   that a farm's seats feed a household"* produced a farmhouse with fourteen seats and 173 food
   from one tile. State the target as a **comparison** against something already derived.
@@ -105,10 +141,14 @@ sums were self-consistent; none asked whether they described the village.
 - **A new deposit path means a new leak.** `RetireWorkplace` had ignored `Workplace.Store` for
   five phases — correctly, because nothing wrote to one. The farm's buffer made demolition
   destroy up to 100 food silently. **Found by reading the method, not by a failing test.**
-- **⭐ THE AUDIT TRAIL IS EVIDENCE AND THE SUITE IS NOT.** D154, D157 and now **D163** all came
-  out of `src/Bclone.Game/logs/`. Joe's log path is in his header in every screenshot, and the
-  files are on disk — **read them.** D163 took four lines of one to diagnose a bug that had been
-  in the game since D45 and that the whole suite had never once noticed.
+- **⭐ THE AUDIT TRAIL IS EVIDENCE AND THE SUITE IS NOT.** D154, D157, D163 and D166 all came out
+  of `src/Bclone.Game/logs/`. Joe's log path is in his header in every screenshot, and the files
+  are on disk — **read them.**
+- **⭐⭐ BUT READ THE WHOLE FILE, NOT THE FIRST MATCH (D166).** D163 diagnosed the jitter from
+  four log lines, fixed a real bug, and declared it *the* cause — and Joe still saw the jitter,
+  because the thing he was watching was a household fetch somewhere else in the same file.
+  **Finding a cause is not finding the cause.** Sweep for the pattern across the run and count
+  how often each shape occurs before believing any of them.
 - **A comment promising the code is general, over code that names a kind.** The farm shipped
   with no work-ground brush because `Main.cs` read `Kind: JobKind.Forester` under a comment
   saying *"so the next one needs no line here"*. **When you add a thing, grep for the comments
