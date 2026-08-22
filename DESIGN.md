@@ -324,10 +324,18 @@ deliberate re-founding, and it should not be started inside a phase.** When it i
 first question is whether the sim goes continuous or stays discrete under a continuous
 *presentation* — those are very different costs and only the first is what Joe described.
 
-#### 2. ⭐ MODS ARE A GOAL, NOT A NICETY — and §3 already promises it
+#### 2. ⭐ MODS MUST BE ABLE TO ADD ANYTHING — and that is further than §3 goes
 
-> Joe: *"I also want the game to allow for mods eventually, for users to be able to increase the
-> longevity of the game and build new and cool things into it."*
+> Joe, 2026-08-16: *"I also want the game to allow for mods eventually, for users to be able to
+> increase the longevity of the game and build new and cool things into it."*
+>
+> Joe, 2026-08-22, asked how far: **"modders should be able to add buildings, essentially add
+> anything to the game."**
+
+**That second sentence is the ruling, and it is a bigger promise than §3's.** "Data-driven" as
+the project practises it today means *every tunable is a value in a file*; what he is asking for
+is that **the set of things itself is open** — a modder adds a building, a job, a good, a kind of
+ground. Those are four C# enums today.
 
 **This restates a principle §3 has carried since day one** — *"first-class modding API from the
 start… Banished is alive in 2026 because of its mods"* — so the value of writing it down is the
@@ -1237,6 +1245,12 @@ scheduled, and none has been designed.
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
 
+- **D168 · 2026-08-22 · Four rulings from Joe playing D167, and two of them are open work.**
+  - **⛔ THE JITTER HAS A THIRD CAUSE, AND HE NAMED IT PRECISELY:** *"when a farmer is sowing/harvesting a field it seems to 'bounce' between two tiles for a few ticks. same with a forester planting/harvesting trees."* **D163's cause (a cold villager with full arms) and D166's (a fetch from a store next door) are both genuinely fixed** — this is a worker on painted ground, which is neither. **Open**, with the run from his screenshot on disk at `logs/bclone-20260822-000011.log`. ⚠️ **The standing lesson applies to it: sweep the whole trail and count the shapes before believing any one of them** — declaring a cause after four log lines is what cost the two previous rounds.
+  - **⭐ THE FARM'S BRUSH SHOULD SAY WHEN THE FIELD OUTRUNS ITS FARMERS** — *"at this size you dont have enough farmers to utilize the land - add more farmers or make your field smaller"* — **and it must stay ignorable**: *"which the user can choose to ignore and 'waste' land if they want."* That is D86 and D43's rule restated by the person they were written for, and most of the machinery is already there: `PaintWorkGround` returns the verdict, D42 makes a brush speak once per stroke, and the only thing missing is that the sentence is written for a forester. **Open**, and small.
+  - **⛔ THE SHELL NEEDS ANOTHER PASS** — *"look at the attached screenshot to see how dumb the width of the windows on the right side of the screen are."* His right-hand column takes over half the window with the map squeezed to a strip, and **D149 set each column to 27% of the window**. So either the share is not reaching that column or a wide child is holding it open — **which is D149's own finding**, where a probe over the control tree found six rows at 438 pinning a column at 450. **Open**, and it starts with that probe rather than with the layout.
+  - **✅ THE QA CHECKLIST IS APPROVED** — *"QA checklist is good."* ⚠️ **Whether he has WALKED it is not established**, and DoD item 3 is the walk rather than the document, so it stays open until he says so plainly.
+  - **⭐ AND THE MODDING GOAL IS BIGGER THAN §3's** — *"modders should be able to add buildings, essentially add anything to the game."* §3 has promised a first-class modding API since day one and the project delivers *values in a file*; **what he is asking for is that the set of things itself is open**, and `BuildingKind`, `JobKind`, `Goods` and `Terrain` are four C# enums hashed by position and pinned by every golden. Recorded in §4 with the audit. **Nothing scheduled**; the standing discipline is that a new kind of thing should be asked whether it wants to be an enum value or a data row, because retrofitting means touching the hash, the goldens and every call site at once.
 - **D167 · 2026-08-22 · ⛔⭐⭐ THE FARM WAS ROTTING SEVENTY PER CENT OF ITS OWN CROP, EVERY YEAR, BY CONSTRUCTION.** Joe, playing: *"2x farmers planted 20 fields in the spring, and harvested only 9 in the fall. review the efficiencies with planting and harvesting for farmers."*
   - **⚠️ HIS AUDIT TRAIL SAID IT WAS WORSE AND PERMANENT.** Not one bad year — **every** year: sown 17 / reaped 7, 21 / 5, 17 / 5, 17 / 5, 17 / 5, with the village log dutifully reporting *"Winter took 16 fields of unreaped crop"* for ever. **About 30% brought in.** The suite had 620 tests and no opinion about it, because every farm guard asked whether a mechanism worked and none asked whether the year added up.
   - **⛔ CAUSE ONE — NOTHING CAPPED THE SOWING, AND THE ECONOMY ALREADY KNEW THE NUMBER.** Sowing is cheap (a step between rows, carrying nothing) and reaping is dear (an armful to a store), so **a spring will always commit two or three times the ground an autumn can take**. `FieldTilesOneFarmerKeeps` takes the *smaller* of the two seasons for precisely this reason — and nothing enforced it on the sowing, so the derivation was describing a farm nobody was running. A farm now sows only what its hands can bring in, counted from `WorkerIds` like `WorkGroundAllowanceFor` so losing a farmer in summer means next spring commits less.
