@@ -4932,8 +4932,84 @@ public sealed class SimWorld
     /// kept apart on purpose; conflating them is how a cart quietly becomes a hearth.
     /// </para>
     /// </remarks>
-    public GridPos RestingPlaceOf(Villager villager) =>
+    public GridPos HomePlaceOf(Villager villager) =>
         HouseholdOf(villager).HomePosition ?? TheCart?.Position ?? Map.FoundingSite;
+
+    /// <summary>
+    /// Where this villager stops when there is nothing to do <b>right now</b> — which is not
+    /// always where they live (D186).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ FARMHANDS STAY OUT AT THE STEADING THROUGH THE WORKING SEASONS</b> (Joe: *"of
+    /// course farmhands should go home sometimes, but they don't have to go home all the
+    /// frickin time"*). A farm is a place people work from, not a place they visit — and the
+    /// commute was measured as **the thing that costs a distant farm its field**: with the
+    /// granary walk removed entirely, a farm ten ticks out still managed only about seven of
+    /// its thirteen tiles, because its people spent their days walking home and back.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THIS IS A SECOND METHOD RATHER THAN A CHANGED ONE, AND THAT IS LOAD-BEARING.</b>
+    /// <see cref="HomePlaceOf"/> is what <c>LabourAllocator</c> measures *distance to work*
+    /// from — D15's *nearest home wins*. Teaching it to answer *"the farm"* for a farmhand
+    /// would make their cost to their own farm **zero**, so the allocator would find them
+    /// unbeatable for that seat and never move them again. **One name for two questions is
+    /// D148's finding**, and this is the shape it would have taken here.
+    /// </para>
+    /// <para>
+    /// <b>Not in winter</b> (Joe's scope), and that is also what keeps it safe: the steading
+    /// has no hearth, and <see cref="ShelterAt"/> knows nothing about it — so a farmhand who
+    /// stayed out through a winter would be standing outdoors in the cold that D45 built to
+    /// kill people. Staying out cannot invent a new way to die while it only happens in the
+    /// three seasons cold does not bite.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It changes where they stop, not whether they stop.</b> Hunger and cold still
+    /// interrupt exactly as before — those paths decide *whether* to break off and only ask
+    /// this for the destination — so a farmhand who gets hungry still eats and one who gets
+    /// cold still walks to a fire.
+    /// </para>
+    /// </remarks>
+    public GridPos RestingPlaceOf(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        return StaysOutAtTheSteading(villager, out GridPos steading)
+            ? steading
+            : HomePlaceOf(villager);
+    }
+
+    /// <summary>Whether this villager is a farmhand with a season's work still to do.</summary>
+    /// <remarks>
+    /// <b>Winter sends everybody home</b>, which is the season boundary Joe drew and the one
+    /// the cold model requires. The other three are the farm's year: sowing, watching it grow,
+    /// and reaping.
+    /// </remarks>
+    private bool StaysOutAtTheSteading(Villager villager, out GridPos steading)
+    {
+        steading = default;
+
+        if (Clock.IsWinter || !villager.CanWork || !villager.HasJob)
+        {
+            return false;
+        }
+
+        Workplace? farm = FindWorkplace(villager.WorkplaceId);
+        if (farm is null || farm.IsSite || farm.Kind != JobKind.Farmer)
+        {
+            return false;
+        }
+
+        // A farm with no ground is not somewhere to stay — its people have nothing to be out
+        // for, and the panel already tells the player to paint it some.
+        if (Zones.WorkGroundTiles(farm.Id) == 0)
+        {
+            return false;
+        }
+
+        steading = farm.Position;
+        return true;
+    }
 
     /// <summary>
     /// Where "the village" is, for anything that needs one point to measure from.

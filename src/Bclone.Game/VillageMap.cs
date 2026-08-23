@@ -1490,7 +1490,7 @@ public partial class VillageMap : Control
             bool selected = villager.Id == _selectedVillagerId;
 
             DrawLine(
-                ToScreen(world.RestingPlaceOf(villager)),
+                ToScreen(world.HomePlaceOf(villager)),
                 ToScreen(workplace.Position),
                 colour with { A = selected ? 0.75f : 0.3f },
                 selected ? 2f : 1f);

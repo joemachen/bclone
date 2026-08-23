@@ -137,7 +137,17 @@ public sealed class FarmGoldenTests
     // re-take must leave it alone; this is not one.
     //
     //   before the market got staffed for farms: 4043003718136410697
-    private const ulong SeamGoldenHash = 6737691834764729296UL;
+    //
+    // ⭐ RE-TAKEN FOR FARMHANDS STAYING AT THE STEADING (D186). Through spring, summer and
+    // autumn a farmhand now stops at the farm rather than walking home, so this village's
+    // people stand in different places on most ticks of twenty years.
+    //
+    // ⚠️ AND IT IS AN ECONOMIC NO-OP AT BEST -- see D186. Measured, it moves 8 farmer-ticks in
+    // 3,636 and COSTS about 13% of the harvest in the distance fixture. It is kept for what
+    // the player sees, not for what the village produces, and that is Joe's call to make.
+    //
+    //   before farmhands stayed out: 6737691834764729296
+    private const ulong SeamGoldenHash = 14730783267476270549UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -150,7 +160,7 @@ public sealed class FarmGoldenTests
     /// sows and reaps exactly as it did, and when landing 2 makes mastery bite, **this number
     /// must move too.** A skill system that changes nothing is D56's clothing.
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 11030727006651863943UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 18000956707541560513UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

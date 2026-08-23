@@ -263,7 +263,7 @@ internal static class LabourAllocator
                 continue;
             }
 
-            GridPos home = world.RestingPlaceOf(villager);
+            GridPos home = world.HomePlaceOf(villager);
 
             for (int w = 0; w < world.Workplaces.Count; w++)
             {
@@ -510,7 +510,7 @@ internal static class LabourAllocator
                 villager.JobReason = closest is null
                     ? "No work: there is nowhere in the valley to work."
                     : $"No work: there is no way to walk from home to any of it. The nearest, "
-                      + $"{closest.Name}, is {world.RestingPlaceOf(villager).ManhattanDistanceTo(closest.Position)} "
+                      + $"{closest.Name}, is {world.HomePlaceOf(villager).ManhattanDistanceTo(closest.Position)} "
                       + "tiles off in a straight line — and the water is in the way.";
                 continue;
             }
@@ -842,7 +842,7 @@ internal static class LabourAllocator
     /// flicker as people walk about.
     /// </remarks>
     internal static int CostBetween(SimWorld world, Villager villager, Workplace workplace) =>
-        world.TravelCost.Cost(world.RestingPlaceOf(villager), workplace.Position);
+        world.TravelCost.Cost(world.HomePlaceOf(villager), workplace.Position);
 
     /// <summary>Whether any walk at all gets this villager from home to that work.</summary>
     /// <remarks>
