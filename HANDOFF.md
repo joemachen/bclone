@@ -1,6 +1,6 @@
-# Handoff — bclone: **Queue items 1–3 are all done and merged. Next is Phase 3.**
+# Handoff — bclone: **Phase 3 has started. Landing 1 of 3 is built; landing 2 is next and is not optional.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D179 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D181 back to D142**, then
 `METHODOLOGY.md`.
 
 > **⛔ WHEN YOU HAND OFF: EDIT THIS FILE, DO NOT REPLACE IT.** The trap list at the bottom is
@@ -8,19 +8,30 @@ Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D179 b
 > silently — that happened on 2026-08-22 and cost an hour and three quarters within the same
 > session. **Rewrite "where things are"; carry the traps forward.**
 
-⭐ **Three things landed since Phase 2 and each is worth knowing before you touch anything:**
-the **town hall is designed** (D176 — it gates the knowledge *screen*, not the tree); **ground is
-worth going to** (D178 — soil is regional and the farm reads it); and **the suite runs in two and
-a half minutes instead of nineteen** (D179).
+⭐ **The two things to know before you touch anything:** **proficiency exists now** (D181 — it
+accrues, is hashed, is visible, and **nothing reads it**), and **the ground the player can read**
+(D180 — a toggle that lied for a day, plus the sentences D178's spec asked for and never got).
+Behind those: the **town hall is designed** (D176), **ground is worth going to** (D178), and **the
+suite runs in two and a half minutes instead of nineteen** (D179).
 
 ---
 
 ## Where things are
 
-**On `main`, and everything is merged.** Phase 2 went in via
-[PR #4](https://github.com/joemachen/bclone/pull/4) — 248 commits, all five Definition-of-Done
-items met, the last being Joe's QA walk. Per-site yield (D178) and the cost-field rewrite (D179)
-followed as two slices, fast-forwarded onto `main`.
+**Phase 2 is merged; Phase 3 is in progress on `phase/3-skill-and-apprenticeship`.** Phase 2 went
+in via [PR #4](https://github.com/joemachen/bclone/pull/4) — 248 commits, all five
+Definition-of-Done items met, the last being Joe's QA walk. Per-site yield (D178), the cost-field
+rewrite (D179) and the ground-legibility slice (D180) are all fast-forwarded onto `main`.
+
+**⭐⭐ PHASE 3 LANDS IN THREE PIECES AND ONLY THE FIRST IS BUILT** (`skills-catalog.md §11`):
+1. ✅ **The proficiency substrate** (D181). `Villager.Skills` accrues time on the task, hashed
+   sparsely in id order; six skills are **rows in config, not enum values**; the villager panel
+   says *"Nineteen years in the fields"*; **the mastery line fires** in the village log.
+2. **⛔ NEXT, AND NOT OPTIONAL: mastery bites** — duration first, yield second (§3.3). **A system
+   that accrues, is visible and changes nothing is D56's clothing**, which was measured as a
+   no-op over 300 years and blocked for it. Landing 1 is that shape until landing 2 lands.
+3. **The mixed founding (§3.2c) and the seeded rhythm (§3.5), together in one commit.** This is
+   what discharges D28.
 
 ⚠️ **The phase PR is #4, not #3.** Number 3 went to the closed screenshot-hook PR D160 rescued,
 and every document in the repo said #3 for a day before anyone checked.
@@ -32,7 +43,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **SUITE, FROM A RUN:**
 
 ```
-641 passed, 0 failed, 2 skipped of 643 — about 2m30s (was 18m52s before D179)
+656 passed, 0 failed, 2 skipped of 658 — about 2m00s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -105,10 +116,30 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
      the locked 67 now means *the yield on average ground*.
    - **⚠️ The player can see the ground** — the **Ground: off** button on the control bar. Without
      it the whole slice is an invisible multiplier (§1.1, D67).
-4. **⭐ NEXT: Phase 3 — skill and apprenticeship** (§2.1), which is also the real answer to the
-   mid-game gap (D161). **Its spec is written and every design question in it is answered** — what
-   remains is tuning, and all of it wants a probe first. Its success test is already written:
-   *play years 1–16 at normal speed, without fast-forwarding, and want to keep watching.*
+4. 🔨 **Phase 3 — skill and apprenticeship** (§2.1), the real answer to the mid-game gap (D161).
+   **Landing 1 is built** (D181). Its success test is unchanged and unmet: *play years 1–16 at
+   normal speed, without fast-forwarding, and want to keep watching.* What a new session needs:
+   - **⛔ THE SPEC'S OWN DoD CONTAINED AN IMPOSSIBLE GUARD AND IT HAS BEEN CORRECTED IN PLACE.**
+     §11.2.1 required landing 1 to be a *"provable no-op: goldens unmoved"*. **The goldens are
+     full state hashes and proficiency is hashed state that grows from tick one — mutually
+     exclusive.** The spec had reasoned by analogy from `crops-and-orchards.md`, where the map
+     golden genuinely held because *the generator never produces the new terrain values*.
+     **`StateHash.ComputeIgnoringSkills` is what shipped instead**, and it is byte-identical to
+     all three goldens' pre-slice values. ⭐ **In landing 2 it must MOVE** — that is the
+     anti-vacuity guard for mastery actually biting.
+   - **⭐ A tick counts while somebody HOLDS the trade, not only while mid-action** (§3.6). The
+     tight reading is tempting and §3.3b's arithmetic rules it out, *and* it would make a master
+     accrue more slowly the better they got once landing 2 shortens the action.
+   - **⚠️⚠️ MEASURED, AND LANDING 2 HAS TO ANSWER TO IT: twenty years on the task is 32–34
+     calendar years for seasonal trades.** D44 unstaffs them in winter — **1 of 4 able adults
+     hold a job in mid-winter against 4 of 4 in summer** — so a farmer masters on schedule and a
+     forager takes half again as long, with nothing on screen saying why. **Three possible
+     shapes are written up in §12 and none should be taken without Joe.**
+   - **⚠️ The reshuffle leaves the whole village jobless for exactly one tick** (Day 1, Spring).
+     Harmless at 0.02%, but it is why landing 1's guards sample mid-season — see the trap list.
+   - **What is still unbuilt:** apprenticeship and teaching (§5), the at-risk line (§7), the
+     workplace panel's *"how practised are they"* (deliberately landing 2's — until skill bites,
+     a hut is never slow *for that reason*), and everything in §12.
 5. **Phase 4 — the tech tree** (§2.7), plus the **town hall** (D176).
 
 **Two directions Joe set, neither scheduled, both in `DESIGN.md §4`:** **gridless** — the largest
@@ -162,6 +193,25 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   proved nothing. **And the guard that catches a bug is often not the obvious one** — *"the
   farm's sentence says farmer"* passes against a generic template with the farm's name in it;
   the one that works reads both sentences with the names masked out and requires them to differ.
+- **⭐⭐ A SPEC CAN ASK FOR A GUARD THAT CANNOT EXIST, AND THE DoD IS WHERE IT HIDES (D181).**
+  `skills-catalog.md §11.2.1` required *"provable no-op: goldens unmoved"* for a slice whose
+  entire content is **new hashed state that grows from tick one.** It was reasoned by analogy
+  from a slice where the analogy held, it sat in a Definition of Done for a week, and it would
+  have been "met" by quietly not hashing proficiency — which would have cost the determinism
+  guarantee and moved the goldens twice later instead of once. **Ask what a DoD item would look
+  like if it were satisfied *before* you try to satisfy it.** The fix was to restate the claim in
+  a vocabulary that can be true (*nothing anybody DOES changed*), not to weaken the guard.
+- **⭐⭐ BREAKING YOUR OWN GUARDS FINDS THE BLIND ONES — DO IT, AND EXPECT A SURPRISE (D181).**
+  Nine reds across seven deliberate breaks, and break #2 turned a guard red **for a reason
+  unrelated to what it tested**: `LeavingATradeStopsTheClockOnItThatTick` sampled on a year edge,
+  so *"the number did not move"* was two effects cancelling — no growth, and no decay only
+  because the floor happened to protect a first-year worker. **The red check is not a formality;
+  it is the only thing that reads your fixture for you.**
+- **⚠️ THE VILLAGE IS BRIEFLY JOBLESS ON THE YEAR EDGE, AND IT WILL BAFFLE YOU (D181).** At
+  *Day 1, Spring* the reshuffle has torn every allocation down and not yet rebuilt it: **0 of 4
+  able adults hold a job on that exact tick.** Any guard that samples "who is working?" at
+  `TicksPerYear * n` is sampling that hole. **Step half a season in.** (Winter is the other one:
+  D44 unstaffs seasonal trades, so mid-winter is 1 of 4.)
 - **⭐⭐ A GUARD CAN BE GREEN AND BLIND.** `AFarmBringsInMostOfWhatItSows` reports 93% while the
   played village was at 46%, and it is not wrong — it sites its farm a step from the stores.
   **Unmoved because it does not cover the case** (D157, three times now). Ask what a guard's
