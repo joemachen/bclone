@@ -189,16 +189,32 @@ public sealed record SimConfig
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// What a child eats, as a percentage of an adult's meal.
+    /// What a <b>dependant</b> eats — a child or an elder — as a percentage of an adult's meal.
     /// </summary>
     /// <remarks>
-    /// A child eating a full adult portion is not just wrong, it is fatal: two
-    /// working adults cannot feed a household of four at full rations, so the
-    /// village grew, starved, and died out every time. Children eat less because
-    /// they are smaller — and that is what makes raising them survivable.
+    /// <para>
+    /// A child eating a full adult portion is not just wrong, it is fatal: two working adults
+    /// cannot feed a household of four at full rations, so the village grew, starved, and died
+    /// out every time. Children eat less because they are smaller — and that is what makes
+    /// raising them survivable.
+    /// </para>
+    /// <para>
+    /// <b>⭐ ELDERS EAT THE SAME SHARE (Joe, 2026-08-23), AND THE OLD BEHAVIOUR WAS NEVER
+    /// CHOSEN.</b> <c>MealCostFor</c> had exactly one branch and it tested for
+    /// <see cref="World.LifeStage.Child"/>, so **an elder ate like a prime adult while producing
+    /// at <c>vigour_min_percent</c>** — not as a decision about ageing, but because the other
+    /// arm of an <c>if</c> caught them. *A number nobody picked is still a number the game is
+    /// balanced on*, which is why it was worth asking about rather than assuming.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ RENAMED FROM <c>child_food_share_percent</c> IN THE SAME BREATH</b>, because a key
+    /// that governs elders while calling itself *child* is precisely the name-that-lies this
+    /// project keeps catching (D148, D188). *Dependant* is the word the economy already uses —
+    /// see <see cref="VillageEconomy.RequiredDependants"/>.
+    /// </para>
     /// </remarks>
-    [JsonPropertyName("child_food_share_percent")]
-    public int ChildFoodSharePercent { get; init; } = 50;
+    [JsonPropertyName("dependant_food_share_percent")]
+    public int DependantFoodSharePercent { get; init; } = 50;
 
     /// <summary>
     /// Age at which an unpaired adult starts looking for a partner and a home of
@@ -1922,10 +1938,10 @@ public sealed record SimConfig
             throw new SimConfigException($"leave_home_age cannot be negative (got {LeaveHomeAge}).");
         }
 
-        if (ChildFoodSharePercent is <= 0 or > 100)
+        if (DependantFoodSharePercent is <= 0 or > 100)
         {
             throw new SimConfigException(
-                $"child_food_share_percent must be in 1..100 (got {ChildFoodSharePercent}).");
+                $"dependant_food_share_percent must be in 1..100 (got {DependantFoodSharePercent}).");
         }
 
         if (FertilityMinAge < 0 || FertilityMaxAge < FertilityMinAge)

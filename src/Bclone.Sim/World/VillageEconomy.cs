@@ -73,7 +73,7 @@ public static class VillageEconomy
     /// <summary>Food one child eats in a year.</summary>
     public static int ChildFoodPerYear(SimConfig config)
     {
-        int childMeal = config.FoodPerMeal * config.ChildFoodSharePercent / 100;
+        int childMeal = config.FoodPerMeal * config.DependantFoodSharePercent / 100;
         return MealsPerYear(config) * (childMeal < 1 ? 1 : childMeal);
     }
 

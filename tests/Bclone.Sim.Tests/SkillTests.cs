@@ -243,8 +243,8 @@ public sealed class SkillTests
     /// </para>
     /// </remarks>
     [Theory]
-    [InlineData(false, 18149215200660116896UL)]
-    [InlineData(true, 8058080173609054323UL)]
+    [InlineData(false, 2304938567605588358UL)]
+    [InlineData(true, 4751632099212391028UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

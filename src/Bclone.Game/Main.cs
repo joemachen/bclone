@@ -3487,7 +3487,11 @@ public partial class Main : Control
         // the button is the only new thing the view owes it.
         row.AddChild(Category(
             "Food",
-            BuildButton("Gatherer", BuildingKind.GathererHut),
+            // ⭐ "Forager", not "Gatherer" (Joe, 2026-08-23). Every other work building on this
+            // bar is named for the trade that works it -- Forester, Woodcutter -- and the
+            // profession became `forager` in D188. This was the last place still saying the
+            // old word, which is the same one-job-two-names bug arriving in a third panel.
+            BuildButton("Forager", BuildingKind.GathererHut),
             BuildButton("Farmhouse", BuildingKind.Farmhouse)));
 
         row.AddChild(Category(

@@ -1658,17 +1658,24 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// Food one meal costs. Children eat a smaller portion — see
-    /// <see cref="SimConfig.ChildFoodSharePercent"/>.
+    /// Food one meal costs. <b>Dependants — the young and the old — eat a smaller portion</b>
+    /// (see <see cref="SimConfig.DependantFoodSharePercent"/>).
     /// </summary>
+    /// <remarks>
+    /// <b>⭐ ELDERS JOINED CHILDREN HERE ON JOE'S CALL (2026-08-23), AND THE OLD BEHAVIOUR WAS
+    /// NEVER A DECISION.</b> This had one branch and it tested for <see cref="LifeStage.Child"/>,
+    /// so **an elder ate a full adult portion while producing at <c>vigour_min_percent</c>** —
+    /// because the other arm of an <c>if</c> caught them, not because anybody ruled on ageing.
+    /// *A number nobody picked is still a number the game is balanced on.*
+    /// </remarks>
     public static int MealCostFor(Villager villager, SimConfig config)
     {
-        if (villager.LifeStage != LifeStage.Child)
+        if (villager.LifeStage is not (LifeStage.Child or LifeStage.Elder))
         {
             return config.FoodPerMeal;
         }
 
-        int cost = config.FoodPerMeal * config.ChildFoodSharePercent / 100;
+        int cost = config.FoodPerMeal * config.DependantFoodSharePercent / 100;
         return cost < 1 ? 1 : cost;
     }
 

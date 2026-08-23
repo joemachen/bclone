@@ -289,7 +289,7 @@ public sealed class StockLimitTests
     //
     //   before mastery bit: fixture 17883694128790877833,
     //                       shipped 15628752506897642520
-    private const ulong FixtureFiftyYearHash = 2925726946142789484UL;
+    private const ulong FixtureFiftyYearHash = 18174430941982640321UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -308,7 +308,15 @@ public sealed class StockLimitTests
     //
     //   before the founders were people: fixture 5402933120067190351,
     //                                    shipped 16150256378240105365
-    private const ulong ShippedFiftyYearHash = 9133620442171355746UL;
+    //
+    // ⭐ RE-TAKEN FOR ELDERS EATING A DEPENDANT'S SHARE (D191, Joe). An elder used to eat a
+    // full adult portion while producing at vigour_min_percent -- not as a ruling about
+    // ageing, but because MealCostFor had one branch and it tested for Child. Fifty years of
+    // a village whose old people eat half is a different fifty years.
+    //
+    //   before elders ate like children: fixture 2925726946142789484,
+    //                                    shipped 9133620442171355746
+    private const ulong ShippedFiftyYearHash = 7791088175599810974UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

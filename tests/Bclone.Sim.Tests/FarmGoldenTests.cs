@@ -149,7 +149,11 @@ public sealed class FarmGoldenTests
     // commit that discharges D28.
     //
     //   before the founders were people: 9706055072185576047
-    private const ulong SeamGoldenHash = 16167409353535345881UL;
+    //
+    // ⭐ RE-TAKEN FOR ELDERS EATING A DEPENDANT'S SHARE (D191).
+    //
+    //   before elders ate like children: 16167409353535345881
+    private const ulong SeamGoldenHash = 11509711031316440761UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -168,7 +172,7 @@ public sealed class FarmGoldenTests
     /// with the speed bonus at zero and asserts the pre-skill goldens byte for byte.
     /// </para>
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 14277723372747276077UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 16089386726126835310UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

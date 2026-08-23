@@ -23,7 +23,7 @@
   // trade is that a schooled child starts LATER and is worth more when they do** — so this is
   // the dial that pair of choices will pull against, not a number that stays put.
   //
-  // ⚠️ It buys hands and costs food: below this a villager eats `child_food_share_percent` of
+  // ⚠️ It buys hands and costs food: below this a villager eats `dependant_food_share_percent` of
   // a meal, so a twelve-year-old now eats a full one. Pairing and childbearing are NOT affected
   // — `leave_home_age` (18) and `fertility_min_age` (18) gate those separately.
   "adult_age": 12,
