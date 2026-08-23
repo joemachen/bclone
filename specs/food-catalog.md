@@ -10,6 +10,34 @@
 
 ---
 
+## 0. ⭐ The axis this catalogue does not have yet — nutrition (Joe, 2026-08-23)
+
+> **Joe:** *"When we introduce food types (fish, meat, wheat, corn, apples, chicken — and
+> prepared meals) they will have different 'nutritional' value which will help vary villagers'
+> rhythms depending on what food they eat to sate their hunger."*
+
+**This document lists *what foods exist* and says nothing about what any of them is worth**, which
+is the gap that idea fills. Today there is one `Goods.Food` and one `food_per_meal`, so every
+mouthful in the game is interchangeable.
+
+**⭐ Why it is worth more than flavour: it is a third source of the thing D28 needed.** Phase 3
+had to *manufacture* variation between villagers — a seeded personal rhythm drawn at birth
+(D190), because two adults of one household ate on the same tick for ever otherwise. **Foods with
+different nutritional values produce that variation for free and for a reason the player can
+see**: two people eat different things, so they get hungry again at different times. *A mechanic
+that falls out of content beats one that has to be injected*, and this is the version of §3.5 that
+would not need a switch.
+
+**⚠️ It lands on a derivation, not on a blank page.** `VillageEconomy` solves the survival floor
+against `food_per_meal` — one number for one food. A catalogue of nutritional values means the
+floor is solved against **the worst food a village might be living on**, or the derivation has to
+change shape. That is the question to answer before any numbers get typed.
+
+**Also open, and asked in the same breath (see `DESIGN.md §5`):** children eat half an adult's
+meal today and **elders eat a full one**.
+
+---
+
 ## 1. Purpose
 
 A full catalog of raw, farmed, raised, and processed foods for the game, organized by
