@@ -833,6 +833,61 @@ public sealed class SimWorld
     }
 
     /// <summary>
+    /// What one tile of this ground is worth against ordinary ground, as a percentage.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE NUMBER BEHIND THE SENTENCE THE PLAYER READS.</b> Joe, walking the shipped
+    /// build: <em>"I can't really tell which areas are good or bad."</em> Until this existed
+    /// the soil overlay's wash was the <b>only</b> channel the game had for saying so — no
+    /// panel, no log line, no sentence anywhere stated a tile's soil in words — and a wash is
+    /// a thing you compare, not a thing you read.
+    /// </para>
+    /// <para>
+    /// <b>Derived from <see cref="CropYieldAt"/> rather than from <c>SoilAt</c> directly</b>,
+    /// so the number the player is shown is the number the farm actually reaps — the never-zero
+    /// floor included. A panel that quoted the raw soil byte could disagree with the harvest,
+    /// and D147's rule is that the marker and the panel must not be able to.
+    /// </para>
+    /// <para>
+    /// 100 is ordinary — <c>crop_yield_per_tile</c> is locked and means <em>the yield on
+    /// average ground</em> (D178).
+    /// </para>
+    /// </remarks>
+    public int SoilShareAt(GridPos tile) =>
+        Config.CropYieldPerTile <= 0 ? 100 : CropYieldAt(tile) * 100 / Config.CropYieldPerTile;
+
+    /// <summary>
+    /// What a farm's own ground is worth against ordinary, averaged over the tiles it holds —
+    /// or 0 if it has been given none.
+    /// </summary>
+    /// <remarks>
+    /// <b>Averaged over what it actually works</b>, not sampled at the farmhouse: soil is
+    /// regional at lattice 8 (`per-site-yield.md §3.1`) and a farm's ground can straddle two
+    /// regions, so the doorstep tile is not the answer to <em>"is this a good farm?"</em>.
+    /// Reads <see cref="ZoneMap.WorkGroundOf"/>, which is already indexed by owner, rather
+    /// than walking the valley.
+    /// </remarks>
+    public int FarmGroundShare(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        IReadOnlyList<int> ground = Zones.WorkGroundOf(workplace.Id);
+        if (ground.Count == 0)
+        {
+            return 0;
+        }
+
+        int total = 0;
+        for (int i = 0; i < ground.Count; i++)
+        {
+            total += SoilShareAt(Zones.PositionOf(ground[i]));
+        }
+
+        return total / ground.Count;
+    }
+
+    /// <summary>
     /// A tile of this workplace's own ground for it to work next, or null if there is none.
     /// </summary>
     /// <remarks>

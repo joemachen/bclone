@@ -343,6 +343,7 @@ public partial class Main : Control
             case Key.Key3: SetSpeed(4.0); break;
             case Key.Key4: SetSpeed(10.0); break;
             case Key.Tab: CycleDetail(); break;
+            case Key.G: ToggleSoil(); break;
             case Key.Home: _map.CentreOnTheVillage(); break;
 
             // H hides the furniture, C rolls it up. Two keys because they answer two different
@@ -371,9 +372,30 @@ public partial class Main : Control
             MapDetail.Selected => "Routes: selected",
             _ => "Routes: all",
         };
-
-        _soilButton.Text = _map.SoilShown ? "Ground: ON" : "Ground: off";
     }
+
+    /// <summary>Switch the soil overlay, and say so on the button that switched it.</summary>
+    /// <remarks>
+    /// <b>⛔ THE LABEL USED TO BE WRITTEN IN <see cref="CycleDetail"/>, WHICH IS THE *ROUTES*
+    /// BUTTON'S HANDLER</b>, so pressing Ground flipped the overlay and left the button
+    /// insisting <em>"Ground: off"</em> until the player happened to press Routes or Tab.
+    /// Joe: <em>"it stays as 'off' regardless."</em> The overlay had been working the whole
+    /// time; the only feedback the control had contradicted what it did.
+    /// <para>
+    /// The fix is the rule <see cref="CycleDetail"/>'s own comment already states — one place
+    /// writes the text, and every caller goes through it — so the label cannot drift from the
+    /// thing it describes again.
+    /// </para>
+    /// </remarks>
+    private void ToggleSoil()
+    {
+        _map.ShowSoil(!_map.SoilShown);
+        RefreshSoilButton();
+    }
+
+    /// <summary>The one place the ground button's text is written.</summary>
+    private void RefreshSoilButton() =>
+        _soilButton.Text = _map.SoilShown ? "Ground: ON" : "Ground: off";
 
     /// <summary>
     /// Change playback speed — ticks per real second, never the size of a tick
@@ -1089,6 +1111,20 @@ public partial class Main : Control
                 : $"Ground: {ground} tiles, {standing} of them under crop. Every hand here can "
                     + $"keep {world.TilesOneWorkerKeeps(JobKind.Farmer)}.");
 
+            // ⭐ AND WHETHER THAT GROUND WAS WORTH GIVING IT (D178). The farm is the one
+            // building whose output soil actually moves — a field on rich ground out-yields a
+            // field on thin by two to one — so "why is this farm slow?" has an answer the panel
+            // was not giving. Averaged over the tiles it holds rather than sampled at the
+            // farmhouse: soil is regional at lattice 8 and a farm's ground can straddle two
+            // regions, so the doorstep tile is not the answer.
+            //
+            // Only once it has ground, because the line above already says what to do about
+            // having none and two instructions are one too many.
+            if (ground > 0)
+            {
+                lines.Add(DescribeSoil(world.FarmGroundShare(workplace)));
+            }
+
             lines.Add(SeasonRules.IsSowing(world.Clock.Season)
                 ? "Spring: the year's one commitment. A field not sown now is a year missed."
                 : SeasonRules.IsReaping(world.Clock.Season)
@@ -1179,11 +1215,59 @@ public partial class Main : Control
 
         lines.Add(ground);
 
+        // ⭐ WHAT THE GROUND IS WORTH, IN WORDS. Until this line existed the soil overlay's
+        // wash was the *only* channel the game had for saying so — no panel, no log, no
+        // sentence anywhere stated a tile's soil — and Joe walked the shipped build and said
+        // he could not tell good ground from bad. A wash is a thing you compare; this is a
+        // thing you read, and D67's rule is that going after a site should be a decision
+        // rather than a lottery.
+        //
+        // Not on the river, which grows nothing and is not ground.
+        if (world.Map.TerrainAt(tile) != Terrain.Water)
+        {
+            lines.Add(DescribeSoil(world.SoilShareAt(tile)));
+        }
+
         if (world.Zones.IsResidential(tile))
         {
             lines.Add("Painted for housing — the village may build a home here.");
         }
     }
+
+    /// <summary>Ground worth this share of ordinary, said the way the rest of the game says it.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE BANDS COME FROM A RUN, NOT FROM THE RANGE IN THE CONFIG</b>
+    /// (`PerSiteYieldTests.TheValleysSoilSpreadIsWideEnoughToName`). Measured on seed 12345 over
+    /// 9,360 dry tiles: <b>p10 70%, median 101%, p90 135%, min 32%, max 165%</b> — so at 115/85
+    /// the valley is <b>31% rich, 44% ordinary, 25% thin</b>, and each word names ground the
+    /// player can actually walk to.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ The reasoning that preceded the probe was wrong, which is why the probe exists.</b>
+    /// `MakeSoilRegional` bilinearly interpolates between lattice draws, and the obvious
+    /// inference — that blending four draws would regress the typical tile toward the middle and
+    /// leave the wash faint everywhere but the region cores — is not what the valley does. Same
+    /// finding D178 got when smoothing turned out to *destroy* the amplitude it was meant to
+    /// create: **when a spec and a measurement disagree, the spec is the one that is wrong.**
+    /// </para>
+    /// <para>
+    /// <b>The share, not the soil byte.</b> 100 is ordinary because <c>crop_yield_per_tile</c> is
+    /// locked and means *the yield on average ground* (D178) — so the number the panel quotes is
+    /// the number the farm reaps, and the panel and the harvest cannot disagree.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>115 and 85 are duplicated in `PerSiteYieldTests` on purpose.</b> `Bclone.Game` is
+    /// outside `bclone.sln` (D11) so the suite cannot reference it; that guard is the only thing
+    /// that can say these bands are bands the valley contains. Move one, move both.
+    /// </para>
+    /// </remarks>
+    private static string DescribeSoil(int share) => share switch
+    {
+        >= 115 => $"Rich ground — a field here reaps {share}% of what ordinary ground gives.",
+        <= 85 => $"Thin ground — a field here reaps {share}% of what ordinary ground gives.",
+        _ => "Ordinary ground — a field here reaps about what average ground gives.",
+    };
 
     private static string WorkerNames(SimWorld world, Workplace workplace)
     {
@@ -2106,8 +2190,9 @@ public partial class Main : Control
         // occasionally, and a permanent wash over the valley is D42's standing alert in
         // another medium.
         _soilButton = new Button { CustomMinimumSize = new Vector2(110, 0) };
-        _soilButton.Pressed += () => _map.ShowSoil(!_map.SoilShown);
+        _soilButton.Pressed += ToggleSoil;
         controls.AddChild(_soilButton);
+        RefreshSoilButton();
 
         // With a valley this size and free panning, getting lost is easy and a way
         // back is not optional.
@@ -2147,8 +2232,8 @@ public partial class Main : Control
         _placementLabel.Visible = false;
 
         body.AddChild(Wrapped(Muted(
-            "space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · home recentre · "
-            + "c fold panels · h hide them")));
+            "space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · g ground · "
+            + "home recentre · c fold panels · h hide them")));
     }
 
     // ---------------------------------------------------------------

@@ -8,10 +8,18 @@ bug), D152 (goldens last).
 Neighbours: `crops-and-orchards.md` (the farm this changes), `seeded-map-generation.md` (the draw
 order, which is the seed contract), `forests-and-gathering.md §3.2` (where the bound became a
 budget), `environment-and-seasons.md` (soil depletion's eventual home).
-**Status:** ✅ **BUILT and merged to `main`** (D178).
+**Status:** ✅ **BUILT and merged to `main`** (D178), **and its visibility half repaired** (D180).
 Soil is regional and read by the farm; the sowing cap asks each farm's own haul; the player can
-see the ground. **641 passing, 0 failing, 2 skipped of 643**, all four goldens re-taken.
-Proved by `PerSiteYieldTests` and `FarmTests.AFarmsHarvestFallsOffWithDistanceFromItsStore`.
+see the ground **and now read it in words**. **644 passing, 0 failing, 2 skipped of 646**, all
+four goldens unmoved by D180. Proved by `PerSiteYieldTests` and
+`FarmTests.AFarmsHarvestFallsOffWithDistanceFromItsStore`.
+
+> **⛔ §5 SHIPPED BROKEN AND NOBODY NOTICED FOR A DAY (D180).** The **Ground** button's label was
+> written inside the *routes* button's handler, so pressing it flipped the overlay and left the
+> button insisting *"Ground: off"*. Joe: *"it stays as 'off' regardless… I can't really tell
+> which areas are good or bad."* The overlay had worked the whole time. **A control whose only
+> feedback contradicts what it did is D103's unreachable feature arriving through the label** —
+> and this spec's own §5 argues the slice is nothing without it. See §5.4.
 
 > **⚠️ This status line is load-bearing. Update it the day the slice merges** — D159 found five
 > specs claiming "not started" for systems that had shipped.
@@ -233,6 +241,36 @@ ships without §5, it is a lottery rather than a decision, and D67's argument ap
 - **On the brush**, once per stroke (D42): painting a field on poor ground says so.
 - ⚠️ **A soil *number* on the panel is the failure mode**, not the fix. `proficiency 73` was
   rejected in `skills-catalog.md §7` for the same reason.
+
+### 5.4 ⛔ What actually shipped in D178, and what D180 had to add
+
+**Only the first bullet was built, and it did not work.** The overlay drew correctly from the
+day it landed; **the button that switched it never changed its label**, because
+`_soilButton.Text` was written inside `CycleDetail` — the *routes* button's handler. Pressing
+Ground flipped the wash in silence and left the control reading *"Ground: off"*; pressing Routes
+afterwards would suddenly relabel it. Joe found it in one sitting of play.
+
+**The second bullet — the sentence on the farm's panel — had never been written at all**, and
+neither had anything else in the game that states soil in words. **The wash was the only channel
+this feature had**, which is why a broken toggle made the whole slice invisible rather than
+merely awkward. D180 adds it, plus the same sentence on any tile the player clicks.
+
+- ⚠️ **The wording departs from this section's own proposal, deliberately.** §5 suggested *"worth
+  about a fifth more than average"*; what shipped quotes the share — *"Rich ground — a field here
+  reaps 134% of what ordinary ground gives."* **The reason is the sentence directly above it in
+  the same panel**, which has said *"a trip brings back 41 food — 62% of what this hut would
+  yield in full woodland"* since D112. Two adjacent lines describing the same idea in two
+  conventions is worse than either convention. **The `proficiency 73` failure is a bare number
+  with no referent**; a share of a stated thing is what this panel already speaks.
+- ⚠️ **The third bullet — the brush saying so once per stroke — is still not built.** Named here
+  so it is not lost.
+- **The bands come from a run** (`PerSiteYieldTests.TheValleysSoilSpreadIsWideEnoughToName`):
+  seed 12345 over 9,360 dry tiles gives **p10 70%, median 101%, p90 135%, min 32%, max 165%**, so
+  *rich* at 115 and *thin* at 85 name **31% / 44% / 25%** of the valley. **The prediction that
+  preceded the probe was wrong** — bilinear interpolation was expected to regress the typical
+  tile toward the middle and leave the wash faint everywhere but the region cores, and it does
+  not. **The palette therefore needs no retune on amplitude grounds**, which is a colour slice
+  that would otherwise have been written on a guess.
 
 ---
 

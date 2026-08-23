@@ -341,6 +341,166 @@ public sealed class PerSiteYieldTests
         return seen == FieldTiles ? total / seen : 0;
     }
 
+    // ---------------------------------------------------------------
+    //  ⭐ The probe behind the words the player reads
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ What the valley's soil actually looks like from the player's side — the spread the
+    /// overlay has to render and the bands the panels have to name.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, walking the shipped build: <em>"I can't really tell which areas are good or
+    /// bad."</em></b> Half of that was a broken button — the ground toggle's label was written
+    /// in the *routes* button's handler, so it read <em>"Ground: off"</em> whatever the overlay
+    /// was doing. The other half is this: <b>how strong is the wash on a typical tile, and where
+    /// do <em>rich</em>, <em>ordinary</em> and <em>thin</em> actually fall?</b>
+    /// </para>
+    /// <para>
+    /// <b>⚠️ MEASURED RATHER THAN REASONED, because the reasoning was available and would have
+    /// been wrong to trust.</b> Soil is drawn uniform in <c>[soil_quality_min,
+    /// soil_quality_max]</c> and then bilinearly interpolated by <c>MakeSoilRegional</c> —
+    /// lattice points keep the full drawn amplitude while every tile between them is a blend of
+    /// four draws, which regresses toward the middle. That predicts a faint typical tile and
+    /// strong region cores, and it is exactly the kind of prediction D178's own smoothing probe
+    /// killed before a line shipped. The percentiles below come from a run.
+    /// </para>
+    /// <para>
+    /// <b>It asserts the thing the wording depends on</b> rather than only printing: the bands
+    /// `Main` names must each contain a real share of the valley, or the panel would call
+    /// everything ordinary and say nothing at all.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheValleysSoilSpreadIsWideEnoughToName()
+    {
+        SimConfig config = Shipped(12345UL);
+        SimWorld world = World(config);
+
+        var shares = new List<int>();
+        for (int y = config.MapMinY; y < config.MapMinY + config.MapHeight; y++)
+        {
+            for (int x = config.MapMinX; x < config.MapMinX + config.MapWidth; x++)
+            {
+                var at = new GridPos(x, y);
+                if (world.Map.TerrainAt(at) != Terrain.Water)
+                {
+                    shares.Add(world.SoilShareAt(at));
+                }
+            }
+        }
+
+        shares.Sort();
+
+        int Percentile(int p) => shares[Math.Min(shares.Count - 1, shares.Count * p / 100)];
+
+        int p05 = Percentile(5);
+        int p10 = Percentile(10);
+        int p50 = Percentile(50);
+        int p90 = Percentile(90);
+        int p95 = Percentile(95);
+
+        // What `DrawSoil` makes of the same tile: alpha = 0.55 × |share − 100| / 100, in
+        // percent so this stays integer.
+        int AlphaAt(int share) => 55 * Math.Abs(share - 100) / 100;
+
+        _output.WriteLine($"{shares.Count} dry tiles at seed 12345");
+        _output.WriteLine(
+            $"share of ordinary: p05 {p05}%  p10 {p10}%  p50 {p50}%  p90 {p90}%  p95 {p95}%"
+            + $"  (min {shares[0]}%, max {shares[^1]}%)");
+        _output.WriteLine(
+            $"overlay alpha: p10 {AlphaAt(p10)}%  p50 {AlphaAt(p50)}%  p90 {AlphaAt(p90)}%"
+            + $"  max {Math.Max(AlphaAt(shares[0]), AlphaAt(shares[^1]))}%");
+
+        int rich = shares.FindAll(share => share >= RichAt).Count * 100 / shares.Count;
+        int thin = shares.FindAll(share => share <= ThinAt).Count * 100 / shares.Count;
+        _output.WriteLine(
+            $"bands: rich (>={RichAt}%) {rich}% of the valley; thin (<={ThinAt}%) {thin}%; "
+            + $"ordinary {100 - rich - thin}%");
+
+        // ⭐ Each band has to be somewhere the player can actually walk to. A band holding
+        // 1% of the valley is a word nobody ever reads, and one holding 90% is a word that
+        // says nothing — which is the failure the sentence exists to avoid.
+        Assert.InRange(rich, 5, 45);
+        Assert.InRange(thin, 5, 45);
+    }
+
+    /// <summary>
+    /// ⭐ A farm reports <b>the ground it works</b>, not the tile its farmhouse stands on.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the guard for the shortcut that would have been easier to write.</b> Sampling
+    /// <see cref="SimWorld.SoilShareAt"/> at <c>farm.Position</c> is one line and would pass any
+    /// test that only asked *"does the panel say a number?"*. It would also be wrong: soil is
+    /// regional at lattice 8 (`per-site-yield.md §3.1`) and a farm's ground reaches well past
+    /// one lattice cell, so the doorstep is a sample of one region and the field can straddle
+    /// two. The player would be told their farm was rich while most of it was thin.
+    /// </para>
+    /// <para>
+    /// <b>Both halves are asserted</b> — that the number is the average of the field, and that
+    /// the doorstep would have given a different one. Without the second half this guard is
+    /// green against the shortcut it exists to catch, which is the failure D157 has now found
+    /// three times.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFarmReportsTheGroundItWorksNotItsDoorstep()
+    {
+        SimConfig config = Shipped(12345UL);
+        SimWorld world = World(config);
+
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        int given = FarmFixtures.GiveItGround(world, farm, reach: 4);
+        Assert.True(given > 1, $"The fixture gave the farm {given} tiles; it needs several.");
+
+        IReadOnlyList<int> owned = world.Zones.WorkGroundOf(farm.Id);
+        int total = 0;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            total += world.SoilShareAt(world.Zones.PositionOf(owned[i]));
+        }
+
+        int doorstep = world.SoilShareAt(farm.Position);
+        int reported = world.FarmGroundShare(farm);
+
+        _output.WriteLine(
+            $"farm at {farm.Position} holds {owned.Count} tiles; its ground averages "
+            + $"{reported}% of ordinary, while the tile it stands on is worth {doorstep}%");
+
+        Assert.Equal(total / owned.Count, reported);
+        Assert.NotEqual(doorstep, reported);
+    }
+
+    /// <summary>A farm given no ground quotes no percentage at all.</summary>
+    /// <remarks>
+    /// The panel already tells a groundless farm what to do about it, and a second sentence
+    /// quoting the soil of a field that does not exist would be two instructions where one
+    /// will do — and one of them about nothing.
+    /// </remarks>
+    [Fact]
+    public void AFarmWithNoGroundSaysNothingAboutSoil()
+    {
+        SimWorld world = World(Shipped(12345UL));
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+
+        Assert.Equal(0, world.Zones.WorkGroundTiles(farm.Id));
+        Assert.Equal(0, world.FarmGroundShare(farm));
+    }
+
+    /// <summary>Where <c>Main</c> starts calling ground rich, as a share of ordinary.</summary>
+    /// <remarks>
+    /// ⚠️ <b>These two constants are duplicated in the view on purpose and must not drift.</b>
+    /// `Bclone.Game` is deliberately outside `bclone.sln` (D11), so the tests cannot reference
+    /// it — this guard is the only thing that can say the bands the panels name are bands the
+    /// valley contains. If `Main.DescribeSoil` moves them, move them here.
+    /// </remarks>
+    private const int RichAt = 115;
+
+    /// <summary>Where <c>Main</c> starts calling ground thin. See <see cref="RichAt"/>.</summary>
+    private const int ThinAt = 85;
+
     private static GridPos FindGroundWorth(SimWorld world, int soil)
     {
         SimConfig config = world.Config;

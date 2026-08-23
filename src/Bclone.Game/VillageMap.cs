@@ -1193,21 +1193,6 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
-    /// Where the player has said the village may live (D42).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Drawn always, not only while painting. A residential zone is a standing decision
-    /// — it is the answer to "why did that house go there?" and to "why has nobody
-    /// moved out in twenty years?" — so it has to be visible when you are not thinking
-    /// about it, which is exactly when those questions occur to you.
-    /// </para>
-    /// <para>
-    /// Faint, though. It is ground the village <em>may</em> use, not something built,
-    /// and it should never compete with the people standing on it.
-    /// </para>
-    /// </remarks>
-    /// <summary>
     /// How good the ground is — <b>the overlay that turns per-site yield from a lottery into a
     /// decision</b> (`specs/per-site-yield.md §5`, D178).
     /// </summary>
@@ -1276,6 +1261,21 @@ public partial class VillageMap : Control
         }
     }
 
+    /// <summary>
+    /// Where the player has said the village may live (D42).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Drawn always, not only while painting. A residential zone is a standing decision
+    /// — it is the answer to "why did that house go there?" and to "why has nobody
+    /// moved out in twenty years?" — so it has to be visible when you are not thinking
+    /// about it, which is exactly when those questions occur to you.
+    /// </para>
+    /// <para>
+    /// Faint, though. It is ground the village <em>may</em> use, not something built,
+    /// and it should never compete with the people standing on it.
+    /// </para>
+    /// </remarks>
     private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
     {
         ZoneMap zones = _world!.Zones;
@@ -1631,7 +1631,16 @@ public partial class VillageMap : Control
     /// the good ground?*) rather than one they want answered continuously, and a permanent
     /// wash over the whole valley is the standing alert D42 and D123 deleted in another medium.
     /// </remarks>
-    public void ShowSoil(bool shown) => _showSoil = shown;
+    public void ShowSoil(bool shown)
+    {
+        _showSoil = shown;
+
+        // ⚠️ Redrawn here rather than relying on `Present` coming round next frame. It would
+        // — `Main._Process` calls it every frame, paused or not — but that is an accident of
+        // the frame loop rather than a decision, and every sibling toggle on this class
+        // (`ShowIdleMarkers`, `ShowFullMarkers`, `ToggleFullMarker`) queues its own.
+        QueueRedraw();
+    }
 
     private bool _showSoil;
 
