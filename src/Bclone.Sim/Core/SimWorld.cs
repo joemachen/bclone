@@ -2263,7 +2263,24 @@ public sealed class SimWorld
     /// neighbourhood, instead of a nag the player learns to click past.
     /// </para>
     /// </remarks>
-    public PlacementVerdict PaintResidential(GridPos tile)
+    /// <summary>
+    /// Whether this tile would take residential paint, <b>and what the player should be told</b>
+    /// — pure (D198).
+    /// </summary>
+    /// <remarks>
+    /// <b>The <see cref="CanBuildAt"/> / <see cref="Mark"/> split, applied to the brush.</b> The
+    /// view could show a ghost under the cursor for a *building* and could show nothing at all
+    /// for a *brush*, because every paint method mixed the test with the doing — so the only way
+    /// to ask *"would this tile take?"* was to paint it. Joe, playing: *"when I'm painting I
+    /// don't see an outline of the area I'm about to paint. I just have to point and click and
+    /// hope."*
+    /// <para>
+    /// <b>One condition, two callers</b> (D142's three call sites, D148's two meanings):
+    /// <see cref="PaintResidential"/> asks this and then acts, so the preview and the paint can
+    /// never disagree about which tiles are in.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict CanPaintResidential(GridPos tile)
     {
         if (!Map.Contains(tile))
         {
@@ -2275,18 +2292,28 @@ public sealed class SimWorld
             return PlacementVerdict.No("Nobody can live on the water.");
         }
 
-        Zones.SetResidential(tile, true);
-
+        // ⚠️ Asked BEFORE the tile is painted and it does not read the zone, so the answer is
+        // the same either side of the stroke — which is what makes it safe to show in advance.
         int toWork = NearestForageDistance(tile);
         int budget = VillageEconomy.MaxHomeToWorkTiles(Config);
-        if (toWork > budget)
-        {
-            return PlacementVerdict.Yes(
+
+        return toWork > budget
+            ? PlacementVerdict.Yes(
                 $"That corner is {toWork} tiles from the nearest food; the village budgets " +
-                $"{budget}. Families there will go hungry.");
+                $"{budget}. Families there will go hungry.")
+            : PlacementVerdict.Fine;
+    }
+
+    public PlacementVerdict PaintResidential(GridPos tile)
+    {
+        PlacementVerdict verdict = CanPaintResidential(tile);
+        if (!verdict.Allowed)
+        {
+            return verdict;
         }
 
-        return PlacementVerdict.Fine;
+        Zones.SetResidential(tile, true);
+        return verdict;
     }
 
     // ---------------------------------------------------------------
@@ -2463,7 +2490,14 @@ public sealed class SimWorld
     /// the player gets is the shape they can actually use.
     /// </para>
     /// </remarks>
-    public PlacementVerdict PaintWorkGround(Workplace workplace, GridPos tile)
+    /// <summary>Whether this workplace could be given this tile — pure (D198).</summary>
+    /// <remarks>
+    /// The preview's door and the paint's — see <see cref="CanPaintResidential"/>. <b>The
+    /// overstretch warning is deliberately not here</b>: it is about the workplace's total
+    /// ground rather than about this tile, so it belongs to the stroke rather than to the ghost,
+    /// and <see cref="OverstretchedNote"/> stays its single author.
+    /// </remarks>
+    public PlacementVerdict CanPaintWorkGround(Workplace workplace, GridPos tile)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
@@ -2477,14 +2511,27 @@ public sealed class SimWorld
             return PlacementVerdict.No("Nobody can work the water.");
         }
 
-        int held = Zones.WorkGroundOwner(tile);
-        if (held != 0 && held != workplace.Id)
+        int owner = Zones.WorkGroundOwner(tile);
+        if (owner != 0 && owner != workplace.Id)
         {
-            Workplace? other = FindWorkplace(held);
+            Workplace? other = FindWorkplace(owner);
             return PlacementVerdict.No(
                 other is null
                     ? "That ground is already spoken for."
                     : $"That ground belongs to {other.Name}.");
+        }
+
+        return PlacementVerdict.Fine;
+    }
+
+    public PlacementVerdict PaintWorkGround(Workplace workplace, GridPos tile)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        PlacementVerdict verdict = CanPaintWorkGround(workplace, tile);
+        if (!verdict.Allowed)
+        {
+            return verdict;
         }
 
         Zones.SetWorkGround(tile, workplace.Id);
@@ -2541,7 +2588,16 @@ public sealed class SimWorld
     /// promise the village cannot keep.
     /// </para>
     /// </remarks>
-    public PlacementVerdict PaintHarvest(GridPos tile, HarvestBrush brush = HarvestBrush.Everything)
+    /// <summary>Whether this tile would take harvest paint — pure (D198).</summary>
+    /// <remarks>
+    /// <b>The preview's door, and the paint's</b> — see <see cref="CanPaintResidential"/> for why
+    /// the split exists. <b>This is the brush where it matters most</b>: the mode is a filter
+    /// (D90), so half the tiles under a stroke routinely refuse it, and *"the brush is set to
+    /// fell trees and that is a stone seam"* is a sentence the player should be able to see
+    /// coming rather than discover by clicking.
+    /// </remarks>
+    public PlacementVerdict CanPaintHarvest(
+        GridPos tile, HarvestBrush brush = HarvestBrush.Everything)
     {
         if (!Map.Contains(tile))
         {
@@ -2554,20 +2610,33 @@ public sealed class SimWorld
             return PlacementVerdict.No("There is nothing standing there to take.");
         }
 
-        // ⭐ THE MODE IS A FILTER AND IS THEN FORGOTTEN (D90, Joe's call of two). A marked
-        // tile is simply marked; what a laborer gets from it is whatever is standing there.
-        // So "clear the stone and leave the wood" works by the wood never taking the paint,
-        // rather than by storing three layers and letting a tile be marked for a good it
-        // does not have.
-        Goods? wanted = WhatTheBrushTakes(brush);
-        if (wanted is not null && standing.Value != wanted.Value)
+        Goods? takes = WhatTheBrushTakes(brush);
+        return takes is not null && standing.Value != takes.Value
+            ? PlacementVerdict.No(
+                $"The brush is set to {Describe(brush)}, and that is {Describe(standing.Value)}.")
+            : PlacementVerdict.Fine;
+    }
+
+    /// <remarks>
+    /// ⭐ <b>THE MODE IS A FILTER AND IS THEN FORGOTTEN</b> (D90, Joe's call of two). A marked
+    /// tile is simply marked; what a laborer gets from it is whatever is standing there. So
+    /// *"clear the stone and leave the wood"* works by the wood never taking the paint, rather
+    /// than by storing three layers and letting a tile be marked for a good it does not have.
+    /// <para>
+    /// <b>The whole test lives in <see cref="CanPaintHarvest"/></b>, so the preview under the
+    /// cursor and the paint under the click are the same answer (D198).
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict PaintHarvest(GridPos tile, HarvestBrush brush = HarvestBrush.Everything)
+    {
+        PlacementVerdict verdict = CanPaintHarvest(tile, brush);
+        if (!verdict.Allowed)
         {
-            return PlacementVerdict.No(
-                $"The brush is set to {Describe(brush)}, and that is {Describe(standing.Value)}.");
+            return verdict;
         }
 
         Zones.SetHarvest(tile, true);
-        return PlacementVerdict.Fine;
+        return verdict;
     }
 
     /// <summary>The good a brush setting will accept, or null for "anything".</summary>

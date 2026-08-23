@@ -963,6 +963,7 @@ public partial class VillageMap : Control
 
         // The ghost last, over everything, because it is the thing being decided.
         DrawTheGhost();
+        DrawTheBrushful();
     }
 
     /// <summary>
@@ -974,6 +975,109 @@ public partial class VillageMap : Control
     /// on amber. The words alongside say why it is amber, because a colour on its own
     /// is the shrug this project keeps refusing.
     /// </remarks>
+    /// <summary>
+    /// ⭐⭐ The brushful about to be laid down, under the cursor (D198, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing:</b> *"when I'm painting I don't see an outline of the area I'm about to
+    /// paint. I just have to point and click and hope it's covering the right area."* A building
+    /// has had a ghost since D43; **the brush — which puts down twelve tiles at a time — had
+    /// nothing at all.**
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT SHOWS WHAT WOULD HAPPEN, NOT WHERE THE BRUSH IS.</b> A plain outline would be a
+    /// rectangle; this asks the sim tile by tile and colours each one by the answer, so the
+    /// harvest brush's filter (D90) — *"the brush is set to fell trees and that is a stone
+    /// seam"* — is visible **before** the click rather than discovered by it. That is §1.1
+    /// applied to the one tool that had escaped it.
+    /// </para>
+    /// <para>
+    /// <b>Asked through the same doors the paint uses</b> — <c>CanPaintResidential</c>,
+    /// <c>CanPaintHarvest</c>, <c>CanPaintWorkGround</c> — which is why those were split out of
+    /// the paint methods (D142's rule): a preview computed from a second copy of the condition is
+    /// a preview that can lie.
+    /// </para>
+    /// <para>
+    /// <b>The diamond, not a square</b>, because that is the shape <see cref="PaintAround"/>
+    /// actually lays down. A square preview over a diamond brush would be a new lie replacing an
+    /// old absence.
+    /// </para>
+    /// </remarks>
+    private void DrawTheBrushful()
+    {
+        if (_brush == 0 || _world is null || !_world.Map.Contains(_hovered))
+        {
+            return;
+        }
+
+        for (int dy = -BrushRadius; dy <= BrushRadius; dy++)
+        {
+            for (int dx = -BrushRadius; dx <= BrushRadius; dx++)
+            {
+                if (Mathf.Abs(dx) + Mathf.Abs(dy) > BrushRadius)
+                {
+                    continue;
+                }
+
+                var tile = new GridPos(_hovered.X + dx, _hovered.Y + dy);
+                if (!_world.Map.Contains(tile))
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                float size = Mathf.Max(6f, _pixelsPerTile * 0.9f);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+                Color colour = ColourForTheBrushOn(tile);
+                DrawRect(rect, colour with { A = 0.30f });
+                DrawRect(rect, colour with { A = 0.85f }, filled: false, width: 1f);
+            }
+        }
+    }
+
+    /// <summary>What the brush would do to this tile, as a colour.</summary>
+    /// <remarks>
+    /// <b>Erasing is never refused</b>, so it is drawn plain: a rubber that showed red over a
+    /// tile with no paint on it would be telling the player they had done something wrong when
+    /// they had not.
+    /// </remarks>
+    private Color ColourForTheBrushOn(GridPos tile)
+    {
+        SimWorld world = _world!;
+
+        if (_brush < 0)
+        {
+            return GhostWarned;
+        }
+
+        PlacementVerdict verdict;
+
+        if (_groundFor != 0)
+        {
+            Workplace? owner = world.FindWorkplace(_groundFor);
+            verdict = owner is null
+                ? PlacementVerdict.No("That building is gone.")
+                : world.CanPaintWorkGround(owner, tile);
+        }
+        else if (_harvestMode is not null)
+        {
+            verdict = world.CanPaintHarvest(tile, _harvestMode.Value);
+        }
+        else
+        {
+            verdict = world.CanPaintResidential(tile);
+        }
+
+        return verdict switch
+        {
+            { Allowed: false } => GhostRefused,
+            { HasWarning: true } => GhostWarned,
+            _ => GhostFine,
+        };
+    }
+
     private void DrawTheGhost()
     {
         if (_building is null)
