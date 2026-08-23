@@ -86,7 +86,12 @@ public sealed class Phase0SimTests
     public void Hunger_AccruesPerTickAndClampsAtMax()
     {
         // Meals priced out of reach, so nothing interferes with the climb.
-        SimConfig config = Config with { FoodPerMeal = 999 };
+        //
+        // ⚠️ AND THE PERSONAL RHYTHM OFF, because it starts a villager's hunger a few points
+        // above zero (§3.5, D190) — people do not all get hungry at the same instant. **This
+        // guard is about the arithmetic of the climb**, which needs a known starting point, and
+        // a one-villager world has nobody to be staggered against anyway.
+        SimConfig config = Config with { FoodPerMeal = 999, SeededRhythm = false };
         var (loop, _) = Phase0Fixtures.Build(config);
 
         loop.StepOnce();

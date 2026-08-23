@@ -7,7 +7,7 @@ D156 (an uneducated child works at twelve), D168 (a new kind of thing should be 
 Neighbours: **`tech-tree.md` (this is its missing substrate — §6)**, `professions.md §4` (the
 roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing.md` and
 `livestock.md` (parked, and both add skills when they land).
-**Status:** 🔨 **LANDINGS 1 AND 2 OF 3 ARE BUILT** (D181, D187). `Villager.Skills` accrues time on
+**Status:** ✅ **ALL THREE LANDINGS ARE BUILT** (D181, D187, D190). `Villager.Skills` accrues time on
 the task, is hashed sparsely in id order, and is visible: the villager panel says *"Nineteen years
 in the fields"* and **the mastery line fires in the village log** (§3.3b, Joe's ask). **Nothing
 ever takes proficiency away** (§3.7, D183) and a tick out on the job counts for more than a tick
@@ -16,12 +16,15 @@ the tick order.
 
 **⭐⭐ AND MASTERY BITES** (D187) — **a master takes half the ticks over an action, rounded up**, so
 skill finally changes what the village does. **The novice floor is untouched to the tick**, so
-every number `VillageEconomy` derives still holds. **667 passing, 0 failing, 2 skipped of 669**;
-the three state-hash goldens moved again, this time for a **real behaviour change** rather than
-for counters.
+every number `VillageEconomy` derives still holds. **675 passing, 0 failing, 2 skipped of 677.**
 
-**Not built:** landing 3 (the mixed founding §3.2c and the seeded rhythm §3.5), apprenticeship and
-teaching (§5), and the at-risk line (§7). **D28 is not yet discharged** — it is landing 3's.
+**⭐⭐ AND LANDING 3 IS IN** (D190): the founders arrive as **a master, a journeyman and two
+novices with seeded trades**, and every villager is drawn a **personal rhythm at birth** that sets
+their first step and their first hunger apart from everybody else's. **D28 IS DISCHARGED** —
+measured over the first five years, two adults of one household went from **identical hunger 100%
+of ticks to 0%**, and from sharing a tile 91% of ticks to 80%.
+
+**Not built:** apprenticeship and teaching (§5), and the at-risk line (§7).
 
 > **⛔ §11.2.1's "provable no-op: goldens unmoved" TURNED OUT TO BE UNWRITABLE, and §11 has been
 > corrected rather than the guard weakened** (D181). The goldens are full state hashes and

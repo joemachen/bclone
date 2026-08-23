@@ -1391,6 +1391,46 @@ public sealed record SimConfig
     [JsonPropertyName("mastery_speed_bonus_percent")]
     public int MasterySpeedBonusPercent { get; init; } = 50;
 
+    /// <summary>
+    /// How many of the founders arrive already <b>masters</b> of a trade
+    /// (`skills-catalog.md §3.2c`).
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ THE SHAPE IS FIXED AND THE TRADES ARE SEEDED</b> — one master, one journeyman and
+    /// the rest novices (Joe, 2026-08-23). Every seed gets the same *strength* of party and a
+    /// different *speciality*, so a second playthrough differs in **what you can do** rather than
+    /// in **whether you can live**. A fully seeded roll would make a four-novice seed and a
+    /// two-master seed a bad run and a good one rather than two playthroughs, and §0.1 is that
+    /// the challenge is in the planning, never in the punishment.
+    /// </remarks>
+    [JsonPropertyName("founding_masters")]
+    public int FoundingMasters { get; init; } = 1;
+
+    /// <summary>How many founders arrive as <b>journeymen</b>. See <see cref="FoundingMasters"/>.</summary>
+    [JsonPropertyName("founding_journeymen")]
+    public int FoundingJourneymen { get; init; } = 1;
+
+    /// <summary>
+    /// Whether every villager is drawn a personal rhythm at birth (`skills-catalog.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A SWITCH BECAUSE THE TEST PLAN REQUIRES ONE, NOT BECAUSE ANYBODY WOULD TURN IT
+    /// OFF.</b> §10 asks for a **synthetic all-novice village with the mixed founding switched
+    /// off and the seeded rhythm switched off**, and for D28's lockstep guard to be *"checked red
+    /// by running with both switched off"*. Neither is posable without this.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT SKIPS THE DRAW RATHER THAN ZEROING THE RESULT, AND THAT IS THE WHOLE POINT.</b>
+    /// Draw order is the seed contract — a run with the rhythm off consumes exactly the draws it
+    /// consumed before §3.5 existed (name, then lifespan), so it reproduces the old history
+    /// byte for byte. Zeroing after drawing would shift every subsequent number and prove
+    /// nothing.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("seeded_rhythm")]
+    public bool SeededRhythm { get; init; } = true;
+
     // ⭐ `forager_catchment_tiles` IS DELETED (`forests-and-gathering.md §3`, Joe: *"get rid
     // of the ring and the distance restrictions"*). It was ten tiles, and past it a villager
     // simply could not hold a job however much they wanted it.

@@ -146,6 +146,31 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐⭐ THEIR OWN RHYTHM, SPENT ONCE AT THE START OF A WORKING LIFE (§3.5, D28, D190).
+        //
+        // **This is the oldest open observation in the project.** Joe watched the village at 4×
+        // in Phase 1 and saw people travelling as duos rather than individuals; measured, two
+        // adults of one household holding one job are on the same tile 99.9% of ticks with
+        // identical hunger 100% of the time. They are not short of variability, they are
+        // SYMMETRIC — same home tile, same stepping rule, same constant durations — so they even
+        // stop to eat on the same tick.
+        //
+        // ⭐ A FEW TICKS, ONCE, IS ENOUGH, because nothing ever puts them back in step: two
+        // villagers who set off a tick apart arrive, work and eat a tick apart for the rest of
+        // their lives. That is §3.3's argument about differing durations, arriving on day one
+        // instead of after twenty years.
+        //
+        // ⚠️ ABOVE EATING ON PURPOSE. Below it, a villager whose rhythm is unspent would take
+        // their first meal in lockstep with their sibling and the stagger would be spent against
+        // an already-synchronised clock. Nobody starves for it: the draw is under one day and
+        // `TicksAtMaxHunger` needs six.
+        if (villager.Rhythm > 0 && villager.CanWork)
+        {
+            villager.Rhythm--;
+            villager.State = VillagerState.Resting;
+            return;
+        }
+
         // Eating preempts everything.
         //
         // The obvious ordering — finish the current action, then decide — produces a

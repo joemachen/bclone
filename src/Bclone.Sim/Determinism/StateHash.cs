@@ -409,6 +409,19 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.ErrandX);
         hash = MixUInt32(hash, (uint)villager.ErrandY);
 
+        // ⭐ Their own rhythm (§3.5, D190) — sim state, because it decides what they do.
+        //
+        // ⚠️ SPARSE, and the reason is the same one the zone loops above record: mixing it
+        // unconditionally would put a fresh zero into every villager in the game, so a village
+        // played with the rhythm switched off could never hash as it did before §3.5 existed —
+        // and §10 asks for exactly that village to be posable. A rhythm is only ever pending
+        // for a few ticks at the start of a working life; once spent it is inert, and inert
+        // state has no business in a fingerprint.
+        if (villager.Rhythm != 0)
+        {
+            hash = MixUInt32(hash, (uint)villager.Rhythm);
+        }
+
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
         // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
         // mixes nothing for a villager who has never held a job and cannot depend on the

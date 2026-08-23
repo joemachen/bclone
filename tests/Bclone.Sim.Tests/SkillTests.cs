@@ -51,7 +51,14 @@ public sealed class SkillTests
     [Fact]
     public void ANoviceWorksAtExactlyTodaysSpeed()
     {
-        SimConfig config = ShippedConfig.Established();
+        // ⭐⭐ POSED ALL-NOVICE, AND §10 PREDICTED THIS EXACT FAILURE IN ADVANCE:
+        // *"a guard that tries to assert this about the real opening will fail, and the
+        // temptation will be to weaken it instead of to pose it properly."* It went red the
+        // moment the mixed founding landed, because founder #0 is now a **master** — so the
+        // villager this reached for was the one person in the valley who is not a novice.
+        // Posed rather than relaxed.
+        SimConfig config = ShippedConfig.Established()
+            with { FoundingMasters = 0, FoundingJourneymen = 0 };
         SimWorld world = Loop(config).World;
         Villager novice = world.Villagers.First(v => v.Alive);
 
@@ -255,8 +262,19 @@ public sealed class SkillTests
         // early return, so **this guard cannot see a break in the novice floor itself** — it
         // was checked red against one and stayed green. `ANoviceWorksAtExactlyTodaysSpeed`
         // covers that arm, in the live path. Two claims, two guards; neither is the other.
+        //
+        // ⭐⭐ AND LANDING 3 ADDED TWO MORE THINGS TO SWITCH OFF, WHICH §10 ALSO NAMED IN
+        // ADVANCE: *"a synthetic all-novice village, with the mixed founding switched off and
+        // the seeded rhythm switched off."* Both change what people **do** — that is what they
+        // are for — so both belong in the posing rather than in the claim.
         SimConfig config = (shipped ? ShippedConfig.Established() : VillageFixtures.Village)
-            with { MasterySpeedBonusPercent = 0 };
+            with
+            {
+                MasterySpeedBonusPercent = 0,
+                FoundingMasters = 0,
+                FoundingJourneymen = 0,
+                SeededRhythm = false,
+            };
         SimLoop loop = Loop(config);
 
         loop.Step(config.TicksPerYear * 50);
@@ -1108,6 +1126,214 @@ public sealed class SkillTests
 
         ages.Sort();
         return ages;
+    }
+
+    // ---------------------------------------------------------------
+    //  ⭐⭐ Landing 3 — the mixed founding and the seeded rhythm (D28)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ <b>Two adults of one household stop running the same program</b> — D28, measured at
+    /// the opening, where Joe saw it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE OLDEST OPEN OBSERVATION IN THE PROJECT, AND THE NUMBER TO BEAT IS ON RECORD.</b>
+    /// Joe watched the village at 4× in Phase 1 and saw people travelling as duos rather than
+    /// individuals. Measured then: **two adults of one household holding one job are on the same
+    /// tile 99.9% of ticks, with identical hunger 100% of the time.**
+    /// </para>
+    /// <para>
+    /// <b>⭐ ASSERTED ABOUT THE FIRST YEARS, NOT ACROSS A CENTURY</b> (§10). That is the whole
+    /// point of taking the rhythm and the mixed founding together: skill alone breaks the
+    /// symmetry over *decades*, and the opening is the stretch Joe was actually watching. **If
+    /// this only came good by year 80 it would not be a fix.**
+    /// </para>
+    /// <para>
+    /// <b>It is a symmetry problem rather than a variability one</b>, which is why a few ticks
+    /// once is enough: two villagers who set off a tick apart never re-synchronise.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TwoAdultsOfOneHouseholdStopMovingInLockstep()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimConfig before = config with
+        {
+            FoundingMasters = 0,
+            FoundingJourneymen = 0,
+            SeededRhythm = false,
+        };
+
+        (int Tile, int Hunger) staggered = SameTileShare(config);
+        (int Tile, int Hunger) lockstepped = SameTileShare(before);
+
+        _output.WriteLine(
+            $"first 5 years, both switched OFF: same tile {lockstepped.Tile}% of ticks, "
+            + $"identical hunger {lockstepped.Hunger}%");
+        _output.WriteLine(
+            $"first 5 years, as shipped:        same tile {staggered.Tile}% of ticks, "
+            + $"identical hunger {staggered.Hunger}%");
+
+        // ⛔ THE RED CHECK IS BUILT IN, which is what makes this falsifiable rather than a
+        // vibe (§10): the same measurement with both switched off must still show the
+        // lockstep, or this guard is describing a village that was never in step.
+        Assert.True(
+            lockstepped.Tile >= 90,
+            $"With the rhythm and the mixed founding off, two adults share a tile only "
+            + $"{lockstepped.Tile}% of ticks — the lockstep this fixes is not present, so the "
+            + "comparison below proves nothing.");
+
+        Assert.True(
+            lockstepped.Hunger >= 95,
+            $"With both switched off, two adults share a hunger value only "
+            + $"{lockstepped.Hunger}% of ticks. The symmetry D28 describes is not there.");
+
+        Assert.True(
+            staggered.Tile < lockstepped.Tile,
+            $"Two adults of one household still share a tile {staggered.Tile}% of ticks against "
+            + $"{lockstepped.Tile}% before — D28 is not discharged.");
+
+        // ⭐⭐ THE DECISIVE NUMBER, AND IT WENT FROM 100% TO 0%. Hunger is a pure function of
+        // ticks since the last meal, so two people who eat on the same tick stay in step for
+        // ever however differently they walk — **an offset that moves only their feet cannot
+        // touch it**, and the first version of this fix did exactly that and left this at 100%.
+        // The rhythm sets their starting hunger apart as well as their first step.
+        Assert.True(
+            staggered.Hunger < 50,
+            $"Two adults of one household still hold identical hunger {staggered.Hunger}% of "
+            + "ticks. They are eating on the same tick, so they are still running one program.");
+    }
+
+    /// <summary>
+    /// ⭐ The rhythm is <b>small</b> — it staggers people without changing what they produce.
+    /// </summary>
+    /// <remarks>
+    /// <b>§3.5's hard bound, asserted:</b> *"If it changes how much anybody produces over a year,
+    /// it is too big"* — that would be a second, invisible hand on the economy rather than a
+    /// stagger. The draw is under one day and is spent **once**, at the start of a working life,
+    /// against 480 ticks in every year of it.
+    /// </remarks>
+    [Fact]
+    public void TheRhythmStaggersWithoutCostingAnything()
+    {
+        SimConfig config = ShippedConfig.Established() with
+        {
+            FoundingMasters = 0,
+            FoundingJourneymen = 0,
+        };
+
+        int withRhythm = FoodAfterFiftyYears(config);
+        int without = FoodAfterFiftyYears(config with { SeededRhythm = false });
+
+        int drift = Math.Abs(withRhythm - without) * 100 / Math.Max(1, without);
+        _output.WriteLine(
+            $"50 years: {withRhythm} food with the rhythm, {without} without — {drift}% apart");
+
+        Assert.True(
+            drift <= 15,
+            $"The personal rhythm moved fifty years of production by {drift}%. It is meant to be "
+            + "people not getting up at the same moment, not a second hand on the economy.");
+    }
+
+    /// <summary>
+    /// ⭐ Every seed gets the same <b>shape</b> of party — <b>and no seed gets one that cannot
+    /// live</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>The distinction fixed composition exists to create</b> (§3.2c). A seed handing you four
+    /// novices and a seed handing you two masters would be a bad run and a good one rather than
+    /// two playthroughs, and §0.1 is that the challenge is in the planning, never in the
+    /// punishment. **Asserted across a twelve-seed arm**, which is the guard that has caught this
+    /// class of thing before (D103's seed 11).
+    /// </remarks>
+    [Theory]
+    [InlineData(1UL)]
+    [InlineData(2UL)]
+    [InlineData(7UL)]
+    [InlineData(11UL)]
+    [InlineData(42UL)]
+    [InlineData(12345UL)]
+    public void EverySeedGetsTheSamePartyAndADifferentSpeciality(ulong seed)
+    {
+        SimConfig config = ShippedConfig.Established() with { Seed = seed };
+        SimWorld world = Loop(config).World;
+
+        var tiers = new List<SkillTier>();
+        var trades = new List<string>();
+
+        foreach (Villager villager in world.Villagers.Where(v => v.Alive))
+        {
+            SkillTier best = SkillTier.Novice;
+            string what = "nothing";
+
+            foreach (SkillRow skill in config.Skills)
+            {
+                SkillTier tier = world.TierOf(villager, skill);
+                if (tier > best)
+                {
+                    best = tier;
+                    what = skill.Name;
+                }
+            }
+
+            tiers.Add(best);
+            if (best != SkillTier.Novice) { trades.Add($"{best} {what}"); }
+        }
+
+        _output.WriteLine($"seed {seed}: {string.Join(", ", trades)}");
+
+        Assert.Equal(config.FoundingMasters, tiers.Count(t => t == SkillTier.Master));
+        Assert.Equal(config.FoundingJourneymen, tiers.Count(t => t == SkillTier.Journeyman));
+
+        // ⭐ Different trades, so the party is a speciality rather than a doubled-up one.
+        Assert.Equal(trades.Count, trades.Distinct().Count());
+    }
+
+    /// <summary>Share of ticks two adults of one household spend on the same tile, first 5 years.</summary>
+    private static (int Tile, int Hunger) SameTileShare(SimConfig config)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        int together = 0;
+        int sameHunger = 0;
+        int samples = 0;
+
+        for (int t = 0; t < config.TicksPerYear * 5; t++)
+        {
+            loop.StepOnce();
+
+            foreach (Household household in world.Households)
+            {
+                List<Villager> adults = world.Villagers
+                    .Where(v => v.Alive && v.HouseholdId == household.Id && v.CanWork)
+                    .Take(2)
+                    .ToList();
+
+                if (adults.Count < 2)
+                {
+                    continue;
+                }
+
+                samples++;
+                if (adults[0].Position == adults[1].Position) { together++; }
+                if (adults[0].Hunger == adults[1].Hunger) { sameHunger++; }
+            }
+        }
+
+        return samples == 0
+            ? (0, 0)
+            : (together * 100 / samples, sameHunger * 100 / samples);
+    }
+
+    private static int FoodAfterFiftyYears(SimConfig config)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        loop.Step(config.TicksPerYear * 50);
+
+        return loop.World.StoreBuildings.Sum(s => s.Store.Food)
+            + loop.World.Households.Sum(h => h.Stockpile.Food);
     }
 
     private static List<string> MasteryLines(InMemoryLogSink sink, string name) =>

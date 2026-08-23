@@ -432,8 +432,8 @@ public sealed class HouseholdSystem : ISimSystem
             return;
         }
 
-        // Draw order is part of the seed contract: name, then lifespan. Same order
-        // as founding, so there is one rule rather than two.
+        // Draw order is part of the seed contract: name, then lifespan, then rhythm. Same
+        // order as founding, so there is one rule rather than two.
         string name = world.DrawUnusedName();
 
         int lifespan = config.LifespanYearsBase;
@@ -442,11 +442,22 @@ public sealed class HouseholdSystem : ISimSystem
             lifespan += world.Rng.NextInt(-config.LifespanYearsVariance, config.LifespanYearsVariance + 1);
         }
 
+        // ⭐ Drawn at birth and spent when their working life begins (§3.5, D190) — a child who
+        // burned it during infancy would be staggered against nobody.
+        int rhythm = config.SeededRhythm && config.TicksPerDay > 1
+            ? world.Rng.NextInt(0, config.TicksPerDay)
+            : 0;
+
         var child = new Villager
         {
             Id = NextVillagerId(world),
             Name = name,
             LifespanYears = lifespan,
+            Rhythm = rhythm,
+
+            // ⭐ And their hunger a little apart — see the founding path for why the action
+            // stagger alone leaves two siblings eating on the same tick for ever.
+            Hunger = rhythm,
             BirthYear = year,
             AgeYears = 0,
             LifeStage = LifeStage.Child,

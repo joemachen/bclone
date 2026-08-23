@@ -289,7 +289,7 @@ public sealed class StockLimitTests
     //
     //   before mastery bit: fixture 17883694128790877833,
     //                       shipped 15628752506897642520
-    private const ulong FixtureFiftyYearHash = 5402933120067190351UL;
+    private const ulong FixtureFiftyYearHash = 2925726946142789484UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -298,7 +298,17 @@ public sealed class StockLimitTests
     // configs rather than drift.
     //
     //   before eating less and burning more: shipped 16062803390206118870
-    private const ulong ShippedFiftyYearHash = 16150256378240105365UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE MIXED FOUNDING AND THE SEEDED RHYTHM (D190) — Phase 3 landing 3, and
+    // the commit that discharges D28. The founders arrive as a master, a journeyman and two
+    // novices with seeded trades, and every villager is drawn a personal rhythm at birth that
+    // sets their first step and their first hunger a little apart from everybody else's.
+    // **No two founders run the same program from tick 0**, so fifty years of village is a
+    // different fifty years from the first tick onward.
+    //
+    //   before the founders were people: fixture 5402933120067190351,
+    //                                    shipped 16150256378240105365
+    private const ulong ShippedFiftyYearHash = 9133620442171355746UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

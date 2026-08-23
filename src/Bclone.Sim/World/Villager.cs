@@ -287,6 +287,40 @@ public sealed class Villager
     public int GathersThisSeason { get; set; }
 
     /// <summary>
+    /// Ticks this villager still has to wait before their working life begins — <b>a seeded
+    /// personal rhythm, drawn once at birth</b> (`skills-catalog.md §3.5`, D28).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ HALF THE ANSWER TO THE OLDEST OPEN OBSERVATION IN THE PROJECT.</b> Joe watched the
+    /// village at 4× in Phase 1 and saw people travelling as duos rather than as individuals.
+    /// Measured, it is near-total: **two adults of one household holding one job are on the same
+    /// tile 99.9% of ticks, with identical hunger 100% of the time.** They are not short of
+    /// variability — they are *symmetric*: same home tile, same fixed stepping rule, same
+    /// constant action durations, so they even stop to eat on the same tick.
+    /// </para>
+    /// <para>
+    /// <b>⭐ A ONE-TIME STAGGER IS ENOUGH, BECAUSE NOTHING EVER RE-SYNCHRONISES THEM.</b> Two
+    /// villagers who set off a tick apart arrive a tick apart, work a tick apart and eat a tick
+    /// apart for the rest of their lives — the same reasoning §3.3 gives for why differing
+    /// action durations break the lockstep permanently.
+    /// </para>
+    /// <para>
+    /// <b>Bounded by a day, and derived rather than picked</b> (D16): the draw is
+    /// <c>0 … ticks_per_day − 1</c>, which is *people do not all get up at the same moment*
+    /// stated in the calendar's own unit. §3.5's hard bound is that **if it changes what anybody
+    /// produces across a year it is too big** — this costs at most three ticks **once in a
+    /// lifetime**, against 480 ticks in every year of it.
+    /// </para>
+    /// <para>
+    /// <b>Spent when their working life starts, not at birth</b>, so a child does not burn it
+    /// during infancy where it would do nothing. Hashed, because it is sim state that decides
+    /// what somebody does.
+    /// </para>
+    /// </remarks>
+    public int Rhythm { get; set; }
+
+    /// <summary>
     /// What this person has put into each trade — <b>time on the task, in ticks</b>
     /// (`specs/skills-catalog.md §3.1`).
     /// </summary>

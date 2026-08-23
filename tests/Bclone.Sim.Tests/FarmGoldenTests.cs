@@ -144,7 +144,12 @@ public sealed class FarmGoldenTests
     // years of that is a different twenty years.
     //
     //   before mastery bit: 6737691834764729296
-    private const ulong SeamGoldenHash = 9706055072185576047UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE MIXED FOUNDING AND THE SEEDED RHYTHM (D190) -- landing 3, and the
+    // commit that discharges D28.
+    //
+    //   before the founders were people: 9706055072185576047
+    private const ulong SeamGoldenHash = 16167409353535345881UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -163,7 +168,7 @@ public sealed class FarmGoldenTests
     /// with the speed bonus at zero and asserts the pre-skill goldens byte for byte.
     /// </para>
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 2355653152556005234UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 14277723372747276077UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

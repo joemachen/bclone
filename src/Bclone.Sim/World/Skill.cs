@@ -153,6 +153,48 @@ public sealed record SkillRow
 }
 
 /// <summary>
+/// How practised somebody is, in words — <b>a reading of proficiency, not a second stored
+/// thing</b> (`skills-catalog.md §3.2c`, D190).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>⭐ THE PLAYER READS WORDS AND NOT NUMBERS.</b> *"Master woodcutter"* is a sentence;
+/// <c>proficiency 73</c> is a spreadsheet, and §1.1 refuses it. Joe's own vocabulary was already
+/// tiered — *"masters, mids — whatever that is"*, *"apprentice forester"* — and the historical
+/// ladder fits the game's register exactly. **Joe's call, 2026-08-23**, with *journeyman* as the
+/// word for the middle: it is the one tier with no obvious plain-English name, which is
+/// presumably why he wrote *"whatever that is"*.
+/// </para>
+/// <para>
+/// <b>⛔ FOUR NAMES OVER ONE INTEGER, NEVER A STORED FIELD.</b> Two sources of truth for one fact
+/// is D148's bug and D76's seam; a tier that could disagree with the ticks behind it would be
+/// exactly that.
+/// </para>
+/// <para>
+/// <b>⚠️ AND ONLY TWO OF THEM WORK AT DIFFERENT SPEEDS, which Joe accepted knowingly.</b> Action
+/// durations are 3 and 4 ticks, so the sim can express one speed step and no more (D187) — it
+/// falls at about 70% of mastery, **inside the journeyman band**. So an apprentice works exactly
+/// as fast as a novice, and a journeyman past the step works exactly as fast as a master. **The
+/// names are honest about a career; they are not four behaviours**, and they will only become
+/// four if the durations ever grow enough to hold them.
+/// </para>
+/// </remarks>
+public enum SkillTier
+{
+    /// <summary>No time on the task at all. *"Wendell has never swung an axe."*</summary>
+    Novice = 0,
+
+    /// <summary>Learning. *"Agnes is learning the wood."*</summary>
+    Apprentice = 1,
+
+    /// <summary>Competent and unremarkable — Joe's *"mid"*. *"Otto knows his trade."*</summary>
+    Journeyman = 2,
+
+    /// <summary>Twenty years on the task (§3.3b). Never lost once reached.</summary>
+    Master = 3,
+}
+
+/// <summary>
 /// What one villager has put into one skill — <b>the whole of the substrate's state</b>.
 /// </summary>
 /// <remarks>

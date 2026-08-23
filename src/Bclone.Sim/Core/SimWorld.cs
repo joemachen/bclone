@@ -1289,6 +1289,50 @@ public sealed class SimWorld
         return ticks < 1 ? 1 : ticks;
     }
 
+    /// <summary>How practised this villager is in one skill, in words (§3.2c, D190).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A reading of the one integer, computed every time and never stored</b> — see
+    /// <see cref="SkillTier"/> for why a stored tier would be two sources of truth for one fact.
+    /// </para>
+    /// <para>
+    /// <b>The bands are halves, which is the plainest thing that could be true:</b> a novice has
+    /// done none of it, an apprentice is on the way, a journeyman is past halfway, and a master
+    /// has arrived. **<see cref="SkillProgress.Mastered"/> is what makes the top one permanent**
+    /// — it is §5.4's record of achievement, so somebody who mastered a trade and moved on is
+    /// still a master of it.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The speed step falls at about 70% of mastery, inside the journeyman band</b> (D187).
+    /// So the tier a player reads and the speed the sim runs at change at different moments, and
+    /// that is a consequence of three-tick actions rather than a design.
+    /// </para>
+    /// </remarks>
+    public SkillTier TierOf(Villager villager, SkillRow skill)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        ArgumentNullException.ThrowIfNull(skill);
+
+        SkillProgress? progress = villager.FindProgressIn(skill.Id);
+        if (progress is null || progress.Work <= 0)
+        {
+            return SkillTier.Novice;
+        }
+
+        if (progress.Mastered)
+        {
+            return SkillTier.Master;
+        }
+
+        int mastery = Config.MasteryWorkFor(skill);
+        if (mastery <= 0)
+        {
+            return SkillTier.Novice;
+        }
+
+        return progress.Work * 2 >= mastery ? SkillTier.Journeyman : SkillTier.Apprentice;
+    }
+
     /// <summary>The skill this kind of work grows, or null if no row claims it.</summary>
     /// <remarks>
     /// <b>⚠️ Not assumed to be one-to-one</b> (§4.3). The catalogue happens to be 1:1 today and
@@ -4541,11 +4585,48 @@ public sealed class SimWorld
                     lifespan += Rng.NextInt(-config.LifespanYearsVariance, config.LifespanYearsVariance + 1);
                 }
 
+                // ⭐ AND THEIR RHYTHM, THIRD IN THE DRAW ORDER — name, lifespan, rhythm (§3.5,
+                // D190). `HouseholdSystem.TryBirth` draws the same three in the same order, so
+                // there is one rule rather than two; that comment has stood over the birth path
+                // since D71 and this keeps it true.
+                // ⭐ AND THEIR RHYTHM, THIRD IN THE DRAW ORDER — name, lifespan, rhythm (§3.5,
+                // D190), ROTATED BY THEIR PLACE IN THE HOUSEHOLD.
+                //
+                // ⛔⛔ THE ROTATION IS NOT BELT AND BRACES — WITHOUT IT THE FIX DID NOTHING, AND
+                // THE MEASUREMENT IS WORTH THE PARAGRAPH. The founding draws four small-range
+                // numbers at a fixed stride at the very start of the stream, and at that stride
+                // the first four come out **1, 1, 2, 2** — so both adults of household 1 got the
+                // same rhythm, both of household 2 got the same rhythm, and two people who were
+                // meant to stop moving in lockstep were handed identical staggers.
+                //
+                // ⚠️ THE RNG IS NOT AT FAULT AND THAT MATTERS. Forty raw `NextInt(0, 4)` draws
+                // come out 9/11/8/12 — well distributed. **It is a short-range correlation at a
+                // fixed stride, showing at the start of the stream**, and the founding is
+                // exactly four such draws. *A generator can be sound and still be the wrong tool
+                // for four draws that must differ from each other.*
+                //
+                // So the draw supplies the seeded part and the rotation supplies the guarantee:
+                // no two adults of one household can share a rhythm while a household holds no
+                // more people than a day holds ticks.
+                int rhythm = config.SeededRhythm && config.TicksPerDay > 1
+                    ? (Rng.NextInt(0, config.TicksPerDay) + a) % config.TicksPerDay
+                    : 0;
+
                 var villager = new Villager
                 {
                     Id = nextVillagerId++,
                     Name = name,
                     LifespanYears = lifespan,
+                    Rhythm = rhythm,
+
+                    // ⭐⭐ AND THEIR HUNGER STARTS A LITTLE APART, WHICH IS THE HALF THE STAGGER
+                    // ALONE COULD NOT REACH (§3.5, D190). Measured with only the action
+                    // stagger: two adults of one household still had **identical hunger 100% of
+                    // ticks** — because hunger is a pure function of ticks since the last meal,
+                    // so two people who eat on the same tick stay in step for ever however
+                    // differently they walk. **Identical hunger is one of the two numbers D28
+                    // named**, and nothing that offsets only movement can touch it.
+                    Hunger = rhythm,
 
                     // Standing at their house, or at the cart they arrived in (D70). Not
                     // RestingPlaceOf — that reads the household, and this villager is not
@@ -4567,7 +4648,93 @@ public sealed class SimWorld
             }
         }
 
+        GiveTheFoundersTheirTrades(config);
         PairFounders(config);
+    }
+
+    /// <summary>
+    /// ⭐⭐ The founders arrive as a <b>mix of tiers</b> — fixed shape, seeded trades
+    /// (`skills-catalog.md §3.2c`, Joe's call 2026-08-23, D190).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, D175: *"Maybe the founders could be a mix of masters, mids — whatever that is —
+    /// and novices? Could be a master woodcutter or gatherer or apprentice forester."*</b> It
+    /// does three things at once: it makes the four founders **people at tick 0** rather than
+    /// four identical units with different names; it gives the opening **a shape to read** — a
+    /// party with a master woodcutter and nobody who can farm is a different opening from the
+    /// reverse; and it **finishes the lockstep fix**, because founders at different tiers do
+    /// different work in different numbers of ticks from the first day.
+    /// </para>
+    /// <para>
+    /// <b>⛔ FIXED COMPOSITION, SEEDED TRADES, AND THE DISTINCTION IS THE WHOLE DESIGN.</b> Every
+    /// seed gets the same *strength* of party and a different *speciality*. A fully seeded roll
+    /// would make a seed handing you four novices and a seed handing you two masters **a bad run
+    /// and a good one rather than two playthroughs** — and §0.1 is that the challenge is in the
+    /// planning, never in the punishment. **You never lose before you press play.**
+    /// </para>
+    /// <para>
+    /// <b>⚠️ MEASURED BEFORE IT WAS BUILT, because §11 named this as the unmeasured arm:</b>
+    /// *does a master gatherer make the opening trivial?* **It does not — it changes nothing at
+    /// all.** Food at the first winter is identical across three seeds with one master forager,
+    /// two master foragers, or none, because **nobody forages during the opening**. A master
+    /// forester moves it 13% and 9% on two seeds, and population at years 1 and 5 is unchanged
+    /// in every arm.
+    /// </para>
+    /// <para>
+    /// <b>Drawn after every founder exists</b>, so the trades are dealt from a settled roster in
+    /// villager-id order — an unordered tie is a desync waiting to happen (D15).
+    /// </para>
+    /// </remarks>
+    private void GiveTheFoundersTheirTrades(SimConfig config)
+    {
+        if (config.Skills.Count == 0 || Villagers.Count == 0)
+        {
+            return;
+        }
+
+        // The trades on offer, one draw each and never the same twice: a master and a
+        // journeyman of the same trade is a narrower party than the shape asks for.
+        var available = new List<SkillRow>(config.Skills);
+
+        int masters = config.FoundingMasters;
+        int journeymen = config.FoundingJourneymen;
+
+        for (int i = 0; i < Villagers.Count && available.Count > 0; i++)
+        {
+            SkillTier tier = i < masters ? SkillTier.Master
+                : i < masters + journeymen ? SkillTier.Journeyman
+                : SkillTier.Novice;
+
+            if (tier == SkillTier.Novice)
+            {
+                // ⛔ A NOVICE IS TODAY'S VILLAGER, TO THE TICK (§3.2) — no entry at all, so
+                // they hash exactly as a villager did before any of this existed.
+                continue;
+            }
+
+            SkillRow trade = available[Rng.NextInt(0, available.Count)];
+            available.Remove(trade);
+
+            SkillProgress progress = Villagers[i].ProgressIn(trade.Id);
+
+            if (tier == SkillTier.Master)
+            {
+                progress.Work = config.MasteryWorkFor(trade);
+                progress.Ticks = config.MasteryYearsFor(trade) * config.TicksPerYear;
+                progress.Mastered = true;
+                continue;
+            }
+
+            // ⭐ THREE QUARTERS OF THE WAY, NOT THE MIDDLE OF THE BAND, AND THE REASON IS
+            // MEASURED. The journeyman band starts at half of mastery, but the sim's one speed
+            // step falls at about 70% (D187) — so a journeyman seeded at the band's midpoint
+            // would read as *"Otto knows his trade"* and work at exactly a novice's pace.
+            // **A tier the player can see and the sim cannot feel is the invisible number this
+            // project keeps refusing**, so they are seeded past the step.
+            progress.Work = config.MasteryWorkFor(trade) * 3 / 4;
+            progress.Ticks = config.MasteryYearsFor(trade) * config.TicksPerYear * 3 / 4;
+        }
     }
 
     /// <summary>
