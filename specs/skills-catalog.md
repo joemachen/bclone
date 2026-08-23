@@ -7,10 +7,22 @@ D156 (an uneducated child works at twelve), D168 (a new kind of thing should be 
 Neighbours: **`tech-tree.md` (this is its missing substrate — §6)**, `professions.md §4` (the
 roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing.md` and
 `livestock.md` (parked, and both add skills when they land).
-**Status:** 📝 **WRITTEN, NOT BUILT.** Nothing in this document exists in the sim. `Villager` has
-`Vigour` and `VigourStage` and **no concept of skill at all**; there is no apprenticeship, no
-proficiency and no teaching. This is `DESIGN.md §4` queue item 2, ahead of per-site yield and
-Phase 3.
+**Status:** 🔨 **LANDING 1 OF 3 IS BUILT** (D181) — **the proficiency substrate**. `Villager.Skills`
+accrues time on the task, it is hashed sparsely in id order, and it is visible: the villager panel
+says *"Nineteen years in the fields"* and **the mastery line fires in the village log** (§3.3b,
+Joe's ask). **Nothing reads it to change behaviour yet** — that is landing 2, and it is next.
+Six skills are rows in config, not enum values (§4.1). `SkillSystem` is step 11 of the tick order.
+**653 passing, 2 skipped; the three state-hash goldens moved once for the counters and
+`StateHash.ComputeIgnoringSkills` is byte-identical to all three of their old values.**
+
+**Not built:** landing 2 (mastery biting, §3.3), landing 3 (the mixed founding §3.2c and the
+seeded rhythm §3.5), apprenticeship and teaching (§5), and the at-risk line (§7). D28 is **not
+yet discharged** — it is landing 3's.
+
+> **⛔ §11.2.1's "provable no-op: goldens unmoved" TURNED OUT TO BE UNWRITABLE, and §11 has been
+> corrected rather than the guard weakened** (D181). The goldens are full state hashes and
+> proficiency is hashed state that grows from the first tick, so **they move by construction**.
+> See §11 and `StateHash.ComputeIgnoringSkills`.
 
 > **⚠️ This status line is load-bearing. Update it the day the slice merges** — D159 found five
 > specs claiming "not started" for systems that had shipped, and `CLAUDE.md` now requires a
@@ -339,6 +351,51 @@ system that exists to save them work — §1.2, and D51's whole argument.
 
 Rate is §12's, and it should be **derived against the reshuffle cadence** rather than picked.
 
+### 3.6 ⭐ What landing 1 had to settle before it could be built (D181)
+
+**§3.1–§3.4 leave four things a substrate cannot avoid deciding.** Written down before the code,
+per METHODOLOGY §2, so the reasoning is inherited rather than re-derived.
+
+**1. ⭐⭐ A tick counts while the villager HOLDS the trade — not only while mid-action.**
+§3.1 says *"the time they have spent doing it"*, and the tempting reading is to count only the
+ticks of `gather_ticks`/`sow_ticks` that a villager is actually swinging. **§3.3b's own
+arithmetic rules that out:** *"a child born in year 1 works at twelve and masters at
+thirty-two"* — twenty **calendar** years from `adult_age`. Nobody spends every tick mid-action;
+under the tight reading mastery would arrive somewhere past a century and the sentence would be
+false. Two further reasons the loose reading is the right one:
+
+- **⛔ The tight reading builds a feedback loop nobody designed.** Landing 2 makes skill shorten
+  the action (§3.3). A master would then spend *fewer* ticks mid-action per trip and so accrue
+  *more slowly* the better they got — mastery quietly throttling itself, with no line of design
+  anywhere asking for it.
+- **It is the thing the player actually controls.** You put somebody on farming and they get
+  better at farming. That is the professions panel's own promise (D51), and it is unfarmable in
+  exactly the way §3.1 demands of an XP bar.
+
+**2. Decay is derived against the reshuffle, and the derivation is one sentence: three years
+away costs one year of the trade.** `labour_reshuffle_years: 3` (D46) is the cadence the village
+moves people on, so **one full reshuffle cycle spent elsewhere must cost less than it bought** —
+otherwise the allocator is the trap §3.4 forbids. A third of the growth rate is the widest rate
+that clears that bar, and it still makes a career a choice: master farming in twenty years, then
+give twenty to forestry, and the farming is back under mastery.
+
+**3. *"Not to zero"* is one year, stated in data.** The floor is a year on the task — **you do
+not forget a trade you gave a year to.** A floor as a share of some personal high-water mark was
+the alternative and it costs a second integer per skill per villager for a number nobody can
+read; this one is a plain fact about the world, which is where D165 puts content.
+
+**4. ⭐ Each skill carries a `mastered` flag, and it is not redundant with the tick count.** It
+is what makes §11.6's *fires **once*** true: without it, a villager who masters, moves trades,
+decays below the threshold and comes back would be narrated a second time. **It is also §5.4's
+*record of achievement* arriving early** — permanent, dies with the person, and **grants
+nothing**, which is the only reading that leaves `tech-tree.md §11`'s ratchet intact.
+
+⚠️ **Left deliberately unanswered, for a probe on a running village:** a trade the village
+stops staffing in winter (D44 — no berry patch is manned while there is nothing on it) accrues
+nothing those ticks, so **twenty years of foraging may be more than twenty years of calendar.**
+That is measured after the substrate lands, not guessed at now — and if the trades diverge
+badly it is a finding for Joe rather than something to paper over.
+
 ---
 
 ## 4. The catalogue
@@ -639,8 +696,24 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
 
 1. This spec current, and its status line true.
 2. **⭐ THREE LANDINGS, IN THIS ORDER, AND THE FIRST IS THE ONLY NO-OP** (D177):
-   1. **The proficiency substrate** — accrues, is hashed, is visible. **Provable no-op**: goldens
-      unmoved, determinism green.
+   1. ✅ **The proficiency substrate** — accrues, is hashed, is visible (D181, built).
+      **⛔ ITS NO-OP CANNOT BE STATED AS *"goldens unmoved"*, AND THAT SENTENCE WAS WRONG WHEN
+      IT WAS WRITTEN.** The goldens are **full state hashes**; proficiency is hashed state that
+      grows from tick one; **the two are mutually exclusive.** The line was reasoned by analogy
+      from `crops-and-orchards.md §4`, where the map golden genuinely held because *the generator
+      never produces the new terrain values* — and proficiency is produced immediately, so the
+      analogy does not carry. **A guard that cannot pass is worse than no guard, because it gets
+      "fixed" by being weakened** (§3.2b's own words, arriving from the other direction).
+      - ✅ **What is provable, and what shipped instead: *nothing anybody DOES changed*.**
+        `StateHash.ComputeIgnoringSkills` at fifty years is **byte-identical to both fifty-year
+        goldens' pre-slice values**, and to the seam golden's. Same positions, same stores, same
+        births, same deaths — only the counters differ. **That is a stronger claim than hash
+        equality**, because it names which half moved.
+      - ⭐ **And it keeps its value into landing 2 pointing the other way:** when mastery bites,
+        `ComputeIgnoringSkills` **must** move. A skill system that changes nothing is D56's
+        clothing, and this is the guard that can say so.
+      - **The three state-hash goldens moved once, in their own commit, for one stated reason**
+        (D152).
    2. **Mastery bites** — duration first, yield second (§3.3). **Moves the goldens.**
    3. **The mixed founding (§3.2c) and the seeded rhythm (§3.5), together in one commit**, so one
       golden move covers both.
@@ -705,6 +778,28 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
 - **Does skill scale yield as well as duration** (§3.3), or duration alone in the first slice?
 - **Should the apprenticeship policy be a village-wide slider or per-workplace?** §5.3 argues
   coarse; the professions panel is where a village-wide one would live.
+
+**⭐⭐ MEASURED BY LANDING 1'S PROBE, AND LANDING 2 HAS TO ANSWER TO BOTH (D181):**
+
+- **⛔ TWENTY YEARS ON THE TASK IS NOT TWENTY YEARS OF CALENDAR, AND THE TRADES DIVERGE BADLY.**
+  Over eighty years of the shipped village, the best foraging career reached twenty years on the
+  task after **32 calendar years**, and trading after **34**. The cause is D44: the quota knows
+  what season it is, so **no berry patch is staffed while there is nothing on it** — measured at
+  **1 of 4 able adults holding a job in mid-winter against 4 of 4 in summer.** §3.6 named this as
+  the thing not to guess at, and the guess would have been wrong in the comfortable direction.
+  - **The question for Joe is whether that is a bug or the design.** *"Twenty years in the
+    fields"* is a sentence about a life, and a forager who spends every winter idle genuinely
+    has fewer years in the woods — which is arguably true rather than broken. But **a farmer
+    masters on schedule and a forager takes half again as long**, and nothing on screen says why.
+  - **Three shapes, if it is to be fixed:** count a held seat across the whole year even when the
+    season stands the work down; give each skill its own mastery number as content; or let the
+    winter reallocation stop unstaffing seasonal trades. **The first is one line and the least
+    honest; the second is D165's split and the most.** None should be taken without Joe.
+- **⚠️ The reshuffle leaves the whole village jobless for exactly one tick.** At *Day 1, Spring*
+  the allocator has torn every assignment down and not yet rebuilt it, so **0 of 4 able adults
+  hold a job on that tick** — one lost tick per trade per three years, which is 0.02% and
+  harmless. **Recorded because it is invisible and would be baffling to rediscover**, and because
+  it is the reason landing 1's own guards sample mid-season rather than on the year edge.
 
 **Tuning, which wants a running sim and must not be guessed:**
 

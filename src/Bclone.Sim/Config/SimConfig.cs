@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Bclone.Sim.World;
 
 namespace Bclone.Sim.Config;
 
@@ -1175,6 +1176,147 @@ public sealed record SimConfig
     [JsonPropertyName("labour_reshuffle_years")]
     public int LabourReshuffleYears { get; init; } = 1;
 
+    // ---------------------------------------------------------------
+    //  Skill (`specs/skills-catalog.md`, Phase 3)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The catalogue — <b>rows, not enum values</b> (`skills-catalog.md §4.1`, D168).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One per job that exists, and no more</b> (§4.2). Every ❌ profession in
+    /// `professions.md §4` brings its own when it lands; inventing them now would be a
+    /// catalogue of things nobody can hold.
+    /// </para>
+    /// <para>
+    /// <b>⛔ LABORERS HOLD NO SKILL, AND THAT IS DELIBERATE.</b> D66 refused
+    /// <c>JobKind.Laborer</c> on the grounds that a laborer is *"the villagers no job currently
+    /// wants"* — a position in the priority order, not a trade (D87). **A skill in being spare
+    /// is a contradiction**, and it would quietly make the fallback a career.
+    /// </para>
+    /// <para>
+    /// Defaults live here rather than in the shipped file, exactly like
+    /// <see cref="HouseholdNames"/> and <see cref="TownNames"/>: a modder replaces the list, and
+    /// a config that says nothing gets the game as designed.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("skills")]
+    public IReadOnlyList<SkillRow> Skills { get; init; } = new[]
+    {
+        new SkillRow
+        {
+            Id = 1,
+            Name = "foraging",
+            GrownBy = JobKind.Forager,
+            YearsPhrase = "in the woods",
+            MasteryLine = "{0} has foraged these woods for {1} years. "
+                + "Nothing that grows here goes unnoticed now.",
+        },
+        new SkillRow
+        {
+            Id = 2,
+            Name = "forestry",
+            GrownBy = JobKind.Forester,
+            YearsPhrase = "among the trees",
+            MasteryLine = "{0} has worked these woods for {1} years. "
+                + "Where to fell and where to plant takes no thinking about now.",
+        },
+        new SkillRow
+        {
+            Id = 3,
+            Name = "woodcutting",
+            GrownBy = JobKind.Woodcutter,
+            YearsPhrase = "at the woodpile",
+            MasteryLine = "{0} has split the village's wood for {1} years. "
+                + "The grain gives way where it always did.",
+        },
+        new SkillRow
+        {
+            Id = 4,
+            Name = "farming",
+            GrownBy = JobKind.Farmer,
+            YearsPhrase = "in the fields",
+
+            // ⭐⭐ Joe's own sentence, from `DESIGN.md`'s opening paragraph by way of §3.3b —
+            // the one he asked for by name. Pronoun-free: villagers have names and no sex.
+            MasteryLine = "{0} has farmed these fields for {1} years. "
+                + "There is nothing about this ground left to learn.",
+        },
+        new SkillRow
+        {
+            Id = 5,
+            Name = "building",
+            GrownBy = JobKind.Builder,
+            YearsPhrase = "on the village's frames",
+            MasteryLine = "{0} has raised the village's roofs for {1} years. "
+                + "The work goes up straight without measuring twice.",
+        },
+        new SkillRow
+        {
+            Id = 6,
+            Name = "trading",
+            GrownBy = JobKind.Marketer,
+            YearsPhrase = "on the village's errands",
+            MasteryLine = "{0} has carried the village's goods for {1} years. "
+                + "Every door and every shortcut is known ground.",
+        },
+    };
+
+    /// <summary>
+    /// Years on the task before somebody is a master of it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Twenty</b> (Joe, D174), against a working life of about fifty-five —
+    /// <see cref="AdultAge"/> to a lifespan of 55–79. **A bit over a third of a career**, which
+    /// means a founder who sticks to one trade masters it and is a master for the back half of
+    /// their life, and a child born in year 1 masters at thirty-two — **so mastery and the first
+    /// grandchildren arrive together** (§3.3b). The generational loop does the pacing rather
+    /// than a timer.
+    /// </para>
+    /// <para>
+    /// <b>Content, not derivation</b> — the class <c>granary_feeds_people</c> is in (D165: a
+    /// stated fact about the world, with the consequence derived). A modder can move it.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("mastery_years")]
+    public int MasteryYears { get; init; } = 20;
+
+    /// <summary>
+    /// How many years away from a trade cost one year of it — <b>the decay rate, derived</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ DERIVED AGAINST <see cref="LabourReshuffleYears"/> RATHER THAN PICKED</b> (§3.4,
+    /// §12, D16). The village moves people on every three years (D46), so **one full reshuffle
+    /// cycle spent elsewhere must cost less than it bought** — otherwise the allocator is the
+    /// trap §3.4 forbids, and the player starts fighting a system that exists to save them work.
+    /// Three years away for one year lost is the widest rate that clears that bar.
+    /// </para>
+    /// <para>
+    /// <b>And it still makes a career a choice</b>, which is the reason decay exists at all:
+    /// master farming in twenty years, then give twenty to forestry, and the farming is back
+    /// under mastery. Without that, a fifty-year-old who did six jobs is a master of six and
+    /// *"knowledge lives in people"* collapses into *"old people are simply better"*.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("skill_decay_years_per_year_lost")]
+    public int SkillDecayYearsPerYearLost { get; init; } = 3;
+
+    /// <summary>
+    /// The floor decay never takes anybody below, in years — <b>*"not to zero"*, stated</b>.
+    /// </summary>
+    /// <remarks>
+    /// §3.4 says a villager who leaves a trade loses ground **not to zero**. This is that as a
+    /// number: **you do not forget a trade you gave a year to.** A floor proportional to some
+    /// personal high-water mark was the alternative and it costs a second integer per skill per
+    /// villager for a number nobody can read; this is a plain fact about the world, which is
+    /// where D165 puts content.
+    /// </remarks>
+    [JsonPropertyName("skill_floor_years")]
+    public int SkillFloorYears { get; init; } = 1;
+
     // ⭐ `forager_catchment_tiles` IS DELETED (`forests-and-gathering.md §3`, Joe: *"get rid
     // of the ring and the distance restrictions"*). It was ten tiles, and past it a villager
     // simply could not hold a job however much they wanted it.
@@ -1720,6 +1862,78 @@ public sealed record SimConfig
         {
             throw new SimConfigException($"founder_age cannot be negative (got {FounderAge}).");
         }
+
+        ValidateSkills();
+    }
+
+    /// <summary>
+    /// The catalogue has to be a catalogue — <b>failing at load rather than at the hash</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ A DUPLICATE OR ZERO ID IS A DESYNC, NOT A TYPO.</b> Ids are what proficiency is
+    /// stored and hashed under (§4.1, §8), so two rows sharing one would have two trades writing
+    /// the same counter — a village that diverges from itself for a reason no log would name.
+    /// **Id 0 is refused** because a default <c>int</c> must never name something (D108).
+    /// A modder editing this file is exactly who this message is for.
+    /// </remarks>
+    private void ValidateSkills()
+    {
+        if (Skills is null)
+        {
+            throw new SimConfigException("skills must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            SkillRow skill = Skills[i];
+
+            if (skill.Id <= 0)
+            {
+                throw new SimConfigException(
+                    $"skills[{i}] has id {skill.Id}; ids must be greater than zero, because a "
+                    + "default int must never name a skill.");
+            }
+
+            if (!seen.Add(skill.Id))
+            {
+                throw new SimConfigException(
+                    $"skills[{i}] repeats id {skill.Id}. Ids are what proficiency is stored and "
+                    + "hashed under, so two skills sharing one would share a counter.");
+            }
+
+            if (string.IsNullOrWhiteSpace(skill.Name))
+            {
+                throw new SimConfigException($"skills[{i}] (id {skill.Id}) has no name.");
+            }
+        }
+
+        if (MasteryYears <= 0)
+        {
+            throw new SimConfigException(
+                $"mastery_years must be greater than zero (got {MasteryYears}).");
+        }
+
+        if (SkillDecayYearsPerYearLost <= 0)
+        {
+            throw new SimConfigException(
+                "skill_decay_years_per_year_lost must be greater than zero (got "
+                + $"{SkillDecayYearsPerYearLost}).");
+        }
+
+        if (SkillFloorYears < 0)
+        {
+            throw new SimConfigException(
+                $"skill_floor_years cannot be negative (got {SkillFloorYears}).");
+        }
+
+        if (SkillFloorYears >= MasteryYears)
+        {
+            throw new SimConfigException(
+                $"skill_floor_years ({SkillFloorYears}) must be below mastery_years "
+                + $"({MasteryYears}), or decay could never take anybody out of mastery and a "
+                + "career would stop being a choice.");
+        }
     }
 
     /// <summary>Founding population. Derived, not configured.</summary>
@@ -1729,6 +1943,14 @@ public sealed record SimConfig
     /// <summary>Ticks in one in-game year. Derived, not configured.</summary>
     [JsonIgnore]
     public int TicksPerYear => TicksPerDay * DaysPerSeason * 4;
+
+    /// <summary>Ticks on the task before mastery. Derived from a stated number of years.</summary>
+    [JsonIgnore]
+    public int MasteryTicks => MasteryYears * TicksPerYear;
+
+    /// <summary>The ticks decay never takes anybody below. Derived (§3.4's *"not to zero"*).</summary>
+    [JsonIgnore]
+    public int SkillFloorTicks => SkillFloorYears * TicksPerYear;
 
     /// <summary>Ticks in one season. Derived, not configured.</summary>
     [JsonIgnore]

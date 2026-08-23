@@ -28,7 +28,43 @@ public static class StateHash
     private const ulong FnvPrime = 1099511628211UL;
 
     /// <summary>Fingerprint the whole world.</summary>
-    public static ulong Compute(SimWorld world)
+    public static ulong Compute(SimWorld world) => Compute(world, skills: true);
+
+    /// <summary>
+    /// Fingerprint the world <b>as it was before anybody could get better at anything</b> —
+    /// everything except what each villager has put into a trade.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS EXISTS BECAUSE THE OBVIOUS NO-OP GUARD CANNOT BE WRITTEN</b>
+    /// (`skills-catalog.md §11.2.1`, D181). The spec asks landing 1 to be a **provable no-op:
+    /// goldens unmoved** — and the goldens are full state hashes, so the moment proficiency is
+    /// hashed and anybody accrues a tick they move by construction. **Hashing new state that
+    /// grows and keeping a state-hash golden byte-identical are mutually exclusive**, and the
+    /// spec reasoned by analogy from `crops-and-orchards.md`'s terrain values, where the
+    /// generator never produced the new values so a valley genuinely hashed the same.
+    /// </para>
+    /// <para>
+    /// <b>So the claim is made in the vocabulary that can be true: *nothing anybody DOES
+    /// changed*.</b> Same positions, same stores, same births, same deaths, same tick —
+    /// only the counters differ. That is a stronger statement than hash equality anyway,
+    /// because it says which half moved.
+    /// </para>
+    /// <para>
+    /// <b>⭐ And it keeps its value into landing 2, pointing the other way:</b> when mastery
+    /// starts biting, **this must move** — a skill system that changes nothing is D56's
+    /// clothing, and this is the guard that can say so.
+    /// </para>
+    /// <para>
+    /// ⚠️ Precedent: `PerSiteYieldTests.MakingSoilRegionalMovedNoOtherTileInTheValley` computes a
+    /// terrain-only fingerprint for exactly this reason — *"including it would make this guard
+    /// say only 'the map changed', which is what the map golden already says and is not the
+    /// question."*
+    /// </para>
+    /// </remarks>
+    public static ulong ComputeIgnoringSkills(SimWorld world) => Compute(world, skills: false);
+
+    private static ulong Compute(SimWorld world, bool skills)
     {
         ArgumentNullException.ThrowIfNull(world);
 
@@ -141,7 +177,7 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)world.Villagers.Count);
         for (int i = 0; i < world.Villagers.Count; i++)
         {
-            hash = MixVillager(hash, world.Villagers[i]);
+            hash = MixVillager(hash, world.Villagers[i], skills);
         }
 
         hash = MixUInt32(hash, (uint)world.Households.Count);
@@ -335,7 +371,7 @@ public static class StateHash
         return MixUInt32(hash, (uint)map.FoundingSite.Y);
     }
 
-    private static ulong MixVillager(ulong hash, Villager villager)
+    private static ulong MixVillager(ulong hash, Villager villager, bool skills)
     {
         hash = MixUInt32(hash, (uint)villager.Id);
         hash = MixUInt32(hash, (uint)villager.HouseholdId);
@@ -372,6 +408,29 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.ErrandHouseholdId);
         hash = MixUInt32(hash, (uint)villager.ErrandX);
         hash = MixUInt32(hash, (uint)villager.ErrandY);
+
+        // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
+        // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
+        // mixes nothing for a villager who has never held a job and cannot depend on the
+        // sequence entries happened to be created in (D15).
+        //
+        // ⚠️ NO COUNT ALONGSIDE, on the same reasoning `Zones.Harvest` records: the ids
+        // determine the set by themselves, and mixing a length would put a fresh zero into
+        // every villager who has never worked — which is exactly the invisibility this
+        // structure is shaped for.
+        if (!skills)
+        {
+            return hash;
+        }
+
+        for (int i = 0; i < villager.Skills.Count; i++)
+        {
+            SkillProgress progress = villager.Skills[i];
+            hash = MixUInt32(hash, (uint)progress.SkillId);
+            hash = MixUInt32(hash, (uint)progress.Ticks);
+            hash = MixByte(hash, progress.Mastered ? (byte)1 : (byte)0);
+        }
+
         return hash;
     }
 

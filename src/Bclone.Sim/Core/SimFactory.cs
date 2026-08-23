@@ -31,6 +31,7 @@ public static class SimFactory
         new BehaviorSystem(),   // 8. decide and act
         new MortalitySystem(),  // 9. old age, starvation, or cold
         new RegrowthSystem(),   // 10. the valley grows back (D125)
+        new SkillSystem(),      // 11. and the people who worked it got better at it (Phase 3)
     };
 
     // ⭐ WHY THE CROPS TURN AT STEP 2 AND NOT AT THE END (D161). The order is part of the

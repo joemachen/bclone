@@ -808,6 +808,8 @@ public partial class Main : Control
                 : $"Vigour: {villager.Vigour}% — past their strongest years");
         }
 
+        DescribeTheirTrades(world, villager, lines);
+
         if (villager.IsPaired)
         {
             Villager? partner = world.FindVillager(villager.PartnerId);
@@ -1232,6 +1234,108 @@ public partial class Main : Control
         {
             lines.Add("Painted for housing — the village may build a home here.");
         }
+    }
+
+    /// <summary>
+    /// What this person has given their working life to — <b>the years, not a number</b>
+    /// (`specs/skills-catalog.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE SENTENCE, NOT THE NUMBER.</b> *"Nineteen years in the fields"* is the diegetic
+    /// fact; <c>proficiency 73</c> is the spreadsheet this game is defined against (§1.4), and
+    /// §7 rejects it by name. The years are also the only thing the sim actually stores — time
+    /// on the task (§3.1) — so the panel is not translating anything, it is reading it out.
+    /// </para>
+    /// <para>
+    /// <b>Every trade they have given a year to, longest first</b>, because that is the career
+    /// rather than the job — a farmer who spent a decade in the woods first is a different
+    /// person from one who did not, and §5's whole argument is that what a village loses when
+    /// somebody dies is that history.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ The workplace panel's version of this is landing 2's, deliberately.</b> §7 wants a
+    /// hut to say how practised its workers are *"because that is the panel a player looks at
+    /// when they want to know why a hut is slow"* — and until mastery bites (§3.3), a hut is
+    /// never slow **for that reason**, so the sentence would be answering a question the sim
+    /// cannot yet be asked.
+    /// </para>
+    /// </remarks>
+    private static void DescribeTheirTrades(SimWorld world, Villager villager, List<string> lines)
+    {
+        int ticksPerYear = world.Config.TicksPerYear;
+        if (ticksPerYear <= 0)
+        {
+            return;
+        }
+
+        // Longest first. Copied rather than sorted in place: `Villager.Skills` is kept in id
+        // order because the state hash reads it in list order (D15), and a view that reordered
+        // it would desync the sim from the panel that drew it.
+        List<SkillProgress> held = villager.Skills
+            .Where(progress => progress.Ticks >= ticksPerYear)
+            .OrderByDescending(progress => progress.Ticks)
+            .ThenBy(progress => progress.SkillId)
+            .ToList();
+
+        for (int i = 0; i < held.Count; i++)
+        {
+            SkillProgress progress = held[i];
+            SkillRow? skill = world.Config.Skills.FirstOrDefault(row => row.Id == progress.SkillId);
+            if (skill is null)
+            {
+                continue;
+            }
+
+            int years = progress.Ticks / ticksPerYear;
+            string phrase = skill.YearsPhrase.Length > 0
+                ? skill.YearsPhrase
+                : $"at {skill.Name}";
+
+            lines.Add(progress.Mastered
+                ? $"{Years(years)} {phrase} — a master of the work."
+                : $"{Years(years)} {phrase}.");
+        }
+    }
+
+    /// <summary>"Nineteen years", spelled out — a life is counted, not measured.</summary>
+    /// <remarks>
+    /// Words up to the end of a working life, digits past it. §7's example is written out in
+    /// words (*"nineteen years in the fields"*) and the difference is register: a number in a
+    /// sentence about a person reads like a stat block, and this game keeps saying it is not one.
+    /// </remarks>
+    private static string Years(int years)
+    {
+        if (years == 1)
+        {
+            return "One year";
+        }
+
+        string[] ones =
+        {
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+            "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen",
+        };
+
+        string[] tens =
+        {
+            string.Empty, string.Empty, "twenty", "thirty", "forty", "fifty", "sixty",
+            "seventy", "eighty", "ninety",
+        };
+
+        if (years < 0 || years >= 100)
+        {
+            return $"{years} years";
+        }
+
+        string word = years < 20
+            ? ones[years]
+            : years % 10 == 0
+                ? tens[years / 10]
+                : $"{tens[years / 10]}-{ones[years % 10]}";
+
+        return $"{char.ToUpperInvariant(word[0])}{word[1..]} years";
     }
 
     /// <summary>Ground worth this share of ordinary, said the way the rest of the game says it.</summary>

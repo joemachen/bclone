@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Bclone.Sim.World;
 
 /// <summary>A position on the abstract map. Integers only — see decision D2.</summary>
@@ -283,6 +285,93 @@ public sealed class Villager
     /// <summary>Gathers since the season turned. Reset by <c>ClockSystem</c> after
     /// it summarises the season into the life log.</summary>
     public int GathersThisSeason { get; set; }
+
+    /// <summary>
+    /// What this person has put into each trade — <b>time on the task, in ticks</b>
+    /// (`specs/skills-catalog.md §3.1`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ NOT EXPERIENCE POINTS, AND THE DISTINCTION IS NOT PEDANTRY.</b> An XP number is a
+    /// thing the player learns to farm: it invites *"what gives the most XP?"*, which is a
+    /// question this game should never be able to answer. **Time-on-task can only be answered
+    /// one way — *she did the work*** — and it is the same argument §2.7 makes when it refuses a
+    /// Civ-style research bar.
+    /// </para>
+    /// <para>
+    /// <b>⛔ SORTED BY <see cref="SkillProgress.SkillId"/> AND KEPT THAT WAY.</b> This is mixed
+    /// into the state hash in list order, so an unordered container would make the hash depend
+    /// on the sequence entries happened to be created in — D15's *an unordered tie is a desync
+    /// waiting to happen*, arriving through a dictionary. <see cref="ProgressIn"/> is the only
+    /// door that adds to it, and it inserts in place.
+    /// </para>
+    /// <para>
+    /// <b>Sparse.</b> A villager who has never held a job carries an empty list and mixes
+    /// nothing (§8) — which is the contract that let this land before the behaviour it will
+    /// eventually drive.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It dies with them, always</b> (§5.4). Proficiency is one person's years; nothing
+    /// in the game may write it back into somebody else, and no record ever restores it.
+    /// </para>
+    /// </remarks>
+    public List<SkillProgress> Skills { get; } = new();
+
+    /// <summary>Ticks this villager has put into one skill, or zero if they never have.</summary>
+    public int TicksIn(int skillId)
+    {
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            if (Skills[i].SkillId == skillId)
+            {
+                return Skills[i].Ticks;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>What they have in one skill, or null if they have never touched it.</summary>
+    /// <remarks>
+    /// <b>Null rather than a zeroed entry</b>, so reading a skill can never create one — an
+    /// accessor that quietly materialises state is how a sparse structure stops being sparse
+    /// and every golden moves for a panel being opened.
+    /// </remarks>
+    public SkillProgress? FindProgressIn(int skillId)
+    {
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            if (Skills[i].SkillId == skillId)
+            {
+                return Skills[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>What they have in one skill, creating a zeroed entry if this is their first tick.</summary>
+    /// <remarks>
+    /// <b>The one door that adds to <see cref="Skills"/></b>, and it inserts in id order so the
+    /// list is sorted by construction rather than by anybody remembering to sort it.
+    /// </remarks>
+    public SkillProgress ProgressIn(int skillId)
+    {
+        int at = 0;
+        while (at < Skills.Count && Skills[at].SkillId < skillId)
+        {
+            at++;
+        }
+
+        if (at < Skills.Count && Skills[at].SkillId == skillId)
+        {
+            return Skills[at];
+        }
+
+        var fresh = new SkillProgress { SkillId = skillId };
+        Skills.Insert(at, fresh);
+        return fresh;
+    }
 
     /// <summary>
     /// Plain-language description of the current action, for the UI.
