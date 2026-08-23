@@ -47,6 +47,22 @@ public sealed class SkillSystem : ISimSystem
         {
             Advance(world, world.Villagers[i], config);
         }
+
+        // ⭐⭐ AND ONCE A YEAR, WHO IS ABOUT TO TAKE SOMETHING WITH THEM (§7, `DESIGN.md §2.1`).
+        // *"Mabel is 68 and the only soul who knows herbalism."* — the sentence §2.1 demands, and
+        // the last outstanding item in §11's Definition of Done.
+        //
+        // ⭐ ANNUAL, NOT PER TICK, AND THE CADENCE IS THE DESIGN. This is a warning about a
+        // lifetime; checking it four times a day would cost a sweep of the whole roster per tick
+        // to say something that changes once in a generation. It is also why the sweep is
+        // affordable at all — see `SimWorld.SayWhatKnowledgeIsAtRisk`, which explains why it is
+        // swept rather than triggered.
+        if (world.Tick > 0UL
+            && config.TicksPerYear > 0
+            && world.Tick % (ulong)config.TicksPerYear == 0UL)
+        {
+            world.SayWhatKnowledgeIsAtRisk();
+        }
     }
 
     private static void Advance(SimWorld world, Villager villager, SimConfig config)

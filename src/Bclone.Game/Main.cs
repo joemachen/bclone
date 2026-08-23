@@ -810,6 +810,17 @@ public partial class Main : Control
 
         DescribeTheirTrades(world, villager, lines);
 
+        // ⭐⭐ AND WHAT GOES WITH THEM IF NOBODY LEARNS IT (`skills-catalog.md §7`, D195).
+        // The village log says this once when it becomes true; the panel says it for as long as
+        // it IS true, because the player who clicked on Mabel is exactly the player who can act
+        // on it. **Both read `SimWorld.KnowledgeAtRiskNote`** — D147's rule for `IdleNote`, and
+        // the reason is that two copies of one condition is how the log and the panel come to
+        // disagree about who is at risk (D142, D148).
+        if (world.KnowledgeAtRiskNote(villager) is string atRisk)
+        {
+            lines.Add(atRisk);
+        }
+
         if (villager.IsPaired)
         {
             Villager? partner = world.FindVillager(villager.PartnerId);

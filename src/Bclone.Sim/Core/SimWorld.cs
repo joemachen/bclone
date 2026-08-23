@@ -1961,6 +1961,145 @@ public sealed class SimWorld
     private readonly bool[] _saidThereIsNowhereFor = new bool[Stockpile.Kinds];
 
     /// <summary>
+    /// Which (villager, skill) pairs the village has already been warned about
+    /// (`skills-catalog.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// <b>Gates narration and nothing else, so it is not in the state hash</b> — the same
+    /// standing as <see cref="_saidThereIsNowhereFor"/> above and for the same reason: two runs
+    /// of one seed say the same sentence on the same tick because <em>everything that decides
+    /// it</em> is hashed. It starts empty and is driven entirely by hashed state.
+    /// <para>
+    /// <b>Entries are removed as well as added</b>, which is what makes this an *edge* detector
+    /// rather than a one-shot. A trade that gains a second master and later loses them is at
+    /// risk again, and the village should be told again — D123 and D147's rule is *narrate on
+    /// the change*, and a flag that only ever sets would silently swallow the second warning.
+    /// </para>
+    /// </remarks>
+    private readonly HashSet<(int Villager, int Skill)> _saidKnowledgeIsAtRisk = new();
+
+    /// <summary>
+    /// ⭐⭐ <b>The at-risk sentence, or null</b> — *"Mabel is 68 and the only soul who knows
+    /// herbalism."* (`skills-catalog.md §7`, `DESIGN.md §2.1`/§2.7.)
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>§2.1's failure mode is what this exists to answer:</b> *"punishing the player for
+    /// losses they couldn't foresee. Knowledge-at-risk must be **visible and actionable**."*
+    /// Without it, a village loses its last master farmer and the only evidence is that
+    /// everything quietly got slower — <b>which is a funeral surprise, and D103's rule is that a
+    /// feature the player cannot reach does not exist.</b>
+    /// </para>
+    /// <para>
+    /// <b>⭐ THE SENTENCE OR NOTHING, FROM ONE PLACE</b> — D147's shape for <c>IdleNote</c>,
+    /// taken deliberately. The village log and the villager's own panel both read this, so
+    /// <b>they cannot disagree about who is at risk</b>; two copies of one condition is how they
+    /// come to (D142's three call sites, D148's two meanings).
+    /// </para>
+    /// <para>
+    /// <b>⭐ BOTH HALVES ARE DERIVED, AND NEITHER IS A NEW NUMBER.</b> *Near the end* is
+    /// <see cref="LifeStage.Elder"/>, which the game already derives from vigour and already
+    /// calls by that name. *The only soul who knows* is <b>the only living master</b> — and
+    /// mastery is the one threshold this design already has, already narrates and already keeps
+    /// in <c>data/</c>. A fraction picked here would be a number with no derivation behind it,
+    /// which is what D16 refuses.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It names the trade a second hand would learn</b>, because the action is the point:
+    /// the player's remedy is to staff somebody beside them, and `skills-catalog.md §5.3` is
+    /// explicit that this is the lever rather than a pairing screen. **A warning whose remedy is
+    /// unstated is an alert, not information.**
+    /// </para>
+    /// </remarks>
+    public string? KnowledgeAtRiskNote(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        SkillRow? skill = OnlyLivingMasterOf(villager);
+        if (skill is null)
+        {
+            return null;
+        }
+
+        return $"{villager.Name} is {villager.AgeYears} and the only soul in the village who has "
+            + $"mastered {skill.Name.ToLowerInvariant()}. Put somebody beside them to learn it, "
+            + "or it goes with them.";
+    }
+
+    /// <summary>
+    /// The skill this elder is the last living master of, or null.
+    /// </summary>
+    /// <remarks>
+    /// <b>The first one in id order where it is true</b>, so a villager who is the last master of
+    /// two things is warned about one of them and the sentence stays a sentence. The second is
+    /// not lost — it is still true next year, and the village is told then.
+    /// </remarks>
+    private SkillRow? OnlyLivingMasterOf(Villager villager)
+    {
+        if (!villager.Alive || villager.LifeStage != LifeStage.Elder)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < Config.Skills.Count; i++)
+        {
+            SkillRow skill = Config.Skills[i];
+            if (villager.FindProgressIn(skill.Id) is not { Mastered: true })
+            {
+                continue;
+            }
+
+            bool anybodyElse = false;
+            for (int v = 0; v < Villagers.Count && !anybodyElse; v++)
+            {
+                Villager other = Villagers[v];
+                anybodyElse = other.Alive
+                    && other.Id != villager.Id
+                    && other.FindProgressIn(skill.Id) is { Mastered: true };
+            }
+
+            if (!anybodyElse)
+            {
+                return skill;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Tell the village about knowledge that is about to be lost — <b>once, on the edge</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>Swept rather than triggered, and that is not laziness.</b> The condition turns true for
+    /// three different reasons — this villager ages into <see cref="LifeStage.Elder"/>, this
+    /// villager masters something, or <em>somebody else dies</em> — and the third has nothing to
+    /// do with the person being warned about. **One sweep beats three notifications** (D142), and
+    /// a year is the right cadence for a warning about a lifetime.
+    /// </remarks>
+    public void SayWhatKnowledgeIsAtRisk()
+    {
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager villager = Villagers[i];
+            SkillRow? skill = OnlyLivingMasterOf(villager);
+
+            if (skill is null)
+            {
+                // Not at risk any more — for any reason, including having died. Forgetting is
+                // what lets the warning fire again if it becomes true again.
+                _saidKnowledgeIsAtRisk.RemoveWhere(said => said.Villager == villager.Id);
+                continue;
+            }
+
+            if (_saidKnowledgeIsAtRisk.Add((villager.Id, skill.Id)))
+            {
+                Narrate(KnowledgeAtRiskNote(villager)!);
+            }
+        }
+    }
+
+    /// <summary>
     /// Say so, once, when a good is being set down because the village has nowhere for it
     /// at all.
     /// </summary>

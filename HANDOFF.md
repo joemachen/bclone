@@ -1,4 +1,4 @@
-# Handoff — bclone: **The farm is unparked. Apprenticeship and the at-risk line are what remain.**
+# Handoff — bclone: **The farm is unparked and the at-risk line is in. Apprenticeship is the last thing.**
 
 Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D194 back to D142**, then
 `METHODOLOGY.md`.
@@ -16,8 +16,9 @@ Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D194 b
    after four hypotheses could not. **⛔ But Joe's thirteen tiles were never available**: thirteen
    tiles ten ticks from a store needs ~230 ticks of a 120-tick autumn. Read the section below
    before re-opening it, and **do not propose `farm_store_cap` — it is dead twice over.**
-3. **⚠️ Phase 3 is NOT done**, whatever an earlier draft of D190 said. **Apprenticeship (§5) and
-   the at-risk line (§7)** remain, and apprenticeship is the pillar's whole point.
+3. **⚠️ Phase 3 is NOT done**, whatever an earlier draft of D190 said — but it is down to **one
+   item: apprenticeship (§5)**, which is the pillar's whole point. The at-risk line landed in
+   D195. **Joe's calls for the apprenticeship slice are already made** — see below.
 
 ---
 
@@ -43,13 +44,35 @@ rewrite (D179) and the ground-legibility slice (D180) are all fast-forwarded ont
 3. ✅ **The mixed founding and the seeded rhythm** (D190) — a master, a journeyman and two
    novices with **seeded trades**, and a rhythm drawn at birth. **D28 discharged.**
 
-**⛔ WHAT IS LEFT, AND IT IS NOT SMALL:**
+4. ✅ **The at-risk line** (D195) — §11's last outstanding Definition-of-Done item. *"Wendell is
+   48 and the only soul in the village who has mastered foraging. Put somebody beside them to
+   learn it, or it goes with them."* One method (`SimWorld.KnowledgeAtRiskNote`), read by the
+   village log **once on the edge** and by the villager's panel **while it is true**. Both halves
+   of the condition are derived — `LifeStage.Elder`, and *the only living master*.
+
+**⛔ WHAT IS LEFT — ONE ITEM, AND IT IS THE PILLAR'S POINT:**
 - **Apprenticeship (§5).** §2.1 is *"that skill dies with the person unless an elder apprentices
   a youth"* — **so far skill is personal and nothing transfers.** §10's anti-vacuity guard is
   written for it and **cannot be written without it**: *a village that never teaches produces
   measurably less than one that does.*
-- **The at-risk line (§7, DoD item 7).** *"Mabel is 68 and the only soul who knows herbalism."*
-  What makes losing somebody legible rather than merely true.
+
+**⭐⭐ AND THE PROBE FOR IT IS ALREADY RUN, WITH JOE'S CALLS MADE (2026-08-23).** Three seeds, a
+century each:
+- **51–59% of learner-ticks are already spent beside a teacher**, so automatic apprenticeship
+  will **not** be decoration — the surface is there.
+- **15–19 villagers reach mastery per century; 11–16 masters die.** Real loss to prevent.
+- ⛔ **But it only reaches 2–3 trades of 5.** Forager and marketer always pair, forester
+  sometimes; **woodcutting and building never do**, because they are one-seat trades and there is
+  never a second person to learn from. **The trades most likely to die with their last holder are
+  exactly the ones the mechanism cannot reach** — which is why §5.3 makes the player's lever
+  *staffing*, and why the at-risk line shipped first. *They are two halves of one loop.*
+
+**Joe's three calls, so the next session does not re-ask them:**
+1. **Teaching is FREE** — the master gives up nothing. D183's *give, never take*, one system over.
+   ⚠️ **Consequence he accepted: §5.3's policy dial then has nothing to trade off**, so —
+2. **There is NO dial.** Automatic only: elders teach youths wherever they already share a trade.
+   No village-wide slider, no per-workplace toggle. The player's lever is staffing, which exists.
+3. **The at-risk line first, apprenticeship second** — done in that order.
 
 ⚠️ **The phase PR is #4, not #3.** Number 3 went to the closed screenshot-hook PR D160 rescued,
 and every document in the repo said #3 for a day before anyone checked.
@@ -61,7 +84,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **SUITE, FROM A RUN:**
 
 ```
-689 passed, 0 failed, 2 skipped of 691 — about 4m30s (was 18m52s before D179)
+698 passed, 0 failed, 2 skipped of 700 — about 2m20s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -164,9 +187,11 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
      behaviours** — an apprentice works exactly as fast as a novice, and a journeyman past the
      step exactly as fast as a master. Joe accepted this knowingly. It only becomes four if the
      durations grow.
-   - **⭐ WHAT TO DO NEXT, IN ORDER:** **apprenticeship (§5)** — the pillar's whole point, and
-     the thing §10's anti-vacuity guard is written for — then **the at-risk line (§7)**, which is
-     DoD item 7 and the last thing between Phase 3 and done.
+   - **⭐ WHAT TO DO NEXT: apprenticeship (§5), and nothing else is outstanding.** The at-risk
+     line (§7, DoD item 7) landed in **D195**, and the order was reversed on Joe's call because
+     the probe showed the two are one loop — the warning is what tells the player to staff the
+     second hand that makes teaching possible at all. **Joe's three calls for the slice are made:
+     teaching is free, there is no policy dial, automatic only.** See "Where things are" above.
 5. **Phase 4 — the tech tree** (§2.7), plus the **town hall** (D176).
 
 ---
@@ -299,6 +324,13 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   able adults hold a job on that exact tick.** Any guard that samples "who is working?" at
   `TicksPerYear * n` is sampling that hole. **Step half a season in.** (Winter is the other one:
   D44 unstaffs seasonal trades, so mid-winter is 1 of 4.)
+- **⭐⭐⭐ AND SOME STATE CANNOT BE POSED AT ALL, BECAUSE IT IS DERIVED — TWO REDS TO FIND (D195).**
+  An elder cannot be posed. Writing `LifeStage` lasts **one tick** (`AgeingSystem` recomputes it
+  from vigour); writing `AgeYears` lasts **one tick** (`ClockSystem` recomputes it as
+  `year - BirthYear`) — the guard **watched a 51-year-old turn 21** between the first tick and the
+  second and read the resulting silence as a broken feature. `BirthYear` is `init`-only, which was
+  the model saying so all along. **The honest fixture steps the sim until somebody genuinely grows
+  old**, and it is barely slower. *Before posing a value, ask whether anything recomputes it.*
 - **⭐⭐ AND A *FIXTURE* CAN FIGHT THE MECHANISM IT IS TESTING (D194).** Three guards for the
   farm's memory posed *"a clean autumn"* as **one sown tile** — so the farm brought in one tile,
   correctly recorded that one tile was what it had managed, and **the guards failed for the

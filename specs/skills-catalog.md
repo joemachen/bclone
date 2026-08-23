@@ -7,11 +7,12 @@ D156 (an uneducated child works at twelve), D168 (a new kind of thing should be 
 Neighbours: **`tech-tree.md` (this is its missing substrate — §6)**, `professions.md §4` (the
 roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing.md` and
 `livestock.md` (parked, and both add skills when they land).
-**Status:** 🔨 **ALL THREE LANDINGS ARE BUILT** (D181, D187, D190) — **and the phase is NOT done.**
-⛔ **Two things remain: apprenticeship (§5) and the at-risk line (§7/§11.7).** Apprenticeship is
-*the pillar's actual point* — §2.1 is *"that skill dies with the person unless an elder
-apprentices a youth"* — and **§10's anti-vacuity guard is written for it and cannot be written
-without it**: *a village that never teaches produces measurably less than one that does.* `Villager.Skills` accrues time on
+**Status:** 🔨 **ALL THREE LANDINGS ARE BUILT** (D181, D187, D190), **and the at-risk line is in**
+(D195) — **but the phase is NOT done.**
+⛔ **One thing remains: apprenticeship (§5).** It is *the pillar's actual point* — §2.1 is
+*"that skill dies with the person unless an elder apprentices a youth"* — and **§10's anti-vacuity
+guard is written for it and cannot be written without it**: *a village that never teaches produces
+measurably less than one that does.* `Villager.Skills` accrues time on
 the task, is hashed sparsely in id order, and is visible: the villager panel says *"Nineteen years
 in the fields"* and **the mastery line fires in the village log** (§3.3b, Joe's ask). **Nothing
 ever takes proficiency away** (§3.7, D183) and a tick out on the job counts for more than a tick
@@ -28,7 +29,16 @@ their first step and their first hunger apart from everybody else's. **D28 IS DI
 measured over the first five years, two adults of one household went from **identical hunger 100%
 of ticks to 0%**, and from sharing a tile 91% of ticks to 80%.
 
-**Not built:** apprenticeship and teaching (§5), and the at-risk line (§7).
+**⭐⭐ AND THE AT-RISK LINE IS IN** (D195) — §11's last outstanding Definition-of-Done item.
+*"Wendell is 48 and the only soul in the village who has mastered foraging. Put somebody beside
+them to learn it, or it goes with them."* Narrated **once, on the edge**, and shown on the
+villager's own panel for as long as it is true — **both reading one method**, so they cannot
+disagree (D147's rule for `IdleNote`). **Both halves derived, neither a new number**: *near the
+end* is `LifeStage.Elder`, *the only soul who knows* is the only living master. Measured, a played
+century says it **3 to 5 times** on three seeds. **698 passing, 0 failing, 2 skipped of 700, and
+not one golden moved** — it narrates and hashes nothing.
+
+**Not built:** apprenticeship and teaching (§5).
 
 > **⛔ §11.2.1's "provable no-op: goldens unmoved" TURNED OUT TO BE UNWRITABLE, and §11 has been
 > corrected rather than the guard weakened** (D181). The goldens are full state hashes and
@@ -805,10 +815,29 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
    Checked red with both switched off.
 6. **⭐ The mastery line fires** (§3.3b, Joe's ask) — once, on the edge, naming the person, and
    visible in the village log without the player going looking.
-7. ⛔ **NOT DONE — the at-risk warning reachable by the player**, because *a feature the player
-   cannot reach does not exist* (D103). §7's line: *"Mabel is 68 and the only soul who knows
-   herbalism."* **This is the outstanding Definition-of-Done item**, and it is the one that makes
-   losing somebody legible rather than merely true.
+7. ✅ **The at-risk warning, reachable by the player** (D195) — *a feature the player cannot reach
+   does not exist* (D103). *"Wendell is 48 and the only soul in the village who has mastered
+   foraging. Put somebody beside them to learn it, or it goes with them."*
+   - **⭐ BOTH HALVES OF THE CONDITION ARE DERIVED AND NEITHER IS A NEW NUMBER.** *Near the end*
+     is `LifeStage.Elder`, which the game already derives from vigour and already calls by that
+     name (D12); *the only soul who knows* is **the only living master**, and mastery is the one
+     threshold this design already has, already narrates and already keeps in `data/`. A fraction
+     picked here would be a number with no derivation behind it (D16).
+   - **⭐ The remedy is in the sentence**, because §5.3's whole argument is that the lever is
+     *staffing* rather than a pairing screen. **A warning whose remedy is unstated is an alert,
+     not information.**
+   - **⭐ One method, two readers** — the village log says it once on the edge, the villager's
+     panel says it while it is true, and both call `SimWorld.KnowledgeAtRiskNote`. That is D147's
+     shape for `IdleNote`, and it is what stops the log and the panel disagreeing about who is at
+     risk (D142's three call sites, D148's two meanings).
+   - **⭐ It is an EDGE detector, not a one-shot.** A trade that gains a second master and later
+     loses them is at risk again and the village is told again — guarded, because the obvious
+     "simplification" is a flag that only ever sets, and it would silently swallow every warning
+     after the first.
+   - **Measured rather than asserted:** a played century says it **3–5 times** across three seeds,
+     and the probe that preceded it found **11–16 masters dying per century** in a village that
+     never noticed. **10 reds across 5 breaks. Not one golden moved** — it narrates, and narration
+     is not hashed.
 8. `DESIGN.md §6` and §7 updated; goldens re-taken last, one commit, one stated reason (D152).
 
 ---
