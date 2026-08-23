@@ -3,6 +3,11 @@
 Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D179 back to D142**, then
 `METHODOLOGY.md`.
 
+> **⛔ WHEN YOU HAND OFF: EDIT THIS FILE, DO NOT REPLACE IT.** The trap list at the bottom is
+> accumulated from sessions that each paid for one entry. Rewriting it wholesale drops them
+> silently — that happened on 2026-08-22 and cost an hour and three quarters within the same
+> session. **Rewrite "where things are"; carry the traps forward.**
+
 ⭐ **Three things landed since Phase 2 and each is worth knowing before you touch anything:**
 the **town hall is designed** (D176 — it gates the knowledge *screen*, not the tree); **ground is
 worth going to** (D178 — soil is regional and the farm reads it); and **the suite runs in two and
@@ -181,6 +186,25 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   the thing costing the time — and Joe had to say "measure it first" to stop the wrong fix.*
 - **⚠️ A FULL RUN IS FOR A VERDICT, NOT FOR DISCOVERY.** One slice here burned four full runs,
   twice to learn what was already knowable. **Use `--filter` while iterating.**
+- **⛔⛔ DO NOT WRITE A WAIT-LOOP FOR A RUN THAT IS ALREADY IN THE BACKGROUND.** It is redundant —
+  **the completion notification arrives by itself** — and it adds a failure mode that has now
+  cost this project two sessions.
+  - **2026-08-16:** two shells spun **thirteen hours** waiting for `Passed!` against a file
+    written with `--logger "console;verbosity=detailed"`, which ends `Test Run Successful.`
+    instead. *The two output formats end with different strings.*
+  - **2026-08-22:** two more spun **an hour and three quarters** waiting for `Passed!` against a
+    file that was the output of `dotnet test | grep … | head -30` — **the summary line had been
+    filtered out before it ever reached the file.** *Grepping a file for a line you already
+    grepped away.*
+  - **The rule: a wait-loop whose condition cannot be met is a vacuous guard that costs wall
+    time instead of passing silently.** If you truly must poll, poll for something the file is
+    *guaranteed* to contain — and prefer just waiting for the notification.
+- **⛔⭐ AND DO NOT REWRITE THIS TRAP LIST FROM SCRATCH — CARRY IT FORWARD.** The warning directly
+  above was written on 2026-08-16 by the session that lost thirteen hours to it. **I deleted it
+  on 2026-08-22 while tidying the handoff after the Phase 2 merge, and walked into the identical
+  trap ninety minutes later.** *A handoff rewritten wholesale silently drops exactly the
+  hard-won warnings it exists to carry* — which is D159's drift running the other way: the
+  document losing knowledge the code never had. **Edit this file; do not replace it.**
 - **⭐ AND WHEN A SPEC AND A MEASUREMENT DISAGREE, THE SPEC IS THE ONE THAT IS WRONG.** D178 wrote
   a soil algorithm into a spec, probed it, and found it made the number it existed to raise
   *worse* — and separately inferred the founding ground was "already ordinary" from a fact about
