@@ -296,8 +296,8 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
    - **⚠️ What is left is tuning, not design** (that spec's §12): the width between novice and
      master, the founding party's composition, the tier names, and whether skill scales yield as
      well as duration. **Every one of them wants a probe before an implementation.**
-3. ✅ **Per-site yield — BUILT** (D58, §5; `specs/per-site-yield.md`, D178) on
-   `slice/per-site-yield`. **Soil is regional and the farm reads it; the sowing cap asks each
+3. ✅ **Per-site yield — DONE, merged to `main`** (D58, §5; `specs/per-site-yield.md`, D178).
+   **Soil is regional and the farm reads it; the sowing cap asks each
    farm's own haul; the player can see the ground.** A farm ten ticks from its store went from
    **46% brought in to 96%**, and still reaps 59 tiles against a near farm's 144 — *the rot is
    gone and distance still costs*, which is both halves of D58.
@@ -474,7 +474,7 @@ Each phase should ship in a playable, legible state before the next begins.
 
 > Update this section as work proceeds. Keep it honest — it's how we both know where we are.
 
-**Current phase:** ✅ **per-site yield is BUILT** (`slice/per-site-yield`, D178) — §4 queue item 3, awaiting review and merge. Phase 2 is complete and merged. §4's queue item 2 — **`specs/skills-catalog.md`** — is ✅ **written** (D173, docs-only on `main`). Next up is **per-site yield** (D172, queue item 3), then **Phase 3, skill and apprenticeship**, which is what builds the catalogue. `main` is the place to branch from.
+**Current phase:** **between slices.** Per-site yield (D178) and the cost-field rewrite (D179) are **merged to `main`**; §4 queue item 3 is closed. **Next is Phase 3 — skill and apprenticeship**, whose spec is written and whose design questions are all answered. Phase 2 is complete and merged. §4's queue item 2 — **`specs/skills-catalog.md`** — is ✅ **written** (D173, docs-only on `main`). Next up is **per-site yield** (D172, queue item 3), then **Phase 3, skill and apprenticeship**, which is what builds the catalogue. `main` is the place to branch from.
 
 **✅ PHASE 2 IS COMPLETE AND MERGED (2026-08-22, D169/D172)** — 248 commits, merged to `main` via [PR #4](https://github.com/joemachen/bclone/pull/4) (⚠️ **#4, not #3**: that number went to the closed screenshot-hook PR D160 rescued, and every document said #3 for a day). **All five Definition-of-Done items met**, the last of them Joe's QA walk. **630 passing, 0 failing, 2 skipped of 632**, CI green on the merged head.
 

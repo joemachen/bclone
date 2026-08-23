@@ -8,7 +8,7 @@ bug), D152 (goldens last).
 Neighbours: `crops-and-orchards.md` (the farm this changes), `seeded-map-generation.md` (the draw
 order, which is the seed contract), `forests-and-gathering.md §3.2` (where the bound became a
 budget), `environment-and-seasons.md` (soil depletion's eventual home).
-**Status:** ✅ **BUILT** (D178) on `slice/per-site-yield`, branched from `main` at `323c273`.
+**Status:** ✅ **BUILT and merged to `main`** (D178).
 Soil is regional and read by the farm; the sowing cap asks each farm's own haul; the player can
 see the ground. **641 passing, 0 failing, 2 skipped of 643**, all four goldens re-taken.
 Proved by `PerSiteYieldTests` and `FarmTests.AFarmsHarvestFallsOffWithDistanceFromItsStore`.

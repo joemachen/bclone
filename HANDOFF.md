@@ -1,25 +1,28 @@
-# Handoff — bclone: **Phase 2 merged, the skills catalogue written. Next is per-site yield.**
+# Handoff — bclone: **Queue items 1–3 are all done and merged. Next is Phase 3.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D177 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D179 back to D142**, then
 `METHODOLOGY.md`.
 
-⭐ **The town hall is designed now** (D176, `specs/tech-tree.md §7f`) — the fourth knowledge
-building, holding the knowledge screen and the collections. **It gates the screen, not the tree.**
+⭐ **Three things landed since Phase 2 and each is worth knowing before you touch anything:**
+the **town hall is designed** (D176 — it gates the knowledge *screen*, not the tree); **ground is
+worth going to** (D178 — soil is regional and the farm reads it); and **the suite runs in two and
+a half minutes instead of nineteen** (D179).
 
 ---
 
 ## Where things are
 
-**On `main`, and `main` is Phase 2.** Merged 2026-08-22 via
+**On `main`, and everything is merged.** Phase 2 went in via
 [PR #4](https://github.com/joemachen/bclone/pull/4) — 248 commits, all five Definition-of-Done
-items met, the last of them Joe's QA walk against
-`specs/phase-2-the-village-you-can-play.md`.
+items met, the last being Joe's QA walk. Per-site yield (D178) and the cost-field rewrite (D179)
+followed as two slices, fast-forwarded onto `main`.
 
-⚠️ **It is #4, not #3.** Number 3 went to the closed screenshot-hook PR D160 rescued, and every
-document in the repo said #3 for a day before anyone checked.
+⚠️ **The phase PR is #4, not #3.** Number 3 went to the closed screenshot-hook PR D160 rescued,
+and every document in the repo said #3 for a day before anyone checked.
 
-**`phase/2-wood-fuel-and-tools` is deleted**, local and remote, on Joe's call and after checking
-it had **0 commits not on `main`**. Its tip was `9b9f410` if it is ever wanted back.
+**Merged slice branches are deleted on Joe's standing preference**, each after checking it had
+**0 commits not on `main`**. Tips if ever wanted back: `phase/2-wood-fuel-and-tools` `9b9f410`,
+`slice/per-site-yield` `b2cb718`, `slice/faster-cost-field` `daec8fd`.
 
 **SUITE, FROM A RUN:**
 
@@ -84,12 +87,24 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
    - **⚠️ What is left in §12 is tuning, not design**: the width between novice and master, the
      founding party's composition, the tier names, and whether skill scales yield as well as
      duration. **Every one wants a probe before an implementation.**
-3. **⭐ NEXT: Per-site yield, and retiring the 7-tile bound** (D58, D172, Joe: *"per-site yield
-   behind skills-catalog"*). **This is the next thing to do.** See below.
-4. **Phase 3 — skill and apprenticeship** (§2.1), which is also the real answer to the mid-game
-   gap (D161). Its success test is already written: *play years 1–16 at normal speed, without
-   fast-forwarding, and want to keep watching.*
-5. **Phase 4 — the tech tree** (§2.7).
+3. ✅ **Per-site yield — DONE and merged** (D58, D178; `specs/per-site-yield.md`).
+   - **⛔ Half of it had already shipped under other names, which is why it was smaller than
+     §4 claimed.** The 7-tile bound stopped being a fence in **D120**; gathering has had per-site
+     yield since **D112**. What was missing was **the farm**, and D58's second half — *distant
+     sites pay better*, which nothing rewarded.
+   - **Soil is regional now** (value noise, lattice 8) **and the farm reads it.** The sowing cap
+     asks each farm's own haul. A farm ten ticks out went **46% → 96% brought in**, and still
+     reaps **59 tiles against a near farm's 144** — the rot is gone *and* distance still costs.
+   - **⛔ `crop_yield_per_tile` and `farm_store_cap` are untouched and stay locked.** Soil is a
+     multiplier around `ReferenceSoil`, so **average ground yields exactly what it always did** —
+     the locked 67 now means *the yield on average ground*.
+   - **⚠️ The player can see the ground** — the **Ground: off** button on the control bar. Without
+     it the whole slice is an invisible multiplier (§1.1, D67).
+4. **⭐ NEXT: Phase 3 — skill and apprenticeship** (§2.1), which is also the real answer to the
+   mid-game gap (D161). **Its spec is written and every design question in it is answered** — what
+   remains is tuning, and all of it wants a probe first. Its success test is already written:
+   *play years 1–16 at normal speed, without fast-forwarding, and want to keep watching.*
+5. **Phase 4 — the tech tree** (§2.7), plus the **town hall** (D176).
 
 **Two directions Joe set, neither scheduled, both in `DESIGN.md §4`:** **gridless** — the largest
 architectural statement anybody has made about this project, and the first question when it is
@@ -101,35 +116,24 @@ data row.**
 
 ---
 
-## ⛔⭐⭐ The one known-open bug, and why it is queue item 3 rather than a fix
+## ⛔⭐⭐ THE TRAP THAT WILL NOT ANNOUNCE ITSELF — read this before building roads
 
-**A farm's harvest falls off sharply with distance from its store** (D170, D171). Measured, ten
-years at each distance:
+**The travel-cost field is a breadth-first sweep since D179**, and that is correct **only while
+every passable tile costs the same to cross.** It replaced an O(n²) Dijkstra that was costing
+**four seconds per world** and very nearly the entire test suite.
 
-| farm → granary | brought in | with a 13-armful buffer |
-|---|---|---|
-| next door | 93–96% | — |
-| 6 ticks | 52% | 59% |
-| **10 ticks** | **46%** | 46% |
-| 22 ticks | 25% | 30% |
+**§2.6 desire-path roads say crossing thresholds *"lowers pathfinding cost, creating a
+reinforcement loop."*** The day a worn path is cheaper than grass, **BFS silently returns wrong
+answers** — it keeps the first route it finds rather than the cheapest, and nothing throws.
 
-Joe's own village landed exactly on the ten-tick row. **The cause is that
-`FieldTilesOneFarmerKeeps` is one number for every farm in the valley**, so a distant farm sows
-what a near one could reap and rots the difference every autumn.
+- **Then, and only then, go back to a priority queue** — `PriorityQueue<int, long>` keyed on
+  `((long)cost << 20) | index`, which keeps the tie-break and stays O(E log V).
+  **Never back to the scan.**
+- ⚠️ **No guard in the suite would catch it.** Every one describes a valley where the uniform-cost
+  rule still holds. The symptom would be villagers taking scenic routes for a phase.
 
-**⛔ DO NOT REACH FOR `farm_store_cap`.** Measured: one armful against thirteen moves the harvest
-by **nought to seven points**. The buffer is not the lever, distance is. It stays on Joe's locked
-list *on evidence*, not deference.
-
-**✅ What did land** — Joe's design, and `crops-and-orchards.md §3.2a`: the **market now runs the
-farm's buffer dry**, which ruling 1 has promised since the farm shipped and nothing ever did. A
-third marketer errand, offered against every other leg on travel cost, gated on the derived
-condition that the buffer can no longer take a whole armful. **Worth +4 points — real, and not
-the fix.**
-
-**⚠️ And it owes the player a sentence when per-site yield lands.** D167 made the rot line mean
-*you over-painted* or *you lost a farmer*. **Distance is a third cause the game cannot yet say**,
-and a rot line nobody can act on is the weather D167 spent a decision deleting.
+Written in three places on purpose: here, `TerrainCostField` itself, and
+`pathfinding-and-water.md`'s header.
 
 ---
 
@@ -140,7 +144,7 @@ and a rot line nobody can act on is the weather D167 spent a decision deleting.
   posed with their worst-case sentence. **A column is never narrower than its widest child**, so
   every width in `Main.BuildUi` is a *request* — three sessions have asked this question and two
   hand-rolled the same throwaway before it was kept.
-- **`HaulTheHarvest` writes its reason** — free space, both costs, which store won — so *"why did
+- **`grep "food from the field"`** — `HaulTheHarvest` writes its reason — free space, both costs, which store won — so *"why did
   the farmer walk past the buffer?"* is one grep rather than an afternoon:
   `grep "food from the field" src/Bclone.Game/logs/<newest>.log`
 - **The audit trail** at `src/Bclone.Game/logs/`. Almost every bug that mattered came out of it.
@@ -170,6 +174,17 @@ and a rot line nobody can act on is the weather D167 spent a decision deleting.
 - **⚠️ IF A NUMBER GOES INTO A DOCUMENT, IT COMES FROM A RUN.** Four for four, the fourth being a
   handoff's own warning about it.
 - **⚠️ CHECK A DOCUMENT'S REFERENCES AGAINST THE THING.** Every file said "PR #3" for a day.
+- **⭐⭐ MEASURE THE TOOLING TOO, NOT JUST THE VILLAGE (D179).** The suite ran nineteen minutes and
+  the obvious fix — tag the long acceptance runs as slow — was **wrong**: it was already 9.5×
+  parallel, so throughput was never the cost. The real culprit was an **O(n²) Dijkstra nobody had
+  ever timed**, four seconds a world. **It is 2m30s now.** *The thing everybody suspects is not
+  the thing costing the time — and Joe had to say "measure it first" to stop the wrong fix.*
+- **⚠️ A FULL RUN IS FOR A VERDICT, NOT FOR DISCOVERY.** One slice here burned four full runs,
+  twice to learn what was already knowable. **Use `--filter` while iterating.**
+- **⭐ AND WHEN A SPEC AND A MEASUREMENT DISAGREE, THE SPEC IS THE ONE THAT IS WRONG.** D178 wrote
+  a soil algorithm into a spec, probed it, and found it made the number it existed to raise
+  *worse* — and separately inferred the founding ground was "already ordinary" from a fact about
+  draw order that turned out to imply the opposite. **Both were caught by ten-minute probes.**
 - **`python` is not on PATH**, and string edits die on this repo's CRLF and its emoji. Use
   `perl -0777`, or the Edit/Write tools for anything with quoting in it.
 - **⚠️ Goldens go last, one commit, one stated reason** (D152). The seam golden moves when a
