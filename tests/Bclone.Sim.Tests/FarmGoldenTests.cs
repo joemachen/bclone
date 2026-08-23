@@ -110,7 +110,28 @@ public sealed class FarmGoldenTests
     // one golden in the suite that reaches a farm at all, so it is the one that can see them.
     //
     //   before ground was worth going to: 5832742735958199009
-    private const ulong SeamGoldenHash = 4486163041401162495UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE PROFICIENCY SUBSTRATE (D181) — and unlike every re-take above it,
+    // **nobody in this village did anything differently.** Villagers now carry what they have
+    // put into each trade; it is hashed; it grows from the first tick; and **no behaviour
+    // anywhere reads it** until landing 2. The scenario staffs a farm and a harvest brush for
+    // twenty years, so its people accrue and this number moves for that and nothing else.
+    //
+    //   before people got better at things: 4486163041401162495
+    private const ulong SeamGoldenHash = 7911818851227652011UL;
+
+    /// <summary>
+    /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
+    /// anything</b> (D181).
+    /// </summary>
+    /// <remarks>
+    /// This is <see cref="SeamGoldenHash"/>'s value from <em>before</em> the substrate landed,
+    /// recomputed over everything except skill. **It is what licenses the move above to be one
+    /// line in a decisions log rather than an investigation** — the seam still farms, clears,
+    /// sows and reaps exactly as it did, and when landing 2 makes mastery bite, **this number
+    /// must move too.** A skill system that changes nothing is D56's clothing.
+    /// </remarks>
+    private const ulong SeamBeforeAnybodyGotBetter = 4486163041401162495UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
@@ -119,9 +140,13 @@ public sealed class FarmGoldenTests
         SimWorld world = RunTheScenario(out _);
 
         ulong actual = StateHash.Compute(world);
-        _output.WriteLine($"crops × harvest brush, {Years}y: {actual}");
+        ulong withoutSkills = StateHash.ComputeIgnoringSkills(world);
+        _output.WriteLine(
+            $"crops × harvest brush, {Years}y: {actual} (without skills {withoutSkills})");
 
         Assert.Equal(SeamGoldenHash, actual);
+        Assert.Equal(SeamBeforeAnybodyGotBetter, withoutSkills);
+        Assert.NotEqual(withoutSkills, actual);
     }
 
     /// <summary>

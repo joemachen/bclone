@@ -12,7 +12,7 @@ accrues time on the task, it is hashed sparsely in id order, and it is visible: 
 says *"Nineteen years in the fields"* and **the mastery line fires in the village log** (§3.3b,
 Joe's ask). **Nothing reads it to change behaviour yet** — that is landing 2, and it is next.
 Six skills are rows in config, not enum values (§4.1). `SkillSystem` is step 11 of the tick order.
-**653 passing, 2 skipped; the three state-hash goldens moved once for the counters and
+**656 passing, 0 failing, 2 skipped of 658; the three state-hash goldens moved once for the counters and
 `StateHash.ComputeIgnoringSkills` is byte-identical to all three of their old values.**
 
 **Not built:** landing 2 (mastery biting, §3.3), landing 3 (the mixed founding §3.2c and the

@@ -244,8 +244,28 @@ public sealed class StockLimitTests
     //
     //   before ground was worth going to: fixture 13985157942708541633,
     //                                     shipped 17566836300829537614
-    private const ulong FixtureFiftyYearHash = 18149215200660116896UL;
-    private const ulong ShippedFiftyYearHash = 2960234095731849111UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE PROFICIENCY SUBSTRATE (D181), AND THIS ONE MOVED WITHOUT ANYBODY
+    // DOING ANYTHING DIFFERENTLY — which is the opposite of every re-take above it and is worth
+    // the paragraph. Villagers now carry what they have put into each trade, it is hashed, and
+    // it grows from the first tick. **Nothing reads it**: no behaviour anywhere consults skill
+    // until landing 2. So these two moved for the counters alone.
+    //
+    // **That is asserted rather than claimed** — `SkillTests.FiftyYearsOfVillageAndOnlyThe-
+    // CountersMoved` recomputes these same two runs with `StateHash.ComputeIgnoringSkills` and
+    // gets the two numbers directly below, byte for byte. If a future change to the substrate
+    // makes somebody walk somewhere different, that guard goes red and this one stays green,
+    // which is the whole point of having both.
+    //
+    // ⛔ AND IT IS WHY `skills-catalog.md §11.2.1`'s *"provable no-op: goldens unmoved"* was
+    // corrected rather than the guard weakened. Hashing new state that grows and keeping a
+    // state-hash golden byte-identical are mutually exclusive; the spec had reasoned by analogy
+    // from `crops-and-orchards.md`, where the generator never produces the new terrain values.
+    //
+    //   before people got better at things: fixture 18149215200660116896,
+    //                                       shipped 2960234095731849111
+    private const ulong FixtureFiftyYearHash = 4887770829745874605UL;
+    private const ulong ShippedFiftyYearHash = 5305142457694342096UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
