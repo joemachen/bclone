@@ -243,8 +243,10 @@ public sealed class SkillTests
     /// </para>
     /// </remarks>
     [Theory]
-    [InlineData(false, 17188106964035056485UL)]
-    [InlineData(true, 8048417015332426583UL)]
+    // ⭐⭐ RE-TAKEN FOR THE STOCKED MARKET (D197). `ComputeIgnoringSkills` moves because the
+    // marketer genuinely does something different — which is exactly what this number is for.
+    [InlineData(false, 7094256123335620835UL)]
+    [InlineData(true, 12645897665937765235UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

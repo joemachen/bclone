@@ -167,7 +167,11 @@ public sealed class FarmGoldenTests
     // in it would be a bug, not a re-base.
     //
     //   before the farm remembered: 12485177273367720852
-    private const ulong SeamGoldenHash = 3714993309705346931UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE STOCKED MARKET (D197) — see the note in `StockLimitTests`.
+    //
+    //   before the market was stocked: 3714993309705346931
+    private const ulong SeamGoldenHash = 4712803508757490940UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -193,7 +197,7 @@ public sealed class FarmGoldenTests
     /// village never changes.
     /// </para>
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 6791173964780676441UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 1114205237771287140UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

@@ -290,7 +290,19 @@ public sealed class StockLimitTests
     //
     //   before mastery bit: fixture 17883694128790877833,
     //                       shipped 15628752506897642520
-    private const ulong FixtureFiftyYearHash = 11057161405161342300UL;
+    //
+    // ⭐⭐ RE-TAKEN BECAUSE THE MARKETER STOCKS THE MARKET (D197,
+    // `storage-and-distribution.md §14.8`). A marketer now carries goods to the market's own
+    // store in slack time, so goods sit in a different building and every history downstream
+    // differs.
+    //
+    // ⚠️ THIS MOVED **EVERY** VILLAGE GOLDEN, NOT JUST THE FARM'S — unlike D194 the day before,
+    // which moved only the seam. The reason is worth keeping: **every village in the suite has a
+    // market in it**, where only one of them plants a farmhouse. *Silent about what they do not
+    // reach, loud about what they do* (D157, D162) — and this one they all reach.
+    //
+    //   before the market was stocked: 11057161405161342300
+    private const ulong FixtureFiftyYearHash = 5407508656652631583UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -325,7 +337,8 @@ public sealed class StockLimitTests
     //
     //   before the fire got warmer: fixture 18174430941982640321,
     //                               shipped 7791088175599810974
-    private const ulong ShippedFiftyYearHash = 15960035659211257615UL;
+    //   before the market was stocked: 15960035659211257615
+    private const ulong ShippedFiftyYearHash = 14089077723027009078UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

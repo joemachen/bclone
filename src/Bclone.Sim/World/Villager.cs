@@ -468,6 +468,7 @@ public sealed class Villager
             VillagerState.Sowing => "sowing a field",
             VillagerState.Reaping => "reaping the harvest",
             VillagerState.HaulingToFarm => "carrying the harvest to the farm",
+            VillagerState.StockingTheMarket => "carrying goods to the market",
             _ => State.ToString(),
         };
     }

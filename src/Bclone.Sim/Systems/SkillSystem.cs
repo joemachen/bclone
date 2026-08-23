@@ -181,6 +181,9 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.Reaping => true,
         VillagerState.HaulingToFarm => true,
 
+        // Stocking the market is a marketer out on their round like any other leg (§14.8).
+        VillagerState.StockingTheMarket => true,
+
         // Only reachable by casting an integer that is not a state at all. Loud rather than
         // swallowed (METHODOLOGY §4), and the walking test above is what catches a real new
         // state long before this could.
