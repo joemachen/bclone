@@ -1944,9 +1944,23 @@ public sealed record SimConfig
     [JsonIgnore]
     public int TicksPerYear => TicksPerDay * DaysPerSeason * 4;
 
-    /// <summary>Ticks on the task before mastery. Derived from a stated number of years.</summary>
+    /// <summary>Ticks on the task before mastery, for a trade that does not state its own.</summary>
     [JsonIgnore]
     public int MasteryTicks => MasteryYears * TicksPerYear;
+
+    /// <summary>Years on the task that make a master of <paramref name="skill"/>.</summary>
+    /// <remarks>
+    /// <b>The trade's own number if it states one, the village's otherwise</b> — see
+    /// <see cref="SkillRow.MasteryYears"/> for why the trades differ (D182).
+    /// </remarks>
+    public int MasteryYearsFor(SkillRow skill)
+    {
+        ArgumentNullException.ThrowIfNull(skill);
+        return skill.MasteryYears ?? MasteryYears;
+    }
+
+    /// <summary>Ticks on the task that make a master of <paramref name="skill"/>.</summary>
+    public int MasteryTicksFor(SkillRow skill) => MasteryYearsFor(skill) * TicksPerYear;
 
     /// <summary>The ticks decay never takes anybody below. Derived (§3.4's *"not to zero"*).</summary>
     [JsonIgnore]

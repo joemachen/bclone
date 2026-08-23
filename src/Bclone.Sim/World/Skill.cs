@@ -67,6 +67,42 @@ public sealed record SkillRow
     public bool Recordable { get; init; } = true;
 
     /// <summary>
+    /// Years <b>on the task</b> before this trade is mastered, or null to use
+    /// <c>mastery_years</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ PER SKILL BECAUSE THE TRADES DO NOT ACCRUE AT THE SAME RATE, AND THAT WAS
+    /// MEASURED</b> (D182, Joe's call). `mastery_years` is twenty and §3.3b promises *"a founder
+    /// who sticks to one trade masters it, and is a master for the back half of their life."*
+    /// Landing 1's probe found that promise held for a farmer and quietly failed for everybody
+    /// seasonal: **twenty years on the task was 32 calendar years for a forager and 34 for a
+    /// marketer**, because D44 stands their work down every winter. A farmer mastered on
+    /// schedule and a forager took half again as long, **with nothing on screen saying why.**
+    /// </para>
+    /// <para>
+    /// <b>So each trade states the years of its own work that make a master</b>, derived from
+    /// what a year of that trade is actually worth
+    /// (`SkillTests.WhatAYearOnEachTradeIsActuallyWorth`). **Every trade now masters at about
+    /// twenty calendar years**, which is what the design promised in the first place.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE ALTERNATIVE WAS ONE LINE AND IT WAS THE DISHONEST ONE</b> — credit a held seat
+    /// through the winter even though the village stood the work down. That would have made the
+    /// panel say *"nineteen years in the woods"* about somebody who spent five of them idle at
+    /// home, and this game's whole claim is that its numbers mean what they say. **This is D165's
+    /// split instead: a stated fact about each trade, with the consequence derived.**
+    /// </para>
+    /// <para>
+    /// Null rather than a default of twenty, so a modder adding a row gets the game's headline
+    /// number without having to know it, and <c>mastery_years</c> stays the one place to move
+    /// them all at once.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("mastery_years")]
+    public int? MasteryYears { get; init; }
+
+    /// <summary>
     /// Where the years were spent, for the villager panel: *"nineteen years <b>in the
     /// fields</b>."*
     /// </summary>

@@ -43,7 +43,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **SUITE, FROM A RUN:**
 
 ```
-656 passed, 0 failed, 2 skipped of 658 — about 2m00s (was 18m52s before D179)
+658 passed, 0 failed, 2 skipped of 660 — about 1m50s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -130,11 +130,14 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
    - **⭐ A tick counts while somebody HOLDS the trade, not only while mid-action** (§3.6). The
      tight reading is tempting and §3.3b's arithmetic rules it out, *and* it would make a master
      accrue more slowly the better they got once landing 2 shortens the action.
-   - **⚠️⚠️ MEASURED, AND LANDING 2 HAS TO ANSWER TO IT: twenty years on the task is 32–34
-     calendar years for seasonal trades.** D44 unstaffs them in winter — **1 of 4 able adults
-     hold a job in mid-winter against 4 of 4 in summer** — so a farmer masters on schedule and a
-     forager takes half again as long, with nothing on screen saying why. **Three possible
-     shapes are written up in §12 and none should be taken without Joe.**
+   - **⛔⛔ DECAY IS WHAT STOPS PEOPLE MASTERING TRADES, AND IT IS THE FIRST THING LANDING 2
+     SHOULD FIX** (D182). Agnes held foraging for **12,240 ticks — more than the 9,600 mastery
+     requires — and kept 7,600**, because decay took 37% of everything she earned. A villager
+     spends over half their adult life off any given trade (D46 moves them every three years),
+     and **§3.4 explicitly forbids exactly this**. ⚠️ **Two wrong causes were published before
+     this one** — a winter *headcount* read as *availability*, and a derivation that measured
+     *demand*. Read §12 before touching it. Recommended fix: **a grace period before decay
+     begins**, at least `labour_reshuffle_years` long.
    - **⚠️ The reshuffle leaves the whole village jobless for exactly one tick** (Day 1, Spring).
      Harmless at 0.02%, but it is why landing 1's guards sample mid-season — see the trap list.
    - **What is still unbuilt:** apprenticeship and teaching (§5), the at-risk line (§7), the
@@ -223,6 +226,19 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   sessions hunted a rendering bug in `BehaviorSystem`. **Ask which half the symptom lives in
   before opening the log.**
 - **⭐ FINDING A CAUSE IS NOT FINDING THE CAUSE** (D163, D166, D169 — three rounds on one symptom).
+  - **⛔⛔ AND THE FOURTH ROUND PUT TWO WRONG CAUSES INTO DOCUMENTS BEFORE THE RIGHT ONE (D182).**
+    *Why does a forager take 32 calendar years to reach 20 years on the task?* **Wrong once:**
+    *"winter stands the work down"* — the evidence was **1 of 4 able adults hold a job in
+    mid-winter**, a **headcount**, read as **availability**. Foraging is worked in all four
+    seasons; there are just fewer people on it. **A number that is true can still be evidence
+    for the wrong claim.** **Wrong twice:** *"derive each trade's mastery from the share of a
+    year it is staffed"* — that measures **demand**, which is the player's business, and would
+    have pinned woodcutting at five years because this village wants one occasionally.
+    **Right:** decay, taking **37% of everything a career earns.**
+  - **⭐ The thing that caught both was building the measurement needed to ACT on the claim.**
+    The first survived a probe because the probe answered a different question; the second died
+    the moment its own numbers were printed next to what they implied. **If a finding is about to
+    become a config number, measure the number — not the story.**
 - **⭐ THE HELPER YOU NEED MAY ALREADY EXIST.** `Main.Wrapped` had been doing exactly the right
   thing on five labels for two UI rebuilds while every sentence in the inspector went into a bare
   `Label` in an `HBox`. Grep before writing.

@@ -122,7 +122,7 @@ public sealed class SkillSystem : ISimSystem
         SkillProgress progress = villager.ProgressIn(skill.Id);
         progress.Ticks++;
 
-        if (progress.Mastered || progress.Ticks < config.MasteryTicks)
+        if (progress.Mastered || progress.Ticks < config.MasteryTicksFor(skill))
         {
             return;
         }
@@ -142,7 +142,7 @@ public sealed class SkillSystem : ISimSystem
                 System.Globalization.CultureInfo.InvariantCulture,
                 skill.MasteryLine,
                 villager.Name,
-                config.MasteryYears));
+                config.MasteryYearsFor(skill)));
         }
     }
 

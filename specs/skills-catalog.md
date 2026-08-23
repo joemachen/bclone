@@ -781,20 +781,31 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
 
 **⭐⭐ MEASURED BY LANDING 1'S PROBE, AND LANDING 2 HAS TO ANSWER TO BOTH (D181):**
 
-- **⛔ TWENTY YEARS ON THE TASK IS NOT TWENTY YEARS OF CALENDAR, AND THE TRADES DIVERGE BADLY.**
-  Over eighty years of the shipped village, the best foraging career reached twenty years on the
-  task after **32 calendar years**, and trading after **34**. The cause is D44: the quota knows
-  what season it is, so **no berry patch is staffed while there is nothing on it** — measured at
-  **1 of 4 able adults holding a job in mid-winter against 4 of 4 in summer.** §3.6 named this as
-  the thing not to guess at, and the guess would have been wrong in the comfortable direction.
-  - **The question for Joe is whether that is a bug or the design.** *"Twenty years in the
-    fields"* is a sentence about a life, and a forager who spends every winter idle genuinely
-    has fewer years in the woods — which is arguably true rather than broken. But **a farmer
-    masters on schedule and a forager takes half again as long**, and nothing on screen says why.
-  - **Three shapes, if it is to be fixed:** count a held seat across the whole year even when the
-    season stands the work down; give each skill its own mastery number as content; or let the
-    winter reallocation stop unstaffing seasonal trades. **The first is one line and the least
-    honest; the second is D165's split and the most.** None should be taken without Joe.
+- **⛔⛔ DECAY IS WHAT STOPS PEOPLE MASTERING TRADES, AND IT IS THE TRAP §3.4 FORBIDS** (D182).
+  Measured tick by tick over sixty years: **Agnes held foraging for 12,240 ticks — more than the
+  9,600 mastery requires — and kept 7,600. Decay took 4,640, 37% of everything she earned, and
+  she never became a master.** Mabel, who held trading for 70% of her adult life against Agnes's
+  44%, lost nothing and sailed past it.
+  - **The variable is how continuously one person holds one seat**, and a villager spends over
+    half their adult life off any given trade because D46's reshuffle moves them every three
+    years. **Not the trade, and not the season.**
+  - **§3.4's own derivation is what hid it.** *Three years away costs one year* was derived
+    against `labour_reshuffle_years: 3` **assuming three years away is an occasional event.**
+    It is the normal state of a career. §3.4's words — *"a decay rate that punishes [the
+    reshuffle] would make the labour allocator feel like a trap"* — describe what shipped.
+  - **⭐ Recommended: a grace period before decay begins**, at least `labour_reshuffle_years`
+    long. **You do not forget a trade because the village borrowed you for a summer**, while a
+    genuine decade away still costs. Derived against *how long people are actually away* rather
+    than against how often the allocator runs.
+  - ⚠️ **Two wrong causes were published before this one, and both are instructive.** *"D44
+    stands seasonal work down in winter"* rested on a **headcount** (1 of 4 in mid-winter) read
+    as **availability** — every trade above is in fact worked in all four seasons. And *"derive
+    each trade's mastery from the share of a year it is staffed"* measures **demand**: it put
+    woodcutting at five years because this village wants one woodcutter occasionally.
+- **⚠️ `SkillRow.MasteryYears` exists and no row sets one.** The mechanism is Joe's call (2026-08-22)
+  and it is real — trades may genuinely diverge one day — but **the measurement removed the reason
+  to set any number today**, and tuning it to a cause that does not exist would bury the one that
+  does.
 - **⚠️ The reshuffle leaves the whole village jobless for exactly one tick.** At *Day 1, Spring*
   the allocator has torn every assignment down and not yet rebuilt it, so **0 of 4 able adults
   hold a job on that tick** — one lost tick per trade per three years, which is 0.02% and

@@ -488,6 +488,247 @@ public sealed class SkillTests
             + "sentence the game never gets to say.");
     }
 
+    /// <summary>
+    /// ⭐⭐ How many ticks a year somebody who sticks to a trade actually puts into it — <b>the
+    /// measurement each skill's own mastery number is derived from</b> (D182, Joe's call).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THE PROBLEM THIS SOLVES, MEASURED BY THE LANDING BEFORE IT:</b> twenty years *on the
+    /// task* was **32 calendar years for a forager and 34 for a marketer**, against twenty for a
+    /// farmer, because D44 stands seasonal work down in winter. §3.3b's promise — *"a founder who
+    /// sticks to one trade masters it, and is a master for the back half of their life"* — was
+    /// true for some trades and quietly false for others, **with nothing on screen saying why**.
+    /// </para>
+    /// <para>
+    /// <b>The statistic is the maximum any one villager gained in any single calendar year</b>,
+    /// which is exactly *"somebody who stuck to it"* — robust to the reshuffle moving people,
+    /// to deaths, and to children coming of age mid-year, because all of those only ever produce
+    /// a **smaller** year and the maximum ignores them.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It asserts the shape rather than the numbers</b> — that a year-round trade is at or
+    /// near a full year and a seasonal one is materially short of it. Pinning the exact ticks
+    /// would make this go red every time the calendar or the winter rules are tuned, which is a
+    /// guard that cries wolf about its own config.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void WhatAYearOnEachTradeIsActuallyWorth()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        // ⛔ SEASONS THE TRADE IS EVER WORKED — NOT "how much of the year did somebody happen to
+        // hold it". The first statistic this probe computed was the maximum ticks any villager
+        // gained in one year, and it was WRONG TO DERIVE FROM: it measured **demand** as much as
+        // availability. Woodcutting came out at 25% of a year, not because a woodcutter rests
+        // nine months but because this village only wants one occasionally — so mastery would
+        // have been set at five years on the task, and a player who staffs three huts year-round
+        // would mint masters in five years and break §3.3b's *"the back half of their life"*.
+        //
+        // **Seasonality is intrinsic to the trade; demand is the player's business and must not
+        // change how long mastery takes.** So: in which seasons is this work ever done at all?
+        var worked = new Dictionary<int, HashSet<Season>>();
+
+        for (int step = 0; step < 40 * 4; step++)
+        {
+            for (int i = 0; i < world.Villagers.Count; i++)
+            {
+                Villager villager = world.Villagers[i];
+                if (!villager.Alive || !villager.HasJob)
+                {
+                    continue;
+                }
+
+                Workplace? workplace = world.FindWorkplace(villager.WorkplaceId);
+                if (workplace is null || workplace.IsSite)
+                {
+                    continue;
+                }
+
+                SkillRow row = config.Skills.First(skill => skill.GrownBy == workplace.Kind);
+                if (!worked.TryGetValue(row.Id, out HashSet<Season>? seasons))
+                {
+                    seasons = new HashSet<Season>();
+                    worked[row.Id] = seasons;
+                }
+
+                seasons.Add(world.Clock.Season);
+            }
+
+            loop.Step(config.TicksPerSeason / 2);
+        }
+
+        var measured = new List<int>();
+
+        for (int i = 0; i < config.Skills.Count; i++)
+        {
+            SkillRow skill = config.Skills[i];
+            if (!worked.TryGetValue(skill.Id, out HashSet<Season>? seasons) || seasons.Count == 0)
+            {
+                _output.WriteLine($"{skill.Name,-12} never staffed in this village — not measurable");
+                continue;
+            }
+
+            int derived = config.MasteryYears * seasons.Count / 4;
+            measured.Add(seasons.Count);
+
+            _output.WriteLine(
+                $"{skill.Name,-12} worked in {seasons.Count} of 4 seasons "
+                + $"({string.Join(", ", seasons.OrderBy(season => (int)season))}) "
+                + $"→ mastery at {derived,2} years on the task ≈ {config.MasteryYears} calendar "
+                + $"(config says {config.MasteryYearsFor(skill)})");
+        }
+
+        Assert.NotEmpty(measured);
+        Assert.Contains(4, measured);
+        Assert.True(
+            measured.Min() < 4,
+            "Every trade is worked in every season, so per-skill mastery numbers would be noise "
+            + "in a data file rather than a correction.");
+    }
+
+    /// <summary>
+    /// ⭐⭐ Why the best career in a trade takes half again as long as the number says —
+    /// <b>the cause, measured, after two wrong ones</b> (D182).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ TWO EXPLANATIONS WERE OFFERED AND BOTH WERE WRONG, WHICH IS D163/D166/D169's
+    /// *finding a cause is not finding the cause* arriving for a fourth time.</b>
+    /// </para>
+    /// <para>
+    /// <b>Wrong once:</b> *"D44 stands seasonal work down in winter."* It does reduce the
+    /// **headcount** — 1 of 4 able adults hold a job in mid-winter against 4 of 4 in summer —
+    /// and that number was read as availability. **It is not:**
+    /// `WhatAYearOnEachTradeIsActuallyWorth` finds foraging, forestry, woodcutting and trading
+    /// all worked in **all four seasons**. Somebody is always on it; there are simply fewer of
+    /// them.
+    /// </para>
+    /// <para>
+    /// <b>Wrong twice:</b> *"derive each trade's mastery from the share of a year it is
+    /// staffed."* That measures **demand**, which is the player's business — woodcutting came
+    /// out at 25% of a year because this village wants one woodcutter occasionally, and mastery
+    /// would have been set at five years for anybody who staffs three huts properly.
+    /// </para>
+    /// <para>
+    /// <b>So this one asks the question directly, tick by tick</b>, and splits the calendar into
+    /// the three things that can consume it: holding the trade, holding some other trade or
+    /// none, and ground given back to decay.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void WhereACareersMissingYearsActuallyGo()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        var heldTrade = new Dictionary<(int Villager, int Skill), int>();
+        var adultTicks = new Dictionary<int, int>();
+
+        for (int tick = 0; tick < config.TicksPerYear * 60; tick++)
+        {
+            loop.Step(1);
+
+            for (int i = 0; i < world.Villagers.Count; i++)
+            {
+                Villager villager = world.Villagers[i];
+                if (!villager.Alive || !villager.CanWork)
+                {
+                    continue;
+                }
+
+                adultTicks[villager.Id] =
+                    (adultTicks.TryGetValue(villager.Id, out int lived) ? lived : 0) + 1;
+
+                if (!villager.HasJob)
+                {
+                    continue;
+                }
+
+                Workplace? workplace = world.FindWorkplace(villager.WorkplaceId);
+                if (workplace is null || workplace.IsSite)
+                {
+                    continue;
+                }
+
+                SkillRow row = config.Skills.First(skill => skill.GrownBy == workplace.Kind);
+                var key = (villager.Id, row.Id);
+                heldTrade[key] = (heldTrade.TryGetValue(key, out int had) ? had : 0) + 1;
+            }
+        }
+
+        int worstDecayShare = 0;
+
+        for (int i = 0; i < config.Skills.Count; i++)
+        {
+            SkillRow skill = config.Skills[i];
+
+            (int Villager, int Skill) best = default;
+            int bestHeld = 0;
+            foreach (KeyValuePair<(int Villager, int Skill), int> entry in heldTrade)
+            {
+                if (entry.Key.Skill == skill.Id && entry.Value > bestHeld)
+                {
+                    bestHeld = entry.Value;
+                    best = entry.Key;
+                }
+            }
+
+            if (bestHeld == 0)
+            {
+                _output.WriteLine($"{skill.Name,-12} nobody ever held it");
+                continue;
+            }
+
+            Villager villager = world.Villagers.First(person => person.Id == best.Villager);
+            int lived = adultTicks[best.Villager];
+            int kept = villager.TicksIn(skill.Id);
+
+            int heldShare = lived == 0 ? 0 : bestHeld * 100 / lived;
+            int decayed = bestHeld - kept;
+            int decayShare = bestHeld == 0 ? 0 : decayed * 100 / bestHeld;
+            worstDecayShare = Math.Max(worstDecayShare, decayShare);
+
+            _output.WriteLine(
+                $"{skill.Name,-12} best career: {villager.Name,-8} held it {bestHeld,6} of "
+                + $"{lived,6} adult ticks ({heldShare,3}%), kept {kept,6} — "
+                + $"decay took {decayed,6} ({decayShare,3}% of what was earned)");
+        }
+
+        _output.WriteLine(
+            $"mastery needs {config.MasteryTicks} ticks; an adult life is about "
+            + $"{(config.LifespanYearsBase - config.AdultAge) * config.TicksPerYear} ticks");
+
+        // ⛔⛔ THE FINDING, AND IT IS THE THIRD CAUSE AFTER TWO WRONG ONES: **decay is what
+        // stops people mastering trades.** Agnes held foraging for 12,240 ticks — MORE than the
+        // 9,600 mastery requires — and kept 7,600, because a villager spends over half their
+        // adult life off any given trade and every year away costs a third of a year.
+        //
+        // **That is precisely the trap §3.4 forbids**: *"a decay rate that punishes [the
+        // reshuffle] would make the labour allocator feel like a trap."* The rate was derived
+        // against `labour_reshuffle_years` on the assumption that three years away is an
+        // occasional event. Measured, it is the normal state of a career.
+        //
+        // ⚠️ This asserts the regime rather than the numbers — that somebody did the work,
+        // and that decay is taking a material share of it. **When the rate is fixed, this
+        // goes red and gets re-taken with the new measurement**, which is what a probe kept
+        // as a guard is for.
+        Assert.True(
+            worstDecayShare > 10,
+            "Decay is taking a negligible share of what careers earn, so the finding this "
+            + "probe exists to hold has been fixed or has moved — re-measure and re-take it.");
+
+        int longest = heldTrade.Values.Count == 0 ? 0 : heldTrade.Values.Max();
+        Assert.True(
+            longest > config.MasteryTicks,
+            "Nobody held any trade for as long as mastery requires, so this probe never "
+            + "reached the regime it is about.");
+    }
+
     private static void StepWholeYears(SimWorld world, SimConfig config, int years)
     {
         // The system alone, on year edges only — the point is the decay arithmetic, not a
