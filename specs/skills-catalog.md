@@ -7,7 +7,11 @@ D156 (an uneducated child works at twelve), D168 (a new kind of thing should be 
 Neighbours: **`tech-tree.md` (this is its missing substrate — §6)**, `professions.md §4` (the
 roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing.md` and
 `livestock.md` (parked, and both add skills when they land).
-**Status:** ✅ **ALL THREE LANDINGS ARE BUILT** (D181, D187, D190). `Villager.Skills` accrues time on
+**Status:** 🔨 **ALL THREE LANDINGS ARE BUILT** (D181, D187, D190) — **and the phase is NOT done.**
+⛔ **Two things remain: apprenticeship (§5) and the at-risk line (§7/§11.7).** Apprenticeship is
+*the pillar's actual point* — §2.1 is *"that skill dies with the person unless an elder
+apprentices a youth"* — and **§10's anti-vacuity guard is written for it and cannot be written
+without it**: *a village that never teaches produces measurably less than one that does.* `Villager.Skills` accrues time on
 the task, is hashed sparsely in id order, and is visible: the villager panel says *"Nineteen years
 in the fields"* and **the mastery line fires in the village log** (§3.3b, Joe's ask). **Nothing
 ever takes proficiency away** (§3.7, D183) and a tick out on the job counts for more than a tick
@@ -784,9 +788,11 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
         clothing, and this is the guard that can say so.
       - **The three state-hash goldens moved once, in their own commit, for one stated reason**
         (D152).
-   2. **Mastery bites** — duration first, yield second (§3.3). **Moves the goldens.**
-   3. **The mixed founding (§3.2c) and the seeded rhythm (§3.5), together in one commit**, so one
-      golden move covers both.
+   3. ✅ **The mixed founding (§3.2c) and the seeded rhythm (§3.5), together in one commit**
+      (D190, built) — a master, a journeyman and two novices with seeded trades, and a personal
+      rhythm drawn at birth that sets a villager's first step **and their first hunger** apart.
+      **D28 discharged:** identical hunger **100% → 0%** over the first five years, same tile
+      91% → 80%.
    *Landing them apart is what makes a regression attributable — the standing habit, and D157's
    own lesson about hashes being evidence only about the code they execute.*
 3. Growth, decay and **the floor rule** guarded, each **checked red and counted** — the standing
@@ -799,8 +805,10 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
    Checked red with both switched off.
 6. **⭐ The mastery line fires** (§3.3b, Joe's ask) — once, on the edge, naming the person, and
    visible in the village log without the player going looking.
-7. The at-risk warning reachable by the player, because *a feature the player cannot reach does
-   not exist* (D103).
+7. ⛔ **NOT DONE — the at-risk warning reachable by the player**, because *a feature the player
+   cannot reach does not exist* (D103). §7's line: *"Mabel is 68 and the only soul who knows
+   herbalism."* **This is the outstanding Definition-of-Done item**, and it is the one that makes
+   losing somebody legible rather than merely true.
 8. `DESIGN.md §6` and §7 updated; goldens re-taken last, one commit, one stated reason (D152).
 
 ---

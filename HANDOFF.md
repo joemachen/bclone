@@ -1,6 +1,6 @@
-# Handoff — bclone: **Phase 3 has started. Landing 1 of 3 is built; landing 2 is next and is not optional.**
+# Handoff — bclone: **Phase 3's three landings are built. Apprenticeship and the at-risk line are what remain.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D181 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D193 back to D142**, then
 `METHODOLOGY.md`.
 
 > **⛔ WHEN YOU HAND OFF: EDIT THIS FILE, DO NOT REPLACE IT.** The trap list at the bottom is
@@ -8,11 +8,15 @@ Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D181 b
 > silently — that happened on 2026-08-22 and cost an hour and three quarters within the same
 > session. **Rewrite "where things are"; carry the traps forward.**
 
-⭐ **The two things to know before you touch anything:** **proficiency exists now** (D181 — it
-accrues, is hashed, is visible, **gives and never takes** (D183), and **nothing reads it**), and **the ground the player can read**
-(D180 — a toggle that lied for a day, plus the sentences D178's spec asked for and never got).
-Behind those: the **town hall is designed** (D176), **ground is worth going to** (D178), and **the
-suite runs in two and a half minutes instead of nineteen** (D179).
+⭐ **Three things to know before you touch anything:**
+1. **⭐⭐ D28 IS DISCHARGED** (D190) — the lockstep Joe watched at 4× in Phase 1 is gone, and
+   **he confirmed it in play**: the four founders read as distinct people and no longer move as
+   pairs. Identical hunger between two adults of one household went **100% → 0%**.
+2. **⛔ THE FARM IS PARKED AND IT IS THE BIGGEST KNOWN-OPEN THING IN THE GAME** — a farm ten
+   ticks from a store sows **5 tiles of 13**. **Four attempts failed and every proposed cause
+   was rejected by measurement.** Read the section below before touching it.
+3. **⚠️ Phase 3 is NOT done**, whatever an earlier draft of D190 said. **Apprenticeship (§5) and
+   the at-risk line (§7)** remain, and apprenticeship is the pillar's whole point.
 
 ---
 
@@ -23,17 +27,28 @@ in via [PR #4](https://github.com/joemachen/bclone/pull/4) — 248 commits, all 
 Definition-of-Done items met, the last being Joe's QA walk. Per-site yield (D178), the cost-field
 rewrite (D179) and the ground-legibility slice (D180) are all fast-forwarded onto `main`.
 
-**⭐⭐ PHASE 3 LANDS IN THREE PIECES AND ONLY THE FIRST IS BUILT** (`skills-catalog.md §11`):
+**⭐⭐ PHASE 3'S THREE LANDINGS ARE ALL BUILT** (`skills-catalog.md §11`), on
+`phase/3-skill-and-apprenticeship`, **unmerged**:
 1. ✅ **The proficiency substrate** (D181, D183). `Villager.Skills` accrues time on the task,
-   hashed sparsely in id order; six skills are **rows in config, not enum values**; the villager
-   panel says *"Nineteen years in the fields"*; **the mastery line fires** in the village log.
+   hashed sparsely in id order; six skills are **rows in config, not enum values**; the panel
+   says *"Sixteen years as a farmer"*; **the mastery line fires** in the village log.
    **Nothing ever takes proficiency away**, and a tick out on the job is worth 1.5 of a tick
    waiting for one. Ages at mastery: **34–55, median 39.**
-2. **⛔ NEXT, AND NOT OPTIONAL: mastery bites** — duration first, yield second (§3.3). **A system
-   that accrues, is visible and changes nothing is D56's clothing**, which was measured as a
-   no-op over 300 years and blocked for it. Landing 1 is that shape until landing 2 lands.
-3. **The mixed founding (§3.2c) and the seeded rhythm (§3.5), together in one commit.** This is
-   what discharges D28.
+2. ✅ **Mastery bites** (D187) — **a master takes half the ticks over an action, rounded up.**
+   ⚠️ **Below 34% the feature is literally a no-op**: durations are 3 and 4 ticks, so a bonus
+   that does not round to a whole tick buys **nothing** — a village at 25% produced population
+   and food *identical* to one with the feature off. `AMasterIsFasterAtEveryTrade` fails the
+   build if it ever rounds away again.
+3. ✅ **The mixed founding and the seeded rhythm** (D190) — a master, a journeyman and two
+   novices with **seeded trades**, and a rhythm drawn at birth. **D28 discharged.**
+
+**⛔ WHAT IS LEFT, AND IT IS NOT SMALL:**
+- **Apprenticeship (§5).** §2.1 is *"that skill dies with the person unless an elder apprentices
+  a youth"* — **so far skill is personal and nothing transfers.** §10's anti-vacuity guard is
+  written for it and **cannot be written without it**: *a village that never teaches produces
+  measurably less than one that does.*
+- **The at-risk line (§7, DoD item 7).** *"Mabel is 68 and the only soul who knows herbalism."*
+  What makes losing somebody legible rather than merely true.
 
 ⚠️ **The phase PR is #4, not #3.** Number 3 went to the closed screenshot-hook PR D160 rescued,
 and every document in the repo said #3 for a day before anyone checked.
@@ -45,7 +60,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **SUITE, FROM A RUN:**
 
 ```
-660 passed, 0 failed, 2 skipped of 662 — about 1m50s (was 18m52s before D179)
+675 passed, 0 failed, 2 skipped of 677 — about 2m10s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -143,10 +158,53 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
      counts as work. **Ages at mastery: 34–55, median 39** — §3.3b's promise, untuned.
    - **⚠️ The reshuffle leaves the whole village jobless for exactly one tick** (Day 1, Spring).
      Harmless at 0.02%, but it is why landing 1's guards sample mid-season — see the trap list.
-   - **What is still unbuilt:** apprenticeship and teaching (§5), the at-risk line (§7), the
-     workplace panel's *"how practised are they"* (deliberately landing 2's — until skill bites,
-     a hut is never slow *for that reason*), and everything in §12.
+   - **⚠️ THE SIM CAN ONLY EXPRESS TWO WORKING SPEEDS** (D187), because `sow_ticks` and
+     `reap_ticks` are 3 and `cut_ticks`/`split_ticks` are 4. **Four tier names sit over two
+     behaviours** — an apprentice works exactly as fast as a novice, and a journeyman past the
+     step exactly as fast as a master. Joe accepted this knowingly. It only becomes four if the
+     durations grow.
+   - **⭐ WHAT TO DO NEXT, IN ORDER:** **apprenticeship (§5)** — the pillar's whole point, and
+     the thing §10's anti-vacuity guard is written for — then **the at-risk line (§7)**, which is
+     DoD item 7 and the last thing between Phase 3 and done.
 5. **Phase 4 — the tech tree** (§2.7), plus the **town hall** (D176).
+
+---
+
+## ⛔⛔ THE FARM, PARKED — read this before you touch `ReapableShareAt`
+
+**Joe's live complaint, unfixed: a farmer plants 5 tiles of the 13 the derivation gives them.**
+Measured per worker-year: a **well-sited farm produces 1,376 food against a forager's 1,076** —
+farming already wins — but **a farm ten ticks from a store produces 523**, because
+`SimWorld.ReapableShareAt` cuts its field to 40%.
+
+**⛔ FOUR ATTEMPTS, FOUR CAUSES PROPOSED, EVERY ONE REJECTED BY MEASUREMENT. Do not add a fifth
+by reasoning.**
+
+| proposed cause | what killed it |
+|---|---|
+| the granary haul | removing it entirely still left the farm at ~7 tiles |
+| the daily commute | travel is **11%** of a farmhand's ticks |
+| resting outdoors getting cold | farmhands' cold is **zero, always** |
+| the buffer (`farm_store_cap`) | raising it gave 13 tiles and **52% brought in** — the rot came back, and `AFarmsHarvestFallsOffWithDistanceFromItsStore` caught it |
+
+**⭐⭐ THE ONE MEASUREMENT THAT LOOKED AT THE BINDING SEASON, AND WHAT IT FOUND.** In *autumn*, a
+farm ten ticks out spends **33% of its ticks Resting** while a near one spends **0%**. **The
+distant farm is not too busy to reap thirteen tiles — it idles a third of the season it is
+supposedly too busy for, because the cap already cut its field to five.** *The cap is
+self-fulfilling, and the guard that says "distant farms reap fewer tiles" is measuring the cap
+rather than a physical limit.*
+
+**⭐ THE NEXT STEP IS A LEDGER, NOT A HYPOTHESIS.** `HaulTheHarvest` writes its reasoning to the
+audit log — free space, both costs, which store won — so `grep "food from the field"` over
+`src/Bclone.Game/logs/<newest>.log` attributes one distant farmhand's autumn tick by tick to
+named causes. **That replaces guessing.** Nobody has run it.
+
+⚠️ **`crop_yield_per_tile` is NOT the lever** and Joe proposed it: raising it would inflate a
+derived number to paper over a bug and leave well-sited farms at ~2.5× gathering.
+
+**Parked on Joe's call**, with the steading slice (farmhands staying at the farm through the
+working seasons) committed but **unmerged** on `slice/work-from-the-steading` — it is an
+economic no-op that costs ~13% of the harvest, kept for the look, and its cost is unexplained.
 
 **Two directions Joe set, neither scheduled, both in `DESIGN.md §4`:** **gridless** — the largest
 architectural statement anybody has made about this project, and the first question when it is
@@ -228,6 +286,26 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 - **⭐⭐ THE SIM'S AUDIT TRAIL IS EVIDENCE ABOUT THE SIM AND SAYS NOTHING ABOUT THE VIEW.** Two
   sessions hunted a rendering bug in `BehaviorSystem`. **Ask which half the symptom lives in
   before opening the log.**
+- **⭐⭐⭐ THE INSTRUMENT WAS WRONG TWICE IN ONE SESSION, AND BOTH TIMES IT NEARLY CHANGED A LOCKED
+  NUMBER (D189).** *"Gathering brings in five times what farming does"* came from a probe counting
+  food into the **farm's own store** — which a reaper hauling to the granary never touches.
+  **Counting reaps instead flipped the answer to "farming wins by 28%".** The wrong number would
+  have justified raising `crop_yield_per_tile`, which is derived and locked. **Before a
+  measurement justifies a change, ask what the instrument cannot see.**
+- **⭐⭐ A DERIVATION THAT AVOIDS STATING A NUMBER STILL STATES ONE (D192).** The thaw rate was
+  *derived* by mirroring the outdoor rate, on the explicit grounds that mirroring *"needs no
+  number of its own"* — true, and it quietly chose **fifteen days to thaw**, half a winter, which
+  nobody noticed until Joe played it. **Check what a derivation came out as, not just that it is
+  principled.**
+- **⭐⭐ A SMALL-RANGE RNG DRAW AT A FIXED STRIDE CORRELATES, AND THE FOUNDING IS FOUR SUCH DRAWS
+  (D190).** Both founding pairs drew the **same** personal rhythm — 1, 1, 2, 2 — so the fix for
+  D28 did nothing. **The RNG is not at fault:** forty raw `NextInt(0, 4)` draws come out 9/11/8/12.
+  It is the *stride* at the start of the stream. **A generator can be sound and still be the wrong
+  tool for four draws that must differ from each other** — deal or rotate, do not draw.
+- **⚠️ HUNGER IS A PURE FUNCTION OF TICKS SINCE THE LAST MEAL (D190).** Two villagers who eat on
+  the same tick stay in step for ever, **however differently they walk** — so a stagger that
+  offsets only movement leaves *identical hunger at 100%*. Anything meant to desynchronise people
+  has to touch the hunger clock too.
 - **⭐ FINDING A CAUSE IS NOT FINDING THE CAUSE** (D163, D166, D169 — three rounds on one symptom).
   - **⛔⛔ AND THE FOURTH ROUND PUT TWO WRONG CAUSES INTO DOCUMENTS BEFORE THE RIGHT ONE (D182).**
     *Why does a forager take 32 calendar years to reach 20 years on the task?* **Wrong once:**
