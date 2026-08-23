@@ -9,7 +9,7 @@ Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D181 b
 > session. **Rewrite "where things are"; carry the traps forward.**
 
 ⭐ **The two things to know before you touch anything:** **proficiency exists now** (D181 — it
-accrues, is hashed, is visible, and **nothing reads it**), and **the ground the player can read**
+accrues, is hashed, is visible, **gives and never takes** (D183), and **nothing reads it**), and **the ground the player can read**
 (D180 — a toggle that lied for a day, plus the sentences D178's spec asked for and never got).
 Behind those: the **town hall is designed** (D176), **ground is worth going to** (D178), and **the
 suite runs in two and a half minutes instead of nineteen** (D179).
@@ -24,9 +24,11 @@ Definition-of-Done items met, the last being Joe's QA walk. Per-site yield (D178
 rewrite (D179) and the ground-legibility slice (D180) are all fast-forwarded onto `main`.
 
 **⭐⭐ PHASE 3 LANDS IN THREE PIECES AND ONLY THE FIRST IS BUILT** (`skills-catalog.md §11`):
-1. ✅ **The proficiency substrate** (D181). `Villager.Skills` accrues time on the task, hashed
-   sparsely in id order; six skills are **rows in config, not enum values**; the villager panel
-   says *"Nineteen years in the fields"*; **the mastery line fires** in the village log.
+1. ✅ **The proficiency substrate** (D181, D183). `Villager.Skills` accrues time on the task,
+   hashed sparsely in id order; six skills are **rows in config, not enum values**; the villager
+   panel says *"Nineteen years in the fields"*; **the mastery line fires** in the village log.
+   **Nothing ever takes proficiency away**, and a tick out on the job is worth 1.5 of a tick
+   waiting for one. Ages at mastery: **34–55, median 39.**
 2. **⛔ NEXT, AND NOT OPTIONAL: mastery bites** — duration first, yield second (§3.3). **A system
    that accrues, is visible and changes nothing is D56's clothing**, which was measured as a
    no-op over 300 years and blocked for it. Landing 1 is that shape until landing 2 lands.
@@ -43,7 +45,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **SUITE, FROM A RUN:**
 
 ```
-658 passed, 0 failed, 2 skipped of 660 — about 1m50s (was 18m52s before D179)
+660 passed, 0 failed, 2 skipped of 662 — about 1m50s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -130,14 +132,15 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
    - **⭐ A tick counts while somebody HOLDS the trade, not only while mid-action** (§3.6). The
      tight reading is tempting and §3.3b's arithmetic rules it out, *and* it would make a master
      accrue more slowly the better they got once landing 2 shortens the action.
-   - **⛔⛔ DECAY IS WHAT STOPS PEOPLE MASTERING TRADES, AND IT IS THE FIRST THING LANDING 2
-     SHOULD FIX** (D182). Agnes held foraging for **12,240 ticks — more than the 9,600 mastery
-     requires — and kept 7,600**, because decay took 37% of everything she earned. A villager
-     spends over half their adult life off any given trade (D46 moves them every three years),
-     and **§3.4 explicitly forbids exactly this**. ⚠️ **Two wrong causes were published before
-     this one** — a winter *headcount* read as *availability*, and a derivation that measured
-     *demand*. Read §12 before touching it. Recommended fix: **a grace period before decay
-     begins**, at least `labour_reshuffle_years` long.
+   - **⭐⭐ SKILL GIVES AND NEVER TAKES (D183, Joe: *"let's give to the player, not punish or
+     decay"*).** Decay was built, measured and deleted inside one phase — it took **37% of
+     everything one forager earned**, so she held foraging longer than mastery requires and
+     never mastered it, which is the trap §3.4 itself forbids. **§3.4's premise — *"a
+     fifty-year-old who did six jobs is a master of six"* — is arithmetically impossible**, and
+     that is what licensed deleting it. ⚠️ **Two wrong causes were published before the right
+     one** (D182): a winter *headcount* read as *availability*, and a derivation that measured
+     *demand*. **A tick out on the job is worth 1.5 of a tick waiting for one**, and the walk
+     counts as work. **Ages at mastery: 34–55, median 39** — §3.3b's promise, untuned.
    - **⚠️ The reshuffle leaves the whole village jobless for exactly one tick** (Day 1, Spring).
      Harmless at 0.02%, but it is why landing 1's guards sample mid-season — see the trap list.
    - **What is still unbuilt:** apprenticeship and teaching (§5), the at-risk line (§7), the

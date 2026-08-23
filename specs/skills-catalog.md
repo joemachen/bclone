@@ -10,10 +10,12 @@ roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing
 **Status:** 🔨 **LANDING 1 OF 3 IS BUILT** (D181) — **the proficiency substrate**. `Villager.Skills`
 accrues time on the task, it is hashed sparsely in id order, and it is visible: the villager panel
 says *"Nineteen years in the fields"* and **the mastery line fires in the village log** (§3.3b,
-Joe's ask). **Nothing reads it to change behaviour yet** — that is landing 2, and it is next.
+Joe's ask). **Nothing ever takes proficiency away** (§3.7, D183) and a tick out on the
+job counts for more than a tick waiting for one. **Nothing reads it to change behaviour yet** — that is landing 2, and it is next.
 Six skills are rows in config, not enum values (§4.1). `SkillSystem` is step 11 of the tick order.
-**656 passing, 0 failing, 2 skipped of 658; the three state-hash goldens moved once for the counters and
-`StateHash.ComputeIgnoringSkills` is byte-identical to all three of their old values.**
+**660 passing, 0 failing, 2 skipped of 662; the three state-hash goldens moved twice in one day for
+the counters, and `StateHash.ComputeIgnoringSkills` is byte-identical to all three of their
+pre-slice values through both moves.**
 
 **Not built:** landing 2 (mastery biting, §3.3), landing 3 (the mixed founding §3.2c and the
 seeded rhythm §3.5), apprenticeship and teaching (§5), and the at-risk line (§7). D28 is **not
@@ -335,7 +337,30 @@ and §3.2c is the other half.
 last, one stated reason (D152) — and it should land in the *same* commit as the mixed founding, so
 one golden move covers both rather than two.
 
-### 3.4 Skill decays — slowly, and only off the task
+### 3.4 ~~Skill decays — slowly, and only off the task~~ ⛔ DELETED (D183)
+
+> **⛔⛔ THERE IS NO DECAY. Joe, 2026-08-22: *"let's give to the player, not punish or decay."***
+> It was built, measured and deleted inside one phase, and **this section is kept because its
+> reasoning is instructive about how a good argument produces a bad mechanic.**
+>
+> - **Its premise was measured and found impossible.** The section argues below that without
+>   decay *"a fifty-year-old who did six jobs is a master of six"*. **Mastery costs a fixed share
+>   of a working life and a life holds at most four of them even working every waking tick** —
+>   measured, the most anybody reached in eighty years was **one**. A career is still a choice;
+>   **the choosing is done by the clock, not by a punishment.**
+> - **And the cure was the disease.** The rate that shipped — *three years away costs one year*,
+>   derived against `labour_reshuffle_years` — **took 37% of everything one forager earned.**
+>   Agnes held foraging for 12,240 ticks against the 9,600 mastery requires and **never became a
+>   master.** That is precisely the trap the section itself forbids two paragraphs down.
+> - **The derivation is what hid it:** *three years away* was treated as an occasional event.
+>   Measured, **a villager spends over half their adult life off any given trade**, because D46
+>   moves them every three years. *The number was derived against how often the allocator runs,
+>   when the thing that mattered was how long people are actually away.*
+>
+> **What replaced it is §3.7.** Nothing in the sim ever reduces proficiency, and
+> `SkillTests.NobodyEverLosesGroundInATrade` asserts it every year for every living villager.
+
+*The original argument, kept as written:*
 
 A villager who leaves a trade loses ground in it. **Not to zero, and not fast.**
 
@@ -350,6 +375,42 @@ either would make the labour allocator feel like a trap**, and the player would 
 system that exists to save them work — §1.2, and D51's whole argument.
 
 Rate is §12's, and it should be **derived against the reshuffle cadence** rather than picked.
+
+### 3.7 ⭐⭐ Give, never take — and a tick out on the work is worth more (D183)
+
+**Joe's call, 2026-08-22: *"A villager assigned to a job gains mastery per tick whether or not
+they are actively engaged. Idle foresters still gain, and so do idle farmers. Active workers gain
+more than idle ones. Let's give to the player, not punish or decay."***
+
+**Three rules, and each answers something measured.**
+
+1. **⭐ Holding the seat is what counts, not being mid-action.** Already true from §3.6 and now
+   load-bearing rather than incidental. **An idle forester is idle because the village ran out of
+   logs**, which is not their doing — charging them for it would make a supply-chain stutter a
+   second punishment on top of the shortage.
+2. **⭐ A tick out on the job is worth 1.5 of a tick waiting for one.** `skill_work_per_active_tick`
+   against `skill_work_per_idle_tick`, in hundredths so the weighting is a percentage with no
+   float near sim state (D2). **"Out on the job" includes the walk** — a forester who spends nine
+   ticks walking and three felling did twelve ticks of forestry, and counting only the three
+   would charge a distant hut twice for a commute D112 already makes it pay.
+3. **⛔ Nothing ever reduces proficiency.** See §3.4 for the measurement that deleted decay.
+
+**⚠️ Two counters, because one would have made the panel lie.** `Ticks` is the honest calendar
+fact — how long this person has held this trade — and it is what the panel and the mastery line
+quote, so *"seventeen years in the woods"* means seventeen years. `Work` is the weighted total
+mastery reads. **With one counter the panel would overstate a forager's life by about a fifth**,
+and the mastery line would say *"twenty years"* to somebody the panel called seventeen.
+
+**⚠️ The measured consequence, stated rather than discovered later.** Time out on the job varies
+by trade — **forestry 88%, woodcutting 82%, foraging 41%, trading 30%, building 27%** — so a
+forester accrues about **27% faster than a builder**. That is real divergence, and it is **the
+good kind**: the player can see it and act on it (keep the hut supplied, staff it properly),
+which is §2.3's traceable pressure rather than the invisible tax decay was.
+
+**⭐⭐ AND THE DESIGN PROMISE LANDED WITHOUT TUNING.** §3.3b wants *"a master for the back half of
+their life"*. Measured ages at mastery over eighty years: **34, 35, 37, 37, 38, 39, 39, 40, 42,
+46, 49, 49, 49, 55** — median **39**, against a lifespan of 55–79. `mastery_years` stays at
+twenty and no per-skill number was needed.
 
 ### 3.6 ⭐ What landing 1 had to settle before it could be built (D181)
 

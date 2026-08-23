@@ -198,64 +198,114 @@ public sealed class SkillTests
     }
 
     // ---------------------------------------------------------------
-    //  Decay — gentle, derived, and never to zero
+    //  ⭐⭐ Nothing is ever taken away (D183)
     // ---------------------------------------------------------------
 
-    /// <summary>⭐ Three years away costs one year of the trade — the derived rate (§3.4).</summary>
+    /// <summary>
+    /// ⭐⭐ Over eighty years of village, <b>no villager's proficiency ever falls</b>.
+    /// </summary>
     /// <remarks>
-    /// <b>The derivation is the assertion.</b> `labour_reshuffle_years` is 3 (D46), so one full
-    /// cycle spent elsewhere must cost less than a cycle bought — otherwise the allocator is the
-    /// trap §3.4 forbids and the player starts fighting a system meant to save them work.
+    /// <para>
+    /// <b>Joe, 2026-08-22: *"let's give to the player, not punish or decay."*</b> Decay was
+    /// built, measured and deleted inside one phase, and this is the invariant that replaced it
+    /// — asserted every year for every living villager rather than left as a policy somebody has
+    /// to remember while editing <see cref="SkillSystem"/>.
+    /// </para>
+    /// <para>
+    /// <b>⛔ WHAT THE MEASUREMENT FOUND, because the spec was sure decay was required.</b> §3.4
+    /// justified it with *"a fifty-year-old who did six jobs is a master of six"*. **That is
+    /// arithmetically impossible** — see <see cref="NobodyCanMasterMoreThanALifeHasRoomFor"/> —
+    /// and what the shipped rate actually did was take **37% of everything one forager earned**,
+    /// so she held foraging longer than mastery requires and never became a master. *The cure
+    /// was the disease it warned about.*
+    /// </para>
     /// </remarks>
     [Fact]
-    public void ThreeYearsAwayCostsOneYearOfTheTrade()
+    public void NobodyEverLosesGroundInATrade()
     {
         SimConfig config = ShippedConfig.Established();
         SimLoop loop = Loop(config);
         SimWorld world = loop.World;
 
-        Villager villager = world.Villagers.First(person => person.Alive);
-        villager.WorkplaceId = 0;
+        var highest = new Dictionary<(int Villager, int Skill), int>();
+        int checks = 0;
 
-        int skill = SkillIdFor(config, JobKind.Farmer);
-        SkillProgress progress = villager.ProgressIn(skill);
-        progress.Ticks = config.MasteryTicks;
+        for (int year = 0; year < 80; year++)
+        {
+            loop.Step(config.TicksPerYear);
 
-        int before = progress.Ticks;
-        StepWholeYears(world, config, config.SkillDecayYearsPerYearLost);
+            for (int i = 0; i < world.Villagers.Count; i++)
+            {
+                Villager villager = world.Villagers[i];
+                for (int s = 0; s < villager.Skills.Count; s++)
+                {
+                    SkillProgress progress = villager.Skills[s];
+                    var key = (villager.Id, progress.SkillId);
+                    int best = highest.TryGetValue(key, out int had) ? had : 0;
 
-        int lost = before - progress.Ticks;
-        _output.WriteLine(
-            $"{config.SkillDecayYearsPerYearLost} years off the trade cost {lost} ticks of "
-            + $"{config.TicksPerYear} in a year");
+                    Assert.True(
+                        progress.Work >= best,
+                        $"{villager.Name} lost ground in skill {progress.SkillId}: "
+                        + $"{best} → {progress.Work}. Nothing may ever take proficiency away.");
 
-        Assert.Equal(config.TicksPerYear, lost);
-        Assert.Equal(config.LabourReshuffleYears, config.SkillDecayYearsPerYearLost);
+                    highest[key] = progress.Work;
+                    checks++;
+                }
+            }
+        }
+
+        _output.WriteLine($"{checks} year-on-year comparisons, none of them downward");
+        Assert.True(checks > 100, "Too few careers to have proved anything.");
     }
 
-    /// <summary>⛔ *"Not to zero"* — a trade given a year never falls out of the hands.</summary>
+    /// <summary>
+    /// ⭐ A life does not contain enough hours to master six trades — <b>§3.4's fear, measured
+    /// and found impossible</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is the guard that licenses deleting decay</b> (D183). *"Knowledge lives in
+    /// people"* does not collapse into *"old people are simply better"*, because the arithmetic
+    /// will not allow it: mastery costs a fixed share of a working life, and a life holds two of
+    /// them at the theoretical maximum. **A career is still a choice — the choosing is done by
+    /// the clock, not by a punishment.**
+    /// </remarks>
     [Fact]
-    public void DecayNeverTakesATradeToNothing()
+    public void NobodyCanMasterMoreThanALifeHasRoomFor()
     {
         SimConfig config = ShippedConfig.Established();
         SimLoop loop = Loop(config);
-        SimWorld world = loop.World;
 
-        Villager villager = world.Villagers.First(person => person.Alive);
-        villager.WorkplaceId = 0;
+        loop.Step(config.TicksPerYear * 80);
 
-        int skill = SkillIdFor(config, JobKind.Woodcutter);
-        SkillProgress progress = villager.ProgressIn(skill);
-        progress.Ticks = config.MasteryTicks;
+        int workingLife = (config.LifespanYearsBase - config.AdultAge) * config.TicksPerYear;
+        int ceiling = workingLife * config.SkillWorkPerActiveTick / config.MasteryWork;
 
-        // A whole working life away from it, which is far more than enough to reach the floor.
-        StepWholeYears(world, config, 60);
+        int most = 0;
+        for (int i = 0; i < loop.World.Villagers.Count; i++)
+        {
+            most = Math.Max(most, loop.World.Villagers[i].Skills.Count(p => p.Mastered));
+        }
 
         _output.WriteLine(
-            $"after 60 years away: {progress.Ticks} ticks, floor {config.SkillFloorTicks}");
+            $"a working life is about {workingLife} ticks and mastery costs {config.MasteryWork} "
+            + $"work, so at most {ceiling} masteries fit in one even working every waking tick; "
+            + $"the most anybody actually reached in 80 years was {most}");
 
-        Assert.Equal(config.SkillFloorTicks, progress.Ticks);
-        Assert.True(progress.Ticks > 0, "The floor is supposed to be above zero.");
+        // ⛔ THE CEILING IS THE THEORETICAL BEST CASE AND IT IS NOT THE INTERESTING NUMBER —
+        // it assumes somebody holds a trade and is out on it every waking tick of fifty-five
+        // years, which nobody does. **Measured, the most anybody reaches is one.** Both are
+        // asserted: the ceiling refutes §3.4's specific claim, and the observed figure says
+        // what the game actually produces.
+        Assert.True(
+            ceiling < 6,
+            $"A life has room for {ceiling} masteries, so §3.4's 'a fifty-year-old who did six "
+            + "jobs is a master of six' is back on the table — and that being impossible is what "
+            + "licensed deleting decay.");
+
+        Assert.True(
+            most <= 2,
+            $"Somebody mastered {most} trades in eighty years. A career is supposed to be a "
+            + "choice made by the clock; if it is not, decay was doing work after all.");
     }
 
     /// <summary>⛔ Reading a skill nobody has must never create one.</summary>
@@ -312,7 +362,14 @@ public sealed class SkillTests
 
         int skill = SkillIdFor(config, JobKind.Farmer);
         SkillProgress progress = villager.ProgressIn(skill);
-        progress.Ticks = config.MasteryTicks - 1;
+        progress.Work = config.MasteryWork - 1;
+
+        // ⭐ Pose the years they actually put in as SHORTER than `mastery_years`, which is what
+        // happens to anybody who spends time out on the job — and check the log quotes THEIR
+        // number rather than the config's. Quoting the config would have the village say
+        // "twenty years" about somebody the panel one click away calls seventeen.
+        int realYears = config.MasteryYears - 3;
+        progress.Ticks = realYears * config.TicksPerYear;
 
         var system = new SkillSystem();
         system.Execute(world);
@@ -322,17 +379,15 @@ public sealed class SkillTests
         List<string> lines = MasteryLines(sink, villager.Name);
         _output.WriteLine(string.Join("\n", lines));
         Assert.Single(lines);
-        Assert.Contains($"{config.MasteryYears} years", lines[0], StringComparison.Ordinal);
+        Assert.Contains($"{realYears} years", lines[0], StringComparison.Ordinal);
+        Assert.DoesNotContain($"{config.MasteryYears} years", lines[0], StringComparison.Ordinal);
 
-        // ⭐ Now take the trade away, let it rust well under the threshold, and put them back.
-        // Without the `Mastered` flag this narrates a second time.
-        villager.WorkplaceId = 0;
-        StepWholeYears(world, config, 30);
-        Assert.True(progress.Ticks < config.MasteryTicks, "The fixture never decayed anybody.");
-
-        villager.WorkplaceId = farm.Id;
-        progress.Ticks = config.MasteryTicks - 1;
-        system.Execute(world);
+        // ⭐ Now run them well past the threshold and check it stays at one line. Without the
+        // `Mastered` flag this narrates again on every tick, for ever.
+        for (int i = 0; i < 50; i++)
+        {
+            system.Execute(world);
+        }
 
         Assert.Single(MasteryLines(sink, villager.Name));
     }
@@ -354,7 +409,7 @@ public sealed class SkillTests
         villager.WorkplaceId = farm.Id;
 
         SkillProgress progress = villager.ProgressIn(SkillIdFor(config, JobKind.Farmer));
-        progress.Ticks = config.MasteryTicks - config.TicksPerYear - 1;
+        progress.Work = config.MasteryWork - (config.TicksPerYear * config.SkillWorkPerIdleTick) - 1;
 
         new SkillSystem().Execute(world);
 
@@ -471,6 +526,25 @@ public sealed class SkillTests
                 }
             }
         }
+
+        // ⭐⭐ THE NUMBER §3.3b's PROMISE LIVES OR DIES ON, and it landed without tuning.
+        // *"A founder who sticks to one trade masters it, and is a master for the back half of
+        // their life."* Measured: **34, 35, 37, 37, 38, 39, 39, 40, 42, 46, 49, 49, 49, 55** —
+        // median 39, against a lifespan of 55–79. Mastery arrives in the late thirties and
+        // there is a long back half to be a master through, which is what the design asked for.
+        //
+        // The band is wide on purpose. **Pinning the median would make this red every time the
+        // calendar, the lifespan or the labour rules are tuned** — what it is guarding is that
+        // mastery is neither free nor posthumous.
+        List<int> ages = AgesAtMastery(config, 80);
+        _output.WriteLine($"ages at mastery: {string.Join(", ", ages)}");
+
+        Assert.NotEmpty(ages);
+
+        int median = ages[ages.Count / 2];
+        _output.WriteLine($"median age at mastery: {median}");
+
+        Assert.InRange(median, config.AdultAge + 10, config.LifespanYearsBase - 10);
 
         for (int i = 0; i < config.Skills.Count; i++)
         {
@@ -700,45 +774,153 @@ public sealed class SkillTests
         }
 
         _output.WriteLine(
-            $"mastery needs {config.MasteryTicks} ticks; an adult life is about "
+            $"mastery needs {config.MasteryWork} work; an adult life is about "
             + $"{(config.LifespanYearsBase - config.AdultAge) * config.TicksPerYear} ticks");
 
-        // ⛔⛔ THE FINDING, AND IT IS THE THIRD CAUSE AFTER TWO WRONG ONES: **decay is what
-        // stops people mastering trades.** Agnes held foraging for 12,240 ticks — MORE than the
-        // 9,600 mastery requires — and kept 7,600, because a villager spends over half their
-        // adult life off any given trade and every year away costs a third of a year.
-        //
-        // **That is precisely the trap §3.4 forbids**: *"a decay rate that punishes [the
-        // reshuffle] would make the labour allocator feel like a trap."* The rate was derived
-        // against `labour_reshuffle_years` on the assumption that three years away is an
-        // occasional event. Measured, it is the normal state of a career.
-        //
-        // ⚠️ This asserts the regime rather than the numbers — that somebody did the work,
-        // and that decay is taking a material share of it. **When the rate is fixed, this
-        // goes red and gets re-taken with the new measurement**, which is what a probe kept
-        // as a guard is for.
-        Assert.True(
-            worstDecayShare > 10,
-            "Decay is taking a negligible share of what careers earn, so the finding this "
-            + "probe exists to hold has been fixed or has moved — re-measure and re-take it.");
+        // ⭐⭐ THE FINDING THIS PROBE WAS WRITTEN FOR HAS BEEN ACTED ON, AND IT SAID SO ITSELF.
+        // It used to assert `worstDecayShare > 10` with the note *"when the rate is fixed, this
+        // goes red and gets re-taken"* — **decay is gone (D183) and it went red on the same
+        // run.** Agnes keeps all 12,240 ticks of foraging now, where the shipped rate took 4,640
+        // of them and left her short of a mastery she had done the work for.
+        Assert.Equal(0, worstDecayShare);
 
+        // ⭐ WHAT IT STILL MEASURES, AND WHY IT IS KEPT: **career continuity**, which is now the
+        // only reason anybody's calendar and their trade disagree. Agnes held foraging for 44%
+        // of her adult life and Mabel held trading for 70% — the reshuffle (D46) and the
+        // village's changing wants move people, and **landing 2 has to decide whether that
+        // spread is the design or a problem.** The numbers are here for that conversation.
         int longest = heldTrade.Values.Count == 0 ? 0 : heldTrade.Values.Max();
         Assert.True(
-            longest > config.MasteryTicks,
+            longest * config.SkillWorkPerActiveTick > config.MasteryWork,
             "Nobody held any trade for as long as mastery requires, so this probe never "
             + "reached the regime it is about.");
     }
 
-    private static void StepWholeYears(SimWorld world, SimConfig config, int years)
+    // ---------------------------------------------------------------
+    //  ⭐ Out on the work counts for more than waiting for it (D183)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ A tick out on the job is worth more than a tick waiting for it — <b>and both are worth
+    /// something</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>Both halves matter and each alone is green against a bug.</b> Crediting only active
+    /// ticks would punish a player whose supply chain stutters — Joe's *"idle foresters still
+    /// get mastery XP"* — and crediting them equally would make an idle trade as good as a
+    /// worked one, which is the whole of his 1.5×.
+    /// </remarks>
+    [Fact]
+    public void OutOnTheWorkIsWorthMoreThanWaitingForIt()
     {
-        // The system alone, on year edges only — the point is the decay arithmetic, not a
-        // village. Stepping the whole loop would let the allocator hand the job back.
+        SimConfig config = ShippedConfig.Established();
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        Villager villager = world.Villagers.First(person => person.Alive && person.CanWork);
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        villager.WorkplaceId = farm.Id;
+
+        int skill = SkillIdFor(config, JobKind.Farmer);
         var system = new SkillSystem();
+
+        villager.State = VillagerState.Idle;
+        system.Execute(world);
+        SkillProgress progress = villager.FindProgressIn(skill)!;
+        int waiting = progress.Work;
+
+        villager.State = VillagerState.Reaping;
+        system.Execute(world);
+        int working = progress.Work - waiting;
+
+        _output.WriteLine($"a tick waiting is worth {waiting}, a tick reaping {working}");
+
+        Assert.Equal(config.SkillWorkPerIdleTick, waiting);
+        Assert.Equal(config.SkillWorkPerActiveTick, working);
+        Assert.True(waiting > 0, "An idle forester is still a forester and still gaining.");
+        Assert.True(working > waiting, "Going out to do the work must teach more than not.");
+
+        // ⭐ And the honest counter does NOT take the weighting: two ticks held is two ticks
+        // held, whichever way they were spent. That is what keeps the panel true.
+        Assert.Equal(2, progress.Ticks);
+    }
+
+    /// <summary>
+    /// ⛔ Every <see cref="VillagerState"/> has been ruled on as work or waiting.
+    /// </summary>
+    /// <remarks>
+    /// <b>The guard `Villager.DescribeState` already has, for the same reason.</b> That method
+    /// fell through to the raw enum name for **seven of seventeen states, every one added after
+    /// it was written**. A compiler check was the first attempt here and C# will not give one —
+    /// an exhaustive switch still demands a <c>_</c> arm for out-of-range casts (CS8524), and
+    /// adding it silences the missing-name check as well. So this walks the enum instead, and a
+    /// new state that nobody has classified throws rather than defaulting quietly (D108).
+    /// </remarks>
+    [Fact]
+    public void EveryVillagerStateIsDeliberatelyClassified()
+    {
+        var waiting = new List<VillagerState>();
+        var working = new List<VillagerState>();
+
+        foreach (VillagerState state in Enum.GetValues<VillagerState>())
+        {
+            (SkillSystem.OutOnTheWork(state) ? working : waiting).Add(state);
+        }
+
+        _output.WriteLine($"waiting: {string.Join(", ", waiting)}");
+        _output.WriteLine($"working: {string.Join(", ", working)}");
+
+        Assert.Equal(Enum.GetValues<VillagerState>().Length, waiting.Count + working.Count);
+        Assert.NotEmpty(waiting);
+        Assert.NotEmpty(working);
+
+        // ⛔ The one that looks like work and is not: `FetchingFromStore` is a household member
+        // fetching their own family's supper (D30). A marketer's delivery is `DeliveringToHome`.
+        Assert.Contains(VillagerState.FetchingFromStore, waiting);
+        Assert.Contains(VillagerState.DeliveringToHome, working);
+
+        // ⭐ And the walk is part of the work — counting only the swing would charge a distant
+        // hut twice for a commute D112 already makes it pay for.
+        Assert.Contains(VillagerState.TravelingToTrees, working);
+        Assert.Contains(VillagerState.TravelingHome, working);
+    }
+
+    /// <summary>
+    /// ⭐ How old people are when they master something — <b>the number §3.3b's promise lives
+    /// or dies on</b>.
+    /// </summary>
+    /// <remarks>
+    /// *"A founder who sticks to one trade masters it, and is a master for the back half of
+    /// their life"* — against a lifespan of 55–79, that wants ages in the thirties and forties.
+    /// **Too early and mastery is free; too late and nobody lives to see it.** Sampled per year
+    /// rather than per tick because a year is the resolution the answer is quoted in.
+    /// </remarks>
+    private static List<int> AgesAtMastery(SimConfig config, int years)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        var seen = new HashSet<(int Villager, int Skill)>();
+        var ages = new List<int>();
+
         for (int year = 0; year < years; year++)
         {
-            world.Tick += (ulong)config.TicksPerYear;
-            system.Execute(world);
+            loop.Step(config.TicksPerYear);
+
+            for (int i = 0; i < loop.World.Villagers.Count; i++)
+            {
+                Villager villager = loop.World.Villagers[i];
+                for (int s = 0; s < villager.Skills.Count; s++)
+                {
+                    SkillProgress progress = villager.Skills[s];
+                    if (progress.Mastered && seen.Add((villager.Id, progress.SkillId)))
+                    {
+                        ages.Add(villager.AgeYears);
+                    }
+                }
+            }
         }
+
+        ages.Sort();
+        return ages;
     }
 
     private static List<string> MasteryLines(InMemoryLogSink sink, string name) =>

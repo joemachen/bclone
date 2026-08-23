@@ -264,8 +264,20 @@ public sealed class StockLimitTests
     //
     //   before people got better at things: fixture 18149215200660116896,
     //                                       shipped 2960234095731849111
-    private const ulong FixtureFiftyYearHash = 4887770829745874605UL;
-    private const ulong ShippedFiftyYearHash = 5305142457694342096UL;
+    //
+    // ⭐⭐ RE-TAKEN AGAIN, SAME DAY, FOR SKILL DECAY BEING DELETED (D183, Joe: *"let's give to
+    // the player, not punish or decay"*). Proficiency now only ever goes up, and it carries a
+    // second counter — the honest calendar ticks the panel quotes, beside the weighted work
+    // mastery reads, because a tick out on the job is worth more than a tick waiting for one.
+    //
+    // **Still nobody doing anything differently.** `ComputeIgnoringSkills` returns the same two
+    // numbers it did before ANY of this landed — 18149215200660116896 and 2960234095731849111 —
+    // so both re-takes today moved these for the counters and for nothing else.
+    //
+    //   before decay was deleted: fixture 4887770829745874605,
+    //                             shipped 5305142457694342096
+    private const ulong FixtureFiftyYearHash = 17883694128790877833UL;
+    private const ulong ShippedFiftyYearHash = 15628752506897642520UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

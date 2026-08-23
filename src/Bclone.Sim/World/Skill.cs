@@ -144,11 +144,22 @@ public sealed record SkillRow
 /// where nobody has held a job carries no entries and mixes nothing into the hash (§8).
 /// </para>
 /// <para>
-/// <b>⭐ <see cref="Mastered"/> is not redundant with <see cref="Ticks"/>, and §3.6 records
-/// why.</b> It is what makes §11.6's *fires **once*** true: without it, somebody who masters,
-/// moves trades, decays back under the threshold and returns would be narrated twice. **It is
-/// also §5.4's *record of achievement* arriving early** — permanent, dies with the person, and
-/// **grants nothing**, which is the only reading that leaves `tech-tree.md §11`'s ratchet intact.
+/// <b>⭐ <see cref="Mastered"/> is not redundant with <see cref="Work"/>.</b> It is what makes
+/// §11.6's *fires **once*** true: without it, anybody at the threshold would be narrated again on
+/// the following tick and every tick after. **It is also §5.4's *record of achievement* arriving
+/// early** — permanent, dies with the person, and **grants nothing**, which is the only reading
+/// that leaves `tech-tree.md §11`'s ratchet intact.
+/// </para>
+/// <para>
+/// <b>⭐⭐ NOTHING EVER TAKES ANY OF THIS AWAY, AND DECAY WAS BUILT BEFORE IT WAS DELETED
+/// (D183, Joe: *"let's give to the player, not punish or decay"*).</b> §3.4 argued decay was
+/// required, on the grounds that *"a fifty-year-old who did six jobs is a master of six"*.
+/// **Measured, that is arithmetically impossible:** mastery needs 9,600 ticks and an adult life
+/// is about 26,400, so **at most two masteries fit in a whole life even holding a trade every
+/// waking tick** — and over sixty years the most any living villager had mastered was **one**.
+/// Meanwhile the rate that was shipped took **37% of everything one forager earned**, which is
+/// exactly the trap §3.4 itself forbids. *The spec's fear was unfounded and its cure was the
+/// disease.*
 /// </para>
 /// </remarks>
 public sealed class SkillProgress
@@ -156,8 +167,32 @@ public sealed class SkillProgress
     /// <summary>Which skill, by <see cref="SkillRow.Id"/>.</summary>
     public required int SkillId { get; init; }
 
-    /// <summary>Ticks spent holding the trade. Integer only (D2).</summary>
+    /// <summary>
+    /// Ticks spent holding the trade — <b>the honest calendar fact</b>, and what the panel says.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is the number a player reads</b> (*"Seventeen years in the woods"*), so it counts
+    /// time and nothing else: every tick holding the seat is worth exactly one, whether the
+    /// villager spent it felling or waiting for logs. <see cref="Work"/> is where the weighting
+    /// lives, precisely so this one cannot drift from the truth about somebody's life.
+    /// </remarks>
     public int Ticks { get; set; }
+
+    /// <summary>
+    /// Weighted work put into the trade — <b>what mastery is measured against</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A tick out on the job is worth more than a tick waiting for it</b> (D183) — see
+    /// <c>SimConfig.SkillWorkPerActiveTick</c>. In hundredths of a tick rather than ticks, so the
+    /// weighting can be a percentage without a float anywhere near sim state (D2).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It is deliberately not shown anywhere.</b> `proficiency 73` is the spreadsheet §7
+    /// rejects by name; this is the machinery under the sentence, not the sentence.
+    /// </para>
+    /// </remarks>
+    public int Work { get; set; }
 
     /// <summary>Whether this person has ever reached mastery. Set once; never cleared.</summary>
     public bool Mastered { get; set; }

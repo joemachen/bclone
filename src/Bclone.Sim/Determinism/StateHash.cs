@@ -428,6 +428,7 @@ public static class StateHash
             SkillProgress progress = villager.Skills[i];
             hash = MixUInt32(hash, (uint)progress.SkillId);
             hash = MixUInt32(hash, (uint)progress.Ticks);
+            hash = MixUInt32(hash, (uint)progress.Work);
             hash = MixByte(hash, progress.Mastered ? (byte)1 : (byte)0);
         }
 

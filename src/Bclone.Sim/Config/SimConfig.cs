@@ -1283,39 +1283,57 @@ public sealed record SimConfig
     [JsonPropertyName("mastery_years")]
     public int MasteryYears { get; init; } = 20;
 
-    /// <summary>
-    /// How many years away from a trade cost one year of it — <b>the decay rate, derived</b>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⭐ DERIVED AGAINST <see cref="LabourReshuffleYears"/> RATHER THAN PICKED</b> (§3.4,
-    /// §12, D16). The village moves people on every three years (D46), so **one full reshuffle
-    /// cycle spent elsewhere must cost less than it bought** — otherwise the allocator is the
-    /// trap §3.4 forbids, and the player starts fighting a system that exists to save them work.
-    /// Three years away for one year lost is the widest rate that clears that bar.
-    /// </para>
-    /// <para>
-    /// <b>And it still makes a career a choice</b>, which is the reason decay exists at all:
-    /// master farming in twenty years, then give twenty to forestry, and the farming is back
-    /// under mastery. Without that, a fifty-year-old who did six jobs is a master of six and
-    /// *"knowledge lives in people"* collapses into *"old people are simply better"*.
-    /// </para>
-    /// </remarks>
-    [JsonPropertyName("skill_decay_years_per_year_lost")]
-    public int SkillDecayYearsPerYearLost { get; init; } = 3;
+    // ⭐⭐ SKILL DECAY IS GONE, AND IT WAS BUILT AND MEASURED BEFORE IT WENT (D183, Joe:
+    // *"let's give to the player, not punish or decay"*). It was `skill_decay_years_per_year_lost`
+    // and `skill_floor_years`, derived against `labour_reshuffle_years` — three years away costs
+    // one year of the trade, floored at a year.
+    //
+    // **§3.4 required it on the grounds that "a fifty-year-old who did six jobs is a master of
+    // six". Measured, that cannot happen:** mastery needs 9,600 ticks and an adult life is about
+    // 26,400, so **at most two masteries fit in a whole life** even holding a trade every waking
+    // tick — and over sixty years the most any living villager had mastered was **one**.
+    //
+    // **What the rate did do was take 37% of everything one forager earned**, because a villager
+    // spends over half their adult life off any given trade (D46 moves them every three years).
+    // Agnes held foraging for 12,240 ticks — more than mastery requires — and never became a
+    // master. *That is the trap §3.4 itself forbids, produced by §3.4's own cure.*
 
     /// <summary>
-    /// The floor decay never takes anybody below, in years — <b>*"not to zero"*, stated</b>.
+    /// What a tick counts for when the villager is <b>out on the job</b>, in hundredths.
     /// </summary>
     /// <remarks>
-    /// §3.4 says a villager who leaves a trade loses ground **not to zero**. This is that as a
-    /// number: **you do not forget a trade you gave a year to.** A floor proportional to some
-    /// personal high-water mark was the alternative and it costs a second integer per skill per
-    /// villager for a number nobody can read; this is a plain fact about the world, which is
-    /// where D165 puts content.
+    /// <para>
+    /// <b>⭐ A TICK OUT ON THE WORK IS WORTH MORE THAN A TICK WAITING FOR IT</b> (Joe, D183).
+    /// A forester who is out felling learns faster than one sitting at home because the hut has
+    /// no logs — **but the second is still a forester, and still gaining**, which is the half
+    /// that keeps a stuttering supply chain from being a punishment as well as a shortage.
+    /// </para>
+    /// <para>
+    /// <b>Hundredths of a tick, so the weighting is a percentage with no float near sim state</b>
+    /// (D2). 150 against an idle 100 is Joe's 1.5×.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Measured consequence, stated rather than discovered later:</b> time out on the job
+    /// varies by trade — **forestry 88%, woodcutting 82%, foraging 41%, trading 30%, building
+    /// 27%** — so at 1.5× a forester accrues about **27% faster than a builder**. That is
+    /// divergence the player can *see and act on* (keep the hut supplied, staff it properly),
+    /// which is §2.3's traceable pressure rather than an invisible tax.
+    /// </para>
     /// </remarks>
-    [JsonPropertyName("skill_floor_years")]
-    public int SkillFloorYears { get; init; } = 1;
+    [JsonPropertyName("skill_work_per_active_tick")]
+    public int SkillWorkPerActiveTick { get; init; } = 150;
+
+    /// <summary>
+    /// What a tick counts for when the villager <b>holds the trade but is not out on it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>100 is the anchor</b>: <c>mastery_years</c> means *that many years of holding a seat
+    /// you never leave the house for*, and anybody who actually works it gets there sooner.
+    /// **The generous direction on purpose** (D183) — the idle forester is idle because the
+    /// village ran out of logs, which is not their doing.
+    /// </remarks>
+    [JsonPropertyName("skill_work_per_idle_tick")]
+    public int SkillWorkPerIdleTick { get; init; } = 100;
 
     // ⭐ `forager_catchment_tiles` IS DELETED (`forests-and-gathering.md §3`, Joe: *"get rid
     // of the ring and the distance restrictions"*). It was ten tiles, and past it a villager
@@ -1914,25 +1932,20 @@ public sealed record SimConfig
                 $"mastery_years must be greater than zero (got {MasteryYears}).");
         }
 
-        if (SkillDecayYearsPerYearLost <= 0)
+        if (SkillWorkPerIdleTick <= 0)
         {
             throw new SimConfigException(
-                "skill_decay_years_per_year_lost must be greater than zero (got "
-                + $"{SkillDecayYearsPerYearLost}).");
+                $"skill_work_per_idle_tick must be greater than zero (got "
+                + $"{SkillWorkPerIdleTick}) — a villager who holds a trade is always gaining "
+                + "in it, even when the village has nothing for them to do.");
         }
 
-        if (SkillFloorYears < 0)
+        if (SkillWorkPerActiveTick < SkillWorkPerIdleTick)
         {
             throw new SimConfigException(
-                $"skill_floor_years cannot be negative (got {SkillFloorYears}).");
-        }
-
-        if (SkillFloorYears >= MasteryYears)
-        {
-            throw new SimConfigException(
-                $"skill_floor_years ({SkillFloorYears}) must be below mastery_years "
-                + $"({MasteryYears}), or decay could never take anybody out of mastery and a "
-                + "career would stop being a choice.");
+                $"skill_work_per_active_tick ({SkillWorkPerActiveTick}) must be at least "
+                + $"skill_work_per_idle_tick ({SkillWorkPerIdleTick}), or going out to do the "
+                + "work would teach somebody less than staying at home.");
         }
     }
 
@@ -1944,14 +1957,15 @@ public sealed record SimConfig
     [JsonIgnore]
     public int TicksPerYear => TicksPerDay * DaysPerSeason * 4;
 
-    /// <summary>Ticks on the task before mastery, for a trade that does not state its own.</summary>
+    /// <summary>Work that makes a master, for a trade that does not state its own years.</summary>
     [JsonIgnore]
-    public int MasteryTicks => MasteryYears * TicksPerYear;
+    public int MasteryWork => MasteryYears * TicksPerYear * SkillWorkPerIdleTick;
 
     /// <summary>Years on the task that make a master of <paramref name="skill"/>.</summary>
     /// <remarks>
     /// <b>The trade's own number if it states one, the village's otherwise</b> — see
-    /// <see cref="SkillRow.MasteryYears"/> for why the trades differ (D182).
+    /// <see cref="SkillRow.MasteryYears"/>. **No row states one today**, and D182 records the
+    /// measurement that removed the reason to.
     /// </remarks>
     public int MasteryYearsFor(SkillRow skill)
     {
@@ -1959,12 +1973,9 @@ public sealed record SimConfig
         return skill.MasteryYears ?? MasteryYears;
     }
 
-    /// <summary>Ticks on the task that make a master of <paramref name="skill"/>.</summary>
-    public int MasteryTicksFor(SkillRow skill) => MasteryYearsFor(skill) * TicksPerYear;
-
-    /// <summary>The ticks decay never takes anybody below. Derived (§3.4's *"not to zero"*).</summary>
-    [JsonIgnore]
-    public int SkillFloorTicks => SkillFloorYears * TicksPerYear;
+    /// <summary>Work that makes a master of <paramref name="skill"/>.</summary>
+    public int MasteryWorkFor(SkillRow skill) =>
+        MasteryYearsFor(skill) * TicksPerYear * SkillWorkPerIdleTick;
 
     /// <summary>Ticks in one season. Derived, not configured.</summary>
     [JsonIgnore]

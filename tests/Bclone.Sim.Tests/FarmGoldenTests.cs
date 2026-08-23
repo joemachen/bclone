@@ -118,7 +118,13 @@ public sealed class FarmGoldenTests
     // twenty years, so its people accrue and this number moves for that and nothing else.
     //
     //   before people got better at things: 4486163041401162495
-    private const ulong SeamGoldenHash = 7911818851227652011UL;
+    //
+    // ⭐⭐ RE-TAKEN AGAIN, SAME DAY, FOR SKILL DECAY BEING DELETED (D183). Proficiency only ever
+    // goes up now, and carries a second counter beside it. **`ComputeIgnoringSkills` below is
+    // unchanged through both re-takes**, which is the whole licence for moving this twice.
+    //
+    //   before decay was deleted: 7911818851227652011
+    private const ulong SeamGoldenHash = 4043003718136410697UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
