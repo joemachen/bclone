@@ -883,6 +883,33 @@ public readonly record struct LabourQuota
             }
         }
 
+        // ⭐⭐ AND A WORKPLACE BUFFER THAT NEEDS EMPTYING IS AN ERRAND TOO (D185, Joe).
+        //
+        // ⛔ THIS ARM WAS MISSING AND THE COST WAS THE WHOLE OF D171. `PlanMarketErrand` has had
+        // a leg since then that clears a farm's buffer — written precisely so that
+        // `crops-and-orchards.md §3.2`'s *"running it dry is the market's job"* would finally be
+        // true — but this method counted errands from HOUSEHOLDS and nothing else. **So the
+        // village never staffed a marketer because a farm needed emptying.** With every
+        // household content the quota was zero, nobody worked the market, and the leg could not
+        // run however full the farm stood.
+        //
+        // **The behaviour existed and the demand did not.** That is D36's own rule — *bounded
+        // by errands and never by spare hands* — held for two of three leg types and quietly
+        // dropped for the third, which is the shape D148 records one control over: two places
+        // that must agree, and only one of them told.
+        //
+        // ⚠️ IT IS STILL BOUNDED BY ERRANDS THAT EXIST, which is the half §5.1 of
+        // `stock-limits-and-laborers.md` warns about by name: D52 deleted a winter labour fill
+        // bounded by *"is any shed not yet full?"* and it cost the village a third of its
+        // population for a century. A farm with room in its buffer asks for nobody.
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.BufferWorthClearing(world.Workplaces[i]))
+            {
+                errands++;
+            }
+        }
+
         return errands;
     }
 

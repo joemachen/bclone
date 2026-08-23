@@ -1178,6 +1178,47 @@ public sealed class SimWorld
         return standing;
     }
 
+    /// <summary>
+    /// Whether this workplace's own buffer is <b>worth a trader's trip</b> (D171, D185).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ ONE CONDITION, TWO CALLERS, AND THE BUG THIS METHOD EXISTS TO CLOSE WAS THE
+    /// SECOND CALLER NOT HAVING IT.</b> `crops-and-orchards.md §3.2` has said since the farm
+    /// shipped that the buffer is free and *"running it dry is the market's job"*, and D171
+    /// built the leg in <c>BehaviorSystem.PlanMarketErrand</c> that does it. But
+    /// <see cref="World.LabourQuota.MarketersWanted"/> counted errands by looping over
+    /// households **and nothing else** — so **the village never staffed a marketer because a
+    /// farm needed emptying.** A trader who happened to be working would clear it; if every
+    /// household was content, nobody was working, and the farm sat full however long it stood.
+    /// </para>
+    /// <para>
+    /// <b>The behaviour existed and the demand did not</b>, which is D36's own rule —
+    /// *"bounded by errands and never by spare hands"* — applied to two of three leg types.
+    /// **The fix is not a second copy of the comparison**: two copies of one sum is how they
+    /// come to disagree (D142's three call sites, D148's two meanings), and this bug is that
+    /// failure one level up. So both callers ask here.
+    /// </para>
+    /// <para>
+    /// <b>⭐ THE CONDITION IS DERIVED, NOT TUNED</b> (D16, and D171's own standard). A buffer is
+    /// worth clearing exactly when it can no longer take a whole armful — which is precisely
+    /// when <c>HaulTheHarvest</c> stops choosing it and starts sending the farmer to the
+    /// granary. No threshold, no new number, one comparison.
+    /// </para>
+    /// <para>
+    /// <b>A workplace with no store of its own has <c>int.MaxValue</c> capacity</b>, so this is
+    /// also what keeps every other building out without naming a kind.
+    /// </para>
+    /// </remarks>
+    public bool BufferWorthClearing(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        return !workplace.IsSite
+            && workplace.Store.Food > 0
+            && workplace.Store.FreeSpace < Config.CropYieldPerTile;
+    }
+
     private string? ForesterIdleNote(Workplace hut)
     {
         if (Zones.WorkGroundTiles(hut.Id) == 0)

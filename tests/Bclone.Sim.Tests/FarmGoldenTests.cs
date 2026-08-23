@@ -124,7 +124,20 @@ public sealed class FarmGoldenTests
     // unchanged through both re-takes**, which is the whole licence for moving this twice.
     //
     //   before decay was deleted: 7911818851227652011
-    private const ulong SeamGoldenHash = 4043003718136410697UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE MARKETER THE VILLAGE NEVER ASKED FOR (D185), AND THIS ONE MOVED FOR
+    // A REAL BEHAVIOUR CHANGE -- unlike the two skill re-takes above it. `MarketersWanted`
+    // counted errands from HOUSEHOLDS and nothing else, so nobody was ever put on the market
+    // because a farm needed emptying, and D171's buffer-clearing leg could not run. This is the
+    // one village in the suite with a farm in it, so it is the one that can see the difference:
+    // a trader works here now, and twenty years of that is a different twenty years.
+    //
+    // ⚠️ `SeamBeforeAnybodyGotBetter` MOVES TOO, and that is correct rather than alarming: it
+    // fingerprints everything except skill, and what changed here is what people DO. A skill
+    // re-take must leave it alone; this is not one.
+    //
+    //   before the market got staffed for farms: 4043003718136410697
+    private const ulong SeamGoldenHash = 6737691834764729296UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -137,7 +150,7 @@ public sealed class FarmGoldenTests
     /// sows and reaps exactly as it did, and when landing 2 makes mastery bite, **this number
     /// must move too.** A skill system that changes nothing is D56's clothing.
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 4486163041401162495UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 11030727006651863943UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

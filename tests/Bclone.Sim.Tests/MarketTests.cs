@@ -543,4 +543,166 @@ public sealed class MarketTests
         loop.World.Villagers[0].ErrandHouseholdId += 1;
         Assert.NotEqual(carried, StateHash.Compute(loop.World));
     }
+
+    // ---------------------------------------------------------------
+    //  ⭐⭐ The marketer the village never asked for (D185)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ A farm with a full buffer is <b>an errand</b>, even when every household is content.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THE BUG, AND IT COST THE WHOLE OF D171.</b> `BehaviorSystem.PlanMarketErrand` has
+    /// had a leg since then that clears a workplace buffer, written so that
+    /// `crops-and-orchards.md §3.2`'s *"running it dry is the market's job"* would finally be
+    /// true. **`LabourQuota.MarketersWanted` counted errands from households and nothing
+    /// else** — so with every family at target the quota was zero, nobody was put on the
+    /// market, and the leg could not run however full the farm stood. **The behaviour existed
+    /// and the demand did not.**
+    /// </para>
+    /// <para>
+    /// <b>Posed rather than played, deliberately.</b> A village that happens to have a hungry
+    /// household would pass this without ever exercising the arm — green and blind, which is
+    /// the shape D157 has now found four times. So every household is filled to target first,
+    /// and the assertion is that the quota is **zero without the farm and non-zero with it.**
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFarmWithNowhereToPutItsHarvestIsAnErrand()
+    {
+        SimConfig config = Config;
+        SimWorld world = Build(config).World;
+
+        // Every family content, so households contribute nothing to the quota.
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            household.Stockpile.Add(Goods.Food, world.TargetFoodFor(household));
+            household.Stockpile.Add(
+                Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
+        }
+
+        int quiet = LabourQuota.MarketersWanted(world);
+        _output.WriteLine($"every household at target: {quiet} marketers wanted");
+        Assert.Equal(0, quiet);
+
+        // Now a farm that cannot take another armful of its own crop.
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        farm.Store.Add(Goods.Food, farm.Store.Capacity);
+
+        Assert.True(
+            world.BufferWorthClearing(farm),
+            "The fixture did not actually fill the farm, so this proves nothing.");
+
+        int wanted = LabourQuota.MarketersWanted(world);
+        _output.WriteLine($"with a full farm buffer: {wanted} marketers wanted");
+
+        Assert.True(
+            wanted > quiet,
+            "A farm that cannot take another armful needs somebody to empty it, and the "
+            + "village is not asking for anybody — so the leg that clears it can never run.");
+    }
+
+    /// <summary>
+    /// ⛔ And a farm with room in it asks for <b>nobody</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>The half that keeps this bounded by errands rather than by spare hands</b> (D36), and
+    /// the trap `stock-limits-and-laborers.md §5.1` names outright: **D52 deleted a winter
+    /// labour fill bounded by *"is any shed not yet full?"* and it cost the village a third of
+    /// its population for a century.** An arm that counted every workplace with any food in it
+    /// would be that bound wearing a different hat.
+    /// </remarks>
+    [Fact]
+    public void AFarmWithRoomInItAsksForNobody()
+    {
+        SimConfig config = Config;
+        SimWorld world = Build(config).World;
+
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            household.Stockpile.Add(Goods.Food, world.TargetFoodFor(household));
+            household.Stockpile.Add(
+                Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
+        }
+
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+
+        // ⚠️ TESTED AT THE BOUNDARY, because the shipped buffer is smaller than this guard's
+        // first draft assumed — `farm_store_cap` is 100 against an armful of 67, so **a farm
+        // holds one and a half tiles of harvest** and a single reaped tile already leaves too
+        // little room. That is worth knowing rather than working around: it means a farm that
+        // has reaped anything at all is almost always asking for a trader.
+        //
+        // So: filled to exactly the point where one more armful still fits, then one unit past
+        // it. The condition is *"can it still take a whole load?"* and this is where that turns
+        // over.
+        int roomForOneMore = farm.Store.Capacity - config.CropYieldPerTile;
+        Assert.True(
+            roomForOneMore > 0,
+            $"The farm's buffer ({farm.Store.Capacity}) cannot hold even one armful of "
+            + $"{config.CropYieldPerTile}, so there is no boundary to test.");
+
+        farm.Store.Add(Goods.Food, roomForOneMore);
+
+        _output.WriteLine(
+            $"farm holds {farm.Store.Food} of {farm.Store.Capacity}, "
+            + $"{farm.Store.FreeSpace} free against an armful of {config.CropYieldPerTile}");
+
+        Assert.False(world.BufferWorthClearing(farm));
+        Assert.Equal(0, LabourQuota.MarketersWanted(world));
+
+        // ⭐ And one unit past the boundary it turns over — without this the guard would pass
+        // against a condition that is simply never true.
+        farm.Store.Add(Goods.Food, 1);
+        Assert.True(world.BufferWorthClearing(farm));
+        Assert.True(LabourQuota.MarketersWanted(world) > 0);
+    }
+
+    /// <summary>
+    /// ⭐ The quota and the errand ask <b>the same question</b>, across the whole range.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is the guard against the fix being made the way the bug was made.</b> The
+    /// obvious repair was to paste the two-line comparison into <c>MarketersWanted</c> beside
+    /// the one already in <c>PlanMarketErrand</c> — **and two copies of one sum is exactly how
+    /// they come to disagree** (D142's three call sites, D148's two meanings). One method
+    /// answers both, and this walks the buffer from empty to full to prove they cannot part
+    /// company.
+    /// </remarks>
+    [Fact]
+    public void TheQuotaAndTheErrandAskTheSameQuestion()
+    {
+        SimConfig config = Config;
+        SimWorld world = Build(config).World;
+
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            household.Stockpile.Add(Goods.Food, world.TargetFoodFor(household));
+            household.Stockpile.Add(
+                Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
+        }
+
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        int capacity = farm.Store.Capacity;
+        int agreed = 0;
+
+        for (int held = 0; held <= capacity; held += Math.Max(1, capacity / 12))
+        {
+            farm.Store.TryTake(Goods.Food, farm.Store.Food);
+            farm.Store.Add(Goods.Food, held);
+
+            bool worthClearing = world.BufferWorthClearing(farm);
+            bool quotaAsksForOne = LabourQuota.MarketersWanted(world) > 0;
+
+            Assert.Equal(worthClearing, quotaAsksForOne);
+            agreed++;
+        }
+
+        _output.WriteLine($"{agreed} buffer levels, quota and errand agreed on every one");
+        Assert.True(agreed > 5, "Too few levels sampled to have proved anything.");
+    }
 }

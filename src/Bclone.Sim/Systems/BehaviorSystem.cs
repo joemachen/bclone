@@ -1293,14 +1293,12 @@ public sealed class BehaviorSystem : ISimSystem
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
-            if (workplace.IsSite || workplace.Store.Food <= 0)
-            {
-                continue;
-            }
 
-            // A workplace with no store of its own has `int.MaxValue` capacity, so this is
-            // also what keeps every other building out of the loop without naming a kind.
-            if (workplace.Store.FreeSpace >= config.CropYieldPerTile)
+            // ⭐ ASKED OF THE WORLD RATHER THAN SPELLED OUT HERE (D185). It used to be two
+            // lines of comparison in this loop and nowhere else — and `MarketersWanted` did not
+            // have them, so **the village never staffed anybody to run this leg.** One
+            // condition, both callers; see `SimWorld.BufferWorthClearing`.
+            if (!world.BufferWorthClearing(workplace))
             {
                 continue;
             }
