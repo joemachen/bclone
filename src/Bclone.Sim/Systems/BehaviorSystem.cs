@@ -332,6 +332,26 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.DeliveringToHome:
+                // ⛔ A MARKETER WHOSE ARMS ARE EMPTY IS NOT DELIVERING ANYTHING (D192).
+                //
+                // **Found by a guard going red for a change that had nothing to do with the
+                // market.** D10 says eating preempts everything and `TryEat` takes from a
+                // villager's own arms first — *nobody starves holding dinner* — so a hungry
+                // marketer eats the load they are carrying and then walks the rest of the leg
+                // with nothing in their hands. `AMarketerNeverWalksAnEmptyLeg` allowed it on
+                // the tick they ate, which is exactly one tick of a walk that can take many.
+                //
+                // The bug was always here; a faster thaw (D192) merely moved the village's
+                // timings until it happened at year 90 instead of never in the run under test.
+                // **Re-decide instead of finishing an errand that no longer exists** — the same
+                // thing every other leg does when its reason evaporates.
+                if (!villager.IsCarrying)
+                {
+                    villager.ErrandHouseholdId = 0;
+                    Decide(world, villager);
+                    return;
+                }
+
                 Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
                     VillagerState.DeliveringToHome);
                 return;

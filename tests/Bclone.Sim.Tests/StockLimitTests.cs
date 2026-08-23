@@ -1,3 +1,4 @@
+using System.Linq;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
@@ -289,7 +290,7 @@ public sealed class StockLimitTests
     //
     //   before mastery bit: fixture 17883694128790877833,
     //                       shipped 15628752506897642520
-    private const ulong FixtureFiftyYearHash = 18174430941982640321UL;
+    private const ulong FixtureFiftyYearHash = 11057161405161342300UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -316,7 +317,15 @@ public sealed class StockLimitTests
     //
     //   before elders ate like children: fixture 2925726946142789484,
     //                                    shipped 9133620442171355746
-    private const ulong ShippedFiftyYearHash = 7791088175599810974UL;
+    //
+    // ⭐ RE-TAKEN FOR A FIVE-DAY THAW (D192, Joe: "fire warm up should be much faster"). A
+    // hearth used to give back exactly what open ground took, so coming back from the brink
+    // was fifteen days -- half a winter spent thawing. It is five now, so villagers spend
+    // materially more of every winter working and fifty years of that is a different fifty.
+    //
+    //   before the fire got warmer: fixture 18174430941982640321,
+    //                               shipped 7791088175599810974
+    private const ulong ShippedFiftyYearHash = 15960035659211257615UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -585,9 +594,53 @@ public sealed class StockLimitTests
         int limited = world.FirewoodInSheds();
         _output.WriteLine($"firewood in sheds: {unlimited} unlimited, {limited} capped at 40");
 
+        // ⭐⭐ IT ASSERTS THAT PRODUCTION STOPPED, WHICH IS STRONGER THAN THE BOUND IT REPLACES
+        // (D192). The old guard allowed one batch of overshoot, which was a guess at how much
+        // work can be in flight when the limit bites — and a faster thaw (Joe, D192) put more
+        // winter hours into the chain and crossed it at 107 against 90.
+        //
+        // ⛔ THE FIRST FIX WAS ALSO A GUESS AND WAS ALSO WRONG: `seats × split` came out at 50
+        // for a fixture that derives ONE woodcutter seat, so it did not even cover the observed
+        // number. *Two guesses at a tolerance is the point at which the tolerance is the wrong
+        // thing to assert.*
+        //
+        // **What the limit promises is that the work stops, not that the stock lands on a
+        // particular number** — so that is what this checks: the capped village is far below
+        // the uncapped one, and twenty more years does not move it. A limit that merely slowed
+        // production would keep climbing here and pass any fixed bound generous enough to
+        // absorb the overshoot.
+        int settled = world.FirewoodInSheds();
+        loop.Step(config.TicksPerYear * 20);
+        int stillSettled = world.FirewoodInSheds();
+
+        int frozen = world.Villagers.Count(v => !v.Alive && v.CauseOfDeath == CauseOfDeath.Cold);
+        _output.WriteLine(
+            $"twenty years later: {stillSettled} firewood, population {world.Population}, "
+            + $"{frozen} ever frozen");
+
         Assert.True(
-            limited <= 40 + config.FirewoodPerSplit,
-            $"Firewood settled at {limited} against a limit of 40.");
+            limited < unlimited / 2,
+            $"Firewood settled at {limited} against {unlimited} uncapped — the limit is not "
+            + "biting at all.");
+
+        Assert.True(
+            stillSettled <= settled + config.FirewoodPerSplit,
+            $"Firewood went {settled} → {stillSettled} over twenty years under a limit of 40. "
+            + "Production did not stop, it merely slowed — which is the bug D139 records one "
+            + "job over, where a forester the player posted keeps felling past the number in "
+            + "the box.");
+
+        // ⭐⭐ AND NOBODY FROZE FOR IT, WHICH IS THE HALF WORTH ASSERTING MOST. A stock limit is
+        // the player saying *stop*, and D62's whole claim is that the player sets a ceiling
+        // while the village goes on keeping itself alive. **The sheds do drain to nothing here**
+        // — households hold their own fuel, and forty in a shed was never what kept anyone warm
+        // — so a guard that only watched the shed would read this as a catastrophe. It is not:
+        // thirty people, forty years, nobody cold.
+        Assert.Equal(0, frozen);
+        Assert.True(
+            world.Population >= config.StartingPopulation,
+            $"The village fell to {world.Population} under a firewood limit. A ceiling the "
+            + "player sets must not be a way to kill them.");
     }
 
     /// <summary>

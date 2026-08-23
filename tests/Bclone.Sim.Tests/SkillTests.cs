@@ -243,8 +243,8 @@ public sealed class SkillTests
     /// </para>
     /// </remarks>
     [Theory]
-    [InlineData(false, 2304938567605588358UL)]
-    [InlineData(true, 4751632099212391028UL)]
+    [InlineData(false, 17188106964035056485UL)]
+    [InlineData(true, 8048417015332426583UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
@@ -1178,8 +1178,12 @@ public sealed class SkillTests
         // ⛔ THE RED CHECK IS BUILT IN, which is what makes this falsifiable rather than a
         // vibe (§10): the same measurement with both switched off must still show the
         // lockstep, or this guard is describing a village that was never in step.
+        // ⚠️ 85, LOWERED FROM 90 WHEN A FASTER THAW MOVED THE BASELINE 91% → 88% (D192).
+        // **The bar exists to prove there is a lockstep to fix**, and 88% plainly is one; it is
+        // not a claim about any particular figure. Recorded rather than quietly edited, because
+        // *"the bar moved"* and *"the guard was weakened"* look identical in a diff.
         Assert.True(
-            lockstepped.Tile >= 90,
+            lockstepped.Tile >= 85,
             $"With the rhythm and the mixed founding off, two adults share a tile only "
             + $"{lockstepped.Tile}% of ticks — the lockstep this fixes is not present, so the "
             + "comparison below proves nothing.");

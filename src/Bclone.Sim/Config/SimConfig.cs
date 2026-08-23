@@ -1036,6 +1036,31 @@ public sealed record SimConfig
     public int ExposureDaysSheltered { get; init; } = 25;
 
     /// <summary>
+    /// Days at a burning hearth to come back <b>from the brink of freezing</b> (Joe, D192).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The third number in D45's table, and the one that was never stated.</b> Fifteen days
+    /// outdoors kills; twenty-five under a fireless roof kills; **five at a fire brings you all
+    /// the way back.** Together those three are the whole cold model, readable in one line each.
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT USED TO BE DERIVED BY MIRRORING THE OUTDOOR RATE, WHICH MEANT FIFTEEN.</b> The
+    /// old reasoning was that mirroring *"needs no number of its own"* — true, and it quietly
+    /// chose one anyway: half a winter to thaw. Joe, watching it: *"fire warm up should be much
+    /// faster than it currently is."* **A derivation that avoids stating a number still states
+    /// one**, and this is what that costs when nobody checks what it came out as.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Bounded below by a measurement</b>: a fire that zeroed the count outright was built,
+    /// measured and rejected — villagers spend **76% of winter at a lit hearth**, so nobody froze
+    /// in 120 years. Five days is fast; instant is a reset.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("thaw_days_at_a_fire")]
+    public int ThawDaysAtAFire { get; init; } = 5;
+
+    /// <summary>
     /// How far toward freezing a villager gets before they break off work to get warm.
     /// </summary>
     /// <remarks>
@@ -1867,6 +1892,17 @@ public sealed record SimConfig
                 $"(got {ExposureDaysOutdoors}, {ExposureDaysSheltered}).");
         }
 
+        // ⛔ A THAW OF ZERO DAYS IS AN INSTANT RESET, AND THAT WAS BUILT AND REJECTED (D45,
+        // D192). Villagers spend 76% of winter at a lit hearth, so a fire that wiped the count
+        // meant nobody froze in 120 years. Refused here rather than left as a division by zero
+        // somebody discovers as an immortal village.
+        if (ThawDaysAtAFire <= 0)
+        {
+            throw new SimConfigException(
+                $"thaw_days_at_a_fire must be greater than zero (got {ThawDaysAtAFire}). "
+                + "A fire that thaws instantly is the reset D45 measured and rejected.");
+        }
+
         if (SeekShelterPercent is < 0 or > 100)
         {
             throw new SimConfigException(
@@ -2142,12 +2178,35 @@ public sealed record SimConfig
     /// villagers spend <b>76% of winter standing at a lit hearth</b>, so the count was
     /// wiped constantly and <em>nobody ever froze in 120 years</em>. Thawing keeps the
     /// sentence true — you never freeze while a fire is burning — without letting one warm
-    /// minute erase a fortnight in the snow. Mirroring the outdoor rate is the only
-    /// choice that needs no number of its own: slower and a hearth is not really safety,
-    /// faster and it is the reset again wearing a delay.
+    /// minute erase a fortnight in the snow.
+    /// <para>
+    /// <b>⭐ IT USED TO MIRROR THE OUTDOOR RATE, ON THE GROUNDS THAT MIRRORING NEEDED NO NUMBER
+    /// OF ITS OWN — AND THE NUMBER IT AVOIDED CHOOSING WAS WRONG (Joe, 2026-08-23, D192).</b>
+    /// A day by the fire undoing a day outdoors meant **fifteen days at a hearth to come back
+    /// from the brink**, which is half a winter spent thawing. Joe, having watched it: *"fire
+    /// warm up should be much faster than it currently is."*
+    /// </para>
+    /// <para>
+    /// <b>Now stated as the fact and derived from it</b> (D165's split): <em>a fire brings you
+    /// back from the brink in <see cref="ThawDaysAtAFire"/> days.</em> Five, against fifteen
+    /// outdoors and twenty-five under a fireless roof — so a hearth is **three times** the
+    /// rescue it was, and getting warm is now something you can watch happen rather than
+    /// something that takes a season.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The old argument's second half still holds and is what bounds this.</b> A fire that
+    /// zeroed the count outright was measured and rejected: villagers spend **76% of winter at a
+    /// lit hearth**, so the count was wiped constantly and **nobody froze in 120 years**. Five
+    /// days is fast, not instant — *faster and it is the reset again wearing a delay.*
+    /// </para>
     /// </remarks>
     [JsonIgnore]
-    public int ThawPerTickAtAFire => ExposurePerTickOutdoors;
+    public int ThawPerTickAtAFire =>
+        ThawTicksAtAFire == 0 ? 0 : ExposureThreshold / ThawTicksAtAFire;
+
+    /// <summary>Ticks at a fire to come back from the brink. Derived from days.</summary>
+    [JsonIgnore]
+    public int ThawTicksAtAFire => ThawDaysAtAFire * TicksPerDay;
 }
 
 /// <summary>Thrown when config is missing, malformed, or out of range.</summary>

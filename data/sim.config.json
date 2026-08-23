@@ -696,6 +696,27 @@
   "exposure_days_outdoors": 15,
   "exposure_days_sheltered": 25,
 
+  // Days at a burning hearth to come back FROM THE BRINK of freezing
+  // (Joe, 2026-08-23: "fire warm up should be much faster than it
+  // currently is").
+  //
+  // THE THIRD NUMBER IN D45's TABLE, AND THE ONE THAT WAS NEVER STATED.
+  // Fifteen days outdoors kills, twenty-five under a fireless roof
+  // kills, and five at a fire brings you all the way back. Three lines,
+  // one model.
+  //
+  // It used to be DERIVED by mirroring the outdoor rate, on the stated
+  // grounds that mirroring "needs no number of its own" -- which was
+  // true, and quietly chose fifteen anyway. Half a winter to thaw. A
+  // derivation that avoids stating a number still states one, and this
+  // is what that costs when nobody checks what it came out as.
+  //
+  // Bounded below by a measurement rather than by taste: a fire that
+  // zeroed the count outright was built and rejected, because villagers
+  // spend 76% of winter at a lit hearth and nobody froze in 120 years.
+  // Five days is fast; instant is a reset.
+  "thaw_days_at_a_fire": 5,
+
   // How far toward freezing somebody gets before they drop what they are
   // doing and walk to the nearest fire. Halfway is where the old system
   // already printed its "you are cold" line, so the player has been

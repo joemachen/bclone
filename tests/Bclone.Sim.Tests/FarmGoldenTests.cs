@@ -153,7 +153,11 @@ public sealed class FarmGoldenTests
     // ⭐ RE-TAKEN FOR ELDERS EATING A DEPENDANT'S SHARE (D191).
     //
     //   before elders ate like children: 16167409353535345881
-    private const ulong SeamGoldenHash = 11509711031316440761UL;
+    //
+    // ⭐ RE-TAKEN FOR A FIVE-DAY THAW (D192).
+    //
+    //   before the fire got warmer: 11509711031316440761
+    private const ulong SeamGoldenHash = 12485177273367720852UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -172,7 +176,7 @@ public sealed class FarmGoldenTests
     /// with the speed bonus at zero and asserts the pre-skill goldens byte for byte.
     /// </para>
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 16089386726126835310UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 13056411884338240746UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

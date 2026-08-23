@@ -116,6 +116,28 @@ public sealed class ShippedConfigTests
         Assert.Equal(
             config.ExposureThreshold,
             config.ExposurePerTickSheltered * config.ExposureTicksSheltered);
+
+        // ⭐ AND THE THIRD RATE, WHICH IS NEW AND IS THE ONE THAT CAN QUIETLY NOT DIVIDE
+        // (D192). The threshold is the product of the OTHER TWO tick-counts, so exactness is
+        // guaranteed for them and merely true for this one: `thaw_days_at_a_fire` is a free
+        // number, and a value that does not divide the threshold would round a stated five
+        // days into five-and-a-bit with nothing on screen to say so.
+        _output.WriteLine(
+            $"a fire brings somebody back from the brink in {config.ThawDaysAtAFire} days: "
+            + $"{config.ThawPerTickAtAFire} a tick against {config.ExposurePerTickOutdoors} "
+            + $"outdoors and {config.ExposurePerTickSheltered} under a fireless roof");
+
+        Assert.Equal(
+            config.ExposureThreshold,
+            config.ThawPerTickAtAFire * config.ThawTicksAtAFire);
+
+        // ⛔ AND IT MUST OUTPACE THE COLD IT UNDOES, or a hearth is not safety — a villager
+        // who thaws slower than the roof over them chills is somebody the fire cannot save.
+        Assert.True(
+            config.ThawPerTickAtAFire > config.ExposurePerTickOutdoors,
+            $"A fire gives back {config.ThawPerTickAtAFire} a tick against "
+            + $"{config.ExposurePerTickOutdoors} lost outdoors — getting warm is no faster than "
+            + "getting cold, which is the fifteen-day thaw Joe asked to be rid of.");
     }
 
     [Fact]
