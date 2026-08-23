@@ -136,7 +136,15 @@
   "hunger_max": 100,
   "eat_threshold": 80,
   "eat_reduces_hunger": 80,
-  "food_per_meal": 5,
+  // ⭐ 5 -> 4 (Joe, 2026-08-23): "lower food consumption -20%".
+  //
+  // EXACTLY -20%, and the derivation makes it a REAL loosening rather
+  // than a rename. RequiredGatherYield falls with it, and gather_yield
+  // is guarded as a FLOOR rather than an equality -- so leaving the
+  // yields where they are hands the village the whole 20% as headroom
+  // above the survival line. Re-deriving the yields down too would have
+  // been the same game with smaller numbers.
+  "food_per_meal": 4,
 
   // 24 ticks = 6 days at maximum hunger before death. Boundary
   // is >= (decided in spec §11).
@@ -633,7 +641,21 @@
   // so a winter costs a household a quarter of what it did, and every
   // number derived from that - the store target, the woodcutter seats,
   // the foresters feeding them - comes down with it.
-  "firewood_burn_interval_days": 4,
+  //
+  // ⭐ 4 -> 3 (Joe, 2026-08-23): "increase firewood consumption +20%".
+  //
+  // ⚠️ IT IS +25%, NOT +20%, AND THE GRID IS WHY. A winter costs
+  // ceil(days_per_season / interval) x firewood_per_winter_day, so with
+  // a 30-day winter the only reachable numbers at one log a burn are
+  // 8 (interval 4), 10 (interval 3) and 15 (interval 2). Ten is the
+  // closest to +20% and it is what shipped.
+  //
+  // Exactly +20% is reachable only as 3 logs every 10 days, which hits
+  // the number and changes the RHYTHM: a household would need three in
+  // hand at once instead of one, so a thin larder fails in bursts
+  // rather than gradually. That is a different feel, not a finer dial,
+  // so the closer-in-spirit option won. Say so if the burst is wanted.
+  "firewood_burn_interval_days": 3,
 
   // ---- Regrowth (D125) ---------------------------------------
   // The valley comes back. Measured before this existed: a village

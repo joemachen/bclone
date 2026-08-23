@@ -290,7 +290,15 @@ public sealed class StockLimitTests
     //   before mastery bit: fixture 17883694128790877833,
     //                       shipped 15628752506897642520
     private const ulong FixtureFiftyYearHash = 5402933120067190351UL;
-    private const ulong ShippedFiftyYearHash = 16062803390206118870UL;
+    //
+    // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
+    // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
+    // correctly -- `VillageFixtures.Village` derives its own economy and never reads the
+    // shipped file's two numbers, so this pair moving apart is the two configs being two
+    // configs rather than drift.
+    //
+    //   before eating less and burning more: shipped 16062803390206118870
+    private const ulong ShippedFiftyYearHash = 16150256378240105365UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

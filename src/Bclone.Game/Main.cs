@@ -3210,12 +3210,31 @@ public partial class Main : Control
     private const int ProfessionIndent = 12;
 
     /// <summary>What a kind of work is called on screen. Every value named (D108).</summary>
+    /// <summary>What a kind of work is called on screen — <b>the one place that decides</b>.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THERE USED TO BE TWO OF THESE AND THEY DISAGREED</b> (found 2026-08-23, D188). This
+    /// said **Gatherer** and **Vendor** while <see cref="TradeOf"/> said **forager** and
+    /// **marketer** — the professions panel and the stock rows using one vocabulary, the roster
+    /// beside every villager's name using the other. **The same job, two words, two panels**,
+    /// which is D148's finding arriving in the UI.
+    /// </para>
+    /// <para>
+    /// <b>It stopped being cosmetic when the skill line landed.</b> *"Sixteen years as a
+    /// farmer"* sits directly under the roster entry that names the villager, so a third place
+    /// had to agree with the other two — and two of the three did not.
+    /// </para>
+    /// <para>
+    /// <b>Joe's call: *"forager and marketer win."*</b> <see cref="TradeOf"/> lower-cases this
+    /// rather than keeping its own list, so there is now exactly one place a job is named.
+    /// </para>
+    /// </remarks>
     private static string ProfessionName(JobKind kind) => kind switch
     {
-        JobKind.Forager => "Gatherer",
+        JobKind.Forager => "Forager",
         JobKind.Forester => "Forester",
         JobKind.Woodcutter => "Woodcutter",
-        JobKind.Marketer => "Vendor",
+        JobKind.Marketer => "Marketer",
         JobKind.Builder => "Builder",
         JobKind.Farmer => "Farmer",
         _ => throw new ArgumentOutOfRangeException(
@@ -3335,19 +3354,18 @@ public partial class Main : Control
     }
 
     /// <summary>A villager's trade, for the roster. What they are, not where they are.</summary>
+    /// <summary>The same names as <see cref="ProfessionName"/>, in the roster's register.</summary>
+    /// <remarks>
+    /// <b>⛔ IT USED TO KEEP ITS OWN LIST, AND THE TWO DRIFTED</b> (D188) — this said *forager*
+    /// and *marketer* where <see cref="ProfessionName"/> said *Gatherer* and *Vendor*. **One
+    /// place names a job now**; this only lower-cases it, because the roster reads
+    /// *"Hattie, 39 (adult) — farmer"* mid-sentence while the professions panel heads a column.
+    /// Two registers of one vocabulary is fine; two vocabularies is what was not.
+    /// </remarks>
     private string TradeOf(Villager villager)
     {
         Workplace? job = _loop.World.FindWorkplace(villager.WorkplaceId);
-        return job?.Kind switch
-        {
-            JobKind.Forager => "forager",
-            JobKind.Forester => "forester",
-            JobKind.Woodcutter => "woodcutter",
-            JobKind.Marketer => "marketer",
-            JobKind.Builder => "builder",
-            JobKind.Farmer => "farmer",
-            _ => "working",
-        };
+        return job is null ? "working" : ProfessionName(job.Kind).ToLowerInvariant();
     }
 
     /// <summary>What a good is called on screen.</summary>
