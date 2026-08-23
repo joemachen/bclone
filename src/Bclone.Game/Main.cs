@@ -1242,14 +1242,14 @@ public partial class Main : Control
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⭐ THE SENTENCE, NOT THE NUMBER.</b> *"Nineteen years in the fields"* is the diegetic
+    /// <b>⭐ THE SENTENCE, NOT THE NUMBER.</b> *"Sixteen years as a farmer"* is the diegetic
     /// fact; <c>proficiency 73</c> is the spreadsheet this game is defined against (§1.4), and
     /// §7 rejects it by name. The years are also the only thing the sim actually stores — time
     /// on the task (§3.1) — so the panel is not translating anything, it is reading it out.
     /// </para>
     /// <para>
     /// <b>Every trade they have given a year to, longest first</b>, because that is the career
-    /// rather than the job — a farmer who spent a decade in the woods first is a different
+    /// rather than the job — a farmer who spent a decade as a forester first is a different
     /// person from one who did not, and §5's whole argument is that what a village loses when
     /// somebody dies is that history.
     /// </para>
@@ -1301,7 +1301,7 @@ public partial class Main : Control
     /// <summary>"Nineteen years", spelled out — a life is counted, not measured.</summary>
     /// <remarks>
     /// Words up to the end of a working life, digits past it. §7's example is written out in
-    /// words (*"nineteen years in the fields"*) and the difference is register: a number in a
+    /// words (*"sixteen years as a farmer"*) and the difference is register: a number in a
     /// sentence about a person reads like a stat block, and this game keeps saying it is not one.
     /// </remarks>
     private static string Years(int years)

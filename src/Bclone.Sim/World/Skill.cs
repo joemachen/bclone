@@ -81,17 +81,17 @@ public sealed record SkillRow
     /// schedule and a forager took half again as long, **with nothing on screen saying why.**
     /// </para>
     /// <para>
-    /// <b>So each trade states the years of its own work that make a master</b>, derived from
-    /// what a year of that trade is actually worth
-    /// (`SkillTests.WhatAYearOnEachTradeIsActuallyWorth`). **Every trade now masters at about
-    /// twenty calendar years**, which is what the design promised in the first place.
+    /// <b>⛔⛔ AND NO ROW SETS ONE, BECAUSE THE MEASUREMENT KILLED THE REASON TO.</b> Building
+    /// the probe that was to derive these numbers found the winter story was **wrong**: foraging,
+    /// forestry, woodcutting and trading are all worked in **all four seasons**, and the
+    /// mid-winter figure that looked like availability was a **headcount**. The real cause was
+    /// decay, since deleted (D183). *The mechanism is kept because trades may genuinely diverge
+    /// one day; tuning it to a cause that does not exist would have buried the one that does.*
     /// </para>
     /// <para>
-    /// <b>⛔ THE ALTERNATIVE WAS ONE LINE AND IT WAS THE DISHONEST ONE</b> — credit a held seat
-    /// through the winter even though the village stood the work down. That would have made the
-    /// panel say *"nineteen years in the woods"* about somebody who spent five of them idle at
-    /// home, and this game's whole claim is that its numbers mean what they say. **This is D165's
-    /// split instead: a stated fact about each trade, with the consequence derived.**
+    /// ⚠️ <b>So this is an inert column, honestly labelled</b>, in the same standing as
+    /// <see cref="Recordable"/> — real, unused, and cheaper to have now than to retrofit across
+    /// the hash and every golden later.
     /// </para>
     /// <para>
     /// Null rather than a default of twenty, so a modder adding a row gets the game's headline
@@ -103,12 +103,29 @@ public sealed record SkillRow
     public int? MasteryYears { get; init; }
 
     /// <summary>
-    /// Where the years were spent, for the villager panel: *"nineteen years <b>in the
-    /// fields</b>."*
+    /// What the years were spent being, for the villager panel: *"sixteen years <b>as a
+    /// farmer</b>."*
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <b>The sentence, not the number</b> (§7). The years are the diegetic fact; <c>proficiency
     /// 73</c> is the spreadsheet this game is defined against (§1.4).
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT NAMES THE PROFESSION, AND IT MUST MATCH WHAT THE REST OF THE SCREEN CALLS THAT
+    /// JOB</b> (Joe, D188). It used to be scene-setting — *"in the fields"*, *"among the
+    /// trees"*, *"at the woodpile"* — which read well and left the player joining a phrase to a
+    /// trade by inference. **Naming the trade is what makes it answer the question the panel is being
+    /// asked**: *what has this person been?*
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE VIEW ALREADY HAS TWO VOCABULARIES FOR THESE JOBS AND THIS IS NOW A THIRD PLACE
+    /// THEY MUST AGREE.</b> `Main.ProfessionName` says **Gatherer** and **Vendor**;
+    /// `Main.TradeOf` says **forager** and **marketer**; the same job, two words, two panels.
+    /// These follow `TradeOf`, because that is what the roster shows beside a villager's name
+    /// and therefore what sits directly above this line. **The split itself is unresolved and
+    /// is Joe's to settle** — see `DESIGN.md §5`.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("years_phrase")]
     public string YearsPhrase { get; init; } = string.Empty;

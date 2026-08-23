@@ -1209,7 +1209,7 @@ public sealed record SimConfig
             Id = 1,
             Name = "foraging",
             GrownBy = JobKind.Forager,
-            YearsPhrase = "in the woods",
+            YearsPhrase = "as a forager",
             MasteryLine = "{0} has foraged these woods for {1} years. "
                 + "Nothing that grows here goes unnoticed now.",
         },
@@ -1218,7 +1218,7 @@ public sealed record SimConfig
             Id = 2,
             Name = "forestry",
             GrownBy = JobKind.Forester,
-            YearsPhrase = "among the trees",
+            YearsPhrase = "as a forester",
             MasteryLine = "{0} has worked these woods for {1} years. "
                 + "Where to fell and where to plant takes no thinking about now.",
         },
@@ -1227,7 +1227,7 @@ public sealed record SimConfig
             Id = 3,
             Name = "woodcutting",
             GrownBy = JobKind.Woodcutter,
-            YearsPhrase = "at the woodpile",
+            YearsPhrase = "as a woodcutter",
             MasteryLine = "{0} has split the village's wood for {1} years. "
                 + "The grain gives way where it always did.",
         },
@@ -1236,7 +1236,7 @@ public sealed record SimConfig
             Id = 4,
             Name = "farming",
             GrownBy = JobKind.Farmer,
-            YearsPhrase = "in the fields",
+            YearsPhrase = "as a farmer",
 
             // ⭐⭐ Joe's own sentence, from `DESIGN.md`'s opening paragraph by way of §3.3b —
             // the one he asked for by name. Pronoun-free: villagers have names and no sex.
@@ -1248,7 +1248,7 @@ public sealed record SimConfig
             Id = 5,
             Name = "building",
             GrownBy = JobKind.Builder,
-            YearsPhrase = "on the village's frames",
+            YearsPhrase = "as a builder",
             MasteryLine = "{0} has raised the village's roofs for {1} years. "
                 + "The work goes up straight without measuring twice.",
         },
@@ -1257,7 +1257,7 @@ public sealed record SimConfig
             Id = 6,
             Name = "trading",
             GrownBy = JobKind.Marketer,
-            YearsPhrase = "on the village's errands",
+            YearsPhrase = "as a marketer",
             MasteryLine = "{0} has carried the village's goods for {1} years. "
                 + "Every door and every shortcut is known ground.",
         },
