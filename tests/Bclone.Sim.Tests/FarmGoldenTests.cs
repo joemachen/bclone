@@ -137,20 +137,33 @@ public sealed class FarmGoldenTests
     // re-take must leave it alone; this is not one.
     //
     //   before the market got staffed for farms: 4043003718136410697
-    private const ulong SeamGoldenHash = 6737691834764729296UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR MASTERY BITING (D187) — Phase 3 landing 2, and the moment the skill
+    // pillar stopped being bookkeeping. **A master takes half the ticks over an action, rounded
+    // up**, so this village's farmers sow and reap faster as their careers run on, and twenty
+    // years of that is a different twenty years.
+    //
+    //   before mastery bit: 6737691834764729296
+    private const ulong SeamGoldenHash = 9706055072185576047UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
     /// anything</b> (D181).
     /// </summary>
     /// <remarks>
-    /// This is <see cref="SeamGoldenHash"/>'s value from <em>before</em> the substrate landed,
-    /// recomputed over everything except skill. **It is what licenses the move above to be one
-    /// line in a decisions log rather than an investigation** — the seam still farms, clears,
-    /// sows and reaps exactly as it did, and when landing 2 makes mastery bite, **this number
-    /// must move too.** A skill system that changes nothing is D56's clothing.
+    /// <b>⭐⭐ AND IT HAS NOW MOVED, WHICH IS THE WHOLE POINT OF IT (D187).</b> This fingerprints
+    /// everything except the skill counters, so through landing 1 it was **byte-identical**
+    /// while proficiency accrued and did nothing — and the note here said in as many words that
+    /// *"when landing 2 makes mastery bite, this number must move too."* **It did.** A skill
+    /// system that changes nothing is D56's clothing, and this is the number that can tell the
+    /// difference.
+    /// <para>
+    /// ⚠️ The claim that the *substrate alone* changes nothing is still alive and still
+    /// checkable — <c>SkillTests.FiftyYearsOfVillageAndOnlyTheCountersMoved</c> poses a village
+    /// with the speed bonus at zero and asserts the pre-skill goldens byte for byte.
+    /// </para>
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 11030727006651863943UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 2355653152556005234UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

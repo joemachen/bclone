@@ -35,6 +35,177 @@ public sealed class SkillTests
         config.Skills.First(skill => skill.GrownBy == job).Id;
 
     // ---------------------------------------------------------------
+    //  ⭐⭐ Landing 2 — mastery bites (§3.3)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⛔⭐ <b>A novice takes exactly today's number of ticks, at every trade.</b>
+    /// </summary>
+    /// <remarks>
+    /// <b>§3.2's floor, asserted where it actually lives.</b> `VillageEconomy` derives the
+    /// **survival floor** — what the village must produce not to die — about the least skilled
+    /// person in the valley. If a novice were even one tick different, every number derived from
+    /// that would be describing a village that no longer exists. **Nobody is ever worse than
+    /// today**, and mastery is headroom above.
+    /// </remarks>
+    [Fact]
+    public void ANoviceWorksAtExactlyTodaysSpeed()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimWorld world = Loop(config).World;
+        Villager novice = world.Villagers.First(v => v.Alive);
+
+        Assert.Empty(novice.Skills);
+
+        Assert.Equal(config.GatherTicks, world.WorkTicksFor(novice, JobKind.Forager, config.GatherTicks));
+        Assert.Equal(config.CutTicks, world.WorkTicksFor(novice, JobKind.Forester, config.CutTicks));
+        Assert.Equal(config.SowTicks, world.WorkTicksFor(novice, JobKind.Farmer, config.SowTicks));
+        Assert.Equal(config.ReapTicks, world.WorkTicksFor(novice, JobKind.Farmer, config.ReapTicks));
+        Assert.Equal(config.SplitTicks, world.WorkTicksFor(novice, JobKind.Woodcutter, config.SplitTicks));
+
+        // ⭐ And reading the question did not create a skill row — the structure stays sparse,
+        // which is what keeps a village that has never worked hashing as it always did.
+        Assert.Empty(novice.Skills);
+    }
+
+    /// <summary>
+    /// ⭐⭐ A master is <b>measurably faster at every trade</b> — the guard against the whole
+    /// pillar silently rounding away.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THIS IS NOT A FORMALITY, AND THE MEASUREMENT IS WHY.</b> The durations are 3 and 4
+    /// ticks, so <c>mastery_speed_bonus_percent</c> only does anything when it rounds to a whole
+    /// tick. **At 17% not one duration moves. At 25% only the four-tick trades do** — and a
+    /// village at 25% produced population and food *identical* to one with the feature switched
+    /// off. A number that looks like a quarter faster and buys literally nothing is exactly the
+    /// invisible no-op this project has rejected four times.
+    /// </para>
+    /// <para>
+    /// So this asserts the **effect** rather than the setting: whatever the bonus is tuned to,
+    /// every trade a master holds must cost them fewer ticks than a novice.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AMasterIsFasterAtEveryTrade()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimWorld world = Loop(config).World;
+
+        Villager novice = world.Villagers.First(v => v.Alive);
+        Villager master = world.Villagers.Last(v => v.Alive);
+        Assert.NotSame(novice, master);
+
+        foreach (SkillRow skill in config.Skills)
+        {
+            master.ProgressIn(skill.Id).Work = config.MasteryWorkFor(skill);
+        }
+
+        (JobKind Trade, int Ticks)[] work =
+        {
+            (JobKind.Forager, config.GatherTicks),
+            (JobKind.Forester, config.CutTicks),
+            (JobKind.Woodcutter, config.SplitTicks),
+            (JobKind.Farmer, config.SowTicks),
+            (JobKind.Farmer, config.ReapTicks),
+        };
+
+        foreach ((JobKind trade, int baseTicks) in work)
+        {
+            int mastered = world.WorkTicksFor(master, trade, baseTicks);
+            _output.WriteLine($"{trade,-11} {baseTicks} ticks for a novice, {mastered} for a master");
+
+            Assert.True(
+                mastered < baseTicks,
+                $"A master of {trade} still takes {mastered} ticks against a novice's "
+                + $"{baseTicks}. mastery_speed_bonus_percent is "
+                + $"{config.MasterySpeedBonusPercent}% and it has rounded away to nothing — "
+                + "the pillar accrues, is visible and changes nothing, which is D56's clothing.");
+
+            Assert.True(mastered >= 1, "An action that costs no ticks happens infinitely often.");
+        }
+    }
+
+    /// <summary>
+    /// ⭐ Half the way to mastery is half the bonus — <b>and at these durations that means a
+    /// step rather than a ramp</b>.
+    /// </summary>
+    /// <remarks>
+    /// The curve is linear in work and then flat (§3.3), but a three-tick action can only ever
+    /// become two — so what the sim actually expresses is **two tiers, because it cannot express
+    /// any others at these durations.** Recorded as a guard rather than a surprise, because §12
+    /// is about to choose tier names and this is the shape underneath them.
+    /// </remarks>
+    [Fact]
+    public void ProgressTowardMasteryIsMonotonic()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimWorld world = Loop(config).World;
+        Villager villager = world.Villagers.First(v => v.Alive);
+
+        int skill = SkillIdFor(config, JobKind.Farmer);
+        SkillProgress progress = villager.ProgressIn(skill);
+        int mastery = config.MasteryWork;
+
+        int previous = int.MaxValue;
+        var steps = new List<string>();
+
+        for (int share = 0; share <= 120; share += 10)
+        {
+            progress.Work = (int)((long)mastery * share / 100);
+            int ticks = world.WorkTicksFor(villager, JobKind.Farmer, config.ReapTicks);
+
+            Assert.True(ticks <= previous, $"Reaping got slower between {share - 10}% and {share}%.");
+            previous = ticks;
+            steps.Add($"{share}%:{ticks}");
+        }
+
+        _output.WriteLine(string.Join("  ", steps));
+
+        // Past mastery it stays flat — a master who keeps working is a master, not somebody who
+        // eventually reaps in no time at all.
+        progress.Work = mastery * 10;
+        Assert.Equal(previous, world.WorkTicksFor(villager, JobKind.Farmer, config.ReapTicks));
+    }
+
+    /// <summary>
+    /// ⭐⭐ Mastery <b>changes what the village does</b> — the anti-vacuity guard landing 1 set up.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Landing 1's own guard, pointed the other way.</b> `FiftyYearsOfVillageAndOnlyTheCounters-
+    /// Moved` asserts that with the substrate alone <see cref="StateHash.ComputeIgnoringSkills"/>
+    /// is byte-identical to the pre-skill goldens — *nothing anybody does changed*. **When
+    /// mastery bites, that number must move**, and this is where it is said out loud.
+    /// </para>
+    /// <para>
+    /// **A skill system that changes nothing is D56's clothing**, measured as a no-op over 300
+    /// years and blocked for it. This is the assertion that decides whether any of Phase 3 is
+    /// real.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillageWhoseMastersAreFasterLivesADifferentLife()
+    {
+        SimConfig config = ShippedConfig.Established();
+
+        SimLoop biting = Loop(config);
+        SimLoop inert = Loop(config with { MasterySpeedBonusPercent = 0 });
+
+        biting.Step(config.TicksPerYear * 50);
+        inert.Step(config.TicksPerYear * 50);
+
+        ulong withMastery = StateHash.ComputeIgnoringSkills(biting.World);
+        ulong without = StateHash.ComputeIgnoringSkills(inert.World);
+
+        _output.WriteLine(
+            $"50 years: {biting.World.Population} alive with mastery biting, "
+            + $"{inert.World.Population} with it switched off");
+
+        Assert.NotEqual(without, withMastery);
+    }
+
+    // ---------------------------------------------------------------
     //  ⭐⭐ The no-op, stated in the vocabulary that can be true
     // ---------------------------------------------------------------
 
@@ -69,7 +240,23 @@ public sealed class SkillTests
     [InlineData(true, 2960234095731849111UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
-        SimConfig config = shipped ? ShippedConfig.Established() : VillageFixtures.Village;
+        // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
+        // rather than played… a guard that tries to assert this about the real opening will
+        // fail, and the temptation will be to weaken it instead of to pose it properly."*
+        //
+        // It went red the moment landing 2 landed, which is **the guard working rather than
+        // breaking**: mastery biting is supposed to change what people do, and this one's whole
+        // job is to say that the SUBSTRATE does not. Re-based by posing the village the claim is
+        // about — the same substrate, nobody any faster — instead of relaxing what it asserts.
+        // *A guard that outlives the rule it was written for looks exactly like a regression*
+        // (D150), and the honest response is to pose it properly.
+        //
+        // ⚠️ AND KNOW WHAT POSING IT COSTS: with the bonus at zero `WorkTicksFor` takes its
+        // early return, so **this guard cannot see a break in the novice floor itself** — it
+        // was checked red against one and stayed green. `ANoviceWorksAtExactlyTodaysSpeed`
+        // covers that arm, in the live path. Two claims, two guards; neither is the other.
+        SimConfig config = (shipped ? ShippedConfig.Established() : VillageFixtures.Village)
+            with { MasterySpeedBonusPercent = 0 };
         SimLoop loop = Loop(config);
 
         loop.Step(config.TicksPerYear * 50);

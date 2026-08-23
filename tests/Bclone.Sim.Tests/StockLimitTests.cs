@@ -276,8 +276,21 @@ public sealed class StockLimitTests
     //
     //   before decay was deleted: fixture 4887770829745874605,
     //                             shipped 5305142457694342096
-    private const ulong FixtureFiftyYearHash = 17883694128790877833UL;
-    private const ulong ShippedFiftyYearHash = 15628752506897642520UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR MASTERY BITING (D187) -- and this is the FIRST skill re-take that is a
+    // real behaviour change. Landings 1 and 2's earlier moves were counters; this one is people
+    // working faster. A master takes half the ticks over an action, rounded up, so fifty years
+    // of a village whose founders got good at things is a genuinely different fifty years --
+    // measured at 23 alive against 29 on the shipped seed at a century.
+    //
+    // ⚠️ `SkillTests.FiftyYearsOfVillageAndOnlyTheCountersMoved` still asserts the OLD values
+    // through `ComputeIgnoringSkills`, posed with the bonus at zero -- so the claim that the
+    // substrate alone changes nothing is still standing, and still checkable, beside this.
+    //
+    //   before mastery bit: fixture 17883694128790877833,
+    //                       shipped 15628752506897642520
+    private const ulong FixtureFiftyYearHash = 5402933120067190351UL;
+    private const ulong ShippedFiftyYearHash = 16062803390206118870UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

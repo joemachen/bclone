@@ -7,19 +7,21 @@ D156 (an uneducated child works at twelve), D168 (a new kind of thing should be 
 Neighbours: **`tech-tree.md` (this is its missing substrate — §6)**, `professions.md §4` (the
 roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing.md` and
 `livestock.md` (parked, and both add skills when they land).
-**Status:** 🔨 **LANDING 1 OF 3 IS BUILT** (D181) — **the proficiency substrate**. `Villager.Skills`
-accrues time on the task, it is hashed sparsely in id order, and it is visible: the villager panel
-says *"Nineteen years in the fields"* and **the mastery line fires in the village log** (§3.3b,
-Joe's ask). **Nothing ever takes proficiency away** (§3.7, D183) and a tick out on the
-job counts for more than a tick waiting for one. **Nothing reads it to change behaviour yet** — that is landing 2, and it is next.
-Six skills are rows in config, not enum values (§4.1). `SkillSystem` is step 11 of the tick order.
-**660 passing, 0 failing, 2 skipped of 662; the three state-hash goldens moved twice in one day for
-the counters, and `StateHash.ComputeIgnoringSkills` is byte-identical to all three of their
-pre-slice values through both moves.**
+**Status:** 🔨 **LANDINGS 1 AND 2 OF 3 ARE BUILT** (D181, D187). `Villager.Skills` accrues time on
+the task, is hashed sparsely in id order, and is visible: the villager panel says *"Nineteen years
+in the fields"* and **the mastery line fires in the village log** (§3.3b, Joe's ask). **Nothing
+ever takes proficiency away** (§3.7, D183) and a tick out on the job counts for more than a tick
+waiting for one. Six skills are rows in config, not enum values (§4.1); `SkillSystem` is step 11 of
+the tick order.
 
-**Not built:** landing 2 (mastery biting, §3.3), landing 3 (the mixed founding §3.2c and the
-seeded rhythm §3.5), apprenticeship and teaching (§5), and the at-risk line (§7). D28 is **not
-yet discharged** — it is landing 3's.
+**⭐⭐ AND MASTERY BITES** (D187) — **a master takes half the ticks over an action, rounded up**, so
+skill finally changes what the village does. **The novice floor is untouched to the tick**, so
+every number `VillageEconomy` derives still holds. **667 passing, 0 failing, 2 skipped of 669**;
+the three state-hash goldens moved again, this time for a **real behaviour change** rather than
+for counters.
+
+**Not built:** landing 3 (the mixed founding §3.2c and the seeded rhythm §3.5), apprenticeship and
+teaching (§5), and the at-risk line (§7). **D28 is not yet discharged** — it is landing 3's.
 
 > **⛔ §11.2.1's "provable no-op: goldens unmoved" TURNED OUT TO BE UNWRITABLE, and §11 has been
 > corrected rather than the guard weakened** (D181). The goldens are full state hashes and
@@ -758,6 +760,10 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
 1. This spec current, and its status line true.
 2. **⭐ THREE LANDINGS, IN THIS ORDER, AND THE FIRST IS THE ONLY NO-OP** (D177):
    1. ✅ **The proficiency substrate** — accrues, is hashed, is visible (D181, built).
+   2. ✅ **Mastery bites** (D187, built) — duration first, yield second. **A master takes half
+      the ticks over an action, rounded up.** The width is measured rather than picked, and
+      the measurement is the finding: **below 34% the feature does not round to a whole tick
+      and is literally a no-op.** See §12.
       **⛔ ITS NO-OP CANNOT BE STATED AS *"goldens unmoved"*, AND THAT SENTENCE WAS WRONG WHEN
       IT WAS WRITTEN.** The goldens are **full state hashes**; proficiency is hashed state that
       grows from tick one; **the two are mutually exclusive.** The line was reasoned by analogy

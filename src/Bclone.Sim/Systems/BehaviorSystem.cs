@@ -1708,7 +1708,7 @@ public sealed class BehaviorSystem : ISimSystem
         {
             if (villager.Position == job!.Position)
             {
-                BeginGathering(villager, config);
+                BeginGathering(world, villager, config);
             }
             else
             {
@@ -1801,7 +1801,8 @@ public sealed class BehaviorSystem : ISimSystem
             if (villager.Position == job.Position)
             {
                 villager.State = VillagerState.MakingFirewood;
-                villager.ActionTicksRemaining = config.SplitTicks;
+                villager.ActionTicksRemaining =
+                    world.WorkTicksFor(villager, JobKind.Woodcutter, config.SplitTicks);
             }
             else
             {
@@ -1962,7 +1963,8 @@ public sealed class BehaviorSystem : ISimSystem
             if (villager.Position == job.Position)
             {
                 villager.State = VillagerState.Cutting;
-                villager.ActionTicksRemaining = config.CutTicks;
+                villager.ActionTicksRemaining =
+                    world.WorkTicksFor(villager, JobKind.Forester, config.CutTicks);
             }
             else
             {
@@ -2606,7 +2608,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         if (onArrival == VillagerState.Gathering)
         {
-            BeginGathering(villager, world.Config);
+            BeginGathering(world, villager, world.Config);
             return;
         }
 
@@ -2708,7 +2710,8 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             villager.State = VillagerState.Clearing;
-            villager.ActionTicksRemaining = world.Config.CutTicks;
+            villager.ActionTicksRemaining =
+                world.WorkTicksFor(villager, JobKind.Forester, world.Config.CutTicks);
             return;
         }
 
@@ -2745,7 +2748,8 @@ public sealed class BehaviorSystem : ISimSystem
         if (onArrival == VillagerState.MakingFirewood)
         {
             villager.State = VillagerState.MakingFirewood;
-            villager.ActionTicksRemaining = world.Config.SplitTicks;
+            villager.ActionTicksRemaining =
+                world.WorkTicksFor(villager, JobKind.Woodcutter, world.Config.SplitTicks);
             return;
         }
 
@@ -2777,9 +2781,12 @@ public sealed class BehaviorSystem : ISimSystem
             // could see it because the villager still walked to a tree and came back with
             // logs. `IsPlantingErrand` is the one place that decides, so the duration and
             // the outcome cannot disagree about which job is being done.
-            villager.ActionTicksRemaining = IsPlantingErrand(world, villager)
-                ? VillageEconomy.PlantTicks(world.Config)
-                : world.Config.CutTicks;
+            villager.ActionTicksRemaining = world.WorkTicksFor(
+                villager,
+                JobKind.Forester,
+                IsPlantingErrand(world, villager)
+                    ? VillageEconomy.PlantTicks(world.Config)
+                    : world.Config.CutTicks);
             return;
         }
 
@@ -2831,10 +2838,11 @@ public sealed class BehaviorSystem : ISimSystem
         villager.State = onArrival == VillagerState.Idle ? VillagerState.Resting : onArrival;
     }
 
-    private static void BeginGathering(Villager villager, SimConfig config)
+    private static void BeginGathering(SimWorld world, Villager villager, SimConfig config)
     {
         villager.State = VillagerState.Gathering;
-        villager.ActionTicksRemaining = config.GatherTicks;
+        villager.ActionTicksRemaining =
+            world.WorkTicksFor(villager, JobKind.Forager, config.GatherTicks);
     }
 
     // ---------------------------------------------------------------
@@ -2867,9 +2875,10 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         villager.State = work;
-        villager.ActionTicksRemaining = work == VillagerState.Sowing
-            ? world.Config.SowTicks
-            : world.Config.ReapTicks;
+        villager.ActionTicksRemaining = world.WorkTicksFor(
+            villager,
+            JobKind.Farmer,
+            work == VillagerState.Sowing ? world.Config.SowTicks : world.Config.ReapTicks);
     }
 
     /// <summary>

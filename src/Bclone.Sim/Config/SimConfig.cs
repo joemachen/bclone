@@ -1335,6 +1335,62 @@ public sealed record SimConfig
     [JsonPropertyName("skill_work_per_idle_tick")]
     public int SkillWorkPerIdleTick { get; init; } = 100;
 
+    /// <summary>
+    /// How much faster a <b>master</b> does the work, as a percentage — <b>the width of the
+    /// whole pillar</b> (`skills-catalog.md §3.3`, §12).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ SKILL SCALES HOW LONG A JOB TAKES, NOT WHAT IT YIELDS — DURATION FIRST, YIELD
+    /// SECOND</b> (§3.3). The reason is legibility rather than arithmetic: **a villager who is
+    /// out longer is visible on the map, and one who brings back less is only visible in a
+    /// panel.** It is also what discharges D28, which has asked since Phase 1 for time-on-task to
+    /// be personal — two people who take different numbers of ticks to do the same thing stop
+    /// arriving together within a season and never re-synchronise.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE NOVICE FLOOR IS UNTOUCHED AND THAT IS WHAT KEEPS THE ECONOMY STANDING</b>
+    /// (§3.2). At zero progress this scales nothing at all, so `VillageEconomy`'s derivation —
+    /// which solves the **survival floor**, about the least skilled person in the valley — goes
+    /// on being exactly as true as it was. **Mastery is headroom above a floor, and headroom
+    /// above a floor is what progression is.**
+    /// </para>
+    /// <para>
+    /// <b>⚠️ QUANTISED HARD, BECAUSE THE DURATIONS ARE TINY.</b> `sow_ticks` and `reap_ticks`
+    /// are **3**, `cut_ticks` and `split_ticks` are **4** — so the only reachable speeds are
+    /// whole ticks, and a bonus that does not round to one **does nothing whatsoever**.
+    /// Measured: at **17% not one duration moves**, and at **25% only the four-tick trades
+    /// do** — a village at 25% produces population and food identical to a village with the
+    /// feature switched off. <c>AMasterIsFasterAtEveryTrade</c> exists to fail the build if a
+    /// tweak here ever rounds the whole pillar away again.
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ FIFTY IS MEASURED, NOT PICKED (§12), AND IT HAS A CLEAN STATEMENT: a master's
+    /// action takes half the ticks, rounded up.</b> 3 → 2 and 4 → 2. Across three seeds at a
+    /// century, against the same villages with the bonus at zero:
+    /// </para>
+    /// <code>
+    /// seed     population        food stored
+    /// 12345    23 → 29           3,677 → 4,631
+    /// 2        63 → 65           4,870 → 9,648
+    /// 42       15 → 20           2,204 → 2,178
+    /// </code>
+    /// <para>
+    /// <b>Population rises on every seed</b>, which is D161's mid-game answer arriving: a
+    /// masterful village supports more people. **34% was tried first and is marginal** —
+    /// population unchanged on two seeds of three. *Narrow makes skill a footnote, and at these
+    /// durations narrow means literally nothing.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The spec predicted a different shape and it is worth recording.</b> §3.2 expected
+    /// mastery to cash out as *"the same output from fewer hands — and the hands it frees become
+    /// laborers"*. **Laborer counts did not move at all**; the village grew instead. Both are
+    /// D161's answer, but through a different door than the one predicted.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("mastery_speed_bonus_percent")]
+    public int MasterySpeedBonusPercent { get; init; } = 50;
+
     // ⭐ `forager_catchment_tiles` IS DELETED (`forests-and-gathering.md §3`, Joe: *"get rid
     // of the ring and the distance restrictions"*). It was ten tiles, and past it a villager
     // simply could not hold a job however much they wanted it.

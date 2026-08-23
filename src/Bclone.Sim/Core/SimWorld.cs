@@ -1210,6 +1210,105 @@ public sealed class SimWorld
     /// also what keeps every other building out without naming a kind.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// How long this villager takes over one action of <paramref name="trade"/> — <b>where
+    /// mastery finally bites</b> (`skills-catalog.md §3.3`, Phase 3 landing 2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS IS THE METHOD THAT STOPS THE SKILL PILLAR BEING DECORATIVE.</b> Landing 1
+    /// shipped proficiency that accrues, is hashed and is visible and **changes nothing** —
+    /// which is the exact shape of D56's clothing, measured as a no-op over 300 years and
+    /// blocked for it. Everything before this call site was bookkeeping.
+    /// </para>
+    /// <para>
+    /// <b>⛔ A NOVICE GETS EXACTLY TODAY'S NUMBER, TO THE TICK.</b> Zero progress scales nothing,
+    /// so `VillageEconomy`'s survival floor — solved about the least skilled person in the
+    /// valley — is untouched and every number derived from it still holds (§3.2). **Nobody is
+    /// ever worse than today**; a master is simply better.
+    /// </para>
+    /// <para>
+    /// <b>Linear in work up to mastery, then flat.</b> Traceable rather than clever (§1.6): a
+    /// villager halfway to mastery is halfway to the bonus, and the player can be told that in
+    /// one sentence. A curve would need a reason, and nothing in the design supplies one.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IN PRACTICE IT IS A STEP, NOT A RAMP, AND THE DURATIONS ARE WHY.</b> A three-tick
+    /// action can only become two, so the bonus buys nothing until it rounds to a whole tick —
+    /// at 34% that is around 84% of the way to mastery. **That is the tier model arriving
+    /// through arithmetic rather than through a design decision**, and it is worth knowing
+    /// before §12's tier names get chosen: the sim already behaves as though there are two
+    /// tiers, because it cannot express any others at these durations.
+    /// </para>
+    /// <para>
+    /// <b>Never below one tick.</b> An action that costs nothing is an action that happens
+    /// infinitely often, which is a hang rather than a fast farmer.
+    /// </para>
+    /// </remarks>
+    public int WorkTicksFor(Villager villager, JobKind trade, int baseTicks)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        if (baseTicks <= 1 || Config.MasterySpeedBonusPercent <= 0)
+        {
+            return baseTicks;
+        }
+
+        SkillRow? skill = SkillGrownBy(trade);
+        if (skill is null)
+        {
+            return baseTicks;
+        }
+
+        int mastery = Config.MasteryWorkFor(skill);
+        if (mastery <= 0)
+        {
+            return baseTicks;
+        }
+
+        SkillProgress? progress = villager.FindProgressIn(skill.Id);
+        if (progress is null || progress.Work <= 0)
+        {
+            return baseTicks;
+        }
+
+        // Share of the way to mastery, 0–100. Capped rather than allowed to run on: a master
+        // who keeps working is a master, not somebody who eventually works in no time at all.
+        long share = (long)progress.Work * 100 / mastery;
+        if (share > 100)
+        {
+            share = 100;
+        }
+
+        // Integer throughout (D2). `long` for the product only — 4 × 34 × 100 is small, but the
+        // shape of this expression is exactly where an int overflow would hide if the durations
+        // or the bonus ever grew.
+        long faster = (long)baseTicks * Config.MasterySpeedBonusPercent * share / 10000;
+        int ticks = baseTicks - (int)faster;
+
+        return ticks < 1 ? 1 : ticks;
+    }
+
+    /// <summary>The skill this kind of work grows, or null if no row claims it.</summary>
+    /// <remarks>
+    /// <b>⚠️ Not assumed to be one-to-one</b> (§4.3). The catalogue happens to be 1:1 today and
+    /// **the model must not depend on it**, because a skill two jobs grow — a smith and a
+    /// farrier — is obviously coming. The first row that claims the trade wins, in catalogue
+    /// order, which is stated so it cannot become an unordered tie (D15).
+    /// </remarks>
+    public SkillRow? SkillGrownBy(JobKind trade)
+    {
+        for (int i = 0; i < Config.Skills.Count; i++)
+        {
+            if (Config.Skills[i].GrownBy == trade)
+            {
+                return Config.Skills[i];
+            }
+        }
+
+        return null;
+    }
+
     public bool BufferWorthClearing(Workplace workplace)
     {
         ArgumentNullException.ThrowIfNull(workplace);
