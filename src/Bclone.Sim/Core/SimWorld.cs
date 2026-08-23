@@ -1102,17 +1102,210 @@ public sealed class SimWorld
         ArgumentNullException.ThrowIfNull(farm);
 
         int hands = farm.WorkerIds.Count;
-        int tiles = hands * VillageEconomy.FieldTilesOneFarmerKeeps(Config)
-            * ReapableShareAt(farm) / 100;
+        int tiles = hands * FieldTilesThisFarmCommitsPerHand(farm);
 
         return hands > 0 && tiles < 1 ? 1 : tiles;
     }
 
     /// <summary>
-    /// What share of a well-sited farm's autumn <em>this</em> farm can actually manage, as a
-    /// percentage — <b>the distance half of per-site yield</b>.
+    /// Tiles <b>one pair of hands</b> at this farm commits next spring — <b>what it has learned,
+    /// not what anybody predicted</b> (`per-site-yield.md §4.2a`, D194).
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>⭐ A farm tries one more tile every year until it cannot bring the crop in, then
+    /// settles one back and stays there.</b> That sentence is the whole mechanism, and it is
+    /// deliberately something a player could be told.
+    /// </para>
+    /// <para>
+    /// <b>⛔ WHAT IT REPLACED WAS SELF-FULFILLING.</b> <see cref="ReapableShareAt"/> cut a
+    /// distant farm's field, the farmer then had nothing left to do, and the idleness read back
+    /// as proof the field had been too big — <b>27% of the autumn resting at ten ticks out, 45%
+    /// at sixteen, 55% at twenty-two</b>, while the farm could in fact bring in one to two more
+    /// tiles at every distance. See <see cref="Workplace.FieldTilesLearned"/> for why no formula
+    /// replaces it.
+    /// </para>
+    /// <para>
+    /// <b>⛔ NEVER PAST <see cref="VillageEconomy.FieldTilesOneFarmerKeeps"/>.</b> That is the
+    /// survival floor the whole economy is solved against (D16, D189), and a well-sited farm's
+    /// measured physical ceiling is <b>21</b> tiles against the derivation's <b>13</b>. Thirteen
+    /// wins: a memory allowed to climb past it would inflate a derived, locked number from the
+    /// far end, which is exactly the move D189 refused for <c>crop_yield_per_tile</c>.
+    /// </para>
+    /// <para>
+    /// <b>The opening guess is the old prediction</b>, so a brand-new farm commits exactly what
+    /// it commits today and then learns. <i>Nobody is ever worse than today.</i>
+    /// </para>
+    /// </remarks>
+    public int FieldTilesThisFarmCommitsPerHand(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
+
+        // ⭐ THE WALK CHANGED, SO THE ANSWER DID. A farm that learned its limit at ten ticks
+        // out was answering a question about a walk; a granary built beside the fields makes
+        // that answer stale, and the farm re-reckons from a fresh guess rather than insisting
+        // on a number the valley no longer supports. Checked here rather than on a store being
+        // built, because there are four ways the walk can move — a store raised, demolished,
+        // filled, or told to stop taking food — and one door beats four notifications (D142).
+        int walk = HaulWalkFor(farm);
+        if (farm.FieldTilesLearned > 0 && farm.FieldWalkWhenLearned != walk)
+        {
+            // Take the better of what it knows and what the fresh walk suggests, and let it
+            // climb again. A shorter walk raises the guess and the farm jumps to it rather
+            // than crawling up a tile a year; a longer one keeps the record and lets the next
+            // autumn settle it down honestly.
+            farm.FieldTilesLearned =
+                Math.Max(farm.FieldTilesLearned, OpeningGuessFor(farm, derived));
+            farm.FieldWalkWhenLearned = walk;
+        }
+
+        if (farm.FieldTilesLearned <= 0)
+        {
+            return OpeningGuessFor(farm, derived);
+        }
+
+        return farm.FieldTilesLearned > derived ? derived : farm.FieldTilesLearned;
+    }
+
+    /// <summary>What a farm with no history commits — <b>the old prediction, demoted</b>.</summary>
+    private int OpeningGuessFor(Workplace farm, int derived)
+    {
+        int guess = derived * ReapableShareAt(farm) / 100;
+        return guess < 1 ? 1 : guess > derived ? derived : guess;
+    }
+
+    /// <summary>
+    /// The walk this farm's harvest actually makes — <b>to the nearest store that takes
+    /// food</b>, or -1 where there is none.
+    /// </summary>
+    /// <remarks>
+    /// <b>One place asks it, and three read the answer</b> — the memory's staleness check, the
+    /// opening guess, and the placement warning (§4.3). Two copies of one walk is how they come
+    /// to disagree (D142's three call sites, D148's two meanings).
+    /// </remarks>
+    public int HaulWalkFor(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        return HaulWalkFrom(farm.Position);
+    }
+
+    /// <summary>The walk from a tile to the nearest store that takes food, or -1.</summary>
+    public int HaulWalkFrom(GridPos position)
+    {
+        StoreBuilding? store = NearestStoreAccepting(
+            position, Goods.Food, static place => place.CanEverHold(Goods.Food));
+
+        return store is null ? -1 : TravelCost.TicksBetween(position, store.Position);
+    }
+
+    /// <summary>
+    /// Take this autumn's lesson — <b>run once, on the turn of winter, before the rot sweep</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Before the rot, and that ordering is the whole reading.</b> What is still standing at
+    /// the turn of winter <em>is</em> the answer to *did this farm bring in what it sowed?*, and
+    /// <see cref="Systems.CropSystem"/> is about to clear it.
+    /// </para>
+    /// <para>
+    /// <b>±1 with a latch, and the simplicity is deliberate.</b> The richer rule — *settle on
+    /// exactly what you brought in* — has to divide a tile count by the hands that worked the
+    /// autumn, and <b>the hand count at the turn of winter is not that number</b>: D44 stands
+    /// seasonal trades down, so a farm can be empty on the very tick the lesson is taken. ±1
+    /// needs no hand count at all and converges in three years.
+    /// </para>
+    /// </remarks>
+    public void LearnFromTheAutumn(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        if (farm.Kind != JobKind.Farmer || farm.IsSite)
+        {
+            return;
+        }
+
+        int sown = farm.FieldTilesSown;
+        int hands = farm.FieldHandsAtAutumn;
+        farm.FieldTilesSown = 0;
+        farm.FieldHandsAtAutumn = 0;
+
+        // A year with no crop teaches nothing — see `Workplace.FieldTilesSown`. An empty field
+        // at the turn of winter is what a met stock limit looks like, and it is identical to
+        // what success looks like.
+        if (sown <= 0 || hands <= 0)
+        {
+            return;
+        }
+
+        int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
+        int broughtIn = sown - StandingCropTiles(farm);
+        int record = broughtIn / hands;
+
+        // ⛔⛔ A HIGH-WATER MARK, AND NOTHING ELSE — no probe, no latch, no settling back.
+        // Two drafts of this method had a `+1` that made the farm try one more tile a year and
+        // a flag that stopped it once a tile rotted. **Deleting both changed nothing anywhere
+        // it could be measured**: 6/5/4 tiles learned and 72/60/48 reaped at ten, sixteen and
+        // twenty-two ticks, identical either way. The reason is that
+        // <see cref="HarvestOneFarmCanBringIn"/> multiplies by the hands standing in the field
+        // *at that moment*, so a farm with two hands in spring and one by autumn already
+        // commits ground for two — **the village probes on its own, and a deliberate probe was
+        // a fifth invisible no-op** (D56, D177, D187 are the other four).
+        //
+        // ⭐ And the failure modes point the same way. Without a probe the worst a farm can do
+        // is sit on its opening guess, which is exactly today's behaviour — *nobody is ever
+        // worse than today*. With one, the worst it can do is rot a tile every year, which is
+        // the weather D167 spent a decision deleting.
+        if (record > farm.FieldTilesLearned)
+        {
+            farm.FieldTilesLearned = record > derived ? derived : record;
+        }
+
+        // What a farm brought in once it can bring in again; a thin year is about the hands
+        // that turned up, not about the ground. That is D183's *give, never take* one system
+        // over, and it is what stops one short-staffed autumn becoming a permanent verdict.
+        if (farm.FieldTilesLearned < 1)
+        {
+            farm.FieldTilesLearned = 1;
+        }
+
+        farm.FieldWalkWhenLearned = HaulWalkFor(farm);
+
+        if (Logs(LogLevel.Debug))
+        {
+            Log(
+                LogLevel.Debug,
+                "crops",
+                $"{farm.Name} had {sown} standing on {hands} pair(s) of hands and brought in "
+                + $"{broughtIn}; it has learned it can bring in {farm.FieldTilesLearned} a hand "
+                + $"({farm.FieldWalkWhenLearned} ticks from a store). {Clock.SeasonAndYear()}.");
+        }
+    }
+
+    /// <summary>
+    /// What share of a well-sited farm's autumn <em>this</em> farm can actually manage, as a
+    /// percentage — <b>a brand-new farm's opening guess, and nothing more</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ DEMOTED FROM A RULING TO A FIRST GUESS (D194), AND THE REASON IS THAT IT IS
+    /// DIMENSIONALLY WRONG.</b> It divides <c>budgeted</c> — a ROUND TRIP inside the field, 4
+    /// ticks — by <c>haul</c>, a ONE-WAY walk to a store, 10. <b>The ratio is not a share of
+    /// anything</b>, and that it lands near the right answer at ten ticks is arithmetic
+    /// coincidence. Measured, it left a farm ten ticks out sowing five tiles when it could bring
+    /// in six, and <b>resting for 27% of the autumn</b> it was supposedly too busy for — 45% at
+    /// sixteen ticks, 55% at twenty-two. <b>The cap cut the field and the idleness read back as
+    /// proof the field had been too big.</b>
+    /// </para>
+    /// <para>
+    /// <b>It is kept, not deleted, because a brand-new farm has no history to read</b> and this
+    /// is a safe place to start from: it is what the game commits today, so <i>nobody is ever
+    /// worse than today</i>. One autumn later
+    /// <see cref="FieldTilesThisFarmCommitsPerHand"/> is reading
+    /// <see cref="Workplace.FieldTilesLearned"/> instead and this number never speaks again.
+    /// </para>
     /// <para>
     /// <b>The derivation budgets a round trip to the steading</b>
     /// (<see cref="VillageEconomy.FieldTileTicks"/>), and that is true right up until the farm's
@@ -1139,16 +1332,13 @@ public sealed class SimWorld
     {
         ArgumentNullException.ThrowIfNull(farm);
 
-        StoreBuilding? store = NearestStoreAccepting(
-            farm.Position, Goods.Food, static place => place.CanEverHold(Goods.Food));
+        int haul = HaulWalkFor(farm);
+        int budgeted = VillageEconomy.FieldHaulTicksBudgeted(Config);
 
-        if (store is null)
+        if (haul < 0)
         {
             return 100;
         }
-
-        int haul = TravelCost.TicksBetween(farm.Position, store.Position);
-        int budgeted = VillageEconomy.FieldHaulTicksBudgeted(Config);
 
         if (haul <= budgeted || budgeted <= 0)
         {
@@ -2865,15 +3055,78 @@ public sealed class SimWorld
                 + "People will spend their days walking to it."
             : null;
 
-        if (standingCrop is null && tooFar is null)
+        string? longHaul = WarningForAFarmFarFromAStore(kind, position);
+
+        if (standingCrop is null && tooFar is null && longHaul is null)
         {
             return PlacementVerdict.Fine;
         }
 
         return PlacementVerdict.Yes(
-            standingCrop is not null && tooFar is not null
-                ? $"{standingCrop} {tooFar}"
-                : standingCrop ?? tooFar!);
+            string.Join(
+                ' ',
+                new[] { standingCrop, longHaul, tooFar }.Where(
+                    static line => !string.IsNullOrEmpty(line))));
+    }
+
+    /// <summary>
+    /// ⭐ A farm far from a store halves its own harvest, and until D194 nothing said so.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The distance warning above measures the wrong walk for a farmhouse.</b> It asks how
+    /// far the building is from the <em>village</em>, which is about people's days; a farm's
+    /// binding walk is to <b>the nearest store that takes food</b>, because that is where every
+    /// armful past the first one goes (`crops-and-orchards.md §3.2a`). Measured, a farm ten
+    /// ticks out brings in six tiles a hand against a well-sited farm's thirteen — <b>the
+    /// single largest legible consequence in the farm, and it happened silently.</b>
+    /// </para>
+    /// <para>
+    /// <b>⭐ AND IT IS THE LEVER THE PLAYER ACTUALLY HAS.</b> Thirteen tiles ten ticks from a
+    /// granary is physically impossible — autumn is 120 ticks and it needs about 230 — so
+    /// *"build a store near the fields"* is not advice, it is the only thing that works.
+    /// </para>
+    /// <para>
+    /// <b>Warned, never refused</b> (D43, D86), and <b>only past the haul the economy budgets
+    /// for</b>, so a farm beside the granary is not nagged — D42's one considered sentence
+    /// rather than an alert the player learns to click past.
+    /// </para>
+    /// </remarks>
+    private string? WarningForAFarmFarFromAStore(BuildingKind kind, GridPos position)
+    {
+        if (kind != BuildingKind.Farmhouse)
+        {
+            return null;
+        }
+
+        int haul = HaulWalkFrom(position);
+        int budgeted = VillageEconomy.FieldHaulTicksBudgeted(Config);
+
+        if (haul < 0)
+        {
+            return "There is no store here that takes food, so every armful of the harvest "
+                + "will be set down where it stands.";
+        }
+
+        if (haul <= budgeted)
+        {
+            return null;
+        }
+
+        int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
+        int share = ReapableShareAt(new Workplace
+        {
+            Id = -1,
+            Kind = JobKind.Farmer,
+            Name = "ghost",
+            Position = position,
+            Capacity = 1,
+        });
+
+        int tiles = derived * share / 100;
+        return $"That is a {haul}-tick walk to the nearest store that takes food. A farmer "
+            + $"there brings in about {(tiles < 1 ? 1 : tiles)} tiles of crop against "
+            + $"{derived} beside a store — build a store near the fields.";
     }
 
     /// <summary>

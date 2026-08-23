@@ -1107,11 +1107,32 @@ public partial class Main : Control
             int ground = world.Zones.WorkGroundTiles(workplace.Id);
             int standing = world.StandingCropTiles(workplace);
 
+            // ⭐⭐ WHAT *THIS* FARM COMMITS, NOT WHAT THE DERIVATION GIVES A WELL-SITED ONE
+            // (D194, `per-site-yield.md §4.2a`). This said *"every hand here can keep 13"* on
+            // every farm in the valley — and for a farm ten ticks from a granary that number is
+            // simply false: it can bring in six, and it says so on the panel now. **A number the
+            // building cannot achieve is worse than no number**, because the player reads it and
+            // then watches the farm miss it every autumn with no explanation offered.
+            int keeps = world.FieldTilesThisFarmCommitsPerHand(workplace);
+            int derived = world.TilesOneWorkerKeeps(JobKind.Farmer);
+
             lines.Add(ground == 0
                 ? "Ground: none. Give it some with the work-ground brush and it will be "
                     + "ploughed."
-                : $"Ground: {ground} tiles, {standing} of them under crop. Every hand here can "
-                    + $"keep {world.TilesOneWorkerKeeps(JobKind.Farmer)}.");
+                : $"Ground: {ground} tiles, {standing} of them under crop. Every hand here "
+                    + $"sows {keeps}.");
+
+            // ⭐ AND WHY IT IS LESS, WHICH IS THE HALF THE PLAYER CAN ACT ON. The walk to the
+            // store is the lever — a granary beside the fields and the same farm commits the
+            // whole field — so the sentence names it rather than leaving the number bare.
+            // Silent on a well-sited farm: one considered sentence, not a nag (D42).
+            if (ground > 0 && keeps < derived)
+            {
+                int haul = world.HaulWalkFor(workplace);
+                lines.Add(
+                    $"That is short of the {derived} a farm beside a store keeps — its harvest "
+                    + $"walks {haul} ticks to the nearest one. Build a store near the fields.");
+            }
 
             // ⭐ AND WHETHER THAT GROUND WAS WORTH GIVING IT (D178). The farm is the one
             // building whose output soil actually moves — a field on rich ground out-yields a

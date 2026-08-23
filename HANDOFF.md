@@ -1,6 +1,6 @@
-# Handoff — bclone: **Phase 3's three landings are built. Apprenticeship and the at-risk line are what remain.**
+# Handoff — bclone: **The farm is unparked. Apprenticeship and the at-risk line are what remain.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D193 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D194 back to D142**, then
 `METHODOLOGY.md`.
 
 > **⛔ WHEN YOU HAND OFF: EDIT THIS FILE, DO NOT REPLACE IT.** The trap list at the bottom is
@@ -12,9 +12,10 @@ Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D193 b
 1. **⭐⭐ D28 IS DISCHARGED** (D190) — the lockstep Joe watched at 4× in Phase 1 is gone, and
    **he confirmed it in play**: the four founders read as distinct people and no longer move as
    pairs. Identical hunger between two adults of one household went **100% → 0%**.
-2. **⛔ THE FARM IS PARKED AND IT IS THE BIGGEST KNOWN-OPEN THING IN THE GAME** — a farm ten
-   ticks from a store sows **5 tiles of 13**. **Four attempts failed and every proposed cause
-   was rejected by measurement.** Read the section below before touching it.
+2. **✅ THE FARM IS UNPARKED (D194)** — the cap was **self-fulfilling**, and the ledger proved it
+   after four hypotheses could not. **⛔ But Joe's thirteen tiles were never available**: thirteen
+   tiles ten ticks from a store needs ~230 ticks of a 120-tick autumn. Read the section below
+   before re-opening it, and **do not propose `farm_store_cap` — it is dead twice over.**
 3. **⚠️ Phase 3 is NOT done**, whatever an earlier draft of D190 said. **Apprenticeship (§5) and
    the at-risk line (§7)** remain, and apprenticeship is the pillar's whole point.
 
@@ -60,7 +61,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **SUITE, FROM A RUN:**
 
 ```
-675 passed, 0 failed, 2 skipped of 677 — about 2m10s (was 18m52s before D179)
+689 passed, 0 failed, 2 skipped of 691 — about 4m30s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -170,41 +171,55 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 
 ---
 
-## ⛔⛔ THE FARM, PARKED — read this before you touch `ReapableShareAt`
+## ✅ THE FARM IS UNPARKED (D194) — and here is what is settled, so nobody re-opens it
 
-**Joe's live complaint, unfixed: a farmer plants 5 tiles of the 13 the derivation gives them.**
-Measured per worker-year: a **well-sited farm produces 1,376 food against a forager's 1,076** —
-farming already wins — but **a farm ten ticks from a store produces 523**, because
-`SimWorld.ReapableShareAt` cuts its field to 40%.
+**The ledger the section below asked for was built, and it answered in one sitting.** Kept as
+`FarmLedgerTests` so the numbers can be **re-taken rather than trusted**.
 
-**⛔ FOUR ATTEMPTS, FOUR CAUSES PROPOSED, EVERY ONE REJECTED BY MEASUREMENT. Do not add a fifth
-by reasoning.**
+**⛔⛔ THE CAP WAS SELF-FULFILLING, AND `ReapableShareAt` IS DIMENSIONALLY WRONG.** It scaled a
+farm's field by `budgeted ÷ haul` — `budgeted` is a **round trip inside the field** (4 ticks),
+`haul` is a **one-way walk to a store** (10). *The ratio is not a share of anything.* Measured,
+one hand, ten years, committed ground posed at each level:
+
+| farm → store | the cap sowed | what it can actually bring in | autumn spent **idle** at the cap |
+|---|---|---|---|
+| 10 ticks | 5 | **6** | **27%** |
+| 16 ticks | 3 | **5** | **45%** |
+| 22 ticks | 2 | **4** | **55%** |
+
+**The cap cut the field, the farmer then had nothing to do, and the idleness read back as proof
+the field had been too big.** After: **72 tiles reaped against 51 at ten ticks, idleness 6%.**
+
+**⛔⛔ AND THE THING TO CARRY FORWARD: THIRTEEN TILES TEN TICKS OUT IS PHYSICALLY IMPOSSIBLE.**
+Autumn is **120 ticks**; thirteen tiles at that distance needs about **230**. Joe's farmer was
+short of **one or two** tiles, not eight. **The lever for thirteen is the walk** — the same
+farmer beside a granary commits the whole field. §4.3's placement warning and the farm's own
+panel now both say so.
+
+**The fix is memory, not a better formula, and "no formula fits" is a finding.** The true ceiling
+depends on the market's drain rate, the painted ground's shape, the granary's fullness and the
+hands that turned up; `season ÷ (reap + walk)` wants a different constant at every distance,
+moving the *wrong way* with distance. **A farm sows what it has already brought in** — a
+high-water mark, per hand, clamped to `FieldTilesOneFarmerKeeps`, re-reckoned when the walk
+changes. It converges on **6, 5 and 4** without being told them.
+
+**⛔ CAUSES NOW DEAD — five proposed, all rejected by measurement. Do not add a sixth by
+reasoning.**
 
 | proposed cause | what killed it |
 |---|---|
 | the granary haul | removing it entirely still left the farm at ~7 tiles |
 | the daily commute | travel is **11%** of a farmhand's ticks |
 | resting outdoors getting cold | farmhands' cold is **zero, always** |
-| the buffer (`farm_store_cap`) | raising it gave 13 tiles and **52% brought in** — the rot came back, and `AFarmsHarvestFallsOffWithDistanceFromItsStore` caught it |
-
-**⭐⭐ THE ONE MEASUREMENT THAT LOOKED AT THE BINDING SEASON, AND WHAT IT FOUND.** In *autumn*, a
-farm ten ticks out spends **33% of its ticks Resting** while a near one spends **0%**. **The
-distant farm is not too busy to reap thirteen tiles — it idles a third of the season it is
-supposedly too busy for, because the cap already cut its field to five.** *The cap is
-self-fulfilling, and the guard that says "distant farms reap fewer tiles" is measuring the cap
-rather than a physical limit.*
-
-**⭐ THE NEXT STEP IS A LEDGER, NOT A HYPOTHESIS.** `HaulTheHarvest` writes its reasoning to the
-audit log — free space, both costs, which store won — so `grep "food from the field"` over
-`src/Bclone.Game/logs/<newest>.log` attributes one distant farmhand's autumn tick by tick to
-named causes. **That replaces guessing.** Nobody has run it.
+| the buffer (`farm_store_cap`) | raising it gave 13 tiles and **52% brought in** — the rot came back |
+| **the buffer, again (D194)** | an **8.7× buffer** moved the ceiling from **6 tiles to 6** at ten ticks and **5 to 5** at sixteen. It still took only **23 of 72 loads** — it fills once and the market cannot keep it drained. **Two independent measurements now.** |
 
 ⚠️ **`crop_yield_per_tile` is NOT the lever** and Joe proposed it: raising it would inflate a
 derived number to paper over a bug and leave well-sited farms at ~2.5× gathering.
 
-**Parked on Joe's call**, with the steading slice (farmhands staying at the farm through the
-working seasons) committed but **unmerged** on `slice/work-from-the-steading` — it is an
-economic no-op that costs ~13% of the harvest, kept for the look, and its cost is unexplained.
+**Still open:** the steading slice (farmhands staying at the farm through the working seasons) is
+committed but **unmerged** on `slice/work-from-the-steading` — an economic no-op that costs ~13%
+of the harvest, kept for the look, and its cost is still unexplained.
 
 **Two directions Joe set, neither scheduled, both in `DESIGN.md §4`:** **gridless** — the largest
 architectural statement anybody has made about this project, and the first question when it is
@@ -265,6 +280,14 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   guarantee and moved the goldens twice later instead of once. **Ask what a DoD item would look
   like if it were satisfied *before* you try to satisfy it.** The fix was to restate the claim in
   a vocabulary that can be true (*nothing anybody DOES changed*), not to weaken the guard.
+- **⭐⭐⭐ AND THE BREAK THAT TURNS UP *NOTHING* IS THE ONE THAT CHANGES THE DESIGN (D194).** Two
+  drafts of the farm's memory had it commit `learned + 1` a year and latch once a tile rotted.
+  **Deleting both turned no guard red** — settled memory and tiles reaped identical at all three
+  distances. The mechanism was redundant because `HarvestOneFarmCanBringIn` multiplies by the
+  hands standing in the field *at that moment*, so **a farm with two hands in spring and one by
+  autumn already over-commits on its own.** *The village probes without being asked.* The probe
+  was **deleted rather than guarded** — a fifth invisible no-op after D56, D177 and D187. **Zero
+  reds is a result, not a formality passed.**
 - **⭐⭐ BREAKING YOUR OWN GUARDS FINDS THE BLIND ONES — DO IT, AND EXPECT A SURPRISE (D181).**
   Nine reds across seven deliberate breaks, and break #2 turned a guard red **for a reason
   unrelated to what it tested**: `LeavingATradeStopsTheClockOnItThatTick` sampled on a year edge,
@@ -276,6 +299,12 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   able adults hold a job on that exact tick.** Any guard that samples "who is working?" at
   `TicksPerYear * n` is sampling that hole. **Step half a season in.** (Winter is the other one:
   D44 unstaffs seasonal trades, so mid-winter is 1 of 4.)
+- **⭐⭐ AND A *FIXTURE* CAN FIGHT THE MECHANISM IT IS TESTING (D194).** Three guards for the
+  farm's memory posed *"a clean autumn"* as **one sown tile** — so the farm brought in one tile,
+  correctly recorded that one tile was what it had managed, and **the guards failed for the
+  feature working.** The memory is a high-water mark, so a posed field *smaller* than the
+  building's own commitment is a **worse** year, not an easier one. **Ask what your pose means to
+  the system, not just what it means to you.**
 - **⭐⭐ A GUARD CAN BE GREEN AND BLIND.** `AFarmBringsInMostOfWhatItSows` reports 93% while the
   played village was at 46%, and it is not wrong — it sites its farm a step from the stores.
   **Unmoved because it does not cover the case** (D157, three times now). Ask what a guard's

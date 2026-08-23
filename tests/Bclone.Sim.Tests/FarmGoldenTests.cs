@@ -157,7 +157,17 @@ public sealed class FarmGoldenTests
     // ⭐ RE-TAKEN FOR A FIVE-DAY THAW (D192).
     //
     //   before the fire got warmer: 11509711031316440761
-    private const ulong SeamGoldenHash = 12485177273367720852UL;
+    //
+    // ⭐⭐ RE-TAKEN BECAUSE THE FARM REMEMBERS WHAT IT BROUGHT IN (D194,
+    // `per-site-yield.md §4.2a`). The sowing cap stopped predicting a distant farm's autumn and
+    // started reading its own best one, so **this village commits different ground and therefore
+    // has a different history**. It is the only village in the suite that plants a farmhouse,
+    // which is why it is the only golden that moves — **the two fifty-year goldens are unmoved,
+    // and that is the check that matters**: a farm's memory leaking into a village with no farm
+    // in it would be a bug, not a re-base.
+    //
+    //   before the farm remembered: 12485177273367720852
+    private const ulong SeamGoldenHash = 3714993309705346931UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -175,8 +185,15 @@ public sealed class FarmGoldenTests
     /// checkable — <c>SkillTests.FiftyYearsOfVillageAndOnlyTheCountersMoved</c> poses a village
     /// with the speed bonus at zero and asserts the pre-skill goldens byte for byte.
     /// </para>
+    /// <para>
+    /// <b>⚠️ AND IT MOVES FOR ANYTHING THAT IS NOT A SKILL, WHICH IS THE OTHER HALF OF ITS JOB.</b>
+    /// D194 gave the farm a memory of what it brought in, so this village commits different ground
+    /// — a real behaviour change, and it belongs in this number as much as in the one above.
+    /// *"Unmoved by anybody getting better"* is a claim about proficiency, not a claim that the
+    /// village never changes.
+    /// </para>
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 13056411884338240746UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 6791173964780676441UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

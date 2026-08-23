@@ -57,10 +57,49 @@ public sealed class CropSystem : ISimSystem
         if (current.Season == Season.Fall)
         {
             Ripen(world, current);
+            RecordWhatEachFarmCommitted(world);
         }
         else if (current.Season == Season.Winter)
         {
+            // ⭐⭐ THE LESSON COMES BEFORE THE ROT, AND THE ORDERING IS THE WHOLE READING
+            // (`per-site-yield.md §4.2a`, D194). What is still standing on a farm's ground at
+            // the turn of winter *is* the answer to "did it bring in what it sowed?" — and the
+            // very next call clears it. Taking the lesson afterwards would ask every farm in
+            // the valley the same question and always get "nothing standing", which reads as
+            // total success and would climb every farm to the derived cap.
+            TakeTheAutumnsLesson(world);
             Rot(world, current);
+        }
+    }
+
+    /// <summary>
+    /// Note what each farm has standing as autumn opens — <b>the year the lesson is about</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ It is the gate as much as the number.</b> A farm held by a met stock limit sows
+    /// nothing and ends autumn with nothing standing, <b>which is indistinguishable from having
+    /// cleared its field</b>. Recording zero here is what makes <i>a year with no crop teaches
+    /// nothing</i> expressible at all — see <see cref="World.Workplace.FieldTilesSown"/>.
+    /// </remarks>
+    private static void RecordWhatEachFarmCommitted(SimWorld world)
+    {
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace farm = world.Workplaces[i];
+            if (farm.Kind == JobKind.Farmer && !farm.IsSite)
+            {
+                farm.FieldTilesSown = world.StandingCropTiles(farm);
+                farm.FieldHandsAtAutumn = farm.WorkerIds.Count < 1 ? 1 : farm.WorkerIds.Count;
+            }
+        }
+    }
+
+    /// <summary>What every farm learned this autumn, taken once, before winter takes the rest.</summary>
+    private static void TakeTheAutumnsLesson(SimWorld world)
+    {
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            world.LearnFromTheAutumn(world.Workplaces[i]);
         }
     }
 

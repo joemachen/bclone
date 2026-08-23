@@ -253,6 +253,25 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.Mode);
             }
 
+            // ⭐⭐ WHAT A FARM HAS LEARNED IT CAN BRING IN (`per-site-yield.md §4.2a`, D194).
+            // It decides how much ground the farm commits every spring, so two runs of one
+            // seed that differ in it are different runs and must hash differently.
+            //
+            // SPARSE, AND SILENT UNTIL A FARM HAS SOWN SOMETHING — the same shape as the queue
+            // rank and the work mode above, and for the same reason: a village with no
+            // farmhouse in it must hash exactly as it did before this existed. That is what
+            // keeps the two fifty-year goldens still while the seam golden moves, and the two
+            // fifty-year villages never place a farmhouse (D162). ⚠️ If they move anyway, the
+            // memory has leaked into a village with no farm in it, which is a bug and not a
+            // re-base.
+            if (workplace.FieldTilesLearned != 0 || workplace.FieldTilesSown != 0)
+            {
+                hash = MixUInt32(hash, (uint)workplace.FieldTilesSown);
+                hash = MixUInt32(hash, (uint)workplace.FieldHandsAtAutumn);
+                hash = MixUInt32(hash, (uint)workplace.FieldTilesLearned);
+                hash = MixUInt32(hash, (uint)(workplace.FieldWalkWhenLearned + 1));
+            }
+
             hash = MixStore(hash, workplace.Store);
         }
 
