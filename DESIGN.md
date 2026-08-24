@@ -318,6 +318,29 @@ without fast-forwarding, and want to keep watching.** It belongs to Phase 3.
    - **⚠️ It also owes the player a sentence.** D167 made the rot line mean *you over-painted* or
      *you lost a farmer*; **distance is a third cause it cannot yet say**, and a rot line the
      player cannot act on is the weather D167 spent a decision removing.
+### Phase 3 — skill and apprenticeship ✅ COMPLETE (2026-08-23). Merged to `main`.
+
+**⭐⭐ §2.1's claim is true now: skill TRANSFERS.** Proficiency accrues and is visible; **mastery
+bites** (half the ticks over an action, rounded up); the founders arrive as a **master, a
+journeyman and two novices** with a personal rhythm drawn at birth, **which discharged D28**; the
+village says **who is about to take a trade with them**; and **a youth beside a master learns
+twice as fast.** §10's anti-vacuity guard is green — masters alive after a century go **3 → 6,
+4 → 8, 8 → 10** against a village that never teaches. **740 passing, 0 failing, 2 skipped of 742.**
+
+> **⚠️ ITS DEFINITION OF DONE IS MET WITH ONE ITEM WAIVED, AND THAT IS RECORDED RATHER THAN
+> QUIETLY TICKED.** METHODOLOGY §3 item 4 is *a manual QA playthrough against a written
+> checklist*; Phase 2 has one (`phase-2-the-village-you-can-play.md`, 45 checks) and **Phase 3
+> does not.** Joe's call, 2026-08-23: *"skip the QA playthrough and merge."*
+>
+> **What stands behind the merge instead**, so a future session can judge the risk rather than
+> guess at it: he **played the build during the phase** and signed off the paint overlay (*"looks
+> great"*), the market (*"feels good"*), the staffing cadence (*"15 feels good"*) and the run as a
+> whole (*"really feels like the bones of a game"*). **The suite is green and every slice was
+> red-checked.** ⛔ **What was NOT walked is the phase end-to-end against a list** — which is
+> exactly the gap D164 and D168 twice refused to tick off on *"the checklist is good"*, because
+> **the document and the walk are different things.** *If a Phase 3 regression ships, this is
+> where it got through.*
+
 4. **Phase 3 — skill and apprenticeship** (§2.1). Proficiency, **personal time-on-task
    (discharges D28)**, the inspector surface, the apprenticeship lever, and the anti-vacuity
    guard that a run with no apprenticeships actually loses something.
@@ -493,7 +516,7 @@ Each phase should ship in a playable, legible state before the next begins.
 
 > Update this section as work proceeds. Keep it honest — it's how we both know where we are.
 
-**Current phase:** **Phase 3 — skill and apprenticeship. ✅ ITS DEFINITION OF DONE IS MET** (D181, D187, D190, D195, D202), on `phase/3-skill-and-apprenticeship`, **unmerged**. **⭐⭐ §2.1's claim is finally true: skill TRANSFERS** — a youth beside a master of the same trade at the same workplace learns twice as fast, nobody is assigned to anybody, and the master pays nothing. §10's anti-vacuity guard is green: masters alive after a century go **3 → 6, 4 → 8, 8 → 10** against a village that never teaches. Proficiency accrues, is hashed and is visible; **mastery bites** (a master takes half the ticks over an action, rounded up); and **the founders arrive as a master, a journeyman and two novices with seeded trades**, each with a personal rhythm drawn at birth. **⭐⭐ D28 IS DISCHARGED** after four weeks open — identical hunger between two adults of one household went **100% → 0%** over the first five years, same tile 91% → 80%, confirmed by Joe in play.
+**Current phase:** **Phase 4 — the tech tree and the town hall** (§2.7), not yet started. **✅ PHASE 3 IS COMPLETE AND MERGED TO `main`** (D181, D187, D190, D195, D202, D203) — ⚠️ **with METHODOLOGY §3's QA-walk item WAIVED on Joe's call, recorded in §4 rather than ticked.** **⭐⭐ §2.1's claim is finally true: skill TRANSFERS** — a youth beside a master of the same trade at the same workplace learns twice as fast, nobody is assigned to anybody, and the master pays nothing. §10's anti-vacuity guard is green: masters alive after a century go **3 → 6, 4 → 8, 8 → 10** against a village that never teaches. Proficiency accrues, is hashed and is visible; **mastery bites** (a master takes half the ticks over an action, rounded up); and **the founders arrive as a master, a journeyman and two novices with seeded trades**, each with a personal rhythm drawn at birth. **⭐⭐ D28 IS DISCHARGED** after four weeks open — identical hunger between two adults of one household went **100% → 0%** over the first five years, same tile 91% → 80%, confirmed by Joe in play.
 
 **✅ APPRENTICESHIP IS IN (D202)** — the pillar's actual point, and the last Definition-of-Done item. ⚠️ **The hole it cannot fill is recorded rather than papered over:** it reaches two or three trades of five, because **woodcutting and building are one-seat trades with nobody to learn from**. That is what D196's library is for.
 
@@ -1399,6 +1422,12 @@ building (D176, `specs/tech-tree.md §7f`). The rest are still notes.
 ## 7. Decisions Log
 
 > **Newest first.** Append-only in the sense that entries are never deleted or rewritten — when a later decision overturns an earlier one, the earlier one is annotated in place and struck through, so the reasoning that was replaced stays readable. Record significant architectural choices here with a one-line rationale so future sessions inherit the thinking.
+
+- **D203 · 2026-08-23 · ⚠️ PHASE 3 MERGED WITH THE QA WALK WAIVED — AND THE WAIVER IS WRITTEN DOWN RATHER THAN TICKED.** Joe: *"skip the QA playthrough and merge."* His call, and it is recorded here and in §4 because **the alternative is a Definition of Done that lies.**
+  - **⛔ WHAT WAS SKIPPED, PRECISELY.** METHODOLOGY §3 item 4 is *a manual QA playthrough against a written checklist*. Phase 2 has one — `phase-2-the-village-you-can-play.md`, 45 checks in the order the game is played — and **Phase 3 has no checklist and no walk.**
+  - **⭐ WHAT STANDS BEHIND THE MERGE INSTEAD**, so a future session can weigh the risk rather than guess: Joe **played the build repeatedly during the phase** and signed off the paint overlay (*"looks great"*), the market (*"feels good"*), the staffing cadence (*"15 feels good"*) and the whole (*"really feels like the bones of a game"*). **740 passing, 0 failing, and every slice red-checked.**
+  - ⛔ **What that is NOT is the phase walked end to end against a list**, which is exactly the distinction **D164 and D168 twice refused to blur** — they declined to tick item 3 on *"the QA checklist is good"* because **the document and the walk are different things and only the second is the item.** *If a Phase 3 regression ships, this entry is where it got through.*
+  - ⚠️ **The unpaid debt, named so it can be paid:** Phase 3 never got a checklist written at all. **Phase 4 should not inherit that** — a phase with a skill system, an at-risk warning and apprenticeship in it is exactly the kind that wants one.
 
 - **D202 · 2026-08-23 · ⭐⭐⭐ APPRENTICESHIP — SKILL FINALLY TRANSFERS, AND PHASE 3's DEFINITION OF DONE IS MET.** §2.1's actual claim: *"a villager is an agent with a growing, **transferable** skill… that skill dies with the person unless an elder apprentices a youth."* Until now **skill was personal and nothing transferred** — a master died, their years died with them, and the village had no way to have done anything about it. `skills-catalog.md §5.1a`.
   - **The rule, in one sentence a player can hold: a youth working beside a master of the same trade, at the same workplace, learns twice as fast.**

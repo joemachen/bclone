@@ -1,6 +1,6 @@
-# Handoff — bclone: **The farm is unparked and the at-risk line is in. Apprenticeship is the last thing.**
+# Handoff — bclone: **Phase 3 is complete and merged. Phase 4 — the tech tree — is next.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D194 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D203 back to D142**, then
 `METHODOLOGY.md`.
 
 > **⛔ WHEN YOU HAND OFF: EDIT THIS FILE, DO NOT REPLACE IT.** The trap list at the bottom is
@@ -16,21 +16,24 @@ Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D194 b
    after four hypotheses could not. **⛔ But Joe's thirteen tiles were never available**: thirteen
    tiles ten ticks from a store needs ~230 ticks of a 120-tick autumn. Read the section below
    before re-opening it, and **do not propose `farm_store_cap` — it is dead twice over.**
-3. **⚠️ Phase 3 is NOT done**, whatever an earlier draft of D190 said — but it is down to **one
-   item: apprenticeship (§5)**, which is the pillar's whole point. The at-risk line landed in
-   D195. **Joe's calls for the apprenticeship slice are already made** — see below.
+3. **✅ PHASE 3 IS COMPLETE AND MERGED** (D202, D203). Skill TRANSFERS now — a youth beside a
+   master of the same trade at the same workplace learns twice as fast. ⚠️ **Its QA walk was
+   WAIVED on Joe's call, not performed** (D203): if a Phase 3 regression ships, that is where it
+   got through. **Phase 4 — the tech tree and the town hall — is next, and D196 has Joe's library
+   model waiting for it.**
 
 ---
 
 ## Where things are
 
-**Phase 2 is merged; Phase 3 is in progress on `phase/3-skill-and-apprenticeship`.** Phase 2 went
-in via [PR #4](https://github.com/joemachen/bclone/pull/4) — 248 commits, all five
-Definition-of-Done items met, the last being Joe's QA walk. Per-site yield (D178), the cost-field
-rewrite (D179) and the ground-legibility slice (D180) are all fast-forwarded onto `main`.
+**Phase 3 is merged to `main`.** Its Definition of Done is met **with one item waived and written
+down rather than ticked** (D203): METHODOLOGY §3's manual QA walk. Joe played the build
+repeatedly through the phase and signed off the paint overlay, the market, the staffing cadence
+and the whole — **but the phase was never walked end to end against a list, and Phase 3 has no
+checklist at all.** *That is an unpaid debt Phase 4 should not inherit.*
 
-**⭐⭐ PHASE 3'S THREE LANDINGS ARE ALL BUILT** (`skills-catalog.md §11`), on
-`phase/3-skill-and-apprenticeship`, **unmerged**:
+**⭐⭐ WHAT PHASE 3 LANDED, in the order it landed:**
+
 1. ✅ **The proficiency substrate** (D181, D183). `Villager.Skills` accrues time on the task,
    hashed sparsely in id order; six skills are **rows in config, not enum values**; the panel
    says *"Sixteen years as a farmer"*; **the mastery line fires** in the village log.
@@ -50,29 +53,17 @@ rewrite (D179) and the ground-legibility slice (D180) are all fast-forwarded ont
    village log **once on the edge** and by the villager's panel **while it is true**. Both halves
    of the condition are derived — `LifeStage.Elder`, and *the only living master*.
 
-**⛔ WHAT IS LEFT — ONE ITEM, AND IT IS THE PILLAR'S POINT:**
-- **Apprenticeship (§5).** §2.1 is *"that skill dies with the person unless an elder apprentices
-  a youth"* — **so far skill is personal and nothing transfers.** §10's anti-vacuity guard is
-  written for it and **cannot be written without it**: *a village that never teaches produces
-  measurably less than one that does.*
-
-**⭐⭐ AND THE PROBE FOR IT IS ALREADY RUN, WITH JOE'S CALLS MADE (2026-08-23).** Three seeds, a
-century each:
-- **51–59% of learner-ticks are already spent beside a teacher**, so automatic apprenticeship
-  will **not** be decoration — the surface is there.
-- **15–19 villagers reach mastery per century; 11–16 masters die.** Real loss to prevent.
-- ⛔ **But it only reaches 2–3 trades of 5.** Forager and marketer always pair, forester
-  sometimes; **woodcutting and building never do**, because they are one-seat trades and there is
-  never a second person to learn from. **The trades most likely to die with their last holder are
-  exactly the ones the mechanism cannot reach** — which is why §5.3 makes the player's lever
-  *staffing*, and why the at-risk line shipped first. *They are two halves of one loop.*
-
-**Joe's three calls, so the next session does not re-ask them:**
-1. **Teaching is FREE** — the master gives up nothing. D183's *give, never take*, one system over.
-   ⚠️ **Consequence he accepted: §5.3's policy dial then has nothing to trade off**, so —
-2. **There is NO dial.** Automatic only: elders teach youths wherever they already share a trade.
-   No village-wide slider, no per-workplace toggle. The player's lever is staffing, which exists.
-3. **The at-risk line first, apprenticeship second** — done in that order.
+5. ✅ **APPRENTICESHIP** (D202) — §2.1's actual claim. **A youth beside a master of the same
+   trade at the same workplace learns twice as fast.** Nobody is assigned to anybody; the master
+   pays nothing; there is no dial. §10's anti-vacuity guard is green — **masters alive after a
+   century go 3 → 6, 4 → 8, 8 → 10** against a village that never teaches.
+   - ⛔ **IT REACHES ONLY 2–3 TRADES OF 5, AND THAT IS RECORDED RATHER THAN PAPERED OVER.**
+     Forager and marketer always pair, forester sometimes; **woodcutting and building never do**,
+     because they are one-seat trades with nobody to learn from. **The trades most likely to die
+     with their last holder are exactly the ones apprenticeship cannot reach** — which is what
+     **D196's library** is for, and why that answer is worth more than it looked.
+   - ⚠️ **200% was too far**: seed 42 ends the century with **zero food**. A hundred leaves it at
+     1,485 against 1,513 with the feature off. *The width is measured, not picked.*
 
 ⚠️ **The phase PR is #4, not #3.** Number 3 went to the closed screenshot-hook PR D160 rescued,
 and every document in the repo said #3 for a day before anyone checked.
@@ -84,7 +75,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **SUITE, FROM A RUN:**
 
 ```
-698 passed, 0 failed, 2 skipped of 700 — about 2m20s (was 18m52s before D179)
+740 passed, 0 failed, 2 skipped of 742 — about 2m30s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -192,7 +183,33 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
      the probe showed the two are one loop — the warning is what tells the player to staff the
      second hand that makes teaching possible at all. **Joe's three calls for the slice are made:
      teaching is free, there is no policy dial, automatic only.** See "Where things are" above.
-5. **Phase 4 — the tech tree** (§2.7), plus the **town hall** (D176).
+5. 🔨 **PHASE 4 — THE TECH TREE (§2.7) AND THE TOWN HALL (D176). THIS IS WHAT IS NEXT.**
+   - **⭐⭐ JOE'S LIBRARY MODEL IS ALREADY RECORDED AND IT IS CONCRETE (D196).** A master
+     woodcutter works out *"splitting lumber in a way that gives more cords — +15% firewood per
+     log, +5% mastery"*; **the technique enters the library's records when he reaches mastery**;
+     when he dies **his proficiency dies with him** but the technique does not, and **the next
+     woodcutter spends idle time in the library learning it.** Where a trade has more than one
+     worker the master also passes it to his apprentice directly.
+   - **⭐ IT LANDS EXACTLY ON D176's SPLIT WITHOUT HAVING BEEN ASKED TO**, which is the strongest
+     sign that split was right: **technique** is the village's and writable, **proficiency** is
+     one person's and never writable. **The anti-ratchet holds** — `tech-tree.md §3a`'s *"a record
+     preserves the method, not the proficiency"* is what stops §2.3's dead late game.
+   - ⚠️ **The one part to measure before it ships:** a technique granting *"+5% mastery gain"* is
+     **a soft ratchet on proficiency itself**, one level up. Bounded and probably fine, but it is
+     the only piece of the model that touches the rule rather than sitting beside it.
+   - **⭐ AND IT IS THE ANSWER TO APPRENTICESHIP'S HOLE**: one-seat trades have nobody to learn
+     from, so the library is what carries their knowledge **across a gap in people** where
+     apprenticeship carries it **between** people.
+   - ⛔ **The list of techniques is deliberately NOT invented yet** (Joe: *"we don't have to come
+     up with the full list… eventually they will all have a number of them"*) — `tech-tree.md
+     §12`'s refusal of false precision.
+   - ⚠️ **WRITE PHASE 4 A QA CHECKLIST.** Phase 3 shipped without one and its walk was waived
+     (D203); **that debt should not compound.**
+6. **Also on the board, unscheduled**, all recorded with Joe's rulings: **nomads and the
+   dead-village revival** (§5, and it needs **building decay**, which reopens D65's *"repair after
+   damage, no decay on a timer"*); **house upgrades and the 60–80 firewood target** (§5 — ⚠️ a
+   6–8× change to a derived burn, **not a dial**); **foods with different nutritional values**;
+   and the **steading slice**, still unmerged on `slice/work-from-the-steading`.
 
 ---
 
