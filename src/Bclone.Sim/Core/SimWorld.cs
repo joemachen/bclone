@@ -1192,6 +1192,76 @@ public sealed class SimWorld
         return HaulWalkFrom(farm.Position);
     }
 
+    /// <summary>
+    /// ⭐⭐ How many homes a market on this tile would be <b>the nearest food store for</b> — its
+    /// service area, stated truthfully (D201, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe asked to see the market's service radius before placing it.</b> ⛔ <b>There is no
+    /// radius, and drawing one would be drawing a lie</b> — a marketer picks the cheapest errand
+    /// from wherever they are standing (§14.2) and households fetch from whatever store is
+    /// nearest (§3), so nothing in the model refuses a distance. <b>Inventing a ring would also
+    /// rebuild the catchment fence D120 deleted</b>, which is the one thing this project has
+    /// already paid to take out.
+    /// </para>
+    /// <para>
+    /// <b>⭐ So the honest answer is a count rather than a circle</b>, and it is exactly what
+    /// makes a market worth having: *the homes for which this would be the closest place to get
+    /// food.* Those are the households whose walk it shortens. **It is not circular** — it
+    /// depends on where the granary and every other store already are, which is the point Joe
+    /// made about positioning: a market beside the granary serves nobody, because the granary was
+    /// already nearer.
+    /// </para>
+    /// <para>
+    /// <b>Strictly nearer</b>, so a tie goes to the store that already exists — a market that
+    /// merely matches the granary's walk has not shortened anybody's errand.
+    /// </para>
+    /// <para>
+    /// <b>Occupied homes only</b>, since a market's job is feeding families rather than
+    /// buildings — the same live-count rule <c>VillageEconomy.MarketStockWanted</c>'s caller uses.
+    /// </para>
+    /// </remarks>
+    public int HomesAMarketHereWouldBeNearestFor(GridPos position)
+    {
+        int served = 0;
+
+        for (int i = 0; i < Households.Count; i++)
+        {
+            Household household = Households[i];
+            if (household.HomePosition is not GridPos home || LivingMembersOf(household) == 0)
+            {
+                continue;
+            }
+
+            int here = TravelCost.Cost(home, position);
+            if (here == TravelCostField.Unreachable)
+            {
+                continue;
+            }
+
+            bool nearest = true;
+            for (int s = 0; s < StoreBuildings.Count && nearest; s++)
+            {
+                StoreBuilding store = StoreBuildings[s];
+                if (!store.CanEverHold(Goods.Food))
+                {
+                    continue;
+                }
+
+                int theirs = TravelCost.Cost(home, store.Position);
+                nearest = theirs == TravelCostField.Unreachable || here < theirs;
+            }
+
+            if (nearest)
+            {
+                served++;
+            }
+        }
+
+        return served;
+    }
+
     /// <summary>The walk from a tile to the nearest store that takes food, or -1.</summary>
     public int HaulWalkFrom(GridPos position)
     {

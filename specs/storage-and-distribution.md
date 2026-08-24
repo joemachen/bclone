@@ -327,6 +327,28 @@ one long marketer trip into many short household fetches. **The building finally
 be somewhere**, which is the same lesson D194 landed on the farm: *put the granary near the
 fields, and the market near the homes.*
 
+#### ⭐⭐ And the player can see what a market here would serve (D201)
+
+> Joe: *"the market should have a radius that is showing when placing it that demonstrates the
+> radius the marketer will go to fetch/drop off/restock… its service area. Before placing."*
+
+**⛔ THERE IS NO RADIUS, AND DRAWING ONE WOULD BE DRAWING A LIE.** A marketer picks the cheapest
+errand from wherever they are standing (§14.2) and households fetch from whatever store is
+nearest (§3) — **nothing in the model refuses a distance.** A ring would also rebuild the
+catchment fence **D120 deleted**, which is the one thing this project has already paid to remove.
+
+**⭐ The truthful answer is a count: the homes this would be the CLOSEST food store for** — exactly
+the set whose walk it shortens. **It is not circular**, because it depends on where the granary
+and every other store already are, and *that is Joe's own point about positioning made visible*:
+a market beside the granary reads **"0 homes"**, because the granary was already nearer.
+
+- **Strictly nearer**, so a tie goes to the store that already exists — matching the granary's
+  walk has not shortened anybody's errand.
+- **Occupied homes only** — a market sited to serve families that no longer exist is sited on a
+  ghost.
+- **Shown at placement, and the homes are ringed on the map.** The number says *how many*; the
+  rings say *which way to move it*, which is the difference between a stat and a decision.
+
 #### ⛔ And storage is separate from distribution (D199)
 
 > Joe: *"only the marketer moves items to the market. Ordinary haulers dump in generic storage
