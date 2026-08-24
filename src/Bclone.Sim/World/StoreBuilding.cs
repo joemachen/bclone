@@ -205,6 +205,39 @@ public sealed class StoreBuilding
     /// </remarks>
     public bool CanEverHold(Goods goods) => KindAccepts(goods);
 
+    /// <summary>
+    /// Whether this building is somewhere the village <b>keeps</b> things, as opposed to
+    /// somewhere it <b>hands them out</b> (D199).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe's distinction, in his words:</b> *"I want to separate the actual storage buildings
+    /// (storage pile, granary, shed, warehouse, etc) from the market (distribution building)."*
+    /// The market is where goods are put **near the people who need them**; everywhere else is
+    /// where the village's production is **kept**.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT EXISTS BECAUSE THE MARKET WAS QUIETLY BECOMING A SECOND GRANARY.</b>
+    /// <c>StoreForTheLoad</c> sends a producer's load to the nearest store of the right kind and
+    /// then, if that is full, to <em>anything that accepts it</em> — and the market accepts food
+    /// and firewood. Measured over thirty years, it sat **600 above** what the village's homes
+    /// need, none of it carried there on purpose. That is exactly what
+    /// <c>market_stock_per_household</c>'s own config comment says must not happen: *"a market is
+    /// a short trip, not a second granary."*
+    /// </para>
+    /// <para>
+    /// <b>⭐ It does not stop a MARKETER putting things there</b>, which is the whole of the
+    /// market's job — including household overflow, because §14.3's *"in"* direction is carried
+    /// by a marketer too. *A trader may stock it and empty a family's larder into it; a forager
+    /// coming home with berries may not.*
+    /// </para>
+    /// <para>
+    /// <b>Expressed as a property of the building rather than a list at each call site</b>, so a
+    /// warehouse — Joe names one — is storage the day it exists, with nothing to remember.
+    /// </para>
+    /// </remarks>
+    public bool IsStorage => Kind != StoreKind.Market;
+
     private bool KindAccepts(Goods goods) => Kind switch
     {
         StoreKind.Granary => goods == Goods.Food,

@@ -270,6 +270,77 @@ public sealed class MarketRestockTests
         Assert.True(shuttles < 50, $"A marketer shuttled on the spot {shuttles} times.");
     }
 
+    /// <summary>
+    /// ⛔⛔ The market is a distribution building, not a dumping ground (D199, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe:</b> *"I want to separate the actual storage buildings (storage pile, granary,
+    /// shed, warehouse, etc) from the market (distribution building)."* Everything in the market
+    /// should have been carried there **on purpose**, by a trader.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT WAS NOT.</b> <c>StoreForTheLoad</c>'s fallbacks ask *"what will take this?"*
+    /// rather than naming kinds, and the market accepts food and firewood — so a full granary
+    /// made it the overflow store. **Measured before this fix: 600 above what the village's homes
+    /// need.** That is the finding <c>MarketRestockTests</c> recorded and declined to fix at the
+    /// time; this is the fix.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Asserted as "the stock stays near what the village wants", not "no producer ever
+    /// deposits"</b>, because the second is a statement about a code path and this is a statement
+    /// about the building. A rule that holds only where somebody remembered to check it is the
+    /// shape D142 and D148 both record.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(12345UL)]
+    [InlineData(2UL)]
+    [InlineData(42UL)]
+    public void NobodyButATraderPutsAnythingInTheMarket(ulong seed)
+    {
+        SimConfig config = Config with { Seed = seed };
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        int worstOverfill = 0;
+        int atHomes = 0;
+
+        for (int i = 0; i < config.TicksPerYear * 30; i++)
+        {
+            loop.StepOnce();
+
+            int homes = world.Households.Count(h => world.LivingMembersOf(h) > 0);
+            int wanted = VillageEconomy.MarketStockWanted(config, homes);
+
+            foreach (Goods goods in new[] { Goods.Food, Goods.Firewood })
+            {
+                int over = TheMarket(world).Store[goods] - wanted;
+                if (over > worstOverfill)
+                {
+                    worstOverfill = over;
+                    atHomes = homes;
+                }
+            }
+        }
+
+        _output.WriteLine(
+            $"seed {seed}: worst the market ever held above the village's own need was "
+            + $"{worstOverfill} (at {atHomes} homes; the building could hold "
+            + $"{TheMarket(world).Store.Capacity})");
+
+        // ⚠️ SLACK OF ONE ARMFUL PLUS ONE HOUSEHOLD'S SHARE. The restock leg tops up in whole
+        // loads (D165), and a trader emptying a dead family's larder into the market is
+        // deliberate and correct (§14.3) — so the bar is "not a dumping ground", not "exact".
+        int slack = config.CarryCapacity + config.MarketStockPerHousehold;
+        Assert.True(
+            worstOverfill <= slack,
+            $"The market held {worstOverfill} above what {atHomes} homes need, which is more than "
+            + $"the {slack} of rounding and household overflow this allows. It is being used as "
+            + "the overflow store again — storage buildings keep things, the market hands them "
+            + "out (D199).");
+    }
+
     /// <summary>⛔ Nothing leaves the world across the new leg.</summary>
     [Fact]
     public void GoodsAreConservedAcrossTheNewLeg()

@@ -327,6 +327,26 @@ one long marketer trip into many short household fetches. **The building finally
 be somewhere**, which is the same lesson D194 landed on the farm: *put the granary near the
 fields, and the market near the homes.*
 
+#### ⛔ And storage is separate from distribution (D199)
+
+> Joe: *"only the marketer moves items to the market. Ordinary haulers dump in generic storage
+> (stockpile, shed, warehouse, etc)… I just don't want it to be a dumping ground — I want to
+> separate the actual storage buildings from the market (distribution building)."*
+
+**`StoreForTheLoad`'s kind-blind fallback was making the market the overflow store.** A producer
+takes their load to the nearest store of the right kind and, failing that, to *anything that will
+take it* — and the market takes food and firewood. Measured over thirty years it sat **600 above**
+what the village's homes need, **none of it carried there on purpose**. That is the very thing
+`market_stock_per_household`'s own config comment forbids.
+
+**`StoreBuilding.IsStorage` names the distinction on the building** — everything but the market —
+so a warehouse is storage the day it exists. **A marketer is unaffected**, which is what keeps
+household overflow arriving there: §14.3's *"in"* direction is a trader's leg too. *The rule is
+about who is carrying, not about what is carried.*
+
+**Measured after: the worst overfill falls from 600 to 36–40**, which is the household overflow
+that belongs there.
+
 #### What must still hold
 
 - **⛔ §14.4 is unchanged and is the acceptance test**: switch the market off and the village

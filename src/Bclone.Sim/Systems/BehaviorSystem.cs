@@ -542,10 +542,25 @@ public sealed class BehaviorSystem : ISimSystem
         // FirstOfKind survives as the arm BELOW, which is the case D48 wrote it for — the
         // only granary is across the water, and somebody holding an armful must still be
         // given somewhere to walk rather than standing still with goods nothing can spend.
+        // ⛔⛔ AND NEVER THE MARKET, WHICH IS A DISTRIBUTION BUILDING (D199, Joe: *"I want to
+        // separate the actual storage buildings — storage pile, granary, shed, warehouse — from
+        // the market"*). The two fallbacks here ask *"what will take this?"* rather than naming
+        // kinds — deliberately, so a new store needs telling nothing — and the market accepts
+        // food and firewood. **So a full granary quietly turned the market into the overflow
+        // store**: measured over thirty years it sat 600 above what the village's homes need,
+        // with none of it carried there on purpose. That is exactly what
+        // `market_stock_per_household`'s own comment forbids — *"a short trip, not a second
+        // granary."*
+        //
+        // ⭐ A MARKETER IS UNAFFECTED, because the branch at the top of this method returns
+        // before here: a trader may still stock the market and still empty a dead family's
+        // larder into it. **The rule is about who is carrying, not about what is carried** —
+        // which is what lets household overflow keep arriving there (§14.3's "in" direction is
+        // a marketer's leg too).
         StoreBuilding? proper =
             world.NearestStore(villager.Position, wanted, static store => !store.Store.IsFull)
             ?? world.NearestStoreAccepting(
-                villager.Position, load, static store => !store.Store.IsFull)
+                villager.Position, load, static store => store.IsStorage && !store.Store.IsFull)
             ?? FirstOfKind(world, wanted);
 
         if (proper is not null)
@@ -565,7 +580,7 @@ public sealed class BehaviorSystem : ISimSystem
         // nearest place that would take this good if it could, and the load stays in their
         // arms until there is room, which is the same thing a person would do.
         StoreBuilding? anywhere =
-            world.NearestStoreAccepting(villager.Position, load, static _ => true);
+            world.NearestStoreAccepting(villager.Position, load, static store => store.IsStorage);
 
         // The cart even where no route reaches it, as before — but only if it would take
         // this good. It stopped taking logs (D90 step 4), and a fallback that ignores

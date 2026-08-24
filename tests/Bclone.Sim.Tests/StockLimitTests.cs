@@ -302,7 +302,9 @@ public sealed class StockLimitTests
     // reach, loud about what they do* (D157, D162) — and this one they all reach.
     //
     //   before the market was stocked: 11057161405161342300
-    private const ulong FixtureFiftyYearHash = 5407508656652631583UL;
+    //
+    //   before the market stopped being a dumping ground (D199): 5407508656652631583
+    private const ulong FixtureFiftyYearHash = 10819177739606102446UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -338,7 +340,8 @@ public sealed class StockLimitTests
     //   before the fire got warmer: fixture 18174430941982640321,
     //                               shipped 7791088175599810974
     //   before the market was stocked: 15960035659211257615
-    private const ulong ShippedFiftyYearHash = 14089077723027009078UL;
+    //   before the market stopped being a dumping ground (D199): 14089077723027009078
+    private const ulong ShippedFiftyYearHash = 6025855613246143038UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
