@@ -73,9 +73,9 @@ and every document in the repo said #3 for a day before anyone checked.
 `028f4fc`, `phase/2-wood-fuel-and-tools` `9b9f410`, `slice/per-site-yield` `b2cb718`,
 `slice/faster-cost-field` `daec8fd`.
 
-⚠️ **`main` is 26 commits ahead of `origin/main` and NOTHING HAS BEEN PUSHED.** Phase 3 was
-merged locally; Phase 2 went up as [PR #4](https://github.com/joemachen/bclone/pull/4), so if
-the same shape is wanted for Phase 3 it is a push and a PR away.
+✅ **Phase 3 is merged AND PUSHED** — `main` is at `de5bfa3` on `origin`, nothing outstanding.
+⚠️ **It went straight to `main` rather than through a PR**, on Joe's call (*"push"*), where Phase
+2 went up as [PR #4](https://github.com/joemachen/bclone/pull/4). **There is no PR #5.**
 
 **SUITE, FROM A RUN:**
 
