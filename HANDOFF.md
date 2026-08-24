@@ -71,11 +71,20 @@ and every document in the repo said #3 for a day before anyone checked.
 **Merged slice branches are deleted on Joe's standing preference**, each after checking it had
 **0 commits not on `main`**. Tips if ever wanted back: `phase/3-skill-and-apprenticeship`
 `028f4fc`, `phase/2-wood-fuel-and-tools` `9b9f410`, `slice/per-site-yield` `b2cb718`,
-`slice/faster-cost-field` `daec8fd`.
+`slice/faster-cost-field` `daec8fd`, `slice/the-market-that-never-gets-staffed` `48ab7e5`.
 
-✅ **Phase 3 is merged AND PUSHED** — `main` is at `de5bfa3` on `origin`, nothing outstanding.
+⛔ **ONE BRANCH IS GENUINELY UNMERGED: `slice/work-from-the-steading` (`e12b20f`, 1 commit).**
+Farmhands staying at the farm through the working seasons — **an economic no-op that costs ~13%
+of the harvest**, kept for the look, and its cost is still unexplained. ⚠️ **It predates D194's
+rewrite of the sowing cap, so it will not merge cleanly and its measurements are stale.**
+
+✅ **Phase 3 is merged AND PUSHED** — `main` and `origin/main` are level.
 ⚠️ **It went straight to `main` rather than through a PR**, on Joe's call (*"push"*), where Phase
-2 went up as [PR #4](https://github.com/joemachen/bclone/pull/4). **There is no PR #5.**
+2 went up as [PR #4](https://github.com/joemachen/bclone/pull/4). **There is no PR #5** — do not
+go looking for one.
+
+⚠️ **Do not write a commit hash into this file for anything that keeps moving.** The line above
+named one and was stale within the minute.
 
 **SUITE, FROM A RUN:**
 
@@ -103,91 +112,18 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
 
-1. ✅ Phase 2 merged, and the branch deleted (it was fully merged; tip was `9b9f410`).
-2. ✅ **`specs/skills-catalog.md` WRITTEN** (D173–D177), docs-only on `main`. **Nothing in it is
-   built** and its status line says so. What to know before touching Phase 3:
-   - **⭐ §3.2 (D174): today's behaviour is the NOVICE FLOOR.** **Nobody is ever worse than
-     today**, mastery is headroom above. **The derivation is a survival floor (§2.2) and the
-     novice is that floor**, so no derived number moves.
-   - **⭐ Mastery is twenty years on the task**, narrated in the village log when it happens —
-     Joe asked for that line by name, and it is the first thing here the player will feel.
-   - **⭐ §3.2c + §3.5 (D175): the founders arrive as a MIX OF TIERS, and every villager gets a
-     SEEDED RHYTHM at birth.** Together they **close D28 at the opening** instead of a century
-     later, and they make the four founders people rather than units.
-   - **⛔ THE TRAP IN IT:** §3.2 says the *floor* does not move; **it does not say the founding
-     does not move.** A party with a master in it starts **above** the floor, so `cold-start.md`
-     is re-measured and the goldens move once. **The byte-identical guard belongs to a *posed
-     all-novice village*** — a guard aimed at the real opening will fail, and the temptation will
-     be to weaken it rather than pose it properly.
-   - **⚠️ Unmeasured**: does a master gatherer make the opening trivial? Probe first.
-   - **✅ §5.4 (D176): WHAT CAN ACTUALLY BE LOST.** *Mastery* was one word doing two jobs. Split
-     into **proficiency** (one person's years — dies with them, always, never writable),
-     **technique** (the village's, re-locks exactly as `tech-tree.md` already said) and **a
-     record of achievement** (permanent, **grants nothing**), the question dissolves.
-     **Mastery-the-tier is not a node and cannot be taken from the village.**
-   - **✅ MASTERY BITES IN PHASE 3, GATED BY NOTHING (D177).** A later node may raise the ceiling
-     further; none permits it. **That is what keeps Phase 3 from shipping D56's shape** — a
-     system that accrues, is visible and changes nothing.
-   - **⭐ PHASE 3 LANDS IN THREE PIECES AND ONLY THE FIRST IS A NO-OP** (§11): the **substrate**
-     (goldens unmoved), then **mastery biting** (moves them), then **the mixed founding and the
-     seeded rhythm together** (moves them once more). *Landing them apart is what makes a
-     regression attributable.*
-   - **✅ Milestones are LOG LINES in Phase 3** (D177) and gain their collections home in the
-     town hall in Phase 4. **There is no milestones panel.**
-   - **§6 is a contract** with `tech-tree.md`, whose header now points back at it, and §6.6–6.7
-     are guarantees Phase 4 may rely on: **no record ever restores proficiency**, and **no
-     knowledge state may gate mastery**.
-   - **⚠️ What is left in §12 is tuning, not design**: the width between novice and master, the
-     founding party's composition, the tier names, and whether skill scales yield as well as
-     duration. **Every one wants a probe before an implementation.**
-3. ✅ **Per-site yield — DONE and merged** (D58, D178; `specs/per-site-yield.md`).
-   - **⛔ Half of it had already shipped under other names, which is why it was smaller than
-     §4 claimed.** The 7-tile bound stopped being a fence in **D120**; gathering has had per-site
-     yield since **D112**. What was missing was **the farm**, and D58's second half — *distant
-     sites pay better*, which nothing rewarded.
-   - **Soil is regional now** (value noise, lattice 8) **and the farm reads it.** The sowing cap
-     asks each farm's own haul. A farm ten ticks out went **46% → 96% brought in**, and still
-     reaps **59 tiles against a near farm's 144** — the rot is gone *and* distance still costs.
-   - **⛔ `crop_yield_per_tile` and `farm_store_cap` are untouched and stay locked.** Soil is a
-     multiplier around `ReferenceSoil`, so **average ground yields exactly what it always did** —
-     the locked 67 now means *the yield on average ground*.
-   - **⚠️ The player can see the ground** — the **Ground: off** button on the control bar. Without
-     it the whole slice is an invisible multiplier (§1.1, D67).
-4. 🔨 **Phase 3 — skill and apprenticeship** (§2.1), the real answer to the mid-game gap (D161).
-   **Landing 1 is built** (D181). Its success test is unchanged and unmet: *play years 1–16 at
-   normal speed, without fast-forwarding, and want to keep watching.* What a new session needs:
-   - **⛔ THE SPEC'S OWN DoD CONTAINED AN IMPOSSIBLE GUARD AND IT HAS BEEN CORRECTED IN PLACE.**
-     §11.2.1 required landing 1 to be a *"provable no-op: goldens unmoved"*. **The goldens are
-     full state hashes and proficiency is hashed state that grows from tick one — mutually
-     exclusive.** The spec had reasoned by analogy from `crops-and-orchards.md`, where the map
-     golden genuinely held because *the generator never produces the new terrain values*.
-     **`StateHash.ComputeIgnoringSkills` is what shipped instead**, and it is byte-identical to
-     all three goldens' pre-slice values. ⭐ **In landing 2 it must MOVE** — that is the
-     anti-vacuity guard for mastery actually biting.
-   - **⭐ A tick counts while somebody HOLDS the trade, not only while mid-action** (§3.6). The
-     tight reading is tempting and §3.3b's arithmetic rules it out, *and* it would make a master
-     accrue more slowly the better they got once landing 2 shortens the action.
-   - **⭐⭐ SKILL GIVES AND NEVER TAKES (D183, Joe: *"let's give to the player, not punish or
-     decay"*).** Decay was built, measured and deleted inside one phase — it took **37% of
-     everything one forager earned**, so she held foraging longer than mastery requires and
-     never mastered it, which is the trap §3.4 itself forbids. **§3.4's premise — *"a
-     fifty-year-old who did six jobs is a master of six"* — is arithmetically impossible**, and
-     that is what licensed deleting it. ⚠️ **Two wrong causes were published before the right
-     one** (D182): a winter *headcount* read as *availability*, and a derivation that measured
-     *demand*. **A tick out on the job is worth 1.5 of a tick waiting for one**, and the walk
-     counts as work. **Ages at mastery: 34–55, median 39** — §3.3b's promise, untuned.
-   - **⚠️ The reshuffle leaves the whole village jobless for exactly one tick** (Day 1, Spring).
-     Harmless at 0.02%, but it is why landing 1's guards sample mid-season — see the trap list.
-   - **⚠️ THE SIM CAN ONLY EXPRESS TWO WORKING SPEEDS** (D187), because `sow_ticks` and
-     `reap_ticks` are 3 and `cut_ticks`/`split_ticks` are 4. **Four tier names sit over two
-     behaviours** — an apprentice works exactly as fast as a novice, and a journeyman past the
-     step exactly as fast as a master. Joe accepted this knowingly. It only becomes four if the
-     durations grow.
-   - **⭐ WHAT TO DO NEXT: apprenticeship (§5), and nothing else is outstanding.** The at-risk
-     line (§7, DoD item 7) landed in **D195**, and the order was reversed on Joe's call because
-     the probe showed the two are one loop — the warning is what tells the player to staff the
-     second hand that makes teaching possible at all. **Joe's three calls for the slice are made:
-     teaching is free, there is no policy dial, automatic only.** See "Where things are" above.
+1. ✅ **Phases 0–3 are all merged to `main`.** Phase 2 went up as
+   [PR #4](https://github.com/joemachen/bclone/pull/4); **Phase 3 went straight to `main`
+   (D203), so there is no PR #5.** Branches are deleted after checking each had 0 commits not on
+   `main` — tips recorded above.
+2. ✅ **`specs/skills-catalog.md` IS BUILT, and its status line says so** (D181–D202). Read it
+   before touching skills — but **read it as a record, not a plan.** Its §12 still holds the
+   tuning questions nobody has answered.
+3. ✅ **`specs/per-site-yield.md` §4.2a and §4.3** (D194) — the farm remembers what it brought in.
+   **Read the farm section below before reopening any of it.**
+4. ✅ **`specs/storage-and-distribution.md` §14.8–§14.9** (D197, D199, D201) — the marketer stocks
+   the market, storage buildings are separate from it, and its service area is a **count, not a
+   ring**.
 5. 🔨 **PHASE 4 — THE TECH TREE (§2.7) AND THE TOWN HALL (D176). THIS IS WHAT IS NEXT.**
    - **⭐⭐ JOE'S LIBRARY MODEL IS ALREADY RECORDED AND IT IS CONCRETE (D196).** A master
      woodcutter works out *"splitting lumber in a way that gives more cords — +15% firewood per
@@ -315,6 +251,46 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Traps, in the order they will cost you
 
+- **⛔⛔⛔ `git checkout -- <file>` DESTROYS UNCOMMITTED WORK AND THERE IS NO UNDO — I DID IT TO
+  MYSELF (D194).** Mid-slice, wanting to revert *one deliberate break* in `SimWorld.cs`, I ran
+  `git checkout --` on it and **reverted the entire slice's uncommitted implementation.** A
+  backup taken minutes earlier saved it. Later in the same session I deleted two untracked test
+  files with `rm` while splitting a commit, **had no backup of those**, and had to rewrite both
+  from scratch.
+  - **The rule: before reverting or deleting anything you have not committed, copy it to the
+    scratchpad first — every file, not just the ones you think are involved.** A deliberate break
+    for a red check is exactly when this bites, because you are *trying* to throw work away and
+    it is easy to throw away more than you meant.
+  - **⭐ And prefer `perl -0777 -pi -e` to revert a break**, since it undoes precisely what it
+    did. `git checkout` cannot tell your break from your feature.
+- **⛔⛔ `dotnet test --filter FullyQualifiedName~Foo` MATCHES THE CLASS NAME, NOT THE FILE (D198).**
+  Breaking the harvest brush's mode filter appeared to turn **nothing** red, and I nearly recorded
+  a coverage hole that does not exist — the guard lives in class `HarvestBrushModeTests` **inside
+  `SeamsTests.cs`**, and `~SeamsTests` never ran it. **It reddens three times.** *A surprising
+  green is a claim about your filter before it is a claim about the code.*
+- **⭐⭐⭐ WRITE THE GUARD FOR A CLAIM THE DOCS MAKE, AND YOU MAY FIND THE CLAIM WAS ALREADY FALSE
+  (D200).** `LabourSystem` had said for phases that its slack pass *"never moves someone who
+  already has a job."* **It does** — `ShedSurplus` releases somebody and `Match` re-places them in
+  the same pass, **67–83 times over fifty years at the cadence that sentence was written for.**
+  The behaviour was right and the sentence was wrong. *A long-standing comment is a hypothesis
+  nobody has tested.*
+- **⚠️ ONE SEED IS NOT A TREND, AND I READ ONE AS A TREND (D200).** Firewood fell 156 → 131 → 91
+  as a cadence quickened and I called it a real cost. **Across three seeds it goes down, up, and
+  down-then-up.** It was noise. *A spot reading of a fluctuating stock is not a trend — and this
+  nearly became the reason not to ship a change.*
+- **⚠️ CHANGE A TIMING AND FIXTURES BREAK THAT ARE NOT REGRESSIONS (D200).** One config key moved
+  and **three guards went red, none of them a bug**: a life-log guard matched the bare word
+  *"foraged"* and flagged the **mastery line** (*"has foraged these woods for 18 years"* — a
+  statement about a life, not about this winter); an at-risk guard killed the two masters it had
+  posed and **had not noticed the village grows its own**, 15–19 a century; and it picked the
+  first frail villager rather than the one with most life left, so **a warning that stopped
+  because the person died read exactly like a warning that stopped working.** *Ask what a fixture
+  quietly depends on before calling its red a regression.*
+- **⭐⭐ THE BUG IS OFTEN A NUMBER RATHER THAN A MECHANISM (D197).** The market restock leg looked
+  wrong — distribution effort rose 24–79%. **The mechanism was fine; the target was
+  `market_stock_per_household × economy_horizon_households` = 800**, so a village of five homes
+  needing forty apiece had a marketer hauling stock for twenty households. *Before rewriting a
+  mechanism, check what number it is aiming at.*
 - **⭐⭐ CHECK EVERY GUARD RED, AND COUNT THE REDS.** Repeatedly this has caught a guard that
   proved nothing. **And the guard that catches a bug is often not the obvious one** — *"the
   farm's sentence says farmer"* passes against a generic template with the farm's name in it;
@@ -414,6 +390,11 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   parallel, so throughput was never the cost. The real culprit was an **O(n²) Dijkstra nobody had
   ever timed**, four seconds a world. **It is 2m30s now.** *The thing everybody suspects is not
   the thing costing the time — and Joe had to say "measure it first" to stop the wrong fix.*
+  - **⭐ AND IT APPLIES TO A GUARD YOU JUST WROTE (D198).** A new sweep built **a fresh world per
+    tile** — 28 seconds an arm, **2.8 minutes for one file**. One world was enough *and was a
+    truer test*, since the preview and the paint are then asked of the same world in the same
+    state. **0.8 seconds now, over nine times as much ground.** *If a new guard is slow, the
+    fixture is usually doing something the claim never needed.*
 - **⚠️ A FULL RUN IS FOR A VERDICT, NOT FOR DISCOVERY.** One slice here burned four full runs,
   twice to learn what was already knowable. **Use `--filter` while iterating.**
 - **⛔⛔ DO NOT WRITE A WAIT-LOOP FOR A RUN THAT IS ALREADY IN THE BACKGROUND.** It is redundant —
