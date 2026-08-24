@@ -1,14 +1,15 @@
-# Handoff — bclone: **Phase 3 is complete and merged. Phase 4 — the tech tree — is next.**
+# Handoff — bclone: **Phase 3 is merged. ⏸️ Phase 4 is HELD on Joe's call, pending his content pass.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D203 back to D142**, then
-`METHODOLOGY.md`.
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D205 back to D142**, then
+`METHODOLOGY.md`. **Then `specs/content-inventory.md`** — it is the audit of what actually exists
+against what the documents claim, and it is the shortest route to being oriented.
 
 > **⛔ WHEN YOU HAND OFF: EDIT THIS FILE, DO NOT REPLACE IT.** The trap list at the bottom is
 > accumulated from sessions that each paid for one entry. Rewriting it wholesale drops them
 > silently — that happened on 2026-08-22 and cost an hour and three quarters within the same
 > session. **Rewrite "where things are"; carry the traps forward.**
 
-⭐ **Three things to know before you touch anything:**
+⭐ **Four things to know before you touch anything — and #4 is the one that decides what you do:**
 1. **⭐⭐ D28 IS DISCHARGED** (D190) — the lockstep Joe watched at 4× in Phase 1 is gone, and
    **he confirmed it in play**: the four founders read as distinct people and no longer move as
    pairs. Identical hunger between two adults of one household went **100% → 0%**.
@@ -19,8 +20,15 @@ Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D203 b
 3. **✅ PHASE 3 IS COMPLETE AND MERGED** (D202, D203). Skill TRANSFERS now — a youth beside a
    master of the same trade at the same workplace learns twice as fast. ⚠️ **Its QA walk was
    WAIVED on Joe's call, not performed** (D203): if a Phase 3 regression ships, that is where it
-   got through. **Phase 4 — the tech tree and the town hall — is next, and D196 has Joe's library
-   model waiting for it.**
+   got through.
+4. **⏸️⏸️ DO NOT START PHASE 4. IT IS HELD ON JOE'S CALL** (D205, 2026-08-24) — *"we might be
+   getting ahead of ourselves with the tech tree… I need to spend time thinking about all of the
+   tech and buildings and skills first."* **This is not a delay to route around; it is the
+   blocking item, and it is his to clear, not yours.** A plan for Phase 4 was drafted and stopped
+   mid-flight. ⛔ **The audit that followed found `buildings-plan.md §10` puts knowledge at step 8
+   of 11 while `DESIGN.md §4` calls it Phase 4 next — D159's two-roadmaps failure, live again in a
+   different pair of files.** Read `specs/content-inventory.md` before forming any opinion about
+   what to build.
 
 ---
 
@@ -124,7 +132,27 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 4. ✅ **`specs/storage-and-distribution.md` §14.8–§14.9** (D197, D199, D201) — the marketer stocks
    the market, storage buildings are separate from it, and its service area is a **count, not a
    ring**.
-5. 🔨 **PHASE 4 — THE TECH TREE (§2.7) AND THE TOWN HALL (D176). THIS IS WHAT IS NEXT.**
+5. ⏸️ **PHASE 4 — THE TECH TREE (§2.7) AND THE TOWN HALL (D176). HELD, NOT STARTED (D205).**
+   - **⛔⛔ THE BLOCKING ITEM IS JOE'S CONTENT PASS, AND IT IS NOT YOURS TO CLEAR.** Do not
+     "helpfully" start on the substrate while he thinks — that is precisely the getting-ahead he
+     stopped. **Ask him where the content pass got to before proposing anything.**
+   - **⭐ WHAT THE AUDIT FOUND, because it changes what Phase 4 even is** (`specs/content-inventory.md`):
+     - ⛔ **`buildings-plan.md` is missing four of the ten buildings that exist** — BuilderHut,
+       ForesterHut, Farmhouse, Pile — and the work-ground zone. Its ✅ marks claim six built.
+       **A catalogue missing 40% of what is built will generate content that duplicates it.**
+     - ⛔ **`BuildingRecipe` is `(int Logs, int WorkTicks)` — one material slot for the whole
+       catalogue**, against a tier system where the mason's yard *"gates every durable building"*.
+       **Stone and iron are already quarried, mined, stored and hashed; nothing spends them.**
+       That is structural, not content, and it touches every recipe, the hauling, the build queue
+       and the goldens at once.
+     - ⛔ **18 catalogue rows carry a knowledge flag and none of those 18 buildings exist**, so a
+       tech tree built today would have almost nothing to gate.
+   - **✅ D204 SETTLED ONE THING WHILE THE PLAN WAS BEING DRAWN: recording is AUTOMATIC AT
+     MASTERY** (Joe), not the seasons-long scriptorium project `tech-tree.md §7b` describes.
+     ⚠️ **The consequence to carry: §11's guard against *"the library is mandatory"* rested on
+     three costs and this deletes one**, so **the hard shelf cap is carrying it nearly alone** —
+     which makes *a full library refuses the record and says so* load-bearing rather than polish.
+     **The scriptorium and literacy are deferred, not deleted.**
    - **⭐⭐ JOE'S LIBRARY MODEL IS ALREADY RECORDED AND IT IS CONCRETE (D196).** A master
      woodcutter works out *"splitting lumber in a way that gives more cords — +15% firewood per
      log, +5% mastery"*; **the technique enters the library's records when he reaches mastery**;

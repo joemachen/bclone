@@ -1,6 +1,8 @@
 # Plan: Buildings — the foundational catalogue
 
-> Status: **draft, deliberately loose.** This is a planning document, not a spec. Every number is absent on purpose and every entry is expected to move during QA. Owner: Joe + Claude.
+> Status: **draft, deliberately loose — catalogue brought current 2026-08-24 (D205).** This is a planning document, not a spec. Every number is absent on purpose and every entry is expected to move during QA. Owner: Joe + Claude.
+>
+> ⚠️ **What "current" means here, precisely:** §4's ✅ marks now match the sim — **ten buildings and three zones**, where this table previously claimed six and omitted five things that exist. It does **not** mean the roadmap in §10 is reconciled with `DESIGN.md §4`; **those two still disagree about where knowledge sits (step 8 of 11 here, Phase 4 there), and that is a design call rather than an editing one.** See `specs/content-inventory.md`.
 > Companion to `specs/building-placement.md`, which governs *how* buildings get put down. This governs *which ones exist and why*.
 
 ---
@@ -75,21 +77,34 @@ Yield per worker-year decays toward a floor as the workings deepen — longer ha
 
 ### 4.1 Tier 0 — Founding
 
-What the exiles arrive able to do. Several of these are built.
+What the exiles arrive able to do. **Ten of these are built.**
+
+> **⭐ BROUGHT CURRENT 2026-08-24 (D205), AND IT HAD DRIFTED BADLY.** This table claimed **six**
+> built and **had no row of any kind** for the builder's hut, the forester's hut, the farmhouse,
+> the storage pile or the work-ground zone — **four of the ten `BuildingKind`s in the game, plus a
+> whole zone layer.** Two more (the gatherer's hut, the harvest zone) were listed and simply never
+> ticked. **A catalogue missing 40% of what is already built will generate content that duplicates
+> it**, which is why this was fixed before the content pass rather than during it.
+> *Nothing here was invented — every ✅ below names a thing that exists in the sim today.*
 
 | Building | Class | Knowledge | Does what |
 |---|---|---|---|
 | Home | Zoned | — | Shelter, household, birth. Built inside the residential brush. ✅ |
 | Granary | Placed | — | Food store; total capacity is the population ceiling (D33). ✅ |
 | Storage shed | Placed | — | Raw and refined materials. ✅ |
+| **Storage pile** | Placed | — | Cleared ground with goods stacked on it — **the one building that costs nothing**, and the first the player places (D76). ✅ |
 | Market | Placed | — | Manned redistribution within a catchment (D14). ✅ |
 | Woodcutter's hut | Placed | — | Logs → firewood. ✅ |
-| Gatherer's hut | Placed | — | Berries, mushrooms, wild herbs. Seasonal. |
+| Gatherer's hut | Placed | — | Berries, mushrooms, wild herbs. Seasonal. ✅ |
+| **Forester's hut** | Placed | — | Fells and plants over its own painted work ground, in two modes — *plant only* and *fell and plant* (D87, D125). ✅ |
+| **Builder's hut** | Placed | — | Funds the Builder job from spare hands; nothing stands until the work is done (D38). ✅ |
+| **Farmhouse** | Placed | — | Owns painted field ground; sows in spring, reaps in autumn (D162). **This is §8.1's *zone plus a small steading*, already resolved and shipped.** ✅ |
 | **Hunter's hut** | Placed | — | Meat, hides, tallow. Thins local game; recovers when rested. |
 | **Fishing hut / staithe** | Placed | — | Species by water type — river, lake, coast yield differently. No minigame; the variance is seasonal and spatial. |
 | **Cemetery** | Placed | — | The dead accumulate somewhere visible (D35). |
-| Harvest zone | Zoned | — | Which forest may be felled. |
-| Residential zone | Zoned | — | Where homes may go. ✅ |
+| Residential zone | Zoned | — | Where homes may go. **Global — the village owns it**, so the player picks the neighbourhood and the sim picks the tile (D86). ✅ |
+| Harvest zone | Zoned | — | Which forest may be felled. ✅ |
+| **Work-ground zone** | Zoned | — | Which ground a workplace may work. **Owned by a building rather than by the village** (D86) — the second of the two zone shapes, and the one any new zone has to choose between. ✅ |
 
 **Note on food breadth.** D19's finding is that a binding catchment radius kills outlying households when there is only one raw food source. Hunter and fisher are therefore not content — they are the prerequisite for §2.2's central rule being survivable rather than merely cruel. They belong at T0.
 
@@ -101,7 +116,7 @@ Earned by practice, or by the village simply being a village.
 
 | Building | Class | Unlock | Knowledge | Does what |
 |---|---|---|---|---|
-| **Crop zone** | Zoned | Founding | — | Wheat, barley, rye, roots, cabbage, flax. Fertility declines under continuous cropping. |
+| **Crop zone** | Zoned | Founding | — | ⚠️ **Partly built** (D162): painted field ground, sowing in spring and reaping in autumn all ship, owned by the farmhouse at T0. **What is NOT built is the plural** — one crop exists where this row lists six — and **fertility declining under continuous cropping.** Soil is generated and read by the farm (D178) but never depletes. |
 | **Pasture zone** | Zoned | Founding | — | Cows, sheep, goats, pigs, fowl. Overgrazing thins the sward. |
 | **Root cellar** | Placed | By doing | — | Slows spoilage of roots and grain. The cheapest preservation. |
 | **Smokehouse** | Placed | By doing | — | Meat and fish keep through winter. |
@@ -148,9 +163,17 @@ Requires scale, accumulated knowledge, or both.
 
 Mutually exclusive-ish, per §2.7's *broad not tall*. Nobody gets all of these in one lifetime.
 
+> **⛔⛔ THE FIRST ROW ALREADY SHIPPED, AND IT SHIPPED UNGATED (found 2026-08-24, D205).**
+> `DESIGN.md §2.7` names managed forestry as **the tech tree's first concrete node** — *"what the
+> node unlocks is the **planting brush**: the ability to put trees back… unlock-by-doing in its
+> purest form"*. **The planting brush is built** (`WorkMode.PlantOnly` and `FellAndPlant`, D125)
+> and **nothing gates it.** *The tree's own worked example is gone*, which matters for a content
+> pass: **the exemplar everybody reasons from is no longer available to be the first node**, and
+> §10's step 8 ordering assumed it still was.
+
 | Node | Answers |
 |---|---|
-| **Managed forestry** (planting brush) | A cleared valley |
+| ~~**Managed forestry** (planting brush)~~ ✅ **BUILT AND UNGATED** — see the note above | A cleared valley |
 | **Crop rotation / fallow** | Soil exhaustion |
 | **Deep shaft, drainage, pit props** | The mine's declining yield curve |
 | **Coal mine** | Charcoal competing with fuel and timber |
@@ -256,7 +279,9 @@ Each step is a thing you could stop after, in the house style.
 2. **Cemetery** — cheap, placeable, immediate generational payoff. D35.
 3. **Preservation** — root cellar, smokehouse. Gives winter an answer other than quantity, and gives the processing chain a second instance.
 4. **Crop and pasture zones** — extends the brush; introduces soil as a surface resource; §2.3 gets a second axis.
-5. **Forestry pair** — harvest brush (already slice 4), then planting as the tech tree's first node (slice 5).
+5. ✅ **Forestry pair — DONE, and the second half did not land the way this line expected.** The
+   harvest brush shipped, and **planting shipped with it as an ordinary work mode, not as the tech
+   tree's first node** (D125). See §4.4's note: *the tree's own worked example is already spent.*
 6. **Stone** — quarry, mason. First use of the subsurface effort rule; gates the civic tier.
 7. **Iron and tools** — mine, charcoal burner, smelter, blacksmith. Tools multiply yields, which is where §2.1's skill pillar gets something to bite on.
 8. **Knowledge** — scriptorium, then school. **Before** re-locking is punishing (§5).
