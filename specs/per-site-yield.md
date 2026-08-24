@@ -14,6 +14,14 @@ see the ground **and now read it in words**. **644 passing, 0 failing, 2 skipped
 four goldens unmoved by D180. Proved by `PerSiteYieldTests` and
 `FarmTests.AFarmsHarvestFallsOffWithDistanceFromItsStore`.
 
+> **🔨 A FOLLOW-ON SLICE IS IN PROGRESS ON `phase/3-skill-and-apprenticeship` — §4.2a and §4.3
+> (D194), which UNPARK THE FARM.** §4.2's sowing cap shipped as a **prediction**, and the ledger
+> says it is short by **one to two tiles at every distance** and leaves a distant farmhand idle
+> for **27–55% of the autumn it is supposedly too busy for**. §4.2a replaces the prediction with
+> the farm's own memory; §4.3 tells the player at placement that a farm far from a store halves
+> its own harvest. **⛔ And the ledger also settles what the farm can never do: thirteen tiles ten
+> ticks out is physically impossible** — read §4.2a before proposing a fifth cause.
+
 > **⛔ §5 SHIPPED BROKEN AND NOBODY NOTICED FOR A DAY (D180).** The **Ground** button's label was
 > written inside the *routes* button's handler, so pressing it flipped the overlay and left the
 > button insisting *"Ground: off"*. Joe: *"it stays as 'off' regardless… I can't really tell
@@ -223,7 +231,136 @@ less ground rather than committing the same ground and rotting it.
 say**, and a rot line the player cannot act on is the weather D167 spent a decision deleting.
 
 ⛔ **`farm_store_cap` is not the lever and must not be touched** — measured at nought to seven
-points across one armful to thirteen (D171).
+points across one armful to thirteen (D171). **⭐ Confirmed a second time by a different route
+(D194):** an **8.7× buffer** (871 against 100 — thirteen armfuls instead of one and a half)
+moved the ceiling from **6 tiles to 6** at ten ticks and **5 to 5** at sixteen. The haul ledger
+says why: with all that room the buffer still took only **23 of 72 loads**, because it fills
+once and the market cannot keep it drained. *Two independent measurements now say the same
+thing; stop proposing it.*
+
+### 4.2a ⭐⭐ THE CAP STOPS PREDICTING AND STARTS REMEMBERING (D194)
+
+> **⛔ §4.2 SHIPPED A PREDICTION THAT WAS WRONG BY 20–100% IN THE DIRECTION THAT MAKES ITSELF
+> TRUE.** `ReapableShareAt` scales a farm's field by `budgeted ÷ haul`, and **those two are not
+> the same kind of quantity** — `budgeted` is a *round trip inside the field* (4 ticks) and
+> `haul` is a *one-way walk to a store* (10). The ratio is not a share of anything. That it
+> lands near the right answer at ten ticks is arithmetic coincidence.
+
+**The ledger, at last, rather than a fifth hypothesis** (one hand, ten years, shipped config,
+the committed ground posed at each level so the curve is visible):
+
+| farm → store | the cap sows | what the farm can actually bring in | autumn spent **idle** at the cap |
+|---|---|---|---|
+| 10 ticks | 5 | **6** | **27%** |
+| 16 ticks | 3 | **5** | **45%** |
+| 22 ticks | 2 | **4** | **55%** |
+
+**⭐ The cap is self-fulfilling, and this is the attribution rather than the inference.** It cuts
+the field, the farmer then has nothing left to do, and the idleness is read back as proof that
+the field was too big. *A guard that says "distant farms reap fewer tiles" was measuring the cap,
+not a physical limit.*
+
+**⛔⛔ AND THIRTEEN TILES TEN TICKS OUT IS PHYSICALLY IMPOSSIBLE, WHICH IS THE ANSWER TO THE
+COMPLAINT THAT OPENED THIS.** Joe: *"a farmer plants 5 tiles of the 13."* Autumn is **120 ticks**
+and thirteen tiles at that distance needs about **230**. The farmer is not being cheated of eight
+tiles; they are being cheated of **one or two**. **The lever that actually buys thirteen is the
+walk, not the cap** — the same farmer beside a granary reaps 13 and measures out at 21 before the
+ground runs out. That is §4.3's warning, and it is why the two land together.
+
+#### The rule
+
+**A farm sows what it has already brought in.** Nothing is predicted; the farm's own best
+autumn is the number.
+
+```
+at the turn of autumn:
+    sownThisYear = tiles standing on this farm's ground
+    handsThisYear = hands in the field right now
+
+at the turn of winter, BEFORE the rot sweep:
+    if (sownThisYear == 0) nothing to learn — a year the farm did not sow
+    record = (sownThisYear - whatever is still standing) / handsThisYear
+    learned = max(learned, min(record, FieldTilesOneFarmerKeeps))
+    walkWhenLearned = the walk to the nearest store that takes food
+
+next spring it commits:
+    hands × (learned > 0 ? learned : the opening guess)
+```
+
+**⭐ A high-water mark, and nothing else — no probe, no settling back.** What a farm brought in
+once it can bring in again; a thin year is about the hands that turned up, not about the ground.
+That is D183's *give, never take* one system over, and it is what stops one short-staffed autumn
+becoming a permanent verdict on a field.
+
+> **⛔⛔ TWO DRAFTS OF THIS SECTION HAD A DELIBERATE PROBE AND THE RED CHECK DELETED IT.** The
+> farm committed `learned + 1` a year and latched once a tile rotted. **Breaking the probe turned
+> nothing red**: the settled memory and the tiles reaped came out *identical* at ten, sixteen and
+> twenty-two ticks — **6/5/4 learned and 72/60/48 reaped either way.**
+>
+> **⭐ The reason is worth keeping, because it is not obvious.** `HarvestOneFarmCanBringIn`
+> multiplies the per-hand number by the hands standing in the field *at that moment*, and
+> `NextFieldToWork` re-asks it before every tile — so **a farm with two hands in spring and one
+> by autumn already commits ground for two.** D86's live-allowance rule was always going to
+> over-reach; the memory only has to notice. *The village probes on its own.*
+>
+> **And the failure modes settle it.** With no probe the worst a farm can do is sit on its
+> opening guess — **exactly today's behaviour**. With one, the worst it can do is rot a tile
+> every year, which is the weather D167 spent a decision deleting. A probe that changes nothing
+> measurable is the invisible no-op this project has rejected four times (D56, D177, D187).
+
+**⚠️ `sownThisYear` is the gate and it is not optional.** A farm held by a met stock limit
+(`MaySow` false) sows nothing, ends autumn with nothing standing, and would read that as *"I
+cleared my field"* — climbing to the cap over a few idle years and then over-committing the
+moment the limit lifts. **A year with no crop teaches nothing.**
+
+**⚠️ And the hands are taken at the START of autumn, not at its end.** D44 stands seasonal trades
+down at winter, so a farm can be *empty* on the very tick the lesson is read — dividing that
+autumn's harvest by the one straggler still standing there would make a two-handed farm's record
+look twice what it was.
+
+- **⭐ Why memory beats arithmetic here, stated so nobody re-derives the formula.** The true
+  ceiling depends on the buffer's drain rate, the field's geometry, how full the granary is and
+  how many hands turned up. **The measured curve fits no closed form** — solving
+  `season ÷ (reap + walk)` wants a different constant at every distance, and the constant moves
+  the wrong way with distance. *A spring-time formula is a guess by construction.* This is the
+  refusal to be clever, not a clever thing.
+- **⭐ It converges in two or three years and then brings in 100%**, because a farm that has
+  proved six tiles sows six tiles.
+- **⭐ The record is re-reckoned when the walk changes** — the player builds a granary by the
+  fields, or demolishes the near one — because that is exactly when the old answer stopped being
+  true. It takes the better of what it knows and what the fresh walk suggests, so a store beside
+  the fields raises the field at once rather than a tile a year. **A memory that cannot be
+  revised by the player is a scar.**
+- **Per hand, like `WorkGroundAllowanceFor`.** Losing a farmhand in summer halves next spring's
+  field and leaves the memory intact, so a farm does not forget what it knows because somebody
+  died.
+- **⛔ Bounded above by `FieldTilesOneFarmerKeeps` and never past it.** A well-sited farm's
+  physical ceiling measured **21**; the derivation says **13**; **13 wins.** That number is the
+  survival floor the whole economy is solved against (D16, D189) and a memory that could raise it
+  would inflate a derived value from the far end. **Nobody is ever worse than today, and the
+  derivation is never better.**
+- **The opening guess is `ReapableShareAt`**, which is demoted from a ruling to a first year's
+  optimism-free start. A brand-new farm behaves exactly as it does today, then learns.
+
+#### What it costs and what it buys
+
+**+20% of the harvest at ten ticks, +67% at sixteen, +100% at twenty-two**, and the idle quarter
+to half of a distant farmhand's autumn goes away. **Two ints and a flag per farm, hashed** (§6).
+
+### 4.3 ⭐ AND THE PLAYER IS TOLD, AT THE MOMENT THEY CAN STILL MOVE IT (D194)
+
+**Nothing in the game says that a farmhouse far from a store will halve its own harvest**, and
+that is the single largest legible consequence in the farm. There is already a distance warning
+at placement — `MaxHomeToVillageTiles`, *"people will spend their days walking to it"* — and it
+measures the wrong walk for a farm. **A farm's binding walk is to the nearest store that takes
+food**, because that is where every armful past the first goes.
+
+> *"That farmhouse is 10 tiles from the nearest granary. Its harvest will be about half what one
+> beside a store brings in — build a store near the fields."*
+
+**Warned, never refused** (D43, D86). A distant farm is a legal decision with a stated
+consequence, which is this project's standing shape, and it is the difference between *"the game
+cheated me"* and *"I put it in the wrong place."*
 
 ---
 
@@ -285,6 +422,22 @@ merely awkward. D180 adds it, plus the same sentence on any tile the player clic
   farms has a different history. **Both, once, last, one stated reason** (D152). The 50-year
   goldens place no farmhouse (D162), so they should *not* move — **and if they do, that is a
   finding, not a nuisance.**
+
+**§4.2a adds hashed state, which is the one thing in this slice that could cost determinism:**
+
+- **Four fields on `Workplace`** — what it sowed this year, the hands that were in the field when
+  autumn opened, the tiles it has learned it can bring in **per hand**, and the store walk that
+  answer was learned at.
+  **Hashed with the workplace, in id order**, exactly as every other workplace field is, and
+  **sparsely — silent until a farm has actually sown something**, which is the shape the queue
+  rank, the work mode and the store filters all use. *A village with no farmhouse in it must hash
+  exactly as it did before this existed*, and that is what keeps the two fifty-year goldens still.
+- **⭐ Nothing reads wall-clock, nothing draws from the RNG.** The memory is a pure function of
+  what the sim already did, updated once a year on the turn of winter — the same boundary
+  `CropSystem` already works on, so there is no new place for the year to be counted from.
+- ⚠️ **The seam golden moves** — it is the only village in the suite that plants a farmhouse.
+  **The two fifty-year goldens must not**, and if they do the memory has leaked into a village
+  with no farm in it, which is a bug rather than a re-base.
 
 ---
 
@@ -358,6 +511,29 @@ guard that outlives the rule it was written for looks exactly like a regression*
 7. Goldens re-taken **last**, one commit, one stated reason each (D152).
 8. `DESIGN.md §4`, §5 and §6 updated — including **correcting the queue entry's claim about this
    slice's size**, which is how this spec started.
+
+### 9a. The follow-on slice (§4.2a + §4.3, D194)
+
+1. ✅ **The ledger run before anything is built** — the handoff's own instruction, and it is what
+   killed the fifth hypothesis before it was written. Kept as `FarmLedgerTests` so the numbers in
+   §4.2a can be re-taken rather than trusted.
+2. A guard that **a distant farm stops idling**: at ten ticks out its autumn is spent working,
+   not resting, and it reaps more than the old cap allowed.
+3. A guard that **a thin year never lowers what the farm has already proved** — the high-water
+   rule, which is what stops one short-staffed autumn becoming a permanent verdict.
+4. A guard that **a well-sited farm is unmoved**, and that the memory can never exceed
+   `FieldTilesOneFarmerKeeps`.
+5. A guard that **the record is re-reckoned when the walk changes**, so a granary built by the
+   fields lets the farm try again.
+6. **Both halves of D58 still hold** — `AFarmsHarvestFallsOffWithDistanceFromItsStore` stays
+   green on both assertions, or is re-based with a stated reason rather than relaxed.
+7. **The determinism guard green**, and the two fifty-year goldens **unmoved**.
+8. Every guard **checked red and the reds counted** — ✅ **14 reds across 7 deliberate breaks**,
+   and **⭐⭐ the break that turned up ZERO is the one that changed the design**: removing the
+   probe changed nothing measurable, so the probe was deleted rather than guarded. *The red check
+   is not a formality; it is the only thing that reads your design for you.*
+9. The placement warning reachable in the view (§4.3) — *a feature the player cannot reach does
+   not exist* (D103).
 
 ---
 

@@ -119,6 +119,7 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.Sowing => "sowing",
         VillagerState.Reaping => "reaping",
         VillagerState.HaulingToFarm => "carrying the harvest to the farm",
+        VillagerState.StockingTheMarket => "stocking the market",
         _ => state.ToString(),
     };
 
@@ -143,6 +144,31 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (!villager.Alive)
         {
+            return;
+        }
+
+        // ⭐⭐ THEIR OWN RHYTHM, SPENT ONCE AT THE START OF A WORKING LIFE (§3.5, D28, D190).
+        //
+        // **This is the oldest open observation in the project.** Joe watched the village at 4×
+        // in Phase 1 and saw people travelling as duos rather than individuals; measured, two
+        // adults of one household holding one job are on the same tile 99.9% of ticks with
+        // identical hunger 100% of the time. They are not short of variability, they are
+        // SYMMETRIC — same home tile, same stepping rule, same constant durations — so they even
+        // stop to eat on the same tick.
+        //
+        // ⭐ A FEW TICKS, ONCE, IS ENOUGH, because nothing ever puts them back in step: two
+        // villagers who set off a tick apart arrive, work and eat a tick apart for the rest of
+        // their lives. That is §3.3's argument about differing durations, arriving on day one
+        // instead of after twenty years.
+        //
+        // ⚠️ ABOVE EATING ON PURPOSE. Below it, a villager whose rhythm is unspent would take
+        // their first meal in lockstep with their sibling and the stagger would be spent against
+        // an already-synchronised clock. Nobody starves for it: the draw is under one day and
+        // `TicksAtMaxHunger` needs six.
+        if (villager.Rhythm > 0 && villager.CanWork)
+        {
+            villager.Rhythm--;
+            villager.State = VillagerState.Resting;
             return;
         }
 
@@ -307,6 +333,26 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.DeliveringToHome:
+                // ⛔ A MARKETER WHOSE ARMS ARE EMPTY IS NOT DELIVERING ANYTHING (D192).
+                //
+                // **Found by a guard going red for a change that had nothing to do with the
+                // market.** D10 says eating preempts everything and `TryEat` takes from a
+                // villager's own arms first — *nobody starves holding dinner* — so a hungry
+                // marketer eats the load they are carrying and then walks the rest of the leg
+                // with nothing in their hands. `AMarketerNeverWalksAnEmptyLeg` allowed it on
+                // the tick they ate, which is exactly one tick of a walk that can take many.
+                //
+                // The bug was always here; a faster thaw (D192) merely moved the village's
+                // timings until it happened at year 90 instead of never in the run under test.
+                // **Re-decide instead of finishing an errand that no longer exists** — the same
+                // thing every other leg does when its reason evaporates.
+                if (!villager.IsCarrying)
+                {
+                    villager.ErrandHouseholdId = 0;
+                    Decide(world, villager);
+                    return;
+                }
+
                 Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
                     VillagerState.DeliveringToHome);
                 return;
@@ -337,6 +383,25 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(world, villager, barn.Position, VillagerState.HaulingToFarm);
                 return;
 
+            case VillagerState.StockingTheMarket:
+                // ⭐ THE DESTINATION IS FIXED, NOT RE-ASKED (§14.8, D197) — the same reason
+                // `HaulingToFarm` is its own state. `HaulingToStore` re-asks *"which store is
+                // nearest with room?"* on every tick, so a marketer who picked up at the granary
+                // would re-target the granary and put the load straight back.
+                //
+                // ⚠️ AND A MARKETER WHOSE ARMS ARE EMPTY IS NOT STOCKING ANYTHING — D192's bug
+                // on the delivery leg, which this leg would otherwise repeat: a hungry marketer
+                // eats the load they are carrying (D10) and then walks the rest of the leg with
+                // nothing in their hands.
+                if (!villager.IsCarrying || WorkplaceOf(world, villager) is not Workplace stall)
+                {
+                    Decide(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, stall.Position, VillagerState.StockingTheMarket);
+                return;
+
             case VillagerState.TravelingHome:
                 Travel(world, villager, world.RestingPlaceOf(villager), VillagerState.Idle);
                 return;
@@ -355,7 +420,9 @@ public sealed class BehaviorSystem : ISimSystem
         state is VillagerState.TravelingToHut or VillagerState.MakingFirewood;
 
     private static bool IsTrading(VillagerState state) =>
-        state is VillagerState.CollectingForMarket or VillagerState.DeliveringToHome;
+        state is VillagerState.CollectingForMarket
+            or VillagerState.DeliveringToHome
+            or VillagerState.StockingTheMarket;
 
     private static bool IsBuilding(VillagerState state) =>
         state is VillagerState.FetchingMaterials or VillagerState.Building;
@@ -475,10 +542,25 @@ public sealed class BehaviorSystem : ISimSystem
         // FirstOfKind survives as the arm BELOW, which is the case D48 wrote it for — the
         // only granary is across the water, and somebody holding an armful must still be
         // given somewhere to walk rather than standing still with goods nothing can spend.
+        // ⛔⛔ AND NEVER THE MARKET, WHICH IS A DISTRIBUTION BUILDING (D199, Joe: *"I want to
+        // separate the actual storage buildings — storage pile, granary, shed, warehouse — from
+        // the market"*). The two fallbacks here ask *"what will take this?"* rather than naming
+        // kinds — deliberately, so a new store needs telling nothing — and the market accepts
+        // food and firewood. **So a full granary quietly turned the market into the overflow
+        // store**: measured over thirty years it sat 600 above what the village's homes need,
+        // with none of it carried there on purpose. That is exactly what
+        // `market_stock_per_household`'s own comment forbids — *"a short trip, not a second
+        // granary."*
+        //
+        // ⭐ A MARKETER IS UNAFFECTED, because the branch at the top of this method returns
+        // before here: a trader may still stock the market and still empty a dead family's
+        // larder into it. **The rule is about who is carrying, not about what is carried** —
+        // which is what lets household overflow keep arriving there (§14.3's "in" direction is
+        // a marketer's leg too).
         StoreBuilding? proper =
             world.NearestStore(villager.Position, wanted, static store => !store.Store.IsFull)
             ?? world.NearestStoreAccepting(
-                villager.Position, load, static store => !store.Store.IsFull)
+                villager.Position, load, static store => store.IsStorage && !store.Store.IsFull)
             ?? FirstOfKind(world, wanted);
 
         if (proper is not null)
@@ -498,7 +580,7 @@ public sealed class BehaviorSystem : ISimSystem
         // nearest place that would take this good if it could, and the load stays in their
         // arms until there is room, which is the same thing a person would do.
         StoreBuilding? anywhere =
-            world.NearestStoreAccepting(villager.Position, load, static _ => true);
+            world.NearestStoreAccepting(villager.Position, load, static store => store.IsStorage);
 
         // The cart even where no route reaches it, as before — but only if it would take
         // this good. It stopped taking logs (D90 step 4), and a fallback that ignores
@@ -1173,8 +1255,13 @@ public sealed class BehaviorSystem : ISimSystem
     /// True to carry from a store out to that household; false to bring goods the
     /// household does not need back to a store.
     /// </param>
+    /// <param name="Stocking">
+    /// True to carry the load to the <b>market's own store</b> rather than to a household
+    /// (`storage-and-distribution.md §14.8`, D197) — the leg that finally puts something in the
+    /// building the spec has assumed was stocked since it shipped.
+    /// </param>
     private readonly record struct MarketErrand(
-        GridPos Source, int HouseholdId, Goods Goods, bool Delivering);
+        GridPos Source, int HouseholdId, Goods Goods, bool Delivering, bool Stocking = false);
 
     /// <summary>
     /// What a marketer does next.
@@ -1247,6 +1334,239 @@ public sealed class BehaviorSystem : ISimSystem
     /// holding more than it needs. A house whose family has died is not a special case
     /// — it is simply a household whose need is zero and whose store is not.
     /// </remarks>
+    /// <summary>
+    /// Offer the leg that <b>puts something in the market</b> (`storage-and-distribution.md
+    /// §14.8`, D197).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The market is short of a good, and a bigger store has some.</b> No threshold and no
+    /// detour arithmetic — one more useful thing to carry, offered on cost like every other leg
+    /// (§14.2).
+    /// </para>
+    /// <para>
+    /// <b>⛔ NEVER SOURCED FROM THE MARKET ITSELF</b>, which would be a marketer carrying a load
+    /// out of a building and back into it for ever. The store it takes from is the nearest one
+    /// holding the good that is <em>not</em> this market.
+    /// </para>
+    /// <para>
+    /// <b>The target is the market's own capacity, which is already derived</b>
+    /// (<c>market_stock_per_household × economy_horizon_households</c>) and already described in
+    /// config as *"a short trip, not a second granary"*. **Nothing new is typed**, and that
+    /// capacity is what stops the market quietly becoming the real store as the village grows —
+    /// which is the failure `market_stock_per_household` exists to prevent.
+    /// </para>
+    /// </remarks>
+    private static void OfferMarketRestock(
+        SimWorld world, Villager villager, ref MarketErrand? best, ref int bestCost)
+    {
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding market = world.StoreBuildings[i];
+            if (market.Kind != StoreKind.Market || market.Store.IsFull)
+            {
+                continue;
+            }
+
+            for (int g = 0; g < MarketGoods.Length; g++)
+            {
+                Goods goods = MarketGoods[g];
+                if (!market.CanEverHold(goods) || !market.Accepts(goods))
+                {
+                    continue;
+                }
+
+                // ⭐⭐ TO WHAT THE VILLAGE NEEDS, NOT TO WHAT THE BUILDING HOLDS — see
+                // `VillageEconomy.MarketStockWanted`. Filling the capacity had a marketer
+                // hauling stock for twenty households to a village of five, and measured
+                // distribution effort rose by up to 79% for it.
+                //
+                // Room for a whole armful too, in the shape D165 had to learn on the farm: room
+                // for a fraction of a load is not room, and taking it turns one walk into two.
+                int wanted = VillageEconomy.MarketStockWanted(world.Config, OccupiedHomes(world));
+                if (HeldOf(market.Store, goods) + world.Config.CarryCapacity > wanted
+                    || market.Store.FreeSpace < world.Config.CarryCapacity)
+                {
+                    continue;
+                }
+
+                StoreBuilding? source = NearestStoreHoldingExcept(
+                    world, villager.Position, goods, market);
+
+                if (source is null)
+                {
+                    continue;
+                }
+
+                int cost = world.TravelCost.TicksBetween(villager.Position, source.Position);
+                if (cost >= bestCost)
+                {
+                    continue;
+                }
+
+                bestCost = cost;
+                best = new MarketErrand(source.Position, 0, goods, Delivering: false, Stocking: true);
+            }
+        }
+    }
+
+    /// <summary>Food and firewood — what a market is allowed to hold (D141's filter aside).</summary>
+    private static readonly Goods[] MarketGoods = { Goods.Food, Goods.Firewood };
+
+    /// <summary>
+    /// Take an armful for the market's own store (`storage-and-distribution.md §14.8`, D197).
+    /// </summary>
+    /// <remarks>
+    /// <b>Which good is re-derived here rather than carried through the walk</b>, so a load can
+    /// never be picked up for a shortage that was filled while the marketer was walking. Whole
+    /// armfuls only — D165's rule, learned on the farm: <em>room for a fraction of a load is not
+    /// room</em>, and taking it turns one walk into two.
+    /// </remarks>
+    private static void LoadForTheMarket(SimWorld world, Villager villager, StoreBuilding source)
+    {
+        StoreBuilding? market = TheMarketNearest(world, villager.Position);
+        if (market is null || ReferenceEquals(market, source))
+        {
+            GoHome(world, villager);
+            return;
+        }
+
+        int load = world.Config.CarryCapacity;
+
+        int wanted = VillageEconomy.MarketStockWanted(world.Config, OccupiedHomes(world));
+
+        for (int g = 0; g < MarketGoods.Length; g++)
+        {
+            Goods goods = MarketGoods[g];
+            int room = wanted - HeldOf(market.Store, goods);
+
+            if (!market.Accepts(goods) || room < load || market.Store.FreeSpace < load)
+            {
+                continue;
+            }
+
+            int take = Smallest(load, HeldOf(source.Store, goods), room);
+            if (take <= 0 || !source.Store.TryTake(goods, take))
+            {
+                continue;
+            }
+
+            if (goods == Goods.Food)
+            {
+                villager.CarriedFood += take;
+            }
+            else
+            {
+                villager.CarriedFirewood += take;
+            }
+
+            villager.State = VillagerState.StockingTheMarket;
+            return;
+        }
+
+        // The shortage filled itself while they walked. Nothing taken, nothing owed.
+        GoHome(world, villager);
+    }
+
+    /// <summary>
+    /// Put the armful into the market's own store — the end of the restock leg (§14.8, D197).
+    /// </summary>
+    /// <remarks>
+    /// <b>Whatever will not fit goes on by the ordinary path</b> (<see cref="HaulOrSetDown"/>),
+    /// which ends in a heap on the ground rather than in goods leaving the world (D96). That
+    /// should not happen — the leg is only offered when the market has room for a whole armful —
+    /// but *"should not happen"* is exactly what D96 and D144 both destroyed goods on.
+    /// </remarks>
+    private static void PutItInTheMarket(SimWorld world, Villager villager)
+    {
+        StoreBuilding? market = TheMarketNearest(world, villager.Position);
+
+        if (market is not null)
+        {
+            villager.CarriedFood -= market.Store.Add(Goods.Food, villager.CarriedFood);
+            villager.CarriedFirewood -= market.Store.Add(Goods.Firewood, villager.CarriedFirewood);
+        }
+
+        if (villager.IsCarrying)
+        {
+            HaulOrSetDown(world, villager);
+            return;
+        }
+
+        Decide(world, villager);
+    }
+
+    /// <summary>Households with somebody still living in them.</summary>
+    /// <remarks>
+    /// <b>Live count, not the roster</b> — a market should not keep stock for families that no
+    /// longer exist, which is the same rule <c>WorkGroundAllowanceFor</c> applies to a farm's
+    /// hands (D86).
+    /// </remarks>
+    private static int OccupiedHomes(SimWorld world)
+    {
+        int occupied = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            if (world.LivingMembersOf(world.Households[i]) > 0)
+            {
+                occupied++;
+            }
+        }
+
+        return occupied;
+    }
+
+    /// <summary>The nearest market store, or null where the village has none.</summary>
+    private static StoreBuilding? TheMarketNearest(SimWorld world, GridPos from)
+    {
+        StoreBuilding? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (store.Kind != StoreKind.Market)
+            {
+                continue;
+            }
+
+            int cost = world.TravelCost.Cost(from, store.Position);
+            if (cost != TravelCostField.Unreachable && cost < bestCost)
+            {
+                bestCost = cost;
+                best = store;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>The nearest store holding this good that is not <paramref name="except"/>.</summary>
+    private static StoreBuilding? NearestStoreHoldingExcept(
+        SimWorld world, GridPos from, Goods goods, StoreBuilding except)
+    {
+        StoreBuilding? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (ReferenceEquals(store, except) || HeldOf(store.Store, goods) <= 0)
+            {
+                continue;
+            }
+
+            int cost = world.TravelCost.Cost(from, store.Position);
+            if (cost != TravelCostField.Unreachable && cost < bestCost)
+            {
+                bestCost = cost;
+                best = store;
+            }
+        }
+
+        return best;
+    }
+
     private static MarketErrand? PlanMarketErrand(SimWorld world, Villager villager)
     {
         SimConfig config = world.Config;
@@ -1293,14 +1613,12 @@ public sealed class BehaviorSystem : ISimSystem
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
-            if (workplace.IsSite || workplace.Store.Food <= 0)
-            {
-                continue;
-            }
 
-            // A workplace with no store of its own has `int.MaxValue` capacity, so this is
-            // also what keeps every other building out of the loop without naming a kind.
-            if (workplace.Store.FreeSpace >= config.CropYieldPerTile)
+            // ⭐ ASKED OF THE WORLD RATHER THAN SPELLED OUT HERE (D185). It used to be two
+            // lines of comparison in this loop and nowhere else — and `MarketersWanted` did not
+            // have them, so **the village never staffed anybody to run this leg.** One
+            // condition, both callers; see `SimWorld.BufferWorthClearing`.
+            if (!world.BufferWorthClearing(workplace))
             {
                 continue;
             }
@@ -1308,6 +1626,29 @@ public sealed class BehaviorSystem : ISimSystem
             // Household 0 is the errand saying *nobody is waiting for this* — the same
             // sentinel a stranded-larder collection already uses.
             Offer(workplace.Position, 0, Goods.Food, delivering: false);
+        }
+
+        // ⭐⭐ AND THE FOURTH LEG: STOCK THE MARKET ITSELF (§14.8, D197, Joe).
+        //
+        // ⛔ THE SPEC HAS ASSUMED A STOCKED MARKET SINCE THE DAY IT SHIPPED AND NOTHING EVER
+        // PUT ANYTHING IN IT. §14.5: *"households fetch from the market as well as the granary
+        // and shed, nearest-first — which is what makes a stocked market shorten the trip
+        // rather than just move it."* The store exists, is sized, and stands empty; the
+        // marketer collects at the granary and walks straight past it to the house.
+        // **D185's shape for the third time — the behaviour existed and the demand did not.**
+        //
+        // ⚠️ OFFERED LAST, AND ONLY WHEN NOTHING ELSE IS WANTED — Joe's own trigger (*"once
+        // houses are full"*) and also the safe reading. **D79's rule is that need outranks
+        // convenience**: routing a hungry household's delivery through the market would make
+        // that household wait two legs instead of one, and a village must never starve with a
+        // full granary and an empty larder.
+        //
+        // ⭐ The value is almost all in the other direction anyway — households fetch for
+        // themselves constantly (§3) and a marketer's delivery is only the top-up, so stocking
+        // the market in slack time is what shortens the walks that actually dominate.
+        if (best is null)
+        {
+            OfferMarketRestock(world, villager, ref best, ref bestCost);
         }
 
         return best;
@@ -1635,17 +1976,24 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// Food one meal costs. Children eat a smaller portion — see
-    /// <see cref="SimConfig.ChildFoodSharePercent"/>.
+    /// Food one meal costs. <b>Dependants — the young and the old — eat a smaller portion</b>
+    /// (see <see cref="SimConfig.DependantFoodSharePercent"/>).
     /// </summary>
+    /// <remarks>
+    /// <b>⭐ ELDERS JOINED CHILDREN HERE ON JOE'S CALL (2026-08-23), AND THE OLD BEHAVIOUR WAS
+    /// NEVER A DECISION.</b> This had one branch and it tested for <see cref="LifeStage.Child"/>,
+    /// so **an elder ate a full adult portion while producing at <c>vigour_min_percent</c>** —
+    /// because the other arm of an <c>if</c> caught them, not because anybody ruled on ageing.
+    /// *A number nobody picked is still a number the game is balanced on.*
+    /// </remarks>
     public static int MealCostFor(Villager villager, SimConfig config)
     {
-        if (villager.LifeStage != LifeStage.Child)
+        if (villager.LifeStage is not (LifeStage.Child or LifeStage.Elder))
         {
             return config.FoodPerMeal;
         }
 
-        int cost = config.FoodPerMeal * config.ChildFoodSharePercent / 100;
+        int cost = config.FoodPerMeal * config.DependantFoodSharePercent / 100;
         return cost < 1 ? 1 : cost;
     }
 
@@ -1710,7 +2058,7 @@ public sealed class BehaviorSystem : ISimSystem
         {
             if (villager.Position == job!.Position)
             {
-                BeginGathering(villager, config);
+                BeginGathering(world, villager, config);
             }
             else
             {
@@ -1803,7 +2151,8 @@ public sealed class BehaviorSystem : ISimSystem
             if (villager.Position == job.Position)
             {
                 villager.State = VillagerState.MakingFirewood;
-                villager.ActionTicksRemaining = config.SplitTicks;
+                villager.ActionTicksRemaining =
+                    world.WorkTicksFor(villager, JobKind.Woodcutter, config.SplitTicks);
             }
             else
             {
@@ -1964,7 +2313,8 @@ public sealed class BehaviorSystem : ISimSystem
             if (villager.Position == job.Position)
             {
                 villager.State = VillagerState.Cutting;
-                villager.ActionTicksRemaining = config.CutTicks;
+                villager.ActionTicksRemaining =
+                    world.WorkTicksFor(villager, JobKind.Forester, config.CutTicks);
             }
             else
             {
@@ -2458,7 +2808,15 @@ public sealed class BehaviorSystem : ISimSystem
             Household? recipient = world.FindHousehold(villager.ErrandHouseholdId);
             if (recipient is null)
             {
-                break;
+                // ⭐⭐ NOBODY IS WAITING FOR THIS LOAD, SO IT IS THE MARKET'S OWN (§14.8, D197).
+                // Standing at a store building with no recipient is uniquely the restock leg:
+                // the other two errands that carry no household — a dead family's larder and a
+                // workplace buffer — are sourced from a *home* and a *workplace*, never from a
+                // store. **Derived at the moment of pickup rather than remembered**, so there is
+                // no flag on the villager that could be set and not cleared (D47's rule about
+                // bookkeeping state, one system over).
+                LoadForTheMarket(world, villager, store);
+                return;
             }
 
             int foodWanted = world.TargetFoodFor(recipient) - recipient.Stockpile.Food;
@@ -2608,7 +2966,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         if (onArrival == VillagerState.Gathering)
         {
-            BeginGathering(villager, world.Config);
+            BeginGathering(world, villager, world.Config);
             return;
         }
 
@@ -2710,7 +3068,8 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             villager.State = VillagerState.Clearing;
-            villager.ActionTicksRemaining = world.Config.CutTicks;
+            villager.ActionTicksRemaining =
+                world.WorkTicksFor(villager, JobKind.Forester, world.Config.CutTicks);
             return;
         }
 
@@ -2744,10 +3103,17 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival == VillagerState.StockingTheMarket)
+        {
+            PutItInTheMarket(world, villager);
+            return;
+        }
+
         if (onArrival == VillagerState.MakingFirewood)
         {
             villager.State = VillagerState.MakingFirewood;
-            villager.ActionTicksRemaining = world.Config.SplitTicks;
+            villager.ActionTicksRemaining =
+                world.WorkTicksFor(villager, JobKind.Woodcutter, world.Config.SplitTicks);
             return;
         }
 
@@ -2779,9 +3145,12 @@ public sealed class BehaviorSystem : ISimSystem
             // could see it because the villager still walked to a tree and came back with
             // logs. `IsPlantingErrand` is the one place that decides, so the duration and
             // the outcome cannot disagree about which job is being done.
-            villager.ActionTicksRemaining = IsPlantingErrand(world, villager)
-                ? VillageEconomy.PlantTicks(world.Config)
-                : world.Config.CutTicks;
+            villager.ActionTicksRemaining = world.WorkTicksFor(
+                villager,
+                JobKind.Forester,
+                IsPlantingErrand(world, villager)
+                    ? VillageEconomy.PlantTicks(world.Config)
+                    : world.Config.CutTicks);
             return;
         }
 
@@ -2833,10 +3202,11 @@ public sealed class BehaviorSystem : ISimSystem
         villager.State = onArrival == VillagerState.Idle ? VillagerState.Resting : onArrival;
     }
 
-    private static void BeginGathering(Villager villager, SimConfig config)
+    private static void BeginGathering(SimWorld world, Villager villager, SimConfig config)
     {
         villager.State = VillagerState.Gathering;
-        villager.ActionTicksRemaining = config.GatherTicks;
+        villager.ActionTicksRemaining =
+            world.WorkTicksFor(villager, JobKind.Forager, config.GatherTicks);
     }
 
     // ---------------------------------------------------------------
@@ -2869,9 +3239,10 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         villager.State = work;
-        villager.ActionTicksRemaining = work == VillagerState.Sowing
-            ? world.Config.SowTicks
-            : world.Config.ReapTicks;
+        villager.ActionTicksRemaining = world.WorkTicksFor(
+            villager,
+            JobKind.Farmer,
+            work == VillagerState.Sowing ? world.Config.SowTicks : world.Config.ReapTicks);
     }
 
     /// <summary>

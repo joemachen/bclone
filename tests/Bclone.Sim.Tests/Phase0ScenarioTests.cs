@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Logging;
@@ -121,16 +123,38 @@ public sealed class Phase0ScenarioTests
         Assert.InRange(loop.World.Villager.AgeYears, 40, 50);
     }
 
+    /// <summary>
+    /// "Winter came … Foraging stops." must never be followed by somebody foraging.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The log is the deliverable; a log that argues with itself fails the phase no matter what
+    /// the sim underneath is doing.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ A CAREER LINE IS NOT AN ACTIVITY LINE, AND THIS GUARD OUTGREW ITS OWN VOCABULARY
+    /// (D200).</b> It matched the bare word *"foraged"*, which was every foraging line in the
+    /// world when Phase 0 wrote it. **Mastery narration arrived in D181** — *"Dorcas has foraged
+    /// these woods for 18 years"* — and that is a statement about a **life**, not about this
+    /// winter. When a cadence change shifted the timings enough to land one inside a winter, the
+    /// guard reported a contradiction that is not one. *A guard that outlives the rule it was
+    /// written for looks exactly like a regression* (D150).
+    /// </para>
+    /// <para>
+    /// <b>⭐ So the exemption is asked of the config rather than hardcoded here.</b> Each
+    /// <c>SkillRow.MasteryLine</c> is a format string; its fixed middle is what a career sentence
+    /// reads like, and pulling it from the same place the narration comes from means the guard
+    /// cannot drift from the words the game actually says (D142, D148).
+    /// </para>
+    /// </remarks>
     [Fact]
     public void TheLifeLogNeverContradictsItself()
     {
-        // "Winter came ... Foraging stops." must never be followed by a foraging
-        // line. The log is the deliverable; a log that argues with itself fails the
-        // phase no matter what the sim underneath is doing.
         var (loop, sink) = Phase0Fixtures.Build(Phase0Fixtures.Plenty);
         Phase0Fixtures.RunUntilDeath(loop);
 
         IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
+        IReadOnlyList<string> careerLines = CareerSentenceFragments(loop.World.Config);
         bool foragingStopped = false;
 
         foreach (string line in log)
@@ -147,10 +171,41 @@ public sealed class Phase0ScenarioTests
                 continue;
             }
 
+            if (careerLines.Any(fragment => line.Contains(fragment, StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
             Assert.False(
                 foragingStopped && line.Contains("foraged", StringComparison.OrdinalIgnoreCase),
                 $"Life log claims foraging stopped, then reports: {line}");
         }
+    }
+
+    /// <summary>
+    /// The fixed middle of every mastery line — what a sentence about a <b>career</b> reads like.
+    /// </summary>
+    /// <remarks>
+    /// Taken from the config's own format strings, so a reworded mastery line changes this guard
+    /// with it rather than quietly slipping past.
+    /// </remarks>
+    private static IReadOnlyList<string> CareerSentenceFragments(SimConfig config)
+    {
+        var fragments = new List<string>();
+
+        foreach (SkillRow skill in config.Skills)
+        {
+            string line = skill.MasteryLine;
+            int from = line.IndexOf("{0}", StringComparison.Ordinal);
+            int to = line.IndexOf("{1}", StringComparison.Ordinal);
+
+            if (from >= 0 && to > from)
+            {
+                fragments.Add(line[(from + 3)..to].Trim());
+            }
+        }
+
+        return fragments;
     }
 
     [Fact]

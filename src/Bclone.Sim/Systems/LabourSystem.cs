@@ -31,10 +31,24 @@ namespace Bclone.Sim.Systems;
 ///     having to anticipate it.
 ///   </item>
 ///   <item>
-///     <b>Every season, whoever is idle takes any opening.</b> Food is stored per
-///     household (D14), so a household left with nobody working cannot wait until
-///     next spring. This never moves someone who already has a job, so the reason
-///     they were given for holding it stays true.
+///     <b>Every <c>labour_slack_ticks</c>, whoever is idle takes any opening</b> — ten days as
+///     shipped (D200, Joe: *"30 days feels unresponsive"*). Food is stored per household (D14),
+///     so a household left with nobody working cannot wait until next spring.
+///     <para>
+///     <b>⚠️ THIS USED TO CLAIM IT "NEVER MOVES SOMEONE WHO ALREADY HAS A JOB", AND THAT WAS
+///     NEVER TRUE</b> — found by writing a guard for the claim (D200). <c>ShedSurplus</c>
+///     releases a villager the village no longer wants and <c>Match</c> puts them into an
+///     opening <em>in the same pass</em>, so from outside it is one move from trade to trade.
+///     Measured at the OLD seasonal cadence: <b>67, 78 and 83</b> such moves over fifty years
+///     on three seeds. <b>The behaviour is right and the sentence was wrong</b> — *the village
+///     wanted fewer foragers, so Agnes was let go and took the open builder's seat the same
+///     day* is exactly what this pass is for.
+///     </para>
+///     <para>
+///     What it genuinely does not do is <em>reconsider</em> a job nobody has asked it to: a
+///     villager whose trade is still wanted is left alone, and that is what keeps their stated
+///     reason true between reshuffles.
+///     </para>
 ///   </item>
 /// </list>
 /// <para>
@@ -46,6 +60,17 @@ namespace Bclone.Sim.Systems;
 public sealed class LabourSystem : ISimSystem
 {
     public string Name => "labour";
+
+    /// <summary>
+    /// How often the slack pass runs, in ticks — <b>a season unless the config says otherwise</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>Defaulted rather than required</b>, so every fixture written before
+    /// <c>labour_slack_ticks</c> existed keeps the cadence it was measured at, and the key is a
+    /// change the shipped file makes rather than one every config has to answer.
+    /// </remarks>
+    private static int SlackInterval(SimConfig config) =>
+        config.LabourSlackTicks > 0 ? config.LabourSlackTicks : config.TicksPerSeason;
 
     public void Execute(SimWorld world)
     {
@@ -63,7 +88,7 @@ public sealed class LabourSystem : ISimSystem
             return;
         }
 
-        if (world.Tick % (ulong)config.TicksPerSeason == 0UL)
+        if (world.Tick % (ulong)SlackInterval(config) == 0UL)
         {
             LabourAllocator.TakeUpSlack(world);
             SayIfWorkIsGoingUndone(world);

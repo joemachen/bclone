@@ -73,7 +73,7 @@ public static class VillageEconomy
     /// <summary>Food one child eats in a year.</summary>
     public static int ChildFoodPerYear(SimConfig config)
     {
-        int childMeal = config.FoodPerMeal * config.ChildFoodSharePercent / 100;
+        int childMeal = config.FoodPerMeal * config.DependantFoodSharePercent / 100;
         return MealsPerYear(config) * (childMeal < 1 ? 1 : childMeal);
     }
 
@@ -1335,6 +1335,41 @@ public static class VillageEconomy
         ArgumentNullException.ThrowIfNull(config);
 
         return config.MarketStockPerHousehold * config.EconomyHorizonHouseholds;
+    }
+
+    /// <summary>
+    /// What a market should actually be <b>kept</b> stocked to — <b>the households it has, not
+    /// the ones it is built for</b> (`storage-and-distribution.md §14.8`, D197).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ THE CAPACITY IS A CEILING FOR THE HORIZON VILLAGE AND USING IT AS THE TARGET
+    /// DOUBLED THE VILLAGE'S HAULING.</b> <see cref="MarketCapacity"/> is
+    /// <c>market_stock_per_household × economy_horizon_households</c> — <b>800 units</b> on the
+    /// shipped config — and the first draft of the restock leg filled it. **A village of five
+    /// homes needing forty apiece had a marketer hauling stock for twenty households**, and
+    /// measured distribution effort went up 24–79% while household fetching fell.
+    /// </para>
+    /// <para>
+    /// <b>⭐ The building is sized for the village it may become; the stock is sized for the
+    /// village it is.</b> That distinction is what makes `market_stock_per_household` mean what
+    /// its own config comment says — *"what the market keeps on hand, PER HOUSEHOLD"* — rather
+    /// than being a capacity in disguise.
+    /// </para>
+    /// <para>
+    /// <b>Counted in occupied households</b>, so a market does not keep stock for families that
+    /// no longer exist — the same live-count rule <c>WorkGroundAllowanceFor</c> and
+    /// <see cref="FieldTilesOneFarmerKeeps"/>'s caller already use.
+    /// </para>
+    /// </remarks>
+    public static int MarketStockWanted(SimConfig config, int occupiedHouseholds)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int wanted = config.MarketStockPerHousehold * occupiedHouseholds;
+        int ceiling = MarketCapacity(config);
+
+        return wanted > ceiling ? ceiling : wanted;
     }
 
     /// <summary>

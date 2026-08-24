@@ -1,3 +1,4 @@
+using System.Linq;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
@@ -244,8 +245,106 @@ public sealed class StockLimitTests
     //
     //   before ground was worth going to: fixture 13985157942708541633,
     //                                     shipped 17566836300829537614
-    private const ulong FixtureFiftyYearHash = 18149215200660116896UL;
-    private const ulong ShippedFiftyYearHash = 2960234095731849111UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE PROFICIENCY SUBSTRATE (D181), AND THIS ONE MOVED WITHOUT ANYBODY
+    // DOING ANYTHING DIFFERENTLY — which is the opposite of every re-take above it and is worth
+    // the paragraph. Villagers now carry what they have put into each trade, it is hashed, and
+    // it grows from the first tick. **Nothing reads it**: no behaviour anywhere consults skill
+    // until landing 2. So these two moved for the counters alone.
+    //
+    // **That is asserted rather than claimed** — `SkillTests.FiftyYearsOfVillageAndOnlyThe-
+    // CountersMoved` recomputes these same two runs with `StateHash.ComputeIgnoringSkills` and
+    // gets the two numbers directly below, byte for byte. If a future change to the substrate
+    // makes somebody walk somewhere different, that guard goes red and this one stays green,
+    // which is the whole point of having both.
+    //
+    // ⛔ AND IT IS WHY `skills-catalog.md §11.2.1`'s *"provable no-op: goldens unmoved"* was
+    // corrected rather than the guard weakened. Hashing new state that grows and keeping a
+    // state-hash golden byte-identical are mutually exclusive; the spec had reasoned by analogy
+    // from `crops-and-orchards.md`, where the generator never produces the new terrain values.
+    //
+    //   before people got better at things: fixture 18149215200660116896,
+    //                                       shipped 2960234095731849111
+    //
+    // ⭐⭐ RE-TAKEN AGAIN, SAME DAY, FOR SKILL DECAY BEING DELETED (D183, Joe: *"let's give to
+    // the player, not punish or decay"*). Proficiency now only ever goes up, and it carries a
+    // second counter — the honest calendar ticks the panel quotes, beside the weighted work
+    // mastery reads, because a tick out on the job is worth more than a tick waiting for one.
+    //
+    // **Still nobody doing anything differently.** `ComputeIgnoringSkills` returns the same two
+    // numbers it did before ANY of this landed — 18149215200660116896 and 2960234095731849111 —
+    // so both re-takes today moved these for the counters and for nothing else.
+    //
+    //   before decay was deleted: fixture 4887770829745874605,
+    //                             shipped 5305142457694342096
+    //
+    // ⭐⭐ RE-TAKEN FOR MASTERY BITING (D187) -- and this is the FIRST skill re-take that is a
+    // real behaviour change. Landings 1 and 2's earlier moves were counters; this one is people
+    // working faster. A master takes half the ticks over an action, rounded up, so fifty years
+    // of a village whose founders got good at things is a genuinely different fifty years --
+    // measured at 23 alive against 29 on the shipped seed at a century.
+    //
+    // ⚠️ `SkillTests.FiftyYearsOfVillageAndOnlyTheCountersMoved` still asserts the OLD values
+    // through `ComputeIgnoringSkills`, posed with the bonus at zero -- so the claim that the
+    // substrate alone changes nothing is still standing, and still checkable, beside this.
+    //
+    //   before mastery bit: fixture 17883694128790877833,
+    //                       shipped 15628752506897642520
+    //
+    // ⭐⭐ RE-TAKEN BECAUSE THE MARKETER STOCKS THE MARKET (D197,
+    // `storage-and-distribution.md §14.8`). A marketer now carries goods to the market's own
+    // store in slack time, so goods sit in a different building and every history downstream
+    // differs.
+    //
+    // ⚠️ THIS MOVED **EVERY** VILLAGE GOLDEN, NOT JUST THE FARM'S — unlike D194 the day before,
+    // which moved only the seam. The reason is worth keeping: **every village in the suite has a
+    // market in it**, where only one of them plants a farmhouse. *Silent about what they do not
+    // reach, loud about what they do* (D157, D162) — and this one they all reach.
+    //
+    //   before the market was stocked: 11057161405161342300
+    //
+    //   before the market stopped being a dumping ground (D199): 5407508656652631583
+    private const ulong FixtureFiftyYearHash = 10819177739606102446UL;
+    //
+    // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
+    // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
+    // correctly -- `VillageFixtures.Village` derives its own economy and never reads the
+    // shipped file's two numbers, so this pair moving apart is the two configs being two
+    // configs rather than drift.
+    //
+    //   before eating less and burning more: shipped 16062803390206118870
+    //
+    // ⭐⭐ RE-TAKEN FOR THE MIXED FOUNDING AND THE SEEDED RHYTHM (D190) — Phase 3 landing 3, and
+    // the commit that discharges D28. The founders arrive as a master, a journeyman and two
+    // novices with seeded trades, and every villager is drawn a personal rhythm at birth that
+    // sets their first step and their first hunger a little apart from everybody else's.
+    // **No two founders run the same program from tick 0**, so fifty years of village is a
+    // different fifty years from the first tick onward.
+    //
+    //   before the founders were people: fixture 5402933120067190351,
+    //                                    shipped 16150256378240105365
+    //
+    // ⭐ RE-TAKEN FOR ELDERS EATING A DEPENDANT'S SHARE (D191, Joe). An elder used to eat a
+    // full adult portion while producing at vigour_min_percent -- not as a ruling about
+    // ageing, but because MealCostFor had one branch and it tested for Child. Fifty years of
+    // a village whose old people eat half is a different fifty years.
+    //
+    //   before elders ate like children: fixture 2925726946142789484,
+    //                                    shipped 9133620442171355746
+    //
+    // ⭐ RE-TAKEN FOR A FIVE-DAY THAW (D192, Joe: "fire warm up should be much faster"). A
+    // hearth used to give back exactly what open ground took, so coming back from the brink
+    // was fifteen days -- half a winter spent thawing. It is five now, so villagers spend
+    // materially more of every winter working and fifty years of that is a different fifty.
+    //
+    //   before the fire got warmer: fixture 18174430941982640321,
+    //                               shipped 7791088175599810974
+    //   before the market was stocked: 15960035659211257615
+    //   before the market stopped being a dumping ground (D199): 14089077723027009078
+    //
+    //   before the village obeyed sooner (D200): 6025855613246143038
+    //   before the village taught its young (D202): 9543702176106421225
+    private const ulong ShippedFiftyYearHash = 8020065647695876691UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -514,9 +613,53 @@ public sealed class StockLimitTests
         int limited = world.FirewoodInSheds();
         _output.WriteLine($"firewood in sheds: {unlimited} unlimited, {limited} capped at 40");
 
+        // ⭐⭐ IT ASSERTS THAT PRODUCTION STOPPED, WHICH IS STRONGER THAN THE BOUND IT REPLACES
+        // (D192). The old guard allowed one batch of overshoot, which was a guess at how much
+        // work can be in flight when the limit bites — and a faster thaw (Joe, D192) put more
+        // winter hours into the chain and crossed it at 107 against 90.
+        //
+        // ⛔ THE FIRST FIX WAS ALSO A GUESS AND WAS ALSO WRONG: `seats × split` came out at 50
+        // for a fixture that derives ONE woodcutter seat, so it did not even cover the observed
+        // number. *Two guesses at a tolerance is the point at which the tolerance is the wrong
+        // thing to assert.*
+        //
+        // **What the limit promises is that the work stops, not that the stock lands on a
+        // particular number** — so that is what this checks: the capped village is far below
+        // the uncapped one, and twenty more years does not move it. A limit that merely slowed
+        // production would keep climbing here and pass any fixed bound generous enough to
+        // absorb the overshoot.
+        int settled = world.FirewoodInSheds();
+        loop.Step(config.TicksPerYear * 20);
+        int stillSettled = world.FirewoodInSheds();
+
+        int frozen = world.Villagers.Count(v => !v.Alive && v.CauseOfDeath == CauseOfDeath.Cold);
+        _output.WriteLine(
+            $"twenty years later: {stillSettled} firewood, population {world.Population}, "
+            + $"{frozen} ever frozen");
+
         Assert.True(
-            limited <= 40 + config.FirewoodPerSplit,
-            $"Firewood settled at {limited} against a limit of 40.");
+            limited < unlimited / 2,
+            $"Firewood settled at {limited} against {unlimited} uncapped — the limit is not "
+            + "biting at all.");
+
+        Assert.True(
+            stillSettled <= settled + config.FirewoodPerSplit,
+            $"Firewood went {settled} → {stillSettled} over twenty years under a limit of 40. "
+            + "Production did not stop, it merely slowed — which is the bug D139 records one "
+            + "job over, where a forester the player posted keeps felling past the number in "
+            + "the box.");
+
+        // ⭐⭐ AND NOBODY FROZE FOR IT, WHICH IS THE HALF WORTH ASSERTING MOST. A stock limit is
+        // the player saying *stop*, and D62's whole claim is that the player sets a ceiling
+        // while the village goes on keeping itself alive. **The sheds do drain to nothing here**
+        // — households hold their own fuel, and forty in a shed was never what kept anyone warm
+        // — so a guard that only watched the shed would read this as a catastrophe. It is not:
+        // thirty people, forty years, nobody cold.
+        Assert.Equal(0, frozen);
+        Assert.True(
+            world.Population >= config.StartingPopulation,
+            $"The village fell to {world.Population} under a firewood limit. A ceiling the "
+            + "player sets must not be a way to kill them.");
     }
 
     /// <summary>

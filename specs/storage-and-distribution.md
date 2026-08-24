@@ -282,6 +282,106 @@ This is the acceptance test for the slice, and it is a stronger claim than "the 
 - **A marketer never walks an empty leg** — asserted directly, since it is the whole of §14.2.
 - **Goods conservation** across every new movement, and **determinism** over 300 years.
 
+### 14.8 ⭐⭐ THE MARKET IS STOCKED, AND UNTIL NOW NOTHING EVER PUT ANYTHING IN IT (Joe, 2026-08-23)
+
+> *"The marketer should fill the market's stores from the granary/storage shed and then
+> distribute to houses from there. Once houses are full, or the market's stores are empty of a
+> needed good, the marketer should replenish the market from the granary/storage shed."*
+
+**⛔ THE SPEC ALREADY ASSUMED THIS AND NOTHING IMPLEMENTED IT.** §14.5's last bullet says
+*"households fetch from the market as well as the granary and shed, nearest-first — **which is
+what makes a stocked market shorten the trip rather than just move it**"* — and **the market has
+never held stock.** Its store exists, is sized (`market_stock_per_household ×
+economy_horizon_households`) and is described in config as *"a short trip, not a second
+granary"*; the marketer collects at the granary and walks straight past it to the house.
+
+**⭐ That is D185's shape for the third time: the behaviour existed and the demand did not.** The
+market is a valid *source* — `NearestStoreHolding` has always included it — so the moment
+anything stocks it, households start fetching from it with no other change at all.
+
+#### The rule
+
+**A fourth errand, offered on cost like the other three (§14.2): *the market is short of a good a
+bigger store has.*** No threshold, no detour logic — one more useful thing to carry.
+
+- **Source: the nearest store holding it that is not the market**, so there is no self-loop.
+- **Target: the market's own capacity**, which is already derived and already sized as a short
+  trip rather than a second store. Nothing new is typed.
+- **⚠️ Offered only when no household needs anything** — *"once houses are full"*, Joe's own
+  trigger, and it is also the safe reading. **D79's rule is that need outranks convenience**: a
+  village must never starve with a full granary and an empty larder, and routing a hungry
+  household's delivery through the market would make that household wait for two legs instead of
+  one.
+- **⚠️ SO THE SECOND HALF OF JOE'S SENTENCE IS DELIBERATELY NOT IMPLEMENTED LITERALLY, AND HE
+  SHOULD KNOW IT.** *"…or the market's stores are empty of a needed good"* would send the
+  marketer to refill the market **before** serving the house that is waiting. The value is
+  almost all in the other direction anyway: **households fetch for themselves constantly (§3),
+  and marketer delivery is only the top-up** — so stocking the market in slack time is what
+  shortens the walks that actually dominate.
+
+#### ⭐ Why this makes siting a decision, which is the point
+
+**Joe: *"that's the point. The user has to put thought into positioning."*** A market next to the
+granary is now pure overhead — two legs where one would do. A market **among the homes** turns
+one long marketer trip into many short household fetches. **The building finally has a reason to
+be somewhere**, which is the same lesson D194 landed on the farm: *put the granary near the
+fields, and the market near the homes.*
+
+#### ⭐⭐ And the player can see what a market here would serve (D201)
+
+> Joe: *"the market should have a radius that is showing when placing it that demonstrates the
+> radius the marketer will go to fetch/drop off/restock… its service area. Before placing."*
+
+**⛔ THERE IS NO RADIUS, AND DRAWING ONE WOULD BE DRAWING A LIE.** A marketer picks the cheapest
+errand from wherever they are standing (§14.2) and households fetch from whatever store is
+nearest (§3) — **nothing in the model refuses a distance.** A ring would also rebuild the
+catchment fence **D120 deleted**, which is the one thing this project has already paid to remove.
+
+**⭐ The truthful answer is a count: the homes this would be the CLOSEST food store for** — exactly
+the set whose walk it shortens. **It is not circular**, because it depends on where the granary
+and every other store already are, and *that is Joe's own point about positioning made visible*:
+a market beside the granary reads **"0 homes"**, because the granary was already nearer.
+
+- **Strictly nearer**, so a tie goes to the store that already exists — matching the granary's
+  walk has not shortened anybody's errand.
+- **Occupied homes only** — a market sited to serve families that no longer exist is sited on a
+  ghost.
+- **Shown at placement, and the homes are ringed on the map.** The number says *how many*; the
+  rings say *which way to move it*, which is the difference between a stat and a decision.
+
+#### ⛔ And storage is separate from distribution (D199)
+
+> Joe: *"only the marketer moves items to the market. Ordinary haulers dump in generic storage
+> (stockpile, shed, warehouse, etc)… I just don't want it to be a dumping ground — I want to
+> separate the actual storage buildings from the market (distribution building)."*
+
+**`StoreForTheLoad`'s kind-blind fallback was making the market the overflow store.** A producer
+takes their load to the nearest store of the right kind and, failing that, to *anything that will
+take it* — and the market takes food and firewood. Measured over thirty years it sat **600 above**
+what the village's homes need, **none of it carried there on purpose**. That is the very thing
+`market_stock_per_household`'s own config comment forbids.
+
+**`StoreBuilding.IsStorage` names the distinction on the building** — everything but the market —
+so a warehouse is storage the day it exists. **A marketer is unaffected**, which is what keeps
+household overflow arriving there: §14.3's *"in"* direction is a trader's leg too. *The rule is
+about who is carrying, not about what is carried.*
+
+**Measured after: the worst overfill falls from 600 to 36–40**, which is the household overflow
+that belongs there.
+
+#### What must still hold
+
+- **⛔ §14.4 is unchanged and is the acceptance test**: switch the market off and the village
+  survives exactly as it does today. Stocking is additive.
+- **The market must not become a second granary.** Its capacity is the guard, and it is derived.
+- **Goods conservation** across the new leg.
+
+#### ⚠️ And the honest failure mode to measure for
+
+**This adds a leg.** If household travel does not measurably fall, the market has become a
+detour and the slice is wrong — which is §8's standing test for the market and the one this must
+be held to. *Measure household walking, not marketer walking.*
+
 ---
 
 ## 13. What actually happened (measured after building it, 2026-07-27)

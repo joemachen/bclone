@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Bclone.Sim.World;
 
 /// <summary>A position on the abstract map. Integers only — see decision D2.</summary>
@@ -285,6 +287,127 @@ public sealed class Villager
     public int GathersThisSeason { get; set; }
 
     /// <summary>
+    /// Ticks this villager still has to wait before their working life begins — <b>a seeded
+    /// personal rhythm, drawn once at birth</b> (`skills-catalog.md §3.5`, D28).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ HALF THE ANSWER TO THE OLDEST OPEN OBSERVATION IN THE PROJECT.</b> Joe watched the
+    /// village at 4× in Phase 1 and saw people travelling as duos rather than as individuals.
+    /// Measured, it is near-total: **two adults of one household holding one job are on the same
+    /// tile 99.9% of ticks, with identical hunger 100% of the time.** They are not short of
+    /// variability — they are *symmetric*: same home tile, same fixed stepping rule, same
+    /// constant action durations, so they even stop to eat on the same tick.
+    /// </para>
+    /// <para>
+    /// <b>⭐ A ONE-TIME STAGGER IS ENOUGH, BECAUSE NOTHING EVER RE-SYNCHRONISES THEM.</b> Two
+    /// villagers who set off a tick apart arrive a tick apart, work a tick apart and eat a tick
+    /// apart for the rest of their lives — the same reasoning §3.3 gives for why differing
+    /// action durations break the lockstep permanently.
+    /// </para>
+    /// <para>
+    /// <b>Bounded by a day, and derived rather than picked</b> (D16): the draw is
+    /// <c>0 … ticks_per_day − 1</c>, which is *people do not all get up at the same moment*
+    /// stated in the calendar's own unit. §3.5's hard bound is that **if it changes what anybody
+    /// produces across a year it is too big** — this costs at most three ticks **once in a
+    /// lifetime**, against 480 ticks in every year of it.
+    /// </para>
+    /// <para>
+    /// <b>Spent when their working life starts, not at birth</b>, so a child does not burn it
+    /// during infancy where it would do nothing. Hashed, because it is sim state that decides
+    /// what somebody does.
+    /// </para>
+    /// </remarks>
+    public int Rhythm { get; set; }
+
+    /// <summary>
+    /// What this person has put into each trade — <b>time on the task, in ticks</b>
+    /// (`specs/skills-catalog.md §3.1`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ NOT EXPERIENCE POINTS, AND THE DISTINCTION IS NOT PEDANTRY.</b> An XP number is a
+    /// thing the player learns to farm: it invites *"what gives the most XP?"*, which is a
+    /// question this game should never be able to answer. **Time-on-task can only be answered
+    /// one way — *she did the work*** — and it is the same argument §2.7 makes when it refuses a
+    /// Civ-style research bar.
+    /// </para>
+    /// <para>
+    /// <b>⛔ SORTED BY <see cref="SkillProgress.SkillId"/> AND KEPT THAT WAY.</b> This is mixed
+    /// into the state hash in list order, so an unordered container would make the hash depend
+    /// on the sequence entries happened to be created in — D15's *an unordered tie is a desync
+    /// waiting to happen*, arriving through a dictionary. <see cref="ProgressIn"/> is the only
+    /// door that adds to it, and it inserts in place.
+    /// </para>
+    /// <para>
+    /// <b>Sparse.</b> A villager who has never held a job carries an empty list and mixes
+    /// nothing (§8) — which is the contract that let this land before the behaviour it will
+    /// eventually drive.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It dies with them, always</b> (§5.4). Proficiency is one person's years; nothing
+    /// in the game may write it back into somebody else, and no record ever restores it.
+    /// </para>
+    /// </remarks>
+    public List<SkillProgress> Skills { get; } = new();
+
+    /// <summary>Ticks this villager has put into one skill, or zero if they never have.</summary>
+    public int TicksIn(int skillId)
+    {
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            if (Skills[i].SkillId == skillId)
+            {
+                return Skills[i].Ticks;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>What they have in one skill, or null if they have never touched it.</summary>
+    /// <remarks>
+    /// <b>Null rather than a zeroed entry</b>, so reading a skill can never create one — an
+    /// accessor that quietly materialises state is how a sparse structure stops being sparse
+    /// and every golden moves for a panel being opened.
+    /// </remarks>
+    public SkillProgress? FindProgressIn(int skillId)
+    {
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            if (Skills[i].SkillId == skillId)
+            {
+                return Skills[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>What they have in one skill, creating a zeroed entry if this is their first tick.</summary>
+    /// <remarks>
+    /// <b>The one door that adds to <see cref="Skills"/></b>, and it inserts in id order so the
+    /// list is sorted by construction rather than by anybody remembering to sort it.
+    /// </remarks>
+    public SkillProgress ProgressIn(int skillId)
+    {
+        int at = 0;
+        while (at < Skills.Count && Skills[at].SkillId < skillId)
+        {
+            at++;
+        }
+
+        if (at < Skills.Count && Skills[at].SkillId == skillId)
+        {
+            return Skills[at];
+        }
+
+        var fresh = new SkillProgress { SkillId = skillId };
+        Skills.Insert(at, fresh);
+        return fresh;
+    }
+
+    /// <summary>
     /// Plain-language description of the current action, for the UI.
     /// </summary>
     /// <param name="workplaceName">
@@ -345,6 +468,7 @@ public sealed class Villager
             VillagerState.Sowing => "sowing a field",
             VillagerState.Reaping => "reaping the harvest",
             VillagerState.HaulingToFarm => "carrying the harvest to the farm",
+            VillagerState.StockingTheMarket => "carrying goods to the market",
             _ => State.ToString(),
         };
     }

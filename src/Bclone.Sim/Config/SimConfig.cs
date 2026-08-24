@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Bclone.Sim.World;
 
 namespace Bclone.Sim.Config;
 
@@ -188,16 +189,32 @@ public sealed record SimConfig
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// What a child eats, as a percentage of an adult's meal.
+    /// What a <b>dependant</b> eats — a child or an elder — as a percentage of an adult's meal.
     /// </summary>
     /// <remarks>
-    /// A child eating a full adult portion is not just wrong, it is fatal: two
-    /// working adults cannot feed a household of four at full rations, so the
-    /// village grew, starved, and died out every time. Children eat less because
-    /// they are smaller — and that is what makes raising them survivable.
+    /// <para>
+    /// A child eating a full adult portion is not just wrong, it is fatal: two working adults
+    /// cannot feed a household of four at full rations, so the village grew, starved, and died
+    /// out every time. Children eat less because they are smaller — and that is what makes
+    /// raising them survivable.
+    /// </para>
+    /// <para>
+    /// <b>⭐ ELDERS EAT THE SAME SHARE (Joe, 2026-08-23), AND THE OLD BEHAVIOUR WAS NEVER
+    /// CHOSEN.</b> <c>MealCostFor</c> had exactly one branch and it tested for
+    /// <see cref="World.LifeStage.Child"/>, so **an elder ate like a prime adult while producing
+    /// at <c>vigour_min_percent</c>** — not as a decision about ageing, but because the other
+    /// arm of an <c>if</c> caught them. *A number nobody picked is still a number the game is
+    /// balanced on*, which is why it was worth asking about rather than assuming.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ RENAMED FROM <c>child_food_share_percent</c> IN THE SAME BREATH</b>, because a key
+    /// that governs elders while calling itself *child* is precisely the name-that-lies this
+    /// project keeps catching (D148, D188). *Dependant* is the word the economy already uses —
+    /// see <see cref="VillageEconomy.RequiredDependants"/>.
+    /// </para>
     /// </remarks>
-    [JsonPropertyName("child_food_share_percent")]
-    public int ChildFoodSharePercent { get; init; } = 50;
+    [JsonPropertyName("dependant_food_share_percent")]
+    public int DependantFoodSharePercent { get; init; } = 50;
 
     /// <summary>
     /// Age at which an unpaired adult starts looking for a partner and a home of
@@ -1019,6 +1036,31 @@ public sealed record SimConfig
     public int ExposureDaysSheltered { get; init; } = 25;
 
     /// <summary>
+    /// Days at a burning hearth to come back <b>from the brink of freezing</b> (Joe, D192).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The third number in D45's table, and the one that was never stated.</b> Fifteen days
+    /// outdoors kills; twenty-five under a fireless roof kills; **five at a fire brings you all
+    /// the way back.** Together those three are the whole cold model, readable in one line each.
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT USED TO BE DERIVED BY MIRRORING THE OUTDOOR RATE, WHICH MEANT FIFTEEN.</b> The
+    /// old reasoning was that mirroring *"needs no number of its own"* — true, and it quietly
+    /// chose one anyway: half a winter to thaw. Joe, watching it: *"fire warm up should be much
+    /// faster than it currently is."* **A derivation that avoids stating a number still states
+    /// one**, and this is what that costs when nobody checks what it came out as.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Bounded below by a measurement</b>: a fire that zeroed the count outright was built,
+    /// measured and rejected — villagers spend **76% of winter at a lit hearth**, so nobody froze
+    /// in 120 years. Five days is fast; instant is a reset.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("thaw_days_at_a_fire")]
+    public int ThawDaysAtAFire { get; init; } = 5;
+
+    /// <summary>
     /// How far toward freezing a villager gets before they break off work to get warm.
     /// </summary>
     /// <remarks>
@@ -1174,6 +1216,314 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("labour_reshuffle_years")]
     public int LabourReshuffleYears { get; init; } = 1;
+
+    /// <summary>
+    /// How often the village fills its openings and lets go of anybody it no longer wants — in
+    /// <b>ticks</b> (D200).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing: *"30 days feels unresponsive."*</b> This pass was hard-wired to
+    /// <see cref="TicksPerSeason"/>, so a change made on the professions panel waited up to a
+    /// whole season to bite — measured at 25, 15 and 5 in-game days depending on where in the
+    /// season it was set.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT IS NOT THE RESHUFFLE AND MUST NOT BECOME IT.</b>
+    /// <see cref="LabourReshuffleYears"/> moves people who already have jobs, and D20/D46 both
+    /// argue that doing so often *"churns jobs faster than a player can read the reason for
+    /// holding one."* **This pass never moves anybody who already holds a job** — it fills
+    /// openings from the idle and sheds a surplus the player asked to shed. Running it more
+    /// often makes the village obey sooner; it does not make anybody's career shorter.
+    /// </para>
+    /// <para>
+    /// <b>Zero is not allowed.</b> A pass on every tick is the per-tick reassignment
+    /// <c>LabourSystem</c>'s own remarks rule out.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("labour_slack_ticks")]
+    public int LabourSlackTicks { get; init; } = 120;
+
+    // ---------------------------------------------------------------
+    //  Skill (`specs/skills-catalog.md`, Phase 3)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The catalogue — <b>rows, not enum values</b> (`skills-catalog.md §4.1`, D168).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One per job that exists, and no more</b> (§4.2). Every ❌ profession in
+    /// `professions.md §4` brings its own when it lands; inventing them now would be a
+    /// catalogue of things nobody can hold.
+    /// </para>
+    /// <para>
+    /// <b>⛔ LABORERS HOLD NO SKILL, AND THAT IS DELIBERATE.</b> D66 refused
+    /// <c>JobKind.Laborer</c> on the grounds that a laborer is *"the villagers no job currently
+    /// wants"* — a position in the priority order, not a trade (D87). **A skill in being spare
+    /// is a contradiction**, and it would quietly make the fallback a career.
+    /// </para>
+    /// <para>
+    /// Defaults live here rather than in the shipped file, exactly like
+    /// <see cref="HouseholdNames"/> and <see cref="TownNames"/>: a modder replaces the list, and
+    /// a config that says nothing gets the game as designed.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("skills")]
+    public IReadOnlyList<SkillRow> Skills { get; init; } = new[]
+    {
+        new SkillRow
+        {
+            Id = 1,
+            Name = "foraging",
+            GrownBy = JobKind.Forager,
+            YearsPhrase = "as a forager",
+            MasteryLine = "{0} has foraged these woods for {1} years. "
+                + "Nothing that grows here goes unnoticed now.",
+        },
+        new SkillRow
+        {
+            Id = 2,
+            Name = "forestry",
+            GrownBy = JobKind.Forester,
+            YearsPhrase = "as a forester",
+            MasteryLine = "{0} has worked these woods for {1} years. "
+                + "Where to fell and where to plant takes no thinking about now.",
+        },
+        new SkillRow
+        {
+            Id = 3,
+            Name = "woodcutting",
+            GrownBy = JobKind.Woodcutter,
+            YearsPhrase = "as a woodcutter",
+            MasteryLine = "{0} has split the village's wood for {1} years. "
+                + "The grain gives way where it always did.",
+        },
+        new SkillRow
+        {
+            Id = 4,
+            Name = "farming",
+            GrownBy = JobKind.Farmer,
+            YearsPhrase = "as a farmer",
+
+            // ⭐⭐ Joe's own sentence, from `DESIGN.md`'s opening paragraph by way of §3.3b —
+            // the one he asked for by name. Pronoun-free: villagers have names and no sex.
+            MasteryLine = "{0} has farmed these fields for {1} years. "
+                + "There is nothing about this ground left to learn.",
+        },
+        new SkillRow
+        {
+            Id = 5,
+            Name = "building",
+            GrownBy = JobKind.Builder,
+            YearsPhrase = "as a builder",
+            MasteryLine = "{0} has raised the village's roofs for {1} years. "
+                + "The work goes up straight without measuring twice.",
+        },
+        new SkillRow
+        {
+            Id = 6,
+            Name = "trading",
+            GrownBy = JobKind.Marketer,
+            YearsPhrase = "as a marketer",
+            MasteryLine = "{0} has carried the village's goods for {1} years. "
+                + "Every door and every shortcut is known ground.",
+        },
+    };
+
+    /// <summary>
+    /// Years on the task before somebody is a master of it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Twenty</b> (Joe, D174), against a working life of about fifty-five —
+    /// <see cref="AdultAge"/> to a lifespan of 55–79. **A bit over a third of a career**, which
+    /// means a founder who sticks to one trade masters it and is a master for the back half of
+    /// their life, and a child born in year 1 masters at thirty-two — **so mastery and the first
+    /// grandchildren arrive together** (§3.3b). The generational loop does the pacing rather
+    /// than a timer.
+    /// </para>
+    /// <para>
+    /// <b>Content, not derivation</b> — the class <c>granary_feeds_people</c> is in (D165: a
+    /// stated fact about the world, with the consequence derived). A modder can move it.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("mastery_years")]
+    public int MasteryYears { get; init; } = 20;
+
+    // ⭐⭐ SKILL DECAY IS GONE, AND IT WAS BUILT AND MEASURED BEFORE IT WENT (D183, Joe:
+    // *"let's give to the player, not punish or decay"*). It was `skill_decay_years_per_year_lost`
+    // and `skill_floor_years`, derived against `labour_reshuffle_years` — three years away costs
+    // one year of the trade, floored at a year.
+    //
+    // **§3.4 required it on the grounds that "a fifty-year-old who did six jobs is a master of
+    // six". Measured, that cannot happen:** mastery needs 9,600 ticks and an adult life is about
+    // 26,400, so **at most two masteries fit in a whole life** even holding a trade every waking
+    // tick — and over sixty years the most any living villager had mastered was **one**.
+    //
+    // **What the rate did do was take 37% of everything one forager earned**, because a villager
+    // spends over half their adult life off any given trade (D46 moves them every three years).
+    // Agnes held foraging for 12,240 ticks — more than mastery requires — and never became a
+    // master. *That is the trap §3.4 itself forbids, produced by §3.4's own cure.*
+
+    /// <summary>
+    /// What a tick counts for when the villager is <b>out on the job</b>, in hundredths.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A TICK OUT ON THE WORK IS WORTH MORE THAN A TICK WAITING FOR IT</b> (Joe, D183).
+    /// A forester who is out felling learns faster than one sitting at home because the hut has
+    /// no logs — **but the second is still a forester, and still gaining**, which is the half
+    /// that keeps a stuttering supply chain from being a punishment as well as a shortage.
+    /// </para>
+    /// <para>
+    /// <b>Hundredths of a tick, so the weighting is a percentage with no float near sim state</b>
+    /// (D2). 150 against an idle 100 is Joe's 1.5×.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Measured consequence, stated rather than discovered later:</b> time out on the job
+    /// varies by trade — **forestry 88%, woodcutting 82%, foraging 41%, trading 30%, building
+    /// 27%** — so at 1.5× a forester accrues about **27% faster than a builder**. That is
+    /// divergence the player can *see and act on* (keep the hut supplied, staff it properly),
+    /// which is §2.3's traceable pressure rather than an invisible tax.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("skill_work_per_active_tick")]
+    public int SkillWorkPerActiveTick { get; init; } = 150;
+
+    /// <summary>
+    /// What a tick counts for when the villager <b>holds the trade but is not out on it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>100 is the anchor</b>: <c>mastery_years</c> means *that many years of holding a seat
+    /// you never leave the house for*, and anybody who actually works it gets there sooner.
+    /// **The generous direction on purpose** (D183) — the idle forester is idle because the
+    /// village ran out of logs, which is not their doing.
+    /// </remarks>
+    [JsonPropertyName("skill_work_per_idle_tick")]
+    public int SkillWorkPerIdleTick { get; init; } = 100;
+
+    /// <summary>
+    /// Extra work a learner gets per tick for standing beside a <b>master of the same trade at
+    /// the same workplace</b>, as a percentage (`skills-catalog.md §5.1a`, D202).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>§2.1's whole point:</b> *"that skill dies with the person unless an elder apprentices a
+    /// youth."* Until this existed, skill was personal and **nothing transferred** — a master
+    /// died and their years died with them, with no way for the village to have done anything
+    /// about it.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE TEACHER PAYS NOTHING</b> (Joe's call, D202, following D183's *"give, never
+    /// punish or decay"*). This adds to the learner and takes nothing from anybody. ⚠️ **The
+    /// stated consequence is that §5.3's policy dial has nothing to trade off**, which is why
+    /// there is no dial rather than a dial that does nothing.
+    /// </para>
+    /// <para>
+    /// <b>Zero is a supported state and is what the guards pose</b> to measure the feature
+    /// against its own absence — §10's anti-vacuity rule: *a village that never teaches must
+    /// produce measurably less than one that does.*
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("apprentice_learning_bonus_percent")]
+    public int ApprenticeLearningBonusPercent { get; init; }
+
+    /// <summary>
+    /// How much faster a <b>master</b> does the work, as a percentage — <b>the width of the
+    /// whole pillar</b> (`skills-catalog.md §3.3`, §12).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ SKILL SCALES HOW LONG A JOB TAKES, NOT WHAT IT YIELDS — DURATION FIRST, YIELD
+    /// SECOND</b> (§3.3). The reason is legibility rather than arithmetic: **a villager who is
+    /// out longer is visible on the map, and one who brings back less is only visible in a
+    /// panel.** It is also what discharges D28, which has asked since Phase 1 for time-on-task to
+    /// be personal — two people who take different numbers of ticks to do the same thing stop
+    /// arriving together within a season and never re-synchronise.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE NOVICE FLOOR IS UNTOUCHED AND THAT IS WHAT KEEPS THE ECONOMY STANDING</b>
+    /// (§3.2). At zero progress this scales nothing at all, so `VillageEconomy`'s derivation —
+    /// which solves the **survival floor**, about the least skilled person in the valley — goes
+    /// on being exactly as true as it was. **Mastery is headroom above a floor, and headroom
+    /// above a floor is what progression is.**
+    /// </para>
+    /// <para>
+    /// <b>⚠️ QUANTISED HARD, BECAUSE THE DURATIONS ARE TINY.</b> `sow_ticks` and `reap_ticks`
+    /// are **3**, `cut_ticks` and `split_ticks` are **4** — so the only reachable speeds are
+    /// whole ticks, and a bonus that does not round to one **does nothing whatsoever**.
+    /// Measured: at **17% not one duration moves**, and at **25% only the four-tick trades
+    /// do** — a village at 25% produces population and food identical to a village with the
+    /// feature switched off. <c>AMasterIsFasterAtEveryTrade</c> exists to fail the build if a
+    /// tweak here ever rounds the whole pillar away again.
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ FIFTY IS MEASURED, NOT PICKED (§12), AND IT HAS A CLEAN STATEMENT: a master's
+    /// action takes half the ticks, rounded up.</b> 3 → 2 and 4 → 2. Across three seeds at a
+    /// century, against the same villages with the bonus at zero:
+    /// </para>
+    /// <code>
+    /// seed     population        food stored
+    /// 12345    23 → 29           3,677 → 4,631
+    /// 2        63 → 65           4,870 → 9,648
+    /// 42       15 → 20           2,204 → 2,178
+    /// </code>
+    /// <para>
+    /// <b>Population rises on every seed</b>, which is D161's mid-game answer arriving: a
+    /// masterful village supports more people. **34% was tried first and is marginal** —
+    /// population unchanged on two seeds of three. *Narrow makes skill a footnote, and at these
+    /// durations narrow means literally nothing.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The spec predicted a different shape and it is worth recording.</b> §3.2 expected
+    /// mastery to cash out as *"the same output from fewer hands — and the hands it frees become
+    /// laborers"*. **Laborer counts did not move at all**; the village grew instead. Both are
+    /// D161's answer, but through a different door than the one predicted.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("mastery_speed_bonus_percent")]
+    public int MasterySpeedBonusPercent { get; init; } = 50;
+
+    /// <summary>
+    /// How many of the founders arrive already <b>masters</b> of a trade
+    /// (`skills-catalog.md §3.2c`).
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ THE SHAPE IS FIXED AND THE TRADES ARE SEEDED</b> — one master, one journeyman and
+    /// the rest novices (Joe, 2026-08-23). Every seed gets the same *strength* of party and a
+    /// different *speciality*, so a second playthrough differs in **what you can do** rather than
+    /// in **whether you can live**. A fully seeded roll would make a four-novice seed and a
+    /// two-master seed a bad run and a good one rather than two playthroughs, and §0.1 is that
+    /// the challenge is in the planning, never in the punishment.
+    /// </remarks>
+    [JsonPropertyName("founding_masters")]
+    public int FoundingMasters { get; init; } = 1;
+
+    /// <summary>How many founders arrive as <b>journeymen</b>. See <see cref="FoundingMasters"/>.</summary>
+    [JsonPropertyName("founding_journeymen")]
+    public int FoundingJourneymen { get; init; } = 1;
+
+    /// <summary>
+    /// Whether every villager is drawn a personal rhythm at birth (`skills-catalog.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A SWITCH BECAUSE THE TEST PLAN REQUIRES ONE, NOT BECAUSE ANYBODY WOULD TURN IT
+    /// OFF.</b> §10 asks for a **synthetic all-novice village with the mixed founding switched
+    /// off and the seeded rhythm switched off**, and for D28's lockstep guard to be *"checked red
+    /// by running with both switched off"*. Neither is posable without this.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT SKIPS THE DRAW RATHER THAN ZEROING THE RESULT, AND THAT IS THE WHOLE POINT.</b>
+    /// Draw order is the seed contract — a run with the rhythm off consumes exactly the draws it
+    /// consumed before §3.5 existed (name, then lifespan), so it reproduces the old history
+    /// byte for byte. Zeroing after drawing would shift every subsequent number and prove
+    /// nothing.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("seeded_rhythm")]
+    public bool SeededRhythm { get; init; } = true;
 
     // ⭐ `forager_catchment_tiles` IS DELETED (`forests-and-gathering.md §3`, Joe: *"get rid
     // of the ring and the distance restrictions"*). It was ten tiles, and past it a villager
@@ -1595,6 +1945,17 @@ public sealed record SimConfig
                 $"(got {ExposureDaysOutdoors}, {ExposureDaysSheltered}).");
         }
 
+        // ⛔ A THAW OF ZERO DAYS IS AN INSTANT RESET, AND THAT WAS BUILT AND REJECTED (D45,
+        // D192). Villagers spend 76% of winter at a lit hearth, so a fire that wiped the count
+        // meant nobody froze in 120 years. Refused here rather than left as a division by zero
+        // somebody discovers as an immortal village.
+        if (ThawDaysAtAFire <= 0)
+        {
+            throw new SimConfigException(
+                $"thaw_days_at_a_fire must be greater than zero (got {ThawDaysAtAFire}). "
+                + "A fire that thaws instantly is the reset D45 measured and rejected.");
+        }
+
         if (SeekShelterPercent is < 0 or > 100)
         {
             throw new SimConfigException(
@@ -1666,10 +2027,10 @@ public sealed record SimConfig
             throw new SimConfigException($"leave_home_age cannot be negative (got {LeaveHomeAge}).");
         }
 
-        if (ChildFoodSharePercent is <= 0 or > 100)
+        if (DependantFoodSharePercent is <= 0 or > 100)
         {
             throw new SimConfigException(
-                $"child_food_share_percent must be in 1..100 (got {ChildFoodSharePercent}).");
+                $"dependant_food_share_percent must be in 1..100 (got {DependantFoodSharePercent}).");
         }
 
         if (FertilityMinAge < 0 || FertilityMaxAge < FertilityMinAge)
@@ -1720,6 +2081,73 @@ public sealed record SimConfig
         {
             throw new SimConfigException($"founder_age cannot be negative (got {FounderAge}).");
         }
+
+        ValidateSkills();
+    }
+
+    /// <summary>
+    /// The catalogue has to be a catalogue — <b>failing at load rather than at the hash</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ A DUPLICATE OR ZERO ID IS A DESYNC, NOT A TYPO.</b> Ids are what proficiency is
+    /// stored and hashed under (§4.1, §8), so two rows sharing one would have two trades writing
+    /// the same counter — a village that diverges from itself for a reason no log would name.
+    /// **Id 0 is refused** because a default <c>int</c> must never name something (D108).
+    /// A modder editing this file is exactly who this message is for.
+    /// </remarks>
+    private void ValidateSkills()
+    {
+        if (Skills is null)
+        {
+            throw new SimConfigException("skills must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            SkillRow skill = Skills[i];
+
+            if (skill.Id <= 0)
+            {
+                throw new SimConfigException(
+                    $"skills[{i}] has id {skill.Id}; ids must be greater than zero, because a "
+                    + "default int must never name a skill.");
+            }
+
+            if (!seen.Add(skill.Id))
+            {
+                throw new SimConfigException(
+                    $"skills[{i}] repeats id {skill.Id}. Ids are what proficiency is stored and "
+                    + "hashed under, so two skills sharing one would share a counter.");
+            }
+
+            if (string.IsNullOrWhiteSpace(skill.Name))
+            {
+                throw new SimConfigException($"skills[{i}] (id {skill.Id}) has no name.");
+            }
+        }
+
+        if (MasteryYears <= 0)
+        {
+            throw new SimConfigException(
+                $"mastery_years must be greater than zero (got {MasteryYears}).");
+        }
+
+        if (SkillWorkPerIdleTick <= 0)
+        {
+            throw new SimConfigException(
+                $"skill_work_per_idle_tick must be greater than zero (got "
+                + $"{SkillWorkPerIdleTick}) — a villager who holds a trade is always gaining "
+                + "in it, even when the village has nothing for them to do.");
+        }
+
+        if (SkillWorkPerActiveTick < SkillWorkPerIdleTick)
+        {
+            throw new SimConfigException(
+                $"skill_work_per_active_tick ({SkillWorkPerActiveTick}) must be at least "
+                + $"skill_work_per_idle_tick ({SkillWorkPerIdleTick}), or going out to do the "
+                + "work would teach somebody less than staying at home.");
+        }
     }
 
     /// <summary>Founding population. Derived, not configured.</summary>
@@ -1729,6 +2157,26 @@ public sealed record SimConfig
     /// <summary>Ticks in one in-game year. Derived, not configured.</summary>
     [JsonIgnore]
     public int TicksPerYear => TicksPerDay * DaysPerSeason * 4;
+
+    /// <summary>Work that makes a master, for a trade that does not state its own years.</summary>
+    [JsonIgnore]
+    public int MasteryWork => MasteryYears * TicksPerYear * SkillWorkPerIdleTick;
+
+    /// <summary>Years on the task that make a master of <paramref name="skill"/>.</summary>
+    /// <remarks>
+    /// <b>The trade's own number if it states one, the village's otherwise</b> — see
+    /// <see cref="SkillRow.MasteryYears"/>. **No row states one today**, and D182 records the
+    /// measurement that removed the reason to.
+    /// </remarks>
+    public int MasteryYearsFor(SkillRow skill)
+    {
+        ArgumentNullException.ThrowIfNull(skill);
+        return skill.MasteryYears ?? MasteryYears;
+    }
+
+    /// <summary>Work that makes a master of <paramref name="skill"/>.</summary>
+    public int MasteryWorkFor(SkillRow skill) =>
+        MasteryYearsFor(skill) * TicksPerYear * SkillWorkPerIdleTick;
 
     /// <summary>Ticks in one season. Derived, not configured.</summary>
     [JsonIgnore]
@@ -1783,12 +2231,35 @@ public sealed record SimConfig
     /// villagers spend <b>76% of winter standing at a lit hearth</b>, so the count was
     /// wiped constantly and <em>nobody ever froze in 120 years</em>. Thawing keeps the
     /// sentence true — you never freeze while a fire is burning — without letting one warm
-    /// minute erase a fortnight in the snow. Mirroring the outdoor rate is the only
-    /// choice that needs no number of its own: slower and a hearth is not really safety,
-    /// faster and it is the reset again wearing a delay.
+    /// minute erase a fortnight in the snow.
+    /// <para>
+    /// <b>⭐ IT USED TO MIRROR THE OUTDOOR RATE, ON THE GROUNDS THAT MIRRORING NEEDED NO NUMBER
+    /// OF ITS OWN — AND THE NUMBER IT AVOIDED CHOOSING WAS WRONG (Joe, 2026-08-23, D192).</b>
+    /// A day by the fire undoing a day outdoors meant **fifteen days at a hearth to come back
+    /// from the brink**, which is half a winter spent thawing. Joe, having watched it: *"fire
+    /// warm up should be much faster than it currently is."*
+    /// </para>
+    /// <para>
+    /// <b>Now stated as the fact and derived from it</b> (D165's split): <em>a fire brings you
+    /// back from the brink in <see cref="ThawDaysAtAFire"/> days.</em> Five, against fifteen
+    /// outdoors and twenty-five under a fireless roof — so a hearth is **three times** the
+    /// rescue it was, and getting warm is now something you can watch happen rather than
+    /// something that takes a season.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The old argument's second half still holds and is what bounds this.</b> A fire that
+    /// zeroed the count outright was measured and rejected: villagers spend **76% of winter at a
+    /// lit hearth**, so the count was wiped constantly and **nobody froze in 120 years**. Five
+    /// days is fast, not instant — *faster and it is the reset again wearing a delay.*
+    /// </para>
     /// </remarks>
     [JsonIgnore]
-    public int ThawPerTickAtAFire => ExposurePerTickOutdoors;
+    public int ThawPerTickAtAFire =>
+        ThawTicksAtAFire == 0 ? 0 : ExposureThreshold / ThawTicksAtAFire;
+
+    /// <summary>Ticks at a fire to come back from the brink. Derived from days.</summary>
+    [JsonIgnore]
+    public int ThawTicksAtAFire => ThawDaysAtAFire * TicksPerDay;
 }
 
 /// <summary>Thrown when config is missing, malformed, or out of range.</summary>

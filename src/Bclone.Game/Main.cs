@@ -808,6 +808,19 @@ public partial class Main : Control
                 : $"Vigour: {villager.Vigour}% — past their strongest years");
         }
 
+        DescribeTheirTrades(world, villager, lines);
+
+        // ⭐⭐ AND WHAT GOES WITH THEM IF NOBODY LEARNS IT (`skills-catalog.md §7`, D195).
+        // The village log says this once when it becomes true; the panel says it for as long as
+        // it IS true, because the player who clicked on Mabel is exactly the player who can act
+        // on it. **Both read `SimWorld.KnowledgeAtRiskNote`** — D147's rule for `IdleNote`, and
+        // the reason is that two copies of one condition is how the log and the panel come to
+        // disagree about who is at risk (D142, D148).
+        if (world.KnowledgeAtRiskNote(villager) is string atRisk)
+        {
+            lines.Add(atRisk);
+        }
+
         if (villager.IsPaired)
         {
             Villager? partner = world.FindVillager(villager.PartnerId);
@@ -1105,11 +1118,32 @@ public partial class Main : Control
             int ground = world.Zones.WorkGroundTiles(workplace.Id);
             int standing = world.StandingCropTiles(workplace);
 
+            // ⭐⭐ WHAT *THIS* FARM COMMITS, NOT WHAT THE DERIVATION GIVES A WELL-SITED ONE
+            // (D194, `per-site-yield.md §4.2a`). This said *"every hand here can keep 13"* on
+            // every farm in the valley — and for a farm ten ticks from a granary that number is
+            // simply false: it can bring in six, and it says so on the panel now. **A number the
+            // building cannot achieve is worse than no number**, because the player reads it and
+            // then watches the farm miss it every autumn with no explanation offered.
+            int keeps = world.FieldTilesThisFarmCommitsPerHand(workplace);
+            int derived = world.TilesOneWorkerKeeps(JobKind.Farmer);
+
             lines.Add(ground == 0
                 ? "Ground: none. Give it some with the work-ground brush and it will be "
                     + "ploughed."
-                : $"Ground: {ground} tiles, {standing} of them under crop. Every hand here can "
-                    + $"keep {world.TilesOneWorkerKeeps(JobKind.Farmer)}.");
+                : $"Ground: {ground} tiles, {standing} of them under crop. Every hand here "
+                    + $"sows {keeps}.");
+
+            // ⭐ AND WHY IT IS LESS, WHICH IS THE HALF THE PLAYER CAN ACT ON. The walk to the
+            // store is the lever — a granary beside the fields and the same farm commits the
+            // whole field — so the sentence names it rather than leaving the number bare.
+            // Silent on a well-sited farm: one considered sentence, not a nag (D42).
+            if (ground > 0 && keeps < derived)
+            {
+                int haul = world.HaulWalkFor(workplace);
+                lines.Add(
+                    $"That is short of the {derived} a farm beside a store keeps — its harvest "
+                    + $"walks {haul} ticks to the nearest one. Build a store near the fields.");
+            }
 
             // ⭐ AND WHETHER THAT GROUND WAS WORTH GIVING IT (D178). The farm is the one
             // building whose output soil actually moves — a field on rich ground out-yields a
@@ -1232,6 +1266,108 @@ public partial class Main : Control
         {
             lines.Add("Painted for housing — the village may build a home here.");
         }
+    }
+
+    /// <summary>
+    /// What this person has given their working life to — <b>the years, not a number</b>
+    /// (`specs/skills-catalog.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE SENTENCE, NOT THE NUMBER.</b> *"Sixteen years as a farmer"* is the diegetic
+    /// fact; <c>proficiency 73</c> is the spreadsheet this game is defined against (§1.4), and
+    /// §7 rejects it by name. The years are also the only thing the sim actually stores — time
+    /// on the task (§3.1) — so the panel is not translating anything, it is reading it out.
+    /// </para>
+    /// <para>
+    /// <b>Every trade they have given a year to, longest first</b>, because that is the career
+    /// rather than the job — a farmer who spent a decade as a forester first is a different
+    /// person from one who did not, and §5's whole argument is that what a village loses when
+    /// somebody dies is that history.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ The workplace panel's version of this is landing 2's, deliberately.</b> §7 wants a
+    /// hut to say how practised its workers are *"because that is the panel a player looks at
+    /// when they want to know why a hut is slow"* — and until mastery bites (§3.3), a hut is
+    /// never slow **for that reason**, so the sentence would be answering a question the sim
+    /// cannot yet be asked.
+    /// </para>
+    /// </remarks>
+    private static void DescribeTheirTrades(SimWorld world, Villager villager, List<string> lines)
+    {
+        int ticksPerYear = world.Config.TicksPerYear;
+        if (ticksPerYear <= 0)
+        {
+            return;
+        }
+
+        // Longest first. Copied rather than sorted in place: `Villager.Skills` is kept in id
+        // order because the state hash reads it in list order (D15), and a view that reordered
+        // it would desync the sim from the panel that drew it.
+        List<SkillProgress> held = villager.Skills
+            .Where(progress => progress.Ticks >= ticksPerYear)
+            .OrderByDescending(progress => progress.Ticks)
+            .ThenBy(progress => progress.SkillId)
+            .ToList();
+
+        for (int i = 0; i < held.Count; i++)
+        {
+            SkillProgress progress = held[i];
+            SkillRow? skill = world.Config.Skills.FirstOrDefault(row => row.Id == progress.SkillId);
+            if (skill is null)
+            {
+                continue;
+            }
+
+            int years = progress.Ticks / ticksPerYear;
+            string phrase = skill.YearsPhrase.Length > 0
+                ? skill.YearsPhrase
+                : $"at {skill.Name}";
+
+            lines.Add(progress.Mastered
+                ? $"{Years(years)} {phrase} — a master of the work."
+                : $"{Years(years)} {phrase}.");
+        }
+    }
+
+    /// <summary>"Nineteen years", spelled out — a life is counted, not measured.</summary>
+    /// <remarks>
+    /// Words up to the end of a working life, digits past it. §7's example is written out in
+    /// words (*"sixteen years as a farmer"*) and the difference is register: a number in a
+    /// sentence about a person reads like a stat block, and this game keeps saying it is not one.
+    /// </remarks>
+    private static string Years(int years)
+    {
+        if (years == 1)
+        {
+            return "One year";
+        }
+
+        string[] ones =
+        {
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+            "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen",
+        };
+
+        string[] tens =
+        {
+            string.Empty, string.Empty, "twenty", "thirty", "forty", "fifty", "sixty",
+            "seventy", "eighty", "ninety",
+        };
+
+        if (years < 0 || years >= 100)
+        {
+            return $"{years} years";
+        }
+
+        string word = years < 20
+            ? ones[years]
+            : years % 10 == 0
+                ? tens[years / 10]
+                : $"{tens[years / 10]}-{ones[years % 10]}";
+
+        return $"{char.ToUpperInvariant(word[0])}{word[1..]} years";
     }
 
     /// <summary>Ground worth this share of ordinary, said the way the rest of the game says it.</summary>
@@ -3106,12 +3242,31 @@ public partial class Main : Control
     private const int ProfessionIndent = 12;
 
     /// <summary>What a kind of work is called on screen. Every value named (D108).</summary>
+    /// <summary>What a kind of work is called on screen — <b>the one place that decides</b>.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THERE USED TO BE TWO OF THESE AND THEY DISAGREED</b> (found 2026-08-23, D188). This
+    /// said **Gatherer** and **Vendor** while <see cref="TradeOf"/> said **forager** and
+    /// **marketer** — the professions panel and the stock rows using one vocabulary, the roster
+    /// beside every villager's name using the other. **The same job, two words, two panels**,
+    /// which is D148's finding arriving in the UI.
+    /// </para>
+    /// <para>
+    /// <b>It stopped being cosmetic when the skill line landed.</b> *"Sixteen years as a
+    /// farmer"* sits directly under the roster entry that names the villager, so a third place
+    /// had to agree with the other two — and two of the three did not.
+    /// </para>
+    /// <para>
+    /// <b>Joe's call: *"forager and marketer win."*</b> <see cref="TradeOf"/> lower-cases this
+    /// rather than keeping its own list, so there is now exactly one place a job is named.
+    /// </para>
+    /// </remarks>
     private static string ProfessionName(JobKind kind) => kind switch
     {
-        JobKind.Forager => "Gatherer",
+        JobKind.Forager => "Forager",
         JobKind.Forester => "Forester",
         JobKind.Woodcutter => "Woodcutter",
-        JobKind.Marketer => "Vendor",
+        JobKind.Marketer => "Marketer",
         JobKind.Builder => "Builder",
         JobKind.Farmer => "Farmer",
         _ => throw new ArgumentOutOfRangeException(
@@ -3231,19 +3386,18 @@ public partial class Main : Control
     }
 
     /// <summary>A villager's trade, for the roster. What they are, not where they are.</summary>
+    /// <summary>The same names as <see cref="ProfessionName"/>, in the roster's register.</summary>
+    /// <remarks>
+    /// <b>⛔ IT USED TO KEEP ITS OWN LIST, AND THE TWO DRIFTED</b> (D188) — this said *forager*
+    /// and *marketer* where <see cref="ProfessionName"/> said *Gatherer* and *Vendor*. **One
+    /// place names a job now**; this only lower-cases it, because the roster reads
+    /// *"Hattie, 39 (adult) — farmer"* mid-sentence while the professions panel heads a column.
+    /// Two registers of one vocabulary is fine; two vocabularies is what was not.
+    /// </remarks>
     private string TradeOf(Villager villager)
     {
         Workplace? job = _loop.World.FindWorkplace(villager.WorkplaceId);
-        return job?.Kind switch
-        {
-            JobKind.Forager => "forager",
-            JobKind.Forester => "forester",
-            JobKind.Woodcutter => "woodcutter",
-            JobKind.Marketer => "marketer",
-            JobKind.Builder => "builder",
-            JobKind.Farmer => "farmer",
-            _ => "working",
-        };
+        return job is null ? "working" : ProfessionName(job.Kind).ToLowerInvariant();
     }
 
     /// <summary>What a good is called on screen.</summary>
@@ -3365,7 +3519,11 @@ public partial class Main : Control
         // the button is the only new thing the view owes it.
         row.AddChild(Category(
             "Food",
-            BuildButton("Gatherer", BuildingKind.GathererHut),
+            // ⭐ "Forager", not "Gatherer" (Joe, 2026-08-23). Every other work building on this
+            // bar is named for the trade that works it -- Forester, Woodcutter -- and the
+            // profession became `forager` in D188. This was the last place still saying the
+            // old word, which is the same one-job-two-names bug arriving in a third panel.
+            BuildButton("Forager", BuildingKind.GathererHut),
             BuildButton("Farmhouse", BuildingKind.Farmhouse)));
 
         row.AddChild(Category(

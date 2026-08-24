@@ -90,6 +90,21 @@ public enum VillagerState
     /// <summary>A marketer carrying goods to the household that needs them (D14).</summary>
     DeliveringToHome,
 
+    /// <summary>
+    /// A marketer carrying a load to the <b>market's own store</b>
+    /// (`storage-and-distribution.md §14.8`, D197).
+    /// </summary>
+    /// <remarks>
+    /// <b>Its own state rather than a variant of <see cref="HaulingToStore"/>, for the reason
+    /// <see cref="HaulingToFarm"/> is one:</b> `HaulingToStore` re-asks *"which store is nearest
+    /// with room?"* on every tick of the walk, so a marketer who picked up at the granary would
+    /// re-target the granary and put the load straight back. **This leg has a destination that
+    /// was chosen when it was planned**, which is the same rule the collect and deliver legs
+    /// already follow — *re-deciding mid-walk let a marketer shuttle between two sources for
+    /// ever and complete nothing.*
+    /// </remarks>
+    StockingTheMarket,
+
     /// <summary>A builder fetching materials for a site the player marked out (D43).</summary>
     FetchingMaterials,
 

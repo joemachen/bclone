@@ -1102,17 +1102,280 @@ public sealed class SimWorld
         ArgumentNullException.ThrowIfNull(farm);
 
         int hands = farm.WorkerIds.Count;
-        int tiles = hands * VillageEconomy.FieldTilesOneFarmerKeeps(Config)
-            * ReapableShareAt(farm) / 100;
+        int tiles = hands * FieldTilesThisFarmCommitsPerHand(farm);
 
         return hands > 0 && tiles < 1 ? 1 : tiles;
     }
 
     /// <summary>
-    /// What share of a well-sited farm's autumn <em>this</em> farm can actually manage, as a
-    /// percentage — <b>the distance half of per-site yield</b>.
+    /// Tiles <b>one pair of hands</b> at this farm commits next spring — <b>what it has learned,
+    /// not what anybody predicted</b> (`per-site-yield.md §4.2a`, D194).
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>⭐ A farm tries one more tile every year until it cannot bring the crop in, then
+    /// settles one back and stays there.</b> That sentence is the whole mechanism, and it is
+    /// deliberately something a player could be told.
+    /// </para>
+    /// <para>
+    /// <b>⛔ WHAT IT REPLACED WAS SELF-FULFILLING.</b> <see cref="ReapableShareAt"/> cut a
+    /// distant farm's field, the farmer then had nothing left to do, and the idleness read back
+    /// as proof the field had been too big — <b>27% of the autumn resting at ten ticks out, 45%
+    /// at sixteen, 55% at twenty-two</b>, while the farm could in fact bring in one to two more
+    /// tiles at every distance. See <see cref="Workplace.FieldTilesLearned"/> for why no formula
+    /// replaces it.
+    /// </para>
+    /// <para>
+    /// <b>⛔ NEVER PAST <see cref="VillageEconomy.FieldTilesOneFarmerKeeps"/>.</b> That is the
+    /// survival floor the whole economy is solved against (D16, D189), and a well-sited farm's
+    /// measured physical ceiling is <b>21</b> tiles against the derivation's <b>13</b>. Thirteen
+    /// wins: a memory allowed to climb past it would inflate a derived, locked number from the
+    /// far end, which is exactly the move D189 refused for <c>crop_yield_per_tile</c>.
+    /// </para>
+    /// <para>
+    /// <b>The opening guess is the old prediction</b>, so a brand-new farm commits exactly what
+    /// it commits today and then learns. <i>Nobody is ever worse than today.</i>
+    /// </para>
+    /// </remarks>
+    public int FieldTilesThisFarmCommitsPerHand(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
+
+        // ⭐ THE WALK CHANGED, SO THE ANSWER DID. A farm that learned its limit at ten ticks
+        // out was answering a question about a walk; a granary built beside the fields makes
+        // that answer stale, and the farm re-reckons from a fresh guess rather than insisting
+        // on a number the valley no longer supports. Checked here rather than on a store being
+        // built, because there are four ways the walk can move — a store raised, demolished,
+        // filled, or told to stop taking food — and one door beats four notifications (D142).
+        int walk = HaulWalkFor(farm);
+        if (farm.FieldTilesLearned > 0 && farm.FieldWalkWhenLearned != walk)
+        {
+            // Take the better of what it knows and what the fresh walk suggests, and let it
+            // climb again. A shorter walk raises the guess and the farm jumps to it rather
+            // than crawling up a tile a year; a longer one keeps the record and lets the next
+            // autumn settle it down honestly.
+            farm.FieldTilesLearned =
+                Math.Max(farm.FieldTilesLearned, OpeningGuessFor(farm, derived));
+            farm.FieldWalkWhenLearned = walk;
+        }
+
+        if (farm.FieldTilesLearned <= 0)
+        {
+            return OpeningGuessFor(farm, derived);
+        }
+
+        return farm.FieldTilesLearned > derived ? derived : farm.FieldTilesLearned;
+    }
+
+    /// <summary>What a farm with no history commits — <b>the old prediction, demoted</b>.</summary>
+    private int OpeningGuessFor(Workplace farm, int derived)
+    {
+        int guess = derived * ReapableShareAt(farm) / 100;
+        return guess < 1 ? 1 : guess > derived ? derived : guess;
+    }
+
+    /// <summary>
+    /// The walk this farm's harvest actually makes — <b>to the nearest store that takes
+    /// food</b>, or -1 where there is none.
+    /// </summary>
+    /// <remarks>
+    /// <b>One place asks it, and three read the answer</b> — the memory's staleness check, the
+    /// opening guess, and the placement warning (§4.3). Two copies of one walk is how they come
+    /// to disagree (D142's three call sites, D148's two meanings).
+    /// </remarks>
+    public int HaulWalkFor(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        return HaulWalkFrom(farm.Position);
+    }
+
+    /// <summary>
+    /// ⭐⭐ How many homes a market on this tile would be <b>the nearest food store for</b> — its
+    /// service area, stated truthfully (D201, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe asked to see the market's service radius before placing it.</b> ⛔ <b>There is no
+    /// radius, and drawing one would be drawing a lie</b> — a marketer picks the cheapest errand
+    /// from wherever they are standing (§14.2) and households fetch from whatever store is
+    /// nearest (§3), so nothing in the model refuses a distance. <b>Inventing a ring would also
+    /// rebuild the catchment fence D120 deleted</b>, which is the one thing this project has
+    /// already paid to take out.
+    /// </para>
+    /// <para>
+    /// <b>⭐ So the honest answer is a count rather than a circle</b>, and it is exactly what
+    /// makes a market worth having: *the homes for which this would be the closest place to get
+    /// food.* Those are the households whose walk it shortens. **It is not circular** — it
+    /// depends on where the granary and every other store already are, which is the point Joe
+    /// made about positioning: a market beside the granary serves nobody, because the granary was
+    /// already nearer.
+    /// </para>
+    /// <para>
+    /// <b>Strictly nearer</b>, so a tie goes to the store that already exists — a market that
+    /// merely matches the granary's walk has not shortened anybody's errand.
+    /// </para>
+    /// <para>
+    /// <b>Occupied homes only</b>, since a market's job is feeding families rather than
+    /// buildings — the same live-count rule <c>VillageEconomy.MarketStockWanted</c>'s caller uses.
+    /// </para>
+    /// </remarks>
+    public int HomesAMarketHereWouldBeNearestFor(GridPos position)
+    {
+        int served = 0;
+
+        for (int i = 0; i < Households.Count; i++)
+        {
+            Household household = Households[i];
+            if (household.HomePosition is not GridPos home || LivingMembersOf(household) == 0)
+            {
+                continue;
+            }
+
+            int here = TravelCost.Cost(home, position);
+            if (here == TravelCostField.Unreachable)
+            {
+                continue;
+            }
+
+            bool nearest = true;
+            for (int s = 0; s < StoreBuildings.Count && nearest; s++)
+            {
+                StoreBuilding store = StoreBuildings[s];
+                if (!store.CanEverHold(Goods.Food))
+                {
+                    continue;
+                }
+
+                int theirs = TravelCost.Cost(home, store.Position);
+                nearest = theirs == TravelCostField.Unreachable || here < theirs;
+            }
+
+            if (nearest)
+            {
+                served++;
+            }
+        }
+
+        return served;
+    }
+
+    /// <summary>The walk from a tile to the nearest store that takes food, or -1.</summary>
+    public int HaulWalkFrom(GridPos position)
+    {
+        StoreBuilding? store = NearestStoreAccepting(
+            position, Goods.Food, static place => place.CanEverHold(Goods.Food));
+
+        return store is null ? -1 : TravelCost.TicksBetween(position, store.Position);
+    }
+
+    /// <summary>
+    /// Take this autumn's lesson — <b>run once, on the turn of winter, before the rot sweep</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Before the rot, and that ordering is the whole reading.</b> What is still standing at
+    /// the turn of winter <em>is</em> the answer to *did this farm bring in what it sowed?*, and
+    /// <see cref="Systems.CropSystem"/> is about to clear it.
+    /// </para>
+    /// <para>
+    /// <b>±1 with a latch, and the simplicity is deliberate.</b> The richer rule — *settle on
+    /// exactly what you brought in* — has to divide a tile count by the hands that worked the
+    /// autumn, and <b>the hand count at the turn of winter is not that number</b>: D44 stands
+    /// seasonal trades down, so a farm can be empty on the very tick the lesson is taken. ±1
+    /// needs no hand count at all and converges in three years.
+    /// </para>
+    /// </remarks>
+    public void LearnFromTheAutumn(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        if (farm.Kind != JobKind.Farmer || farm.IsSite)
+        {
+            return;
+        }
+
+        int sown = farm.FieldTilesSown;
+        int hands = farm.FieldHandsAtAutumn;
+        farm.FieldTilesSown = 0;
+        farm.FieldHandsAtAutumn = 0;
+
+        // A year with no crop teaches nothing — see `Workplace.FieldTilesSown`. An empty field
+        // at the turn of winter is what a met stock limit looks like, and it is identical to
+        // what success looks like.
+        if (sown <= 0 || hands <= 0)
+        {
+            return;
+        }
+
+        int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
+        int broughtIn = sown - StandingCropTiles(farm);
+        int record = broughtIn / hands;
+
+        // ⛔⛔ A HIGH-WATER MARK, AND NOTHING ELSE — no probe, no latch, no settling back.
+        // Two drafts of this method had a `+1` that made the farm try one more tile a year and
+        // a flag that stopped it once a tile rotted. **Deleting both changed nothing anywhere
+        // it could be measured**: 6/5/4 tiles learned and 72/60/48 reaped at ten, sixteen and
+        // twenty-two ticks, identical either way. The reason is that
+        // <see cref="HarvestOneFarmCanBringIn"/> multiplies by the hands standing in the field
+        // *at that moment*, so a farm with two hands in spring and one by autumn already
+        // commits ground for two — **the village probes on its own, and a deliberate probe was
+        // a fifth invisible no-op** (D56, D177, D187 are the other four).
+        //
+        // ⭐ And the failure modes point the same way. Without a probe the worst a farm can do
+        // is sit on its opening guess, which is exactly today's behaviour — *nobody is ever
+        // worse than today*. With one, the worst it can do is rot a tile every year, which is
+        // the weather D167 spent a decision deleting.
+        if (record > farm.FieldTilesLearned)
+        {
+            farm.FieldTilesLearned = record > derived ? derived : record;
+        }
+
+        // What a farm brought in once it can bring in again; a thin year is about the hands
+        // that turned up, not about the ground. That is D183's *give, never take* one system
+        // over, and it is what stops one short-staffed autumn becoming a permanent verdict.
+        if (farm.FieldTilesLearned < 1)
+        {
+            farm.FieldTilesLearned = 1;
+        }
+
+        farm.FieldWalkWhenLearned = HaulWalkFor(farm);
+
+        if (Logs(LogLevel.Debug))
+        {
+            Log(
+                LogLevel.Debug,
+                "crops",
+                $"{farm.Name} had {sown} standing on {hands} pair(s) of hands and brought in "
+                + $"{broughtIn}; it has learned it can bring in {farm.FieldTilesLearned} a hand "
+                + $"({farm.FieldWalkWhenLearned} ticks from a store). {Clock.SeasonAndYear()}.");
+        }
+    }
+
+    /// <summary>
+    /// What share of a well-sited farm's autumn <em>this</em> farm can actually manage, as a
+    /// percentage — <b>a brand-new farm's opening guess, and nothing more</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ DEMOTED FROM A RULING TO A FIRST GUESS (D194), AND THE REASON IS THAT IT IS
+    /// DIMENSIONALLY WRONG.</b> It divides <c>budgeted</c> — a ROUND TRIP inside the field, 4
+    /// ticks — by <c>haul</c>, a ONE-WAY walk to a store, 10. <b>The ratio is not a share of
+    /// anything</b>, and that it lands near the right answer at ten ticks is arithmetic
+    /// coincidence. Measured, it left a farm ten ticks out sowing five tiles when it could bring
+    /// in six, and <b>resting for 27% of the autumn</b> it was supposedly too busy for — 45% at
+    /// sixteen ticks, 55% at twenty-two. <b>The cap cut the field and the idleness read back as
+    /// proof the field had been too big.</b>
+    /// </para>
+    /// <para>
+    /// <b>It is kept, not deleted, because a brand-new farm has no history to read</b> and this
+    /// is a safe place to start from: it is what the game commits today, so <i>nobody is ever
+    /// worse than today</i>. One autumn later
+    /// <see cref="FieldTilesThisFarmCommitsPerHand"/> is reading
+    /// <see cref="Workplace.FieldTilesLearned"/> instead and this number never speaks again.
+    /// </para>
     /// <para>
     /// <b>The derivation budgets a round trip to the steading</b>
     /// (<see cref="VillageEconomy.FieldTileTicks"/>), and that is true right up until the farm's
@@ -1139,16 +1402,13 @@ public sealed class SimWorld
     {
         ArgumentNullException.ThrowIfNull(farm);
 
-        StoreBuilding? store = NearestStoreAccepting(
-            farm.Position, Goods.Food, static place => place.CanEverHold(Goods.Food));
+        int haul = HaulWalkFor(farm);
+        int budgeted = VillageEconomy.FieldHaulTicksBudgeted(Config);
 
-        if (store is null)
+        if (haul < 0)
         {
             return 100;
         }
-
-        int haul = TravelCost.TicksBetween(farm.Position, store.Position);
-        int budgeted = VillageEconomy.FieldHaulTicksBudgeted(Config);
 
         if (haul <= budgeted || budgeted <= 0)
         {
@@ -1176,6 +1436,190 @@ public sealed class SimWorld
         }
 
         return standing;
+    }
+
+    /// <summary>
+    /// Whether this workplace's own buffer is <b>worth a trader's trip</b> (D171, D185).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ ONE CONDITION, TWO CALLERS, AND THE BUG THIS METHOD EXISTS TO CLOSE WAS THE
+    /// SECOND CALLER NOT HAVING IT.</b> `crops-and-orchards.md §3.2` has said since the farm
+    /// shipped that the buffer is free and *"running it dry is the market's job"*, and D171
+    /// built the leg in <c>BehaviorSystem.PlanMarketErrand</c> that does it. But
+    /// <see cref="World.LabourQuota.MarketersWanted"/> counted errands by looping over
+    /// households **and nothing else** — so **the village never staffed a marketer because a
+    /// farm needed emptying.** A trader who happened to be working would clear it; if every
+    /// household was content, nobody was working, and the farm sat full however long it stood.
+    /// </para>
+    /// <para>
+    /// <b>The behaviour existed and the demand did not</b>, which is D36's own rule —
+    /// *"bounded by errands and never by spare hands"* — applied to two of three leg types.
+    /// **The fix is not a second copy of the comparison**: two copies of one sum is how they
+    /// come to disagree (D142's three call sites, D148's two meanings), and this bug is that
+    /// failure one level up. So both callers ask here.
+    /// </para>
+    /// <para>
+    /// <b>⭐ THE CONDITION IS DERIVED, NOT TUNED</b> (D16, and D171's own standard). A buffer is
+    /// worth clearing exactly when it can no longer take a whole armful — which is precisely
+    /// when <c>HaulTheHarvest</c> stops choosing it and starts sending the farmer to the
+    /// granary. No threshold, no new number, one comparison.
+    /// </para>
+    /// <para>
+    /// <b>A workplace with no store of its own has <c>int.MaxValue</c> capacity</b>, so this is
+    /// also what keeps every other building out without naming a kind.
+    /// </para>
+    /// </remarks>
+    /// <summary>
+    /// How long this villager takes over one action of <paramref name="trade"/> — <b>where
+    /// mastery finally bites</b> (`skills-catalog.md §3.3`, Phase 3 landing 2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS IS THE METHOD THAT STOPS THE SKILL PILLAR BEING DECORATIVE.</b> Landing 1
+    /// shipped proficiency that accrues, is hashed and is visible and **changes nothing** —
+    /// which is the exact shape of D56's clothing, measured as a no-op over 300 years and
+    /// blocked for it. Everything before this call site was bookkeeping.
+    /// </para>
+    /// <para>
+    /// <b>⛔ A NOVICE GETS EXACTLY TODAY'S NUMBER, TO THE TICK.</b> Zero progress scales nothing,
+    /// so `VillageEconomy`'s survival floor — solved about the least skilled person in the
+    /// valley — is untouched and every number derived from it still holds (§3.2). **Nobody is
+    /// ever worse than today**; a master is simply better.
+    /// </para>
+    /// <para>
+    /// <b>Linear in work up to mastery, then flat.</b> Traceable rather than clever (§1.6): a
+    /// villager halfway to mastery is halfway to the bonus, and the player can be told that in
+    /// one sentence. A curve would need a reason, and nothing in the design supplies one.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IN PRACTICE IT IS A STEP, NOT A RAMP, AND THE DURATIONS ARE WHY.</b> A three-tick
+    /// action can only become two, so the bonus buys nothing until it rounds to a whole tick —
+    /// at 34% that is around 84% of the way to mastery. **That is the tier model arriving
+    /// through arithmetic rather than through a design decision**, and it is worth knowing
+    /// before §12's tier names get chosen: the sim already behaves as though there are two
+    /// tiers, because it cannot express any others at these durations.
+    /// </para>
+    /// <para>
+    /// <b>Never below one tick.</b> An action that costs nothing is an action that happens
+    /// infinitely often, which is a hang rather than a fast farmer.
+    /// </para>
+    /// </remarks>
+    public int WorkTicksFor(Villager villager, JobKind trade, int baseTicks)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        if (baseTicks <= 1 || Config.MasterySpeedBonusPercent <= 0)
+        {
+            return baseTicks;
+        }
+
+        SkillRow? skill = SkillGrownBy(trade);
+        if (skill is null)
+        {
+            return baseTicks;
+        }
+
+        int mastery = Config.MasteryWorkFor(skill);
+        if (mastery <= 0)
+        {
+            return baseTicks;
+        }
+
+        SkillProgress? progress = villager.FindProgressIn(skill.Id);
+        if (progress is null || progress.Work <= 0)
+        {
+            return baseTicks;
+        }
+
+        // Share of the way to mastery, 0–100. Capped rather than allowed to run on: a master
+        // who keeps working is a master, not somebody who eventually works in no time at all.
+        long share = (long)progress.Work * 100 / mastery;
+        if (share > 100)
+        {
+            share = 100;
+        }
+
+        // Integer throughout (D2). `long` for the product only — 4 × 34 × 100 is small, but the
+        // shape of this expression is exactly where an int overflow would hide if the durations
+        // or the bonus ever grew.
+        long faster = (long)baseTicks * Config.MasterySpeedBonusPercent * share / 10000;
+        int ticks = baseTicks - (int)faster;
+
+        return ticks < 1 ? 1 : ticks;
+    }
+
+    /// <summary>How practised this villager is in one skill, in words (§3.2c, D190).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A reading of the one integer, computed every time and never stored</b> — see
+    /// <see cref="SkillTier"/> for why a stored tier would be two sources of truth for one fact.
+    /// </para>
+    /// <para>
+    /// <b>The bands are halves, which is the plainest thing that could be true:</b> a novice has
+    /// done none of it, an apprentice is on the way, a journeyman is past halfway, and a master
+    /// has arrived. **<see cref="SkillProgress.Mastered"/> is what makes the top one permanent**
+    /// — it is §5.4's record of achievement, so somebody who mastered a trade and moved on is
+    /// still a master of it.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The speed step falls at about 70% of mastery, inside the journeyman band</b> (D187).
+    /// So the tier a player reads and the speed the sim runs at change at different moments, and
+    /// that is a consequence of three-tick actions rather than a design.
+    /// </para>
+    /// </remarks>
+    public SkillTier TierOf(Villager villager, SkillRow skill)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        ArgumentNullException.ThrowIfNull(skill);
+
+        SkillProgress? progress = villager.FindProgressIn(skill.Id);
+        if (progress is null || progress.Work <= 0)
+        {
+            return SkillTier.Novice;
+        }
+
+        if (progress.Mastered)
+        {
+            return SkillTier.Master;
+        }
+
+        int mastery = Config.MasteryWorkFor(skill);
+        if (mastery <= 0)
+        {
+            return SkillTier.Novice;
+        }
+
+        return progress.Work * 2 >= mastery ? SkillTier.Journeyman : SkillTier.Apprentice;
+    }
+
+    /// <summary>The skill this kind of work grows, or null if no row claims it.</summary>
+    /// <remarks>
+    /// <b>⚠️ Not assumed to be one-to-one</b> (§4.3). The catalogue happens to be 1:1 today and
+    /// **the model must not depend on it**, because a skill two jobs grow — a smith and a
+    /// farrier — is obviously coming. The first row that claims the trade wins, in catalogue
+    /// order, which is stated so it cannot become an unordered tie (D15).
+    /// </remarks>
+    public SkillRow? SkillGrownBy(JobKind trade)
+    {
+        for (int i = 0; i < Config.Skills.Count; i++)
+        {
+            if (Config.Skills[i].GrownBy == trade)
+            {
+                return Config.Skills[i];
+            }
+        }
+
+        return null;
+    }
+
+    public bool BufferWorthClearing(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        return !workplace.IsSite
+            && workplace.Store.Food > 0
+            && workplace.Store.FreeSpace < Config.CropYieldPerTile;
     }
 
     private string? ForesterIdleNote(Workplace hut)
@@ -1587,6 +2031,145 @@ public sealed class SimWorld
     private readonly bool[] _saidThereIsNowhereFor = new bool[Stockpile.Kinds];
 
     /// <summary>
+    /// Which (villager, skill) pairs the village has already been warned about
+    /// (`skills-catalog.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// <b>Gates narration and nothing else, so it is not in the state hash</b> — the same
+    /// standing as <see cref="_saidThereIsNowhereFor"/> above and for the same reason: two runs
+    /// of one seed say the same sentence on the same tick because <em>everything that decides
+    /// it</em> is hashed. It starts empty and is driven entirely by hashed state.
+    /// <para>
+    /// <b>Entries are removed as well as added</b>, which is what makes this an *edge* detector
+    /// rather than a one-shot. A trade that gains a second master and later loses them is at
+    /// risk again, and the village should be told again — D123 and D147's rule is *narrate on
+    /// the change*, and a flag that only ever sets would silently swallow the second warning.
+    /// </para>
+    /// </remarks>
+    private readonly HashSet<(int Villager, int Skill)> _saidKnowledgeIsAtRisk = new();
+
+    /// <summary>
+    /// ⭐⭐ <b>The at-risk sentence, or null</b> — *"Mabel is 68 and the only soul who knows
+    /// herbalism."* (`skills-catalog.md §7`, `DESIGN.md §2.1`/§2.7.)
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>§2.1's failure mode is what this exists to answer:</b> *"punishing the player for
+    /// losses they couldn't foresee. Knowledge-at-risk must be **visible and actionable**."*
+    /// Without it, a village loses its last master farmer and the only evidence is that
+    /// everything quietly got slower — <b>which is a funeral surprise, and D103's rule is that a
+    /// feature the player cannot reach does not exist.</b>
+    /// </para>
+    /// <para>
+    /// <b>⭐ THE SENTENCE OR NOTHING, FROM ONE PLACE</b> — D147's shape for <c>IdleNote</c>,
+    /// taken deliberately. The village log and the villager's own panel both read this, so
+    /// <b>they cannot disagree about who is at risk</b>; two copies of one condition is how they
+    /// come to (D142's three call sites, D148's two meanings).
+    /// </para>
+    /// <para>
+    /// <b>⭐ BOTH HALVES ARE DERIVED, AND NEITHER IS A NEW NUMBER.</b> *Near the end* is
+    /// <see cref="LifeStage.Elder"/>, which the game already derives from vigour and already
+    /// calls by that name. *The only soul who knows* is <b>the only living master</b> — and
+    /// mastery is the one threshold this design already has, already narrates and already keeps
+    /// in <c>data/</c>. A fraction picked here would be a number with no derivation behind it,
+    /// which is what D16 refuses.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It names the trade a second hand would learn</b>, because the action is the point:
+    /// the player's remedy is to staff somebody beside them, and `skills-catalog.md §5.3` is
+    /// explicit that this is the lever rather than a pairing screen. **A warning whose remedy is
+    /// unstated is an alert, not information.**
+    /// </para>
+    /// </remarks>
+    public string? KnowledgeAtRiskNote(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        SkillRow? skill = OnlyLivingMasterOf(villager);
+        if (skill is null)
+        {
+            return null;
+        }
+
+        return $"{villager.Name} is {villager.AgeYears} and the only soul in the village who has "
+            + $"mastered {skill.Name.ToLowerInvariant()}. Put somebody beside them to learn it, "
+            + "or it goes with them.";
+    }
+
+    /// <summary>
+    /// The skill this elder is the last living master of, or null.
+    /// </summary>
+    /// <remarks>
+    /// <b>The first one in id order where it is true</b>, so a villager who is the last master of
+    /// two things is warned about one of them and the sentence stays a sentence. The second is
+    /// not lost — it is still true next year, and the village is told then.
+    /// </remarks>
+    private SkillRow? OnlyLivingMasterOf(Villager villager)
+    {
+        if (!villager.Alive || villager.LifeStage != LifeStage.Elder)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < Config.Skills.Count; i++)
+        {
+            SkillRow skill = Config.Skills[i];
+            if (villager.FindProgressIn(skill.Id) is not { Mastered: true })
+            {
+                continue;
+            }
+
+            bool anybodyElse = false;
+            for (int v = 0; v < Villagers.Count && !anybodyElse; v++)
+            {
+                Villager other = Villagers[v];
+                anybodyElse = other.Alive
+                    && other.Id != villager.Id
+                    && other.FindProgressIn(skill.Id) is { Mastered: true };
+            }
+
+            if (!anybodyElse)
+            {
+                return skill;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Tell the village about knowledge that is about to be lost — <b>once, on the edge</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>Swept rather than triggered, and that is not laziness.</b> The condition turns true for
+    /// three different reasons — this villager ages into <see cref="LifeStage.Elder"/>, this
+    /// villager masters something, or <em>somebody else dies</em> — and the third has nothing to
+    /// do with the person being warned about. **One sweep beats three notifications** (D142), and
+    /// a year is the right cadence for a warning about a lifetime.
+    /// </remarks>
+    public void SayWhatKnowledgeIsAtRisk()
+    {
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager villager = Villagers[i];
+            SkillRow? skill = OnlyLivingMasterOf(villager);
+
+            if (skill is null)
+            {
+                // Not at risk any more — for any reason, including having died. Forgetting is
+                // what lets the warning fire again if it becomes true again.
+                _saidKnowledgeIsAtRisk.RemoveWhere(said => said.Villager == villager.Id);
+                continue;
+            }
+
+            if (_saidKnowledgeIsAtRisk.Add((villager.Id, skill.Id)))
+            {
+                Narrate(KnowledgeAtRiskNote(villager)!);
+            }
+        }
+    }
+
+    /// <summary>
     /// Say so, once, when a good is being set down because the village has nowhere for it
     /// at all.
     /// </summary>
@@ -1750,7 +2333,24 @@ public sealed class SimWorld
     /// neighbourhood, instead of a nag the player learns to click past.
     /// </para>
     /// </remarks>
-    public PlacementVerdict PaintResidential(GridPos tile)
+    /// <summary>
+    /// Whether this tile would take residential paint, <b>and what the player should be told</b>
+    /// — pure (D198).
+    /// </summary>
+    /// <remarks>
+    /// <b>The <see cref="CanBuildAt"/> / <see cref="Mark"/> split, applied to the brush.</b> The
+    /// view could show a ghost under the cursor for a *building* and could show nothing at all
+    /// for a *brush*, because every paint method mixed the test with the doing — so the only way
+    /// to ask *"would this tile take?"* was to paint it. Joe, playing: *"when I'm painting I
+    /// don't see an outline of the area I'm about to paint. I just have to point and click and
+    /// hope."*
+    /// <para>
+    /// <b>One condition, two callers</b> (D142's three call sites, D148's two meanings):
+    /// <see cref="PaintResidential"/> asks this and then acts, so the preview and the paint can
+    /// never disagree about which tiles are in.
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict CanPaintResidential(GridPos tile)
     {
         if (!Map.Contains(tile))
         {
@@ -1762,18 +2362,28 @@ public sealed class SimWorld
             return PlacementVerdict.No("Nobody can live on the water.");
         }
 
-        Zones.SetResidential(tile, true);
-
+        // ⚠️ Asked BEFORE the tile is painted and it does not read the zone, so the answer is
+        // the same either side of the stroke — which is what makes it safe to show in advance.
         int toWork = NearestForageDistance(tile);
         int budget = VillageEconomy.MaxHomeToWorkTiles(Config);
-        if (toWork > budget)
-        {
-            return PlacementVerdict.Yes(
+
+        return toWork > budget
+            ? PlacementVerdict.Yes(
                 $"That corner is {toWork} tiles from the nearest food; the village budgets " +
-                $"{budget}. Families there will go hungry.");
+                $"{budget}. Families there will go hungry.")
+            : PlacementVerdict.Fine;
+    }
+
+    public PlacementVerdict PaintResidential(GridPos tile)
+    {
+        PlacementVerdict verdict = CanPaintResidential(tile);
+        if (!verdict.Allowed)
+        {
+            return verdict;
         }
 
-        return PlacementVerdict.Fine;
+        Zones.SetResidential(tile, true);
+        return verdict;
     }
 
     // ---------------------------------------------------------------
@@ -1950,7 +2560,14 @@ public sealed class SimWorld
     /// the player gets is the shape they can actually use.
     /// </para>
     /// </remarks>
-    public PlacementVerdict PaintWorkGround(Workplace workplace, GridPos tile)
+    /// <summary>Whether this workplace could be given this tile — pure (D198).</summary>
+    /// <remarks>
+    /// The preview's door and the paint's — see <see cref="CanPaintResidential"/>. <b>The
+    /// overstretch warning is deliberately not here</b>: it is about the workplace's total
+    /// ground rather than about this tile, so it belongs to the stroke rather than to the ghost,
+    /// and <see cref="OverstretchedNote"/> stays its single author.
+    /// </remarks>
+    public PlacementVerdict CanPaintWorkGround(Workplace workplace, GridPos tile)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
@@ -1964,14 +2581,27 @@ public sealed class SimWorld
             return PlacementVerdict.No("Nobody can work the water.");
         }
 
-        int held = Zones.WorkGroundOwner(tile);
-        if (held != 0 && held != workplace.Id)
+        int owner = Zones.WorkGroundOwner(tile);
+        if (owner != 0 && owner != workplace.Id)
         {
-            Workplace? other = FindWorkplace(held);
+            Workplace? other = FindWorkplace(owner);
             return PlacementVerdict.No(
                 other is null
                     ? "That ground is already spoken for."
                     : $"That ground belongs to {other.Name}.");
+        }
+
+        return PlacementVerdict.Fine;
+    }
+
+    public PlacementVerdict PaintWorkGround(Workplace workplace, GridPos tile)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        PlacementVerdict verdict = CanPaintWorkGround(workplace, tile);
+        if (!verdict.Allowed)
+        {
+            return verdict;
         }
 
         Zones.SetWorkGround(tile, workplace.Id);
@@ -2028,7 +2658,16 @@ public sealed class SimWorld
     /// promise the village cannot keep.
     /// </para>
     /// </remarks>
-    public PlacementVerdict PaintHarvest(GridPos tile, HarvestBrush brush = HarvestBrush.Everything)
+    /// <summary>Whether this tile would take harvest paint — pure (D198).</summary>
+    /// <remarks>
+    /// <b>The preview's door, and the paint's</b> — see <see cref="CanPaintResidential"/> for why
+    /// the split exists. <b>This is the brush where it matters most</b>: the mode is a filter
+    /// (D90), so half the tiles under a stroke routinely refuse it, and *"the brush is set to
+    /// fell trees and that is a stone seam"* is a sentence the player should be able to see
+    /// coming rather than discover by clicking.
+    /// </remarks>
+    public PlacementVerdict CanPaintHarvest(
+        GridPos tile, HarvestBrush brush = HarvestBrush.Everything)
     {
         if (!Map.Contains(tile))
         {
@@ -2041,20 +2680,33 @@ public sealed class SimWorld
             return PlacementVerdict.No("There is nothing standing there to take.");
         }
 
-        // ⭐ THE MODE IS A FILTER AND IS THEN FORGOTTEN (D90, Joe's call of two). A marked
-        // tile is simply marked; what a laborer gets from it is whatever is standing there.
-        // So "clear the stone and leave the wood" works by the wood never taking the paint,
-        // rather than by storing three layers and letting a tile be marked for a good it
-        // does not have.
-        Goods? wanted = WhatTheBrushTakes(brush);
-        if (wanted is not null && standing.Value != wanted.Value)
+        Goods? takes = WhatTheBrushTakes(brush);
+        return takes is not null && standing.Value != takes.Value
+            ? PlacementVerdict.No(
+                $"The brush is set to {Describe(brush)}, and that is {Describe(standing.Value)}.")
+            : PlacementVerdict.Fine;
+    }
+
+    /// <remarks>
+    /// ⭐ <b>THE MODE IS A FILTER AND IS THEN FORGOTTEN</b> (D90, Joe's call of two). A marked
+    /// tile is simply marked; what a laborer gets from it is whatever is standing there. So
+    /// *"clear the stone and leave the wood"* works by the wood never taking the paint, rather
+    /// than by storing three layers and letting a tile be marked for a good it does not have.
+    /// <para>
+    /// <b>The whole test lives in <see cref="CanPaintHarvest"/></b>, so the preview under the
+    /// cursor and the paint under the click are the same answer (D198).
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict PaintHarvest(GridPos tile, HarvestBrush brush = HarvestBrush.Everything)
+    {
+        PlacementVerdict verdict = CanPaintHarvest(tile, brush);
+        if (!verdict.Allowed)
         {
-            return PlacementVerdict.No(
-                $"The brush is set to {Describe(brush)}, and that is {Describe(standing.Value)}.");
+            return verdict;
         }
 
         Zones.SetHarvest(tile, true);
-        return PlacementVerdict.Fine;
+        return verdict;
     }
 
     /// <summary>The good a brush setting will accept, or null for "anything".</summary>
@@ -2681,15 +3333,78 @@ public sealed class SimWorld
                 + "People will spend their days walking to it."
             : null;
 
-        if (standingCrop is null && tooFar is null)
+        string? longHaul = WarningForAFarmFarFromAStore(kind, position);
+
+        if (standingCrop is null && tooFar is null && longHaul is null)
         {
             return PlacementVerdict.Fine;
         }
 
         return PlacementVerdict.Yes(
-            standingCrop is not null && tooFar is not null
-                ? $"{standingCrop} {tooFar}"
-                : standingCrop ?? tooFar!);
+            string.Join(
+                ' ',
+                new[] { standingCrop, longHaul, tooFar }.Where(
+                    static line => !string.IsNullOrEmpty(line))));
+    }
+
+    /// <summary>
+    /// ⭐ A farm far from a store halves its own harvest, and until D194 nothing said so.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The distance warning above measures the wrong walk for a farmhouse.</b> It asks how
+    /// far the building is from the <em>village</em>, which is about people's days; a farm's
+    /// binding walk is to <b>the nearest store that takes food</b>, because that is where every
+    /// armful past the first one goes (`crops-and-orchards.md §3.2a`). Measured, a farm ten
+    /// ticks out brings in six tiles a hand against a well-sited farm's thirteen — <b>the
+    /// single largest legible consequence in the farm, and it happened silently.</b>
+    /// </para>
+    /// <para>
+    /// <b>⭐ AND IT IS THE LEVER THE PLAYER ACTUALLY HAS.</b> Thirteen tiles ten ticks from a
+    /// granary is physically impossible — autumn is 120 ticks and it needs about 230 — so
+    /// *"build a store near the fields"* is not advice, it is the only thing that works.
+    /// </para>
+    /// <para>
+    /// <b>Warned, never refused</b> (D43, D86), and <b>only past the haul the economy budgets
+    /// for</b>, so a farm beside the granary is not nagged — D42's one considered sentence
+    /// rather than an alert the player learns to click past.
+    /// </para>
+    /// </remarks>
+    private string? WarningForAFarmFarFromAStore(BuildingKind kind, GridPos position)
+    {
+        if (kind != BuildingKind.Farmhouse)
+        {
+            return null;
+        }
+
+        int haul = HaulWalkFrom(position);
+        int budgeted = VillageEconomy.FieldHaulTicksBudgeted(Config);
+
+        if (haul < 0)
+        {
+            return "There is no store here that takes food, so every armful of the harvest "
+                + "will be set down where it stands.";
+        }
+
+        if (haul <= budgeted)
+        {
+            return null;
+        }
+
+        int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
+        int share = ReapableShareAt(new Workplace
+        {
+            Id = -1,
+            Kind = JobKind.Farmer,
+            Name = "ghost",
+            Position = position,
+            Capacity = 1,
+        });
+
+        int tiles = derived * share / 100;
+        return $"That is a {haul}-tick walk to the nearest store that takes food. A farmer "
+            + $"there brings in about {(tiles < 1 ? 1 : tiles)} tiles of crop against "
+            + $"{derived} beside a store — build a store near the fields.";
     }
 
     /// <summary>
@@ -4401,11 +5116,48 @@ public sealed class SimWorld
                     lifespan += Rng.NextInt(-config.LifespanYearsVariance, config.LifespanYearsVariance + 1);
                 }
 
+                // ⭐ AND THEIR RHYTHM, THIRD IN THE DRAW ORDER — name, lifespan, rhythm (§3.5,
+                // D190). `HouseholdSystem.TryBirth` draws the same three in the same order, so
+                // there is one rule rather than two; that comment has stood over the birth path
+                // since D71 and this keeps it true.
+                // ⭐ AND THEIR RHYTHM, THIRD IN THE DRAW ORDER — name, lifespan, rhythm (§3.5,
+                // D190), ROTATED BY THEIR PLACE IN THE HOUSEHOLD.
+                //
+                // ⛔⛔ THE ROTATION IS NOT BELT AND BRACES — WITHOUT IT THE FIX DID NOTHING, AND
+                // THE MEASUREMENT IS WORTH THE PARAGRAPH. The founding draws four small-range
+                // numbers at a fixed stride at the very start of the stream, and at that stride
+                // the first four come out **1, 1, 2, 2** — so both adults of household 1 got the
+                // same rhythm, both of household 2 got the same rhythm, and two people who were
+                // meant to stop moving in lockstep were handed identical staggers.
+                //
+                // ⚠️ THE RNG IS NOT AT FAULT AND THAT MATTERS. Forty raw `NextInt(0, 4)` draws
+                // come out 9/11/8/12 — well distributed. **It is a short-range correlation at a
+                // fixed stride, showing at the start of the stream**, and the founding is
+                // exactly four such draws. *A generator can be sound and still be the wrong tool
+                // for four draws that must differ from each other.*
+                //
+                // So the draw supplies the seeded part and the rotation supplies the guarantee:
+                // no two adults of one household can share a rhythm while a household holds no
+                // more people than a day holds ticks.
+                int rhythm = config.SeededRhythm && config.TicksPerDay > 1
+                    ? (Rng.NextInt(0, config.TicksPerDay) + a) % config.TicksPerDay
+                    : 0;
+
                 var villager = new Villager
                 {
                     Id = nextVillagerId++,
                     Name = name,
                     LifespanYears = lifespan,
+                    Rhythm = rhythm,
+
+                    // ⭐⭐ AND THEIR HUNGER STARTS A LITTLE APART, WHICH IS THE HALF THE STAGGER
+                    // ALONE COULD NOT REACH (§3.5, D190). Measured with only the action
+                    // stagger: two adults of one household still had **identical hunger 100% of
+                    // ticks** — because hunger is a pure function of ticks since the last meal,
+                    // so two people who eat on the same tick stay in step for ever however
+                    // differently they walk. **Identical hunger is one of the two numbers D28
+                    // named**, and nothing that offsets only movement can touch it.
+                    Hunger = rhythm,
 
                     // Standing at their house, or at the cart they arrived in (D70). Not
                     // RestingPlaceOf — that reads the household, and this villager is not
@@ -4427,7 +5179,93 @@ public sealed class SimWorld
             }
         }
 
+        GiveTheFoundersTheirTrades(config);
         PairFounders(config);
+    }
+
+    /// <summary>
+    /// ⭐⭐ The founders arrive as a <b>mix of tiers</b> — fixed shape, seeded trades
+    /// (`skills-catalog.md §3.2c`, Joe's call 2026-08-23, D190).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, D175: *"Maybe the founders could be a mix of masters, mids — whatever that is —
+    /// and novices? Could be a master woodcutter or gatherer or apprentice forester."*</b> It
+    /// does three things at once: it makes the four founders **people at tick 0** rather than
+    /// four identical units with different names; it gives the opening **a shape to read** — a
+    /// party with a master woodcutter and nobody who can farm is a different opening from the
+    /// reverse; and it **finishes the lockstep fix**, because founders at different tiers do
+    /// different work in different numbers of ticks from the first day.
+    /// </para>
+    /// <para>
+    /// <b>⛔ FIXED COMPOSITION, SEEDED TRADES, AND THE DISTINCTION IS THE WHOLE DESIGN.</b> Every
+    /// seed gets the same *strength* of party and a different *speciality*. A fully seeded roll
+    /// would make a seed handing you four novices and a seed handing you two masters **a bad run
+    /// and a good one rather than two playthroughs** — and §0.1 is that the challenge is in the
+    /// planning, never in the punishment. **You never lose before you press play.**
+    /// </para>
+    /// <para>
+    /// <b>⚠️ MEASURED BEFORE IT WAS BUILT, because §11 named this as the unmeasured arm:</b>
+    /// *does a master gatherer make the opening trivial?* **It does not — it changes nothing at
+    /// all.** Food at the first winter is identical across three seeds with one master forager,
+    /// two master foragers, or none, because **nobody forages during the opening**. A master
+    /// forester moves it 13% and 9% on two seeds, and population at years 1 and 5 is unchanged
+    /// in every arm.
+    /// </para>
+    /// <para>
+    /// <b>Drawn after every founder exists</b>, so the trades are dealt from a settled roster in
+    /// villager-id order — an unordered tie is a desync waiting to happen (D15).
+    /// </para>
+    /// </remarks>
+    private void GiveTheFoundersTheirTrades(SimConfig config)
+    {
+        if (config.Skills.Count == 0 || Villagers.Count == 0)
+        {
+            return;
+        }
+
+        // The trades on offer, one draw each and never the same twice: a master and a
+        // journeyman of the same trade is a narrower party than the shape asks for.
+        var available = new List<SkillRow>(config.Skills);
+
+        int masters = config.FoundingMasters;
+        int journeymen = config.FoundingJourneymen;
+
+        for (int i = 0; i < Villagers.Count && available.Count > 0; i++)
+        {
+            SkillTier tier = i < masters ? SkillTier.Master
+                : i < masters + journeymen ? SkillTier.Journeyman
+                : SkillTier.Novice;
+
+            if (tier == SkillTier.Novice)
+            {
+                // ⛔ A NOVICE IS TODAY'S VILLAGER, TO THE TICK (§3.2) — no entry at all, so
+                // they hash exactly as a villager did before any of this existed.
+                continue;
+            }
+
+            SkillRow trade = available[Rng.NextInt(0, available.Count)];
+            available.Remove(trade);
+
+            SkillProgress progress = Villagers[i].ProgressIn(trade.Id);
+
+            if (tier == SkillTier.Master)
+            {
+                progress.Work = config.MasteryWorkFor(trade);
+                progress.Ticks = config.MasteryYearsFor(trade) * config.TicksPerYear;
+                progress.Mastered = true;
+                continue;
+            }
+
+            // ⭐ THREE QUARTERS OF THE WAY, NOT THE MIDDLE OF THE BAND, AND THE REASON IS
+            // MEASURED. The journeyman band starts at half of mastery, but the sim's one speed
+            // step falls at about 70% (D187) — so a journeyman seeded at the band's midpoint
+            // would read as *"Otto knows his trade"* and work at exactly a novice's pace.
+            // **A tier the player can see and the sim cannot feel is the invisible number this
+            // project keeps refusing**, so they are seeded past the step.
+            progress.Work = config.MasteryWorkFor(trade) * 3 / 4;
+            progress.Ticks = config.MasteryYearsFor(trade) * config.TicksPerYear * 3 / 4;
+        }
     }
 
     /// <summary>

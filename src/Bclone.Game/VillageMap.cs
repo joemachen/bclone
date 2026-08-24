@@ -825,9 +825,46 @@ public partial class VillageMap : Control
         PlacementMessageChanged?.Invoke(_verdict switch
         {
             { Allowed: false } => _verdict.Reason,
-            { HasWarning: true } => _verdict.Warning,
-            _ => "Click to mark it out. Right-click to stop.",
+            { HasWarning: true } => _verdict.Warning + TheMarketsServiceArea(),
+            _ => "Click to mark it out. Right-click to stop." + TheMarketsServiceArea(),
         });
+    }
+
+    /// <summary>
+    /// ⭐⭐ What a market here would actually serve (D201, Joe) — <b>a count, not a ring</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe asked to see the market's service area before placing it.</b> ⛔ <b>There is no
+    /// radius to draw</b> — a marketer picks the cheapest errand from where they stand and
+    /// households fetch from whatever store is nearest, so nothing in the model refuses a
+    /// distance, and inventing a ring would rebuild the catchment fence D120 deleted.
+    /// </para>
+    /// <para>
+    /// <b>⭐ The truthful answer is the homes this would be the CLOSEST food store for</b>, which
+    /// is exactly the set whose walk it shortens — and it is not circular, because it depends on
+    /// where the granary already is. **That is Joe's own point about positioning, made visible:**
+    /// a market beside the granary reads *"0 homes"*, because the granary was already nearer.
+    /// </para>
+    /// <para>
+    /// Empty for every other building, so it is information where it means something rather than
+    /// a line the player learns to skip (D42).
+    /// </para>
+    /// </remarks>
+    private string TheMarketsServiceArea()
+    {
+        if (_building != BuildingKind.Market || _world is null || !_world.Map.Contains(_hovered))
+        {
+            return string.Empty;
+        }
+
+        int homes = _world.HomesAMarketHereWouldBeNearestFor(_hovered);
+
+        return homes == 0
+            ? "  ⚠ No home would be closer to this than to a store they already use — "
+                + "a market here shortens nobody's walk."
+            : $"  {homes} {(homes == 1 ? "home is" : "homes are")} closer to this than to any "
+                + "other food store.";
     }
 
     private void SetZoom(float pixelsPerTile)
@@ -963,6 +1000,7 @@ public partial class VillageMap : Control
 
         // The ghost last, over everything, because it is the thing being decided.
         DrawTheGhost();
+        DrawTheBrushful();
     }
 
     /// <summary>
@@ -974,6 +1012,109 @@ public partial class VillageMap : Control
     /// on amber. The words alongside say why it is amber, because a colour on its own
     /// is the shrug this project keeps refusing.
     /// </remarks>
+    /// <summary>
+    /// ⭐⭐ The brushful about to be laid down, under the cursor (D198, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing:</b> *"when I'm painting I don't see an outline of the area I'm about to
+    /// paint. I just have to point and click and hope it's covering the right area."* A building
+    /// has had a ghost since D43; **the brush — which puts down twelve tiles at a time — had
+    /// nothing at all.**
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT SHOWS WHAT WOULD HAPPEN, NOT WHERE THE BRUSH IS.</b> A plain outline would be a
+    /// rectangle; this asks the sim tile by tile and colours each one by the answer, so the
+    /// harvest brush's filter (D90) — *"the brush is set to fell trees and that is a stone
+    /// seam"* — is visible **before** the click rather than discovered by it. That is §1.1
+    /// applied to the one tool that had escaped it.
+    /// </para>
+    /// <para>
+    /// <b>Asked through the same doors the paint uses</b> — <c>CanPaintResidential</c>,
+    /// <c>CanPaintHarvest</c>, <c>CanPaintWorkGround</c> — which is why those were split out of
+    /// the paint methods (D142's rule): a preview computed from a second copy of the condition is
+    /// a preview that can lie.
+    /// </para>
+    /// <para>
+    /// <b>The diamond, not a square</b>, because that is the shape <see cref="PaintAround"/>
+    /// actually lays down. A square preview over a diamond brush would be a new lie replacing an
+    /// old absence.
+    /// </para>
+    /// </remarks>
+    private void DrawTheBrushful()
+    {
+        if (_brush == 0 || _world is null || !_world.Map.Contains(_hovered))
+        {
+            return;
+        }
+
+        for (int dy = -BrushRadius; dy <= BrushRadius; dy++)
+        {
+            for (int dx = -BrushRadius; dx <= BrushRadius; dx++)
+            {
+                if (Mathf.Abs(dx) + Mathf.Abs(dy) > BrushRadius)
+                {
+                    continue;
+                }
+
+                var tile = new GridPos(_hovered.X + dx, _hovered.Y + dy);
+                if (!_world.Map.Contains(tile))
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                float size = Mathf.Max(6f, _pixelsPerTile * 0.9f);
+                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+                Color colour = ColourForTheBrushOn(tile);
+                DrawRect(rect, colour with { A = 0.30f });
+                DrawRect(rect, colour with { A = 0.85f }, filled: false, width: 1f);
+            }
+        }
+    }
+
+    /// <summary>What the brush would do to this tile, as a colour.</summary>
+    /// <remarks>
+    /// <b>Erasing is never refused</b>, so it is drawn plain: a rubber that showed red over a
+    /// tile with no paint on it would be telling the player they had done something wrong when
+    /// they had not.
+    /// </remarks>
+    private Color ColourForTheBrushOn(GridPos tile)
+    {
+        SimWorld world = _world!;
+
+        if (_brush < 0)
+        {
+            return GhostWarned;
+        }
+
+        PlacementVerdict verdict;
+
+        if (_groundFor != 0)
+        {
+            Workplace? owner = world.FindWorkplace(_groundFor);
+            verdict = owner is null
+                ? PlacementVerdict.No("That building is gone.")
+                : world.CanPaintWorkGround(owner, tile);
+        }
+        else if (_harvestMode is not null)
+        {
+            verdict = world.CanPaintHarvest(tile, _harvestMode.Value);
+        }
+        else
+        {
+            verdict = world.CanPaintResidential(tile);
+        }
+
+        return verdict switch
+        {
+            { Allowed: false } => GhostRefused,
+            { HasWarning: true } => GhostWarned,
+            _ => GhostFine,
+        };
+    }
+
     private void DrawTheGhost()
     {
         if (_building is null)
@@ -1014,6 +1155,72 @@ public partial class VillageMap : Control
 
         DrawRect(rect, colour with { A = 0.35f });
         DrawRect(rect, colour, filled: false, width: 2f);
+
+        DrawTheHomesThisMarketWouldServe();
+    }
+
+    /// <summary>
+    /// ⭐ Ring the homes a market here would be the nearest food store for (D201).
+    /// </summary>
+    /// <remarks>
+    /// <b>The count in the placement line says how many; this says which.</b> A number tells the
+    /// player whether to move the building, and the rings tell them <em>which way</em> — which is
+    /// the difference between a stat and a decision (§1.1). Drawn only while a market is on the
+    /// cursor, because it is a placement aid rather than furniture.
+    /// </remarks>
+    private void DrawTheHomesThisMarketWouldServe()
+    {
+        if (_building != BuildingKind.Market || _world is null)
+        {
+            return;
+        }
+
+        SimWorld world = _world;
+        float radius = Mathf.Max(4f, _pixelsPerTile * 0.55f);
+
+        foreach (Household household in world.Households)
+        {
+            if (household.HomePosition is not GridPos home
+                || world.LivingMembersOf(household) == 0)
+            {
+                continue;
+            }
+
+            // Asked one home at a time, off the same method the placement line counts with, so
+            // the rings and the number can never disagree (D142, D147's rule for `IdleNote`).
+            if (world.HomesAMarketHereWouldBeNearestFor(_hovered) == 0)
+            {
+                return;
+            }
+
+            int here = world.TravelCost.Cost(home, _hovered);
+            if (here == TravelCostField.Unreachable || !IsNearestFoodStore(world, home, here))
+            {
+                continue;
+            }
+
+            DrawArc(ToScreen(home), radius, 0f, Mathf.Tau, 24, GhostFine with { A = 0.9f }, 2f);
+        }
+    }
+
+    /// <summary>Whether a store at the cursor would beat every food store this home can reach.</summary>
+    private static bool IsNearestFoodStore(SimWorld world, GridPos home, int here)
+    {
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (!store.CanEverHold(Goods.Food))
+            {
+                continue;
+            }
+
+            int theirs = world.TravelCost.Cost(home, store.Position);
+            if (theirs != TravelCostField.Unreachable && theirs <= here)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

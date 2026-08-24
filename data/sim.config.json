@@ -23,7 +23,7 @@
   // trade is that a schooled child starts LATER and is worth more when they do** — so this is
   // the dial that pair of choices will pull against, not a number that stays put.
   //
-  // ⚠️ It buys hands and costs food: below this a villager eats `child_food_share_percent` of
+  // ⚠️ It buys hands and costs food: below this a villager eats `dependant_food_share_percent` of
   // a meal, so a twelve-year-old now eats a full one. Pairing and childbearing are NOT affected
   // — `leave_home_age` (18) and `fertility_min_age` (18) gate those separately.
   "adult_age": 12,
@@ -136,7 +136,15 @@
   "hunger_max": 100,
   "eat_threshold": 80,
   "eat_reduces_hunger": 80,
-  "food_per_meal": 5,
+  // ⭐ 5 -> 4 (Joe, 2026-08-23): "lower food consumption -20%".
+  //
+  // EXACTLY -20%, and the derivation makes it a REAL loosening rather
+  // than a rename. RequiredGatherYield falls with it, and gather_yield
+  // is guarded as a FLOOR rather than an equality -- so leaving the
+  // yields where they are hands the village the whole 20% as headroom
+  // above the survival line. Re-deriving the yields down too would have
+  // been the same game with smaller numbers.
+  "food_per_meal": 4,
 
   // 24 ticks = 6 days at maximum hunger before death. Boundary
   // is >= (decided in spec §11).
@@ -309,6 +317,58 @@
   // on the day the berry patches close (D44); and a job left vacant by a
   // death is filled the tick after it happens (D47).
   "labour_reshuffle_years": 3,
+
+  // How often the village fills its openings and lets go of anybody it
+  // no longer wants, IN TICKS. Sixty is fifteen in-game days.
+  //
+  // Joe, playing: "30 days feels unresponsive." It was hard-wired to a
+  // season, so a change on the professions panel waited up to thirty days
+  // to bite -- measured at 25, 15 and 5 days depending on where in the
+  // season it was set.
+  //
+  // MEASURED ACROSS THREE SEEDS AT FIFTY YEARS, and the trade is churn for
+  // responsiveness with nothing economic either way: population, food and
+  // the share of able adults holding no job are all flat at 30, 10 and 5
+  // days. What moves is job changes -- about 800 over fifty years at a
+  // season, 1,220 at ten days, 1,960 at five.
+  //
+  // FIFTEEN, NOT TEN, AND THE BOUND IS MEASURED. At ten days D28's fix
+  // stops working: two adults of one household share a tile 87% of ticks
+  // with the seeded rhythm and mixed founding ON, against 87% with them
+  // OFF -- the whole gain gone. At fifteen it is 90% -> 80%, exactly as
+  // at a season. The hunger half (100% -> 0%) holds at every cadence.
+  // D28 took four weeks to discharge and Joe confirmed it in play; it is
+  // not worth trading for five more days of responsiveness.
+  //
+  // IT IS NOT THE RESHUFFLE. This pass never moves anybody who already
+  // holds a job; it fills openings from the idle and sheds a surplus the
+  // player asked to shed. D20 and D46 both argue against churning careers,
+  // and neither is what this does.
+  "labour_slack_ticks": 60,
+
+  // What a learner gains per tick for working beside a MASTER of the
+  // same trade at the same workplace. A hundred means they learn twice
+  // as fast -- the sentence a player can hold in their head.
+  //
+  // This is DESIGN.md 2.1's whole point arriving: "that skill dies with
+  // the person unless an elder apprentices a youth." Until it existed,
+  // skill was personal and nothing transferred.
+  //
+  // MEASURED OVER A CENTURY ON THREE SEEDS. Masters alive at the end:
+  // 3 -> 6, 4 -> 8, 8 -> 10 against a village with this at zero, and
+  // 43-67% of learner-ticks are already spent beside a master, so the
+  // mechanism has surface without anybody being assigned to anybody.
+  // Population and food are flat.
+  //
+  // TWO HUNDRED IS TOO FAR: on seed 42 it ends the century with zero
+  // food. A hundred leaves that seed at 1,485 against 1,513 with the
+  // feature off.
+  //
+  // The master pays nothing (D183's "give, never take"), which is why
+  // there is no policy dial -- a control with nothing to trade off is a
+  // switch. The player's lever is staffing, and the at-risk line is what
+  // tells them to use it.
+  "apprentice_learning_bonus_percent": 100,
 
   // ---- Ageing ------------------------------------------------
   // Full strength until 30, then a straight decline to 55% in the
@@ -633,7 +693,21 @@
   // so a winter costs a household a quarter of what it did, and every
   // number derived from that - the store target, the woodcutter seats,
   // the foresters feeding them - comes down with it.
-  "firewood_burn_interval_days": 4,
+  //
+  // ⭐ 4 -> 3 (Joe, 2026-08-23): "increase firewood consumption +20%".
+  //
+  // ⚠️ IT IS +25%, NOT +20%, AND THE GRID IS WHY. A winter costs
+  // ceil(days_per_season / interval) x firewood_per_winter_day, so with
+  // a 30-day winter the only reachable numbers at one log a burn are
+  // 8 (interval 4), 10 (interval 3) and 15 (interval 2). Ten is the
+  // closest to +20% and it is what shipped.
+  //
+  // Exactly +20% is reachable only as 3 logs every 10 days, which hits
+  // the number and changes the RHYTHM: a household would need three in
+  // hand at once instead of one, so a thin larder fails in bursts
+  // rather than gradually. That is a different feel, not a finer dial,
+  // so the closer-in-spirit option won. Say so if the burst is wanted.
+  "firewood_burn_interval_days": 3,
 
   // ---- Regrowth (D125) ---------------------------------------
   // The valley comes back. Measured before this existed: a village
@@ -673,6 +747,27 @@
   // tested before the clothing chain exists.
   "exposure_days_outdoors": 15,
   "exposure_days_sheltered": 25,
+
+  // Days at a burning hearth to come back FROM THE BRINK of freezing
+  // (Joe, 2026-08-23: "fire warm up should be much faster than it
+  // currently is").
+  //
+  // THE THIRD NUMBER IN D45's TABLE, AND THE ONE THAT WAS NEVER STATED.
+  // Fifteen days outdoors kills, twenty-five under a fireless roof
+  // kills, and five at a fire brings you all the way back. Three lines,
+  // one model.
+  //
+  // It used to be DERIVED by mirroring the outdoor rate, on the stated
+  // grounds that mirroring "needs no number of its own" -- which was
+  // true, and quietly chose fifteen anyway. Half a winter to thaw. A
+  // derivation that avoids stating a number still states one, and this
+  // is what that costs when nobody checks what it came out as.
+  //
+  // Bounded below by a measurement rather than by taste: a fire that
+  // zeroed the count outright was built and rejected, because villagers
+  // spend 76% of winter at a lit hearth and nobody froze in 120 years.
+  // Five days is fast; instant is a reset.
+  "thaw_days_at_a_fire": 5,
 
   // How far toward freezing somebody gets before they drop what they are
   // doing and walk to the nearest fire. Halfway is where the old system

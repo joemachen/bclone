@@ -110,7 +110,95 @@ public sealed class FarmGoldenTests
     // one golden in the suite that reaches a farm at all, so it is the one that can see them.
     //
     //   before ground was worth going to: 5832742735958199009
-    private const ulong SeamGoldenHash = 4486163041401162495UL;
+    //
+    // ⭐⭐ RE-TAKEN FOR THE PROFICIENCY SUBSTRATE (D181) — and unlike every re-take above it,
+    // **nobody in this village did anything differently.** Villagers now carry what they have
+    // put into each trade; it is hashed; it grows from the first tick; and **no behaviour
+    // anywhere reads it** until landing 2. The scenario staffs a farm and a harvest brush for
+    // twenty years, so its people accrue and this number moves for that and nothing else.
+    //
+    //   before people got better at things: 4486163041401162495
+    //
+    // ⭐⭐ RE-TAKEN AGAIN, SAME DAY, FOR SKILL DECAY BEING DELETED (D183). Proficiency only ever
+    // goes up now, and carries a second counter beside it. **`ComputeIgnoringSkills` below is
+    // unchanged through both re-takes**, which is the whole licence for moving this twice.
+    //
+    //   before decay was deleted: 7911818851227652011
+    //
+    // ⭐⭐ RE-TAKEN FOR THE MARKETER THE VILLAGE NEVER ASKED FOR (D185), AND THIS ONE MOVED FOR
+    // A REAL BEHAVIOUR CHANGE -- unlike the two skill re-takes above it. `MarketersWanted`
+    // counted errands from HOUSEHOLDS and nothing else, so nobody was ever put on the market
+    // because a farm needed emptying, and D171's buffer-clearing leg could not run. This is the
+    // one village in the suite with a farm in it, so it is the one that can see the difference:
+    // a trader works here now, and twenty years of that is a different twenty years.
+    //
+    // ⚠️ `SeamBeforeAnybodyGotBetter` MOVES TOO, and that is correct rather than alarming: it
+    // fingerprints everything except skill, and what changed here is what people DO. A skill
+    // re-take must leave it alone; this is not one.
+    //
+    //   before the market got staffed for farms: 4043003718136410697
+    //
+    // ⭐⭐ RE-TAKEN FOR MASTERY BITING (D187) — Phase 3 landing 2, and the moment the skill
+    // pillar stopped being bookkeeping. **A master takes half the ticks over an action, rounded
+    // up**, so this village's farmers sow and reap faster as their careers run on, and twenty
+    // years of that is a different twenty years.
+    //
+    //   before mastery bit: 6737691834764729296
+    //
+    // ⭐⭐ RE-TAKEN FOR THE MIXED FOUNDING AND THE SEEDED RHYTHM (D190) -- landing 3, and the
+    // commit that discharges D28.
+    //
+    //   before the founders were people: 9706055072185576047
+    //
+    // ⭐ RE-TAKEN FOR ELDERS EATING A DEPENDANT'S SHARE (D191).
+    //
+    //   before elders ate like children: 16167409353535345881
+    //
+    // ⭐ RE-TAKEN FOR A FIVE-DAY THAW (D192).
+    //
+    //   before the fire got warmer: 11509711031316440761
+    //
+    // ⭐⭐ RE-TAKEN BECAUSE THE FARM REMEMBERS WHAT IT BROUGHT IN (D194,
+    // `per-site-yield.md §4.2a`). The sowing cap stopped predicting a distant farm's autumn and
+    // started reading its own best one, so **this village commits different ground and therefore
+    // has a different history**. It is the only village in the suite that plants a farmhouse,
+    // which is why it is the only golden that moves — **the two fifty-year goldens are unmoved,
+    // and that is the check that matters**: a farm's memory leaking into a village with no farm
+    // in it would be a bug, not a re-base.
+    //
+    //   before the farm remembered: 12485177273367720852
+    //
+    // ⭐⭐ RE-TAKEN FOR THE STOCKED MARKET (D197) — see the note in `StockLimitTests`.
+    //
+    //   before the market was stocked: 3714993309705346931
+    //   before the market stopped being a dumping ground (D199): 4712803508757490940
+    private const ulong SeamGoldenHash = 11064751127156165011UL;
+
+    /// <summary>
+    /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
+    /// anything</b> (D181).
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐⭐ AND IT HAS NOW MOVED, WHICH IS THE WHOLE POINT OF IT (D187).</b> This fingerprints
+    /// everything except the skill counters, so through landing 1 it was **byte-identical**
+    /// while proficiency accrued and did nothing — and the note here said in as many words that
+    /// *"when landing 2 makes mastery bite, this number must move too."* **It did.** A skill
+    /// system that changes nothing is D56's clothing, and this is the number that can tell the
+    /// difference.
+    /// <para>
+    /// ⚠️ The claim that the *substrate alone* changes nothing is still alive and still
+    /// checkable — <c>SkillTests.FiftyYearsOfVillageAndOnlyTheCountersMoved</c> poses a village
+    /// with the speed bonus at zero and asserts the pre-skill goldens byte for byte.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ AND IT MOVES FOR ANYTHING THAT IS NOT A SKILL, WHICH IS THE OTHER HALF OF ITS JOB.</b>
+    /// D194 gave the farm a memory of what it brought in, so this village commits different ground
+    /// — a real behaviour change, and it belongs in this number as much as in the one above.
+    /// *"Unmoved by anybody getting better"* is a claim about proficiency, not a claim that the
+    /// village never changes.
+    /// </para>
+    /// </remarks>
+    private const ulong SeamBeforeAnybodyGotBetter = 4480535409214959852UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
@@ -119,9 +207,13 @@ public sealed class FarmGoldenTests
         SimWorld world = RunTheScenario(out _);
 
         ulong actual = StateHash.Compute(world);
-        _output.WriteLine($"crops × harvest brush, {Years}y: {actual}");
+        ulong withoutSkills = StateHash.ComputeIgnoringSkills(world);
+        _output.WriteLine(
+            $"crops × harvest brush, {Years}y: {actual} (without skills {withoutSkills})");
 
         Assert.Equal(SeamGoldenHash, actual);
+        Assert.Equal(SeamBeforeAnybodyGotBetter, withoutSkills);
+        Assert.NotEqual(withoutSkills, actual);
     }
 
     /// <summary>

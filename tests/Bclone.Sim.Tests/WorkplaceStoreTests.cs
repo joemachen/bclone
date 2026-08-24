@@ -115,14 +115,28 @@ public sealed class WorkplaceStoreTests
         loop.Step(Config.TicksPerYear * 2);
 
         int bar = world.TargetFoodForTheGranary() * Config.BirthFoodPercent / 100;
-        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
         Workplace workplace = world.Workplaces[0];
 
-        // Empty the granary into the farm, so the *only* village food is in a workplace.
-        int all = granary.Store.Food;
-        Assert.True(all > bar, $"The granary holds {all}, which is not above the bar of {bar} — "
-            + "this fixture cannot pose the case.");
-        Assert.True(granary.Store.TryTake(Goods.Food, all));
+        // Empty EVERY store that holds food into the farm, so the *only* village food is in a
+        // workplace.
+        //
+        // ⚠️ IT USED TO EMPTY THE GRANARY ALONE, AND THAT STOPPED BEING THE WHOLE STORY (D197).
+        // The market now gets deliberately stocked (`storage-and-distribution.md §14.8`), so
+        // there is a second building holding food and `FoodInGranaries` — which counts every
+        // store that accepts food, not only granaries — read 75 instead of 0. **The claim was
+        // never wrong; the fixture's premise was.**
+        int all = 0;
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            int held = store.Store.Food;
+            if (held > 0 && store.Store.TryTake(Goods.Food, held))
+            {
+                all += held;
+            }
+        }
+
+        Assert.True(all > bar, $"The village's stores hold {all}, which is not above the bar of "
+            + $"{bar} — this fixture cannot pose the case.");
         workplace.Store.Add(Goods.Food, all);
 
         _output.WriteLine(

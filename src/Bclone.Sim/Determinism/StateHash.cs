@@ -28,7 +28,43 @@ public static class StateHash
     private const ulong FnvPrime = 1099511628211UL;
 
     /// <summary>Fingerprint the whole world.</summary>
-    public static ulong Compute(SimWorld world)
+    public static ulong Compute(SimWorld world) => Compute(world, skills: true);
+
+    /// <summary>
+    /// Fingerprint the world <b>as it was before anybody could get better at anything</b> —
+    /// everything except what each villager has put into a trade.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS EXISTS BECAUSE THE OBVIOUS NO-OP GUARD CANNOT BE WRITTEN</b>
+    /// (`skills-catalog.md §11.2.1`, D181). The spec asks landing 1 to be a **provable no-op:
+    /// goldens unmoved** — and the goldens are full state hashes, so the moment proficiency is
+    /// hashed and anybody accrues a tick they move by construction. **Hashing new state that
+    /// grows and keeping a state-hash golden byte-identical are mutually exclusive**, and the
+    /// spec reasoned by analogy from `crops-and-orchards.md`'s terrain values, where the
+    /// generator never produced the new values so a valley genuinely hashed the same.
+    /// </para>
+    /// <para>
+    /// <b>So the claim is made in the vocabulary that can be true: *nothing anybody DOES
+    /// changed*.</b> Same positions, same stores, same births, same deaths, same tick —
+    /// only the counters differ. That is a stronger statement than hash equality anyway,
+    /// because it says which half moved.
+    /// </para>
+    /// <para>
+    /// <b>⭐ And it keeps its value into landing 2, pointing the other way:</b> when mastery
+    /// starts biting, **this must move** — a skill system that changes nothing is D56's
+    /// clothing, and this is the guard that can say so.
+    /// </para>
+    /// <para>
+    /// ⚠️ Precedent: `PerSiteYieldTests.MakingSoilRegionalMovedNoOtherTileInTheValley` computes a
+    /// terrain-only fingerprint for exactly this reason — *"including it would make this guard
+    /// say only 'the map changed', which is what the map golden already says and is not the
+    /// question."*
+    /// </para>
+    /// </remarks>
+    public static ulong ComputeIgnoringSkills(SimWorld world) => Compute(world, skills: false);
+
+    private static ulong Compute(SimWorld world, bool skills)
     {
         ArgumentNullException.ThrowIfNull(world);
 
@@ -141,7 +177,7 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)world.Villagers.Count);
         for (int i = 0; i < world.Villagers.Count; i++)
         {
-            hash = MixVillager(hash, world.Villagers[i]);
+            hash = MixVillager(hash, world.Villagers[i], skills);
         }
 
         hash = MixUInt32(hash, (uint)world.Households.Count);
@@ -215,6 +251,25 @@ public static class StateHash
             if (workplace.Mode != Workplace.DefaultMode)
             {
                 hash = MixUInt32(hash, (uint)workplace.Mode);
+            }
+
+            // ⭐⭐ WHAT A FARM HAS LEARNED IT CAN BRING IN (`per-site-yield.md §4.2a`, D194).
+            // It decides how much ground the farm commits every spring, so two runs of one
+            // seed that differ in it are different runs and must hash differently.
+            //
+            // SPARSE, AND SILENT UNTIL A FARM HAS SOWN SOMETHING — the same shape as the queue
+            // rank and the work mode above, and for the same reason: a village with no
+            // farmhouse in it must hash exactly as it did before this existed. That is what
+            // keeps the two fifty-year goldens still while the seam golden moves, and the two
+            // fifty-year villages never place a farmhouse (D162). ⚠️ If they move anyway, the
+            // memory has leaked into a village with no farm in it, which is a bug and not a
+            // re-base.
+            if (workplace.FieldTilesLearned != 0 || workplace.FieldTilesSown != 0)
+            {
+                hash = MixUInt32(hash, (uint)workplace.FieldTilesSown);
+                hash = MixUInt32(hash, (uint)workplace.FieldHandsAtAutumn);
+                hash = MixUInt32(hash, (uint)workplace.FieldTilesLearned);
+                hash = MixUInt32(hash, (uint)(workplace.FieldWalkWhenLearned + 1));
             }
 
             hash = MixStore(hash, workplace.Store);
@@ -335,7 +390,7 @@ public static class StateHash
         return MixUInt32(hash, (uint)map.FoundingSite.Y);
     }
 
-    private static ulong MixVillager(ulong hash, Villager villager)
+    private static ulong MixVillager(ulong hash, Villager villager, bool skills)
     {
         hash = MixUInt32(hash, (uint)villager.Id);
         hash = MixUInt32(hash, (uint)villager.HouseholdId);
@@ -372,6 +427,43 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.ErrandHouseholdId);
         hash = MixUInt32(hash, (uint)villager.ErrandX);
         hash = MixUInt32(hash, (uint)villager.ErrandY);
+
+        // ⭐ Their own rhythm (§3.5, D190) — sim state, because it decides what they do.
+        //
+        // ⚠️ SPARSE, and the reason is the same one the zone loops above record: mixing it
+        // unconditionally would put a fresh zero into every villager in the game, so a village
+        // played with the rhythm switched off could never hash as it did before §3.5 existed —
+        // and §10 asks for exactly that village to be posable. A rhythm is only ever pending
+        // for a few ticks at the start of a working life; once spent it is inert, and inert
+        // state has no business in a fingerprint.
+        if (villager.Rhythm != 0)
+        {
+            hash = MixUInt32(hash, (uint)villager.Rhythm);
+        }
+
+        // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
+        // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
+        // mixes nothing for a villager who has never held a job and cannot depend on the
+        // sequence entries happened to be created in (D15).
+        //
+        // ⚠️ NO COUNT ALONGSIDE, on the same reasoning `Zones.Harvest` records: the ids
+        // determine the set by themselves, and mixing a length would put a fresh zero into
+        // every villager who has never worked — which is exactly the invisibility this
+        // structure is shaped for.
+        if (!skills)
+        {
+            return hash;
+        }
+
+        for (int i = 0; i < villager.Skills.Count; i++)
+        {
+            SkillProgress progress = villager.Skills[i];
+            hash = MixUInt32(hash, (uint)progress.SkillId);
+            hash = MixUInt32(hash, (uint)progress.Ticks);
+            hash = MixUInt32(hash, (uint)progress.Work);
+            hash = MixByte(hash, progress.Mastered ? (byte)1 : (byte)0);
+        }
+
         return hash;
     }
 

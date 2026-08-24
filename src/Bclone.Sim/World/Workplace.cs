@@ -351,6 +351,78 @@ public sealed class Workplace
     /// </remarks>
     public Stockpile Store { get; init; } = new();
 
+    // -----------------------------------------------------------------
+    //  ⭐⭐ WHAT THIS FARM HAS LEARNED IT CAN BRING IN
+    //  (`specs/per-site-yield.md §4.2a`, D194)
+    // -----------------------------------------------------------------
+    //
+    // ⛔ THE THING THESE FOUR FIELDS REPLACE WAS A PREDICTION, AND IT WAS WRONG IN THE
+    // DIRECTION THAT MAKES ITSELF TRUE. `SimWorld.ReapableShareAt` scaled a farm's field by
+    // `budgeted ÷ haul` — and those are not the same kind of quantity: `budgeted` is a ROUND
+    // TRIP inside the field (4 ticks) and `haul` is a ONE-WAY walk to a store (10). Measured,
+    // it left a farm ten ticks out committing five tiles when it could bring in six, and then
+    // RESTING FOR 27% OF THE AUTUMN it was supposedly too busy for. At sixteen ticks 45%; at
+    // twenty-two, 55%. **The cap cut the field and the idleness read back as proof the field
+    // had been too big.**
+    //
+    // ⭐ AND NO FORMULA REPLACES IT, WHICH IS THE FINDING RATHER THAN A SHRUG. The true ceiling
+    // depends on how fast the market drains the farm's buffer, on the shape of the painted
+    // ground, on how full the granary is and on how many hands turned up. The measured curve
+    // fits no closed form — `season ÷ (reap + walk)` wants a different constant at every
+    // distance, and the constant moves the wrong way with distance. **A spring-time formula is
+    // a guess by construction.** So the farm remembers instead.
+
+    /// <summary>
+    /// Tiles standing on this farm's ground when autumn began — <b>the year's lesson, and the
+    /// gate on there being one</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ NOT OPTIONAL, AND THE TRAP IT CLOSES IS SUBTLE.</b> A farm held by a met stock
+    /// limit sows nothing and ends autumn with nothing standing — <b>which is indistinguishable
+    /// from having cleared its field</b>. Without this gate such a farm would read years of
+    /// idleness as years of success, climb to the derived cap, and over-commit the moment the
+    /// player raised the limit. <i>A year with no crop teaches nothing.</i>
+    /// </remarks>
+    public int FieldTilesSown { get; set; }
+
+    /// <summary>Hands standing in this farm when autumn opened, for reading the lesson per hand.</summary>
+    /// <remarks>
+    /// <b>⚠️ Taken at the START of autumn, not at its end, and the difference is a bug.</b>
+    /// D44 stands seasonal trades down at winter, so a farm can be <em>empty</em> on the very
+    /// tick the lesson is taken — dividing that autumn's harvest by nought hands, or by the one
+    /// straggler still there, would make a two-handed farm's record look twice what it was.
+    /// </remarks>
+    public int FieldHandsAtAutumn { get; set; }
+
+    /// <summary>
+    /// Tiles <b>one pair of hands</b> at this farm has learned it can actually bring in.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Per hand, like <c>SimWorld.WorkGroundAllowanceFor</c></b>, so losing a farmhand in
+    /// summer halves next spring's field without the farm forgetting what it knows.
+    /// </para>
+    /// <para>
+    /// <b>Zero means it has never sown anything</b>, and that is the state a brand-new farm is
+    /// in — <see cref="Core.SimWorld.HarvestOneFarmCanBringIn"/> falls back to the old
+    /// prediction as an opening guess. The prediction is demoted from a ruling to a first
+    /// guess rather than deleted, so <b>nobody is ever worse than today</b>.
+    /// </para>
+    /// </remarks>
+    public int FieldTilesLearned { get; set; }
+
+    /// <summary>
+    /// The walk to the nearest food store that <see cref="FieldTilesLearned"/> was learned at.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ A memory that cannot be revised by the player is a scar.</b> The farm learned an
+    /// answer about a walk; when the player builds a granary by the fields — or demolishes the
+    /// near one — the old answer stopped being true, and the farm re-reckons from a fresh
+    /// guess. <b>That is the lever that actually buys the thirteen tiles</b>, and it is the
+    /// reason §4.3's placement warning ships in the same slice.
+    /// </remarks>
+    public int FieldWalkWhenLearned { get; set; } = -1;
+
     /// <summary>True when there is no room for anyone else.</summary>
     /// <summary>
     /// How many hands the player has insisted on here, or null to let the village

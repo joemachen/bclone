@@ -108,6 +108,21 @@ undo a type that should not have existed.
 
 ### 5.2 ⛔ And the hauling errands do not exist — measured
 
+> **⚠️ THIS MEASUREMENT PREDATES THE FARM AND IS STALE (D185).** *"Workplace buffers holding
+> anything: 0.0% of ticks"* was taken when **no workplace in the game had a store anything ever
+> wrote to** — the farm arrived with D161/D162, and its buffer is precisely the case this section
+> concluded did not exist. **Do not quote the 0.0% as current.**
+>
+> **What it concluded is still right, and for a better reason now.** Joe asked whether idle
+> laborers should haul farm food to the granary, and answered it himself: *"it should be the
+> vendor's job before the laborers job."* It is — `PlanMarketErrand`'s third leg (D171) — and as
+> of D185 the village actually **staffs** somebody to run it, which it never did before. So the
+> errand exists, and it belongs to a trade rather than to the fallback. **A laborer arm would now
+> be a second answer to a question that has one**, which is the shape §5.1 warns about.
+>
+> ⭐ **Re-measure before building anything here.** If a farm's buffer is still found standing
+> full with a marketer available, that is a real gap and laborer hauling becomes real work.
+
 This section proposed two errands. **Both were probed before being built, per METHODOLOGY §3,
 and both occur on 0.0% of ticks.** A hundred years, shipped config:
 

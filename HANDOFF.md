@@ -1,6 +1,6 @@
-# Handoff — bclone: **Queue items 1–3 are all done and merged. Next is Phase 3.**
+# Handoff — bclone: **Phase 3 is complete and merged. Phase 4 — the tech tree — is next.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D179 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D203 back to D142**, then
 `METHODOLOGY.md`.
 
 > **⛔ WHEN YOU HAND OFF: EDIT THIS FILE, DO NOT REPLACE IT.** The trap list at the bottom is
@@ -8,19 +8,62 @@ Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D179 b
 > silently — that happened on 2026-08-22 and cost an hour and three quarters within the same
 > session. **Rewrite "where things are"; carry the traps forward.**
 
-⭐ **Three things landed since Phase 2 and each is worth knowing before you touch anything:**
-the **town hall is designed** (D176 — it gates the knowledge *screen*, not the tree); **ground is
-worth going to** (D178 — soil is regional and the farm reads it); and **the suite runs in two and
-a half minutes instead of nineteen** (D179).
+⭐ **Three things to know before you touch anything:**
+1. **⭐⭐ D28 IS DISCHARGED** (D190) — the lockstep Joe watched at 4× in Phase 1 is gone, and
+   **he confirmed it in play**: the four founders read as distinct people and no longer move as
+   pairs. Identical hunger between two adults of one household went **100% → 0%**.
+2. **✅ THE FARM IS UNPARKED (D194)** — the cap was **self-fulfilling**, and the ledger proved it
+   after four hypotheses could not. **⛔ But Joe's thirteen tiles were never available**: thirteen
+   tiles ten ticks from a store needs ~230 ticks of a 120-tick autumn. Read the section below
+   before re-opening it, and **do not propose `farm_store_cap` — it is dead twice over.**
+3. **✅ PHASE 3 IS COMPLETE AND MERGED** (D202, D203). Skill TRANSFERS now — a youth beside a
+   master of the same trade at the same workplace learns twice as fast. ⚠️ **Its QA walk was
+   WAIVED on Joe's call, not performed** (D203): if a Phase 3 regression ships, that is where it
+   got through. **Phase 4 — the tech tree and the town hall — is next, and D196 has Joe's library
+   model waiting for it.**
 
 ---
 
 ## Where things are
 
-**On `main`, and everything is merged.** Phase 2 went in via
-[PR #4](https://github.com/joemachen/bclone/pull/4) — 248 commits, all five Definition-of-Done
-items met, the last being Joe's QA walk. Per-site yield (D178) and the cost-field rewrite (D179)
-followed as two slices, fast-forwarded onto `main`.
+**Phase 3 is merged to `main`.** Its Definition of Done is met **with one item waived and written
+down rather than ticked** (D203): METHODOLOGY §3's manual QA walk. Joe played the build
+repeatedly through the phase and signed off the paint overlay, the market, the staffing cadence
+and the whole — **but the phase was never walked end to end against a list, and Phase 3 has no
+checklist at all.** *That is an unpaid debt Phase 4 should not inherit.*
+
+**⭐⭐ WHAT PHASE 3 LANDED, in the order it landed:**
+
+1. ✅ **The proficiency substrate** (D181, D183). `Villager.Skills` accrues time on the task,
+   hashed sparsely in id order; six skills are **rows in config, not enum values**; the panel
+   says *"Sixteen years as a farmer"*; **the mastery line fires** in the village log.
+   **Nothing ever takes proficiency away**, and a tick out on the job is worth 1.5 of a tick
+   waiting for one. Ages at mastery: **34–55, median 39.**
+2. ✅ **Mastery bites** (D187) — **a master takes half the ticks over an action, rounded up.**
+   ⚠️ **Below 34% the feature is literally a no-op**: durations are 3 and 4 ticks, so a bonus
+   that does not round to a whole tick buys **nothing** — a village at 25% produced population
+   and food *identical* to one with the feature off. `AMasterIsFasterAtEveryTrade` fails the
+   build if it ever rounds away again.
+3. ✅ **The mixed founding and the seeded rhythm** (D190) — a master, a journeyman and two
+   novices with **seeded trades**, and a rhythm drawn at birth. **D28 discharged.**
+
+4. ✅ **The at-risk line** (D195) — §11's last outstanding Definition-of-Done item. *"Wendell is
+   48 and the only soul in the village who has mastered foraging. Put somebody beside them to
+   learn it, or it goes with them."* One method (`SimWorld.KnowledgeAtRiskNote`), read by the
+   village log **once on the edge** and by the villager's panel **while it is true**. Both halves
+   of the condition are derived — `LifeStage.Elder`, and *the only living master*.
+
+5. ✅ **APPRENTICESHIP** (D202) — §2.1's actual claim. **A youth beside a master of the same
+   trade at the same workplace learns twice as fast.** Nobody is assigned to anybody; the master
+   pays nothing; there is no dial. §10's anti-vacuity guard is green — **masters alive after a
+   century go 3 → 6, 4 → 8, 8 → 10** against a village that never teaches.
+   - ⛔ **IT REACHES ONLY 2–3 TRADES OF 5, AND THAT IS RECORDED RATHER THAN PAPERED OVER.**
+     Forager and marketer always pair, forester sometimes; **woodcutting and building never do**,
+     because they are one-seat trades with nobody to learn from. **The trades most likely to die
+     with their last holder are exactly the ones apprenticeship cannot reach** — which is what
+     **D196's library** is for, and why that answer is worth more than it looked.
+   - ⚠️ **200% was too far**: seed 42 ends the century with **zero food**. A hundred leaves it at
+     1,485 against 1,513 with the feature off. *The width is measured, not picked.*
 
 ⚠️ **The phase PR is #4, not #3.** Number 3 went to the closed screenshot-hook PR D160 rescued,
 and every document in the repo said #3 for a day before anyone checked.
@@ -32,7 +75,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **SUITE, FROM A RUN:**
 
 ```
-641 passed, 0 failed, 2 skipped of 643 — about 2m30s (was 18m52s before D179)
+740 passed, 0 failed, 2 skipped of 742 — about 2m30s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -105,11 +148,120 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
      the locked 67 now means *the yield on average ground*.
    - **⚠️ The player can see the ground** — the **Ground: off** button on the control bar. Without
      it the whole slice is an invisible multiplier (§1.1, D67).
-4. **⭐ NEXT: Phase 3 — skill and apprenticeship** (§2.1), which is also the real answer to the
-   mid-game gap (D161). **Its spec is written and every design question in it is answered** — what
-   remains is tuning, and all of it wants a probe first. Its success test is already written:
-   *play years 1–16 at normal speed, without fast-forwarding, and want to keep watching.*
-5. **Phase 4 — the tech tree** (§2.7), plus the **town hall** (D176).
+4. 🔨 **Phase 3 — skill and apprenticeship** (§2.1), the real answer to the mid-game gap (D161).
+   **Landing 1 is built** (D181). Its success test is unchanged and unmet: *play years 1–16 at
+   normal speed, without fast-forwarding, and want to keep watching.* What a new session needs:
+   - **⛔ THE SPEC'S OWN DoD CONTAINED AN IMPOSSIBLE GUARD AND IT HAS BEEN CORRECTED IN PLACE.**
+     §11.2.1 required landing 1 to be a *"provable no-op: goldens unmoved"*. **The goldens are
+     full state hashes and proficiency is hashed state that grows from tick one — mutually
+     exclusive.** The spec had reasoned by analogy from `crops-and-orchards.md`, where the map
+     golden genuinely held because *the generator never produces the new terrain values*.
+     **`StateHash.ComputeIgnoringSkills` is what shipped instead**, and it is byte-identical to
+     all three goldens' pre-slice values. ⭐ **In landing 2 it must MOVE** — that is the
+     anti-vacuity guard for mastery actually biting.
+   - **⭐ A tick counts while somebody HOLDS the trade, not only while mid-action** (§3.6). The
+     tight reading is tempting and §3.3b's arithmetic rules it out, *and* it would make a master
+     accrue more slowly the better they got once landing 2 shortens the action.
+   - **⭐⭐ SKILL GIVES AND NEVER TAKES (D183, Joe: *"let's give to the player, not punish or
+     decay"*).** Decay was built, measured and deleted inside one phase — it took **37% of
+     everything one forager earned**, so she held foraging longer than mastery requires and
+     never mastered it, which is the trap §3.4 itself forbids. **§3.4's premise — *"a
+     fifty-year-old who did six jobs is a master of six"* — is arithmetically impossible**, and
+     that is what licensed deleting it. ⚠️ **Two wrong causes were published before the right
+     one** (D182): a winter *headcount* read as *availability*, and a derivation that measured
+     *demand*. **A tick out on the job is worth 1.5 of a tick waiting for one**, and the walk
+     counts as work. **Ages at mastery: 34–55, median 39** — §3.3b's promise, untuned.
+   - **⚠️ The reshuffle leaves the whole village jobless for exactly one tick** (Day 1, Spring).
+     Harmless at 0.02%, but it is why landing 1's guards sample mid-season — see the trap list.
+   - **⚠️ THE SIM CAN ONLY EXPRESS TWO WORKING SPEEDS** (D187), because `sow_ticks` and
+     `reap_ticks` are 3 and `cut_ticks`/`split_ticks` are 4. **Four tier names sit over two
+     behaviours** — an apprentice works exactly as fast as a novice, and a journeyman past the
+     step exactly as fast as a master. Joe accepted this knowingly. It only becomes four if the
+     durations grow.
+   - **⭐ WHAT TO DO NEXT: apprenticeship (§5), and nothing else is outstanding.** The at-risk
+     line (§7, DoD item 7) landed in **D195**, and the order was reversed on Joe's call because
+     the probe showed the two are one loop — the warning is what tells the player to staff the
+     second hand that makes teaching possible at all. **Joe's three calls for the slice are made:
+     teaching is free, there is no policy dial, automatic only.** See "Where things are" above.
+5. 🔨 **PHASE 4 — THE TECH TREE (§2.7) AND THE TOWN HALL (D176). THIS IS WHAT IS NEXT.**
+   - **⭐⭐ JOE'S LIBRARY MODEL IS ALREADY RECORDED AND IT IS CONCRETE (D196).** A master
+     woodcutter works out *"splitting lumber in a way that gives more cords — +15% firewood per
+     log, +5% mastery"*; **the technique enters the library's records when he reaches mastery**;
+     when he dies **his proficiency dies with him** but the technique does not, and **the next
+     woodcutter spends idle time in the library learning it.** Where a trade has more than one
+     worker the master also passes it to his apprentice directly.
+   - **⭐ IT LANDS EXACTLY ON D176's SPLIT WITHOUT HAVING BEEN ASKED TO**, which is the strongest
+     sign that split was right: **technique** is the village's and writable, **proficiency** is
+     one person's and never writable. **The anti-ratchet holds** — `tech-tree.md §3a`'s *"a record
+     preserves the method, not the proficiency"* is what stops §2.3's dead late game.
+   - ⚠️ **The one part to measure before it ships:** a technique granting *"+5% mastery gain"* is
+     **a soft ratchet on proficiency itself**, one level up. Bounded and probably fine, but it is
+     the only piece of the model that touches the rule rather than sitting beside it.
+   - **⭐ AND IT IS THE ANSWER TO APPRENTICESHIP'S HOLE**: one-seat trades have nobody to learn
+     from, so the library is what carries their knowledge **across a gap in people** where
+     apprenticeship carries it **between** people.
+   - ⛔ **The list of techniques is deliberately NOT invented yet** (Joe: *"we don't have to come
+     up with the full list… eventually they will all have a number of them"*) — `tech-tree.md
+     §12`'s refusal of false precision.
+   - ⚠️ **WRITE PHASE 4 A QA CHECKLIST.** Phase 3 shipped without one and its walk was waived
+     (D203); **that debt should not compound.**
+6. **Also on the board, unscheduled**, all recorded with Joe's rulings: **nomads and the
+   dead-village revival** (§5, and it needs **building decay**, which reopens D65's *"repair after
+   damage, no decay on a timer"*); **house upgrades and the 60–80 firewood target** (§5 — ⚠️ a
+   6–8× change to a derived burn, **not a dial**); **foods with different nutritional values**;
+   and the **steading slice**, still unmerged on `slice/work-from-the-steading`.
+
+---
+
+## ✅ THE FARM IS UNPARKED (D194) — and here is what is settled, so nobody re-opens it
+
+**The ledger the section below asked for was built, and it answered in one sitting.** Kept as
+`FarmLedgerTests` so the numbers can be **re-taken rather than trusted**.
+
+**⛔⛔ THE CAP WAS SELF-FULFILLING, AND `ReapableShareAt` IS DIMENSIONALLY WRONG.** It scaled a
+farm's field by `budgeted ÷ haul` — `budgeted` is a **round trip inside the field** (4 ticks),
+`haul` is a **one-way walk to a store** (10). *The ratio is not a share of anything.* Measured,
+one hand, ten years, committed ground posed at each level:
+
+| farm → store | the cap sowed | what it can actually bring in | autumn spent **idle** at the cap |
+|---|---|---|---|
+| 10 ticks | 5 | **6** | **27%** |
+| 16 ticks | 3 | **5** | **45%** |
+| 22 ticks | 2 | **4** | **55%** |
+
+**The cap cut the field, the farmer then had nothing to do, and the idleness read back as proof
+the field had been too big.** After: **72 tiles reaped against 51 at ten ticks, idleness 6%.**
+
+**⛔⛔ AND THE THING TO CARRY FORWARD: THIRTEEN TILES TEN TICKS OUT IS PHYSICALLY IMPOSSIBLE.**
+Autumn is **120 ticks**; thirteen tiles at that distance needs about **230**. Joe's farmer was
+short of **one or two** tiles, not eight. **The lever for thirteen is the walk** — the same
+farmer beside a granary commits the whole field. §4.3's placement warning and the farm's own
+panel now both say so.
+
+**The fix is memory, not a better formula, and "no formula fits" is a finding.** The true ceiling
+depends on the market's drain rate, the painted ground's shape, the granary's fullness and the
+hands that turned up; `season ÷ (reap + walk)` wants a different constant at every distance,
+moving the *wrong way* with distance. **A farm sows what it has already brought in** — a
+high-water mark, per hand, clamped to `FieldTilesOneFarmerKeeps`, re-reckoned when the walk
+changes. It converges on **6, 5 and 4** without being told them.
+
+**⛔ CAUSES NOW DEAD — five proposed, all rejected by measurement. Do not add a sixth by
+reasoning.**
+
+| proposed cause | what killed it |
+|---|---|
+| the granary haul | removing it entirely still left the farm at ~7 tiles |
+| the daily commute | travel is **11%** of a farmhand's ticks |
+| resting outdoors getting cold | farmhands' cold is **zero, always** |
+| the buffer (`farm_store_cap`) | raising it gave 13 tiles and **52% brought in** — the rot came back |
+| **the buffer, again (D194)** | an **8.7× buffer** moved the ceiling from **6 tiles to 6** at ten ticks and **5 to 5** at sixteen. It still took only **23 of 72 loads** — it fills once and the market cannot keep it drained. **Two independent measurements now.** |
+
+⚠️ **`crop_yield_per_tile` is NOT the lever** and Joe proposed it: raising it would inflate a
+derived number to paper over a bug and leave well-sited farms at ~2.5× gathering.
+
+**Still open:** the steading slice (farmhands staying at the farm through the working seasons) is
+committed but **unmerged** on `slice/work-from-the-steading` — an economic no-op that costs ~13%
+of the harvest, kept for the look, and its cost is still unexplained.
 
 **Two directions Joe set, neither scheduled, both in `DESIGN.md §4`:** **gridless** — the largest
 architectural statement anybody has made about this project, and the first question when it is
@@ -162,6 +314,46 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   proved nothing. **And the guard that catches a bug is often not the obvious one** — *"the
   farm's sentence says farmer"* passes against a generic template with the farm's name in it;
   the one that works reads both sentences with the names masked out and requires them to differ.
+- **⭐⭐ A SPEC CAN ASK FOR A GUARD THAT CANNOT EXIST, AND THE DoD IS WHERE IT HIDES (D181).**
+  `skills-catalog.md §11.2.1` required *"provable no-op: goldens unmoved"* for a slice whose
+  entire content is **new hashed state that grows from tick one.** It was reasoned by analogy
+  from a slice where the analogy held, it sat in a Definition of Done for a week, and it would
+  have been "met" by quietly not hashing proficiency — which would have cost the determinism
+  guarantee and moved the goldens twice later instead of once. **Ask what a DoD item would look
+  like if it were satisfied *before* you try to satisfy it.** The fix was to restate the claim in
+  a vocabulary that can be true (*nothing anybody DOES changed*), not to weaken the guard.
+- **⭐⭐⭐ AND THE BREAK THAT TURNS UP *NOTHING* IS THE ONE THAT CHANGES THE DESIGN (D194).** Two
+  drafts of the farm's memory had it commit `learned + 1` a year and latch once a tile rotted.
+  **Deleting both turned no guard red** — settled memory and tiles reaped identical at all three
+  distances. The mechanism was redundant because `HarvestOneFarmCanBringIn` multiplies by the
+  hands standing in the field *at that moment*, so **a farm with two hands in spring and one by
+  autumn already over-commits on its own.** *The village probes without being asked.* The probe
+  was **deleted rather than guarded** — a fifth invisible no-op after D56, D177 and D187. **Zero
+  reds is a result, not a formality passed.**
+- **⭐⭐ BREAKING YOUR OWN GUARDS FINDS THE BLIND ONES — DO IT, AND EXPECT A SURPRISE (D181).**
+  Nine reds across seven deliberate breaks, and break #2 turned a guard red **for a reason
+  unrelated to what it tested**: `LeavingATradeStopsTheClockOnItThatTick` sampled on a year edge,
+  so *"the number did not move"* was two effects cancelling — no growth, and no decay only
+  because the floor happened to protect a first-year worker. **The red check is not a formality;
+  it is the only thing that reads your fixture for you.**
+- **⚠️ THE VILLAGE IS BRIEFLY JOBLESS ON THE YEAR EDGE, AND IT WILL BAFFLE YOU (D181).** At
+  *Day 1, Spring* the reshuffle has torn every allocation down and not yet rebuilt it: **0 of 4
+  able adults hold a job on that exact tick.** Any guard that samples "who is working?" at
+  `TicksPerYear * n` is sampling that hole. **Step half a season in.** (Winter is the other one:
+  D44 unstaffs seasonal trades, so mid-winter is 1 of 4.)
+- **⭐⭐⭐ AND SOME STATE CANNOT BE POSED AT ALL, BECAUSE IT IS DERIVED — TWO REDS TO FIND (D195).**
+  An elder cannot be posed. Writing `LifeStage` lasts **one tick** (`AgeingSystem` recomputes it
+  from vigour); writing `AgeYears` lasts **one tick** (`ClockSystem` recomputes it as
+  `year - BirthYear`) — the guard **watched a 51-year-old turn 21** between the first tick and the
+  second and read the resulting silence as a broken feature. `BirthYear` is `init`-only, which was
+  the model saying so all along. **The honest fixture steps the sim until somebody genuinely grows
+  old**, and it is barely slower. *Before posing a value, ask whether anything recomputes it.*
+- **⭐⭐ AND A *FIXTURE* CAN FIGHT THE MECHANISM IT IS TESTING (D194).** Three guards for the
+  farm's memory posed *"a clean autumn"* as **one sown tile** — so the farm brought in one tile,
+  correctly recorded that one tile was what it had managed, and **the guards failed for the
+  feature working.** The memory is a high-water mark, so a posed field *smaller* than the
+  building's own commitment is a **worse** year, not an easier one. **Ask what your pose means to
+  the system, not just what it means to you.**
 - **⭐⭐ A GUARD CAN BE GREEN AND BLIND.** `AFarmBringsInMostOfWhatItSows` reports 93% while the
   played village was at 46%, and it is not wrong — it sites its farm a step from the stores.
   **Unmoved because it does not cover the case** (D157, three times now). Ask what a guard's
@@ -172,7 +364,40 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 - **⭐⭐ THE SIM'S AUDIT TRAIL IS EVIDENCE ABOUT THE SIM AND SAYS NOTHING ABOUT THE VIEW.** Two
   sessions hunted a rendering bug in `BehaviorSystem`. **Ask which half the symptom lives in
   before opening the log.**
+- **⭐⭐⭐ THE INSTRUMENT WAS WRONG TWICE IN ONE SESSION, AND BOTH TIMES IT NEARLY CHANGED A LOCKED
+  NUMBER (D189).** *"Gathering brings in five times what farming does"* came from a probe counting
+  food into the **farm's own store** — which a reaper hauling to the granary never touches.
+  **Counting reaps instead flipped the answer to "farming wins by 28%".** The wrong number would
+  have justified raising `crop_yield_per_tile`, which is derived and locked. **Before a
+  measurement justifies a change, ask what the instrument cannot see.**
+- **⭐⭐ A DERIVATION THAT AVOIDS STATING A NUMBER STILL STATES ONE (D192).** The thaw rate was
+  *derived* by mirroring the outdoor rate, on the explicit grounds that mirroring *"needs no
+  number of its own"* — true, and it quietly chose **fifteen days to thaw**, half a winter, which
+  nobody noticed until Joe played it. **Check what a derivation came out as, not just that it is
+  principled.**
+- **⭐⭐ A SMALL-RANGE RNG DRAW AT A FIXED STRIDE CORRELATES, AND THE FOUNDING IS FOUR SUCH DRAWS
+  (D190).** Both founding pairs drew the **same** personal rhythm — 1, 1, 2, 2 — so the fix for
+  D28 did nothing. **The RNG is not at fault:** forty raw `NextInt(0, 4)` draws come out 9/11/8/12.
+  It is the *stride* at the start of the stream. **A generator can be sound and still be the wrong
+  tool for four draws that must differ from each other** — deal or rotate, do not draw.
+- **⚠️ HUNGER IS A PURE FUNCTION OF TICKS SINCE THE LAST MEAL (D190).** Two villagers who eat on
+  the same tick stay in step for ever, **however differently they walk** — so a stagger that
+  offsets only movement leaves *identical hunger at 100%*. Anything meant to desynchronise people
+  has to touch the hunger clock too.
 - **⭐ FINDING A CAUSE IS NOT FINDING THE CAUSE** (D163, D166, D169 — three rounds on one symptom).
+  - **⛔⛔ AND THE FOURTH ROUND PUT TWO WRONG CAUSES INTO DOCUMENTS BEFORE THE RIGHT ONE (D182).**
+    *Why does a forager take 32 calendar years to reach 20 years on the task?* **Wrong once:**
+    *"winter stands the work down"* — the evidence was **1 of 4 able adults hold a job in
+    mid-winter**, a **headcount**, read as **availability**. Foraging is worked in all four
+    seasons; there are just fewer people on it. **A number that is true can still be evidence
+    for the wrong claim.** **Wrong twice:** *"derive each trade's mastery from the share of a
+    year it is staffed"* — that measures **demand**, which is the player's business, and would
+    have pinned woodcutting at five years because this village wants one occasionally.
+    **Right:** decay, taking **37% of everything a career earns.**
+  - **⭐ The thing that caught both was building the measurement needed to ACT on the claim.**
+    The first survived a probe because the probe answered a different question; the second died
+    the moment its own numbers were printed next to what they implied. **If a finding is about to
+    become a config number, measure the number — not the story.**
 - **⭐ THE HELPER YOU NEED MAY ALREADY EXIST.** `Main.Wrapped` had been doing exactly the right
   thing on five labels for two UI rebuilds while every sentence in the inspector went into a bare
   `Label` in an `HBox`. Grep before writing.
