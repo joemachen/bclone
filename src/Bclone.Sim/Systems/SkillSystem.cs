@@ -95,11 +95,68 @@ public sealed class SkillSystem : ISimSystem
         for (int i = 0; i < config.Skills.Count; i++)
         {
             SkillRow skill = config.Skills[i];
-            if (skill.GrownBy == trade)
+            if (skill.GrownBy != trade)
             {
-                Grow(world, villager, skill, config, worth);
+                continue;
+            }
+
+            // ⭐⭐ AND A YOUTH BESIDE A MASTER LEARNS FASTER — §2.1's whole point, and the last
+            // thing Phase 3 owed it (`skills-catalog.md §5.1a`, D202). *"That skill dies with
+            // the person unless an elder apprentices a youth."*
+            //
+            // ⛔ THE MASTER PAYS NOTHING (Joe, D202, following D183's *give, never take*). This
+            // adds to the learner and takes from nobody, which is why there is no policy dial:
+            // a control with nothing to trade off is a switch, and §5.3's dial was only ever
+            // worth having if teaching cost something.
+            //
+            // ⭐ NOBODY IS ASSIGNED TO ANYBODY. The pair is *noticed*, not made — the player says
+            // how many hands a workplace gets and the sim says who (D51, D62, D106), and a
+            // per-pair screen would be the slotting UI §2.2 exists to delete. **The player's
+            // lever is staffing**, and §7's at-risk line is what tells them to use it.
+            Grow(world, villager, skill, config, worth + ApprenticeBonus(world, villager, skill, worth));
+        }
+    }
+
+    /// <summary>
+    /// What this villager gains for working beside a master of the same trade — <b>zero unless
+    /// one is actually standing there</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The same workplace, not merely the same trade.</b> §5.1 says *"working alongside"*, and
+    /// the stricter reading is the one that means something: it makes **where the player puts
+    /// people** the thing that decides whether knowledge passes on, which is the same lesson the
+    /// farm and the market both landed on this week.
+    /// </para>
+    /// <para>
+    /// <b>⛔ A master learns nothing from another master</b>, so this cannot inflate the very
+    /// people who need it least — and a trade with one seat gets nothing at all, which is a real
+    /// hole the library is meant to fill later (D196) rather than something to paper over here.
+    /// </para>
+    /// </remarks>
+    private static int ApprenticeBonus(
+        SimWorld world, Villager learner, SkillRow skill, int worth)
+    {
+        int bonus = world.Config.ApprenticeLearningBonusPercent;
+        if (bonus <= 0 || learner.FindProgressIn(skill.Id) is { Mastered: true })
+        {
+            return 0;
+        }
+
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager other = world.Villagers[i];
+
+            if (other.Alive
+                && other.Id != learner.Id
+                && other.WorkplaceId == learner.WorkplaceId
+                && other.FindProgressIn(skill.Id) is { Mastered: true })
+            {
+                return worth * bonus / 100;
             }
         }
+
+        return 0;
     }
 
     /// <summary>The trade this villager currently holds, or null if they hold none.</summary>

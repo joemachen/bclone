@@ -1404,6 +1404,32 @@ public sealed record SimConfig
     public int SkillWorkPerIdleTick { get; init; } = 100;
 
     /// <summary>
+    /// Extra work a learner gets per tick for standing beside a <b>master of the same trade at
+    /// the same workplace</b>, as a percentage (`skills-catalog.md §5.1a`, D202).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>§2.1's whole point:</b> *"that skill dies with the person unless an elder apprentices a
+    /// youth."* Until this existed, skill was personal and **nothing transferred** — a master
+    /// died and their years died with them, with no way for the village to have done anything
+    /// about it.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE TEACHER PAYS NOTHING</b> (Joe's call, D202, following D183's *"give, never
+    /// punish or decay"*). This adds to the learner and takes nothing from anybody. ⚠️ **The
+    /// stated consequence is that §5.3's policy dial has nothing to trade off**, which is why
+    /// there is no dial rather than a dial that does nothing.
+    /// </para>
+    /// <para>
+    /// <b>Zero is a supported state and is what the guards pose</b> to measure the feature
+    /// against its own absence — §10's anti-vacuity rule: *a village that never teaches must
+    /// produce measurably less than one that does.*
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("apprentice_learning_bonus_percent")]
+    public int ApprenticeLearningBonusPercent { get; init; }
+
+    /// <summary>
     /// How much faster a <b>master</b> does the work, as a percentage — <b>the width of the
     /// whole pillar</b> (`skills-catalog.md §3.3`, §12).
     /// </summary>

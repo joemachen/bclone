@@ -7,12 +7,12 @@ D156 (an uneducated child works at twelve), D168 (a new kind of thing should be 
 Neighbours: **`tech-tree.md` (this is its missing substrate — §6)**, `professions.md §4` (the
 roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing.md` and
 `livestock.md` (parked, and both add skills when they land).
-**Status:** 🔨 **ALL THREE LANDINGS ARE BUILT** (D181, D187, D190), **and the at-risk line is in**
-(D195) — **but the phase is NOT done.**
-⛔ **One thing remains: apprenticeship (§5).** It is *the pillar's actual point* — §2.1 is
-*"that skill dies with the person unless an elder apprentices a youth"* — and **§10's anti-vacuity
-guard is written for it and cannot be written without it**: *a village that never teaches produces
-measurably less than one that does.* `Villager.Skills` accrues time on
+**Status:** ✅ **COMPLETE — all three landings, the at-risk line and apprenticeship are built**
+(D181, D187, D190, D195, D202), on `phase/3-skill-and-apprenticeship`, **unmerged**.
+**⭐⭐ §2.1's claim is finally true: skill TRANSFERS.** A learner beside a master of the same trade
+at the same workplace learns twice as fast, nobody is assigned to anybody, and the master pays
+nothing. **§10's anti-vacuity guard is written and green** — masters alive after a century go
+**3 → 6, 4 → 8, 8 → 10** against a village that never teaches. `Villager.Skills` accrues time on
 the task, is hashed sparsely in id order, and is visible: the villager panel says *"Nineteen years
 in the fields"* and **the mastery line fires in the village log** (§3.3b, Joe's ask). **Nothing
 ever takes proficiency away** (§3.7, D183) and a tick out on the job counts for more than a tick
@@ -38,7 +38,14 @@ end* is `LifeStage.Elder`, *the only soul who knows* is the only living master. 
 century says it **3 to 5 times** on three seeds. **698 passing, 0 failing, 2 skipped of 700, and
 not one golden moved** — it narrates and hashes nothing.
 
-**Not built:** apprenticeship and teaching (§5).
+**⭐⭐ AND APPRENTICESHIP IS IN** (D202) — the pillar's whole point, and the last item in §11.
+Joe's three calls: **teaching is free** (D183's *give, never take*), **there is no dial** —
+automatic only — and the at-risk line shipped first, because the probe showed the two are one
+loop. ⚠️ **The hole it cannot fill is recorded rather than papered over:** it reaches only two or
+three trades of five, because **woodcutting and building are one-seat trades with nobody to learn
+from.** That is what the library is for (D196).
+
+**740 passing, 0 failing, 2 skipped of 742.**
 
 > **⛔ §11.2.1's "provable no-op: goldens unmoved" TURNED OUT TO BE UNWRITABLE, and §11 has been
 > corrected rather than the guard weakened** (D181). The goldens are full state hashes and
@@ -553,6 +560,34 @@ without it, the youth grows at the ordinary rate and the master's years die with
 assignment screen, this design has grown a slotting UI on the one axis the whole game refuses
 it.** The lever is a *policy* — see §5.3.
 
+#### ⭐⭐ 5.1a What shipped, and Joe's three calls (D202)
+
+> Joe, 2026-08-23, on being shown the probe: **teaching is free** (*"give, never take"*, D183's
+> rule one system over); **there is no dial at all** — automatic only; and **the at-risk line
+> ships first**, because the probe showed the two are one loop.
+
+- **A learner beside a master of the same trade, at the same workplace, learns faster.** Nothing
+  else is required of either of them and neither is assigned to the other.
+- **⭐ "Master" is the threshold, and it is derived rather than picked** (D16). Mastery is the one
+  bar this design already has, already narrates and already keeps in `data/` — the same choice
+  §7's at-risk line makes, which is what keeps the two halves of the loop speaking one language.
+  *The line says "put somebody beside them to learn it"; this is what happens when they do.*
+- **⛔ THE TEACHER PAYS NOTHING.** Joe's call, and it follows D183: *"let's give to the player, not
+  punish or decay."* ⚠️ **The stated consequence is that §5.3's policy dial has nothing to trade
+  off** — which is why there is no dial, rather than a dial that does nothing.
+- **⭐ The player's lever is staffing, which already exists** (§5.3), and §7's at-risk warning is
+  what tells them to use it. **Apprenticeship and the at-risk line are two halves of one loop**,
+  and the probe is what showed it.
+
+**⚠️ AND THE PROBE FOUND THE HOLE THIS CANNOT FILL, WHICH JOE SHOULD NOT HAVE TO REDISCOVER.**
+Measured over a century on three seeds: **51–59% of learner-ticks are already spent beside a
+teacher**, so the mechanism has plenty of surface and will not be decoration — **but it reaches
+only two or three trades of five.** Forager and marketer always pair; forester sometimes;
+**woodcutting and building never do**, because they are one-seat trades and there is never a
+second person to learn from. *The trades most likely to die with their last holder are exactly
+the ones apprenticeship cannot reach.* **That is what the library is for** (D196), and it is why
+that answer matters rather than being a nicety.
+
 ### 5.2 What a record gives, and what it does not — the tech-tree contract
 
 Restating `tech-tree.md §3a` in this document's terms, because this is the side that has to
@@ -838,7 +873,27 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
      and the probe that preceded it found **11–16 masters dying per century** in a village that
      never noticed. **10 reds across 5 breaks. Not one golden moved** — it narrates, and narration
      is not hashed.
-8. `DESIGN.md §6` and §7 updated; goldens re-taken last, one commit, one stated reason (D152).
+8. ✅ **APPRENTICESHIP, AND WITH IT §2.1's ACTUAL CLAIM** (D202, §5.1a) — *"that skill dies with
+   the person unless an elder apprentices a youth."* A learner beside a **master of the same
+   trade at the same workplace** learns **twice as fast**; nobody is assigned to anybody; the
+   master pays nothing.
+   - **⭐⭐ §10's ANTI-VACUITY GUARD IS WRITTEN AND GREEN, AND IT COULD NOT EXIST UNTIL NOW.**
+     *"A run with no apprenticeships must actually lose something."* Measured at a century on
+     three seeds: **masters alive 3 → 6, 4 → 8, 8 → 10** against a village that never teaches.
+     **This project has shipped a decorative system before and only found out by measuring**
+     (D56's clothing), and this is the guard that says this one is not.
+   - **⭐ The width is measured, not picked.** A hundred per cent is *"a youth beside a master
+     learns twice as fast"* — a sentence a player can hold. **Two hundred is too far**: on seed 42
+     it ends the century with **zero food**, where a hundred leaves it at 1,485 against 1,513
+     with the feature off.
+   - **⭐ The same workplace, not merely the same trade**, so **where the player puts people**
+     decides whether knowledge passes on — the same lesson the farm (D194) and the market (D197)
+     both landed on this week.
+   - ⚠️ **And the hole it cannot fill is recorded rather than papered over:** it reaches **two or
+     three trades of five**, because woodcutting and building are one-seat trades with nobody to
+     learn from. **That is what the library is for** (D196), and it is why that answer matters.
+   - **7 reds across 3 breaks.**
+9. `DESIGN.md §6` and §7 updated; goldens re-taken last, one commit, one stated reason (D152).
 
 ---
 

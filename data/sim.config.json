@@ -346,6 +346,30 @@
   // and neither is what this does.
   "labour_slack_ticks": 60,
 
+  // What a learner gains per tick for working beside a MASTER of the
+  // same trade at the same workplace. A hundred means they learn twice
+  // as fast -- the sentence a player can hold in their head.
+  //
+  // This is DESIGN.md 2.1's whole point arriving: "that skill dies with
+  // the person unless an elder apprentices a youth." Until it existed,
+  // skill was personal and nothing transferred.
+  //
+  // MEASURED OVER A CENTURY ON THREE SEEDS. Masters alive at the end:
+  // 3 -> 6, 4 -> 8, 8 -> 10 against a village with this at zero, and
+  // 43-67% of learner-ticks are already spent beside a master, so the
+  // mechanism has surface without anybody being assigned to anybody.
+  // Population and food are flat.
+  //
+  // TWO HUNDRED IS TOO FAR: on seed 42 it ends the century with zero
+  // food. A hundred leaves that seed at 1,485 against 1,513 with the
+  // feature off.
+  //
+  // The master pays nothing (D183's "give, never take"), which is why
+  // there is no policy dial -- a control with nothing to trade off is a
+  // switch. The player's lever is staffing, and the at-risk line is what
+  // tells them to use it.
+  "apprentice_learning_bonus_percent": 100,
+
   // ---- Ageing ------------------------------------------------
   // Full strength until 30, then a straight decline to 55% in the
   // final year. It is what gives a life a shape: easy middle years
