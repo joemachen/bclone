@@ -1217,6 +1217,33 @@ public sealed record SimConfig
     [JsonPropertyName("labour_reshuffle_years")]
     public int LabourReshuffleYears { get; init; } = 1;
 
+    /// <summary>
+    /// How often the village fills its openings and lets go of anybody it no longer wants — in
+    /// <b>ticks</b> (D200).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing: *"30 days feels unresponsive."*</b> This pass was hard-wired to
+    /// <see cref="TicksPerSeason"/>, so a change made on the professions panel waited up to a
+    /// whole season to bite — measured at 25, 15 and 5 in-game days depending on where in the
+    /// season it was set.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT IS NOT THE RESHUFFLE AND MUST NOT BECOME IT.</b>
+    /// <see cref="LabourReshuffleYears"/> moves people who already have jobs, and D20/D46 both
+    /// argue that doing so often *"churns jobs faster than a player can read the reason for
+    /// holding one."* **This pass never moves anybody who already holds a job** — it fills
+    /// openings from the idle and sheds a surplus the player asked to shed. Running it more
+    /// often makes the village obey sooner; it does not make anybody's career shorter.
+    /// </para>
+    /// <para>
+    /// <b>Zero is not allowed.</b> A pass on every tick is the per-tick reassignment
+    /// <c>LabourSystem</c>'s own remarks rule out.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("labour_slack_ticks")]
+    public int LabourSlackTicks { get; init; } = 120;
+
     // ---------------------------------------------------------------
     //  Skill (`specs/skills-catalog.md`, Phase 3)
     // ---------------------------------------------------------------

@@ -318,6 +318,34 @@
   // death is filled the tick after it happens (D47).
   "labour_reshuffle_years": 3,
 
+  // How often the village fills its openings and lets go of anybody it
+  // no longer wants, IN TICKS. Sixty is fifteen in-game days.
+  //
+  // Joe, playing: "30 days feels unresponsive." It was hard-wired to a
+  // season, so a change on the professions panel waited up to thirty days
+  // to bite -- measured at 25, 15 and 5 days depending on where in the
+  // season it was set.
+  //
+  // MEASURED ACROSS THREE SEEDS AT FIFTY YEARS, and the trade is churn for
+  // responsiveness with nothing economic either way: population, food and
+  // the share of able adults holding no job are all flat at 30, 10 and 5
+  // days. What moves is job changes -- about 800 over fifty years at a
+  // season, 1,220 at ten days, 1,960 at five.
+  //
+  // FIFTEEN, NOT TEN, AND THE BOUND IS MEASURED. At ten days D28's fix
+  // stops working: two adults of one household share a tile 87% of ticks
+  // with the seeded rhythm and mixed founding ON, against 87% with them
+  // OFF -- the whole gain gone. At fifteen it is 90% -> 80%, exactly as
+  // at a season. The hunger half (100% -> 0%) holds at every cadence.
+  // D28 took four weeks to discharge and Joe confirmed it in play; it is
+  // not worth trading for five more days of responsiveness.
+  //
+  // IT IS NOT THE RESHUFFLE. This pass never moves anybody who already
+  // holds a job; it fills openings from the idle and sheds a surplus the
+  // player asked to shed. D20 and D46 both argue against churning careers,
+  // and neither is what this does.
+  "labour_slack_ticks": 60,
+
   // ---- Ageing ------------------------------------------------
   // Full strength until 30, then a straight decline to 55% in the
   // final year. It is what gives a life a shape: easy middle years

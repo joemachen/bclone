@@ -341,7 +341,9 @@ public sealed class StockLimitTests
     //                               shipped 7791088175599810974
     //   before the market was stocked: 15960035659211257615
     //   before the market stopped being a dumping ground (D199): 14089077723027009078
-    private const ulong ShippedFiftyYearHash = 6025855613246143038UL;
+    //
+    //   before the village obeyed sooner (D200): 6025855613246143038
+    private const ulong ShippedFiftyYearHash = 9543702176106421225UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

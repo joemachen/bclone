@@ -178,8 +178,12 @@ public sealed class KnowledgeAtRiskTests
         Assert.Equal(0, CountWarnings(sink, elder));
 
         // The second master dies. Now the elder is the last.
-        second.Alive = false;
-        StepAYear(loop, config);
+        //
+        // ⚠️ EVERY OTHER MASTER, NOT JUST THE ONE THIS FIXTURE MADE (D200). The village grows
+        // its own masters — measured, 15 to 19 a century — so killing the posed second one left
+        // a third that nobody in this test had heard of, the condition was correctly false, and
+        // the guard failed for the feature working.
+        StepToTheNextSweep(loop, config, skill, elder);
         Assert.Equal(1, CountWarnings(sink, elder));
 
         // Somebody else masters it — the warning stands down.
@@ -191,8 +195,7 @@ public sealed class KnowledgeAtRiskTests
         Assert.Equal(1, CountWarnings(sink, elder));
 
         // …and dies. The village must hear it a second time.
-        third.Alive = false;
-        StepAYear(loop, config);
+        StepToTheNextSweep(loop, config, skill, elder);
 
         int said = CountWarnings(sink, elder);
         _output.WriteLine($"warned {said} times across two separate at-risk spells");
@@ -276,19 +279,94 @@ public sealed class KnowledgeAtRiskTests
 
         for (int i = 0; i < world.Config.TicksPerYear * 80; i++)
         {
+            // ⚠️ THE FRAIL VILLAGER WITH THE MOST LIFE LEFT, NOT THE FIRST ONE FOUND (D200).
+            // These guards step several years and the annual sweep means they must: an elder
+            // picked at random is one who may well die part-way through, and **a warning that
+            // stops because the person died reads exactly like a warning that stopped working.**
+            // It failed that way the day `labour_slack_ticks` changed the village's timings.
+            Villager? oldest = null;
             for (int v = 0; v < world.Villagers.Count; v++)
             {
                 Villager villager = world.Villagers[v];
-                if (villager.Alive && villager.LifeStage == LifeStage.Elder)
+                if (!villager.Alive || villager.LifeStage != LifeStage.Elder)
                 {
-                    return villager;
+                    continue;
                 }
+
+                if (oldest is null
+                    || villager.LifespanYears - villager.AgeYears
+                        > oldest.LifespanYears - oldest.AgeYears)
+                {
+                    oldest = villager;
+                }
+            }
+
+            if (oldest is not null)
+            {
+                return oldest;
             }
 
             loop.StepOnce();
         }
 
         throw new Xunit.Sdk.XunitException("Eighty years and nobody in the village grew old.");
+    }
+
+    /// <summary>
+    /// Step to the next annual sweep, holding the trade at exactly one master as it lands.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ CLEARING THE OTHER MASTERS A YEAR IN ADVANCE DOES NOT WORK, AND FINDING OUT WHY WAS
+    /// THE USEFUL PART (D200).</b> <c>Skills[0]</c> is <b>foraging</b> — the trade the village
+    /// holds more of than any other — and it produces masters faster than a fixture can clear
+    /// them: measured, <b>15 to 19 a century</b>. Killing the two this test posed left a third
+    /// nobody had heard of, the condition was correctly false, and the guard failed for the
+    /// feature working.
+    /// </para>
+    /// <para>
+    /// <b>So the state is held true at the moment it is read</b> rather than a year before. The
+    /// sweep runs on the year boundary, so this walks to it clearing as it goes.
+    /// </para>
+    /// </remarks>
+    private static void StepToTheNextSweep(
+        SimLoop loop, SimConfig config, SkillRow skill, Villager keep)
+    {
+        for (int i = 0; i < config.TicksPerYear; i++)
+        {
+            LeaveOnlyOneMasterOf(loop.World, skill, keep);
+            loop.StepOnce();
+
+            if (loop.World.Tick % (ulong)config.TicksPerYear != 0UL)
+            {
+                continue;
+            }
+
+            // ⚠️ ONE MORE, AND IT IS NOT PADDING (FarmFixtures records the same trap).
+            // `StepOnce` runs the systems and THEN advances the tick, so the moment the clock
+            // first reads a year boundary the sweep has not seen it yet.
+            LeaveOnlyOneMasterOf(loop.World, skill, keep);
+            loop.StepOnce();
+            return;
+        }
+    }
+
+    /// <summary>Kill every living master of a skill except one.</summary>
+    /// <remarks>
+    /// <b>The village makes masters of its own accord</b> — 15 to 19 a century, measured — so a
+    /// fixture that only removes the ones it posed is not posing what it thinks it is.
+    /// </remarks>
+    private static void LeaveOnlyOneMasterOf(SimWorld world, SkillRow skill, Villager keep)
+    {
+        foreach (Villager villager in world.Villagers)
+        {
+            if (villager.Alive
+                && villager.Id != keep.Id
+                && villager.FindProgressIn(skill.Id) is { Mastered: true })
+            {
+                villager.Alive = false;
+            }
+        }
     }
 
     private static Villager MakeThemAMaster(SimWorld world, Villager villager, SkillRow skill)
