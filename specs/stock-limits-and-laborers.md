@@ -90,6 +90,37 @@ limit reads the same total its demand function reads**, and the spec says so her
 than leaving it to be rediscovered. Where a good has no demand function yet, the limit reads
 village stores.
 
+### 4.2 ✅ AND THE HARVEST BRUSH READS IT NOW (D212) — it was a box that did nothing
+
+**`StockLimits.Kinds` is the whole goods enum**, so the panel has always shown a row per good.
+**The sim read three of them** — food, logs and firewood, each at the workplace that produces it.
+**Clearing painted ground read none**, and the brush is the only source of stone and iron the game
+has. So *"keep 100 stone"* was a number the village could not see: the player typed it, watched
+every seam in the valley come out of the ground, and got no explanation. §1.1's failure, and
+D145's *"a control needs one door"* on the good the door was never cut for.
+
+- **`SimWorld.MayTake(goods)` is that door**, and **`MayFell` reads it** rather than naming the
+  Logs limit. Byte-identical: `InStores(Goods.Logs)` and `LogsInSheds()` are the same sum over the
+  same stores, because `store.Logs` *is* `store[Goods.Logs]`.
+- **The tile is skipped, never un-painted** — D127's standing instruction. A seam the village is
+  currently full of is *work that is waiting*, and it comes back when the stores are spent down.
+- ⛔⛔ **The footprint branch is exempt and there is a test that says so.** `Mark` paints the
+  ground a building will stand on (D100); a limit applied there deadlocks the village on its own
+  instruction — the site waits on the ground, the ground waits on the limit, and the limit waits
+  on nothing at all.
+- ⭐ **The refusal writes its own sentence** (METHODOLOGY §4). A laborer standing about because a
+  limit is met reads exactly like a laborer with nothing to do — D146's finding, one control over.
+
+**Measured:** a limit of 24 against eight painted seams clears **3** and stops at **36** — one
+tile of overshoot, because a tile is spent whole. Capped at zero, the same village still fells its
+painted trees (2,662 → 2,650). **No golden moved:** `null` is the default and means *"the player
+has not said"*.
+
+⚠️ **`StockLimits.Kinds` still reads `Enum.GetValues<Goods>()` rather than the run's catalogue**,
+so a mod-added good cannot be limited. It is a `static readonly` and the array is sized from it,
+which is the *"a mutable static was never the fix"* problem `goods-catalog.md` §5 records — the
+suite runs ~9.5× parallel with a world per test. Left open deliberately.
+
 ---
 
 ## 5. Laborers

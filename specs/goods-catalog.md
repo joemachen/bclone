@@ -277,8 +277,15 @@ proves the refactor*; here the test plays that part.
    one the content pass needs most and the one with a proven precedent (D82).
 2. **`StoredBy` as flags or as a list per store kind?** Flags are cheaper; a list reads better in
    data. Decide at implementation.
-3. **⚠️ NOW THAT STONE ACCUMULATES, NOTHING SPENDS IT — AND A SHED'S CAPACITY IS TOTAL** (found by
-   D211, not fixed by it). `Stockpile.Capacity` is physical room *across every good*, deliberately
+3. **✅ ANSWERED BY D212 AND D213 — stone is spendable and its gathering has a ceiling.**
+   Recorded here as *"now that stone accumulates, nothing spends it"* and it was true for
+   exactly one day. **The harvest brush obeys the stock limit now** (D212,
+   `stock-limits-and-laborers.md §4.2`) so *"keep 100 stone"* stops the village clearing seams,
+   and **a granary, a shed and a market cost stone** (D213,
+   `multi-material-construction.md`) so there is something to spend it on. ⚠️ **The wider
+   point survives and is worth keeping:** a store's capacity is total across goods by design,
+   so any good with no consumer competes for room with the ones that have. *Original note,
+   for the record:* `Stockpile.Capacity` is physical room *across every good*, deliberately
    (*"a shed packed with logs has nowhere to stack firewood, and being made to choose is the
    interesting part"*). Stone has no consumer: `BuildingRecipe` is **one material slot**
    (`content-inventory.md` finding 2). **And the harvest brush answers to no stock limit** — it is
