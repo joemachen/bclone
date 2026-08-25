@@ -1059,35 +1059,23 @@ public sealed record SimConfig
     [JsonPropertyName("cart_tools")]
     public int CartTools { get; init; } = 20;
 
-    /// <summary>
-    /// Stone the founders arrive carrying — <b>enough for the first huts, and no more</b> (D214).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⛔⛔ THE FOUNDING BRICKED WITHOUT IT, AND THAT IS WHY IT EXISTS.</b> Once a hut costs
-    /// stone (Joe: *"a nominal amount"*), the cold start asks a village with **no stone and no
-    /// way to have any** to raise the two huts it eats and heats out of. Measured on the shipped
-    /// opening: **0 alive, 4 frozen, not one berry ever reaching a store.** The gatherer's hut
-    /// and the woodcutter's hut are the founding, and a price nobody can pay is not a difficulty
-    /// setting — it is a village that cannot start.
-    /// </para>
-    /// <para>
-    /// <b>⭐ A CART, NOT AN EXEMPTION</b>, and the difference is the whole design. Making the
-    /// first huts free would have been a rule the player must be told; arriving with a small pile
-    /// of stone is a fact they can <em>see</em> — it sits in the cart beside the food and the
-    /// tools, it goes down as they build, and when it runs out the answer is on the map. That is
-    /// `DESIGN.md §0.1`'s *recoverable by design*: the mistake is real, visible and expensive,
-    /// and the valley forgives you slowly.
-    /// </para>
-    /// <para>
-    /// <b>One seam tile's worth</b> (<c>yield_per_tile</c> for stone is 12), which buys the two
-    /// huts the opening marks with a little over. **It is a difficulty dial and a real one**,
-    /// unlike <see cref="CartTools"/> beside it: lower it and the player must go to the rock
-    /// sooner.
-    /// </para>
-    /// </remarks>
-    [JsonPropertyName("cart_stone")]
-    public int CartStone { get; init; } = 12;
+    // ⛔⛔ `cart_stone` WAS HERE FOR ONE COMMIT AND IS GONE (Joe, D215): *"there should already
+    // be stone on the map for the user to ask the laborers to harvest. I don't want stone in the
+    // cart. Only food and tools."*
+    //
+    // ⚠️⚠️ IT EXISTED BECAUSE OF A UNIT I MISREAD, AND THAT IS THE PART WORTH KEEPING. D214
+    // measured the distance from a founding site to the nearest reachable stone as **120**, read
+    // it as 120 tiles, and concluded the seams were out of reach — so the founders were given a
+    // pile of stone to start with. `TravelCostField.Cost` returns **cost units**, and
+    // `BaseTileCost` is 10: the real distance is **twelve tiles**, on every seed. Worldgen says
+    // so out loud one file over — *"STONE NEAR, IRON FAR… a valley whose ore sits in the far
+    // woods plays differently from one where it is on the doorstep"* — and
+    // `stone_seam_ring_tiles` is 14.
+    //
+    // **The founding was never short of stone; the test fixture simply never painted a seam.**
+    // A number in the wrong unit bought a starting resource the game did not need — the same
+    // shape as D214's other correction, where a probe measured a stall and was read as measuring
+    // a price.
 
     /// <summary>Share of a building's logs returned when it is pulled down, as a percentage.</summary>
     /// <remarks>

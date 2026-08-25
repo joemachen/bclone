@@ -997,11 +997,9 @@
   "cart_food": 1200,
   "cart_tools": 20,
 
-  // Stone for the first huts (D214). Without it a founding that must pay stone
-  // for the hut it eats out of cannot start: measured at 0 alive, 4 frozen. One
-  // seam tile is 12, so this is exactly one rock's worth -- enough for the two
-  // huts the opening marks, and then the player goes to the map.
-  "cart_stone": 12,
+  // NO cart_stone (Joe, D215): "there should already be stone on the map for the
+  // user to ask the laborers to harvest. I don't want stone in the cart. Only
+  // food and tools." There is -- stone_seam_count 4 on a fourteen-tile ring.
 
   // Less than everything, deliberately. Demolition is how a player
   // corrects a mistake, and it should cost something - otherwise a

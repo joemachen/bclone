@@ -1,7 +1,7 @@
 # Spec: Multi-material construction — a building can ask for more than one thing
 
-> Status: **✅ BUILT (D213 + D214, 2026-08-25), in three commits: the machinery as a provable
-> no-op, the store prices, then the huts on Joe's call.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3` (data-driven), `§2.3`
+> Status: **✅ BUILT (D213 → D215, 2026-08-25), in four commits: the machinery as a provable
+> no-op, the store prices, the huts on Joe's call, then the stone taken back out of the cart.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3` (data-driven), `§2.3`
 > (systemic pressure traceable to a player decision) · Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `content-inventory.md` **finding 2** (which scheduled this),
@@ -69,7 +69,7 @@ reachable for the first time.
 | Gatherer's / woodcutter's / forester's hut, farmhouse | 25 | **3** | Joe, D214: *"a nominal amount"*. One seam tile is 12 stone, so clearing a single rock buys four huts |
 | Home | 30 | **0** | ⛔⛔ The one building the **village** decides to raise (D42). A stone price here gates growth on a resource an unattended valley never gathers |
 | Pile, builder's hut | 0 | 0 | Free, and must stay free (D96, D108) — the circle |
-| **The founders' cart** | — | **+12 stone** | §3.2 — without it the cold start cannot begin |
+| **The founders' cart** | — | **nothing** | ⛔ Joe, D215: *"only food and tools"* — see §3.2 |
 
 ### 3.1 ⚠️⚠️ The measurement that was wrong, and why it is recorded rather than deleted
 
@@ -93,27 +93,66 @@ Re-measured on the fixed build, fifty years of the shipped opening:
 ⭐ **A number is only as good as the build it was taken on.** This is the same lesson D179 records
 about the suite's own runtime: *the horizons everybody suspected were never the problem.*
 
-### 3.2 ⛔⛔ And the cold start bricked anyway, which the fixture village could not show
+### 3.2 ⛔⛔ The cold start bricked — and the first fix for it was wrong
 
-The re-measurement above ran on a **warm start** — `FoundingBuildings` defaults to `true`, so that
-village already has its huts and has **no cart**. On the *real* cold start the founders have no
-stone and **no way to have any**, and the two huts they eat and heat out of cannot be paid for:
-**0 alive, 4 frozen, not one berry ever reaching a store.**
+On the **real** cold start (`founding_buildings: false`) the founders have no stone, and the two
+huts they eat and heat out of cannot be paid for: **0 alive, 4 frozen, not one berry ever reaching
+a store.** The §3.1 re-measurement missed it because it ran on a **warm start**, which already has
+its huts and has **no cart at all** — *the fixture and the shipped opening are two different games*
+(METHODOLOGY §3, arriving through a starting condition rather than a config key).
 
-✅ **The founders arrive with one seam tile's worth of stone** (`cart_stone: 12`), beside the food
-and the tools.
+**The first answer was `cart_stone: 12` — founders arriving with a pile of stone — and Joe threw it
+out:**
 
-- **A cart, not an exemption**, and the difference is the whole design. Making the first huts free
-  would be a rule the player must be *told*; arriving with a small pile of stone is a fact they can
-  **see** — it sits in the cart, it goes down as they build, and when it runs out the answer is on
-  the map.
-- **It is a real difficulty dial**, unlike `cart_tools` beside it: lower it and the player must go
-  to the rock sooner.
+> *"There should already be stone on the map for the user to ask the laborers to harvest. I don't
+> want stone in the cart. Only food and tools."*
+
+⚠️⚠️ **He was right, and the reason it was ever proposed is the part worth keeping: a unit was
+misread.** The probe measuring *"how far is the nearest reachable stone"* reported **120** on every
+seed and it was read as **120 tiles** — so the seams looked unreachable. `TravelCostField.Cost`
+returns **cost units** and `BaseTileCost` is **10**: the real answer is **twelve tiles**, on every
+seed, and `MapGenerator` says so out loud — *"STONE NEAR, IRON FAR… a valley whose ore sits in the
+far woods plays differently from one where it is on the doorstep"* — with `stone_seam_ring_tiles`
+set to **14**.
+
+**The founding was never short of stone. The test fixture simply never painted a seam.** ⭐ *A
+number in the wrong unit bought a starting resource the game did not need* — the same shape as
+§3.1, where a probe measured a stall and was read as measuring a price. **Two corrections in one
+slice, both of them a measurement believed too quickly.**
+
+✅ **So the opening paints a seam**, exactly as it already paints trees, and the cart carries food
+and tools and nothing else.
 
 **The safety property, stated as the test that holds it:** a granary the village cannot pay for
 **waits**, the settlement carries on out of its pile, and the site says what it is short of.
 `DESIGN.md §0.1` — *the challenge is in the planning, never in the punishment*, and a mistake must
 never be unrecoverable before it was understood.
+
+### 3.3 ⛔⛔ And painting the seam was not enough: nearest-first never walks to a rock
+
+**Painting it changed almost nothing**, and the measurement is the finding:
+
+| the opening paints | seams cleared in 5y | stone in store | firewood | alive |
+|---|---|---|---|---|
+| a seam, **no trees** | 4 of 4 | 48 | 0 | 0 *(no timber — they froze)* |
+| a seam **and trees** | **1 of 4** | **0** | 0 | **0** |
+
+`NearestHarvest` takes the **cheapest painted tile**, the village paints its trees on its doorstep,
+and **the wood grows back** (D126) — so there is always something nearer than a fourteen-tile ring,
+for ever. The huts that needed three stone stayed sites and everybody froze.
+
+✅ **What a building is waiting on comes before what is merely nearest.** This is
+`NextFootprintToClear`'s exception one good over, and **its comment had already written the
+reason** — *"nearest-first never gets to it"*.
+
+- ⚠️ **Only when nothing in store can serve it.** If a shed already holds the stone, a builder
+  fetches it and this is not clearing work at all. The rule is *"the village cannot otherwise get
+  this"*, not *"a site wants this"* — the latter would send laborers to the rock every time a
+  granary was marked.
+- **Still cheapest-first among its own kind**, so the village goes to the *closest* rock.
+
+**Measured after:** a seam and trees both painted → **4 of 4 cleared, 42 stone, 119 firewood, and
+the village alive.**
 
 ---
 
@@ -169,13 +208,18 @@ for this either**, because no golden run marks a store.
 
 ### ✅ Slice 3 — the huts, on Joe's call (D214)
 
-Huts and the farmhouse at **3** each, and the founders' cart at **12**. **No golden moved for this
-one either, and the reason is checkable rather than lucky:** every golden village is a warm start,
-so it has no cart for the stone to land in and its huts were standing before the run began.
-*Silent about what they do not reach, loud about what they do* (D157, D162).
+Huts and the farmhouse at **3** each. ⚠️ **`AFoundingThatPaintsNoSeamStillLives` is the guard this
+slice turns on** — the claim is that a nominal price costs the village *buildings* and never its
+life.
 
-⚠️ **`AFoundingThatPaintsNoSeamStillLives` is the guard this slice turns on** — the whole claim is
-that a nominal price costs the village buildings and never its life.
+### ✅ Slice 4 — the stone comes off the map, not out of the cart (D215)
+
+`cart_stone` deleted; **the opening paints a seam** (four tiles ≈ 48 stone, against the 6 the two
+huts cost); and §3.3's priority rule, without which painting it achieved nothing.
+
+**No golden moved for any of the four**, and the reason stays checkable: every golden village is a
+warm start with its huts already standing, and none of them has a site waiting on a material no
+store holds. *Silent about what they do not reach, loud about what they do* (D157, D162).
 
 ---
 
@@ -210,5 +254,8 @@ that a nominal price costs the village buildings and never its life.
    gap itself: *"the quarry extracts; nothing dresses."* Raw `Goods.Stone` is the material today.
 3. **No load-time validation that a priced good is obtainable.** See §6.
 4. ~~**Should the huts pay?**~~ ✅ **Answered by Joe, D214: yes, a nominal amount.** 3 each, and
-   the founders arrive with the stone for the first two — see §3.1 for the measurement that had to
-   be re-taken and §3.2 for the cold start it exposed.
+   the stone comes off the map (D215) — see §3.1 and §3.2 for the two measurements that had to be
+   re-taken, and §3.3 for the priority rule that made a painted seam actually get worked.
+5. ⚠️ **§3.3 changes what laborers prioritise, and it is worth watching in play.** A village with a
+   site waiting on an unobtainable good will send its spare hands past nearer work to get it. That
+   is the intent, but it is a real change to where people walk.

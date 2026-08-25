@@ -159,7 +159,10 @@ public sealed class StoneCostsTests
         SimLoop loop = Loop(config);
         SimWorld world = loop.World;
 
-        ColdStartTests.PlayTheOpening(world);
+        // ⛔ DELIBERATELY NO SEAM PAINTED. A played opening sends laborers to a rock now (D215),
+        // so withholding that is the whole premise of this guard: a village that has marked a
+        // store it cannot pay for.
+        ColdStartTests.PlayTheOpening(world, paintASeam: false);
         loop.Step(config.TicksPerYear * 5);
 
         GridPos? where = MarkAGranary(world);

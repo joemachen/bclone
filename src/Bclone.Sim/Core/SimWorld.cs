@@ -2877,6 +2877,8 @@ public sealed class SimWorld
 
         GridPos? best = null;
         int bestCost = int.MaxValue;
+        GridPos? needed = null;
+        int neededCost = int.MaxValue;
 
         // ⭐ WHAT THE VILLAGE HAS ENOUGH OF, ASKED ONCE (D212). A limit is a ceiling on
         // production (D62), and clearing painted ground is production — it was simply the one
@@ -2899,6 +2901,42 @@ public sealed class SimWorld
             for (int g = 0; g < enoughOf.Length; g++)
             {
                 enoughOf[g] = !MayTake((Goods)g);
+            }
+        }
+
+        // ⭐⭐ WHAT A BUILDING IS WAITING ON COMES BEFORE WHAT IS MERELY NEAREST (D215).
+        //
+        // **This is `NextFootprintToClear`'s exception, one good over, and its comment already
+        // wrote the reason: *"nearest-first never gets to it."*** Stone sits on a ring fourteen
+        // tiles out by design (*"STONE NEAR, IRON FAR"*), while a village paints its trees on its
+        // doorstep and the wood **grows back** (D126) — so there is always something cheaper to
+        // walk to, for ever. Measured on the shipped opening with both painted: **one seam of
+        // four cleared in five years and not one stone reaching a store**, while the huts that
+        // needed three of it stayed sites and everybody froze.
+        //
+        // ⚠️ ONLY WHEN NOTHING IN STORE CAN SERVE IT. If a shed already holds the stone, a
+        // builder fetches it and this is not clearing work at all — the rule is *"the village
+        // cannot otherwise get this"*, not *"a site wants this"*, which would send laborers to
+        // the rock every time a granary was marked.
+        bool[]? waitedOn = null;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Construction is not { IsFinished: false } plan
+                || !GroundIsClearAt(Workplaces[i].Position))
+            {
+                continue;
+            }
+
+            for (int m = 0; m < plan.Recipe.Materials.Count; m++)
+            {
+                Goods wants = plan.Recipe.Materials[m].Goods;
+                if (plan.StillNeeded(wants) <= 0 || AnyStoreHolding(wants))
+                {
+                    continue;
+                }
+
+                waitedOn ??= new bool[GoodsCatalog.Count];
+                waitedOn[(int)wants] = true;
             }
         }
 
@@ -2954,11 +2992,33 @@ public sealed class SimWorld
             }
 
             int cost = TravelCost.Cost(from, at);
+
+            // A tile something is waiting on outranks every merely-nearer tile, and is still
+            // chosen by cost among its own kind — so the village goes to the closest rock, not
+            // to a random one.
+            if (waitedOn is not null
+                && waitedOn[(int)TerrainRules.Yields(Map.TerrainAt(at))!.Value])
+            {
+                if (cost < neededCost)
+                {
+                    needed = at;
+                    neededCost = cost;
+                }
+
+                continue;
+            }
+
             if (cost < bestCost)
             {
                 best = at;
                 bestCost = cost;
             }
+        }
+
+        if (needed is not null)
+        {
+            heldBackBy = null;
+            return needed;
         }
 
         // Only a refusal if it is the reason there is nothing to do. Somebody who walked past a
@@ -6057,9 +6117,10 @@ public sealed class SimWorld
         cart.Store.Receive(Goods.Food, config.CartFood);
         cart.Store.Receive(Goods.Tools, config.CartTools);
 
-        // ⭐ And the stone for the first huts (D214). See `SimConfig.CartStone`: without it a
-        // founding that must pay stone for the hut it eats out of cannot start at all.
-        cart.Store.Receive(Goods.Stone, config.CartStone);
+        // ⛔ AND NOTHING ELSE (Joe, D215). Stone was added here for one commit and taken out
+        // again: *"there should already be stone on the map for the user to ask the laborers to
+        // harvest."* There is — four seams on a fourteen-tile ring — see `SimConfig`'s note where
+        // `cart_stone` used to be for the misread unit that put it here.
     }
 
 
