@@ -1,8 +1,17 @@
-# Handoff — bclone: **Phase 3 is merged. ⏸️ Phase 4 is HELD on Joe's call, pending his content pass.**
+# Handoff — bclone: **⏸️ Phase 4 still HELD. But stone is real end to end, and a good is a row.**
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D205 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D217 back to D142**, then
 `METHODOLOGY.md`. **Then `specs/content-inventory.md`** — it is the audit of what actually exists
 against what the documents claim, and it is the shortest route to being oriented.
+
+> **⚠️ THE MOST EXPENSIVE THING THAT HAPPENED IN THIS STRETCH WAS NOT A BUG — IT WAS AN UNMERGED
+> BRANCH.** Eleven commits of finished, green work sat in a worktree while `main` had none of it.
+> **Joe played `main`, saw *"villagers harvest stone but the pile shows 0"*, and reported a bug
+> that was real on his build and already fixed on the branch he was not running** (D217). Then the
+> merge itself was left half-finished — two unresolved conflicts, nothing committed — and a fresh
+> session had to find that before it could review anything.
+> **Merge it, or say plainly that it is not merged. A branch nobody merges is a branch that lies
+> to whoever plays the game.**
 
 > **⛔ WHEN YOU HAND OFF: EDIT THIS FILE, DO NOT REPLACE IT.** The trap list at the bottom is
 > accumulated from sessions that each paid for one entry. Rewriting it wholesale drops them
@@ -29,6 +38,38 @@ against what the documents claim, and it is the shortest route to being oriented
    of 11 while `DESIGN.md §4` calls it Phase 4 next — D159's two-roadmaps failure, live again in a
    different pair of files.** Read `specs/content-inventory.md` before forming any opinion about
    what to build.
+
+---
+
+## ⭐⭐ What landed while Phase 4 stayed held (D206–D217, 2026-08-24/25)
+
+**The hold was never idleness.** Joe's content pass arrived and the infrastructure it needs got
+built underneath it — none of which is Phase 4, and all of which Phase 4 will stand on.
+
+- **⭐ Joe wrote the technique list** (D206, `TECH-EXAMPLE.md`): 45 buildings over four tiers,
+  **39 named techniques**, 25 animal species. **They are diegetic, not a research menu** — asked
+  directly, because the document reads like one. Mapped into `tech-tree.md §9` with two new trunks.
+- **⭐ Morale is real** (D207) — per villager, doing **exactly two things: people leave, and
+  households have fewer children.** *Work slows* and *sickness* were both offered and **declined**,
+  which is what keeps it clear of §1.1's invisible multiplier and §0.1's death spiral.
+  `specs/morale.md`.
+- **⛔ Spoilage was re-proposed and refused again** (D208). Winter feed is a seasonal fact, not a
+  rot timer. **D37 stands.**
+- **✅ The school** (D209) — a teacher, slots for children **12–16**, graduates who work better,
+  **paid for with four working years per pupil** because `adult_age` is 12. It cashes a dial
+  **D156 reserved in August in the same words.**
+- **✅ A good is a ROW, and the set is open to 62** (D210, `specs/goods-catalog.md`). Every switch
+  on a good is gone from the sim. **Four ceilings nobody had counted** were found and lifted —
+  six goods, thirty goods, stock limits, and the villager's arms.
+- **✅⭐⭐ STONE IS REAL END TO END** (D211–D217). A villager **could not carry stone** — the arms
+  were the one stockpile D82 never reached, so a cleared seam's yield **stopped existing**.
+  Red-checked before the fix: *eight seams cleared in two years, zero stone anywhere.* Then
+  **multi-material building costs** (a granary is 40 logs and 10 stone), the stone taken off the
+  map rather than out of the cart, and the food limit finally reaching the forager.
+
+⚠️ **Five goldens moved, once, deliberately** — the arms are hashed by index now. **Measured, not
+assumed:** restoring the old three-line mix makes every one byte-identical, which is what says the
+hash's *shape* moved and the village did not.
 
 ---
 
@@ -97,7 +138,7 @@ named one and was stale within the minute.
 **SUITE, FROM A RUN:**
 
 ```
-740 passed, 0 failed, 2 skipped of 742 — about 2m30s (was 18m52s before D179)
+772 passed, 0 failed, 2 skipped of 774 — about 2m40s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -278,6 +319,22 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔ FINISH THE MERGE, OR SAY OUT LOUD THAT IT IS NOT MERGED (2026-08-25).** Eleven commits of
+  finished, green work sat on a branch in a worktree while `main` had none of it. **Joe played
+  `main`, saw *"villagers harvest stone but the pile shows 0 stone"*, and filed a bug that was
+  entirely real on his build and entirely fixed on the branch he was not running** (D217). The
+  session that had done the work spent its reply diagnosing a build rather than a village.
+  - **⚠️ AND THE MERGE WAS THEN LEFT HALF-DONE** — two unresolved conflicts, nothing committed,
+    `git log` still showing an older tip. A fresh session asked to *"review what's in"* had to
+    discover that **nothing was in** before it could review anything.
+  - **The rule: a branch is not done when the tests pass, it is done when it is on `main`.** If it
+    cannot be merged yet, **the handoff must say so in the first paragraph** — because the person
+    playing the game has no way to tell which build they are on.
+  - ⭐ **When two sessions have both edited the docs, expect conflicts and expect BOTH sides to be
+    true.** All three here were documentation where each session had updated the same line about
+    its own half; the resolution was *and*, never *either*. **Take both, then check the arithmetic:**
+    761 + 11 = 772 is what proved neither side's guards were dropped.
 
 - **⛔⛔⛔ `git checkout -- <file>` DESTROYS UNCOMMITTED WORK AND THERE IS NO UNDO — I DID IT TO
   MYSELF (D194).** Mid-slice, wanting to revert *one deliberate break* in `SimWorld.cs`, I ran
