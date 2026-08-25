@@ -261,6 +261,22 @@ public sealed class Stockpile
         return true;
     }
 
+    /// <summary>Take everything of one good, and return how much that was.</summary>
+    /// <remarks>
+    /// <b>The verb the villager's arms needed</b> (D211): every path that empties a load reads
+    /// the amount, hands it somewhere, and zeroes the slot — three lines that only stay in step
+    /// while somebody keeps them there. <see cref="TryTake"/> answers *"if there is enough"*,
+    /// which is a different question and cannot express *"all of it"* without the caller
+    /// naming the number twice.
+    /// </remarks>
+    public int TakeAll(Goods goods)
+    {
+        int index = Index(goods);
+        int held = _held[index];
+        _held[index] = 0;
+        return held;
+    }
+
     private int Clamp(Goods goods, int amount, string parameterName)
     {
         if (amount < 0)

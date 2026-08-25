@@ -113,10 +113,26 @@ public sealed class HouseholdTests
     [Fact]
     public void OnlyNonChildrenCanWork()
     {
-        var child = new Villager { Id = 1, Name = "Tam", LifespanYears = 45, LifeStage = LifeStage.Child };
-        var adult = new Villager { Id = 2, Name = "Bess", LifespanYears = 45, LifeStage = LifeStage.Adult };
-        var elder = new Villager { Id = 3, Name = "Mabel", LifespanYears = 45, LifeStage = LifeStage.Elder };
-        var dead = new Villager { Id = 4, Name = "Otto", LifespanYears = 45, LifeStage = LifeStage.Adult, Alive = false };
+        var child = new Villager
+        {
+            Id = 1, Name = "Tam", LifespanYears = 45, LifeStage = LifeStage.Child,
+            Carried = new Stockpile(Stockpile.Kinds),
+        };
+        var adult = new Villager
+        {
+            Id = 2, Name = "Bess", LifespanYears = 45, LifeStage = LifeStage.Adult,
+            Carried = new Stockpile(Stockpile.Kinds),
+        };
+        var elder = new Villager
+        {
+            Id = 3, Name = "Mabel", LifespanYears = 45, LifeStage = LifeStage.Elder,
+            Carried = new Stockpile(Stockpile.Kinds),
+        };
+        var dead = new Villager
+        {
+            Id = 4, Name = "Otto", LifespanYears = 45, LifeStage = LifeStage.Adult, Alive = false,
+            Carried = new Stockpile(Stockpile.Kinds),
+        };
 
         Assert.False(child.CanWork);
         Assert.True(adult.CanWork);

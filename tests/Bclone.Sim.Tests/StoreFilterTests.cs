@@ -201,9 +201,11 @@ public sealed class StoreFilterTests
 
         Villager carrier = world.Villagers[0];
         carrier.Position = shed.Position;
-        carrier.CarriedFood = 0;
-        carrier.CarriedLogs = 5;
-        carrier.CarriedFirewood = 7;
+        carrier.Carried.TakeAll(Goods.Food);
+        carrier.Carried.TakeAll(Goods.Logs);
+        carrier.Carried.TakeAll(Goods.Firewood);
+        carrier.Carried.Receive(Goods.Logs, 5);
+        carrier.Carried.Receive(Goods.Firewood, 7);
 
         int logsBefore = shed.Store.Logs;
         Bclone.Sim.Systems.BehaviorSystem.ArriveWithALoadForTest(world, carrier);

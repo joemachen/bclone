@@ -477,8 +477,8 @@ public sealed class MarketTests
         // Put somebody at the market's door with an empty larder behind them.
         Villager villager = world.FindVillager(household.MemberIds[0])!;
         villager.Position = market.Position;
-        villager.CarriedFood = 0;
-        villager.CarriedFirewood = 0;
+        villager.Carried.TakeAll(Goods.Food);
+        villager.Carried.TakeAll(Goods.Firewood);
 
         Bclone.Sim.Systems.BehaviorSystem.CollectForTest(world, villager);
 
@@ -536,7 +536,7 @@ public sealed class MarketTests
         loop.Step(Config.TicksPerYear * 5);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Villagers[0].CarriedFood += 1;
+        loop.World.Villagers[0].Carried.Receive(Goods.Food, 1);
         Assert.NotEqual(before, StateHash.Compute(loop.World));
 
         ulong carried = StateHash.Compute(loop.World);

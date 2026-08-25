@@ -209,7 +209,7 @@ public sealed class Villager
 
     public GridPos Position { get; set; }
 
-    /// <summary>Logs in their arms right now, between the stumps and the shed.</summary>
+    /// <summary>What is in their arms right now, between where they took it and where it goes.</summary>
     /// <remarks>
     /// <para>
     /// Goods used to teleport: a logger finished a cut and the timber appeared in
@@ -223,17 +223,53 @@ public sealed class Villager
     /// and it is what gives §2.6's desire paths something to be about, because a route
     /// walked with a load is traffic.
     /// </para>
+    /// <para>
+    /// <b>⛔ THIS WAS THREE NAMED FIELDS, AND THREE OF THE SIX GOODS COULD NOT BE PICKED UP</b>
+    /// (`goods-catalog.md §4.0`, D211). D82 made every <em>store</em> an indexed array and never
+    /// reached the villager's arms, so a laborer sent to clear a stone seam spent the tile —
+    /// <c>Harvest</c> sets it to grass — carried nothing, and left nothing behind. <b>The yield
+    /// stopped existing.</b> Measured before it was fixed: eight painted seams cleared in two
+    /// years, <b>zero stone in the stores and zero on the ground</b>, and the same for iron.
+    /// </para>
+    /// <para>
+    /// It is the same array a granary, a larder and a cart hold, sized from the same catalogue —
+    /// so <b>a good a modder adds can be carried the day it is added</b>, which is the whole
+    /// promise `goods-catalog.md` makes and the one place it did not reach.
+    /// </para>
+    /// <para>
+    /// <b>Uncapped, deliberately.</b> <c>carry_capacity</c> is applied by the errands that pick
+    /// things up — a fetch, a tidy — and giving the arms a <see cref="Stockpile.Capacity"/> as
+    /// well would silently clamp a gather or a fell that has always been allowed to exceed it.
+    /// That would be a balance change hiding inside a refactor.
+    /// </para>
     /// </remarks>
-    public int CarriedLogs { get; set; }
+    public required Stockpile Carried { get; init; }
+
+    /// <summary>
+    /// Logs in their arms right now, between the stumps and the shed.
+    /// </summary>
+    /// <remarks>
+    /// <b>A named reader over the one array</b>, exactly as <see cref="Stockpile.Logs"/> is —
+    /// and for the reason recorded there: readers read as English at the call site and cannot go
+    /// stale, while the named <em>mutators</em> are gone so that every place that changes a load
+    /// has to say which good it means.
+    /// </remarks>
+    public int CarriedLogs => Carried.Logs;
 
     /// <summary>Firewood in their arms.</summary>
-    public int CarriedFirewood { get; set; }
+    public int CarriedFirewood => Carried.Firewood;
 
     /// <summary>Food in their arms — used once fetching lands.</summary>
-    public int CarriedFood { get; set; }
+    public int CarriedFood => Carried.Food;
 
     /// <summary>True when they are hauling anything at all.</summary>
-    public bool IsCarrying => CarriedLogs > 0 || CarriedFirewood > 0 || CarriedFood > 0;
+    /// <remarks>
+    /// <b>Every good, not the three that had a field.</b> This read
+    /// <c>CarriedLogs &gt; 0 || CarriedFirewood &gt; 0 || CarriedFood &gt; 0</c>, which is what
+    /// made a villager holding stone look empty-handed to every caller — including
+    /// <c>ArriveAt</c>, whose set-down is the conservation rule's last line of defence.
+    /// </remarks>
+    public bool IsCarrying => Carried.Held > 0;
 
     /// <summary>
     /// The household a marketer's current errand concerns. Zero when none.

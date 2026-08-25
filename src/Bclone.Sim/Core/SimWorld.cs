@@ -2770,10 +2770,20 @@ public sealed class SimWorld
 
     /// <summary>Whether a tile holds anything a laborer could take.</summary>
     /// <remarks>
+    /// <para>
     /// <b>One question, so a new harvestable terrain is answered here and nowhere else.</b>
-    /// Only forest today; stone and iron are D84's finite deposits and land next. This is
+    /// Forest, stone seams and iron seams — <c>TerrainRules.Yields</c> is the list. This is
     /// deliberately the same shape as <c>TerrainRules.IsPassable</c> — the seam D76 spent
     /// five instalments learning to recognise.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It said <em>"only forest today; stone and iron are D84's finite deposits and land
+    /// next"</em> until D211</b>, and that stopped being true the day the seams shipped. It is
+    /// recorded rather than quietly deleted because the stale sentence was read as evidence
+    /// while `goods-catalog.md §4.0` was working out whether a villager could reach a seam at
+    /// all — <b>a comment that lies is worse than no comment, because it is believed at exactly
+    /// the moment somebody is orienting.</b>
+    /// </para>
     /// </remarks>
     public bool HasSomethingToHarvest(GridPos tile) =>
         TerrainRules.Yields(Map.TerrainAt(tile)) is not null;
@@ -5176,6 +5186,10 @@ public sealed class SimWorld
                     Name = name,
                     LifespanYears = lifespan,
                     Rhythm = rhythm,
+
+                    // Sized from the run's catalogue like every other stockpile (D210) — so a
+                    // good a mod adds can be picked up rather than only stored.
+                    Carried = NewStockpile(),
 
                     // ⭐⭐ AND THEIR HUNGER STARTS A LITTLE APART, WHICH IS THE HALF THE STAGGER
                     // ALONE COULD NOT REACH (§3.5, D190). Measured with only the action
