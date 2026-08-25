@@ -277,6 +277,15 @@ proves the refactor*; here the test plays that part.
    one the content pass needs most and the one with a proven precedent (D82).
 2. **`StoredBy` as flags or as a list per store kind?** Flags are cheaper; a list reads better in
    data. Decide at implementation.
-3. **Does a mod-added good need a display colour?** The view has one per good
+3. **⚠️ NOW THAT STONE ACCUMULATES, NOTHING SPENDS IT — AND A SHED'S CAPACITY IS TOTAL** (found by
+   D211, not fixed by it). `Stockpile.Capacity` is physical room *across every good*, deliberately
+   (*"a shed packed with logs has nowhere to stack firewood, and being made to choose is the
+   interesting part"*). Stone has no consumer: `BuildingRecipe` is **one material slot**
+   (`content-inventory.md` finding 2). **And the harvest brush answers to no stock limit** — it is
+   a standing instruction the player paints and only the player unmarks (D127), which is right, and
+   which means *paint a seam and the shed fills with stone the village cannot spend.* Not a bug in
+   the fix — the yield existing is strictly better than it vanishing — but the pressure is real and
+   its answer is multi-material recipes, not a cap here.
+4. **Does a mod-added good need a display colour?** The view has one per good
    (`Main.cs`). Out of scope for slice 1 — the sim does not care — but it is the first thing a
    modder will ask for.
