@@ -121,6 +121,34 @@ so a mod-added good cannot be limited. It is a `static readonly` and the array i
 which is the *"a mutable static was never the fix"* problem `goods-catalog.md` §5 records — the
 suite runs ~9.5× parallel with a world per test. Left open deliberately.
 
+### 4.3 ⛔⛔ AND THE FOOD LIMIT NEVER REACHED THE FORAGER (D216) — the same shape again
+
+**One week after §4.2, on the good the whole economy is derived from.** Joe, playing: *"if there
+are trees marked for harvest, foragers will gather trees even though the food limit is not yet met
+[set to 2000]."*
+
+**Measured: a limit of 2000 and no limit at all produced byte-identical behaviour** — 959 forager
+ticks gathering and 871 clearing in both arms. `FoodTheVillageHasRoomFor`, the work gate's only
+reader, asked `TargetFoodForTheGranary()` — a **derived** number — and never `StockLimits`.
+
+⭐ **The priority was never wrong, and that is worth stating**, because the symptom reads as a
+priority bug and is not one: the harvest branch sits below every job in `Decide` (D87), so a
+forager who reaches it has already declined their own work. **What was invisible is *why*.**
+
+✅ **`wanted = StockLimits.For(Goods.Food) ?? TargetFoodForTheGranary()`** — §4's *derived floor,
+player ceiling*, finally wired on the work side.
+
+- ⚠️ **The floor half is deliberately untouched.** `TargetFoodForTheGranary` is what the **birth**
+  gate reads and stays derived (D153). *The player's number governs work; the derived number
+  governs children.*
+- ⛔ **Still capped by room**, which is D33 and D76: *a village cannot want more food than it has
+  somewhere to put.* Asking for 2000 with granaries for 900 is a request for granaries.
+- ⭐ **And the forager says which of the two stopped them** (`WhyTheVillageWantsNoMoreFood`),
+  because *raise the limit* and *build a granary* are opposite answers and neither was on screen.
+
+**After: clearing 871 → 220 forager ticks, food held 1077 → 1652.** No golden moved — `null` is
+still the default.
+
 ---
 
 ## 5. Laborers

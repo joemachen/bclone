@@ -2243,6 +2243,22 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐⭐ AND A FORAGER WHO IS NOT GATHERING SAYS WHY (D216). Joe, playing: *"if there are
+        // trees marked for harvest, foragers will gather trees even though the food limit is not
+        // yet met."* **Falling silently through to painted ground reads as *labour outranking a
+        // profession*, which is not what happened and is not what the code does** — the harvest
+        // branch sits below every job (D87) and this villager declined their own work first.
+        //
+        // What they declined it *for* is the thing that was invisible, and its two causes have
+        // opposite answers: *raise the limit* against *build a granary*. METHODOLOGY §4 — every
+        // refusal writes its own reason.
+        if (canForage && !needsFood)
+        {
+            villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string why
+                ? $"Nothing to gather for — {why}."
+                : string.Empty;
+        }
+
         // Raising a building the player marked out (D43). Materials first, then work:
         // a builder standing on an empty footprint has nothing to build WITH, and
         // making them fetch it is what stops construction being a purchase.

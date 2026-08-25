@@ -6011,12 +6011,62 @@ public sealed class SimWorld
     /// </remarks>
     public int FoodTheVillageHasRoomFor()
     {
+        // ⭐⭐ THE PLAYER'S NUMBER IF THEY HAVE GIVEN ONE, THE DERIVED TARGET IF NOT (D216).
+        //
+        // **This read the derived target ONLY, so a food limit was invisible to the one person
+        // who would produce toward it.** Joe, playing: *"if there are trees marked for harvest,
+        // foragers will gather trees even though the food limit is not yet met [set to 2000]."*
+        // Measured on his shape of village: **a limit of 2000 and no limit at all produced
+        // byte-identical behaviour** — 959 forager ticks gathering and 871 clearing in both arms.
+        // A control that changes nothing is D212's stone box, on the good the whole economy is
+        // derived from.
+        //
+        // **This is exactly D62's *derived floor, player ceiling*** — and the floor half is
+        // unaffected, because `TargetFoodForTheGranary` is what the BIRTH gate reads
+        // (`HouseholdSystem`) and that deliberately stays derived (D153). The player's number
+        // governs *work*; the derived number governs *children*. Two questions, two readers.
+        //
+        // ⚠️ A limit BELOW the derived floor is obeyed rather than argued with, which is D62's
+        // own rule — `SetStockLimit` already warns at the moment it is set, because *a game that
+        // refuses the player's number is arguing with them, and one that obeys it silently has
+        // killed them without saying so.*
+        int wanted = StockLimits.For(Goods.Food) ?? TargetFoodForTheGranary();
+
         // Across every store the village can actually put food in (D76, D79) — the
         // granaries it has built, the pile the player dropped on day one, and the cart
         // they arrived in.
-        int wanted = TargetFoodForTheGranary();
+        //
+        // ⛔ STILL CAPPED BY ROOM, and that is not a hedge: *a village cannot want more food
+        // than it has somewhere to put* (D33, D76). Asking for 2000 with granaries for 900 is a
+        // request for granaries, and the forager who stops now says so out loud rather than
+        // wandering off to fell a tree — see `BehaviorSystem`'s note where this is read.
         int capacity = FoodInGranaries() + RoomLeftForFood();
         return wanted < capacity ? wanted : capacity;
+    }
+
+    /// <summary>
+    /// Why the village has stopped wanting food, or null while it still does.
+    /// </summary>
+    /// <remarks>
+    /// <b>For the sentence, not the decision</b> (METHODOLOGY §4, D216). A forager who falls
+    /// through to clearing painted ground looks exactly like a forager who has decided timber
+    /// matters more than food — which is what Joe read off the screen — and the two have
+    /// completely different answers: *raise the limit* against *build a granary*.
+    /// </remarks>
+    public string? WhyTheVillageWantsNoMoreFood()
+    {
+        int holds = FoodTheVillageHolds();
+        if (holds < FoodTheVillageHasRoomFor())
+        {
+            return null;
+        }
+
+        if (StockLimits.For(Goods.Food) is int limit && holds >= limit)
+        {
+            return $"you asked the village to keep {limit} food and it has {holds}";
+        }
+
+        return $"every store that takes food is full — {holds} held, and nowhere to put more";
     }
 
     /// <summary>Free space across every store that would take food.</summary>
