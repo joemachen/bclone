@@ -137,6 +137,18 @@ public sealed class StoreBuilding
     public required Stockpile Store { get; init; }
 
     /// <summary>
+    /// The run's goods catalogue — <b>what this building asks whether it can hold a thing</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Held here rather than passed to <see cref="Accepts"/></b> (D210, slice 1b), because
+    /// <c>Accepts</c> has <b>46 call sites</b> and a store building has eight — the cheaper seam
+    /// by a wide margin, and the one that keeps every caller reading the way it did.
+    /// </para>
+    /// </remarks>
+    public required GoodsCatalog Catalog { get; init; }
+
+    /// <summary>
     /// Which goods the player has told this building to take, as a bitmask. Zero means
     /// they have not said, which is every building until somebody says otherwise.
     /// </summary>
@@ -238,34 +250,39 @@ public sealed class StoreBuilding
     /// </remarks>
     public bool IsStorage => Kind != StoreKind.Market;
 
-    private bool KindAccepts(Goods goods) => Kind switch
-    {
-        StoreKind.Granary => goods == Goods.Food,
-
-        // Materials, which is what the shed has always been for — stone and tools join
-        // logs and firewood on exactly that reading (D32). The market does not take
-        // them: it exists to be the short trip for whatever a HOUSEHOLD is short of
-        // (D14, D78), and no household consumes either yet.
-        StoreKind.Shed => goods is Goods.Logs or Goods.Firewood or Goods.Stone or Goods.Tools
-            or Goods.Iron,
-        StoreKind.Market => goods is Goods.Food or Goods.Firewood,
-
-        // ⭐ EVERYTHING BUT TIMBER (D90 step 4). The founders' load was never sorted — it is
-        // what they could carry (D64) — and logs are the one thing that plausibly will not
-        // fit in a wagon you arrived in. That single refusal is what makes the storage pile
-        // load-bearing again (you cannot take timber until you have somewhere to put it) and
-        // what stops D89's silent strangling, where a cart packed with logs crowded out the
-        // food and the village aged out with nobody starved and nobody frozen.
-        //
-        // It only became safe once goods could be set down (D96): before that, a forester
-        // whose cart refused a load had nowhere on earth to put it.
-        StoreKind.Cart => goods != Goods.Logs,
-
-        // The pile still takes anything, and it is the one store that does. A heap does not
-        // specialise, and its SIZE rather than its rules is what stops it being the granary.
-        StoreKind.Pile => true,
-        _ => false,
-    };
+    /// <summary>
+    /// What this kind of building holds — <b>read off the good's row, not a switch</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THIS WAS A SWITCH OVER <see cref="StoreKind"/> NAMING GOODS ON THE RIGHT-HAND
+    /// SIDE</b> (D210), so adding a good meant editing a method in the sim — which is precisely
+    /// what `goods-catalog.md §2.1` forbids and what made the row decorative until now. Every
+    /// rule it encoded is preserved, as <c>stored_by</c> on each row:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>Granary</b> — food, and only food (D32).</item>
+    /// <item><b>Shed</b> — materials, which is what it has always been for: logs, firewood,
+    /// stone, tools and iron. The market does not take them, because it exists to be the short
+    /// trip for whatever a HOUSEHOLD is short of (D14, D78).</item>
+    /// <item><b>Market</b> — food and firewood, near the homes.</item>
+    /// <item><b>Cart</b> — <b>everything but timber</b> (D90 step 4). The founders' load was never
+    /// sorted; it is what they could carry (D64), and logs are the one thing that plausibly will
+    /// not fit in a wagon you arrived in. That single refusal is what makes the storage pile
+    /// load-bearing — you cannot take timber until you have somewhere to put it — and what stops
+    /// D89's silent strangling, where a cart packed with logs crowded out the food and the village
+    /// aged out with nobody starved and nobody frozen.</item>
+    /// </list>
+    /// <para>
+    /// <b>⛔ The pile stays in code, and that is not an oversight.</b> It takes anything, and its
+    /// <em>size</em> rather than its rules is what stops it being the granary — so *"takes
+    /// everything"* is a statement about the pile, not a fact about any good. Putting it in every
+    /// row would mean a modder had to remember to opt into it, and forgetting would silently
+    /// narrow a heap.
+    /// </para>
+    /// </remarks>
+    private bool KindAccepts(Goods goods) =>
+        Kind == StoreKind.Pile || Catalog.StoredBy(goods, Kind);
 }
 
 /// <summary>The kinds of goods a store can hold. Lumber and cloth land here next.</summary>

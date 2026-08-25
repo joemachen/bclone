@@ -1798,12 +1798,30 @@ public sealed class BehaviorSystem : ISimSystem
         return best;
     }
 
-    private static int HeldOf(Stockpile store, Goods goods) => goods switch
-    {
-        Goods.Food => store.Food,
-        Goods.Logs => store.Logs,
-        _ => store.Firewood,
-    };
+    /// <summary>
+    /// How much of a good a store holds — <b>the indexer, which was always the right answer</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THIS WAS A HAND-WRITTEN SWITCH AND ITS DEFAULT ARM WAS WRONG</b> (D210):
+    /// <c>Goods.Food =&gt; store.Food, Goods.Logs =&gt; store.Logs, _ =&gt; store.Firewood</c> —
+    /// so *"how much stone?"*, *"how much iron?"* and *"how much in tools?"* all answered with
+    /// <b>the firewood count</b>.
+    /// </para>
+    /// <para>
+    /// <b>It was latent rather than live, and that was traced rather than assumed.</b> All six
+    /// callers reach it only with food, logs or firewood today — the three it got right. It would
+    /// have gone live the moment a builder asked for stone, which is exactly what multi-material
+    /// building costs bring (`content-inventory.md` finding 2). *A bug that is unreachable today
+    /// and becomes reachable with the next feature is still a bug; it is just one nobody has met.*
+    /// </para>
+    /// <para>
+    /// <b>⭐ And <see cref="Stockpile"/> has had <c>this[Goods]</c> the whole time</b>, handling
+    /// every good correctly — the helper you need may already exist. Kept as a named method rather
+    /// than inlined at six call sites so the reasoning above has somewhere to live.
+    /// </para>
+    /// </remarks>
+    private static int HeldOf(Stockpile store, Goods goods) => store[goods];
 
     private static void GoHome(SimWorld world, Villager villager)
     {

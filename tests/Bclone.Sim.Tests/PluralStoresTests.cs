@@ -48,6 +48,7 @@ public sealed class PluralStoresTests
 
         world.StoreBuildings.Add(new StoreBuilding
         {
+            Catalog = world.GoodsCatalog,
             Id = 4,
             Kind = StoreKind.Granary,
             Name = "the second granary",
@@ -57,6 +58,7 @@ public sealed class PluralStoresTests
 
         world.StoreBuildings.Add(new StoreBuilding
         {
+            Catalog = world.GoodsCatalog,
             Id = 5,
             Kind = StoreKind.Shed,
             Name = "the second shed",
@@ -252,6 +254,7 @@ public sealed class PluralStoresTests
         var marooned = new GridPos(config.MapMaxX - 1, config.MapMaxY - 1);
         world.StoreBuildings.Add(new StoreBuilding
         {
+            Catalog = world.GoodsCatalog,
             Id = 9,
             Kind = StoreKind.Granary,
             Name = "the marooned granary",

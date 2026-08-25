@@ -4280,6 +4280,7 @@ public sealed class SimWorld
 
         var building = new StoreBuilding
         {
+            Catalog = GoodsCatalog,
             Id = NextStoreId(),
             Kind = storeKind,
             Name = name,
@@ -5005,6 +5006,7 @@ public sealed class SimWorld
         // shape the population curve needed.
         StoreBuildings.Add(new StoreBuilding
         {
+            Catalog = GoodsCatalog,
             Id = 1,
             Kind = StoreKind.Granary,
             Name = NameFor(BuildingKind.Granary),
@@ -5014,6 +5016,7 @@ public sealed class SimWorld
 
         StoreBuildings.Add(new StoreBuilding
         {
+            Catalog = GoodsCatalog,
             Id = 2,
             Kind = StoreKind.Shed,
             Name = NameFor(BuildingKind.Shed),
@@ -5038,6 +5041,7 @@ public sealed class SimWorld
 
         StoreBuildings.Add(new StoreBuilding
         {
+            Catalog = GoodsCatalog,
             Id = 3,
             Kind = StoreKind.Market,
             Name = marketName,
@@ -5799,6 +5803,7 @@ public sealed class SimWorld
     {
         var cart = new StoreBuilding
         {
+            Catalog = GoodsCatalog,
             Id = 1,
             Kind = StoreKind.Cart,
             Name = "the cart",

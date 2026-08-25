@@ -80,6 +80,43 @@ GoodRow
 | Per-tile yield | `SimWorld`, reading three config keys **nothing else reads** | `YieldPerTile` |
 | Who stores it | `StoreBuilding.KindAccepts` | `StoredBy` |
 
+### 4.0 ⛔⛔ A THIRD CEILING, AND THIS ONE LOOKS LIVE: A VILLAGER CANNOT CARRY STONE
+
+**Found while checking that no switch on a good survived.** Three comparisons remain in
+`BehaviorSystem`, and they are not lookups — they are the villager's **carried load**, which is
+still **three named fields**, not an indexed stockpile:
+
+```
+public int CarriedLogs   { get; set; }
+public int CarriedFirewood { get; set; }
+public int CarriedFood   { get; set; }
+```
+
+**D82 made every *store* an indexed array. It never reached the villager's arms.** So the six goods
+that exist are not equally real: three can be carried, three cannot.
+
+**⛔ And the clearing path appears to destroy what it takes.** In `VillagerState.Clearing`:
+
+```
+villager.CarriedLogs += goods == Goods.Logs ? taken : 0;
+int left            =  goods == Goods.Logs ? amount - taken : 0;
+```
+
+`Harvest` has **already set the tile to Grass** — the seam is spent. For stone or iron, nothing is
+carried *and* nothing is left on the ground. **The yield simply stops existing.**
+
+⚠️ **Reachability is the part still to prove, and it must be measured rather than reasoned.**
+`HasSomethingToHarvest` is `TerrainRules.Yields(...) is not null`, which is true for `Rock` and
+`IronDeposit` — so a painted seam *is* selectable by `NearestHarvest`, and `HarvestBrush.Stone`
+exists as a paint mode. **That says the path is open, not that a village walks it.**
+*(Its own doc comment still says "only forest today; stone and iron land next", which stopped being
+true when seams shipped — so the comment is not evidence either way.)*
+
+⛔ **Deliberately NOT fixed in this slice.** Making stone accumulate is **a behaviour change, not a
+refactor** — it would move the goldens, and it belongs in its own slice with a **red check first**:
+*write the guard, watch it fail, then fix it.* Folding it into a no-op refactor is exactly how a
+real change hides inside a safe one.
+
 ### 4.1 ⛔ And one of them is a latent bug, found while counting
 
 ⚠️ **Not fixed in slice 1** — `HeldOf` is reached from six places and the fix wants its own red
