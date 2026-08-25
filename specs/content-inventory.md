@@ -182,6 +182,21 @@ goldens repeatedly — **and a modder still could not add one**, which is the pr
 you add a new kind of thing, ask whether it wants to be an enum value or a data row.* **`SkillRow`
 and the crop id are the two places this project already did it right**, and they are the templates.
 
+### ⛔⛔ Two hard ceilings found while building the catalogue (D210) — neither was on any list
+
+**The game cannot hold more than six goods today, and could not hold more than thirty even after
+the obvious fix.** Both now fail at load with a sentence rather than at an index in the middle of a
+run:
+
+| Ceiling | Where | Why it is not a one-line fix |
+|---|---|---|
+| **6 goods** | `Stockpile.Kinds` is `Enum.GetValues<Goods>().Length`, read in a **field initializer** | Households, store buildings and workplaces all default their stockpile with `= new()`, so the count has to be **threaded**, not set. ⛔ **A mutable static is unusable** — the suite runs ~9.5× parallel with a world per test, so it would be a cross-test race and a determinism hazard |
+| **30 goods** | `StoreBuilding.AllowedGoods` is an **`int` bitmask** with the `Spoken` sentinel at **bit 30** | Good 30 sets the sentinel — *a store the player never touched reporting that they had.* Widening it changes a hashed field, so the goldens move once, deliberately |
+
+⚠️ **The second one would have been a spectacular silent bug**: not a crash, but a store filter
+that switches itself on. *It is the kind of thing found by counting rather than by reasoning* —
+`AllowedGoods` had never been read as *"how many goods can this game have?"* before.
+
 ⚠️ **The order matters.** Doing the rows first costs one migration; discovering it at building
 thirty costs the hash, the goldens and every call site **at a point where there is far more of all
 three.** *Written down, not scheduled.*

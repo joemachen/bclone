@@ -33,6 +33,15 @@ public sealed class SimWorld
     /// <summary>Tunables for this run. Immutable once the run starts.</summary>
     public SimConfig Config { get; }
 
+    /// <summary>
+    /// What the goods are — <b>the one place the sim asks</b> (`goods-catalog.md`, D210).
+    /// </summary>
+    /// <remarks>
+    /// Built once from <see cref="Config"/> and never mutated, like the config itself. Everything
+    /// that used to <c>switch</c> over <see cref="Goods"/> asks this instead.
+    /// </remarks>
+    public GoodsCatalog GoodsCatalog { get; }
+
     /// <summary>Structured sink. Entries are stamped with the current tick.</summary>
     public ISimLogger Logger { get; }
 
@@ -2726,13 +2735,10 @@ public sealed class SimWorld
         _ => "clear everything",
     };
 
-    private static string Describe(Goods goods) => goods switch
-    {
-        Goods.Logs => "woodland",
-        Goods.Stone => "a stone seam",
-        Goods.Iron => "an iron seam",
-        _ => goods.ToString().ToLowerInvariant(),
-    };
+    // ⭐ Was a switch naming three goods; the words live in the row now (D210). The fallback to
+    // the good's own name is preserved inside `SourceNameOf`, so every sentence this writes is
+    // unchanged.
+    private string Describe(Goods goods) => GoodsCatalog.SourceNameOf(goods);
 
     /// <summary>Un-paint a tile the village had meant to clear.</summary>
     public bool EraseHarvest(GridPos tile) => Zones.SetHarvest(tile, false);
@@ -2955,16 +2961,11 @@ public sealed class SimWorld
 
         SetTerrain(tile, Terrain.Grass);
 
-        // One number per kind of ground, and the terrain is what says which — a new
-        // harvestable kind is a row in TerrainRules.Yields and a key in config, not a
-        // fifth place to remember.
-        int amount = yields.Value switch
-        {
-            Goods.Logs => Config.LogsPerForestTile,
-            Goods.Stone => Config.StonePerRockTile,
-            Goods.Iron => Config.IronPerDepositTile,
-            _ => 0,
-        };
+        // ⭐ One number per kind of ground, and the terrain is what says which — a new harvestable
+        // kind is a row in TerrainRules.Yields and a row here, not a fifth place to remember.
+        // This comment asked for exactly the change D210 made: the three loose config keys it used
+        // to read were used by this switch and by nothing else in the codebase.
+        int amount = GoodsCatalog.YieldPerTileOf(yields.Value);
 
         return (yields.Value, amount);
     }
@@ -3082,13 +3083,9 @@ public sealed class SimWorld
             return PlacementVerdict.Fine;
         }
 
-        string name = goods switch
-        {
-            Goods.Food => "food",
-            Goods.Logs => "logs",
-            Goods.Firewood => "firewood",
-            _ => goods.ToString().ToLowerInvariant(),
-        };
+        // ⭐ One of the two places that carried these three words; the other was `Stockpile.Name`,
+        // with identical arms. D148 and D188's finding in code (D210).
+        string name = GoodsCatalog.NameOf(goods);
 
         return PlacementVerdict.Yes(
             $"The village needs {floor} {name} to see the year out and you have asked it to "
@@ -4837,6 +4834,7 @@ public sealed class SimWorld
     private SimWorld(SimConfig config, ISimLogger logger, ulong seed)
     {
         Config = config;
+        GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
         Logger = logger;
         Seed = seed;
         Rng = new DeterministicRandom(seed);

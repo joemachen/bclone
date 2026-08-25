@@ -815,44 +815,23 @@ public sealed record SimConfig
     [JsonPropertyName("work_ground_tiles_per_worker")]
     public int WorkGroundTilesPerWorker { get; init; } = 24;
 
-    /// <summary>Logs a laborer gets from clearing one forest tile (D87).</summary>
-    /// <remarks>
-    /// <para>
-    /// <b>A forest tile is a deposit and this is what is in it</b> (D84) — take it and the
-    /// ground is grass. That makes it a genuinely new quantity: a tree stand yields
-    /// <c>cut_yield</c> forever, and this yields once.
-    /// </para>
-    /// <para>
-    /// <b>⚠️ It is content today and it becomes derived the moment the tree stand retires.</b>
-    /// `building-placement.md §12.8` is explicit that per-tile yield is what the whole timber
-    /// economy gets re-derived against, and that is not this slice — while stands still stand,
-    /// the brush is an extra source rather than the only one, so nothing hangs off this
-    /// number yet. Matching <c>cut_yield</c> is the honest starting point: one tile is one
-    /// visit to the stand.
-    /// </para>
-    /// </remarks>
-    [JsonPropertyName("logs_per_forest_tile")]
-    public int LogsPerForestTile { get; init; } = 12;
+    // ⭐⭐ `logs_per_forest_tile`, `stone_per_rock_tile` and `iron_per_deposit_tile` MOVED TO THE
+    // GOODS CATALOGUE (D210, `goods-catalog.md`) and are `GoodRow.YieldPerTile` now.
+    //
+    // All three were read by exactly ONE switch in `SimWorld` and by nothing else in the
+    // codebase, which is what made moving them safe — and that switch's own comment had been
+    // asking for this: *"a new harvestable kind is a row… not a fifth place to remember."*
+    //
+    // ⛔ They are DELETED rather than left in place, because a config key nothing reads is worse
+    // than no key at all: a modder edits it, the game ignores them, and nothing says so. The
+    // reasoning they carried is preserved on the rows and beside the seam counts below.
+    //
+    // The values were identical in the shipped file and the defaults (12, 12, 8), so this moved
+    // no behaviour — which is what let the goldens stay byte-identical.
 
     // ---------------------------------------------------------------
     //  Visible seams (D67, D84, D90)
     // ---------------------------------------------------------------
-
-    /// <summary>Stone a laborer gets from clearing one seam tile (D90).</summary>
-    /// <remarks>
-    /// A deposit, so this is what is in one tile and taking it leaves grass — the same
-    /// shape as <see cref="LogsPerForestTile"/>, and the opposite of a quarry.
-    /// </remarks>
-    [JsonPropertyName("stone_per_rock_tile")]
-    public int StonePerRockTile { get; init; } = 12;
-
-    /// <summary>Iron a laborer gets from clearing one seam tile (D90).</summary>
-    /// <remarks>
-    /// <b>Less than stone per tile, and there is less of it in the valley</b> — the two
-    /// together are what make iron worth walking for rather than merely further away.
-    /// </remarks>
-    [JsonPropertyName("iron_per_deposit_tile")]
-    public int IronPerDepositTile { get; init; } = 8;
 
     /// <summary>How many stone seams the generator lays down.</summary>
     /// <remarks>
@@ -1269,6 +1248,77 @@ public sealed record SimConfig
     /// a config that says nothing gets the game as designed.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The goods that exist — <b>rows, so a modder can add a seventh</b> (`goods-catalog.md`, D210).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Ids 0–5 match <see cref="Goods"/> exactly, and must.</b> The enum survives as an alias
+    /// for the built-in six (Joe's call) so the economy can go on naming food directly; <b>this list
+    /// is what says how many goods there are and what each one does.</b>
+    /// </para>
+    /// <para>
+    /// <b>⛔ Appended, never renumbered.</b> Ids are what a stockpile indexes by, what a stock limit
+    /// is saved under and what the state hash mixes in order.
+    /// </para>
+    /// <para>
+    /// Defaults live here rather than in the shipped file, like <see cref="Skills"/> and
+    /// <see cref="HouseholdNames"/> — <b>one source of truth, not two.</b> Writing them into
+    /// `data/sim.config.json` as well would recreate exactly the fixture-versus-shipped drift
+    /// METHODOLOGY §3 warns about, which has already produced D48, D49 and D50.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("goods")]
+    public IReadOnlyList<GoodRow> GoodsCatalog { get; init; } = new[]
+    {
+        new GoodRow
+        {
+            Id = (int)World.Goods.Food,
+            Name = "food",
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Logs,
+            Name = "logs",
+            SourceName = "woodland",
+            YieldPerTile = 12,
+
+            // ⛔ No cart. The founders' load is what they could carry, and logs are the one thing
+            // that plausibly will not fit in a wagon you arrived in (D90 step 4) — the refusal that
+            // makes the storage pile load-bearing.
+            StoredBy = new[] { StoreKind.Shed },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Firewood,
+            Name = "firewood",
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Market, StoreKind.Cart },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Stone,
+            Name = "stone",
+            SourceName = "a stone seam",
+            YieldPerTile = 12,
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Tools,
+            Name = "tools",
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Iron,
+            Name = "iron",
+            SourceName = "an iron seam",
+            YieldPerTile = 8,
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart },
+        },
+    };
+
     [JsonPropertyName("skills")]
     public IReadOnlyList<SkillRow> Skills { get; init; } = new[]
     {
@@ -2082,6 +2132,7 @@ public sealed record SimConfig
             throw new SimConfigException($"founder_age cannot be negative (got {FounderAge}).");
         }
 
+        ValidateGoods();
         ValidateSkills();
     }
 
@@ -2095,6 +2146,98 @@ public sealed record SimConfig
     /// **Id 0 is refused** because a default <c>int</c> must never name something (D108).
     /// A modder editing this file is exactly who this message is for.
     /// </remarks>
+    /// <summary>
+    /// Check the goods catalogue — <b>every failure here is silent and expensive if it ships</b>.
+    /// </summary>
+    private void ValidateGoods()
+    {
+        if (GoodsCatalog is null)
+        {
+            throw new SimConfigException("goods must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        int builtIn = System.Enum.GetValues<World.Goods>().Length;
+
+        for (int i = 0; i < GoodsCatalog.Count; i++)
+        {
+            World.GoodRow good = GoodsCatalog[i];
+
+            if (good.Id < 0)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] has id {good.Id}; ids index a stockpile and cannot be negative.");
+            }
+
+            if (!seen.Add(good.Id))
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] repeats id {good.Id}. Ids are what a stockpile indexes by and "
+                    + "what the state hash mixes in order, so two goods sharing one would share "
+                    + "a counter.");
+            }
+
+            if (string.IsNullOrWhiteSpace(good.Name))
+            {
+                throw new SimConfigException($"goods[{i}] (id {good.Id}) has no name.");
+            }
+
+            // ⛔ A good no store will take can be produced and never put down. That is not a
+            // config anybody meant to write, and the symptom — a hauler that never completes an
+            // errand — reads as a pathfinding bug rather than a missing line in a data file.
+            if (good.StoredBy.Count == 0)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') names no store kind in stored_by, so nothing "
+                    + "in the village could ever hold it.");
+            }
+        }
+
+        // ⛔ The enum is an alias for the first ids (`goods-catalog.md §2.1`). If the catalogue
+        // does not cover them, `Goods.Food` indexes a row that is not there — and it would fail
+        // as a null reference deep in the sim rather than here, at load, with a sentence.
+        for (int id = 0; id < builtIn; id++)
+        {
+            if (!seen.Contains(id))
+            {
+                throw new SimConfigException(
+                    $"goods is missing id {id} ({(World.Goods)id}). The built-in goods are named "
+                    + "directly by the economy and every golden is pinned to their ids, so a "
+                    + "catalogue may add rows above them but may not omit them.");
+            }
+        }
+
+        // ⛔⛔ THE CEILING SLICE 1 HAS NOT LIFTED YET, AND IT MUST FAIL LOUDLY RATHER THAN AT AN
+        // INDEX. `Stockpile` sizes its arrays from `Enum.GetValues<Goods>().Length` in a *field
+        // initializer*, and households, store buildings and workplaces all default theirs with
+        // `= new()` — so nothing can hold a good the enum does not have. A seventh row would
+        // validate, load, and then throw an IndexOutOfRangeException somewhere in the middle of
+        // the sim, which is precisely the failure this project logs sentences to avoid.
+        //
+        // ⚠️ Making it dynamic is NOT a one-line change and is deliberately not attempted here:
+        // the count would have to be threaded to every stockpile, and a mutable static is
+        // unusable because the suite runs ~9.5x parallel with a world per test. See
+        // `goods-catalog.md §5`, slice 1b.
+        int slots = World.Stockpile.Kinds;
+        if (seen.Count > slots)
+        {
+            throw new SimConfigException(
+                $"goods has {seen.Count} rows but a stockpile has {slots} slots. Adding a good "
+                + "beyond the built-in set needs slice 1b of `goods-catalog.md` — the stockpile "
+                + "arrays are sized from the enum and nothing could hold it yet.");
+        }
+
+        // ⛔⛔ And the ceiling above that one: `StoreBuilding.AllowedGoods` is an int bitmask with
+        // one bit per good and the `Spoken` sentinel at bit 30 — so good 30 would set the
+        // sentinel, and a store the player never touched would report that they had.
+        if (seen.Count > 30)
+        {
+            throw new SimConfigException(
+                $"goods has {seen.Count} rows; the store filter is an int bitmask with a sentinel "
+                + "at bit 30, so at most 30 goods can exist until it is widened.");
+        }
+    }
+
     private void ValidateSkills()
     {
         if (Skills is null)

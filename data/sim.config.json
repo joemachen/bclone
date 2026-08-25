@@ -890,7 +890,15 @@
   // Content today, DERIVED the moment the tree stand retires: per-tile yield
   // is what the whole timber economy gets re-derived against, and while
   // stands still stand the brush is an extra source rather than the only one.
-  "logs_per_forest_tile": 12,
+  //
+  // ⭐⭐ MOVED (D210): this is `yield_per_tile` on the LOGS row of the goods
+  // catalogue now, along with stone's and iron's. See `goods-catalog.md`.
+  //
+  // ⚠️ The goods themselves are NOT listed in this file, deliberately -- their
+  // defaults live in `SimConfig.GoodsCatalog` the way `skills`, `household_names`
+  // and `town_names` do, so there is ONE source of truth rather than two that can
+  // drift (METHODOLOGY §3, and D48/D49/D50 are what drift costs). To change them,
+  // add a "goods" array here and it replaces the list wholesale.
 
   // Visible seams of stone and iron (D67, D84, D90). RULES, NOT
   // COORDINATES: a modder controls how much ore a valley has and roughly
@@ -907,11 +915,11 @@
   // Laid only over open grass -- never over forest, because taking trees
   // out of the valley would be a balance change hiding inside a worldgen
   // change, and the whole fuel economy is derived against reachable wood.
-  // What one tile of each seam holds. Less iron per tile than stone, and
-  // fewer iron seams -- together those are what make iron worth walking
-  // for rather than merely further away.
-  "stone_per_rock_tile": 12,
-  "iron_per_deposit_tile": 8,
+  // What one tile of each seam holds moved to the goods catalogue with logs
+  // (D210) -- it is `yield_per_tile` on the STONE and IRON rows now. Less iron
+  // per tile than stone, and fewer iron seams: together those are what make
+  // iron worth walking for rather than merely further away, and the second
+  // half of that pair is still right here.
 
   "stone_seam_count": 4,
   "stone_seam_ring_tiles": 14,

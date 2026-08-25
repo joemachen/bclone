@@ -193,8 +193,17 @@ public sealed class SeamsTests
 
         Assert.True(shipped.StoneSeamCount > 0);
         Assert.True(shipped.IronSeamCount > 0);
-        Assert.True(shipped.StonePerRockTile > 0);
-        Assert.True(shipped.IronPerDepositTile > 0);
+        // Per-tile yields are rows in the goods catalogue since D210.
+        var goods = new GoodsCatalog(shipped.GoodsCatalog);
+        Assert.True(goods.YieldPerTileOf(Goods.Stone) > 0);
+        Assert.True(goods.YieldPerTileOf(Goods.Iron) > 0);
+
+        // ⭐ And the pairing that makes iron worth walking for is still assertable, which is the
+        // half of that reasoning the config comment kept: less iron per tile than stone.
+        Assert.True(
+            goods.YieldPerTileOf(Goods.Iron) < goods.YieldPerTileOf(Goods.Stone),
+            "Iron is meant to give less per tile than stone — that and the ring distance are "
+            + "what make it worth walking for rather than merely further away.");
         Assert.True(
             shipped.IronSeamRingTiles > shipped.StoneSeamRingTiles,
             "Iron is meant to sit further out than stone — reaching it is the decision.");

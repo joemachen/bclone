@@ -131,7 +131,9 @@ public sealed class HarvestBrushTests
         _output.WriteLine($"{forest} gave {amount} {goods} and is now {world.Map.TerrainAt(forest)}");
 
         Assert.Equal(Goods.Logs, goods);
-        Assert.Equal(VillageFixtures.Village.LogsPerForestTile, amount);
+        Assert.Equal(
+            new GoodsCatalog(VillageFixtures.Village.GoodsCatalog).YieldPerTileOf(Goods.Logs),
+            amount);
         Assert.Equal(Terrain.Grass, world.Map.TerrainAt(forest));
 
         // ⭐ AND THE PAINT STAYS ON (D127). It used to come off here, *because the job is
@@ -292,7 +294,16 @@ public sealed class HarvestBrushTests
     {
         SimConfig shipped = ShippedConfig.Load();
 
-        Assert.True(shipped.LogsPerForestTile > 0);
-        Assert.Equal(VillageFixtures.Village.LogsPerForestTile, shipped.LogsPerForestTile);
+        // ⚠️ THIS GUARD CHANGED SHAPE WITH D210 AND THE REASON IS WORTH KNOWING. It used to
+        // compare the shipped file against the fixture, per METHODOLOGY §3 — the two were typed
+        // separately and drift between them is where D48, D49 and D50 lived. The yield is a row
+        // in the goods catalogue now, whose defaults live in code the way `skills` and
+        // `town_names` do, so **there is one copy and it cannot drift from itself**. Comparing
+        // them would be a guard that can no longer fail, which is worse than no guard.
+        //
+        // What is still worth asserting is what the game actually runs on: a config — shipped,
+        // defaulted or modded — must give a forest tile a positive yield, or clearing woodland
+        // silently produces nothing.
+        Assert.True(new GoodsCatalog(shipped.GoodsCatalog).YieldPerTileOf(Goods.Logs) > 0);
     }
 }

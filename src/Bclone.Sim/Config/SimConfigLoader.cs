@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Bclone.Sim.Config;
 
@@ -17,6 +18,13 @@ public static class SimConfigLoader
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
         PropertyNameCaseInsensitive = true,
+
+        // ⭐ So a modder writes `"stored_by": ["Shed", "Cart"]` rather than a list of integers
+        // they would have to look up (D210, `goods-catalog.md`). Safe to add globally and that
+        // was checked rather than assumed: the only enum this config has ever deserialized is
+        // `SkillRow.GrownBy`, which carries its own copy of this converter and already expects
+        // strings — so nothing that parses today parses differently.
+        Converters = { new JsonStringEnumConverter() },
     };
 
     /// <summary>Load and validate config from a file.</summary>

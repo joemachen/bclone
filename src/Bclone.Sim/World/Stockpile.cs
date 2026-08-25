@@ -243,13 +243,25 @@ public sealed class Stockpile
         return index;
     }
 
-    private static string Name(Goods goods) => goods switch
-    {
-        Goods.Food => "food",
-        Goods.Logs => "logs",
-        Goods.Firewood => "firewood",
-        _ => goods.ToString().ToLowerInvariant(),
-    };
+    /// <summary>
+    /// The good's name for an exception message — <b>deliberately NOT the catalogue's word</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THIS WAS A SWITCH, AND EVERY ARM OF IT PRODUCED EXACTLY WHAT ITS OWN DEFAULT ARM
+    /// ALREADY DID</b> (D210). <c>Goods.Food =&gt; "food"</c> beside
+    /// <c>_ =&gt; goods.ToString().ToLowerInvariant()</c> — three hand-written arms restating the
+    /// fallback. It was **the second of two places carrying those same three words**, the other
+    /// being <c>SimWorld</c>, which is D148 and D188's finding in code.
+    /// </para>
+    /// <para>
+    /// <b>A <see cref="Stockpile"/> deliberately does not reach the catalogue.</b> It is a bare
+    /// array held by every store, household and cart in the game, and threading a catalogue into
+    /// all of them to spell a word in a <em>developer-facing exception</em> would be the tail
+    /// wagging the dog. The player never sees this string.
+    /// </para>
+    /// </remarks>
+    private static string Name(Goods goods) => goods.ToString().ToLowerInvariant();
 }
 
 // ⭐ `TreeStand` AND `FoodSource` ARE DELETED HERE (D159), which three comments elsewhere in
