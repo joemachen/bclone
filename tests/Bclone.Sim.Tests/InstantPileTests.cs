@@ -283,8 +283,8 @@ public sealed class InstantPileTests
             world.Workplaces, place => place.Construction?.Kind == BuildingKind.Shed);
 
         // Give it every log it wants, so materials can never be the reason it is not built.
-        site.Construction!.Deliver(site.Construction.Recipe.Logs);
-        Assert.True(site.Construction.HasMaterials);
+        BuildFixtures.StockTheSite(site);
+        Assert.True(site.Construction!.HasMaterials);
 
         int woodedTicks = 0;
         while (!world.GroundIsClearAt(at) && woodedTicks < config.TicksPerYear)
@@ -324,7 +324,7 @@ public sealed class InstantPileTests
     {
         BuildingRecipe recipe = BuildingRecipe.For(BuildingKind.Pile, VillageFixtures.Village);
 
-        Assert.Equal(0, recipe.Logs);
+        Assert.Equal(0, recipe.Of(Goods.Logs));
         Assert.Equal(0, recipe.WorkTicks);
     }
 

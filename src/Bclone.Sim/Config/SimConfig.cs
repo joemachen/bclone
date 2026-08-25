@@ -713,6 +713,22 @@ public sealed record SimConfig
     // different decision from one that is dear in both, and collapsing them into a
     // single "cost" would delete that.
 
+    // ---------------------------------------------------------------
+    //  ⭐ THE STONE HALF OF EVERY RECIPE (`multi-material-construction.md`, D213)
+    // ---------------------------------------------------------------
+    //
+    // ⭐ SHIPPED AT ZERO AND TURNED ON SEPARATELY, which is D82's and D210's shape: the
+    // machinery lands as a **provable no-op** — every golden byte-identical — and the balance
+    // change that follows it cannot hide inside it. A recipe drops its zeros, so a building
+    // priced at 0 stone has exactly the recipe it had before this existed.
+    //
+    // ⚠️ ONE KEY PER (BUILDING, GOOD), symmetric with the log keys above, and that is
+    // deliberately a stopgap rather than the catalogue. `content-inventory.md` finding 1 and
+    // `goods-catalog.md §9` both scope **BuildingKind becoming a row** as its own axis — ~45
+    // buildings against 10 — and 45 × 4 materials is not a flat key list. What this buys is the
+    // *structure*: `BuildingRecipe` holds N materials now, so the tier climb is unblocked and
+    // the catalogue is a refactor rather than a redesign.
+
     /// <summary>Logs a granary takes to build.</summary>
     [JsonPropertyName("granary_logs")]
     public int GranaryLogs { get; init; } = 40;
@@ -736,6 +752,47 @@ public sealed record SimConfig
     /// <summary>Ticks of work a market takes.</summary>
     [JsonPropertyName("market_work_ticks")]
     public int MarketWorkTicks { get; init; } = 50;
+
+    /// <summary>Stone a granary takes to build. See the block above for why it ships at zero.</summary>
+    [JsonPropertyName("granary_stone")]
+    public int GranaryStone { get; init; }
+
+    /// <summary>Stone a storage shed takes to build.</summary>
+    [JsonPropertyName("shed_stone")]
+    public int ShedStone { get; init; }
+
+    /// <summary>Stone a market takes to build.</summary>
+    [JsonPropertyName("market_stone")]
+    public int MarketStone { get; init; }
+
+    /// <summary>Stone a woodcutter's hut takes to build.</summary>
+    [JsonPropertyName("hut_stone")]
+    public int HutStone { get; init; }
+
+    /// <summary>Stone a gatherer's hut takes to build.</summary>
+    [JsonPropertyName("gatherer_hut_stone")]
+    public int GathererHutStone { get; init; }
+
+    /// <summary>Stone a forester's hut takes to build.</summary>
+    [JsonPropertyName("forester_hut_stone")]
+    public int ForesterHutStone { get; init; }
+
+    /// <summary>Stone a farmhouse takes to build.</summary>
+    [JsonPropertyName("farmhouse_stone")]
+    public int FarmhouseStone { get; init; }
+
+    /// <summary>
+    /// Stone a house takes to raise.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>The one to think hardest about before raising above zero.</b> A house is the only
+    /// building the <em>village</em> decides to put up — the player never places one (D42) — so
+    /// a stone price here is a growth gate rather than a purchase, and an unattended valley
+    /// paints no seam. `VillageEconomy` derives the timber budget against
+    /// <see cref="LogsPerHouse"/> and has no stone term at all.
+    /// </remarks>
+    [JsonPropertyName("home_stone")]
+    public int HomeStone { get; init; }
 
     /// <summary>Logs a woodcutter's hut takes to build.</summary>
     [JsonPropertyName("hut_logs")]

@@ -3592,7 +3592,7 @@ public sealed class SimWorld
         // which was true while the pile was the only free building and would have been the
         // sixth silent special case the day a second one arrived. "Does it cost anything?" is
         // the question this branch is actually asking.
-        if (recipe.Logs == 0 && recipe.WorkTicks == 0)
+        if (recipe.TotalMaterials == 0 && recipe.WorkTicks == 0)
         {
             // Clear ground: it stands now. Wooded ground: it stands the moment the wood is
             // gone, and THE CLEARING IS WHAT IT COSTS (D96) — which is still true, and is
@@ -3993,18 +3993,21 @@ public sealed class SimWorld
             Name = $"{name} (building)",
             Position = position,
             Capacity = 0,
-            Construction = new ConstructionSite
+            Construction = new ConstructionSite(recipe)
             {
                 Kind = kind,
                 Name = name,
-                Recipe = recipe,
                 ForHouseholdId = forHouseholdId,
             },
         });
 
+        // ⭐ The cost is a sentence the recipe writes, not a format string naming one good
+        // (D213). "40 logs and 10 stone" comes out of the same method the panel uses, so the
+        // village log and the inspector can never describe one building two ways — D148 and
+        // D188's finding, which is what put the words on the row in the first place.
         Log(Logging.LogLevel.Info, "placement",
-            $"{name} was marked out — {recipe.Logs} logs and {recipe.WorkTicks} ticks of work. " +
-            $"{Clock.SeasonAndYear()}.");
+            $"{name} was marked out — {recipe.Describe(GoodsCatalog)} and "
+            + $"{recipe.WorkTicks} ticks of work. {Clock.SeasonAndYear()}.");
 
         // ⭐ AND IT SAYS SO WHEN NOBODY WILL COME (D108). A hut is the only path to a
         // building now, so a village without one can mark out as much as it likes and watch
@@ -4055,7 +4058,7 @@ public sealed class SimWorld
         };
 
         int held = building.Store.Held;
-        int back = BuildingRecipe.For(kind, Config).Logs * Config.DemolitionReturnsPercent / 100;
+        IReadOnlyList<MaterialCost> back = RefundFor(BuildingRecipe.For(kind, Config));
 
         StoreBuildings.Remove(building);
 
@@ -4069,17 +4072,15 @@ public sealed class SimWorld
             }
         }
 
-        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `shed` was simply null and the logs went nowhere.
-        StoreBuilding? shed = NearestStoreAccepting(
-            building.Position, Goods.Logs, static store => !store.Store.IsFull);
-        int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
+        string recovered = ReturnToStore(building.Position, back);
 
         Narrate(held > 0
-            ? $"{building.Name} was pulled down — {recovered} logs recovered, and the {held} " +
+            ? $"{building.Name} was pulled down — {recovered} recovered, and the {held} " +
               $"goods inside it were lost. {Clock.SeasonAndYear()}."
-            : $"{building.Name} was pulled down — {recovered} logs recovered. {Clock.SeasonAndYear()}.");
+            : $"{building.Name} was pulled down — {recovered} recovered. {Clock.SeasonAndYear()}.");
     }
 
     /// <summary>
@@ -4136,22 +4137,70 @@ public sealed class SimWorld
         }
 
         BuildingKind kind = KindOf(workplace);
-        int back = BuildingRecipe.For(kind, Config).Logs * Config.DemolitionReturnsPercent / 100;
+        IReadOnlyList<MaterialCost> back = RefundFor(BuildingRecipe.For(kind, Config));
 
         string name = workplace.Name;
         RetireWorkplace(workplace);
 
-        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `shed` was simply null and the logs went nowhere.
-        StoreBuilding? shed = NearestStoreAccepting(
-            workplace.Position, Goods.Logs, static store => !store.Store.IsFull);
-        int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
+        string recovered = ReturnToStore(workplace.Position, back);
 
-        Narrate(recovered > 0
-            ? $"{Capitalised(name)} was pulled down — {recovered} logs recovered. "
+        Narrate(back.Count > 0
+            ? $"{Capitalised(name)} was pulled down — {recovered} recovered. "
                 + $"{Clock.SeasonAndYear()}."
             : $"{Capitalised(name)} was pulled down. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>What pulling a building down hands back — a share of every material (D213).</summary>
+    /// <remarks>
+    /// <b>Priced off the recipe rather than off what was delivered</b>, which is what demolition
+    /// has always done: a standing building has no memory of its own site. The share is
+    /// <c>demolition_returns_percent</c>, applied per material so that a building costing two
+    /// things gives a little of each back rather than all of one.
+    /// </remarks>
+    private IReadOnlyList<MaterialCost> RefundFor(BuildingRecipe recipe)
+    {
+        var back = new List<MaterialCost>();
+        for (int i = 0; i < recipe.Materials.Count; i++)
+        {
+            int share = recipe.Materials[i].Amount * Config.DemolitionReturnsPercent / 100;
+            if (share > 0)
+            {
+                back.Add(new MaterialCost(recipe.Materials[i].Goods, share));
+            }
+        }
+
+        return back;
+    }
+
+    /// <summary>
+    /// Put a refund back wherever will take it, and say what actually landed.
+    /// </summary>
+    /// <remarks>
+    /// <b>Each material asked about separately</b>, for D144's reason one path over: a store the
+    /// player has filtered may take the timber and refuse the stone, and a refund that assumed
+    /// one destination for a two-material building would quietly destroy half of it.
+    /// </remarks>
+    private string ReturnToStore(GridPos where, IReadOnlyList<MaterialCost> back)
+    {
+        var landed = new List<MaterialCost>();
+        for (int i = 0; i < back.Count; i++)
+        {
+            StoreBuilding? store = NearestStoreAccepting(
+                where, back[i].Goods, static place => !place.Store.IsFull);
+
+            int took = store?.Store.Receive(back[i].Goods, back[i].Amount) ?? 0;
+            if (took > 0)
+            {
+                landed.Add(new MaterialCost(back[i].Goods, took));
+            }
+        }
+
+        return landed.Count == 0
+            ? "nothing"
+            : new BuildingRecipe(0, landed.ToArray()).Describe(GoodsCatalog);
     }
 
     /// <summary>Which kind of building a standing workplace is, for pricing its refund.</summary>
@@ -4182,18 +4231,16 @@ public sealed class SimWorld
             throw new ArgumentException($"{site.Name} is not a construction site.", nameof(site));
         }
 
-        int back = site.Construction.Abandon();
+        IReadOnlyList<MaterialCost> back = site.Construction.Abandon();
         RetireWorkplace(site);
 
-        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `shed` was simply null and the logs went nowhere.
-        StoreBuilding? shed = NearestStoreAccepting(
-            site.Position, Goods.Logs, static store => !store.Store.IsFull);
-        shed?.Store.Receive(Goods.Logs, back);
+        string recovered = ReturnToStore(site.Position, back);
 
         Narrate($"{site.Construction.Name} was abandoned before it was built — " +
-            $"{back} logs went back to store. {Clock.SeasonAndYear()}.");
+            $"{recovered} went back to store. {Clock.SeasonAndYear()}.");
     }
 
     /// <summary>Turn a finished site into the building it was always going to be.</summary>

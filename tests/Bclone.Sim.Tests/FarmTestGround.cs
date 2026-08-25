@@ -77,8 +77,8 @@ internal static class FarmTestGround
                     Workplace site = Assert.Single(
                         world.Workplaces, place => place.Construction?.Kind == BuildingKind.Granary);
 
-                    site.Construction!.Deliver(site.Construction.Recipe.Logs);
-                    for (int i = 0; i <= site.Construction.Recipe.WorkTicks; i++)
+                    BuildFixtures.StockTheSite(site);
+                    for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
                     {
                         site.Construction.Work();
                     }

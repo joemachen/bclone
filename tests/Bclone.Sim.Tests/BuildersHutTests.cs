@@ -108,7 +108,7 @@ public sealed class BuildersHutTests
     public void TheHutIsFreeAndStandsTheTickItIsMarked()
     {
         BuildingRecipe recipe = BuildingRecipe.For(BuildingKind.BuilderHut, VillageFixtures.Village);
-        Assert.Equal(0, recipe.Logs);
+        Assert.Equal(0, recipe.Of(Goods.Logs));
         Assert.Equal(0, recipe.WorkTicks);
 
         SimWorld world = World(ShippedConfig.Load());
@@ -404,7 +404,7 @@ public sealed class BuildersHutTests
 
         Workplace site = Assert.Single(
             world.Workplaces, place => place.Construction?.Kind == BuildingKind.Granary);
-        int wanted = site.Construction!.Recipe.Logs;
+        int wanted = site.Construction!.Recipe.Of(Goods.Logs);
 
         // Less than the recipe, so the first trip cannot finish it — Joe's 27 of 40.
         StoreBuilding yard = world.NearestStoreAccepting(

@@ -1120,16 +1120,20 @@ public sealed class BehaviorSystem : ISimSystem
             return true;
         }
 
-        // Carrying logs, or the site already has what it needs: head for the site.
-        if (villager.CarriedLogs > 0 || site.HasMaterials)
+        // Carrying something the site wants, or the site already has what it needs: head there.
+        //
+        // ⚠️ IT ASKED `CarriedLogs > 0` (D213). Once a recipe can want two things, an armful of
+        // the WRONG thing would have sent a builder to the footprint to deliver nothing and walk
+        // straight back — the shuttle D154 records, arriving by a different road.
+        if (site.HasMaterials || CarryingSomethingFor(site, villager))
         {
             villager.WorkNote = string.Empty;
             HeadFor(world, villager, standing.Position, VillagerState.Building);
             return true;
         }
 
-        // Otherwise fetch materials from the nearest shed that has any — OR THE CART,
-        // while it is the only store the village has (D75).
+        // Otherwise fetch what the site is short of, from the nearest store that has any —
+        // OR THE CART, while it is the only store the village has (D75).
         //
         // Measured, after two playthroughs where a marked hut sat at "0 of 25 logs" with
         // a builder assigned to it and 426 logs standing in the village: the builder was
@@ -1137,8 +1141,13 @@ public sealed class BehaviorSystem : ISimSystem
         // that read sheds-only and had to learn about the cart — TryTakeBuildingTimber
         // and StoreForTheLoad were the other two — which says the seam is the KIND check
         // rather than any one call site.
+        //
+        // ⭐ AND IT ASKS THE SITE WHAT IT WANTS (D213). `NextMaterialWanted` walks the recipe in
+        // good order, so a granary short of both timber and stone is filled in a fixed sequence
+        // — two runs of one seed send the builder to the same store for the same thing.
+        Goods wantedGood = site.NextMaterialWanted() ?? Goods.Logs;
         StoreBuilding? shed = world.NearestStoreAccepting(
-            villager.Position, Goods.Logs, static store => store.Store.Logs > 0);
+            villager.Position, wantedGood, store => store.Store[wantedGood] > 0);
 
         if (shed is null)
         {
@@ -1157,15 +1166,16 @@ public sealed class BehaviorSystem : ISimSystem
             if (ready is not null && ready.Id != standing.Id)
             {
                 villager.WorkNote =
-                    $"{site.Name} is waiting on {site.LogsStillNeeded} logs nobody has, so "
-                    + $"{ready.Construction!.Name} is getting the day instead.";
+                    $"{site.Name} is waiting on {site.DescribeWhatIsMissing(world.GoodsCatalog)} "
+                    + $"nobody has, so {ready.Construction!.Name} is getting the day instead.";
                 HeadFor(world, villager, ready.Position, VillagerState.Building);
                 return true;
             }
 
             villager.WorkNote =
-                $"Nothing to build with — {site.Name} still wants {site.LogsStillNeeded} logs, " +
-                "and nowhere within reach has any.";
+                $"Nothing to build with — {site.Name} still wants "
+                + $"{site.DescribeWhatIsMissing(world.GoodsCatalog)}, "
+                + "and nowhere within reach has any.";
 
             // ⭐ AND NOTHING TO BUILD EITHER, so they go and MAKE materials rather than stand
             // there — Joe's rule: *"if there are no materials available, the builder should
@@ -1184,6 +1194,26 @@ public sealed class BehaviorSystem : ISimSystem
         villager.WorkNote = string.Empty;
         HeadFor(world, villager, shed.Position, VillagerState.FetchingMaterials);
         return true;
+    }
+
+    /// <summary>Whether anything in somebody's arms is something this site still wants.</summary>
+    /// <remarks>
+    /// <b>The question the timber test was standing in for</b> (D213). A builder holding an
+    /// armful the site has no use for should go and put it down, not walk it to a footprint that
+    /// will refuse it.
+    /// </remarks>
+    private static bool CarryingSomethingFor(ConstructionSite site, Villager villager)
+    {
+        for (int g = 0; g < villager.Carried.Slots; g++)
+        {
+            var goods = (Goods)g;
+            if (villager.Carried[goods] > 0 && site.StillNeeded(goods) > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Set off for a spot, remembering it so the walk survives re-deciding.</summary>
@@ -1216,25 +1246,30 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        int wanted = Math.Min(site.LogsStillNeeded, world.Config.CarryCapacity);
+        // ⭐ WHATEVER THE SITE IS SHORT OF, NOT TIMBER BY NAME (D213). `WorkTheSite` chose the
+        // store for this good, so asking the site again here is the same question getting the
+        // same answer — and if the queue moved under them mid-errand, picking up for the site
+        // they now want is the right outcome anyway (see the remarks above).
+        Goods wanted = site.NextMaterialWanted() ?? Goods.Logs;
+        int room = Math.Min(site.StillNeeded(wanted), world.Config.CarryCapacity);
 
-        for (int i = 0; i < world.StoreBuildings.Count && wanted > 0; i++)
+        for (int i = 0; i < world.StoreBuildings.Count && room > 0; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
 
             // The cart counts here too, and it must: the walk above may have sent them to
-            // one, and a builder who arrives at the timber and cannot pick it up is worse
+            // one, and a builder who arrives at the materials and cannot pick them up is worse
             // than one who never set off (D75).
-            if (!store.Accepts(Goods.Logs)
+            if (!store.Accepts(wanted)
                 || store.Position != villager.Position)
             {
                 continue;
             }
 
-            int take = Math.Min(wanted, store.Store.Logs);
-            if (take > 0 && store.Store.TryTake(Goods.Logs, take))
+            int take = Math.Min(room, store.Store[wanted]);
+            if (take > 0 && store.Store.TryTake(wanted, take))
             {
-                villager.Carried.Receive(Goods.Logs, take);
+                villager.Carried.Receive(wanted, take);
             }
 
             break;
@@ -1263,14 +1298,24 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (villager.CarriedLogs > 0)
+        // ⭐ EVERY MATERIAL IN THEIR ARMS, IN GOOD ORDER (D213). A builder can be carrying two
+        // things now — timber from one errand and stone from the next — and a site that only
+        // took the logs would have sent them away holding the stone it was waiting for.
+        if (villager.IsCarrying)
         {
-            int accepted = site.Deliver(villager.CarriedLogs);
-            villager.Carried.TryTake(Goods.Logs, accepted);
+            for (int g = 0; g < villager.Carried.Slots; g++)
+            {
+                var goods = (Goods)g;
+                int held = villager.Carried[goods];
+                if (held > 0)
+                {
+                    villager.Carried.TryTake(goods, site.Deliver(goods, held));
+                }
+            }
 
             // Anything the site could not take stays in their arms and goes back to a
-            // shed on the next errand — never dropped, per the conservation rule.
-            if (villager.CarriedLogs > 0)
+            // store on the next errand — never dropped, per the conservation rule.
+            if (villager.IsCarrying)
             {
                 villager.State = VillagerState.HaulingToStore;
                 return;
@@ -1321,7 +1366,8 @@ public sealed class BehaviorSystem : ISimSystem
         if (!site.HasMaterials)
         {
             villager.WorkNote =
-                $"{site.Name} still wants {site.LogsStillNeeded} logs — going for them.";
+                $"{site.Name} still wants {site.DescribeWhatIsMissing(world.GoodsCatalog)} "
+                + "— going for them.";
             villager.State = VillagerState.Idle;
             return;
         }

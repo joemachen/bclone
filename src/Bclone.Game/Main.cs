@@ -1031,10 +1031,15 @@ public partial class Main : Control
         if (workplace.Construction is ConstructionSite site)
         {
             lines.Add($"{site.Name} — under construction");
+            // ⭐ EVERY MATERIAL, NAMED BY THE CATALOGUE (D213). This read one good and one
+            // number, so a site short of stone reported all its timber delivered and looked
+            // finished while nothing moved — §1.1 failing in the player's favour, which is
+            // still failing.
             lines.Add(site.HasMaterials
-                ? $"Materials: all {site.Recipe.Logs} logs delivered"
-                : $"Materials: {site.LogsDelivered} of {site.Recipe.Logs} logs — " +
-                  $"{site.LogsStillNeeded} still to come");
+                ? $"Materials: all of {site.Recipe.Describe(world.GoodsCatalog)} delivered"
+                : $"Materials: still wants "
+                  + $"{site.DescribeWhatIsMissing(world.GoodsCatalog)} of "
+                  + $"{site.Recipe.Describe(world.GoodsCatalog)}");
             lines.Add($"Work: {site.WorkDone} of {site.Recipe.WorkTicks} ticks done");
 
             // ⭐ WHERE IT IS IN THE QUEUE, AND WHAT IS AHEAD OF IT (Joe). A site sitting at

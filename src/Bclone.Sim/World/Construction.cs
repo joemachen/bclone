@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Bclone.Sim.Config;
 
 namespace Bclone.Sim.World;
@@ -160,16 +161,126 @@ public enum BuildingKind
     Farmhouse = 9,
 }
 
+/// <summary>One material a building costs, and how much of it.</summary>
+public readonly record struct MaterialCost(Goods Goods, int Amount);
+
 /// <summary>What a building costs to raise.</summary>
 /// <remarks>
+/// <para>
 /// <b>Data, not code</b> — the recipe comes out of config so a modder can change what a
-/// granary costs without touching the sim (DESIGN.md §3). The two numbers are separate
-/// on purpose: logs are what the village must *have*, and work is what it must *spend*,
+/// granary costs without touching the sim (DESIGN.md §3). Materials and work are separate
+/// on purpose: materials are what the village must *have*, and work is what it must *spend*,
 /// and a building that is expensive in one and cheap in the other is a different
 /// decision from one that is expensive in both.
+/// </para>
+/// <para>
+/// <b>⭐⭐ IT WAS ONE MATERIAL SLOT — <c>(int Logs, int WorkTicks)</c> — FOR THE WHOLE
+/// CATALOGUE</b> (`content-inventory.md` finding 2, D213). `buildings-plan.md §4.2` has the
+/// mason's yard *"gating every durable building"* and §4.3 puts stone behind the civic tier;
+/// `TECH-EXAMPLE.md` prices **every one of Joe's 45 buildings in two to four goods**, from
+/// *"10 Wood, 10 Cut Stone"* on the first well up to *"80 Stone, 50 Planks, 20 Iron"* on the
+/// town hall. <b>There is no version of that content that fits one slot</b>, so this was never
+/// a question, only a schedule.
+/// </para>
+/// <para>
+/// <b>A list of pairs rather than an array indexed by good</b>, deliberately. A building costs
+/// one to four materials against a catalogue of up to 62 goods, so a per-good array would be
+/// mostly zeros — and, worse, it would have to be sized from the run's goods catalogue, which
+/// <see cref="For"/> does not have and should not need. The list is <b>sorted by good id and
+/// carries no zeros</b>, so iteration is deterministic and two recipes that cost the same
+/// things are the same recipe (D5's ordering rule, one type over).
+/// </para>
 /// </remarks>
-public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
+public sealed class BuildingRecipe
 {
+    private readonly MaterialCost[] _materials;
+
+    /// <summary>A recipe costing <paramref name="materials"/> and <paramref name="workTicks"/>.</summary>
+    /// <remarks>
+    /// <b>Zeros are dropped and the rest are put in good order here</b>, so no caller has to
+    /// remember to — <c>For</c> below writes a line per material whether or not the config
+    /// prices it, which is what keeps a building's cost readable as one statement.
+    /// </remarks>
+    public BuildingRecipe(int workTicks, params MaterialCost[] materials)
+    {
+        ArgumentNullException.ThrowIfNull(materials);
+
+        WorkTicks = workTicks;
+
+        var kept = new List<MaterialCost>(materials.Length);
+        for (int i = 0; i < materials.Length; i++)
+        {
+            if (materials[i].Amount > 0)
+            {
+                kept.Add(materials[i]);
+            }
+        }
+
+        kept.Sort(static (a, b) => ((int)a.Goods).CompareTo((int)b.Goods));
+        _materials = kept.ToArray();
+    }
+
+    /// <summary>Everything it costs, in good order. Empty for a building that is free.</summary>
+    public IReadOnlyList<MaterialCost> Materials => _materials;
+
+    /// <summary>Ticks of work it owes once the materials are on site.</summary>
+    public int WorkTicks { get; }
+
+    /// <summary>How much of one good it costs. Zero for a good it does not want.</summary>
+    public int Of(Goods goods)
+    {
+        for (int i = 0; i < _materials.Length; i++)
+        {
+            if (_materials[i].Goods == goods)
+            {
+                return _materials[i].Amount;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>Everything it costs, added up — for a progress bar and for a refund.</summary>
+    public int TotalMaterials
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < _materials.Length; i++)
+            {
+                total += _materials[i].Amount;
+            }
+
+            return total;
+        }
+    }
+
+    /// <summary>What it costs, as a sentence: <em>"40 logs and 10 stone"</em>.</summary>
+    public string Describe(GoodsCatalog catalogue)
+    {
+        ArgumentNullException.ThrowIfNull(catalogue);
+
+        if (_materials.Length == 0)
+        {
+            return "nothing";
+        }
+
+        var said = new System.Text.StringBuilder();
+        for (int i = 0; i < _materials.Length; i++)
+        {
+            if (i > 0)
+            {
+                said.Append(i == _materials.Length - 1 ? " and " : ", ");
+            }
+
+            said.Append(_materials[i].Amount)
+                .Append(' ')
+                .Append(catalogue.NameOf(_materials[i].Goods));
+        }
+
+        return said.ToString();
+    }
+
     /// <summary>The recipe for a kind, read from config.</summary>
     public static BuildingRecipe For(BuildingKind kind, SimConfig config)
     {
@@ -177,9 +288,18 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
 
         return kind switch
         {
-            BuildingKind.Granary => new BuildingRecipe(config.GranaryLogs, config.GranaryWorkTicks),
-            BuildingKind.Shed => new BuildingRecipe(config.ShedLogs, config.ShedWorkTicks),
-            BuildingKind.Market => new BuildingRecipe(config.MarketLogs, config.MarketWorkTicks),
+            BuildingKind.Granary => new BuildingRecipe(
+                config.GranaryWorkTicks,
+                new MaterialCost(Goods.Logs, config.GranaryLogs),
+                new MaterialCost(Goods.Stone, config.GranaryStone)),
+            BuildingKind.Shed => new BuildingRecipe(
+                config.ShedWorkTicks,
+                new MaterialCost(Goods.Logs, config.ShedLogs),
+                new MaterialCost(Goods.Stone, config.ShedStone)),
+            BuildingKind.Market => new BuildingRecipe(
+                config.MarketWorkTicks,
+                new MaterialCost(Goods.Logs, config.MarketLogs),
+                new MaterialCost(Goods.Stone, config.MarketStone)),
 
             // NOTHING AT ALL — no materials and no work (D96). A village with nowhere to put
             // things cannot begin, and asking it to build a store out of timber it has
@@ -197,36 +317,48 @@ public readonly record struct BuildingRecipe(int Logs, int WorkTicks)
             // The recipe survives at zero because `Demolish` reads one to work out a refund,
             // and zero is the right answer there too: you get nothing back from a heap you
             // never paid for.
-            BuildingKind.Pile => new BuildingRecipe(0, 0),
+            BuildingKind.Pile => new BuildingRecipe(0),
 
             // A house costs what it has always cost in timber (`logs_per_house`, which the
             // whole timber economy is derived against) and now owes work as well (D102).
-            BuildingKind.Home => new BuildingRecipe(config.LogsPerHouse, config.HomeWorkTicks),
+            BuildingKind.Home => new BuildingRecipe(
+                config.HomeWorkTicks,
+                new MaterialCost(Goods.Logs, config.LogsPerHouse),
+                new MaterialCost(Goods.Stone, config.HomeStone)),
 
             // ⭐ FREE AND INSTANT, LIKE THE PILE (D108). The builder's hut is the one building
             // that must exist before any other can be raised, so charging timber for it would
             // be a circle exactly like charging the pile for somewhere to stack timber. It is
             // the player's first act, and its cost is the ground and the hands they put in it.
-            BuildingKind.BuilderHut => new BuildingRecipe(0, 0),
+            BuildingKind.BuilderHut => new BuildingRecipe(0),
 
-            BuildingKind.WoodcutterHut => new BuildingRecipe(config.HutLogs, config.HutWorkTicks),
+            BuildingKind.WoodcutterHut => new BuildingRecipe(
+                config.HutWorkTicks,
+                new MaterialCost(Goods.Logs, config.HutLogs),
+                new MaterialCost(Goods.Stone, config.HutStone)),
 
             // Costs timber and work like every other real building. Deliberately NOT free:
             // the pile and the builder's hut are free because nothing can be built without
             // them, and a gatherer's hut has no such circle to break — it is the first thing
             // the player spends logs on because they chose to eat better.
-            BuildingKind.GathererHut =>
-                new BuildingRecipe(config.GathererHutLogs, config.GathererHutWorkTicks),
+            BuildingKind.GathererHut => new BuildingRecipe(
+                config.GathererHutWorkTicks,
+                new MaterialCost(Goods.Logs, config.GathererHutLogs),
+                new MaterialCost(Goods.Stone, config.GathererHutStone)),
 
-            BuildingKind.ForesterHut =>
-                new BuildingRecipe(config.ForesterHutLogs, config.ForesterHutWorkTicks),
+            BuildingKind.ForesterHut => new BuildingRecipe(
+                config.ForesterHutWorkTicks,
+                new MaterialCost(Goods.Logs, config.ForesterHutLogs),
+                new MaterialCost(Goods.Stone, config.ForesterHutStone)),
 
             // Priced like its siblings, and deliberately not free: the pile and the builder's
             // hut are free because nothing can be built without them, and a farm has no such
             // circle to break — it is a thing the player spends logs on because they chose to
             // eat differently.
-            BuildingKind.Farmhouse =>
-                new BuildingRecipe(config.FarmhouseLogs, config.FarmhouseWorkTicks),
+            BuildingKind.Farmhouse => new BuildingRecipe(
+                config.FarmhouseWorkTicks,
+                new MaterialCost(Goods.Logs, config.FarmhouseLogs),
+                new MaterialCost(Goods.Stone, config.FarmhouseStone)),
 
             // ⭐ NAMED RATHER THAN DEFAULTED, and this arm is why. It used to hand out the
             // woodcutter's hut's recipe to anything it did not recognise — 25 logs and 40
@@ -281,41 +413,184 @@ public sealed class ConstructionSite
     /// </remarks>
     public int ForHouseholdId { get; init; }
 
-    public required BuildingRecipe Recipe { get; init; }
+    /// <summary>What it costs. Set once, at marking.</summary>
+    /// <remarks>
+    /// <b>A constructor parameter rather than an <c>init</c> property since D213</b>, because
+    /// the delivery counts are sized from it: an object initialiser cannot guarantee the recipe
+    /// is set before the site starts counting deliveries against it.
+    /// </remarks>
+    public BuildingRecipe Recipe { get; }
 
-    /// <summary>Logs carried here so far.</summary>
-    public int LogsDelivered { get; private set; }
+    /// <summary>How much of each material has arrived, parallel to <c>Recipe.Materials</c>.</summary>
+    /// <remarks>
+    /// <b>Parallel to the recipe's own list, not indexed by good</b> — a site can only ever
+    /// receive what its recipe asks for, so the recipe's ordering is the natural index and
+    /// there are no empty slots for the sixty-odd goods a building does not want.
+    /// </remarks>
+    private readonly int[] _delivered;
+
+    public ConstructionSite(BuildingRecipe recipe)
+    {
+        Recipe = recipe ?? throw new ArgumentNullException(nameof(recipe));
+        _delivered = new int[recipe.Materials.Count];
+    }
 
     /// <summary>Ticks of work put in so far.</summary>
     public int WorkDone { get; private set; }
 
+    /// <summary>Logs carried here so far — a named reader over the one array.</summary>
+    public int LogsDelivered => Delivered(Goods.Logs);
+
+    /// <summary>How much of one good has been carried here.</summary>
+    public int Delivered(Goods goods)
+    {
+        for (int i = 0; i < _delivered.Length; i++)
+        {
+            if (Recipe.Materials[i].Goods == goods)
+            {
+                return _delivered[i];
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>Everything carried here so far, of every kind.</summary>
+    public int TotalDelivered
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < _delivered.Length; i++)
+            {
+                total += _delivered[i];
+            }
+
+            return total;
+        }
+    }
+
     /// <summary>Whether everything it needs has been carried here.</summary>
-    public bool HasMaterials => LogsDelivered >= Recipe.Logs;
+    public bool HasMaterials
+    {
+        get
+        {
+            for (int i = 0; i < _delivered.Length; i++)
+            {
+                if (_delivered[i] < Recipe.Materials[i].Amount)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
 
     /// <summary>Whether it is finished and ready to become a building.</summary>
     public bool IsFinished => HasMaterials && WorkDone >= Recipe.WorkTicks;
 
-    /// <summary>Logs still wanted here.</summary>
-    public int LogsStillNeeded
+    /// <summary>How much of one good is still wanted here.</summary>
+    public int StillNeeded(Goods goods)
     {
-        get
+        for (int i = 0; i < _delivered.Length; i++)
         {
-            int short_ = Recipe.Logs - LogsDelivered;
-            return short_ < 0 ? 0 : short_;
+            if (Recipe.Materials[i].Goods == goods)
+            {
+                int shortfall = Recipe.Materials[i].Amount - _delivered[i];
+                return shortfall < 0 ? 0 : shortfall;
+            }
         }
+
+        return 0;
     }
 
-    /// <summary>Take in logs somebody carried over. Returns how many were accepted.</summary>
-    public int Deliver(int logs)
+    /// <summary>Logs still wanted here.</summary>
+    public int LogsStillNeeded => StillNeeded(Goods.Logs);
+
+    /// <summary>
+    /// The next material this site is short of, or null when it has everything.
+    /// </summary>
+    /// <remarks>
+    /// <b>In recipe order, which is good order</b> — so two runs of one seed send a builder for
+    /// the same thing, and a site short of two materials is filled in a fixed sequence rather
+    /// than by whichever the nearest store happened to hold most of.
+    /// </remarks>
+    public Goods? NextMaterialWanted()
     {
-        if (logs < 0)
+        for (int i = 0; i < _delivered.Length; i++)
         {
-            throw new ArgumentOutOfRangeException(nameof(logs), $"Cannot deliver {logs} logs.");
+            if (_delivered[i] < Recipe.Materials[i].Amount)
+            {
+                return Recipe.Materials[i].Goods;
+            }
         }
 
-        int accepted = logs < LogsStillNeeded ? logs : LogsStillNeeded;
-        LogsDelivered += accepted;
-        return accepted;
+        return null;
+    }
+
+    /// <summary>Everything still wanted here, as a sentence: <em>"13 logs and 4 stone"</em>.</summary>
+    public string DescribeWhatIsMissing(GoodsCatalog catalogue)
+    {
+        ArgumentNullException.ThrowIfNull(catalogue);
+
+        var missing = new List<MaterialCost>();
+        for (int i = 0; i < _delivered.Length; i++)
+        {
+            int shortfall = Recipe.Materials[i].Amount - _delivered[i];
+            if (shortfall > 0)
+            {
+                missing.Add(new MaterialCost(Recipe.Materials[i].Goods, shortfall));
+            }
+        }
+
+        return new BuildingRecipe(0, missing.ToArray()).Describe(catalogue);
+    }
+
+    /// <summary>Everything carried here so far, for a refund.</summary>
+    public IReadOnlyList<MaterialCost> Held()
+    {
+        var held = new List<MaterialCost>();
+        for (int i = 0; i < _delivered.Length; i++)
+        {
+            if (_delivered[i] > 0)
+            {
+                held.Add(new MaterialCost(Recipe.Materials[i].Goods, _delivered[i]));
+            }
+        }
+
+        return held;
+    }
+
+    /// <summary>Take in a material somebody carried over. Returns how much was accepted.</summary>
+    /// <remarks>
+    /// <b>A good this building never asked for is refused rather than swallowed</b>, so the load
+    /// stays in the carrier's arms and walks back to a store — D96's conservation rule, which a
+    /// second material makes reachable for the first time.
+    /// </remarks>
+    public int Deliver(Goods goods, int amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(amount), $"Cannot deliver {amount} {goods}.");
+        }
+
+        for (int i = 0; i < _delivered.Length; i++)
+        {
+            if (Recipe.Materials[i].Goods != goods)
+            {
+                continue;
+            }
+
+            int room = Recipe.Materials[i].Amount - _delivered[i];
+            int accepted = amount < room ? amount : room;
+            accepted = accepted < 0 ? 0 : accepted;
+            _delivered[i] += accepted;
+            return accepted;
+        }
+
+        return 0;
     }
 
     /// <summary>Put a tick of work in. Does nothing until the materials are here.</summary>
@@ -332,11 +607,22 @@ public sealed class ConstructionSite
         }
     }
 
-    /// <summary>Logs handed back if the site is abandoned before it is finished.</summary>
-    public int Abandon()
+    /// <summary>Everything handed back if the site is abandoned before it is finished.</summary>
+    /// <remarks>
+    /// <b>Every material, not the timber</b> (D213). A site abandoned with stone on it would
+    /// have handed back only its logs — which, once a recipe can ask for two things, is the
+    /// conservation rule leaking in the one direction nothing ever notices: the total only
+    /// falls.
+    /// </remarks>
+    public IReadOnlyList<MaterialCost> Abandon()
     {
-        int back = LogsDelivered;
-        LogsDelivered = 0;
+        IReadOnlyList<MaterialCost> back = Held();
+
+        for (int i = 0; i < _delivered.Length; i++)
+        {
+            _delivered[i] = 0;
+        }
+
         WorkDone = 0;
         return back;
     }
