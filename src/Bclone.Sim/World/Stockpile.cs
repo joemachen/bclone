@@ -39,15 +39,29 @@ namespace Bclone.Sim.World;
 /// </remarks>
 public sealed class Stockpile
 {
-    /// <summary>How many kinds of goods exist. Grows with <see cref="Goods"/>.</summary>
+    /// <summary>
+    /// How many goods the <em>enum</em> has — <b>the built-in six, and NOT how many exist</b>.
+    /// </summary>
     /// <remarks>
-    /// Read off the enum rather than typed, so adding a good cannot leave an array one
-    /// short — which would be an <c>IndexOutOfRangeException</c> in the middle of the
-    /// sim rather than a compile error.
+    /// <para>
+    /// <b>⚠️ THIS IS NO LONGER THE ANSWER TO "HOW MANY GOODS ARE THERE?"</b> (D210, slice 1b).
+    /// The goods catalogue is, and it can hold rows the enum has no value for. This is kept only
+    /// as the floor a stockpile falls back to when nobody says otherwise, and as the count the
+    /// validator compares a catalogue against.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Do not reintroduce it as a loop bound.</b> Iterating <c>0..Kinds</c> over a village
+    /// that has more goods than the enum silently ignores every good above the sixth — a village
+    /// that holds a thing the state hash never mixes, which is a determinism bug that would show
+    /// up as an unreproducible run rather than as an error.
+    /// </para>
     /// </remarks>
     public static readonly int Kinds = System.Enum.GetValues<Goods>().Length;
 
-    private readonly int[] _held = new int[Kinds];
+    /// <summary>How many goods THIS stockpile has room for. Set once, at construction.</summary>
+    public int Slots => _held.Length;
+
+    private readonly int[] _held;
 
     /// <summary>
     /// How much of each good this store has ever taken in <em>as production</em>.
@@ -57,7 +71,36 @@ public sealed class Stockpile
     /// numbers are claims about a life and a household, and inflating them by counting
     /// gifts is how the village once appeared to consume more logs than it had felled.
     /// </remarks>
-    private readonly int[] _produced = new int[Kinds];
+    private readonly int[] _produced;
+
+    /// <summary>
+    /// A stockpile with room for <paramref name="slots"/> goods.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THERE IS DELIBERATELY NO PARAMETERLESS CONSTRUCTOR</b> (D210, slice 1b). Every
+    /// stockpile in a run must be sized from that run's goods catalogue, and a convenient default
+    /// is exactly how one would quietly get six slots in a village that has seven goods — a
+    /// larder that cannot hold a thing the village produces, failing as an index somewhere in the
+    /// sim rather than here.
+    /// </para>
+    /// <para>
+    /// <b>Removing the default is what made the compiler list every site</b>, which is the same
+    /// device D82 used when the named mutators were deleted rather than wrapped: *the compiler
+    /// made every call site say which good it meant.*
+    /// </para>
+    /// </remarks>
+    public Stockpile(int slots)
+    {
+        if (slots < 1)
+        {
+            throw new System.ArgumentOutOfRangeException(
+                nameof(slots), $"A stockpile needs at least one slot (got {slots}).");
+        }
+
+        _held = new int[slots];
+        _produced = new int[slots];
+    }
 
     /// <summary>
     /// How much this store can hold in total, across every kind of goods.
@@ -231,13 +274,16 @@ public sealed class Stockpile
         return amount < free ? amount : free;
     }
 
-    private static int Index(Goods goods)
+    private int Index(Goods goods)
     {
         int index = (int)goods;
-        if (index < 0 || index >= Kinds)
+        if (index < 0 || index >= _held.Length)
         {
             throw new System.ArgumentOutOfRangeException(
-                nameof(goods), $"There is no such good as {goods}.");
+                nameof(goods),
+                $"There is no such good as {goods} — this stockpile has {_held.Length} slots. "
+                + "A stockpile is sized from the run's goods catalogue, so this means the "
+                + "catalogue and the caller disagree about how many goods exist.");
         }
 
         return index;

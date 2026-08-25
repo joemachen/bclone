@@ -15,6 +15,7 @@ public sealed class HouseholdTests
 
     private static Household NewHousehold() => new()
     {
+        Stockpile = new Stockpile(Stockpile.Kinds),
         Id = 1,
         Name = "Thatcher",
         HomePosition = new GridPos(0, 0),
@@ -72,7 +73,7 @@ public sealed class HouseholdTests
         // The asymmetry decision D14 exists to create: one family can starve
         // beside a thriving neighbour.
         var poor = NewHousehold();
-        var rich = new Household { Id = 2, Name = "Fletcher", HomePosition = new GridPos(9, 0) };
+        var rich = new Household { Id = 2, Name = "Fletcher", HomePosition = new GridPos(9, 0), Stockpile = new Stockpile(Stockpile.Kinds) };
 
         rich.Stockpile.Add(Goods.Food, 80);
 

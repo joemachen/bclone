@@ -52,7 +52,7 @@ public sealed class PluralStoresTests
             Kind = StoreKind.Granary,
             Name = "the second granary",
             Position = FreeSpotNear(world, granary.Position),
-            Store = new Stockpile { Capacity = granary.Store.Capacity },
+            Store = new Stockpile(world.GoodsCatalog.Count) { Capacity = granary.Store.Capacity },
         });
 
         world.StoreBuildings.Add(new StoreBuilding
@@ -61,7 +61,7 @@ public sealed class PluralStoresTests
             Kind = StoreKind.Shed,
             Name = "the second shed",
             Position = FreeSpotNear(world, shed.Position),
-            Store = new Stockpile { Capacity = shed.Store.Capacity },
+            Store = new Stockpile(world.GoodsCatalog.Count) { Capacity = shed.Store.Capacity },
         });
 
         return world;
@@ -256,7 +256,7 @@ public sealed class PluralStoresTests
             Kind = StoreKind.Granary,
             Name = "the marooned granary",
             Position = marooned,
-            Store = new Stockpile { Capacity = 1000 },
+            Store = new Stockpile(world.GoodsCatalog.Count) { Capacity = 1000 },
         });
 
         GridPos from = world.Households[0].Home();

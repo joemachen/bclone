@@ -349,7 +349,7 @@ public sealed class Workplace
     /// disagree (D159's lesson).
     /// </para>
     /// </remarks>
-    public Stockpile Store { get; init; } = new();
+    public required Stockpile Store { get; init; }
 
     // -----------------------------------------------------------------
     //  ⭐⭐ WHAT THIS FARM HAS LEARNED IT CAN BRING IN

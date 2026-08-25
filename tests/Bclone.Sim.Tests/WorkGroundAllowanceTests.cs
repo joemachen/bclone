@@ -65,6 +65,7 @@ public sealed class WorkGroundAllowanceTests
 
         var hut = new Workplace
         {
+            Store = world.NewStockpile(),
             Id = id,
             Kind = JobKind.Forester,
             Name = $"forester's hut {id}",

@@ -2207,27 +2207,12 @@ public sealed record SimConfig
             }
         }
 
-        // ⛔⛔ THE CEILING SLICE 1 HAS NOT LIFTED YET, AND IT MUST FAIL LOUDLY RATHER THAN AT AN
-        // INDEX. `Stockpile` sizes its arrays from `Enum.GetValues<Goods>().Length` in a *field
-        // initializer*, and households, store buildings and workplaces all default theirs with
-        // `= new()` — so nothing can hold a good the enum does not have. A seventh row would
-        // validate, load, and then throw an IndexOutOfRangeException somewhere in the middle of
-        // the sim, which is precisely the failure this project logs sentences to avoid.
-        //
-        // ⚠️ Making it dynamic is NOT a one-line change and is deliberately not attempted here:
-        // the count would have to be threaded to every stockpile, and a mutable static is
-        // unusable because the suite runs ~9.5x parallel with a world per test. See
-        // `goods-catalog.md §5`, slice 1b.
-        int slots = World.Stockpile.Kinds;
-        if (seen.Count > slots)
-        {
-            throw new SimConfigException(
-                $"goods has {seen.Count} rows but a stockpile has {slots} slots. Adding a good "
-                + "beyond the built-in set needs slice 1b of `goods-catalog.md` — the stockpile "
-                + "arrays are sized from the enum and nothing could hold it yet.");
-        }
+        // ✅ THE SIX-GOOD CEILING IS LIFTED (D210, slice 1b). Every stockpile in a run is now
+        // sized from this catalogue rather than from `Enum.GetValues<Goods>().Length`, and the
+        // state hash is bounded by the store's own size — so a seventh good is held, hashed and
+        // carried like any other. The check that used to stand here is gone rather than relaxed.
 
-        // ⛔⛔ And the ceiling above that one: `StoreBuilding.AllowedGoods` is an int bitmask with
+        // ⛔⛔ The ceiling above it is still real: `StoreBuilding.AllowedGoods` is an int bitmask with
         // one bit per good and the `Spoken` sentinel at bit 30 — so good 30 would set the
         // sentinel, and a store the player never touched would report that they had.
         if (seen.Count > 30)

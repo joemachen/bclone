@@ -329,7 +329,7 @@ public sealed class Household
     public int LastBirthYear { get; set; }
 
     /// <summary>This household's food. Not the village's.</summary>
-    public Stockpile Stockpile { get; } = new();
+    public required Stockpile Stockpile { get; init; }
 
     /// <summary>
     /// Member ids, kept sorted ascending.

@@ -42,6 +42,17 @@ public sealed class SimWorld
     /// </remarks>
     public GoodsCatalog GoodsCatalog { get; }
 
+    /// <summary>
+    /// A stockpile with a slot for every good <em>this run</em> has (D210, slice 1b).
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ One place, so a new kind of store cannot be born the wrong size.</b> Every larder,
+    /// buffer and cart in the village is sized from the same catalogue — which is what stops a
+    /// village holding a good its own state hash never mixes, a determinism bug that would surface
+    /// as an unreproducible run rather than as an error.
+    /// </remarks>
+    internal Stockpile NewStockpile() => new(GoodsCatalog.Count);
+
     /// <summary>Structured sink. Entries are stamped with the current tick.</summary>
     public ISimLogger Logger { get; }
 
@@ -678,6 +689,7 @@ public sealed class SimWorld
     private void RaiseBuilderHut(GridPos position, string name) =>
         Workplaces.Add(new Workplace
         {
+            Store = NewStockpile(),
             Id = NextWorkplaceId(),
             Kind = JobKind.Builder,
             Name = name,
@@ -2037,7 +2049,7 @@ public sealed class SimWorld
     /// it is hashed. It exists for D42's rule about the distance warning — one considered
     /// sentence, rather than a nag the player learns to click past.
     /// </remarks>
-    private readonly bool[] _saidThereIsNowhereFor = new bool[Stockpile.Kinds];
+    private readonly bool[] _saidThereIsNowhereFor;
 
     /// <summary>
     /// Which (villager, skill) pairs the village has already been warned about
@@ -3019,7 +3031,7 @@ public sealed class SimWorld
         int mask = store.AllowedGoods;
         if (mask == 0)
         {
-            for (int g = 0; g < Stockpile.Kinds; g++)
+            for (int g = 0; g < GoodsCatalog.Count; g++)
             {
                 if (store.CanEverHold((Goods)g))
                 {
@@ -3391,6 +3403,7 @@ public sealed class SimWorld
         int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
         int share = ReapableShareAt(new Workplace
         {
+            Store = NewStockpile(),
             Id = -1,
             Kind = JobKind.Farmer,
             Name = "ghost",
@@ -3872,6 +3885,7 @@ public sealed class SimWorld
     {
         Workplaces.Add(new Workplace
         {
+            Store = NewStockpile(),
             Id = NextWorkplaceId(),
             Kind = JobKind.Builder,
             Name = $"{name} (building)",
@@ -4124,6 +4138,7 @@ public sealed class SimWorld
             case BuildingKind.WoodcutterHut:
                 Workplaces.Add(new Workplace
                 {
+                    Store = NewStockpile(),
                     Id = NextWorkplaceId(),
                     Kind = JobKind.Woodcutter,
                     Name = plan.Name,
@@ -4141,6 +4156,7 @@ public sealed class SimWorld
             case BuildingKind.GathererHut:
                 Workplaces.Add(new Workplace
                 {
+                    Store = NewStockpile(),
                     Id = NextWorkplaceId(),
                     Kind = JobKind.Forager,
                     Name = plan.Name,
@@ -4161,6 +4177,7 @@ public sealed class SimWorld
             case BuildingKind.ForesterHut:
                 Workplaces.Add(new Workplace
                 {
+                    Store = NewStockpile(),
                     Id = NextWorkplaceId(),
                     Kind = JobKind.Forester,
                     Name = plan.Name,
@@ -4186,7 +4203,7 @@ public sealed class SimWorld
                     Name = plan.Name,
                     Position = site.Position,
                     Capacity = VillageEconomy.RequiredFarmerSeats(Config),
-                    Store = new Stockpile { Capacity = Config.FarmStoreCap },
+                    Store = new Stockpile(GoodsCatalog.Count) { Capacity = Config.FarmStoreCap },
                 });
                 break;
 
@@ -4204,6 +4221,7 @@ public sealed class SimWorld
                 {
                     Workplaces.Add(new Workplace
                     {
+                        Store = NewStockpile(),
                         Id = NextWorkplaceId(),
                         Kind = JobKind.Marketer,
                         Name = plan.Name,
@@ -4266,7 +4284,7 @@ public sealed class SimWorld
             Kind = storeKind,
             Name = name,
             Position = position,
-            Store = new Stockpile { Capacity = capacity },
+            Store = new Stockpile(GoodsCatalog.Count) { Capacity = capacity },
         };
 
         StoreBuildings.Add(building);
@@ -4316,7 +4334,7 @@ public sealed class SimWorld
         // put a hundred food. It is on the map, it can be fetched, and it counts in no total
         // until it is (`GroundStack`).
         int spilled = 0;
-        for (int g = 0; g < Stockpile.Kinds; g++)
+        for (int g = 0; g < GoodsCatalog.Count; g++)
         {
             var goods = (Goods)g;
             int held = workplace.Store[goods];
@@ -4835,6 +4853,7 @@ public sealed class SimWorld
     {
         Config = config;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
+        _saidThereIsNowhereFor = new bool[GoodsCatalog.Count];
         Logger = logger;
         Seed = seed;
         Rng = new DeterministicRandom(seed);
@@ -4905,6 +4924,7 @@ public sealed class SimWorld
         // the yields around them moved, and thirty-six people froze (D50).
         Workplaces.Add(new Workplace
         {
+            Store = NewStockpile(),
             Id = nextWorkplaceId++,
             Kind = JobKind.Builder,
             Name = NameFor(BuildingKind.BuilderHut),
@@ -4925,6 +4945,7 @@ public sealed class SimWorld
         // they picked, and it is the first real decision of a run.
         Workplaces.Add(new Workplace
         {
+            Store = NewStockpile(),
             Id = nextWorkplaceId++,
             Kind = JobKind.Forager,
             Name = NameFor(BuildingKind.GathererHut),
@@ -4946,6 +4967,7 @@ public sealed class SimWorld
         // rather than one holding a building it does not understand.
         var forester = new Workplace
         {
+            Store = NewStockpile(),
             Id = nextWorkplaceId++,
             Kind = JobKind.Forester,
             Name = NameFor(BuildingKind.ForesterHut),
@@ -4961,6 +4983,7 @@ public sealed class SimWorld
         // which is a state no other workplace can be in.
         Workplaces.Add(new Workplace
         {
+            Store = NewStockpile(),
             Id = nextWorkplaceId++,
             Kind = JobKind.Woodcutter,
             Name = NameFor(BuildingKind.WoodcutterHut),
@@ -4986,7 +5009,7 @@ public sealed class SimWorld
             Kind = StoreKind.Granary,
             Name = NameFor(BuildingKind.Granary),
             Position = Offset(origin, config.GranaryX, config.GranaryY),
-            Store = new Stockpile { Capacity = VillageEconomy.GranaryCapacity(config) },
+            Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.GranaryCapacity(config) },
         });
 
         StoreBuildings.Add(new StoreBuilding
@@ -4995,7 +5018,7 @@ public sealed class SimWorld
             Kind = StoreKind.Shed,
             Name = NameFor(BuildingKind.Shed),
             Position = Offset(origin, config.StorageShedX, config.StorageShedY),
-            Store = new Stockpile { Capacity = VillageEconomy.ShedCapacity(config) },
+            Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.ShedCapacity(config) },
         });
 
         // The market (D14) — the one store that is also a workplace, because its
@@ -5019,7 +5042,7 @@ public sealed class SimWorld
             Kind = StoreKind.Market,
             Name = marketName,
             Position = market,
-            Store = new Stockpile { Capacity = VillageEconomy.MarketCapacity(config) },
+            Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.MarketCapacity(config) },
         });
 
         // Capacity zero means no market at all rather than a market nobody can work
@@ -5030,6 +5053,7 @@ public sealed class SimWorld
         {
             Workplaces.Add(new Workplace
             {
+                Store = NewStockpile(),
                 Id = nextWorkplaceId++,
                 Kind = JobKind.Marketer,
                 Name = marketName,
@@ -5095,6 +5119,7 @@ public sealed class SimWorld
 
             var household = new Household
             {
+                Stockpile = NewStockpile(),
                 Id = h + 1,
                 Name = config.HouseholdNames[h % config.HouseholdNames.Count],
                 HomePosition = home,
@@ -5778,7 +5803,7 @@ public sealed class SimWorld
             Kind = StoreKind.Cart,
             Name = "the cart",
             Position = origin,
-            Store = new Stockpile { Capacity = config.CartCapacity },
+            Store = new Stockpile(GoodsCatalog.Count) { Capacity = config.CartCapacity },
         };
 
         StoreBuildings.Add(cart);

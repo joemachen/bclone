@@ -190,7 +190,7 @@ public static class StateHash
             // The larder and what it has ever produced, every good of it — the same
             // loop MixStore uses, for the same reason.
             hash = MixStore(hash, household.Stockpile);
-            for (int g = 0; g < Stockpile.Kinds; g++)
+            for (int g = 0; g < household.Stockpile.Slots; g++)
             {
                 hash = MixUInt32(hash, (uint)household.Stockpile.Produced((Goods)g));
             }
@@ -336,7 +336,13 @@ public static class StateHash
         // that is not hashed is a good two different worlds can disagree about while
         // reading identical — D51's trap, and the reason this is a loop the day stone
         // and tools arrive rather than the day somebody notices.
-        for (int i = 0; i < Stockpile.Kinds; i++)
+        //
+        // ⭐ BOUNDED BY THE STORE'S OWN SIZE, NOT BY THE ENUM (D210, slice 1b). Every stockpile in
+        // a run is sized from that run's goods catalogue, so this covers a mod-added good for
+        // free — where `Stockpile.Kinds` would have silently stopped at the sixth and left the
+        // village holding something the hash never saw. That is the same trap one level up: not a
+        // crash, but two runs that read identical and are not.
+        for (int i = 0; i < store.Slots; i++)
         {
             hash = MixUInt32(hash, (uint)store[(Goods)i]);
         }

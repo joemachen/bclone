@@ -151,7 +151,7 @@ public sealed class StorageTests
         // Conservation, at the one place capacity could break it. A store that took
         // goods it had no room for would destroy them silently, and the total only
         // ever falls — which is the direction nobody notices.
-        var store = new Stockpile { Capacity = 10 };
+        var store = new Stockpile(Stockpile.Kinds) { Capacity = 10 };
 
         Assert.Equal(6, store.Add(Goods.Food, 6));
         Assert.Equal(4, store.Add(Goods.Logs, 9));      // only four would fit
@@ -170,7 +170,7 @@ public sealed class StorageTests
         // Total, not per good — a shed packed with logs has nowhere to stack firewood.
         // A per-good cap would be three shelves that never compete, which is
         // bookkeeping wearing a constraint's clothes.
-        var store = new Stockpile { Capacity = 10 };
+        var store = new Stockpile(Stockpile.Kinds) { Capacity = 10 };
         store.Add(Goods.Logs, 10);
 
         Assert.Equal(0, store.Add(Goods.Firewood, 5));

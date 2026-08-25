@@ -331,6 +331,7 @@ public sealed class HouseholdSystem : ISimSystem
 
         var household = new Household
         {
+            Stockpile = world.NewStockpile(),
             Id = NextHouseholdId(world),
             Name = config.HouseholdNames[world.Households.Count % config.HouseholdNames.Count],
 

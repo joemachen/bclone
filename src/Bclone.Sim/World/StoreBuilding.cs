@@ -134,7 +134,7 @@ public sealed class StoreBuilding
     /// <see cref="VillageEconomy.GranaryCapacity"/> or
     /// <see cref="VillageEconomy.ShedCapacity"/> — never typed in.
     /// </remarks>
-    public Stockpile Store { get; init; } = new();
+    public required Stockpile Store { get; init; }
 
     /// <summary>
     /// Which goods the player has told this building to take, as a bitmask. Zero means
