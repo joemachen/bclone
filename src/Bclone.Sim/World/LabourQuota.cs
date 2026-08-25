@@ -557,7 +557,19 @@ public readonly record struct LabourQuota
         JobKind.Farmer => world.StockLimits.IsMet(Goods.Food, world.FoodTheVillageHolds())
             && world.FarmerSeatsWithGroundToWork() == 0,
 
-        _ => false,
+        // ⭐ ANYTHING ELSE — INCLUDING A TRADE A MOD ADDED — IS STOPPED BY ITS ROW'S LIMIT IF IT
+        // NAMES ONE, AND NEVER OTHERWISE (D218). This arm used to be a flat `false`, which meant
+        // a trade the sim had not been taught about could not be capped at all: the player sets a
+        // limit and the work carries on, silently.
+        //
+        // ⚠️ THE THREE ARMS ABOVE ARE NOT REDUNDANT WITH IT, and that is why they stay. Each
+        // carries an escape clause that is real per-trade reasoning rather than data — a met log
+        // limit does not stop a forester who still has bare ground to plant (D146), and a met food
+        // limit does not stop a farmer with a crop still standing. `jobs-catalog.md §2.1` records
+        // this as the second exemption beside the idle note: **the good is data; knowing when the
+        // cap has no business applying is not.**
+        _ => world.JobsCatalog.LimitedBy(kind) is Goods limited
+            && world.StockLimits.IsMet(limited, world.InStores(limited)),
     };
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>

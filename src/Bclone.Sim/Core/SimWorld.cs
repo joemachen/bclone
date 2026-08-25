@@ -42,6 +42,9 @@ public sealed class SimWorld
     /// </remarks>
     public GoodsCatalog GoodsCatalog { get; }
 
+    /// <summary>What the trades are — the one place the sim asks (`jobs-catalog.md`, D218).</summary>
+    public JobsCatalog JobsCatalog { get; }
+
     /// <summary>
     /// A stockpile with a slot for every good <em>this run</em> has (D210, slice 1b).
     /// </summary>
@@ -184,16 +187,10 @@ public sealed class SimWorld
         return PlacementVerdict.Fine;
     }
 
-    private static string Describe(JobKind kind) => kind switch
-    {
-        JobKind.Forager => "gathering",
-        JobKind.Forester => "felling timber",
-        JobKind.Woodcutter => "splitting firewood",
-        JobKind.Marketer => "the market",
-        JobKind.Builder => "building",
-        JobKind.Farmer => "farming",
-        _ => kind.ToString().ToLowerInvariant(),
-    };
+    // ⭐ Six arms naming six trades; the gerund is a column on the row now (D218). The old
+    // default arm — `kind.ToString().ToLowerInvariant()` — is gone with them: a trade that
+    // reaches here has a row, because the validator refuses a catalogue missing a built-in id.
+    private string Describe(JobKind kind) => JobsCatalog.DoingOf(kind);
 
     /// <summary>
     /// Everyone old enough and well enough to hold a job — the number
@@ -4352,17 +4349,13 @@ public sealed class SimWorld
     /// bug, not a woodcutter's hut — the default arm is exactly how six buildings came to be
     /// mis-priced and mis-named before anybody noticed.
     /// </remarks>
-    private static BuildingKind KindOf(Workplace workplace) => workplace.Kind switch
-    {
-        JobKind.Woodcutter => BuildingKind.WoodcutterHut,
-        JobKind.Forager => BuildingKind.GathererHut,
-        JobKind.Forester => BuildingKind.ForesterHut,
-        JobKind.Builder => BuildingKind.BuilderHut,
-        JobKind.Marketer => BuildingKind.Market,
-        JobKind.Farmer => BuildingKind.Farmhouse,
-        _ => throw new ArgumentOutOfRangeException(
-            nameof(workplace), workplace.Kind, "That kind of workplace has no building."),
-    };
+    // ⭐ Which building a trade staffs is `works_at` on the row now (D218). The throw stays:
+    // a row may legally have no workplace — a laborer is "the villagers no job currently
+    // wants" (D66) — and asking such a trade for its building is still a caller error.
+    private BuildingKind KindOf(Workplace workplace) =>
+        JobsCatalog.WorksAt(workplace.Kind)
+        ?? throw new ArgumentOutOfRangeException(
+            nameof(workplace), workplace.Kind, "That kind of workplace has no building.");
 
     /// <summary>Abandon a site that has not been finished; its delivered logs come back.</summary>
     public void CancelConstruction(Workplace site)
@@ -5155,6 +5148,7 @@ public sealed class SimWorld
     {
         Config = config;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
+        JobsCatalog = new JobsCatalog(config.JobsCatalog);
         _saidThereIsNowhereFor = new bool[GoodsCatalog.Count];
         StockLimits = new StockLimits(GoodsCatalog.Count);
         Logger = logger;

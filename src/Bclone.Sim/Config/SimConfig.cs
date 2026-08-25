@@ -1422,6 +1422,80 @@ public sealed record SimConfig
         },
     };
 
+    /// <summary>
+    /// The trades that exist — <b>rows, so a modder can add a seventh</b> (`jobs-catalog.md`, D218).
+    /// </summary>
+    /// <remarks>
+    /// <b>Ids 0–5 match <see cref="JobKind"/> exactly, and must</b> — every golden and every saved
+    /// staffing figure is pinned to them. Defaults live here rather than in the shipped file, like
+    /// <see cref="GoodsCatalog"/> and <see cref="Skills"/>: <b>one source of truth, not two.</b>
+    /// </remarks>
+    [JsonPropertyName("jobs")]
+    public IReadOnlyList<JobRow> JobsCatalog { get; init; } = new[]
+    {
+        new JobRow
+        {
+            Id = (int)JobKind.Forager,
+            Name = "forager",
+            Plural = "foragers",
+            Doing = "gathering",
+            WorksAt = BuildingKind.GathererHut,
+
+            // ⛔ No limit. Food is gathered as well as farmed, and standing the gatherers down on
+            // a full granary is a decision nobody has taken.
+            LimitedBy = null,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Forester,
+            Name = "forester",
+            Plural = "foresters",
+            Doing = "felling timber",
+            WorksAt = BuildingKind.ForesterHut,
+            LimitedBy = World.Goods.Logs,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Woodcutter,
+            Name = "woodcutter",
+            Plural = "woodcutters",
+            Doing = "splitting firewood",
+            WorksAt = BuildingKind.WoodcutterHut,
+            LimitedBy = World.Goods.Firewood,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Marketer,
+
+            // ⚠️ TWO WORDS FOR ONE TRADE, AND THAT IS D188 UNRESOLVED RATHER THAN A TYPO. The
+            // staffing panel says "traders"; the roster beside a villager's name says "marketer".
+            // Both are carried so the row does not settle Joe's question by accident.
+            Name = "marketer",
+            Plural = "traders",
+            Doing = "the market",
+            WorksAt = BuildingKind.Market,
+            LimitedBy = null,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Builder,
+            Name = "builder",
+            Plural = "builders",
+            Doing = "building",
+            WorksAt = BuildingKind.BuilderHut,
+            LimitedBy = null,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Farmer,
+            Name = "farmer",
+            Plural = "farmers",
+            Doing = "farming",
+            WorksAt = BuildingKind.Farmhouse,
+            LimitedBy = World.Goods.Food,
+        },
+    };
+
     [JsonPropertyName("skills")]
     public IReadOnlyList<SkillRow> Skills { get; init; } = new[]
     {
@@ -2236,6 +2310,7 @@ public sealed record SimConfig
         }
 
         ValidateGoods();
+        ValidateJobs();
         ValidateSkills();
     }
 
@@ -2329,6 +2404,55 @@ public sealed record SimConfig
                 $"goods has {seen.Count} rows; the store filter is a 64-bit mask with its "
                 + $"sentinel at bit {filterCeiling}, so at most {filterCeiling} goods can exist "
                 + "until it is widened again.");
+        }
+    }
+
+    /// <summary>Check the jobs catalogue (`jobs-catalog.md`, D218).</summary>
+    private void ValidateJobs()
+    {
+        if (JobsCatalog is null)
+        {
+            throw new SimConfigException("jobs must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < JobsCatalog.Count; i++)
+        {
+            World.JobRow job = JobsCatalog[i];
+
+            if (job.Id < 0)
+            {
+                throw new SimConfigException(
+                    $"jobs[{i}] has id {job.Id}; ids index the quota and cannot be negative.");
+            }
+
+            if (!seen.Add(job.Id))
+            {
+                throw new SimConfigException(
+                    $"jobs[{i}] repeats id {job.Id}. Ids are what a staffing figure is stored "
+                    + "and hashed under, so two trades sharing one would share a quota.");
+            }
+
+            if (string.IsNullOrWhiteSpace(job.Name) || string.IsNullOrWhiteSpace(job.Plural))
+            {
+                throw new SimConfigException(
+                    $"jobs[{i}] (id {job.Id}) needs both a name and a plural — they are different "
+                    + "words for a reason (D188), so neither may be left blank.");
+            }
+        }
+
+        // The enum is an alias for the first ids, exactly as it is for goods. A missing built-in
+        // would index a row that is not there, failing deep in the allocator rather than here.
+        int builtIn = System.Enum.GetValues<World.JobKind>().Length;
+        for (int id = 0; id < builtIn; id++)
+        {
+            if (!seen.Contains(id))
+            {
+                throw new SimConfigException(
+                    $"jobs is missing id {id} ({(World.JobKind)id}). The built-in trades are named "
+                    + "directly by the allocator and every golden is pinned to their ids, so a "
+                    + "catalogue may add rows above them but may not omit them.");
+            }
         }
     }
 

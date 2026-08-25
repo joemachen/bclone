@@ -434,7 +434,7 @@ internal static class LabourAllocator
         reason.Append(Tiles(nearestCost));
         reason.Append(nearest.IsFull
             ? " tiles, but already had its hands."
-            : $" tiles, but the village has all the {Plural(nearest.Kind)} it needs.");
+            : $" tiles, but the village has all the {Plural(world, nearest.Kind)} it needs.");
     }
 
     /// <summary>"Bess was equally close; the tie went to the elder claim."</summary>
@@ -685,7 +685,7 @@ internal static class LabourAllocator
                         ? $"No work: every hand went back to food — a household is going hungry, " +
                           $"so nothing is cut until the village is fed. Yours was the longest walk " +
                           $"at {Tiles(furthestCost)} tiles."
-                        : $"No work: the village needs only {wanted} {Plural(kind)} for its " +
+                        : $"No work: the village needs only {wanted} {Plural(world, kind)} for its " +
                           $"{quota.Mouths} mouths, and yours was the longest walk at " +
                           $"{Tiles(furthestCost)} tiles.");
 
@@ -854,16 +854,10 @@ internal static class LabourAllocator
 
     private static int Tiles(int cost) => cost / TravelCostField.BaseTileCost;
 
-    private static string Plural(JobKind kind) => kind switch
-    {
-        JobKind.Forager => "foragers",
-        JobKind.Forester => "foresters",
-        JobKind.Woodcutter => "woodcutters",
-        JobKind.Marketer => "traders",
-        JobKind.Builder => "builders",
-        JobKind.Farmer => "farmers",
-        _ => "workers",
-    };
+    // ⭐ Six arms naming six trades; the plural is a column on the row now (D218). It is a
+    // column of its own rather than the name plus an "s" because the marketer is "traders"
+    // here and "marketer" on the roster — D188 unresolved, and not this row's to settle.
+    private static string Plural(SimWorld world, JobKind kind) => world.JobsCatalog.PluralOf(kind);
 
     /// <summary>Place names read "the berry patch"; sometimes one has to start a sentence.</summary>
     private static string Capitalise(string text) =>
