@@ -927,7 +927,7 @@ public sealed class SimWorld
     /// <para>
     /// <b>Walks the owned tiles, never the valley.</b> `ZoneMap` keeps a per-owner list, so a
     /// hut with forty tiles looks at forty — not at 9,600, which is the mistake
-    /// <see cref="NearestHarvest"/> had to be rescued from when the valley became wooded.
+    /// <see cref="NearestHarvest(GridPos)"/> had to be rescued from when the valley became wooded.
     /// </para>
     /// </remarks>
     /// <summary>
@@ -953,9 +953,36 @@ public sealed class SimWorld
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        return workplace.Mode == WorkMode.FellAndPlant
-            && !StockLimits.IsMet(Goods.Logs, LogsInSheds());
+        return workplace.Mode == WorkMode.FellAndPlant && MayTake(Goods.Logs);
     }
+
+    /// <summary>
+    /// Whether the village still wants more of a good — <b>the limit's one door</b> (D212).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ D146 cut this door for the forester and for nobody else.</b> <see cref="MayFell"/>
+    /// asked the Logs limit by name, so the <em>hut</em> obeyed the player and the
+    /// <em>harvest brush</em> did not — and the brush is the only source of stone and iron the
+    /// game has. A player could type <em>"keep 100 stone"</em>, watch every seam in the valley
+    /// come out of the ground, and get no sentence explaining it.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It reads <see cref="InStores"/> for every good, and that is not a widening of what
+    /// <see cref="MayFell"/> counted.</b> `stock-limits-and-laborers.md §4.1` is emphatic that a
+    /// limit must read the same supply the good's demand function reads — D29 froze a village to
+    /// extinction on the other reading. <c>InStores(Goods.Logs)</c> and <see cref="LogsInSheds"/>
+    /// are the same sum over the same stores (<c>store.Logs</c> <em>is</em>
+    /// <c>store[Goods.Logs]</c>), so the forester's question is unchanged to the byte. The spec's
+    /// own answer for a good with no demand function yet — stone, iron, tools — is <em>"the limit
+    /// reads village stores"</em>, which is this.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Nothing switches on a good by name here</b>, which is `goods-catalog.md §2.1`'s rule
+    /// and the reason a mod-added good is limited the day it is added.
+    /// </para>
+    /// </remarks>
+    public bool MayTake(Goods goods) => !StockLimits.IsMet(goods, InStores(goods));
 
     /// <summary>
     /// Why this workplace cannot do its job right now, or <c>null</c> if it can.
@@ -2231,7 +2258,7 @@ public sealed class SimWorld
             $"There is nowhere in the village to keep {goods.ToString().ToLowerInvariant()}, "
             + "so it is being left "
             + "on the ground where it falls — and goods on the ground feed nobody and build "
-            + $"nothing. A storage pile costs only the cleared ground it stands on. "
+            + $"nothing. A stockpile costs only the cleared ground it stands on. "
             + $"{Clock.SeasonAndYear()}.");
     }
 
@@ -2292,7 +2319,7 @@ public sealed class SimWorld
     /// <para>
     /// <b>The empty-list guard is not an optimisation.</b> This is asked by every able adult
     /// with nothing else to do, every tick — the same position that took the suite from four
-    /// minutes to over ten when <see cref="NearestHarvest"/> shipped without one (D87). A
+    /// minutes to over ten when <see cref="NearestHarvest(GridPos)"/> shipped without one (D87). A
     /// village that has never dropped anything pays one integer compare.
     /// </para>
     /// </remarks>
@@ -2770,10 +2797,20 @@ public sealed class SimWorld
 
     /// <summary>Whether a tile holds anything a laborer could take.</summary>
     /// <remarks>
+    /// <para>
     /// <b>One question, so a new harvestable terrain is answered here and nowhere else.</b>
-    /// Only forest today; stone and iron are D84's finite deposits and land next. This is
+    /// Forest, stone seams and iron seams — <c>TerrainRules.Yields</c> is the list. This is
     /// deliberately the same shape as <c>TerrainRules.IsPassable</c> — the seam D76 spent
     /// five instalments learning to recognise.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It said <em>"only forest today; stone and iron are D84's finite deposits and land
+    /// next"</em> until D211</b>, and that stopped being true the day the seams shipped. It is
+    /// recorded rather than quietly deleted because the stale sentence was read as evidence
+    /// while `goods-catalog.md §4.0` was working out whether a villager could reach a seam at
+    /// all — <b>a comment that lies is worse than no comment, because it is believed at exactly
+    /// the moment somebody is orienting.</b>
+    /// </para>
     /// </remarks>
     public bool HasSomethingToHarvest(GridPos tile) =>
         TerrainRules.Yields(Map.TerrainAt(tile)) is not null;
@@ -2787,8 +2824,21 @@ public sealed class SimWorld
     /// flicker against, and taking the nearest tree to hand is what a person would do.
     /// Walked in a fixed order so two runs pick the same tree.
     /// </remarks>
-    public GridPos? NearestHarvest(GridPos from)
+    public GridPos? NearestHarvest(GridPos from) => NearestHarvest(from, out _);
+
+    /// <summary>
+    /// The nearest tile to clear, and — when there is none — <b>the good a limit held back</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>The out-parameter is for the sentence, not for the decision</b> (D212, METHODOLOGY §4:
+    /// every refusal writes its own reason). A laborer who walks past a painted seam because the
+    /// village already has enough stone must be able to say so, and working that out afterwards
+    /// would mean a second scan of the painted tiles for every idle adult on every tick. This
+    /// scan already knows.
+    /// </remarks>
+    public GridPos? NearestHarvest(GridPos from, out Goods? heldBackBy)
     {
+        heldBackBy = null;
         // ⭐ NOTHING PAINTED, NOTHING TO SCAN — and this line is not an optimisation, it
         // is the difference between the feature being free and being ruinous. This is
         // asked by every able adult who has nothing else to do, every tick, and the scan
@@ -2827,6 +2877,68 @@ public sealed class SimWorld
 
         GridPos? best = null;
         int bestCost = int.MaxValue;
+        GridPos? needed = null;
+        int neededCost = int.MaxValue;
+
+        // ⭐ WHAT THE VILLAGE HAS ENOUGH OF, ASKED ONCE (D212). A limit is a ceiling on
+        // production (D62), and clearing painted ground is production — it was simply the one
+        // producer nobody had wired the control to.
+        //
+        // ⚠️ COMPUTED HERE RATHER THAN PER TILE, and that is not tidiness. `MayTake` sums a good
+        // across every store that accepts it, and the loop below runs over every painted tile
+        // for every idle adult on every tick — the exact ruin this method's own comments above
+        // are about. One pass over the goods, then an array lookup per tile.
+        //
+        // ⛔ AND `AnySet` IS THE EARLY-OUT THAT KEEPS THE FEATURE FREE. A village that has never
+        // opened the control pays one boolean, which is the argument the sparse hashing and the
+        // `HarvestTiles == 0` line above both make: a feature nobody has switched on should cost
+        // nothing at all. It is also why no golden moves for this — `null` is the default and
+        // means *"the player has not said"*.
+        bool[]? enoughOf = null;
+        if (StockLimits.AnySet)
+        {
+            enoughOf = new bool[GoodsCatalog.Count];
+            for (int g = 0; g < enoughOf.Length; g++)
+            {
+                enoughOf[g] = !MayTake((Goods)g);
+            }
+        }
+
+        // ⭐⭐ WHAT A BUILDING IS WAITING ON COMES BEFORE WHAT IS MERELY NEAREST (D215).
+        //
+        // **This is `NextFootprintToClear`'s exception, one good over, and its comment already
+        // wrote the reason: *"nearest-first never gets to it."*** Stone sits on a ring fourteen
+        // tiles out by design (*"STONE NEAR, IRON FAR"*), while a village paints its trees on its
+        // doorstep and the wood **grows back** (D126) — so there is always something cheaper to
+        // walk to, for ever. Measured on the shipped opening with both painted: **one seam of
+        // four cleared in five years and not one stone reaching a store**, while the huts that
+        // needed three of it stayed sites and everybody froze.
+        //
+        // ⚠️ ONLY WHEN NOTHING IN STORE CAN SERVE IT. If a shed already holds the stone, a
+        // builder fetches it and this is not clearing work at all — the rule is *"the village
+        // cannot otherwise get this"*, not *"a site wants this"*, which would send laborers to
+        // the rock every time a granary was marked.
+        bool[]? waitedOn = null;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Construction is not { IsFinished: false } plan
+                || !GroundIsClearAt(Workplaces[i].Position))
+            {
+                continue;
+            }
+
+            for (int m = 0; m < plan.Recipe.Materials.Count; m++)
+            {
+                Goods wants = plan.Recipe.Materials[m].Goods;
+                if (plan.StillNeeded(wants) <= 0 || AnyStoreHolding(wants))
+                {
+                    continue;
+                }
+
+                waitedOn ??= new bool[GoodsCatalog.Count];
+                waitedOn[(int)wants] = true;
+            }
+        }
 
         // ⭐ THE PAINTED TILES THEMSELVES, NOT THE WHOLE VALLEY (`forests-and-gathering.md`).
         // This walked all 9,600 tiles, guarded by the early-out above — which was enough while
@@ -2858,12 +2970,62 @@ public sealed class SimWorld
                 continue;
             }
 
+            // ⭐ AND IT IS LEFT STANDING WHEN THE VILLAGE HAS ENOUGH (D212). Skipped, never
+            // un-painted — the rule D127 wrote three paragraphs up: the paint is a standing
+            // instruction, so a seam the village is currently full of is *work that is waiting*
+            // and it comes back the moment the stores are spent down. The player raises the
+            // limit or spends the stone; the village does not forget what they asked for.
+            //
+            // ⛔ THE FOOTPRINT BRANCH ABOVE RETURNS BEFORE THIS, AND MUST. A building's ground
+            // is cleared whatever the limit says, or the village deadlocks on its own
+            // instruction: the site waits on the ground, the ground waits on the limit, and the
+            // limit waits on nothing at all. Guarded by
+            // `HarvestLimitTests.GroundABuildingWaitsOnIsClearedEvenAtTheLimit`.
+            if (enoughOf is not null)
+            {
+                Goods standing = TerrainRules.Yields(Map.TerrainAt(at))!.Value;
+                if (enoughOf[(int)standing])
+                {
+                    heldBackBy ??= standing;
+                    continue;
+                }
+            }
+
             int cost = TravelCost.Cost(from, at);
+
+            // A tile something is waiting on outranks every merely-nearer tile, and is still
+            // chosen by cost among its own kind — so the village goes to the closest rock, not
+            // to a random one.
+            if (waitedOn is not null
+                && waitedOn[(int)TerrainRules.Yields(Map.TerrainAt(at))!.Value])
+            {
+                if (cost < neededCost)
+                {
+                    needed = at;
+                    neededCost = cost;
+                }
+
+                continue;
+            }
+
             if (cost < bestCost)
             {
                 best = at;
                 bestCost = cost;
             }
+        }
+
+        if (needed is not null)
+        {
+            heldBackBy = null;
+            return needed;
+        }
+
+        // Only a refusal if it is the reason there is nothing to do. Somebody who walked past a
+        // capped seam on the way to a tree is not being held back by anything.
+        if (best is not null)
+        {
+            heldBackBy = null;
         }
 
         return best;
@@ -3490,7 +3652,7 @@ public sealed class SimWorld
         // which was true while the pile was the only free building and would have been the
         // sixth silent special case the day a second one arrived. "Does it cost anything?" is
         // the question this branch is actually asking.
-        if (recipe.Logs == 0 && recipe.WorkTicks == 0)
+        if (recipe.TotalMaterials == 0 && recipe.WorkTicks == 0)
         {
             // Clear ground: it stands now. Wooded ground: it stands the moment the wood is
             // gone, and THE CLEARING IS WHAT IT COSTS (D96) — which is still true, and is
@@ -3693,6 +3855,89 @@ public sealed class SimWorld
     /// not over labour.
     /// </para>
     /// </remarks>
+    /// <summary>Whether anywhere in the village is holding this good right now.</summary>
+    public bool AnyStoreHolding(Goods goods)
+    {
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Accepts(goods) && StoreBuildings[i].Store[goods] > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The site a builder should serve right now — <b>the first in queue order they can
+    /// actually advance</b> (D213).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ D135'S BUG, ARRIVING THROUGH A SECOND MATERIAL.</b> That decision gave a builder
+    /// somewhere to go when the head of the queue was starved — *"the builder shouldn't just sit
+    /// at the building waiting"* — and it asked <see cref="NextBuildableSite"/>, which only ever
+    /// answers with a site that <b>already has everything</b> and is merely short of work. While
+    /// timber was the only material that was nearly always true: the village makes logs, so a
+    /// starved head was rare and short-lived.
+    /// </para>
+    /// <para>
+    /// <b>Stone is not like that.</b> Nothing produces it until the player paints a seam, so
+    /// *"the head wants something the village has not got"* is the NORMAL state of a fresh
+    /// village — and the head then blocked every site behind it for ever. Measured before this
+    /// existed: a played founding went to <b>0 alive, 4 frozen, no house ever built</b>, and a
+    /// century of the shipped village finished at <b>0 alive</b> with four sites queued and 116
+    /// logs in store. The houses were affordable the whole time and nobody could reach them.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE QUEUE IS STILL NOT REORDERED, which is D102's line and it holds.</b> This walks
+    /// the same order <see cref="NextToBuild"/> does and prefers the head whenever the head can
+    /// be advanced at all — so scarce timber still goes where the player pointed. What moves is
+    /// only which site a builder serves when the head is waiting on something that does not
+    /// exist yet.
+    /// </para>
+    /// <para>
+    /// <b>⭐ ONE ORDERING, ASKED IN ONE PLACE.</b> <c>WorkTheSite</c> and <c>LoadMaterials</c>
+    /// both ask this, so the site somebody walks to a store for and the site they carry the load
+    /// back to cannot disagree — which is D157's rule about two orderings over one list being
+    /// the shape of half the bugs in this project.
+    /// </para>
+    /// </remarks>
+    public Workplace? NextSiteToServe()
+    {
+        Workplace? best = null;
+        GridPos village = FirstHomeOrFoundingSite();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+            if (candidate.Construction is not { IsFinished: false } plan
+                || !GroundIsClearAt(candidate.Position)
+                || !TravelCost.CanReach(village, candidate.Position))
+            {
+                continue;
+            }
+
+            // Either it is paid for and merely owes work, or the next thing it wants is
+            // standing in a store somewhere. Anything else is a site nobody can move today.
+            if (plan.NextMaterialWanted() is Goods wanted && !AnyStoreHolding(wanted))
+            {
+                continue;
+            }
+
+            if (best is null
+                || candidate.EffectiveQueueRank < best.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == best.EffectiveQueueRank
+                    && candidate.Id < best.Id))
+            {
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
     public Workplace? NextBuildableSite()
     {
         Workplace? best = null;
@@ -3891,18 +4136,21 @@ public sealed class SimWorld
             Name = $"{name} (building)",
             Position = position,
             Capacity = 0,
-            Construction = new ConstructionSite
+            Construction = new ConstructionSite(recipe)
             {
                 Kind = kind,
                 Name = name,
-                Recipe = recipe,
                 ForHouseholdId = forHouseholdId,
             },
         });
 
+        // ⭐ The cost is a sentence the recipe writes, not a format string naming one good
+        // (D213). "40 logs and 10 stone" comes out of the same method the panel uses, so the
+        // village log and the inspector can never describe one building two ways — D148 and
+        // D188's finding, which is what put the words on the row in the first place.
         Log(Logging.LogLevel.Info, "placement",
-            $"{name} was marked out — {recipe.Logs} logs and {recipe.WorkTicks} ticks of work. " +
-            $"{Clock.SeasonAndYear()}.");
+            $"{name} was marked out — {recipe.Describe(GoodsCatalog)} and "
+            + $"{recipe.WorkTicks} ticks of work. {Clock.SeasonAndYear()}.");
 
         // ⭐ AND IT SAYS SO WHEN NOBODY WILL COME (D108). A hut is the only path to a
         // building now, so a village without one can mark out as much as it likes and watch
@@ -3953,7 +4201,7 @@ public sealed class SimWorld
         };
 
         int held = building.Store.Held;
-        int back = BuildingRecipe.For(kind, Config).Logs * Config.DemolitionReturnsPercent / 100;
+        IReadOnlyList<MaterialCost> back = RefundFor(BuildingRecipe.For(kind, Config));
 
         StoreBuildings.Remove(building);
 
@@ -3967,17 +4215,15 @@ public sealed class SimWorld
             }
         }
 
-        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `shed` was simply null and the logs went nowhere.
-        StoreBuilding? shed = NearestStoreAccepting(
-            building.Position, Goods.Logs, static store => !store.Store.IsFull);
-        int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
+        string recovered = ReturnToStore(building.Position, back);
 
         Narrate(held > 0
-            ? $"{building.Name} was pulled down — {recovered} logs recovered, and the {held} " +
+            ? $"{building.Name} was pulled down — {recovered} recovered, and the {held} " +
               $"goods inside it were lost. {Clock.SeasonAndYear()}."
-            : $"{building.Name} was pulled down — {recovered} logs recovered. {Clock.SeasonAndYear()}.");
+            : $"{building.Name} was pulled down — {recovered} recovered. {Clock.SeasonAndYear()}.");
     }
 
     /// <summary>
@@ -4034,22 +4280,70 @@ public sealed class SimWorld
         }
 
         BuildingKind kind = KindOf(workplace);
-        int back = BuildingRecipe.For(kind, Config).Logs * Config.DemolitionReturnsPercent / 100;
+        IReadOnlyList<MaterialCost> back = RefundFor(BuildingRecipe.For(kind, Config));
 
         string name = workplace.Name;
         RetireWorkplace(workplace);
 
-        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `shed` was simply null and the logs went nowhere.
-        StoreBuilding? shed = NearestStoreAccepting(
-            workplace.Position, Goods.Logs, static store => !store.Store.IsFull);
-        int recovered = shed?.Store.Receive(Goods.Logs, back) ?? 0;
+        string recovered = ReturnToStore(workplace.Position, back);
 
-        Narrate(recovered > 0
-            ? $"{Capitalised(name)} was pulled down — {recovered} logs recovered. "
+        Narrate(back.Count > 0
+            ? $"{Capitalised(name)} was pulled down — {recovered} recovered. "
                 + $"{Clock.SeasonAndYear()}."
             : $"{Capitalised(name)} was pulled down. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>What pulling a building down hands back — a share of every material (D213).</summary>
+    /// <remarks>
+    /// <b>Priced off the recipe rather than off what was delivered</b>, which is what demolition
+    /// has always done: a standing building has no memory of its own site. The share is
+    /// <c>demolition_returns_percent</c>, applied per material so that a building costing two
+    /// things gives a little of each back rather than all of one.
+    /// </remarks>
+    private IReadOnlyList<MaterialCost> RefundFor(BuildingRecipe recipe)
+    {
+        var back = new List<MaterialCost>();
+        for (int i = 0; i < recipe.Materials.Count; i++)
+        {
+            int share = recipe.Materials[i].Amount * Config.DemolitionReturnsPercent / 100;
+            if (share > 0)
+            {
+                back.Add(new MaterialCost(recipe.Materials[i].Goods, share));
+            }
+        }
+
+        return back;
+    }
+
+    /// <summary>
+    /// Put a refund back wherever will take it, and say what actually landed.
+    /// </summary>
+    /// <remarks>
+    /// <b>Each material asked about separately</b>, for D144's reason one path over: a store the
+    /// player has filtered may take the timber and refuse the stone, and a refund that assumed
+    /// one destination for a two-material building would quietly destroy half of it.
+    /// </remarks>
+    private string ReturnToStore(GridPos where, IReadOnlyList<MaterialCost> back)
+    {
+        var landed = new List<MaterialCost>();
+        for (int i = 0; i < back.Count; i++)
+        {
+            StoreBuilding? store = NearestStoreAccepting(
+                where, back[i].Goods, static place => !place.Store.IsFull);
+
+            int took = store?.Store.Receive(back[i].Goods, back[i].Amount) ?? 0;
+            if (took > 0)
+            {
+                landed.Add(new MaterialCost(back[i].Goods, took));
+            }
+        }
+
+        return landed.Count == 0
+            ? "nothing"
+            : new BuildingRecipe(0, landed.ToArray()).Describe(GoodsCatalog);
     }
 
     /// <summary>Which kind of building a standing workplace is, for pricing its refund.</summary>
@@ -4080,18 +4374,16 @@ public sealed class SimWorld
             throw new ArgumentException($"{site.Name} is not a construction site.", nameof(site));
         }
 
-        int back = site.Construction.Abandon();
+        IReadOnlyList<MaterialCost> back = site.Construction.Abandon();
         RetireWorkplace(site);
 
-        // ANYWHERE THAT TAKES TIMBER, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `shed` was simply null and the logs went nowhere.
-        StoreBuilding? shed = NearestStoreAccepting(
-            site.Position, Goods.Logs, static store => !store.Store.IsFull);
-        shed?.Store.Receive(Goods.Logs, back);
+        string recovered = ReturnToStore(site.Position, back);
 
         Narrate($"{site.Construction.Name} was abandoned before it was built — " +
-            $"{back} logs went back to store. {Clock.SeasonAndYear()}.");
+            $"{recovered} went back to store. {Clock.SeasonAndYear()}.");
     }
 
     /// <summary>Turn a finished site into the building it was always going to be.</summary>
@@ -4613,7 +4905,16 @@ public sealed class SimWorld
             BuildingKind.Granary => "granary",
             BuildingKind.Shed => "storage shed",
             BuildingKind.Market => "market",
-            BuildingKind.Pile => "storage pile",
+            // ⭐ "stockpile", not "storage pile" (Joe, D217: *"rename storage pile to
+            // stockpile across all instances in the game"*).
+            //
+            // ⚠️ IT SHARES A WORD WITH THE `Stockpile` CLASS AND THEY ARE NOT THE SAME THING.
+            // `Stockpile` is the goods container every store, larder, workplace and pair of arms
+            // holds; this is the name of ONE kind of store building (`StoreKind.Pile`). The type
+            // is deliberately not renamed — it would collide on the very screen this makes
+            // clearer — so a reader who meets both should take **the enum** as the identity and
+            // this string as the label.
+            BuildingKind.Pile => "stockpile",
             BuildingKind.BuilderHut => "builder's hut",
             BuildingKind.GathererHut => "gatherer's hut",
             BuildingKind.ForesterHut => "forester's hut",
@@ -5178,6 +5479,10 @@ public sealed class SimWorld
                     LifespanYears = lifespan,
                     Rhythm = rhythm,
 
+                    // Sized from the run's catalogue like every other stockpile (D210) — so a
+                    // good a mod adds can be picked up rather than only stored.
+                    Carried = NewStockpile(),
+
                     // ⭐⭐ AND THEIR HUNGER STARTS A LITTLE APART, WHICH IS THE HALF THE STAGGER
                     // ALONE COULD NOT REACH (§3.5, D190). Measured with only the action
                     // stagger: two adults of one household still had **identical hunger 100% of
@@ -5716,12 +6021,62 @@ public sealed class SimWorld
     /// </remarks>
     public int FoodTheVillageHasRoomFor()
     {
+        // ⭐⭐ THE PLAYER'S NUMBER IF THEY HAVE GIVEN ONE, THE DERIVED TARGET IF NOT (D216).
+        //
+        // **This read the derived target ONLY, so a food limit was invisible to the one person
+        // who would produce toward it.** Joe, playing: *"if there are trees marked for harvest,
+        // foragers will gather trees even though the food limit is not yet met [set to 2000]."*
+        // Measured on his shape of village: **a limit of 2000 and no limit at all produced
+        // byte-identical behaviour** — 959 forager ticks gathering and 871 clearing in both arms.
+        // A control that changes nothing is D212's stone box, on the good the whole economy is
+        // derived from.
+        //
+        // **This is exactly D62's *derived floor, player ceiling*** — and the floor half is
+        // unaffected, because `TargetFoodForTheGranary` is what the BIRTH gate reads
+        // (`HouseholdSystem`) and that deliberately stays derived (D153). The player's number
+        // governs *work*; the derived number governs *children*. Two questions, two readers.
+        //
+        // ⚠️ A limit BELOW the derived floor is obeyed rather than argued with, which is D62's
+        // own rule — `SetStockLimit` already warns at the moment it is set, because *a game that
+        // refuses the player's number is arguing with them, and one that obeys it silently has
+        // killed them without saying so.*
+        int wanted = StockLimits.For(Goods.Food) ?? TargetFoodForTheGranary();
+
         // Across every store the village can actually put food in (D76, D79) — the
         // granaries it has built, the pile the player dropped on day one, and the cart
         // they arrived in.
-        int wanted = TargetFoodForTheGranary();
+        //
+        // ⛔ STILL CAPPED BY ROOM, and that is not a hedge: *a village cannot want more food
+        // than it has somewhere to put* (D33, D76). Asking for 2000 with granaries for 900 is a
+        // request for granaries, and the forager who stops now says so out loud rather than
+        // wandering off to fell a tree — see `BehaviorSystem`'s note where this is read.
         int capacity = FoodInGranaries() + RoomLeftForFood();
         return wanted < capacity ? wanted : capacity;
+    }
+
+    /// <summary>
+    /// Why the village has stopped wanting food, or null while it still does.
+    /// </summary>
+    /// <remarks>
+    /// <b>For the sentence, not the decision</b> (METHODOLOGY §4, D216). A forager who falls
+    /// through to clearing painted ground looks exactly like a forager who has decided timber
+    /// matters more than food — which is what Joe read off the screen — and the two have
+    /// completely different answers: *raise the limit* against *build a granary*.
+    /// </remarks>
+    public string? WhyTheVillageWantsNoMoreFood()
+    {
+        int holds = FoodTheVillageHolds();
+        if (holds < FoodTheVillageHasRoomFor())
+        {
+            return null;
+        }
+
+        if (StockLimits.For(Goods.Food) is int limit && holds >= limit)
+        {
+            return $"you asked the village to keep {limit} food and it has {holds}";
+        }
+
+        return $"every store that takes food is full — {holds} held, and nowhere to put more";
     }
 
     /// <summary>Free space across every store that would take food.</summary>
@@ -5821,6 +6176,11 @@ public sealed class SimWorld
         // holds is what you arrived in: your food and your tools.
         cart.Store.Receive(Goods.Food, config.CartFood);
         cart.Store.Receive(Goods.Tools, config.CartTools);
+
+        // ⛔ AND NOTHING ELSE (Joe, D215). Stone was added here for one commit and taken out
+        // again: *"there should already be stone on the map for the user to ask the laborers to
+        // harvest."* There is — four seams on a fourteen-tile ring — see `SimConfig`'s note where
+        // `cart_stone` used to be for the misread unit that put it here.
     }
 
 

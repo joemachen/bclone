@@ -25,6 +25,9 @@ namespace Bclone.Sim.Systems;
 /// </remarks>
 public sealed class BehaviorSystem : ISimSystem
 {
+    /// <summary>Scratch for the audit trail's before-and-after. See <see cref="Snapshot"/>.</summary>
+    private int[] _carriedBefore = System.Array.Empty<int>();
+
     public string Name => "behavior";
 
     public void Execute(SimWorld world)
@@ -52,9 +55,16 @@ public sealed class BehaviorSystem : ISimSystem
 
             VillagerState before = villager.State;
             GridPos wasAt = villager.Position;
-            int hadFood = villager.CarriedFood;
-            int hadLogs = villager.CarriedLogs;
-            int hadFirewood = villager.CarriedFirewood;
+
+            // ⭐ EVERY GOOD, NOT THE THREE THAT USED TO HAVE A FIELD (D211). A villager can
+            // carry stone now, and an audit trail that names three goods would be silent about
+            // exactly the load `goods-catalog.md §4.0` found going missing.
+            //
+            // Into a buffer owned by this system rather than a fresh array per villager per
+            // tick: this branch runs for every villager on every tick of a DEBUG run, which is
+            // the run somebody is reading a trail out of, and METHODOLOGY §4's rule is that the
+            // trail must not cost the thing it is describing.
+            int[] had = Snapshot(villager);
 
             ActOne(world, villager);
 
@@ -71,17 +81,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             // Goods changing hands is the other half of an audit: "why is the granary
             // empty" is answered by who carried what, and when.
-            int food = villager.CarriedFood - hadFood;
-            int logs = villager.CarriedLogs - hadLogs;
-            int firewood = villager.CarriedFirewood - hadFirewood;
-
-            if (food != 0 || logs != 0 || firewood != 0)
-            {
-                world.LogVillager(LogLevel.Debug, villager, "goods",
-                    $"carrying {Change(food, "food")}{Change(logs, "logs")}" +
-                    $"{Change(firewood, "firewood")}" +
-                    $"— now {villager.CarriedFood}f/{villager.CarriedLogs}l/{villager.CarriedFirewood}w");
-            }
+            LogWhatChangedHands(world, villager, had);
         }
     }
 
@@ -137,6 +137,65 @@ public sealed class BehaviorSystem : ISimSystem
 
     private static string Change(int delta, string what) =>
         delta == 0 ? string.Empty : $"{(delta > 0 ? "+" : string.Empty)}{delta} {what} ";
+
+    /// <summary>
+    /// Everything in somebody's arms, by good id — <b>reused, not allocated</b>.
+    /// </summary>
+    /// <remarks>
+    /// One buffer per <see cref="BehaviorSystem"/>, and a system belongs to one world, which
+    /// steps one villager at a time. The suite runs worlds in parallel and this is not shared
+    /// between them.
+    /// </remarks>
+    private int[] Snapshot(Villager villager)
+    {
+        if (_carriedBefore.Length != villager.Carried.Slots)
+        {
+            _carriedBefore = new int[villager.Carried.Slots];
+        }
+
+        for (int g = 0; g < _carriedBefore.Length; g++)
+        {
+            _carriedBefore[g] = villager.Carried[(Goods)g];
+        }
+
+        return _carriedBefore;
+    }
+
+    /// <summary>What moved into or out of somebody's arms this tick, named by the catalogue.</summary>
+    private static void LogWhatChangedHands(SimWorld world, Villager villager, int[] had)
+    {
+        Stockpile carried = villager.Carried;
+        bool moved = false;
+        for (int g = 0; g < had.Length && !moved; g++)
+        {
+            moved = carried[(Goods)g] != had[g];
+        }
+
+        if (!moved)
+        {
+            return;
+        }
+
+        var change = new System.Text.StringBuilder("carrying ");
+        for (int g = 0; g < had.Length; g++)
+        {
+            change.Append(Change(carried[(Goods)g] - had[g], world.GoodsCatalog.NameOf((Goods)g)));
+        }
+
+        change.Append("— now");
+        for (int g = 0; g < had.Length; g++)
+        {
+            if (carried[(Goods)g] > 0)
+            {
+                change.Append(' ')
+                    .Append(carried[(Goods)g])
+                    .Append(' ')
+                    .Append(world.GoodsCatalog.NameOf((Goods)g));
+            }
+        }
+
+        world.LogVillager(LogLevel.Debug, villager, "goods", change.ToString());
+    }
 
     private static void ActOne(SimWorld world, Villager villager)
     {
@@ -479,6 +538,36 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool HoldsTheJobFor(SimWorld world, Villager villager) =>
         WorkplaceOf(world, villager)?.Kind == ErrandKind(villager.State);
 
+    /// <summary>
+    /// The one good a trip is <em>for</em>, when somebody is holding more than one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Lowest good id first, which is food, then logs, then firewood</b> — exactly the order
+    /// the three-way conditional this replaces asked in, so nothing about the built-in six moves
+    /// for the generalisation (D211). What changes is that a seventh good has an answer at all:
+    /// the old chain ended in <c>: Goods.Firewood</c>, so somebody carrying nothing but stone was
+    /// walked to a store picked for firewood.
+    /// </para>
+    /// <para>
+    /// <b>Empty arms answer <see cref="Goods.Food"/></b>, as the old chain's fallback answered
+    /// firewood: no caller asks this without a load, and a destination for nothing is spent on
+    /// nothing either way.
+    /// </para>
+    /// </remarks>
+    private static Goods TheLoad(Villager villager)
+    {
+        for (int g = 0; g < villager.Carried.Slots; g++)
+        {
+            if (villager.Carried[(Goods)g] > 0)
+            {
+                return (Goods)g;
+            }
+        }
+
+        return Goods.Food;
+    }
+
     /// <summary>Where a load in someone's arms is going.</summary>
     /// <remarks>
     /// Decided by what they are carrying rather than remembered on the villager: food
@@ -499,7 +588,7 @@ public sealed class BehaviorSystem : ISimSystem
         // population ceiling starts depending on where people were standing.
         if (WorkplaceOf(world, villager)?.Kind == JobKind.Marketer)
         {
-            Goods carrying = villager.CarriedFood > 0 ? Goods.Food : Goods.Firewood;
+            Goods carrying = TheLoad(villager);
             StoreBuilding? nearest = NearestStoreAccepting(world, villager.Position, carrying);
             if (nearest is not null)
             {
@@ -514,10 +603,8 @@ public sealed class BehaviorSystem : ISimSystem
         // goes to a GRANARY rather than to whatever store is closest, because the birth
         // gate reads granaries. Letting the day's gathering land in the market would
         // make the village's population ceiling depend on where somebody was standing.
-        StoreKind wanted = villager.CarriedFood > 0 ? StoreKind.Granary : StoreKind.Shed;
-        Goods load = villager.CarriedFood > 0 ? Goods.Food
-            : villager.CarriedLogs > 0 ? Goods.Logs
-            : Goods.Firewood;
+        Goods load = TheLoad(villager);
+        StoreKind wanted = load == Goods.Food ? StoreKind.Granary : StoreKind.Shed;
 
         // THE PREFERRED KIND FIRST, THEN ANYWHERE THAT WILL TAKE IT (D76).
         //
@@ -653,12 +740,18 @@ public sealed class BehaviorSystem : ISimSystem
 
     private static void SetDownWhereTheyStand(SimWorld world, Villager villager)
     {
-        world.SetDown(villager.Position, Goods.Food, villager.CarriedFood);
-        world.SetDown(villager.Position, Goods.Logs, villager.CarriedLogs);
-        world.SetDown(villager.Position, Goods.Firewood, villager.CarriedFirewood);
-        villager.CarriedFood = 0;
-        villager.CarriedLogs = 0;
-        villager.CarriedFirewood = 0;
+        // Every good, by index (D211). This named three, so a villager holding stone put down
+        // nothing and walked away still holding it — the conservation rule's last line of
+        // defence, silent about half the catalogue.
+        for (int g = 0; g < villager.Carried.Slots; g++)
+        {
+            var goods = (Goods)g;
+            int held = villager.Carried.TakeAll(goods);
+            if (held > 0)
+            {
+                world.SetDown(villager.Position, goods, held);
+            }
+        }
     }
 
     /// <summary>Any store of this kind, reachable or not, or null if there are none.</summary>
@@ -1027,16 +1120,31 @@ public sealed class BehaviorSystem : ISimSystem
             return true;
         }
 
-        // Carrying logs, or the site already has what it needs: head for the site.
-        if (villager.CarriedLogs > 0 || site.HasMaterials)
+        // ⭐⭐ AND FROM HERE ON, THE SITE THEY SERVE IS THE FIRST ONE THEY CAN ACTUALLY MOVE
+        // (D213). The head above is still what gets its ground cleared and still gets first
+        // refusal on everything — `NextSiteToServe` walks the same queue order — but a head
+        // waiting on stone the village has not got no longer holds up the houses behind it.
+        // See `SimWorld.NextSiteToServe` for the founding this killed before it existed.
+        if (world.NextSiteToServe() is Workplace servable && servable.Id != standing.Id)
+        {
+            standing = servable;
+            site = standing.Construction!;
+        }
+
+        // Carrying something the site wants, or the site already has what it needs: head there.
+        //
+        // ⚠️ IT ASKED `CarriedLogs > 0` (D213). Once a recipe can want two things, an armful of
+        // the WRONG thing would have sent a builder to the footprint to deliver nothing and walk
+        // straight back — the shuttle D154 records, arriving by a different road.
+        if (site.HasMaterials || CarryingSomethingFor(site, villager))
         {
             villager.WorkNote = string.Empty;
             HeadFor(world, villager, standing.Position, VillagerState.Building);
             return true;
         }
 
-        // Otherwise fetch materials from the nearest shed that has any — OR THE CART,
-        // while it is the only store the village has (D75).
+        // Otherwise fetch what the site is short of, from the nearest store that has any —
+        // OR THE CART, while it is the only store the village has (D75).
         //
         // Measured, after two playthroughs where a marked hut sat at "0 of 25 logs" with
         // a builder assigned to it and 426 logs standing in the village: the builder was
@@ -1044,8 +1152,13 @@ public sealed class BehaviorSystem : ISimSystem
         // that read sheds-only and had to learn about the cart — TryTakeBuildingTimber
         // and StoreForTheLoad were the other two — which says the seam is the KIND check
         // rather than any one call site.
+        //
+        // ⭐ AND IT ASKS THE SITE WHAT IT WANTS (D213). `NextMaterialWanted` walks the recipe in
+        // good order, so a granary short of both timber and stone is filled in a fixed sequence
+        // — two runs of one seed send the builder to the same store for the same thing.
+        Goods wantedGood = site.NextMaterialWanted() ?? Goods.Logs;
         StoreBuilding? shed = world.NearestStoreAccepting(
-            villager.Position, Goods.Logs, static store => store.Store.Logs > 0);
+            villager.Position, wantedGood, store => store.Store[wantedGood] > 0);
 
         if (shed is null)
         {
@@ -1064,15 +1177,16 @@ public sealed class BehaviorSystem : ISimSystem
             if (ready is not null && ready.Id != standing.Id)
             {
                 villager.WorkNote =
-                    $"{site.Name} is waiting on {site.LogsStillNeeded} logs nobody has, so "
-                    + $"{ready.Construction!.Name} is getting the day instead.";
+                    $"{site.Name} is waiting on {site.DescribeWhatIsMissing(world.GoodsCatalog)} "
+                    + $"nobody has, so {ready.Construction!.Name} is getting the day instead.";
                 HeadFor(world, villager, ready.Position, VillagerState.Building);
                 return true;
             }
 
             villager.WorkNote =
-                $"Nothing to build with — {site.Name} still wants {site.LogsStillNeeded} logs, " +
-                "and nowhere within reach has any.";
+                $"Nothing to build with — {site.Name} still wants "
+                + $"{site.DescribeWhatIsMissing(world.GoodsCatalog)}, "
+                + "and nowhere within reach has any.";
 
             // ⭐ AND NOTHING TO BUILD EITHER, so they go and MAKE materials rather than stand
             // there — Joe's rule: *"if there are no materials available, the builder should
@@ -1091,6 +1205,26 @@ public sealed class BehaviorSystem : ISimSystem
         villager.WorkNote = string.Empty;
         HeadFor(world, villager, shed.Position, VillagerState.FetchingMaterials);
         return true;
+    }
+
+    /// <summary>Whether anything in somebody's arms is something this site still wants.</summary>
+    /// <remarks>
+    /// <b>The question the timber test was standing in for</b> (D213). A builder holding an
+    /// armful the site has no use for should go and put it down, not walk it to a footprint that
+    /// will refuse it.
+    /// </remarks>
+    private static bool CarryingSomethingFor(ConstructionSite site, Villager villager)
+    {
+        for (int g = 0; g < villager.Carried.Slots; g++)
+        {
+            var goods = (Goods)g;
+            if (villager.Carried[goods] > 0 && site.StillNeeded(goods) > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Set off for a spot, remembering it so the walk survives re-deciding.</summary>
@@ -1115,7 +1249,11 @@ public sealed class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void LoadMaterials(SimWorld world, Villager villager)
     {
-        ConstructionSite? site = world.NextToBuild()?.Construction;
+        // ⭐ THE SAME QUESTION `WorkTheSite` ASKED WHEN IT SENT THEM (D213). It was
+        // `NextToBuild` — the head — which stopped being the site they were walking for the
+        // moment a head could be stuck on a material nobody has. Two orderings over one list is
+        // D157's shape for half the bugs here; there is one.
+        ConstructionSite? site = world.NextSiteToServe()?.Construction;
 
         if (site is null)
         {
@@ -1123,25 +1261,30 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        int wanted = Math.Min(site.LogsStillNeeded, world.Config.CarryCapacity);
+        // ⭐ WHATEVER THE SITE IS SHORT OF, NOT TIMBER BY NAME (D213). `WorkTheSite` chose the
+        // store for this good, so asking the site again here is the same question getting the
+        // same answer — and if the queue moved under them mid-errand, picking up for the site
+        // they now want is the right outcome anyway (see the remarks above).
+        Goods wanted = site.NextMaterialWanted() ?? Goods.Logs;
+        int room = Math.Min(site.StillNeeded(wanted), world.Config.CarryCapacity);
 
-        for (int i = 0; i < world.StoreBuildings.Count && wanted > 0; i++)
+        for (int i = 0; i < world.StoreBuildings.Count && room > 0; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
 
             // The cart counts here too, and it must: the walk above may have sent them to
-            // one, and a builder who arrives at the timber and cannot pick it up is worse
+            // one, and a builder who arrives at the materials and cannot pick them up is worse
             // than one who never set off (D75).
-            if (!store.Accepts(Goods.Logs)
+            if (!store.Accepts(wanted)
                 || store.Position != villager.Position)
             {
                 continue;
             }
 
-            int take = Math.Min(wanted, store.Store.Logs);
-            if (take > 0 && store.Store.TryTake(Goods.Logs, take))
+            int take = Math.Min(room, store.Store[wanted]);
+            if (take > 0 && store.Store.TryTake(wanted, take))
             {
-                villager.CarriedLogs += take;
+                villager.Carried.Receive(wanted, take);
             }
 
             break;
@@ -1170,14 +1313,24 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (villager.CarriedLogs > 0)
+        // ⭐ EVERY MATERIAL IN THEIR ARMS, IN GOOD ORDER (D213). A builder can be carrying two
+        // things now — timber from one errand and stone from the next — and a site that only
+        // took the logs would have sent them away holding the stone it was waiting for.
+        if (villager.IsCarrying)
         {
-            int accepted = site.Deliver(villager.CarriedLogs);
-            villager.CarriedLogs -= accepted;
+            for (int g = 0; g < villager.Carried.Slots; g++)
+            {
+                var goods = (Goods)g;
+                int held = villager.Carried[goods];
+                if (held > 0)
+                {
+                    villager.Carried.TryTake(goods, site.Deliver(goods, held));
+                }
+            }
 
             // Anything the site could not take stays in their arms and goes back to a
-            // shed on the next errand — never dropped, per the conservation rule.
-            if (villager.CarriedLogs > 0)
+            // store on the next errand — never dropped, per the conservation rule.
+            if (villager.IsCarrying)
             {
                 villager.State = VillagerState.HaulingToStore;
                 return;
@@ -1228,7 +1381,8 @@ public sealed class BehaviorSystem : ISimSystem
         if (!site.HasMaterials)
         {
             villager.WorkNote =
-                $"{site.Name} still wants {site.LogsStillNeeded} logs — going for them.";
+                $"{site.Name} still wants {site.DescribeWhatIsMissing(world.GoodsCatalog)} "
+                + "— going for them.";
             villager.State = VillagerState.Idle;
             return;
         }
@@ -1453,11 +1607,11 @@ public sealed class BehaviorSystem : ISimSystem
 
             if (goods == Goods.Food)
             {
-                villager.CarriedFood += take;
+                villager.Carried.Receive(Goods.Food, take);
             }
             else
             {
-                villager.CarriedFirewood += take;
+                villager.Carried.Receive(Goods.Firewood, take);
             }
 
             villager.State = VillagerState.StockingTheMarket;
@@ -1483,8 +1637,10 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (market is not null)
         {
-            villager.CarriedFood -= market.Store.Add(Goods.Food, villager.CarriedFood);
-            villager.CarriedFirewood -= market.Store.Add(Goods.Firewood, villager.CarriedFirewood);
+            villager.Carried.TryTake(
+                Goods.Food, market.Store.Add(Goods.Food, villager.CarriedFood));
+            villager.Carried.TryTake(
+                Goods.Firewood, market.Store.Add(Goods.Firewood, villager.CarriedFirewood));
         }
 
         if (villager.IsCarrying)
@@ -1945,7 +2101,7 @@ public sealed class BehaviorSystem : ISimSystem
         // scheduling artifact that did not exist when D10 was written.
         if (villager.CarriedFood >= mealCost)
         {
-            villager.CarriedFood -= mealCost;
+            villager.Carried.TryTake(Goods.Food, mealCost);
             Feed(villager, config);
             world.LogVillager(LogLevel.Debug, villager, "needs",
                 $"ate {mealCost} from their own arms (hunger was {villager.Hunger})");
@@ -2085,6 +2241,22 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             return;
+        }
+
+        // ⭐⭐ AND A FORAGER WHO IS NOT GATHERING SAYS WHY (D216). Joe, playing: *"if there are
+        // trees marked for harvest, foragers will gather trees even though the food limit is not
+        // yet met."* **Falling silently through to painted ground reads as *labour outranking a
+        // profession*, which is not what happened and is not what the code does** — the harvest
+        // branch sits below every job (D87) and this villager declined their own work first.
+        //
+        // What they declined it *for* is the thing that was invisible, and its two causes have
+        // opposite answers: *raise the limit* against *build a granary*. METHODOLOGY §4 — every
+        // refusal writes its own reason.
+        if (canForage && !needsFood)
+        {
+            villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string why
+                ? $"Nothing to gather for — {why}."
+                : string.Empty;
         }
 
         // Raising a building the player marked out (D43). Materials first, then work:
@@ -2462,12 +2634,18 @@ public sealed class BehaviorSystem : ISimSystem
         villager.ErrandX = 0;
         villager.ErrandY = 0;
 
+        // ⭐ EVERY GOOD IN THE HEAP, IN ID ORDER (D211). This named three, so a heap of stone
+        // was a heap nobody could ever tidy away — and since D211 the clearing path can make
+        // one. The order is food, logs, firewood as before, and the armful is still one
+        // `carry_capacity` between them: the rule that stops tidying being a teleport.
         int room = world.Config.CarryCapacity;
-        villager.CarriedFood += world.TakeFromGround(at, Goods.Food, room);
-        room -= villager.CarriedFood;
-        villager.CarriedLogs += world.TakeFromGround(at, Goods.Logs, room);
-        room -= villager.CarriedLogs;
-        villager.CarriedFirewood += world.TakeFromGround(at, Goods.Firewood, room);
+        for (int g = 0; g < villager.Carried.Slots && room > 0; g++)
+        {
+            var goods = (Goods)g;
+            int took = world.TakeFromGround(at, goods, room);
+            villager.Carried.Receive(goods, took);
+            room -= took;
+        }
 
         if (!villager.IsCarrying)
         {
@@ -2487,9 +2665,23 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        GridPos? tile = world.NearestHarvest(villager.Position);
+        GridPos? tile = world.NearestHarvest(villager.Position, out Goods? heldBackBy);
         if (tile is null)
         {
+            // ⭐ AND A LIMIT SAYS SO RATHER THAN LOOKING LIKE NOTHING TO DO (D212). This is
+            // D146's finding one control over: *"a hut whose ground is fully wooded because
+            // the village stopped felling reads exactly like a hut that has run out of work,
+            // and the answer — raise the limit — is nowhere near the panel unless the sentence
+            // points at it."* A laborer standing about is the silent stall §1.1 forbids.
+            if (heldBackBy is Goods enough)
+            {
+                villager.WorkNote =
+                    $"Nothing left to clear — you asked the village to keep "
+                    + $"{world.StockLimits.For(enough)} {world.GoodsCatalog.NameOf(enough)} "
+                    + $"and it has {world.InStores(enough)}, so the ground it has painted for "
+                    + "that is left standing.";
+            }
+
             return false;
         }
 
@@ -2656,7 +2848,7 @@ public sealed class BehaviorSystem : ISimSystem
         int food = Smallest(foodShort, load, target.Store.Food);
         if (food > 0 && target.Store.TryTake(Goods.Food, food))
         {
-            villager.CarriedFood += food;
+            villager.Carried.Receive(Goods.Food, food);
             load -= food;
         }
 
@@ -2674,7 +2866,7 @@ public sealed class BehaviorSystem : ISimSystem
         int firewood = Smallest(firewoodShort, load, target.Store.Firewood);
         if (firewood > 0 && target.Store.TryTake(Goods.Firewood, firewood))
         {
-            villager.CarriedFirewood += firewood;
+            villager.Carried.Receive(Goods.Firewood, firewood);
         }
     }
 
@@ -2730,43 +2922,64 @@ public sealed class BehaviorSystem : ISimSystem
         larder.Receive(Goods.Firewood, villager.CarriedFirewood);
         larder.Add(Goods.Food, villager.CarriedFood);
 
-        villager.CarriedFood = 0;
-        villager.CarriedFirewood = 0;
+        villager.Carried.TakeAll(Goods.Firewood);
+        villager.Carried.TakeAll(Goods.Food);
 
-        // The degenerate case, handled rather than assumed away: a village with no
-        // shed at all has nowhere to put timber, and sending them to one that does not
+        // ⭐ EVERYTHING ELSE STAYS IN THEIR ARMS, WHICH IS THE RULE THIS ALWAYS HELD FOR
+        // TIMBER (D211). A larder is what a household eats and burns; a log in one is a log
+        // nobody can spend, and so is a block of stone. The caller turns anyone still holding
+        // something round toward a store.
+        //
+        // The degenerate case, handled rather than assumed away: a village with nowhere at all
+        // to put a good has nowhere to send them, and sending them to a store that does not
         // exist would throw. Put it down and say so loudly — never silently (METHODOLOGY §4).
-        if (villager.CarriedLogs > 0 && !AnywhereToPutTimber(world))
+        for (int g = 0; g < villager.Carried.Slots; g++)
         {
+            var goods = (Goods)g;
+            int held = villager.Carried[goods];
+            if (held == 0 || AnywhereToPut(world, goods))
+            {
+                continue;
+            }
+
             world.Log(
                 LogLevel.Warn,
                 "goods",
-                $"{villager.Name} came home with {villager.CarriedLogs} logs and the village has " +
-                "nowhere to put them, so they are stranded in the larder where nothing can " +
-                "spend them. Build a storage pile or a shed.");
+                $"{villager.Name} came home with {held} {world.GoodsCatalog.NameOf(goods)} and "
+                + "the village has nowhere to put them, so they are stranded in the larder "
+                + "where nothing can spend them. Build a stockpile or a shed.");
 
-            larder.Receive(Goods.Logs, villager.CarriedLogs);
-            villager.CarriedLogs = 0;
+            larder.Receive(goods, held);
+            villager.Carried.TakeAll(goods);
         }
     }
 
     /// <summary>
-    /// Timber a feller could not carry away stays on the tile rather than ceasing to exist.
+    /// What a harvester could not carry away stays on the tile rather than ceasing to exist.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// D133. Called from both felling paths, which had drifted into two copies of the same
     /// arithmetic and the same leak. Goods move only by trips people make (D96) — so the
     /// remainder is set down where it fell, and the tidy-ground errand brings it in.
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT TAKES THE GOOD NOW RATHER THAN ASSUMING TIMBER (D211).</b> Both callers had
+    /// already asked <c>world.Harvest</c> what the tile yields and then thrown the answer away
+    /// unless it was <see cref="Goods.Logs"/> — which is precisely how a stone seam came to be
+    /// spent for nothing.
+    /// </para>
     /// </remarks>
-    private static void LeaveTheRestOnTheGround(SimWorld world, GridPos where, int logs)
+    private static void LeaveTheRestOnTheGround(
+        SimWorld world, GridPos where, Goods goods, int amount)
     {
-        if (logs > 0)
+        if (amount > 0)
         {
-            world.SetDown(where, Goods.Logs, logs);
+            world.SetDown(where, goods, amount);
         }
     }
 
-    /// <summary>Is there anywhere in the village at all that will take timber?</summary>
+    /// <summary>Is there anywhere in the village at all that will take this good?</summary>
     /// <remarks>
     /// <para>
     /// <b>⭐ IT ASKS WHAT IT NEEDS TO KNOW, WHICH IS NOT "IS THERE A SHED" (D132).</b> This was
@@ -2791,12 +3004,17 @@ public sealed class BehaviorSystem : ISimSystem
     /// (D76). This one place asked by name instead, and needed telling about each new kind of
     /// store. Asking "what will take this?" needs telling about none of them.
     /// </para>
+    /// <para>
+    /// <b>⭐ And it takes the good now rather than naming timber (D211)</b>, for the same reason
+    /// one paragraph up: a villager can come home holding stone, and <c>Goods.Logs</c> would
+    /// have answered a question nobody asked.
+    /// </para>
     /// </remarks>
-    private static bool AnywhereToPutTimber(SimWorld world)
+    private static bool AnywhereToPut(SimWorld world, Goods goods)
     {
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
-            if (world.StoreBuildings[i].Accepts(Goods.Logs))
+            if (world.StoreBuildings[i].Accepts(goods))
             {
                 return true;
             }
@@ -2841,7 +3059,7 @@ public sealed class BehaviorSystem : ISimSystem
             int food = Smallest(foodWanted, load, store.Store.Food);
             if (food > 0 && store.Store.TryTake(Goods.Food, food))
             {
-                villager.CarriedFood += food;
+                villager.Carried.Receive(Goods.Food, food);
                 villager.State = VillagerState.DeliveringToHome;
                 return;
             }
@@ -2851,7 +3069,7 @@ public sealed class BehaviorSystem : ISimSystem
             int fuel = Smallest(fuelWanted, load, store.Store.Firewood);
             if (fuel > 0 && store.Store.TryTake(Goods.Firewood, fuel))
             {
-                villager.CarriedFirewood += fuel;
+                villager.Carried.Receive(Goods.Firewood, fuel);
                 villager.State = VillagerState.DeliveringToHome;
                 return;
             }
@@ -2893,7 +3111,7 @@ public sealed class BehaviorSystem : ISimSystem
                 int clearing = Smallest(load, load, workplace.Store.Food);
                 if (clearing > 0 && workplace.Store.TryTake(Goods.Food, clearing))
                 {
-                    villager.CarriedFood += clearing;
+                    villager.Carried.Receive(Goods.Food, clearing);
                 }
 
                 break;
@@ -2908,7 +3126,7 @@ public sealed class BehaviorSystem : ISimSystem
             int fromTheBuffer = Smallest(shortOf, load, workplace.Store.Food);
             if (fromTheBuffer > 0 && workplace.Store.TryTake(Goods.Food, fromTheBuffer))
             {
-                villager.CarriedFood += fromTheBuffer;
+                villager.Carried.Receive(Goods.Food, fromTheBuffer);
                 villager.State = VillagerState.DeliveringToHome;
                 return;
             }
@@ -2938,13 +3156,13 @@ public sealed class BehaviorSystem : ISimSystem
             int food = Smallest(household.Stockpile.Food, load, household.Stockpile.Food);
             if (food > 0 && household.Stockpile.TryTake(Goods.Food, food))
             {
-                villager.CarriedFood += food;
+                villager.Carried.Receive(Goods.Food, food);
             }
 
             int fuel = Smallest(household.Stockpile.Firewood, load - food, household.Stockpile.Firewood);
             if (fuel > 0 && household.Stockpile.TryTake(Goods.Firewood, fuel))
             {
-                villager.CarriedFirewood += fuel;
+                villager.Carried.Receive(Goods.Firewood, fuel);
             }
 
             break;
@@ -2969,8 +3187,8 @@ public sealed class BehaviorSystem : ISimSystem
             // else gathered. That is the bug Stockpile.Receive exists for.
             recipient.Stockpile.Receive(Goods.Food, villager.CarriedFood);
             recipient.Stockpile.Receive(Goods.Firewood, villager.CarriedFirewood);
-            villager.CarriedFood = 0;
-            villager.CarriedFirewood = 0;
+            villager.Carried.TakeAll(Goods.Food);
+            villager.Carried.TakeAll(Goods.Firewood);
         }
 
         villager.ErrandHouseholdId = 0;
@@ -3009,19 +3227,18 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 Stockpile store = destination.Store;
 
-                if (destination.Accepts(Goods.Food))
+                // ⭐ AND IT IS A LOOP OVER THE CATALOGUE NOW, NOT THREE NAMED GOODS (D211). The
+                // shape below is D144's — each good asked about separately, because the
+                // destination was chosen for one of them and a store the player has filtered
+                // may refuse the other. What is new is that the loop covers every good the run
+                // has, so a load of stone is put down here rather than carried for ever.
+                for (int g = 0; g < villager.Carried.Slots; g++)
                 {
-                    villager.CarriedFood -= store.Add(Goods.Food, villager.CarriedFood);
-                }
-
-                if (destination.Accepts(Goods.Logs))
-                {
-                    villager.CarriedLogs -= store.Add(Goods.Logs, villager.CarriedLogs);
-                }
-
-                if (destination.Accepts(Goods.Firewood))
-                {
-                    villager.CarriedFirewood -= store.Add(Goods.Firewood, villager.CarriedFirewood);
+                    var goods = (Goods)g;
+                    if (villager.Carried[goods] > 0 && destination.Accepts(goods))
+                    {
+                        villager.Carried.TryTake(goods, store.Add(goods, villager.Carried[goods]));
+                    }
                 }
             }
 
@@ -3208,10 +3425,12 @@ public sealed class BehaviorSystem : ISimSystem
         // directly, or an armful fetched from the granary.
         UnloadAtHome(world, villager);
 
-        // Except timber. Anyone who reaches their door still carrying logs turns round
-        // and walks them to a shed, because a log in a larder is a log nobody can ever
-        // spend — see UnloadAtHome for the twenty years this cost.
-        if (villager.CarriedLogs > 0)
+        // Except what a larder is not for. Anyone who reaches their door still carrying
+        // something turns round and walks it to a store, because a log in a larder is a log
+        // nobody can ever spend — see UnloadAtHome for the twenty years this cost. It said
+        // `CarriedLogs > 0`, which was the same sentence while logs were the only good that
+        // could survive the unload; stone is the second (D211).
+        if (villager.IsCarrying)
         {
             villager.State = VillagerState.HaulingToStore;
             return;
@@ -3289,7 +3508,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         if (WorkplaceOf(world, villager) is Workplace farm)
         {
-            villager.CarriedFood -= farm.Store.Add(Goods.Food, villager.CarriedFood);
+            villager.Carried.TryTake(Goods.Food, farm.Store.Add(Goods.Food, villager.CarriedFood));
         }
 
         if (villager.CarriedFood > 0 || villager.IsCarrying)
@@ -3467,7 +3686,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // a household with a forager in it feeds itself directly, no round
                 // trip through a building — while surplus ends up somewhere the whole
                 // village can draw on. It is also just what a person would do.
-                villager.CarriedFood += yield;
+                villager.Carried.Receive(Goods.Food, yield);
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
 
@@ -3516,15 +3735,20 @@ public sealed class BehaviorSystem : ISimSystem
                     }
 
                     (Goods felled, int fromTheTile) = world.Harvest(tile);
-                    if (felled == Goods.Logs && fromTheTile > 0)
+                    if (fromTheTile > 0)
                     {
                         // Vigour scales what they carry home in one go — the same way it
                         // scales a gather — and WHAT THEY CANNOT CARRY STAYS ON THE TILE.
                         // See the clearing case below for why the second half matters.
+                        //
+                        // ⚠️ THE `felled == Goods.Logs` TEST IS GONE (D211). A forester's work
+                        // ground is painted by the player and may hold a seam, and the test
+                        // meant the seam was spent for nothing — the clearing path's bug, in
+                        // the second of the two felling paths D133 already found drifting.
                         int carried = fromTheTile * villager.Vigour / 100;
                         carried = carried < 1 ? 1 : carried;
-                        villager.CarriedLogs += carried;
-                        LeaveTheRestOnTheGround(world, tile, fromTheTile - carried);
+                        villager.Carried.Receive(felled, carried);
+                        LeaveTheRestOnTheGround(world, tile, felled, fromTheTile - carried);
                     }
 
                     villager.State = VillagerState.HaulingToStore;
@@ -3546,7 +3770,7 @@ public sealed class BehaviorSystem : ISimSystem
 
                 // Picked up, not banked. The logs go to the shed on the way home,
                 // which is what makes them the village's rather than this family's.
-                villager.CarriedLogs += wood;
+                villager.Carried.Receive(Goods.Logs, wood);
                 villager.State = VillagerState.HaulingToStore;
                 HaulOrSetDown(world, villager);
                 return;
@@ -3605,7 +3829,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // that was reaped, not of the farm**, because a field can span better and worse
                 // ground and the player should be able to see that on the map.
                 int crop = world.CropYieldAt(reaped) * villager.Vigour / 100;
-                villager.CarriedFood += crop < 1 ? 1 : crop;
+                villager.Carried.Receive(Goods.Food, crop < 1 ? 1 : crop);
 
                 if (WorkplaceOf(world, villager) is Workplace theirFarm)
                 {
@@ -3640,7 +3864,7 @@ public sealed class BehaviorSystem : ISimSystem
                     taken = 1;
                 }
 
-                villager.CarriedLogs += goods == Goods.Logs ? taken : 0;
+                villager.Carried.Receive(goods, taken);
 
                 // ⭐ AND THE REST OF THE TREE STAYS WHERE IT FELL (D133).
                 //
@@ -3665,8 +3889,17 @@ public sealed class BehaviorSystem : ISimSystem
                 // Vigour keeps its meaning — a weak villager still carries less in one
                 // armful — and D96's ground stacks are exactly the machinery for the other
                 // half: the timber lies on the tile until somebody fetches it.
-                int left = goods == Goods.Logs ? amount - taken : 0;
-                LeaveTheRestOnTheGround(world, cleared, left);
+                //
+                // ⛔⛔ AND IT USED TO BE `goods == Goods.Logs ? ... : 0` ON BOTH LINES, WHICH IS
+                // THE SAME LEAK ONE GOOD OVER (`goods-catalog.md §4.0`, D211). `Harvest` has
+                // already spent the tile whatever was standing on it, so for stone or iron
+                // nothing was carried AND nothing was left: **the yield simply stopped
+                // existing.** Measured before the fix — eight painted seams of each cleared
+                // inside two years, **zero stone and zero iron in the stores, and none on the
+                // ground.** D133's own words, one good over: *"a number that is never written
+                // down cannot be read back."*
+                int left = amount - taken;
+                LeaveTheRestOnTheGround(world, cleared, goods, left);
 
                 world.Log(LogLevel.Debug, "behavior",
                     $"{villager.Name} cleared {cleared} for {taken} {goods}"

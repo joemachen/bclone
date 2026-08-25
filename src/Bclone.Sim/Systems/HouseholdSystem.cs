@@ -455,6 +455,7 @@ public sealed class HouseholdSystem : ISimSystem
             Name = name,
             LifespanYears = lifespan,
             Rhythm = rhythm,
+            Carried = world.NewStockpile(),
 
             // ⭐ And their hunger a little apart — see the founding path for why the action
             // stagger alone leaves two siblings eating on the same tick for ever.

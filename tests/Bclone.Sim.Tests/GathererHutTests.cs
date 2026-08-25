@@ -47,8 +47,8 @@ public sealed class GathererHutTests
         Workplace site = Assert.Single(
             world.Workplaces, place => place.Construction?.Kind == BuildingKind.GathererHut);
 
-        site.Construction!.Deliver(site.Construction.Recipe.Logs);
-        for (int i = 0; i <= site.Construction.Recipe.WorkTicks; i++)
+        BuildFixtures.StockTheSite(site);
+        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
         {
             site.Construction.Work();
         }
@@ -145,7 +145,7 @@ public sealed class GathererHutTests
     {
         BuildingRecipe recipe = BuildingRecipe.For(BuildingKind.GathererHut, Config);
 
-        Assert.True(recipe.Logs > 0, "A free gatherer's hut is a free food supply.");
+        Assert.True(recipe.Of(Goods.Logs) > 0, "A free gatherer's hut is a free food supply.");
         Assert.True(recipe.WorkTicks > 0, "A hut that owes no work is an instant hut.");
     }
 

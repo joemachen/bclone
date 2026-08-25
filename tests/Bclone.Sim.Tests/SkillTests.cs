@@ -245,8 +245,15 @@ public sealed class SkillTests
     [Theory]
     // ⭐⭐ RE-TAKEN FOR THE STOCKED MARKET (D197). `ComputeIgnoringSkills` moves because the
     // marketer genuinely does something different — which is exactly what this number is for.
-    [InlineData(false, 16512056222735860702UL)]
-    [InlineData(true, 14931182978223796698UL)]
+    // ⭐⭐ RE-TAKEN FOR D211 with the rest: a villager's arms are hashed by index now rather
+    // than as three named goods. **This number is the one that says the village is unmoved** —
+    // it excludes skills, and the measurement behind the re-take is that restoring the old
+    // three-line mix makes every moved golden byte-identical again.
+    //
+    //   before the arms were hashed by index: false 16512056222735860702,
+    //                                         true  14931182978223796698
+    [InlineData(false, 8831112212085357582UL)]
+    [InlineData(true, 4483703907203751178UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

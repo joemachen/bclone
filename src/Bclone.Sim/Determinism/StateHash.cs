@@ -438,9 +438,13 @@ public static class StateHash
         // buildings — and a village could have desynced in exactly the amount somebody
         // was holding without the determinism test noticing. Appended at the end, per
         // the note at the top of this file.
-        hash = MixUInt32(hash, (uint)villager.CarriedFood);
-        hash = MixUInt32(hash, (uint)villager.CarriedLogs);
-        hash = MixUInt32(hash, (uint)villager.CarriedFirewood);
+        //
+        // ⭐ AND IT IS THE SAME LOOP EVERY OTHER STORE GETS (D211). These were three lines
+        // naming three goods, over three named fields — the arms being the one stockpile in
+        // the game D82 never reached. **The trap is the one `MixStore`'s own comment records:**
+        // a good that is not hashed is a good two runs can disagree about while reading
+        // identical, and a villager can carry stone now.
+        hash = MixStore(hash, villager.Carried);
         hash = MixUInt32(hash, (uint)villager.ErrandHouseholdId);
         hash = MixUInt32(hash, (uint)villager.ErrandX);
         hash = MixUInt32(hash, (uint)villager.ErrandY);

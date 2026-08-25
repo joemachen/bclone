@@ -172,7 +172,16 @@ public sealed class FarmGoldenTests
     //
     //   before the market was stocked: 3714993309705346931
     //   before the market stopped being a dumping ground (D199): 4712803508757490940
-    private const ulong SeamGoldenHash = 11064751127156165011UL;
+    //
+    // ⭐⭐ RE-TAKEN BECAUSE A VILLAGER'S ARMS ARE HASHED BY INDEX (D211), and that is the whole
+    // reason — measured rather than assumed. `MixVillager` mixed three named carried fields; it
+    // mixes the whole carried stockpile now, like every other store in the game. **Restoring
+    // those three lines and re-running makes all five moved goldens byte-identical again**,
+    // which says the village itself did not move: nothing paints a seam in these runs, so
+    // nobody clears one and the carry fix reaches nothing here.
+    //
+    //   before the arms were hashed by index: 11064751127156165011
+    private const ulong SeamGoldenHash = 11012185428064972883UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -198,7 +207,8 @@ public sealed class FarmGoldenTests
     /// village never changes.
     /// </para>
     /// </remarks>
-    private const ulong SeamBeforeAnybodyGotBetter = 4480535409214959852UL;
+    //   before the arms were hashed by index (D211): 4480535409214959852
+    private const ulong SeamBeforeAnybodyGotBetter = 14487067649038122620UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

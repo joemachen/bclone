@@ -452,7 +452,8 @@ public sealed class ShelterAndExposureTests
         Villager villager = world.Villagers[0];
 
         villager.Cold = world.Config.ExposureThreshold / 2;
-        villager.CarriedLogs = 5;
+        villager.Carried.TakeAll(Goods.Logs);
+        villager.Carried.Receive(Goods.Logs, 5);
         villager.State = VillagerState.SeekingShelter;
 
         BehaviorSystem.ArriveAtAFireForTest(world, villager);
@@ -480,7 +481,8 @@ public sealed class ShelterAndExposureTests
         Villager villager = world.Villagers[0];
 
         villager.Cold = 0;
-        villager.CarriedLogs = 5;
+        villager.Carried.TakeAll(Goods.Logs);
+        villager.Carried.Receive(Goods.Logs, 5);
         villager.Position = world.RestingPlaceOf(villager);
 
         BehaviorSystem.ArriveHomeForTest(world, villager);

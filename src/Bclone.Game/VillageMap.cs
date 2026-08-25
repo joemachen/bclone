@@ -1751,8 +1751,10 @@ public partial class VillageMap : Control
                 float size = Mathf.Max(10f, _pixelsPerTile * 0.8f);
                 var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
 
-                int total = System.Math.Max(1, site.Recipe.Logs + site.Recipe.WorkTicks);
-                float done = (site.LogsDelivered + site.WorkDone) / (float)total;
+                // Every material plus the work, so a two-material building fills its ring
+                // honestly rather than showing full while its stone is still coming (D213).
+                int total = System.Math.Max(1, site.Recipe.TotalMaterials + site.Recipe.WorkTicks);
+                float done = (site.TotalDelivered + site.WorkDone) / (float)total;
 
                 DrawRect(rect, SiteColour with { A = 0.18f });
                 if (done > 0f)

@@ -215,7 +215,7 @@ that switches itself on. *It is the kind of thing found by counting rather than 
 thirty costs the hash, the goldens and every call site **at a point where there is far more of all
 three.** *Written down, not scheduled.*
 
-### 2. ✅ ANSWERED — every building costs logs and only logs
+### 2. ✅✅ ANSWERED, AND NOW BUILT — every building costs logs and only logs
 
 `BuildingRecipe` is `(int Logs, int WorkTicks)` (`World/Construction.cs:171`) — **one material
 slot, for the whole catalogue.**
@@ -232,6 +232,13 @@ the goldens at once. Worth knowing *before* designing tiers that depend on it.
 material slot. **So multi-material `BuildingRecipe` is no longer a question, only a schedule** —
 and it is the natural first slice whenever building resumes, because **it unblocks the entire stone
 tier and the house-upgrade ladder together.**
+
+**✅✅ BUILT 2026-08-25 (D213), on Joe'''s call — `specs/multi-material-construction.md`.** A recipe
+holds N materials, the granary, shed and market cost stone, and **which buildings pay was measured
+rather than chosen** (stone on the huts took a founding from 24 alive to 7). ⛔ **And it surfaced
+a live stall nobody had counted:** D135'''s starved-head escape asked for a site that *already had
+every material*, which was nearly always true while timber was the only one — with stone in play a
+blocked head froze the whole queue, killing a played founding outright.
 
 ### 3. The library is a building in two documents and cut in a third
 

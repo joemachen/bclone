@@ -695,7 +695,7 @@ public sealed class ColdStartTests
     /// building failure rather than the starvation underneath it: a village with nobody
     /// gathering does not raise anything, because there is nobody left to raise it. Any test
     /// that runs the shipped opening for more than a season needs this, and it is deliberately
-    /// <em>not</em> the whole of <see cref="PlayTheOpening"/> — the builder's hut is left out,
+    /// <em>not</em> the whole of <see cref="PlayTheOpening(SimWorld)"/> — the builder's hut is left out,
     /// because whether one is standing is precisely what several of those guards vary.
     /// </para>
     /// </remarks>
@@ -703,7 +703,37 @@ public sealed class ColdStartTests
     {
         MarkInTheBestWoodland(world, world.Map.FoundingSite);
         PaintTheNearbyTrees(world, 6);
+        PaintTheNearestSeam(world);
     }
+
+    /// <summary>
+    /// Send the laborers to a rock — <b>part of founding a village since D214</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A hut costs three stone now</b>, and stone comes from nowhere but the brush. So a
+    /// played opening paints a seam for exactly the reason it already paints trees: with no
+    /// painted ground there is <em>no source at all</em>, and both huts stay sites for ever.
+    /// This is the tree comment above, one good over.
+    /// </para>
+    /// <para>
+    /// <b>⛔ AND THE STONE IS THERE TO BE PAINTED, WHICH WAS THE WHOLE ARGUMENT (Joe, D215).</b>
+    /// <em>"There should already be stone on the map for the user to ask the laborers to harvest.
+    /// I don't want stone in the cart."</em> There is: <c>stone_seam_count</c> is 4 on a
+    /// <c>stone_seam_ring_tiles</c> ring of 14, and `MapGenerator` states the intent out loud —
+    /// <em>"STONE NEAR, IRON FAR… a valley whose ore sits in the far woods plays differently from
+    /// one where it is on the doorstep."</em> Measured across six seeds, the nearest reachable
+    /// stone is <b>twelve tiles</b> from the founding site on every one of them.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Four tiles, not the whole ring.</b> A tile is 12 stone, so four is ~48 — the two
+    /// huts the opening marks cost 6 between them, and the rest is what a player would have in
+    /// hand for the first granary. Painting the lot would be the <c>PaintTheNearbyTrees(12)</c>
+    /// mistake one good over: laborers spend the extra walk clearing instead of building.
+    /// </para>
+    /// </remarks>
+    internal static void PaintTheNearestSeam(SimWorld world) =>
+        SeamFixtures.PaintNearest(world, Terrain.Rock, 4);
 
     /// <summary>
     /// The opening as it stands before anybody builds a shed: a storage pile takes the timber.
@@ -732,7 +762,18 @@ public sealed class ColdStartTests
         FeedTheFounding(world);
     }
 
-    internal static void PlayTheOpening(SimWorld world)
+    internal static void PlayTheOpening(SimWorld world) => PlayTheOpening(world, paintASeam: true);
+
+    /// <summary>
+    /// The opening, with the option of NOT sending anybody to the rock.
+    /// </summary>
+    /// <remarks>
+    /// <b>The false arm exists for one guard and is named rather than improvised</b>: 
+    /// <c>StoneCostsTests.AStoreWithNoStoneWaitsRatherThanKillingTheVillage</c> is about a village
+    /// that has marked a store it <em>cannot pay for</em>, and a played opening now gets its stone
+    /// — so that test has to say out loud that it is withholding it.
+    /// </remarks>
+    internal static void PlayTheOpening(SimWorld world, bool paintASeam)
     {
         GridPos site = world.Map.FoundingSite;
 
@@ -812,8 +853,18 @@ public sealed class ColdStartTests
         // against a winter at t360.
         PaintTheNearbyTrees(world, 6);
 
+        // 6. ⭐ AND A ROCK, BECAUSE A HUT COSTS THREE STONE NOW (D214, D215). The same
+        // sentence as the trees one line up, one good over: with no painted seam there is no
+        // source of stone at all, so both huts stay sites for ever and all four founders
+        // freeze. Joe: *"there should already be stone on the map for the user to ask the
+        // laborers to harvest"* — there is, four seams on a fourteen-tile ring.
+        if (paintASeam)
+        {
+            PaintTheNearestSeam(world);
+        }
 
-        // ⚠️ AND DELIBERATELY NO HARVEST PAINTING, which was tried here and measured as
+
+        // ⚠️ AND DELIBERATELY NO EXTRA HARVEST PAINTING, which was tried here and measured as
         // harmful — see TheOpeningGetsItsTimberFromTheTreesThePlayerPainted, which paints
         // for its own purpose and runs one year. Over forty years, four arms on the
         // shipped config:
@@ -833,7 +884,7 @@ public sealed class ColdStartTests
     }
 
     /// <summary>Paint every fellable tile within a short walk of the founding site.</summary>
-    private static int PaintTheNearbyTrees(SimWorld world, int radius)
+    internal static int PaintTheNearbyTrees(SimWorld world, int radius)
     {
         GridPos site = world.Map.FoundingSite;
         int painted = 0;
@@ -888,7 +939,7 @@ public sealed class ColdStartTests
     /// walk the food economy is derived against — the same rule the warm start's
     /// <c>WhereTheTreesAre</c> follows, expressed here through the public API a player has.
     /// </remarks>
-    private static void MarkInTheBestWoodland(SimWorld world, GridPos site)
+    internal static void MarkInTheBestWoodland(SimWorld world, GridPos site)
     {
         int reach = VillageEconomy.MaxHomeToWorkTiles(world.Config);
         int ring = world.Config.GathererHutRingTiles;
@@ -940,7 +991,7 @@ public sealed class ColdStartTests
         }
     }
 
-    private static void MarkSomewhereNear(
+    internal static void MarkSomewhereNear(
         SimWorld world, BuildingKind kind, GridPos site, int radius)
     {
         for (int dy = -radius; dy <= radius; dy++)

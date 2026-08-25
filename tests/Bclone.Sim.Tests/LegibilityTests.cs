@@ -36,7 +36,11 @@ public sealed class LegibilityTests
     {
         foreach (VillagerState state in Enum.GetValues<VillagerState>())
         {
-            var villager = new Villager { Id = 1, Name = "Test", LifespanYears = 45, State = state };
+            var villager = new Villager
+            {
+                Id = 1, Name = "Test", LifespanYears = 45, State = state,
+                Carried = new Stockpile(Stockpile.Kinds),
+            };
             string said = villager.DescribeState("the berry patch");
 
             _output.WriteLine($"{state} — \"{said}\"");

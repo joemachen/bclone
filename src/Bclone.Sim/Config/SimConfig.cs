@@ -713,6 +713,50 @@ public sealed record SimConfig
     // different decision from one that is dear in both, and collapsing them into a
     // single "cost" would delete that.
 
+    // ---------------------------------------------------------------
+    //  ⭐ THE STONE HALF OF EVERY RECIPE (`multi-material-construction.md`, D213)
+    // ---------------------------------------------------------------
+    //
+    // ⭐ THE MACHINERY SHIPPED AT ZERO AND THE PRICES CAME AFTER, which is D82's and D210's
+    // shape: the refactor landed as a **provable no-op** — every golden byte-identical — so the
+    // balance change could not hide inside it. A recipe drops its zeros, so a building priced at
+    // 0 stone has exactly the recipe it had before any of this existed.
+    //
+    // ⭐⭐ WHICH BUILDINGS PAY, AND IT WAS MEASURED RATHER THAN CHOSEN (D213, D214). Everything
+    // the **player marks** pays; the two free buildings and the **house** do not.
+    //
+    //   STORES (granary 10, shed 8, market 10) — a granary the village cannot pay for waits, the
+    //   settlement carries on out of its pile, and the site says what it is short of. Measured at
+    //   fifty years: identical to charging nothing until somebody marks one.
+    //
+    //   HUTS (3 each, Joe's call — "a nominal amount") — fifty years of the shipped opening:
+    //
+    //     hut stone 0, no seam   →  24 alive, 2 gatherer huts, 2 woodcutter huts, 0 unfinished
+    //     hut stone 3, no seam   →  24 alive, 1 gatherer hut,  1 woodcutter hut,  2 unfinished
+    //     hut stone 3, a seam    →  24 alive, 2 gatherer huts, 2 woodcutter huts, 0 unfinished
+    //
+    //   **Full population either way.** The cost of not painting a seam is that the village
+    //   builds FEWER huts, which is a legible and recoverable pressure rather than a death —
+    //   `DESIGN.md §0.1`, the challenge is in the planning and never in the punishment.
+    //
+    // ⚠️⚠️ AN EARLIER MEASUREMENT SAID PRICING THE HUTS TOOK THE FOUNDING FROM 24 ALIVE TO 7,
+    // AND IT IS RECORDED HERE BECAUSE IT WAS WRONG FOR AN INSTRUCTIVE REASON. That probe ran
+    // BEFORE `SimWorld.NextSiteToServe` existed, so what it measured was **D135's starved-head
+    // stall** — a site blocked on stone froze every site behind it — and not the price at all.
+    // Re-measured with the stall fixed, the collapse is gone entirely. *A number is only as good
+    // as the build it was taken on.*
+    //
+    // ⛔ A HOUSE STILL PAYS NOTHING, for a reason no measurement changes: a house is the one
+    // building the VILLAGE decides to raise (D42), so a stone price there is a growth gate on a
+    // resource an unattended valley never gathers.
+    //
+    // ⚠️ ONE KEY PER (BUILDING, GOOD), symmetric with the log keys above, and that is
+    // deliberately a stopgap rather than the catalogue. `content-inventory.md` finding 1 and
+    // `goods-catalog.md §9` both scope **BuildingKind becoming a row** as its own axis — ~45
+    // buildings against 10 — and 45 × 4 materials is not a flat key list. What this buys is the
+    // *structure*: `BuildingRecipe` holds N materials now, so the tier climb is unblocked and
+    // the catalogue is a refactor rather than a redesign.
+
     /// <summary>Logs a granary takes to build.</summary>
     [JsonPropertyName("granary_logs")]
     public int GranaryLogs { get; init; } = 40;
@@ -736,6 +780,47 @@ public sealed record SimConfig
     /// <summary>Ticks of work a market takes.</summary>
     [JsonPropertyName("market_work_ticks")]
     public int MarketWorkTicks { get; init; } = 50;
+
+    /// <summary>Stone a granary takes to build.</summary>
+    [JsonPropertyName("granary_stone")]
+    public int GranaryStone { get; init; } = 10;
+
+    /// <summary>Stone a storage shed takes to build.</summary>
+    [JsonPropertyName("shed_stone")]
+    public int ShedStone { get; init; } = 8;
+
+    /// <summary>Stone a market takes to build.</summary>
+    [JsonPropertyName("market_stone")]
+    public int MarketStone { get; init; } = 10;
+
+    /// <summary>Stone a woodcutter's hut takes to build.</summary>
+    [JsonPropertyName("hut_stone")]
+    public int HutStone { get; init; } = 3;
+
+    /// <summary>Stone a gatherer's hut takes to build.</summary>
+    [JsonPropertyName("gatherer_hut_stone")]
+    public int GathererHutStone { get; init; } = 3;
+
+    /// <summary>Stone a forester's hut takes to build.</summary>
+    [JsonPropertyName("forester_hut_stone")]
+    public int ForesterHutStone { get; init; } = 3;
+
+    /// <summary>Stone a farmhouse takes to build.</summary>
+    [JsonPropertyName("farmhouse_stone")]
+    public int FarmhouseStone { get; init; } = 3;
+
+    /// <summary>
+    /// Stone a house takes to raise.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>The one to think hardest about before raising above zero.</b> A house is the only
+    /// building the <em>village</em> decides to put up — the player never places one (D42) — so
+    /// a stone price here is a growth gate rather than a purchase, and an unattended valley
+    /// paints no seam. `VillageEconomy` derives the timber budget against
+    /// <see cref="LogsPerHouse"/> and has no stone term at all.
+    /// </remarks>
+    [JsonPropertyName("home_stone")]
+    public int HomeStone { get; init; }
 
     /// <summary>Logs a woodcutter's hut takes to build.</summary>
     [JsonPropertyName("hut_logs")]
@@ -973,6 +1058,24 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("cart_tools")]
     public int CartTools { get; init; } = 20;
+
+    // ⛔⛔ `cart_stone` WAS HERE FOR ONE COMMIT AND IS GONE (Joe, D215): *"there should already
+    // be stone on the map for the user to ask the laborers to harvest. I don't want stone in the
+    // cart. Only food and tools."*
+    //
+    // ⚠️⚠️ IT EXISTED BECAUSE OF A UNIT I MISREAD, AND THAT IS THE PART WORTH KEEPING. D214
+    // measured the distance from a founding site to the nearest reachable stone as **120**, read
+    // it as 120 tiles, and concluded the seams were out of reach — so the founders were given a
+    // pile of stone to start with. `TravelCostField.Cost` returns **cost units**, and
+    // `BaseTileCost` is 10: the real distance is **twelve tiles**, on every seed. Worldgen says
+    // so out loud one file over — *"STONE NEAR, IRON FAR… a valley whose ore sits in the far
+    // woods plays differently from one where it is on the doorstep"* — and
+    // `stone_seam_ring_tiles` is 14.
+    //
+    // **The founding was never short of stone; the test fixture simply never painted a seam.**
+    // A number in the wrong unit bought a starting resource the game did not need — the same
+    // shape as D214's other correction, where a probe measured a stall and was read as measuring
+    // a price.
 
     /// <summary>Share of a building's logs returned when it is pulled down, as a percentage.</summary>
     /// <remarks>

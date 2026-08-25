@@ -118,7 +118,7 @@ public sealed class HousesAreBuiltTests
         SimConfig config = ShippedConfig.Load();
         BuildingRecipe recipe = BuildingRecipe.For(BuildingKind.Home, config);
 
-        Assert.Equal(config.LogsPerHouse, recipe.Logs);
+        Assert.Equal(config.LogsPerHouse, recipe.Of(Goods.Logs));
         Assert.Equal(config.HomeWorkTicks, recipe.WorkTicks);
         Assert.True(recipe.WorkTicks > 0, "A house that owes no work is an instant house again.");
     }
@@ -424,6 +424,11 @@ public sealed class HousesAreBuiltTests
             Workplace shed = queue[^1];
             Assert.Equal(BuildingKind.Shed, shed.Construction!.Kind);
 
+            // ⭐ Both arms get the same stone, because a shed costs some now (D213) and this
+            // guard is about the ORDER two buildings are raised in, not about whether the
+            // village can afford either.
+            SeamFixtures.PaintStoneForBuilding(world);
+
             if (promote)
             {
                 while (world.QueuePositionOf(shed) > 1)
@@ -547,7 +552,7 @@ public sealed class HousesAreBuiltTests
 
         loop.Step(config.TicksPerYear);
 
-        int delivered = granary.Construction?.LogsDelivered ?? granary.Construction?.Recipe.Logs ?? 0;
+        int delivered = granary.Construction?.LogsDelivered ?? granary.Construction?.Recipe.Of(Goods.Logs) ?? 0;
         _output.WriteLine(
             $"a year after moving the granary to the front: {delivered} logs delivered to it, "
             + $"{Homes(world)} houses standing");
@@ -683,8 +688,8 @@ public sealed class HousesAreBuiltTests
         Assert.NotNull(starved);
         Assert.NotNull(stocked);
 
-        stocked!.Construction!.Deliver(stocked.Construction.LogsStillNeeded);
-        Assert.True(stocked.Construction.HasMaterials);
+        BuildFixtures.StockTheSite(stocked!);
+        Assert.True(stocked!.Construction!.HasMaterials);
 
         // Anti-vacuity: the starved one must really be ahead of it, or nothing is blocked.
         Assert.True(

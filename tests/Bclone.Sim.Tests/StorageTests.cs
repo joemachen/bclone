@@ -341,8 +341,8 @@ public sealed class StorageTests
         market.Store.Receive(Goods.Food, 200);
         market.Store.Receive(Goods.Firewood, 200);
 
-        villager.CarriedFood = 0;
-        villager.CarriedFirewood = 0;
+        villager.Carried.TakeAll(Goods.Food);
+        villager.Carried.TakeAll(Goods.Firewood);
         villager.Position = market.Position;
 
         BehaviorSystem.CollectForTest(world, villager);
@@ -386,8 +386,8 @@ public sealed class StorageTests
         market.Store.Receive(Goods.Food, 500);
         market.Store.Receive(Goods.Firewood, 200);
 
-        villager.CarriedFood = 0;
-        villager.CarriedFirewood = 0;
+        villager.Carried.TakeAll(Goods.Food);
+        villager.Carried.TakeAll(Goods.Firewood);
         villager.Position = market.Position;
 
         BehaviorSystem.CollectForTest(world, villager);
