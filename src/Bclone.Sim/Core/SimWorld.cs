@@ -927,7 +927,7 @@ public sealed class SimWorld
     /// <para>
     /// <b>Walks the owned tiles, never the valley.</b> `ZoneMap` keeps a per-owner list, so a
     /// hut with forty tiles looks at forty — not at 9,600, which is the mistake
-    /// <see cref="NearestHarvest"/> had to be rescued from when the valley became wooded.
+    /// <see cref="NearestHarvest(GridPos)"/> had to be rescued from when the valley became wooded.
     /// </para>
     /// </remarks>
     /// <summary>
@@ -953,9 +953,36 @@ public sealed class SimWorld
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        return workplace.Mode == WorkMode.FellAndPlant
-            && !StockLimits.IsMet(Goods.Logs, LogsInSheds());
+        return workplace.Mode == WorkMode.FellAndPlant && MayTake(Goods.Logs);
     }
+
+    /// <summary>
+    /// Whether the village still wants more of a good — <b>the limit's one door</b> (D212).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ D146 cut this door for the forester and for nobody else.</b> <see cref="MayFell"/>
+    /// asked the Logs limit by name, so the <em>hut</em> obeyed the player and the
+    /// <em>harvest brush</em> did not — and the brush is the only source of stone and iron the
+    /// game has. A player could type <em>"keep 100 stone"</em>, watch every seam in the valley
+    /// come out of the ground, and get no sentence explaining it.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It reads <see cref="InStores"/> for every good, and that is not a widening of what
+    /// <see cref="MayFell"/> counted.</b> `stock-limits-and-laborers.md §4.1` is emphatic that a
+    /// limit must read the same supply the good's demand function reads — D29 froze a village to
+    /// extinction on the other reading. <c>InStores(Goods.Logs)</c> and <see cref="LogsInSheds"/>
+    /// are the same sum over the same stores (<c>store.Logs</c> <em>is</em>
+    /// <c>store[Goods.Logs]</c>), so the forester's question is unchanged to the byte. The spec's
+    /// own answer for a good with no demand function yet — stone, iron, tools — is <em>"the limit
+    /// reads village stores"</em>, which is this.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Nothing switches on a good by name here</b>, which is `goods-catalog.md §2.1`'s rule
+    /// and the reason a mod-added good is limited the day it is added.
+    /// </para>
+    /// </remarks>
+    public bool MayTake(Goods goods) => !StockLimits.IsMet(goods, InStores(goods));
 
     /// <summary>
     /// Why this workplace cannot do its job right now, or <c>null</c> if it can.
@@ -2292,7 +2319,7 @@ public sealed class SimWorld
     /// <para>
     /// <b>The empty-list guard is not an optimisation.</b> This is asked by every able adult
     /// with nothing else to do, every tick — the same position that took the suite from four
-    /// minutes to over ten when <see cref="NearestHarvest"/> shipped without one (D87). A
+    /// minutes to over ten when <see cref="NearestHarvest(GridPos)"/> shipped without one (D87). A
     /// village that has never dropped anything pays one integer compare.
     /// </para>
     /// </remarks>
@@ -2797,8 +2824,21 @@ public sealed class SimWorld
     /// flicker against, and taking the nearest tree to hand is what a person would do.
     /// Walked in a fixed order so two runs pick the same tree.
     /// </remarks>
-    public GridPos? NearestHarvest(GridPos from)
+    public GridPos? NearestHarvest(GridPos from) => NearestHarvest(from, out _);
+
+    /// <summary>
+    /// The nearest tile to clear, and — when there is none — <b>the good a limit held back</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>The out-parameter is for the sentence, not for the decision</b> (D212, METHODOLOGY §4:
+    /// every refusal writes its own reason). A laborer who walks past a painted seam because the
+    /// village already has enough stone must be able to say so, and working that out afterwards
+    /// would mean a second scan of the painted tiles for every idle adult on every tick. This
+    /// scan already knows.
+    /// </remarks>
+    public GridPos? NearestHarvest(GridPos from, out Goods? heldBackBy)
     {
+        heldBackBy = null;
         // ⭐ NOTHING PAINTED, NOTHING TO SCAN — and this line is not an optimisation, it
         // is the difference between the feature being free and being ruinous. This is
         // asked by every able adult who has nothing else to do, every tick, and the scan
@@ -2838,6 +2878,30 @@ public sealed class SimWorld
         GridPos? best = null;
         int bestCost = int.MaxValue;
 
+        // ⭐ WHAT THE VILLAGE HAS ENOUGH OF, ASKED ONCE (D212). A limit is a ceiling on
+        // production (D62), and clearing painted ground is production — it was simply the one
+        // producer nobody had wired the control to.
+        //
+        // ⚠️ COMPUTED HERE RATHER THAN PER TILE, and that is not tidiness. `MayTake` sums a good
+        // across every store that accepts it, and the loop below runs over every painted tile
+        // for every idle adult on every tick — the exact ruin this method's own comments above
+        // are about. One pass over the goods, then an array lookup per tile.
+        //
+        // ⛔ AND `AnySet` IS THE EARLY-OUT THAT KEEPS THE FEATURE FREE. A village that has never
+        // opened the control pays one boolean, which is the argument the sparse hashing and the
+        // `HarvestTiles == 0` line above both make: a feature nobody has switched on should cost
+        // nothing at all. It is also why no golden moves for this — `null` is the default and
+        // means *"the player has not said"*.
+        bool[]? enoughOf = null;
+        if (StockLimits.AnySet)
+        {
+            enoughOf = new bool[GoodsCatalog.Count];
+            for (int g = 0; g < enoughOf.Length; g++)
+            {
+                enoughOf[g] = !MayTake((Goods)g);
+            }
+        }
+
         // ⭐ THE PAINTED TILES THEMSELVES, NOT THE WHOLE VALLEY (`forests-and-gathering.md`).
         // This walked all 9,600 tiles, guarded by the early-out above — which was enough while
         // almost no village painted anything. A WOODED VALLEY BROKE THAT: every house the
@@ -2868,12 +2932,40 @@ public sealed class SimWorld
                 continue;
             }
 
+            // ⭐ AND IT IS LEFT STANDING WHEN THE VILLAGE HAS ENOUGH (D212). Skipped, never
+            // un-painted — the rule D127 wrote three paragraphs up: the paint is a standing
+            // instruction, so a seam the village is currently full of is *work that is waiting*
+            // and it comes back the moment the stores are spent down. The player raises the
+            // limit or spends the stone; the village does not forget what they asked for.
+            //
+            // ⛔ THE FOOTPRINT BRANCH ABOVE RETURNS BEFORE THIS, AND MUST. A building's ground
+            // is cleared whatever the limit says, or the village deadlocks on its own
+            // instruction: the site waits on the ground, the ground waits on the limit, and the
+            // limit waits on nothing at all. Guarded by
+            // `HarvestLimitTests.GroundABuildingWaitsOnIsClearedEvenAtTheLimit`.
+            if (enoughOf is not null)
+            {
+                Goods standing = TerrainRules.Yields(Map.TerrainAt(at))!.Value;
+                if (enoughOf[(int)standing])
+                {
+                    heldBackBy ??= standing;
+                    continue;
+                }
+            }
+
             int cost = TravelCost.Cost(from, at);
             if (cost < bestCost)
             {
                 best = at;
                 bestCost = cost;
             }
+        }
+
+        // Only a refusal if it is the reason there is nothing to do. Somebody who walked past a
+        // capped seam on the way to a tree is not being held back by anything.
+        if (best is not null)
+        {
+            heldBackBy = null;
         }
 
         return best;

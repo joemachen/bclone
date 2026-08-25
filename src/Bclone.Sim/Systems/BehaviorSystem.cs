@@ -2588,9 +2588,23 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        GridPos? tile = world.NearestHarvest(villager.Position);
+        GridPos? tile = world.NearestHarvest(villager.Position, out Goods? heldBackBy);
         if (tile is null)
         {
+            // ⭐ AND A LIMIT SAYS SO RATHER THAN LOOKING LIKE NOTHING TO DO (D212). This is
+            // D146's finding one control over: *"a hut whose ground is fully wooded because
+            // the village stopped felling reads exactly like a hut that has run out of work,
+            // and the answer — raise the limit — is nowhere near the panel unless the sentence
+            // points at it."* A laborer standing about is the silent stall §1.1 forbids.
+            if (heldBackBy is Goods enough)
+            {
+                villager.WorkNote =
+                    $"Nothing left to clear — you asked the village to keep "
+                    + $"{world.StockLimits.For(enough)} {world.GoodsCatalog.NameOf(enough)} "
+                    + $"and it has {world.InStores(enough)}, so the ground it has painted for "
+                    + "that is left standing.";
+            }
+
             return false;
         }
 
