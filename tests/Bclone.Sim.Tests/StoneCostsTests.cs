@@ -65,17 +65,83 @@ public sealed class StoneCostsTests
         Assert.Equal(Goods.Stone, recipe.Materials[1].Goods);
     }
 
-    /// <summary>⛔ The survival chain pays nothing, and the probe above is why.</summary>
+    /// <summary>⭐ A hut costs a nominal amount of stone (Joe, D214).</summary>
+    /// <remarks>
+    /// <b>Nominal against 25 logs, and one seam tile is 12 stone</b> — so clearing a single rock
+    /// buys four huts. Measured over fifty years of the shipped opening: the village holds
+    /// <b>24 either way</b>, and a founding that never paints a seam simply builds <em>fewer</em>
+    /// huts (1 gatherer and 1 woodcutter against 2 and 2). A pressure you can read and recover
+    /// from, which is `DESIGN.md §0.1`.
+    /// </remarks>
     [Theory]
-    [InlineData(BuildingKind.Home)]
     [InlineData(BuildingKind.GathererHut)]
     [InlineData(BuildingKind.WoodcutterHut)]
+    [InlineData(BuildingKind.ForesterHut)]
+    [InlineData(BuildingKind.Farmhouse)]
+    public void AHutCostsANominalAmountOfStone(BuildingKind kind)
+    {
+        BuildingRecipe recipe = BuildingRecipe.For(kind, VillageFixtures.Village);
+
+        Assert.True(recipe.Of(Goods.Stone) > 0, $"A {kind} is meant to cost some stone.");
+        Assert.True(
+            recipe.Of(Goods.Stone) * 4 <= recipe.Of(Goods.Logs),
+            $"A {kind} costs {recipe.Of(Goods.Stone)} stone against {recipe.Of(Goods.Logs)} logs, "
+            + "which is not nominal any more.");
+    }
+
+    /// <summary>
+    /// ⛔ The bootstrap is free and a house is timber-only, and neither is a balance number.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The pile and the builder's hut are the circle</b> (D96, D108): nothing can be built
+    /// without them, so charging for them is charging a village for the means of paying.
+    /// </para>
+    /// <para>
+    /// <b>⛔⛔ And a house pays nothing for a reason no measurement changes.</b> It is the one
+    /// building the <em>village</em> decides to raise (D42) — the player never places one — so a
+    /// stone price there is a growth gate on a resource an unattended valley never gathers, and
+    /// `VillageEconomy` derives the timber budget with no stone term at all.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(BuildingKind.Home)]
     [InlineData(BuildingKind.Pile)]
     [InlineData(BuildingKind.BuilderHut)]
-    public void TheSurvivalChainIsStillTimberOnly(BuildingKind kind)
+    public void TheBootstrapAndTheHousePayNoStone(BuildingKind kind)
     {
         BuildingRecipe recipe = BuildingRecipe.For(kind, VillageFixtures.Village);
         Assert.Equal(0, recipe.Of(Goods.Stone));
+    }
+
+    /// <summary>
+    /// ⭐⭐ A founding that never paints a seam still fills the valley — it just builds less.
+    /// </summary>
+    /// <remarks>
+    /// <b>The safety property for D214, and it is the number that mattered.</b> An earlier probe
+    /// said pricing the huts took the founding from 24 alive to 7 — that probe ran before
+    /// <c>SimWorld.NextSiteToServe</c> existed, so what it measured was D135's starved-head stall
+    /// rather than the price. With the stall fixed there is no collapse: the village holds its
+    /// full population and leaves a couple of huts unbuilt until somebody clears a rock.
+    /// </remarks>
+    [Fact]
+    public void AFoundingThatPaintsNoSeamStillLives()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        ColdStartTests.PlayTheOpening(world);
+        loop.Step(config.TicksPerYear * 50);
+
+        int alive = CountAlive(world);
+        _output.WriteLine(
+            $"no seam ever painted, huts priced at {config.GathererHutStone} stone: "
+            + $"{alive} alive after 50 years, {world.TotalFood()} food");
+
+        Assert.True(
+            alive >= 15,
+            $"Pricing the huts in stone cost the founding its village — {alive} alive.");
     }
 
     /// <summary>

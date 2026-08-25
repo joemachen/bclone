@@ -1,7 +1,7 @@
 # Spec: Multi-material construction — a building can ask for more than one thing
 
-> Status: **✅ BUILT (D213, 2026-08-25), in two commits: the machinery as a provable no-op, then
-> the prices.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3` (data-driven), `§2.3`
+> Status: **✅ BUILT (D213 + D214, 2026-08-25), in three commits: the machinery as a provable
+> no-op, the store prices, then the huts on Joe's call.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3` (data-driven), `§2.3`
 > (systemic pressure traceable to a player decision) · Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `content-inventory.md` **finding 2** (which scheduled this),
@@ -59,33 +59,61 @@ reachable for the first time.
 
 ## 3. ⭐⭐ Which buildings pay, and it was measured rather than chosen
 
-Fifty years of the shipped opening, three ways:
-
-| | alive @50y | sites unfinished |
-|---|---|---|
-| stone on the **stores**, no seam painted | **24** | **0** — *identical to charging nothing* |
-| stone on the **huts**, no seam painted | **7** | 6 |
-| stone on the huts, **a seam painted** | 24 | 0 |
-
-**So the stores pay and the survival chain does not.**
+**Everything the player marks pays. The two free buildings and the house do not.**
 
 | Building | Logs | Stone | Why |
 |---|---|---|---|
 | Granary | 40 | **10** | The player marks it. A durable civic store — `buildings-plan.md` lists *"stone granary"* under the civic tier |
 | Shed | 30 | **8** | Same |
 | Market | 35 | **10** | Same |
-| Gatherer's / woodcutter's / forester's hut, farmhouse | as before | **0** | ⛔ The opening marks a gatherer's hut, and one nobody can pay for is a village that does not eat |
+| Gatherer's / woodcutter's / forester's hut, farmhouse | 25 | **3** | Joe, D214: *"a nominal amount"*. One seam tile is 12 stone, so clearing a single rock buys four huts |
 | Home | 30 | **0** | ⛔⛔ The one building the **village** decides to raise (D42). A stone price here gates growth on a resource an unattended valley never gathers |
 | Pile, builder's hut | 0 | 0 | Free, and must stay free (D96, D108) — the circle |
+| **The founders' cart** | — | **+12 stone** | §3.2 — without it the cold start cannot begin |
+
+### 3.1 ⚠️⚠️ The measurement that was wrong, and why it is recorded rather than deleted
+
+The first probe said pricing the huts took the founding from **24 alive to 7**, and that number
+decided the original split. **It was wrong, and instructively so:** it ran *before*
+`SimWorld.NextSiteToServe` existed, so what it measured was §4's **starved-head stall** — a site
+blocked on stone freezing every site behind it — and not the price at all.
+
+Re-measured on the fixed build, fifty years of the shipped opening:
+
+| hut stone | seam painted | alive @50y | huts standing | sites unfinished |
+|---|---|---|---|---|
+| 0 | — | 24 | 2 gatherer, 2 woodcutter | 0 |
+| **3** | no | **24** | 1 gatherer, 1 woodcutter | 2 |
+| **3** | yes | 24 | 2 gatherer, 2 woodcutter | 0 |
+| 5 | no | 24 | 1 gatherer, 1 woodcutter | 2 |
+
+**Full population either way.** The cost of never painting a seam is that the village builds
+*fewer huts* — a legible, recoverable pressure rather than a death.
+
+⭐ **A number is only as good as the build it was taken on.** This is the same lesson D179 records
+about the suite's own runtime: *the horizons everybody suspected were never the problem.*
+
+### 3.2 ⛔⛔ And the cold start bricked anyway, which the fixture village could not show
+
+The re-measurement above ran on a **warm start** — `FoundingBuildings` defaults to `true`, so that
+village already has its huts and has **no cart**. On the *real* cold start the founders have no
+stone and **no way to have any**, and the two huts they eat and heat out of cannot be paid for:
+**0 alive, 4 frozen, not one berry ever reaching a store.**
+
+✅ **The founders arrive with one seam tile's worth of stone** (`cart_stone: 12`), beside the food
+and the tools.
+
+- **A cart, not an exemption**, and the difference is the whole design. Making the first huts free
+  would be a rule the player must be *told*; arriving with a small pile of stone is a fact they can
+  **see** — it sits in the cart, it goes down as they build, and when it runs out the answer is on
+  the map.
+- **It is a real difficulty dial**, unlike `cart_tools` beside it: lower it and the player must go
+  to the rock sooner.
 
 **The safety property, stated as the test that holds it:** a granary the village cannot pay for
 **waits**, the settlement carries on out of its pile, and the site says what it is short of.
-`DESIGN.md §0.1` — *the challenge is in the planning, never in the punishment*, and a mistake
-must never be unrecoverable before it was understood.
-
-⚠️ **The hut version is a real and defensible difficulty and it is Joe's call, not a default.**
-*Paint a seam early or the founding starves* is a coherent game; it is a difficulty setting rather
-than a detail, and 24 → 7 alive is what it costs.
+`DESIGN.md §0.1` — *the challenge is in the planning, never in the punishment*, and a mistake must
+never be unrecoverable before it was understood.
 
 ---
 
@@ -139,6 +167,16 @@ balance change that followed could not hide inside it.
 The three stores priced, §4's queue fix, and the guards in `StoneCostsTests`. **No golden moved
 for this either**, because no golden run marks a store.
 
+### ✅ Slice 3 — the huts, on Joe's call (D214)
+
+Huts and the farmhouse at **3** each, and the founders' cart at **12**. **No golden moved for this
+one either, and the reason is checkable rather than lucky:** every golden village is a warm start,
+so it has no cart for the stone to land in and its huts were standing before the run began.
+*Silent about what they do not reach, loud about what they do* (D157, D162).
+
+⚠️ **`AFoundingThatPaintsNoSeamStillLives` is the guard this slice turns on** — the whole claim is
+that a nominal price costs the village buildings and never its life.
+
 ---
 
 ## 6. ⛔ Failure modes
@@ -171,4 +209,6 @@ for this either**, because no golden run marks a store.
 2. **Nothing dresses stone.** `TECH-EXAMPLE.md` prices ~15 buildings in *Cut Stone* and notes the
    gap itself: *"the quarry extracts; nothing dresses."* Raw `Goods.Stone` is the material today.
 3. **No load-time validation that a priced good is obtainable.** See §6.
-4. **Should the huts pay?** §3's measurement is there for the decision; the numbers are 24 → 7.
+4. ~~**Should the huts pay?**~~ ✅ **Answered by Joe, D214: yes, a nominal amount.** 3 each, and
+   the founders arrive with the stone for the first two — see §3.1 for the measurement that had to
+   be re-taken and §3.2 for the cold start it exposed.

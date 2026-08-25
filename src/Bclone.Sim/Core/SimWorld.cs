@@ -6056,6 +6056,10 @@ public sealed class SimWorld
         // holds is what you arrived in: your food and your tools.
         cart.Store.Receive(Goods.Food, config.CartFood);
         cart.Store.Receive(Goods.Tools, config.CartTools);
+
+        // ⭐ And the stone for the first huts (D214). See `SimConfig.CartStone`: without it a
+        // founding that must pay stone for the hut it eats out of cannot start at all.
+        cart.Store.Receive(Goods.Stone, config.CartStone);
     }
 
 

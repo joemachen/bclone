@@ -878,6 +878,15 @@
   "shed_stone": 8,
   "market_stone": 10,
 
+  // And a nominal amount on the huts (Joe, D214). One seam tile is 12 stone,
+  // so clearing a single rock buys four huts. Measured over fifty years: the
+  // village holds 24 either way, and a founding that never paints a seam simply
+  // builds FEWER huts -- a pressure you can read and recover from, not a death.
+  "hut_stone": 3,
+  "gatherer_hut_stone": 3,
+  "forester_hut_stone": 3,
+  "farmhouse_stone": 3,
+
   // construction_site_capacity is GONE (D108). A site had three seats and
   // people were assigned to it; builders hold their job at the hut now and
   // treat sites as errands, so the number would be permanently zero -- and
@@ -987,6 +996,12 @@
   "cart_capacity": 1650,
   "cart_food": 1200,
   "cart_tools": 20,
+
+  // Stone for the first huts (D214). Without it a founding that must pay stone
+  // for the hut it eats out of cannot start: measured at 0 alive, 4 frozen. One
+  // seam tile is 12, so this is exactly one rock's worth -- enough for the two
+  // huts the opening marks, and then the player goes to the map.
+  "cart_stone": 12,
 
   // Less than everything, deliberately. Demolition is how a player
   // corrects a mistake, and it should cost something - otherwise a

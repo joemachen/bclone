@@ -722,27 +722,31 @@ public sealed record SimConfig
     // balance change could not hide inside it. A recipe drops its zeros, so a building priced at
     // 0 stone has exactly the recipe it had before any of this existed.
     //
-    // ⭐⭐ WHICH BUILDINGS PAY, AND IT WAS MEASURED RATHER THAN CHOSEN (D213). The split is
-    // **player-placed stores yes, the survival chain no**, and the reason is a probe over fifty
-    // years of the shipped opening:
+    // ⭐⭐ WHICH BUILDINGS PAY, AND IT WAS MEASURED RATHER THAN CHOSEN (D213, D214). Everything
+    // the **player marks** pays; the two free buildings and the **house** do not.
     //
-    //   stone on the STORES, no seam painted  →  24 alive, 0 sites unfinished  (identical to 0)
-    //   stone on the HUTS,   no seam painted  →   7 alive, 6 sites unfinished
-    //   stone on the HUTS,   a seam painted   →  24 alive, 0 sites unfinished
+    //   STORES (granary 10, shed 8, market 10) — a granary the village cannot pay for waits, the
+    //   settlement carries on out of its pile, and the site says what it is short of. Measured at
+    //   fifty years: identical to charging nothing until somebody marks one.
     //
-    // A granary, a shed and a market are things **the player marks**; a village that never
-    // marks one never needs stone, and one that marks a granary it cannot pay for keeps running
-    // on its pile and is told what the site is short of. That is `DESIGN.md §0.1`'s
-    // *recoverable by design* — the mistake is real, visible and expensive, and it never ends a
-    // run.
+    //   HUTS (3 each, Joe's call — "a nominal amount") — fifty years of the shipped opening:
     //
-    // ⛔ A HUT IS DIFFERENT AND THE NUMBER SAYS SO: the opening marks a gatherer's hut, and a
-    // gatherer's hut nobody can pay for is a village that does not eat. Priced at 10 it took the
-    // founding from 24 alive to **7**, and painting one seam put it straight back to 24. That is
-    // a real and defensible difficulty — *paint a seam early* — but it is a difficulty setting
-    // rather than a detail, and it is Joe's call rather than a default.
+    //     hut stone 0, no seam   →  24 alive, 2 gatherer huts, 2 woodcutter huts, 0 unfinished
+    //     hut stone 3, no seam   →  24 alive, 1 gatherer hut,  1 woodcutter hut,  2 unfinished
+    //     hut stone 3, a seam    →  24 alive, 2 gatherer huts, 2 woodcutter huts, 0 unfinished
     //
-    // ⛔ AND A HOUSE PAYS NOTHING, for a stronger reason than either: a house is the one
+    //   **Full population either way.** The cost of not painting a seam is that the village
+    //   builds FEWER huts, which is a legible and recoverable pressure rather than a death —
+    //   `DESIGN.md §0.1`, the challenge is in the planning and never in the punishment.
+    //
+    // ⚠️⚠️ AN EARLIER MEASUREMENT SAID PRICING THE HUTS TOOK THE FOUNDING FROM 24 ALIVE TO 7,
+    // AND IT IS RECORDED HERE BECAUSE IT WAS WRONG FOR AN INSTRUCTIVE REASON. That probe ran
+    // BEFORE `SimWorld.NextSiteToServe` existed, so what it measured was **D135's starved-head
+    // stall** — a site blocked on stone froze every site behind it — and not the price at all.
+    // Re-measured with the stall fixed, the collapse is gone entirely. *A number is only as good
+    // as the build it was taken on.*
+    //
+    // ⛔ A HOUSE STILL PAYS NOTHING, for a reason no measurement changes: a house is the one
     // building the VILLAGE decides to raise (D42), so a stone price there is a growth gate on a
     // resource an unattended valley never gathers.
     //
@@ -791,19 +795,19 @@ public sealed record SimConfig
 
     /// <summary>Stone a woodcutter's hut takes to build.</summary>
     [JsonPropertyName("hut_stone")]
-    public int HutStone { get; init; }
+    public int HutStone { get; init; } = 3;
 
     /// <summary>Stone a gatherer's hut takes to build.</summary>
     [JsonPropertyName("gatherer_hut_stone")]
-    public int GathererHutStone { get; init; }
+    public int GathererHutStone { get; init; } = 3;
 
     /// <summary>Stone a forester's hut takes to build.</summary>
     [JsonPropertyName("forester_hut_stone")]
-    public int ForesterHutStone { get; init; }
+    public int ForesterHutStone { get; init; } = 3;
 
     /// <summary>Stone a farmhouse takes to build.</summary>
     [JsonPropertyName("farmhouse_stone")]
-    public int FarmhouseStone { get; init; }
+    public int FarmhouseStone { get; init; } = 3;
 
     /// <summary>
     /// Stone a house takes to raise.
@@ -1054,6 +1058,36 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("cart_tools")]
     public int CartTools { get; init; } = 20;
+
+    /// <summary>
+    /// Stone the founders arrive carrying — <b>enough for the first huts, and no more</b> (D214).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ THE FOUNDING BRICKED WITHOUT IT, AND THAT IS WHY IT EXISTS.</b> Once a hut costs
+    /// stone (Joe: *"a nominal amount"*), the cold start asks a village with **no stone and no
+    /// way to have any** to raise the two huts it eats and heats out of. Measured on the shipped
+    /// opening: **0 alive, 4 frozen, not one berry ever reaching a store.** The gatherer's hut
+    /// and the woodcutter's hut are the founding, and a price nobody can pay is not a difficulty
+    /// setting — it is a village that cannot start.
+    /// </para>
+    /// <para>
+    /// <b>⭐ A CART, NOT AN EXEMPTION</b>, and the difference is the whole design. Making the
+    /// first huts free would have been a rule the player must be told; arriving with a small pile
+    /// of stone is a fact they can <em>see</em> — it sits in the cart beside the food and the
+    /// tools, it goes down as they build, and when it runs out the answer is on the map. That is
+    /// `DESIGN.md §0.1`'s *recoverable by design*: the mistake is real, visible and expensive,
+    /// and the valley forgives you slowly.
+    /// </para>
+    /// <para>
+    /// <b>One seam tile's worth</b> (<c>yield_per_tile</c> for stone is 12), which buys the two
+    /// huts the opening marks with a little over. **It is a difficulty dial and a real one**,
+    /// unlike <see cref="CartTools"/> beside it: lower it and the player must go to the rock
+    /// sooner.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("cart_stone")]
+    public int CartStone { get; init; } = 12;
 
     /// <summary>Share of a building's logs returned when it is pulled down, as a percentage.</summary>
     /// <remarks>
