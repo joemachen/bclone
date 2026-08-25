@@ -116,9 +116,27 @@ are the next slice, and until then a modded job can only staff a building that a
 `JobRow`, `JobsCatalog`, defaults for the six. The five data surfaces read the row.
 `LabourQuota` becomes indexed. **Acceptance: goldens byte-identical.**
 
-### Slice 2 — prove a modder can
-A test defining a **seventh job in real JSON**, driven through the quota, the allocator's naming
-and the state hash — the shape `ModdedGoodTests` established. ⛔ **No new job ships into the game.**
+### ✅ Slice 2 — prove a modder can
+
+**`ModdedJobTests.cs`, 9 guards.** A seventh trade (*fisher*) defined in **real JSON**, parsed by
+the shipping loader, driven through the catalogue, the quota and the validator. ⛔ **No new trade
+ships into the game** — `professions.md` has a fisher on its list with a spec of its own owed.
+
+#### ⛔⛔ And the red check found the guards were green and blind
+
+**Eight of the nine passed a break they should have caught.** Placing rows by **file position**
+instead of by their stated id left every one of them green — because the catalogue in the test
+**happens to list its rows in id order**, so the two are indistinguishable.
+
+> *A guard whose fixture makes the bug impossible reports a number that is true and proves nothing.*
+
+**That is D157's finding for the third time**, and the only cure is a fixture where the two
+genuinely differ: `ReorderingTheFileDoesNotReinterpretTheTrades` lists the same seven trades
+**backwards**. Re-run against the same break, it goes red on its own.
+
+⚠️ **What the bug would have looked like is why it matters**: a modder sorts their file
+alphabetically, and every trade in the village quietly means a different one. **Nothing thrown,
+nothing to see** — `Forager` simply reads *"fisher"*.
 
 ---
 
