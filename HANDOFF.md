@@ -41,7 +41,7 @@ against what the documents claim, and it is the shortest route to being oriented
 
 ---
 
-## ⭐⭐ What landed while Phase 4 stayed held (D206–D217, 2026-08-24/25)
+## ⭐⭐ What landed while Phase 4 stayed held (D206–D218, 2026-08-24/25)
 
 **The hold was never idleness.** Joe's content pass arrived and the infrastructure it needs got
 built underneath it — none of which is Phase 4, and all of which Phase 4 will stand on.
@@ -138,7 +138,7 @@ named one and was stale within the minute.
 **SUITE, FROM A RUN:**
 
 ```
-772 passed, 0 failed, 2 skipped of 774 — about 2m40s (was 18m52s before D179)
+781 passed, 0 failed, 2 skipped of 783 — about 2m40s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to

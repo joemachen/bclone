@@ -1,6 +1,6 @@
 # Spec: The jobs catalogue — a trade becomes a row
 
-> Status: **specced, in progress.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3`
+> Status: **BUILT — slices 1 and 2 landed, proven and red-checked.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3`
 > (data-driven, first-class modding) · Format per `METHODOLOGY.md §2`.
 >
 > **⭐ This is `goods-catalog.md` applied one enum over**, and it deliberately does not re-argue
@@ -112,7 +112,7 @@ are the next slice, and until then a modded job can only staff a building that a
 
 ## 5. Slices
 
-### Slice 1 — the catalogue, as a provable no-op
+### ✅ Slice 1 — the catalogue, as a provable no-op
 `JobRow`, `JobsCatalog`, defaults for the six. The five data surfaces read the row.
 `LabourQuota` becomes indexed. **Acceptance: goldens byte-identical.**
 

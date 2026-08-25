@@ -160,10 +160,23 @@ spec* (D159); this closed the status half only.
 > JSON** and drives it through storing, acceptance, stock limits and the state hash — **11 guards,
 > red-checked** by reinstating the exact pre-fix bug and confirming two went red.
 >
+> ✅ **AND JOBS FOLLOWED (D218, `specs/jobs-catalog.md`).** A trade is a row, the quota is indexed,
+> and `ModdedJobTests` proves a seventh in real JSON. **⛔ Its red check is the most useful thing
+> either slice produced:** eight of nine new guards passed a break they should have caught, because
+> the test's own catalogue listed rows in id order and so could not tell *id* from *position*.
+> **D157's green-and-blind finding, third instance.**
+>
 > ⛔ **Still open, and this finding stays until it is:**
-> - **`JobKind` and `BuildingKind` have had no equivalent** — ~40 worker roles and ~45 buildings
->   against **6 and 10**. Same enum, same hash-by-position, same problem. **The goods work is the
->   template for both.**
+> - **`BuildingKind` has had no equivalent** — **~45 buildings against 10**, and it is where the
+>   content pass actually needs the headroom. `BuildingRecipe.For` is still a switch with per-kind
+>   config keys, and `JobRow.WorksAt` points straight at the enum, so **a modded trade can only
+>   staff a building that already exists.**
+> - ⭐ **One correction carried forward for that slice** (Joe, 2026-08-25): *"why does the granary
+>   capacity have to be derived? it should be a set number."* **He is right — the set number already
+>   exists**, `granary_feeds_people: 30`; the derivation only converts people into food so the
+>   building's meaning does not drift when `food_per_meal` moves. The market is likewise two stated
+>   numbers. **So capacity is mostly data**, and only the shed, stockpile, builder's hut and
+>   gatherer's hut are genuinely derived from other systems.
 
 
 **Added 2026-08-24 (D206), from `TECH-EXAMPLE.md`.** This is the finding that decides *when* the
