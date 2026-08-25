@@ -10,13 +10,24 @@ of ourselves with the tech tree. It isn't fully thought out by me. I need to spe
 about all of the tech and buildings and skills first."*
 
 Three documents already hold most of that thinking. **They were written weeks apart, nobody had
-checked them against each other or against the code, and they disagree in seven places** — one of
+checked them against each other or against the code, and they disagreed in seven places** — one of
 which is D159's exact failure mode (two roadmaps that disagree; it cost six weeks last time).
 
-**⭐ Finding 1 is already fixed** (the catalogue was missing four of the ten buildings that exist);
-the rest are recorded rather than resolved, because they are design calls and not editing ones.
-**Finding 7 is the one to read first if you read only one** — the tech tree's own worked example
-already shipped, ungated.
+> **⭐⭐ UPDATED 2026-08-24, LATER THE SAME DAY — THE CONTENT PASS LANDED AND ANSWERED THREE OF
+> THEM.** Joe wrote `TECH-EXAMPLE.md` (D206): a four-tier tree of 45 buildings, 39 named
+> techniques, 25 animal species, and pasture, fodder and breeding systems.
+>
+> | Finding | Standing |
+> |---|---|
+> | **1** — catalogue missing four built buildings | ✅ **Fixed** |
+> | **2** — one material slot for every building | ✅ **Answered** — the new content cannot fit in one, so it is a schedule, not a question |
+> | **7** — the tree's first node already spent | ✅ **Answered** — 39 techniques replace it |
+> | **3, 4, 5, 6** | ⛔ **Still open** — design calls, not editing ones |
+> | *(the school, flagged as the biggest gap in Joe's document)* | ✅ **Specified within hours** (D209) — teacher, slots, ages 12–16, `specs/school-and-education.md` |
+> | **8** — ~70 goods against 6, all enums | ⛔ **New, and it is now the gating one** |
+>
+> **Finding 8 is the one to read first.** The content is settled enough to build toward; **the data
+> model underneath it is not.**
 
 **⛔ Every number in Part A was read off the code, not off a document's claim about the code.**
 That rule exists because this project has now broken it four times, the fourth being a handoff's
@@ -139,7 +150,43 @@ crops and *fertility decline* do not.
 `DESIGN.md §4`'s Phase 4 — see finding 5. *A spec that lies about its own status is worse than no
 spec* (D159); this closed the status half only.
 
-### 2. ⛔⛔ Every building costs logs and only logs
+### 8. ⛔⛔ ~70 goods and ~40 worker roles against 6 and 6 — the infrastructure the content requires
+
+**Added 2026-08-24 (D206), from `TECH-EXAMPLE.md`.** This is the finding that decides *when* the
+content can be built, rather than what it is.
+
+| | Today | Required | How counted |
+|---|---|---|---|
+| `Goods` | **6** | **~70** | ⚠️ **An estimate from a read**, not an enumeration — foods, animal products, textiles, fuels, consumables and construction materials together |
+| `JobKind` | **6** | **~40** | Named worker roles in the four tier tables |
+| `BuildingKind` | **10** | **45** | Counted: 8 + 14 + 17 + 6 |
+| Construction materials alone | **1** (logs) | **14** | Counted from the cost column, after normalising aliases |
+
+**⛔ AND COUNTING THEM TURNED UP THIS PROJECT'S RECURRING BUG, THIRD INSTANCE.** The cost column
+names **23 distinct material strings for about 14 actual materials**: *Wood / Timber / Logs*,
+*Stone / Cut Stone*, *Iron / Iron Ingots*, *Steel / Steel Ingots*, *Pipes / Iron Pipes*,
+*Hoops / Iron Hoops*, *Parts / Iron Parts*.
+
+**That is D148's finding and D188's, arriving a third time** — *"the view calls the same job two
+different things, in two panels"*, and before that the site names. ⚠️ **It matters more here than
+it looks**: these become `Goods` ids, and *Wood* and *Timber* resolving to the same id is a
+decision somebody has to make deliberately rather than discover when two recipes disagree. **Cheap
+to settle now, in the document; expensive once fourteen recipes are typed against it.**
+
+`Goods`, `JobKind` and `BuildingKind` are **C# enums hashed by position**, pinned by every golden.
+Seventy goods cannot be hand-added as enum values without touching the hash and re-taking the
+goldens repeatedly — **and a modder still could not add one**, which is the promise D168 records:
+*"modders should be able to add buildings, essentially add anything to the game."*
+
+**⭐ This is D168's standing discipline arriving at the scale where the answer is forced** — *when
+you add a new kind of thing, ask whether it wants to be an enum value or a data row.* **`SkillRow`
+and the crop id are the two places this project already did it right**, and they are the templates.
+
+⚠️ **The order matters.** Doing the rows first costs one migration; discovering it at building
+thirty costs the hash, the goldens and every call site **at a point where there is far more of all
+three.** *Written down, not scheduled.*
+
+### 2. ✅ ANSWERED — every building costs logs and only logs
 
 `BuildingRecipe` is `(int Logs, int WorkTicks)` (`World/Construction.cs:171`) — **one material
 slot, for the whole catalogue.**
@@ -149,6 +196,13 @@ stone behind the civic tier, and the whole T1→T2 climb assumes materials other
 tier structure cannot exist against a one-material recipe.** Widening it is not large, but it is
 **structural rather than content**, and it touches every recipe, the hauling, the build queue and
 the goldens at once. Worth knowing *before* designing tiers that depend on it.
+
+**✅ ANSWERED 2026-08-24 by `TECH-EXAMPLE.md` (D206), which settles it by simply assuming it.**
+**Every one of Joe's 45 buildings costs two to four goods** — *"50 Planks, 20 Cut Stone, 15 Rope"*,
+*"40 Stone, 30 Iron, 50 Glass, 20 Timber"*. There is no version of that content that fits one
+material slot. **So multi-material `BuildingRecipe` is no longer a question, only a schedule** —
+and it is the natural first slice whenever building resumes, because **it unblocks the entire stone
+tier and the house-upgrade ladder together.**
 
 ### 3. The library is a building in two documents and cut in a third
 
@@ -221,8 +275,18 @@ own gatherer's ring and starved.
 
 **Why it matters beyond bookkeeping:** the tree's worked example is **spent**. Every argument about
 what a first node looks like has been reasoning from a node that is now free, and
-`buildings-plan.md §10`'s ordering assumed it was still ahead. **The first node will have to be
-something else, and nothing currently proposes what.**
+`buildings-plan.md §10`'s ordering assumed it was still ahead. ~~**The first node will have to be
+something else, and nothing currently proposes what.**~~
+
+**✅ ANSWERED THE SAME DAY (D206).** `TECH-EXAMPLE.md` proposes **39 named techniques**, each
+attached to a building that wants it — and **Joe confirmed they are diegetic, not a research menu**:
+*"Masonry & Stonecutting"* is what a mason knows once he has mastered the trade. They are mapped
+into `tech-tree.md §9` against §4's eight mechanisms, with two new trunks (**cloth and hide**, and
+**commerce, faith and hospitality**) for content that did not fit the eight.
+
+⚠️ **The struck-through sentence is left visible on purpose.** It was true for about six hours, and
+*the gap being filled that fast is the strongest argument that holding Phase 4 for a content pass
+was the right call.*
 
 ---
 

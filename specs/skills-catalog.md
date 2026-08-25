@@ -688,10 +688,33 @@ where D159 found five specs lying.
 **⭐ And two guarantees the tree may rely on absolutely** (D176, §5.4) — stated as guarantees
 rather than as behaviour, because Phase 4 will build the library against them:
 
-6. **Proficiency is NEVER restorable from a record.** No node, no library, no school and no
-   policy can hand anybody years they did not work. A school produces *readers* and a record
-   produces *method*; only a life produces proficiency. **This is `tech-tree.md §3a`'s
-   anti-ratchet rule, and this document is the side that enforces it.**
+6. **Proficiency is NEVER restorable from a record.** No node, no library and no policy can hand
+   anybody years they did not ~~work~~ **spend**. A record produces *method*; only a life produces
+   proficiency. **This is `tech-tree.md §3a`'s anti-ratchet rule, and this document is the side
+   that enforces it.**
+   - > **⚠️ AMENDED 2026-08-24 (D209), AND THE AMENDMENT SHARPENS THE RULE RATHER THAN WEAKENING
+     > IT.** This clause used to read *"no node, no library, **no school** and no policy… years they
+     > did not **work**"*, and it named the school explicitly. **Joe's school** — children attend
+     > from 12 to 16 and enter work more proficient — **is now permitted, and the reason is
+     > payment.**
+     >
+     > | | What it costs the recipient | Verdict |
+     > |---|---|---|
+     > | A record or library grant | **Nothing.** You open a book | ⛔ Never confers proficiency |
+     > | **A school** | **Four years of their life, and four years of the village's labour** | ✅ Permitted — *the years are real and they were spent* |
+     >
+     > **`adult_age` is 12**, so a child at school is a working adult who is not working. **The
+     > village forgoes four years of labour per pupil, plus a teacher who produces nothing.**
+     > *Nothing about it is free*, which is the whole difference.
+     >
+     > **⭐⭐ AND JOE DELETED THE GREAT LIBRARY'S *"+50% apprentice XP"* IN THE SAME BREATH AS
+     > ADDING THE SCHOOL.** The two moves look opposite and are one judgement: **education you pay
+     > for is legitimate; education that falls out of a building is a ratchet.** See
+     > `specs/school-and-education.md §5`.
+     >
+     > ⛔ **Unchanged and never to be amended:** a record still preserves the method and never the
+     > proficiency, and **§6.7 below stands absolutely** — a school may make the road shorter and
+     > **may never close it.**
 7. **Mastery-the-tier is ALWAYS reachable by time on the task**, whatever the village knows,
    has written, or has lost. **No knowledge state may gate it.** A villager who works twenty
    years is a master even in a village that has forgotten every technique it ever had.

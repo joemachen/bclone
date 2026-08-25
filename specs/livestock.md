@@ -2,9 +2,38 @@
 
 **Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
 shelter-and-exposure slice.
-**Status:** ⛔ **specced and BLOCKED — animals may only be acquired by trade (D61), and
+**Status:** ⛔ **specced and STILL BLOCKED — animals may only be acquired by trade (D61), and
 there is no trade.** Everything below is still the design; §12.1 is the blocker. Slices
 in §11.
+
+> **⭐ THE CONTENT IT WAS MISSING NOW EXISTS (D206, `TECH-EXAMPLE.md`) — BUT THE BLOCKER IS
+> UNTOUCHED, AND JOE'S OWN DOCUMENT CONTRADICTS HIS OWN RULING.**
+>
+> **What arrived:** eleven domestic species with primary and secondary outputs, four work and
+> transport animals, ten wild game species, **pasture sizing by tiles-per-head with grazing drain
+> and rotation**, winter fodder (hay and silage) with storage buildings, gestation and litter
+> figures, male-to-female ratios, **auto-slaughter thresholds**, and **three barn tiers** with
+> capacity, warmth and sanitation. §12.2 asked *one animal or several* and recommended one generic
+> beast; **Joe has answered with eleven.**
+>
+> ⛔ **But D61 stands: *"I don't want animals available to the user until they trade for it."***
+> `TECH-EXAMPLE.md` places the **Timber Barn in its T2** and the **Trading Post / Dock in its T3** —
+> so **the herd arrives two tiers before the only sanctioned way to get one.** That is a
+> contradiction inside the new document, not a change of ruling, and **resolving it is Joe's**:
+> either trade moves earlier, or the barn moves later, or D61 is deliberately reversed.
+>
+> **✅ Two things absorb cleanly right now, blocker or no blocker:**
+> - **Auto-slaughter thresholds are `StockLimits` (D62) one noun over** — *"maintain 12 female cows,
+>   1 male"* is the same control as *"200 wood, 2000 food"*, and it should reuse that machinery
+>   rather than grow a parallel one.
+> - **Pasture-with-overgrazing is already twice-argued**: `buildings-plan.md §2.1`'s *surface
+>   resources are finite in place*, and §8.1's *pasture should be a brush*. **D162 settled the
+>   shape** — a painted zone plus a small steading that is the workplace, because the labour
+>   allocator is built entirely around workplaces with a catchment.
+>
+> ⚠️ **And one thing to carry:** `TECH-EXAMPLE.md` has fodder rotting *"5% per day"* uncovered.
+> **D208 refused that** — hay and silage exist because **grass stops growing**, not because anything
+> decays. *A seasonal fact, not a rot tax.* D37 stands.
 
 ---
 

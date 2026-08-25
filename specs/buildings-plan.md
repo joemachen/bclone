@@ -150,7 +150,7 @@ Requires scale, accumulated knowledge, or both.
 | **Blacksmith** | Placed | By knowledge | ✓ | Iron + wood → **tools**, and fittings for better buildings. Tools raise yields, which is §2.1's hook. |
 | **Tool shed** | Placed | Civic | — | Tools are real, stockpiled, auto-distributed. Reconcile with the existing store set. |
 | **Scriptorium** | Placed | By knowledge | ✓ | **Writes knowledge down.** See §5 — this is load-bearing. |
-| **School** | Placed | Civic | ✓ | Transmits knowledge to more than one apprentice at a time. The civic-scale form of §2.1. |
+| **School** | Placed | Civic | ✓ | ⭐ **Specified 2026-08-24 (D209), and it is the first T2 building with a full design behind it.** A **teacher** works it; **children attend 12–16** if there are open slots, and **another school is built when there are not**; graduates enter work **more proficient**. ⛔ **It is not free** — `adult_age` is 12, so every year at school is a working year the village gives up. `specs/school-and-education.md` |
 | **Trading post / dock** | Placed | Civic | — | §2.4, currently unbuilt in any form. Dock if on navigable water; post if not. |
 | **Church** | Singleton | Civic | — | The grown chapel. |
 | **Tavern** | Placed | Civic | — | Consumes ale, wine, food. Happiness and, later, the vector along which news and disease both travel. |
@@ -183,7 +183,104 @@ Mutually exclusive-ish, per §2.7's *broad not tall*. Nobody gets all of these i
 
 ---
 
-## 5. The scriptorium is structural
+## 4.5 ⭐⭐ Reconciliation with `TECH-EXAMPLE.md` (Joe, 2026-08-24 — D206)
+
+Joe's content pass wrote a **four-tier tree of 45 buildings** with construction costs, worker
+counts and a named tech prerequisite each. **This section maps it onto the catalogue above rather
+than replacing it**, because the two were written for different purposes: §4 says *which buildings
+exist and why*, and `TECH-EXAMPLE.md` says *what they cost and what unlocks them*. **Neither is
+redundant.**
+
+⚠️ **Its tiers are offset by one from this document's.** Joe's T1 (*Pioneer Survival*) is this
+document's **T0 Founding**; his T2 is roughly T1; his T3 spans T1–T2; his T4 is **beyond anything
+here** and is genuinely new ground.
+
+### 4.5a What it confirms — already in this catalogue, sometimes renamed
+
+| Joe's name | This catalogue |
+|---|---|
+| Wooden Cabin | Home ✅ |
+| Woodcutter's Hut · Forester's Lodge · Fisherman's Hut | Woodcutter's hut ✅ · Forester's hut ✅ · Fishing hut |
+| Hunter's Lodge & Kennels | Hunter's hut *(+ hunting dogs, new)* |
+| Market Square · Village Chapel · Tavern & Inn | Market ✅ · Chapel · Tavern |
+| Sawmill · Quarry & Slate Works · Clay Pit & Brick Kiln | Sawpit · Quarry · Clay pit + Kiln |
+| Gristmill & Bakery · Dairy House · Brewery & Cider Mill | Mill + Bakery · Creamery · Brewery |
+| Slaughterhouse & Butchery · Tannery · Weaver's Cottage | Butcher · Tannery · Weaver |
+| Smokehouse & Salting Shed · Root Cellar | Smokehouse · Root cellar |
+| Smelter & Foundry · Blacksmith Forge · Deep Shaft Mine | Smelter · Blacksmith · Iron mine |
+| Scriptorium · Town Hall · Trading Post / Dock | Scriptorium · Town hall · Trading post |
+| Apothecary & Infirmary | Herbalist's cottage → Physician's house |
+| Stone Cathedral | Church *(the grown chapel)* |
+
+### 4.5b ⭐ What it genuinely adds
+
+**Nine buildings this catalogue never had**, and most of them earn their place:
+
+| New | Why it matters |
+|---|---|
+| **Stone Cottage** · **Insulated Manor** | ⭐⭐ **The house-upgrade ladder on a fuel axis** — wood hut *(high burn)* → stone *(50% less)* → insulated *(80% less)*. **This closes `DESIGN.md §5`'s open decision**, which asked for exactly this in exactly these words |
+| **Compost Pit** | Manure and spoiled food → fertiliser. **Makes the herd branch feed the ground branch** — the web-not-columns shape §7a argues for |
+| **Basic Well** | ⚠️ **Answers `§9`'s open question 1 — water IS a resource.** But Joe makes it *default unlocked*, where `tech-tree.md §9.7` had clean water taught by an outbreak |
+| **Cartwright Shed** | Wagons and handcarts. The first thing in this game that would change **how much one person can carry**, which is `carry_capacity` — a load-bearing number |
+| **Glassworks** · **Paper Mill & Ink Workshop** | ⭐ **Supply chains under things that were previously switches.** Writing now needs paper and ink to be *made*; the glasshouse needs panes. Good — it gives literacy a material cost rather than a flag |
+| **Cooperage** · **Oil Rendering Station** · **Soapery** | Barrels, lamp oil, soap and candles from tallow and beeswax |
+| **Pigeon Aviary & Sericulture** | Silk, guano, postal birds. ⚠️ The most speculative entry in the document |
+| **Tier 4 entirely** — Glasshouse, Boiler House, Aqueduct, Blast Furnace, Great Library | **Beyond anything previously designed.** A late game made of *thermal automation* rather than more of the same |
+| **Barn tiers** (Lean-To → Timber → Stone Homestead) | The *tier of shed* pattern §6 already blessed, applied to livestock |
+
+### 4.5c ⛔ What it omits — and several are things its own costs require
+
+**`TECH-EXAMPLE.md` spends goods that nothing in it produces.** Recorded because a catalogue that
+consumes what it does not make is the gap that bites at build time:
+
+| Missing | Why it is needed |
+|---|---|
+| ⛔ **The granary** | **It is the population ceiling (D33)**, and it is the literacy route's own source (§7a — *a keeper who has tallied stores for nineteen winters*). Almost certainly an oversight |
+| ✅ ~~**The school**~~ | **CLOSED THE SAME DAY (D209).** Flagged here as *"the biggest single gap"*, and Joe specified it within hours: a **teacher**, a **school** with slots, children **12–16**, and graduates who work better. `specs/school-and-education.md` |
+| ⛔ **Charcoal burner** | *"4 Charcoal per day"* is a stated fuel cost across the glasshouse and boiler. **Nothing makes charcoal** |
+| ⛔ **Mason's yard** | *Cut Stone* appears in ~15 construction costs. The quarry extracts; nothing dresses |
+| ⛔ **Cemetery** | D35, and this document calls it *"possibly the highest-value building in the game"* |
+| ⛔ **Builder's hut, storage shed, storage pile, gatherer's hut, farmhouse, all three zones** | **All built and shipping.** Joe's document is a forward plan, not an inventory — noted so nobody reads the omission as a deletion |
+| Pasture zone, tailor, orchard, bridge, vineyard | In this catalogue, absent from his |
+
+### 4.5d ⚠️ Four §6 cuts are re-proposed, and a cut that comes back should be re-decided
+
+**Not overwritten — flagged.** §6 exists so a rejected idea is not silently re-adopted a year later:
+
+| §6 cut | Re-proposed as | Standing |
+|---|---|---|
+| *"Separate library — not a building"* | **Imperial Great Library** | ⛔ **`tech-tree.md §7c` also treats it as a building with shelf caps and fire, and D196 has a woodcutter learning *in* it.** Two of three say building. **The cut looks like the outlier** |
+| *"Warehouse — a tier of shed, not a new building"* | **Vaulted Warehouse** | Consistent with the cut if it ships as a shed tier |
+| *"Chandler / candles — flavour with no mechanic"* | **Soapery & Candle Workshop** | ⚠️ Still needs a mechanic. *There is no night work, because there is no twitch play* |
+| *"Gold, gems, jewellery — nothing for them to attach to"* | *"highest gold value per weight unit"* | ⚠️ **Trade arriving may legitimately reopen this**, but it is a reversal |
+
+⚠️ **And the watch-list held:** §6 warned that apiary, cider and wine were *"three of one too many."*
+`TECH-EXAMPLE.md` proposes **all three plus ale and mead**. Now that morale is real (D207) they have
+a mechanic to attach to — **which is the argument the watch-list said it wanted to hear.**
+
+---
+
+## 5. ~~The scriptorium is structural~~ ⚠️ SUPERSEDED IN PART BY D204
+
+> **⛔ THIS SECTION DESCRIBES A PLAN THAT IS NO LONGER THE PLAN, and it is annotated rather than
+> deleted because its *reasoning* is still the best statement of why records matter.**
+>
+> **D204 (Joe, 2026-08-24): recording is AUTOMATIC AT MASTERY** — no scribe, no literacy
+> prerequisite, no seasons of dictation. The technique enters the records the moment its master
+> reaches mastery. **So the scriptorium is off the critical path**, and §10's *"the one hard
+> dependency in that list"* — item 8 before any re-locking — **is satisfied by a different route**
+> rather than by this building.
+>
+> ⚠️ **What that costs, carried here as well as in `tech-tree.md §11`:** the guard against *"the
+> library is mandatory"* rested on **three** costs — the scriptorium's opportunity cost, the hard
+> shelf cap, and tacit nodes. **Automatic recording removes the first**, so the cap is carrying the
+> guard nearly alone and must be built as though it is. A full library **refuses the record and says
+> so**, naming what is on its shelves.
+>
+> **The scriptorium and literacy are deferred, not deleted.** Written down so a later session does
+> not read the gap as an oversight and restore it without knowing why it went. ⭐ **And
+> `TECH-EXAMPLE.md` strengthens the building's case for coming back**: it puts a **Paper Mill & Ink
+> Workshop** underneath writing, which gives literacy a supply chain rather than a flag.
 
 It deserves its own section because it is the only building that changes how a *rule* works rather than how a resource flows.
 

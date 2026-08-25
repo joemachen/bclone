@@ -1,9 +1,13 @@
 # Spec / Catalog: Knowledge-Based Tech Tree
 
-> Status: **design settled, unbuilt** · Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.7`
+> Status: **design settled, unbuilt — and its substrate now EXISTS** · Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.7`
+>
+> **⚠️ CORRECTED 2026-08-24.** This header said the proficiency model *"does not exist in the sim"* for a phase after it shipped. **Phase 3 built all five items of `skills-catalog.md §6`'s contract** (D181–D202): per-villager per-skill proficiency, a stated novice floor, years-in-practice, a live `Recordable` column, and `SimWorld.KnowledgeAtRiskNote` as the *who still knows this and how old are they* query. **A spec that lies about its own status is worse than no spec** (D159, which found five of them) — and this one was read at exactly the moment a session was orienting.
+>
+> **⭐ §9 now has real content** — 39 named techniques from Joe (`TECH-EXAMPLE.md`, D206), each attached to a building and each **diegetic, not picked from a menu.** ⛔ **§9a lists what did not come across cleanly and is still his to settle.**
 > Format per `METHODOLOGY.md §2`. Written ahead of the build phase so there is settled content to implement against rather than content invented mid-implementation.
 >
-> **⭐ ITS SUBSTRATE IS NOW SPECCED: `specs/skills-catalog.md` (D173).** This document is written entirely on top of a proficiency model that **does not exist in the sim** — §3a's *"a record preserves the method, not the proficiency"* is the rule that stops this tree becoming a ratchet, and it cannot be implemented against nothing. That spec's **§6 is the contract** stating exactly what this one may assume exists: a per-villager per-skill integer proficiency, a stated reference level, years-in-practice, a `Recordable` flag, and a *who still knows this and how old are they* query. **It is queue item 2 and this is item 5** (`DESIGN.md §4`). ⚠️ **§12's open question about whether skill retained from a record is zero or a small floor is the same question `skills-catalog.md §12` asks from the other side — they must be answered together, or the two documents will disagree**, which is precisely what D159 spent a session unpicking.
+> **⭐ ITS SUBSTRATE IS SPECCED *AND BUILT*: `specs/skills-catalog.md` (D173, shipped D181–D202).** ~~This document is written entirely on top of a proficiency model that **does not exist in the sim**~~ — **it exists; see the correction above** — §3a's *"a record preserves the method, not the proficiency"* is the rule that stops this tree becoming a ratchet, and it cannot be implemented against nothing. That spec's **§6 is the contract** stating exactly what this one may assume exists: a per-villager per-skill integer proficiency, a stated reference level, years-in-practice, a `Recordable` flag, and a *who still knows this and how old are they* query. **It is queue item 2 and this is item 5** (`DESIGN.md §4`). ⚠️ **§12's open question about whether skill retained from a record is zero or a small floor is the same question `skills-catalog.md §12` asks from the other side — they must be answered together, or the two documents will disagree**, which is precisely what D159 spent a session unpicking.
 >
 > **This document is foundational guidance, not prescription.** It fixes the *shape* of the system — states, mechanisms, buildings, the rules that make it legible — and sketches the content that fills it. Node lists, prerequisites, and every number here are expected to change once the thing is running and testable. What should **not** drift without a recorded decision: the three knowledge states, the record-preserves-method rule, the hard library cap, and the agency levers. Those are load-bearing; the rest is furniture.
 
@@ -162,6 +166,26 @@ The tension to preserve: *one big library is efficient and fragile; three small 
 
 ### 7d. School — where records become people again
 
+> **⭐⭐ JOE SPECIFIED THIS BUILDING ON 2026-08-24 (D209), AND IT IS SIMPLER AND BETTER THAN THE
+> VERSION BELOW.** *"A teacher profession who works at a school building that children can attend
+> from ages 12–16 if there are open slots — if not, another school needs to be built to accommodate
+> the demand — after which the working adults at age 16 are more proficient villagers overall."*
+> **Full design: `specs/school-and-education.md`.**
+>
+> **Two things below are superseded and are annotated rather than deleted:**
+> - ⛔ *"The first school generation produces no craft benefit at all — it produces **readers**"* —
+>   **it produces more proficient workers.** D204 deferred literacy when recording became automatic
+>   at mastery, so *readers* had nothing left to read; Joe's version gives the building a job that
+>   works today.
+> - ⚠️ *"Fidelity: **Low** — the basics only"* — **the width is now an open number** wanting a probe
+>   (`school-and-education.md §9.2`), not a stated tier.
+>
+> **⭐ AND THE COST THIS SECTION ARGUES FOR IS ALREADY BUILT, WHICH NOBODY NOTICED.** `adult_age` is
+> **12**, so a child aged 12–16 is *already a working adult* — **every year at school is a year of
+> labour the village gives up**, on top of the teacher. **D156 reserved exactly this dial in
+> August**: *"when education lands, the trade is that a schooled child starts LATER and is worth
+> more when they do."*
+
 A library nobody reads is furniture. The school converts records back into knowers, and it is the strategic fork of the whole system:
 
 | | Apprenticeship | School |
@@ -268,7 +292,32 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 
 ## 9. Branch catalogue (sketch — expect revision)
 
-**Shape: broad, not tall.** Eight trunks, roughly four to six deep. No final node. The mutual exclusions come from **land and labour competing**, not from a "pick one" prompt: pasture and cropland want the same cleared ground; charcoal and managed forest want the same trees; every hand at a kiln is a hand not foraging. You do not pick a branch — you drift down one and notice thirty years later that you cannot afford the other.
+**Shape: broad, not tall.** Ten trunks, roughly four to seven deep. No final node. The mutual exclusions come from **land and labour competing**, not from a "pick one" prompt: pasture and cropland want the same cleared ground; charcoal and managed forest want the same trees; every hand at a kiln is a hand not foraging. You do not pick a branch — you drift down one and notice thirty years later that you cannot afford the other.
+
+> **⭐⭐ THE CONTENT BELOW MARKED ★ CAME FROM JOE, 2026-08-24 — `TECH-EXAMPLE.md` (D206).** This
+> section was a **sketch of shapes with almost no content**, and §12 plus D196 both *deliberately
+> declined to invent a list* — Joe: *"we don't have to come up with the full list… eventually they
+> will all have a number of them."* **That refusal was about inventing one, not about receiving
+> one.** He has now written 39 named techniques, each attached to a building that wants it.
+>
+> **⭐ AND IT ARRIVES AT EXACTLY THE RIGHT MOMENT, because the tree had just lost its only worked
+> example.** `content-inventory.md` finding 7 found that §2.7's *first concrete node* — managed
+> forestry, the planting brush — **had already shipped ungated** (D125), so every argument about
+> what a first node looks like was reasoning from a node that is now free, **and nothing proposed a
+> replacement.** This is the replacement.
+>
+> **✅ AND THEY ARE DIEGETIC — JOE'S CALL, ASKED DIRECTLY (D206).** `TECH-EXAMPLE.md` presents them
+> as a *"Tech Prerequisite"* column, which reads exactly like the research menu §2.7 refuses by
+> name. **It is not one:** *"Masonry & Stonecutting"* **is what a mason knows once he has mastered
+> the trade.** Every one of them is unlocked by §4's eight mechanisms, and **nothing here is picked
+> from a list.**
+>
+> ⚠️ **Two branches are new** (§9.9, §9.10) because the incoming content did not fit the eight:
+> cloth and hide has always been implied by livestock and never had a trunk, and the civic/social
+> group now has somewhere to attach since **morale is a real system** (D207, `specs/morale.md`).
+>
+> ⚠️ **Every ★ node's building, cost and number is a PROPOSAL, not a measurement.** The standing
+> rule is *if a number goes into a document, it comes from a run*, and none of these has had one.
 
 ### 9.1 Ground — soil and crops
 
@@ -281,6 +330,11 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 | Manuring | ADJ (herder + farmer) | |
 | Fallowing | CRISIS or PEOPLE | Typically taught by soil depletion biting |
 | Drainage | TERRAIN (wet ground) + SCALE | |
+| ★ **Basic Sanitation** | DOING | *Compost Pit.* Manure and spoiled food → fertiliser. **The herd branch feeding the ground branch**, which is the same web-not-columns argument §7a makes for the granary |
+| ★ **Crop Milling** | PEOPLE | *Gristmill & Bakery.* Grain → flour → bread. §2.7's own unlock-by-doing example finally has its building |
+| ★ **Subterranean Engineering** | SCALE + PEOPLE | *Heated Aqueduct Network.* Sub-surface irrigation. ⚠️ **Answers `buildings-plan.md §9`'s open question 1 — water IS a resource** |
+| ★ **Thermal Horticulture** | PEOPLE + ADJ (glazier + farmer) | *Tier 4 Glasshouse.* Year-round growing. **The deepest node in the tree** and the one that most needs the anti-ratchet check |
+| ★ **Hydronic Heat Distribution** | PEOPLE + ADJ (smith + builder) | *Geothermal Boiler House.* Feeds the glasshouse and the fields both |
 
 ### 9.2 Woods
 
@@ -288,9 +342,11 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 |---|---|---|
 | Felling | — | Starting practice |
 | Coppicing | DOING | |
-| Managed forestry / replanting | DOING | *Log a stand for two generations* (§2.7 example) |
+| ~~Managed forestry / replanting~~ | ~~DOING~~ | ⛔ **ALREADY SHIPPED, UNGATED** (D125) — `content-inventory.md` finding 7. *"Log a stand for two generations"* was §2.7's worked example and **the planting brush is a free work mode.** Kept struck through rather than deleted, because the argument built on it is quoted in three documents |
 | Charcoal burning | ADJ (woodsman + kiln) | Competes with managed forest for the same trees |
 | Orchard | PEOPLE + SCALE | Pays out over decades |
+| ★ **Mechanical Carpentry** | PEOPLE | *Sawmill.* Logs → planks. ⚠️ **This is the gateway to the whole stone/brick tier**, because nearly every T2+ building costs planks |
+| ★ **Container Fabrication** | PEOPLE | *Cooperage.* Barrels and casks — what liquids and cured food are kept in |
 
 ### 9.3 Herd
 
@@ -299,50 +355,68 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 | Hunting | — | Starting practice |
 | Trapping | DOING | |
 | Penning | SCALE | |
-| Husbandry | PEOPLE | |
-| Dairying | PEOPLE | |
-| Draught animals | ADJ (herder + builder) | Feeds hauling and the road branch |
+| ★ Husbandry | PEOPLE | *Timber Barn.* Joe's **Animal Husbandry**. ⛔ **Blocked by D61** — *"I don't want animals available to the user until they trade for it"* — and `TECH-EXAMPLE.md` puts the barn **two tiers before the trading post.** See §9a |
+| ★ Dairying | PEOPLE | *Dairy House.* Milk → butter and cheese. **Cheese is preservation that is not a rot mechanic** — it keeps because of what it is |
+| ★ Draught animals | ADJ (herder + builder) | *Cartwright Shed.* Joe's **Heavy Haulage**. Feeds hauling and the road branch |
+| ★ **Livestock Processing** | PEOPLE | *Slaughterhouse & Butchery.* Meat, hides, tallow, bone — **the input to four other branches** |
+| ★ **Avian & Insect Culture** | PEOPLE + SCALE | *Pigeon Aviary & Sericulture.* Silk, guano, and postal birds. ⚠️ The most speculative node Joe wrote; deepest in the branch |
 
 ### 9.4 Fire and materials
 
 | Node | Unlocked by | Notes |
 |---|---|---|
 | Hearth | — | Starting practice |
-| Kiln / pottery | DOING + TERRAIN (clay) | SEREN candidate — the hotter fire |
+| ★ Kiln / pottery | DOING + TERRAIN (clay) | *Clay Pit & Brick Kiln.* Joe's **Kiln Firing**. SEREN candidate — the hotter fire |
 | Lime burning | TERRAIN (limestone) | |
-| Smelting | TERRAIN (ore) + IMPORT | |
-| Forge / iron tools | PEOPLE | Tools are real stockpiled resources (D17) |
-| Steel | PEOPLE + ADJ | |
+| ★ Smelting | TERRAIN (ore) + IMPORT | *Smelter & Foundry.* Joe's **Pyrometallurgy** |
+| ★ Forge / iron tools | PEOPLE | *Blacksmith Forge.* Joe's **Metalworking**. Tools are real stockpiled resources (D17) — ⛔ **and his entry says "and weapons", which Non-Negotiable 3 forbids a use for.** See §9a |
+| ★ Steel / **Industrial Metallurgy** | PEOPLE + ADJ | *Blast Furnace Foundry* |
+| ★ **Subterranean Mining** | SCALE + TERRAIN (ore) | *Deep Shaft Mine.* `buildings-plan.md §2.2`'s *finite in effort* rule, which has no machinery yet |
+| ★ **Vitrification & Soda Ash** | PEOPLE + ADJ (kiln + smelter) | *Glassworks.* **Gates the glasshouse**, so the ground branch's deepest node runs through this one |
+| ★ **Chemical Rendering** | DOING | *Soapery & Candle Workshop.* Tallow and beeswax → soap and candles |
+| ★ **Rendering & Distillation** | DOING | *Oil Rendering Station.* Lamp oil, tallow, bone ash from offal and fish |
 
 ### 9.5 Keeping — preservation and storage
 
 | Node | Unlocked by | Notes |
 |---|---|---|
 | Drying | DOING | |
-| Salting | TERRAIN (salt) or IMPORT | |
-| Smoking | CRISIS | The bark winter |
-| Root cellar | SCALE | |
-| **Granary** | SCALE | **Feeds the Knowing branch — the literacy route** |
+| ★ Salting | TERRAIN (salt) or IMPORT | Joe folds this into **Curing Methods** with smoking |
+| ★ Smoking | CRISIS | *Smokehouse & Salting Shed.* The bark winter |
+| ★ Root cellar | SCALE | Joe's **Primitive Preservation**, and he places it at **T1 — much earlier than SCALE implies.** Worth taking: it is the cheapest possible answer to winter |
+| **Granary** | SCALE | **Feeds the Knowing branch — the literacy route.** ⚠️ **Absent from `TECH-EXAMPLE.md` entirely** — almost certainly an oversight, since the granary is the population ceiling (D33) |
 | Icehouse | TERRAIN + SCALE | |
+| ★ **Fermentation** | DOING | *Brewery & Cider Mill.* Ale and cider — **and now an input to morale** (D207), which is what D39's *"wine from berries, beer from wheat"* was always for |
+| ★ **Logistics Management** | SCALE | *Vaulted Warehouse.* `buildings-plan.md §6` already ruled a bigger shed is **a tier of shed, not a new building** — reconcile |
+
+> **⛔ THIS BRANCH IS WHERE SPOILAGE TRIED TO COME BACK, AND JOE REFUSED IT AGAIN (D208).**
+> `TECH-EXAMPLE.md` has fodder rotting *"5% per day"* uncovered, plus root cellars *"slowing
+> spoilage"*. **D37 cut spoilage** (*"it's not fun"*) and D39 confirmed it. Asked directly, Joe's
+> ruling is **winter feed only**: hay and silage exist because **grass stops growing**, not because
+> anything decays. *A seasonal fact, not a rot tax* — so this branch is about **making food that
+> keeps**, never about fighting a timer.
 
 ### 9.6 Building and ground works
 
 | Node | Unlocked by | Notes |
 |---|---|---|
 | Timber frame | — | Starting practice |
-| Stone footing | SCALE + TERRAIN (stone) | Permanence milestone |
+| ★ Stone footing / **Masonry & Stonecutting** | SCALE + TERRAIN (stone) | *Stone Cottage.* Permanence milestone — **and the first house upgrade**, which closes `DESIGN.md §5`'s open decision |
 | Mortar | ADJ (lime burner + builder) | |
+| ★ **Stone Excavation** | SCALE + TERRAIN (stone) | *Quarry & Slate Works.* The source the whole tier stands on |
 | Watermill | TERRAIN (fall on river) | The headline terrain gate |
 | Bridge | SCALE | |
 | Paving / auto-pave policy | SCALE | The civic tier §2.6 already anticipates |
+| ★ **Advanced Joinery** | PEOPLE | *Insulated Manor.* The **second** house upgrade — Joe's fuel-burn ladder is wood hut → stone → insulated |
+| ★ **Monumental Architecture** | SCALE + PEOPLE | *Stone Cathedral.* The grown chapel; deepest civic node |
 
 ### 9.7 Bodies
 
 | Node | Unlocked by | Notes |
 |---|---|---|
 | Midwifery | PEOPLE | **Tacit — unwritable** |
-| Herbalism | PEOPLE | **Tacit — unwritable** |
-| Clean water / well | CRISIS + SCALE | |
+| ★ Herbalism / **Herbal Medicine** | PEOPLE | *Apothecary & Infirmary.* **Tacit — unwritable.** ⚠️ Joe's version treats and anaesthetises, which is more machinery than "herbalism" implied |
+| ★ Clean water / well | ~~CRISIS + SCALE~~ | ⚠️ **CONFLICT: Joe makes the Basic Well *default unlocked* at T1.** This spec had it **taught by an outbreak.** Free-at-founding is the cosier reading and loses a CRISIS node; his call |
 | Quarantine practice | CRISIS | Taught by an outbreak |
 
 This branch is deliberately the most tacit-heavy. Health knowledge should be the most fragile thing the village holds.
@@ -353,11 +427,59 @@ This branch is deliberately the most tacit-heavy. Health knowledge should be the
 |---|---|---|
 | Tally-keeping | DOING (granary keeper) | |
 | Letters | DOING (from tally) **or** IMPORT | Two routes, asymmetric by design |
-| Scriptorium | SCALE + Letters | |
+| ★ **Scholastic Engineering** | PEOPLE + ADJ | *Paper Mill & Ink Workshop.* **Joe added a materials prerequisite under writing** — paper and ink must be *made*. Good: it gives literacy a supply chain rather than a switch |
+| ★ Scriptorium / **Manuscript Illumination** | SCALE + Letters | ⚠️ **Deferred, not deleted (D204)** — recording is automatic at mastery, so this building is off the critical path |
 | Library | SCALE | Hard capacity; burns |
-| School | Library in catchment | |
+| ★ **Master Archival Science** | SCALE + PEOPLE | *Imperial Great Library.* The library's top tier — **more shelves, better proof against fire and decay.** ✅ **Its *"+50% apprentice XP"* grant is REMOVED** (Joe, D209): a building that made everyone learn faster for free was the ratchet §11 exists to prevent, and **the school is where education belongs** |
+| ★ **School** | SCALE | ⭐ **Specified by Joe, D209** — a teacher, slots for children 12–16, and graduates who work better. `specs/school-and-education.md`. ⚠️ **§7e requires a library in catchment and his model does not mention one** — open |
 | Formal apprenticeship | SCALE | Institutionalises the lever |
+| ★ **Civil Civic Governance** | SCALE | *Town Hall.* D176's building — **gates the knowledge screen, not the tree** |
 | Contracts / regional trade | IMPORT + SCALE | Hands off to §2.4 |
+
+### 9.9 Cloth and hide ★ — a new trunk
+
+**Implied by livestock since D45's clothing clause and never given a branch of its own.** Every node
+here consumes an animal output, so this trunk **cannot start before §9.3 does** — which is the kind
+of dependency §9's opening paragraph means by *land and labour competing*.
+
+| Node | Unlocked by | Notes |
+|---|---|---|
+| ★ **Leather Working** | PEOPLE | *Tannery.* Hides → leather. The first node, and the one `clothing.md` has been blocked on |
+| ★ **Advanced Textiles** | PEOPLE | *Weaver's Cottage & Mill.* Wool, cotton, alpaca and silk → fabric |
+| ★ Fine fabrics | PEOPLE + IMPORT | Damask and velvet. **Luxury, so it wants §2.4 to exist** to be worth anything |
+
+### 9.10 Gathering-in ★ — commerce, faith and hospitality, a new trunk
+
+**⭐ This trunk exists because morale became a real system on 2026-08-24** (D207). Before that these
+three buildings had no mechanical home and would have been flavour; now they are **the levers a
+player pulls when villagers are leaving.** ⚠️ **Its nodes must not become a happiness slot machine**
+— `morale.md` holds the constraint that every effect is legible on the villager it acts on.
+
+| Node | Unlocked by | Notes |
+|---|---|---|
+| ★ **Organized Commerce** | SCALE | *Market Square.* ✅ **Already built** as the manned market (D36) |
+| ★ **Community & Faith** | SCALE | *Village Chapel.* Funerals, and the reason the cemetery has a shape |
+| ★ **Hospitality & Service** | SCALE + DOING | *Tavern & Inn.* Consumes ale and food. **The clearest morale lever**, and what §9.5's fermentation is ultimately for |
+| ★ **Maritime & Overland Trade** | IMPORT + SCALE | *Trading Post / Dock.* §2.4's floor — ⛔ **and D61's blocker for the entire herd branch** |
+
+---
+
+## 9a. ⛔ What did NOT come across cleanly — recorded, not resolved
+
+**Every item here is Joe's to settle.** They are written down rather than decided in one direction,
+because each is a conflict between `TECH-EXAMPLE.md` and something already ruled.
+
+| Item | The conflict |
+|---|---|
+| ~~**"+50% apprentice XP"**~~ | ✅ **RESOLVED — removed (Joe, D209).** It failed `skills-catalog.md §3.1` (*"Time on the task, counted in ticks. **Not experience points**"*) and was ten times the soft ratchet D196 flagged at +5%. **The library keeps records; it does not teach.** Education moved to the school, where it is paid for |
+| **"and weapons"** (Blacksmith Forge) | **Non-Negotiable 3: No combat.** Hunting equipment has a use; weapons do not. Recommend narrowing the word |
+| **Gold and barter value** | `buildings-plan.md §6` cut gold outright — *"No combat, no score, no wealth condition. Nothing for them to attach to."* **Trade arriving may legitimately reopen this**, but it is a reversal rather than an addition |
+| **Temperatures in °C** | Cold in this game is **a place you are standing**, not degrees (D45/D53) — `BehaviorSystem` states it *"as a share of the way to dying rather than as a temperature."* Recommend translating the thresholds into season-and-shelter terms rather than building a temperature model |
+| **The barn arrives before trade** | **D61: animals only by trade.** `TECH-EXAMPLE.md` puts the Timber Barn at T2 and the Trading Post at T3 |
+| **Crop cycles of 20–40 days** | Against sow-in-spring/reap-in-autumn (~90 days) on a **120-day year**. Means **multiple harvests annually** — a real change to `crops-and-orchards.md` |
+| **The granary is missing** | Absent from `TECH-EXAMPLE.md`, and it is the population ceiling (D33) |
+| **~70 goods and ~40 worker roles** | Against **6 and 6** today, both C# enums hashed by position. See `content-inventory.md` finding 8 |
+| **One material, several names** | The cost column uses **23 strings for ~14 materials** — *Wood / Timber / Logs*, *Stone / Cut Stone*, *Iron / Iron Ingots*, *Steel / Steel Ingots*, *Pipes / Iron Pipes*, *Hoops / Iron Hoops*, *Parts / Iron Parts*. **D148 and D188's finding a third time.** These become `Goods` ids, so whether *Wood* and *Timber* are one id is a decision to take deliberately — **cheap now, expensive once fourteen recipes are typed against it** |
 
 ---
 
@@ -410,6 +532,13 @@ together afterwards.
 ## 12. Open — tuning, not design
 
 Deliberately unspecified. These need a running sim to answer, and inventing numbers now would be false precision.
+
+> **⭐ THE NODE LIST IS NO LONGER ONE OF THESE (D206).** This section's refusal — and D196's *"we
+> don't have to come up with the full list"* — **was about *inventing* a list, not about receiving
+> one.** Joe wrote 39 techniques on 2026-08-24 and they are in §9. **The refusal of false precision
+> still stands for every *number* attached to them**, none of which has been measured: costs,
+> worker counts, growth cycles, fuel burns and percentages in `TECH-EXAMPLE.md` are **proposals**.
+> *If a number goes into a document, it comes from a run* — and none of these has had one.
 
 - Starting library capacity, and shelves per upgrade tier.
 - Seasons to record one technique; how much of a master's output it costs.
