@@ -41,17 +41,24 @@ public readonly record struct LabourQuota
         int woodcutters,
         int marketers = 0,
         int builders = 0,
-        int farmers = 0)
+        int farmers = 0,
+        int slots = 0)
     {
-        Builders = builders;
         Hands = hands;
         Mouths = mouths;
         ForagersToFeedEveryone = foragersToFeedEveryone;
-        Foragers = foragers;
-        Foresters = foresters;
-        Woodcutters = woodcutters;
-        Marketers = marketers;
-        Farmers = farmers;
+
+        // ⭐ INDEXED BY JOB ID, WITH THE NAMED READERS KEPT OVER IT (D218) — exactly the shape
+        // `Stockpile` settled on: readers read as English at the call site and cannot go stale,
+        // because there is one array underneath them. A seventh trade has a slot here the day a
+        // modder adds one, where six named fields could never grow.
+        _byJob = new int[slots < BuiltIn ? BuiltIn : slots];
+        _byJob[(int)JobKind.Forager] = foragers;
+        _byJob[(int)JobKind.Forester] = foresters;
+        _byJob[(int)JobKind.Woodcutter] = woodcutters;
+        _byJob[(int)JobKind.Marketer] = marketers;
+        _byJob[(int)JobKind.Builder] = builders;
+        _byJob[(int)JobKind.Farmer] = farmers;
     }
 
     /// <summary>Villagers able to do a day's work.</summary>
@@ -71,20 +78,35 @@ public readonly record struct LabourQuota
     /// </remarks>
     public int ForagersToFeedEveryone { get; }
 
+    /// <summary>How many trades the enum has — the floor a quota is never smaller than.</summary>
+    private static readonly int BuiltIn = Enum.GetValues<JobKind>().Length;
+
+    /// <summary>
+    /// What the village wants on each trade, by job id.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ ONE ARRAY, WITH THE NAMED READERS KEPT OVER IT</b> (D218) — the shape
+    /// <see cref="Stockpile"/> settled on, and for the reason recorded there: the readers read as
+    /// English at the call site and <em>cannot go stale</em>, because there is a single source
+    /// underneath them. <b>Six named fields could never grow; this has a slot for a seventh trade
+    /// the day a modder adds one.</b>
+    /// </remarks>
+    private readonly int[] _byJob;
+
     /// <summary>Hands the village wants foraging.</summary>
-    public int Foragers { get; }
+    public int Foragers => _byJob[(int)JobKind.Forager];
 
     /// <summary>Hands the village wants felling trees.</summary>
-    public int Foresters { get; }
+    public int Foresters => _byJob[(int)JobKind.Forester];
 
     /// <summary>Hands the village wants splitting logs into firewood.</summary>
-    public int Woodcutters { get; }
+    public int Woodcutters => _byJob[(int)JobKind.Woodcutter];
 
     /// <summary>Hands the village wants working the market (D14).</summary>
-    public int Marketers { get; }
+    public int Marketers => _byJob[(int)JobKind.Marketer];
 
     /// <summary>Hands the village wants raising what the player marked out (D43).</summary>
-    public int Builders { get; }
+    public int Builders => _byJob[(int)JobKind.Builder];
 
     /// <summary>
     /// Hands the village wants sowing and reaping (`crops-and-orchards.md`, D161).
@@ -95,19 +117,37 @@ public readonly record struct LabourQuota
     /// <c>SetStaffing</c> is a ceiling and not a summons (D146), so a farm nobody is wanted at
     /// is a harvest that rots while every guard blames the crop system.
     /// </remarks>
-    public int Farmers { get; }
+    public int Farmers => _byJob[(int)JobKind.Farmer];
+
+    /// <summary>How many trades this quota has an opinion about.</summary>
+    public int Slots => _byJob.Length;
 
     /// <summary>The quota for one kind of work.</summary>
-    public int For(JobKind kind) => kind switch
+    /// <remarks>
+    /// <para>
+    /// An index rather than six arms naming six trades (D218). <b>The out-of-range answer stays
+    /// zero</b> — <em>the village wants nobody on a trade it has never heard of</em> — which is
+    /// what the old default arm said and is still right for a job id with no row.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Converting these six from stored fields to readers over the array is where this change
+    /// nearly went wrong.</b> One was left as an auto-property after the constructor stopped
+    /// assigning it, so it read <b>zero for ever</b> — a village that wanted no farmers,
+    /// <em>compiling perfectly</em>. <b>A property the compiler is happy to default is one that can
+    /// go silently missing in a refactor.</b>
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The guards catch it, and that was measured rather than hoped:</b> reintroducing the
+    /// zero turns <c>TheVillageWantsFarmersWhileTheYearHasFieldWorkInIt</c> and
+    /// <c>AMetFoodLimitStopsTheSowingAndNotTheReaping</c> red — D146's guard doing precisely the
+    /// job it was written for. <em>The compiler is blind here; the suite is not.</em>
+    /// </para>
+    /// </remarks>
+    public int For(JobKind kind)
     {
-        JobKind.Forager => Foragers,
-        JobKind.Forester => Foresters,
-        JobKind.Woodcutter => Woodcutters,
-        JobKind.Marketer => Marketers,
-        JobKind.Builder => Builders,
-        JobKind.Farmer => Farmers,
-        _ => 0,
-    };
+        int index = (int)kind;
+        return index >= 0 && index < _byJob.Length ? _byJob[index] : 0;
+    }
 
     /// <summary>
     /// Work out what this village needs, from the people currently in it.

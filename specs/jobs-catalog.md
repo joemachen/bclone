@@ -104,6 +104,7 @@ are the next slice, and until then a modded job can only staff a building that a
 | **The row is decoration** | Every column must be read by something. ⚠️ `LimitedBy` nearly failed this — see §2.0: it earns its place by giving the default arm real behaviour, not by existing |
 | **The allocator changes behaviour** | ⭐ **The whole slice is a provable no-op: goldens byte-identical.** `labour-allocation.md`'s cost-first pass is untouched |
 | **The quota silently loses a trade** | `LabourQuota` sizes from the catalogue, not from six named fields. A job with no slot would read zero and *look like a village that wanted none* |
+| **⚠️ A reader that quietly defaults** | Converting the six from stored fields to readers, one was left as an auto-property after the constructor stopped assigning it — so `Farmers` read **zero for ever**: a village wanting no farmers, **compiling perfectly.** ⭐ **But the suite catches it, and that was checked rather than assumed**: reintroducing it turns `TheVillageWantsFarmersWhileTheYearHasFieldWorkInIt` and `AMetFoodLimitStopsTheSowingAndNotTheReaping` red. **The compiler is blind to this class of bug and the guards are not** — which is D146's guard doing exactly the job it was written for. *The lesson is about the compiler, not a coverage hole* |
 | **D188 gets settled by accident** | The row carries **both** words. Nothing here picks which the player sees |
 | **A modded job with no workplace** | Legal — `WorksAt` is nullable, and a laborer is already *"the villagers no job currently wants"* (D66) |
 
