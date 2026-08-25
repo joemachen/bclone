@@ -156,12 +156,14 @@ spec* (D159); this closed the status half only.
 > is **open to 62**, and **nothing in the sim switches on a good by name.** Three ceilings nobody
 > had counted were found and lifted on the way — see the box below.
 >
-> ⛔ **Still open, and this finding stays until they are:**
+> ✅ **And it is PROVEN, not asserted:** `ModdedGoodTests.cs` defines a seventh good in **real
+> JSON** and drives it through storing, acceptance, stock limits and the state hash — **11 guards,
+> red-checked** by reinstating the exact pre-fix bug and confirming two went red.
+>
+> ⛔ **Still open, and this finding stays until it is:**
 > - **`JobKind` and `BuildingKind` have had no equivalent** — ~40 worker roles and ~45 buildings
->   against **6 and 10**. Same enum, same hash-by-position, same problem.
-> - **Slice 2 is not done**, so the goods work is *unproven*: nothing yet defines a seventh good
->   **entirely in data** and drives it through storing, limits and hashing. **D82's lesson is that
->   the new good is what proves the refactor.**
+>   against **6 and 10**. Same enum, same hash-by-position, same problem. **The goods work is the
+>   template for both.**
 
 
 **Added 2026-08-24 (D206), from `TECH-EXAMPLE.md`.** This is the finding that decides *when* the

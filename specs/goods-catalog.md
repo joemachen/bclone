@@ -1,6 +1,6 @@
 # Spec: The goods catalogue — a good becomes a row
 
-> Status: **slices 1 and 1b BUILT; slice 2 (prove a modder can) outstanding.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3`
+> Status: **BUILT — slices 1, 1b and 2 all landed and proven.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3`
 > (data-driven, first-class modding) · Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md §4.1` (**the template — a row, not an enum value**),
@@ -183,14 +183,38 @@ is deleted in favour of `Stockpile`'s indexer.
 was still an `int`. Negated and then widened, it **sign-extends and wipes the sentinel.** CS0675
 caught it — *the kind of bug that would have read as a filter forgetting itself.*
 
-### Slice 2 — prove a modder can
+### ✅ Slice 2 — prove a modder can
 
-**A test that defines a seventh good entirely in data** and drives it through storing, limits,
-hashing and a store's acceptance. ⛔ **No new good ships into the game** — the proof is the test,
-not content nobody asked for.
+**Done: `tests/Bclone.Sim.Tests/ModdedGoodTests.cs`, 11 guards.** A seventh good (*pitch*) is
+defined **in real JSON**, parsed by `SimConfigLoader`, and driven through **storing, acceptance,
+stock limits and the state hash**. ⛔ **Nothing ships into the game** — the good exists only inside
+the tests, because adding one to the shipped catalogue would be inventing content under cover of an
+infrastructure slice.
 
-⚠️ **Slices 1 and 1b are unproven until this exists.** D82's lesson is that *the new good is what
-proves the refactor*; here the test plays that part.
+**⭐ Going through JSON rather than constructing `GoodRow` objects is the whole point.** The latter
+would prove the *sim* can hold seven goods; only the former proves **a modder editing a data file**
+can add one, which is D168's actual promise.
+
+**⭐⭐ AND THE GUARDS WERE RED-CHECKED, not merely observed green.** Reinstating the exact
+pre-slice-1b bug — `MixStore` counting to `Stockpile.Kinds` — turned **two tests red and left the
+other seven green**, which is what proves they test what they claim. Reverted with `perl -0777`, so
+the undo was precisely the do; `git diff` on `StateHash.cs` came back empty.
+
+#### ⛔ And writing it found a FOURTH ceiling
+
+**`StockLimits` sized itself from `Enum.GetValues<Goods>()`**, so a modded good had no slot:
+`IndexOf` returned `-1` and `Set` answered **`false`**.
+
+> *The player sets a limit, the control reports no change, and nothing anywhere says why.*
+
+**Silent refusal is the worst of the three failures** — worse than the crash and worse than the
+wrong answer — because there is nothing to read. Fixed the same way as the others: sized from the
+catalogue, and the hash now enumerates the run's goods rather than the enum's.
+
+⚠️ **`IndexOf` was also an O(n) search for something that was already the index** — walking a list
+comparing entries to find a position that `(int)goods` gives directly. **The same redundancy
+`HeldOf` had**, found the same way: by asking what a method was actually for.
+
 
 ---
 
@@ -229,7 +253,7 @@ proves the refactor*; here the test plays that part.
 3. ✅ No `switch` on a good by name anywhere in `Bclone.Sim`. ⚠️ Three comparisons remain and are NOT lookups — they are the villager's carried load, which is still three named fields. See §4.0.
 4. ✅ `HeldOf` deleted; the indexer used.
 5. Unit tests passing; **determinism test green; both fifty-year goldens byte-identical.**
-6. Slice 2's data-defined-good test passing.
+6. ✅ Slice 2's data-defined-good test passing — 11 guards, red-checked.
 7. `DESIGN.md` Progress Tracker + Decisions Log updated.
 
 ---

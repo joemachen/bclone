@@ -42,7 +42,27 @@ public sealed class StockLimits
     /// </remarks>
     public static readonly IReadOnlyList<Goods> Kinds = Enum.GetValues<Goods>();
 
-    private readonly int?[] _limits = new int?[Kinds.Count];
+    private readonly int?[] _limits;
+
+    /// <summary>Limits for a run with <paramref name="slots"/> goods.</summary>
+    /// <remarks>
+    /// <b>Sized from the goods catalogue, not from <see cref="Kinds"/></b> (D210). The remark above
+    /// says this control should *"describe what the game has rather than what somebody
+    /// remembered"* — and once goods became rows, **the catalogue is what the game has.**
+    /// </remarks>
+    public StockLimits(int slots)
+    {
+        if (slots < 1)
+        {
+            throw new System.ArgumentOutOfRangeException(
+                nameof(slots), $"A village needs at least one good to limit (got {slots}).");
+        }
+
+        _limits = new int?[slots];
+    }
+
+    /// <summary>How many goods this run can have an opinion about.</summary>
+    public int Slots => _limits.Length;
 
     /// <summary>
     /// The limit on one good, or null for <em>"let the village decide"</em>.
@@ -153,17 +173,24 @@ public sealed class StockLimits
         }
     }
 
-    /// <summary>Position of a good in <see cref="Kinds"/>, or -1 if it has no limit.</summary>
-    private static int IndexOf(Goods goods)
+    /// <summary>The slot for a good, or -1 if this run has no such good.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THIS WAS AN O(n) SEARCH FOR SOMETHING THAT IS ALREADY THE INDEX</b> (D210). It walked
+    /// <see cref="Kinds"/> comparing each entry until it found a match — for a value whose
+    /// <c>int</c> cast <em>is</em> its position, by the same appended-never-renumbered rule
+    /// everything else here relies on. The same redundancy <c>BehaviorSystem.HeldOf</c> had.
+    /// </para>
+    /// <para>
+    /// <b>And bounding it by the array rather than by the enum is what lets a modded good be
+    /// limited at all</b> — with <see cref="Kinds"/> as the bound, a good above the built-in six
+    /// returned -1, and <see cref="Set"/> silently answered <c>false</c>: *the player sets a limit,
+    /// the control reports no change, and nothing says why.*
+    /// </para>
+    /// </remarks>
+    private int IndexOf(Goods goods)
     {
-        for (int i = 0; i < Kinds.Count; i++)
-        {
-            if (Kinds[i] == goods)
-            {
-                return i;
-            }
-        }
-
-        return -1;
+        int index = (int)goods;
+        return index >= 0 && index < _limits.Length ? index : -1;
     }
 }

@@ -147,9 +147,9 @@ public static class StateHash
         // They are different instructions — "no opinion" against "stop, I mean it" — and a
         // hash that conflated them would let a determinism test pass across a real
         // divergence (D51 records the same trap one control over).
-        for (int i = 0; i < StockLimits.Kinds.Count; i++)
+        for (int i = 0; i < world.StockLimits.Slots; i++)
         {
-            int? limit = world.StockLimits.For(StockLimits.Kinds[i]);
+            int? limit = world.StockLimits.For((Goods)i);
             if (limit is not null)
             {
                 hash = MixUInt32(hash, (uint)i);

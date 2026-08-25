@@ -459,7 +459,7 @@ public sealed class StockLimitTests
     [Fact]
     public void EveryGoodTheGameHasCanBeLimited()
     {
-        var limits = new StockLimits();
+        var limits = new StockLimits(Stockpile.Kinds);
         Goods[] all = Enum.GetValues<Goods>();
 
         Assert.Equal(all.Length, StockLimits.Kinds.Count);
@@ -507,7 +507,7 @@ public sealed class StockLimitTests
     [Fact]
     public void ALimitIsMetAtTheNumberAndNotBefore()
     {
-        var limits = new StockLimits();
+        var limits = new StockLimits(Stockpile.Kinds);
 
         Assert.False(limits.IsMet(Goods.Logs, 1_000_000));
 
@@ -522,7 +522,7 @@ public sealed class StockLimitTests
     [Fact]
     public void ANegativeLimitIsReadAsStopMakingThis()
     {
-        var limits = new StockLimits();
+        var limits = new StockLimits(Stockpile.Kinds);
         limits.Set(Goods.Food, -20);
 
         Assert.Equal(0, limits.For(Goods.Food));

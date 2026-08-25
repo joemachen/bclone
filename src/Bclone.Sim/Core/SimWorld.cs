@@ -117,7 +117,7 @@ public sealed class SimWorld
     /// <see cref="Config"/>: a config value is what the world is made of, and this is
     /// something somebody decided during a run.
     /// </remarks>
-    public StockLimits StockLimits { get; } = new();
+    public StockLimits StockLimits { get; }
 
     /// <summary>How many people the player wants on each kind of work (D106).</summary>
     /// <remarks>
@@ -4855,6 +4855,7 @@ public sealed class SimWorld
         Config = config;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
         _saidThereIsNowhereFor = new bool[GoodsCatalog.Count];
+        StockLimits = new StockLimits(GoodsCatalog.Count);
         Logger = logger;
         Seed = seed;
         Rng = new DeterministicRandom(seed);
