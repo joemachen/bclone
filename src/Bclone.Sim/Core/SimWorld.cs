@@ -3028,14 +3028,14 @@ public sealed class SimWorld
         // Start from "everything this kind can hold", so the first click narrows rather than
         // wiping. A mask of zero means no opinion, and turning one good off has to leave the
         // others on — otherwise the first click would empty the building.
-        int mask = store.AllowedGoods;
+        long mask = store.AllowedGoods;
         if (mask == 0)
         {
             for (int g = 0; g < GoodsCatalog.Count; g++)
             {
                 if (store.CanEverHold((Goods)g))
                 {
-                    mask |= 1 << g;
+                    mask |= 1L << g;
                 }
             }
         }
@@ -3045,7 +3045,7 @@ public sealed class SimWorld
         // opinion", and the store silently starts accepting everything again.
         mask |= StoreBuilding.Spoken;
 
-        int bit = 1 << (int)goods;
+        long bit = 1L << (int)goods;
 
         if (accepted)
         {

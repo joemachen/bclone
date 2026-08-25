@@ -150,7 +150,19 @@ crops and *fertility decline* do not.
 `DESIGN.md §4`'s Phase 4 — see finding 5. *A spec that lies about its own status is worse than no
 spec* (D159); this closed the status half only.
 
-### 8. ⛔⛔ ~70 goods and ~40 worker roles against 6 and 6 — the infrastructure the content requires
+### 8. 🔨 ~70 goods and ~40 worker roles against 6 and 6 — GOODS SOLVED, THE REST NOT
+
+> **✅ THE GOODS HALF IS BUILT (D210, `specs/goods-catalog.md`).** A good is a **row** now, the set
+> is **open to 62**, and **nothing in the sim switches on a good by name.** Three ceilings nobody
+> had counted were found and lifted on the way — see the box below.
+>
+> ⛔ **Still open, and this finding stays until they are:**
+> - **`JobKind` and `BuildingKind` have had no equivalent** — ~40 worker roles and ~45 buildings
+>   against **6 and 10**. Same enum, same hash-by-position, same problem.
+> - **Slice 2 is not done**, so the goods work is *unproven*: nothing yet defines a seventh good
+>   **entirely in data** and drives it through storing, limits and hashing. **D82's lesson is that
+>   the new good is what proves the refactor.**
+
 
 **Added 2026-08-24 (D206), from `TECH-EXAMPLE.md`.** This is the finding that decides *when* the
 content can be built, rather than what it is.

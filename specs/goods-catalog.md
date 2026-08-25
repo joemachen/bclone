@@ -1,6 +1,6 @@
 # Spec: The goods catalogue — a good becomes a row
 
-> Status: **specced, slice 1 in progress.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3`
+> Status: **slices 1 and 1b BUILT; slice 2 (prove a modder can) outstanding.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3`
 > (data-driven, first-class modding) · Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md §4.1` (**the template — a row, not an enum value**),
@@ -117,13 +117,9 @@ refactor** — it would move the goldens, and it belongs in its own slice with a
 *write the guard, watch it fail, then fix it.* Folding it into a no-op refactor is exactly how a
 real change hides inside a safe one.
 
-### 4.1 ⛔ And one of them is a latent bug, found while counting
+### 4.1 ✅ FIXED — and it was a latent bug, found while counting
 
-⚠️ **Not fixed in slice 1** — `HeldOf` is reached from six places and the fix wants its own red
-check, so it rides with slice 1b rather than being folded silently into a no-op refactor.
-
-
-`BehaviorSystem.HeldOf` is a hand-written switch:
+`BehaviorSystem.HeldOf` **was** a hand-written switch:
 
 ```
 Goods.Food => store.Food,
@@ -134,11 +130,12 @@ _          => store.Firewood,      // ⛔ stone, tools and iron all land here
 **`Stockpile` already has `this[Goods]`, which handles every good correctly.** `HeldOf` duplicates
 it and its default arm answers *"how much stone?"* with **the firewood count.**
 
-- **It is latent, not live** — traced, and today it is only ever reached with Food, Logs or
-  Firewood, all three of which it gets right.
-- ⛔ **It goes live the moment a builder asks for stone**, which is exactly what multi-material
-  recipes bring (`content-inventory.md` finding 2). **The fix is to delete it and use the
-  indexer** — *the helper you need may already exist.*
+- **It was latent, not live** — traced rather than assumed: all six callers reach it only with
+  Food, Logs or Firewood, the three it got right.
+- ⛔ **It would have gone live the moment a builder asked for stone**, which is exactly what
+  multi-material recipes bring (`content-inventory.md` finding 2).
+- ✅ **Deleted in favour of `Stockpile`'s indexer**, which handled every good correctly the whole
+  time — *the helper you need may already exist.*
 
 ---
 
@@ -161,26 +158,30 @@ moved nothing, and that is what made it safe to build on."*
 - Validation at load: duplicate ids, missing built-ins, a good no store will take, **and both
   ceilings below**.
 
-### ⛔ Slice 1b — the open set, and it is the whole promise
+### ✅ Slice 1b — the open set
 
-**Slice 1 makes a good's *behaviour* data. It does NOT yet let you add a seventh**, and that is
-stated here rather than glossed, because a catalogue that cannot be extended is the *"row is
-decoration"* failure in §6.
+**Done, in three commits, each verified green before the next was started.** Both ceilings lifted:
 
-**Two ceilings, both guarded at load with a sentence rather than left to fail at an index:**
-
-| Ceiling | Why |
+| Was | Now |
 |---|---|
-| **`Stockpile.Kinds`** is `Enum.GetValues<Goods>().Length`, in a **field initializer** | Households, store buildings and workplaces all default their stockpile with `= new()`, so nothing can hold a good the enum lacks |
-| **`StoreBuilding.AllowedGoods`** is an `int` bitmask with **`Spoken` at bit 30** | Good 30 would set the sentinel — *a store the player never touched reporting that they had* |
+| **6 goods** — `Stockpile` sized from `Enum.GetValues<Goods>().Length`, in a field initializer | **Sized from the catalogue.** `Stockpile` takes a slot count and has **no parameterless constructor**, so the compiler listed all 20 sites; the stockpile is `required` on households, store buildings and workplaces |
+| **30 goods** — `AllowedGoods` an `int` with `Spoken` at bit 30 | **62 goods** — a `long` with the sentinel at bit 62, and **both halves hashed** |
 
-⛔ **And a mutable static is not the fix.** The suite runs **~9.5× parallel with a world per
-test**; a global `Kinds` set at load would be a cross-test race and a determinism hazard — the one
-class of bug this project treats as P0.
+⛔ **A mutable static was never the fix**, for the record: the suite runs **~9.5× parallel with a
+world per test**, so a global count set at load would be a cross-test race and a determinism
+hazard — the one class of bug this project treats as P0.
 
-**So slice 1b is: thread the catalogue into `Stockpile` and `StoreBuilding`.** That also carries
-the fourth switch surface, `KindAccepts` — **46 `Accepts(` call sites**, which is why it belongs
-with the threading rather than ahead of it.
+**⭐ And the goldens did not move for the widening — the guard's doing rather than luck.**
+`AllowedGoods` is hashed only when non-zero, and zero is *"the player has not said"*, which is
+every store in an unattended fifty-year run.
+
+**Also landed:** `KindAccepts` reads `stored_by` off the row — the catalogue is held **on the store
+building**, because `Accepts` has **46 call sites** and a store building has **8** — and `HeldOf`
+is deleted in favour of `Stockpile`'s indexer.
+
+⚠️ **One compiler catch worth recording:** widening the mask surfaced `mask &= ~bit` where `bit`
+was still an `int`. Negated and then widened, it **sign-extends and wipes the sentinel.** CS0675
+caught it — *the kind of bug that would have read as a filter forgetting itself.*
 
 ### Slice 2 — prove a modder can
 
@@ -225,9 +226,8 @@ proves the refactor*; here the test plays that part.
      drift METHODOLOGY §3 warns about — the gap that produced D48, D49 and D50. **The discoverability
      complaint stands** (a modder reading the data file sees no goods and no skills); *the fix is a
      comment pointing at the defaults, not a second copy of them.*
-3. No `switch` on a good by name anywhere in `Bclone.Sim`. *(Slice 1 clears three of four;
-   `KindAccepts` rides with 1b.)*
-4. `HeldOf` deleted; the indexer used. *(Slice 1b.)*
+3. ✅ No `switch` on a good by name anywhere in `Bclone.Sim`. ⚠️ Three comparisons remain and are NOT lookups — they are the villager's carried load, which is still three named fields. See §4.0.
+4. ✅ `HeldOf` deleted; the indexer used.
 5. Unit tests passing; **determinism test green; both fifty-year goldens byte-identical.**
 6. Slice 2's data-defined-good test passing.
 7. `DESIGN.md` Progress Tracker + Decisions Log updated.

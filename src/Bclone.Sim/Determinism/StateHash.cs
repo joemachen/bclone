@@ -287,9 +287,20 @@ public static class StateHash
             // and the work mode above: zero is "they have not said", which is every store in
             // every village that has never used the control, so those hash exactly as they did
             // before filters existed and not one golden moves for the feature landing.
-            if (world.StoreBuildings[i].AllowedGoods != 0)
+            // ⚠️ BOTH HALVES SINCE D210, because the mask is a long now and the sentinel sits at
+            // bit 62. Mixing only the low 32 bits would leave every good above the thirty-second —
+            // and the `Spoken` flag itself — outside the hash, which is the quiet kind of
+            // determinism bug: two runs that read identical and are not.
+            //
+            // ⭐ The goldens do not move for this, and the reason is the guard above rather than
+            // luck: zero is *"they have not said"*, which is every store in every village that has
+            // never used the control — so an unattended fifty-year run mixes nothing here, exactly
+            // as it did before filters existed.
+            long allowed = world.StoreBuildings[i].AllowedGoods;
+            if (allowed != 0)
             {
-                hash = MixUInt32(hash, (uint)world.StoreBuildings[i].AllowedGoods);
+                hash = MixUInt32(hash, (uint)allowed);
+                hash = MixUInt32(hash, (uint)(allowed >> 32));
             }
         }
 

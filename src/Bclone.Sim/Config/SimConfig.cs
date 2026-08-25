@@ -2212,14 +2212,20 @@ public sealed record SimConfig
         // state hash is bounded by the store's own size — so a seventh good is held, hashed and
         // carried like any other. The check that used to stand here is gone rather than relaxed.
 
-        // ⛔⛔ The ceiling above it is still real: `StoreBuilding.AllowedGoods` is an int bitmask with
-        // one bit per good and the `Spoken` sentinel at bit 30 — so good 30 would set the
-        // sentinel, and a store the player never touched would report that they had.
-        if (seen.Count > 30)
+        // ⚠️ The remaining ceiling, raised from 30 to 62 by widening the mask (D210, slice 1b).
+        // `StoreBuilding.AllowedGoods` holds one bit per good with the `Spoken` sentinel at bit
+        // 62, so a good at 62 or beyond would set the sentinel and a store the player never
+        // touched would report that they had — not a crash, a filter that switches itself on.
+        //
+        // Kept as a guard rather than deleted because 62 is a real edge, not a theoretical one:
+        // it is only about twice what the content pass already asks for.
+        const int filterCeiling = 62;
+        if (seen.Count > filterCeiling)
         {
             throw new SimConfigException(
-                $"goods has {seen.Count} rows; the store filter is an int bitmask with a sentinel "
-                + "at bit 30, so at most 30 goods can exist until it is widened.");
+                $"goods has {seen.Count} rows; the store filter is a 64-bit mask with its "
+                + $"sentinel at bit {filterCeiling}, so at most {filterCeiling} goods can exist "
+                + "until it is widened again.");
         }
     }
 

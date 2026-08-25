@@ -178,7 +178,15 @@ public sealed class StoreBuilding
     /// is visible and reversible rather than silent.
     /// </para>
     /// </remarks>
-    public int AllowedGoods { get; set; }
+    /// <remarks>
+    /// <b>⭐ WIDENED FROM <c>int</c> TO <c>long</c> (D210, slice 1b), AND THE OLD WIDTH WAS A
+    /// CEILING NOBODY HAD COUNTED.</b> One bit per good, with <see cref="Spoken"/> formerly at bit
+    /// 30 — so **good 30 would have set the sentinel**, and a store the player had never touched
+    /// would report that they had. Not a crash: a filter that switches itself on. At 64 bits with
+    /// the sentinel at 62, the ceiling is 62 goods, which is comfortably past the ~35 the content
+    /// pass needs.
+    /// </remarks>
+    public long AllowedGoods { get; set; }
 
     /// <summary>
     /// Set on <see cref="AllowedGoods"/> the moment the player touches the filter, so that
@@ -192,11 +200,11 @@ public sealed class StoreBuilding
     /// <c>AStoreThatWillTakeNothingSaysSoOnce</c> on its first run, which is what that guard is
     /// for: the empty case is exactly where a bitmask sentinel goes wrong.
     /// </remarks>
-    public const int Spoken = 1 << 30;
+    public const long Spoken = 1L << 62;
 
     /// <summary>Whether the player's filter permits this good. True when they have not said.</summary>
     public bool PlayerAllows(Goods goods) =>
-        AllowedGoods == 0 || (AllowedGoods & (1 << (int)goods)) != 0;
+        AllowedGoods == 0 || (AllowedGoods & (1L << (int)goods)) != 0;
 
     /// <summary>Whether this building will hold a given kind of goods, here and now.</summary>
     /// <remarks>
