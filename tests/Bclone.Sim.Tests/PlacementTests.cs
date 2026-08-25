@@ -206,6 +206,12 @@ public sealed class PlacementTests
         SimLoop loop = Build(config);
         SimWorld world = loop.World;
 
+        // ⭐ A GRANARY COSTS STONE NOW (D213), and stone comes from nowhere but the brush —
+        // so painting a seam is part of asking for a granary, exactly as it is in the game.
+        // Without it this stops being a test about building and becomes a second copy of
+        // `StoneCostsTests.AStoreWithNoStoneWaitsRatherThanKillingTheVillage`.
+        SeamFixtures.PaintStoneForBuilding(world);
+
         // Let them get established first — a village with an empty larder puts every
         // hand on food, and rightly so (§4a).
         loop.Step(config.TicksPerYear * 12);
@@ -243,6 +249,9 @@ public sealed class PlacementTests
         SimConfig config = Config;
         SimLoop loop = Build(config);
         SimWorld world = loop.World;
+
+        // A shed costs stone as well as timber now (D213) — see the granary test above.
+        SeamFixtures.PaintStoneForBuilding(world);
         loop.Step(config.TicksPerYear * 12);
 
         GridPos spot = SomewhereBuildable(world, BuildingKind.Shed);

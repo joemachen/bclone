@@ -717,10 +717,34 @@ public sealed record SimConfig
     //  ⭐ THE STONE HALF OF EVERY RECIPE (`multi-material-construction.md`, D213)
     // ---------------------------------------------------------------
     //
-    // ⭐ SHIPPED AT ZERO AND TURNED ON SEPARATELY, which is D82's and D210's shape: the
-    // machinery lands as a **provable no-op** — every golden byte-identical — and the balance
-    // change that follows it cannot hide inside it. A recipe drops its zeros, so a building
-    // priced at 0 stone has exactly the recipe it had before this existed.
+    // ⭐ THE MACHINERY SHIPPED AT ZERO AND THE PRICES CAME AFTER, which is D82's and D210's
+    // shape: the refactor landed as a **provable no-op** — every golden byte-identical — so the
+    // balance change could not hide inside it. A recipe drops its zeros, so a building priced at
+    // 0 stone has exactly the recipe it had before any of this existed.
+    //
+    // ⭐⭐ WHICH BUILDINGS PAY, AND IT WAS MEASURED RATHER THAN CHOSEN (D213). The split is
+    // **player-placed stores yes, the survival chain no**, and the reason is a probe over fifty
+    // years of the shipped opening:
+    //
+    //   stone on the STORES, no seam painted  →  24 alive, 0 sites unfinished  (identical to 0)
+    //   stone on the HUTS,   no seam painted  →   7 alive, 6 sites unfinished
+    //   stone on the HUTS,   a seam painted   →  24 alive, 0 sites unfinished
+    //
+    // A granary, a shed and a market are things **the player marks**; a village that never
+    // marks one never needs stone, and one that marks a granary it cannot pay for keeps running
+    // on its pile and is told what the site is short of. That is `DESIGN.md §0.1`'s
+    // *recoverable by design* — the mistake is real, visible and expensive, and it never ends a
+    // run.
+    //
+    // ⛔ A HUT IS DIFFERENT AND THE NUMBER SAYS SO: the opening marks a gatherer's hut, and a
+    // gatherer's hut nobody can pay for is a village that does not eat. Priced at 10 it took the
+    // founding from 24 alive to **7**, and painting one seam put it straight back to 24. That is
+    // a real and defensible difficulty — *paint a seam early* — but it is a difficulty setting
+    // rather than a detail, and it is Joe's call rather than a default.
+    //
+    // ⛔ AND A HOUSE PAYS NOTHING, for a stronger reason than either: a house is the one
+    // building the VILLAGE decides to raise (D42), so a stone price there is a growth gate on a
+    // resource an unattended valley never gathers.
     //
     // ⚠️ ONE KEY PER (BUILDING, GOOD), symmetric with the log keys above, and that is
     // deliberately a stopgap rather than the catalogue. `content-inventory.md` finding 1 and
@@ -753,17 +777,17 @@ public sealed record SimConfig
     [JsonPropertyName("market_work_ticks")]
     public int MarketWorkTicks { get; init; } = 50;
 
-    /// <summary>Stone a granary takes to build. See the block above for why it ships at zero.</summary>
+    /// <summary>Stone a granary takes to build.</summary>
     [JsonPropertyName("granary_stone")]
-    public int GranaryStone { get; init; }
+    public int GranaryStone { get; init; } = 10;
 
     /// <summary>Stone a storage shed takes to build.</summary>
     [JsonPropertyName("shed_stone")]
-    public int ShedStone { get; init; }
+    public int ShedStone { get; init; } = 8;
 
     /// <summary>Stone a market takes to build.</summary>
     [JsonPropertyName("market_stone")]
-    public int MarketStone { get; init; }
+    public int MarketStone { get; init; } = 10;
 
     /// <summary>Stone a woodcutter's hut takes to build.</summary>
     [JsonPropertyName("hut_stone")]

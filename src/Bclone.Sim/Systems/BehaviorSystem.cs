@@ -1120,6 +1120,17 @@ public sealed class BehaviorSystem : ISimSystem
             return true;
         }
 
+        // ⭐⭐ AND FROM HERE ON, THE SITE THEY SERVE IS THE FIRST ONE THEY CAN ACTUALLY MOVE
+        // (D213). The head above is still what gets its ground cleared and still gets first
+        // refusal on everything — `NextSiteToServe` walks the same queue order — but a head
+        // waiting on stone the village has not got no longer holds up the houses behind it.
+        // See `SimWorld.NextSiteToServe` for the founding this killed before it existed.
+        if (world.NextSiteToServe() is Workplace servable && servable.Id != standing.Id)
+        {
+            standing = servable;
+            site = standing.Construction!;
+        }
+
         // Carrying something the site wants, or the site already has what it needs: head there.
         //
         // ⚠️ IT ASKED `CarriedLogs > 0` (D213). Once a recipe can want two things, an armful of
@@ -1238,7 +1249,11 @@ public sealed class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void LoadMaterials(SimWorld world, Villager villager)
     {
-        ConstructionSite? site = world.NextToBuild()?.Construction;
+        // ⭐ THE SAME QUESTION `WorkTheSite` ASKED WHEN IT SENT THEM (D213). It was
+        // `NextToBuild` — the head — which stopped being the site they were walking for the
+        // moment a head could be stuck on a material nobody has. Two orderings over one list is
+        // D157's shape for half the bugs here; there is one.
+        ConstructionSite? site = world.NextSiteToServe()?.Construction;
 
         if (site is null)
         {

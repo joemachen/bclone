@@ -424,6 +424,11 @@ public sealed class HousesAreBuiltTests
             Workplace shed = queue[^1];
             Assert.Equal(BuildingKind.Shed, shed.Construction!.Kind);
 
+            // ⭐ Both arms get the same stone, because a shed costs some now (D213) and this
+            // guard is about the ORDER two buildings are raised in, not about whether the
+            // village can afford either.
+            SeamFixtures.PaintStoneForBuilding(world);
+
             if (promote)
             {
                 while (world.QueuePositionOf(shed) > 1)

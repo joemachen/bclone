@@ -3795,6 +3795,89 @@ public sealed class SimWorld
     /// not over labour.
     /// </para>
     /// </remarks>
+    /// <summary>Whether anywhere in the village is holding this good right now.</summary>
+    public bool AnyStoreHolding(Goods goods)
+    {
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Accepts(goods) && StoreBuildings[i].Store[goods] > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The site a builder should serve right now — <b>the first in queue order they can
+    /// actually advance</b> (D213).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ D135'S BUG, ARRIVING THROUGH A SECOND MATERIAL.</b> That decision gave a builder
+    /// somewhere to go when the head of the queue was starved — *"the builder shouldn't just sit
+    /// at the building waiting"* — and it asked <see cref="NextBuildableSite"/>, which only ever
+    /// answers with a site that <b>already has everything</b> and is merely short of work. While
+    /// timber was the only material that was nearly always true: the village makes logs, so a
+    /// starved head was rare and short-lived.
+    /// </para>
+    /// <para>
+    /// <b>Stone is not like that.</b> Nothing produces it until the player paints a seam, so
+    /// *"the head wants something the village has not got"* is the NORMAL state of a fresh
+    /// village — and the head then blocked every site behind it for ever. Measured before this
+    /// existed: a played founding went to <b>0 alive, 4 frozen, no house ever built</b>, and a
+    /// century of the shipped village finished at <b>0 alive</b> with four sites queued and 116
+    /// logs in store. The houses were affordable the whole time and nobody could reach them.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE QUEUE IS STILL NOT REORDERED, which is D102's line and it holds.</b> This walks
+    /// the same order <see cref="NextToBuild"/> does and prefers the head whenever the head can
+    /// be advanced at all — so scarce timber still goes where the player pointed. What moves is
+    /// only which site a builder serves when the head is waiting on something that does not
+    /// exist yet.
+    /// </para>
+    /// <para>
+    /// <b>⭐ ONE ORDERING, ASKED IN ONE PLACE.</b> <c>WorkTheSite</c> and <c>LoadMaterials</c>
+    /// both ask this, so the site somebody walks to a store for and the site they carry the load
+    /// back to cannot disagree — which is D157's rule about two orderings over one list being
+    /// the shape of half the bugs in this project.
+    /// </para>
+    /// </remarks>
+    public Workplace? NextSiteToServe()
+    {
+        Workplace? best = null;
+        GridPos village = FirstHomeOrFoundingSite();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+            if (candidate.Construction is not { IsFinished: false } plan
+                || !GroundIsClearAt(candidate.Position)
+                || !TravelCost.CanReach(village, candidate.Position))
+            {
+                continue;
+            }
+
+            // Either it is paid for and merely owes work, or the next thing it wants is
+            // standing in a store somewhere. Anything else is a site nobody can move today.
+            if (plan.NextMaterialWanted() is Goods wanted && !AnyStoreHolding(wanted))
+            {
+                continue;
+            }
+
+            if (best is null
+                || candidate.EffectiveQueueRank < best.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == best.EffectiveQueueRank
+                    && candidate.Id < best.Id))
+            {
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
     public Workplace? NextBuildableSite()
     {
         Workplace? best = null;

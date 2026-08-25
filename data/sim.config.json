@@ -867,6 +867,17 @@
   "hut_logs": 25,
   "hut_work_ticks": 40,
 
+  // The stone half of a recipe (D213). ONLY THE STORES THE PLAYER MARKS: a
+  // granary, a shed and a market are durable civic buildings and Joe's own
+  // TECH-EXAMPLE prices even a root cellar in wood AND cut stone. The huts and
+  // the house pay nothing, and that split was measured rather than chosen --
+  // see the block above granary_stone in SimConfig.cs for the fifty-year
+  // numbers. A village that never marks a store never needs stone; one that
+  // marks a granary it cannot pay for keeps running and is told what it wants.
+  "granary_stone": 10,
+  "shed_stone": 8,
+  "market_stone": 10,
+
   // construction_site_capacity is GONE (D108). A site had three seats and
   // people were assigned to it; builders hold their job at the hut now and
   // treat sites as errands, so the number would be permanently zero -- and
