@@ -2258,7 +2258,7 @@ public sealed class SimWorld
             $"There is nowhere in the village to keep {goods.ToString().ToLowerInvariant()}, "
             + "so it is being left "
             + "on the ground where it falls — and goods on the ground feed nobody and build "
-            + $"nothing. A storage pile costs only the cleared ground it stands on. "
+            + $"nothing. A stockpile costs only the cleared ground it stands on. "
             + $"{Clock.SeasonAndYear()}.");
     }
 
@@ -4905,7 +4905,16 @@ public sealed class SimWorld
             BuildingKind.Granary => "granary",
             BuildingKind.Shed => "storage shed",
             BuildingKind.Market => "market",
-            BuildingKind.Pile => "storage pile",
+            // ⭐ "stockpile", not "storage pile" (Joe, D217: *"rename storage pile to
+            // stockpile across all instances in the game"*).
+            //
+            // ⚠️ IT SHARES A WORD WITH THE `Stockpile` CLASS AND THEY ARE NOT THE SAME THING.
+            // `Stockpile` is the goods container every store, larder, workplace and pair of arms
+            // holds; this is the name of ONE kind of store building (`StoreKind.Pile`). The type
+            // is deliberately not renamed — it would collide on the very screen this makes
+            // clearer — so a reader who meets both should take **the enum** as the identity and
+            // this string as the label.
+            BuildingKind.Pile => "stockpile",
             BuildingKind.BuilderHut => "builder's hut",
             BuildingKind.GathererHut => "gatherer's hut",
             BuildingKind.ForesterHut => "forester's hut",

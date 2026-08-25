@@ -2947,7 +2947,7 @@ public sealed class BehaviorSystem : ISimSystem
                 "goods",
                 $"{villager.Name} came home with {held} {world.GoodsCatalog.NameOf(goods)} and "
                 + "the village has nowhere to put them, so they are stranded in the larder "
-                + "where nothing can spend them. Build a storage pile or a shed.");
+                + "where nothing can spend them. Build a stockpile or a shed.");
 
             larder.Receive(goods, held);
             villager.Carried.TakeAll(goods);

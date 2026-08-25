@@ -234,7 +234,7 @@ public partial class Main : Control
 
         Pose(_staffingRow, _staffingLabel, "Staffing the south-western forester's hut 2 — 2 of 3:");
         Pose(_groundRow, _groundLabel, "Ground — 128 tiles, enough hands for 26:");
-        Pose(_queueRow, _queueLabel, "3rd in the queue, after a granary and a storage pile:");
+        Pose(_queueRow, _queueLabel, "3rd in the queue, after a granary and a stockpile:");
         Pose(
             _idleRow,
             _idleLabel,
@@ -1488,7 +1488,7 @@ public partial class Main : Control
         StoreKind.Granary => "granary, which holds the village's food",
         StoreKind.Shed => "storage shed, which holds logs and firewood",
         StoreKind.Market => "market, which holds food and firewood for the houses near it",
-        StoreKind.Pile => "storage pile — cleared ground, and it holds anything",
+        StoreKind.Pile => "stockpile — cleared ground, and it holds anything",
         StoreKind.Cart => "cart the founders arrived in, which holds anything",
         _ => kind.ToString().ToLowerInvariant(),
     };
@@ -3540,7 +3540,7 @@ public partial class Main : Control
         // ground, and a village with nowhere to put things cannot begin.
         row.AddChild(Category(
             "Storage & trade",
-            BuildButton("Storage pile", BuildingKind.Pile),
+            BuildButton("Stockpile", BuildingKind.Pile),
             BuildButton("Granary", BuildingKind.Granary),
             BuildButton("Shed", BuildingKind.Shed),
             BuildButton("Market", BuildingKind.Market)));

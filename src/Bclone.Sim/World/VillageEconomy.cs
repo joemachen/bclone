@@ -1314,7 +1314,13 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int toBuild = config.LogsPerHouse + config.HutLogs;
+        // ⭐ THE STONE THOSE SAME BUILDINGS COST, SINCE D214. The sentence above is *"enough to
+        // raise the village's first buildings out of"*, and a woodcutter's hut has cost stone as
+        // well as timber since Joe priced the huts — so a derivation that counted only logs had
+        // quietly stopped meaning what it says. Small (three), and that is not the point:
+        // METHODOLOGY §3's drift is exactly a number that stops matching its own sentence, and
+        // D48, D49 and D50 were each one of those.
+        int toBuild = config.LogsPerHouse + config.HutLogs + config.HomeStone + config.HutStone;
         int firewood = config.StartingHouseholds * FirewoodStoreWantedPerHousehold(config);
 
         return toBuild + firewood;

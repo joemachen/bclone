@@ -97,6 +97,68 @@ public sealed class CarryingSeamGoodsTests
         return painted;
     }
 
+    /// <summary>
+    /// ⭐⭐ And a cold start's cleared stone reaches somewhere the village can spend it (D217).
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe, playing:</b> <em>"while villagers harvest stone on the map, they didn'''t put any
+    /// stone in the storage pile, and the UI always showed 0 stone."</em> He was playing
+    /// <c>main</c>, where D211 had not landed and a cleared seam was simply destroyed — but the
+    /// report named a store the guards above never used, so it gets its own.
+    /// <para>
+    /// The tests above run a warm-start village, which has a shed. <b>A founding has a stockpile
+    /// and a cart</b>, and a stockpile holds a good by <em>being</em> a stockpile
+    /// (<c>KindAccepts</c>: <c>Kind == StoreKind.Pile || …</c>) rather than by the catalogue
+    /// listing it — a different question, asked here.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>IT ASSERTS "a store", NOT "the stockpile", AND THE MEASUREMENT IS WHY.</b> Three
+    /// years into a played opening the stockpile is <b>91/91 — completely full of timber</b> — so
+    /// the 42 stone the village cleared is correctly in the cart instead. **A stockpile showing
+    /// zero stone is not the bug Joe saw; a village showing zero stone was.** Pinning this guard
+    /// to one building would make it a test about which store happened to have room.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ClearedStoneReachesTheStockpileOfAColdStart()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        ColdStartTests.PlayTheOpening(world);
+        loop.Step(config.TicksPerYear * 3);
+
+        StoreBuilding? pile = null;
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            if (world.StoreBuildings[i].Kind == StoreKind.Pile)
+            {
+                pile = world.StoreBuildings[i];
+                break;
+            }
+        }
+
+        Assert.NotNull(pile);
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding st = world.StoreBuildings[i];
+            _output.WriteLine(
+                $"  {st.Name} ({st.Kind}) at {st.Position}: {st.Store[Goods.Stone]} stone, "
+                + $"{st.Store.Held}/{st.Store.Capacity} held, accepts={st.Accepts(Goods.Stone)}");
+        }
+
+        _output.WriteLine(
+            $"{pile!.Name}: {pile.Store[Goods.Stone]} stone; "
+            + $"village total {world.InStores(Goods.Stone)}");
+
+        Assert.True(pile.Accepts(Goods.Stone), "A stockpile is meant to take anything.");
+        Assert.True(
+            world.InStores(Goods.Stone) > 0,
+            "A played opening cleared its seam and no stone reached any store.");
+        Assert.Equal(0, world.OnTheGround(Goods.Stone));
+    }
+
     [Theory]
     [InlineData(Terrain.Rock, Goods.Stone)]
     [InlineData(Terrain.IronDeposit, Goods.Iron)]
