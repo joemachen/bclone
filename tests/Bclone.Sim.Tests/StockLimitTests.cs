@@ -304,7 +304,15 @@ public sealed class StockLimitTests
     //   before the market was stocked: 11057161405161342300
     //
     //   before the market stopped being a dumping ground (D199): 5407508656652631583
-    private const ulong FixtureFiftyYearHash = 10819177739606102446UL;
+    //
+    // ⭐⭐ RE-TAKEN BECAUSE A VILLAGER'S ARMS ARE HASHED BY INDEX (D211) — the arms were the one
+    // stockpile in the game D82 never reached, and `MixVillager` named three carried goods where
+    // it now mixes the whole load. **Measured: restore the three lines and every moved golden is
+    // byte-identical again**, so this pair moved for the hash's shape and not for the village.
+    // An unattended fifty years paints no seam, so nothing here ever clears one.
+    //
+    //   before the arms were hashed by index: 10819177739606102446
+    private const ulong FixtureFiftyYearHash = 11757924775578785150UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -344,7 +352,8 @@ public sealed class StockLimitTests
     //
     //   before the village obeyed sooner (D200): 6025855613246143038
     //   before the village taught its young (D202): 9543702176106421225
-    private const ulong ShippedFiftyYearHash = 8020065647695876691UL;
+    //   before the arms were hashed by index (D211): 8020065647695876691
+    private const ulong ShippedFiftyYearHash = 4853604208320653235UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
