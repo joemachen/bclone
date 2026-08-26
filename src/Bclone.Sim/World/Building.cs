@@ -143,6 +143,32 @@ public sealed record BuildingRow
     public int LocalStoreCap { get; init; }
 
     /// <summary>
+    /// How many techniques it can hold records of. <b>Zero for a building that keeps none.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ A HARD CAP, AND `tech-tree.md §7c` IS EMPHATIC ABOUT WHY.</b> One record per node, no
+    /// bundling: <em>"a library of N shelves holds N techniques, and choosing which N is the whole
+    /// point. To hold more, build more libraries."</em> **A soft decay was considered and refused**
+    /// — *"what is worth preserving?"* is a better question than *"is this record still legible?"*
+    /// </para>
+    /// <para>
+    /// <b>⛔ AND IT IS CARRYING MORE WEIGHT THAN IT WAS DESIGNED TO.</b> `tech-tree.md §11`'s guard
+    /// against *"the library is mandatory"* rested on three costs — the scriptorium's opportunity
+    /// cost, this cap, and tacit nodes. **D204 deleted the first** by making recording automatic at
+    /// mastery. *So a full library refusing a record, and saying so, is load-bearing rather than
+    /// polish.*
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Shelves belong to the BUILDING, not to the village</b>, which is what makes *"build a
+    /// second library"* an answer and — later — what makes copying a record into a second one
+    /// survive a fire (§7c). Fire is not in this phase; the shape it needs is.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("shelves")]
+    public int Shelves { get; init; }
+
+    /// <summary>
     /// How many souls live in it. <b>Zero for a building nobody lives in.</b>
     /// </summary>
     /// <remarks>

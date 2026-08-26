@@ -237,7 +237,7 @@ public sealed class TechniqueTests
         Villager first = MakeAMasterOf(world, skillId: 4);
         loop.Step(1);
 
-        Villager second = MakeAMasterOf(world, skillId: 4, skip: first);
+        Villager second = MakeAMasterOf(world, skillId: 4, first);
         first.Alive = false;
         loop.Step(1);
 
@@ -268,7 +268,7 @@ public sealed class TechniqueTests
 
         Assert.Equal(KnowledgeState.Unknown, world.KnowledgeStates[TendedPatches]);
 
-        MakeAMasterOf(world, skillId: 1, skip: first);
+        MakeAMasterOf(world, skillId: 1, first);
         loop.Step(1);
 
         Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[TendedPatches]);
@@ -396,18 +396,225 @@ public sealed class TechniqueTests
 
     // -----------------------------------------------------------------
 
+    //  Slice 2 — the library, and Known becoming Established
+    // -----------------------------------------------------------------
+
+    /// <summary>A written technique outlives the death of everyone who knew it.</summary>
+    /// <remarks>
+    /// <b>The third state earning its place.</b> Slice 1's village lost everything, every time;
+    /// this one guard is the whole difference a library makes.
+    /// </remarks>
+    [Fact]
+    public void AWrittenTechniqueOutlivesItsLastKnower()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = Loop(VillageFixtures.Village, sink);
+        SimWorld world = loop.World;
+
+        GiveThemALibrary(world);
+
+        Villager master = MakeAMasterOf(world, 4);
+        loop.Step(1);
+
+        Assert.Equal(KnowledgeState.Established, world.KnowledgeStates[CropRotation]);
+        Assert.True(world.IsWrittenDown(CropRotation));
+
+        master.Alive = false;
+        loop.Step(1);
+
+        // Nobody alive knows it, and the village still does it her way.
+        Assert.Equal(KnowledgeState.Established, world.KnowledgeStates[CropRotation]);
+        Assert.Equal(115, world.YieldWithTechnique(JobKind.Farmer, 100));
+
+        _output.WriteLine(Said(sink));
+    }
+
+    /// <summary>
+    /// A full library refuses the record and says what to do about it.
+    /// </summary>
+    /// <remarks>
+    /// <b>Load-bearing rather than polish.</b> `tech-tree.md §11`'s guard against *"the library is
+    /// mandatory"* rested on three costs, and <b>D204 deleted one of them</b> by making recording
+    /// automatic at mastery — so the hard shelf cap carries that guard nearly alone. If this ever
+    /// goes green by accident, writing everything down has become always-correct and the building
+    /// has stopped being a decision.
+    /// </remarks>
+    [Fact]
+    public void AFullLibraryRefusesTheRecordAndSaysSo()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = Loop(VillageFixtures.Village, sink);
+        SimWorld world = loop.World;
+
+        Library library = GiveThemALibrary(world);
+        Assert.Equal(3, library.Shelves);
+
+        Villager a = MakeAMasterOf(world, 1);
+        Villager b = MakeAMasterOf(world, 2, a);
+        Villager c = MakeAMasterOf(world, 3, a, b);
+        loop.Step(1);
+
+        Assert.Equal(3, library.Records.Count);
+        Assert.False(library.HasRoom);
+
+        Villager d = MakeAMasterOf(world, 4, a, b, c);
+        loop.Step(1);
+
+        string said = Said(sink);
+        _output.WriteLine(said);
+
+        // Known, not Established — the village does it, and cannot keep it.
+        Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[CropRotation]);
+        Assert.False(world.IsWrittenDown(CropRotation));
+        Assert.Contains("no shelf left", said, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Build another library", said, System.StringComparison.Ordinal);
+
+        // And the refusal is real: it dies with him, exactly as it would have with no library.
+        d.Alive = false;
+        loop.Step(1);
+        Assert.Equal(KnowledgeState.Unknown, world.KnowledgeStates[CropRotation]);
+    }
+
+    /// <summary>A second library is the answer, and it works.</summary>
+    [Fact]
+    public void ASecondLibraryTakesWhatTheFirstCouldNotHold()
+    {
+        SimLoop loop = Loop(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        GiveThemALibrary(world);
+
+        Villager a = MakeAMasterOf(world, 1);
+        Villager b = MakeAMasterOf(world, 2, a);
+        Villager c = MakeAMasterOf(world, 3, a, b);
+        loop.Step(1);
+
+        GiveThemALibrary(world, at: new GridPos(3, 3));
+
+        MakeAMasterOf(world, 4, a, b, c);
+        loop.Step(1);
+
+        Assert.Equal(KnowledgeState.Established, world.KnowledgeStates[CropRotation]);
+        Assert.Single(world.Libraries[1].Records);
+    }
+
+    /// <summary>
+    /// Pulling the library down loses the record, and the technique is mortal again.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is what stops <c>Established</c> being a ratchet in this slice.</b> Fire is not in
+    /// this phase, so demolition is the only way a record can be lost — and without it everything
+    /// written down would be permanent, which is `tech-tree.md §11`'s *"the collections become a
+    /// ratchet"* arriving by the back door.
+    /// </remarks>
+    [Fact]
+    public void PullingDownTheLibraryPutsTheTechniqueBackAtRisk()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = Loop(VillageFixtures.Village, sink);
+        SimWorld world = loop.World;
+
+        Library library = GiveThemALibrary(world);
+        Villager master = MakeAMasterOf(world, 4);
+        loop.Step(1);
+
+        Assert.Equal(KnowledgeState.Established, world.KnowledgeStates[CropRotation]);
+
+        world.Demolish(library);
+        loop.Step(1);
+
+        // Still known — he is alive. But it is mortal again.
+        Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[CropRotation]);
+        Assert.Contains("crop rotation", Said(sink), System.StringComparison.Ordinal);
+
+        master.Alive = false;
+        loop.Step(1);
+        Assert.Equal(KnowledgeState.Unknown, world.KnowledgeStates[CropRotation]);
+    }
+
+    /// <summary>A record preserves the method and never the proficiency.</summary>
+    /// <remarks>
+    /// <b>`tech-tree.md §3a`'s anti-ratchet rule, and `skills-catalog.md §6.6` is the side that
+    /// enforces it.</b> The open question both specs asked is settled: <b>proficiency retained from
+    /// a record is ZERO, not a floor</b> — the village keeps the method and the next person still
+    /// owes it twenty years. <em>A record converts a catastrophic loss into an expensive setback.</em>
+    /// </remarks>
+    [Fact]
+    public void ARecordPreservesTheMethodAndNeverTheProficiency()
+    {
+        SimLoop loop = Loop(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        GiveThemALibrary(world);
+        Villager master = MakeAMasterOf(world, 4);
+        loop.Step(1);
+
+        master.Alive = false;
+        loop.Step(1);
+
+        Assert.Equal(KnowledgeState.Established, world.KnowledgeStates[CropRotation]);
+
+        // And nobody else got a single year of her life for it.
+        foreach (Villager villager in world.Villagers)
+        {
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            Assert.False(
+                villager.FindProgressIn(4) is { Mastered: true },
+                $"{villager.Name} became a master of farming without working for it.");
+        }
+    }
+
+    /// <summary>Nothing can be built on top of a library.</summary>
+    /// <remarks>
+    /// A library is the fourth kind of thing that can stand on a tile, and
+    /// <c>SomethingStandsAt</c> knew about three. <b>That method's own comment is about this going
+    /// wrong once already</b> — two rules for *"is this tile free?"*, with the wrong one facing the
+    /// player.
+    /// </remarks>
+    [Fact]
+    public void NothingCanBeBuiltOnTopOfALibrary()
+    {
+        SimWorld world = Loop(VillageFixtures.Village, new InMemoryLogSink()).World;
+
+        Library library = GiveThemALibrary(world);
+        PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Granary, library.Position);
+
+        Assert.False(verdict.Allowed);
+        Assert.Contains(
+            "already stands", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Stand a library in the village without making anybody build it.</summary>
+    private static Library GiveThemALibrary(SimWorld world, GridPos? at = null)
+    {
+        var library = new Library
+        {
+            Position = at ?? new GridPos(2, 2),
+            Name = $"library {world.Libraries.Count + 1}",
+            Shelves = world.Config.LibraryShelves,
+        };
+
+        world.Libraries.Add(library);
+        return library;
+    }
+
     /// <summary>Pose a living master of one skill, and hand them back.</summary>
     /// <remarks>
     /// <b>⚠️ <c>Mastered</c> is safe to pose and most of this villager is not</b> — D195 found that
     /// <c>LifeStage</c> and <c>AgeYears</c> both last exactly one tick before something recomputes
     /// them. This writes the one field <c>SkillSystem</c> owns and nothing else recomputes.
     /// </remarks>
-    private static Villager MakeAMasterOf(SimWorld world, int skillId, Villager? skip = null)
+    // -----------------------------------------------------------------
+    private static Villager MakeAMasterOf(SimWorld world, int skillId, params Villager[] skip)
     {
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive || ReferenceEquals(villager, skip))
+            if (!villager.Alive || System.Array.Exists(skip, s => ReferenceEquals(s, villager)))
             {
                 continue;
             }

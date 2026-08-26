@@ -211,3 +211,50 @@ public sealed class TechniquesCatalog
     public int FromSkill(int skillId) =>
         skillId >= 0 && skillId < _bySkill.Length ? _bySkill[skillId] : -1;
 }
+
+/// <summary>
+/// A library — <b>shelves with records on them, and the only thing that outlives a knower</b>
+/// (`specs/tech-tree.md §7c`).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>⭐ IT IS ITS OWN KIND OF THING, AND THAT WAS FORCED RATHER THAN CHOSEN.</b> A finished
+/// building becomes a store, a workplace, or a home, and a library is none of the three — it holds
+/// no goods, nobody works there yet, and nobody lives in it. <c>SimConfig.ValidateBuildings</c>
+/// refuses a row that <em>"stores nothing, employs nobody and houses nobody"</em>, and it was right
+/// to: <b>the validator caught that a library needed a reason to exist before the library did.</b>
+/// </para>
+/// <para>
+/// <b>⚠️ NO KEEPER YET, AND THAT IS A DEBT RATHER THAN A DESIGN.</b> §7c says a library
+/// <em>"needs a keeper, or records degrade"</em> — and decay is out of this phase
+/// (`phase-4-the-tech-tree.md §3`), so a keeper would be a seventh trade competing for hands with
+/// nothing to do. **When decay lands, the keeper lands with it**, and this is the type it attaches
+/// to.
+/// </para>
+/// </remarks>
+public sealed class Library
+{
+    /// <summary>Where it stands.</summary>
+    public required GridPos Position { get; init; }
+
+    /// <summary>What the village calls it.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>How many records it can hold. Stated by its row, never derived.</summary>
+    public required int Shelves { get; init; }
+
+    /// <summary>
+    /// The techniques written down here, in the order they were recorded.
+    /// </summary>
+    /// <remarks>
+    /// <b>Order is recording order and it is hashed</b>, so two runs of one seed shelve the same
+    /// techniques in the same order. A set would read more naturally and would let two runs that
+    /// recorded the same things in different years hash identically — <b>which would be a lie</b>:
+    /// they are different villages that made the same choices at different times, and the shelf a
+    /// record sits on is what a later slice's fire will take.
+    /// </remarks>
+    public List<int> Records { get; } = new();
+
+    /// <summary>Whether there is room for one more.</summary>
+    public bool HasRoom => Records.Count < Shelves;
+}

@@ -548,7 +548,7 @@ Deliberately unspecified. These need a running sim to answer, and inventing numb
 - Fire probability per library tier — high enough to matter, low enough not to feel punitive.
 - Re-discovery cost multiplier for a lost art with wreckage present.
 - How many policy slots at which civic thresholds.
-- Whether skill retained from a record is zero or a small floor. ⚠️ **Bounded by D176: it is at most a *floor*, never restoration** — `skills-catalog.md §6.6` guarantees no record, school or policy hands anybody years they did not work. The same question is asked from the other side in `skills-catalog.md §12`, and **the two must be answered together or the documents will disagree** (D159).
+- ✅ **ANSWERED 2026-08-26 (D226): ZERO, not a floor** — and answered in `skills-catalog.md §12` in the same commit, as both documents required. The village keeps the method; the next person still owes it twenty years. *It is the stronger reading of D176 and what §3a already promises in plain words; a floor is a knob that can be added later with a measurement behind it.* ~~Whether skill retained from a record is zero or a small floor. ⚠️ **Bounded by D176: it is at most a *floor*, never restoration** — `skills-catalog.md §6.6` guarantees no record, school or policy hands anybody years they did not work. The same question is asked from the other side in `skills-catalog.md §12`, and **the two must be answered together or the documents will disagree** (D159).~~
 
 ---
 

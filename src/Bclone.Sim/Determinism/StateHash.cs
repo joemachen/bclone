@@ -333,6 +333,35 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.LastKnowerIds[i]);
         }
 
+        // ---- The libraries, and what is written in them (Phase 4 slice 2) ----
+        //
+        // ⚠️ THE RECORDS ARE MIXED IN SHELF ORDER, NOT AS A SET, and that is deliberate. Two runs
+        // that recorded the same techniques in different years are **different villages that made
+        // the same choices at different times** — and the shelf a record sits on is what a later
+        // slice's fire will take, so which building holds what has to be part of the fingerprint.
+        // ⛔⛔ SPARSELY, AND I BROKE THIS ONE BLOCK AFTER WRITING IT DOWN. Mixing the count
+        // unconditionally put a zero into every village that has no library — **which moved five
+        // goldens for a feature none of those villages uses.** The rule is stated directly above
+        // for the knowledge states and it is the same rule here: *a village with no library is not
+        // different from a village from before libraries existed.* **A golden that moves for a
+        // feature a run never touches is a golden that has stopped meaning anything.**
+        if (world.Libraries.Count > 0)
+        {
+            hash = MixUInt32(hash, (uint)world.Libraries.Count);
+        }
+
+        for (int i = 0; i < world.Libraries.Count; i++)
+        {
+            Library library = world.Libraries[i];
+            hash = MixUInt32(hash, (uint)library.Position.X);
+            hash = MixUInt32(hash, (uint)library.Position.Y);
+            hash = MixUInt32(hash, (uint)library.Records.Count);
+            for (int r = 0; r < library.Records.Count; r++)
+            {
+                hash = MixUInt32(hash, (uint)library.Records[r]);
+            }
+        }
+
         // ---- Goods on the ground (D96) ----
         // A heap is as much sim state as anything in a store — it is goods in a place, which
         // is the whole reason it can be walked to (D96, against D83's arms).

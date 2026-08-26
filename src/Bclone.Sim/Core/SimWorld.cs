@@ -48,6 +48,110 @@ public sealed class SimWorld
     /// <summary>What the techniques are — the one place the sim asks (`tech-tree.md`).</summary>
     public TechniquesCatalog TechniquesCatalog { get; }
 
+    /// <summary>The libraries standing in the village, and what is written in them.</summary>
+    /// <remarks>
+    /// <b>Its own list, because a library is not a store, a workplace or a home</b> — see
+    /// <see cref="Library"/>. Order is placement order and it is hashed, like every other list of
+    /// buildings here.
+    /// </remarks>
+    public List<Library> Libraries { get; } = new();
+
+    /// <summary>Whether any standing library has a shelf free.</summary>
+    public bool AnyShelfFree()
+    {
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].HasRoom)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Write a technique down, if there is a shelf for it. Returns the library that took it.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ THE FIRST LIBRARY WITH ROOM, IN PLACEMENT ORDER</b> — stated so it cannot become an
+    /// unordered tie (D15). It matters more than it looks: **which building holds a record is what
+    /// a later slice's fire will take**, so *"whichever happened to be first in memory"* would make
+    /// a fire's outcome unreproducible from the seed.
+    /// </remarks>
+    internal Library? WriteDown(int techniqueId)
+    {
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].HasRoom)
+            {
+                Libraries[i].Records.Add(techniqueId);
+                return Libraries[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Pull down a library, and lose whatever was written in it.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THIS IS WHAT KEEPS `Established` FROM BEING A RATCHET IN THIS SLICE.</b> Fire is not in
+    /// this phase (`phase-4-the-tech-tree.md §3`), so **demolition is the only way a record can be
+    /// lost** — and without it, everything written down would be permanent and §11's *"the
+    /// collections become a ratchet"* failure mode would arrive by the back door. A technique whose
+    /// record is gone falls back to being worth exactly as many living knowers as it has.
+    /// </para>
+    /// <para>
+    /// <b>⛔ It warns by saying what is being destroyed</b>, the way demolishing a full store does
+    /// — the player is told what they are about to forget, not merely that a building is going.
+    /// </para>
+    /// </remarks>
+    public void Demolish(Library library)
+    {
+        ArgumentNullException.ThrowIfNull(library);
+
+        if (!Libraries.Remove(library))
+        {
+            throw new ArgumentException($"{library.Name} is not standing.", nameof(library));
+        }
+
+        if (library.Records.Count == 0)
+        {
+            Narrate($"{Capitalised(library.Name)} was pulled down. Nothing was written in it. "
+                + $"{Clock.SeasonAndYear()}.");
+            return;
+        }
+
+        var lost = new System.Text.StringBuilder();
+        for (int i = 0; i < library.Records.Count; i++)
+        {
+            if (i > 0)
+            {
+                lost.Append(i == library.Records.Count - 1 ? " and " : ", ");
+            }
+
+            lost.Append(TechniquesCatalog[library.Records[i]].Name);
+        }
+
+        Narrate($"{Capitalised(library.Name)} was pulled down, and with it the village's record "
+            + $"of {lost}. {Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>Whether a technique is written down anywhere that still stands.</summary>
+    public bool IsWrittenDown(int techniqueId)
+    {
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Records.Contains(techniqueId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// What the village knows, one state per technique, indexed by technique id.
     /// </summary>
@@ -4652,6 +4756,22 @@ public sealed class SimWorld
             RaiseStore(kind, position, name);
         }
 
+        // ⭐ A library is a fourth thing a building can be (Phase 4 slice 2) — not a store, not a
+        // workplace, not a home. It holds records, which is the only thing in this game that
+        // outlives the person who made it.
+        if (row.Shelves > 0)
+        {
+            Libraries.Add(new Library
+            {
+                Position = position,
+                Name = name,
+                Shelves = row.Shelves,
+            });
+
+            Narrate($"{Capitalised(name)} stands, with {row.Shelves} shelves waiting. "
+                + $"{Clock.SeasonAndYear()}.");
+        }
+
         if (BuildingsCatalog.EmployedBy(kind) is not JobKind trade)
         {
             return;
@@ -5934,6 +6054,18 @@ public sealed class SimWorld
         for (int i = 0; i < Workplaces.Count; i++)
         {
             if (Workplaces[i].Position == position)
+            {
+                return true;
+            }
+        }
+
+        // ⚠️ AND THE LIBRARIES, WHICH ARE THE FOURTH KIND OF THING TO STAND ON A TILE. The comment
+        // above is about exactly this going wrong once already — two rules for *"is this tile
+        // free?"*, one of them missing a kind of building, and the wrong one facing the player.
+        // **A new kind of building is a new line here or it can be built on top of.**
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Position == position)
             {
                 return true;
             }

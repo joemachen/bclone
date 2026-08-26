@@ -161,6 +161,33 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     Farmhouse = 9,
+
+    /// <summary>
+    /// A library — where a technique outlives the person who worked it out
+    /// (`specs/tech-tree.md §7c`, Phase 4 slice 2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE FIRST BUILDING THAT IS NEITHER A STORE, A WORKPLACE NOR A HOME</b>, and the first
+    /// whose point is not production at all. It holds <em>records</em>: a hard number of shelves,
+    /// one technique each, no bundling.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT IS A BUILDING, AND THAT WAS A CONTRADICTION TO RESOLVE RATHER THAN A GIVEN.</b>
+    /// `content-inventory.md` finding 3 found three sources disagreeing, **two of them Joe's own
+    /// words at different times** — `tech-tree.md §7c` gives it a building, `buildings-plan.md §6`
+    /// cut it as *"not a building, the room the scriptorium's output lives in"*, and **D196 says
+    /// *"the next woodcutter can spend idle time in the library"***. The cut is void on its own
+    /// terms: it cut the library because it was a room inside the scriptorium, and **D204 took the
+    /// scriptorium off the path entirely.** *A room inside a building nobody is building is not a
+    /// room.*
+    /// </para>
+    /// <para>
+    /// <b>Appended, never renumbered</b> — the same rule <see cref="Goods"/>, <see cref="JobKind"/>
+    /// and the buildings catalogue all carry.
+    /// </para>
+    /// </remarks>
+    Library = 10,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

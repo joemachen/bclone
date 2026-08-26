@@ -1,6 +1,6 @@
 # Spec: Phase 4 — the tech tree
 
-> Status: **SLICE 1 IS IN, red-checked. Slices 2 and 3 are open.** Owner: Joe + Claude Code ·
+> Status: **SLICES 1 AND 2 ARE IN, both red-checked. Slice 3 (the knowledge screen) is open.**
 > Pillar: `DESIGN.md §2.7` · Format per `METHODOLOGY.md §2`.
 >
 > **⭐ This is the phase plan and the QA checklist in one document, and the checklist exists from
@@ -158,6 +158,15 @@ The building (§2.2), a **hard shelf cap**, automatic recording at mastery when 
 (D204), and **a full library that refuses the record and says so** — which `§11` now leans on almost
 alone. The next worker learns the method from the record and **starts at zero proficiency** (§2.3).
 
+
+> **✅ SLICE 2 LANDED (D226).** The library is a building with a hard shelf cap; recording is
+> automatic at mastery; **a full library refuses and says to build another**; and demolishing one
+> puts what was written in it back at the mercy of who is alive. **Proficiency from a record is
+> ZERO** — answered here and in `skills-catalog.md §12` at once, as both documents required.
+> **No golden moved**, because a village that builds no library is byte-identical to before.
+>
+> ⚠️ **No keeper yet** — §7c wants one *"or records degrade"*, and decay is out of this phase, so a
+> keeper would be a seventh trade with nothing to do. **It lands with decay.**
 ### Slice 3 — the knowledge screen, and re-lock the player can see coming
 `§8`'s screen, and the at-risk line already exists (`SimWorld.KnowledgeAtRiskNote`, D195) — this is
 where it stops being one villager's panel row and becomes the village's memory. ⛔ **No unlock the

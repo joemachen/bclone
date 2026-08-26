@@ -1693,6 +1693,24 @@ public sealed record SimConfig
             // and the walk lengthens once it is full.
             LocalStoreCap = FarmStoreCap,
         },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Library,
+            Name = "library",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, LibraryLogs),
+                new MaterialCost(World.Goods.Stone, LibraryStone),
+            },
+            WorkTicks = LibraryWorkTicks,
+
+            // ⛔ THE HARD CAP, AND IT IS CARRYING `tech-tree.md §11`'s GUARD NEARLY ALONE. Three
+            // costs were meant to stop *"write everything down"* being always correct; D204 deleted
+            // one of them by making recording automatic. **Choosing which techniques get shelves is
+            // what is left**, so the number is small on purpose and *"build another library"* is
+            // the answer to wanting more.
+            Shelves = LibraryShelves,
+        },
     };
 
     [JsonPropertyName("skills")]
@@ -1756,6 +1774,42 @@ public sealed record SimConfig
                 + "Every door and every shortcut is known ground.",
         },
     };
+
+    /// <summary>Logs a library takes to build.</summary>
+    [JsonPropertyName("library_logs")]
+    public int LibraryLogs { get; init; } = 35;
+
+    /// <summary>Stone a library takes to build.</summary>
+    /// <remarks>
+    /// <b>More than a hut and less than a granary.</b> A library is the first building the village
+    /// raises for a reason other than eating, so it should cost enough to be a decision and not so
+    /// much that it is only ever a late-game monument.
+    /// </remarks>
+    [JsonPropertyName("library_stone")]
+    public int LibraryStone { get; init; } = 12;
+
+    /// <summary>Ticks of work a library takes, once the materials are on site.</summary>
+    [JsonPropertyName("library_work_ticks")]
+    public int LibraryWorkTicks { get; init; } = 55;
+
+    /// <summary>
+    /// How many techniques one library can hold records of.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ THREE AGAINST FOUR TECHNIQUES, AND THE RATIO IS THE POINT RATHER THAN THE NUMBER.</b>
+    /// A library that holds everything the village can know is not a decision; one that holds most
+    /// of it is. **The moment a fifth technique exists this number must be looked at again**, which
+    /// is why it is a stated key and not a constant.
+    /// </para>
+    /// <para>
+    /// <b>⛔ A PROPOSAL UNTIL A RUN ARGUES WITH IT</b> — `tech-tree.md §12` lists *"starting library
+    /// capacity"* among the things it deliberately refuses to invent, and the standing rule is that
+    /// a number in a document comes from a run. This one has not had one.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("library_shelves")]
+    public int LibraryShelves { get; init; } = 3;
 
     /// <summary>
     /// The techniques that exist — <b>rows, not code</b> (`specs/tech-tree.md`).
@@ -2924,12 +2978,18 @@ public sealed record SimConfig
                     + "derived; every other workplace must state how many work there.");
             }
 
-            if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0)
+            // ⭐ SHELVES ARE A FOURTH REASON TO EXIST, AND THIS CHECK IS WHY THEY HAD TO BE.
+            // The library holds no goods, employs nobody yet and houses nobody — **so this guard
+            // refused it**, correctly, before it had a column saying what it was for. *The
+            // validator caught that a library needed a reason to exist before the library did*,
+            // which is the best argument for having written it.
+            if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
+                && row.Shelves <= 0)
             {
                 throw new SimConfigException(
-                    $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody and "
-                    + "houses nobody. The village would raise it and it would do nothing for "
-                    + "ever.");
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody, "
+                    + "houses nobody and keeps no records. The village would raise it and it would "
+                    + "do nothing for ever.");
             }
         }
 

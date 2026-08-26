@@ -3599,6 +3599,16 @@ public partial class Main : Control
             BuildButton("Shed", BuildingKind.Shed),
             BuildButton("Market", BuildingKind.Market)));
 
+        // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else on
+        // this bar is about producing or keeping goods; a library keeps *techniques*, and it is
+        // the first building the village raises for a reason other than eating.
+        //
+        // ⛔ THE BUTTON SHIPS WITH THE BUILDING, which is D103's rule: a feature the player cannot
+        // reach does not exist. The build bar is still ten hand-written buttons and becoming
+        // catalogue-driven is deferred on Joe's call (D223) — **which makes remembering this line
+        // the cost of that deferral, and it is cheap while the catalogue is small.**
+        row.AddChild(Category("Knowledge", BuildButton("Library", BuildingKind.Library)));
+
         // The brush (D42). Its own category because it is a different kind of decision: the
         // others place one thing, this says where a whole neighbourhood may grow — and the
         // village decides which tiles, and when, and whether at all.

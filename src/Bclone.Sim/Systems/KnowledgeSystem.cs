@@ -56,14 +56,27 @@ public sealed class KnowledgeSystem : ISimSystem
 
             KnowledgeState was = world.KnowledgeStates[id];
 
-            // ⛔ ESTABLISHED IS NOT REACHABLE YET AND MUST NOT BE OVERWRITTEN WHEN IT IS. A written
-            // technique survives its last knower by definition (`tech-tree.md §3`), so the scan
-            // below is only allowed to decide between Unknown and Known. Nothing sets Established
-            // in this slice; the library does, in the next. **Stated as a guard rather than left
-            // implicit, because the day it is set, this loop is what would silently undo it.**
+            // ⛔⛔ ESTABLISHED SURVIVES ITS LAST KNOWER — THAT IS THE ENTIRE POINT OF THE THIRD
+            // STATE, and this early exit is what makes it true. The scan below only ever decides
+            // between Unknown and Known; a written technique is not up for reconsideration by a
+            // headcount of the living (`tech-tree.md §3`).
+            //
+            // ⚠️ It is not permanent, though — it is *durable*. `IsWrittenDown` is asked afresh,
+            // so demolishing the last library holding a record puts the technique back at the mercy
+            // of who is alive. **A record is a building, and buildings can be lost.**
             if (was == KnowledgeState.Established)
             {
-                continue;
+                if (world.IsWrittenDown(id))
+                {
+                    continue;
+                }
+
+                // The record is gone. Fall through: the technique is now worth exactly as much as
+                // the people who still know it, which may be nobody.
+                world.Narrate($"The village's record of {technique.Name} is gone. "
+                    + $"{world.Clock.SeasonAndYear()}.");
+                world.KnowledgeStates[id] = KnowledgeState.Known;
+                was = KnowledgeState.Known;
             }
 
             Villager? knower = FirstLivingMasterOf(world, technique.Skill);
@@ -79,6 +92,40 @@ public sealed class KnowledgeSystem : ISimSystem
             if (knower is not null)
             {
                 world.RememberKnowerOf(id, knower);
+            }
+
+            // ⭐⭐ RECORDING IS AUTOMATIC AT MASTERY (D204, Joe) — there is no button and no
+            // project. A village that knows something and has a shelf free writes it down, because
+            // the alternative Joe overturned was `tech-tree.md §7b`'s seasons-long scriptorium and
+            // it took a scribe, a literate one, and the master off work to get it.
+            //
+            // ⛔ AND THE REFUSAL IS THE FEATURE, NOT THE FAILURE. §11's guard against *"the library
+            // is mandatory"* rested on three costs and D204 deleted one, so **a full library saying
+            // so, by name, is what is left of it.** Said once on the edge rather than every tick,
+            // or the log would fill with it for ever.
+            if (now == KnowledgeState.Known && !world.IsWrittenDown(id))
+            {
+                if (world.WriteDown(id) is Library shelved)
+                {
+                    world.KnowledgeStates[id] = KnowledgeState.Established;
+                    world.Narrate($"{technique.Name} was written down at {shelved.Name} — "
+                        + $"{shelved.Shelves - shelved.Records.Count} shelves left. "
+                        + $"{world.Clock.SeasonAndYear()}.");
+
+                    if (was == KnowledgeState.Unknown)
+                    {
+                        world.Narrate(Said(technique.DiscoveryLine, knower!.Name));
+                    }
+
+                    continue;
+                }
+
+                if (was == KnowledgeState.Unknown && world.Libraries.Count > 0)
+                {
+                    world.Narrate($"There was no shelf left for {technique.Name}. "
+                        + "Build another library, or it goes when its last knower does. "
+                        + $"{world.Clock.SeasonAndYear()}.");
+                }
             }
 
             if (now == was)

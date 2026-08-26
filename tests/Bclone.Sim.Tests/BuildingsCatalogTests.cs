@@ -272,7 +272,7 @@ public sealed class BuildingsCatalogTests
         {
             new BuildingRow
             {
-                Id = 10,
+                Id = 11,
                 Name = "folly",
                 WorkTicks = 10,
                 Materials = new[] { new MaterialCost(Goods.Logs, 5) },
@@ -293,7 +293,7 @@ public sealed class BuildingsCatalogTests
         SimConfig config = VillageFixtures.Village;
         var rows = new List<BuildingRow>(config.BuildingRows)
         {
-            new BuildingRow { Id = 10, Name = "wagon shed", Stores = StoreKind.Cart, StoreCapacity = 50 },
+            new BuildingRow { Id = 11, Name = "wagon shed", Stores = StoreKind.Cart, StoreCapacity = 50 },
         };
 
         SimConfigException blew = Assert.Throws<SimConfigException>(
@@ -325,7 +325,7 @@ public sealed class BuildingsCatalogTests
         {
             new BuildingRow
             {
-                Id = 10,
+                Id = 11,
                 Name = "boathouse",
                 Stores = StoreKind.Shed,
                 StoreCapacity = 200,
@@ -337,7 +337,7 @@ public sealed class BuildingsCatalogTests
         SimWorld world = World(config with { Buildings = rows }, out InMemoryLogSink sink);
         GridPos site = SomewhereBuildable(world);
 
-        PlacementVerdict verdict = world.Mark((BuildingKind)10, site);
+        PlacementVerdict verdict = world.Mark((BuildingKind)11, site);
 
         Assert.True(verdict.Allowed, verdict.Reason);
         Assert.Contains(

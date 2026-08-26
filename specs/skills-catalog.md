@@ -1009,6 +1009,6 @@ Sim logic is pure and deterministic; exploit it (METHODOLOGY §3).
   Both want a probe before an implementation, and the rhythm has a hard bound: **if it changes
   what anybody produces across a year, it is too big.** The composition's unmeasured arm is
   whether **a master gatherer makes the opening trivial.**
-- Whether proficiency retained from a record is zero or a small floor
+- ✅ **ANSWERED 2026-08-26 (D226): ZERO, not a floor** — and answered in `tech-tree.md §12` in the same commit, which is what both documents said was required or they would disagree (D159). A record produces *method*; only a life produces proficiency. ~~Whether proficiency retained from a record is zero or a small floor~~
   (`tech-tree.md §12` asks the same question from the other side — **they must be answered
   together, or the two documents will disagree**).
