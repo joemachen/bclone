@@ -1610,7 +1610,15 @@ public partial class Main : Control
         BuildSettingsPanel();
         BuildControlPanel();
 
-        SetSpeed(1.0);
+        // ⭐ START PAUSED (Joe, 2026-08-25): the player unpauses to begin. It was 1.0, so
+        // the valley started running the moment the window appeared — and the founding is
+        // the one stretch of this game that asks the player to act inside a single year
+        // (D74). Reading the map, painting ground and marking a store is not something to
+        // do against a clock that started without being asked.
+        //
+        // Space unpauses, and `SetSpeed` already writes "PAUSED" into the label from
+        // `_driver.IsPaused`, so the header says so from the first frame.
+        SetSpeed(0.0);
 
         // Start on Selected, and set the button's label from the same switch that the
         // key binding uses — two places writing that text would eventually disagree.
@@ -3310,12 +3318,26 @@ public partial class Main : Control
         // would have forced a number onto every good at startup, and **a Food row defaulting to
         // 200 would cap a granary that needs thousands** — the village quietly starved by a
         // control the player never touched. So the tick becomes a button that clears.
+        // ⭐⭐ THE NUMBER SHOWN IS THE NUMBER IN FORCE (Joe, 2026-08-25): *"even though the
+        // default limit is set for all, there is also a 'no limit' that seems to override the
+        // default number… if there is a number, it should be the default limit."*
+        //
+        // ⚠️ THIS IS THE SECOND TIME THE SAME CONTRADICTION HAS BEEN REPORTED, AND IT IS BEING
+        // RESOLVED THE OTHER WAY ROUND. The first fix made the LABEL honest — it says "no limit"
+        // beside a box reading 200 — on the reasoning recorded below: that a Food row defaulting
+        // to 200 would cap a granary needing thousands and starve the village by a control
+        // nobody touched. That reasoning is still true, which is why the food default is 2000
+        // now (Joe, same message) rather than 200.
+        //
+        // The panel no longer shows a number it does not mean.
+        int startsAt = goods == Goods.Food ? 2000 : 200;
+
         var amount = new SpinBox
         {
             MinValue = 0,
             MaxValue = 100_000,
             Step = 10,
-            Value = 200,
+            Value = startsAt,
             Editable = true,
             CustomMinimumSize = new Vector2(110, 0),
         };
@@ -3341,6 +3363,14 @@ public partial class Main : Control
 
         amount.ValueChanged += _ => Set((int)amount.Value);
         clear.Pressed += () => Set(null);
+
+        // ⭐ AND THE SIM IS TOLD, so the state matches the display from the first frame rather
+        // than from the first click. Straight to `SetStockLimit` rather than through `Set`
+        // above: `Set` routes the sim's reply through `Warn`, and this runs while the panels
+        // are still being built — the exact ordering hazard that method's own comment warns
+        // about. There is no player action to report here anyway; nobody has been refused.
+        _loop.World.SetStockLimit(goods, startsAt);
+        clear.Disabled = false;
 
         row.AddChild(amount);
         row.AddChild(clear);

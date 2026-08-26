@@ -620,10 +620,16 @@ public partial class VillageMap : Control
         {
             for (int dx = -BrushRadius; dx <= BrushRadius; dx++)
             {
-                if (Mathf.Abs(dx) + Mathf.Abs(dy) > BrushRadius)
-                {
-                    continue;
-                }
+                // ⭐ SQUARE, NOT A DIAMOND (Joe, 2026-08-25). This was
+                // `Abs(dx) + Abs(dy) > BrushRadius` — Manhattan distance, which paints a
+                // rhombus. A brush the player drags over ground they can see should cover
+                // the rectangle they think it covers; the diamond left corners unpainted
+                // and made a dragged stroke scallop along its edges.
+                //
+                // ⚠️ It is 5x5 = 25 tiles now rather than 13, so ONE CLICK PAINTS NEARLY
+                // TWICE THE GROUND. Both loops changed together — this one and the preview
+                // outline (D198) — because a preview that disagrees with the paint is worse
+                // than no preview.
 
                 var tile = new GridPos(centre.X + dx, centre.Y + dy);
 
@@ -1052,10 +1058,16 @@ public partial class VillageMap : Control
         {
             for (int dx = -BrushRadius; dx <= BrushRadius; dx++)
             {
-                if (Mathf.Abs(dx) + Mathf.Abs(dy) > BrushRadius)
-                {
-                    continue;
-                }
+                // ⭐ SQUARE, NOT A DIAMOND (Joe, 2026-08-25). This was
+                // `Abs(dx) + Abs(dy) > BrushRadius` — Manhattan distance, which paints a
+                // rhombus. A brush the player drags over ground they can see should cover
+                // the rectangle they think it covers; the diamond left corners unpainted
+                // and made a dragged stroke scallop along its edges.
+                //
+                // ⚠️ It is 5x5 = 25 tiles now rather than 13, so ONE CLICK PAINTS NEARLY
+                // TWICE THE GROUND. Both loops changed together — this one and the preview
+                // outline (D198) — because a preview that disagrees with the paint is worse
+                // than no preview.
 
                 var tile = new GridPos(_hovered.X + dx, _hovered.Y + dy);
                 if (!_world.Map.Contains(tile))
