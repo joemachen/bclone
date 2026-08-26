@@ -39,6 +39,25 @@ public static class VillageFixtures
                 // describes it, and its pacing is stated against it.
                 DaysPerSeason = 30,
 
+                // ⭐⭐ AND THE SAME SEAM, THE SAME WAY, FOR THE SAME REASON (D223, Joe's call).
+                // `data/sim.config.json` has eaten **4** since Joe asked for *"lower food
+                // consumption -20%"* (2026-08-23); this fixture inherited Phase 0's **5** and
+                // nobody noticed, so ~60 test files were asserting against a village that ate
+                // **25% more per meal than the one he plays.**
+                //
+                // ⭐ THE GRANARY WAS HIDING IT. While capacity was *derived* from `food_per_meal`,
+                // each config quietly produced its own building — 2,850 for the tests, 2,310 for
+                // the game — so the two never had to agree. **D219 made capacity a stated number,
+                // and a stated size cannot hide a divergence**, which is a point in favour of
+                // stating it.
+                //
+                // ⚠️ IT GOES HERE AND NOT IN `Phase0Fixtures.Plenty`, exactly as the calendar
+                // above does. That fixture is deliberately its own world — fifteen-day seasons, no
+                // firewood at all, its own hunger rate and its own gather yield — and its spec is
+                // written against it. **The defect was never that Phase 0 differs; it is that the
+                // VILLAGE fixture inherited a number it was not supposed to.**
+                FoodPerMeal = 4,
+
                 StartingHouseholds = 2,
                 AdultsPerHousehold = 2,
                 FounderAge = 20,

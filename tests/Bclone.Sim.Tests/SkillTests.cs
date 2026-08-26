@@ -252,7 +252,8 @@ public sealed class SkillTests
     //
     //   before the arms were hashed by index: false 16512056222735860702,
     //                                         true  14931182978223796698
-    [InlineData(false, 16154924796471685929UL)]
+    //   before the fixture ate what the game eats (D223): false 16154924796471685929
+    [InlineData(false, 18186071774726496737UL)]
     [InlineData(true, 11403972867442886560UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {

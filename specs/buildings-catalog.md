@@ -315,9 +315,18 @@ buttons and mods get an *"Other"* group.
 
 1. ✅ **§2.4's warning column — ANSWERED: no column.** It would be read once, by one building, with
    no default arm to give it work. It becomes one when a second building hauls bulk to a store.
-2. **Does the menu become catalogue-driven?** §6 slice 3. Joe's, because it changes what the player
-   clicks. ⛔ **Until it is, a modded building has no button and the player cannot reach it** — this
-   project's fifth feature that exists without being reachable (D221).
+2. **⏸️ DEFERRED ON JOE'S CALL, 2026-08-26 (D223) — does the menu become catalogue-driven?**
+   **Not now.** ⛔ **The hole is real and stays stated: a modded building has no button and the
+   player cannot reach it** — this project's fifth feature that exists without being reachable
+   (D221). **What defers it is that closing it now solves a smaller problem twice:** the bar is ten
+   hand-written buttons in four groups, and **that does not scale to 45 buildings** whatever the
+   data model underneath says. The menu wants a redesign when the content lands, and *that* is the
+   moment to decide whether it reads from the catalogue.
+   - ⚠️ **It costs nothing today, because no eleventh building exists. It is a blocker the day one
+     does** — including one of Joe's own, not just a modder's.
+   - ⭐ **The option that was on the table and is still the cheap one:** built-ins keep hand-placed
+     buttons, and anything with an id above the built-ins appears automatically in an *"Other"*
+     group. **Recorded so it is not re-derived.**
 5. **Should the per-building recipe keys fold into the rows?** `granary_logs`, `hut_stone`,
    `farmhouse_work_ticks` and their eighteen siblings are read by the default rows and by nothing
    else, so they would move cleanly — **except `logs_per_house`, `hut_logs`, `hut_stone` and

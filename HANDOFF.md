@@ -1,7 +1,7 @@
-# Handoff — bclone: **⏸️ Phase 4 still HELD. ✅ Buildings are rows now too — the last enum is done, and the VIEW is the hole it left.**
+# Handoff — bclone: **⏸️ Phase 4 still HELD. ✅ Buildings are rows, the suite eats what the game eats, and the build menu is deferred on purpose.**
 
 > **✅ MERGED TO LOCAL `main` (D222, 2026-08-26), NOT PUSHED.** `main` is at `9f59523`;
-> **`origin/main` is one commit behind at `398a793`.** The build Joe plays has the work in it —
+> **`origin/main` is four commits behind at `398a793`.** The build Joe plays has the work in it —
 > that is the thing D217's trap is about — but the remote does not. **Pushing is Joe's call and
 > nobody has made it.**
 
@@ -197,12 +197,15 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >    golden byte-identical.** Nine surfaces read the row; `Complete`'s eight-arm switch and
 >    `RaiseFreeBuilding`'s two collapse into one method; `ModdedBuildingTests` puts an eleventh
 >    building in real JSON **staffed by a modded trade**, closing `jobs-catalog.md §3`'s seam.
->    - **⛔⛔ WHAT IT LEFT OPEN IS THE VIEW, AND IT IS THE ONE THING TO PICK UP FIRST.**
->      `Main.BuildUi` is **ten hand-written buttons in four categories**, so **a modded building
->      exists and the player cannot reach it** — this project's own rule, and its fifth instance
->      (D221). ⚠️ **The categories are presentation, not sim**, so *whether the menu becomes
->      catalogue-driven at all* is Joe's call: built-ins keep hand-placed buttons and mods get an
->      *"Other"* group, or the whole menu comes off the catalogue. **Ask before building it.**
+>    - **⏸️ WHAT IT LEFT OPEN IS THE VIEW — AND IT IS DEFERRED ON JOE'S CALL (D223), NOT WAITING
+>      FOR YOU.** `Main.BuildUi` is **ten hand-written buttons in four categories**, so **a building
+>      added in data has no button and the player cannot reach it** — this project's own rule, and
+>      its fifth instance (D221). ⛔ **Do not open a session by building this.** Joe's reasoning:
+>      ten buttons in four groups **does not scale to 45 buildings** whatever the data model says,
+>      so the menu wants a redesign when the content lands and closing it now solves a smaller
+>      problem twice. ⚠️ **It costs nothing until an eleventh building exists, and is a blocker the
+>      moment one does** — including one of his own. The cheap option, recorded so it is not
+>      re-derived: built-ins keep their buttons, higher ids appear in an *"Other"* group.
 >    - ⭐ **D219's banked correction was half right, and the other half is measured now.** Capacity
 >      is mostly *data* for **stores** (the granary states its own) and mostly *derived* for
 >      **seats** — three stated, three solved. The table is `buildings-catalog.md §2.2`.
@@ -210,10 +213,18 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >      economy anchor the shed's capacity, the stockpile's and the timber quota all derive against,
 >      so folding it into a row is a re-derivation. **Recorded as open in that spec's §8, not done
 >      quietly.**
-> 2. **⛔ THE TESTS AND THE GAME DISAGREE ABOUT FOOD** — `DESIGN.md §5`. The fixture eats
->    `food_per_meal: 5`; the shipped game eats **4**. **Every food-adjacent guard is asserting
->    against a village that eats 25% more than Joe plays.** The granary derivation was hiding it by
->    giving each config its own building. **His call whether the fixture follows the game.**
+> 2. **✅ DONE — THE TESTS AND THE GAME AGREE ABOUT FOOD** (D223, Joe's call). `DESIGN.md §5`'s
+>    longest-standing open item. **`VillageFixtures.Village` eats 4 like the shipped file;
+>    `Phase0Fixtures.Plenty` keeps 5 on purpose**, because Phase 0 is deliberately its own world —
+>    the seam the calendar was fixed at in D49/D50.
+>    - **⭐ Four goldens moved and FOUR HELD, and the ones that held are the result.**
+>      `ShippedFiftyYearHash`, `SkillTests`' shipped arm, `GoldenMapHash` and all three
+>      `PerSiteYieldTests` arms are byte-identical — **every one runs the shipped config.** *That is
+>      what says a fixture change stayed inside the fixture, and it is a check rather than a hope.*
+>    - **⚠️ Not one food-adjacent guard reddened, which was NOT the prediction.** Population bands,
+>      granary-fullness and starvation guards were all expected to want triage; none moved.
+>      **Those bands are wide enough to swallow a 25% change in the price of a meal** — worth
+>      knowing before citing one as evidence about food.
 > 3. ⚠️ **THE FORESTER MAY NOW FEEL SLOW, and that is a tuning call rather than a bug.** Cleared
 >    ground takes **144 days** to return to wood and planted ground genuinely waits its sapling
 >    stage. **Joe was reacting to a bug when he asked for −20%; let him play it before touching
@@ -421,6 +432,22 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
     lines out of one interleaved log and matching them to four arms by eye is how you write the
     fixture's hash into the shipped slot. *"Check every guard red, and count the reds" — counting
     the tests is not counting the reds.*
+  - **⛔⛔ AND THE `grep "private const ulong"` RULE IS NOT ENOUGH — IT MISSED ONE ON ME (D223).**
+    That grep found five goldens; **`SkillTests` holds its two as bare `InlineData` literals with
+    no `const` anywhere**, so the grep never saw them and the enumeration was wrong before the
+    first value was replaced. *The line above already said "expect parameterised arms to hold
+    values too" — it was read, and still under-applied, because a rule that names one grep invites
+    you to run that grep and stop.*
+    - **⭐ THE RELIABLE ENUMERATION GREPS FOR THE LITERALS, NOT FOR THE DECLARATION:**
+      `grep -rn "[0-9]\{15,\}" tests/Bclone.Sim.Tests/*.cs`. A golden is a 19-to-20-digit number
+      however it is spelled — `const`, `InlineData`, or an argument. **It also turns up the history
+      comments, which is a feature: those are where you write the old value.**
+  - **⭐⭐ AND THE GOLDENS THAT *DO NOT* MOVE ARE THE RESULT, NOT THE LEFTOVERS (D223).** Bringing
+    the fixture to `food_per_meal: 4` moved four values and held four — and **every held one runs
+    the SHIPPED config** (`ShippedFiftyYearHash`, `SkillTests`' true arm, `GoldenMapHash`, all
+    three `PerSiteYieldTests` arms). *That is what proves a fixture change stayed inside the
+    fixture. Check it deliberately with a `git diff` on those lines; do not just notice they were
+    green.*
 - **⭐⭐⭐ A COMMENT THAT IS TRUE OF ONE PATH IS THE HARDEST BUG IN THIS REPO TO SEE (D220).**
   `RegrowthSystem` said *"a sapling seen by a sweep is a sapling that has stood for one period,
   because the sweep visits every tile exactly once per period."* **Perfectly true — for saplings
