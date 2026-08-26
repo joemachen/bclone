@@ -1,4 +1,4 @@
-# Handoff — bclone: **⏸️ Phase 4 still HELD. But stone is real end to end, and a good is a row.**
+# Handoff — bclone: **⏸️ Phase 4 still HELD. Goods and jobs are rows; buildings are not, and that is next.**
 
 Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D217 back to D142**, then
 `METHODOLOGY.md`. **Then `specs/content-inventory.md`** — it is the audit of what actually exists
@@ -70,6 +70,29 @@ built underneath it — none of which is Phase 4, and all of which Phase 4 will 
 ⚠️ **Five goldens moved, once, deliberately** — the arms are hashed by index now. **Measured, not
 assumed:** restoring the old three-line mix makes every one byte-identical, which is what says the
 hash's *shape* moved and the village did not.
+
+- **✅ A TRADE IS A ROW TOO** (D218, `specs/jobs-catalog.md`). `content-inventory.md` finding 8's
+  second half. ⛔ **Its red check is the most useful thing either catalogue produced:** *eight of
+  nine new guards passed a break they should have caught*, because the test's own JSON listed rows
+  in id order and so could not tell **id** from **position**. D157's green-and-blind, third
+  instance. The cure is a fixture where the two differ — a file listing the trades backwards.
+- **✅ THE GRANARY IS A BOX** (D219). `granary_feeds_people: 30` → **`granary_capacity: 2500`**,
+  Joe: *"it's fine if the granary feeds a different number of people. The user should build more
+  granaries — and will need to!"* **Deriving the box meant a village that ate more got a bigger
+  granary for free**, which is the opposite of a pressure. ⚠️ **The one place D16 does not apply**,
+  stated in `VillageEconomy` so nobody restores the derivation.
+- **✅ A PLANTED TREE TAKES AS LONG AS A SEEDED ONE** (D220), and **Joe found it by playing**:
+  *"trees planted by the forester [are] ready to fell very quickly."* Planted ground matured
+  **three times faster** than seeded — near-instant at worst. ⭐ **The cause was a comment that was
+  TRUE, for one path**: *"a sapling seen by a sweep has stood for one period"* holds for saplings
+  the sweep seeded itself and **was never checked against the forester's.**
+- **✅ Player-facing fixes** (D221 and the batch before it): the game **starts paused**; the brush
+  is **square**; the stock-limit panel **means the numbers it shows** (food 2000, firewood 400 —
+  ⚠️ *above* the village's own 360 target, because a default below it would freeze the village by a
+  control nobody touched); the stockpile **refuses food** so it stays on the cart until a granary
+  stands; demolition **warns before destroying** what is inside; the comfortable-walk ring is
+  **gone**; and **saplings now have a colour and a sentence** — they had *neither*, drawn as mature
+  woodland and described as *"open ground"*.
 
 ---
 
@@ -160,6 +183,26 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 ---
 
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
+
+> **⭐⭐ START HERE — THE THREE THINGS ACTUALLY OPEN, 2026-08-25.** Everything numbered below is
+> either done or held; these are the live calls.
+>
+> 1. **⛔ `BuildingKind` IS THE LAST ENUM** — `content-inventory.md` finding 8's remaining half.
+>    **~45 buildings against 10.** `BuildingRecipe.For` is still a switch with per-kind config
+>    keys, and `JobRow.WorksAt` points straight at the enum, so **a modded trade can only staff a
+>    building that already exists.** ⭐ **`goods-catalog.md` and `jobs-catalog.md` are the template
+>    — follow them, do not re-argue the shape.**
+>    - ⭐ **And one correction is already banked for it** (D219): capacity is *mostly data*.
+>      `granary_feeds_people` was a stated number all along, and the market is two stated numbers.
+>      **Only the shed, stockpile, builder's hut and gatherer's hut are genuinely derived.**
+> 2. **⛔ THE TESTS AND THE GAME DISAGREE ABOUT FOOD** — `DESIGN.md §5`. The fixture eats
+>    `food_per_meal: 5`; the shipped game eats **4**. **Every food-adjacent guard is asserting
+>    against a village that eats 25% more than Joe plays.** The granary derivation was hiding it by
+>    giving each config its own building. **His call whether the fixture follows the game.**
+> 3. ⚠️ **THE FORESTER MAY NOW FEEL SLOW, and that is a tuning call rather than a bug.** Cleared
+>    ground takes **144 days** to return to wood and planted ground genuinely waits its sapling
+>    stage. **Joe was reacting to a bug when he asked for −20%; let him play it before touching
+>    `regrowth_period_days` again.**
 
 1. ✅ **Phases 0–3 are all merged to `main`.** Phase 2 went up as
    [PR #4](https://github.com/joemachen/bclone/pull/4); **Phase 3 went straight to `main`
@@ -320,6 +363,28 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Traps, in the order they will cost you
 
+- **⛔⛔ COUNT THE GOLDEN *VALUES*, NOT THE FAILING *TESTS* (2026-08-25).** Five tests reddened and
+  I re-took five numbers. **`FarmGoldenTests` asserts two** — a full state hash and a
+  skills-ignoring one — so fixing the first merely let the test reach the second, and the suite
+  came back red again for what looked like the same failure.
+  - **The rule: `grep "private const ulong"` across the affected files before replacing anything**,
+    and expect parameterised arms (`[InlineData(...)]`) to hold values too.
+  - **⭐ And pair each value to its arm by running the tests SEPARATELY.** Reading four `Actual:`
+    lines out of one interleaved log and matching them to four arms by eye is how you write the
+    fixture's hash into the shipped slot. *"Check every guard red, and count the reds" — counting
+    the tests is not counting the reds.*
+- **⭐⭐⭐ A COMMENT THAT IS TRUE OF ONE PATH IS THE HARDEST BUG IN THIS REPO TO SEE (D220).**
+  `RegrowthSystem` said *"a sapling seen by a sweep is a sapling that has stood for one period,
+  because the sweep visits every tile exactly once per period."* **Perfectly true — for saplings
+  the sweep seeded itself.** A forester plants at an arbitrary tick, so the next visit might be the
+  very next one, and planted trees matured **three times faster** than seeded ones for as long as
+  that comment stood.
+  - **It read so plainly that nobody thought to test it**, which is what makes this class worse
+    than a wrong comment: a wrong one invites checking. **D200 found the same shape** in
+    `LabourSystem`'s *"never moves someone who already has a job."*
+  - **The tell: a sentence that explains WHY it is true.** *"…because the sweep visits every tile
+    once per period"* is a proof sketch, and a proof sketch names its assumptions. **Ask which
+    paths satisfy them.**
 - **⛔⛔ FINISH THE MERGE, OR SAY OUT LOUD THAT IT IS NOT MERGED (2026-08-25).** Eleven commits of
   finished, green work sat on a branch in a worktree while `main` had none of it. **Joe played
   `main`, saw *"villagers harvest stone but the pile shows 0 stone"*, and filed a bug that was

@@ -82,6 +82,23 @@ public partial class VillageMap : Control
     /// <summary>Generated woodland. Quieter than the tree stand that stands in it.</summary>
     private static readonly Color ForestColour = new("#2a3d2c");
 
+    /// <summary>Young trees — <b>between bare ground and woodland, and visibly so</b>.</summary>
+    /// <remarks>
+    /// ⭐⭐ It had NO COLOUR AT ALL until D221 (Joe, from a screenshot). `ColourOf`'s
+    /// <c>_ =&gt;</c> arm handed it <see cref="ForestColour"/>, so a sapling was drawn as a mature
+    /// tree and a freshly planted patch looked identical to old woodland.
+    /// <para>
+    /// <b>That is D125's own argument broken in the one place it was making it:</b> a sapling is
+    /// its own ground rather than a hidden countdown *because it is visible* — *"the player can
+    /// see their wood coming back, see where it has not"*. Drawn as forest, it could not.
+    /// </para>
+    /// <para>
+    /// Lighter and yellower than <see cref="ForestColour"/>, so young growth reads as thinner
+    /// than old wood at a glance, and clearly not <see cref="Ground"/>.
+    /// </para>
+    /// </remarks>
+    private static readonly Color SaplingColour = new("#3d5433");
+
     /// <summary>A stone seam — pale and dry against the grass, so it reads as bare ground.</summary>
     private static readonly Color RockColour = new("#6b6459");
 
@@ -1692,6 +1709,7 @@ public partial class VillageMap : Control
         Terrain.Water => WaterColour,
         Terrain.Rock => RockColour,
         Terrain.IronDeposit => IronColour,
+        Terrain.Sapling => SaplingColour,
         Terrain.Grass => Ground,
         Terrain.Field => FieldColour,
         Terrain.Sown => SownColour,

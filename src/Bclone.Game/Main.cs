@@ -1244,6 +1244,19 @@ public partial class Main : Control
             Terrain.Water => "The river. Nobody can cross it and nothing can be built on it.",
             Terrain.Forest => "Woodland.",
 
+            // ⭐⭐ THE SAPLING SAYS SO (Joe, 2026-08-25): *"right now it reads as open land until
+            // it's woodland with no sapling specific verbiage in between."* It fell through to
+            // the `_ =>` arm, so a tile with young trees standing on it described itself as bare.
+            //
+            // ⚠️ AND IT SAYS THE TWO THINGS THAT MATTER TO A DECISION, not just the name. It
+            // cannot be felled — `TerrainRules.Yields` returns null for it — and it is worth
+            // nothing to a gatherer's ring, which counts `Forest` only. A player looking at a
+            // cleared patch needs to know their wood is on its way and not yet theirs; that is
+            // D125's whole argument for making a sapling its own ground rather than a hidden
+            // timer, and the inspector was the one place still not making it.
+            Terrain.Sapling => "Young trees, not yet grown. Nothing to fell here yet, "
+                + "and a gatherer's ring counts it as bare.",
+
             // The field says which part of its year it is in, because that is the mechanic
             // (`specs/crops-and-orchards.md`) rather than a label on one.
             Terrain.Field => "Ploughed field, bare. It will be sown in spring.",
