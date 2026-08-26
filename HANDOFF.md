@@ -1,4 +1,9 @@
-# Handoff — bclone: **⏸️ Phase 4 still HELD. Goods and jobs are rows; buildings are not, and that is next.**
+# Handoff — bclone: **⏸️ Phase 4 still HELD. ✅ Buildings are rows now too — the last enum is done, and the VIEW is the hole it left.**
+
+> **✅ MERGED TO LOCAL `main` (D222, 2026-08-26), NOT PUSHED.** `main` is at `9f59523`;
+> **`origin/main` is one commit behind at `398a793`.** The build Joe plays has the work in it —
+> that is the thing D217's trap is about — but the remote does not. **Pushing is Joe's call and
+> nobody has made it.**
 
 Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D217 back to D142**, then
 `METHODOLOGY.md`. **Then `specs/content-inventory.md`** — it is the audit of what actually exists
@@ -158,10 +163,10 @@ go looking for one.
 ⚠️ **Do not write a commit hash into this file for anything that keeps moving.** The line above
 named one and was stale within the minute.
 
-**SUITE, FROM A RUN:**
+**SUITE, FROM A RUN (2026-08-26, after D222):**
 
 ```
-786 passed, 0 failed, 2 skipped of 788 — about 2m40s (was 18m52s before D179)
+804 passed, 0 failed, 2 skipped of 806 — about 2m12s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -184,17 +189,27 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
 
-> **⭐⭐ START HERE — THE THREE THINGS ACTUALLY OPEN, 2026-08-25.** Everything numbered below is
+> **⭐⭐ START HERE — THE THREE THINGS ACTUALLY OPEN, 2026-08-26.** Everything numbered below is
 > either done or held; these are the live calls.
 >
-> 1. **⛔ `BuildingKind` IS THE LAST ENUM** — `content-inventory.md` finding 8's remaining half.
->    **~45 buildings against 10.** `BuildingRecipe.For` is still a switch with per-kind config
->    keys, and `JobRow.WorksAt` points straight at the enum, so **a modded trade can only staff a
->    building that already exists.** ⭐ **`goods-catalog.md` and `jobs-catalog.md` are the template
->    — follow them, do not re-argue the shape.**
->    - ⭐ **And one correction is already banked for it** (D219): capacity is *mostly data*.
->      `granary_feeds_people` was a stated number all along, and the market is two stated numbers.
->      **Only the shed, stockpile, builder's hut and gatherer's hut are genuinely derived.**
+> 1. **✅ DONE — `BuildingKind` WAS THE LAST ENUM AND IT IS A ROW NOW** (D222,
+>    `specs/buildings-catalog.md`, slices 1 and 2). **804 passing, 0 failing, 2 skipped of 806, every
+>    golden byte-identical.** Nine surfaces read the row; `Complete`'s eight-arm switch and
+>    `RaiseFreeBuilding`'s two collapse into one method; `ModdedBuildingTests` puts an eleventh
+>    building in real JSON **staffed by a modded trade**, closing `jobs-catalog.md §3`'s seam.
+>    - **⛔⛔ WHAT IT LEFT OPEN IS THE VIEW, AND IT IS THE ONE THING TO PICK UP FIRST.**
+>      `Main.BuildUi` is **ten hand-written buttons in four categories**, so **a modded building
+>      exists and the player cannot reach it** — this project's own rule, and its fifth instance
+>      (D221). ⚠️ **The categories are presentation, not sim**, so *whether the menu becomes
+>      catalogue-driven at all* is Joe's call: built-ins keep hand-placed buttons and mods get an
+>      *"Other"* group, or the whole menu comes off the catalogue. **Ask before building it.**
+>    - ⭐ **D219's banked correction was half right, and the other half is measured now.** Capacity
+>      is mostly *data* for **stores** (the granary states its own) and mostly *derived* for
+>      **seats** — three stated, three solved. The table is `buildings-catalog.md §2.2`.
+>    - ⚠️ **The per-building recipe keys did NOT move**, deliberately: `logs_per_house` is an
+>      economy anchor the shed's capacity, the stockpile's and the timber quota all derive against,
+>      so folding it into a row is a re-derivation. **Recorded as open in that spec's §8, not done
+>      quietly.**
 > 2. **⛔ THE TESTS AND THE GAME DISAGREE ABOUT FOOD** — `DESIGN.md §5`. The fixture eats
 >    `food_per_meal: 5`; the shipped game eats **4**. **Every food-adjacent guard is asserting
 >    against a village that eats 25% more than Joe plays.** The granary derivation was hiding it by
@@ -363,6 +378,39 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Traps, in the order they will cost you
 
+- **⛔⛔⛔ `perl -0777 -pi -e` WITH A WIDE CHARACTER IN THE REPLACEMENT DOUBLE-ENCODES THE WHOLE FILE
+  (2026-08-26).** This handoff recommends `perl -0777` *because* of the repo's emoji — and that is
+  exactly how it bites. Perl reads the file as **latin-1 bytes**; if the replacement string contains
+  any code point above 255 (a literal ⭐, or a `\x{2b50}` escape), perl upgrades the entire output
+  string and **re-encodes every byte in the file as UTF-8 a second time.** `Construction.cs` came
+  back with `â` where every `—` had been, top to bottom.
+  - **The tell is a one-line warning you will scroll past: `Wide character in print at -e line 1`.**
+    Nothing fails. The build still succeeds. The damage is in 400 lines you did not touch.
+  - **The rule: perl is fine for ASCII-only substitutions — a rename, a type change, deleting a
+    line. The moment the replacement text contains an emoji or a dash, use Edit/Write instead.**
+  - **And back up before you find out**: the recovery was `cp` to the scratchpad, then
+    `git checkout --` on a file whose only uncommitted changes were two edits worth redoing. *That
+    is the good case.*
+- **⭐⭐⭐ A BREAK THAT REDDENS *NOTHING* IS THE MOST VALUABLE RESULT A RED CHECK CAN GIVE, AND IT
+  HAPPENED AGAIN (D222).** Renaming the granary to *"barn"* in the catalogue — **the word in the
+  village log, in the placement sentence and on the panel** — turned **zero** tests red across 786.
+  **D108 spent a decision fixing exactly those words** (*"the default arm called every unrecognised
+  building a woodcutter's hut, in the log, in the panel, and in every placement sentence"*) **and
+  nothing has ever guarded them.**
+  - **⭐ The cure is a PAIR of guards, and the pairing is the point:** one proves the catalogue holds
+    the word, one proves the code that writes the sentence *uses* it. D108's bug was a naming path
+    ignoring the right answer, not a wrong answer stored somewhere — **a guard on the data alone
+    would have been green through the original bug.**
+  - **Ask, of any slice: which of these strings does the player actually read, and does anything
+    check that they arrive?** Fourth in the family after D56, D177, D187 and D194.
+- **⛔⛔ AND YOUR OWN SPEC IS A HYPOTHESIS TOO (D222).** `buildings-catalog.md §2.1` said, in bold,
+  that `JobRow.WorksAt` **must** stop being an enum or the slice closes nothing. **Changing it
+  reddened six `ModdedJobTests` in one run**: their JSON reads `"works_at": "GathererHut"`, a word.
+  The enum was an *alias for the first N ids* all along — `ModdedGoodTests` had been casting
+  `(Goods)6` since D210 — so what was missing was never the type, only a catalogue to resolve
+  against. **The wrong version would also have made every row read `"works_at": 7`.**
+  - *Written between reading the code and writing it, and wrong by the time the tests ran. **A spec
+    sentence with "must" in it is the one to check first**, not the one to trust.*
 - **⛔⛔ COUNT THE GOLDEN *VALUES*, NOT THE FAILING *TESTS* (2026-08-25).** Five tests reddened and
   I re-took five numbers. **`FarmGoldenTests` asserts two** — a full state hash and a
   skills-ignoring one — so fixing the first merely let the test reach the second, and the suite
