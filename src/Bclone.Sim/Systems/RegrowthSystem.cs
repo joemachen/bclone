@@ -82,8 +82,28 @@ internal sealed class RegrowthSystem : ISimSystem
 
             // A sapling seen by a sweep is a sapling that has stood for one period, because
             // the sweep visits every tile exactly once per period. Six months, then wood.
+            //
+            // ⛔⛔ THAT SENTENCE WAS ONLY EVER TRUE OF SAPLINGS THE SWEEP MADE ITSELF (D220,
+            // Joe: *"it feels like the trees are planted by the forester and ready to fell very
+            // quickly"* — he was right, and this comment is why nobody had checked).
+            //
+            // A sapling the sweep seeds is not seen again for a full period, by construction.
+            // A sapling a FORESTER plants appears at an arbitrary tick, so the next visit might
+            // be one tick away: seeded ground took 1–2 periods to become wood and planted ground
+            // took 0–1, **three times faster on average and near-instant at worst.**
+            //
+            // So a planted sapling is passed over once — the bit is cleared and it is left
+            // standing — and matures on the visit after, a full period later. Both paths now
+            // spend one whole period as a sapling. *The forester decides where trees are, not
+            // how fast they grow.*
             if (here == Terrain.Sapling)
             {
+                if (world.Map.IsYoungSapling(tile))
+                {
+                    world.Map.SetYoungSapling(tile, false);
+                    continue;
+                }
+
                 world.SetTerrain(tile, Terrain.Forest);
                 continue;
             }

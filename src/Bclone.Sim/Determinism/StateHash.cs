@@ -398,6 +398,23 @@ public static class StateHash
             }
         }
 
+        // Which saplings were planted and have not yet been passed over (D220). ⭐ SPARSE, in
+        // the same shape and for the same reason as the crop layer above: a village whose
+        // forester has never planted mixes *nothing at all*, so this is invisible to every run
+        // that does not plant.
+        //
+        // ⚠️ AND IT MUST BE HASHED, because it decides *when a tile becomes wood*. State the
+        // sim reads and the hash does not see is two runs that read identical and are not — the
+        // trap `MixStore`'s own comment records, and the one this project treats as P0. It is
+        // one bit per tile and it changes the map, which is as sim as state gets.
+        for (int i = 0; i < map.YoungSaplings.Count; i++)
+        {
+            if (map.YoungSaplings[i])
+            {
+                hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
         // The forage sites and the tree stands were mixed in here, counts and all. They no
         // longer exist (`forests-and-gathering.md` slice 5), so there is nothing to mix —
         // and the woodland that replaced them is in `map.Tiles` above, which is where a fact

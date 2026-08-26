@@ -208,6 +208,9 @@ public sealed class GeneratedMap
     // sparsely and stay invisible to every village that never farms.
     private readonly byte[] _crop;
 
+    /// <summary>Saplings a forester planted that the sweep has not yet passed over (D220).</summary>
+    private readonly bool[] _youngSapling;
+
     public GeneratedMap(
         int width,
         int height,
@@ -227,6 +230,7 @@ public sealed class GeneratedMap
         _terrain = terrain;
         _soil = soilQuality;
         _crop = new byte[terrain.Length];
+        _youngSapling = new bool[terrain.Length];
         FoundingSite = foundingSite;
 
         // The valley's natural woodland, recorded once. Everything the generator painted as
@@ -346,6 +350,58 @@ public sealed class GeneratedMap
         _crop[index] = crop;
         return true;
     }
+
+    /// <summary>
+    /// Whether this sapling was <b>planted</b> and has not yet been passed over by the
+    /// regrowth sweep.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE ONE BIT THAT MAKES A PLANTED TREE TAKE AS LONG AS A SEEDED ONE</b> (D220, Joe:
+    /// *"it feels like the trees are planted by the forester and ready to fell very quickly"* —
+    /// and he was right).
+    /// </para>
+    /// <para>
+    /// <b>The asymmetry it fixes:</b> the regrowth sweep visits every tile once per period, and a
+    /// sapling it *created itself* is therefore not seen again for a full period. A sapling a
+    /// <em>forester</em> plants appears at an arbitrary tick, so the next visit may be one tick
+    /// away or a whole period away. Measured against the ladder: a seeded tile takes <b>1–2
+    /// periods</b> to become wood and a planted one took <b>0–1</b> — three times faster on
+    /// average, and **near-instant if planted just ahead of the sweep.**
+    /// </para>
+    /// <para>
+    /// So a planted sapling is <em>young</em>: the first sweep to reach it clears this bit and
+    /// leaves it standing, and the visit after that — a full period later — turns it to wood.
+    /// **Planted and seeded now both take one full period as a sapling**, which is the honest
+    /// reading of the forester's value: he decides <em>where</em> trees are, not how fast they grow.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Cleared through the same door terrain changes by</b> (D85), so a sapling that is
+    /// felled, built on or overwritten cannot leave the bit behind for whatever occupies the tile
+    /// next.
+    /// </para>
+    /// </remarks>
+    public bool IsYoungSapling(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index >= 0 && _youngSapling[index];
+    }
+
+    /// <summary>Mark or clear a sapling as newly planted. True if it changed anything.</summary>
+    public bool SetYoungSapling(GridPos position, bool young)
+    {
+        int index = IndexOf(position);
+        if (index < 0 || _youngSapling[index] == young)
+        {
+            return false;
+        }
+
+        _youngSapling[index] = young;
+        return true;
+    }
+
+    /// <summary>Which tiles hold a newly planted sapling, for the state hash.</summary>
+    public IReadOnlyList<bool> YoungSaplings => _youngSapling;
 
     /// <summary>
     /// Change what a tile is made of. Returns whether it changed anything.

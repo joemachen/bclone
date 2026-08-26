@@ -138,7 +138,7 @@ named one and was stale within the minute.
 **SUITE, FROM A RUN:**
 
 ```
-781 passed, 0 failed, 2 skipped of 783 — about 2m40s (was 18m52s before D179)
+786 passed, 0 failed, 2 skipped of 788 — about 2m40s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to

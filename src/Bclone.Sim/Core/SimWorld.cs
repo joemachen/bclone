@@ -2063,7 +2063,16 @@ public sealed class SimWorld
         // A planted tile now grows up on the same clock as one that came back by itself —
         // *"sapling for the first six months, mature tree after a year"* — so the two kinds
         // of recovery cost the same time and only differ in who started them.
-        return Map.TerrainAt(tile) == Terrain.Grass && SetTerrain(tile, Terrain.Sapling);
+        if (Map.TerrainAt(tile) != Terrain.Grass || !SetTerrain(tile, Terrain.Sapling))
+        {
+            return false;
+        }
+
+        // ⭐ PLANTED, SO IT WAITS ITS FULL PERIOD (D220). Without this the sweep would mature
+        // it on its next visit — which may be the very next tick — where a sapling the sweep
+        // seeded itself is not seen again for a whole period. See `GeneratedMap.IsYoungSapling`.
+        Map.SetYoungSapling(tile, true);
+        return true;
     }
 
     /// <summary>Whether the village has already been told it has nowhere for a good.</summary>
@@ -3295,6 +3304,14 @@ public sealed class SimWorld
         if (!Map.SetTerrain(position, terrain))
         {
             return false;
+        }
+
+        // ⚠️ A tile that stops being a sapling stops being a YOUNG one (D220) — felled, built
+        // on, or matured. Cleared here, at the one door terrain changes by (D85), so the bit
+        // cannot be left behind for whatever occupies the tile next.
+        if (terrain != Terrain.Sapling)
+        {
+            Map.SetYoungSapling(position, false);
         }
 
         bool routeAffecting = TerrainRules.IsPassable(before) != TerrainRules.IsPassable(terrain);
