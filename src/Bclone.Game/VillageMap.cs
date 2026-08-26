@@ -449,6 +449,7 @@ public partial class VillageMap : Control
         _groundFor = 0;
         _building = null;
         _demolishing = false;
+        _demolishArmedAt = null;
         Announce();
         QueueRedraw();
     }
@@ -461,6 +462,7 @@ public partial class VillageMap : Control
         _groundFor = 0;
         _building = null;
         _demolishing = false;
+        _demolishArmedAt = null;
         Announce();
         QueueRedraw();
     }
@@ -473,6 +475,7 @@ public partial class VillageMap : Control
         _groundFor = workplaceId;
         _building = null;
         _demolishing = false;
+        _demolishArmedAt = null;
         Announce();
         QueueRedraw();
     }
@@ -489,16 +492,28 @@ public partial class VillageMap : Control
     {
         _building = kind;
         _demolishing = false;
+        _demolishArmedAt = null;
         _brush = 0;
         Announce();
         QueueRedraw();
     }
 
     /// <summary>Next click pulls a building down.</summary>
+    /// <summary>
+    /// The store a demolish click has warned about, waiting for a second click.
+    /// </summary>
+    /// <remarks>
+    /// Cleared whenever the mode changes or another tile is clicked, so an arming warning
+    /// cannot outlive the intent that raised it — <b>a confirmation the player has forgotten
+    /// about is a trap rather than a guard.</b>
+    /// </remarks>
+    private GridPos? _demolishArmedAt;
+
     public void BeginDemolishing()
     {
         _building = null;
         _demolishing = true;
+        _demolishArmedAt = null;
         _brush = 0;
         Announce();
         QueueRedraw();
@@ -553,6 +568,7 @@ public partial class VillageMap : Control
         {
             BeginBuilding(null);
             _demolishing = false;
+        _demolishArmedAt = null;
             AcceptEvent();
             return;
         }
@@ -755,6 +771,34 @@ public partial class VillageMap : Control
             {
                 if (building.Position == where)
                 {
+                    // ⭐⭐ ASK BEFORE DESTROYING WHAT IS INSIDE (Joe, 2026-08-25): *"maybe a
+                    // warning — this building has goods inside that will be destroyed —
+                    // proceed?"* He confirmed the LOSS is right and wants it said out loud:
+                    // *"it should be destroyed. No changes."*
+                    //
+                    // ⚠️ IT MATTERS MORE THAN IT DID YESTERDAY. The stockpile stopped taking
+                    // food the same day, so before a granary stands **the cart is the only
+                    // thing in the world holding the village's food** — and pulling it down
+                    // was one click that ended the run with nothing said.
+                    //
+                    // ARMED RATHER THAN MODAL, deliberately. The view has no dialog anywhere
+                    // in it and no automated verification of any kind (D11, D160), so a modal
+                    // is a thing I cannot test standing between the player and their village.
+                    // This reuses `PlacementMessageChanged` — the channel that already carries
+                    // every refusal and warning (D43), so it is one voice rather than two.
+                    int inside = building.Store.Held;
+                    if (inside > 0 && _demolishArmedAt != where)
+                    {
+                        _demolishArmedAt = where;
+                        PlacementMessageChanged?.Invoke(
+                            $"{building.Name} holds {inside} goods that will be destroyed, "
+                            + "not recovered. "
+                            + "Click it again to pull it down.");
+                        QueueRedraw();
+                        return;
+                    }
+
+                    _demolishArmedAt = null;
                     _world.Demolish(building);
                     PlacementMessageChanged?.Invoke($"{building.Name} is coming down.");
                     QueueRedraw();
@@ -1134,20 +1178,22 @@ public partial class VillageMap : Control
             return;
         }
 
-        // WHERE THE AMBER STARTS, drawn only while placing.
+        // ⛔ THE COMFORTABLE-WALK RING IS GONE (Joe, 2026-08-25): *"remove the circle from the
+        // UI. If there can't be a radius for the market service area, then why does this exist?
+        // It means nothing helpful to the user."*
         //
-        // The warning fires past a distance the player cannot see, which makes it
-        // undiscoverable — Joe placed several buildings and never met one. A ring at
-        // exactly that radius turns a hidden constant into a line on the map, so
-        // "people will spend their days walking to it" arrives as confirmation of
-        // something already visible rather than as a surprise.
+        // ⭐ THAT IS D201'S ARGUMENT, APPLIED WHERE IT WAS FIRST WRITTEN. The market's service
+        // area was refused a ring because a ring would have LIED -- it is a count of households
+        // reached by travel cost, not a distance, and water or a hill makes the same radius mean
+        // different things in different directions. **`MaxHomeToVillageTiles` is the same kind of
+        // number**: the warning it feeds is measured in TRAVEL COST round a river, and a perfect
+        // circle drawn on the map claims a straight-line distance the sim never uses.
         //
-        // Only while the build menu is open: it is a placement aid, not furniture.
+        // It was added so a hidden constant would stop being undiscoverable, and that problem is
+        // real -- but the sentence under the build menu already says it in the units the sim
+        // actually measures: *"That is 9 tiles from the village; it budgets 8."* One true sentence
+        // beats one approximate picture.
         SimWorld world = _world!;
-        GridPos village = world.FirstHomeOrFoundingSite();
-
-        float comfortable = VillageEconomy.MaxHomeToVillageTiles(world.Config) * _pixelsPerTile;
-        DrawArc(ToScreen(village), comfortable, 0f, Mathf.Tau, 96, GhostWarned with { A = 0.35f }, 1f);
 
         if (!world.Map.Contains(_hovered))
         {

@@ -81,7 +81,13 @@ public static class VillageFixtures
                 // without it a settlement fells its own gatherer's ring simply by living in
                 // it and starves at year 45 (D125), so every long-horizon guard here would
                 // be describing a world the shipped game does not have.
-                RegrowthPeriodDays = 60,
+                // ⚠️ 60 -> 72 WITH THE SHIPPED FILE (Joe, 2026-08-25), and moved together on this
+                // comment's own reasoning: a fixture left at 60 would be "describing a world the
+                // shipped game does not have" -- trees coming back 20%% faster than the player
+                // ever sees. That is METHODOLOGY §3's shipped-versus-fixture drift, and there is
+                // already one open against food (§5); adding a second in the same change that
+                // complains about the first would be indefensible.
+                RegrowthPeriodDays = 72,
             };
 
             // Then derive the values the targets actually determine — food first,

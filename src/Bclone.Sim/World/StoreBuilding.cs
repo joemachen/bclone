@@ -282,15 +282,26 @@ public sealed class StoreBuilding
     /// aged out with nobody starved and nobody frozen.</item>
     /// </list>
     /// <para>
-    /// <b>⛔ The pile stays in code, and that is not an oversight.</b> It takes anything, and its
-    /// <em>size</em> rather than its rules is what stops it being the granary — so *"takes
-    /// everything"* is a statement about the pile, not a fact about any good. Putting it in every
-    /// row would mean a modder had to remember to opt into it, and forgetting would silently
-    /// narrow a heap.
+    /// <b>⭐⭐ THE PILE IS A ROW LIKE EVERY OTHER STORE NOW (Joe, 2026-08-25):</b> *"remove 'food'
+    /// as an option for stockpiles. It will have to remain on the cart until there is a granary
+    /// built."*
+    /// </para>
+    /// <para>
+    /// <b>It used to be a special case here</b> — <c>Kind == StoreKind.Pile || …</c> — on the
+    /// reasoning that *a heap does not specialise*, so *"takes everything"* was a statement about
+    /// the pile rather than a fact about any good. **That stopped being true the moment one good
+    /// was excluded**, and the honest move was to delete the exception rather than grow an
+    /// if-not-food inside it: the pile appears in `stored_by` on the five goods it takes, and is
+    /// absent from food.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>So food has nowhere to go until a granary stands</b>, which is the intended pressure:
+    /// the founders' cart is the only thing that holds it, and the granary stops being a building
+    /// the player gets round to. **The cart already refuses logs** (D90) — between them the two
+    /// refusals are what make the opening a sequence rather than a pile of options.
     /// </para>
     /// </remarks>
-    private bool KindAccepts(Goods goods) =>
-        Kind == StoreKind.Pile || Catalog.StoredBy(goods, Kind);
+    private bool KindAccepts(Goods goods) => Catalog.StoredBy(goods, Kind);
 }
 
 /// <summary>The kinds of goods a store can hold. Lumber and cloth land here next.</summary>

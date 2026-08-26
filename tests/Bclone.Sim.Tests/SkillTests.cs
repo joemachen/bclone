@@ -252,8 +252,8 @@ public sealed class SkillTests
     //
     //   before the arms were hashed by index: false 16512056222735860702,
     //                                         true  14931182978223796698
-    [InlineData(false, 8062016649581022818UL)]
-    [InlineData(true, 10990884683705369097UL)]
+    [InlineData(false, 9928897713440208055UL)]
+    [InlineData(true, 8199381411983390786UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

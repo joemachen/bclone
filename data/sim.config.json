@@ -722,7 +722,15 @@
   // is the rate Joe asked for ("it should come back every year").
   //
   // Zero switches it off.
-  "regrowth_period_days": 60,
+  // ⭐ 60 -> 72 (Joe, 2026-08-25): "trees grow back a little too fast. slow them
+  // down by 20%% or so."
+  //
+  // This is ONE RUNG of the ladder, not the whole climb, which is why 20%% here is
+  // 20%% of a year rather than of six months: a cleared tile becomes a SAPLING after
+  // one period and mature FOREST after a second (D125), and a sapling yields nothing
+  // to anybody. So the wait for harvestable wood goes from 120 days to 144 -- a full
+  // year to 1.2 years, on a 120-day calendar.
+  "regrowth_period_days": 72,
 
   // ---- Cold is a place you are standing (D45) -----------------
   // freezing_ticks is GONE. It was one counter per household - "days

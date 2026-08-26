@@ -1401,13 +1401,13 @@ public sealed record SimConfig
             // ⛔ No cart. The founders' load is what they could carry, and logs are the one thing
             // that plausibly will not fit in a wagon you arrived in (D90 step 4) — the refusal that
             // makes the storage pile load-bearing.
-            StoredBy = new[] { StoreKind.Shed },
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Pile },
         },
         new GoodRow
         {
             Id = (int)World.Goods.Firewood,
             Name = "firewood",
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Market, StoreKind.Cart },
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Market, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
@@ -1415,13 +1415,13 @@ public sealed record SimConfig
             Name = "stone",
             SourceName = "a stone seam",
             YieldPerTile = 12,
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart },
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
             Id = (int)World.Goods.Tools,
             Name = "tools",
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart },
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
@@ -1429,7 +1429,7 @@ public sealed record SimConfig
             Name = "iron",
             SourceName = "an iron seam",
             YieldPerTile = 8,
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart },
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
         },
     };
 
