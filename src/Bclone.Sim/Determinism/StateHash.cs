@@ -304,6 +304,35 @@ public static class StateHash
             }
         }
 
+        // ---- What the village knows (Phase 4) ----
+        //
+        // ⛔ HASHED BECAUSE THE SIM READS IT. `SimWorld.YieldWithTechnique` asks this array how much
+        // a trade brings in, so two runs that disagree about it are two villages producing
+        // different amounts of food — and *state the sim reads that the hash cannot see is two runs
+        // that read identical and are not*, the trap this project treats as P0.
+        //
+        // ⭐ SPARSELY, in the shape the crop layer and the sapling bit already use: a village where
+        // nobody has mastered anything mixes NOTHING AT ALL, so no golden moved for the feature
+        // merely existing. Every fifty-year run reaches mastery and moves anyway — the sparseness
+        // is not there to protect the goldens, it is there so the hash says *this village knows
+        // something* rather than *this village has a knowledge system*.
+        //
+        // ⚠️ The last-knower id rides with it. It is only ever read to write a sentence, but it is
+        // set from a scan over the living, so a run that disagreed about it has already diverged
+        // somewhere that matters — and leaving it out would be a silent asymmetry between two
+        // arrays maintained by one loop.
+        for (int i = 0; i < world.KnowledgeStates.Length; i++)
+        {
+            if (world.KnowledgeStates[i] == KnowledgeState.Unknown)
+            {
+                continue;
+            }
+
+            hash = MixUInt32(hash, (uint)i);
+            hash = MixByte(hash, (byte)world.KnowledgeStates[i]);
+            hash = MixUInt32(hash, (uint)world.LastKnowerIds[i]);
+        }
+
         // ---- Goods on the ground (D96) ----
         // A heap is as much sim state as anything in a store — it is goods in a place, which
         // is the whole reason it can be walked to (D96, against D83's arms).

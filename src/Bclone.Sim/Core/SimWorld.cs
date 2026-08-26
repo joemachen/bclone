@@ -45,6 +45,33 @@ public sealed class SimWorld
     /// <summary>What the trades are — the one place the sim asks (`jobs-catalog.md`, D218).</summary>
     public JobsCatalog JobsCatalog { get; }
 
+    /// <summary>What the techniques are — the one place the sim asks (`tech-tree.md`).</summary>
+    public TechniquesCatalog TechniquesCatalog { get; }
+
+    /// <summary>
+    /// What the village knows, one state per technique, indexed by technique id.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ REDUNDANT BY CONSTRUCTION, AND STORED ANYWAY — FOR THE EDGE.</b>
+    /// <see cref="Systems.KnowledgeSystem"/> recomputes it every tick from who is alive, so it can
+    /// never disagree with the village's own people. **What it buys is the transition**: the log
+    /// has to say *"the village learned this"* and *"this went with her"*, and a sentence on an
+    /// edge needs to know what was true a tick ago.
+    /// <b>It is hashed</b>, because <see cref="YieldWithTechnique"/> reads it — and state the sim
+    /// reads that the hash cannot see is two runs that read identical and are not.
+    /// </remarks>
+    public KnowledgeState[] KnowledgeStates { get; }
+
+    /// <summary>
+    /// The villager id who last held each technique, so the village can name them when it is lost.
+    /// </summary>
+    /// <remarks>
+    /// <b>An id rather than a name</b>, because a name is a string and this is hashed state. The
+    /// dead stay in <see cref="Villagers"/> with <c>Alive</c> false, so the name is still there to
+    /// be looked up on the tick it is needed.
+    /// </remarks>
+    public int[] LastKnowerIds { get; }
+
     /// <summary>What the buildings are — the one place the sim asks (`buildings-catalog.md`).</summary>
     /// <remarks>
     /// <b>The last of the four enums D168 named</b> (<c>Goods</c>, <c>JobKind</c>,
@@ -799,7 +826,12 @@ public sealed class SimWorld
         ArgumentNullException.ThrowIfNull(workplace);
 
         int ring = VillageEconomy.TilesInRing(workplace.GatheringRadius);
-        return ring <= 0 ? 0 : Config.GatherYield * WoodedTilesAround(workplace) / ring;
+        int perTrip = ring <= 0 ? 0 : Config.GatherYield * WoodedTilesAround(workplace) / ring;
+
+        // Tended patches, if anybody alive knows the woods that well (Phase 4). Applied here so
+        // the panel and the sim quote the same number: the hut says what a trip is worth, and a
+        // village that knows the technique is told the truth about it.
+        return YieldWithTechnique(JobKind.Forager, perTrip);
     }
 
     /// <summary>
@@ -835,6 +867,11 @@ public sealed class SimWorld
         }
 
         int yield = Config.CropYieldPerTile * Map.SoilAt(tile) / reference;
+
+        // Crop rotation, if anybody alive knows to rest a field (Phase 4). DESIGN.md 2.7 own
+        // worked example, arriving as content at last. It is applied to the per-tile figure, so
+        // the soil overlay and the harvest agree about what a field is worth.
+        yield = YieldWithTechnique(JobKind.Farmer, yield);
         return yield < 1 ? 1 : yield;
     }
 
@@ -1581,6 +1618,90 @@ public sealed class SimWorld
 
         return ticks < 1 ? 1 : ticks;
     }
+    /// <summary>Remember who holds a technique, so the village can name them when it is lost.</summary>
+    internal void RememberKnowerOf(int techniqueId, Villager knower)
+    {
+        ArgumentNullException.ThrowIfNull(knower);
+        LastKnowerIds[techniqueId] = knower.Id;
+    }
+
+    /// <summary>
+    /// The name of the last soul who held a technique, for the sentence about losing it.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ Looked up among the dead as well as the living, on purpose</b> — by the tick this is
+    /// asked, the person it names has just died, which is the entire reason the sentence is being
+    /// written. Falls back to <em>"somebody"</em> rather than throwing: a village that lost a
+    /// technique still has to be able to say so, and a missing name is a worse sentence rather than
+    /// a broken run.
+    /// </remarks>
+    public string LastKnowerOf(int techniqueId)
+    {
+        int id = LastKnowerIds[techniqueId];
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            if (Villagers[i].Id == id)
+            {
+                return Villagers[i].Name;
+            }
+        }
+
+        return "Somebody";
+    }
+
+    /// <summary>
+    /// What a trade brings in, once the village's own techniques are counted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ONE PLACE, DELIBERATELY — the sibling of <see cref="WorkTicksFor"/>.</b> That method is
+    /// the single seam where mastery bites (D187); this is the single seam where a <em>technique</em>
+    /// does. Four production sites call it, and a fifth trade added tomorrow gets the behaviour by
+    /// calling it rather than by remembering a formula. **Two copies of a multiplier is how a bonus
+    /// comes to be applied twice in one place and not at all in another**, which `StoreKind` has
+    /// taught this project five times (D76).
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ IT IS THE VILLAGE'S BONUS, NOT THE WORKER'S, AND IT TAKES NO VILLAGER.</b> That is the
+    /// signature saying so. Once anybody has worked a technique out, <em>everyone</em> in that trade
+    /// does the job the better way — which is what makes a technique different from proficiency, and
+    /// what makes the whole village's output drop when the last knower dies. A per-villager bonus
+    /// would be indistinguishable from mastery, which already bites.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ NOTHING HERE REACHES <see cref="VillageEconomy"/>, AND THAT IS THE POINT.</b> The
+    /// survival floor is solved against the base config numbers, so **it assumes a village that
+    /// knows nothing.** A technique is upside above that line and never a move in the line itself —
+    /// so losing one can cost a village its surplus and can never cost it the run. *§0.1's "you lose
+    /// villagers, not runs", applied to knowledge.*
+    /// </para>
+    /// </remarks>
+    public int YieldWithTechnique(JobKind trade, int baseAmount)
+    {
+        if (baseAmount <= 0)
+        {
+            return baseAmount;
+        }
+
+        SkillRow? skill = SkillGrownBy(trade);
+        if (skill is null)
+        {
+            return baseAmount;
+        }
+
+        int id = TechniquesCatalog.FromSkill(skill.Id);
+        if (id < 0 || KnowledgeStates[id] == KnowledgeState.Unknown)
+        {
+            return baseAmount;
+        }
+
+        int bonus = TechniquesCatalog[id].YieldBonusPercent;
+
+        // Integer only (D2). Rounded down, so a technique never invents a unit out of rounding —
+        // the village's gain has to come from the percentage being real.
+        return bonus <= 0 ? baseAmount : baseAmount + (baseAmount * bonus / 100);
+    }
+
 
     /// <summary>How practised this villager is in one skill, in words (§3.2c, D190).</summary>
     /// <remarks>
@@ -3134,6 +3255,18 @@ public sealed class SimWorld
         // This comment asked for exactly the change D210 made: the three loose config keys it used
         // to read were used by this switch and by nothing else in the codebase.
         int amount = GoodsCatalog.YieldPerTileOf(yields.Value);
+
+        // ⚠️ COPPICING IS A TECHNIQUE ABOUT WOOD, AND THIS METHOD IS NOT ABOUT WOOD — it hands out
+        // whatever the ground yields, which is stone from a seam and iron from a deposit as
+        // readily as logs from a stand. **Applying the forester's technique unconditionally here
+        // would have made a master forester improve the village's QUARRY**, silently, with nothing
+        // to see but a number that was slightly too good. Asked of the good rather than of the
+        // caller, because the caller is the harvest brush and it does not know which trade it is
+        // standing in.
+        if (yields.Value == Goods.Logs)
+        {
+            amount = YieldWithTechnique(JobKind.Forester, amount);
+        }
 
         return (yields.Value, amount);
     }
@@ -5185,6 +5318,10 @@ public sealed class SimWorld
         // (`buildings-catalog.md §2.1`).
         BuildingsCatalog = new BuildingsCatalog(config.BuildingRows, JobsCatalog);
         _buildingsNamed = new int[BuildingsCatalog.Count];
+
+        TechniquesCatalog = new TechniquesCatalog(config.Techniques, config.Skills);
+        KnowledgeStates = new KnowledgeState[TechniquesCatalog.Count];
+        LastKnowerIds = new int[TechniquesCatalog.Count];
         _saidThereIsNowhereFor = new bool[GoodsCatalog.Count];
         StockLimits = new StockLimits(GoodsCatalog.Count);
         Logger = logger;

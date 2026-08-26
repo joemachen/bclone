@@ -1,3 +1,4 @@
+using System.Linq;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
@@ -424,6 +425,14 @@ public sealed class Phase0SimTests
 
         IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
         Assert.Equal("Dorcas begins. Spring, Year 1, no food stored.", log[0]);
-        Assert.Contains("died of old age at 45", log[^1], StringComparison.Ordinal);
+        // ⚠️ THE ENDING, NOT THE LAST LINE — the third guard to want this, and all three for one
+        // cause. Dorcas masters foraging inside her forty-five years, so her death is followed by
+        // a line saying what went with her (`KnowledgeSystem` runs after `MortalitySystem`, by
+        // design). **`log[^1]` quietly meant "the death" across this suite and now means "the
+        // consequence"** — which is worth knowing before the next system appends anything.
+        Assert.Contains(
+            "died of old age at 45",
+            string.Join(" | ", log.TakeLast(3)),
+            StringComparison.Ordinal);
     }
 }

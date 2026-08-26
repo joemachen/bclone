@@ -1758,6 +1758,93 @@ public sealed record SimConfig
     };
 
     /// <summary>
+    /// The techniques that exist — <b>rows, not code</b> (`specs/tech-tree.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ FOUR, NOT THIRTY-NINE, AND THAT IS THE POINT.</b> `TECH-EXAMPLE.md` holds 39 named
+    /// techniques from Joe (D206) and <b>almost every one names a building that does not exist</b>
+    /// — a sawmill, a dairy house, a gristmill. These four hang off <b>trades the village already
+    /// has</b>, which is what makes Phase 4 buildable before the T1/T2 building tier
+    /// (`phase-4-the-tech-tree.md §1`). The other thirty-five arrive with their buildings.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ EVERY NUMBER HERE IS A PROPOSAL AND NONE HAS HAD A RUN.</b> D196's own example is
+    /// *"+15% firewood per log"*, and that is where the woodcutter's starts. `tech-tree.md §12`
+    /// refuses false precision on exactly these, and the standing rule is <em>if a number goes
+    /// into a document, it comes from a run.</em>
+    /// </para>
+    /// <para>
+    /// <b>⭐ The lines are written as sentences about a person doing something</b>, because that is
+    /// the whole difference between this and a research menu — and because `phase-4-the-tech-tree.md
+    /// §6`'s success test fails if the answer to *"what happened?"* is *"a node re-locked"* rather
+    /// than a name.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("techniques")]
+    public IReadOnlyList<TechniqueRow> Techniques { get; init; } = new[]
+    {
+        // ⭐ D196's OWN EXAMPLE, WORD FOR WORD: *"a master woodcutter works out splitting lumber in
+        // a way that gives more cords — +15% firewood per log."* It is here first because it is the
+        // one technique in this list Joe specified himself, down to the number.
+        new TechniqueRow
+        {
+            Id = 0,
+            Name = "splitting lumber",
+            Skill = 3,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has split the village's firewood long enough to see the grain "
+                + "before the axe falls. The same log gives more cords now.",
+            LostLine = "{0} took the trick of the grain with them. The woodpile will be thinner "
+                + "for it.",
+        },
+        new TechniqueRow
+        {
+            Id = 1,
+            // ⚠️ THE LINES SAY WHAT IT DOES, WHICH IS NOT WHAT THE WORD USUALLY MEANS. Coppicing
+            // is properly about *regrowth* — cutting so the stool comes back — and the first draft
+            // of these lines said exactly that, while the effect was more timber per stand. **A
+            // sentence that promises a mechanic the code does not have is the untraceable outcome
+            // §1.1 forbids**, and it would have been read as a regrowth bug for a phase. The
+            // effect is honest and the words follow it; the regrowth reading is a technique of its
+            // own to be written when regrowth is something a technique can touch.
+            Name = "coppicing",
+            Skill = 2,
+            YieldBonusPercent = 12,
+            DiscoveryLine = "{0} has worked these stands long enough to cut them so they throw up "
+                + "straight poles instead of scrub. The same wood gives more usable timber now.",
+            LostLine = "The stands are being cut anyhow again. {0} was the last who knew how to "
+                + "take them.",
+        },
+
+        // ⭐ `DESIGN.md §2.7`'s OWN WORKED EXAMPLE — *"your master farmer develops crop rotation
+        // after 25 years"* — arriving as content at last. The pillar has used it as an illustration
+        // since the first day of the project.
+        new TechniqueRow
+        {
+            Id = 2,
+            Name = "crop rotation",
+            Skill = 4,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has read this ground for twenty years, and has begun resting one "
+                + "field in three. What grows in the others comes up thicker for it.",
+            LostLine = "The fields are all sown again this spring. {0} was the only one who knew "
+                + "to rest them.",
+        },
+        new TechniqueRow
+        {
+            Id = 3,
+            Name = "tended patches",
+            Skill = 1,
+            YieldBonusPercent = 10,
+            DiscoveryLine = "{0} has walked these woods so long that the good patches are tended "
+                + "rather than merely found. They give more every year now.",
+            LostLine = "The tended patches are going back to wild. {0} was the last who knew "
+                + "which they were.",
+        },
+    };
+
+    /// <summary>
     /// Years on the task before somebody is a master of it.
     /// </summary>
     /// <remarks>
@@ -2528,6 +2615,81 @@ public sealed record SimConfig
         ValidateJobs();
         ValidateBuildings();
         ValidateSkills();
+        ValidateTechniques();
+    }
+
+    /// <summary>Check the techniques catalogue says something the village can actually learn.</summary>
+    /// <remarks>
+    /// <b>⛔ THE ONE THAT MATTERS IS THE SKILL REFERENCE.</b> A technique pointing at a skill id no
+    /// row claims is a technique <b>nobody can ever work out</b> — it would sit at Unknown for
+    /// three hundred years, produce no error, and read exactly like a technique whose masters had
+    /// simply never appeared. <em>A plausible default, not a crash</em>, which is the shape of
+    /// almost every near-miss in this project.
+    /// </remarks>
+    private void ValidateTechniques()
+    {
+        if (Techniques is null)
+        {
+            throw new SimConfigException("techniques must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < Techniques.Count; i++)
+        {
+            World.TechniqueRow technique = Techniques[i];
+
+            if (technique.Id < 0)
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] has id {technique.Id}; ids index the catalogue and are "
+                    + "hashed, so they cannot be negative.");
+            }
+
+            if (!seen.Add(technique.Id))
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] repeats id {technique.Id}. An id is what the village's "
+                    + "knowledge of a technique is stored and hashed under, so two sharing one "
+                    + "would be one technique wearing two names.");
+            }
+
+            if (string.IsNullOrWhiteSpace(technique.Name))
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] (id {technique.Id}) has no name.");
+            }
+
+            bool anySkillClaimsIt = false;
+            for (int s = 0; s < Skills.Count; s++)
+            {
+                anySkillClaimsIt |= Skills[s].Id == technique.Skill;
+            }
+
+            if (!anySkillClaimsIt)
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] ({technique.Name}) is worked out by skill {technique.Skill}, "
+                    + "which no skill row claims. Nobody could ever learn it, and nothing would "
+                    + "say so.");
+            }
+
+            if (technique.YieldBonusPercent < 0)
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] ({technique.Name}) has a negative yield bonus. A technique "
+                    + "the village would be better off forgetting is not a technique.");
+            }
+
+            if (string.IsNullOrWhiteSpace(technique.DiscoveryLine)
+                || string.IsNullOrWhiteSpace(technique.LostLine))
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] ({technique.Name}) is missing a discovery or lost line. "
+                    + "Every unlock and every loss owes the player one sentence naming the person "
+                    + "(non-negotiable 1); a silent one is the untraceable outcome the design "
+                    + "forbids.");
+            }
+        }
     }
 
     /// <summary>

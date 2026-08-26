@@ -253,8 +253,9 @@ public sealed class SkillTests
     //   before the arms were hashed by index: false 16512056222735860702,
     //                                         true  14931182978223796698
     //   before the fixture ate what the game eats (D223): false 16154924796471685929
-    [InlineData(false, 18186071774726496737UL)]
-    [InlineData(true, 11403972867442886560UL)]
+    //   before the village knew things (D225): false 18186071774726496737, true 11403972867442886560
+    [InlineData(false, 6192378668729777699UL)]
+    [InlineData(true, 9064700070209210640UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

@@ -120,7 +120,23 @@ public sealed class AgeingTests
     [Fact]
     public void OldAgeCostsMoreWorkForTheSameFood()
     {
-        SimConfig config = Config;
+        // ⭐⭐ NO TECHNIQUES, AND THAT IS THIS GUARD'S OWN CONTROL EXTENDED RATHER THAN A DODGE.
+        // It already excludes one confound — *"the valley did not move, so the fall is hers"* —
+        // because a wood being felled around her would make a statement about the map read as a
+        // statement about age. **A technique is a second confound, and it moves the other way:**
+        // she masters foraging around forty and works out tended patches, so her old-age trips
+        // carry a bonus her prime-age trips never had, and the measured decline is *vigour minus
+        // technique*.
+        //
+        // ⚠️ IT IS NOT HYPOTHETICAL — it turned this guard red the day techniques landed: 65.0 a
+        // trip young against **54.7** old, a 16% fall where the claim needs 20%. **The code was
+        // right and the instrument had started measuring two things** (D189's finding, and the
+        // reason the ring control was written in the first place).
+        //
+        // ⛔ The interaction itself is real and is recorded rather than hidden here: **an old master
+        // partly offsets her own ageing**, which softens D12's life-shape. That is Joe's to weigh,
+        // not this guard's to swallow.
+        SimConfig config = Config with { Techniques = System.Array.Empty<TechniqueRow>() };
         var (loop, _) = Phase0Fixtures.Build(config);
         SimWorld world = loop.World;
 

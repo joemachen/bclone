@@ -32,8 +32,17 @@ public sealed class Phase0ScenarioTests
             $"Expected a long life, but only survived {villager.WintersSurvived} winters.");
 
         // The epitaph has to make the good arc unmistakable.
-        string last = Phase0Fixtures.LifeLog(sink)[^1];
-        Assert.Contains("old age", last, StringComparison.OrdinalIgnoreCase);
+        //
+        // ⚠️ READ FROM THE END RATHER THAN AT IT, SINCE TECHNIQUES LANDED — and the change is an
+        // improvement to the epitaph rather than damage to it. A villager who mastered foraging
+        // works out tended patches, so her death is now followed by one more line saying **what
+        // went with her**: *"The tended patches are going back to wild."* That ordering is
+        // deliberate — `KnowledgeSystem` runs after `MortalitySystem`, so the village buries her
+        // and then notices what it lost. **The last line stopped being the death and started being
+        // the consequence**, which is a better last word than the one this guard was written for.
+        IReadOnlyList<string> life = Phase0Fixtures.LifeLog(sink);
+        string ending = string.Join(" | ", life.TakeLast(3));
+        Assert.Contains("old age", ending, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -65,8 +74,13 @@ public sealed class Phase0ScenarioTests
         Phase0Fixtures.RunUntilDeath(plenty);
         Phase0Fixtures.RunUntilDeath(scarce);
 
-        string plentyEpitaph = Phase0Fixtures.LifeLog(plentyLog)[^1];
-        string scarceEpitaph = Phase0Fixtures.LifeLog(scarceLog)[^1];
+        // ⚠️ THE ENDING RATHER THAN THE LAST LINE, for the reason above: a long life now ends with
+        // one more sentence saying what died with her, and a short one does not — **which makes
+        // the two endings differ MORE than they did, not less.** The claim under test is that a
+        // full life and a starvation read as different stories, and it is stronger now: the
+        // starved villager never mastered anything, so there is nothing to lose and nothing said.
+        string plentyEpitaph = string.Join(" | ", Phase0Fixtures.LifeLog(plentyLog).TakeLast(3));
+        string scarceEpitaph = string.Join(" | ", Phase0Fixtures.LifeLog(scarceLog).TakeLast(3));
 
         Assert.NotEqual(plentyEpitaph, scarceEpitaph);
         Assert.Contains("winters", plentyEpitaph, StringComparison.OrdinalIgnoreCase);

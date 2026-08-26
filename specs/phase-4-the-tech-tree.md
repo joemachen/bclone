@@ -1,6 +1,6 @@
 # Spec: Phase 4 — the tech tree
 
-> Status: **OPEN — Joe lifted the D205 hold on 2026-08-26 (*"start"*).** Owner: Joe + Claude Code ·
+> Status: **SLICE 1 IS IN, red-checked. Slices 2 and 3 are open.** Owner: Joe + Claude Code ·
 > Pillar: `DESIGN.md §2.7` · Format per `METHODOLOGY.md §2`.
 >
 > **⭐ This is the phase plan and the QA checklist in one document, and the checklist exists from
@@ -143,6 +143,16 @@ real before the remedy exists, so the library in slice 2 is answering a pressure
 felt. It is `§0.1`'s pattern — *the pressure and its remedy shipping close together* — with the
 pressure first by one slice, not by a phase.
 
+
+> **✅ SLICE 1 LANDED (D225).** Four techniques, three states, the PEOPLE mechanism, and a village
+> that measurably forgets — **learned 4, lost 3 over a century.** Red-checked three ways, and the
+> most useful one found that **eleven guards of twelve were blind to a bug caught by reading**: the
+> village named the *first* master rather than the last when a technique died.
+>
+> ⚠️ **One design interaction came out of it and is Joe's to weigh** — an old master **partly
+> offsets her own ageing**: true vigour decline is 65.0 → 47.3 food a trip (27%), and with the
+> technique she masters at forty it is 65.0 → 54.7 (16%). **A technique recovers about 40% of what
+> age takes**, which softens D12's *"a life has a shape"*.
 ### Slice 2 — the library, and Known becomes Established
 The building (§2.2), a **hard shelf cap**, automatic recording at mastery when a shelf is free
 (D204), and **a full library that refuses the record and says so** — which `§11` now leans on almost

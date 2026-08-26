@@ -3928,7 +3928,12 @@ public sealed class BehaviorSystem : ISimSystem
                     return;
                 }
 
-                int firewood = world.Config.FirewoodPerSplit * villager.Vigour / 100;
+                // D196's own example, and the first technique in the game: *"a master woodcutter
+                // works out splitting lumber in a way that gives more cords."* The same log gives
+                // more firewood once anybody alive has worked it out — and the whole village's
+                // woodpile thins again when the last of them dies.
+                int firewood = world.YieldWithTechnique(
+                    JobKind.Woodcutter, world.Config.FirewoodPerSplit) * villager.Vigour / 100;
                 if (firewood < 1)
                 {
                     firewood = 1;

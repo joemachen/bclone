@@ -32,7 +32,22 @@ public static class SimFactory
         new MortalitySystem(),  // 9. old age, starvation, or cold
         new RegrowthSystem(),   // 10. the valley grows back (D125)
         new SkillSystem(),      // 11. and the people who worked it got better at it (Phase 3)
+        new KnowledgeSystem(),  // 12. and what the village knows is what those people know (Phase 4)
     };
+
+    // ⭐ WHY KNOWLEDGE TICKS LAST, AND DIRECTLY AFTER SKILL (Phase 4). The order is part of the
+    // determinism contract (D5), so this is a decision rather than a detail.
+    //
+    // The causal sentence is *somebody worked, so they got better, so the village knows what they
+    // know* — and the middle step is `SkillSystem`, which is the only thing that ever sets
+    // `Mastered`. Reading the village's knowledge **before** that runs would mean a master's
+    // technique arrived a tick late, every time, for ever.
+    //
+    // ⚠️ AND IT MUST FOLLOW `MortalitySystem` TOO, which it does by a wider margin: the whole
+    // system is a scan for living masters, so a technique lost to a death is only lost once the
+    // death has happened. Running it earlier would leave the village doing a dead woman's trick
+    // for one more tick — invisible, harmless, and exactly the kind of off-by-one that turns up
+    // three phases later as *"sometimes the log line is a day out."*
 
     // ⭐ WHY THE CROPS TURN AT STEP 2 AND NOT AT THE END (D161). The order is part of the
     // determinism contract (D5), so a new system's position is a decision rather than a
