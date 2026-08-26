@@ -3330,7 +3330,18 @@ public partial class Main : Control
         // now (Joe, same message) rather than 200.
         //
         // The panel no longer shows a number it does not mean.
-        int startsAt = goods == Goods.Food ? 2000 : 200;
+        // ⚠️ FIREWOOD IS 400 BECAUSE 200 SAT BELOW THE VILLAGE'S OWN WINTER TARGET (Joe,
+        // 2026-08-25). That target is 360 — ten per household per winter, x180%% buffer, x20
+        // horizon households — so a 200 cap stood the woodcutter down at 56%% of it and the
+        // village would have frozen by a default nobody chose. **A default limit must sit
+        // ABOVE what the village would have done unasked**, or it is not a ceiling the player
+        // raised, it is a floor they never saw.
+        int startsAt = goods switch
+        {
+            Goods.Food => 2000,
+            Goods.Firewood => 400,
+            _ => 200,
+        };
 
         var amount = new SpinBox
         {
