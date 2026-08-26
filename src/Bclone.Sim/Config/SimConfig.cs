@@ -654,23 +654,34 @@ public sealed record SimConfig
     [JsonPropertyName("carry_capacity")]
     public int CarryCapacity { get; init; } = 40;
 
-    /// <summary>How many people one granary is built to carry through a winter.</summary>
+    /// <summary>How much food one granary holds. <b>A size, not a promise.</b></summary>
     /// <remarks>
     /// <para>
-    /// A fact about the <em>building</em>, like how many hands fit at a berry patch —
-    /// which is why it lives here rather than being derived. What it implies is not a
-    /// setting: <see cref="World.VillageEconomy.GranaryCapacity"/> turns it into a
-    /// quantity of food, and <see cref="World.VillageEconomy.PopulationCeiling"/> turns
-    /// that into the size the village stops growing at.
+    /// <b>⭐⭐ A RAW QUANTITY SINCE D219 (Joe): *"It's fine if the granary feeds a different
+    /// number of people. The user should build more granaries — and will need to! — and upgrade
+    /// them."*</b> It was <c>granary_feeds_people: 30</c>, and
+    /// <see cref="World.VillageEconomy.GranaryCapacity"/> multiplied that by a winter's ration to
+    /// reach a quantity.
     /// </para>
     /// <para>
-    /// <b>This is the number that answers "how big can my village get" — per granary.</b>
-    /// The village-wide answer is now "build another one" (D33, D43), which is what turns
-    /// this from a ceiling the player is handed into a price they can choose to pay.
+    /// <b>The argument that settled it is about what a granary IS.</b> A granary is a box of a
+    /// certain size; <em>how many people it feeds is a consequence of how much they eat.</em>
+    /// Stating it as people made the building promise something about population and quietly
+    /// resized itself whenever the food economy moved — so a village that ate more got a bigger
+    /// granary for free, which is the opposite of a pressure. **Now, a village that eats more
+    /// needs more granaries**, which is D39's *"the buffer is priced, not capped"* applied to the
+    /// building rather than to the food, and it is what gives an upgrade tier something to be.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>What it stops guaranteeing, stated plainly:</b> nothing here promises the founders
+    /// can be fed. <see cref="World.VillageEconomy.PopulationCeiling"/> is a *consequence* of this
+    /// number now — divide by what a head demands — rather than this number being derived to hit a
+    /// population. **A granary too small for the village that starts in it is now possible**, and
+    /// the validator below is what refuses it.
     /// </para>
     /// </remarks>
-    [JsonPropertyName("granary_feeds_people")]
-    public int GranaryFeedsPeople { get; init; } = 30;
+    [JsonPropertyName("granary_capacity")]
+    public int GranaryCapacity { get; init; } = 2500;
 
     /// <summary>Where the market stands — among the homes, which is its whole value.</summary>
     [JsonPropertyName("market_x")]
@@ -2133,14 +2144,30 @@ public sealed record SimConfig
                 + "a farm nobody can work is not a building.");
         }
 
-        if (GranaryFeedsPeople < StartingPopulation)
+        // ⛔⛔ THE OLD "CAN IT FEED THE FOUNDERS?" GUARD IS GONE, AND DELETING IT IS PART OF THE
+        // DECISION RATHER THAN A CASUALTY OF IT (D219).
+        //
+        // It read `granary_feeds_people >= StartingPopulation` — 30 against 4 — which was
+        // trivially true and therefore harmless. Re-expressing it in units was tried first and was
+        // WRONG IN AN INSTRUCTIVE WAY: it asked whether the granary could hold a winter's ration
+        // per founder, which reintroduced **exactly the coupling this decision removed**, one
+        // level up. The capacity stopped depending on the food economy and the validator started
+        // depending on it instead.
+        //
+        // ⚠️ It failed on `Phase0SimTests`, which deliberately sets `FoodPerMeal = 999` to price
+        // meals out of reach while it tests the hunger climb: a winter's ration came to 9,439 and
+        // a 2,500 granary was refused. *A fixture that is not trying to be a viable village must
+        // not be told it is an invalid one.*
+        //
+        // So the only thing checked here is that the box has a size. **A granary too small for
+        // its village is now a legitimate configuration with a visible consequence** — the village
+        // stops growing sooner and the player builds another — which is the whole of Joe's ruling:
+        // *"it's fine if the granary feeds a different number of people."*
+        if (GranaryCapacity < 1)
         {
-            // A granary too small for the village it is founded with is not a pressure,
-            // it is an execution: the birth gate would be shut from tick one and the
-            // founders would age out having had no children at all.
             throw new SimConfigException(
-                $"granary_feeds_people ({GranaryFeedsPeople}) is below the {StartingPopulation} " +
-                "founders — the village could never grow at all.");
+                $"granary_capacity must be at least 1 (got {GranaryCapacity}) — "
+                + "a granary that holds nothing is not a building.");
         }
 
         if (LogsPerSplit <= 0 || FirewoodPerSplit <= 0 || SplitTicks <= 0)

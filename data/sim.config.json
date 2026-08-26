@@ -820,7 +820,22 @@
   // consequence: the player answers a ceiling they have hit by building a
   // second granary (D33, D43), which prices the buffer rather than capping
   // it (D39). This line is the price per granary, not the village's limit.
-  "granary_feeds_people": 30,
+  // ⭐⭐ A SIZE, NOT A PROMISE (D219, Joe): "it's fine if the granary feeds a
+  // different number of people. The user should build more granaries -- and will
+  // need to! -- and upgrade them."
+  //
+  // Was `granary_feeds_people: 30`, multiplied by a winter's ration to reach a
+  // quantity. The trouble with that: a village that ate more got a BIGGER granary
+  // for free, because the building resized itself to keep its promise. A granary is
+  // a box. How many people it feeds is a consequence of how much they eat, so a
+  // village that eats more now needs MORE GRANARIES -- which is D39's "the buffer is
+  // priced, not capped" applied to the building, and what gives an upgrade tier
+  // something to be.
+  //
+  // 2500 is a round number Joe chose, sitting between what the shipped config used
+  // to derive (2310) and what the test fixture derived (2850) -- see D219 for why
+  // those two ever differed, which is a food drift this change made visible.
+  "granary_capacity": 2500,
 
   // ---- The market (D14, D36) ---------------------------------
   // Among the homes, which is the whole of its value: it is the

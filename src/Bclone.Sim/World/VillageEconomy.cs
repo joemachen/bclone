@@ -1164,11 +1164,15 @@ public static class VillageEconomy
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>The stated target: a granary holds a full winter's store for the village it
-    /// is built to feed</b> — <see cref="RequiredStockpilePerAdult"/> per head, for
-    /// <see cref="SimConfig.GranaryFeedsPeople"/> heads. Derived, per D16, so that
-    /// changing hunger or the winter margin moves the building with them instead of
-    /// quietly invalidating it.
+    /// <b>⭐ A STATED SIZE SINCE D219, not a derived one</b> — <c>granary_capacity</c>, and
+    /// nothing else. It used to be <see cref="RequiredStockpilePerAdult"/> × a stated head count,
+    /// on the D16 reasoning that the building should move when hunger moved.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THAT REASONING IS REVERSED HERE DELIBERATELY, AND IT IS THE ONE PLACE D16 DOES NOT
+    /// APPLY.</b> Deriving the box meant *a village that ate more got a bigger granary for free* —
+    /// the building silently resizing to keep a promise about population, which is the opposite of
+    /// a pressure. A granary is a box: <b>eat more and you need more granaries.</b>
     /// </para>
     /// <para>
     /// <b>How many people a granary is built for is content, not economy.</b> It is a
@@ -1182,7 +1186,10 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        return RequiredStockpilePerAdult(config) * config.GranaryFeedsPeople;
+        // ⭐ A READ, NOT A DERIVATION, SINCE D219 (Joe). A granary is a box of a stated size; how
+        // many people it feeds falls out of how much they eat, rather than the box resizing itself
+        // to keep a promise about population. `PopulationCeiling` below is the consequence.
+        return config.GranaryCapacity;
     }
 
     /// <summary>
@@ -1199,9 +1206,9 @@ public static class VillageEconomy
     /// falling back (spec §12).
     /// </para>
     /// <para>
-    /// Note it comes out <em>above</em> <see cref="SimConfig.GranaryFeedsPeople"/>, by
+    /// Note it comes out <em>above</em> the heads a granary holds full winter rations for, by
     /// exactly the slack in the birth gate: a village will keep having children until
-    /// its store is 80% of what everyone alive would want, which is a larger village
+    /// its store is <c>birth_food_percent</c> of what everyone alive would want, which is a larger village
     /// than the granary comfortably feeds. That is the intended reading — a granary
     /// built for thirty supports a village that runs a little hungrier than thirty.
     /// </para>

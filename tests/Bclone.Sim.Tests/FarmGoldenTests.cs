@@ -181,7 +181,7 @@ public sealed class FarmGoldenTests
     // nobody clears one and the carry fix reaches nothing here.
     //
     //   before the arms were hashed by index: 11064751127156165011
-    private const ulong SeamGoldenHash = 11012185428064972883UL;
+    private const ulong SeamGoldenHash = 16587514677818181082UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -208,7 +208,7 @@ public sealed class FarmGoldenTests
     /// </para>
     /// </remarks>
     //   before the arms were hashed by index (D211): 4480535409214959852
-    private const ulong SeamBeforeAnybodyGotBetter = 14487067649038122620UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 14746602501310546017UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

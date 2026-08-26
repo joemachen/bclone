@@ -187,18 +187,26 @@ public sealed class StorageTests
 
         int ceiling = VillageEconomy.PopulationCeiling(config);
         _output.WriteLine(
-            $"granary feeds {config.GranaryFeedsPeople}, holds " +
-            $"{VillageEconomy.GranaryCapacity(config)}, ceiling {ceiling} people.");
+            $"granary holds {VillageEconomy.GranaryCapacity(config)}, " +
+            $"ceiling {ceiling} people.");
 
         // A bigger granary must mean a bigger village, or capacity is decoration.
-        SimConfig larger = config with { GranaryFeedsPeople = config.GranaryFeedsPeople * 2 };
+        SimConfig larger = config with { GranaryCapacity = config.GranaryCapacity * 2 };
         Assert.True(VillageEconomy.PopulationCeiling(larger) > ceiling);
 
-        // And the ceiling sits ABOVE what the granary comfortably feeds, by exactly
-        // the slack in the birth gate — a village keeps having children until its
+        // And the ceiling sits ABOVE the heads a granary holds full winter rations for, by
+        // exactly the slack in the birth gate — a village keeps having children until its
         // store is short of what everyone alive would want.
-        Assert.True(ceiling >= config.GranaryFeedsPeople,
-            $"Ceiling {ceiling} is below the {config.GranaryFeedsPeople} the granary feeds.");
+        //
+        // ⚠️ ASKED IN UNITS SINCE D219. The granary is a stated size now, so "who it feeds" is a
+        // division this test has to do for itself rather than a number it can read off the config.
+        // That is the change working as intended: the box is the fact, the population is the
+        // consequence.
+        int fullRations = VillageEconomy.GranaryCapacity(config)
+            / VillageEconomy.RequiredStockpilePerAdult(config);
+
+        Assert.True(ceiling >= fullRations,
+            $"Ceiling {ceiling} is below the {fullRations} the granary holds full rations for.");
     }
 
     /// <remarks>
@@ -234,7 +242,7 @@ public sealed class StorageTests
         // Measured over 200 years — the unbounded village swings between 24 and 86,
         // the shipped one between 24 and 35.
         SimConfig bounded = Config;
-        SimConfig unbounded = bounded with { GranaryFeedsPeople = 100_000 };
+        SimConfig unbounded = bounded with { GranaryCapacity = 100_000_000 };
 
         (int Low, int High) boundedBand = Band(bounded);
         (int Low, int High) unboundedBand = Band(unbounded);
