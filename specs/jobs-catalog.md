@@ -95,6 +95,19 @@ JobRow
 are the next slice, and until then a modded job can only staff a building that already exists.
 **Recorded rather than glossed** — it is the seam this spec cannot close on its own.
 
+> **✅ CLOSED (D222, `buildings-catalog.md`) — AND THE FIX WAS NOT WHAT THIS SENTENCE IMPLIED.**
+> The obvious reading was that `WorksAt` had to become an `int`. **It did not, and trying it turned
+> six of this spec's own guards red**, because their JSON reads `"works_at": "GathererHut"` — a
+> word, not a number. **The enum is an alias for the first ten ids**, exactly as `Goods` is for the
+> first six (`goods-catalog.md §2.1`): a modded building is `(BuildingKind)10`, which C# permits and
+> the JSON converter reads as a number. **What was missing was never the type — it was a catalogue
+> for that value to resolve against**, and `ModdedBuildingTests` now staffs a modded building from a
+> modded trade with `"works_at": 10`.
+>
+> ⚠️ **And keeping the enum keeps the word:** an int column would make every built-in row read
+> `"works_at": 7`, sending a modder to look up which number is the gatherer's hut in the file that
+> exists to tell them. **§1.1 applies to the data files too.**
+
 ---
 
 ## 4. ⛔ The failure modes

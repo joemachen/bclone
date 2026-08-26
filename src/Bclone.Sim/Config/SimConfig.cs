@@ -1507,6 +1507,194 @@ public sealed record SimConfig
         },
     };
 
+    /// <summary>
+    /// The buildings that exist — <b>rows, not enum values</b> (`specs/buildings-catalog.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ NULL BY DEFAULT, AND THAT IS THE ONE PLACE THIS CATALOGUE DIFFERS FROM
+    /// <see cref="GoodsCatalog"/> AND <see cref="JobsCatalog"/>.</b> Their defaults are literals, so
+    /// a plain initialiser works. <b>The built-in ten are priced from other keys on this same
+    /// config</b> — <c>logs_per_house</c>, <c>granary_logs</c>, <c>hut_stone</c> — and a property
+    /// initialiser cannot read <c>this</c>. Null therefore means <em>"the built-in ten, priced from
+    /// this config"</em>; see <see cref="BuildingRows"/>.
+    /// </para>
+    /// <para>
+    /// <b>⭐ AND THAT IS NOT A WORKAROUND, IT IS WHAT KEEPS ONE SOURCE OF TRUTH.</b> Restating
+    /// <c>logs_per_house</c> as a row literal would make it two numbers that must agree — the shed's
+    /// capacity, the stockpile's capacity and the timber quota all derive against it, and every
+    /// <c>Config with { LogsPerHouse = … }</c> in the suite would quietly stop meaning anything.
+    /// <b>Folding those keys into the rows is a separate slice with no behaviour in it</b>
+    /// (`buildings-catalog.md §8`), because it is a re-derivation rather than a move.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Ids 0–9 match <see cref="BuildingKind"/> exactly, and must</b> — <c>works_at</c> names
+    /// them, and the enum survives as an alias for the built-in ten.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("buildings")]
+    public IReadOnlyList<BuildingRow>? Buildings { get; init; }
+
+    /// <summary>The buildings this config describes — its own list, or the built-in ten.</summary>
+    public IReadOnlyList<BuildingRow> BuildingRows => Buildings ?? DefaultBuildings();
+
+    /// <summary>The built-in ten, priced from this config's own keys.</summary>
+    private IReadOnlyList<BuildingRow> DefaultBuildings() => new[]
+    {
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Granary,
+            Name = "granary",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, GranaryLogs),
+                new MaterialCost(World.Goods.Stone, GranaryStone),
+            },
+            WorkTicks = GranaryWorkTicks,
+            Stores = StoreKind.Granary,
+
+            // ⭐ STATED, SINCE D219 (Joe): *"it's fine if the granary feeds a different number of
+            // people. The user should build more granaries — and will need to!"* A granary is a box
+            // of a stated size; how many people it feeds falls out of how much they eat.
+            StoreCapacity = GranaryCapacity,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Shed,
+            Name = "storage shed",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, ShedLogs),
+                new MaterialCost(World.Goods.Stone, ShedStone),
+            },
+            WorkTicks = ShedWorkTicks,
+            Stores = StoreKind.Shed,
+
+            // ⛔ DERIVED, and it must stay derived (D16): a horizon of households, the firewood they
+            // want, the logs to split it out of, a house's timber, floored at a granary. Typing that
+            // number in is the move `buildings-catalog.md §2.2` refuses.
+            StoreCapacity = null,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Market,
+            Name = "market",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, MarketLogs),
+                new MaterialCost(World.Goods.Stone, MarketStone),
+            },
+            WorkTicks = MarketWorkTicks,
+
+            // A market is a place to work as well as a place to keep things (D14) — the one row
+            // that both stores and employs.
+            Stores = StoreKind.Market,
+            StoreCapacity = null,
+            Seats = MarketCapacity,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.WoodcutterHut,
+            Name = "woodcutter's hut",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, HutLogs),
+                new MaterialCost(World.Goods.Stone, HutStone),
+            },
+            WorkTicks = HutWorkTicks,
+            Seats = WoodcutterHutCapacity,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Pile,
+
+            // ⭐ "stockpile", not "storage pile" (Joe, D217). ⚠️ It shares a word with the
+            // `Stockpile` class and they are not the same thing: that is the goods container every
+            // store, larder, workplace and pair of arms holds; this is the name of one kind of
+            // store building.
+            Name = "stockpile",
+
+            // NOTHING AT ALL — no materials and no work (D96), which is what `Mark` reads to know
+            // it is free and instant. A village with nowhere to put things cannot begin, and asking
+            // it to build a store out of timber it has nowhere to stack is a circle. Its cost moved
+            // somewhere better rather than being abolished: a pile may only stand on clear ground,
+            // so THE CLEARING IS WHAT IT COSTS.
+            Stores = StoreKind.Pile,
+            StoreCapacity = null,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Home,
+
+            // ⚠️ NOT USED AS A LABEL — a house is not numbered (`SimWorld.NameFor`), because a home
+            // is identified by the family in it. Carried so the row is complete and so a modded
+            // dwelling has somewhere to put its word.
+            Name = "house",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, LogsPerHouse),
+                new MaterialCost(World.Goods.Stone, HomeStone),
+            },
+            WorkTicks = HomeWorkTicks,
+            HouseCapacity = MaxHouseholdSize,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.BuilderHut,
+            Name = "builder's hut",
+
+            // ⭐ FREE AND INSTANT, LIKE THE STOCKPILE (D108). It is the one building that must exist
+            // before any other can be raised, so charging timber for it would be the same circle.
+            Seats = null,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.GathererHut,
+            Name = "gatherer's hut",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, GathererHutLogs),
+                new MaterialCost(World.Goods.Stone, GathererHutStone),
+            },
+            WorkTicks = GathererHutWorkTicks,
+
+            // ⛔ Derived from the ring: tiles in it ÷ tiles per worker.
+            Seats = null,
+            GatheringRadius = GathererHutRingTiles,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.ForesterHut,
+            Name = "forester's hut",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, ForesterHutLogs),
+                new MaterialCost(World.Goods.Stone, ForesterHutStone),
+            },
+            WorkTicks = ForesterHutWorkTicks,
+
+            // ⛔ Derived from what the woodcutters can eat, plus a hand for building.
+            Seats = null,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Farmhouse,
+            Name = "farmhouse",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, FarmhouseLogs),
+                new MaterialCost(World.Goods.Stone, FarmhouseStone),
+            },
+            WorkTicks = FarmhouseWorkTicks,
+            Seats = FarmhouseSeats < 1 ? 1 : FarmhouseSeats,
+
+            // ⭐ The only building with a buffer of its own (`crops-and-orchards.md §3.2a`): reaping
+            // is bursty and the granary is across the village, so the store underfoot fills first
+            // and the walk lengthens once it is full.
+            LocalStoreCap = FarmStoreCap,
+        },
+    };
+
     [JsonPropertyName("skills")]
     public IReadOnlyList<SkillRow> Skills { get; init; } = new[]
     {
@@ -2338,6 +2526,7 @@ public sealed record SimConfig
 
         ValidateGoods();
         ValidateJobs();
+        ValidateBuildings();
         ValidateSkills();
     }
 
@@ -2479,6 +2668,121 @@ public sealed record SimConfig
                     $"jobs is missing id {id} ({(World.JobKind)id}). The built-in trades are named "
                     + "directly by the allocator and every golden is pinned to their ids, so a "
                     + "catalogue may add rows above them but may not omit them.");
+            }
+        }
+    }
+
+    /// <summary>Check the buildings catalogue says something a village can be built out of.</summary>
+    /// <remarks>
+    /// <b>⛔ THE THREE THINGS THAT WOULD FAIL SILENTLY OTHERWISE</b>, each of which
+    /// `buildings-catalog.md §4` names as a failure mode: a repeated id (two buildings sharing a
+    /// name and a recipe), a building that neither stores, employs nor houses anybody (raised, and
+    /// then doing nothing for ever), and <b>a null capacity on a row the economy derives nothing
+    /// for</b> — which would throw in the middle of a run, on the tick the building was finished,
+    /// rather than at load.
+    /// </remarks>
+    private void ValidateBuildings()
+    {
+        IReadOnlyList<BuildingRow> rows = BuildingRows;
+        if (rows is null)
+        {
+            throw new SimConfigException("buildings must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            BuildingRow row = rows[i];
+
+            if (row.Id < 0)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] has id {row.Id}; ids index the catalogue and cannot be "
+                    + "negative.");
+            }
+
+            if (!seen.Add(row.Id))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] repeats id {row.Id}. An id is what a trade's works_at names "
+                    + "and what a building is counted under, so two sharing one would be one "
+                    + "building wearing two names.");
+            }
+
+            if (string.IsNullOrWhiteSpace(row.Name))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}) has no name. Every building the village raises "
+                    + "is named in the log and on the panel, so a blank one is a sentence with a "
+                    + "hole in it.");
+            }
+
+            if (row.Stores == StoreKind.Cart)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}) stores as a cart. The cart is the wagon the "
+                    + "founders arrive in, not a building anybody puts up.");
+            }
+        }
+
+        // ⛔ THE CAPACITY CHECK, AND IT IS WHAT MAKES §2.2's EXEMPTION HONEST. A null capacity
+        // means *the economy derives this*, and the economy derives it for exactly six built-in
+        // buildings. Any other row leaving it null is a building that throws on the tick it is
+        // finished — which is the shape of bug this project treats as worse than a crash, because
+        // it surfaces in a played run rather than at load.
+        for (int i = 0; i < rows.Count; i++)
+        {
+            BuildingRow row = rows[i];
+            var kind = (BuildingKind)row.Id;
+
+            bool economyDerivesTheStore =
+                kind is BuildingKind.Shed or BuildingKind.Pile or BuildingKind.Market;
+            if (row.Stores is not null && row.StoreCapacity is null && !economyDerivesTheStore)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) is a store with no capacity. Only "
+                    + "the shed, the stockpile and the market have one derived for them; every "
+                    + "other store must state how much it holds.");
+            }
+
+            bool economyDerivesTheSeats =
+                kind is BuildingKind.GathererHut or BuildingKind.ForesterHut
+                    or BuildingKind.BuilderHut;
+            bool anybodyWorksThere = false;
+            for (int j = 0; j < JobsCatalog.Count; j++)
+            {
+                anybodyWorksThere |= (int?)JobsCatalog[j].WorksAt == row.Id;
+            }
+
+            if (anybodyWorksThere && row.Seats is null && !economyDerivesTheSeats)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) is a workplace with no seats. Only "
+                    + "the gatherer's hut, the forester's hut and the builder's hut have them "
+                    + "derived; every other workplace must state how many work there.");
+            }
+
+            if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody and "
+                    + "houses nobody. The village would raise it and it would do nothing for "
+                    + "ever.");
+            }
+        }
+
+        // The enum is an alias for the first ids, exactly as it is for goods and trades. A missing
+        // built-in would index a row that is not there, failing deep in a placement rather than
+        // here.
+        int builtIn = System.Enum.GetValues<BuildingKind>().Length;
+        for (int id = 0; id < builtIn; id++)
+        {
+            if (!seen.Contains(id))
+            {
+                throw new SimConfigException(
+                    $"buildings is missing id {id} ({(BuildingKind)id}). The built-in buildings are "
+                    + "named directly by the placement rules and the founding, so a catalogue may "
+                    + "add rows above them but may not omit them.");
             }
         }
     }

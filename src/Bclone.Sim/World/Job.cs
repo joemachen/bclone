@@ -62,10 +62,30 @@ public sealed record JobRow
     /// The workplace this trade staffs, or null for a trade with no building.
     /// </summary>
     /// <remarks>
-    /// <b>⚠️ THIS POINTS AT AN ENUM THAT IS STILL AN ENUM, and that is honest rather than
-    /// finished.</b> <see cref="BuildingKind"/> is the next slice; until it lands, a modded trade
-    /// can only staff a building that already exists. Recorded here and in `jobs-catalog.md §3`
-    /// because it is the one seam this row cannot close on its own.
+    /// <para>
+    /// <b>⭐ THE SEAM `jobs-catalog.md §3` RECORDED IS CLOSED, AND IT TURNED OUT NOT TO BE THE
+    /// TYPE.</b> That spec called this column <em>"honest and temporary — it points at an enum that
+    /// is still an enum, so a modded trade can only staff a building that already exists"</em>, and
+    /// the obvious reading was that it had to become an <c>int</c>. <b>It did not.</b> The enum is
+    /// <b>an alias for the first ten ids</b>, exactly as <see cref="Goods"/> is for the first six
+    /// (`goods-catalog.md §2.1`) — a modded building is <c>(BuildingKind)10</c>, which C# permits and
+    /// <c>JsonStringEnumConverter</c> writes and reads as a number. What was actually missing was a
+    /// <b>catalogue for that value to resolve against</b>, and that is what arrived.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ And keeping the enum keeps the word.</b> An int column would make every built-in row
+    /// read <c>"works_at": 7</c> where it reads <c>"works_at": "GathererHut"</c> today — a modder
+    /// looking up which number is the gatherer's hut, in the file that is supposed to tell them.
+    /// <em>Legibility applies to the data files too.</em>
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ AND IT IS THE ONE SOURCE OF THE BUILDING↔TRADE RELATION.</b>
+    /// <see cref="BuildingRow"/> carries no trade column;
+    /// <see cref="BuildingsCatalog.EmployedBy(BuildingKind)"/> indexes this one backwards at load.
+    /// Two hand-written directions that must agree, with nothing checking that they do, is D148's
+    /// finding as a data model rather than as a word — and it is what `SimWorld.Complete` and this
+    /// column were, side by side, for a phase.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("works_at")]
     public BuildingKind? WorksAt { get; init; }
@@ -136,6 +156,14 @@ public sealed class JobsCatalog
 
     /// <summary>The workplace this trade staffs, or null.</summary>
     public BuildingKind? WorksAt(JobKind kind) => _rows[(int)kind].WorksAt;
+
+    /// <summary>The id of the workplace this trade staffs, or null.</summary>
+    /// <remarks>
+    /// For a modded building, which has an id and no name of its own in the enum. The two are the
+    /// same number — see <see cref="JobRow.WorksAt"/>.
+    /// </remarks>
+    public int? WorksAtId(JobKind kind) =>
+        _rows[(int)kind].WorksAt is BuildingKind kind_ ? (int)kind_ : null;
 
     /// <summary>Whose stock limit stands this trade down, or null.</summary>
     public Goods? LimitedBy(JobKind kind) => _rows[(int)kind].LimitedBy;

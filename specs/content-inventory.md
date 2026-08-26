@@ -166,11 +166,27 @@ spec* (D159); this closed the status half only.
 > the test's own catalogue listed rows in id order and so could not tell *id* from *position*.
 > **D157's green-and-blind finding, third instance.**
 >
-> ⛔ **Still open, and this finding stays until it is:**
-> - **`BuildingKind` has had no equivalent** — **~45 buildings against 10**, and it is where the
+> ✅ **AND BUILDINGS FOLLOWED (D222, 2026-08-26, `specs/buildings-catalog.md`) — THIS FINDING IS
+> CLOSED IN THE SIM.** A building is a row, nine surfaces read it, and `ModdedBuildingTests` proves
+> an eleventh in real JSON **staffed by a modded trade through `works_at`** — the seam
+> `jobs-catalog.md §3` recorded. **804 passing of 806, every golden byte-identical.**
+>
+> ⛔ **What is still open is the VIEW, and it is a real hole:** `Main.BuildUi` is ten hand-written
+> buttons in four categories, so **a modded building exists and the player cannot reach it.** This
+> project's own rule — *a feature the player cannot reach does not exist* — and its fifth instance
+> (D221). ⚠️ **The menu's categories are presentation rather than sim**, so whether it becomes
+> catalogue-driven is Joe's call.
+>
+> ⚠️ **And one thing did NOT move, deliberately:** the per-building recipe keys (`granary_logs`,
+> `hut_stone`, …) still price the built-in ten. **`logs_per_house` is an economy anchor the recipe
+> happens to spend** — the shed's capacity, the stockpile's and the timber quota all derive against
+> it — so folding it in is a re-derivation rather than a move.
+>
+> *Original text, for the record:*
+> - ~~**`BuildingKind` has had no equivalent** — **~45 buildings against 10**, and it is where the
 >   content pass actually needs the headroom. `BuildingRecipe.For` is still a switch with per-kind
 >   config keys, and `JobRow.WorksAt` points straight at the enum, so **a modded trade can only
->   staff a building that already exists.**
+>   staff a building that already exists.**~~
 > - ⭐ **One correction carried forward for that slice** (Joe, 2026-08-25): *"why does the granary
 >   capacity have to be derived? it should be a set number."* **He is right — the set number already
 >   exists**, `granary_feeds_people: 30`; the derivation only converts people into food so the

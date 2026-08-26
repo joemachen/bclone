@@ -416,16 +416,29 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        return kind switch
+        // ⭐ A COLUMN NOW, AND THAT IS THIS METHOD'S OWN PARAGRAPH CASHED. It said the unlock lands
+        // as *"a second arm, beside a `BuildingKind` appended to the enum"*; it lands as a second
+        // ROW, with a different `house_capacity` and a different recipe, and no new mechanism at
+        // all. `DESIGN.md §5`'s ladder — Wooden Cabin, Stone Cottage, Insulated Manor — is three
+        // rows (`specs/buildings-catalog.md §2.3`).
+        //
+        // ⚠️ Zero still means *nobody lives here*, and it still throws rather than answering: a
+        // house that holds nobody is a building the birth gate would quietly read as full.
+        int capacity = 0;
+        IReadOnlyList<BuildingRow> rows = config.BuildingRows;
+        for (int i = 0; i < rows.Count; i++)
         {
-            BuildingKind.Home => config.MaxHouseholdSize,
+            if (rows[i].Id == (int)kind)
+            {
+                capacity = rows[i].HouseCapacity;
+                break;
+            }
+        }
 
-            // Named rather than defaulted, which is D108's rule: five of six silent default
-            // arms would have mis-priced or mis-named a new building kind, so every arm says
-            // what it means and a new one has to be added on purpose.
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "That kind of building is not somewhere anybody lives."),
-        };
+        return capacity > 0
+            ? capacity
+            : throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building is not somewhere anybody lives.");
     }
 
     /// <summary>

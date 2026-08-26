@@ -45,6 +45,15 @@ public sealed class SimWorld
     /// <summary>What the trades are — the one place the sim asks (`jobs-catalog.md`, D218).</summary>
     public JobsCatalog JobsCatalog { get; }
 
+    /// <summary>What the buildings are — the one place the sim asks (`buildings-catalog.md`).</summary>
+    /// <remarks>
+    /// <b>The last of the four enums D168 named</b> (<c>Goods</c>, <c>JobKind</c>,
+    /// <c>BuildingKind</c>, <c>Terrain</c>) to get a row behind it. Everything that used to
+    /// <c>switch</c> over a building — its name, its cost, the store it becomes, the trade worked
+    /// there, its ring, its buffer, how many live in it — asks this instead.
+    /// </remarks>
+    public BuildingsCatalog BuildingsCatalog { get; }
+
     /// <summary>
     /// A stockpile with a slot for every good <em>this run</em> has (D210, slice 1b).
     /// </summary>
@@ -662,37 +671,16 @@ public sealed class SimWorld
     /// </remarks>
     private void RaiseFreeBuilding(BuildingKind kind, GridPos position, string name)
     {
-        if (kind == BuildingKind.Pile)
-        {
-            RaiseStore(kind, position, name);
-            return;
-        }
-
-        // ⭐ THE BUILDER'S HUT, AND IT IS WHY THIS METHOD TAKES A KIND (D108). The one
-        // workplace the player places that costs nothing — because it is the building every
-        // other building waits on, and charging timber for it is the circle the pile exists
-        // to avoid.
-        if (kind == BuildingKind.BuilderHut)
-        {
-            RaiseBuilderHut(position, name);
-            return;
-        }
-
-        throw new ArgumentOutOfRangeException(
-            nameof(kind), kind, "That kind of building is not free.");
+        // ⭐ IT IS THE SAME METHOD AS THE FINISHED PATH NOW, WHICH IS WHAT THIS METHOD'S OWN
+        // REMARKS HAVE ASKED FOR SINCE D108: *"one place, so the two ways a free building can
+        // arrive cannot disagree about what it becomes."* It was two hand-written arms — a
+        // stockpile became a store, a builder's hut became a workplace — and the row says which
+        // without either being written down twice.
+        //
+        // ⚠️ Free-ness itself is not a column: `Mark` asks the recipe (D108), and a row that costs
+        // nothing and owes no work is the whole of it.
+        RaiseFinished(kind, position, name);
     }
-
-    /// <summary>Put a builder's hut into the world, with the seats the economy derives.</summary>
-    private void RaiseBuilderHut(GridPos position, string name) =>
-        Workplaces.Add(new Workplace
-        {
-            Store = NewStockpile(),
-            Id = NextWorkplaceId(),
-            Kind = JobKind.Builder,
-            Name = name,
-            Position = position,
-            Capacity = VillageEconomy.BuilderHutCapacity(Config),
-        });
 
     /// <summary>Whether anyone in the village builds — that is, whether a hut stands.</summary>
     /// <remarks>
@@ -4203,16 +4191,15 @@ public sealed class SimWorld
         // Named rather than defaulted (D108): the cart is the other building nobody paid for,
         // and a pile's recipe of (0, 0) is the right refund for both. An unknown store kind is
         // a bug rather than a pile.
-        BuildingKind kind = building.Kind switch
-        {
-            StoreKind.Granary => BuildingKind.Granary,
-            StoreKind.Shed => BuildingKind.Shed,
-            StoreKind.Market => BuildingKind.Market,
-            StoreKind.Pile => BuildingKind.Pile,
-            StoreKind.Cart => BuildingKind.Pile,
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(building), building.Kind, "That kind of store has no refund."),
-        };
+        // ⛔ THE CART STAYS NAMED, AND IT IS THE EXEMPTION `buildings-catalog.md §2.3` RECORDS.
+        // It is not a building — it is the wagon the founders arrive in — so no row claims it and
+        // none should. It borrows the stockpile's recipe because that is the right refund for both
+        // buildings nobody paid for: nothing.
+        BuildingKind kind = building.Kind == StoreKind.Cart
+            ? BuildingKind.Pile
+            : BuildingsCatalog.ThatStores(building.Kind)
+                ?? throw new ArgumentOutOfRangeException(
+                    nameof(building), building.Kind, "That kind of store has no refund.");
 
         int held = building.Store.Held;
         IReadOnlyList<MaterialCost> back = RefundFor(BuildingRecipe.For(kind, Config));
@@ -4437,108 +4424,27 @@ public sealed class SimWorld
                     + $"{site.Position} — {Clock.SeasonAndYear()}.");
                 break;
 
-            case BuildingKind.WoodcutterHut:
-                Workplaces.Add(new Workplace
-                {
-                    Store = NewStockpile(),
-                    Id = NextWorkplaceId(),
-                    Kind = JobKind.Woodcutter,
-                    Name = plan.Name,
-                    Position = site.Position,
-                    Capacity = Config.WoodcutterHutCapacity,
-                });
-                break;
-
-            // ⭐ A GATHERER'S HUT IS A FORAGER'S WORKPLACE WITH A RING (Joe,
-            // `forests-and-gathering.md`). `JobKind.Forager` is REUSED rather than added
-            // beside — the same argument D96 made for renaming `Logger` to `Forester`: a
-            // second kind means a second quota arm, a second slot in the allocator's scarcity
-            // order, a second plural, a second behaviour branch and a rule somewhere to stop
-            // the village staffing both. It is the same work, on ground somebody chose.
-            case BuildingKind.GathererHut:
-                Workplaces.Add(new Workplace
-                {
-                    Store = NewStockpile(),
-                    Id = NextWorkplaceId(),
-                    Kind = JobKind.Forager,
-                    Name = plan.Name,
-                    Position = site.Position,
-                    Capacity = VillageEconomy.GathererHutCapacity(Config),
-                    GatheringRadius = Config.GathererHutRingTiles,
-                });
-                break;
-
-            // ⭐ A WOOD SOMEBODY KEEPS, RATHER THAN ONE THEY ONLY TAKE FROM (D86, Joe).
-            // `JobKind.Forester` is reused for the third time on this argument — it is the
-            // same work, on ground the player painted instead of at a stand the generator
-            // dropped, which is precisely what D96's rename was for.
+            // ⭐⭐ AND EVERYTHING ELSE IS THE ROW (`buildings-catalog.md §2`). This was six more
+            // arms, each hand-writing the same four lines with a different trade and a different
+            // capacity, and between them they held the second copy of the building↔trade relation:
+            // `JobRow.WorksAt` said forager → gatherer's hut and this said gatherer's hut →
+            // forager, with nothing checking that they agreed. **One relation, one direction.**
             //
-            // Its seats are `RequiredForesterSeats` — how many foresters the village needs to
-            // keep its huts in logs and its houses built. ⚠️ That name retires with the stands
-            // in the next slice; the derivation is what matters and it is unchanged.
-            case BuildingKind.ForesterHut:
-                Workplaces.Add(new Workplace
-                {
-                    Store = NewStockpile(),
-                    Id = NextWorkplaceId(),
-                    Kind = JobKind.Forester,
-                    Name = plan.Name,
-                    Position = site.Position,
-                    Capacity = VillageEconomy.RequiredForesterSeats(Config),
-                });
-                break;
-
-            // ⭐ A FARM IS A FORESTER'S HUT WITH A DIFFERENT VERB (`crops-and-orchards.md §3`).
-            // Same painted work ground, same allowance, same overstretched warning, same idle
-            // ring — a farmhouse sows what the forester's hut fells, and everything that is a
-            // property of *a workplace with painted ground* comes for free.
+            // ⭐ A GATHERER'S HUT IS A FORAGER'S WORKPLACE WITH A RING, and a farm is a forester's
+            // hut with a different verb (Joe, `forests-and-gathering.md`, `crops-and-orchards.md
+            // §3`). `JobKind` is REUSED rather than added beside — the same argument D96 made for
+            // renaming `Logger` to `Forester`: a second kind means a second quota arm, a second
+            // slot in the allocator's scarcity order, a second plural, a second behaviour branch
+            // and a rule somewhere to stop the village staffing both. **That those three were the
+            // same four lines all along is exactly why they collapse.**
             //
-            // ⭐ AND IT IS THE FIRST WORKPLACE IN THE PROJECT WITH A REAL LOCAL STORE. The cap
-            // is Joe's stated 100, in data; what makes it mean anything is that the farmer
-            // hauls to the nearest storage WITH ROOM, so the buffer underfoot fills first and
-            // the walk lengthens once it is full.
-            case BuildingKind.Farmhouse:
-                Workplaces.Add(new Workplace
-                {
-                    Id = NextWorkplaceId(),
-                    Kind = JobKind.Farmer,
-                    Name = plan.Name,
-                    Position = site.Position,
-                    Capacity = VillageEconomy.RequiredFarmerSeats(Config),
-                    Store = new Stockpile(GoodsCatalog.Count) { Capacity = Config.FarmStoreCap },
-                });
-                break;
-
-            // ⭐ THE STORES, NAMED (D108). This was a `default:` arm, and it was two silent
-            // defaults deep: an unrecognised kind fell through to `RaiseStore`, whose own two
-            // switches then made it a market with a market's capacity. A building kind nobody
-            // taught this method about would have quietly become a market.
-            case BuildingKind.Granary:
-            case BuildingKind.Shed:
-            case BuildingKind.Market:
-                RaiseStore(plan.Kind, site.Position, plan.Name);
-
-                // A market is a place to work as well as a place to keep things (D14).
-                if (plan.Kind == BuildingKind.Market && Config.MarketCapacity > 0)
-                {
-                    Workplaces.Add(new Workplace
-                    {
-                        Store = NewStockpile(),
-                        Id = NextWorkplaceId(),
-                        Kind = JobKind.Marketer,
-                        Name = plan.Name,
-                        Position = site.Position,
-                        Capacity = Config.MarketCapacity,
-                    });
-                }
-
-                break;
-
-            // A pile and a builder's hut are free and instant, so neither is ever a site and
-            // neither can reach this method. Said out loud rather than swallowed.
+            // ⭐ THE STORES WERE NAMED RATHER THAN DEFAULTED (D108), and the reason survives the
+            // collapse: this used to be a `default:` arm two silent defaults deep — an unrecognised
+            // kind fell through to `RaiseStore`, whose own two switches made it a market with a
+            // market's capacity. **A building with no row now throws, and says which.**
             default:
-                throw new ArgumentOutOfRangeException(
-                    nameof(site), plan.Kind, "That kind of building is never raised from a site.");
+                RaiseFinished(plan.Kind, site.Position, plan.Name);
+                break;
         }
 
         RetireWorkplace(site);
@@ -4556,29 +4462,15 @@ public sealed class SimWorld
     /// </remarks>
     private StoreBuilding RaiseStore(BuildingKind kind, GridPos position, string name)
     {
-        // Both switches name the market rather than defaulting to it (D108). They were the
-        // second and third silent defaults on the path from `Complete`, and between them they
-        // would have turned any building kind nobody had taught this method about into a
-        // market with a market's capacity.
-        StoreKind storeKind = kind switch
-        {
-            BuildingKind.Granary => StoreKind.Granary,
-            BuildingKind.Shed => StoreKind.Shed,
-            BuildingKind.Pile => StoreKind.Pile,
-            BuildingKind.Market => StoreKind.Market,
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "That kind of building is not a store."),
-        };
+        // ⭐ THE STORE KIND IS A COLUMN NOW. Both of these were switches that named the market
+        // rather than defaulting to it (D108) — they were the second and third silent defaults on
+        // the path from `Complete`, and between them they would have turned any building kind
+        // nobody had taught this method about into a market with a market's capacity.
+        StoreKind storeKind = BuildingsCatalog.StoresAs(kind)
+            ?? throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building is not a store.");
 
-        int capacity = kind switch
-        {
-            BuildingKind.Granary => VillageEconomy.GranaryCapacity(Config),
-            BuildingKind.Shed => VillageEconomy.ShedCapacity(Config),
-            BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
-            BuildingKind.Market => VillageEconomy.MarketCapacity(Config),
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "That kind of building has no store capacity."),
-        };
+        int capacity = CapacityOfTheStoreIn(kind);
 
         var building = new StoreBuilding
         {
@@ -4592,6 +4484,132 @@ public sealed class SimWorld
 
         StoreBuildings.Add(building);
         return building;
+    }
+
+    /// <summary>
+    /// Put a building into the world once it stands — <b>whatever its row says it is</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ONE PLACE, BECAUSE THERE ARE TWO WAYS A BUILDING CAN ARRIVE</b> — finished by a
+    /// builder, or laid out instantly because it costs nothing (D96, D108). Two copies of
+    /// "what does this become?" is exactly how a kind comes to be born the wrong size in one of
+    /// them and nobody notices for a phase; <c>StoreKind</c> has already taught this lesson five
+    /// times (D76).
+    /// </para>
+    /// <para>
+    /// <b>A row may be a store, a workplace, or both</b> — the market is deliberately both (D14,
+    /// D36's seam). <b>A row that is neither is a building that does nothing</b>, refused at load
+    /// by <c>SimConfig.ValidateBuildings</c> rather than silently raised here.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A home does not come through here.</b> Finishing one moves a family in — it is
+    /// reasoning rather than a value, and `buildings-catalog.md §2.3` keeps it named in
+    /// <see cref="Complete"/> for that reason.
+    /// </para>
+    /// </remarks>
+    private void RaiseFinished(BuildingKind kind, GridPos position, string name)
+    {
+        BuildingRow row = BuildingsCatalog[kind]
+            ?? throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building has no row, so it cannot be raised.");
+
+        if (row.Stores is not null)
+        {
+            RaiseStore(kind, position, name);
+        }
+
+        if (BuildingsCatalog.EmployedBy(kind) is not JobKind trade)
+        {
+            return;
+        }
+
+        // A market with no seats is a store and nothing else — the gate was
+        // `Config.MarketCapacity > 0` when this was a switch, and it means the same thing.
+        int seats = SeatsIn(kind);
+        if (seats <= 0)
+        {
+            return;
+        }
+
+        Workplaces.Add(new Workplace
+        {
+            // ⭐ The farmhouse is the only building with a buffer of its own today
+            // (`crops-and-orchards.md §3.2a`), and `int.MaxValue` is what every other workplace
+            // store has always had — `Stockpile`'s own default.
+            Store = new Stockpile(GoodsCatalog.Count)
+            {
+                Capacity = row.LocalStoreCap > 0 ? row.LocalStoreCap : int.MaxValue,
+            },
+            Id = NextWorkplaceId(),
+            Kind = trade,
+            Name = name,
+            Position = position,
+            Capacity = seats,
+            GatheringRadius = row.GatheringRadius,
+        });
+    }
+
+    /// <summary>
+    /// How much a store of this kind holds — <b>the row's number, or the economy's</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE EXEMPTION `buildings-catalog.md §2.2` NAMES ON THE RECORD, AND IT IS PRINCIPLED
+    /// RATHER THAN A SHORTCUT: a STATED capacity is data; a DERIVED one is the survival floor, and
+    /// the survival floor is <see cref="VillageEconomy"/>'s business (D16).</b> A granary is a box
+    /// of a stated size (D219). A shed is <em>solved</em> — a horizon of households, the firewood
+    /// they want, the logs to split it out of, a house's timber, floored at a granary — and typing
+    /// that number into a row is exactly the move D16 exists to refuse.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ A modded building has no derivation to appeal to, so it must state a capacity</b>,
+    /// which is the test of whether this exemption is honest: it covers what the game already
+    /// solves for itself, never what a modder can reach. <c>SimConfig.ValidateBuildings</c> refuses
+    /// a null capacity on any row but the three named here.
+    /// </para>
+    /// </remarks>
+    private int CapacityOfTheStoreIn(BuildingKind kind)
+    {
+        if (BuildingsCatalog[kind]?.StoreCapacity is int stated)
+        {
+            return stated;
+        }
+
+        return kind switch
+        {
+            BuildingKind.Shed => VillageEconomy.ShedCapacity(Config),
+            BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
+            BuildingKind.Market => VillageEconomy.MarketCapacity(Config),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That store states no capacity and the economy derives none."),
+        };
+    }
+
+    /// <summary>
+    /// How many work at a building of this kind — <b>the row's number, or the economy's</b>.
+    /// </summary>
+    /// <remarks>
+    /// The other half of <see cref="CapacityOfTheStoreIn"/>'s exemption, and the same rule governs
+    /// it: the woodcutter's hut, the farmhouse and the market <em>state</em> their seats; the
+    /// gatherer's hut (its ring ÷ tiles per worker), the forester's hut (what the woodcutters can
+    /// eat, plus a hand for building) and the builder's hut <em>solve</em> for them.
+    /// </remarks>
+    private int SeatsIn(BuildingKind kind)
+    {
+        if (BuildingsCatalog[kind]?.Seats is int stated)
+        {
+            return stated;
+        }
+
+        return kind switch
+        {
+            BuildingKind.GathererHut => VillageEconomy.GathererHutCapacity(Config),
+            BuildingKind.ForesterHut => VillageEconomy.RequiredForesterSeats(Config),
+            BuildingKind.BuilderHut => VillageEconomy.BuilderHutCapacity(Config),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That workplace states no seats and the economy derives none."),
+        };
     }
 
     /// <summary>
@@ -4910,39 +4928,34 @@ public sealed class SimWorld
         int index = (int)kind;
         _buildingsNamed[index]++;
 
-        string what = kind switch
-        {
-            BuildingKind.Granary => "granary",
-            BuildingKind.Shed => "storage shed",
-            BuildingKind.Market => "market",
-            // ⭐ "stockpile", not "storage pile" (Joe, D217: *"rename storage pile to
-            // stockpile across all instances in the game"*).
-            //
-            // ⚠️ IT SHARES A WORD WITH THE `Stockpile` CLASS AND THEY ARE NOT THE SAME THING.
-            // `Stockpile` is the goods container every store, larder, workplace and pair of arms
-            // holds; this is the name of ONE kind of store building (`StoreKind.Pile`). The type
-            // is deliberately not renamed — it would collide on the very screen this makes
-            // clearer — so a reader who meets both should take **the enum** as the identity and
-            // this string as the label.
-            BuildingKind.Pile => "stockpile",
-            BuildingKind.BuilderHut => "builder's hut",
-            BuildingKind.GathererHut => "gatherer's hut",
-            BuildingKind.ForesterHut => "forester's hut",
-            BuildingKind.Farmhouse => "farmhouse",
-
-            // Named, because the default arm called every unrecognised building a woodcutter's
-            // hut — in the log, in the panel, and in every placement sentence (D108).
-            BuildingKind.WoodcutterHut => "woodcutter's hut",
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "That kind of building has no name."),
-        };
+        // ⭐⭐ THE WORD COMES OFF THE ROW (`buildings-catalog.md §2`). It was a nine-arm switch, and
+        // the arms are kept below as the record of what each one said and why — the labels are
+        // `SimConfig.DefaultBuildings`' `Name` column now, word for word.
+        //
+        // ⚠️ "stockpile", not "storage pile" (Joe, D217), and it shares a word with the `Stockpile`
+        // class without being the same thing: that is the goods container every store, larder,
+        // workplace and pair of arms holds; this is the name of ONE kind of store building.
+        //
+        // ⚠️ And the arm that mattered most was the one that did not exist: the default called every
+        // unrecognised building a woodcutter's hut — in the log, in the panel and in every placement
+        // sentence (D108). A missing row is now a missing name and says so.
+        string what = BuildingsCatalog[kind]?.Name
+            ?? throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, "That kind of building has no row, so it has no name.");
 
         return $"{what} {_buildingsNamed[index]}";
     }
 
     /// <summary>How many of each kind have ever been named. Never decremented.</summary>
-    private readonly int[] _buildingsNamed =
-        new int[Enum.GetValues<BuildingKind>().Length];
+    /// <remarks>
+    /// <b>⛔ SIZED FROM THE CATALOGUE, NOT FROM THE ENUM, AND THAT WAS A LIVE CEILING.</b> It read
+    /// <c>Enum.GetValues&lt;BuildingKind&gt;().Length</c>, so <b>building eleven would have walked
+    /// off the end of it</b> — an <c>IndexOutOfRangeException</c> the first time a modded building
+    /// was named, in the middle of a run rather than at load. That is the same class of thing
+    /// `goods-catalog.md` found twice by counting rather than by reasoning (<c>Stockpile.Kinds</c>
+    /// at six, <c>AllowedGoods</c> at thirty), and it is why the ceilings get counted.
+    /// </remarks>
+    private readonly int[] _buildingsNamed;
 
     /// <summary>Any store of this kind, for naming things and for tests. Never for logic.</summary>
     /// <remarks>
@@ -5166,6 +5179,12 @@ public sealed class SimWorld
         Config = config;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
         JobsCatalog = new JobsCatalog(config.JobsCatalog);
+
+        // ⚠️ AFTER THE JOBS, AND IT MUST BE: the buildings catalogue indexes `JobRow.WorksAt`
+        // backwards to answer "who works here?", because that relation is stated once
+        // (`buildings-catalog.md §2.1`).
+        BuildingsCatalog = new BuildingsCatalog(config.BuildingRows, JobsCatalog);
+        _buildingsNamed = new int[BuildingsCatalog.Count];
         _saidThereIsNowhereFor = new bool[GoodsCatalog.Count];
         StockLimits = new StockLimits(GoodsCatalog.Count);
         Logger = logger;

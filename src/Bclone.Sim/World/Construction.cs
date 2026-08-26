@@ -21,10 +21,12 @@ public enum BuildingKind
     /// A storage pile — cleared ground with goods stacked on it (D76).
     /// </summary>
     /// <remarks>
-    /// <b>The one building that costs nothing</b>, and the first the player places. Note
-    /// that <see cref="BuildingRecipe.For"/>'s default arm hands out the hut's recipe, so
-    /// this kind must be named there explicitly or a pile silently costs 25 logs — which
-    /// would delete the entire reason it exists.
+    /// <b>The one building that costs nothing</b>, and the first the player places.
+    /// <b>⚠️ That sentence used to carry a warning that is now spent</b>, and the reason is worth
+    /// keeping: <see cref="BuildingRecipe.For"/>'s default arm once handed out the woodcutter's
+    /// hut's recipe, so <em>a pile silently cost 25 logs</em> — which would have deleted the
+    /// entire reason it exists. <b>The cost is a row now</b> (`specs/buildings-catalog.md`), and a
+    /// building nobody has priced throws rather than becoming a hut.
     /// </remarks>
     Pile = 4,
 
@@ -162,7 +164,14 @@ public enum BuildingKind
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>
-public readonly record struct MaterialCost(Goods Goods, int Amount);
+/// <remarks>
+/// <b>A row in a building's cost list</b> since the buildings catalogue landed, so the names are
+/// spelled for a config file. The good may be written as a name (<c>"Stone"</c>) or as an id
+/// (<c>6</c>) — <b>a mod's good has an id and no enum name</b>, so the number has to be legal.
+/// </remarks>
+public readonly record struct MaterialCost(
+    [property: System.Text.Json.Serialization.JsonPropertyName("goods")] Goods Goods,
+    [property: System.Text.Json.Serialization.JsonPropertyName("amount")] int Amount);
 
 /// <summary>What a building costs to raise.</summary>
 /// <remarks>
@@ -281,92 +290,49 @@ public sealed class BuildingRecipe
         return said.ToString();
     }
 
-    /// <summary>The recipe for a kind, read from config.</summary>
+    /// <summary>The recipe for a kind, read from the buildings catalogue.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ IT WAS A SWITCH OVER PER-KIND CONFIG KEYS, AND THAT WAS THE LAST PLACE A BUILDING'S
+    /// COST COULD ONLY EVER BE ONE OF TEN</b> (`specs/buildings-catalog.md`). Every arm read
+    /// <c>config.GranaryLogs</c>, <c>config.HutStone</c> and their siblings, so a modded building had
+    /// nowhere to state a price and the default arm could only throw. <b>The cost is a column on the
+    /// row now</b>, and the config keys survive as the dials the built-in ten are priced from.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ A scan rather than an index, deliberately:</b> this takes a <see cref="SimConfig"/>
+    /// rather than a <see cref="BuildingsCatalog"/>, because the call sites that have a config and no
+    /// world would otherwise each have to build one. It is called at marking and at demolition,
+    /// never in a tick loop.
+    /// </para>
+    /// </remarks>
     public static BuildingRecipe For(BuildingKind kind, SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        return kind switch
+        IReadOnlyList<BuildingRow> rows = config.BuildingRows;
+        for (int i = 0; i < rows.Count; i++)
         {
-            BuildingKind.Granary => new BuildingRecipe(
-                config.GranaryWorkTicks,
-                new MaterialCost(Goods.Logs, config.GranaryLogs),
-                new MaterialCost(Goods.Stone, config.GranaryStone)),
-            BuildingKind.Shed => new BuildingRecipe(
-                config.ShedWorkTicks,
-                new MaterialCost(Goods.Logs, config.ShedLogs),
-                new MaterialCost(Goods.Stone, config.ShedStone)),
-            BuildingKind.Market => new BuildingRecipe(
-                config.MarketWorkTicks,
-                new MaterialCost(Goods.Logs, config.MarketLogs),
-                new MaterialCost(Goods.Stone, config.MarketStone)),
+            if (rows[i].Id != (int)kind)
+            {
+                continue;
+            }
 
-            // NOTHING AT ALL — no materials and no work (D96). A village with nowhere to put
-            // things cannot begin, and asking it to build a store out of timber it has
-            // nowhere to stack is a circle.
-            //
-            // ⭐ The work went because the cost moved somewhere better rather than because it
-            // was abolished: a pile may only be placed on ground that is already clear, so
-            // ITS COST IS THE CLEARING. `pile_work_ticks` was eight ticks of levelling bare
-            // earth, which was strange on its own terms; clearing a wood to make room for the
-            // store is a decision with a visible price, paid in the currency the rest of the
-            // game uses. A pile is therefore instant, and `SimWorld.Mark` never makes a
-            // construction site for one — which is also what closes D95's window, where the
-            // cart refused logs and the pile that would take them was not standing yet.
-            //
-            // The recipe survives at zero because `Demolish` reads one to work out a refund,
-            // and zero is the right answer there too: you get nothing back from a heap you
-            // never paid for.
-            BuildingKind.Pile => new BuildingRecipe(0),
+            var priced = new MaterialCost[rows[i].Materials.Count];
+            for (int m = 0; m < priced.Length; m++)
+            {
+                priced[m] = rows[i].Materials[m];
+            }
 
-            // A house costs what it has always cost in timber (`logs_per_house`, which the
-            // whole timber economy is derived against) and now owes work as well (D102).
-            BuildingKind.Home => new BuildingRecipe(
-                config.HomeWorkTicks,
-                new MaterialCost(Goods.Logs, config.LogsPerHouse),
-                new MaterialCost(Goods.Stone, config.HomeStone)),
+            return new BuildingRecipe(rows[i].WorkTicks, priced);
+        }
 
-            // ⭐ FREE AND INSTANT, LIKE THE PILE (D108). The builder's hut is the one building
-            // that must exist before any other can be raised, so charging timber for it would
-            // be a circle exactly like charging the pile for somewhere to stack timber. It is
-            // the player's first act, and its cost is the ground and the hands they put in it.
-            BuildingKind.BuilderHut => new BuildingRecipe(0),
-
-            BuildingKind.WoodcutterHut => new BuildingRecipe(
-                config.HutWorkTicks,
-                new MaterialCost(Goods.Logs, config.HutLogs),
-                new MaterialCost(Goods.Stone, config.HutStone)),
-
-            // Costs timber and work like every other real building. Deliberately NOT free:
-            // the pile and the builder's hut are free because nothing can be built without
-            // them, and a gatherer's hut has no such circle to break — it is the first thing
-            // the player spends logs on because they chose to eat better.
-            BuildingKind.GathererHut => new BuildingRecipe(
-                config.GathererHutWorkTicks,
-                new MaterialCost(Goods.Logs, config.GathererHutLogs),
-                new MaterialCost(Goods.Stone, config.GathererHutStone)),
-
-            BuildingKind.ForesterHut => new BuildingRecipe(
-                config.ForesterHutWorkTicks,
-                new MaterialCost(Goods.Logs, config.ForesterHutLogs),
-                new MaterialCost(Goods.Stone, config.ForesterHutStone)),
-
-            // Priced like its siblings, and deliberately not free: the pile and the builder's
-            // hut are free because nothing can be built without them, and a farm has no such
-            // circle to break — it is a thing the player spends logs on because they chose to
-            // eat differently.
-            BuildingKind.Farmhouse => new BuildingRecipe(
-                config.FarmhouseWorkTicks,
-                new MaterialCost(Goods.Logs, config.FarmhouseLogs),
-                new MaterialCost(Goods.Stone, config.FarmhouseStone)),
-
-            // ⭐ NAMED RATHER THAN DEFAULTED, and this arm is why. It used to hand out the
-            // woodcutter's hut's recipe to anything it did not recognise — 25 logs and 40
-            // ticks — so a new kind silently cost a hut. `BuildingKind.Pile`'s own remarks
-            // were written about that trap. A kind nobody has priced is a bug, not a hut.
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "That kind of building has no recipe."),
-        };
+        // ⭐ A KIND NOBODY HAS PRICED IS A BUG, NOT A HUT (D108). The old default arm handed out the
+        // woodcutter's hut's recipe — 25 logs and 40 ticks — so a new kind silently cost a hut, and
+        // `BuildingKind.Pile`'s own remarks were written about that trap. It is a missing row now
+        // rather than a missing arm, and it still says so out loud.
+        throw new ArgumentOutOfRangeException(
+            nameof(kind), kind, "That kind of building has no row, so it has no recipe.");
     }
 }
 
