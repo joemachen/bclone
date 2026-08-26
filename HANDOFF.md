@@ -1,11 +1,16 @@
-# Handoff — bclone: **⏸️ Phase 4 still HELD. ✅ Buildings are rows, the suite eats what the game eats, and the build menu is deferred on purpose.**
+# Handoff — bclone: **⏸️ Phase 4 is the only thing held. Everything else on the last list is closed.**
 
-> **✅ MERGED TO LOCAL `main` (D222, 2026-08-26), NOT PUSHED.** `main` is at `9f59523`;
-> **`origin/main` is four commits behind at `398a793`.** The build Joe plays has the work in it —
-> that is the thing D217's trap is about — but the remote does not. **Pushing is Joe's call and
-> nobody has made it.**
+> **✅ PUSHED, 2026-08-26.** `main` and `origin/main` are level at `887a737`. Four commits went up
+> on Joe's call: the buildings catalogue (D222), its record, the retired test word, and the food
+> fixture (D223). **The remote and the build Joe plays are the same thing** — which is the state
+> D217's trap exists to keep true.
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D217 back to D142**, then
+> **⭐ ALL THREE OF THE PREVIOUS HANDOFF'S "THINGS ACTUALLY OPEN" ARE NOW CLOSED:** buildings are
+> rows (D222), the suite eats what the game eats (D223), and **the forester's pace is settled by
+> play** (D224 — Joe: *"forester feels good"*). ⏸️ **The build menu is deferred on his call, not
+> outstanding.** What is left blocking is **Phase 4's content pass, and it is his** (D205).
+
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D224 back to D142**, then
 `METHODOLOGY.md`. **Then `specs/content-inventory.md`** — it is the audit of what actually exists
 against what the documents claim, and it is the shortest route to being oriented.
 
@@ -225,10 +230,17 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >      granary-fullness and starvation guards were all expected to want triage; none moved.
 >      **Those bands are wide enough to swallow a 25% change in the price of a meal** — worth
 >      knowing before citing one as evidence about food.
-> 3. ⚠️ **THE FORESTER MAY NOW FEEL SLOW, and that is a tuning call rather than a bug.** Cleared
->    ground takes **144 days** to return to wood and planted ground genuinely waits its sapling
->    stage. **Joe was reacting to a bug when he asked for −20%; let him play it before touching
->    `regrowth_period_days` again.**
+> 3. **✅ CLOSED BY PLAY — THE FORESTER FEELS GOOD** (Joe, 2026-08-26: *"forester feels good"*).
+>    Cleared ground takes **144 days** to return to wood and planted ground genuinely waits its
+>    sapling stage, and **that is the shipped pace now.**
+>    - ⛔ **`regrowth_period_days` IS SETTLED. Do not re-open it on a hunch.** The −20% Joe asked
+>      for in D220 was **a reaction to a bug, not to the pace** — planted ground was maturing three
+>      times faster than seeded, so the forester looked instant and the woods looked wrong. **Fix
+>      the bug, and the number nobody changed turned out to be right.**
+>    - **⭐ That is the whole argument for letting him play before turning a dial**, and it is the
+>      second time in three decisions: D220's *"maybe I am misperceiving"* was a real bug, and the
+>      tuning request that rode along with it would have papered over the fix. *A dial asked for
+>      while a bug is live is a dial asked for on bad evidence.*
 
 1. ✅ **Phases 0–3 are all merged to `main`.** Phase 2 went up as
    [PR #4](https://github.com/joemachen/bclone/pull/4); **Phase 3 went straight to `main`
