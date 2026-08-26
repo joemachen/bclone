@@ -392,7 +392,7 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
     `git checkout --` on a file whose only uncommitted changes were two edits worth redoing. *That
     is the good case.*
 - **⭐⭐⭐ A BREAK THAT REDDENS *NOTHING* IS THE MOST VALUABLE RESULT A RED CHECK CAN GIVE, AND IT
-  HAPPENED AGAIN (D222).** Renaming the granary to *"barn"* in the catalogue — **the word in the
+  HAPPENED AGAIN (D222).** Renaming the granary in the catalogue — **the word in the
   village log, in the placement sentence and on the panel** — turned **zero** tests red across 786.
   **D108 spent a decision fixing exactly those words** (*"the default arm called every unrecognised
   building a woodcutter's hut, in the log, in the panel, and in every placement sentence"*) **and

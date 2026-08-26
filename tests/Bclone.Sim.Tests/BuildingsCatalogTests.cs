@@ -18,12 +18,20 @@ namespace Bclone.Sim.Tests;
 /// <see cref="ModdedBuildingTests"/> is the other half — that a modder can add an eleventh.
 /// </para>
 /// <para>
-/// <b>⛔ THE NAME GUARDS EXIST BECAUSE A RED CHECK FOUND NOTHING.</b> Renaming the granary to
-/// <em>"barn"</em> in the catalogue — the word in the log, in the placement sentence and on the
-/// panel — turned <b>zero</b> tests red across the whole suite. D108 fixed a default arm that
-/// <em>"called every unrecognised building a woodcutter's hut, in the log, in the panel, and in
-/// every placement sentence"</em>, and nothing has ever checked the words it fixed.
+/// <b>⛔ THE NAME GUARDS EXIST BECAUSE A RED CHECK FOUND NOTHING.</b> Renaming the granary in the
+/// catalogue — the word in the log, in the placement sentence and on the panel — turned <b>zero</b>
+/// tests red across the whole suite. D108 fixed a default arm that <em>"called every unrecognised
+/// building a woodcutter's hut, in the log, in the panel, and in every placement sentence"</em>, and
+/// nothing has ever checked the words it fixed.
 /// <em>A break that turns up nothing is a finding.</em>
+/// </para>
+/// <para>
+/// <b>⚠️ THE POSED WORD BELOW IS DELIBERATE NONSENSE, AND THAT IS A CORRECTION.</b> The break was
+/// originally run with <em>"barn"</em>, and the guard kept it — which reads as though the granary
+/// had been renamed. <b>It had not, and a barn is real content:</b> `TECH-EXAMPLE.md`,
+/// `livestock.md` and `tech-tree.md §9` all carry a <b>Timber Barn</b> as its own building, the hay
+/// store D52 refuses to put in the shed. <b>A fixture word that will shortly name a different
+/// building is a fixture that reads as a bug</b> — so it is a word this game can never have.
 /// </para>
 /// </remarks>
 public sealed class BuildingsCatalogTests
@@ -100,7 +108,7 @@ public sealed class BuildingsCatalogTests
         {
             if (rows[i].Id == (int)BuildingKind.Granary)
             {
-                rows[i] = rows[i] with { Name = "barn" };
+                rows[i] = rows[i] with { Name = "grommet" };
             }
         }
 
@@ -113,7 +121,7 @@ public sealed class BuildingsCatalogTests
         string said = Said(sink);
         _output.WriteLine(said);
 
-        Assert.Contains("barn", said, System.StringComparison.Ordinal);
+        Assert.Contains("grommet", said, System.StringComparison.Ordinal);
         Assert.DoesNotContain("granary", said, System.StringComparison.Ordinal);
     }
 

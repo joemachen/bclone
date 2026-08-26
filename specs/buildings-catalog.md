@@ -254,7 +254,7 @@ no excuse for a fourth.*
 
 ### ⛔ Slice 1's red check found a hole, and it is recorded rather than papered over
 
-Renaming the granary to *"barn"* in the catalogue — **the word in the village log, in the placement
+Renaming the granary in the catalogue — **the word in the village log, in the placement
 sentence and on the panel** — turned **zero** tests red across the whole suite. **D108 fixed a
 default arm that *"called every unrecognised building a woodcutter's hut, in the log, in the panel,
 and in every placement sentence"*, and nothing has ever guarded the words it fixed.**
