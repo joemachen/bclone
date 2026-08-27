@@ -3615,13 +3615,71 @@ public sealed class SimWorld
         return true;
     }
 
-    /// <summary>Un-paint a tile. Homes already standing there stay where they are.</summary>
+    /// <summary>
+    /// Un-paint a tile, and pull down the house standing on it. Returns the household turned out.
+    /// </summary>
     /// <remarks>
-    /// Erasing is about where the village may build <em>next</em>, not a demolition
-    /// order. Pulling houses down because somebody adjusted a brush would be a cruel
-    /// reading of an undo.
+    /// <para>
+    /// <b>⭐⭐ THE BRUSH IS THE ONLY CONTROL HOUSING HAS, AND THAT IS NOW TRUE IN BOTH DIRECTIONS</b>
+    /// (Joe, 2026-08-26): *"houses should not be relocatable. The way to demolish a house is to
+    /// 'unpaint' the residential area underneath. And then the user paints another area to
+    /// 'relocate' houses."* D42 settled that the player paints the neighbourhood and the sim picks
+    /// the tile — so **the removal control has to be the brush too**, or housing would be the one
+    /// thing you place with one tool and unplace with another. <b>A house is the one building the
+    /// player never sited, so it is the one building they should not have to move by hand.</b>
+    /// </para>
+    /// <para>
+    /// <b>⛔ THIS OVERTURNS WHAT THIS METHOD USED TO SAY, AND THE OBJECTION IT MADE WAS RIGHT:</b>
+    /// <em>"Erasing is about where the village may build next, not a demolition order. Pulling
+    /// houses down because somebody adjusted a brush would be a cruel reading of an undo."</em>
+    /// **That is correct about an accident and wrong about an intent** — so the difference is made
+    /// visible in the view rather than argued away here: erasing over occupied ground warns, names
+    /// how many households it would turn out, and takes a second deliberate action (the arming
+    /// pattern the demolish brush already uses).
+    /// </para>
+    /// <para>
+    /// <b>⭐ "Relocating" a neighbourhood then needs no new mechanism at all</b> — unpaint here,
+    /// paint there, and <c>HouseholdSystem.HouseTheRoofless</c> re-sites the family on whatever
+    /// painted ground remains, exactly as it does for a new couple. **The timber is refunded at
+    /// <c>demolition_returns_percent</c> like any other demolition**, so moving a neighbourhood
+    /// costs half its houses — which is what keeps it a decision rather than a free redraw.
+    /// </para>
     /// </remarks>
-    public void EraseResidential(GridPos tile) => Zones.SetResidential(tile, false);
+    public Household? EraseResidential(GridPos tile)
+    {
+        Zones.SetResidential(tile, false);
+
+        Household? turnedOut = HouseholdAt(tile);
+        if (turnedOut is null)
+        {
+            return null;
+        }
+
+        turnedOut.HomePosition = null;
+
+        string recovered = ReturnToStore(
+            tile, RefundFor(BuildingRecipe.For(BuildingKind.Home, Config)));
+
+        Narrate($"The {turnedOut.Name} household's house at {tile} was pulled down when the "
+            + $"ground was unpainted — {recovered} went back to store. "
+            + $"{Clock.SeasonAndYear()}.");
+
+        return turnedOut;
+    }
+
+    /// <summary>The household whose house stands on a tile, or null.</summary>
+    public Household? HouseholdAt(GridPos tile)
+    {
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (Households[i].HomePosition == tile)
+            {
+                return Households[i];
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Whether the village has run out of room to build and needs the player.

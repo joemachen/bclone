@@ -325,21 +325,76 @@ public sealed class ResidentialZoneTests
         Assert.NotEqual(before, StateHash.Compute(loop.World));
     }
 
+    /// <summary>
+    /// ⭐⭐ Erasing the ground under a house pulls the house down — and the family survives it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THIS GUARD USED TO ASSERT THE OPPOSITE, AND THE INVERSION IS THE POINT.</b> It read
+    /// <c>ErasingLandDoesNotPullDownTheHousesOnIt</c>, on the grounds that *"erasing says where the
+    /// village may build NEXT; demolishing homes because somebody adjusted a brush would be a cruel
+    /// reading of an undo."* **Joe reversed it on 2026-08-26**: *"the way to demolish a house is to
+    /// 'unpaint' the residential area underneath. And then the user paints another area to
+    /// 'relocate' houses."*
+    /// </para>
+    /// <para>
+    /// <b>⭐ The old objection is answered rather than dropped, and it is answered in the VIEW</b> —
+    /// erasing over occupied ground warns, names how many households it would turn out, and takes a
+    /// second deliberate stroke. *A brush wobble must not level a neighbourhood; a deliberate
+    /// unpaint should.* **The sim's job is to do what it is told, plainly, and say so.**
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void ErasingLandDoesNotPullDownTheHousesOnIt()
+    public void ErasingLandPullsDownTheHouseOnItAndTurnsTheFamilyOut()
     {
-        // Erasing says where the village may build NEXT. Demolishing homes because
-        // somebody adjusted a brush would be a cruel reading of an undo.
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear * 20);
 
         SimWorld world = loop.World;
-        int before = world.Households.Count;
+        int households = world.Households.Count;
         GridPos lived = world.Households[0].Home();
 
-        world.EraseResidential(lived);
+        Household? turnedOut = world.EraseResidential(lived);
 
-        Assert.Equal(before, world.Households.Count);
-        Assert.Equal(lived, world.Households[0].Home());
+        // ⭐ The household is not destroyed — it is made roofless, which is a state this game
+        // already knows how to be in and already knows how to end (`HouseTheRoofless`).
+        Assert.NotNull(turnedOut);
+        Assert.Equal(households, world.Households.Count);
+        Assert.Null(turnedOut!.HomePosition);
+        Assert.Null(world.HouseholdAt(lived));
+    }
+
+    /// <summary>⭐ And "relocating" a neighbourhood is unpaint, paint, and wait.</summary>
+    /// <remarks>
+    /// <b>No new mechanism at all</b> — the roofless family is re-sited by the same code that
+    /// houses a new couple. That is the whole of Joe's *"the user paints another area to relocate
+    /// houses"*, and it is why houses were dropped from the relocate work entirely.
+    /// </remarks>
+    [Fact]
+    public void APaintedElsewhereIsHowAHouseholdMoves()
+    {
+        SimLoop loop = Build(Config);
+        loop.Step(Config.TicksPerYear * 20);
+
+        SimWorld world = loop.World;
+        GridPos lived = world.Households[0].Home();
+
+        Household turnedOut = world.EraseResidential(lived)!;
+        Assert.Null(turnedOut.HomePosition);
+
+        // NOTHING NEW IS PAINTED, AND THAT IS THE FIX RATHER THAN A SHORTCUT. The first draft
+        // painted a block around the founding site -- which in this fixture sits at (-1,-1), so
+        // the block spanned the tile that had just been erased and RE-PAINTED IT. The family
+        // dutifully rebuilt in the very spot the test had turned them out of, and the guard failed
+        // for the feature working. *A fixture can fight the mechanism it is testing* (D194).
+        //
+        // The rest of the neighbourhood is still painted, which is all this claim needs: the one
+        // erased tile is now the only ground in the village they cannot have.
+        loop.Step(Config.TicksPerYear * 15);
+
+        Assert.True(
+            turnedOut.HasHome,
+            $"The {turnedOut.Name} household never rebuilt on the ground still painted for them.");
+        Assert.NotEqual(lived, turnedOut.Home());
     }
 }

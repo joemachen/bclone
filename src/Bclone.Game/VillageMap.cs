@@ -472,6 +472,7 @@ public partial class VillageMap : Control
         _building = null;
         _demolishing = false;
         _demolishArmedAt = null;
+        _eraseHousesArmed = false;
         Announce();
         QueueRedraw();
     }
@@ -485,6 +486,7 @@ public partial class VillageMap : Control
         _building = null;
         _demolishing = false;
         _demolishArmedAt = null;
+        _eraseHousesArmed = false;
         Announce();
         QueueRedraw();
     }
@@ -498,6 +500,7 @@ public partial class VillageMap : Control
         _building = null;
         _demolishing = false;
         _demolishArmedAt = null;
+        _eraseHousesArmed = false;
         Announce();
         QueueRedraw();
     }
@@ -515,6 +518,7 @@ public partial class VillageMap : Control
         _building = kind;
         _demolishing = false;
         _demolishArmedAt = null;
+        _eraseHousesArmed = false;
         _brush = 0;
         Announce();
         QueueRedraw();
@@ -531,11 +535,19 @@ public partial class VillageMap : Control
     /// </remarks>
     private GridPos? _demolishArmedAt;
 
+    /// <summary>Whether an erase stroke has already warned about the houses under it.</summary>
+    /// <remarks>
+    /// <b>Cleared whenever the mode changes</b>, for the same reason <see cref="_demolishArmedAt"/>
+    /// is — <em>a confirmation the player has forgotten about is a trap rather than a guard.</em>
+    /// </remarks>
+    private bool _eraseHousesArmed;
+
     public void BeginDemolishing()
     {
         _building = null;
         _demolishing = true;
         _demolishArmedAt = null;
+        _eraseHousesArmed = false;
         _brush = 0;
         Announce();
         QueueRedraw();
@@ -591,6 +603,7 @@ public partial class VillageMap : Control
             BeginBuilding(null);
             _demolishing = false;
         _demolishArmedAt = null;
+        _eraseHousesArmed = false;
             AcceptEvent();
             return;
         }
@@ -652,6 +665,7 @@ public partial class VillageMap : Control
     private void PaintAround(GridPos centre)
     {
         string? warning = null;
+        int homesUnderTheBrush = 0;
         string? refused = null;
 
         for (int dy = -BrushRadius; dy <= BrushRadius; dy++)
@@ -728,7 +742,22 @@ public partial class VillageMap : Control
 
                 if (_brush < 0)
                 {
-                    _world!.EraseResidential(tile);
+                    // ⭐⭐ ERASING OVER HOUSES IS A DEMOLITION ORDER NOW (Joe, 2026-08-26), and the
+                    // objection the sim used to make is answered here rather than argued away:
+                    // *"pulling houses down because somebody adjusted a brush would be a cruel
+                    // reading of an undo."* **True of an accident, false of an intent** — so the
+                    // stroke is counted, warned about, and takes a SECOND deliberate stroke.
+                    //
+                    // ⚠️ Armed per stroke rather than per tile, because a neighbourhood is erased
+                    // with one drag: warning once and requiring one confirmation is the shape D42
+                    // chose for painting and D221 for destroying a full store.
+                    if (_world!.HouseholdAt(tile) is not null && !_eraseHousesArmed)
+                    {
+                        homesUnderTheBrush++;
+                        continue;
+                    }
+
+                    _world.EraseResidential(tile);
                     continue;
                 }
 
@@ -738,6 +767,26 @@ public partial class VillageMap : Control
                     warning = verdict.Warning;
                 }
             }
+        }
+
+        // ⛔ THE SECOND STROKE IS THE CONSENT, AND THE WARNING HAS TO SAY WHERE THEY WOULD GO.
+        // A family turned out in autumn with no painted ground left is a winter death caused by a
+        // brush stroke — the unforeseeable punishment §2.1 and §0.1 both refuse. The village
+        // already computes *"nowhere to build"*, so the sentence can be specific rather than
+        // ominous.
+        if (homesUnderTheBrush > 0)
+        {
+            _eraseHousesArmed = true;
+            string homes = homesUnderTheBrush == 1 ? "1 household" : $"{homesUnderTheBrush} households";
+
+            PlacementMessageChanged?.Invoke(_world!.NeedsMoreResidentialLand
+                ? $"That would turn {homes} out, and there is no other painted ground for them "
+                    + "to move to. Paint somewhere else first. Erase again to do it anyway."
+                : $"That would turn {homes} out of their homes; they will rebuild on the ground "
+                    + "you have painted elsewhere. Erase again to confirm.");
+
+            QueueRedraw();
+            return;
         }
 
         // One warning for the stroke, not one per tile — which is the entire reason
