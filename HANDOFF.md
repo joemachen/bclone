@@ -1,7 +1,10 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT. Techniques and the library are in; the knowledge screen is not.**
 
-> **⛔⛔ NOT PUSHED. `main` is at `887a737` and the work is on `phase/4-the-tech-tree`, TWENTY
-> commits ahead.** Joe has been asked three times and has not said either way, so **do not assume
+> **⛔⛔ NOT PUSHED. The work is on `phase/4-the-tech-tree`, about fifteen commits ahead of
+> `origin/main`** — count it with `git rev-list --count origin/main..HEAD` rather than trusting
+> this line, because **this file's own rule is not to write a number that keeps moving and the
+> first draft of this paragraph got both the hash and the count wrong within the hour.**
+> Joe has been asked three times and has not said either way, so **do not assume
 > it is his oversight and do not push without him saying so.** ⚠️ **He plays this branch**, so the
 > build he sees and the remote are not the same thing — which is D217's trap sitting live rather
 > than historical. **Ask, in the first message.**
@@ -51,6 +54,7 @@ against what the documents claim, and it is the shortest route to being oriented
 4. **⚠️ THE FARM IS UNPARKED (D194)** and **Joe's thirteen tiles were never available** — thirteen
    tiles ten ticks from a store needs ~230 ticks of a 120-tick autumn. Read the farm section below
    before re-opening it, and **do not propose `farm_store_cap` — it is dead twice over.**
+
 ---
 
 ## ⭐⭐ What landed while Phase 4 stayed held (D206–D218, 2026-08-24/25)
@@ -200,7 +204,7 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 > done; these are the live calls.
 >
 > 1. **⛔⛔ ASK JOE WHETHER TO PUSH.** Twenty commits on `phase/4-the-tech-tree`, `main` at
->    `887a737`. **He has been asked three times and has not answered** — which is not the same as
+>    **He has been asked three times and has not answered** — which is not the same as
 >    "no", and not the same as permission. ⚠️ **He plays this branch**, so the build he sees and
 >    the remote differ: D217's trap, live.
 > 2. **⛔ SLICE 3 — THE KNOWLEDGE SCREEN — IS THE REST OF PHASE 4.**
