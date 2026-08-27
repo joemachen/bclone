@@ -479,7 +479,6 @@ public partial class VillageMap : Control
         _moveFrom = null;
         _emptying = false;
         _demolishArmedAt = null;
-        _eraseHousesArmed = false;
         Announce();
         QueueRedraw();
     }
@@ -496,7 +495,6 @@ public partial class VillageMap : Control
         _moveFrom = null;
         _emptying = false;
         _demolishArmedAt = null;
-        _eraseHousesArmed = false;
         Announce();
         QueueRedraw();
     }
@@ -513,7 +511,6 @@ public partial class VillageMap : Control
         _moveFrom = null;
         _emptying = false;
         _demolishArmedAt = null;
-        _eraseHousesArmed = false;
         Announce();
         QueueRedraw();
     }
@@ -534,7 +531,6 @@ public partial class VillageMap : Control
         _moveFrom = null;
         _emptying = false;
         _demolishArmedAt = null;
-        _eraseHousesArmed = false;
         _brush = 0;
         Announce();
         QueueRedraw();
@@ -551,19 +547,11 @@ public partial class VillageMap : Control
     /// </remarks>
     private GridPos? _demolishArmedAt;
 
-    /// <summary>Whether an erase stroke has already warned about the houses under it.</summary>
-    /// <remarks>
-    /// <b>Cleared whenever the mode changes</b>, for the same reason <see cref="_demolishArmedAt"/>
-    /// is — <em>a confirmation the player has forgotten about is a trap rather than a guard.</em>
-    /// </remarks>
-    private bool _eraseHousesArmed;
-
     public void BeginDemolishing()
     {
         _building = null;
         _demolishing = true;
         _demolishArmedAt = null;
-        _eraseHousesArmed = false;
         _brush = 0;
         _moveFrom = null;
         _moving = false;
@@ -591,7 +579,6 @@ public partial class VillageMap : Control
         _moveFrom = null;
         _emptying = false;
         _demolishArmedAt = null;
-        _eraseHousesArmed = false;
         _brush = 0;
         _emptying = false;
         _moving = true;
@@ -609,7 +596,6 @@ public partial class VillageMap : Control
         _moveFrom = null;
         _emptying = false;
         _demolishArmedAt = null;
-        _eraseHousesArmed = false;
         _brush = 0;
         _moving = false;
         _moveFrom = null;
@@ -672,7 +658,6 @@ public partial class VillageMap : Control
             _moveFrom = null;
             _emptying = false;
         _demolishArmedAt = null;
-        _eraseHousesArmed = false;
             AcceptEvent();
             return;
         }
@@ -820,10 +805,9 @@ public partial class VillageMap : Control
                     // ⚠️ Armed per stroke rather than per tile, because a neighbourhood is erased
                     // with one drag: warning once and requiring one confirmation is the shape D42
                     // chose for painting and D221 for destroying a full store.
-                    if (_world!.HouseholdAt(tile) is not null && !_eraseHousesArmed)
+                    if (_world!.HouseholdAt(tile) is not null)
                     {
                         homesUnderTheBrush++;
-                        continue;
                     }
 
                     _world.EraseResidential(tile);
@@ -843,19 +827,30 @@ public partial class VillageMap : Control
         // brush stroke — the unforeseeable punishment §2.1 and §0.1 both refuse. The village
         // already computes *"nowhere to build"*, so the sentence can be specific rather than
         // ominous.
+        // ⛔⛔ THE CONFIRMATION IS GONE, AND DELETING IT IS THE FIX (Joe, playing: *"I tried to
+        // 'take back' residential land that a house existed on and it wouldn't let me unpaint the
+        // land."*). **It was written when unpainting LEVELLED a house on the spot** — the guard
+        // against *"pulling houses down because somebody adjusted a brush would be a cruel reading
+        // of an undo"*.
+        //
+        // ⭐ D230 MADE THAT IMPOSSIBLE ONE COMMIT LATER AND NOBODY NOTICED THE GATE HAD BECOME
+        // REDUNDANT. Unpainting now only **marks**, and repainting **cancels** right up until the
+        // first hammer swings — so a brush wobble already costs nothing, and the second stroke was
+        // guarding against a thing that can no longer happen. *A safety built into the mechanism
+        // does not also need a click.*
+        //
+        // ⚠️ The SENTENCE stays, because it is information the player wants — how many homes this
+        // touches, and whether there is anywhere for those families to go. **It just is not a gate
+        // any more.**
         if (homesUnderTheBrush > 0)
         {
-            _eraseHousesArmed = true;
             string homes = homesUnderTheBrush == 1 ? "1 household" : $"{homesUnderTheBrush} households";
 
             PlacementMessageChanged?.Invoke(_world!.NeedsMoreResidentialLand
-                ? $"That would turn {homes} out, and there is no other painted ground for them "
-                    + "to move to. Paint somewhere else first. Erase again to do it anyway."
-                : $"That would turn {homes} out of their homes; they will rebuild on the ground "
-                    + "you have painted elsewhere. Erase again to confirm.");
-
-            QueueRedraw();
-            return;
+                ? $"{homes} marked to come down, and there is no other painted ground for them to "
+                    + "move to — paint somewhere else, or paint this back."
+                : $"{homes} marked to come down; they will rebuild on ground you have painted "
+                    + "elsewhere. Paint it back to call it off.");
         }
 
         // One warning for the stroke, not one per tile — which is the entire reason
