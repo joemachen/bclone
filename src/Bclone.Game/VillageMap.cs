@@ -146,6 +146,11 @@ public partial class VillageMap : Control
     /// <summary>The market (D14), which is both a workplace and a store.</summary>
     private static readonly Color MarketColour = new("#c98f4a");
 
+    // A library reads as ink rather than as grain or timber — deliberately unlike every other
+    // building on the map, because it is the only one that produces nothing you can eat, burn or
+    // build with. Cool blue against a palette that is otherwise earth and harvest.
+    private static readonly Color LibraryColour = new("#6a7fc9");
+
     /// <summary>The ring round a store with no room left (D140).</summary>
     /// <remarks>
     /// Warm amber rather than red. A full store is not a disaster — it is usually a village
@@ -784,6 +789,25 @@ public partial class VillageMap : Control
                 }
             }
 
+            // ⚠️ LIBRARIES TOO, OR A MISPLACED ONE IS PERMANENT — which is the thing the comment
+            // at the top of this method says the brush must never allow. It also matters more here
+            // than for a hut: pulling a library down destroys the records in it, and the sim says
+            // which techniques went, so the player is told what they are forgetting.
+            foreach (Library library in _world.Libraries)
+            {
+                if (library.Position == where)
+                {
+                    string name = library.Name;
+                    int held = library.Records.Count;
+                    _world.Demolish(library);
+                    PlacementMessageChanged?.Invoke(held == 0
+                        ? $"{name} is gone."
+                        : $"{name} is gone, and the {held} record(s) in it with it.");
+                    QueueRedraw();
+                    return;
+                }
+            }
+
             foreach (StoreBuilding building in _world.StoreBuildings)
             {
                 if (building.Position == where)
@@ -1058,6 +1082,7 @@ public partial class VillageMap : Control
         DrawRoutes();
         DrawWorkplaces();
         DrawStores();
+        DrawLibraries();
         DrawHomes();
 
         // Over the buildings so it is not hidden by one, under the people so it never
@@ -1328,6 +1353,39 @@ public partial class VillageMap : Control
             SelectedRing,
             filled: false,
             width: 2f);
+    }
+
+    /// <summary>Draw the libraries, which are neither stores nor workplaces.</summary>
+    /// <remarks>
+    /// <b>⛔ ITS ABSENCE IS WHAT JOE HIT:</b> *"it was constructed as buildings usually are, but no
+    /// final building showed up upon completion. Just an open ground tile."* The sim had the
+    /// building the whole time — it is in <c>SimWorld.Libraries</c>, and **this view knew about
+    /// exactly two lists.**
+    /// </remarks>
+    private void DrawLibraries()
+    {
+        SimWorld world = _world!;
+
+        for (int i = 0; i < world.Libraries.Count; i++)
+        {
+            Library library = world.Libraries[i];
+
+            Vector2 centre = ToScreen(library.Position);
+            float size = Mathf.Max(8f, _pixelsPerTile * 0.8f);
+            var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+            DrawRect(rect, LibraryColour with { A = 0.85f });
+            DrawRect(rect, LibraryColour, filled: false, width: 2f);
+
+            // ⭐ A FULL LIBRARY SAYS SO ON THE MAP, for the same reason a full store does (D140):
+            // the consequence of a full shelf is a technique dying with somebody years from now,
+            // and the player should not have to click to find that out. Same ring, same reason —
+            // *this building is the cause of the thing you are about to be annoyed by.*
+            if (!library.HasRoom)
+            {
+                DrawArc(centre, size * 0.85f, 0f, Mathf.Tau, 24, LibraryColour, width: 2f);
+            }
+        }
     }
 
     private void DrawStores()

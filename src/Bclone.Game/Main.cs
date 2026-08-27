@@ -993,6 +993,25 @@ public partial class Main : Control
             }
         }
 
+        // ⛔⛔ THE FOURTH LIST, AND LEAVING IT OUT MADE A FINISHED LIBRARY READ AS "OPEN GROUND"
+        // (Joe, playing: *"it was constructed as buildings usually are, but no final building
+        // showed up upon completion"*). **This method knew about three kinds of thing that can
+        // stand on a tile and a library is a fourth** — the same shape as `SomethingStandsAt`,
+        // which had the identical hole in the sim half.
+        //
+        // ⚠️ AND THE BUTTON WAS NOT ENOUGH. The build button shipped with the building on D103's
+        // rule — *a feature the player cannot reach does not exist* — and that was checked off as
+        // done. **Placeable is not reachable.** A building the player can mark, pay for, watch get
+        // built, and then never see is D221's finding for the sixth time, arriving through the one
+        // door that had just been declared closed.
+        foreach (Library library in world.Libraries)
+        {
+            if (library.Position == tile)
+            {
+                DescribeLibrary(world, library, lines);
+            }
+        }
+
         if (lines.Count == 0)
         {
             DescribeBareGround(world, tile, lines);
@@ -1196,6 +1215,38 @@ public partial class Main : Control
         else if (workplace.Kind == JobKind.Woodcutter)
         {
             lines.Add("Holding: nothing — no logs here to split.");
+        }
+    }
+
+    /// <summary>What a library says when you click it — its shelves, and what is on them.</summary>
+    /// <remarks>
+    /// <b>⭐ THE SHELVES ARE THE WHOLE PANEL, because they are the whole decision.</b> The player is
+    /// choosing which techniques outlive the people who worked them out, and *"two of three shelves
+    /// used"* is the sentence that makes the choice visible before it bites rather than afterwards.
+    /// </remarks>
+    private static void DescribeLibrary(SimWorld world, Library library, List<string> lines)
+    {
+        Separate(lines);
+
+        lines.Add($"{library.Name} — where the village writes things down");
+        lines.Add($"Shelves: {library.Records.Count} of {library.Shelves} used");
+
+        if (library.Records.Count == 0)
+        {
+            lines.Add("Nothing written yet. A master who has worked a trade for twenty "
+                + "years works something out, and it is recorded here.");
+            return;
+        }
+
+        for (int i = 0; i < library.Records.Count; i++)
+        {
+            lines.Add($"  · {world.TechniquesCatalog[library.Records[i]].Name}");
+        }
+
+        if (!library.HasRoom)
+        {
+            lines.Add("Full. The next technique anybody works out has nowhere to go, and "
+                + "will die with them unless another library stands.");
         }
     }
 
