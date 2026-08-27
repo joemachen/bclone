@@ -44,6 +44,8 @@ public sealed class KnowledgeSystem : ISimSystem
     {
         ArgumentNullException.ThrowIfNull(world);
 
+        NoticeIfAnybodyLearnedToWrite(world);
+
         TechniquesCatalog catalogue = world.TechniquesCatalog;
 
         for (int id = 0; id < catalogue.Count; id++)
@@ -80,6 +82,21 @@ public sealed class KnowledgeSystem : ISimSystem
             }
 
             Villager? knower = FirstLivingMasterOf(world, technique.Skill);
+
+            // ⭐⭐ DISCOVERY IS AN EVENT; PERSISTENCE IS A SCAN — and they ask different questions
+            // (Joe, 2026-08-26, from play). A technique the village has never had is worked out by
+            // somebody who reached mastery **here**; once it exists, **any** living master keeps it
+            // alive, home-grown or arrived-with-the-cart.
+            //
+            // ⛔ THE BUG THIS CLOSES: the shipped founding seeds one master, so a technique was
+            // being worked out on **tick one**, before the village had a house. *"Unlock by doing"*
+            // with nothing done. **A founding master is skilled and did not have the moment here.**
+            bool nobodyHasEverHadIt = was == KnowledgeState.Unknown;
+            if (nobodyHasEverHadIt && !AnybodyMasteredItHere(world, technique.Skill))
+            {
+                knower = null;
+            }
+
             KnowledgeState now = knower is null ? KnowledgeState.Unknown : KnowledgeState.Known;
 
             // ⚠️ REMEMBERED EVERY TICK IT IS HELD, NOT ONCE WHEN IT IS LEARNED — and the difference
@@ -160,6 +177,45 @@ public sealed class KnowledgeSystem : ISimSystem
     /// question for the warning, so the sentence the player reads years ahead and the state that
     /// changes on the death are **made of the same fact**.
     /// </remarks>
+    /// <summary>Say it, once, on the year the granary's count turns into writing.</summary>
+    /// <remarks>
+    /// <b>⭐ §7a's OWN SENTENCE, and it is the whole reason literacy comes from the granary rather
+    /// than from a threshold.</b> The player reaches writing by trying not to starve — so the line
+    /// has to be about a person keeping a count, not about a milestone being met.
+    /// </remarks>
+    private static void NoticeIfAnybodyLearnedToWrite(SimWorld world)
+    {
+        if (world.SaidTheyCanWrite || !world.HasLiteracy)
+        {
+            return;
+        }
+
+        world.SaidTheyCanWrite = true;
+        world.Narrate(
+            $"The granary's count has been kept for {world.Config.LiteracyYears} years, and "
+            + "somebody has begun marking the sacks with signs of their own devising. "
+            + $"The village can write things down now. {world.Clock.SeasonAndYear()}.");
+    }
+
+    /// <summary>Whether any living villager reached mastery of a skill in this valley.</summary>
+    /// <remarks>
+    /// <b>The discovery half of the rule.</b> Asked only when nobody has ever had the technique —
+    /// once the village has it, <see cref="FirstLivingMasterOf"/>'s looser question keeps it alive.
+    /// </remarks>
+    private static bool AnybodyMasteredItHere(SimWorld world, int skillId)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.Alive && villager.FindProgressIn(skillId) is { MasteredHere: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static Villager? FirstLivingMasterOf(SimWorld world, int skillId)
     {
         for (int i = 0; i < world.Villagers.Count; i++)

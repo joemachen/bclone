@@ -183,7 +183,8 @@ public sealed class FarmGoldenTests
     //   before the arms were hashed by index: 11064751127156165011
     //   before the fixture ate what the game eats (D223): 5494657115974799914
     //   before the village knew things (D225): 4569067148687306339
-    private const ulong SeamGoldenHash = 4947410003911202830UL;
+    //   before the founding master had to earn it here (D227): 4947410003911202830
+    private const ulong SeamGoldenHash = 5913960743801194628UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -212,7 +213,8 @@ public sealed class FarmGoldenTests
     //   before the arms were hashed by index (D211): 4480535409214959852
     //   before the fixture ate what the game eats (D223): 12276508385911985440
     //   before the village knew things (D225): 13041738680192547203
-    private const ulong SeamBeforeAnybodyGotBetter = 267111501083800924UL;
+    //   before the founding master had to earn it here (D227): 267111501083800924
+    private const ulong SeamBeforeAnybodyGotBetter = 2112570384239951269UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

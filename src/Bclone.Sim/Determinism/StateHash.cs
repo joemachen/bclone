@@ -333,6 +333,18 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.LastKnowerIds[i]);
         }
 
+        // ---- When the granary's count began (Phase 4, D32's literacy) ----
+        //
+        // ⛔ HASHED BECAUSE THE SIM READS IT: `HasLiteracy` decides whether a library may be
+        // placed at all, so two runs disagreeing about it are two villages with different
+        // buildings available. **Sparse** — a village that has never raised a granary mixes
+        // nothing, so nothing moved for the feature merely existing.
+        if (world.FirstGranaryTick > 0)
+        {
+            hash = MixUInt32(hash, (uint)world.FirstGranaryTick);
+            hash = MixUInt32(hash, (uint)(world.FirstGranaryTick >> 32));
+        }
+
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----
         //
         // ⚠️ THE RECORDS ARE MIXED IN SHELF ORDER, NOT AS A SET, and that is deliberate. Two runs
@@ -558,6 +570,15 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)progress.Ticks);
             hash = MixUInt32(hash, (uint)progress.Work);
             hash = MixByte(hash, progress.Mastered ? (byte)1 : (byte)0);
+
+            // ⭐ AND WHETHER THEY WORKED IT OUT HERE, sparsely — false mixes nothing, so a village
+            // whose only master arrived with the cart is byte-identical to one from before this
+            // existed. The sim reads it (`KnowledgeSystem` asks it to decide whether a technique
+            // can be discovered at all), so it cannot be left out of the fingerprint.
+            if (progress.MasteredHere)
+            {
+                hash = MixByte(hash, 1);
+            }
         }
 
         return hash;

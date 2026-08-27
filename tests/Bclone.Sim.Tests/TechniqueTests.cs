@@ -399,6 +399,161 @@ public sealed class TechniqueTests
     //  Slice 2 — the library, and Known becoming Established
     // -----------------------------------------------------------------
 
+    /// <summary>
+    /// A founding master keeps a technique alive and cannot be the one who works it out.
+    /// </summary>
+    /// <remarks>
+    /// <b>⛔ THE SHIPPED FOUNDING SEEDS ONE MASTER, so a technique was being worked out on tick
+    /// one</b>, before the village had a house — which Joe hit in play as *"it feels out of sync"*.
+    /// <b>Discovery is an event and persistence is a scan</b>: she is skilled, and she did not have
+    /// the moment here.
+    /// </remarks>
+    [Fact]
+    public void AFoundingMasterCannotWorkAnythingOut()
+    {
+        SimLoop loop = Loop(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        // Exactly what the founding does: mastered, but not mastered here.
+        Villager arrived = FirstLiving(world);
+        SkillProgress progress = arrived.ProgressIn(4);
+        progress.Work = int.MaxValue / 2;
+        progress.Mastered = true;
+
+        loop.Step(1);
+        Assert.Equal(KnowledgeState.Unknown, world.KnowledgeStates[CropRotation]);
+
+        // ⭐ But once somebody DOES work it out here, she is a knower like any other — so the
+        // technique survives the discoverer's death while she is still alive.
+        Villager grewIntoIt = MakeAMasterOf(world, 4, arrived);
+        loop.Step(1);
+        Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[CropRotation]);
+
+        grewIntoIt.Alive = false;
+        loop.Step(1);
+        Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[CropRotation]);
+    }
+
+    /// <summary>
+    /// ⛔ A library cannot be built before anybody can write, and the refusal says what to do.
+    /// </summary>
+    /// <remarks>
+    /// <b>D32 and `tech-tree.md §7a`: literacy comes out of the granary.</b> The player does not
+    /// set out to invent writing — they set out not to starve, and a kept count is what eventually
+    /// teaches it. ⚠️ <b>The rule is asked of the ROW, not of the kind</b>: any building with
+    /// shelves waits on literacy, including one this sim has never heard of. The first version
+    /// compared against <c>BuildingKind.Library</c> and refused a modder's building that happened
+    /// to share the id.
+    /// </remarks>
+    [Fact]
+    public void NobodyCanBuildALibraryBeforeTheyCanWrite()
+    {
+        SimLoop loop = Loop(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        GridPos site = SomewhereBuildable(world);
+        PlacementVerdict tooSoon = world.CanBuildAt(BuildingKind.Library, site);
+
+        Assert.False(tooSoon.Allowed);
+        Assert.Contains("granary", tooSoon.Reason, System.StringComparison.OrdinalIgnoreCase);
+        _output.WriteLine(tooSoon.Reason);
+
+        Assert.False(world.HasLiteracy);
+    }
+
+    /// <summary>Literacy arrives from a granary that has been kept, and the village says so.</summary>
+    [Fact]
+    public void KeepingAGranarysCountForYearsTeachesTheVillageToWrite()
+    {
+        var sink = new InMemoryLogSink();
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config, sink);
+        SimWorld world = loop.World;
+
+        Assert.False(world.HasLiteracy);
+
+        // ⚠️ BUILT BY HAND RATHER THAN WAITED FOR, and the first draft of this guard waited.
+        // A cold-start village has to raise a builder's hut, gather timber and stone and get
+        // through a queue, and **it had not finished a granary in seventeen years** — so the guard
+        // failed for a reason that had nothing to do with literacy. *Its own anti-vacuity check is
+        // what said so, instead of leaving a confusing red.*
+        world.Mark(BuildingKind.Granary, SomewhereBuildable(world));
+        FinishTheSiteAt(world, world.Workplaces[^1].Position);
+
+        loop.Step(config.TicksPerYear * (config.LiteracyYears + 2));
+
+        // ⚠️ Only meaningful if the granary actually got built — a run where the village never
+        // finished it would pass this guard for the wrong reason.
+        Assert.True(
+            world.FirstGranaryTick > 0,
+            "The village never finished a granary, so this proves nothing about literacy.");
+        Assert.True(world.HasLiteracy);
+        Assert.Contains("signs of their own devising", Said(sink), System.StringComparison.Ordinal);
+
+        PlacementVerdict now = world.CanBuildAt(BuildingKind.Library, SomewhereBuildable(world));
+        Assert.True(now.Allowed, now.Reason);
+    }
+
+    /// <summary>A tile the village may build on, found rather than assumed.</summary>
+    private static GridPos SomewhereBuildable(SimWorld world)
+    {
+        for (int y = 0; y < world.Map.Height; y++)
+        {
+            for (int x = 0; x < world.Map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                if (world.Map.TerrainAt(at) == Terrain.Grass
+                    && world.CanBuildAt(BuildingKind.Granary, at).Allowed)
+                {
+                    return at;
+                }
+            }
+        }
+
+        throw new System.InvalidOperationException("No buildable tile in the valley.");
+    }
+
+    /// <summary>Deliver a site's materials and work it to completion, as a builder's crew would.</summary>
+    private static void FinishTheSiteAt(SimWorld world, GridPos site)
+    {
+        Workplace? found = null;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.Workplaces[i].Position == site && world.Workplaces[i].IsSite)
+            {
+                found = world.Workplaces[i];
+            }
+        }
+
+        Assert.NotNull(found);
+
+        ConstructionSite plan = found!.Construction!;
+        foreach (MaterialCost owed in plan.Recipe.Materials)
+        {
+            plan.Deliver(owed.Goods, owed.Amount);
+        }
+
+        while (!plan.IsFinished)
+        {
+            plan.Work();
+        }
+
+        world.Complete(found);
+    }
+
+    private static Villager FirstLiving(SimWorld world)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (world.Villagers[i].Alive)
+            {
+                return world.Villagers[i];
+            }
+        }
+
+        throw new System.InvalidOperationException("Nobody is alive.");
+    }
+
     /// <summary>A written technique outlives the death of everyone who knew it.</summary>
     /// <remarks>
     /// <b>The third state earning its place.</b> Slice 1's village lost everything, every time;
@@ -622,6 +777,12 @@ public sealed class TechniqueTests
             SkillProgress progress = villager.ProgressIn(skillId);
             progress.Work = int.MaxValue / 2;
             progress.Mastered = true;
+
+            // ⭐ A HOME-GROWN MASTER, WHICH IS NOW A DIFFERENT THING FROM A MASTER. Since a
+            // founding master cannot work anything out, every guard here that expects a discovery
+            // has to pose somebody who reached mastery **in this valley** — and
+            // <see cref="AFoundingMasterCannotWorkAnythingOut"/> is the guard for the other side.
+            progress.MasteredHere = true;
             return villager;
         }
 

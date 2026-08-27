@@ -277,6 +277,11 @@ public sealed class SkillSystem : ISimSystem
         // would be narrated again on the following tick, and every tick after that.
         progress.Mastered = true;
 
+        // ⭐ AND THEY WORKED IT OUT HERE — the flag the founding never sets. This is the only
+        // place it is written, which is what makes "a founding master cannot discover anything"
+        // true by construction rather than by a check somebody has to remember.
+        progress.MasteredHere = true;
+
         if (skill.MasteryLine.Length == 0)
         {
             return;

@@ -56,6 +56,45 @@ public sealed class SimWorld
     /// </remarks>
     public List<Library> Libraries { get; } = new();
 
+    /// <summary>
+    /// The tick the village's first granary began keeping count, or 0 if none ever has.
+    /// </summary>
+    /// <remarks>
+    /// <b>Never cleared</b> — pulling the granary down does not unlearn writing, any more than
+    /// burning a ledger un-teaches the person who kept it.
+    /// </remarks>
+    public ulong FirstGranaryTick { get; private set; }
+
+    /// <summary>Whether the village has already been told it can write. An edge, said once.</summary>
+    internal bool SaidTheyCanWrite { get; set; }
+
+    /// <summary>
+    /// Whether anybody here can write — <b>and it comes out of the granary</b> (D32, §7a).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE PLAYER DOES NOT SET OUT TO INVENT WRITING. THEY SET OUT NOT TO STARVE.</b>
+    /// `tech-tree.md §7a`, Joe's own design: <em>"the granary is a staffed building whose job is
+    /// counting. A keeper who has tallied stores for long enough begins marking the sacks with
+    /// signs of her own devising. Tally marks → notation → letters."</em>
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT EXISTS BECAUSE THE LIBRARY WAS OFFERED FROM TICK ONE AND THAT READ AS WRONG</b>
+    /// (Joe, from play): *"it feels too early for the library to be necessary… you just stabilised,
+    /// now build a library? Maybe a smoother transition to writing."* **`buildings-plan.md §10`
+    /// had said the same thing in a different vocabulary** — knowledge is step 8 of 11 — and the
+    /// phase plan argued its way past that for the techniques and then shipped the *building*
+    /// anyway. *He found it by playing in ten minutes.*
+    /// </para>
+    /// <para>
+    /// <b>⭐ And it makes the storage branch feed the knowing branch</b>, which is §7a's structural
+    /// point rather than its flavour: the tree stops being parallel columns and becomes a web.
+    /// </para>
+    /// </remarks>
+    public bool HasLiteracy =>
+        FirstGranaryTick > 0
+        && Tick >= FirstGranaryTick + ((ulong)Config.LiteracyYears * (ulong)Config.TicksPerYear);
+
     /// <summary>Whether any standing library has a shelf free.</summary>
     public bool AnyShelfFree()
     {
@@ -3713,6 +3752,29 @@ public sealed class SimWorld
             return PlacementVerdict.No("Something already stands there.");
         }
 
+        // ⛔ A REFUSAL WITH A REASON, NOT A GREYED-OUT BUTTON (D43). The library waits on literacy,
+        // and literacy comes out of the granary — so the sentence says **what to do**, not merely
+        // that the answer is no. *"You cannot build this yet"* would be the untraceable outcome
+        // §1.1 forbids; naming the granary makes it a plan.
+        //
+        // ⛔⛔ ASKED OF THE ROW, NOT OF THE KIND, AND THAT WAS A BUG BEFORE IT WAS A PRINCIPLE.
+        // The first version compared `kind == BuildingKind.Library` — **a switch on a building by
+        // name, which is the exact thing `buildings-catalog.md` exists to delete** — and it fired
+        // on `ModdedBuildingTests`' boathouse within one test run, because that fixture's building
+        // holds id 10 too. *A modder's building was refused for want of literacy it had no use
+        // for.*
+        //
+        // ⭐ And the data-driven rule is the better sentence anyway: **you must be able to write
+        // before you can build somewhere to write things down.** Any building with shelves waits
+        // on literacy, including one this sim has never heard of.
+        if (BuildingsCatalog[kind]?.Shelves > 0 && !HasLiteracy)
+        {
+            return PlacementVerdict.No(FirstGranaryTick == 0
+                ? "Nobody here can write yet. Keeping a granary's count is what teaches it — "
+                    + "build one, and give it years."
+                : "Nobody here can write yet. The granary's count has not been kept long enough.");
+        }
+
         // ⚠️ STANDING TREES ARE NOT A REFUSAL, and this is a correction rather than an
         // omission (Joe, D100). It refused a pile on wooded ground and told the player to
         // clear it first — which read the rule backwards. The village clears it: "I want
@@ -4720,6 +4782,15 @@ public sealed class SimWorld
         };
 
         StoreBuildings.Add(building);
+
+        // ⭐ THE CLOCK ON WRITING STARTS HERE (D32, §7a). The first granary is the first thing in
+        // this village whose job is *counting*, and literacy is what a well-run count eventually
+        // produces. Recorded on the first one only — a second granary does not restart the years.
+        if (storeKind == StoreKind.Granary && FirstGranaryTick == 0)
+        {
+            FirstGranaryTick = Tick == 0 ? 1UL : Tick;
+        }
+
         return building;
     }
 

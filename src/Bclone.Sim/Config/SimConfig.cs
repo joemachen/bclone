@@ -1775,6 +1775,27 @@ public sealed record SimConfig
         },
     };
 
+    /// <summary>
+    /// Years a granary's count must be kept before anybody here can write (D32, §7a).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ FIFTEEN IS A PACING NUMBER AND IT IS A PROPOSAL.</b> It is chosen to sit **just
+    /// before** the first home-grown master, not after: a granary goes up around year three to
+    /// five, so literacy lands about year eighteen to twenty, and the first technique needs
+    /// twenty years on a trade. **The library becomes buildable slightly before there is anything
+    /// to write in it**, which gives the player a season or two to prepare rather than a scramble.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>If the two ever cross, the feature reads as broken</b> — a technique announced as lost
+    /// before the player was ever allowed to build the thing that would have saved it is the
+    /// funeral surprise `tech-tree.md §11` forbids. <b>Whichever way these numbers move, they move
+    /// together.</b>
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("literacy_years")]
+    public int LiteracyYears { get; init; } = 15;
+
     /// <summary>Logs a library takes to build.</summary>
     [JsonPropertyName("library_logs")]
     public int LibraryLogs { get; init; } = 35;

@@ -255,4 +255,31 @@ public sealed class SkillProgress
 
     /// <summary>Whether this person has ever reached mastery. Set once; never cleared.</summary>
     public bool Mastered { get; set; }
+
+    /// <summary>
+    /// Whether they reached mastery <b>here</b>, rather than arriving already holding it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE DIFFERENCE BETWEEN BEING A MASTER AND HAVING WORKED SOMETHING OUT</b>
+    /// (Joe, 2026-08-26, from play: the library and the first technique both *"feel out of
+    /// sync — you just stabilised, now build a library?"*). The shipped founding seeds
+    /// <b>one master</b>, so a technique was being worked out on <b>tick one</b>, before the
+    /// village had a house — an unlock the player did nothing to earn, which is exactly what
+    /// `DESIGN.md §2.7`'s *unlock by doing* is not.
+    /// </para>
+    /// <para>
+    /// <b>⛔ SO DISCOVERY IS AN EVENT AND PERSISTENCE IS A SCAN, and they ask different
+    /// questions.</b> A technique arrives when somebody <em>reaches</em> mastery in this valley;
+    /// it survives while <em>any</em> living master holds it, home-grown or not. **A founding
+    /// master can keep a technique alive and can never be the one who works it out** — she is
+    /// skilled, and she did not have the moment here.
+    /// </para>
+    /// <para>
+    /// <b>Set by <see cref="Systems.SkillSystem"/> only, on the tick the threshold is crossed</b>,
+    /// and never by the founding. Hashed sparsely — false mixes nothing — so a village whose
+    /// masters all arrived with the cart is byte-identical to one from before this existed.
+    /// </para>
+    /// </remarks>
+    public bool MasteredHere { get; set; }
 }
