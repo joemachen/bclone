@@ -191,10 +191,35 @@ public sealed class KnowledgeSystem : ISimSystem
         }
 
         world.SaidTheyCanWrite = true;
-        world.Narrate(
+
+        // ⭐⭐ THE VILLAGE GIVES THE PLAYER A LIBRARY, AND IT IS A REWARD RATHER THAN A CHORE (Joe,
+        // 2026-08-26, with a SimCity screenshot: the mayor's house you are gifted for doing well).
+        // **A library you BUILD is an item on a list; a library the village GIVES you is what
+        // fifteen years of keeping a granary bought.** ⛔ No characters — nobody hands it over, it
+        // is simply there, which is the half of SimCity's version worth keeping.
+        //
+        // ⛔ THE GIFT IS THE FIRST ONE ONLY. Every further library costs materials, which is what
+        // keeps the shelf cap a decision (`tech-tree.md §11`) rather than a formality D204 already
+        // half-dissolved.
+        string body =
             $"The granary's count has been kept for {world.Config.LiteracyYears} years, and "
             + "somebody has begun marking the sacks with signs of their own devising. "
-            + $"The village can write things down now. {world.Clock.SeasonAndYear()}.");
+            + $"The village can write things down now. {world.Clock.SeasonAndYear()}.";
+
+        if (world.GiftALibrary() is string where)
+        {
+            world.RaiseMoment(
+                "The village learned to write",
+                body + $" They have raised a library {where} to keep what they know.");
+            return;
+        }
+
+        // ⚠️ SAID EITHER WAY. A gift the player is told about and never receives is worse than no
+        // gift, so a valley with nowhere to put one says so and the player can make room.
+        world.RaiseMoment(
+            "The village learned to write",
+            body + " There was nowhere beside the granary to raise a library; clear some ground "
+                + "near it and build one.");
     }
 
     /// <summary>Whether any living villager reached mastery of a skill in this valley.</summary>

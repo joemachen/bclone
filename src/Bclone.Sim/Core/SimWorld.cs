@@ -48,6 +48,37 @@ public sealed class SimWorld
     /// <summary>What the techniques are — the one place the sim asks (`tech-tree.md`).</summary>
     public TechniquesCatalog TechniquesCatalog { get; }
 
+    /// <summary>
+    /// Things worth stopping for, waiting for the view to show them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ NOT HASHED, AND IT MUST NOT BE.</b> This is a queue for the view, not a fact about the
+    /// village — the same class of thing as <c>_terrainGeneration</c>, whose own comment says
+    /// *"bookkeeping about a cache, not a fact about the village."* **Two runs that disagree about
+    /// what is in here have already diverged on whatever raised it**, and every raiser writes to
+    /// the village log too.
+    /// </para>
+    /// <para>
+    /// <b>⛔ It is drained by whoever reads it, and a headless run simply never does.</b> That has
+    /// to be harmless: the sim must not care whether anybody is watching, so nothing here is ever
+    /// waited on and the list growing unread across a three-hundred-year run costs a few strings.
+    /// </para>
+    /// </remarks>
+    public List<Moment> Moments { get; } = new();
+
+    /// <summary>Raise something worth stopping for — <b>and say it in the log as well</b>.</summary>
+    /// <remarks>
+    /// <b>One call does both on purpose.</b> A moment that only appeared in a modal would be a
+    /// thing the audit trail never knew happened, and this project has spent whole sessions inside
+    /// that log.
+    /// </remarks>
+    internal void RaiseMoment(string title, string body)
+    {
+        Moments.Add(new Moment { Title = title, Body = body });
+        Narrate(body);
+    }
+
     /// <summary>The libraries standing in the village, and what is written in them.</summary>
     /// <remarks>
     /// <b>Its own list, because a library is not a store, a workplace or a home</b> — see
@@ -94,6 +125,68 @@ public sealed class SimWorld
     public bool HasLiteracy =>
         FirstGranaryTick > 0
         && Tick >= FirstGranaryTick + ((ulong)Config.LiteracyYears * (ulong)Config.TicksPerYear);
+
+    /// <summary>
+    /// Raise a library for nothing, beside the granary that taught them. Returns where, or null.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ BESIDE THE GRANARY, AND THE POSITION IS THE STORY.</b> Literacy came out of keeping
+    /// that building's count (D32, `tech-tree.md §7a`), so the records start where the counting
+    /// happened. *A library dropped at the village centre would be sited sensibly and mean
+    /// nothing.*
+    /// </para>
+    /// <para>
+    /// <b>⛔ Free, and the only free one.</b> Every library after this costs materials — which is
+    /// what keeps *which techniques do you preserve?* a decision rather than a formality.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It can fail, and failing quietly would be the worst version.</b> A valley with no
+    /// clear ground near the granary gets told so; the caller says it out loud.
+    /// </para>
+    /// </remarks>
+    internal string? GiftALibrary()
+    {
+        StoreBuilding? granary = FindStore(StoreKind.Granary);
+        if (granary is null)
+        {
+            return null;
+        }
+
+        BuildingRow row = BuildingsCatalog[BuildingKind.Library];
+
+        // Outward from the granary, so "beside it" means beside it rather than merely near.
+        for (int ring = 1; ring <= 6; ring++)
+        {
+            for (int dy = -ring; dy <= ring; dy++)
+            {
+                for (int dx = -ring; dx <= ring; dx++)
+                {
+                    var at = new GridPos(granary.Position.X + dx, granary.Position.Y + dy);
+
+                    // ⚠️ `alreadyStanding` because the village is not *building* this — it is being
+                    // given one, and asking whether they may build a library would refuse the gift
+                    // on the very tick that earned it.
+                    if (!CanBuildAt(BuildingKind.Library, at, alreadyStanding: true).Allowed)
+                    {
+                        continue;
+                    }
+
+                    string name = NameFor(BuildingKind.Library);
+                    Libraries.Add(new Library
+                    {
+                        Position = at,
+                        Name = name,
+                        Shelves = row.Shelves,
+                    });
+
+                    return $"beside {granary.Name}";
+                }
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>Whether any standing library has a shelf free.</summary>
     public bool AnyShelfFree()

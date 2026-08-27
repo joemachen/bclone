@@ -461,6 +461,83 @@ public sealed class TechniqueTests
         Assert.False(world.HasLiteracy);
     }
 
+    /// <summary>
+    /// ⭐⭐ The village GIVES the player a library the year it learns to write.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-08-26, with a SimCity screenshot</b> — the mayor's house you are gifted for
+    /// doing well. **A library you build is an item on a list; a library the village gives you is
+    /// what fifteen years of keeping a granary bought.** ⛔ No characters: nobody hands it over, it
+    /// is simply there.
+    /// </para>
+    /// <para>
+    /// <b>⭐ Beside the granary, and the position is the story</b> — literacy came out of keeping
+    /// that building's count (D32), so the records start where the counting happened.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheVillageGivesItselfALibraryWhenItLearnsToWrite()
+    {
+        var sink = new InMemoryLogSink();
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config, sink);
+        SimWorld world = loop.World;
+
+        Assert.Empty(world.Libraries);
+
+        GridPos site = SomewhereBuildable(world);
+        world.Mark(BuildingKind.Granary, site);
+        FinishTheSiteAt(world, site);
+
+        StoreBuilding granary = world.StoreAt(site)!;
+
+        loop.Step(config.TicksPerYear * (config.LiteracyYears + 2));
+
+        Assert.True(world.HasLiteracy);
+        Assert.Single(world.Libraries);
+
+        // ⭐ Beside the granary that taught them, not merely somewhere sensible.
+        GridPos where = world.Libraries[0].Position;
+        int away = System.Math.Max(
+            System.Math.Abs(where.X - granary.Position.X),
+            System.Math.Abs(where.Y - granary.Position.Y));
+
+        _output.WriteLine($"library at {where}, granary at {granary.Position} — {away} tiles away");
+        Assert.True(away <= 6, $"The library went up {away} tiles from the granary.");
+
+        // ⛔ And it is a moment worth stopping for, not just a log line.
+        Assert.Contains(world.Moments, m => m.Title.Contains("write", System.StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>⛔ The gift is the FIRST library only — the rest are built and paid for.</summary>
+    /// <remarks>
+    /// <b>What keeps the shelf cap a decision</b> (`tech-tree.md §11`). A village handed a library
+    /// every time it needed one would never have to choose which techniques survive, which is the
+    /// guard D204 already left carrying most of the weight.
+    /// </remarks>
+    [Fact]
+    public void OnlyTheFirstLibraryIsAGift()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        world.Mark(BuildingKind.Granary, SomewhereBuildable(world));
+        FinishTheSiteAt(world, world.Workplaces[^1].Position);
+        loop.Step(config.TicksPerYear * (config.LiteracyYears + 2));
+
+        Assert.Single(world.Libraries);
+
+        // Another decade goes by and nobody is given anything else.
+        loop.Step(config.TicksPerYear * 10);
+        Assert.Single(world.Libraries);
+
+        // ⭐ And a second one still costs what a library costs.
+        BuildingRecipe recipe = world.BuildingsCatalog.RecipeOf(BuildingKind.Library);
+        Assert.True(recipe.TotalMaterials > 0, "A built library should still cost materials.");
+    }
+
     /// <summary>Literacy arrives from a granary that has been kept, and the village says so.</summary>
     [Fact]
     public void KeepingAGranarysCountForYearsTeachesTheVillageToWrite()

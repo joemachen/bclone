@@ -335,6 +335,20 @@ public partial class Main : Control
             return;
         }
 
+        // ⛔ WHILE A MOMENT IS UP, THE KEYBOARD DISMISSES IT AND DOES NOTHING ELSE. A player who
+        // hits space to unpause would otherwise resume the village behind a panel that is still
+        // covering it — and the speed keys would fight `DismissTheMoment`'s restore. **One thing to
+        // do, and the two obvious keys both do it.**
+        if (_momentPanel is { Visible: true })
+        {
+            if (key.Keycode is Key.Space or Key.Escape or Key.Enter)
+            {
+                DismissTheMoment();
+            }
+
+            return;
+        }
+
         switch (key.Keycode)
         {
             case Key.Space: SetSpeed(_driver.IsPaused ? 1.0 : 0.0); break;
@@ -401,6 +415,96 @@ public partial class Main : Control
     /// Change playback speed — ticks per real second, never the size of a tick
     /// (decision D4).
     /// </summary>
+    /// <summary>
+    /// The one panel that sits over the valley rather than beside it.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ EVERY OTHER PANEL LIVES IN A COLUMN so that two of them cannot overlap</b> — the rule
+    /// D54/D55 arrived at after a growing panel shoved the map sideways. **This one deliberately
+    /// breaks that rule**, because it is the only thing in the game that is meant to be in the
+    /// way: the village is paused behind it and nothing else is competing for the space.
+    /// </remarks>
+    private PanelContainer? _momentPanel;
+    private Label _momentTitle = null!;
+    private Label _momentBody = null!;
+    private double _speedBeforeTheMoment = 1.0;
+
+    /// <summary>
+    /// Stop the village and show the next thing worth stopping for, if there is one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ IT PAUSES, AND THAT IS THE POINT RATHER THAN A CONVENIENCE</b> (Joe, 2026-08-26).
+    /// At 4× or 10× an unpaused panel slides past unread, and a gift you half-noticed is not a
+    /// gift. <b>Pausing also REMOVES time pressure rather than adding it</b>, which is the test
+    /// §1.2 sets for anything that interrupts.
+    /// </para>
+    /// <para>
+    /// <b>⭐ It restores the speed the player was at, not 1×.</b> Resuming slower than they left is
+    /// a small theft of a setting they chose, and the sort of thing that makes an interruption feel
+    /// like an imposition.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>One at a time, and the queue keeps the rest.</b> Two gifts in one tick would otherwise
+    /// stack panels; the second waits for the first to be dismissed, which is also why the sim
+    /// hands over a list rather than an event.
+    /// </para>
+    /// </remarks>
+    private void ShowAnyMoment(SimWorld world)
+    {
+        if (_momentPanel is { Visible: true } || world.Moments.Count == 0)
+        {
+            return;
+        }
+
+        Moment moment = world.Moments[0];
+        world.Moments.RemoveAt(0);
+
+        _momentTitle.Text = moment.Title;
+        _momentBody.Text = moment.Body;
+
+        _speedBeforeTheMoment = _driver.IsPaused ? 1.0 : _driver.SpeedMultiplier;
+        SetSpeed(0.0);
+
+        _momentPanel!.Visible = true;
+    }
+
+    private void BuildTheMomentPanel()
+    {
+        var panel = new PanelContainer { Visible = false };
+        panel.SetAnchorsAndOffsetsPreset(LayoutPreset.Center);
+        panel.CustomMinimumSize = new Vector2(460f, 0f);
+
+        var box = new VBoxContainer();
+        box.AddThemeConstantOverride("separation", 10);
+
+        _momentTitle = Heading(string.Empty);
+        box.AddChild(_momentTitle);
+
+        _momentBody = Wrapped(Body(string.Empty));
+        _momentBody.CustomMinimumSize = new Vector2(420f, 0f);
+        box.AddChild(_momentBody);
+
+        var go = new Button { Text = "Go on" };
+        go.Pressed += DismissTheMoment;
+        box.AddChild(go);
+
+        panel.AddChild(box);
+        AddChild(panel);
+        _momentPanel = panel;
+    }
+
+    private void DismissTheMoment()
+    {
+        if (_momentPanel is null || !_momentPanel.Visible)
+        {
+            return;
+        }
+
+        _momentPanel.Visible = false;
+        SetSpeed(_speedBeforeTheMoment);
+    }
+
     private void SetSpeed(double multiplier)
     {
         _driver.SpeedMultiplier = multiplier;
@@ -414,6 +518,8 @@ public partial class Main : Control
     private void Refresh()
     {
         SimWorld world = _loop.World;
+
+        ShowAnyMoment(world);
 
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
 
@@ -1683,6 +1789,8 @@ public partial class Main : Control
         // Space unpauses, and `SetSpeed` already writes "PAUSED" into the label from
         // `_driver.IsPaused`, so the header says so from the first frame.
         SetSpeed(0.0);
+
+        BuildTheMomentPanel();
 
         // Start on Selected, and set the button's label from the same switch that the
         // key binding uses — two places writing that text would eventually disagree.
