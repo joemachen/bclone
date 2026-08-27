@@ -326,26 +326,25 @@ public sealed class ResidentialZoneTests
     }
 
     /// <summary>
-    /// ⭐⭐ Erasing the ground under a house pulls the house down — and the family survives it.
+    /// Erasing the ground under a house MARKS it, and a builder pulls it down over time.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⛔ THIS GUARD USED TO ASSERT THE OPPOSITE, AND THE INVERSION IS THE POINT.</b> It read
-    /// <c>ErasingLandDoesNotPullDownTheHousesOnIt</c>, on the grounds that *"erasing says where the
+    /// THIS GUARD HAS NOW BEEN INVERTED ONCE AND SOFTENED ONCE, AND BOTH ARE RECORDED. It began as
+    /// `ErasingLandDoesNotPullDownTheHousesOnIt`, on the grounds that "erasing says where the
     /// village may build NEXT; demolishing homes because somebody adjusted a brush would be a cruel
-    /// reading of an undo."* **Joe reversed it on 2026-08-26**: *"the way to demolish a house is to
-    /// 'unpaint' the residential area underneath. And then the user paints another area to
-    /// 'relocate' houses."*
+    /// reading of an undo." Joe reversed that on 2026-08-26 -- unpainting IS how you demolish a
+    /// house -- and then immediately made it humane: "it is a builder's job to demolish it. The
+    /// demolition should take time, like the construction."
     /// </para>
     /// <para>
-    /// <b>⭐ The old objection is answered rather than dropped, and it is answered in the VIEW</b> —
-    /// erasing over occupied ground warns, names how many households it would turn out, and takes a
-    /// second deliberate stroke. *A brush wobble must not level a neighbourhood; a deliberate
-    /// unpaint should.* **The sim's job is to do what it is told, plainly, and say so.**
+    /// So the old objection is answered twice over: the view warns and asks for a second stroke,
+    /// AND the family keeps their roof until somebody actually arrives to take it off. A brush
+    /// wobble cannot level a neighbourhood; it can only propose to.
     /// </para>
     /// </remarks>
     [Fact]
-    public void ErasingLandPullsDownTheHouseOnItAndTurnsTheFamilyOut()
+    public void ErasingLandMarksTheHouseAndABuilderPullsItDown()
     {
         SimLoop loop = Build(Config);
         loop.Step(Config.TicksPerYear * 20);
@@ -356,19 +355,73 @@ public sealed class ResidentialZoneTests
 
         Household? turnedOut = world.EraseResidential(lived);
 
-        // ⭐ The household is not destroyed — it is made roofless, which is a state this game
-        // already knows how to be in and already knows how to end (`HouseTheRoofless`).
+        // Marked, not levelled -- they still live there.
         Assert.NotNull(turnedOut);
+        Assert.NotNull(world.DemolitionSiteAt(lived));
+        Assert.Equal(lived, turnedOut!.Home());
+
+        FinishTheDemolitionAt(world, lived);
+
+        // The household is not destroyed -- it is made roofless, which is a state this game
+        // already knows how to be in and already knows how to end.
         Assert.Equal(households, world.Households.Count);
-        Assert.Null(turnedOut!.HomePosition);
+        Assert.Null(turnedOut.HomePosition);
         Assert.Null(world.HouseholdAt(lived));
     }
 
-    /// <summary>⭐ And "relocating" a neighbourhood is unpaint, paint, and wait.</summary>
+    /// <summary>Repainting the ground before anybody starts calls the demolition off.</summary>
     /// <remarks>
-    /// <b>No new mechanism at all</b> — the roofless family is re-sited by the same code that
-    /// houses a new couple. That is the whole of Joe's *"the user paints another area to relocate
-    /// houses"*, and it is why houses were dropped from the relocate work entirely.
+    /// Joe: "if the user repaints the residential area before the house is demolished, then the
+    /// house is no longer marked for demolition."
+    /// </remarks>
+    [Fact]
+    public void RepaintingBeforeAnybodyStartsCallsTheDemolitionOff()
+    {
+        SimLoop loop = Build(Config);
+        loop.Step(Config.TicksPerYear * 20);
+
+        SimWorld world = loop.World;
+        GridPos lived = world.Households[0].Home();
+
+        world.EraseResidential(lived);
+        Assert.NotNull(world.DemolitionSiteAt(lived));
+
+        world.PaintResidential(lived);
+
+        Assert.Null(world.DemolitionSiteAt(lived));
+        Assert.Equal(lived, world.Households[0].Home());
+    }
+
+    /// <summary>But once the crew have started, repainting does not stop them.</summary>
+    /// <remarks>
+    /// Joe's own ruling, and the deliberate asymmetry with construction, which CAN be cancelled at
+    /// any point: "if the house is mid-demolition when the area is re-painted, the demolishing job
+    /// should finish." A half-built house was never a house; a half-demolished one is no longer one.
+    /// </remarks>
+    [Fact]
+    public void OnceTheCrewHaveStartedRepaintingDoesNotStopThem()
+    {
+        SimLoop loop = Build(Config);
+        loop.Step(Config.TicksPerYear * 20);
+
+        SimWorld world = loop.World;
+        GridPos lived = world.Households[0].Home();
+
+        world.EraseResidential(lived);
+        Workplace site = world.DemolitionSiteAt(lived)!;
+
+        // One swing of the hammer is enough to commit it.
+        site.Construction!.Work();
+        world.PaintResidential(lived);
+
+        Assert.NotNull(world.DemolitionSiteAt(lived));
+    }
+
+    /// <summary>And "relocating" a neighbourhood is unpaint, paint, and wait.</summary>
+    /// <remarks>
+    /// No new mechanism at all -- the roofless family is re-sited by the same code that houses a
+    /// new couple. That is the whole of Joe's "the user paints another area to relocate houses",
+    /// and it is why houses were dropped from the relocate work entirely.
     /// </remarks>
     [Fact]
     public void APaintedElsewhereIsHowAHouseholdMoves()
@@ -380,21 +433,33 @@ public sealed class ResidentialZoneTests
         GridPos lived = world.Households[0].Home();
 
         Household turnedOut = world.EraseResidential(lived)!;
+        FinishTheDemolitionAt(world, lived);
         Assert.Null(turnedOut.HomePosition);
 
-        // NOTHING NEW IS PAINTED, AND THAT IS THE FIX RATHER THAN A SHORTCUT. The first draft
+        // NOTHING NEW IS PAINTED, AND THAT IS THE FIX RATHER THAN A SHORTCUT. An earlier draft
         // painted a block around the founding site -- which in this fixture sits at (-1,-1), so
         // the block spanned the tile that had just been erased and RE-PAINTED IT. The family
         // dutifully rebuilt in the very spot the test had turned them out of, and the guard failed
-        // for the feature working. *A fixture can fight the mechanism it is testing* (D194).
-        //
-        // The rest of the neighbourhood is still painted, which is all this claim needs: the one
-        // erased tile is now the only ground in the village they cannot have.
+        // for the feature working. A fixture can fight the mechanism it is testing (D194).
         loop.Step(Config.TicksPerYear * 15);
 
         Assert.True(
             turnedOut.HasHome,
             $"The {turnedOut.Name} household never rebuilt on the ground still painted for them.");
         Assert.NotEqual(lived, turnedOut.Home());
+    }
+
+    /// <summary>Work a demolition to completion, as a builder's crew would.</summary>
+    private static void FinishTheDemolitionAt(SimWorld world, GridPos tile)
+    {
+        Workplace site = world.DemolitionSiteAt(tile)!;
+        ConstructionSite plan = site.Construction!;
+
+        while (!plan.IsFinished)
+        {
+            plan.Work();
+        }
+
+        world.Complete(site);
     }
 }

@@ -431,6 +431,33 @@ public sealed class ConstructionSite
     /// </remarks>
     public GridPos? MovingFrom { get; init; }
 
+    /// <summary>
+    /// Whether this site is pulling a building <em>down</em> rather than putting one up.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ DEMOLITION IS A BUILDER'S JOB, AND IT TAKES TIME</b> (Joe, 2026-08-26): *"when a
+    /// building is marked for demolition, it is a builder's job to demolish it. The demolition
+    /// should take time, like the construction. Reverse-construction, essentially."* **It used to
+    /// be instant** — a click and the building was gone — which made it the one piece of work in
+    /// the village that nobody did.
+    /// </para>
+    /// <para>
+    /// <b>⭐ It owes work and no materials, and the work comes off the building's own recipe</b>
+    /// (<c>demolition_work_percent</c>). *So a stockpile, which owed nothing to raise, owes nothing
+    /// to pull down* — the free-and-instant rule falls straight out of the data rather than needing
+    /// a second special case (D108's lesson, one system over).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A demolition cannot be cancelled once the crew have started, and construction can</b>
+    /// (<c>SimWorld.CancelConstruction</c> refunds what was delivered). **That asymmetry is
+    /// deliberate and it is Joe's call:** a half-built house was never a house, and a half-demolished
+    /// one is no longer one. *Repainting the ground under a house un-marks it right up until
+    /// somebody swings the first hammer.*
+    /// </para>
+    /// </remarks>
+    public bool Demolishing { get; init; }
+
     /// <summary>What it costs. Set once, at marking.</summary>
     /// <remarks>
     /// <b>A constructor parameter rather than an <c>init</c> property since D213</b>, because

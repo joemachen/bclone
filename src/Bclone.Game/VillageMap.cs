@@ -170,6 +170,10 @@ public partial class VillageMap : Control
     /// <summary>A building marked out but not yet raised (D43).</summary>
     private static readonly Color SiteColour = new("#8f9aa8");
 
+    // A building coming down reads as warm rust against the site's cool grey -- the two are the
+    // same shape doing opposite things, so colour is what tells them apart at a glance.
+    private static readonly Color DemolishColour = new("#b5714a");
+
     /// <summary>Land the player has painted for housing (D42). Faint on purpose.</summary>
     private static readonly Color ResidentialColour = new("#b98a52", 0.14f);
 
@@ -824,13 +828,27 @@ public partial class VillageMap : Control
             // and every hut in the game were permanent once marked. **A misplaced building
             // the player cannot take back is the opposite of the brush's whole promise.**
             //
-            // Workplaces first, because that is where the thing the player is most likely to
-            // be undoing lives: a site they have just marked in the wrong spot.
+            // A CONSTRUCTION SITE IS CANCELLED, A STANDING BUILDING IS MARKED, and the two are
+            // different acts. Calling off something nobody has finished is an undo and stays
+            // instant; taking down something that stands is work, and since 2026-08-26 it is a
+            // builder's job with a site of its own (Joe: "reverse-construction, essentially").
             foreach (Workplace workplace in _world!.Workplaces)
             {
-                if (workplace.Position == where)
+                if (workplace.Position == where && workplace.IsSite)
                 {
-                    string name = workplace.Construction?.Name ?? workplace.Name;
+                    string name = workplace.Construction!.Name;
+
+                    // A demolition already under way is not cancellable once begun -- the sim
+                    // decides that, not this brush, so ask it rather than duplicating the rule.
+                    if (workplace.Construction.Demolishing)
+                    {
+                        PlacementMessageChanged?.Invoke(_world.CancelDemolition(where)
+                            ? $"{name} is to stand after all."
+                            : $"{name} is already coming down; it is too late to stop it.");
+                        QueueRedraw();
+                        return;
+                    }
+
                     _world.Demolish(workplace);
                     PlacementMessageChanged?.Invoke($"{name} is gone.");
                     QueueRedraw();
@@ -838,65 +856,15 @@ public partial class VillageMap : Control
                 }
             }
 
-            // ⚠️ LIBRARIES TOO, OR A MISPLACED ONE IS PERMANENT — which is the thing the comment
-            // at the top of this method says the brush must never allow. It also matters more here
-            // than for a hut: pulling a library down destroys the records in it, and the sim says
-            // which techniques went, so the player is told what they are forgetting.
-            foreach (Library library in _world.Libraries)
-            {
-                if (library.Position == where)
-                {
-                    string name = library.Name;
-                    int held = library.Records.Count;
-                    _world.Demolish(library);
-                    PlacementMessageChanged?.Invoke(held == 0
-                        ? $"{name} is gone."
-                        : $"{name} is gone, and the {held} record(s) in it with it.");
-                    QueueRedraw();
-                    return;
-                }
-            }
+            // Anything that STANDS -- a hut, a store, a library, a house -- is marked, and a
+            // builder comes to it. One call for all four kinds, because the sim knows what is on
+            // a tile and this brush should not have to.
+            PlacementVerdict marked = _world.MarkDemolition(where);
+            PlacementMessageChanged?.Invoke(marked.Allowed
+                ? $"{_world.NameOnTheTile(where)} is marked to come down."
+                : marked.Reason);
 
-            foreach (StoreBuilding building in _world.StoreBuildings)
-            {
-                if (building.Position == where)
-                {
-                    // ⭐⭐ ASK BEFORE DESTROYING WHAT IS INSIDE (Joe, 2026-08-25): *"maybe a
-                    // warning — this building has goods inside that will be destroyed —
-                    // proceed?"* He confirmed the LOSS is right and wants it said out loud:
-                    // *"it should be destroyed. No changes."*
-                    //
-                    // ⚠️ IT MATTERS MORE THAN IT DID YESTERDAY. The stockpile stopped taking
-                    // food the same day, so before a granary stands **the cart is the only
-                    // thing in the world holding the village's food** — and pulling it down
-                    // was one click that ended the run with nothing said.
-                    //
-                    // ARMED RATHER THAN MODAL, deliberately. The view has no dialog anywhere
-                    // in it and no automated verification of any kind (D11, D160), so a modal
-                    // is a thing I cannot test standing between the player and their village.
-                    // This reuses `PlacementMessageChanged` — the channel that already carries
-                    // every refusal and warning (D43), so it is one voice rather than two.
-                    int inside = building.Store.Held;
-                    if (inside > 0 && _demolishArmedAt != where)
-                    {
-                        _demolishArmedAt = where;
-                        PlacementMessageChanged?.Invoke(
-                            $"{building.Name} holds {inside} goods that will be destroyed, "
-                            + "not recovered. "
-                            + "Click it again to pull it down.");
-                        QueueRedraw();
-                        return;
-                    }
-
-                    _demolishArmedAt = null;
-                    _world.Demolish(building);
-                    PlacementMessageChanged?.Invoke($"{building.Name} is coming down.");
-                    QueueRedraw();
-                    return;
-                }
-            }
-
-            PlacementMessageChanged?.Invoke("Nothing there to pull down.");
+            QueueRedraw();
             return;
         }
 
@@ -1939,16 +1907,25 @@ public partial class VillageMap : Control
                 int total = System.Math.Max(1, site.Recipe.TotalMaterials + site.Recipe.WorkTicks);
                 float done = (site.TotalDelivered + site.WorkDone) / (float)total;
 
-                DrawRect(rect, SiteColour with { A = 0.18f });
-                if (done > 0f)
+                // ⭐⭐ A DEMOLITION DRAINS WHERE A CONSTRUCTION FILLS, which is *"reverse
+                // construction"* said in the one place the player is actually looking (Joe,
+                // 2026-08-26). A building marked to come down starts full and empties as the crew
+                // work — so **"how far along is it?" reads the same way in both directions**, and a
+                // marked house is obvious the moment you unpaint the ground under it.
+                bool pullingDown = site.Demolishing;
+                Color colourOfWork = pullingDown ? DemolishColour : SiteColour;
+                float shown = pullingDown ? 1f - done : done;
+
+                DrawRect(rect, colourOfWork with { A = 0.18f });
+                if (shown > 0f)
                 {
                     var filled = new Rect2(
-                        rect.Position + new Vector2(0f, rect.Size.Y * (1f - done)),
-                        new Vector2(rect.Size.X, rect.Size.Y * done));
-                    DrawRect(filled, SiteColour with { A = 0.55f });
+                        rect.Position + new Vector2(0f, rect.Size.Y * (1f - shown)),
+                        new Vector2(rect.Size.X, rect.Size.Y * shown));
+                    DrawRect(filled, colourOfWork with { A = 0.55f });
                 }
 
-                DrawRect(rect, SiteColour, filled: false, width: 2f);
+                DrawRect(rect, colourOfWork, filled: false, width: 2f);
                 continue;
             }
 

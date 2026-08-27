@@ -2689,6 +2689,17 @@ public sealed class SimWorld
         }
 
         Zones.SetResidential(tile, true);
+
+        // REPAINTING IS A REAL UNDO, RIGHT UP UNTIL SOMEBODY SWINGS A HAMMER (Joe, 2026-08-26):
+        // "if the user repaints the residential area before the house is demolished, then the
+        // house is no longer marked for demolition. But if the house is mid-demolition when the
+        // area is re-painted, the demolishing job should finish."
+        //
+        // CancelDemolition returns false once any work is done, so this one line is both halves
+        // of that rule and neither is special-cased here. A half-demolished house is no longer a
+        // house, and the family rebuilds on the ground now painted for them -- which costs them
+        // half the timber and a few cold seasons for the dithering.
+        CancelDemolition(tile);
         return verdict;
     }
 
@@ -3655,15 +3666,11 @@ public sealed class SimWorld
             return null;
         }
 
-        turnedOut.HomePosition = null;
-
-        string recovered = ReturnToStore(
-            tile, RefundFor(BuildingRecipe.For(BuildingKind.Home, Config)));
-
-        Narrate($"The {turnedOut.Name} household's house at {tile} was pulled down when the "
-            + $"ground was unpainted — {recovered} went back to store. "
-            + $"{Clock.SeasonAndYear()}.");
-
+        // ⭐⭐ MARKED, NOT LEVELLED (Joe, 2026-08-26). Unpainting is an *instruction*, and a
+        // builder carries it out over the following seasons — *"reverse-construction, essentially."*
+        // **The family lives there until the crew arrive**, which is what makes repainting a real
+        // undo rather than a condolence.
+        MarkDemolition(tile);
         return turnedOut;
     }
 
@@ -3793,6 +3800,149 @@ public sealed class SimWorld
         return false;
     }
 
+    /// <summary>
+    /// Mark whatever stands on a tile to be pulled down. <b>A builder's job, not a click.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ DEMOLITION USED TO BE THE ONE PIECE OF WORK IN THIS VILLAGE THAT NOBODY DID</b> — a
+    /// click and the building vanished. Joe, 2026-08-26: *"it is a builder's job to demolish it.
+    /// The demolition should take time, like the construction. Reverse-construction, essentially."*
+    /// </para>
+    /// <para>
+    /// <b>⭐ Free buildings stay free to remove, with no second rule</b>: the work is a share of
+    /// what the building owed to raise, and a stockpile owed nothing. *The data decides, which is
+    /// D108's lesson arriving in a second system.*
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict MarkDemolition(GridPos tile)
+    {
+        if (DemolitionSiteAt(tile) is not null)
+        {
+            return PlacementVerdict.No("That is already being pulled down.");
+        }
+
+        BuildingKind? kind = HouseholdAt(tile) is not null
+            ? BuildingKind.Home
+            : WhatStandsAt(tile);
+
+        if (kind is null)
+        {
+            return PlacementVerdict.No("There is nothing there to pull down.");
+        }
+
+        string name = NameOfWhatStandsAt(tile);
+        int work = BuildingsCatalog.RecipeOf(kind.Value).WorkTicks
+            * Config.DemolitionWorkPercent / 100;
+
+        // Nothing to take apart — it goes now, exactly as it always did.
+        if (work <= 0)
+        {
+            PullDownWhatStandsAt(tile);
+            return PlacementVerdict.Fine;
+        }
+
+        Workplaces.Add(new Workplace
+        {
+            Store = NewStockpile(),
+            Id = NextWorkplaceId(),
+            Kind = JobKind.Builder,
+            Name = $"{name} (being pulled down)",
+            Position = tile,
+            Capacity = 0,
+            Construction = new ConstructionSite(new BuildingRecipe(work))
+            {
+                Kind = kind.Value,
+                Name = name,
+                Demolishing = true,
+            },
+        });
+
+        Narrate($"{Capitalised(name)} is to be pulled down. {Clock.SeasonAndYear()}.");
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>The demolition job standing on a tile, or null.</summary>
+    public Workplace? DemolitionSiteAt(GridPos tile)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Position == tile
+                && Workplaces[i].Construction is { Demolishing: true })
+            {
+                return Workplaces[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Call off a demolition nobody has started. Returns false if the crew are already at it.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ ONCE THE FIRST HAMMER HAS SWUNG, IT FINISHES — Joe's call, and it is a deliberate
+    /// asymmetry with construction</b>, which <c>CancelConstruction</c> lets the player call off at
+    /// any point. *A half-built house was never a house; a half-demolished one is no longer one.*
+    /// </remarks>
+    public bool CancelDemolition(GridPos tile)
+    {
+        if (DemolitionSiteAt(tile) is not Workplace site)
+        {
+            return false;
+        }
+
+        if (site.Construction!.WorkDone > 0)
+        {
+            return false;
+        }
+
+        RetireWorkplace(site);
+        Narrate($"{Capitalised(site.Construction.Name)} is to stand after all. "
+            + $"{Clock.SeasonAndYear()}.");
+        return true;
+    }
+
+    /// <summary>Actually remove whatever stands on a tile, whichever kind it is.</summary>
+    private void PullDownWhatStandsAt(GridPos tile)
+    {
+        if (HouseholdAt(tile) is Household family)
+        {
+            family.HomePosition = null;
+
+            string recovered = ReturnToStore(
+                tile, RefundFor(BuildingsCatalog.RecipeOf(BuildingKind.Home)));
+
+            Narrate($"The {family.Name} household's house at {tile} came down — "
+                + $"{recovered} went back to store. {Clock.SeasonAndYear()}.");
+            return;
+        }
+
+        if (StoreAt(tile) is StoreBuilding store)
+        {
+            Demolish(store);
+            return;
+        }
+
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Position == tile)
+            {
+                Demolish(Libraries[i]);
+                return;
+            }
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Position == tile && !Workplaces[i].IsSite)
+            {
+                Demolish(Workplaces[i]);
+                return;
+            }
+        }
+    }
+
     /// <summary>What kind of building stands on a tile, or null.</summary>
     public BuildingKind? WhatStandsAt(GridPos tile)
     {
@@ -3821,6 +3971,8 @@ public sealed class SimWorld
     }
 
     /// <summary>What the building on a tile is called, or "it".</summary>
+    public string NameOnTheTile(GridPos tile) => NameOfWhatStandsAt(tile);
+
     private string NameOfWhatStandsAt(GridPos tile)
     {
         if (StoreAt(tile) is StoreBuilding store)
@@ -4955,6 +5107,17 @@ public sealed class SimWorld
     internal void Complete(Workplace site)
     {
         ConstructionSite plan = site.Construction!;
+
+        // ⭐⭐ A DEMOLITION FINISHES BY TAKING THE BUILDING AWAY. It is checked before everything
+        // else because it is the one kind of site whose completion RAISES NOTHING — falling through
+        // to the switch below would hand the player a second granary as a reward for pulling the
+        // first one down.
+        if (plan.Demolishing)
+        {
+            RetireWorkplace(site);
+            PullDownWhatStandsAt(site.Position);
+            return;
+        }
 
         // ⭐⭐ A RELOCATION MOVES WHAT ALREADY STANDS RATHER THAN RAISING ANYTHING NEW, which is
         // what keeps a moved building the SAME building — its name, its contents, its workers, its

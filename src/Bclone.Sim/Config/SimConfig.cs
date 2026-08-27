@@ -1776,6 +1776,26 @@ public sealed record SimConfig
     };
 
     /// <summary>
+    /// How much of a building's own work it costs to pull it down again, as a percentage.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ REVERSE CONSTRUCTION, PRICED OFF THE BUILDING'S OWN RECIPE</b> (Joe, 2026-08-26). Half,
+    /// because taking a thing apart is faster than putting it up and nobody has to measure
+    /// anything — **and because it makes the free buildings free to remove without a second rule**:
+    /// a stockpile owes no work to raise, so half of nothing is nothing, and pulling one down is
+    /// still instant.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ A PROPOSAL UNTIL A RUN ARGUES WITH IT.</b> If it is too high, a mis-sited building is
+    /// a season's punishment for a click; too low and demolition is the instant thing it just
+    /// stopped being.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("demolition_work_percent")]
+    public int DemolitionWorkPercent { get; init; } = 50;
+
+    /// <summary>
     /// Years a granary's count must be kept before anybody here can write (D32, §7a).
     /// </summary>
     /// <remarks>
