@@ -242,6 +242,47 @@ public sealed class RelocateTests
             v => v.Alive && v.State == VillagerState.ClearingAStore);
     }
 
+    /// <summary>
+    /// ⛔⛔ Somebody actually comes and pulls a marked building down.
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe, playing:</b> *"I marked the forester hut for demolition and even though there was a
+    /// builder in the village, no one ever demolished the building."* **A marked building nobody
+    /// comes to is the same shape as a feature with no button** — the work exists and never
+    /// happens, which is worse than not having built it.
+    /// </remarks>
+    [Fact]
+    public void SomebodyComesAndPullsAMarkedBuildingDown()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        // A hut the village is not using, so nothing else competes for the crew.
+        GridPos at = Buildable(world);
+        world.Mark(BuildingKind.ForesterHut, at);
+        Finish(world, at);
+        Assert.NotNull(world.WhatStandsAt(at));
+
+        Assert.True(world.MarkDemolition(at).Allowed);
+        Assert.NotNull(world.DemolitionSiteAt(at));
+
+        // ⚠️ AND SOMETHING ELSE IN THE QUEUE, WHICH IS THE CASE JOE ACTUALLY HAD. A demolition
+        // site takes a fresh workplace id, and `EffectiveQueueRank` falls back to the id — so it
+        // sorts behind every site already marked. **A village that is always building would never
+        // pull anything down**, and the first version of this guard had an empty queue and so
+        // could not see it.
+        world.Mark(BuildingKind.Granary, Buildable(world, at));
+
+        loop.Step(Config.TicksPerYear * 5);
+
+        _output.WriteLine(world.DemolitionSiteAt(at) is Workplace still
+            ? $"five years on it is still standing, {still.Construction!.WorkDone} ticks of work done"
+            : "it came down");
+
+        Assert.Null(world.DemolitionSiteAt(at));
+        Assert.Null(world.WhatStandsAt(at));
+    }
+
     /// <summary>⛔ A house is never moved by hand — the brush is its only control (D228).</summary>
     [Fact]
     public void AHouseIsNotMovedByHand()

@@ -495,7 +495,27 @@ public sealed class Workplace
     public int? QueueRank { get; set; }
 
     /// <summary>What this site sorts by in the build queue.</summary>
-    public int EffectiveQueueRank => QueueRank ?? Id;
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ A DEMOLITION LEADS THE QUEUE, AND WITHOUT THAT A BUSY VILLAGE WOULD NEVER PULL
+    /// ANYTHING DOWN.</b> A demolition site takes a fresh workplace id, and the fallback rank is
+    /// the id — so it sorted **behind every site already marked**, and a player who keeps building
+    /// keeps pushing it back for ever. *Marking something for demolition and watching nothing
+    /// happen is the shape Joe hit.*
+    /// </para>
+    /// <para>
+    /// <b>⭐ It is also the right order on its own terms:</b> demolition is cheap (half the work,
+    /// no materials) and is usually **clearing the way for the very thing behind it in the queue**.
+    /// Taking it first is what a crew would do. ⚠️ It cannot starve construction for long — there
+    /// is a bounded number of things standing to pull down, and each is quick.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Demolitions still sort among themselves by id</b>, so the order they were marked in
+    /// survives — the same promise the ordinary fallback makes.
+    /// </para>
+    /// </remarks>
+    public int EffectiveQueueRank =>
+        Construction is { Demolishing: true } ? int.MinValue / 2 + Id : QueueRank ?? Id;
 
     /// <summary>
     /// Hands the village will actually staff here — the override if there is one,
