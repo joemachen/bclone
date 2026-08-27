@@ -1,14 +1,19 @@
-# Handoff — bclone: **⏸️ Phase 4 is the only thing held. Everything else on the last list is closed.**
+# Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT. Techniques and the library are in; the knowledge screen is not.**
 
-> **✅ PUSHED, 2026-08-26.** `main` and `origin/main` are level at `887a737`. Four commits went up
-> on Joe's call: the buildings catalogue (D222), its record, the retired test word, and the food
-> fixture (D223). **The remote and the build Joe plays are the same thing** — which is the state
-> D217's trap exists to keep true.
+> **⛔⛔ NOT PUSHED. `main` is at `887a737` and the work is on `phase/4-the-tech-tree`, TWENTY
+> commits ahead.** Joe has been asked three times and has not said either way, so **do not assume
+> it is his oversight and do not push without him saying so.** ⚠️ **He plays this branch**, so the
+> build he sees and the remote are not the same thing — which is D217's trap sitting live rather
+> than historical. **Ask, in the first message.**
 
-> **⭐ ALL THREE OF THE PREVIOUS HANDOFF'S "THINGS ACTUALLY OPEN" ARE NOW CLOSED:** buildings are
-> rows (D222), the suite eats what the game eats (D223), and **the forester's pace is settled by
-> play** (D224 — Joe: *"forester feels good"*). ⏸️ **The build menu is deferred on his call, not
-> outstanding.** What is left blocking is **Phase 4's content pass, and it is his** (D205).
+> **⭐⭐ WHAT PHASE 4 HAS: techniques (D225), the library (D226), the pacing fixes his play forced
+> (D227, D232, D233), and the whole build/undo loop rebuilt around them (D228–D231, D234, D235).**
+> **⛔ WHAT IT DOES NOT HAVE: slice 3, the knowledge screen** — `phase-4-the-tech-tree.md §3`. And
+> its **QA checklist (§5) has never been walked**, which is the debt Phase 3 left and this phase
+> wrote a checklist specifically to avoid repeating.
+
+> **⭐ READ `specs/phase-4-the-tech-tree.md` FIRST** — it is the phase plan, the four design calls
+> and the QA checklist in one document, and it is current.
 
 Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D224 back to D142**, then
 `METHODOLOGY.md`. **Then `specs/content-inventory.md`** — it is the audit of what actually exists
@@ -28,27 +33,24 @@ against what the documents claim, and it is the shortest route to being oriented
 > silently — that happened on 2026-08-22 and cost an hour and three quarters within the same
 > session. **Rewrite "where things are"; carry the traps forward.**
 
-⭐ **Four things to know before you touch anything — and #4 is the one that decides what you do:**
-1. **⭐⭐ D28 IS DISCHARGED** (D190) — the lockstep Joe watched at 4× in Phase 1 is gone, and
-   **he confirmed it in play**: the four founders read as distinct people and no longer move as
-   pairs. Identical hunger between two adults of one household went **100% → 0%**.
-2. **✅ THE FARM IS UNPARKED (D194)** — the cap was **self-fulfilling**, and the ledger proved it
-   after four hypotheses could not. **⛔ But Joe's thirteen tiles were never available**: thirteen
-   tiles ten ticks from a store needs ~230 ticks of a 120-tick autumn. Read the section below
+⭐ **Four things to know before you touch anything:**
+1. **▶️ PHASE 4 IS OPEN — D205's hold was lifted by Joe on 2026-08-26 with one word: *"start"*.**
+   ⛔ **Do not re-litigate whether to build it.** `specs/phase-4-the-tech-tree.md §1` already
+   answers `content-inventory.md` finding 5's objection, and §2 records four design calls he has
+   since confirmed or overruled in play.
+2. **⭐⭐ HIS PLAY IS THE BEST BUG-FINDER THIS PROJECT HAS, AND THIS STRETCH PROVED IT SEVEN TIMES.**
+   D227, D232, D233, D234 and D235 all came from him playing for ten minutes. ⛔ **Three of them
+   were features that existed only in the sim** — the library was invisible, then Move and Empty
+   had no buttons. **A sim feature is not done until something in the view calls it, and no test
+   in this suite can tell you that.** *Build the button in the same commit as the feature.*
+3. **✅ THE BUILD/UNDO LOOP IS PEOPLE-SHAPED NOW** (D228–D231). Demolition is **reverse
+   construction** — a builder's job costing half the building's own work. Housing is the **brush's
+   business in both directions**: unpaint to mark, repaint to call it off. **Any building can be
+   moved**, and **a store can be emptied on request.** ⛔ *Nothing in the village happens by a click
+   any more* — demolition was the last exception, unnoticed because it was the player's own hand.
+4. **⚠️ THE FARM IS UNPARKED (D194)** and **Joe's thirteen tiles were never available** — thirteen
+   tiles ten ticks from a store needs ~230 ticks of a 120-tick autumn. Read the farm section below
    before re-opening it, and **do not propose `farm_store_cap` — it is dead twice over.**
-3. **✅ PHASE 3 IS COMPLETE AND MERGED** (D202, D203). Skill TRANSFERS now — a youth beside a
-   master of the same trade at the same workplace learns twice as fast. ⚠️ **Its QA walk was
-   WAIVED on Joe's call, not performed** (D203): if a Phase 3 regression ships, that is where it
-   got through.
-4. **⏸️⏸️ DO NOT START PHASE 4. IT IS HELD ON JOE'S CALL** (D205, 2026-08-24) — *"we might be
-   getting ahead of ourselves with the tech tree… I need to spend time thinking about all of the
-   tech and buildings and skills first."* **This is not a delay to route around; it is the
-   blocking item, and it is his to clear, not yours.** A plan for Phase 4 was drafted and stopped
-   mid-flight. ⛔ **The audit that followed found `buildings-plan.md §10` puts knowledge at step 8
-   of 11 while `DESIGN.md §4` calls it Phase 4 next — D159's two-roadmaps failure, live again in a
-   different pair of files.** Read `specs/content-inventory.md` before forming any opinion about
-   what to build.
-
 ---
 
 ## ⭐⭐ What landed while Phase 4 stayed held (D206–D218, 2026-08-24/25)
@@ -168,10 +170,10 @@ go looking for one.
 ⚠️ **Do not write a commit hash into this file for anything that keeps moving.** The line above
 named one and was stale within the minute.
 
-**SUITE, FROM A RUN (2026-08-26, after D222):**
 
+**SUITE, FROM A RUN (2026-08-26, after D235):**
 ```
-804 passed, 0 failed, 2 skipped of 806 — about 2m12s (was 18m52s before D179)
+841 passed, 0 failed, 2 skipped of 843 — about 2m50s (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -194,54 +196,29 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
 
-> **⭐⭐ START HERE — THE THREE THINGS ACTUALLY OPEN, 2026-08-26.** Everything numbered below is
-> either done or held; these are the live calls.
+> **⭐⭐ START HERE — THE FOUR THINGS ACTUALLY OPEN, 2026-08-26.** Everything numbered below is
+> done; these are the live calls.
 >
-> 1. **✅ DONE — `BuildingKind` WAS THE LAST ENUM AND IT IS A ROW NOW** (D222,
->    `specs/buildings-catalog.md`, slices 1 and 2). **804 passing, 0 failing, 2 skipped of 806, every
->    golden byte-identical.** Nine surfaces read the row; `Complete`'s eight-arm switch and
->    `RaiseFreeBuilding`'s two collapse into one method; `ModdedBuildingTests` puts an eleventh
->    building in real JSON **staffed by a modded trade**, closing `jobs-catalog.md §3`'s seam.
->    - **⏸️ WHAT IT LEFT OPEN IS THE VIEW — AND IT IS DEFERRED ON JOE'S CALL (D223), NOT WAITING
->      FOR YOU.** `Main.BuildUi` is **ten hand-written buttons in four categories**, so **a building
->      added in data has no button and the player cannot reach it** — this project's own rule, and
->      its fifth instance (D221). ⛔ **Do not open a session by building this.** Joe's reasoning:
->      ten buttons in four groups **does not scale to 45 buildings** whatever the data model says,
->      so the menu wants a redesign when the content lands and closing it now solves a smaller
->      problem twice. ⚠️ **It costs nothing until an eleventh building exists, and is a blocker the
->      moment one does** — including one of his own. The cheap option, recorded so it is not
->      re-derived: built-ins keep their buttons, higher ids appear in an *"Other"* group.
->    - ⭐ **D219's banked correction was half right, and the other half is measured now.** Capacity
->      is mostly *data* for **stores** (the granary states its own) and mostly *derived* for
->      **seats** — three stated, three solved. The table is `buildings-catalog.md §2.2`.
->    - ⚠️ **The per-building recipe keys did NOT move**, deliberately: `logs_per_house` is an
->      economy anchor the shed's capacity, the stockpile's and the timber quota all derive against,
->      so folding it into a row is a re-derivation. **Recorded as open in that spec's §8, not done
->      quietly.**
-> 2. **✅ DONE — THE TESTS AND THE GAME AGREE ABOUT FOOD** (D223, Joe's call). `DESIGN.md §5`'s
->    longest-standing open item. **`VillageFixtures.Village` eats 4 like the shipped file;
->    `Phase0Fixtures.Plenty` keeps 5 on purpose**, because Phase 0 is deliberately its own world —
->    the seam the calendar was fixed at in D49/D50.
->    - **⭐ Four goldens moved and FOUR HELD, and the ones that held are the result.**
->      `ShippedFiftyYearHash`, `SkillTests`' shipped arm, `GoldenMapHash` and all three
->      `PerSiteYieldTests` arms are byte-identical — **every one runs the shipped config.** *That is
->      what says a fixture change stayed inside the fixture, and it is a check rather than a hope.*
->    - **⚠️ Not one food-adjacent guard reddened, which was NOT the prediction.** Population bands,
->      granary-fullness and starvation guards were all expected to want triage; none moved.
->      **Those bands are wide enough to swallow a 25% change in the price of a meal** — worth
->      knowing before citing one as evidence about food.
-> 3. **✅ CLOSED BY PLAY — THE FORESTER FEELS GOOD** (Joe, 2026-08-26: *"forester feels good"*).
->    Cleared ground takes **144 days** to return to wood and planted ground genuinely waits its
->    sapling stage, and **that is the shipped pace now.**
->    - ⛔ **`regrowth_period_days` IS SETTLED. Do not re-open it on a hunch.** The −20% Joe asked
->      for in D220 was **a reaction to a bug, not to the pace** — planted ground was maturing three
->      times faster than seeded, so the forester looked instant and the woods looked wrong. **Fix
->      the bug, and the number nobody changed turned out to be right.**
->    - **⭐ That is the whole argument for letting him play before turning a dial**, and it is the
->      second time in three decisions: D220's *"maybe I am misperceiving"* was a real bug, and the
->      tuning request that rode along with it would have papered over the fix. *A dial asked for
->      while a bug is live is a dial asked for on bad evidence.*
-
+> 1. **⛔⛔ ASK JOE WHETHER TO PUSH.** Twenty commits on `phase/4-the-tech-tree`, `main` at
+>    `887a737`. **He has been asked three times and has not answered** — which is not the same as
+>    "no", and not the same as permission. ⚠️ **He plays this branch**, so the build he sees and
+>    the remote differ: D217's trap, live.
+> 2. **⛔ SLICE 3 — THE KNOWLEDGE SCREEN — IS THE REST OF PHASE 4.**
+>    `phase-4-the-tech-tree.md §3`. It mostly *surfaces* what exists: which techniques the village
+>    has, who holds each one, and how close the last knower is to dying.
+>    `SimWorld.KnowledgeAtRiskNote` (D195) already answers the third and is on the villager panel.
+> 3. **⛔⛔ THE QA CHECKLIST HAS NEVER BEEN WALKED** — `phase-4-the-tech-tree.md §5`, 22 checks.
+>    **Phase 3's walk was waived and this phase wrote its checklist on day one specifically so that
+>    debt would not compound.** *Walking it is a Definition-of-Done item, not a formality, and it
+>    is the one item this phase is not allowed to waive.*
+> 4. ⚠️ **THEN FISHING AND HUNTING** — `buildings-plan.md §10` step 1, food breadth, and **Joe
+>    chose it as what comes after Phase 4 pauses** (2026-08-26). Phase 4 does not have to be
+>    *finished* first; he agreed to pause it at a clean point.
+>
+> ⭐ **Recently settled and NOT open, so they are not re-argued:** the build menu becoming
+> catalogue-driven is **deferred on his call** (D223); the forester's regrowth pace is **settled by
+> play** (D224); the ageing/technique interaction is **fine by him** (D225); `demolition_work_percent`
+> at **50% is confirmed** (2026-08-26: *"half the build time is fine"*).
 1. ✅ **Phases 0–3 are all merged to `main`.** Phase 2 went up as
    [PR #4](https://github.com/joemachen/bclone/pull/4); **Phase 3 went straight to `main`
    (D203), so there is no PR #5.** Branches are deleted after checking each had 0 commits not on
@@ -401,6 +378,46 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Traps, in the order they will cost you
 
+
+- **⛔⛔⛔ A SIM FEATURE IS NOT DONE UNTIL SOMETHING IN THE VIEW CALLS IT — SEVEN INSTANCES NOW, THREE
+  OF THEM IN ONE WEEK.** The library was built, tested, red-checked and **invisible** (no draw call,
+  no inspector row, no demolish path). Then **Move and Empty shipped with no buttons at all.** Every
+  one had passing guards. **No test in this suite can catch it, and Joe finds it in ten minutes of
+  play, every time.**
+  - **The rule: write the button in the SAME COMMIT as the feature**, and if you cannot, say in the
+    handoff that the feature is unreachable. *"Placeable is not reachable" was written down after
+    the library and the next two features shipped unreachable anyway.*
+- **⛔⛔ WHEN A CHANGE MAKES AN ACTION REVERSIBLE, GO BACK AND DELETE THE CONFIRMATION IT USED TO
+  NEED (D235).** D228 made unpainting *level* a house, so a second-stroke confirmation was correct.
+  **D230 made unpainting only MARK one, with repainting cancelling it — and the gate survived one
+  commit past its reason.** To Joe it read as *"it wouldn't let me unpaint the land."*
+  - **Friction that outlives its justification is indistinguishable from a bug**, and the two
+    commits were both right on their own. *Ask what a safety is protecting against after every
+    change to the thing it guards.*
+- **⛔⛔ `git checkout -- <file>` DESTROYED UNCOMMITTED WORK AGAIN (D232), IN THE SESSION THAT
+  RE-READ D194's WARNING ABOUT IT.** A red-check break failed to compile and I reverted the file
+  instead of restoring from the scratchpad — losing three methods. ⚠️ **I had backed up ONE of the
+  two files I was about to touch**, which is the exact half-measure the trap warns about.
+  - **⭐ AND THE CHEAPER LESSON: a break that does not compile is not a red check, it is an edit to
+    undo.** Write breaks that compile — flip a bool, set a bound to zero — and the temptation to
+    reach for `git checkout` never arrives.
+- **⛔ `grep -c` RETURNS EXIT 1 WHEN THE COUNT IS ZERO, so `grep -c "â" file && git commit` silently
+  skips the commit.** Cost one confusing "why did that not land?" It is the encoding check this
+  project runs constantly — **put it after the commit, or terminate it with `|| true`.**
+- **⚠️ AN INSTRUMENT THAT ASSUMES A SIMPLER WORLD MEASURES SOMETHING ELSE — three times in one
+  stretch.** A guard placed its granary by scanning from the map's *corner*, so nobody walked to it
+  and *"emptied after three years"* measured the distance (D231). A guard assumed the founders' cart
+  was empty and asserted on "40" against a wagon holding 200 (D233). A guard painted a block around
+  the founding site that **re-painted the very tile it had just erased**, so the family rebuilt in
+  the spot the test had turned them out of (D228).
+  - **Read the numbers out of the fixture rather than writing them into it**, and when a guard needs
+    people to walk somewhere, put the building where a player would.
+- **⭐⭐ AND ONE TICK IS NOT A TREND, ANY MORE THAN ONE SEED IS (D227).** `ApprenticeshipTests` read
+  *masters alive at exactly tick N* and a change turned one seed from 8→10 into **8→8**, which
+  looked like Phase 3's pillar dying. **Two hypotheses died to a probe** — saturation, then
+  *apprenticeship never fired* — before the answer: it is a **spot reading of a fluctuating stock**.
+  Averaged over twenty years the same seed has the **widest margin of the three**. *The guard got
+  stronger and the fallback plan was not needed.*
 - **⛔⛔⛔ `perl -0777 -pi -e` WITH A WIDE CHARACTER IN THE REPLACEMENT DOUBLE-ENCODES THE WHOLE FILE
   (2026-08-26).** This handoff recommends `perl -0777` *because* of the repo's emoji — and that is
   exactly how it bites. Perl reads the file as **latin-1 bytes**; if the replacement string contains
