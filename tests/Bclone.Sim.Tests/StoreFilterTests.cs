@@ -170,6 +170,118 @@ public sealed class StoreFilterTests
         Assert.Equal(0, worst);
     }
 
+    /// <summary>⛔ A load the shed refuses must still get somewhere, not circle for ever.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe's Year-44 village, and the most expensive bug this project has had</b> (found
+    /// 2026-08-27 in his own audit trail). His shed refused a good, so every armful of it was
+    /// walked to the shed, <b>refused on arrival</b>, and set down at the shed's own door — and
+    /// <c>NearestGroundStack</c>, which DOES ask <c>Accepts</c>, then declared that heap worth
+    /// fetching. Somebody picked it up, <c>StoreForTheLoad</c> sent them straight back to the
+    /// same shed, and the village did that <b>about fifteen thousand times</b>: 1,439 failed
+    /// trips to one tile in the last 900 ticks alone, by fourteen different villagers.
+    /// </para>
+    /// <para>
+    /// ⭐⭐ <b>THE CAUSE IS TWO FINDER FUNCTIONS THAT DISAGREE ABOUT WHERE A GOOD MAY GO.</b>
+    /// <c>SimWorld.NearestStore</c> matched on kind and fullness and <b>never asked
+    /// <c>Accepts</c></b>; every other finder asks. One said <i>"there is somewhere for this"</i>
+    /// and the other walked them somewhere that refused it.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>And it cost far more than a wasted walk.</b> Tidying outranked clearing, so the
+    /// loop ate every spare hand in the village: painted ground stopped being cleared after
+    /// <b>Year 3</b>, and a granary marked out in Year 23 was still an unbuilt site twenty-one
+    /// years later, in silence.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The guard above was green through all of it.</b> It asserts the shed stays empty —
+    /// which was perfectly true — and only <em>prints</em> what ended up on the ground. That is
+    /// D144's <i>"tested at its predicate and never at its deposit"</i> arriving a second time,
+    /// so this one asserts the <b>outcome</b>: the goods have to actually arrive somewhere.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AGoodTheShedRefusesStillReachesAStoreThatWillHaveIt()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        StoreBuilding shed = ShedIn(world);
+
+        // ⚠️ LOGS, NOT FIREWOOD, AND THE FIRST DRAFT OF THIS GUARD FOUND OUT WHY. Firewood is
+        // held by the MARKET as well (`stored_by`), so a marketer's leg — which asks `Accepts`
+        // properly — quietly rescued every load and the guard passed against the live bug:
+        // 622 firewood in the market, none on the ground. Logs are held by the shed and the
+        // pile and nothing else, which is Joe's own case and leaves no third party to save it.
+        var pile = PileOnClearGroundIn(world);
+        Assert.True(pile.Accepts(Goods.Logs), "The pile must take logs, or nothing is tested.");
+
+        // Exactly as Joe did it: the shed is told to refuse, and it is not full.
+        Assert.True(world.SetStoreAccepts(shed, Goods.Logs, accepted: false).Allowed);
+        Assert.False(shed.Store.IsFull, "A full shed would take a different branch entirely.");
+
+        int everMade = 0;
+        for (int tick = 0; tick < config.TicksPerYear * 20; tick++)
+        {
+            loop.StepOnce();
+            everMade = System.Math.Max(everMade, world.TotalLogs());
+        }
+
+        int onTheGround = world.OnTheGround(Goods.Logs);
+
+        _output.WriteLine(
+            $"20 years: the village handled {everMade} logs in all. {shed.Name} refused them and "
+            + $"holds {shed.Store.Logs}; {pile.Name} holds {pile.Store.Logs} with "
+            + $"{pile.Store.FreeSpace} free; {onTheGround} are lying on the ground.");
+
+        // ⚠️ ANTI-VACUITY FIRST (D7). A village that never felled anything proves nothing, and
+        // the guard above this one records exactly that failure being green for weeks.
+        Assert.True(everMade > 0, "Nobody ever felled a tree in twenty years, so this is vacuous.");
+        Assert.Equal(0, shed.Store.Logs);
+
+        // ⭐⭐ THE CLAIM, AND IT IS ABOUT THE DEPOSIT RATHER THAN THE PREDICATE. A store that
+        // would have taken these logs stood there with room the whole time, so logs on the
+        // ground are the village failing to DELIVER — not a village with nowhere to put things,
+        // which is the genuinely different state D80 drew the line around.
+        Assert.True(
+            pile.Store.FreeSpace <= 0 || onTheGround == 0,
+            $"{onTheGround} logs are lying on the ground while {pile.Name} would take them and "
+                + $"has {pile.Store.FreeSpace} free. The load is walked to a store that refuses "
+                + "it, set down, picked up, and walked to the same store again.");
+    }
+
+    /// <summary>A pile standing on bare ground near the founding site, usable at once.</summary>
+    private static StoreBuilding PileOnClearGroundIn(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+        for (int radius = 1; radius < 12; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (world.HasSomethingToHarvest(at)
+                        || !world.CanBuildAt(BuildingKind.Pile, at).Allowed)
+                    {
+                        continue;
+                    }
+
+                    Assert.True(world.Mark(BuildingKind.Pile, at).Allowed);
+                    foreach (StoreBuilding store in world.StoreBuildings)
+                    {
+                        if (store.Kind == StoreKind.Pile && store.Position == at)
+                        {
+                            return store;
+                        }
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("No clear ground near the founding site for a pile.");
+    }
+
     /// <summary>⭐ An armful of two goods leaves behind the one the store will not have.</summary>
     /// <remarks>
     /// <para>

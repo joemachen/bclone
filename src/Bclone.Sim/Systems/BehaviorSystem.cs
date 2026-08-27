@@ -657,11 +657,35 @@ public sealed class BehaviorSystem : ISimSystem
         // larder into it. **The rule is about who is carrying, not about what is carried** —
         // which is what lets household overflow keep arriving there (§14.3's "in" direction is
         // a marketer's leg too).
+        // ⛔⛔ AND IT ASKS `Accepts`, WHICH IT DID NOT FOR MONTHS — THE MOST EXPENSIVE BUG THIS
+        // PROJECT HAS HAD (2026-08-27, found in Joe's own audit trail at Year 44).
+        //
+        // `NearestStore` matches on KIND and fullness and never asks what a store will take.
+        // Every other finder asks — `NearestStoreAccepting` does, and so does
+        // `SimWorld.NearestGroundStack`. **Two finders that disagree about where a good may go**
+        // is a livelock rather than an inefficiency:
+        //
+        //   1. the armful is sent to the shed, unasked whether the shed takes it;
+        //   2. `ArriveAt` asks per good, and the shed REFUSES it;
+        //   3. `SetDownWhereTheyStand` leaves a heap at the shed's own door;
+        //   4. `NearestGroundStack` — which DOES ask — sees the pile has room and calls that
+        //      heap worth fetching;
+        //   5. somebody fetches it, lands back here, and is sent to the same shed. Goto 2.
+        //
+        // ⚠️ **It cost the whole village, not one walk.** Tidying outranked clearing, so the
+        // loop ate every spare hand: painted ground stopped being cleared after **Year 3**, and
+        // a granary marked out in Year 23 was still an unbuilt site twenty-one years later, in
+        // silence. Measured in his log: ~15,000 fetch trips, 1,439 of them to a single tile in
+        // the last 900 ticks, by fourteen different villagers.
+        //
+        // The kind preference above is untouched and still first — a forager's harvest still
+        // belongs in a granary. This only stops the preference outranking possibility.
         StoreBuilding? proper =
-            world.NearestStore(villager.Position, wanted, static store => !store.Store.IsFull)
+            world.NearestStore(
+                villager.Position, wanted, store => store.Accepts(load) && !store.Store.IsFull)
             ?? world.NearestStoreAccepting(
                 villager.Position, load, static store => store.IsStorage && !store.Store.IsFull)
-            ?? FirstOfKind(world, wanted);
+            ?? FirstOfKind(world, wanted, load);
 
         if (proper is not null)
         {
@@ -776,11 +800,21 @@ public sealed class BehaviorSystem : ISimSystem
     /// goods that nothing can spend (D48). The difference is that this returns null instead
     /// of throwing, so the caller can offer the cart before giving up.
     /// </remarks>
-    private static StoreBuilding? FirstOfKind(SimWorld world, StoreKind kind)
+    /// <remarks>
+    /// <b>⛔ And it asks <c>Accepts</c> too, for the reason written at the call site.</b> This
+    /// was blind to <em>both</em> the filter and fullness, so it handed back a store that
+    /// refuses the load as the last word before the fallbacks — which put the goods on the
+    /// ground at that store's door and started the livelock again one arm lower. Returning null
+    /// here is correct and not a regression: the caller's next branch asks
+    /// <c>NearestStoreAccepting</c> without the fullness test, and then the cart, and only then
+    /// gives up. <b>Somewhere to walk still beats a stack trace (D80); it just has to be
+    /// somewhere that would have the load.</b>
+    /// </remarks>
+    private static StoreBuilding? FirstOfKind(SimWorld world, StoreKind kind, Goods load)
     {
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
-            if (world.StoreBuildings[i].Kind == kind)
+            if (world.StoreBuildings[i].Kind == kind && world.StoreBuildings[i].Accepts(load))
             {
                 return world.StoreBuildings[i];
             }
@@ -2620,25 +2654,6 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        // Pick up a load somebody left lying about, if there is nothing else to do (D96).
-        //
-        // ⭐ ABOVE CLEARING AND BELOW EVERY JOB, and both halves of that are the rule.
-        // Below every job for D87's reason — anybody who reaches this line has already
-        // declined their own work this tick, so it needs no quota and no job kind. Above
-        // clearing because a load already won is worth more than a load not yet taken:
-        // tidying before felling is what stops a painted valley producing heaps faster than
-        // it produces order.
-        //
-        // It has to be its own errand rather than a pull, and that is D96's gift rather than
-        // its cost: goods on the ground are supply-invisible, so "the village wants more
-        // food" cannot reach them — that question reads stores. "There is a load lying about;
-        // take it to a store" reaches them, and needs no construction site to exist, which is
-        // the second of D66's two missing errands arriving at last.
-        if (TryTidyGround(world, villager))
-        {
-            return;
-        }
-
         // Clear ground the village painted, if there is nothing else to do (D87).
         //
         // ⭐ THE POSITION IS THE WHOLE RULE, and it is Joe's: "the harvest brush is only
@@ -2656,6 +2671,34 @@ public sealed class BehaviorSystem : ISimSystem
         // and the laborer shipped as a NAME because both errands proposed for them
         // occurred on 0.0% of ticks. This is work that was always on the map.
         if (TryHelpWithHarvest(world, villager))
+        {
+            return;
+        }
+
+        // Pick up a load somebody left lying about, if there is nothing else to do (D96).
+        //
+        // ⭐⭐ BELOW CLEARING NOW, AND THAT IS JOE'S CALL (2026-08-27: *"clearing first"*).
+        //
+        // It sat ABOVE clearing on the argument that *"a load already won is worth more than a
+        // load not yet taken"* — which is a good argument and was wrong about the failure it
+        // would cause. Tidying outranking clearing meant **one stubborn heap could consume the
+        // entire spare labour force for ever**: in his Year-44 village, painted ground stopped
+        // being cleared after **Year 3** and a granary marked out in Year 23 was never built,
+        // because every idle hand spent its life walking to a heap it could not put down.
+        //
+        // ⚠️ The livelock that produced that heap is fixed at `StoreForTheLoad`, so this is
+        // not the fix — it is the **blast radius**. A bug in hauling should cost the village
+        // its tidiness, not its harvest, and the order is what decides which.
+        //
+        // It stays below every job for D87's reason, unchanged: anybody reaching this line has
+        // already declined their own work this tick, so it needs no quota and no job kind.
+        //
+        // It has to be its own errand rather than a pull, and that is D96's gift rather than
+        // its cost: goods on the ground are supply-invisible, so "the village wants more
+        // food" cannot reach them — that question reads stores. "There is a load lying about;
+        // take it to a store" reaches them, and needs no construction site to exist, which is
+        // the second of D66's two missing errands arriving at last.
+        if (TryTidyGround(world, villager))
         {
             return;
         }

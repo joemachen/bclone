@@ -183,8 +183,25 @@ public sealed class FarmGoldenTests
     //   before the arms were hashed by index: 11064751127156165011
     //   before the fixture ate what the game eats (D223): 5494657115974799914
     //   before the village knew things (D225): 4569067148687306339
-    //   before the founding master had to earn it here (D227): 4947410003911202830
-    private const ulong SeamGoldenHash = 5913960743801194628UL;
+    // ⭐⭐ RE-TAKEN BECAUSE THE VILLAGE CAN PUT ITS LOGS DOWN AGAIN (2026-08-27). Two changes,
+    // both of which reach this village and only this village:
+    //
+    //   1. `StoreForTheLoad` asks `Accepts` before walking somewhere. It matched on KIND and
+    //      fullness alone, so an armful was carried to a store that refuses it, set down at its
+    //      door, picked up by the tidy errand — which DOES ask — and carried back to the same
+    //      store, for ever.
+    //   2. Clearing now outranks tidying (Joe: *"clearing first"*), so one stubborn heap can no
+    //      longer consume every spare hand in the village.
+    //
+    // ⭐⭐ AND THE GOLDENS THAT DID **NOT** MOVE ARE THE RESULT HERE, NOT THE LEFTOVERS (D223).
+    // **This is the only golden in the suite that moved.** The two fifty-year villages are
+    // byte-identical, and they should be: nothing in them ever refuses a good, so neither change
+    // can reach them. **This is the one village that paints a seam and clears it**, which is
+    // exactly the village a hauling fix is supposed to touch. A move in the others would have
+    // meant the change had leaked.
+    //
+    //   before a load could be put down where it was accepted: 5913960743801194628
+    private const ulong SeamGoldenHash = 1856781046300124051UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -214,7 +231,8 @@ public sealed class FarmGoldenTests
     //   before the fixture ate what the game eats (D223): 12276508385911985440
     //   before the village knew things (D225): 13041738680192547203
     //   before the founding master had to earn it here (D227): 267111501083800924
-    private const ulong SeamBeforeAnybodyGotBetter = 2112570384239951269UL;
+    //   before a load could be put down where it was accepted (2026-08-27): 2112570384239951269
+    private const ulong SeamBeforeAnybodyGotBetter = 15700858930161795428UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
