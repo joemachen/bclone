@@ -424,6 +424,29 @@ public partial class Main : Control
     /// breaks that rule**, because it is the only thing in the game that is meant to be in the
     /// way: the village is paused behind it and nothing else is competing for the space.
     /// </remarks>
+    private Button _libraryButton = null!;
+    private VBoxContainer _libraryCategory = null!;
+
+    /// <summary>
+    /// Show the library only once the village can write, and glow while the gift is unspent.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ A BUTTON YOU HAVE BEEN LOOKING AT FOR EIGHTEEN YEARS IS NOT A SURPRISE WHEN IT
+    /// UNLOCKS</b> (Joe, from play). Hiding it until literacy is what makes the moment land as a
+    /// gift rather than as permission. **The tint clears when the free one is spent**, so the
+    /// highlight means *"this is the gift"* rather than *"this is a library"*.
+    /// </remarks>
+    private void RefreshTheLibraryButton(SimWorld world)
+    {
+        _libraryCategory.Visible = world.HasLiteracy;
+
+        _libraryButton.Modulate = world.AFreeLibraryIsOwed
+            ? new Color(1f, 0.85f, 0.4f)
+            : Colors.White;
+
+        _libraryButton.Text = world.AFreeLibraryIsOwed ? "Library ★" : "Library";
+    }
+
     private PanelContainer? _momentPanel;
     private Label _momentTitle = null!;
     private Label _momentBody = null!;
@@ -471,8 +494,18 @@ public partial class Main : Control
 
     private void BuildTheMomentPanel()
     {
+        // ⚠️ CENTRED PROPERLY, WHICH IT WAS NOT (Joe, from play: *"it should be centered"*).
+        // `LayoutPreset.Center` anchors the middle of the control to the middle of the screen and
+        // then leaves the offsets where they were — so a panel that grows to fit its text drifts
+        // off to one side, which is what the screenshot showed. **Growing both ways from the
+        // centre is what `Center` sounds like it does and does not.**
+        //
+        // ⚠️ Draggable is Joe's other half and is NOT built — he said the UI pass comes later, so
+        // this is the centring only. **Recorded rather than silently dropped.**
         var panel = new PanelContainer { Visible = false };
-        panel.SetAnchorsAndOffsetsPreset(LayoutPreset.Center);
+        panel.SetAnchorsPreset(LayoutPreset.Center, keepOffsets: false);
+        panel.GrowHorizontal = GrowDirection.Both;
+        panel.GrowVertical = GrowDirection.Both;
         panel.CustomMinimumSize = new Vector2(460f, 0f);
 
         var box = new VBoxContainer();
@@ -520,6 +553,7 @@ public partial class Main : Control
         SimWorld world = _loop.World;
 
         ShowAnyMoment(world);
+        RefreshTheLibraryButton(world);
 
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
 
@@ -3766,7 +3800,17 @@ public partial class Main : Control
         // reach does not exist. The build bar is still ten hand-written buttons and becoming
         // catalogue-driven is deferred on Joe's call (D223) — **which makes remembering this line
         // the cost of that deferral, and it is cheap while the catalogue is small.**
-        row.AddChild(Category("Knowledge", BuildButton("Library", BuildingKind.Library)));
+        // ⭐⭐ THE LIBRARY BUTTON IS NOT THERE UNTIL IT IS EARNED (Joe, from play): *"the library is
+        // in the UI from the beginning — shouldn't it show up once gifted?"* **He is right, and the
+        // button sitting there for eighteen years was the gift being spoiled before it arrived** —
+        // a thing you have been looking at and cannot press is not a surprise when it unlocks.
+        //
+        // ⭐ AND IT IS HIGHLIGHTED WHEN IT IS NEW, which is his other half: *"with a highlight to
+        // show it's special/new."* The tint clears the moment the free one is spent, so the badge
+        // means *"this is the gift"* rather than *"this is a library"*.
+        _libraryButton = BuildButton("Library", BuildingKind.Library);
+        _libraryCategory = Category("Knowledge", _libraryButton);
+        row.AddChild(_libraryCategory);
 
         // The brush (D42). Its own category because it is a different kind of decision: the
         // others place one thing, this says where a whole neighbourhood may grow — and the
@@ -3779,9 +3823,20 @@ public partial class Main : Control
 
         row.AddChild(Category("Homes", paint, erase));
 
+        // ⛔ MOVE AND EMPTY SHIP WITH THE SIM FEATURES THEY DRIVE, and their absence is what Joe
+        // hit: *"I don't see anything in the UI that allows me to move a building?"* and *"no
+        // option to 'empty' to another storage building."* **Both had been built and neither was
+        // reachable** — the third and fourth instances this session of a feature existing only in
+        // the sim. *Placeable is not reachable, and neither is relocatable.*
+        var move = new Button { Text = "Move" };
+        move.Pressed += () => _map.BeginMoving();
+
+        var empty = new Button { Text = "Empty" };
+        empty.Pressed += () => _map.BeginEmptying();
+
         var demolish = new Button { Text = "Demolish" };
         demolish.Pressed += () => _map.BeginDemolishing();
-        row.AddChild(Category("Removal", demolish));
+        row.AddChild(Category("Removal", move, empty, demolish));
 
         row.AddChild(new VSeparator());
 

@@ -345,6 +345,16 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)(world.FirstGranaryTick >> 32));
         }
 
+        // ---- A library the village has been given and not yet placed ----
+        //
+        // ⛔ HASHED BECAUSE IT CHANGES WHAT A BUILDING COSTS. Two runs disagreeing about it are two
+        // villages paying different prices for the same library. **Sparse** — false mixes nothing,
+        // so it is invisible to every run that has not reached literacy.
+        if (world.AFreeLibraryIsOwed)
+        {
+            hash = MixByte(hash, 1);
+        }
+
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----
         //
         // ⚠️ THE RECORDS ARE MIXED IN SHELF ORDER, NOT AS A SET, and that is deliberate. Two runs

@@ -1,3 +1,4 @@
+using System.Linq;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Logging;
@@ -495,19 +496,31 @@ public sealed class TechniqueTests
         loop.Step(config.TicksPerYear * (config.LiteracyYears + 2));
 
         Assert.True(world.HasLiteracy);
-        Assert.Single(world.Libraries);
 
-        // ⭐ Beside the granary that taught them, not merely somewhere sensible.
-        GridPos where = world.Libraries[0].Position;
-        int away = System.Math.Max(
-            System.Math.Abs(where.X - granary.Position.X),
-            System.Math.Abs(where.Y - granary.Position.Y));
-
-        _output.WriteLine($"library at {where}, granary at {granary.Position} — {away} tiles away");
-        Assert.True(away <= 6, $"The library went up {away} tiles from the granary.");
+        // ⭐⭐ THE GIFT IS THE MATERIALS, NOT THE BUILDING (Joe, from play: *"I think it's best to
+        // let the user place the library"*). Nothing is standing yet — the village has gathered
+        // the timber and stone and is waiting to be told where.
+        Assert.Empty(world.Libraries);
+        Assert.True(world.AFreeLibraryIsOwed);
 
         // ⛔ And it is a moment worth stopping for, not just a log line.
-        Assert.Contains(world.Moments, m => m.Title.Contains("write", System.StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            world.Moments,
+            m => m.Title.Contains("write", System.StringComparison.OrdinalIgnoreCase));
+
+        // ⭐ Marking one costs nothing but the work — the crew still raise it.
+        GridPos spot = SomewhereBuildable(world);
+        Assert.True(world.Mark(BuildingKind.Library, spot).Allowed);
+
+        Workplace raising = world.Workplaces.Last(w => w.Position == spot && w.IsSite);
+        _output.WriteLine($"the gifted library costs {raising.Construction!.Recipe.TotalMaterials} "
+            + $"materials and {raising.Construction.Recipe.WorkTicks} ticks of work");
+
+        Assert.Equal(0, raising.Construction.Recipe.TotalMaterials);
+        Assert.True(raising.Construction.Recipe.WorkTicks > 0, "Somebody still has to build it.");
+        Assert.False(world.AFreeLibraryIsOwed);
+
+        _ = granary;
     }
 
     /// <summary>⛔ The gift is the FIRST library only — the rest are built and paid for.</summary>
@@ -527,15 +540,73 @@ public sealed class TechniqueTests
         FinishTheSiteAt(world, world.Workplaces[^1].Position);
         loop.Step(config.TicksPerYear * (config.LiteracyYears + 2));
 
-        Assert.Single(world.Libraries);
+        Assert.True(world.AFreeLibraryIsOwed);
 
-        // Another decade goes by and nobody is given anything else.
+        // Spend it.
+        world.Mark(BuildingKind.Library, SomewhereBuildable(world));
+        Assert.False(world.AFreeLibraryIsOwed);
+
+        // ⭐ A second one costs what a library costs — which is what keeps the shelf cap a
+        // decision rather than a formality.
+        GridPos second = SomewhereBuildable(world);
+        Assert.True(world.Mark(BuildingKind.Library, second).Allowed);
+
+        Workplace site = world.Workplaces.Last(w => w.Position == second && w.IsSite);
+        Assert.True(
+            site.Construction!.Recipe.TotalMaterials > 0,
+            "The second library was free too — the gift is meant to be spent once.");
+
+        // ⛔ And another decade grants nothing further.
         loop.Step(config.TicksPerYear * 10);
-        Assert.Single(world.Libraries);
+        Assert.False(world.AFreeLibraryIsOwed);
+    }
 
-        // ⭐ And a second one still costs what a library costs.
-        BuildingRecipe recipe = world.BuildingsCatalog.RecipeOf(BuildingKind.Library);
-        Assert.True(recipe.TotalMaterials > 0, "A built library should still cost materials.");
+    /// <summary>
+    /// ⛔ The founders' cart can be pulled down, and the refusal names what is inside it.
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe, playing:</b> *"when I try to demolish the cart, the UI tells me 'there is nothing
+    /// there to pull down' — note the cart has items in it."* **`WhatStandsAt` asks the buildings
+    /// catalogue which building stores as a `Cart`, and no row may claim that** — validated at
+    /// load, deliberately, because the wagon is not something the player puts up. *A correct rule
+    /// producing a false sentence, and the third time this session a list that did not know about
+    /// a kind of thing said "there is nothing here."*
+    /// </remarks>
+    [Fact]
+    public void TheCartComesDownOnceItIsEmpty()
+    {
+        // ⚠️ A COLD START, because the cart is the cold start's own building — it only exists in a
+        // village that was not handed anything (`founding_buildings: false`, D64). The warm fixture
+        // has no wagon to pull down, and asserting against it would have been a guard about the
+        // fixture rather than about the cart.
+        SimConfig config = VillageFixtures.Village with { FoundingBuildings = false };
+        SimWorld world = Loop(config, new InMemoryLogSink()).World;
+        StoreBuilding cart = world.StoreBuildings.First(s => s.Kind == StoreKind.Cart);
+
+        // ⚠️ It already holds the founders' supplies — the cart arrives full, which is its whole
+        // reason for existing (D64). Read the number rather than assuming one.
+        int aboard = cart.Store.Held;
+        Assert.True(aboard > 0, "The founders' cart should arrive with their supplies in it.");
+
+        PlacementVerdict refused = world.MarkDemolition(cart.Position);
+
+        _output.WriteLine(refused.Reason);
+        Assert.False(refused.Allowed);
+        Assert.DoesNotContain(
+            "nothing there", refused.Reason, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            aboard.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            refused.Reason,
+            System.StringComparison.Ordinal);
+
+        // ⭐ Emptied, it is wheeled away rather than dismantled — D64's own "demolishable once
+        // empty", finally reachable.
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            cart.Store.TakeAll((Goods)g);
+        }
+        Assert.True(world.MarkDemolition(cart.Position).Allowed);
+        Assert.DoesNotContain(world.StoreBuildings, s => s.Kind == StoreKind.Cart);
     }
 
     /// <summary>Literacy arrives from a granary that has been kept, and the village says so.</summary>

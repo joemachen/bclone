@@ -145,48 +145,28 @@ public sealed class SimWorld
     /// clear ground near the granary gets told so; the caller says it out loud.
     /// </para>
     /// </remarks>
-    internal string? GiftALibrary()
-    {
-        StoreBuilding? granary = FindStore(StoreKind.Granary);
-        if (granary is null)
-        {
-            return null;
-        }
-
-        BuildingRow row = BuildingsCatalog[BuildingKind.Library];
-
-        // Outward from the granary, so "beside it" means beside it rather than merely near.
-        for (int ring = 1; ring <= 6; ring++)
-        {
-            for (int dy = -ring; dy <= ring; dy++)
-            {
-                for (int dx = -ring; dx <= ring; dx++)
-                {
-                    var at = new GridPos(granary.Position.X + dx, granary.Position.Y + dy);
-
-                    // ⚠️ `alreadyStanding` because the village is not *building* this — it is being
-                    // given one, and asking whether they may build a library would refuse the gift
-                    // on the very tick that earned it.
-                    if (!CanBuildAt(BuildingKind.Library, at, alreadyStanding: true).Allowed)
-                    {
-                        continue;
-                    }
-
-                    string name = NameFor(BuildingKind.Library);
-                    Libraries.Add(new Library
-                    {
-                        Position = at,
-                        Name = name,
-                        Shelves = row.Shelves,
-                    });
-
-                    return $"beside {granary.Name}";
-                }
-            }
-        }
-
-        return null;
-    }
+    /// <summary>
+    /// Whether the village has been given a library it has not yet put anywhere.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE GIFT IS THE MATERIALS, AND THE PLAYER CHOOSES THE SPOT</b> (Joe, from play,
+    /// 2026-08-26): *"I think it's best to let the user place the library."* **The sim sited the
+    /// first one beside the granary and he did not want that** — which is the same instinct that
+    /// produced the relocate condition, arriving one step earlier: *the village may give you a
+    /// building; it should not choose where you keep it.*
+    /// </para>
+    /// <para>
+    /// <b>⭐ Materials free, work still owed.</b> The villagers gathered the timber and stone; they
+    /// still have to raise the thing. **A building that appeared finished would be the only one in
+    /// the game nobody built** — the exception D230 has just finished removing from demolition.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Exactly one.</b> It is spent by the first library marked, and every library after it
+    /// costs what a library costs — which is what keeps the shelf cap a decision.
+    /// </para>
+    /// </remarks>
+    public bool AFreeLibraryIsOwed { get; internal set; }
 
     /// <summary>Whether any standing library has a shelf free.</summary>
     public bool AnyShelfFree()
@@ -3915,6 +3895,30 @@ public sealed class SimWorld
             return PlacementVerdict.No("That is already being pulled down.");
         }
 
+        // ⛔⛔ THE CART IS A BUILDING TO THE PLAYER AND NOT ONE TO THE CATALOGUE, AND THAT GAP TOLD
+        // THEM A LIE (Joe, playing): *"when I try to demolish the cart, the UI tells me 'there is
+        // nothing there to pull down'"* — while pointing at the wagon their founders arrived in,
+        // with goods visibly inside it. **`WhatStandsAt` asks the buildings catalogue which
+        // building stores as a `Cart`, and no row may claim that** (validated at load, deliberately:
+        // the wagon is not something the player puts up). *A correct rule producing a false
+        // sentence — the third time this session that a list which did not know about a kind of
+        // thing said "there is nothing here."*
+        //
+        // ⭐ It comes down instantly and empty-handed, which is what D64 already said of it:
+        // *"demolishable once empty."* A wagon is unloaded and wheeled away, not dismantled.
+        if (StoreAt(tile) is { Kind: StoreKind.Cart } cart)
+        {
+            if (cart.Store.Held > 0)
+            {
+                return PlacementVerdict.No(
+                    $"There are {cart.Store.Held} goods in {cart.Name}. Empty it first, or they "
+                    + "go with it.");
+            }
+
+            Demolish(cart);
+            return PlacementVerdict.Fine;
+        }
+
         BuildingKind? kind = HouseholdAt(tile) is not null
             ? BuildingKind.Home
             : WhatStandsAt(tile);
@@ -4433,6 +4437,17 @@ public sealed class SimWorld
         }
 
         BuildingRecipe recipe = BuildingRecipe.For(kind, Config);
+
+        // ⭐ THE GIFT IS SPENT HERE, ON THE FIRST ONE MARKED. The villagers gathered the materials;
+        // the crew still raise it, so the work stands and only the cost falls away.
+        if (AFreeLibraryIsOwed && BuildingsCatalog[kind]?.Shelves > 0)
+        {
+            AFreeLibraryIsOwed = false;
+            recipe = new BuildingRecipe(recipe.WorkTicks);
+            Narrate("The timber and stone for the library were gathered by the village. "
+                + $"{Clock.SeasonAndYear()}.");
+        }
+
         string name = NameFor(kind);
 
         // ⭐ THE VILLAGE CLEARS THE GROUND, THE PLAYER DOES NOT HAVE TO (Joe, D100).

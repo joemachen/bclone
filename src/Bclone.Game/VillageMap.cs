@@ -475,6 +475,9 @@ public partial class VillageMap : Control
         _groundFor = 0;
         _building = null;
         _demolishing = false;
+        _moving = false;
+        _moveFrom = null;
+        _emptying = false;
         _demolishArmedAt = null;
         _eraseHousesArmed = false;
         Announce();
@@ -489,6 +492,9 @@ public partial class VillageMap : Control
         _groundFor = 0;
         _building = null;
         _demolishing = false;
+        _moving = false;
+        _moveFrom = null;
+        _emptying = false;
         _demolishArmedAt = null;
         _eraseHousesArmed = false;
         Announce();
@@ -503,6 +509,9 @@ public partial class VillageMap : Control
         _groundFor = workplaceId;
         _building = null;
         _demolishing = false;
+        _moving = false;
+        _moveFrom = null;
+        _emptying = false;
         _demolishArmedAt = null;
         _eraseHousesArmed = false;
         Announce();
@@ -521,6 +530,9 @@ public partial class VillageMap : Control
     {
         _building = kind;
         _demolishing = false;
+        _moving = false;
+        _moveFrom = null;
+        _emptying = false;
         _demolishArmedAt = null;
         _eraseHousesArmed = false;
         _brush = 0;
@@ -553,12 +565,62 @@ public partial class VillageMap : Control
         _demolishArmedAt = null;
         _eraseHousesArmed = false;
         _brush = 0;
+        _moveFrom = null;
+        _moving = false;
+        _emptying = false;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>The tile a move has picked up, waiting for somewhere to put it down.</summary>
+    /// <remarks>
+    /// <b>Two clicks, like every other two-part act in this game</b> — pick the building, then the
+    /// destination. The first click says what is being moved and the second says where, so a
+    /// misclick costs a click rather than a building.
+    /// </remarks>
+    private GridPos? _moveFrom;
+    private bool _moving;
+    private bool _emptying;
+
+    /// <summary>Pick a building up and put it down somewhere else (D229).</summary>
+    public void BeginMoving()
+    {
+        _building = null;
+        _demolishing = false;
+        _moving = false;
+        _moveFrom = null;
+        _emptying = false;
+        _demolishArmedAt = null;
+        _eraseHousesArmed = false;
+        _brush = 0;
+        _emptying = false;
+        _moving = true;
+        _moveFrom = null;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Mark a store to be carried out into the others, or stop (D231).</summary>
+    public void BeginEmptying()
+    {
+        _building = null;
+        _demolishing = false;
+        _moving = false;
+        _moveFrom = null;
+        _emptying = false;
+        _demolishArmedAt = null;
+        _eraseHousesArmed = false;
+        _brush = 0;
+        _moving = false;
+        _moveFrom = null;
+        _emptying = true;
         Announce();
         QueueRedraw();
     }
 
     /// <summary>Whether the player is in the middle of placing, demolishing or painting.</summary>
-    public bool IsPlacing => _building is not null || _demolishing || _brush != 0;
+    public bool IsPlacing =>
+        _building is not null || _demolishing || _moving || _emptying || _brush != 0;
 
     public override void _GuiInput(InputEvent @event)
     {
@@ -606,6 +668,9 @@ public partial class VillageMap : Control
         {
             BeginBuilding(null);
             _demolishing = false;
+            _moving = false;
+            _moveFrom = null;
+            _emptying = false;
         _demolishArmedAt = null;
         _eraseHousesArmed = false;
             AcceptEvent();
@@ -820,6 +885,62 @@ public partial class VillageMap : Control
             return;
         }
 
+        // ⭐ EMPTYING IS A TOGGLE, because the player may change their mind and a store that is
+        // being cleared and one that is not are the same building in two moods.
+        if (_emptying)
+        {
+            if (_world!.StoreAt(where) is not StoreBuilding store)
+            {
+                PlacementMessageChanged?.Invoke("That is not a store.");
+                return;
+            }
+
+            store.Emptying = !store.Emptying;
+            PlacementMessageChanged?.Invoke(store.Emptying
+                ? $"{store.Name} is being cleared out — its {store.Store.Held} goods will be "
+                    + "carried to the other stores."
+                : $"{store.Name} is back in use.");
+
+            QueueRedraw();
+            return;
+        }
+
+        // ⭐ TWO CLICKS: what to move, then where to. The sim refuses anything it should refuse —
+        // a house, a full store, an illegal tile — and says why, so this only has to carry the
+        // question rather than duplicate the rules.
+        if (_moving)
+        {
+            if (_moveFrom is not GridPos from)
+            {
+                if (_world!.WhatStandsAt(where) is null && _world.HouseholdAt(where) is null)
+                {
+                    PlacementMessageChanged?.Invoke("There is nothing there to move.");
+                    return;
+                }
+
+                _moveFrom = where;
+                PlacementMessageChanged?.Invoke(
+                    $"Moving {_world.NameOnTheTile(where)} — click where it should stand.");
+                QueueRedraw();
+                return;
+            }
+
+            PlacementVerdict moved = _world!.MarkRelocation(from, where);
+            PlacementMessageChanged?.Invoke(moved.Allowed
+                ? $"{_world.NameOnTheTile(where)} is being moved."
+                : moved.Reason);
+
+            // Only let go of the building once the move is actually under way, so a refused
+            // destination leaves them still holding it rather than starting over.
+            if (moved.Allowed)
+            {
+                _moveFrom = null;
+            }
+
+            QueueRedraw();
+            return;
+        }
+
         if (_demolishing)
         {
             // ⭐ SITES AND HUTS TOO, WHICH THIS COULD NOT TOUCH BEFORE (Joe: *"I can't
@@ -901,6 +1022,22 @@ public partial class VillageMap : Control
                 ? $"Drag to take ground back from {whose}. Right-click to stop."
                 : $"Drag to give ground to {whose} — its people work what you paint. "
                     + "Right-click to stop.");
+            return;
+        }
+
+        if (_moving)
+        {
+            PlacementMessageChanged?.Invoke(
+                "Click a building to move, then click where it should stand. A store must be "
+                + "empty first, and houses move by the land brush. Right-click to stop.");
+            return;
+        }
+
+        if (_emptying)
+        {
+            PlacementMessageChanged?.Invoke(
+                "Click a store to have its goods carried out to the others, or click it again to "
+                + "stop. Right-click to put the tool down.");
             return;
         }
 

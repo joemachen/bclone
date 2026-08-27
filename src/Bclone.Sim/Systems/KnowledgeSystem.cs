@@ -206,20 +206,12 @@ public sealed class KnowledgeSystem : ISimSystem
             + "somebody has begun marking the sacks with signs of their own devising. "
             + $"The village can write things down now. {world.Clock.SeasonAndYear()}.";
 
-        if (world.GiftALibrary() is string where)
-        {
-            world.RaiseMoment(
-                "The village learned to write",
-                body + $" They have raised a library {where} to keep what they know.");
-            return;
-        }
+        world.AFreeLibraryIsOwed = true;
 
-        // ⚠️ SAID EITHER WAY. A gift the player is told about and never receives is worse than no
-        // gift, so a valley with nowhere to put one says so and the player can make room.
         world.RaiseMoment(
             "The village learned to write",
-            body + " There was nowhere beside the granary to raise a library; clear some ground "
-                + "near it and build one.");
+            body + " They have gathered timber and stone for a library — put it wherever you "
+                + "like, and it will cost you nothing.");
     }
 
     /// <summary>Whether any living villager reached mastery of a skill in this valley.</summary>
