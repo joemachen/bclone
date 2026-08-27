@@ -36,16 +36,41 @@ public sealed class ApprenticeshipTests
     private static SimLoop Loop(SimConfig config) =>
         SimFactory.CreatePhase0(config, new InMemoryLogSink());
 
-    private static int MastersAliveAfterACentury(SimConfig config)
+    private static int MasterYearsAcrossTheLastTwentyYears(SimConfig config)
     {
         SimLoop loop = Loop(config);
 
-        for (int i = 0; i < config.TicksPerYear * 100; i++)
+        // ⭐⭐ SAMPLED ACROSS THE LAST TWENTY YEARS, NOT READ OFF AT ONE INSTANT — and the change
+        // came out of a probe that reversed its own hypothesis (D227).
+        //
+        // ⛔ THIS GUARD USED TO COUNT MASTERS ALIVE AT EXACTLY TICK N, and that is a spot reading
+        // of a fluctuating stock, which this project has been bitten by before: *"firewood fell
+        // 156 → 131 → 91 and I called it a real cost; across three seeds it goes down, up, and
+        // down-then-up. It was noise"* (D200). **Masters alive on one particular tick swings on
+        // whether somebody died at ninety-nine or a hundred and one.**
+        //
+        // ⚠️ IT WAS NOT A THEORETICAL WEAKNESS. Seed 2 read **8 against 8 — no difference at all**,
+        // and the honest conclusion looked like *apprenticeship has stopped mattering*. Measured
+        // over the last twenty years instead, that same seed is **5.15 against 8.40 — the LARGEST
+        // margin of the three.** *The instant said the feature was dead and the truth was the
+        // opposite.*
+        //
+        // **So the bar stays strictly-more and stays per-seed**, which is stronger than aggregating
+        // across seeds would have been. The instrument was wrong, not the claim.
+        long mastersOverTheYears = 0;
+
+        for (int year = 0; year < 100; year++)
         {
-            loop.StepOnce();
+            loop.Step(config.TicksPerYear);
+
+            if (year >= 80)
+            {
+                mastersOverTheYears += loop.World.Villagers.Count(
+                    v => v.Alive && v.Skills.Any(s => s.Mastered));
+            }
         }
 
-        return loop.World.Villagers.Count(v => v.Alive && v.Skills.Any(s => s.Mastered));
+        return (int)mastersOverTheYears;
     }
 
     // ---------------------------------------------------------------
@@ -64,8 +89,15 @@ public sealed class ApprenticeshipTests
     /// no-op over three hundred years.
     /// </para>
     /// <para>
-    /// <b>Measured at a century on three seeds: masters alive 3 → 6, 4 → 8, 8 → 10.</b> The bar
-    /// is *strictly more*, because the claim is directional and the magnitude is content.
+    /// <b>Measured as masters alive AVERAGED OVER THE LAST TWENTY YEARS, on three seeds:
+    /// 6.00 → 6.95, 5.15 → 8.40, 5.35 → 7.45.</b> The bar is *strictly more*, because the claim is
+    /// directional and the magnitude is content.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The original figures were read at one instant — 3 → 6, 4 → 8, 8 → 10 — and the last
+    /// of those went to 8 → 8 when Phase 4 changed the founding</b> (D227). That looked like
+    /// apprenticeship dying and was the instrument: smoothed, that same seed has the widest margin
+    /// of the three. <em>See the sampling comment above.</em>
     /// </para>
     /// </remarks>
     [Theory]
@@ -77,17 +109,17 @@ public sealed class ApprenticeshipTests
         SimConfig teaching = Shipped with { Seed = seed };
         SimConfig silent = teaching with { ApprenticeLearningBonusPercent = 0 };
 
-        int taught = MastersAliveAfterACentury(teaching);
-        int untaught = MastersAliveAfterACentury(silent);
+        int taught = MasterYearsAcrossTheLastTwentyYears(teaching);
+        int untaught = MasterYearsAcrossTheLastTwentyYears(silent);
 
         _output.WriteLine(
-            $"seed {seed}: {untaught} masters alive after a century with nobody teaching, "
-            + $"{taught} with the village teaching");
+            $"seed {seed}: {untaught / 20.0:F2} masters on average over the last twenty years "
+            + $"with nobody teaching, {taught / 20.0:F2} with the village teaching");
 
         Assert.True(
             taught > untaught,
-            $"A village that teaches ended a century with {taught} masters and one that never "
-            + $"taught ended with {untaught}. If teaching changes nothing, §2.1's whole claim — "
+            $"A village that teaches averaged {taught / 20.0:F2} masters over the last twenty "
+            + $"years and one that never taught averaged {untaught / 20.0:F2}. If teaching changes nothing, §2.1's whole claim — "
             + "that skill is *transferable* — is decoration, which is D56's clothing again.");
     }
 
