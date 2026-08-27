@@ -34,28 +34,42 @@ public sealed class RelocateTests
     private static SimLoop Loop() =>
         SimFactory.CreatePhase0(Config, new InMemoryLogSink());
 
-    /// <summary>A tile the village may build on, found rather than assumed.</summary>
+    /// <summary>
+    /// A tile the village may build on, found rather than assumed — <b>and found NEAR THEM</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>It used to scan from the map's corner, and that quietly broke the one guard that
+    /// needed people to walk.</b> The first buildable tile in the valley is in the far top-left;
+    /// a granary put there is a granary nobody goes to, so *"emptied after three years"* measured
+    /// the distance rather than the errand. **Searching outward from the founding site puts the
+    /// building where a player would put it**, which is what the guard was always assuming.
+    /// </remarks>
     private static GridPos Buildable(SimWorld world, params GridPos[] avoid)
     {
-        for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
-        {
-            for (int x = world.Map.MinX; x < world.Map.MinX + world.Map.Width; x++)
-            {
-                var at = new GridPos(x, y);
-                if (System.Array.Exists(avoid, a => a == at))
-                {
-                    continue;
-                }
+        GridPos centre = world.Map.FoundingSite;
 
-                if (world.Map.TerrainAt(at) == Terrain.Grass
-                    && world.CanBuildAt(BuildingKind.Granary, at).Allowed)
+        for (int ring = 1; ring < 30; ring++)
+        {
+            for (int dy = -ring; dy <= ring; dy++)
+            {
+                for (int dx = -ring; dx <= ring; dx++)
                 {
-                    return at;
+                    var at = new GridPos(centre.X + dx, centre.Y + dy);
+                    if (System.Array.Exists(avoid, a => a == at) || !world.Map.Contains(at))
+                    {
+                        continue;
+                    }
+
+                    if (world.Map.TerrainAt(at) == Terrain.Grass
+                        && world.CanBuildAt(BuildingKind.Granary, at).Allowed)
+                    {
+                        return at;
+                    }
                 }
             }
         }
 
-        throw new System.InvalidOperationException("No buildable tile in the valley.");
+        throw new System.InvalidOperationException("No buildable tile near the village.");
     }
 
     /// <summary>Deliver a site's materials and work it to completion, as a crew would.</summary>
@@ -141,6 +155,91 @@ public sealed class RelocateTests
         // ⭐ And emptying it is the whole of the remedy.
         granary.Store.TakeAll(Goods.Food);
         Assert.True(world.MarkRelocation(from, to).Allowed);
+    }
+
+    /// <summary>
+    /// ⭐⭐ A store marked for emptying is carried out by people, and then it can move.
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe's second function, end to end</b> (2026-08-26): *"storage buildings must be 'emptied'
+    /// first — another function to build."* Before this, the only way to move a full store was to
+    /// demolish it and lose everything inside (D221).
+    /// </remarks>
+    [Fact]
+    public void AStoreMarkedForEmptyingIsCarriedOutAndThenCanMove()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        // Two stores, so there is somewhere for the goods to go.
+        StoreBuilding full = StandAGranary(world, out GridPos from);
+        StandAGranary(world, out GridPos _);
+
+        full.Store.Receive(Goods.Food, 120);
+        Assert.False(world.MarkRelocation(from, Buildable(world, from)).Allowed);
+
+        full.Emptying = true;
+        loop.Step(Config.TicksPerYear * 3);
+
+        _output.WriteLine($"{full.Name} holds {full.Store.Held} after three years of clearing");
+
+        Assert.Equal(0, full.Store.Held);
+        Assert.True(world.MarkRelocation(from, Buildable(world, from)).Allowed);
+    }
+
+    /// <summary>
+    /// ⛔ A store being emptied refuses everything, or the drain would never finish.
+    /// </summary>
+    /// <remarks>
+    /// <b>The refusal IS the mechanism, not a side effect.</b> A store that still accepted goods
+    /// would be refilled by the same errands emptying it, and the two would race for ever.
+    /// </remarks>
+    [Fact]
+    public void AStoreBeingEmptiedRefusesEverything()
+    {
+        SimWorld world = Loop().World;
+        StoreBuilding granary = StandAGranary(world, out GridPos _);
+
+        Assert.True(granary.Accepts(Goods.Food));
+
+        granary.Emptying = true;
+        Assert.False(granary.Accepts(Goods.Food));
+
+        // ⭐ And clearing the request puts it straight back to work.
+        granary.Emptying = false;
+        Assert.True(granary.Accepts(Goods.Food));
+    }
+
+    /// <summary>
+    /// ⚠️ With nowhere to put the goods, nobody is sent to fetch them.
+    /// </summary>
+    /// <remarks>
+    /// <b>Otherwise the village would send people to carry armfuls they could only put back</b> —
+    /// emptying a store into itself, for ever. The errand simply does not exist, which leaves the
+    /// relocate refusal telling the player the truth rather than a queue of futile walks.
+    /// </remarks>
+    [Fact]
+    public void WithNowhereToPutThemNobodyIsSentToFetchThem()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        StoreBuilding only = StandAGranary(world, out GridPos _);
+
+        // Every other store gone, so this one has nowhere to send anything.
+        foreach (StoreBuilding other in world.StoreBuildings.Where(s => !ReferenceEquals(s, only)).ToList())
+        {
+            world.Demolish(other);
+        }
+
+        only.Store.Receive(Goods.Food, 90);
+        only.Emptying = true;
+        loop.Step(Config.TicksPerYear);
+
+        Assert.Equal(90, only.Store.Held);
+        Assert.DoesNotContain(
+            world.Villagers,
+            v => v.Alive && v.State == VillagerState.ClearingAStore);
     }
 
     /// <summary>⛔ A house is never moved by hand — the brush is its only control (D228).</summary>

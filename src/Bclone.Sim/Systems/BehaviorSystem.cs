@@ -113,6 +113,7 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.DeliveringToHome => "delivering to a home",
         VillagerState.FetchingMaterials => "fetching building materials",
         VillagerState.Building => "building",
+        VillagerState.ClearingAStore => "clearing out a store",
         VillagerState.Clearing => "clearing painted ground",
         VillagerState.TidyingGround => "fetching a load off the ground",
         VillagerState.TravelingToField => "walking out to the field",
@@ -359,6 +360,18 @@ public sealed class BehaviorSystem : ISimSystem
             case VillagerState.FetchingFromStore:
                 Travel(world, villager, PlanFetch(world, villager)?.Position ?? world.RestingPlaceOf(villager),
                     VillagerState.FetchingFromStore);
+                return;
+
+            case VillagerState.ClearingAStore:
+                // ⚠️ RE-ASKED EACH STEP, LIKE THE HOUSEHOLD FETCH ABOVE, because the player can
+                // change their mind mid-walk: clearing the request should turn somebody round
+                // rather than sending them to a store that is working again. Falling back to their
+                // resting place is what `FetchingFromStore` does for the same reason.
+                Travel(
+                    world,
+                    villager,
+                    PlanEmptying(world, villager)?.Position ?? world.RestingPlaceOf(villager),
+                    VillagerState.ClearingAStore);
                 return;
 
             case VillagerState.Clearing:
@@ -979,6 +992,82 @@ public sealed class BehaviorSystem : ISimSystem
 
         int bar = byArmful < byTarget ? byArmful : byTarget;
         return shortfall >= (bar < 1 ? 1 : bar);
+    }
+
+    /// <summary>
+    /// The nearest store the player has asked to be cleared that still has something in it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ NEAREST, AND ONLY IF THERE IS SOMEWHERE FOR THE LOAD TO GO.</b> A village with one
+    /// store and no room anywhere else would otherwise send people to fetch armfuls they could
+    /// only put back — *"emptying" a store into itself*, for ever. **The errand simply does not
+    /// exist when there is nowhere to take things**, which is the honest answer and leaves the
+    /// refusal on the relocate button telling the player the truth.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Their arms have to be free.</b> Somebody already carrying a harvest has a nearer
+    /// obligation, and taking a second load would silently drop the first.
+    /// </para>
+    /// </remarks>
+    private static StoreBuilding? PlanEmptying(SimWorld world, Villager villager)
+    {
+        if (villager.Carried.Held > 0)
+        {
+            return null;
+        }
+
+        StoreBuilding? nearest = null;
+        int best = int.MaxValue;
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (!store.Emptying || store.Store.Held <= 0)
+            {
+                continue;
+            }
+
+            if (!AnywhereElseWouldTakeSomethingFrom(world, store))
+            {
+                continue;
+            }
+
+            int cost = world.TravelCost.Cost(villager.Position, store.Position);
+            if (cost != TravelCostField.Unreachable && cost < best)
+            {
+                best = cost;
+                nearest = store;
+            }
+        }
+
+        return nearest;
+    }
+
+    /// <summary>Whether any other store would take at least one good out of this one.</summary>
+    private static bool AnywhereElseWouldTakeSomethingFrom(SimWorld world, StoreBuilding emptying)
+    {
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            var goods = (Goods)g;
+            if (emptying.Store[goods] <= 0)
+            {
+                continue;
+            }
+
+            for (int i = 0; i < world.StoreBuildings.Count; i++)
+            {
+                StoreBuilding other = world.StoreBuildings[i];
+                if (!ReferenceEquals(other, emptying)
+                    && other.Accepts(goods)
+                    && !other.Store.IsFull)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static StoreBuilding? PlanFetch(SimWorld world, Villager villager)
@@ -2220,6 +2309,22 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐⭐ CLEARING OUT A STORE THE PLAYER ASKED TO BE CLEARED (Joe, 2026-08-26: *"storage
+        // buildings must be 'emptied' first — another function to build"*). It sits here, after the
+        // household's own larder and before anybody's trade, for the same reason the harvest brush
+        // does: **a standing instruction the player left is work, and it outranks the job the
+        // allocator happened to hand out.**
+        //
+        // ⭐ THE ERRAND IS ONLY THE OUTWARD LEG. They walk over, take an armful, and the ordinary
+        // carrying logic does the rest — `HaulOrSetDown` finds the nearest store that will have it,
+        // and the emptying store refuses everything, so **a load can never come straight back**.
+        // *Two rules and no shuttling, rather than a second hauling system.*
+        if (villager.CanWork && PlanEmptying(world, villager) is StoreBuilding clearing)
+        {
+            Travel(world, villager, clearing.Position, VillagerState.ClearingAStore);
+            return;
+        }
+
         // Foraging is a JOB, not something anyone wanders off and does. Held via
         // LabourSystem, which decides who works where and records why - and, since
         // there are several forage sites now, WHICH ONE.
@@ -2800,6 +2905,34 @@ public sealed class BehaviorSystem : ISimSystem
     internal static void ArriveHomeForTest(SimWorld world, Villager villager) =>
         ArriveAt(world, villager, VillagerState.Idle);
 
+    /// <summary>Take one armful out of a store being cleared, whatever it happens to hold.</summary>
+    /// <remarks>
+    /// <b>⭐ IN GOOD ORDER, NOT BY WHAT IS MOST PLENTIFUL</b> — the goods catalogue's own order, so
+    /// two runs of one seed empty a store in the same sequence. *An errand whose choice depends on
+    /// iteration order is a determinism bug waiting for a second good.*
+    /// </remarks>
+    private static void TakeALoadOutOf(SimWorld world, Villager villager, StoreBuilding store)
+    {
+        int room = world.Config.CarryCapacity;
+
+        for (int g = 0; g < world.GoodsCatalog.Count && room > 0; g++)
+        {
+            var goods = (Goods)g;
+            int there = store.Store[goods];
+            if (there <= 0)
+            {
+                continue;
+            }
+
+            int took = there < room ? there : room;
+            if (store.Store.TryTake(goods, took))
+            {
+                villager.Carried.Add(goods, took);
+                room -= took;
+            }
+        }
+    }
+
     private static void CollectFromStore(SimWorld world, Villager villager)
     {
         Household household = world.HouseholdOf(villager);
@@ -3281,6 +3414,21 @@ public sealed class BehaviorSystem : ISimSystem
         {
             CollectFromStore(world, villager);
             villager.State = VillagerState.TravelingHome;
+            return;
+        }
+
+        // ⭐ AN ARMFUL OUT OF THE STORE BEING CLEARED, AND THEN THE ORDINARY CARRYING RULES TAKE
+        // OVER. Nothing here decides where it goes — `HaulOrSetDown` asks *"which store will have
+        // this?"* on the next tick, and the emptying store refuses everything, so it cannot be the
+        // answer. **The whole errand is the walk out and one armful.**
+        if (onArrival == VillagerState.ClearingAStore)
+        {
+            if (world.StoreAt(villager.Position) is StoreBuilding clearing && clearing.Emptying)
+            {
+                TakeALoadOutOf(world, villager, clearing);
+            }
+
+            HaulOrSetDown(world, villager);
             return;
         }
 

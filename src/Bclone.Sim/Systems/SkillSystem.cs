@@ -233,6 +233,12 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.Building => true,
         VillagerState.Clearing => true,
         VillagerState.TidyingGround => true,
+
+        // Clearing a store out is work, and it is nobody's TRADE -- like tidying a load off the
+        // ground, it is what somebody does when the village has asked for something doing. It
+        // grows no skill of its own because there is no skill of carrying boxes, which is the
+        // same ruling `TidyingGround` already carries.
+        VillagerState.ClearingAStore => true,
         VillagerState.TravelingToField => true,
         VillagerState.Sowing => true,
         VillagerState.Reaping => true,

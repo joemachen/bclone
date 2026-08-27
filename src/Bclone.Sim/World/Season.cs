@@ -153,6 +153,18 @@ public enum VillagerState
     /// unsafe — so the two destinations stay two answers, chosen once, in one place.
     /// </remarks>
     HaulingToFarm,
+
+    /// <summary>Walking to a store the player has asked to be cleared out.</summary>
+    /// <remarks>
+    /// <b>Its own errand, and it only carries the OUTWARD leg.</b> Once they have an armful the
+    /// ordinary carrying logic takes over -- `HaulOrSetDown` walks it to the nearest store that
+    /// will have it, and the emptying store refuses everything while the request stands, so the
+    /// load can never come straight back. <em>Two rules, no shuttling, and no new hauling
+    /// machinery.</em>
+    ///
+    /// Appended, never renumbered, like every other hashed enum in this project.
+    /// </remarks>
+    ClearingAStore,
 }
 
 /// <summary>

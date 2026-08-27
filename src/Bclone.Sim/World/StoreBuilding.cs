@@ -223,7 +223,30 @@ public sealed class StoreBuilding
     /// player has said (D141). Deliberately a plain question rather than a set of flags: a
     /// modder adding a good should be able to see at a glance where it can go.
     /// </remarks>
-    public bool Accepts(Goods goods) => PlayerAllows(goods) && KindAccepts(goods);
+    public bool Accepts(Goods goods) => !Emptying && PlayerAllows(goods) && KindAccepts(goods);
+
+    /// <summary>
+    /// Whether the village is clearing this store out so it can be moved or pulled down.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE SECOND HALF OF RELOCATION, AND JOE NAMED IT AS ITS OWN FUNCTION</b> (2026-08-26):
+    /// *"storage buildings must be 'emptied' first — another function to build."* A full granary
+    /// cannot be carried across the valley, and **demolishing one destroys what is inside** (D221,
+    /// his call), so without this the only way to move a store was to throw away its contents.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT REFUSES EVERYTHING WHILE IT IS SET</b>, which is the whole mechanism and not a
+    /// side effect: a store that still accepted goods would be filled by the same errands that
+    /// were emptying it, and the two would race for ever. *Refusing is what makes the drain
+    /// monotonic.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It is a request, not a state the sim reaches by itself</b> — nothing sets it but the
+    /// player, and clearing it puts the store straight back to work with whatever is still inside.
+    /// </para>
+    /// </remarks>
+    public bool Emptying { get; set; }
 
     /// <summary>
     /// What this kind of building can hold at all, before the player narrows it (D141).
