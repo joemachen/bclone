@@ -172,6 +172,33 @@ alone. The next worker learns the method from the record and **starts at zero pr
 where it stops being one villager's panel row and becomes the village's memory. ⛔ **No unlock the
 player cannot account for** (`§11`, non-negotiable 1).
 
+> **⛔⛔ OPEN, AND IT BLOCKS THE FIRST LINE OF THIS SLICE: `tech-tree.md §8` GATES THIS SCREEN
+> BEHIND A TOWN HALL, AND THE TOWN HALL IS ON THIS SPEC'S OWN EXCLUSION LIST.** §8 says it plainly
+> — *"this screen is the town hall's interior (§7f, D176), and it is reachable only once one
+> stands"*, with the village log carrying the same facts until then so that **nothing is hidden, it
+> is simply not yet collected**. But the ⏸️ list four lines below names *"the town hall and
+> collections"* as explicitly out of this phase, and **no `TownHall` exists anywhere in `src/` or
+> `data/`** — checked, not assumed.
+>
+> **So slice 3 as written asks for a screen whose diegetic front door is out of scope.** That is a
+> legibility call (`DESIGN.md §1`, non-negotiable 1), not a detail, so it is **Joe's** — three ways
+> out, and *do not pick one silently:*
+>
+> 1. **Ship the screen ungated**, reachable from the UI now, and add the town-hall gate when the
+>    building lands. ⚠️ *An always-open roster is a menu, which is the thing §8 was written to
+>    avoid* — but it is the smallest slice and the log still carries every event as it happens.
+> 2. **Bring a minimal town hall into Phase 4** so the screen has its diegetic home. ⚠️ *Contradicts
+>    the exclusion list, which exists so scope is not smuggled in* — and D176's town hall carries
+>    collections, which is a second feature.
+> 3. **Cut slice 3 and pause Phase 4 here.** Joe already agreed (2026-08-26) to **pause at a clean
+>    point** before fishing and hunting, and slices 1 and 2 are a clean point. ⚠️ *Leaves the phase's
+>    DoD unmet and the QA walk still owed* — the walk is item 4 and **this phase is not allowed to
+>    waive it.**
+>
+> ⭐ **Note that §5's QA checklist survives all three:** only check 21 (*"the knowledge screen
+> answers what does this village know, and who knows it, at a glance"*) depends on the screen. The
+> other 21 checks cover slices 1 and 2 and **can be walked now**, whichever way this goes.
+
 ### ⏸️ Explicitly NOT in this phase
 The scriptorium (D204 took it off the path), literacy, the school (specced, `school-and-education.md`,
 wants its own slice), the town hall and collections, fire, record decay, SEREN, ADJ, CRISIS, IMPORT,

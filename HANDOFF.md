@@ -1,13 +1,17 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT. Techniques and the library are in; the knowledge screen is not.**
 
-> **⛔⛔ NOT PUSHED. The work is on `phase/4-the-tech-tree`, about fifteen commits ahead of
-> `origin/main`** — count it with `git rev-list --count origin/main..HEAD` rather than trusting
-> this line, because **this file's own rule is not to write a number that keeps moving and the
-> first draft of this paragraph got both the hash and the count wrong within the hour.**
-> Joe has been asked three times and has not said either way, so **do not assume
-> it is his oversight and do not push without him saying so.** ⚠️ **He plays this branch**, so the
-> build he sees and the remote are not the same thing — which is D217's trap sitting live rather
-> than historical. **Ask, in the first message.**
+> **✅ PUSHED, AS A BRANCH — AND STILL NOT MERGED. `phase/4-the-tech-tree` is on `origin`
+> (2026-08-27, Joe: *"push"*), so the work is no longer only on this machine.** Count the gap with
+> `git rev-list --count origin/main..HEAD` rather than trusting a number written here, because
+> **this file's own rule is not to write a number that keeps moving and the first draft of this
+> paragraph got both the hash and the count wrong within the hour.**
+> ⛔ **It went to the branch, NOT to `main`, and that was a deliberate call rather than his:**
+> Phase 4's Definition of Done is not met — **slice 3 is unbuilt and the QA walk has never
+> happened** — and METHODOLOGY §3 does not merge a phase in that state. **Phase 3's one-word
+> *"push"* did go straight to `main` (D203), so the precedent points the other way; if he meant
+> `main` this time, merging is one command and the reason not to is written above.**
+> ⚠️ **He plays this branch**, so his build and `main` are still not the same thing — D217's trap
+> sitting live rather than historical. **`main` has none of Phase 4.**
 
 > **⭐⭐ WHAT PHASE 4 HAS: techniques (D225), the library (D226), the pacing fixes his play forced
 > (D227, D232, D233), and the whole build/undo loop rebuilt around them (D228–D231, D234, D235).**
@@ -203,14 +207,24 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 > **⭐⭐ START HERE — THE FOUR THINGS ACTUALLY OPEN, 2026-08-26.** Everything numbered below is
 > done; these are the live calls.
 >
-> 1. **⛔⛔ ASK JOE WHETHER TO PUSH.** Twenty commits on `phase/4-the-tech-tree`, `main` at
->    **He has been asked three times and has not answered** — which is not the same as
->    "no", and not the same as permission. ⚠️ **He plays this branch**, so the build he sees and
->    the remote differ: D217's trap, live.
+> 1. **✅ PUSHING IS ANSWERED — ⛔ MERGING IS NOT.** He said *"push"* on 2026-08-27 and the branch
+>    went to `origin`. **It did not go to `main`**, because Phase 4's DoD is unmet (items 2 and 3
+>    below are the unmet half). ⛔ **Do not re-ask whether to push. Ask whether he wants it on
+>    `main` now** — Phase 3 went straight there on the same one word (D203). ⚠️ Until he says so,
+>    **`main` has no Phase 4 at all** and he is playing a branch: D217's trap, still live.
 > 2. **⛔ SLICE 3 — THE KNOWLEDGE SCREEN — IS THE REST OF PHASE 4.**
 >    `phase-4-the-tech-tree.md §3`. It mostly *surfaces* what exists: which techniques the village
 >    has, who holds each one, and how close the last knower is to dying.
 >    `SimWorld.KnowledgeAtRiskNote` (D195) already answers the third and is on the villager panel.
+>    - **⛔⛔ IT IS BLOCKED ON A DESIGN CALL NOBODY HAS MADE, FOUND 2026-08-27 AND WRITTEN INTO THE
+>      SPEC AT SLICE 3.** `tech-tree.md §8` says the knowledge screen **is the town hall's interior
+>      and is reachable only once one stands** — and the same phase spec's ⏸️ list puts **the town
+>      hall explicitly out of Phase 4**. **No `TownHall` exists in `src/` or `data/`** (checked).
+>      *The slice asks for a screen whose front door is out of scope.* Three ways out are written
+>      out in the spec — ship it ungated, pull a minimal town hall in, or pause the phase here —
+>      and **it is a legibility call, so it is Joe's. Do not pick one silently.**
+>    - ⭐ **This does not block the QA walk: 21 of the 22 checks cover slices 1 and 2.** Only check
+>      21 needs the screen.
 > 3. **⛔⛔ THE QA CHECKLIST HAS NEVER BEEN WALKED** — `phase-4-the-tech-tree.md §5`, 22 checks.
 >    **Phase 3's walk was waived and this phase wrote its checklist on day one specifically so that
 >    debt would not compound.** *Walking it is a Definition-of-Done item, not a formality, and it
