@@ -163,7 +163,18 @@ public sealed class Workplace
     /// <summary>A place name, so the log reads "the north stand" not "Workplace 3".</summary>
     public required string Name { get; init; }
 
-    public required GridPos Position { get; init; }
+    private GridPos _position;
+
+    /// <summary>Where it stands.</summary>
+    /// <remarks>
+    /// <b>⚠️ <c>init</c> for building it, <see cref="MoveTo"/> for moving it, and nothing else.</b>
+    /// Relocation is a builder's job with a construction site behind it, and this is the one door
+    /// it comes through.
+    /// </remarks>
+    public required GridPos Position { get => _position; init => _position = value; }
+
+    /// <summary>Move it. Only a finished relocation may.</summary>
+    internal void MoveTo(GridPos to) => _position = to;
 
     /// <summary>
     /// How many people can physically work here at once. <b>A local fact about the

@@ -234,8 +234,17 @@ public sealed class TechniquesCatalog
 /// </remarks>
 public sealed class Library
 {
+    private GridPos _position;
+
     /// <summary>Where it stands.</summary>
-    public required GridPos Position { get; init; }
+    /// <remarks>
+    /// <b>⚠️ <c>init</c> for building it, <see cref="MoveTo"/> for moving it.</b> A library is
+    /// worth moving precisely because its records travel with it — the shelves are the building.
+    /// </remarks>
+    public required GridPos Position { get => _position; init => _position = value; }
+
+    /// <summary>Move it. Only a finished relocation may.</summary>
+    internal void MoveTo(GridPos to) => _position = to;
 
     /// <summary>What the village calls it.</summary>
     public required string Name { get; init; }

@@ -406,6 +406,31 @@ public sealed class ConstructionSite
     /// </remarks>
     public int ForHouseholdId { get; init; }
 
+    /// <summary>
+    /// The tile a building is being moved <em>from</em>, or null for an ordinary new building.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ RELOCATION IS A BUILDER'S JOB, NOT A TELEPORT</b> (Joe, 2026-08-26: the sim may only
+    /// impose a placement if the player has a remedy). Everything in this village happens because
+    /// somebody does it — D14 for distribution, D29 for processing, D43 for building — and **a
+    /// building that moved itself would be the one thing on the map that did not.** So a
+    /// relocation is a site like any other: it owes <b>work ticks and no materials</b>, because
+    /// the timber and stone walk over with the crew.
+    /// </para>
+    /// <para>
+    /// <b>⭐ A TILE RATHER THAN AN ID, AND THAT IS WHY THIS WORKS FOR ALL THREE KINDS.</b> Stores,
+    /// workplaces and libraries have three separate id spaces and a library has no id at all — but
+    /// <b>only one building can stand on a tile</b>, which the placement rules already guarantee.
+    /// *The tile is the identity that all three share.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The source may be gone by the time the crew finish</b> — the player can demolish it
+    /// mid-move. <c>SimWorld.Complete</c> says so and abandons rather than raising a phantom.
+    /// </para>
+    /// </remarks>
+    public GridPos? MovingFrom { get; init; }
+
     /// <summary>What it costs. Set once, at marking.</summary>
     /// <remarks>
     /// <b>A constructor parameter rather than an <c>init</c> property since D213</b>, because

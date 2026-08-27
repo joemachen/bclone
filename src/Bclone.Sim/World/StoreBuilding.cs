@@ -126,7 +126,18 @@ public sealed class StoreBuilding
     /// <summary>A place name, so the log reads "the granary" not "Store 2".</summary>
     public required string Name { get; init; }
 
-    public required GridPos Position { get; init; }
+    private GridPos _position;
+
+    /// <summary>Where it stands.</summary>
+    /// <remarks>
+    /// <b>⚠️ <c>init</c> for building it, <see cref="MoveTo"/> for moving it, and nothing else.</b>
+    /// A public setter would let any caller slide a building sideways; relocation is a builder's
+    /// job with a construction site behind it, and this is the one door it comes through.
+    /// </remarks>
+    public required GridPos Position { get => _position; init => _position = value; }
+
+    /// <summary>Move it. Only a finished relocation may.</summary>
+    internal void MoveTo(GridPos to) => _position = to;
 
     /// <summary>Goods held here, and how much of them will fit.</summary>
     /// <remarks>

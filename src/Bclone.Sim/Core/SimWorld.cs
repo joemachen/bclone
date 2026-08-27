@@ -3667,6 +3667,200 @@ public sealed class SimWorld
         return turnedOut;
     }
 
+    /// <summary>
+    /// Move a building that already stands to another tile — <b>a builder's job, not a teleport</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE REMEDY JOE'S CONDITION REQUIRES</b> (2026-08-26): *"if we are going to allow the
+    /// sim to place it, then we need to add a 'relocate' function for all buildings."* **The sim may
+    /// only impose a placement if the player can undo it** — `§0.1`'s *recoverable by design*
+    /// applied to layout, and the reason a gifted building is a gift rather than a trap.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>NOT HOUSES</b> (D228). Housing is the brush's business in both directions: unpaint the
+    /// ground and the house comes down, paint elsewhere and the family rebuilds. <b>A house is the
+    /// one building the player never sited, so it is the one they never have to move by hand.</b>
+    /// </para>
+    /// <para>
+    /// <b>⭐ Validated by <see cref="CanBuildAt"/>, so every placement rule already written applies
+    /// unchanged</b> — the water, the reachability, the *"something already stands there"*, the farm's
+    /// distance warning, the library's literacy gate. *No second opinion about what a legal tile is,
+    /// which is the mistake `Household.ChooseSite` made for a phase (D111).*
+    /// </para>
+    /// </remarks>
+    public PlacementVerdict MarkRelocation(GridPos from, GridPos to)
+    {
+        // ⚠️ THE HOUSE IS ASKED ABOUT FIRST, AND THE ORDER IS THE WHOLE ANSWER. A house is not in
+        // the stores, the libraries or the workplaces — it is a position on a household — so
+        // `WhatStandsAt` returns null for one, and asking it first told the player *"there is
+        // nothing there to move"* while they were pointing at somebody's home. **A wrong sentence,
+        // not a wrong outcome**, which is this project's hardest class of bug to notice.
+        if (HouseholdAt(from) is not null)
+        {
+            return PlacementVerdict.No(
+                "A house is not moved by hand. Unpaint the ground under it and paint somewhere "
+                + "else, and the family will rebuild there.");
+        }
+
+        BuildingKind? kind = WhatStandsAt(from);
+        if (kind is null)
+        {
+            return PlacementVerdict.No("There is nothing there to move.");
+        }
+
+        // ⛔ A FULL STORE CANNOT BE CARRIED, AND THIS IS THE SENTENCE THAT SAYS SO RATHER THAN A
+        // DISABLED CONTROL (D43). Joe named it as the second half of the feature: *"storage
+        // buildings must be 'emptied' first."*
+        if (StoreAt(from) is StoreBuilding store && store.Store.Held > 0)
+        {
+            return PlacementVerdict.No(
+                $"There are {store.Store.Held} goods inside {store.Name}. Empty it first, and "
+                + "the village will carry them to the other stores.");
+        }
+
+        PlacementVerdict verdict = CanBuildAt(kind.Value, to, alreadyStanding: true);
+        if (!verdict.Allowed)
+        {
+            return verdict;
+        }
+
+        BuildingRecipe recipe = BuildingsCatalog.RecipeOf(kind.Value);
+
+        // ⭐ WORK BUT NO MATERIALS — the timber and stone walk over with the crew. A relocation
+        // that also charged for the building would be a demolition and a rebuild wearing one name.
+        RaiseSiteFor(
+            kind.Value,
+            to,
+            $"{NameOfWhatStandsAt(from)} (being moved)",
+            new BuildingRecipe(recipe.WorkTicks),
+            forHouseholdId: 0,
+            movingFrom: from);
+
+        Narrate($"{NameOfWhatStandsAt(from)} is being moved to {to}. {Clock.SeasonAndYear()}.");
+        return verdict;
+    }
+
+    /// <summary>
+    /// Move whatever stands on one tile to another. False if there was nothing left to move.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE SAME BUILDING ARRIVES, WHICH IS THE WHOLE POINT.</b> Nothing is recreated, so a
+    /// moved store keeps its name and its filter, a moved workplace keeps its workers and its
+    /// painted ground, and <b>a moved library keeps its records</b> — the shelves are the building.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Painted work ground needs no thought here</b>, and that is worth saying because it
+    /// looks like it should: <c>ZoneMap.WorkGround</c> stores the owning building's <em>id</em>, not
+    /// its position, so a farm that moves is still the owner of its fields (D86, D118).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The travel-cost cache is forgotten</b>, because a building that moved is every route in
+    /// the village answering a different question. That is the same invalidation D85 built for
+    /// terrain, used for the same reason.
+    /// </para>
+    /// </remarks>
+    private bool MoveWhatStandsAt(GridPos from, GridPos to)
+    {
+        if (StoreAt(from) is StoreBuilding store)
+        {
+            store.MoveTo(to);
+            TravelCost.Forget();
+            return true;
+        }
+
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Position == from)
+            {
+                Libraries[i].MoveTo(to);
+                TravelCost.Forget();
+                return true;
+            }
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Position == from && !Workplaces[i].IsSite)
+            {
+                Workplaces[i].MoveTo(to);
+                TravelCost.Forget();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>What kind of building stands on a tile, or null.</summary>
+    public BuildingKind? WhatStandsAt(GridPos tile)
+    {
+        if (StoreAt(tile) is StoreBuilding store)
+        {
+            return BuildingsCatalog.ThatStores(store.Kind);
+        }
+
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Position == tile)
+            {
+                return BuildingKind.Library;
+            }
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Position == tile && !Workplaces[i].IsSite)
+            {
+                return JobsCatalog.WorksAt(Workplaces[i].Kind);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>What the building on a tile is called, or "it".</summary>
+    private string NameOfWhatStandsAt(GridPos tile)
+    {
+        if (StoreAt(tile) is StoreBuilding store)
+        {
+            return store.Name;
+        }
+
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Position == tile)
+            {
+                return Libraries[i].Name;
+            }
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Position == tile && !Workplaces[i].IsSite)
+            {
+                return Workplaces[i].Name;
+            }
+        }
+
+        return "it";
+    }
+
+    /// <summary>The store standing on a tile, or null.</summary>
+    public StoreBuilding? StoreAt(GridPos tile)
+    {
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Position == tile)
+            {
+                return StoreBuildings[i];
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>The household whose house stands on a tile, or null.</summary>
     public Household? HouseholdAt(GridPos tile)
     {
@@ -3793,7 +3987,8 @@ public sealed class SimWorld
     /// lets the view call it every frame under the cursor and show the answer before
     /// anybody commits to it, which is the whole of D43's "warn and allow".
     /// </remarks>
-    public PlacementVerdict CanBuildAt(BuildingKind kind, GridPos position)
+    public PlacementVerdict CanBuildAt(
+        BuildingKind kind, GridPos position, bool alreadyStanding = false)
     {
         if (!Map.Contains(position))
         {
@@ -3810,6 +4005,16 @@ public sealed class SimWorld
             return PlacementVerdict.No("Something already stands there.");
         }
 
+        // ⛔⛔ AN UNLOCK IS NOT A PLACEMENT RULE, AND CONFLATING THEM REFUSED A LIBRARY THE VILLAGE
+        // ALREADY OWNED. Relocation validates its destination through this method — so a library
+        // being carried across the village was told *"nobody here can write yet"* in a valley
+        // whose granary had taught them, simply because the check lives on the wrong side of the
+        // question. **"May the village have one of these at all?" and "is this tile legal?" are
+        // different questions**, and only the second one is about a tile.
+        //
+        // ⭐ So it is skipped for a building that already stands. *You do not re-earn a building by
+        // moving it.*
+        //
         // ⛔ A REFUSAL WITH A REASON, NOT A GREYED-OUT BUTTON (D43). The library waits on literacy,
         // and literacy comes out of the granary — so the sentence says **what to do**, not merely
         // that the answer is no. *"You cannot build this yet"* would be the untraceable outcome
@@ -3825,7 +4030,7 @@ public sealed class SimWorld
         // ⭐ And the data-driven rule is the better sentence anyway: **you must be able to write
         // before you can build somewhere to write things down.** Any building with shelves waits
         // on literacy, including one this sim has never heard of.
-        if (BuildingsCatalog[kind]?.Shelves > 0 && !HasLiteracy)
+        if (alreadyStanding is false && BuildingsCatalog[kind]?.Shelves > 0 && !HasLiteracy)
         {
             return PlacementVerdict.No(FirstGranaryTick == 0
                 ? "Nobody here can write yet. Keeping a granary's count is what teaches it — "
@@ -4485,7 +4690,12 @@ public sealed class SimWorld
     /// on D98's rule that a number which is always zero is a lie waiting to be found.
     /// </remarks>
     private void RaiseSiteFor(
-        BuildingKind kind, GridPos position, string name, BuildingRecipe recipe, int forHouseholdId)
+        BuildingKind kind,
+        GridPos position,
+        string name,
+        BuildingRecipe recipe,
+        int forHouseholdId,
+        GridPos? movingFrom = null)
     {
         Workplaces.Add(new Workplace
         {
@@ -4500,6 +4710,7 @@ public sealed class SimWorld
                 Kind = kind,
                 Name = name,
                 ForHouseholdId = forHouseholdId,
+                MovingFrom = movingFrom,
             },
         });
 
@@ -4744,6 +4955,27 @@ public sealed class SimWorld
     internal void Complete(Workplace site)
     {
         ConstructionSite plan = site.Construction!;
+
+        // ⭐⭐ A RELOCATION MOVES WHAT ALREADY STANDS RATHER THAN RAISING ANYTHING NEW, which is
+        // what keeps a moved building the SAME building — its name, its contents, its workers, its
+        // records and its painted ground all travel with it because none of them are recreated.
+        if (plan.MovingFrom is GridPos from)
+        {
+            RetireWorkplace(site);
+
+            if (!MoveWhatStandsAt(from, site.Position))
+            {
+                // ⚠️ SAID OUT LOUD RATHER THAN SWALLOWED. The player can demolish the source while
+                // the crew are still working, and a site that then raised a fresh building would
+                // hand them a free one — a phantom nobody paid for.
+                Narrate($"{plan.Name} was being moved, but there was nothing left to move. "
+                    + $"{Clock.SeasonAndYear()}.");
+                return;
+            }
+
+            Narrate($"{plan.Name} finished moving. {Clock.SeasonAndYear()}.");
+            return;
+        }
 
         switch (plan.Kind)
         {
