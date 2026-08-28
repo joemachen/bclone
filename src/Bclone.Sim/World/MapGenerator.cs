@@ -623,10 +623,18 @@ public static class MapGenerator
     /// <remarks>
     /// <para>
     /// Walkable tiles are labelled into connected components — one sweep — and the
-    /// village goes into the component holding the most forage sites, as near to where
-    /// it wanted to be as that allows. A village with berries it cannot walk to is not
-    /// a hard start, it is an unplayable one, and non-negotiable 1 says a death has to
-    /// be traceable to a decision. Nobody decided the river was there.
+    /// village goes into the <b>largest</b> one, as near to where it wanted to be as that
+    /// allows. A village on ground it cannot walk out of is not a hard start, it is an
+    /// unplayable one, and non-negotiable 1 says a death has to be traceable to a decision.
+    /// Nobody decided the river was there.
+    /// <para>
+    /// ⚠️ <b>~~the component holding the most forage sites~~ — corrected 2026-08-28.</b> The body
+    /// of this method retired that rule and says so in an inline comment: <em>"it had to stop
+    /// being 'the most work' because there is no longer any work on the map to count… size is the
+    /// honest successor."</em> Forage sites were removed from the map in step C. <b>The rewrite
+    /// updated the code and the inline comment and left the XML doc — the one a caller reads on
+    /// hover — describing the old rule.</b>
+    /// </para>
     /// </para>
     /// <para>
     /// Ties go to the tile nearest the wanted spot, then to the lower y and then the
@@ -756,49 +764,6 @@ public static class MapGenerator
         }
 
         return label;
-    }
-
-    private static int ComponentAt(
-        int[] component, GridPos position, int width, int height, int minX, int minY)
-    {
-        int x = position.X - minX;
-        int y = position.Y - minY;
-
-        return x < 0 || x >= width || y < 0 || y >= height ? -1 : component[(y * width) + x];
-    }
-
-    /// <summary>Walk outward until the tile is not water. Consumes no random draws.</summary>
-    private static GridPos NudgeOutOfWater(
-        Terrain[] terrain, GridPos from, int width, int height, int minX, int minY)
-    {
-        for (int radius = 0; radius < height; radius++)
-        {
-            for (int dy = -radius; dy <= radius; dy++)
-            {
-                for (int dx = -radius; dx <= radius; dx++)
-                {
-                    if (Math.Abs(dx) + Math.Abs(dy) != radius)
-                    {
-                        continue;
-                    }
-
-                    int x = from.X + dx - minX;
-                    int row = from.Y + dy - minY;
-                    if (x < 0 || x >= width || row < 0 || row >= height)
-                    {
-                        continue;
-                    }
-
-                    if (terrain[(row * width) + x] != Terrain.Water)
-                    {
-                        return new GridPos(from.X + dx, from.Y + dy);
-                    }
-                }
-            }
-        }
-
-        throw new InvalidOperationException(
-            "The whole valley is under water; no village could be founded. Check river_width_tiles.");
     }
 
     private static GridPos ClampInside(GridPos position, SimConfig config) =>

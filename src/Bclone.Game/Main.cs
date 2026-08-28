@@ -883,7 +883,18 @@ public partial class Main : Control
         // The two standing alerts used to be composed here every frame and shown in the
         // overview. They are narrated by the sim on their edges now and read in the village
         // log like everything else that happens (Joe) — so the view no longer asks the
-        // question at all, which also takes a `LabourQuota.For` off every single frame.
+        // question at all.
+        //
+        // ⚠️ ~~which also takes a `LabourQuota.For` off every single frame~~ — WRONG, corrected
+        // 2026-08-28. That was true of the ALERTS and false of this method: the professions panel
+        // a few lines up still calls `LabourQuota.For(world)` every frame, and `_Process` calls
+        // `Refresh()` unconditionally, paused or not. **D220's shape in a performance claim** —
+        // true of one path, written as though true of the method.
+        //
+        // ⭐ And it is not a cheap call: `LabourQuota.For` walks every villager, and
+        // `MarketersWanted` loops every household calling `LivingMembersOf`, which loops every
+        // villager again. **Left measured rather than fixed** — it is a real cost and changing
+        // when the quota is computed is a behaviour change, not housekeeping.
 
         RefreshRoster(world);
         RefreshInspector(world);
@@ -1361,7 +1372,7 @@ public partial class Main : Control
         {
             if (store.Position == tile)
             {
-                DescribeStore(store, lines);
+                DescribeStore(world, store, lines);
             }
         }
 
@@ -1650,11 +1661,11 @@ public partial class Main : Control
         }
     }
 
-    private static void DescribeStore(StoreBuilding store, List<string> lines)
+    private static void DescribeStore(SimWorld world, StoreBuilding store, List<string> lines)
     {
         Separate(lines);
 
-        lines.Add($"{store.Name} — a {Describe(store.Kind)}");
+        lines.Add($"{store.Name} — a {Describe(world, store.Kind)}");
         lines.Add($"Holding: {DescribeGoods(store.Store)}");
 
         // Capacity is derived rather than typed in (D33), and it is the number that
@@ -1951,15 +1962,64 @@ public partial class Main : Control
         _ => kind.ToString().ToLowerInvariant(),
     };
 
-    private static string Describe(StoreKind kind) => kind switch
+    /// <summary>What a store is, and what it will actually take — asked, not remembered.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ ALL THREE OF THESE SENTENCES WERE WRONG, AND ONE OF THEM CONTRADICTED THE OPENING
+    /// MECHANIC</b> (found 2026-08-28). The shed said *"holds logs and firewood"* and holds
+    /// **stone, tools and iron** as well; the pile said *"holds anything"* and **refuses food**;
+    /// the cart said *"holds anything"* and **refuses logs** since D90.
+    /// </para>
+    /// <para>
+    /// ⭐⭐ <b>The cart and pile refusals are not a detail — `StoreBuilding` calls them "the two
+    /// refusals that make the opening a sequence rather than a pile of options".</b> So the
+    /// inspector was telling the player the exact opposite of the rule the first ten minutes of
+    /// the game are built on.
+    /// </para>
+    /// <para>
+    /// <b>⭐ It asks the catalogue now, so it cannot drift again.</b> `Bclone.Sim` went
+    /// catalogue-driven in D210 precisely so adding a good would not mean editing a method — the
+    /// view did not follow, and this is what that cost. A modded seventh good appears here for
+    /// free.
+    /// </para>
+    /// </remarks>
+    private static string Describe(SimWorld world, StoreKind kind)
     {
-        StoreKind.Granary => "granary, which holds the village's food",
-        StoreKind.Shed => "storage shed, which holds logs and firewood",
-        StoreKind.Market => "market, which holds food and firewood for the houses near it",
-        StoreKind.Pile => "stockpile — cleared ground, and it holds anything",
-        StoreKind.Cart => "cart the founders arrived in, which holds anything",
-        _ => kind.ToString().ToLowerInvariant(),
-    };
+        string what = kind switch
+        {
+            StoreKind.Granary => "granary",
+            StoreKind.Shed => "storage shed",
+            StoreKind.Market => "market",
+            StoreKind.Pile => "stockpile — cleared ground",
+            StoreKind.Cart => "cart the founders arrived in",
+            _ => kind.ToString().ToLowerInvariant(),
+        };
+
+        var takes = new List<string>();
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            var goods = (Goods)g;
+            if (world.GoodsCatalog.StoredBy(goods, kind))
+            {
+                takes.Add(world.GoodsCatalog.NameOf(goods).ToLowerInvariant());
+            }
+        }
+
+        if (takes.Count == 0)
+        {
+            return $"{what}, which holds nothing";
+        }
+
+        // ⭐ "everything" only when it is true of the whole catalogue, so the day a good is added
+        // that the pile refuses, this stops claiming otherwise on its own.
+        string held = takes.Count == world.GoodsCatalog.Count
+            ? "everything"
+            : takes.Count == 1
+                ? takes[0]
+                : $"{string.Join(", ", takes.GetRange(0, takes.Count - 1))} and {takes[^1]}";
+
+        return $"{what}, which holds {held}";
+    }
 
     /// <summary>A blank line between two things standing on the same tile.</summary>
     private static void Separate(List<string> lines)

@@ -478,7 +478,6 @@ public partial class VillageMap : Control
         _moving = false;
         _moveFrom = null;
         _emptying = false;
-        _demolishArmedAt = null;
         Announce();
         QueueRedraw();
     }
@@ -494,7 +493,6 @@ public partial class VillageMap : Control
         _moving = false;
         _moveFrom = null;
         _emptying = false;
-        _demolishArmedAt = null;
         Announce();
         QueueRedraw();
     }
@@ -510,7 +508,6 @@ public partial class VillageMap : Control
         _moving = false;
         _moveFrom = null;
         _emptying = false;
-        _demolishArmedAt = null;
         Announce();
         QueueRedraw();
     }
@@ -530,28 +527,16 @@ public partial class VillageMap : Control
         _moving = false;
         _moveFrom = null;
         _emptying = false;
-        _demolishArmedAt = null;
         _brush = 0;
         Announce();
         QueueRedraw();
     }
 
     /// <summary>Next click pulls a building down.</summary>
-    /// <summary>
-    /// The store a demolish click has warned about, waiting for a second click.
-    /// </summary>
-    /// <remarks>
-    /// Cleared whenever the mode changes or another tile is clicked, so an arming warning
-    /// cannot outlive the intent that raised it — <b>a confirmation the player has forgotten
-    /// about is a trap rather than a guard.</b>
-    /// </remarks>
-    private GridPos? _demolishArmedAt;
-
     public void BeginDemolishing()
     {
         _building = null;
         _demolishing = true;
-        _demolishArmedAt = null;
         _brush = 0;
         _moveFrom = null;
         _moving = false;
@@ -578,7 +563,6 @@ public partial class VillageMap : Control
         _moving = false;
         _moveFrom = null;
         _emptying = false;
-        _demolishArmedAt = null;
         _brush = 0;
         _emptying = false;
         _moving = true;
@@ -595,7 +579,6 @@ public partial class VillageMap : Control
         _moving = false;
         _moveFrom = null;
         _emptying = false;
-        _demolishArmedAt = null;
         _brush = 0;
         _moving = false;
         _moveFrom = null;
@@ -657,7 +640,6 @@ public partial class VillageMap : Control
             _moving = false;
             _moveFrom = null;
             _emptying = false;
-        _demolishArmedAt = null;
             AcceptEvent();
             return;
         }

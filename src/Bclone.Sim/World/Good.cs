@@ -110,16 +110,24 @@ public sealed record GoodRow
     /// a method in the sim.
     /// </para>
     /// <para>
-    /// <b>⚠️ The pile is deliberately absent from every row.</b> A heap does not specialise: it
-    /// takes anything, and its <em>size</em> rather than its rules is what stops it being the
-    /// granary. That stays in code because it is a statement about the pile, not about any good.
+    /// <b>⛔ ~~The pile is deliberately absent from every row.~~ FALSE SINCE D220 — corrected
+    /// 2026-08-28.</b> It is in <b>five</b> rows (logs, firewood, stone, tools, iron) and it does
+    /// <em>not</em> take anything: <b>food is deliberately excluded</b>, which is what makes the
+    /// opening a sequence rather than a pile of options. Nothing about the pile is "in code" any
+    /// more — <c>StoreBuilding.KindAccepts</c> asks this catalogue like every other store.
     /// </para>
-    /// </remarks>
+    /// <para>
+    /// ⚠️ <b>This is D220's shape exactly: the pile was made a row, the comment on the other path
+    /// was not updated, and the corrected version has been sitting in
+    /// <c>StoreBuilding</c> ever since.</b> A comment that is true of one path is the hardest bug
+    /// in this repo to see, and it does not stop being one when it is a comment about data.
+    /// </para>
     /// <para>
     /// Parsed from strings by the global <c>JsonStringEnumConverter</c> on
     /// <c>SimConfigLoader.Options</c>, so a row reads <c>"stored_by": ["Shed", "Cart"]</c> rather
     /// than a list of integers a modder would have to look up.
     /// </para>
+    /// </remarks>
     [JsonPropertyName("stored_by")]
     public IReadOnlyList<StoreKind> StoredBy { get; init; } = new List<StoreKind>();
 }
