@@ -6,6 +6,14 @@ haul when production stops, and the per-building store filter all ship (D128 rep
 after they were found not reaching the forester; D141 added the filter; D144 found it obeyed by
 the predicate and ignored by two deposit paths). Guarded by `StockLimitTests` and
 `StoreFilterTests`. Marked *"not started"* for a fortnight after it shipped; see D159.
+> **⭐ AND TWO MORE LANDINGS THIS SPEC WAS SILENT ABOUT UNTIL 2026-08-28, BOTH ITS OWN SUBJECT:**
+> **D238 — a met limit now stops the JOB and keeps the SEAT** (Joe's call over shrinking the
+> quota, because proficiency accrues per trade). D216 had wired only the *village is short* arm;
+> the *my family is short* arm kept a forager gathering into capped, full stores.
+> **D239 — the limits panel measures what the sim decides on.** `HeldFor` fell to `_ => 0` for
+> stone, tools and iron, so a village holding 300 stone read *"stop at 100 · have 0"*, and Food
+> read `FoodInGranaries()` where every sim decision reads `FoodTheVillageHolds()`.
+> ⚠️ *A spec silent on its own subject for a day is the mild form of what D159 found.*
 
 ---
 

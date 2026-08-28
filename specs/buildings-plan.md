@@ -82,7 +82,7 @@ What the exiles arrive able to do. **Ten of these are built.**
 > **⭐ BROUGHT CURRENT 2026-08-24 (D205), AND IT HAD DRIFTED BADLY.** This table claimed **six**
 > built and **had no row of any kind** for the builder's hut, the forester's hut, the farmhouse,
 > the storage pile or the work-ground zone — **four of the ten `BuildingKind`s in the game, plus a
-> whole zone layer.** Two more (the gatherer's hut, the harvest zone) were listed and simply never
+> whole zone layer.** Two more (the forager's hut, the harvest zone) were listed and simply never
 > ticked. **A catalogue missing 40% of what is already built will generate content that duplicates
 > it**, which is why this was fixed before the content pass rather than during it.
 > *Nothing here was invented — every ✅ below names a thing that exists in the sim today.*
@@ -240,7 +240,7 @@ consumes what it does not make is the gap that bites at build time:
 | ⛔ **Charcoal burner** | *"4 Charcoal per day"* is a stated fuel cost across the glasshouse and boiler. **Nothing makes charcoal** |
 | ⛔ **Mason's yard** | *Cut Stone* appears in ~15 construction costs. The quarry extracts; nothing dresses |
 | ⛔ **Cemetery** | D35, and this document calls it *"possibly the highest-value building in the game"* |
-| ⛔ **Builder's hut, storage shed, storage pile, gatherer's hut, farmhouse, all three zones** | **All built and shipping.** Joe's document is a forward plan, not an inventory — noted so nobody reads the omission as a deletion |
+| ⛔ **Builder's hut, storage shed, storage pile, forager's hut, farmhouse, all three zones** | **All built and shipping.** Joe's document is a forward plan, not an inventory — noted so nobody reads the omission as a deletion |
 | Pasture zone, tailor, orchard, bridge, vineyard | In this catalogue, absent from his |
 
 ### 4.5d ⚠️ Four §6 cuts are re-proposed, and a cut that comes back should be re-decided
@@ -310,7 +310,7 @@ Cutting is the more useful half of a catalogue. Each of these was considered and
 | **Distillery / spirits** | Duplicates ale and wine's role. One vice ladder, not three. |
 | **Tobacco and cigars** | Same. If a luxury is wanted for *trade* rather than happiness, that is a different argument and should be made on those terms. |
 | **Cobbler** | Folded into the tailor. Boots are a product, not a building. |
-| **Separate library** | The library is the room the scriptorium's output lives in. Not a building. |
+| ~~**Separate library**~~ ⛔ **REVERSED — it IS a building, and it shipped** (D226; annotated 2026-08-28) | ~~The library is the room the scriptorium's output lives in. Not a building.~~ `BuildingKind.Library` exists, is placeable, holds a hard shelf cap, is gifted once and can be demolished. `content-inventory.md` finding 3 named the three-way disagreement and `phase-4-the-tech-tree.md §2.2` resolved it **on recency**. ⚠️ The scriptorium it was cut in favour of is itself deferred (D204), so the cut outlived its own premise. |
 | **Windmill *and* watermill** | One mill, sited by terrain. This makes the mill a *placement decision*, which is worth more than a second entry in a menu. |
 | **Warehouse** | The storage shed already exists. A bigger one is a **tier of shed**, not a new building. |
 | **City center** | The town hall. Pick one name. |

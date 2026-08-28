@@ -4,7 +4,7 @@
 Neighbours: D18, D19, D24, D40, D42, D43, D58, D84, D86, D87, D88, D107, D111.
 Supersedes in part: `building-placement.md §12.5(3)`, `§12.6`; `professions.md §6.1`, `§6.2`;
 `DESIGN.md §5`'s open "7-tile bound".
-**Status:** ✅ **BUILT AND MERGED** to `phase/2-wood-fuel-and-tools`, 2026-08-15, as step C
+**Status:** ✅ **BUILT AND MERGED TO `main`** as step C (2026-08-15 on `phase/2-wood-fuel-and-tools`, merged with Phase 2 on 2026-08-22; *that branch no longer exists — corrected 2026-08-28*)
 (D112–D130, then D142–D158). Written before the code (METHODOLOGY §2), and it stayed marked
 *"specced, not built"* for a week after it shipped — see D159.
 

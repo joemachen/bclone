@@ -1,6 +1,8 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
-> Status: **✅ built — slices 1 and 2 of 3 (see §11); the harvest brush is the third** · Owner: Joe + Claude Code
+> Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started** · Owner: Joe + Claude Code
+>
+> ⚠️ *Corrected 2026-08-28: this said the third slice was "the harvest brush", which contradicted its own §11 (bridges) and was doubly wrong because the harvest brush shipped anyway (D87, D112–D130).*
 > Format per `METHODOLOGY.md §2`. Implements decision **D18**.
 
 ---

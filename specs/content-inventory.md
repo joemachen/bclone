@@ -1,6 +1,7 @@
 # Inventory: what the village has, what the documents promise, and where they disagree
 
-> Status: **an audit, current as of 2026-08-24.** Not a spec and not a plan — it invents nothing
+> Status: **an audit. Part C is maintained through D223; ⚠️ PART A WAS STALE UNTIL 2026-08-28** —
+> and Part A is the half people quote. Not a spec and not a plan — it invents nothing
 > and decides nothing. Owner: Joe + Claude.
 > Companion to `buildings-plan.md` (which governs *which buildings exist and why*),
 > `skills-catalog.md` (*what a skill is*) and `tech-tree.md` (*how knowledge is held and lost*).
@@ -39,9 +40,9 @@ own warning about it.
 
 | | Count | Members | Declared in |
 |---|---|---|---|
-| `BuildingKind` | **10** | Granary, Shed, Market, WoodcutterHut, Pile, Home, BuilderHut, GathererHut, ForesterHut, Farmhouse | `World/Construction.cs:12` |
+| `BuildingKind` | **11** | Granary, Shed, Market, WoodcutterHut, Pile, Home, BuilderHut, GathererHut *(named "forager's hut" since D240)*, ForesterHut, Farmhouse, **Library** *(D226)* | `World/Construction.cs` |
 | `JobKind` | **6** | Forager, Forester, Woodcutter, Marketer, Builder, Farmer | `World/Workplace.cs:21` |
-| `Goods` | **6** | Food, Logs, Firewood, Stone, Tools, Iron | `World/StoreBuilding.cs:292` |
+| `Goods` | **6** *(and open to 62 since D210 — the enum is an alias for the first ids)* | Food, Logs, Firewood, Stone, Tools, Iron | `World/StoreBuilding.cs` |
 | `Terrain` | **9** | Grass, Water, Forest, Rock, IronDeposit, Sapling, Field, Sown, Ripe | `World/GeneratedMap.cs:20` |
 | Skills | **6** | foraging, forestry, woodcutting, farming, building, trading | `Config/SimConfig.cs:1273` |
 | Zones | **3** | residential, work ground, harvest | `World/ZoneMap.cs:43` |
@@ -62,9 +63,14 @@ crops are the other (`crops-and-orchards.md §4`).
 
 | Thing | Produced by | Consumed by |
 |---|---|---|
-| `Goods.Stone` | ✅ quarried from `Terrain.Rock` via the harvest brush | **nothing** |
+| `Goods.Stone` | ✅ quarried from `Terrain.Rock` via the harvest brush | ✅ **BUILDINGS, since D213** — a granary costs 40 logs **and 10 stone**; the shed and market likewise, the huts 3 each |
 | `Goods.Iron` | ✅ mined from `Terrain.IronDeposit` via the harvest brush | **nothing** |
-| `Goods.Tools` | ⛔ only the founders' cart (`SimWorld.cs:5794`) | **nothing** |
+| `Goods.Tools` | ⛔ only the founders' cart | **nothing** |
+
+> ⛔ **THIS TABLE SAID STONE WAS "CONSUMED BY NOTHING" WHILE FINDING 2 BELOW SAID *"✅✅ BUILT
+> 2026-08-25 (D213)"*** — the same document disagreeing with itself, corrected 2026-08-28. Part C
+> was maintained and Part A was not, which is the more dangerous way round: **Part A is the half
+> people quote.**
 
 The economy says so itself, honestly, at `World/VillageEconomy.cs:1421`:
 
@@ -269,7 +275,12 @@ a live stall nobody had counted:** D135'''s starved-head escape asked for a site
 every material*, which was nearly always true while timber was the only one — with stone in play a
 blocked head froze the whole queue, killing a played founding outright.
 
-### 3. The library is a building in two documents and cut in a third
+### 3. ~~The library is a building in two documents and cut in a third~~ — ✅ RESOLVED (D226), annotated 2026-08-28
+
+> **Resolved on recency by `phase-4-the-tech-tree.md §2.2`, and then it shipped.** `BuildingKind.Library`
+> is placeable, gifted once (D232), holds a hard shelf cap and can be demolished. `buildings-plan.md`'s
+> cut list has been struck. ⭐ **This finding did its job**: it named a three-way disagreement, and
+> the phase that resolved it cited the finding by number.
 
 | Source | Says |
 |---|---|

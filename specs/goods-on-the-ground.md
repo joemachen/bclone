@@ -2,7 +2,7 @@
 
 **Decisions:** **D96**, and D90 step 4 which has been waiting on it. Implemented as **D97**
 (ground stacks), **D98** (the instant pile) and **D99** (the cart). Neighbours: D76, D80, D83,
-D89, D95. **Status:** ✅ **all three steps shipped**, 496 tests green — awaiting Joe's QA pass
+D89, D95. **Status:** ✅ **all three steps shipped** (suite is 857 green now, not the 496 this line froze at). ⚠️ *The view REPORTS ground goods since 2026-08-27 — the overview says "+12 on the ground" and names the real reason — but `VillageMap` still draws no heaps. Corrected 2026-08-28.* Awaiting Joe's QA pass
 (§10.6) and the view, which draws none of it yet.
 
 ---
