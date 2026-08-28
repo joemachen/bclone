@@ -1,4 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT. Techniques and the library are in; the knowledge screen is not.**
+# Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
+
+> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27, D236–D239.** Joe played to Year 44
+> and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
+> building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
+> His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
+> **granary 2 was marked out in Winter Year 23 and was still an unbuilt site at Year 44**, twenty-one
+> years on, while three houses went up around it; and the spare labour force made about **fifteen
+> thousand** round trips fetching loads it never picked up — **1,439 to one tile in the last 900
+> ticks, by fourteen villagers**, one with no goods line anywhere in the log.
+>
+> **⭐⭐ THE CAUSE WAS TWO FINDER FUNCTIONS THAT DISAGREED ABOUT WHERE A GOOD MAY GO.**
+> `NearestStore` matched on kind and fullness and **never asked `Accepts`**; every other finder
+> asks. Fixed, along with the three things that made it invisible: a **stalled site now says what
+> it waits for**, a **met limit stops the job and keeps the seat**, and the **limits panel measures
+> what the sim decides on**. **847 passing, 0 failing, 2 skipped of 849.**
+>
+> **⭐⭐⭐ THE LESSON WORTH MORE THAN THE FIX: IT WAS FOUND IN THE LOG, NOT IN THE CODE.** Nobody
+> reading `StoreForTheLoad` had spotted it in months. Twenty minutes of
+> `grep`/`awk` over `src/Bclone.Game/logs/` — counting state transitions per year, per villager —
+> found it, sized it, and proved it. ⭐ **Bucket the behaviour histogram before forming a
+> hypothesis**; "clearing per year" collapsing to zero is a sentence no test in this suite can say.
 
 > **✅ PUSHED, AS A BRANCH — AND STILL NOT MERGED. `phase/4-the-tech-tree` is on `origin`
 > (2026-08-27, Joe: *"push"*), so the work is no longer only on this machine.** Count the gap with
@@ -179,9 +200,9 @@ go looking for one.
 named one and was stale within the minute.
 
 
-**SUITE, FROM A RUN (2026-08-26, after D235):**
+**SUITE, FROM A RUN (2026-08-27, after D239):**
 ```
-841 passed, 0 failed, 2 skipped of 843 — about 2m50s (was 18m52s before D179)
+847 passed, 0 failed, 2 skipped of 849 — about 3m (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -204,8 +225,29 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
 
-> **⭐⭐ START HERE — THE FOUR THINGS ACTUALLY OPEN, 2026-08-26.** Everything numbered below is
-> done; these are the live calls.
+> **⭐⭐ START HERE — THE LIVE CALLS, 2026-08-27.** Everything numbered below is done.
+>
+> 0. **⭐⭐ JOE SHOULD REPLAY SEED 12345 BEFORE ANYTHING ELSE.** D236–D239 changed how the village
+>    works, and **the acceptance criteria are in his log, not in the suite**: clearing must not
+>    collapse to zero after Year 3, and fetch trips without pickups must not run to thousands.
+>    Re-run the two commands in the audit-trail trap below against a fresh log and compare.
+> 0b. **⛔ FOUR OF HIS SEVEN ITEMS ARE STILL UNDONE, AND HE ASKED FOR ALL SEVEN** (2026-08-27, he
+>    chose "fix the economy first, alone"):
+>    - **The *"gatherer's hut"* naming.** One row (`SimConfig.cs:1653`), one test expectation
+>      (`BuildingsCatalogTests.cs:85`), two view sentences (`Main.cs:1270`, `:1449`). ⚠️ Check no
+>      golden holds the string first.
+>    - **The technique-discovery modal** — non-pausing, celebratory, and it should say the
+>      technique is in the library. ⛔ **The sim currently says NOTHING when a technique is
+>      discovered and the village has no library at all** (`KnowledgeSystem.cs:140` guards on
+>      `Libraries.Count > 0`) — exactly the case he asked to have called out.
+>    - **The village log's colours and category filters.** He chose **categorising at the
+>      source**. ⚠️ Entries are bare strings (`LogEntry.cs:15`) and `BbcodeEnabled = false`
+>      (`Main.cs:2138`); the `Subsystem` string is the cheapest category channel but it *is* in
+>      `LogEntry.ToString()`, so audit goldens would move.
+>    - **⛔ PINNING A VILLAGER TO A TRADE IS BLOCKED ON A DESIGN CALL, NOT ON WORK.**
+>      `LabourTests.NoPublicApiLetsACallerAssignAVillagerToAWorkplace` exists specifically to make
+>      it impossible, protecting §2.2 and D15. **Joe has to overrule that deliberately** — do not
+>      route around the guard.
 >
 > 1. **✅ PUSHING IS ANSWERED — ⛔ MERGING IS NOT.** He said *"push"* on 2026-08-27 and the branch
 >    went to `origin`. **It did not go to `main`**, because Phase 4's DoD is unmet (items 2 and 3
@@ -395,6 +437,37 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ A GREEN RED-CHECK IS A CLAIM ABOUT YOUR FIXTURE BEFORE IT IS A CLAIM ABOUT THE CODE
+  (2026-08-27).** The guard for D236 **passed against the live bug on its first run.** Posed with
+  **firewood** — which the *market* also holds — a marketer's leg quietly rescued every load: 622
+  in the market, none on the ground. **Logs are held by the shed and the pile and nothing else**,
+  which was Joe's own case and leaves no third party to save it. Re-posed, it went red instantly:
+  300 logs on the ground beside an empty pile.
+  - **The rule: when a red check comes back green, interrogate the pose before you doubt the bug.**
+    Ask *what else in this village could be quietly solving the problem for me?*
+  - ⭐ **Corollary that paid twice more the same afternoon:** the stalled-site guard failed on its
+    own pose (a fresh valley has no logs either, so the sentence correctly said *"40 logs"* when
+    the test demanded *"stone"*), and the food-limit guard asserted **zero gathering over two
+    years and measured 327** — *which was the feature working*, because stores fall back through
+    the limit and foraging resumes. **Three fixture bugs, one code bug, in one session.**
+- **⛔⛔ THE AUDIT TRAIL FINDS WHAT READING THE CODE DOES NOT — AND NOBODY HAD MINED IT LIKE THIS
+  (2026-08-27).** D236 sat in `StoreForTheLoad` for months, read past by several sessions. What
+  found it was arithmetic on the log:
+  ```bash
+  # every state transition, most common first
+  grep -oE "DEBUG behavior [A-Za-z]+ #[0-9]+: [a-z ]+ -> [a-z ]+" "$L" \
+    | sed -E 's/[A-Za-z]+ #[0-9]+: //' | sort | uniq -c | sort -rn | head -20
+  # any activity, bucketed by year (480 ticks/year)
+  grep -oE "^\[t +[0-9]+\].*-> clearing painted ground" "$L" | grep -oE "[0-9]+" \
+    | awk '{printf "%d\n", ($1/480)+1}' | sort -n | uniq -c
+  ```
+  - **⭐ The tell was a state transition with no matching `goods` line** — villagers "fetching a
+    load" thousands of times who never picked anything up. **Cross-reference the two streams**:
+    an action with no consequence is a loop.
+  - ⚠️ **And check what a suspicious line actually means before reporting it.** `carrying -13 food`
+    looks like a catastrophe and is a **delta** (`+40 … now 360`, `-280 … now` empty). *Nearly
+    filed as a bug.*
 
 
 - **⛔⛔⛔ A SIM FEATURE IS NOT DONE UNTIL SOMETHING IN THE VIEW CALLS IT — SEVEN INSTANCES NOW, THREE
