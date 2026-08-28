@@ -89,6 +89,27 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 
 ---
 
+## 5a. Analyzers — and the flag that did nothing for a year
+
+- **⛔⛔ `.editorconfig` IS LOAD-BEARING, NOT STYLE (D246).** `Directory.Build.props` has set
+  `EnforceCodeStyleInBuild=true` since the first commit, and **there was no `.editorconfig` in the
+  repository until 2026-08-28.** Without severity entries every `IDEnnnn` analyzer stays at
+  `silent`, so `TreatWarningsAsErrors=true` — which this project does have — **had nothing to
+  promote.** A codebase that fails the build on warnings accumulated dead code for a year because
+  nothing could report it.
+- **⭐ The rules are deliberately few: only dead-or-wrong code.** `IDE0051` (unused private
+  member), `IDE0052` (assigned and never read), `IDE0005` (unnecessary using), `IDE0060` (unused
+  parameter). *A linter that also has opinions about formatting is a build failure people learn
+  not to read* — and the house style here is carried by the surrounding code and `CLAUDE.md`.
+- **⚠️ `src/Bclone.Game` is exempt and always will be** — it sets `TreatWarningsAsErrors=false`
+  because Godot's source generators emit code nobody controls. **It reports these and does not
+  fail on them, so its build output has to be read rather than trusted to be silent.** A
+  write-only field warned `CS0414` there for months unnoticed.
+- **⭐ `IDE0060` is the one worth having.** Unused parameters cannot be found by search at all —
+  a three-agent audit said so explicitly — and the analyzer found four in one build.
+
+---
+
 ## 6. CI / GitHub Actions
 
 - **On every push & PR:** build + run the full test suite (including the determinism test). `main` must stay green.

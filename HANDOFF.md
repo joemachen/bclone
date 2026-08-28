@@ -1,6 +1,6 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
 
-> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27/28, D236–D244.** Joe played to Year 44
+> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27/28, D236–D246.** Joe played to Year 44
 > and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
 > building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
 > His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
@@ -205,11 +205,18 @@ named one and was stale within the minute.
 
 **SUITE, FROM A RUN (2026-08-27, after D239):**
 ```
-857 passed, 0 failed, 2 skipped of 859 — about 3m (was 18m52s before D179)
+858 passed, 0 failed, 1 skipped of 859 — about 3m (was 18m52s before D179)
 ```
 
-The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
-die out) and **D134** (the granary stopped being the binding cap; the timber shed is).
+**The one remaining skip is a ruling, not unfinished work: D143** — an unattended village is
+*supposed* to die out, and that guard measures an empty valley rather than three-century
+stability. ⚠️ **Its stated fix — give it `PlayTheOpening` and assert the peak and the causes of
+death — is unblocked and has design content in it** (what peak?), so it is a small slice rather
+than a housekeeping edit.
+> ⭐ **There were two until 2026-08-28.** The other was skipped because *"the timber shed is the
+> binding cap at 343/343"* and *"restore when D134's open question is answered"* — **both halves
+> had expired** (`ShedCapacity` is floored on the granary's; D143 answered D134) and it passes.
+> **A skip is a claim about the world and nothing re-reads it.**
 
 ```bash
 dotnet test bclone.sln --nologo -v q
@@ -460,6 +467,21 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
     the test demanded *"stone"*), and the food-limit guard asserted **zero gathering over two
     years and measured 327** — *which was the feature working*, because stores fall back through
     the limit and foraging resumes. **Three fixture bugs, one code bug, in one session.**
+- **⛔⛔⛔ ASK THE COMPILER BEFORE YOU BELIEVE A GREP — AND CHECK THAT YOUR ENFORCEMENT IS ACTUALLY
+  ENFORCING (D246, 2026-08-28).** `Directory.Build.props` has set `EnforceCodeStyleInBuild=true`
+  since the first commit and **there was no `.editorconfig`**, so every `IDEnnnn` analyzer sat at
+  `silent` and `TreatWarningsAsErrors=true` had nothing to promote. **A project that fails the
+  build on warnings quietly accumulated dead code for a year.**
+  - **⭐ A three-agent audit missed things one config file found in thirty seconds:** four unused
+    parameters (they need dataflow, not search), a duplicate `RepoRoot` one line below the shared
+    one, and 43 redundant usings against an estimate of 65. ⚠️ **The audit said outright it could
+    not detect unused parameters. It was right, and the answer was to turn the rule on.**
+  - ⚠️ **`src/Bclone.Game` is exempt** (`TreatWarningsAsErrors=false`, for Godot's generators), so
+    it **reports and does not fail**. **Read its build output.** A write-only field warned CS0414
+    there for months and nobody saw it.
+  - ⭐ **And a SKIP is a claim about the world that nothing re-reads.** One of the two had a reason
+    where *both halves* had expired; un-skipped, it passes. **Re-read skip reasons the way you
+    re-read a status line.**
 - **⛔⛔ A LAYOUT THAT IS CORRECT AT STARTUP AND WRONG LATER IS INVISIBLE TO EVERY CHECK ANYBODY
   MAKES (D242, 2026-08-27).** The bottom bar ran off **both** edges — *"Pause"* clipped to
   *"use"* — but only **after the village learned to write**, because the Knowledge group is
