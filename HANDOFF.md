@@ -1,6 +1,6 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
 
-> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27, D236–D243.** Joe played to Year 44
+> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27/28, D236–D244.** Joe played to Year 44
 > and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
 > building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
 > His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
@@ -206,7 +206,7 @@ named one and was stale within the minute.
 
 **SUITE, FROM A RUN (2026-08-27, after D239):**
 ```
-855 passed, 0 failed, 2 skipped of 857 — about 3m (was 18m52s before D179)
+857 passed, 0 failed, 2 skipped of 859 — about 3m (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -235,7 +235,7 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >    works, and **the acceptance criteria are in his log, not in the suite**: clearing must not
 >    collapse to zero after Year 3, and fetch trips without pickups must not run to thousands.
 >    Re-run the two commands in the audit-trail trap below against a fresh log and compare.
-> 0b. **⛔ FOUR OF HIS SEVEN ITEMS ARE STILL UNDONE, AND HE ASKED FOR ALL SEVEN** (2026-08-27, he
+> 0b. **✅ SIX OF HIS SEVEN ARE DONE; ONE IS BLOCKED ON HIM** (2026-08-27/28, he
 >    chose "fix the economy first, alone"):
 >    - ✅ **The *"gatherer's hut"* naming is DONE** (D240) — it is *"forager's hut"*, and the two
 >      hand-written view sentences now read from the catalogues rather than holding the word.
@@ -251,10 +251,11 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >      coloured in the log, saying whether the village can keep the technique. The
 >      no-library-at-all case, which had no sentence anywhere, now has two (one for a village
 >      that cannot write yet).
->    - **The village log's colours and category filters.** He chose **categorising at the
->      source**. ⚠️ Entries are bare strings (`LogEntry.cs:15`) and `BbcodeEnabled = false`
->      (`Main.cs:2138`); the `Subsystem` string is the cheapest category channel but it *is* in
->      `LogEntry.ToString()`, so audit goldens would move.
+>    - ✅ **The village log's colours and category filters are DONE** (D244) — seven categories
+>      decided at the source, one switch each, and the switch doubles as the legend. **Seasons
+>      alone are 42% of a sixty-year log**, so one click does most of the noise reduction.
+>      ⚠️ *Warning fires 214 times in sixty years — a warning that frequent is furniture, and is
+>      worth a look in the UI pass.*
 >    - **⛔ PINNING A VILLAGER TO A TRADE IS BLOCKED ON A DESIGN CALL, NOT ON WORK.**
 >      `LabourTests.NoPublicApiLetsACallerAssignAVillagerToAWorkplace` exists specifically to make
 >      it impossible, protecting §2.2 and D15. **Joe has to overrule that deliberately** — do not
