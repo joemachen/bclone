@@ -466,6 +466,20 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
     leaves the screen. **Prefer `HFlowContainer` for any bar that can grow.** ⚠️ Flow containers
     read `h_separation`/`v_separation`; the plain `separation` an HBox uses is **silently
     ignored**, so a straight swap quietly loses all your spacing.
+  - **⛔⛔⛔ AND SWAPPING THE CONTAINER ALONE MADE IT WORSE — JOE CAUGHT IT IN ONE LOOK:** *"i think
+    you messed it up. its tall and wide on the right side."* **The bar is a `Floating(...)` panel
+    with width 0, so it is sized BY ITS CONTENTS.** An `HBoxContainer`'s minimum width is the
+    **sum** of its children, which is what had been holding the bar open (and then dragging it off
+    the left edge — the original bug). A flow container's minimum width is its **widest single
+    child**, so the panel collapsed to one button wide and wrapped everything into a tall column
+    in the corner.
+    - **⭐ THE RULE: a wrapping container cannot decide WHERE to wrap unless something else
+      decides HOW WIDE it is. Flow containers consume width; they never create it.** The fix is
+      `Floating(..., spanWidth: true)` — anchors pinned to both sides — plus
+      `SizeFlagsHorizontal = ExpandFill` on the rows. **The two changes are one change, and
+      shipping either alone is a different bug.**
+    - ⚠️ **Every other floating panel is deliberately content-sized and hangs off one corner.**
+      `spanWidth` exists for the control bar alone; do not spread it to the columns.
   - ⚠️ **`BCLONE_PROBE_WIDTHS` would have caught it and needs Godot on PATH**, which this session
     did not have (`GODOT` unset). *The fix was made by construction rather than by measurement —
     worth re-measuring when somebody has the binary.*

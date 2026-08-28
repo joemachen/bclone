@@ -2754,7 +2754,11 @@ public partial class Main : Control
     /// <summary>Speed, what the map draws, and what the player can ask the village for.</summary>
     private void BuildControlPanel()
     {
-        VBoxContainer body = Floating(Edge, Edge, 0, 0, Corner.BottomRight);
+        // ⭐ SPANS THE WINDOW (2026-08-27). It hung off the bottom-right corner and took its
+        // width from whatever the widest row demanded — which is how it came to run off the
+        // LEFT edge, since a panel pinned right grows leftward without limit. Pinned on both
+        // sides it can only ever be as wide as the window, and the rows below wrap inside it.
+        VBoxContainer body = Floating(Edge, Edge, 0, 0, Corner.BottomRight, spanWidth: true);
         body.AddThemeConstantOverride("separation", 8);
 
         // ⛔ THE SPEED BAR WRAPS TOO — Joe's screenshot shows **"Pause" clipped to "use"** on the
@@ -2763,7 +2767,7 @@ public partial class Main : Control
         // nothing here was ever going to get shorter. Same fix, same reason: an
         // `HBoxContainer` cannot fail gracefully, and the first thing it throws away is the
         // control the player reaches for most.
-        var controls = new HFlowContainer();
+        var controls = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         controls.AddThemeConstantOverride("h_separation", 6);
         controls.AddThemeConstantOverride("v_separation", 4);
         body.AddChild(controls);
@@ -3046,7 +3050,8 @@ public partial class Main : Control
         float height,
         Corner corner,
         string? title = null,
-        bool startOpen = true)
+        bool startOpen = true,
+        bool spanWidth = false)
     {
         var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
         panel.AddThemeStyleboxOverride("panel", PanelSkin());
@@ -3054,11 +3059,37 @@ public partial class Main : Control
         bool right = corner is Corner.TopRight or Corner.BottomRight;
         bool bottom = corner is Corner.BottomLeft or Corner.BottomRight;
 
-        panel.AnchorLeft = panel.AnchorRight = right ? 1f : 0f;
-        panel.AnchorTop = panel.AnchorBottom = bottom ? 1f : 0f;
+        // ⭐⭐ `spanWidth` PINS BOTH SIDES, AND THE CONTROL BAR NEEDS IT TO WRAP AT ALL
+        // (2026-08-27). Every other floating panel is sized BY ITS CONTENTS and hangs off one
+        // corner, which is right for a panel and **wrong for a bar that must fill the window**.
+        //
+        // ⛔ **This is what my first attempt at D242 got wrong, and Joe caught it in one look:**
+        // *"i think you messed it up. its tall and wide on the right side."* Swapping the bar to
+        // an `HFlowContainer` removed the very thing that had been holding it open. An
+        // `HBoxContainer`'s minimum width is **the sum of its children**, so the panel was
+        // dragged wide (and then off the left edge — the original bug); a flow container's
+        // minimum width is **its widest single child**, so the panel collapsed to one button and
+        // wrapped everything into a tall column in the corner.
+        //
+        // ⚠️ **A wrapping container cannot decide where to wrap unless something else decides
+        // how wide it is.** Flow containers do not create width; they consume it. The two
+        // changes are one change and shipping either alone is a different bug.
+        if (spanWidth)
+        {
+            panel.AnchorLeft = 0f;
+            panel.AnchorRight = 1f;
+            panel.OffsetLeft = x;
+            panel.OffsetRight = -x;
+            panel.GrowHorizontal = GrowDirection.Both;
+        }
+        else
+        {
+            panel.AnchorLeft = panel.AnchorRight = right ? 1f : 0f;
+            panel.OffsetLeft = right ? -(x + width) : x;
+            panel.OffsetRight = right ? -x : x + width;
+        }
 
-        panel.OffsetLeft = right ? -(x + width) : x;
-        panel.OffsetRight = right ? -x : x + width;
+        panel.AnchorTop = panel.AnchorBottom = bottom ? 1f : 0f;
         panel.OffsetTop = bottom ? -(y + height) : y;
         panel.OffsetBottom = bottom ? -y : y + height;
 
@@ -3068,7 +3099,11 @@ public partial class Main : Control
         // bottom-right and asked for nothing grew off the screen entirely — the controls
         // vanished, leaving one lit pixel in the corner. Panels pinned to an edge have to
         // grow away from it.
-        panel.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
+        if (!spanWidth)
+        {
+            panel.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
+        }
+
         panel.GrowVertical = bottom ? GrowDirection.Begin : GrowDirection.End;
 
         VBoxContainer floated = Dress(panel, title, startOpen);
@@ -4009,7 +4044,7 @@ public partial class Main : Control
     {
         // Wraps for the same reason as the build row above — this one fits today, and "fits
         // today" is exactly what the build row could have said last week.
-        var row = new HFlowContainer();
+        var row = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         row.AddThemeConstantOverride("h_separation", 8);
         row.AddThemeConstantOverride("v_separation", 6);
         row.AddChild(Muted("Harvest:"));
@@ -4077,7 +4112,7 @@ public partial class Main : Control
         //
         // ⚠️ Flow containers take `h_separation`/`v_separation`; the plain `separation` an
         // HBoxContainer uses is silently ignored, which would have left the groups touching.
-        var row = new HFlowContainer();
+        var row = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         row.AddThemeConstantOverride("h_separation", 10);
         row.AddThemeConstantOverride("v_separation", 6);
 
