@@ -202,7 +202,7 @@ named one and was stale within the minute.
 
 **SUITE, FROM A RUN (2026-08-27, after D239):**
 ```
-847 passed, 0 failed, 2 skipped of 849 — about 3m (was 18m52s before D179)
+851 passed, 0 failed, 2 skipped of 853 — about 3m (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -233,9 +233,8 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >    Re-run the two commands in the audit-trail trap below against a fresh log and compare.
 > 0b. **⛔ FOUR OF HIS SEVEN ITEMS ARE STILL UNDONE, AND HE ASKED FOR ALL SEVEN** (2026-08-27, he
 >    chose "fix the economy first, alone"):
->    - **The *"gatherer's hut"* naming.** One row (`SimConfig.cs:1653`), one test expectation
->      (`BuildingsCatalogTests.cs:85`), two view sentences (`Main.cs:1270`, `:1449`). ⚠️ Check no
->      golden holds the string first.
+>    - ✅ **The *"gatherer's hut"* naming is DONE** (D240) — it is *"forager's hut"*, and the two
+>      hand-written view sentences now read from the catalogues rather than holding the word.
 >    - **The technique-discovery modal** — non-pausing, celebratory, and it should say the
 >      technique is in the library. ⛔ **The sim currently says NOTHING when a technique is
 >      discovered and the village has no library at all** (`KnowledgeSystem.cs:140` guards on
