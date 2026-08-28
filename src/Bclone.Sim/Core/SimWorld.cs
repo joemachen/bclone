@@ -1913,6 +1913,76 @@ public sealed class SimWorld
     /// villagers, not runs", applied to knowledge.*
     /// </para>
     /// </remarks>
+    /// <summary>The techniques this person carries, in catalogue order.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe, 2026-08-27:</b> <i>"if a villager has unlocked a technique, it should be
+    /// highlighted in their 'inspector' going forward."</i> The sim knew this all along and had
+    /// no way to be asked — <c>KnowledgeStates</c> says what the <em>village</em> has and
+    /// `SkillProgress` says what a <em>person</em> has mastered, and nothing joined them.
+    /// </para>
+    /// <para>
+    /// <b>The join is the same one <c>KnowledgeSystem</c> makes</b> — a technique is carried by
+    /// anyone who has mastered its skill, once the village has the technique at all. Written
+    /// here rather than in the view so the villager panel and §8's knowledge screen cannot end
+    /// up disagreeing about who knows what, which is D188's lesson one system over.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>An <c>Established</c> technique still needs a living master to be CARRIED.</b> The
+    /// record preserves the method, never the proficiency (§3a) — so somebody learning from a
+    /// library holds nothing yet, and this list is honest about that rather than crediting them
+    /// with years they have not spent.
+    /// </para>
+    /// </remarks>
+    public List<TechniqueRow> TechniquesCarriedBy(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        var carried = new List<TechniqueRow>();
+        if (!villager.Alive)
+        {
+            return carried;
+        }
+
+        for (int id = 0; id < TechniquesCatalog.Count; id++)
+        {
+            TechniqueRow row = TechniquesCatalog[id];
+            if (KnowledgeStates[id] != KnowledgeState.Unknown
+                && villager.FindProgressIn(row.Skill) is { Mastered: true })
+            {
+                carried.Add(row);
+            }
+        }
+
+        return carried;
+    }
+
+    /// <summary>Whether this person is the only living soul carrying that technique.</summary>
+    /// <remarks>
+    /// <b>What turns a list into a warning.</b> A technique two people know is a fact about the
+    /// village; one that rests on a single pair of hands is a decision the player can still act
+    /// on — put somebody beside them, or build a library. The same claim
+    /// <see cref="KnowledgeAtRiskNote"/> makes about a skill, asked about a technique.
+    /// </remarks>
+    public bool IsOnlyCarrierOf(Villager villager, TechniqueRow technique)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        ArgumentNullException.ThrowIfNull(technique);
+
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager other = Villagers[i];
+            if (other.Alive
+                && other.Id != villager.Id
+                && other.FindProgressIn(technique.Skill) is { Mastered: true })
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public int YieldWithTechnique(JobKind trade, int baseAmount)
     {
         if (baseAmount <= 0)

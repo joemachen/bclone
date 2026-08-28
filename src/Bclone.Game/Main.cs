@@ -1103,6 +1103,51 @@ public partial class Main : Control
             }
         }
 
+        // ⭐⭐ WHAT THIS PERSON HAS WORKED OUT (Joe, 2026-08-27: *"if a villager has unlocked a
+        // technique, it should be highlighted in their 'inspector' going forward"*).
+        //
+        // ⛔ **The sim knew this all along and had no way to be asked.** `KnowledgeStates` says
+        // what the VILLAGE has and `SkillProgress` says what a PERSON has mastered; nothing
+        // joined them, so the one screen about a particular villager could not say the one thing
+        // that makes them irreplaceable. **A technique was a village-level fact with a person's
+        // name in the log entry and nowhere else** — the sixth instance of a sim feature the view
+        // could not reach, and the first that needed a query rather than a button.
+        //
+        // ⭐ THE AT-RISK HALF IS WHAT MAKES IT ACTIONABLE, not the list. Knowing Mabel understands
+        // coppicing is pleasant; knowing she is the ONLY one is a decision — put somebody beside
+        // her, or build a library — and it is the same claim `KnowledgeAtRiskNote` makes about a
+        // skill, one level up (D195).
+        List<TechniqueRow> carried = world.TechniquesCarriedBy(villager);
+        if (carried.Count > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add(carried.Count == 1 ? "Knows a technique:" : "Knows techniques:");
+
+            foreach (TechniqueRow technique in carried)
+            {
+                lines.Add(world.IsOnlyCarrierOf(villager, technique)
+                    ? $"  ★ {technique.Name} — and nobody else alive knows it"
+                    : $"  ★ {technique.Name}");
+            }
+
+            // ⚠️ Said once for the person rather than once per technique: a villager holding
+            // three unwritten techniques does not need the remedy three times.
+            bool anyUnwritten = false;
+            foreach (TechniqueRow technique in carried)
+            {
+                if (!world.IsWrittenDown(technique.Id))
+                {
+                    anyUnwritten = true;
+                    break;
+                }
+            }
+
+            if (anyUnwritten)
+            {
+                lines.Add("  Not all of it is written down — a library keeps what a life cannot.");
+            }
+        }
+
         lines.Add(string.Empty);
         lines.Add(workplace is null ? "Work: none" : $"Work: {workplace.Name}");
 
@@ -2712,8 +2757,15 @@ public partial class Main : Control
         VBoxContainer body = Floating(Edge, Edge, 0, 0, Corner.BottomRight);
         body.AddThemeConstantOverride("separation", 8);
 
-        var controls = new HBoxContainer();
-        controls.AddThemeConstantOverride("separation", 6);
+        // ⛔ THE SPEED BAR WRAPS TOO — Joe's screenshot shows **"Pause" clipped to "use"** on the
+        // left edge, which is this row overflowing rather than the build row below it. Ten
+        // controls including *"Centre on village"* is already wider than a narrow window, and
+        // nothing here was ever going to get shorter. Same fix, same reason: an
+        // `HBoxContainer` cannot fail gracefully, and the first thing it throws away is the
+        // control the player reaches for most.
+        var controls = new HFlowContainer();
+        controls.AddThemeConstantOverride("h_separation", 6);
+        controls.AddThemeConstantOverride("v_separation", 4);
         body.AddChild(controls);
 
         controls.AddChild(SpeedButton("Pause", 0.0));
@@ -3953,9 +4005,13 @@ public partial class Main : Control
     /// clear-this-area brush D67 asked for.
     /// </para>
     /// </remarks>
-    private HBoxContainer BuildHarvestMenu()
+    private HFlowContainer BuildHarvestMenu()
     {
-        var row = new HBoxContainer();
+        // Wraps for the same reason as the build row above — this one fits today, and "fits
+        // today" is exactly what the build row could have said last week.
+        var row = new HFlowContainer();
+        row.AddThemeConstantOverride("h_separation", 8);
+        row.AddThemeConstantOverride("v_separation", 6);
         row.AddChild(Muted("Harvest:"));
 
         foreach ((string Label, HarvestBrush Mode) entry in new[]
@@ -3999,10 +4055,31 @@ public partial class Main : Control
     /// never said.
     /// </para>
     /// </remarks>
-    private HBoxContainer BuildBuildMenu()
+    private HFlowContainer BuildBuildMenu()
     {
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 10);
+        // ⛔⛔ IT WRAPS, BECAUSE IT RAN OFF BOTH EDGES OF THE SCREEN (Joe, 2026-08-27, with a
+        // screenshot: *"the bottom menu doesn't fit in the screenview when the library button
+        // pops in"*). **"Pause" was clipped to "use" on the left and "Cancel" sat half off the
+        // right.**
+        //
+        // ⚠️ **AND IT IS A TIMED FAULT, WHICH IS WHY NOBODY CAUGHT IT.** The Knowledge group is
+        // hidden until the village learns to write (`RefreshTheLibraryButton`), so the row fits
+        // perfectly for the first fifteen-odd years of every game and then **grows by a whole
+        // category in the middle of play**. A layout that is correct at startup and wrong later
+        // is invisible to every check anybody makes at startup — which is all of them, since
+        // there is no view test project.
+        //
+        // ⭐ **An `HBoxContainer` has no way to fail gracefully: it has one line and children
+        // that do not fit simply leave the screen.** A flow container puts the overflow on a
+        // second row instead. That also settles the shape D223 parked — *"ten hand-written
+        // buttons in four groups does not scale to 45 buildings"* — because wrapping is what a
+        // menu that grows needs whether the buttons stay hand-written or become catalogue-driven.
+        //
+        // ⚠️ Flow containers take `h_separation`/`v_separation`; the plain `separation` an
+        // HBoxContainer uses is silently ignored, which would have left the groups touching.
+        var row = new HFlowContainer();
+        row.AddThemeConstantOverride("h_separation", 10);
+        row.AddThemeConstantOverride("v_separation", 6);
 
         row.AddChild(Muted("Build:"));
 

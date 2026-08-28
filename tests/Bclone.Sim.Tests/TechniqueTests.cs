@@ -854,6 +854,102 @@ public sealed class TechniqueTests
         Assert.Contains("written down", moment.Body, System.StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>⭐ A villager's own panel can say what they have worked out.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-08-27:</b> <i>"if a villager has unlocked a technique, it should be
+    /// highlighted in their 'inspector' going forward."</i>
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The sim knew this all along and had no way to be asked.</b>
+    /// <c>KnowledgeStates</c> says what the <em>village</em> has and <c>SkillProgress</c> says
+    /// what a <em>person</em> has mastered — <b>nothing joined them</b>, so the one screen about
+    /// a particular villager could not say the thing that makes them irreplaceable.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillagerCarriesTheTechniquesTheyHaveMastered()
+    {
+        SimLoop loop = Loop(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Villager master = MakeAMasterOf(world, 1);
+        loop.Step(1);
+
+        Villager? novice = null;
+        foreach (Villager candidate in world.Villagers)
+        {
+            if (candidate.Alive && candidate.Id != master.Id)
+            {
+                novice = candidate;
+                break;
+            }
+        }
+
+        Assert.NotNull(novice);
+
+        List<TechniqueRow> his = world.TechniquesCarriedBy(master);
+        List<TechniqueRow> hers = world.TechniquesCarriedBy(novice);
+
+        _output.WriteLine(
+            $"{master.Name} carries {his.Count}: {string.Join(", ", his.ConvertAll(t => t.Name))}. "
+            + $"{novice.Name} carries {hers.Count}.");
+
+        TechniqueRow carried = Assert.Single(his);
+        Assert.Equal(1, carried.Skill);
+
+        // ⚠️ ANTI-VACUITY (D7): a join that returned everything for everybody would pass the
+        // assertion above and mean nothing.
+        Assert.Empty(hers);
+
+        // ⭐ AND THE AT-RISK HALF, which is what turns a list into a decision the player can act
+        // on — the same claim `KnowledgeAtRiskNote` makes about a skill, one level up.
+        Assert.True(world.IsOnlyCarrierOf(master, carried));
+    }
+
+    /// <summary>⛔ A record hands nobody the years they did not spend.</summary>
+    /// <remarks>
+    /// <b>§3a's anti-ratchet, asked of the new query</b> — <i>"a record preserves the method, not
+    /// the proficiency."</i> A technique can be <c>Established</c> and written in a library while
+    /// <b>nobody alive carries it</b>, and the villager panel must not credit the next worker
+    /// with mastery they have not earned. This is `phase-4-the-tech-tree.md §5` check 17 —
+    /// <i>"verified by reading a villager's panel, not by trusting the code"</i> — made into a
+    /// guard.
+    /// </remarks>
+    [Fact]
+    public void AnEstablishedTechniqueIsCarriedByNobodyOnceItsMasterIsGone()
+    {
+        SimLoop loop = Loop(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        GiveThemALibrary(world);
+
+        Villager master = MakeAMasterOf(world, 1);
+        loop.Step(1);
+
+        int id = Assert.Single(world.TechniquesCarriedBy(master)).Id;
+        Assert.True(world.IsWrittenDown(id));
+
+        master.Alive = false;
+        loop.Step(1);
+
+        // The village keeps the method...
+        Assert.Equal(KnowledgeState.Established, world.KnowledgeStates[id]);
+
+        // ...and not one living soul carries it, because carrying is proficiency and
+        // proficiency died with him.
+        foreach (Villager villager in world.Villagers)
+        {
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            Assert.DoesNotContain(
+                world.TechniquesCarriedBy(villager), row => row.Id == id);
+        }
+    }
+
     /// <summary>A second library is the answer, and it works.</summary>
     [Fact]
     public void ASecondLibraryTakesWhatTheFirstCouldNotHold()
