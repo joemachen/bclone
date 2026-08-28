@@ -239,6 +239,14 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >    chose "fix the economy first, alone"):
 >    - ✅ **The *"gatherer's hut"* naming is DONE** (D240) — it is *"forager's hut"*, and the two
 >      hand-written view sentences now read from the catalogues rather than holding the word.
+>    - ⏸️ **A UI PASS IS OWED AND DEFERRED ON HIS CALL** (2026-08-28: *"the bar looks better for
+>      now. still lots of overlap between menus, but we'll fix that in a later UI pass"*). The
+>      bottom bar is fixed and measured; **the panels still overlap** — the left column draws over
+>      the speed buttons. ⛔ **Do not start it piecemeal, he has said when.** Two things to fold
+>      in when it happens: the panels have **no z-order or reserved regions**, so every new panel
+>      is a new overlap; and *"Builder — nobody working of 21 seats"* in a village of four adults
+>      is **`BuilderHutCapacity` derived from the economy horizon (D16) and not a bug**, but it
+>      reads as one.
 >    - ✅ **The technique-discovery modal is DONE** (D241) — a non-pausing celebratory banner,
 >      coloured in the log, saying whether the village can keep the technique. The
 >      no-library-at-all case, which had no sentence anywhere, now has two (one for a village
