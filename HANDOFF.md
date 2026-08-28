@@ -25,18 +25,17 @@
 > found it, sized it, and proved it. ⭐ **Bucket the behaviour histogram before forming a
 > hypothesis**; "clearing per year" collapsing to zero is a sentence no test in this suite can say.
 
-> **✅ PUSHED, AS A BRANCH — AND STILL NOT MERGED. `phase/4-the-tech-tree` is on `origin`
-> (2026-08-27, Joe: *"push"*), so the work is no longer only on this machine.** Count the gap with
-> `git rev-list --count origin/main..HEAD` rather than trusting a number written here, because
-> **this file's own rule is not to write a number that keeps moving and the first draft of this
-> paragraph got both the hash and the count wrong within the hour.**
-> ⛔ **It went to the branch, NOT to `main`, and that was a deliberate call rather than his:**
-> Phase 4's Definition of Done is not met — **slice 3 is unbuilt and the QA walk has never
-> happened** — and METHODOLOGY §3 does not merge a phase in that state. **Phase 3's one-word
-> *"push"* did go straight to `main` (D203), so the precedent points the other way; if he meant
-> `main` this time, merging is one command and the reason not to is written above.**
-> ⚠️ **He plays this branch**, so his build and `main` are still not the same thing — D217's trap
-> sitting live rather than historical. **`main` has none of Phase 4.**
+> **✅✅ MERGED TO `main` AND PUSHED (2026-08-28, Joe: *"then merge to main"*).** A clean
+> fast-forward — `main` had no commits of its own — so **`main`, `origin/main` and
+> `phase/4-the-tech-tree` are all the same commit.** D217's trap is finally not live: the build
+> Joe plays and the remote are one thing again.
+>
+> ⚠️⚠️ **IT WENT TO `main` WITH PHASE 4'S DEFINITION OF DONE UNMET, AND THAT IS RECORDED RATHER
+> THAN TICKED.** **Slice 3 (the knowledge screen) is unbuilt and the §5 QA walk has never been
+> performed** — item 4 of the phase's own DoD, the one it says it is *not allowed to waive*.
+> **This is Joe's call, asked and answered three times**, and it is exactly what D203 did for
+> Phase 3. ⛔ **Do not treat the merge as evidence the phase is finished; it is evidence he
+> wanted the work on `main`.** *If a Phase 4 regression ships, this is where it got through.*
 
 > **⭐⭐ WHAT PHASE 4 HAS: techniques (D225), the library (D226), the pacing fixes his play forced
 > (D227, D232, D233), and the whole build/undo loop rebuilt around them (D228–D231, D234, D235).**
@@ -261,11 +260,9 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >      it impossible, protecting §2.2 and D15. **Joe has to overrule that deliberately** — do not
 >      route around the guard.
 >
-> 1. **✅ PUSHING IS ANSWERED — ⛔ MERGING IS NOT.** He said *"push"* on 2026-08-27 and the branch
->    went to `origin`. **It did not go to `main`**, because Phase 4's DoD is unmet (items 2 and 3
->    below are the unmet half). ⛔ **Do not re-ask whether to push. Ask whether he wants it on
->    `main` now** — Phase 3 went straight there on the same one word (D203). ⚠️ Until he says so,
->    **`main` has no Phase 4 at all** and he is playing a branch: D217's trap, still live.
+> 1. **✅ BOTH ARE ANSWERED: PUSHED (2026-08-27) AND MERGED TO `main` (2026-08-28).** ⛔ **Do not
+>    re-ask either.** ⚠️ **The phase's DoD is still unmet** — slice 3 unbuilt, the QA walk never
+>    walked — and that is written into the banner at the top rather than quietly ticked.
 > 2. **⛔ SLICE 3 — THE KNOWLEDGE SCREEN — IS THE REST OF PHASE 4.**
 >    `phase-4-the-tech-tree.md §3`. It mostly *surfaces* what exists: which techniques the village
 >    has, who holds each one, and how close the last knower is to dying.
