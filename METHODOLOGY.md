@@ -98,8 +98,26 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
 - **⭐ THE ONE THING THE VIEW CAN BE MEASURED FOR IS ITS OWN WIDTH: `BCLONE_PROBE_WIDTHS`** (D169). Set it and the game walks the control tree, prints what every panel and every inspector row is claiming as a **minimum width**, and quits — headless, in about two seconds:
 
   ```bash
+  # ⭐ WHERE THE BINARY IS. It is NOT on C: — a session searched there, concluded there was no
+  # Godot on the machine, and shipped two unverifiable UI guesses before checking `run.bat`,
+  # which has named the path all along. It must be the **mono/.NET** build (the project is
+  # `Godot.NET.Sdk/4.7.1` and `config/features` lists "C#"); a standard build cannot run it.
+  export GODOT="/d/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64.exe"
+
   BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
   ```
+
+  **⭐ IT MEASURES THE BOTTOM CONTROL BAR TOO, SINCE 2026-08-27** (D242) — the one part of the UI
+  that **grows during play**, when the library button appears, and the part nothing measured. It
+  prints, per row, *what the row demands* against *how much room it has*, and flags a row that
+  wants more than it has. **Both of that day's bugs are one line each in this output**: a row
+  wider than the bar walks off the screen, and a bar far narrower than the window is a flow
+  container with nothing to wrap inside.
+
+  ⚠️ **`--resolution` is ignored here and the numbers are always 1280 wide**, because
+  `project.godot` sets `stretch/mode="canvas_items"` at a 1280×800 viewport: **the UI is laid out
+  at 1280 logical pixels and then scaled to whatever window the player has.** So a row that wraps
+  in this output wraps on every monitor — *there is no "it will fit on a bigger screen".*
 
   **This exists because the question has now been asked three times and hand-rolled twice** (D149, then D169), and because it is genuinely un-guessable from the layout code: **a column can never be narrower than its widest child**, so `ColumnWidthFor` hands out 27% of the window and Godot overrules it. D149 found six stock-limit rows at 438 pinning a column at 450; D169 found the inspector's idle row wanting **733** on a 267-pixel column. **It is a measurement, not a hook that plays the game** — which is the distinction D160 drew when it deleted `BCLONE_SCREENSHOT` — and it is verified as of 2026-08-22 rather than assumed, having been run four times that day.
 - **On version tag (`v*`):** `.github/workflows/release.yml` builds a **Windows `.exe`**, packages it, and attaches it to a GitHub Release with the changelog as the body. The Godot steps are written but have **never run** — see §5 for the missing export preset.

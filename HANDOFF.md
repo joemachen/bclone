@@ -480,9 +480,28 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
       shipping either alone is a different bug.**
     - ⚠️ **Every other floating panel is deliberately content-sized and hangs off one corner.**
       `spanWidth` exists for the control bar alone; do not spread it to the columns.
-  - ⚠️ **`BCLONE_PROBE_WIDTHS` would have caught it and needs Godot on PATH**, which this session
-    did not have (`GODOT` unset). *The fix was made by construction rather than by measurement —
-    worth re-measuring when somebody has the binary.*
+  - **⛔⛔⛔ AND THE WORST PART: I DECIDED THERE WAS NO GODOT ON THE MACHINE AND THERE WAS.** I
+    searched `C:\`, found nothing, said so, and shipped **two** unverifiable UI guesses — the
+    second of which Joe had to catch. **`run.bat` has named the path all along**, three lines
+    from the top:
+    ```bash
+    export GODOT="/d/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64.exe"
+    BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
+    ```
+    - **⭐ THE RULE: BEFORE CONCLUDING A TOOL IS MISSING, GREP THE REPO FOR ITS NAME.** This one
+      is configured, documented and used by the script Joe runs every day. *"Not on `C:`" is not
+      "not installed"* — and a wrong "I cannot verify this" is more expensive than a slow check,
+      because everything downstream of it becomes a guess.
+  - ⭐ **The probe measures the control bar now**, which it did not, and both bugs are one line
+    each in its output. ⚠️ **`--resolution` is ignored and the numbers are always 1280 wide** —
+    `stretch/mode="canvas_items"` lays the UI out at 1280 logical pixels and scales it, so
+    **a row that wraps in the probe wraps on every monitor.** There is no "it will fit on a
+    bigger screen".
+  - ⚠️ **A taller bar silently ate the columns' clearance.** `ControlsReserve` is a *measured*
+    constant at 160; the wrapped bar is **189**, so the columns ran underneath it — **the wrap
+    fix created the exact bug that constant exists to prevent.** It reads the bar's real height
+    now, which is safe because the dependency runs one way: the bar's height depends on the
+    window and its own contents, never on the columns.
 - **⛔⛔ THE AUDIT TRAIL FINDS WHAT READING THE CODE DOES NOT — AND NOBODY HAD MINED IT LIKE THIS
   (2026-08-27).** D236 sat in `StoreForTheLoad` for months, read past by several sessions. What
   found it was arithmetic on the log:

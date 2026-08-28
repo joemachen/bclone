@@ -219,9 +219,54 @@ public partial class Main : Control
         }
 
         ProbeTheInspectorRows();
+        ProbeTheControlBar();
 
         GD.Print("[widths] done.");
         GetTree().Quit();
+    }
+
+    /// <summary>The control bar at the bottom, which the column probe never looked at.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ ADDED BECAUSE THE BAR BROKE TWICE IN ONE DAY AND THIS TOOL COULD NOT SEE IT</b>
+    /// (2026-08-27). D169 built the probe for the columns and the inspector rows, and the bottom
+    /// bar — the one part of the UI that <b>grows during play</b>, when the library button
+    /// appears — was the part nothing measured.
+    /// </para>
+    /// <para>
+    /// <b>⭐ It prints the two numbers whose disagreement IS the bug, for each row:</b> what the
+    /// row's contents demand, and how much room the row actually has. Wider than the window is
+    /// the first failure (buttons walk off the edge); a bar far narrower than the window is the
+    /// second (a flow container with no width to wrap inside, stacking into a column). <b>Both
+    /// are obvious here and neither is guessable from the layout code.</b>
+    /// </para>
+    /// </remarks>
+    private void ProbeTheControlBar()
+    {
+        if (_controlBar is null)
+        {
+            GD.Print("[widths] --- control bar: NOT BUILT ---");
+            return;
+        }
+
+        GD.Print($"[widths] --- control bar: is {_controlBar.Size.X:F0} wide "
+            + $"of a {Size.X:F0} window, and {_controlBar.Size.Y:F0} tall ---");
+
+        foreach (Node child in _controlBar.GetChildren())
+        {
+            if (child is not Control row)
+            {
+                continue;
+            }
+
+            float wants = row.GetCombinedMinimumSize().X;
+            string verdict = wants > _controlBar.Size.X + 1f
+                ? "  ⛔ WANTS MORE THAN IT HAS — this row runs off the screen"
+                : string.Empty;
+
+            GD.Print($"[widths] bar    {row.GetType().Name} wants {wants:F0}, "
+                + $"is {row.Size.X:F0} x {row.Size.Y:F0}{verdict}");
+        }
     }
 
     /// <summary>
@@ -318,6 +363,9 @@ public partial class Main : Control
         text.Length <= 40 ? text : text[..40] + "…";
 
     private bool _probed;
+
+    /// <summary>The bottom bar, kept so the width probe can measure it (2026-08-27).</summary>
+    private VBoxContainer? _controlBar;
     private int _probeFrames;
 
     /// <summary>Close the audit log cleanly when the window goes.</summary>
@@ -2760,6 +2808,7 @@ public partial class Main : Control
         // sides it can only ever be as wide as the window, and the rows below wrap inside it.
         VBoxContainer body = Floating(Edge, Edge, 0, 0, Corner.BottomRight, spanWidth: true);
         body.AddThemeConstantOverride("separation", 8);
+        _controlBar = body;
 
         // ⛔ THE SPEED BAR WRAPS TOO — Joe's screenshot shows **"Pause" clipped to "use"** on the
         // left edge, which is this row overflowing rather than the build row below it. Ten
@@ -2933,7 +2982,23 @@ public partial class Main : Control
     /// </remarks>
     private void FitColumns()
     {
-        float room = Size.Y - Edge - (Edge + ControlsReserve);
+        // ⛔⛔ MEASURED RATHER THAN ASSUMED, BECAUSE THE BAR CAN GROW NOW (2026-08-27).
+        // `ControlsReserve` is 160 and the bar measured **189** the moment it started wrapping —
+        // so the columns would have run 29 pixels underneath it, which is the overlap this
+        // constant exists to prevent. **The wrap fix created the exact bug the constant was
+        // written for**, and only the probe caught it.
+        //
+        // ⚠️ The comment on `ControlsReserve` warns that asking a container for its size during
+        // layout is how circular dependencies start, and that is right — but this one is not
+        // circular. **The bar's height depends on the window width and its own contents; it
+        // never depends on the columns.** The dependency runs one way, so reading it here is a
+        // measurement rather than a negotiation. The constant stays as the floor for the frame
+        // before the bar has been laid out.
+        float reserve = _controlBar is { } bar && bar.Size.Y > ControlsReserve
+            ? bar.Size.Y
+            : ControlsReserve;
+
+        float room = Size.Y - Edge - (Edge + reserve);
         float wide = ColumnWidthFor(Size.X);
 
         foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
