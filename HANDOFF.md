@@ -1,6 +1,6 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
 
-> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27, D236–D239.** Joe played to Year 44
+> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27, D236–D240.** Joe played to Year 44
 > and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
 > building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
 > His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
@@ -13,7 +13,8 @@
 > `NearestStore` matched on kind and fullness and **never asked `Accepts`**; every other finder
 > asks. Fixed, along with the three things that made it invisible: a **stalled site now says what
 > it waits for**, a **met limit stops the job and keeps the seat**, and the **limits panel measures
-> what the sim decides on**. **847 passing, 0 failing, 2 skipped of 849.**
+> what the sim decides on**. The forager's hut is also **called what its workers are called** at
+> last (D240). **851 passing, 0 failing, 2 skipped of 853.**
 >
 > **⭐⭐⭐ THE LESSON WORTH MORE THAN THE FIX: IT WAS FOUND IN THE LOG, NOT IN THE CODE.** Nobody
 > reading `StoreForTheLoad` had spotted it in months. Twenty minutes of
