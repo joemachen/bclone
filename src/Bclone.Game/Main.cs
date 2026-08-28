@@ -615,9 +615,17 @@ public partial class Main : Control
             // and everything hauled in after that is set down outside it — measured at 320 logs
             // in store against 5,977 on the ground. Reading "Logs 320" while a mountain sits in
             // the open is the village lying to the player about a shortage it does not have.
+            // ⛔ AND IT USED TO ASSERT A CAUSE IT NEVER TESTED (2026-08-27). The string was
+            // hard-coded to "no room in store" and fired on `OnTheGround > 0` alone. Joe read
+            // "Stone 0 (+12 on the ground — no room in store)" while a stone-filtered pile stood
+            // empty beside it, and reasonably reported an impossible village — the panel was
+            // simply naming the wrong reason. **The real one was that the store REFUSED it.**
+            //
+            // Full and unwilling are different states with different remedies — empty a store,
+            // versus change what it takes — so the sentence has to tell them apart.
             int inHeaps = world.OnTheGround(goods);
             held.Text = inHeaps > 0
-                ? $"{inStores}  (+{inHeaps} on the ground — no room in store)"
+                ? $"{inStores}  (+{inHeaps} on the ground — {WhyItIsOnTheGround(world, goods)})"
                 : $"{inStores}";
         }
 
@@ -3689,19 +3697,74 @@ public partial class Main : Control
     /// How much of a good the limit is actually measured against.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <b>The same total <c>LabourQuota</c> reads, and it must stay that way.</b> Firewood is
     /// counted in the sheds, not everywhere, because a pile in somebody else's home is not
     /// supply — no errand reaches it. Showing the player a village-wide total beside a limit
     /// that governs the shed would explain a stopped woodcutter with a number that had
     /// nothing to do with why it stopped, which is D29 wearing a UI.
+    /// </para>
+    /// <para>
+    /// <b>⛔ AND FOR MONTHS IT DID NOT (2026-08-27). The invariant above was asserted and
+    /// broken in the same method</b>, in two places:
+    /// </para>
+    /// <para>
+    /// <b>Stone, tools and iron fell to <c>_ =&gt; 0</c></b>, so a village holding three hundred
+    /// stone read <em>"stop at 100 · have 0"</em> — a row telling the player their limit is
+    /// nowhere near binding while it binds. The sim never had this gap: <c>MayTake</c> is
+    /// <c>InStores(goods)</c> for every good by index, with nothing switching on a name, which
+    /// is `goods-catalog.md §2.1`'s rule. **A modded good read zero here for ever.**
+    /// </para>
+    /// <para>
+    /// <b>And Food read <c>FoodInGranaries()</c> where every sim decision reads
+    /// <c>FoodTheVillageHolds()</c></b> — granaries <em>plus</em> workplace stores. They stopped
+    /// being the same number when D161 gave the farm a buffer, and the row has disagreed with
+    /// the quota it describes ever since.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The arms are the sim's own reads, per good, and not a tidy single call</b>: logs
+    /// and firewood genuinely are counted in the sheds by <c>LabourQuota</c>, and collapsing all
+    /// five to <c>InStores</c> would break the invariant in the other direction.
+    /// </para>
     /// </remarks>
     private static int HeldFor(SimWorld world, Goods goods) => goods switch
     {
-        Goods.Food => world.FoodInGranaries(),
+        Goods.Food => world.FoodTheVillageHolds(),
         Goods.Logs => world.LogsInSheds(),
         Goods.Firewood => world.FirewoodInSheds(),
-        _ => 0,
+        _ => world.InStores(goods),
     };
+
+    /// <summary>Why a good is lying in the open, asked rather than assumed.</summary>
+    /// <remarks>
+    /// <b>Three states, and they have different remedies.</b> Nothing will take it (build or
+    /// re-filter a store); something would but is full (empty one, or build another); or
+    /// somewhere has room right now and it simply has not been carried yet, which after a
+    /// clearing is the ordinary case and not a problem at all. Reporting all three as
+    /// <em>"no room in store"</em> sent Joe looking for space he already had.
+    /// </remarks>
+    private static string WhyItIsOnTheGround(SimWorld world, Goods goods)
+    {
+        bool anyWilling = false;
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (!store.Accepts(goods))
+            {
+                continue;
+            }
+
+            anyWilling = true;
+            if (!store.Store.IsFull)
+            {
+                return "still to be carried in";
+            }
+        }
+
+        return anyWilling
+            ? "no room in store"
+            : "nothing in the village will take it";
+    }
 
     /// <summary>
     /// What the village should take off the map — modes of one tool (D87, D92).
