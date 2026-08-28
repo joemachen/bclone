@@ -335,6 +335,85 @@ public sealed class ProfessionsTests
             + $"{world.Laborers}.");
     }
 
+    /// <summary>⛔ An idle villager is never told the village has enough hands when it has not.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe's Year-44 log said this 1,129 times, and it contradicts itself inside its own
+    /// punctuation:</b> <i>"No work: the village has all the hands it needs on the work that
+    /// matters — 16 hands for 21 mouths: 2 foraging (at least 4 to feed everyone), 0 cutting."</i>
+    /// </para>
+    /// <para>
+    /// <b>He had set the forager number to 2 himself</b>, against seven seats standing empty. So
+    /// the claim was about NEED while the number came from the player, and the clause after the
+    /// dash named the very shortfall the claim denied. Ten of sixteen adults stood idle while
+    /// the village went hungry and the sentence said everything was fine.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Nothing guarded it, which is D222's question arriving again</b> — <i>which of these
+    /// strings does the player actually read, and does anything check that they arrive?</i> The
+    /// sentence is the only thing standing between a capped village and a player who cannot see
+    /// why nobody is working, and it was wrong for as long as it has existed.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillageShortOfForagersDoesNotClaimItHasEveryHandItNeeds()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        loop.Step((config.TicksPerYear * 10) + (config.TicksPerSeason / 2));
+
+        // Joe's own move: ask for fewer foragers than the village needs to feed itself.
+        LabourQuota quota = LabourQuota.For(world);
+        Assert.True(
+            quota.ForagersToFeedEveryone > 1,
+            $"The village only needs {quota.ForagersToFeedEveryone} foraging, so asking for "
+                + "fewer cannot create the shortfall this guard is about.");
+
+        world.SetJobLimit(JobKind.Forager, 1);
+        loop.Step(config.TicksPerSeason);
+
+        var idle = new List<string>();
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager v = world.Villagers[i];
+            if (v.Alive && v.IsLaborer && v.JobReason.Length > 0)
+            {
+                idle.Add(v.JobReason);
+            }
+        }
+
+        foreach (string reason in idle)
+        {
+            _output.WriteLine(reason);
+        }
+
+        // ⚠️ ANTI-VACUITY (D7): a village with nobody idle proves nothing about what the idle
+        // are told, and capping gathering is precisely what makes laborers (the guard above).
+        Assert.True(idle.Count > 0, "Nobody was idle, so no reason was given to anybody.");
+
+        LabourQuota after = LabourQuota.For(world);
+        Assert.True(
+            after.Foragers < after.ForagersToFeedEveryone,
+            $"The village wants {after.Foragers} foraging and needs "
+                + $"{after.ForagersToFeedEveryone}, so it is not actually short and the sentence "
+                + "would be right to say it has enough.");
+
+        // ⭐⭐ THE CLAIM, AND IT IS THE NEGATIVE ONE ON PURPOSE. A first draft also demanded that
+        // somebody be told to "Raise the number" and went red for a reason worth keeping: an
+        // idle villager can arrive at any of several sentences, and in this fixture they come
+        // from `ShedSurplus` instead — *"the village needs only 1 foragers for its 10 mouths,
+        // and yours was the longest walk"*. Those are true and are not this bug.
+        //
+        // **What must never happen is any of them claiming sufficiency while the village is
+        // short**, whichever path wrote it — so that is what is asserted, across all of them.
+        foreach (string reason in idle)
+        {
+            Assert.DoesNotContain("all the hands it needs", reason);
+        }
+    }
+
     /// <summary>⭐ The professions panel's arithmetic works out — laborers are the remainder.</summary>
     /// <remarks>
     /// <para>

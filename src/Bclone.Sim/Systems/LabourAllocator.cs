@@ -534,12 +534,45 @@ internal static class LabourAllocator
             // place exists does "we have enough hands" become the true answer.
             reachable = NearestFullAndWanted(world, villager, quota) ?? reachable;
 
-            villager.JobReason = reachable.IsFull
-                ? $"No work: {reachable.Name} is full — it has its {reachable.Capacity} " +
-                  $"{(reachable.Capacity == 1 ? "hand" : "hands")}, and it is the nearest place " +
-                  $"within reach of home."
-                : $"No work: the village has all the hands it needs on the work that matters " +
-                  $"— {quota}";
+            // ⛔⛔ AND "ALL THE HANDS IT NEEDS" WAS FLATLY FALSE WHENEVER THE PLAYER'S OWN
+            // NUMBER WAS THE CAP (2026-08-27). Joe's Year-44 log says it **1,129 times**, and
+            // the sentence contradicts itself inside its own punctuation:
+            //
+            //   "the village has all the hands it needs on the work that matters
+            //    — 16 hands for 21 mouths: 2 foraging (at least 4 to feed everyone), 0 cutting."
+            //
+            // **He had set the forager number to 2 himself**, against seven seats standing
+            // empty. So the claim was about NEED while the number came from the player, and the
+            // clause that followed named the very shortfall the claim denied. Ten of sixteen
+            // adults stood idle while the village went hungry, and the sentence said everything
+            // was fine.
+            //
+            // ⭐ The remedy is one click away and was nowhere near the sentence: **raise the
+            // number.** A refusal that does not name its own cause is the silent stall §1.1
+            // forbids — the same argument D146 makes about a limit reading as "nothing to do".
+            //
+            // ⚠️ Claimed only when the player's figure is genuinely the binding one. `Asked`
+            // returns `min(asked, seats, hands)`, so `asked <= Foragers` is what says their
+            // number won rather than the seats or the roster.
+            string? askedTooFew = null;
+            if (world.JobLimits.For(JobKind.Forager) is int askedFor
+                && askedFor <= quota.Foragers
+                && quota.Foragers < quota.ForagersToFeedEveryone)
+            {
+                askedTooFew =
+                    $"No work: you asked the village for {askedFor} on gathering, and it needs "
+                    + $"{quota.ForagersToFeedEveryone} to feed {quota.Mouths}. Raise the number "
+                    + "on gathering, or these hands have nothing to do while the village goes "
+                    + "short.";
+            }
+
+            villager.JobReason = askedTooFew
+                ?? (reachable.IsFull
+                    ? $"No work: {reachable.Name} is full — it has its {reachable.Capacity} " +
+                      $"{(reachable.Capacity == 1 ? "hand" : "hands")}, and it is the nearest place " +
+                      $"within reach of home."
+                    : $"No work: the village has all the hands it needs on the work that matters " +
+                      $"— {quota}");
 
             world.LogVillager(LogLevel.Debug, villager, "labour", villager.JobReason);
         }
@@ -685,7 +718,7 @@ internal static class LabourAllocator
                         ? $"No work: every hand went back to food — a household is going hungry, " +
                           $"so nothing is cut until the village is fed. Yours was the longest walk " +
                           $"at {Tiles(furthestCost)} tiles."
-                        : $"No work: the village needs only {wanted} {Plural(world, kind)} for its " +
+                        : $"No work: the village needs only {wanted} {Counted(world, kind, wanted)} for its " +
                           $"{quota.Mouths} mouths, and yours was the longest walk at " +
                           $"{Tiles(furthestCost)} tiles.");
 
@@ -858,6 +891,17 @@ internal static class LabourAllocator
     // column of its own rather than the name plus an "s" because the marketer is "traders"
     // here and "marketer" on the roster — D188 unresolved, and not this row's to settle.
     private static string Plural(SimWorld world, JobKind kind) => world.JobsCatalog.PluralOf(kind);
+
+    /// <summary>The trade's name, singular or plural to match a count.</summary>
+    /// <remarks>
+    /// <b>Found by a guard that was looking for something else</b> (2026-08-27): a village capped
+    /// at one forager read <i>"the village needs only 1 foragers for its 10 mouths"</i>. Both
+    /// words come from the catalogue row, so this stays data-driven — <c>NameOf</c> is the
+    /// singular the row already carries, not an "s" chopped off the plural, which is the kind of
+    /// guess that breaks the moment a mod adds a trade whose plural is irregular.
+    /// </remarks>
+    private static string Counted(SimWorld world, JobKind kind, int count) =>
+        count == 1 ? world.JobsCatalog.NameOf(kind) : world.JobsCatalog.PluralOf(kind);
 
     /// <summary>Place names read "the berry patch"; sometimes one has to start a sentence.</summary>
     private static string Capitalise(string text) =>
