@@ -123,7 +123,7 @@ public sealed class CropSystem : ISimSystem
         {
             world.Narrate(
                 $"The fields are ripe — {ripened} {Tiles(ripened)} standing and ready to reap. "
-                + $"{clock.SeasonAndYear()}.");
+                + $"{clock.SeasonAndYear()}.", LogCategory.Season);
         }
     }
 
@@ -169,7 +169,7 @@ public sealed class CropSystem : ISimSystem
         {
             world.Narrate(
                 $"Winter took {lost} {Tiles(lost)} of unreaped crop — it rotted where it stood. "
-                + $"{clock.SeasonAndYear()}.");
+                + $"{clock.SeasonAndYear()}.", LogCategory.Season);
         }
     }
 

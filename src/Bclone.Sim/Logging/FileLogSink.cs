@@ -36,14 +36,19 @@ public sealed class FileLogSink : ISimLogger, IDisposable
 
     public LogLevel MinimumLevel { get; }
 
-    public void Log(ulong tick, LogLevel level, string subsystem, string message)
+    public void Log(
+        ulong tick,
+        LogLevel level,
+        string subsystem,
+        string message,
+        LogCategory category = LogCategory.Ordinary)
     {
         if (_disposed || level < MinimumLevel)
         {
             return;
         }
 
-        var line = new LogEntry(tick, level, subsystem, message).ToString();
+        var line = new LogEntry(tick, level, subsystem, message, category).ToString();
 
         try
         {

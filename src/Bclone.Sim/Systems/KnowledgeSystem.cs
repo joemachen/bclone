@@ -1,4 +1,5 @@
 using Bclone.Sim.Core;
+using Bclone.Sim.Logging;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Systems;
@@ -76,7 +77,7 @@ public sealed class KnowledgeSystem : ISimSystem
                 // The record is gone. Fall through: the technique is now worth exactly as much as
                 // the people who still know it, which may be nobody.
                 world.Narrate($"The village's record of {technique.Name} is gone. "
-                    + $"{world.Clock.SeasonAndYear()}.");
+                    + $"{world.Clock.SeasonAndYear()}.", LogCategory.Discovery);
                 world.KnowledgeStates[id] = KnowledgeState.Known;
                 was = KnowledgeState.Known;
             }
@@ -168,7 +169,7 @@ public sealed class KnowledgeSystem : ISimSystem
                 {
                     world.Narrate($"{technique.Name} was written down at {shelved.Name} — "
                         + $"{shelved.Shelves - shelved.Records.Count} shelves left. "
-                        + $"{world.Clock.SeasonAndYear()}.");
+                        + $"{world.Clock.SeasonAndYear()}.", LogCategory.Discovery);
                     continue;
                 }
             }
@@ -185,14 +186,14 @@ public sealed class KnowledgeSystem : ISimSystem
                 // ⭐ ONCE, ON THE EDGE — a second master is not news. The mastery line has already
                 // fired for this person (`SkillSystem`), and this is the different claim: not
                 // *"she is good at this"* but *"the village does it her way now."*
-                world.Narrate(Said(technique.DiscoveryLine, knower!.Name));
+                world.Narrate(Said(technique.DiscoveryLine, knower!.Name), LogCategory.Discovery);
                 continue;
             }
 
             // ⚠️ The person named here is the one who was last known to hold it — recorded when it
             // was learned rather than looked up now, because by this tick they are dead and no
             // longer in any list the scan can reach.
-            world.Narrate(Said(technique.LostLine, world.LastKnowerOf(id)));
+            world.Narrate(Said(technique.LostLine, world.LastKnowerOf(id)), LogCategory.Discovery);
         }
     }
 

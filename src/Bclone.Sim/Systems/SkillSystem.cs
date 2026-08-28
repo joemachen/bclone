@@ -1,5 +1,6 @@
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
+using Bclone.Sim.Logging;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Systems;
@@ -303,6 +304,6 @@ public sealed class SkillSystem : ISimSystem
             System.Globalization.CultureInfo.InvariantCulture,
             skill.MasteryLine,
             villager.Name,
-            years));
+            years), LogCategory.Discovery);
     }
 }

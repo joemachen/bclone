@@ -1,5 +1,6 @@
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
+using Bclone.Sim.Logging;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Systems;
@@ -96,7 +97,7 @@ public sealed class HearthSystem : ISimSystem
             {
                 world.Narrate(
                     $"The {household.Name} household put its last firewood on the fire " +
-                    $"— {world.Clock.SeasonAndYear()}.");
+                    $"— {world.Clock.SeasonAndYear()}.", LogCategory.Warning);
             }
         }
     }
@@ -167,7 +168,7 @@ public sealed class HearthSystem : ISimSystem
             {
                 world.Narrate(
                     $"{villager.Name} is dangerously cold and is going in to get warm " +
-                    $"— {world.Clock.SeasonAndYear()}.");
+                    $"— {world.Clock.SeasonAndYear()}.", LogCategory.Warning);
             }
         }
     }

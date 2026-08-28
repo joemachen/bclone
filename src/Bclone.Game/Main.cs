@@ -1963,9 +1963,9 @@ public partial class Main : Control
 
         for (int i = _renderedLogEntries; i < entries.Count; i++)
         {
-            if (entries[i].Subsystem == "life")
+            if (Shown(entries[i]))
             {
-                _villageLog.AppendText(LogMarkup(entries[i].Message));
+                _villageLog.AppendText(LogMarkup(entries[i]));
             }
         }
 
@@ -1977,13 +1977,17 @@ public partial class Main : Control
             _villageLog.AppendText("(earlier entries trimmed)\n");
             for (int i = entries.Count - MaxLogLines; i < entries.Count; i++)
             {
-                if (i >= 0 && entries[i].Subsystem == "life")
+                if (i >= 0 && Shown(entries[i]))
                 {
-                    _villageLog.AppendText(LogMarkup(entries[i].Message));
+                    _villageLog.AppendText(LogMarkup(entries[i]));
                 }
             }
         }
     }
+
+    /// <summary>Whether this entry belongs in the village log as the player has set it.</summary>
+    private bool Shown(LogEntry entry) =>
+        entry.Subsystem == "life" && _shownCategories.Contains(entry.Category);
 
     /// <summary>One village-log line, escaped, and coloured if it was a moment.</summary>
     /// <remarks>
@@ -2005,13 +2009,22 @@ public partial class Main : Control
     /// <b>This is the foothold, not that feature.</b>
     /// </para>
     /// </remarks>
-    private string LogMarkup(string message)
+    private string LogMarkup(LogEntry entry)
     {
-        string safe = message.Replace("[", "[lb]", StringComparison.Ordinal);
+        string safe = entry.Message.Replace("[", "[lb]", StringComparison.Ordinal);
 
-        return _celebrated.Contains(message)
-            ? $"[color=#e8c46a]{safe}[/color]\n"
-            : $"{safe}\n";
+        // ⭐ THE CATEGORY DECIDES THE COLOUR NOW, AND `_celebrated` ONLY DECIDES EMPHASIS.
+        // D241 picked celebrations out by identity because the sim had no category to offer; it
+        // has one now, so the colour comes from the sim's own answer and the moment-matching is
+        // left doing the one thing it is still better at — **saying which discovery was big
+        // enough to interrupt for.** A technique worked out is gold; the one that stopped the
+        // game to tell you is gold and bold.
+        Color colour = ColourOf(entry.Category);
+        string tinted = $"[color=#{colour.ToRgba32():x8}]{safe}[/color]";
+
+        return _celebrated.Contains(entry.Message)
+            ? $"[b]{tinted}[/b]\n"
+            : $"{tinted}\n";
     }
 
     private static int LivingHouseholds(SimWorld world)
@@ -2428,6 +2441,110 @@ public partial class Main : Control
         // around it shrank — which is exactly the panel Joe named first.
         _villageLog.AddThemeFontSizeOverride("normal_font_size", RowSize);
         body.AddChild(_villageLog);
+
+        // ⭐⭐ ONE SWITCH PER CATEGORY (Joe, 2026-08-27: *"a filter for each category… optimize
+        // noise to signal ratio"*). **Under the log rather than above it**, because the log is
+        // what the panel is for and a row of controls above it pushes the newest line down.
+        //
+        // ⚠️ **`Ordinary` gets a switch too, and it is the one worth having.** It is the bulk of
+        // the log by a wide margin, so *"show me only what I chose to care about"* is exactly
+        // "turn Ordinary off" — a filter set that could not mute the majority would not change
+        // the ratio it exists to change.
+        var filters = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        filters.AddThemeConstantOverride("h_separation", 6);
+        filters.AddThemeConstantOverride("v_separation", 2);
+
+        foreach (LogCategory category in System.Enum.GetValues<LogCategory>())
+        {
+            _shownCategories.Add(category);
+
+            var toggle = new CheckBox
+            {
+                Text = CategoryName(category),
+                ButtonPressed = true,
+                Flat = true,
+            };
+
+            toggle.AddThemeFontSizeOverride("font_size", RowSize);
+
+            // ⭐ THE SWITCH IS THE COLOUR, so the filter row doubles as the legend. A key
+            // somewhere else is a second thing to keep in step with the first.
+            toggle.AddThemeColorOverride("font_color", ColourOf(category));
+            toggle.AddThemeColorOverride("font_pressed_color", ColourOf(category));
+            toggle.AddThemeColorOverride("font_hover_color", ColourOf(category));
+
+            LogCategory captured = category;
+            toggle.Toggled += on =>
+            {
+                if (on)
+                {
+                    _shownCategories.Add(captured);
+                }
+                else
+                {
+                    _shownCategories.Remove(captured);
+                }
+
+                RedrawTheLog();
+            };
+
+            filters.AddChild(toggle);
+        }
+
+        body.AddChild(filters);
+    }
+
+    /// <summary>Which categories the player is currently letting through.</summary>
+    private readonly HashSet<LogCategory> _shownCategories = new();
+
+    /// <summary>What a category is called on the switch that filters it.</summary>
+    /// <remarks>
+    /// <b>Named for the player, not for the enum.</b> <c>Life</c> is the births and the pairings
+    /// and reads as nothing at all on a switch; <em>"Born"</em> says what it lets through.
+    /// </remarks>
+    private static string CategoryName(LogCategory category) => category switch
+    {
+        LogCategory.Ordinary => "Everyday",
+        LogCategory.Death => "Deaths",
+        LogCategory.Life => "Born",
+        LogCategory.Discovery => "Learned",
+        LogCategory.Warning => "Warnings",
+        LogCategory.Building => "Building",
+        LogCategory.Season => "Seasons",
+        _ => category.ToString(),
+    };
+
+    /// <summary>What a category reads as in the log.</summary>
+    /// <remarks>
+    /// <b>Joe's shape:</b> <i>"deaths, important events in colors, general info in white."</i> So
+    /// <c>Ordinary</c> is the parchment white everything used to be, and every other colour has
+    /// to earn its place against it — <b>a log where everything is coloured is a log where
+    /// nothing is.</b> Deaths take the red the food chip already uses and discoveries the gold
+    /// the library gift used, so a colour means the same thing in two places.
+    /// </remarks>
+    private static Color ColourOf(LogCategory category) => category switch
+    {
+        LogCategory.Death => new Color(0.85f, 0.40f, 0.40f),
+        LogCategory.Life => new Color(0.55f, 0.80f, 0.55f),
+        LogCategory.Discovery => new Color(0.91f, 0.77f, 0.41f),
+        LogCategory.Warning => new Color(1f, 0.78f, 0.35f),
+        LogCategory.Building => new Color(0.62f, 0.72f, 0.85f),
+        LogCategory.Season => new Color(0.60f, 0.62f, 0.60f),
+        _ => new Color(0.88f, 0.88f, 0.86f),
+    };
+
+    /// <summary>Rebuild the whole log — the one thing a filter change has to do.</summary>
+    /// <remarks>
+    /// <b>⚠️ A filter change cannot be incremental</b>, which is the one place `AppendNewLogLines`'
+    /// cursor has to be given up: turning a category back on has to bring back lines that were
+    /// never drawn. Resetting the cursor and clearing is the whole of it, and it happens on a
+    /// click rather than per frame.
+    /// </remarks>
+    private void RedrawTheLog()
+    {
+        _villageLog.Clear();
+        _renderedLogEntries = 0;
+        AppendNewLogLines();
     }
 
     /// <summary>Everyone alive, and what they are doing about it.</summary>

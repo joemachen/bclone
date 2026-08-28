@@ -15,7 +15,12 @@ public interface ISimLogger
     LogLevel MinimumLevel { get; }
 
     /// <summary>Record an entry. Implementations must not throw.</summary>
-    void Log(ulong tick, LogLevel level, string subsystem, string message);
+    void Log(
+        ulong tick,
+        LogLevel level,
+        string subsystem,
+        string message,
+        LogCategory category = LogCategory.Ordinary);
 }
 
 /// <summary>A sink that discards everything. Useful for benchmarks and for
@@ -28,7 +33,12 @@ public sealed class NullSimLogger : ISimLogger
 
     public LogLevel MinimumLevel => LogLevel.Error;
 
-    public void Log(ulong tick, LogLevel level, string subsystem, string message)
+    public void Log(
+        ulong tick,
+        LogLevel level,
+        string subsystem,
+        string message,
+        LogCategory category = LogCategory.Ordinary)
     {
         // Intentionally empty — this is the one place discarding is the point.
     }

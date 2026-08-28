@@ -1,4 +1,5 @@
 using Bclone.Sim.Core;
+using Bclone.Sim.Logging;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Systems;
@@ -78,14 +79,14 @@ public sealed class ClockSystem : ISimSystem
         // across a life is a receipt; "foraged 12 times" is a season.
         if (foraged > 0)
         {
-            world.Narrate(BuildForagingLine(world, previous, foraged, stored));
+            world.Narrate(BuildForagingLine(world, previous, foraged, stored), LogCategory.Season);
         }
 
         // Winter is the one that matters, so it gets its own line with the stores in
         // it — that number is the whole story of the winter about to happen.
         if (current.IsWinter)
         {
-            world.Narrate($"Winter came to Year {current.Year}. Foraging stops. {stored} food stored.");
+            world.Narrate($"Winter came to Year {current.Year}. Foraging stops. {stored} food stored.", LogCategory.Season);
             return;
         }
 
@@ -107,13 +108,13 @@ public sealed class ClockSystem : ISimSystem
             Villager only = world.Villagers[0];
             world.Narrate(
                 $"{only.Name} survived winter {only.WintersSurvived} " +
-                $"({stored} food left). {current.Season} of Year {current.Year} begins.");
+                $"({stored} food left). {current.Season} of Year {current.Year} begins.", LogCategory.Season);
         }
         else
         {
             world.Narrate(
                 $"The village came through winter with {stored} food left — " +
-                $"{world.Population} alive. {current.Season} of Year {current.Year} begins.");
+                $"{world.Population} alive. {current.Season} of Year {current.Year} begins.", LogCategory.Season);
         }
     }
 

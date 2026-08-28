@@ -18,14 +18,19 @@ public sealed class InMemoryLogSink : ISimLogger
     /// <summary>Entries in emission order.</summary>
     public IReadOnlyList<LogEntry> Entries => _entries;
 
-    public void Log(ulong tick, LogLevel level, string subsystem, string message)
+    public void Log(
+        ulong tick,
+        LogLevel level,
+        string subsystem,
+        string message,
+        LogCategory category = LogCategory.Ordinary)
     {
         if (level < MinimumLevel)
         {
             return;
         }
 
-        _entries.Add(new LogEntry(tick, level, subsystem, message));
+        _entries.Add(new LogEntry(tick, level, subsystem, message, category));
     }
 
     public void Clear() => _entries.Clear();

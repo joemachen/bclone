@@ -1,5 +1,6 @@
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
+using Bclone.Sim.Logging;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Systems;
@@ -111,7 +112,7 @@ public sealed class MortalitySystem : ISimSystem
             _ => $"{villager.Name} died.",
         };
 
-        world.Narrate(epitaph);
+        world.Narrate(epitaph, LogCategory.Death);
     }
 
     /// <summary>Where somebody was when the cold finished them (D45).</summary>

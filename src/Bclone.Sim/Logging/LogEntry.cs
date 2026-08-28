@@ -16,12 +16,23 @@ public sealed record LogEntry(
     ulong Tick,
     LogLevel Level,
     string Subsystem,
-    string Message)
+    string Message,
+    LogCategory Category = LogCategory.Ordinary)
 {
     /// <summary>
     /// Stable, human-readable rendering. Deliberately deterministic — no
     /// wall-clock timestamp, because the tick <em>is</em> the timestamp.
     /// </summary>
+    /// <remarks>
+    /// <b>⭐ The category appears only when there IS one</b>, so the tens of thousands of debug
+    /// lines in an audit trail are byte-identical to what they were and the greps this project
+    /// lives by keep working. A categorised line gains one bracketed word, which is worth having
+    /// when reading a played log — <c>grep "\[death\]"</c> is a better question than
+    /// <c>grep -i died</c>.
+    /// </remarks>
     public override string ToString() =>
-        $"[t{Tick,8}] {Level.ToString().ToUpperInvariant(),-5} {Subsystem,-8} {Message}";
+        Category == LogCategory.Ordinary
+            ? $"[t{Tick,8}] {Level.ToString().ToUpperInvariant(),-5} {Subsystem,-8} {Message}"
+            : $"[t{Tick,8}] {Level.ToString().ToUpperInvariant(),-5} {Subsystem,-8} "
+                + $"[{Category.ToString().ToLowerInvariant()}] {Message}";
 }

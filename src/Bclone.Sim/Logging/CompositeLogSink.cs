@@ -46,7 +46,12 @@ public sealed class CompositeLogSink : ISimLogger, IDisposable
 
     public LogLevel MinimumLevel { get; }
 
-    public void Log(ulong tick, LogLevel level, string subsystem, string message)
+    public void Log(
+        ulong tick,
+        LogLevel level,
+        string subsystem,
+        string message,
+        LogCategory category = LogCategory.Ordinary)
     {
         if (_disposed)
         {
@@ -55,7 +60,7 @@ public sealed class CompositeLogSink : ISimLogger, IDisposable
 
         for (int i = 0; i < _sinks.Length; i++)
         {
-            _sinks[i].Log(tick, level, subsystem, message);
+            _sinks[i].Log(tick, level, subsystem, message, category);
         }
     }
 

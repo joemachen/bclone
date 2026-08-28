@@ -1,5 +1,6 @@
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
+using Bclone.Sim.Logging;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Systems;
@@ -145,7 +146,7 @@ public sealed class HouseholdSystem : ISimSystem
                 standingEmpty.HomePosition = null;
                 world.Narrate(
                     $"The {household.Name} household moved into the empty house at "
-                    + $"{household.HomePosition} — {world.Clock.SeasonAndYear()}.");
+                    + $"{household.HomePosition} — {world.Clock.SeasonAndYear()}.", LogCategory.Life);
                 continue;
             }
 
@@ -176,7 +177,7 @@ public sealed class HouseholdSystem : ISimSystem
                     world.NeedsMoreResidentialLand = true;
                     world.Narrate(
                         $"The {household.Name} household has nowhere to build — "
-                        + "paint some land for houses.");
+                        + "paint some land for houses.", LogCategory.Warning);
                 }
             }
         }
@@ -250,7 +251,7 @@ public sealed class HouseholdSystem : ISimSystem
                     world.Narrate(
                         $"{seeker.Name} and {partner.Name} want a home of their own and there is " +
                         $"nowhere to put one — {noRoom.Message}. The village needs somewhere new " +
-                        $"to build. {world.Clock.SeasonAndYear()}.");
+                        $"to build. {world.Clock.SeasonAndYear()}.", LogCategory.Warning);
                 }
 
                 continue;
@@ -378,7 +379,7 @@ public sealed class HouseholdSystem : ISimSystem
               $"{dowry} food between them, and a house being raised for them."
             : $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
               $"took over the empty {household.Name} house - {world.Clock.SeasonAndYear()}. " +
-              $"{dowry} food between them, and no trees felled for it.");
+              $"{dowry} food between them, and no trees felled for it.", LogCategory.Life);
     }
 
     /// <summary>
@@ -478,7 +479,7 @@ public sealed class HouseholdSystem : ISimSystem
 
         world.Narrate(
             $"{name} was born to the {household.Name} household — {world.Clock.SeasonAndYear()}. " +
-            $"The village is now {world.Population}.");
+            $"The village is now {world.Population}.", LogCategory.Life);
     }
 
     /// <summary>

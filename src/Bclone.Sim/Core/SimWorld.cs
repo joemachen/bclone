@@ -73,10 +73,14 @@ public sealed class SimWorld
     /// thing the audit trail never knew happened, and this project has spent whole sessions inside
     /// that log.
     /// </remarks>
-    internal void RaiseMoment(string title, string body, bool stops = true)
+    internal void RaiseMoment(
+        string title,
+        string body,
+        bool stops = true,
+        LogCategory category = LogCategory.Discovery)
     {
         Moments.Add(new Moment { Title = title, Body = body, Stops = stops });
-        Narrate(body);
+        Narrate(body, category);
     }
 
     /// <summary>The libraries standing in the village, and what is written in them.</summary>
@@ -231,7 +235,7 @@ public sealed class SimWorld
         if (library.Records.Count == 0)
         {
             Narrate($"{Capitalised(library.Name)} was pulled down. Nothing was written in it. "
-                + $"{Clock.SeasonAndYear()}.");
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
             return;
         }
 
@@ -247,7 +251,7 @@ public sealed class SimWorld
         }
 
         Narrate($"{Capitalised(library.Name)} was pulled down, and with it the village's record "
-            + $"of {lost}. {Clock.SeasonAndYear()}.");
+            + $"of {lost}. {Clock.SeasonAndYear()}.", LogCategory.Discovery);
     }
 
     /// <summary>Whether a technique is written down anywhere that still stands.</summary>
@@ -895,13 +899,13 @@ public sealed class SimWorld
             if (SomethingStandsAt(tile))
             {
                 Narrate($"The ground at {tile} was cleared, but something else stands there "
-                    + $"now, so {name} was never laid out. {Clock.SeasonAndYear()}.");
+                    + $"now, so {name} was never laid out. {Clock.SeasonAndYear()}.", LogCategory.Warning);
                 return;
             }
 
             RaiseFreeBuilding(kind, tile, name);
             Narrate($"{Capitalised(name)} was laid out on the ground the village just "
-                + $"cleared. {Clock.SeasonAndYear()}.");
+                + $"cleared. {Clock.SeasonAndYear()}.", LogCategory.Building);
             return;
         }
     }
@@ -2634,7 +2638,7 @@ public sealed class SimWorld
 
             if (_saidKnowledgeIsAtRisk.Add((villager.Id, skill.Id)))
             {
-                Narrate(KnowledgeAtRiskNote(villager)!);
+                Narrate(KnowledgeAtRiskNote(villager)!, LogCategory.Warning);
             }
         }
     }
@@ -2720,7 +2724,7 @@ public sealed class SimWorld
 
             if (_saidSiteIsWaiting.Add(workplace.Id))
             {
-                Narrate($"{note} {Clock.SeasonAndYear()}.");
+                Narrate($"{note} {Clock.SeasonAndYear()}.", LogCategory.Warning);
             }
         }
     }
@@ -2767,7 +2771,7 @@ public sealed class SimWorld
             + "so it is being left "
             + "on the ground where it falls — and goods on the ground feed nobody and build "
             + $"nothing. A stockpile costs only the cleared ground it stands on. "
-            + $"{Clock.SeasonAndYear()}.");
+            + $"{Clock.SeasonAndYear()}.", LogCategory.Warning);
     }
 
     /// <summary>Take up to <paramref name="amount"/> off a heap; it goes when it is empty.</summary>
@@ -3994,7 +3998,7 @@ public sealed class SimWorld
             forHouseholdId: 0,
             movingFrom: from);
 
-        Narrate($"{NameOfWhatStandsAt(from)} is being moved to {to}. {Clock.SeasonAndYear()}.");
+        Narrate($"{NameOfWhatStandsAt(from)} is being moved to {to}. {Clock.SeasonAndYear()}.", LogCategory.Building);
         return verdict;
     }
 
@@ -4132,7 +4136,7 @@ public sealed class SimWorld
             },
         });
 
-        Narrate($"{Capitalised(name)} is to be pulled down. {Clock.SeasonAndYear()}.");
+        Narrate($"{Capitalised(name)} is to be pulled down. {Clock.SeasonAndYear()}.", LogCategory.Building);
         return PlacementVerdict.Fine;
     }
 
@@ -4173,7 +4177,7 @@ public sealed class SimWorld
 
         RetireWorkplace(site);
         Narrate($"{Capitalised(site.Construction.Name)} is to stand after all. "
-            + $"{Clock.SeasonAndYear()}.");
+            + $"{Clock.SeasonAndYear()}.", LogCategory.Building);
         return true;
     }
 
@@ -4188,7 +4192,7 @@ public sealed class SimWorld
                 tile, RefundFor(BuildingsCatalog.RecipeOf(BuildingKind.Home)));
 
             Narrate($"The {family.Name} household's house at {tile} came down — "
-                + $"{recovered} went back to store. {Clock.SeasonAndYear()}.");
+                + $"{recovered} went back to store. {Clock.SeasonAndYear()}.", LogCategory.Building);
             return;
         }
 
@@ -4622,7 +4626,7 @@ public sealed class SimWorld
             AFreeLibraryIsOwed = false;
             recipe = new BuildingRecipe(recipe.WorkTicks);
             Narrate("The timber and stone for the library were gathered by the village. "
-                + $"{Clock.SeasonAndYear()}.");
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
         string name = NameFor(kind);
@@ -4662,7 +4666,7 @@ public sealed class SimWorld
             {
                 RaiseFreeBuilding(kind, position, name);
                 Narrate($"{Capitalised(name)} was laid out on cleared ground. " +
-                    $"{Clock.SeasonAndYear()}.");
+                    $"{Clock.SeasonAndYear()}.", LogCategory.Building);
                 return verdict;
             }
 
@@ -4673,7 +4677,7 @@ public sealed class SimWorld
             }
 
             Narrate($"{Capitalised(name)} is marked out, and the ground is being cleared for "
-                + $"it first. {Clock.SeasonAndYear()}.");
+                + $"it first. {Clock.SeasonAndYear()}.", LogCategory.Building);
             return verdict;
         }
 
@@ -5169,7 +5173,7 @@ public sealed class SimWorld
         {
             Narrate($"{Capitalised(name)} is marked out, but nobody in the village builds — "
                 + $"a builder's hut costs nothing but the ground it stands on, and until one "
-                + $"is up and staffed, nothing will be raised. {Clock.SeasonAndYear()}.");
+                + $"is up and staffed, nothing will be raised. {Clock.SeasonAndYear()}.", LogCategory.Warning);
         }
     }
 
@@ -5229,7 +5233,7 @@ public sealed class SimWorld
         Narrate(held > 0
             ? $"{building.Name} was pulled down — {recovered} recovered, and the {held} " +
               $"goods inside it were lost. {Clock.SeasonAndYear()}."
-            : $"{building.Name} was pulled down — {recovered} recovered. {Clock.SeasonAndYear()}.");
+            : $"{building.Name} was pulled down — {recovered} recovered. {Clock.SeasonAndYear()}.", LogCategory.Building);
     }
 
     /// <summary>
@@ -5299,7 +5303,7 @@ public sealed class SimWorld
         Narrate(back.Count > 0
             ? $"{Capitalised(name)} was pulled down — {recovered} recovered. "
                 + $"{Clock.SeasonAndYear()}."
-            : $"{Capitalised(name)} was pulled down. {Clock.SeasonAndYear()}.");
+            : $"{Capitalised(name)} was pulled down. {Clock.SeasonAndYear()}.", LogCategory.Building);
     }
 
     /// <summary>What pulling a building down hands back — a share of every material (D213).</summary>
@@ -5385,7 +5389,7 @@ public sealed class SimWorld
         string recovered = ReturnToStore(site.Position, back);
 
         Narrate($"{site.Construction.Name} was abandoned before it was built — " +
-            $"{recovered} went back to store. {Clock.SeasonAndYear()}.");
+            $"{recovered} went back to store. {Clock.SeasonAndYear()}.", LogCategory.Building);
     }
 
     /// <summary>Turn a finished site into the building it was always going to be.</summary>
@@ -5417,11 +5421,11 @@ public sealed class SimWorld
                 // the crew are still working, and a site that then raised a fresh building would
                 // hand them a free one — a phantom nobody paid for.
                 Narrate($"{plan.Name} was being moved, but there was nothing left to move. "
-                    + $"{Clock.SeasonAndYear()}.");
+                    + $"{Clock.SeasonAndYear()}.", LogCategory.Warning);
                 return;
             }
 
-            Narrate($"{plan.Name} finished moving. {Clock.SeasonAndYear()}.");
+            Narrate($"{plan.Name} finished moving. {Clock.SeasonAndYear()}.", LogCategory.Building);
             return;
         }
 
@@ -5440,7 +5444,7 @@ public sealed class SimWorld
                     // house is being raised, and an empty house is a house (HouseholdSystem
                     // hands it to the next family that needs one).
                     Narrate($"The house at {site.Position} was finished with nobody left to "
-                        + $"live in it. {Clock.SeasonAndYear()}.");
+                        + $"live in it. {Clock.SeasonAndYear()}.", LogCategory.Warning);
                     break;
                 }
 
@@ -5458,7 +5462,7 @@ public sealed class SimWorld
                 }
 
                 Narrate($"The {family.Name} household moved into the house they had raised at "
-                    + $"{site.Position} — {Clock.SeasonAndYear()}.");
+                    + $"{site.Position} — {Clock.SeasonAndYear()}.", LogCategory.Life);
                 break;
 
             // ⭐⭐ AND EVERYTHING ELSE IS THE ROW (`buildings-catalog.md §2`). This was six more
@@ -5486,7 +5490,7 @@ public sealed class SimWorld
 
         RetireWorkplace(site);
 
-        Narrate($"{plan.Name} was finished. {Clock.SeasonAndYear()}.");
+        Narrate($"{plan.Name} was finished. {Clock.SeasonAndYear()}.", LogCategory.Building);
     }
 
     /// <summary>Put a store building into the world, with the capacity its kind derives.</summary>
@@ -5578,7 +5582,7 @@ public sealed class SimWorld
             });
 
             Narrate($"{Capitalised(name)} stands, with {row.Shelves} shelves waiting. "
-                + $"{Clock.SeasonAndYear()}.");
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
         if (BuildingsCatalog.EmployedBy(kind) is not JobKind trade)
@@ -5731,7 +5735,7 @@ public sealed class SimWorld
         if (spilled > 0)
         {
             Narrate($"{Capitalised(workplace.Name)} came down with {spilled} still in it — "
-                + $"it is on the ground where it stood. {Clock.SeasonAndYear()}.");
+                + $"it is on the ground where it stood. {Clock.SeasonAndYear()}.", LogCategory.Building);
         }
 
         int freed = Zones.ReleaseWorkGround(workplace.Id);
@@ -6192,7 +6196,7 @@ public sealed class SimWorld
         workplace.StaffingOverride = places;
 
         Narrate($"{workplace.Name} is to be worked by {places} " +
-            $"{(places == 1 ? "person" : "people")} from now on. {Clock.SeasonAndYear()}.");
+            $"{(places == 1 ? "person" : "people")} from now on. {Clock.SeasonAndYear()}.", LogCategory.Building);
     }
 
     public Workplace? FindWorkplace(int id)
@@ -7361,13 +7365,13 @@ public sealed class SimWorld
 
         if (world.Villagers.Count == 1)
         {
-            world.Narrate($"{world.Villager.Name} begins. {world.Clock.SeasonAndYear()}, no food stored.");
+            world.Narrate($"{world.Villager.Name} begins. {world.Clock.SeasonAndYear()}, no food stored.", LogCategory.Life);
         }
         else
         {
             world.Narrate(
                 $"{world.Villagers.Count} exiles arrive in {world.Households.Count} households. " +
-                $"{world.Clock.SeasonAndYear()}, no food stored.");
+                $"{world.Clock.SeasonAndYear()}, no food stored.", LogCategory.Life);
         }
 
         return world;
@@ -7383,7 +7387,20 @@ public sealed class SimWorld
     /// artifact. Keep the wording plain and past-tense; this is the legibility
     /// deliverable, and it should read like a life rather than a changelog.
     /// </remarks>
-    public void Narrate(string text) => Log(LogLevel.Info, "life", text);
+    /// <remarks>
+    /// <b>⭐ The category is decided HERE, by the system that knows what happened</b> (Joe,
+    /// 2026-08-27, on the village log needing colour and filters: <i>"deaths, important events in
+    /// colors, general info in white. optimize noise to signal ratio."</i>). The alternative was
+    /// the view matching words in the sentence — a second place that knows what a death looks
+    /// like, wrong the first time somebody rephrases an epitaph.
+    /// <para>
+    /// <b>It defaults to <see cref="LogCategory.Ordinary"/> and most callers leave it there</b>,
+    /// which is correct rather than lazy: most of what a village says is ordinary, and a category
+    /// on everything is a taxonomy nobody filters by.
+    /// </para>
+    /// </remarks>
+    public void Narrate(string text, LogCategory category = LogCategory.Ordinary) =>
+        Log(LogLevel.Info, "life", text, category);
 
     /// <summary>
     /// Log an entry stamped with the current tick.
@@ -7392,8 +7409,12 @@ public sealed class SimWorld
     /// Routing all sim logging through here is what guarantees METHODOLOGY.md §4's
     /// tick-stamping requirement — there is no way to emit an unstamped entry.
     /// </remarks>
-    public void Log(LogLevel level, string subsystem, string message) =>
-        Logger.Log(Tick, level, subsystem, message);
+    public void Log(
+        LogLevel level,
+        string subsystem,
+        string message,
+        LogCategory category = LogCategory.Ordinary) =>
+        Logger.Log(Tick, level, subsystem, message, category);
 
     /// <summary>
     /// Whether anything is listening at this level.

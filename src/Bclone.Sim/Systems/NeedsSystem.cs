@@ -55,7 +55,7 @@ public sealed class NeedsSystem : ISimSystem
             if (!wasAtMax && world.HouseholdOf(villager).Stockpile.Food < BehaviorSystem.MealCostFor(villager, config))
             {
                 world.Narrate(
-                    $"{villager.Name} has nothing left to eat — {world.Clock.SeasonAndYear()}.");
+                    $"{villager.Name} has nothing left to eat — {world.Clock.SeasonAndYear()}.", LogCategory.Death);
             }
         }
         else
