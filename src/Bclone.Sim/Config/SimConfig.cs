@@ -1650,7 +1650,21 @@ public sealed record SimConfig
         new BuildingRow
         {
             Id = (int)BuildingKind.GathererHut,
-            Name = "gatherer's hut",
+
+            // ⭐ "forager's hut", NOT "gatherer's hut" (Joe, 2026-08-27, from play: *"forager hut
+            // workers still referred to as 'gatherers' in villager inspector window"*).
+            //
+            // **D188 settled the vocabulary — *"forager and marketer win"* — and settled it for
+            // the TRADE only.** `ProfessionName` and `TradeOf` were made to agree and the build
+            // button was relabelled, but the BUILDING kept the old word, so the roster said
+            // *"Hattie, 39 — forager"* two lines above *"Work: gatherer's hut 1"*. One
+            // vocabulary in two registers is fine; two vocabularies is what D188 ruled out, and
+            // half the rename is how it survived.
+            //
+            // ⛔ **The enum stays `GathererHut` and so do the config keys.** They are identifiers,
+            // not words anybody reads, and renaming them would rewrite `data/sim.config.json` for
+            // no player-visible gain — the catalogue row is the one place a building is named.
+            Name = "forager's hut",
             Materials = new[]
             {
                 new MaterialCost(World.Goods.Logs, GathererHutLogs),
@@ -3015,7 +3029,7 @@ public sealed record SimConfig
             {
                 throw new SimConfigException(
                     $"buildings[{i}] (id {row.Id}, {row.Name}) is a workplace with no seats. Only "
-                    + "the gatherer's hut, the forester's hut and the builder's hut have them "
+                    + "the forager's hut, the forester's hut and the builder's hut have them "
                     + "derived; every other workplace must state how many work there.");
             }
 

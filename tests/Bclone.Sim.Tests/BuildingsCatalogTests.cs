@@ -82,13 +82,58 @@ public sealed class BuildingsCatalogTests
         Assert.Equal("market", world.BuildingsCatalog.NameOf(BuildingKind.Market));
         Assert.Equal("woodcutter's hut", world.BuildingsCatalog.NameOf(BuildingKind.WoodcutterHut));
         Assert.Equal("builder's hut", world.BuildingsCatalog.NameOf(BuildingKind.BuilderHut));
-        Assert.Equal("gatherer's hut", world.BuildingsCatalog.NameOf(BuildingKind.GathererHut));
+        // ⭐ "forager's hut", NOT "gatherer's hut" (Joe, 2026-08-27, from play). D188 settled
+        // *"forager and marketer win"* for the TRADE and the building kept the old word, so the
+        // roster read "Hattie, 39 — forager" two lines above "Work: gatherer's hut 1". ⚠️ The
+        // enum is still `GathererHut` and the config keys still say `gatherer_hut_*`: those are
+        // identifiers, not words anybody reads.
+        Assert.Equal("forager's hut", world.BuildingsCatalog.NameOf(BuildingKind.GathererHut));
         Assert.Equal("forester's hut", world.BuildingsCatalog.NameOf(BuildingKind.ForesterHut));
         Assert.Equal("farmhouse", world.BuildingsCatalog.NameOf(BuildingKind.Farmhouse));
 
         // ⚠️ "stockpile", not "storage pile" (Joe, D217) — and it shares a word with the
         // `Stockpile` class without being the same thing.
         Assert.Equal("stockpile", world.BuildingsCatalog.NameOf(BuildingKind.Pile));
+    }
+
+    /// <summary>⛔ A hut named after its trade uses the trade's own word for it.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The invariant that actually broke, and nothing was watching it</b> (Joe, 2026-08-27:
+    /// <i>"forager hut workers still referred to as 'gatherers' in villager inspector
+    /// window"</i>). D188 found two vocabularies for one job — <c>ProfessionName</c> saying
+    /// <em>Gatherer</em> while <c>TradeOf</c> said <em>forager</em> — and settled it:
+    /// <b>"forager and marketer win."</b> But it settled it for the <b>trade</b>. The
+    /// <b>building</b> kept the old word for another four days short of a year, so the roster
+    /// read <i>"Hattie, 39 — forager"</i> two lines above <i>"Work: gatherer's hut 1"</i>.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Half a rename is how a settled decision comes undone.</b> The pair below proves the
+    /// catalogue holds a word and that the code uses it; neither could notice that the word in
+    /// one catalogue disagreed with the word in another.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Only the huts that are named after their trade</b>, which is the honest scope — a
+    /// farmer works at a <em>farmhouse</em> and a forager also fills a <em>granary</em>, so this
+    /// is not a rule about workplaces in general and pretending otherwise would make it a
+    /// nuisance the next person deletes.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(BuildingKind.GathererHut, JobKind.Forager)]
+    [InlineData(BuildingKind.ForesterHut, JobKind.Forester)]
+    [InlineData(BuildingKind.WoodcutterHut, JobKind.Woodcutter)]
+    [InlineData(BuildingKind.BuilderHut, JobKind.Builder)]
+    public void AHutNamedAfterItsTradeUsesTheTradesWord(BuildingKind kind, JobKind trade)
+    {
+        SimWorld world = World(VillageFixtures.Village);
+
+        string hut = world.BuildingsCatalog.NameOf(kind);
+        string worker = world.JobsCatalog.NameOf(trade);
+
+        _output.WriteLine($"{trade}: the trade is \"{worker}\" and the hut is \"{hut}\"");
+
+        Assert.Contains(worker, hut, System.StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

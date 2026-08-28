@@ -1288,9 +1288,15 @@ public partial class Main : Control
             int share = ring <= 0 ? 0 : wooded * 100 / ring;
 
             lines.Add($"Ground: {wooded} wooded tiles of {ring} within {workplace.GatheringRadius}.");
+            // ⭐ THE WORKERS ARE NAMED BY THE JOBS CATALOGUE, NOT BY A WORD TYPED HERE
+            // (Joe, 2026-08-27: *"forager hut workers still referred to as 'gatherers'"*).
+            // D188 made one place name a trade and this sentence was not asking it — which is
+            // precisely D108's bug, where a naming path ignored the right answer sitting one
+            // call away. **Nothing in the suite can guard a string in the view** (there is no
+            // view test project at all), so the only real defence is not to hold the word here.
             lines.Add(wooded == 0
-                ? "Nothing grows here any more — its gatherers bring back nothing at all. "
-                    + "Plant it, or move the work."
+                ? $"Nothing grows here any more — its {world.JobsCatalog.PluralOf(workplace.Kind)} "
+                    + "bring back nothing at all. Plant it, or move the work."
                 : $"A trip brings back {world.GatherYieldAt(workplace)} food — {share}% of what "
                     + "this hut would yield in full woodland.");
         }
@@ -1467,8 +1473,12 @@ public partial class Main : Control
             // cleared patch needs to know their wood is on its way and not yet theirs; that is
             // D125's whole argument for making a sapling its own ground rather than a hidden
             // timer, and the inspector was the one place still not making it.
+            // ⭐ And the hut is named by the buildings catalogue for the same reason as the
+            // workers one screen up: this said *"a gatherer's ring"* while the build button,
+            // the roster and the professions panel all said forager.
             Terrain.Sapling => "Young trees, not yet grown. Nothing to fell here yet, "
-                + "and a gatherer's ring counts it as bare.",
+                + $"and a {world.BuildingsCatalog.NameOf(BuildingKind.GathererHut)}'s ring "
+                + "counts it as bare.",
 
             // The field says which part of its year it is in, because that is the mechanic
             // (`specs/crops-and-orchards.md`) rather than a label on one.
