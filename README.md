@@ -16,7 +16,7 @@ A ground-up, generational village-builder / survival sim — a spiritual success
 
 ## Where it is
 
-**Phases 0 and 1 are merged to `main`.** Phase 2 — wood as fuel, goods that live in buildings, a generated valley, building placement, and seasons with teeth — is on `phase/2-wood-fuel-and-tools` and unmerged until its Definition of Done is met. `DESIGN.md` §6 has the detail.
+**Phases 0 through 4 are all on `main`.** Phase 2 brought wood as fuel, goods that live in buildings, a generated valley, building placement and seasons with teeth; Phase 3 brought proficiency, mastery and apprenticeship; Phase 4 brought techniques and the library. ⚠️ **Phase 4 is half built and was merged with three Definition-of-Done items unmet, on Joe's call** — its knowledge screen is unbuilt and its QA walk has never been walked. `DESIGN.md` §6 has the live detail and §7 has the reasoning.
 
 The game runs. A village founds itself, feeds itself, cuts timber, builds, has children, freezes if you let the woodpile fail, and dies out if you get it badly wrong — and every one of those outcomes can be traced back to a decision by clicking on the people it happened to.
 
@@ -40,7 +40,7 @@ src/Bclone.Game/      Godot view shell — NOT in bclone.sln, see below
 tests/                xUnit suite, including the P0 determinism test
 data/                 content and tunables (JSON, modder-editable)
 specs/                one spec per system, written before the code
-screenshots/          one per version (METHODOLOGY §5)
+screenshots/          the record of 2026-08-01 (the per-version rule was withdrawn, D160)
 ```
 
 ### ⚠️ `bclone.sln` does not contain the Godot project
@@ -81,4 +81,4 @@ Nothing in `src/Bclone.Game` can be unit-tested (D11), and as of D160 there is n
 
 ## Releases (from v1)
 
-Release automation lives in `.github/workflows/release.yml`. It is **tag-triggered** and has never run: there are no tags yet, `VERSION` is not wired into the build, and the Godot export preset is not committed. See `METHODOLOGY.md` → *Versioning & Releases* for what the first tag needs.
+Release automation lives in `.github/workflows/release.yml`. It is **tag-triggered** and has never run: there are no tags yet. ✅ The other two blockers are cleared — `VERSION` is read into every assembly by `Directory.Build.props` and printed beside the seed in-game, and `export_presets.cfg` is committed. See `METHODOLOGY.md` → *Versioning & Releases* for what the first tag needs.

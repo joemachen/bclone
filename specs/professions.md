@@ -2,7 +2,7 @@
 
 **Decisions:** **D107** (this document), and the ones it settles. Neighbours: D14, D29, D30,
 D43, D51, D62, D63, D64, D66, D84, D86, D87, D102–D106.
-**Status:** ⚠️ **Alignment document, agreed with Joe. Nothing here is built except where the
+**Status:** ⚠️ **Alignment document. STALE IN PLACES — corrected 2026-08-28.** The table below still calls the **Gatherer** "blocked" on a dependency that shipped: forage sites were retired in step C (D112–D130), the forager's hut is built, and the 7-tile fence came down in D120. §6.2 beside it *is* correctly struck through; §6.1 was missed. Nothing else here is built except where the
 table says so.**
 
 ---
@@ -135,7 +135,7 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 | **Builder** | builder's hut | — | raises buildings; later roads, bridges, fences | — | ✅ **hut built (D110)**. Free and instant; seats derived; a site is an errand, not a seat |
 | **Forester** | forester's hut | owned ground | logs → shed | 50 logs | ⚠️ job exists (D96 rename); hut, ground and worker-pricing built and waiting (D86, C3c) |
 | **Woodcutter** | woodcutter's hut | — | firewood → shed | 50 firewood | ✅ built. Local store new. |
-| **Gatherer** | gatherer's hut | forest nearby | food → granary | 100 food | ⚠️ job exists as map-placed forage sites. **Blocked — §6.1** |
+| **Forager** | forager's hut | forest nearby | food → granary | 100 food | ✅ **BUILT** (D112–D130). Forage sites retired; named "forager" since D188/D240. §6.1 below is spent |
 | **Fisherman** | fishing hut | **beside water** | food → granary | 100 food | ❌ new |
 | **Hunter** | hunter's lodge | **in forest** | food → granary; leather → shed | 50 + 50 | ❌ new |
 | **Tailor** | tailor's | — | clothing → shed | 50 clothing | ❌ new; `clothing.md` blocked on its input |
@@ -197,7 +197,14 @@ Wiring it up is the first real slice of this model, and it means:
 
 ## 6. What is blocked, and by what
 
-### 6.1 ⛔ The gatherer's hut waits for natural regrowth (Joe)
+### 6.1 ~~⛔ The gatherer's hut waits for natural regrowth (Joe)~~ — ✅ SPENT, annotated 2026-08-28
+
+> ✅ **BOTH REASONS ARE SPENT, AND THE SECTION IS KEPT FOR ITS REASONING RATHER THAN ITS VERDICT.**
+> Natural regrowth shipped, forage sites were retired in step C, the forager's hut is built and
+> staffed, and **the 7-tile anchor this section is built on came down in D120** — a home beyond it
+> is *"a family the village feeds less well, not one it refuses to house."* ⭐ **The argument below
+> was right and is why the ordering happened**; only the *"blocked"* conclusion has expired.
+> *(§6.2 beside it was struck through correctly at the time; this one was missed for a phase.)*
 
 Two reasons, and the second is the harder one.
 

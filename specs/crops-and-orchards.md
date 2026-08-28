@@ -12,13 +12,15 @@ mechanic this is a sibling of).
 market's widened reach are all in; **§3.2a (the market runs the buffer dry) landed in D171**.
 Proved by `FarmDemandTests`, `FarmTests`, `FarmGoldenTests`, `CropCalendarTests`,
 `CropGroundTests`, `WorkplaceStoreTests` and `ShippedConfigTests`.
-**Orchards (§8) are still deferred to Phase 3**, with the reason unchanged.
-⛔ **One thing is known-open and it is not a crop bug:** a farm's harvest falls off sharply with
-**distance from its store** — 93% next door, **46% at ten ticks**, 25% at twenty-two — because
-`FieldTilesOneFarmerKeeps` is one number for every farm in the valley. That is `DESIGN.md §5`'s
-per-site-yield decision (D171). **`farm_store_cap` was measured as near-irrelevant to it: one
-armful against thirteen moves the harvest by nought to seven points. Do not reach for that
-number.**
+**Orchards (§8) are deferred — ⚠️ *not* to Phase 3, which is complete and shipped none** (corrected
+2026-08-28). They are unscheduled; the reason for deferring is unchanged.
+✅ **~~One thing is known-open and it is not a crop bug~~ — FIXED by D178/D194, annotated
+2026-08-28.** ~~A farm's harvest falls off sharply with distance from its store — 93% next door,
+**46% at ten ticks**, 25% at twenty-two.~~ **Per-site yield landed and took a farm ten ticks out
+from 46% brought in to 96%**; D194 then found the sowing cap was self-fulfilling and replaced it
+with the farm's own memory of its best autumn. ⛔ **`farm_store_cap` is still dead — twice over
+now**, measured by two independent routes (D171, then D194's 8.7× buffer moving the ceiling from
+6 tiles to 6). **Do not reach for that number.**
 
 > **⚠️ This status line is load-bearing. Update it the day the slice merges** — D159 found five
 > specs claiming "not started" for systems that had shipped, one of them for the slice merged

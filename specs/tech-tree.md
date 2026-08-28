@@ -1,6 +1,18 @@
 # Spec / Catalog: Knowledge-Based Tech Tree
 
-> Status: **design settled, unbuilt — and its substrate now EXISTS** · Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.7`
+> Status: **BUILT AND MERGED TO `main` — slices 1 and 2 of Phase 4 (D225, D226). §8's knowledge screen is the part that is NOT built.** · Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.7`
+>
+> **⚠️⚠️ CORRECTED AGAIN 2026-08-28, AND THE SECOND TIME IS THE EMBARRASSING ONE.** This header said
+> **"design settled, unbuilt"** for four days after the library shipped — while the paragraph
+> immediately below lectured about D159 and *"a spec that lies about its own status is worse than
+> no spec."* **A warning is not a guard.** What exists now: `World/Technique.cs` (`TechniqueRow`,
+> `Library`), `Systems/KnowledgeSystem.cs`, `BuildingKind.Library`, `TechniqueTests.cs`, the
+> library in the build menu, discovery moments (D241) and `TechniquesCarriedBy` on the villager
+> panel (D243).
+>
+> ⛔ **This staleness was itself a Definition-of-Done failure**: `phase-4-the-tech-tree.md` item 1
+> requires this file *"current and reconciled with what was actually built"*, and Phase 4 was
+> merged without it. D245 originally named only the QA walk; it names three items now.
 >
 > **⚠️ CORRECTED 2026-08-24.** This header said the proficiency model *"does not exist in the sim"* for a phase after it shipped. **Phase 3 built all five items of `skills-catalog.md §6`'s contract** (D181–D202): per-villager per-skill proficiency, a stated novice floor, years-in-practice, a live `Recordable` column, and `SimWorld.KnowledgeAtRiskNote` as the *who still knows this and how old are they* query. **A spec that lies about its own status is worse than no spec** (D159, which found five of them) — and this one was read at exactly the moment a session was orienting.
 >
