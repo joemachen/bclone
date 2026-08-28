@@ -1,6 +1,6 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
 
-> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27, D236–D240.** Joe played to Year 44
+> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27, D236–D241.** Joe played to Year 44
 > and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
 > building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
 > His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
@@ -14,7 +14,8 @@
 > asks. Fixed, along with the three things that made it invisible: a **stalled site now says what
 > it waits for**, a **met limit stops the job and keeps the seat**, and the **limits panel measures
 > what the sim decides on**. The forager's hut is also **called what its workers are called** at
-> last (D240). **851 passing, 0 failing, 2 skipped of 853.**
+> last (D240), and a discovery is now a **celebratory banner that does not pause the game** (D241).
+> **853 passing, 0 failing, 2 skipped of 855.**
 >
 > **⭐⭐⭐ THE LESSON WORTH MORE THAN THE FIX: IT WAS FOUND IN THE LOG, NOT IN THE CODE.** Nobody
 > reading `StoreForTheLoad` had spotted it in months. Twenty minutes of
@@ -203,7 +204,7 @@ named one and was stale within the minute.
 
 **SUITE, FROM A RUN (2026-08-27, after D239):**
 ```
-851 passed, 0 failed, 2 skipped of 853 — about 3m (was 18m52s before D179)
+853 passed, 0 failed, 2 skipped of 855 — about 3m (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -236,10 +237,10 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >    chose "fix the economy first, alone"):
 >    - ✅ **The *"gatherer's hut"* naming is DONE** (D240) — it is *"forager's hut"*, and the two
 >      hand-written view sentences now read from the catalogues rather than holding the word.
->    - **The technique-discovery modal** — non-pausing, celebratory, and it should say the
->      technique is in the library. ⛔ **The sim currently says NOTHING when a technique is
->      discovered and the village has no library at all** (`KnowledgeSystem.cs:140` guards on
->      `Libraries.Count > 0`) — exactly the case he asked to have called out.
+>    - ✅ **The technique-discovery modal is DONE** (D241) — a non-pausing celebratory banner,
+>      coloured in the log, saying whether the village can keep the technique. The
+>      no-library-at-all case, which had no sentence anywhere, now has two (one for a village
+>      that cannot write yet).
 >    - **The village log's colours and category filters.** He chose **categorising at the
 >      source**. ⚠️ Entries are bare strings (`LogEntry.cs:15`) and `BbcodeEnabled = false`
 >      (`Main.cs:2138`); the `Subsystem` string is the cheapest category channel but it *is* in
