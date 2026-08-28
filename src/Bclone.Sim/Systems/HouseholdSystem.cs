@@ -54,7 +54,7 @@ public sealed class HouseholdSystem : ISimSystem
         // roofs, which is every tick of an established village.
         if (world.Tick % (ulong)config.TicksPerDay == 0UL)
         {
-            HouseTheRoofless(world, config);
+            HouseTheRoofless(world);
         }
 
         if (world.Tick % (ulong)config.TicksPerYear != 0UL)
@@ -66,7 +66,7 @@ public sealed class HouseholdSystem : ISimSystem
 
         // Formation next: a couple who move out this year get their own house
         // before anyone considers having children in it.
-        FormNewHouseholds(world, config, year);
+        FormNewHouseholds(world, config);
 
         // Snapshot the count: newborns are appended, and a baby must not be
         // considered for parenthood on the tick it is born.
@@ -126,7 +126,7 @@ public sealed class HouseholdSystem : ISimSystem
     /// already exists.
     /// </para>
     /// </remarks>
-    private static void HouseTheRoofless(SimWorld world, SimConfig config)
+    private static void HouseTheRoofless(SimWorld world)
     {
         for (int i = 0; i < world.Households.Count; i++)
         {
@@ -183,7 +183,7 @@ public sealed class HouseholdSystem : ISimSystem
         }
     }
 
-    private static void FormNewHouseholds(SimWorld world, SimConfig config, int year)
+    private static void FormNewHouseholds(SimWorld world, SimConfig config)
     {
         // Snapshot: a villager who pairs this year must not also be considered as
         // someone else's partner later in the same pass.

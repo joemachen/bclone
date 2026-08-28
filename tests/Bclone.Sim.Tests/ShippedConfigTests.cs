@@ -43,21 +43,6 @@ public sealed class ShippedConfigTests
     /// </remarks>
     private static SimConfig Shipped => ShippedConfig.Established();
 
-    private static string RepoRoot()
-    {
-        var directory = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (System.IO.File.Exists(System.IO.Path.Combine(directory.FullName, "bclone.sln")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new System.InvalidOperationException("Could not find the repo root.");
-    }
 
     /// <summary>
     /// The buildings must be big enough for the village the economy is budgeted for.

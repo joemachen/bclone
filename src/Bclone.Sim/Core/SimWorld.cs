@@ -6613,7 +6613,7 @@ public sealed class SimWorld
         }
 
         GiveTheFoundersTheirTrades(config);
-        PairFounders(config);
+        PairFounders();
     }
 
     /// <summary>
@@ -6708,7 +6708,7 @@ public sealed class SimWorld
     /// Otherwise the founders are all unpaired and immediately walk out of their own
     /// homes looking for partners, which is a strange way to found a settlement.
     /// </remarks>
-    private void PairFounders(SimConfig config)
+    private void PairFounders()
     {
         for (int h = 0; h < Households.Count; h++)
         {

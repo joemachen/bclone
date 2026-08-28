@@ -169,7 +169,7 @@ public static class MapGenerator
     /// habitable.
     /// </remarks>
     private static GridPos DrawRingPosition(
-        DeterministicRandom rng, int radius, int jitter, int index, int count)
+        DeterministicRandom rng, int radius, int jitter, int index)
     {
         GridPos slot = RingSlot(index, radius);
         return new GridPos(slot.X + DrawJitter(rng, jitter), slot.Y + DrawJitter(rng, jitter));
@@ -434,7 +434,7 @@ public static class MapGenerator
         for (int i = 0; i < count; i++)
         {
             GridPos centre = ClampInside(
-                DrawRingPosition(rng, ringTiles, config.SiteJitterTiles, i, count), config);
+                DrawRingPosition(rng, ringTiles, config.SiteJitterTiles, i), config);
 
             for (int dy = -radius; dy <= radius; dy++)
             {

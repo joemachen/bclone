@@ -1,4 +1,3 @@
-using System.Linq;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
@@ -229,10 +228,20 @@ public sealed class StorageTests
     /// around. It is the same question as D131's market and D103's building.
     /// </para>
     /// </remarks>
-    [Fact(Skip = "D134: the granary is no longer the binding cap — the timber shed is, at "
-        + "343/343 from year five with thousands of logs stranded outside it. Both arms hit "
-        + "that first, so they swing 35 against 34. Restore when D134's open question is "
-        + "answered.")]
+    /// <remarks>
+    /// <b>⭐ UN-SKIPPED 2026-08-28, AND IT PASSES.</b> It was skipped on the grounds that
+    /// <i>"the granary is no longer the binding cap — the timber shed is, at 343/343 … restore
+    /// when D134's open question is answered."</i> <b>Both halves of that expired without anybody
+    /// noticing.</b> <c>VillageEconomy.ShedCapacity</c> is floored on the granary's now — it
+    /// <em>"had inverted by an order of magnitude: 343 against the granary's 2,850"</em> — and
+    /// D143 answered D134's question by ruling the whole second-store family working as designed.
+    /// <para>
+    /// ⚠️ <b>A skip is a claim about the world and it goes stale like any other.</b> Nothing
+    /// re-reads them, so this sat over a guard that would have passed for weeks. It costs ~43
+    /// seconds, which is why it was worth running rather than assuming.
+    /// </para>
+    /// </remarks>
+    [Fact]
     public void CapacityIsWhatHoldsThePopulationFlat()
     {
         // The claim slice 5 was taken ahead of the market to test, asserted rather

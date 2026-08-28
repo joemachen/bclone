@@ -1,0 +1,67 @@
+root = true
+
+# =============================================================================
+#  bclone — analyzer severities
+#
+#  ⛔⛔ WHY THIS FILE EXISTS, AND IT IS NOT STYLE.
+#
+#  `Directory.Build.props` has set `EnforceCodeStyleInBuild=true` since the
+#  first commit, and there was no `.editorconfig` anywhere in the repository
+#  until 2026-08-28. Without severity entries every IDEnnnn analyzer stays at
+#  `silent`, so `TreatWarningsAsErrors=true` — which this project does have —
+#  had nothing to promote. The enforcement flag was a no-op for the whole life
+#  of the project.
+#
+#  That is the mechanical reason a housekeeping pass found dead code in a
+#  codebase that fails the build on warnings: a write-only field assigned in
+#  eight places, two private methods with no callers, and ~65 redundant usings.
+#  None of them could ever have been reported.
+#
+#  ⚠️ These are WARNINGS, and with TreatWarningsAsErrors that means they FAIL
+#  THE BUILD in Bclone.Sim and the test project. That is the intent — the point
+#  is to make the next one impossible rather than to find this one twice.
+#
+#  ⚠️ It cannot reach `src/Bclone.Game`, which sets TreatWarningsAsErrors=false
+#  because Godot's source generators emit code we do not control. The view will
+#  report these and not fail on them, which is why `_demolishArmedAt`'s CS0414
+#  scrolled past for months. Read the view's build output; do not trust silence.
+#
+#  ⛔ DELIBERATELY NARROW. This is not a house style and must not become one:
+#  the project's convention is carried by the surrounding code and by
+#  CLAUDE.md, not by a linter. Only rules that catch DEAD or WRONG code are
+#  enabled. A rule that merely has an opinion about formatting is noise, and
+#  noise is how a build failure stops being read.
+# =============================================================================
+
+[*.cs]
+
+# --- Dead code. These are the three that would have caught this pass. --------
+
+# IDE0051: private member is never used (the two dead MapGenerator methods).
+dotnet_diagnostic.IDE0051.severity = warning
+
+# IDE0052: private member is assigned but never read (_demolishArmedAt).
+dotnet_diagnostic.IDE0052.severity = warning
+
+# IDE0005: using directive is unnecessary.
+# ⚠️ Requires GenerateDocumentationFile, which Directory.Build.props sets. If
+# that is ever turned off this rule silently stops reporting.
+dotnet_diagnostic.IDE0005.severity = warning
+
+# --- Almost certainly a bug, not a preference -------------------------------
+
+# IDE0060: unused parameter. The audit could not detect these by search at all;
+# this is the only way they surface.
+dotnet_diagnostic.IDE0060.severity = warning
+
+# CA1806 / IDE0058 are deliberately NOT enabled: this codebase calls methods for
+# effect in plenty of places and an "unused return value" rule would be noise.
+
+# --- Encoding ---------------------------------------------------------------
+# ⛔ UTF-8, and it is load-bearing here rather than conventional. The source and
+# the documents are full of em-dashes and emoji, and this project has twice had
+# a file double-encoded by a byte-level edit (see HANDOFF.md's perl trap).
+charset = utf-8
+insert_final_newline = true
+indent_style = space
+indent_size = 4

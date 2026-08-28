@@ -1,7 +1,6 @@
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Logging;
-using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 

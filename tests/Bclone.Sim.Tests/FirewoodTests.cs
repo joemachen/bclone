@@ -221,11 +221,6 @@ public sealed class FirewoodTests
     /// </para>
     /// </remarks>
     private const int AcceptanceYears = 300;
-
-    /// <summary>Founding decades to ignore — four people growing into a village is not
-    /// yet the steady state this is about.</summary>
-    private const int SettledFromYear = 40;
-
     /// <summary>
     /// ⭐ THE acceptance test for D17/D29/D30 — <b>the fuel chain warms a village that grows,
     /// and freezes nobody.</b>

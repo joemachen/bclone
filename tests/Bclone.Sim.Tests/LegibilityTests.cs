@@ -1,4 +1,3 @@
-using System;
 using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
