@@ -2548,6 +2548,92 @@ public sealed class SimWorld
         }
     }
 
+    /// <summary>Sites already reported as waiting, so the sentence is said once (D142).</summary>
+    /// <remarks>
+    /// <b>Per SITE, not per site-and-material</b>, and the first draft had it the other way.
+    /// A granary short of both its logs and its stone announced itself twice in one season,
+    /// which is two lines about one building standing still — <b>one sweep beats three
+    /// notifications</b> (D142) applies inside a single building too.
+    /// </remarks>
+    private readonly HashSet<int> _saidSiteIsWaiting = new();
+
+    /// <summary>
+    /// Why a marked-out building is not being raised, or null when nothing is holding it up.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ JOE'S GRANARY STOOD UNBUILT FOR TWENTY-ONE YEARS AND NOTHING EVER SAID SO</b>
+    /// (2026-08-27). Marked out in Winter, Year 23, needing 40 logs and 10 stone; still a site
+    /// at Year 44 while three houses went up around it. **That is the silent stall §1.1
+    /// forbids** — the player has no way to tell a building that is coming slowly from one that
+    /// is never coming at all.
+    /// </para>
+    /// <para>
+    /// <b>The condition is "the village cannot otherwise get this"</b>, which is the same test
+    /// <c>NearestHarvest</c>'s <c>waitedOn</c> already makes: the site still wants the material
+    /// and <em>no store anywhere holds any of it</em>. A site merely waiting on a builder's legs
+    /// is not stalled, and saying so would be a nag.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It names the remedy, because a warning whose remedy is unstated is an alert rather
+    /// than information</b> — the rule <see cref="KnowledgeAtRiskNote"/> is written to, one
+    /// system over.
+    /// </para>
+    /// </remarks>
+    public string? SiteWaitingNote(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (workplace.Construction is not { IsFinished: false } plan)
+        {
+            return null;
+        }
+
+        for (int m = 0; m < plan.Recipe.Materials.Count; m++)
+        {
+            Goods wants = plan.Recipe.Materials[m].Goods;
+            int short_ = plan.StillNeeded(wants);
+            if (short_ <= 0 || AnyStoreHolding(wants))
+            {
+                continue;
+            }
+
+            return $"{plan.Name} is waiting for {short_} {GoodsCatalog.NameOf(wants)} and the "
+                + "village has none in store. Paint ground that yields it for clearing, or it "
+                + "will stand as it is.";
+        }
+
+        return null;
+    }
+
+    /// <summary>Say, once, which marked-out buildings the village cannot currently raise.</summary>
+    /// <remarks>
+    /// <b>Swept rather than triggered, and forgotten when it stops being true</b> — the shape
+    /// <see cref="SayWhatKnowledgeIsAtRisk"/> uses, and for the same reason: the condition can
+    /// end for reasons that have nothing to do with the site (somebody clears a seam a mile
+    /// away), and forgetting is what lets the warning fire again if it comes back.
+    /// </remarks>
+    public void SayWhatIsWaitingToBeBuilt()
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace workplace = Workplaces[i];
+
+            if (SiteWaitingNote(workplace) is not string note)
+            {
+                // Not stalled any more — for any reason, including having been built or
+                // cancelled. Forgetting is what lets it fire again if it comes back.
+                _saidSiteIsWaiting.Remove(workplace.Id);
+                continue;
+            }
+
+            if (_saidSiteIsWaiting.Add(workplace.Id))
+            {
+                Narrate($"{note} {Clock.SeasonAndYear()}.");
+            }
+        }
+    }
+
     /// <summary>
     /// Say so, once, when a good is being set down because the village has nowhere for it
     /// at all.

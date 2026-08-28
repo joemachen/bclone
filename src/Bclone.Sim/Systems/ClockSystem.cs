@@ -51,6 +51,19 @@ public sealed class ClockSystem : ISimSystem
 
         NarrateSeasonTurn(world, current, previous, foragedThisSeason);
 
+        // ⭐⭐ AND WHAT THE VILLAGE HAS MARKED OUT BUT CANNOT RAISE (2026-08-27). Joe's second
+        // granary was marked in Winter, Year 23 and was still a site at Year 44 — twenty-one
+        // years, in total silence, while three houses went up around it. **A building that is
+        // never coming has to be distinguishable from one that is coming slowly**, which is
+        // §1.1, and nothing in the game drew that line.
+        //
+        // ⭐ SEASONAL RATHER THAN ANNUAL, and the cadence is the difference between the two
+        // warnings. `SayWhatKnowledgeIsAtRisk` is annual because it is about a lifetime; this is
+        // about a decision the player can act on this afternoon by painting a seam. It is said
+        // once per site per material and forgotten when it stops being true, so a village that
+        // fixes it hears nothing more.
+        world.SayWhatIsWaitingToBeBuilt();
+
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             world.Villagers[i].GathersThisSeason = 0;

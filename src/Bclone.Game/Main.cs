@@ -1223,6 +1223,20 @@ public partial class Main : Control
                 lines.Add("Waiting: the ground it stands on is still being cleared.");
             }
 
+            // ⭐⭐ AND THE THING THAT ACTUALLY STOPPED JOE'S GRANARY FOR TWENTY-ONE YEARS
+            // (2026-08-27). "Materials: still wants 10 stone" above is true and is not the
+            // answer — it says WHAT is missing, never that the village has no way to get it.
+            // His granary read exactly that line every year from 23 to 44 while nobody ever
+            // went to a seam.
+            //
+            // ⭐ THE SAME METHOD THE VILLAGE LOG USES, so the two cannot disagree — D195's
+            // rule for the at-risk line, and the reason it is one method rather than two
+            // sentences. Narrated once on the edge, shown here for as long as it is true.
+            if (world.SiteWaitingNote(workplace) is string stalled)
+            {
+                lines.Add(stalled);
+            }
+
             // ⭐ A SITE HAS NOBODY POSTED TO IT ANY MORE (D108), so it must not go on to the
             // staffing lines below — they would read "Nobody works here. Room for 0", which
             // is true of a place nobody can ever be posted to and is the wrong answer to the
