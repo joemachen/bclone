@@ -1,6 +1,6 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
 
-> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27, D236–D241.** Joe played to Year 44
+> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27, D236–D243.** Joe played to Year 44
 > and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
 > building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
 > His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
@@ -15,7 +15,9 @@
 > it waits for**, a **met limit stops the job and keeps the seat**, and the **limits panel measures
 > what the sim decides on**. The forager's hut is also **called what its workers are called** at
 > last (D240), and a discovery is now a **celebratory banner that does not pause the game** (D241).
-> **853 passing, 0 failing, 2 skipped of 855.**
+> The **bottom bar wraps** instead of running off both edges once the library button appears
+> (D242), and a **villager's panel lists the techniques they carry** (D243).
+> **855 passing, 0 failing, 2 skipped of 857.**
 >
 > **⭐⭐⭐ THE LESSON WORTH MORE THAN THE FIX: IT WAS FOUND IN THE LOG, NOT IN THE CODE.** Nobody
 > reading `StoreForTheLoad` had spotted it in months. Twenty minutes of
@@ -204,7 +206,7 @@ named one and was stale within the minute.
 
 **SUITE, FROM A RUN (2026-08-27, after D239):**
 ```
-853 passed, 0 failed, 2 skipped of 855 — about 3m (was 18m52s before D179)
+855 passed, 0 failed, 2 skipped of 857 — about 3m (was 18m52s before D179)
 ```
 
 The two skips are rulings, not unfinished work: **D143** (an unattended village is *supposed* to
@@ -452,6 +454,21 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
     the test demanded *"stone"*), and the food-limit guard asserted **zero gathering over two
     years and measured 327** — *which was the feature working*, because stores fall back through
     the limit and foraging resumes. **Three fixture bugs, one code bug, in one session.**
+- **⛔⛔ A LAYOUT THAT IS CORRECT AT STARTUP AND WRONG LATER IS INVISIBLE TO EVERY CHECK ANYBODY
+  MAKES (D242, 2026-08-27).** The bottom bar ran off **both** edges — *"Pause"* clipped to
+  *"use"* — but only **after the village learned to write**, because the Knowledge group is
+  hidden until then and the row grows by a whole category mid-play. **Every look anybody takes at
+  the UI is a look at a young village.**
+  - **⭐ The general rule: ask what this panel looks like in year forty, not year one.** Things
+    that appear on a condition — the library button, a second granary's row, a modded building —
+    are exactly the ones no screenshot will ever show you.
+  - ⭐ **`HBoxContainer` has no graceful failure**: one line, and anything that does not fit
+    leaves the screen. **Prefer `HFlowContainer` for any bar that can grow.** ⚠️ Flow containers
+    read `h_separation`/`v_separation`; the plain `separation` an HBox uses is **silently
+    ignored**, so a straight swap quietly loses all your spacing.
+  - ⚠️ **`BCLONE_PROBE_WIDTHS` would have caught it and needs Godot on PATH**, which this session
+    did not have (`GODOT` unset). *The fix was made by construction rather than by measurement —
+    worth re-measuring when somebody has the binary.*
 - **⛔⛔ THE AUDIT TRAIL FINDS WHAT READING THE CODE DOES NOT — AND NOBODY HAD MINED IT LIKE THIS
   (2026-08-27).** D236 sat in `StoreForTheLoad` for months, read past by several sessions. What
   found it was arithmetic on the log:
