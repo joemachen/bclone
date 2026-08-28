@@ -123,6 +123,20 @@ public partial class Main : Control
         // Bclone.Sim is not allowed to know what time it is (BannedSymbols.txt).
         _sink = new InMemoryLogSink(LogLevel.Info);
 
+        // ⚠️ NOTHING PRUNES THESE, AND THEY ARE THE LARGEST THING IN THE REPOSITORY DIRECTORY
+        // (measured 2026-08-28: 235 files, **159 MB**, one of them 24 MB, against 5.5 MB of
+        // tracked source). Every launch writes a new unbounded DEBUG file; there is no cap, no
+        // rotation and no delete path here or in `FileLogSink`.
+        //
+        // ⛔ **Do not "fix" this by lowering the level or capping the file.** The audit trail at
+        // full DEBUG is how D236 was found — the bug that had stopped the village working in
+        // Year 3 was invisible in the code and obvious in a histogram of state transitions per
+        // year. **A truncated log would have hidden it.**
+        //
+        // ⭐ The right cure is housekeeping, not a smaller log: delete old ones periodically and
+        // keep the recent ones. Pruned by hand on 2026-08-28 to everything from 2026-08-26
+        // onward (159 MB → 16 MB), deliberately keeping Joe's Year-44 session because it is the
+        // evidence D236 rests on.
         string logDirectory = System.IO.Path.Combine(
             System.IO.Directory.GetCurrentDirectory(), "logs");
         string logPath = System.IO.Path.Combine(
