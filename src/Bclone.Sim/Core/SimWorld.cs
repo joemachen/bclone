@@ -73,9 +73,9 @@ public sealed class SimWorld
     /// thing the audit trail never knew happened, and this project has spent whole sessions inside
     /// that log.
     /// </remarks>
-    internal void RaiseMoment(string title, string body)
+    internal void RaiseMoment(string title, string body, bool stops = true)
     {
-        Moments.Add(new Moment { Title = title, Body = body });
+        Moments.Add(new Moment { Title = title, Body = body, Stops = stops });
         Narrate(body);
     }
 

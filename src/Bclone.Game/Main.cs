@@ -339,6 +339,11 @@ public partial class Main : Control
         // hits space to unpause would otherwise resume the village behind a panel that is still
         // covering it — and the speed keys would fight `DismissTheMoment`'s restore. **One thing to
         // do, and the two obvious keys both do it.**
+        //
+        // ⭐ THIS DELIBERATELY ASKS ABOUT `_momentPanel` ONLY, NOT THE PASSING BANNER (2026-08-27).
+        // A moment that does not stop the village must not take the keyboard either — the whole
+        // point of it is that play continues, and a banner that swallowed the speed keys for
+        // fourteen seconds would be the interruption `Moment.Stops` exists to avoid.
         if (_momentPanel is { Visible: true })
         {
             if (key.Keycode is Key.Space or Key.Escape or Key.Enter)
@@ -452,6 +457,39 @@ public partial class Main : Control
     private Label _momentBody = null!;
     private double _speedBeforeTheMoment = 1.0;
 
+    /// <summary>The passing moment — celebrated, but the village keeps working.</summary>
+    private PanelContainer? _passingPanel;
+    private Label _passingTitle = null!;
+    private Label _passingBody = null!;
+
+    /// <summary>When the passing moment fades, in view-side milliseconds.</summary>
+    /// <remarks>
+    /// <b>⚠️ WALL-CLOCK, AND THAT IS ALLOWED HERE BECAUSE IT IS THE VIEW.</b> The sim may never
+    /// read a clock (`DESIGN.md §3`), but how long a banner stays on screen is a fact about the
+    /// person reading it, not about the village — the same licence the speed control already
+    /// takes. **Nothing in the sim knows this number exists.**
+    /// </remarks>
+    private ulong _passingUntilMsec;
+
+    /// <summary>How long a passing moment stays up — long enough to read twice.</summary>
+    private const ulong PassingMomentMsec = 14_000;
+
+    /// <summary>Bodies of moments already raised, so the log can pick them out in colour.</summary>
+    /// <remarks>
+    /// <b>⭐ The colour comes from the moment, not from parsing the sentence</b> (Joe wanted the
+    /// discovery *"a different font color in the village log"*). The sim writes every moment's
+    /// body to the log as well as raising it, so the two are the same string by construction —
+    /// which means the view can highlight it without the sim growing a presentation field, and
+    /// without `LogEntry` changing shape and moving the audit trail.
+    /// <para>
+    /// ⚠️ <b>Drained before the log is appended in the same frame</b> (`Refresh` calls
+    /// `ShowAnyMoment` first), so a moment's own line is always already known by the time it is
+    /// drawn. That ordering is load-bearing — swap the two calls and every celebration renders
+    /// plain for one frame and then never again.
+    /// </para>
+    /// </remarks>
+    private readonly HashSet<string> _celebrated = new(StringComparer.Ordinal);
+
     /// <summary>
     /// Stop the village and show the next thing worth stopping for, if there is one.
     /// </summary>
@@ -475,21 +513,108 @@ public partial class Main : Control
     /// </remarks>
     private void ShowAnyMoment(SimWorld world)
     {
-        if (_momentPanel is { Visible: true } || world.Moments.Count == 0)
+        // ⭐⭐ PASSING MOMENTS ARE DRAINED FIRST AND ALL AT ONCE, AND NEITHER HALF OF THAT IS
+        // INCIDENTAL (2026-08-27). They must not queue behind a gift waiting to be dismissed —
+        // a player who leaves the library modal up for a minute would otherwise collect a
+        // backlog of discoveries that then fire one per frame. And every body has to reach
+        // `_celebrated` this frame, or its own log line renders plain and never gets another
+        // chance.
+        for (int i = world.Moments.Count - 1; i >= 0; i--)
+        {
+            Moment passing = world.Moments[i];
+            if (passing.Stops)
+            {
+                continue;
+            }
+
+            world.Moments.RemoveAt(i);
+            _celebrated.Add(passing.Body);
+
+            // ⚠️ THE NEWEST WINS RATHER THAN A QUEUE. Two discoveries in one season is already
+            // unusual; showing them in sequence would hold the second banner up long after its
+            // news went stale, and the log has both regardless — a moment is never the only
+            // surface (`Moment` remarks).
+            _passingTitle.Text = passing.Title;
+            _passingBody.Text = passing.Body;
+            _passingPanel!.Visible = true;
+            _passingUntilMsec = Time.GetTicksMsec() + PassingMomentMsec;
+        }
+
+        if (_passingPanel is { Visible: true } && Time.GetTicksMsec() >= _passingUntilMsec)
+        {
+            _passingPanel.Visible = false;
+        }
+
+        if (_momentPanel is { Visible: true })
         {
             return;
         }
 
-        Moment moment = world.Moments[0];
-        world.Moments.RemoveAt(0);
+        for (int i = 0; i < world.Moments.Count; i++)
+        {
+            if (!world.Moments[i].Stops)
+            {
+                continue;
+            }
 
-        _momentTitle.Text = moment.Title;
-        _momentBody.Text = moment.Body;
+            Moment moment = world.Moments[i];
+            world.Moments.RemoveAt(i);
+            _celebrated.Add(moment.Body);
 
-        _speedBeforeTheMoment = _driver.IsPaused ? 1.0 : _driver.SpeedMultiplier;
-        SetSpeed(0.0);
+            _momentTitle.Text = moment.Title;
+            _momentBody.Text = moment.Body;
 
-        _momentPanel!.Visible = true;
+            _speedBeforeTheMoment = _driver.IsPaused ? 1.0 : _driver.SpeedMultiplier;
+            SetSpeed(0.0);
+
+            _momentPanel!.Visible = true;
+            return;
+        }
+    }
+
+    /// <summary>The banner for a moment the village does not stop for.</summary>
+    /// <remarks>
+    /// <b>⭐ TOP-CENTRE, NOT CENTRE.</b> A panel over the middle of the map while the village is
+    /// still moving covers the thing the player is watching; the gift modal may do that because
+    /// it has stopped the world and there is nothing behind it to see.
+    /// </remarks>
+    private void BuildThePassingPanel()
+    {
+        var panel = new PanelContainer { Visible = false };
+        panel.SetAnchorsPreset(LayoutPreset.CenterTop, keepOffsets: false);
+        panel.GrowHorizontal = GrowDirection.Both;
+        panel.GrowVertical = GrowDirection.End;
+        panel.OffsetTop = 24f;
+        panel.CustomMinimumSize = new Vector2(460f, 0f);
+
+        // ⚠️ It must not eat clicks meant for the map behind it. `Stop` is the default for a
+        // PanelContainer, and a banner nobody asked for stealing a build click would be a worse
+        // bug than the one this feature fixes.
+        panel.MouseFilter = MouseFilterEnum.Pass;
+
+        var box = new VBoxContainer();
+        box.AddThemeConstantOverride("separation", 8);
+
+        _passingTitle = Heading(string.Empty);
+        box.AddChild(_passingTitle);
+
+        _passingBody = Wrapped(Body(string.Empty));
+        _passingBody.CustomMinimumSize = new Vector2(420f, 0f);
+        box.AddChild(_passingBody);
+
+        var go = new Button { Text = "Good" };
+        go.Pressed += () =>
+        {
+            if (_passingPanel is not null)
+            {
+                _passingPanel.Visible = false;
+            }
+        };
+        box.AddChild(go);
+
+        panel.AddChild(box);
+        AddChild(panel);
+        _passingPanel = panel;
     }
 
     private void BuildTheMomentPanel()
@@ -1747,7 +1872,7 @@ public partial class Main : Control
         {
             if (entries[i].Subsystem == "life")
             {
-                _villageLog.AppendText($"{entries[i].Message}\n");
+                _villageLog.AppendText(LogMarkup(entries[i].Message));
             }
         }
 
@@ -1761,10 +1886,39 @@ public partial class Main : Control
             {
                 if (i >= 0 && entries[i].Subsystem == "life")
                 {
-                    _villageLog.AppendText($"{entries[i].Message}\n");
+                    _villageLog.AppendText(LogMarkup(entries[i].Message));
                 }
             }
         }
+    }
+
+    /// <summary>One village-log line, escaped, and coloured if it was a moment.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A celebration reads as one</b> (Joe, 2026-08-27). The line is picked out by identity
+    /// rather than by parsing: the sim writes a moment's body to the log as well as raising it,
+    /// so the two are the same string by construction and the view needs no rule about what
+    /// counts as good news.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The escape is not optional now BBCode is on.</b> A `[` in a village sentence would
+    /// otherwise be swallowed as markup and take the rest of the tag with it. Nothing narrated
+    /// today contains one — this is so nothing has to keep checking.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>One colour, not a palette.</b> The full categorisation Joe asked for — deaths,
+    /// important events, ordinary information, with filters — is its own slice and wants the
+    /// category to come from the sim rather than from a set of strings the view happens to hold.
+    /// <b>This is the foothold, not that feature.</b>
+    /// </para>
+    /// </remarks>
+    private string LogMarkup(string message)
+    {
+        string safe = message.Replace("[", "[lb]", StringComparison.Ordinal);
+
+        return _celebrated.Contains(message)
+            ? $"[color=#e8c46a]{safe}[/color]\n"
+            : $"{safe}\n";
     }
 
     private static int LivingHouseholds(SimWorld world)
@@ -1857,6 +2011,7 @@ public partial class Main : Control
         SetSpeed(0.0);
 
         BuildTheMomentPanel();
+        BuildThePassingPanel();
 
         // Start on Selected, and set the button's label from the same switch that the
         // key binding uses — two places writing that text would eventually disagree.
@@ -2164,10 +2319,15 @@ public partial class Main : Control
     {
         VBoxContainer body = InColumn(_rightColumn, ListHeight, "Village log");
 
+        // ⭐ BBCODE IS ON SO A CELEBRATION CAN READ AS ONE (Joe, 2026-08-27: a discovery should be
+        // *"a different font color in the village log"*). ⚠️ **Everything appended must go through
+        // `LogMarkup` from here on** — with BBCode enabled a stray `[` in a village sentence
+        // becomes markup and the line silently loses text. Nothing narrated today contains one;
+        // the escape is there so nothing has to remember that.
         _villageLog = new RichTextLabel
         {
             ScrollFollowing = true,
-            BbcodeEnabled = false,
+            BbcodeEnabled = true,
             SizeFlagsVertical = SizeFlags.ExpandFill,
         };
 

@@ -778,6 +778,82 @@ public sealed class TechniqueTests
         Assert.Equal(KnowledgeState.Unknown, world.KnowledgeStates[CropRotation]);
     }
 
+    /// <summary>⛔ A village with NO library is told its discovery will die too.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The hole D204's refusal left, and it was the worst-placed one possible</b> (Joe,
+    /// 2026-08-27: the discovery <i>"should also say that the technique lives in the library —
+    /// unless a library isn't built or there isn't room, in which case it should call those cases
+    /// out"</i>).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The refusal above was gated on <c>world.Libraries.Count &gt; 0</c></b>, so a village
+    /// that had never built one discovered a technique and heard <em>nothing at all</em> about
+    /// the fact that it would go with its knower. <b>The one case where the player most needs
+    /// telling was the one case that said nothing</b> — §1.1 failing in the player's favour,
+    /// which is still failing.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillageWithNoLibraryIsToldTheDiscoveryWillGoWithItsKnower()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = Loop(VillageFixtures.Village, sink);
+        SimWorld world = loop.World;
+
+        // ⚠️ ANTI-VACUITY (D7): no library anywhere is the whole pose, so assert it rather than
+        // assuming the fixture never builds one.
+        Assert.Empty(world.Libraries);
+
+        Villager master = MakeAMasterOf(world, 1);
+        loop.Step(1);
+
+        string said = Said(sink);
+        _output.WriteLine(said);
+
+        Assert.False(world.IsWrittenDown(1));
+        Assert.Contains(master.Name, said, System.StringComparison.Ordinal);
+
+        // ⭐ It says the technique is his alone and what becomes of it — the two facts the player
+        // needs to act. Which remedy it names depends on whether anybody can write yet.
+        Assert.Contains("lives only in", said, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("last knower", said, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>⭐ A discovery is a moment, and it does not stop the village.</summary>
+    /// <remarks>
+    /// <b>Joe's call, 2026-08-27:</b> <i>"should be a modal that pops up to alert the player
+    /// (doesn't pause the game)… a little more celebratory than just a line in the village
+    /// log."</i> A gift <b>stops</b> — the player has to place it — and a discovery <b>passes</b>,
+    /// because there is nothing to answer and stopping the world every few decades for news would
+    /// spend the rarity that justifies the modal at all (`Moment` remarks).
+    /// </remarks>
+    [Fact]
+    public void ADiscoveryRaisesAMomentThatDoesNotStopTheVillage()
+    {
+        SimLoop loop = Loop(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Library library = GiveThemALibrary(world);
+        world.Moments.Clear();
+
+        Villager master = MakeAMasterOf(world, 1);
+        loop.Step(1);
+
+        Moment moment = Assert.Single(
+            world.Moments, raised => raised.Body.Contains(master.Name, System.StringComparison.Ordinal));
+
+        _output.WriteLine($"\"{moment.Title}\" — {moment.Body}");
+
+        Assert.False(moment.Stops, "A discovery must not stop the village; only a gift does.");
+        Assert.Contains(master.Name, moment.Title, System.StringComparison.Ordinal);
+
+        // ⭐ AND IT SAYS WHERE THE TECHNIQUE NOW LIVES, which was the whole of Joe's request —
+        // the discovery line alone never said whether the village could keep it.
+        Assert.Contains(library.Name, moment.Body, System.StringComparison.Ordinal);
+        Assert.Contains("written down", moment.Body, System.StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>A second library is the answer, and it works.</summary>
     [Fact]
     public void ASecondLibraryTakesWhatTheFirstCouldNotHold()

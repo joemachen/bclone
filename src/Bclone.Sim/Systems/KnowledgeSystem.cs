@@ -122,26 +122,54 @@ public sealed class KnowledgeSystem : ISimSystem
             // or the log would fill with it for ever.
             if (now == KnowledgeState.Known && !world.IsWrittenDown(id))
             {
-                if (world.WriteDown(id) is Library shelved)
+                Library? shelved = world.WriteDown(id);
+                if (shelved is not null)
                 {
                     world.KnowledgeStates[id] = KnowledgeState.Established;
-                    world.Narrate($"{technique.Name} was written down at {shelved.Name} — "
-                        + $"{shelved.Shelves - shelved.Records.Count} shelves left. "
-                        + $"{world.Clock.SeasonAndYear()}.");
+                }
 
-                    if (was == KnowledgeState.Unknown)
-                    {
-                        world.Narrate(Said(technique.DiscoveryLine, knower!.Name));
-                    }
+                // ⭐⭐ A DISCOVERY IS A MOMENT, AND IT SAYS WHETHER THE VILLAGE CAN KEEP IT
+                // (Joe, 2026-08-27, from play): *"it should also say that the technique lives in
+                // the library (unless a library isn't built or there isn't room, in which case
+                // it should call those cases out) — a little more celebratory than just a line
+                // in the village log."*
+                //
+                // ⛔ **THE "NO LIBRARY AT ALL" CASE HAD NO SENTENCE ANYWHERE** — the guard below
+                // used to read `world.Libraries.Count > 0`, so a village that had never built one
+                // discovered a technique and was told nothing about the fact that it would die
+                // with its knower. **The one case where the player most needs telling was the one
+                // case that said nothing**, which is §1.1 failing in the player's favour.
+                //
+                // ⚠️ It does NOT stop the game (`stops: false`). A gift must be acted on; this is
+                // news. See `Moment.Stops`.
+                if (was == KnowledgeState.Unknown)
+                {
+                    // ⚠️ The state has to be settled BEFORE the `continue`, and the first draft
+                    // of this branch forgot it: the old code let an unshelved discovery fall
+                    // through to the assignment below, so short-circuiting here left the
+                    // technique reading Unknown for ever while its discovery line had already
+                    // been said. *A `continue` added to a loop inherits every side effect it
+                    // now skips.*
+                    world.KnowledgeStates[id] =
+                        shelved is not null ? KnowledgeState.Established : now;
+
+                    world.RaiseMoment(
+                        $"{knower!.Name} worked something out",
+                        $"{Said(technique.DiscoveryLine, knower.Name)} "
+                            + Kept(world, technique, knower, shelved),
+                        stops: false);
 
                     continue;
                 }
 
-                if (was == KnowledgeState.Unknown && world.Libraries.Count > 0)
+                // Not a discovery — a technique the village already knew finally finding a
+                // shelf. The accounting line still matters, and there is no news in it.
+                if (shelved is not null)
                 {
-                    world.Narrate($"There was no shelf left for {technique.Name}. "
-                        + "Build another library, or it goes when its last knower does. "
+                    world.Narrate($"{technique.Name} was written down at {shelved.Name} — "
+                        + $"{shelved.Shelves - shelved.Records.Count} shelves left. "
                         + $"{world.Clock.SeasonAndYear()}.");
+                    continue;
                 }
             }
 
@@ -250,4 +278,49 @@ public sealed class KnowledgeSystem : ISimSystem
     private static string Said(string line, string who) =>
         line.Length == 0 ? string.Empty : string.Format(
             System.Globalization.CultureInfo.InvariantCulture, line, who);
+
+    /// <summary>Whether the village can keep this, said plainly — Joe, 2026-08-27.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Four cases, and three of them used to say nothing.</b> Only *"written down"* and
+    /// *"no shelf left"* existed, and the second was gated on the village already owning a
+    /// library — so **a village with no library heard nothing at all**, which is exactly the
+    /// case where the warning is worth most.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The no-library case splits on literacy, because the remedy differs and a wrong
+    /// remedy is worse than none.</b> A village that cannot yet write is not being told to build
+    /// something it has no way to use — writing comes out of a granary kept for fifteen years
+    /// (D227), not out of a build menu.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The phrase "no shelf left" is load-bearing</b> — `TechniqueTests` asserts it, and
+    /// §11's guard against *"the library is mandatory"* leans on the refusal being audible since
+    /// D204 removed one of the three costs it used to rest on.
+    /// </para>
+    /// </remarks>
+    private static string Kept(
+        SimWorld world, TechniqueRow technique, Villager knower, Library? shelved)
+    {
+        if (shelved is not null)
+        {
+            int free = shelved.Shelves - shelved.Records.Count;
+            return $"It is written down at {shelved.Name} now — {free} "
+                + $"{(free == 1 ? "shelf" : "shelves")} left — so it will outlive "
+                + $"{knower.Name}.";
+        }
+
+        if (world.Libraries.Count > 0)
+        {
+            return $"But there was no shelf left for {technique.Name}, so it lives only in "
+                + $"{knower.Name}'s hands. Build another library, or it goes when its last "
+                + "knower does.";
+        }
+
+        return world.HasLiteracy
+            ? $"But the village has no library, so it lives only in {knower.Name}'s hands. "
+                + "Build one, or it goes when its last knower does."
+            : $"But nobody in the village can write yet, so it lives only in {knower.Name}'s "
+                + "hands — and it goes when its last knower does.";
+    }
 }
