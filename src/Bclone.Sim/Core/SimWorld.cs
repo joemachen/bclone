@@ -1222,6 +1222,27 @@ public sealed class SimWorld
     /// </remarks>
     public bool MayTake(Goods goods) => !StockLimits.IsMet(goods, InStores(goods));
 
+    /// <summary>Whether the player's food limit is met, by the total every food decision uses.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ONE DOOR, because food is the one good measured against something other than
+    /// <c>InStores</c>.</b> <see cref="MayTake"/> answers every other good by index and nothing
+    /// switches on a name there; food is different because <see cref="FoodTheVillageHolds"/>
+    /// counts workplace buffers as well as granaries (D161), and the quota, the panel and the
+    /// forager all have to agree about which number the player's limit is compared against.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>They did not agree, which is what this exists to stop.</b> The stock limit was read
+    /// against three different totals in three places, and the panel read a fourth. When a
+    /// player asks *"why is my forager still working?"* the only useful answer is one number.
+    /// </para>
+    /// <para>
+    /// <b>False when no limit is set</b>, which keeps every unlimited village byte-identical —
+    /// the shape D216 was careful about for the same reason.
+    /// </para>
+    /// </remarks>
+    public bool FoodLimitIsMet() => StockLimits.IsMet(Goods.Food, FoodTheVillageHolds());
+
     /// <summary>
     /// Why this workplace cannot do its job right now, or <c>null</c> if it can.
     /// </summary>

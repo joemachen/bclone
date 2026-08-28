@@ -157,6 +157,111 @@ public sealed class FoodLimitTests
         Assert.Null(world.WhyTheVillageWantsNoMoreFood());
     }
 
+    /// <summary>⭐⭐ A met limit stops the work — and the forager is still a forager.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-08-27, in his own words:</b> <i>"food workers should stop working if the
+    /// food limit is hit… the limits should dictate if a job keeps going. once limits are hit,
+    /// the job is done until stores fall below limits."</i>
+    /// </para>
+    /// <para>
+    /// <b>⛔ D216 landed half of this and the half it missed is the half he felt.</b> There are
+    /// two reasons to go out — <em>the village is short</em> and <em>my family is short</em> —
+    /// and only the first ever read the limit. A household below its own target kept sending its
+    /// forager to the berry patch with the village's stores capped and full.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>And the seat is KEPT, which was Joe's call over shrinking the quota.</b> Cutting
+    /// forager seats would churn people between trades, and proficiency accrues per trade — it
+    /// would spend Phase 3's whole pillar to enforce a stock limit. They stay foragers with
+    /// nothing to forage for, and fall through to labouring like anyone else who has declined
+    /// their own work this tick (D87).
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AMetFoodLimitStopsTheGatheringAndLeavesTheTrade()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        ColdStartTests.PlayTheOpening(world);
+        loop.Step(config.TicksPerYear * 10);
+
+        // ⚠️ Read the limit OUT of the village rather than writing a number in — an instrument
+        // that assumes a simpler world measures something else. Half of what it already holds
+        // is met by definition, whatever this fixture's economy happens to be doing.
+        int holds = world.FoodTheVillageHolds();
+        Assert.True(holds > 0, "The village stored no food in ten years, so this is vacuous.");
+        world.SetStockLimit(Goods.Food, holds / 2);
+        Assert.True(world.FoodLimitIsMet(), "The limit must be met, or nothing is being tested.");
+
+        // ⚠️ COUNTED ONLY ON THE TICKS WHERE THE LIMIT IS ACTUALLY MET, and the first draft of
+        // this guard was not — it asserted zero gathering over two whole years and measured 327.
+        // **That was the feature working, not failing.** The village eats, its stores fall back
+        // through the limit, and foraging correctly resumes: *"until stores fall below limits"*
+        // is the second half of Joe's own sentence. Asserting a flat zero would have demanded a
+        // village that starves rather than one that obeys a cap.
+        int gatheringWhileMet = 0;
+        int foragerTicksWhileMet = 0;
+        int ticksMet = 0;
+        string note = string.Empty;
+
+        for (int tick = 0; tick < config.TicksPerYear * 2; tick++)
+        {
+            loop.StepOnce();
+
+            if (!world.FoodLimitIsMet())
+            {
+                continue;
+            }
+
+            ticksMet++;
+            for (int i = 0; i < world.Villagers.Count; i++)
+            {
+                Villager v = world.Villagers[i];
+                if (!v.Alive || KindOf(world, v) != JobKind.Forager)
+                {
+                    continue;
+                }
+
+                foragerTicksWhileMet++;
+                if (v.State is VillagerState.Gathering or VillagerState.TravelingToFood)
+                {
+                    gatheringWhileMet++;
+                }
+
+                if (v.WorkNote.Length > 0)
+                {
+                    note = v.WorkNote;
+                }
+            }
+        }
+
+        _output.WriteLine(
+            $"limit {holds / 2} against {holds} held: the limit was met on {ticksMet} ticks of "
+            + $"two years, over which foragers held their trade for {foragerTicksWhileMet} ticks "
+            + $"and gathered on {gatheringWhileMet}. The note reads: "
+            + $"{(note.Length > 0 ? note : "(nothing)")}");
+
+        Assert.True(ticksMet > 0, "The limit was never met, so this measures nothing.");
+
+        // ⭐ THE SEAT IS KEPT. Somebody is still a forager while the limit stands — if the trade
+        // had been emptied instead this would be zero and the assertion below would pass
+        // vacuously, which is the failure mode that matters here.
+        Assert.True(
+            foragerTicksWhileMet > 0,
+            "Nobody held the forager's trade at all, so the seat was cut rather than the work "
+                + "stopped — which is the option Joe did not choose.");
+
+        // ⭐⭐ AND THE WORK STOPS, for exactly as long as the limit is met.
+        Assert.Equal(0, gatheringWhileMet);
+
+        // ⭐ AND IT SAYS WHY, naming the player's own number. A stop nobody can account for is
+        // the silent stall §1.1 forbids — we would have traded a loop for a mystery.
+        Assert.Contains("asked the village to keep", note);
+    }
+
     private static JobKind? KindOf(SimWorld world, Villager villager)
     {
         for (int i = 0; i < world.Workplaces.Count; i++)

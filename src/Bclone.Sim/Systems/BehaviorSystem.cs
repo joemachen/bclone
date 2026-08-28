@@ -2322,8 +2322,30 @@ public sealed class BehaviorSystem : ISimSystem
         // first rested while their neighbours did everything.
         // AND WHAT THE VILLAGE HOLDS, NOT WHAT IS IN THE GRANARIES (D161) — the same
         // correction one store over: food buffered at a farm is food the village has.
-        bool needsFood = household.Stockpile.Food < world.TargetFoodFor(household)
-            || world.FoodTheVillageHolds() < world.FoodTheVillageHasRoomFor();
+        // ⭐⭐ AND A MET LIMIT STOPS THE JOB, WHICH IS JOE'S RULE IN HIS OWN WORDS
+        // (2026-08-27): *"food workers should stop working if the food limit is hit… the limits
+        // should dictate if a job keeps going. once limits are hit, the job is done until stores
+        // fall below limits."*
+        //
+        // ⛔ THE SECOND ARM ALREADY OBEYED THE LIMIT AND THE FIRST NEVER DID (D216 landed half
+        // of this). `FoodTheVillageHasRoomFor` reads the player's number, so *the village is
+        // short* stopped at the limit — but *my family is short* did not, and a household below
+        // its own target sent its forager out with the village's stores capped and full. That is
+        // the one he felt.
+        //
+        // ⭐ IT COSTS THE HOUSEHOLD NOTHING, and that is why it is safe rather than a starvation
+        // risk: a met limit means the stores are FULL of food, so the hungry family's answer is
+        // the fetch errand a few lines below — walk to the granary and carry an armful home —
+        // not another trip to the berry patch. **Gathering more food into a village that has
+        // told you to stop gathering is the loop, not the remedy.**
+        //
+        // ⚠️ **The seat is kept, not cut** (Joe's call, over shrinking the quota): they are
+        // still a forager, they still hold the job, and they fall through to labouring. Churning
+        // the trade instead would throw away proficiency, which accrues per trade and is the
+        // whole of Phase 3.
+        bool needsFood = !world.FoodLimitIsMet()
+            && (household.Stockpile.Food < world.TargetFoodFor(household)
+                || world.FoodTheVillageHolds() < world.FoodTheVillageHasRoomFor());
 
         // FETCH — before work, because a household with an empty larder has a more
         // pressing errand than its job.
