@@ -2562,7 +2562,23 @@ public partial class Main : Control
 
         // A RichTextLabel does not go through `Body`, so it kept Godot's 16 while everything
         // around it shrank — which is exactly the panel Joe named first.
+        // ⛔⛔ EVERY VARIANT, NOT JUST `normal` — Joe, 2026-08-28, with a screenshot: *"what is this
+        // font size in the village log? got big out of nowhere!"*
+        //
+        // **A `RichTextLabel` picks a DIFFERENT theme font per markup variant**, and only
+        // `normal_font_size` was overridden. That was invisible for as long as nothing in the log
+        // was ever bold — and D241 started wrapping a celebrated discovery in `[b]`, which fell
+        // through to Godot's default **16** while every other line rendered at `RowSize`. So the
+        // one line the player is most meant to notice was the one that looked broken.
+        //
+        // ⚠️ **Turning BBCode on is what made a second font size reachable at all.** The lesson
+        // is not "remember bold": it is that enabling markup enables every theme slot the markup
+        // can name, and overriding one of them is overriding none of them.
         _villageLog.AddThemeFontSizeOverride("normal_font_size", RowSize);
+        _villageLog.AddThemeFontSizeOverride("bold_font_size", RowSize);
+        _villageLog.AddThemeFontSizeOverride("italics_font_size", RowSize);
+        _villageLog.AddThemeFontSizeOverride("bold_italics_font_size", RowSize);
+        _villageLog.AddThemeFontSizeOverride("mono_font_size", RowSize);
         body.AddChild(_villageLog);
 
         // ⭐⭐ ONE SWITCH PER CATEGORY (Joe, 2026-08-27: *"a filter for each category… optimize
