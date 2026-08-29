@@ -1057,6 +1057,111 @@ public sealed class SimWorld
     }
 
     /// <summary>
+    /// Ground shared by more than one hut is worth less to each — <b>rings compete</b> (D260, Joe).
+    /// </summary>
+    /// <returns>
+    /// The ring's wooded tiles weighted by how many huts draw on each, in <see cref="ShareScale"/>ths
+    /// of a tile.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS IS THE HALF THAT MAKES A SEAT CAP MEAN ANYTHING</b> (Joe, 2026-08-29): *"the
+    /// player has to build more if it wants more forest — but a 2nd hut should 'compete' with the
+    /// first hut for gathered food resources if they are too close."* ⛔ **Without it, capping the
+    /// seats is a tax rather than a decision**: two huts on the same copse each counted every tree
+    /// twice and doubled the village's food for the price of some timber. *"Build another hut" was
+    /// the answer to every food problem, and where you put it did not matter at all.*
+    /// </para>
+    /// <para>
+    /// <b>⛔ A TREE IS ONE TREE. Split evenly between the huts that reach it</b>, so two overlapping
+    /// rings are worth what one was and the overlap is pure waste. **Spreading out is the whole
+    /// skill the cap is meant to ask for**, and the player can see the rings, so the decision is
+    /// legible before it is made rather than discovered afterwards (`DESIGN.md §1`).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Fixed point at 2,520 — the least common multiple of one through ten — so an even split
+    /// stays EXACT for up to ten overlapping huts.</b> Integer division at a smaller scale would
+    /// round a third of a tree away each time and quietly make crowding cheaper than it is.
+    /// </para>
+    /// <para>
+    /// <b>⛔⛔ DELIBERATELY NOT CACHED, AND THE FIRST VERSION WAS.</b> <see cref="WoodedTilesAround"/>
+    /// beside it caches against the terrain generation, because what it counts depends only on the
+    /// ground. **This depends on WHO ELSE IS STANDING NEARBY**, so it goes stale on a second door —
+    /// a hut raised, moved or pulled down — and *the cached version returned the uncontested number
+    /// for ever with nothing looking wrong.* ⭐ **A guard caught it in one run**: two huts stacked on
+    /// one copse reported the first still holding every tree.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The cost is a ring sweep times the standing huts, and it is affordable because of WHO
+    /// ASKS.</b> A gather completes about every fifteen ticks per forager, and the panel asks once a
+    /// frame — this is not a per-tick, per-villager question. *A cache that can be wrong is worse
+    /// than a loop that is slow, when the loop is this small.*
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Asked of standing gathering workplaces, not of forager huts by name.</b> Anything with
+    /// a ring competes with anything else with a ring, so a modder's building is in the rule the day
+    /// it exists. **Sites do not compete** — a hut that is still a footprint has nobody working it.
+    /// </para>
+    /// </remarks>
+    public int WoodedShareAround(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        if (workplace.GatheringRadius <= 0)
+        {
+            return 0;
+        }
+
+        int radius = workplace.GatheringRadius;
+        int share = 0;
+
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            int span = radius - Math.Abs(dy);
+            for (int dx = -span; dx <= span; dx++)
+            {
+                var at = new GridPos(workplace.Position.X + dx, workplace.Position.Y + dy);
+                if (!Map.Contains(at) || Map.TerrainAt(at) != Terrain.Forest)
+                {
+                    continue;
+                }
+
+                share += ShareScale / SharersOf(at);
+            }
+        }
+
+        return share;
+    }
+
+    /// <summary>Fixed-point denominator for a shared tile. LCM of 1..10, so ties divide exactly.</summary>
+    public const int ShareScale = 2520;
+
+    /// <summary>How many standing gathering places reach a tile. Never below one for its own ring.</summary>
+    private int SharersOf(GridPos tile)
+    {
+        int sharers = 0;
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace other = Workplaces[i];
+            if (other.GatheringRadius <= 0 || other.IsSite)
+            {
+                continue;
+            }
+
+            int distance = Math.Abs(other.Position.X - tile.X) + Math.Abs(other.Position.Y - tile.Y);
+            if (distance <= other.GatheringRadius)
+            {
+                sharers++;
+            }
+        }
+
+        // ⚠️ A hut asking about its own ring is always at least one sharer — but the caller may be
+        // a SITE, which does not count itself. Floored so a preview never divides by zero.
+        return sharers < 1 ? 1 : sharers;
+    }
+
+    /// <summary>
     /// What one gathering trip at this place is worth, before vigour.
     /// </summary>
     /// <remarks>
@@ -1082,8 +1187,13 @@ public sealed class SimWorld
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
+        // ⭐ THE SHARED COUNT, NOT THE RAW ONE (D260). A tree two huts can both reach is one tree,
+        // and each of them gets half of it — so crowding two rings together buys nothing and the
+        // player has to spread out to feed more people.
         int ring = VillageEconomy.TilesInRing(workplace.GatheringRadius);
-        int perTrip = ring <= 0 ? 0 : Config.GatherYield * WoodedTilesAround(workplace) / ring;
+        int perTrip = ring <= 0
+            ? 0
+            : Config.GatherYield * WoodedShareAround(workplace) / (ring * ShareScale);
 
         // Tended patches, if anybody alive knows the woods that well (Phase 4). Applied here so
         // the panel and the sim quote the same number: the hut says what a trip is worth, and a

@@ -249,6 +249,7 @@ public sealed class Workplace
     /// <summary>Which terrain generation <see cref="CachedWoodedTiles"/> was counted against.</summary>
     internal int CachedAtTerrainGeneration = -1;
 
+
     /// <summary>
     /// What this place is set to do — <see cref="WorkMode.FellAndPlant"/> unless the player
     /// says otherwise.

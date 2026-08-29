@@ -45,7 +45,22 @@
 >   narrative voice across five systems**, and two of those lines carry `Day 4, Spring, Year 58`,
 >   which is more precise than the stamp. **Ask him before doing it.**
 >
-> **⛔⛔ THE LIVE ITEM IS THE COPSE'S RATE, AND IT IS JOE'S TO FEEL (D257).** ⭐ **The thinning is
+> **⛔⛔⛔ THE LIVE DECISION IS ONE SENTENCE AND ONLY JOE CAN WRITE IT (D261).** He has asked three
+> times for a **2-seat forager hut**. ✅ **The other half of his design — rings that COMPETE — is
+> built and shipped (D260): two huts on one copse are worth exactly one, and beyond twice the
+> radius they cost each other nothing.** ⛔ **The cap itself is blocked, and the cause is located to
+> the tick: two founders starve on Day 10 of Year 1**, because in the opening **foraging is the only
+> food tap and it needs a seat** — a villager without one has nowhere to get a meal.
+> ⭐ **The remedy is measured: 2 seats + a stocked granary at founding** turns seed 12345 from dying
+> into growing normally and plateauing at 17–20 against 43, *which is the pressure he asked for*.
+> ⛔ **But seed 42 still dies, and `MapGenerationTests.EverySeedProducesAValleyAVillageSurvivesIn`
+> promises every seed is survivable WITH THE PLAYER DOING NOTHING.** His design withdraws that
+> promise on purpose. **Ask him to confirm it, then the cap ships in one slice.**
+> ⚠️ **And a real oddity found on the way: the warm start has NO FOOD.** `RaiseTheCart` runs only on
+> a cold start, so `ShippedConfig.Established()` begins with `cart_food: 1200` unspent and zero food
+> in any store. **Seven seats were hiding it.**
+>
+> **⭐ The copse's thinning rate is also his to feel (D257).** ⭐ **The thinning is
 > BUILT and SHIPPED OFF**: `gathers_per_thinned_tile` in `data/sim.config.json`, at **0**. Every N
 > gathers sets the nearest mature tree in the ring back to a sapling and regrowth grows it up
 > again — **no new state, and the player watches the ring lighten.** Flip it to **3** to feel it
