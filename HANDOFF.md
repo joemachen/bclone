@@ -1,6 +1,6 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
 
-> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27/28, D236–D246.** Joe played to Year 44
+> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27/28, D236–D248.** Joe played to Year 44
 > and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
 > building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
 > His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
@@ -205,7 +205,7 @@ named one and was stale within the minute.
 
 **SUITE, FROM A RUN (2026-08-27, after D239):**
 ```
-858 passed, 0 failed, 1 skipped of 859 — about 3m (was 18m52s before D179)
+864 passed, 0 failed, 1 skipped of 865 — about 5m (was 18m52s before D179)
 ```
 
 **The one remaining skip is a ruling, not unfinished work: D143** — an unattended village is
@@ -262,10 +262,14 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 >      alone are 42% of a sixty-year log**, so one click does most of the noise reduction.
 >      ⚠️ *Warning fires 214 times in sixty years — a warning that frequent is furniture, and is
 >      worth a look in the UI pass.*
->    - **⛔ PINNING A VILLAGER TO A TRADE IS BLOCKED ON A DESIGN CALL, NOT ON WORK.**
->      `LabourTests.NoPublicApiLetsACallerAssignAVillagerToAWorkplace` exists specifically to make
->      it impossible, protecting §2.2 and D15. **Joe has to overrule that deliberately** — do not
->      route around the guard.
+>    - ✅ **PINNING A VILLAGER TO A TRADE IS DONE** (D247) — **and the guard never forbade it.**
+>      `NoPublicApiLetsACallerAssignAVillagerToAWorkplace` blocks naming a person into a
+>      *building*; `SetPinnedTrade(Villager, JobKind?)` names a *trade* and passes untouched.
+>      ⭐ **Joe offered to overrule it and it turned out not to need overruling** — worth
+>      remembering the next time a guard looks like it is in the way. ⚠️ It needed **five**
+>      mechanisms and read *0 of 4,311 ticks* through four of them; the last is that **a pin
+>      outranks cost in the candidate sort.**
+>    - ✅ **ALL SEVEN OF JOE'S ITEMS ARE NOW DONE**, and the QA walk with them (D248).
 >
 > 1. **✅ BOTH ARE ANSWERED: PUSHED (2026-08-27) AND MERGED TO `main` (2026-08-28).** ⛔ **Do not
 >    re-ask either.** ⚠️ **The phase's DoD is still unmet** — slice 3 unbuilt, the QA walk never
