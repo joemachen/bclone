@@ -79,7 +79,7 @@ public sealed class ModdedBuildingTests
         { "id": 4, "name": "stockpile",        "stores": "Pile" },
         { "id": 5, "name": "house",            "house_capacity": 5,                         "work_ticks": 30, "materials": [ { "goods": "Logs", "amount": 30 } ] },
         { "id": 6, "name": "builder's hut" },
-        { "id": 7, "name": "gatherer's hut",                        "gathering_radius": 8,  "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ] },
+        { "id": 7, "name": "gatherer's hut", "seats": 2,            "gathering_radius": 8,  "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ] },
         { "id": 8, "name": "forester's hut",                                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ] },
         { "id": 9, "name": "farmhouse",                             "seats": 2, "local_store_cap": 100, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ] },
 
@@ -273,7 +273,7 @@ public sealed class ModdedBuildingTests
             { "id": 10, "name": "boathouse",       "stores": "Shed",    "store_capacity": 200, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 15 } ] },
             { "id": 9,  "name": "farmhouse",       "seats": 2, "local_store_cap": 100,         "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 8,  "name": "forester's hut",                                              "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
-            { "id": 7,  "name": "gatherer's hut",  "gathering_radius": 8,                      "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
+            { "id": 7,  "name": "gatherer's hut",  "seats": 2, "gathering_radius": 8,           "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 6,  "name": "builder's hut" },
             { "id": 5,  "name": "house",           "house_capacity": 5,                        "work_ticks": 30, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 11, "name": "moot hall",       "civic": true, "singleton": true,           "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 20 } ] },

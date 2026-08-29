@@ -433,7 +433,7 @@ public sealed class LabourAllocationTests
         // That is the same posing done through the number that still exists.
         SimConfig config = Config with
         {
-            GathererHutRingTiles = 1,
+            GathererHutCapacity = 1,
             ForesterHutCapacity = 1,
             WoodcutterHutCapacity = 1,
 

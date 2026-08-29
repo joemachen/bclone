@@ -149,27 +149,36 @@ public sealed class GathererHutTests
         Assert.True(recipe.WorkTicks > 0, "A hut that owes no work is an instant hut.");
     }
 
-    /// <summary>Its seats are the ring priced in workers — derived, not typed (D16, D50, D86).</summary>
+    /// <summary>⛔ It seats two, and a bigger ring does not buy a third (D262, Joe).</summary>
+    /// <remarks>
+    /// <b>⭐⭐ THIS GUARD USED TO ASSERT THE OPPOSITE, AND THE REVERSAL IS THE POINT.</b> It was
+    /// <c>ItsSeatsAreItsRingPricedInWorkers</c>, with an anti-vacuity arm proving *a wider ring is
+    /// more hands*. That rule gave the forager's hut **seven** seats against **two** for every
+    /// other stated workplace — on the one building that feeds everybody.
+    /// <b>⛔ The second arm is the old one pointed the other way: a doubled ring must still seat
+    /// two.</b> Joe: *"the user must build more forests and huts to grow."* A seat count that grows
+    /// with reach is exactly how one hut carries a whole game.
+    /// </remarks>
     [Fact]
-    public void ItsSeatsAreItsRingPricedInWorkers()
+    public void ItSeatsTwoHoweverBigItsRingIs()
     {
         SimConfig config = Config;
         SimWorld world = Loop(config).World;
 
         Workplace hut = RaiseAHut(world, WoodiestSpotNear(world, 6));
 
-        Assert.Equal(VillageEconomy.GathererHutCapacity(config), hut.Capacity);
+        Assert.Equal(config.GathererHutCapacity, hut.Capacity);
         Assert.True(hut.Capacity >= 1, "A hut with no seat can never gather anything.");
 
-        // Anti-vacuity (D7): a bigger ring is more ground and therefore more hands, or this
-        // is asserting against a constant.
-        int wider = VillageEconomy.GathererHutCapacity(
-            config with { GathererHutRingTiles = config.GathererHutRingTiles * 2 });
+        SimConfig wider = config with { GathererHutRingTiles = config.GathererHutRingTiles * 2 };
+        SimWorld widerWorld = Loop(wider).World;
+        Workplace widerHut = RaiseAHut(widerWorld, WoodiestSpotNear(widerWorld, 6));
 
         _output.WriteLine($"ring {config.GathererHutRingTiles} → {hut.Capacity} seats; "
-            + $"ring {config.GathererHutRingTiles * 2} → {wider}");
+            + $"ring {wider.GathererHutRingTiles} → {widerHut.Capacity} seats");
 
-        Assert.True(wider > hut.Capacity, "The seats do not follow the ground they price.");
+        Assert.Equal(hut.Capacity, widerHut.Capacity);
+        Assert.Equal(config.MarketCapacity, hut.Capacity);
     }
 
     /// <summary>A gatherer's hut is a forager's workplace — the job kind is reused, not added to.</summary>

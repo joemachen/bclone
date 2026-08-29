@@ -263,7 +263,7 @@ public sealed class BuildingsCatalogTests
     /// exemption becoming a hole a modder falls into.
     /// </remarks>
     [Fact]
-    public void OnlyTheSixTheEconomySolvesForMayLeaveACapacityUnstated()
+    public void OnlyTheFiveTheEconomySolvesForMayLeaveACapacityUnstated()
     {
         SimConfig config = VillageFixtures.Village;
         BuildingsCatalog catalog = World(config).BuildingsCatalog;
@@ -276,7 +276,10 @@ public sealed class BuildingsCatalogTests
         Assert.Equal(config.WoodcutterHutCapacity, catalog[BuildingKind.WoodcutterHut].Seats);
         Assert.Equal(config.MarketCapacity, catalog[BuildingKind.Market].Seats);
         Assert.Equal(config.FarmhouseSeats, catalog[BuildingKind.Farmhouse].Seats);
-        Assert.Null(catalog[BuildingKind.GathererHut].Seats);
+        // ⭐ THE FORAGER'S HUT LEFT THE DERIVED SET IN D262 and states two, like every other
+        // workplace the player can see. Only the forester's hut (what the woodcutters can eat)
+        // and the builder's hut (the economy horizon) are still solved.
+        Assert.Equal(config.GathererHutCapacity, catalog[BuildingKind.GathererHut].Seats);
         Assert.Null(catalog[BuildingKind.ForesterHut].Seats);
         Assert.Null(catalog[BuildingKind.BuilderHut].Seats);
     }

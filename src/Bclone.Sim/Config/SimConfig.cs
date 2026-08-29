@@ -177,6 +177,65 @@ public sealed record SimConfig
     [JsonPropertyName("gathers_per_thinned_tile")]
     public int GathersPerThinnedTile { get; init; }
 
+    /// <summary>
+    /// How many people can work one gathering hut at once — <b>two</b> (D262, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ ASKED FOR FOUR TIMES, AND THE FOURTH CAME WITH THE DESIGN SENTENCE THAT SETTLES IT:</b>
+    /// <em>"the user must build more forests and huts to grow (if it wants to focus on gathering —
+    /// there are/will be other food sources available)."</em> **Gathering is no longer meant to carry
+    /// a village on its own.** Fishing and hunting are next (D253), and the hut that fed forty-four
+    /// people from one ring was the reason nobody would ever have needed them.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT WAS DERIVED AND GAVE SEVEN</b> — the ring priced in workers, 145 tiles ÷ 24 a worker —
+    /// **the only workplace in the game seating more than two**, on the one building that feeds
+    /// everybody. Woodcutter, forester, market and farmhouse all state two. *This was the outlier.*
+    /// </para>
+    /// <para>
+    /// <b>⛔⛔ AND IT WITHDRAWS A PROMISE, DELIBERATELY.</b> An unattended village on a thin-wooded
+    /// valley now dies, because it never builds the second hut the design requires. Joe:
+    /// <em>"my QA trumps your tests."</em> **`MapGenerationTests` asserts survivability WHEN PLAYED
+    /// now, not when ignored** — which is what a management game means, and what D143 already said
+    /// of an unattended valley.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It only works beside <c>WoodedShareAround</c> (D260).</b> Without rings that compete, the
+    /// answer to a capped hut is a second hut on the same trees, and the cap is a tax rather than a
+    /// decision. **The two are one design and neither is worth shipping alone.**
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("gatherer_hut_capacity")]
+    public int GathererHutCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// How many gathering huts a village founded WITH buildings starts with (D262).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ONE IN THE SHIPPED GAME, AND THAT IS THE DESIGN RATHER THAN A DEFAULT</b> (Joe):
+    /// <em>"the user must build more forests and huts to grow."</em> The village is handed a hut and
+    /// has to earn the rest. ⛔ A cold start still gets none — *"no forest, no food"*, and siting
+    /// the first one is the first real decision of a run.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT EXISTS SO A TEST FIXTURE CAN BE A PLAYED VILLAGE RATHER THAN AN ABANDONED ONE.</b>
+    /// Capping the hut at two seats (see <see cref="GathererHutCapacity"/>) means a village that
+    /// never builds a second hut plateaus and dies — **which is exactly the intended pressure, and
+    /// useless in a guard about firewood, farms or apprenticeship.** Those guards are not about
+    /// gathering, and they should not be gated on it. *`VillageFixtures` sets this; the shipped
+    /// file does not.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Huts past the first are sited so their rings do not overlap</b> (D260), because two
+    /// huts on one copse are worth one. A founding that crowded them would be provisioning the
+    /// fixture with buildings that feed nobody.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("founding_gathering_huts")]
+    public int FoundingGatheringHuts { get; init; } = 1;
+
     /// <summary>Ticks spent gathering once at the source.</summary>
     [JsonPropertyName("gather_ticks")]
     public int GatherTicks { get; init; } = 3;
@@ -1760,8 +1819,9 @@ public sealed record SimConfig
             },
             WorkTicks = GathererHutWorkTicks,
 
-            // ⛔ Derived from the ring: tiles in it ÷ tiles per worker.
-            Seats = null,
+            // ⛔⛔ STATED AT TWO (D262, Joe, asked four times). See GathererHutCapacity — and note it
+            // only means anything beside D260's competing rings.
+            Seats = GathererHutCapacity,
             GatheringRadius = GathererHutRingTiles,
         },
         new BuildingRow
@@ -3174,9 +3234,11 @@ public sealed record SimConfig
                     + "other store must state how much it holds.");
             }
 
+            // ⚠️ The forager's hut left this list in D262: it states its seats now, like the
+            // woodcutter, the market and the farmhouse. Only the forester's hut (what the
+            // woodcutters can eat) and the builder's hut (the economy horizon) are still solved.
             bool economyDerivesTheSeats =
-                kind is BuildingKind.GathererHut or BuildingKind.ForesterHut
-                    or BuildingKind.BuilderHut;
+                kind is BuildingKind.ForesterHut or BuildingKind.BuilderHut;
             bool anybodyWorksThere = false;
             for (int j = 0; j < JobsCatalog.Count; j++)
             {

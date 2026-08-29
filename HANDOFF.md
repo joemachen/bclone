@@ -45,7 +45,26 @@
 >   narrative voice across five systems**, and two of those lines carry `Day 4, Spring, Year 58`,
 >   which is more precise than the stamp. **Ask him before doing it.**
 >
-> **⛔⛔⛔ THE LIVE DECISION IS ONE SENTENCE AND ONLY JOE CAN WRITE IT (D261).** He has asked three
+> **⛔⛔⛔ THE LIVE JOB IS RECONCILING 28 GUARDS TO A SMALLER VILLAGE (D262), AND IT IS ON
+> `slice/two-seats-per-hut` — NOT ON `main`.** ✅ **Joe's call is taken: two seats per gathering hut,
+> and the unattended-survival promise withdrawn with it** (*"my QA trumps your tests"*). The cap,
+> competing rings and the warm start's missing food are all built. ⭐ **Measured: nothing dies out —
+> the shipped seeds settle at 20, 23 and 15 against peaks of 26, 32 and 18.** *Villages top out
+> around twenty instead of forty-four, which is the pressure he asked for.*
+> ⛔⛔ **31 GUARDS ARE RED AND THE BRANCH MUST NOT MERGE UNTIL THEY ARE JUDGED ONE BY ONE.** Four
+> are goldens (move last, one commit). **About seventeen are not about gathering at all** — farms,
+> firewood, market, apprenticeship, storage — and are failing only because their village is now
+> smaller. **Four assert unattended survival and need Joe's sentence written into them.**
+> ⛔⛔⛔ **DO NOT SET `GathererHutCapacity = 8` IN `VillageFixtures.Village` TO GO GREEN.** It fixes
+> most of them in one edit **and stops every one of them exercising the shipped seat count while
+> reading as passing.** *That is D157 green-and-blind, bought on purpose — the fifth time this
+> project has been offered that trade.*
+> ⚠️ **And a hard limit found on the way: `MaxHomeToWorkTiles` IS the ring**, so two huts with no
+> overlap sit twice as far apart as anybody may walk to work. **Spreading huts is the player's job,
+> done with painted neighbourhoods; an unattended fixture cannot do it, and placing more huts made
+> thin valleys WORSE.**
+>
+> **⭐ The copse's thinning rate is still his to feel (D257), and the old note stands:** He has asked three
 > times for a **2-seat forager hut**. ✅ **The other half of his design — rings that COMPETE — is
 > built and shipped (D260): two huts on one copse are worth exactly one, and beyond twice the
 > radius they cost each other nothing.** ⛔ **The cap itself is blocked, and the cause is located to

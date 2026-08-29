@@ -1136,6 +1136,31 @@ public sealed class SimWorld
     /// <summary>Fixed-point denominator for a shared tile. LCM of 1..10, so ties divide exactly.</summary>
     public const int ShareScale = 2520;
 
+    /// <summary>
+    /// Put what the founders carried into the granary of a village that already has one (D262).
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ The warm start's half of <c>RaiseTheCart</c>.</b> A cold start gets the wagon and its
+    /// <c>cart_food</c>; a warm start got the buildings and, until now, <b>nothing to put in them</b>.
+    /// ⚠️ <b>Food and tools only</b> — the same two things the cart carries (D64), for the same
+    /// reason: *what the founders arrived with is what they could pull.* No timber, because they
+    /// did not drag a woodpile across the map.
+    /// </remarks>
+    private void StockTheFoundingStores(SimConfig config)
+    {
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = StoreBuildings[i];
+            if (store.Kind != StoreKind.Granary)
+            {
+                continue;
+            }
+
+            store.Store.Receive(Goods.Food, config.CartFood);
+            return;
+        }
+    }
+
     /// <summary>How many standing gathering places reach a tile. Never below one for its own ring.</summary>
     private int SharersOf(GridPos tile)
     {
@@ -5988,7 +6013,6 @@ public sealed class SimWorld
 
         return kind switch
         {
-            BuildingKind.GathererHut => VillageEconomy.GathererHutCapacity(Config),
             BuildingKind.ForesterHut => VillageEconomy.RequiredForesterSeats(Config),
             BuildingKind.BuilderHut => VillageEconomy.BuilderHutCapacity(Config),
             _ => throw new ArgumentOutOfRangeException(
@@ -6169,12 +6193,12 @@ public sealed class SimWorld
     /// by position, so two runs of one seed cannot disagree (D15).
     /// </para>
     /// </remarks>
-    private GridPos WhereTheTreesAre(GridPos origin, SimConfig config)
+    private GridPos? WhereTheTreesAre(GridPos origin, SimConfig config, bool clearOfOtherRings = false)
     {
         int reach = VillageEconomy.MaxHomeToWorkTiles(config);
         int ring = config.GathererHutRingTiles;
 
-        GridPos best = origin;
+        GridPos? best = clearOfOtherRings ? null : origin;
         int bestTrees = -1;
         int bestDistance = int.MaxValue;
 
@@ -6209,6 +6233,13 @@ public sealed class SimWorld
                     continue;
                 }
 
+                // ⭐ A SECOND HUT MUST NOT SHARE THE FIRST'S TREES (D260). Rings are diamonds of
+                // radius r, so two centres more than 2r apart cannot overlap at all.
+                if (clearOfOtherRings && OverlapsAGatheringRing(at, ring))
+                {
+                    continue;
+                }
+
                 int trees = WoodedTilesWithin(at, ring);
 
                 if (trees > bestTrees || (trees == bestTrees && distance < bestDistance))
@@ -6232,6 +6263,39 @@ public sealed class SimWorld
     /// and carrying the warning that says so. Nearest wood first, in a fixed scan order, so
     /// two runs of a seed give the hut the same ground.
     /// </remarks>
+    /// <summary>
+    /// Whether a ring centred here would share trees with one already standing (D260).
+    /// </summary>
+    /// <remarks>
+    /// <b>Rings are diamonds, so two centres more than twice the radius apart cannot share a
+    /// tile.</b> ⚠️ It is a bound on the CENTRES, not a tile-by-tile test — the cheap question,
+    /// asked of a candidate list, exactly as <see cref="WhereTheTreesAre"/>'s own comment insists
+    /// for reachability.
+    /// </remarks>
+    private bool OverlapsAGatheringRing(GridPos centre, int radius)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace other = Workplaces[i];
+            if (other.GatheringRadius <= 0)
+            {
+                continue;
+            }
+
+            // ⚠️ HALF A RING APART, NOT A WHOLE ONE, AND THAT IS FORCED BY THE COMMUTE.
+            // `MaxHomeToWorkTiles` IS the ring (the economy is anchored on it), so two huts with
+            // NO overlap would be 2r apart — twice as far as anybody may walk to work. **A hut
+            // nobody can reach is not a second hut.** So the rule is separation, not disjointness:
+            // far enough that most of each ring is its own, near enough to be worked.
+            if (centre.ManhattanDistanceTo(other.Position) <= radius)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void GiveItTheWoodAroundIt(Workplace hut, SimConfig config)
     {
         // ⚠️ AGAINST THE SEATS, NOT AGAINST THE WORKERS. `WorkGroundAllowanceFor` prices
@@ -6701,6 +6765,19 @@ public sealed class SimWorld
             Capacity = VillageEconomy.BuilderHutCapacity(config),
         });
 
+        // ⭐⭐ AND THE SUPPLIES THEY ARRIVED WITH, WHICH A WARM START HAD BEEN THROWING AWAY
+        // (D262). `RaiseTheCart` runs only when `!FoundingBuildings`, so a village founded WITH
+        // buildings began with `cart_food` unspent and **zero food in any store** — its founders
+        // survived purely because all four could forage on tick one.
+        //
+        // ⛔ SEVEN SEATS WERE HIDING IT, AND CAPPING THEM AT TWO IS WHAT MADE IT VISIBLE: two
+        // founders starved on Day 10 of Year 1, at hunger 100 for twenty-five ticks, with no seat
+        // at the only food tap in the valley. *The bug was always there; the cap only stopped the
+        // village outrunning it.*
+        //
+        // ⚠️ INTO THE GRANARY RATHER THAN A CART. A warm start has somewhere to put things, so a
+        // second store standing in the middle of it would be the wagon they arrived in *and* the
+        // building they built — two answers to "where is the food?" on day one.
         // ⭐ A GATHERER'S HUT, BECAUSE A WARM START NOW HAS NO OTHER FOOD (slice 5). The
         // berry patches used to be laid down by the generator before any building existed,
         // so a warm start woke up able to eat. With them retired, a village founded with
@@ -6712,16 +6789,33 @@ public sealed class SimWorld
         // tests that taught me the difference. The COLD start still has no hut at all, and
         // that is Joe's *"no forest, no food"*: the player sites the first one, in woodland
         // they picked, and it is the first real decision of a run.
-        Workplaces.Add(new Workplace
+        // ⭐ AND AS MANY AS `founding_gathering_huts` ASKS FOR, SITED SO THEIR RINGS DO NOT
+        // OVERLAP (D260, D262). The shipped game asks for one and the player earns the rest;
+        // a fixture asks for enough that a guard about firewood is not secretly a guard about
+        // gathering. **Crowded huts would be buildings that feed nobody.**
+        int huts = config.FoundingGatheringHuts < 1 ? 1 : config.FoundingGatheringHuts;
+        for (int h = 0; h < huts; h++)
         {
-            Store = NewStockpile(),
-            Id = nextWorkplaceId++,
-            Kind = JobKind.Forager,
-            Name = NameFor(BuildingKind.GathererHut),
-            Position = WhereTheTreesAre(origin, config),
-            Capacity = VillageEconomy.GathererHutCapacity(config),
-            GatheringRadius = config.GathererHutRingTiles,
-        });
+            GridPos? spot = WhereTheTreesAre(origin, config, clearOfOtherRings: h > 0);
+            if (spot is null)
+            {
+                // ⚠️ Nowhere left that is wooded, reachable AND clear of the rings already
+                // standing. Fewer huts than asked for is the honest answer — the valley simply
+                // does not have that many separate copses within reach.
+                break;
+            }
+
+            Workplaces.Add(new Workplace
+            {
+                Store = NewStockpile(),
+                Id = nextWorkplaceId++,
+                Kind = JobKind.Forager,
+                Name = NameFor(BuildingKind.GathererHut),
+                Position = spot.Value,
+                Capacity = config.GathererHutCapacity,
+                GatheringRadius = config.GathererHutRingTiles,
+            });
+        }
 
         // ⭐ AND A FORESTER'S HUT WITH GROUND, WHICH IS THE OTHER HALF OF THE SAME HOLE.
         // Foresters worked the two generated tree stands; with those retired a warm start
@@ -6740,7 +6834,10 @@ public sealed class SimWorld
             Id = nextWorkplaceId++,
             Kind = JobKind.Forester,
             Name = NameFor(BuildingKind.ForesterHut),
-            Position = WhereTheTreesAre(origin, config),
+
+            // ⚠️ Never null: only the clear-of-other-rings form can fail to find a spot, and a
+            // forester does not compete for gathered food.
+            Position = WhereTheTreesAre(origin, config)!.Value,
             Capacity = VillageEconomy.RequiredForesterSeats(config),
         };
 
@@ -6857,6 +6954,7 @@ public sealed class SimWorld
         if (config.FoundingBuildings)
         {
             PaintTheStarterZone(origin, config);
+            StockTheFoundingStores(config);
         }
 
         FoundVillage(config, origin);
