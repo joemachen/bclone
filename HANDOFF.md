@@ -3,14 +3,10 @@
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
 > **880 passing, 0 failing, 1 skipped of 881.**
 >
-> **⛔⛔ ALL OF IT IS ON `slice/the-founders-hall`, FIVE COMMITS, AND `main` HAS NONE OF IT.**
-> Clean tree, everything committed, both projects build. **`main` and `origin/main` are still at
-> `8c35f1a`** — and the branch is **not pushed**, so it exists on this machine only.
-> ⚠️ **IF JOE PLAYS `main` HE WILL NOT SEE THE TOWN HALL, THE 20x, THE SKIP BUTTONS OR THE
-> TIMESTAMPS**, and will correctly report them missing. *That is D217 exactly — he played `main`,
-> saw a bug that was real on his build and fixed on a branch he was not running, and the session
-> that had done the work spent its reply diagnosing a build rather than a village.*
-> **Merge it, or say out loud that it is not merged.** ⭐ Nothing is blocking the merge but asking.
+> **✅✅ ALL OF IT IS MERGED TO `main` AND PUSHED (2026-08-29, Joe: *"Both: Merge to main, push the
+> branch"*).** A clean fast-forward, so **`main`, `origin/main`, `slice/the-founders-hall` and
+> `origin/slice/the-founders-hall` are all the same commit** — `d0259a5`. Clean tree, both
+> projects build. ⭐ **D217's trap is not live: the build Joe plays and the remote are one thing.**
 >
 > The only other branch is `slice/work-from-the-steading`, one unmerged commit, **93+ commits
 > behind** and backed up on `origin` — a decaying asset, not a parked one.
@@ -48,6 +44,20 @@
 >   so about half the stamped lines say it twice. **Taking it out is a change to the game's
 >   narrative voice across five systems**, and two of those lines carry `Day 4, Spring, Year 58`,
 >   which is more precise than the stamp. **Ask him before doing it.**
+>
+> **⛔⛔ THE LIVE ITEM IS THE COPSE, AND IT IS JOE'S CALL (D256).** From his 111-year run:
+> *"forager huts should be capped at 2 workers max so the player cant milk one forager hut for the
+> whole game — the copse of wood isnt infinite."* ⭐ **He is right, and it is measured: one hut
+> saturates at seven foragers and carries a 44-person village from year 70 to 110.**
+> ⛔⛔ **BUT THE CAP WAS BUILT, MEASURED ACROSS FOUR VALUES AND THREE SEEDS, AND REVERTED — the
+> band where it works does not exist.** At **5–6 the good valleys are exactly as good as at 7**
+> (no pressure at all) **while the poor valley gets worse**; at **4** the pressure appears and
+> **Phase 3's apprenticeship pillar inverts** (a village that teaches keeps *fewer* masters,
+> because the forager's hut is where pairing happens); at **2–3, two valleys in three die out.**
+> ⭐ **The lever is yield against regrowth, not seats** — the ring regrows faster than any number
+> of foragers can strip it. **Sixth cause killed by measurement after the farm's five; do not add a
+> seventh by reasoning.** *Ask him whether the answer is slower regrowth, thinner yield, or a ring
+> that remembers what has been taken (the farm's memory, one building over).*
 >
 > **⭐ AND ONE FINDING WORTH MORE THAN THE FEATURE: the unattended shipped village NEVER LEARNS TO
 > WRITE**, in fifty-eight years. A granary is player-placed, nobody places one in an unattended

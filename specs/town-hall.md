@@ -2,6 +2,9 @@
 
 > Status: **✅ SLICE 1 IS BUILT AND GREEN, 2026-08-29** — the trigger, the gift, the tribute, the
 > building, and the view that reaches it. **880 passing, 0 failing, 1 skipped of 881.**
+> ✅ **PLAYED AND SIGNED OFF BY JOE (2026-08-29): the moment fired at Year 58, the hall was placed
+> and built, and the founders' panel reads right — *"looks good!"* — with a 111-year run standing
+> in for the 200-year check.**
 > ⏸️ **Slices 2–4 (founders tab, collections, knowledge, charts) are not started.**
 > Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (people, not a spreadsheet) and **§1's
 > generational time as the core loop**. Format per `METHODOLOGY.md §2`.
@@ -271,13 +274,18 @@ people.
      left half-open in the tool built to close it. **Measured: the Civic group costs 83px on a row
      that already wrapped, and the bar's height is unchanged at 189.**
 5. ✅ `DESIGN.md` §6 and §7 updated.
-6. ⏸️ **No new errors across a clean 200-year playthrough — NOT CHECKED, and not claimed.** The
-   suite runs 150-year villages green and a headless launch starts clean, but the 200-year
-   playthrough is a separate run nobody has done for this slice.
+6. ✅ **SIGNED OFF AT 111 YEARS BY JOE, 2026-08-29** — *"I just did a 111 year run which is good
+   enough. not much will change at year 200 as long as i keep adding granaries and
+   foragers/farmers."* ⚠️ **Recorded as his call rather than ticked as 200**, which is what D203
+   and D248 did for the QA walks. **The reasoning is his and it is sound**: past the town hall the
+   village is in its steady state, and the two hundredth year differs from the hundredth by
+   arithmetic rather than by anything new happening.
 
-> **⛔ AND THE VIEW HALF HAS NO AUTOMATED VERIFICATION OF ANY KIND** (D160). The button, the
-> colour, the panel and the moment were built and compiled; **nobody has looked at them.** *Looking
-> at it is the test, and that needs Joe.*
+> **✅✅ AND THE VIEW HAS BEEN LOOKED AT — Joe played it (2026-08-29): the moment fired at Year 58,
+> he placed the hall, it was built, and the founders' panel names all four with their years and
+> winters.** *"looks good!"* ⭐ **That closes the one thing this spec could not verify** (D160: the
+> view has no automated verification of any kind), and it is the second slice in a row whose
+> player-facing half was checked by the only test that can check it.
 
 ---
 
