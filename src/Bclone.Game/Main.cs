@@ -4049,8 +4049,46 @@ public partial class Main : Control
             Apply();
         };
 
+        // ⭐⭐ AND THE VILLAGE CANNOT BE ASKED FOR MORE PEOPLE THAN IT HAS (Joe, 2026-08-29, with
+        // a screenshot showing **six jobs asked for against four able adults**): *"the total
+        // number of villagers assigned a profession should not be able to exceed the total number
+        // of adults available to work… the + shouldn't work."*
+        //
+        // ⛔ **THE OLD REASONING IS OVERTURNED DELIBERATELY, NOT OVERLOOKED.** The comment above
+        // says this panel has *"no ceiling of its own — the panel is allowed to ask for more than
+        // the village would choose (D106), and the sim says out loud when it cannot honour the
+        // number."* **That is right about the QUOTA and wrong about the HEADCOUNT**, and the
+        // difference is what the screenshot shows: asking for more foragers than the village
+        // wants is a real instruction the sim can act on later; asking for more *people* than
+        // exist is not a preference at all, it is arithmetic that cannot come true.
+        //
+        // ⭐ **The tell is that it was silently doing nothing.** Marketer read *"nobody working of
+        // 0 seats · asked 1"* — a number the player had typed that could never be honoured, sat
+        // beside two others in the same state. *A control that accepts input it can never act on
+        // is the same bug as a button you cannot press, from the other side.*
+        //
+        // ⚠️ **Able adults, not population** — children and elders are not labour, and
+        // `AbleAdults` is the number the panel already prints one row up as *"0 of 4 able
+        // adults"*, so the ceiling and the readout cannot disagree.
         more.Pressed += () =>
         {
+            int spoken = 0;
+            foreach (JobKind trade in System.Enum.GetValues<JobKind>())
+            {
+                spoken += _loop.World.JobLimits.For(trade) ?? 0;
+            }
+
+            int hands = _loop.World.AbleAdults;
+            if (spoken >= hands)
+            {
+                Warn(PlacementVerdict.Yes(
+                    $"There are only {hands} able "
+                    + $"{(hands == 1 ? "adult" : "adults")} in {_loop.World.Name}, and all of "
+                    + $"{(hands == 1 ? "them is" : "them are")} already spoken for. Take somebody "
+                    + "off another kind of work first."));
+                return;
+            }
+
             asked++;
             Apply();
         };
