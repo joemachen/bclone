@@ -2335,6 +2335,46 @@ public sealed class SimWorld
     /// player has turned down does not ask for hands it would refuse.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Every seat the village has to gather from — <b>the ceiling on how many can feed it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE QUOTA HAD NO IDEA THE SEATS COULD RUN OUT, AND CAPPING THE HUT AT TWO IS WHAT
+    /// EXPOSED IT (D262).</b> <c>LabourQuota</c> took as many hands as it needed to feed everyone
+    /// and left the rest to farm, cut timber and mind the market. **With seven seats a hut, "as
+    /// many as it needs" was always seatable.** With two, the quota reserves five hands for a job
+    /// that has room for two — and **the other three do nothing at all**, because they were spent
+    /// from the pool before farming or timber was asked.
+    /// </para>
+    /// <para>
+    /// <b>⛔ SO A VILLAGE SHORT OF FOOD FROZE ITS OWN WORKFORCE.</b> Measured before the fix:
+    /// *"nobody was ever posted to the forester's hut"*, markets unstaffed, farms sowing with
+    /// hands that had been booked for a hut they could not get into. **Hands the food work cannot
+    /// use must go back to the pool**, or the cap is a labour bug wearing a design's clothes.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It bounds what is TAKEN, never what is WANTED.</b> <c>ForagersToFeedEveryone</c> stays
+    /// the honest need, so the panel can still say *"the village wants five"* while only two can
+    /// sit down — which is the sentence that tells the player to build another hut.
+    /// </para>
+    /// </remarks>
+    public int GatheringSeats()
+    {
+        int seats = 0;
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace place = Workplaces[i];
+            if (place.GatheringRadius > 0 && !place.IsSite)
+            {
+                seats += place.Capacity;
+            }
+        }
+
+        return seats;
+    }
+
     public int ForesterSeatsWithGroundToPlant()
     {
         int seats = 0;

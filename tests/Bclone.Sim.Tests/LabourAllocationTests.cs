@@ -30,6 +30,27 @@ public sealed class LabourAllocationTests
         SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
 
     /// <summary>
+    /// A founding with nothing in its stores — <b>posed, because it stopped being free</b> (D262).
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ THESE GUARDS USED TO GET AN EMPTY LARDER BY ACCIDENT.</b> A warm start never spent
+    /// `cart_food`, so a village founded WITH buildings woke up with **zero food anywhere** — and
+    /// *"a village founded with an empty larder has no spare hands by definition"* was true without
+    /// anybody arranging it. **D262 fixed that bug**, so the premise now has to be stated.
+    /// ⭐ *A fixture that depended on a bug is a fixture that was testing the bug.*
+    /// </remarks>
+    private static SimLoop BuildWithBareStores(SimConfig config, ulong? seed = null)
+    {
+        SimLoop loop = Build(config, seed);
+        for (int i = 0; i < loop.World.StoreBuildings.Count; i++)
+        {
+            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Food);
+        }
+
+        return loop;
+    }
+
+    /// <summary>
     /// Run whole years, then one more tick, so the last thing to have happened is a
     /// reshuffle.
     /// </summary>
@@ -122,16 +143,23 @@ public sealed class LabourAllocationTests
         // §4a's one-sentence policy: a village short of hands feeds itself before it
         // builds. Stated as a property of the quota rather than of a run, so it
         // cannot pass by accident of tuning.
-        SimLoop loop = Build(Config);
+        SimLoop loop = BuildWithBareStores(Config);
         loop.StepOnce();
 
         LabourQuota quota = LabourQuota.For(loop.World);
         _output.WriteLine(quota.ToString());
 
-        // A village founded with an empty larder has no spare hands by definition.
+        // A village with an empty larder has no spare hands by definition — posed now, because
+        // D262 stopped a warm start being empty by accident.
         Assert.True(LabourQuota.VillageIsShortOfFood(loop.World));
         Assert.Equal(0, quota.Foresters);
-        Assert.Equal(quota.Hands, quota.Foragers);
+
+        // ⛔ ALL OF THEM IT CAN SEAT, WHICH IS NOT ALL OF THEM (D262). A gathering hut holds two,
+        // so a village of four hands puts two on food and the rest go back to the pool rather
+        // than idling in a queue for a seat that does not exist. **The policy is unchanged; the
+        // ceiling is new.**
+        Assert.Equal(System.Math.Min(quota.Hands, loop.World.GatheringSeats()), quota.Foragers);
+        Assert.True(quota.Foragers > 0, "Nobody was put on food at all.");
     }
 
     [Fact]

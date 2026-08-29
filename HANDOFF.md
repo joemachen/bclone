@@ -51,10 +51,20 @@
 > competing rings and the warm start's missing food are all built. ⭐ **Measured: nothing dies out —
 > the shipped seeds settle at 20, 23 and 15 against peaks of 26, 32 and 18.** *Villages top out
 > around twenty instead of forty-four, which is the pressure he asked for.*
-> ⛔⛔ **31 GUARDS ARE RED AND THE BRANCH MUST NOT MERGE UNTIL THEY ARE JUDGED ONE BY ONE.** Four
-> are goldens (move last, one commit). **About seventeen are not about gathering at all** — farms,
-> firewood, market, apprenticeship, storage — and are failing only because their village is now
-> smaller. **Four assert unattended survival and need Joe's sentence written into them.**
+> ◐ **28 GUARDS ARE RED (from 55) AND THE BRANCH MUST NOT MERGE UNTIL THEY ARE JUDGED ONE BY ONE.**
+> ✅ **Done: the four survival guards carry Joe's sentence** — `MapGenerationTests` asks *can a
+> village live here at all* at a peak of 12 (measured 26/32/18, was 30–49); the growth guards
+> moved 25 → 15 against a measured 21. The modded catalogues state seats, the derived-seats guard
+> is reversed, and the capacity-refusal pose uses the key.
+> ⛔ **What is left clusters in `LabourAllocationTests` (5), `FarmTests` + `FarmMemoryTests` (6),
+> `SkillTests` (4), and the four goldens — move those LAST, one commit, one stated reason.**
+> ⚠️ **Several fixtures were quietly depending on the warm start being EMPTY** (*"a village founded
+> with an empty larder has no spare hands by definition"* was true without anybody arranging it).
+> **A fixture that depends on a bug is a fixture that was testing the bug** — pose the emptiness
+> with `BuildWithBareStores`, do not restore the bug.
+> ⚠️⚠️ **AND EXPECT EACH FIX TO MOVE THE COUNT BOTH WAYS.** Bounding the spare-hands top-up by
+> seats was *more* correct and took 27 to 28. **This is a rebalance, not a list — measure after
+> every step.**
 > ⛔⛔⛔ **DO NOT SET `GathererHutCapacity = 8` IN `VillageFixtures.Village` TO GO GREEN.** It fixes
 > most of them in one edit **and stops every one of them exercising the shipped seat count while
 > reading as passing.** *That is D157 green-and-blind, bought on purpose — the fifth time this

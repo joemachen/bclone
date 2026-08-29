@@ -628,7 +628,17 @@ public sealed class MapGenerationTests
             // village live here at all?* Peaks run 30 to 49, so twenty has real headroom and
             // still fires on a valley too poor, too wooded or too cut-up to support a
             // settlement — which is the defect this arm has actually caught twice (D103, D110).
-            Assert.True(peak >= 20,
+            // ⛔⛔ TWENTY → TWELVE (D262, Joe): *"the user must build more forests and huts to grow."*
+            // **A gathering hut seats two now, and an UNATTENDED village never builds a second
+            // one** — so this guard no longer asks "can a village thrive here by itself", which is
+            // a promise the game has deliberately withdrawn. It asks the question a
+            // map-generation guard should: **can a village live here at all?**
+            //
+            // ⭐ Measured after the cap: peaks of 26, 32 and 18 where they used to run 30 to 49.
+            // **Twelve keeps real headroom under the poorest valley measured** and still fires on
+            // ground too thin, too wooded or too cut-up to settle — the defect this arm has
+            // actually caught twice (D103, D110), where peaks sit barely above the founding four.
+            Assert.True(peak >= 12,
                 $"Seed {seed} never grew a village — it peaked at {peak} from "
                 + $"{config.StartingPopulation} founders, so this valley cannot support one. "
                 + $"({string.Join("; ", results)})");

@@ -485,7 +485,11 @@ public sealed class VillageTests
             $"{loop.World.Households.Count} households. Deaths — {froze} froze, {starved} " +
             $"starved, {aged} of old age.");
 
-        Assert.True(peak >= 25,
+        // ⛔ TWENTY-FIVE → FIFTEEN (D262). A gathering hut seats two, and this village never
+        // builds a second — measured, it peaks at 21 where it used to reach the high thirties.
+        // **The claim is unchanged — a village GROWS from its founders — and only the size the
+        // derived economy can feed unattended has moved.**
+        Assert.True(peak >= 15,
             $"The village only ever reached {peak} from {GrowingVillage.StartingPopulation} " +
             "founders, so the derived economy is not feeding a growing settlement.");
 

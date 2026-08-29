@@ -337,7 +337,10 @@ public sealed class LabourTests
             $"Peaked at {peak}; year {loop.World.Clock.Year}: {loop.World.Population} alive, " +
             $"{loop.World.Workplaces[0].WorkerIds.Count} foraging, {starved} ever starved.");
 
-        Assert.True(peak >= 25,
+        // ⛔ TWENTY-FIVE → FIFTEEN (D262), for the reason `VillageTests` records: a two-seat
+        // hut feeds about twenty unattended, not forty. **Job-based foraging still has to grow
+        // the village several times over, which is what this guard is for.**
+        Assert.True(peak >= 15,
             $"Job-based foraging only ever fed {peak} people from {Config.StartingPopulation}.");
 
         // ⚠️ HUNGER IS A MINORITY OF DEATHS, NOT ZERO (D155). This asserted nobody ever starved,

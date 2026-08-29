@@ -348,7 +348,17 @@ public readonly record struct LabourQuota
         // limit is about the village's stock, and a farm's buffer is part of it.
         bool foodIsEnough = limits.IsMet(Goods.Food, world.FoodTheVillageHolds());
 
-        int foragers = canGather && !foodIsEnough ? Take(ref free, toFeedEveryone) : 0;
+        // ⛔⛔ BOUNDED BY THE SEATS THAT ACTUALLY EXIST (D262). Taking more hands than the huts
+        // can seat books them for a job with no room and **leaves them idle**, because they are
+        // spent from `free` before farming, timber or the market is asked. With a seven-seat hut
+        // that could not happen; with two it happens the moment a village grows.
+        //
+        // ⚠️ IT BOUNDS WHAT IS TAKEN, NEVER WHAT IS WANTED — `ForagersToFeedEveryone` stays the
+        // honest need, so the panel can still say *"the village wants five"* while two sit down.
+        // **That sentence is what tells the player to build another hut.**
+        int seats = world.GatheringSeats();
+        int seatable = toFeedEveryone < seats ? toFeedEveryone : seats;
+        int foragers = canGather && !foodIsEnough ? Take(ref free, seatable) : 0;
 
         // ⭐ THE FARM, AND IT SITS HERE FOR A STATED REASON (`crops-and-orchards.md`, D161).
         //
@@ -491,9 +501,19 @@ public readonly record struct LabourQuota
         // cap the quota and then hand every freed body straight back to the berry patch,
         // so the granary would sail past the number the player asked for and the control
         // would appear broken while working perfectly.
+        // ⛔ AND ONLY AS MANY AS CAN SIT DOWN (D262). Handing every spare body to the berry
+        // patch was free while a hut seated seven; with two, the surplus is booked for a seat
+        // that does not exist and **does nothing at all** — no farming, no timber, no market.
+        // *The village's answer to "we are hungry" must stop at the doors it actually has.*
         if (canGather && !foodIsEnough)
         {
-            foragers += free;
+            int room = seats - foragers;
+            int spare = free < room ? free : room;
+            if (spare > 0)
+            {
+                foragers += spare;
+                free -= spare;
+            }
         }
 
         // ⭐ AND THEN THE PLAYER HAS THE LAST WORD (D106). Everything above is the village
