@@ -172,6 +172,16 @@ alone. The next worker learns the method from the record and **starts at zero pr
 where it stops being one villager's panel row and becomes the village's memory. ⛔ **No unlock the
 player cannot account for** (`§11`, non-negotiable 1).
 
+> **✅✅ RESOLVED 2026-08-29 (D252) — WAY 2, AND JOE PICKED IT BY ANSWERING THE TOWN HALL'S OWN
+> OPEN QUESTION.** The trigger is settled (*the last founder dies*; the gift is a tribute to the
+> founders), the town hall **is the next build**, and this slice therefore lands **inside it as one
+> tab** rather than in front of it. ⛔ **The exclusion list below is superseded for the town hall
+> only** — and it is superseded by a decision rather than by scope creep, which is the distinction
+> the list exists to protect. **The spec is `specs/town-hall.md`; this slice is its slice 3.**
+> ⭐ *The screen keeps its diegetic front door and nothing had to be shipped ungated.*
+>
+> *The original blocker, kept because the three ways out are the record of how it was decided:*
+>
 > **⛔⛔ OPEN, AND IT BLOCKS THE FIRST LINE OF THIS SLICE: `tech-tree.md §8` GATES THIS SCREEN
 > BEHIND A TOWN HALL, AND THE TOWN HALL IS ON THIS SPEC'S OWN EXCLUSION LIST.** §8 says it plainly
 > — *"this screen is the town hall's interior (§7f, D176), and it is reachable only once one

@@ -1,32 +1,50 @@
-# Handoff — bclone: **▶️ PHASE 4 IS ON `main`, ITS DoD IS FULLY MET, AND THE NEXT BUILD IS THE TOWN HALL.**
+# Handoff — bclone: **✅ THE TOWN HALL'S SLICE 1 IS BUILT AND GREEN. NOBODY HAS LOOKED AT IT YET.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29.** `main` = `origin/main`, clean tree,
-> **867 passing, 0 failing, 1 skipped of 868.** No branch is in flight. The only other branch is
-> `slice/work-from-the-steading`, which is one unmerged commit, **93+ commits behind**, and now
-> backed up on `origin` — a decaying asset, not a parked one.
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
+> **880 passing, 0 failing, 1 skipped of 881.** ⚠️ **The work is UNCOMMITTED on `main`** — a dirty
+> tree, nothing staged. `origin/main` is still at `8c35f1a`. No branch is in flight. The only other
+> branch is `slice/work-from-the-steading`, one unmerged commit, **93+ commits behind** and backed
+> up on `origin` — a decaying asset, not a parked one.
 >
-> **✅ ALL SEVEN OF JOE'S PLAY-REPORTED ITEMS ARE DONE**, the **QA walk was performed** (D248 —
-> the first in this project not waived), and **all six of Phase 4's Definition-of-Done items are
-> met** (D249 closed the last). ⚠️ **That does NOT mean Phase 4 is finished:** *slice 3, the
-> knowledge screen, is unbuilt.* A DoD is the bar for merging.
+> **⭐⭐ JOE SETTLED BOTH OPEN CALLS IN ONE MESSAGE, AND SLICE 1 WAS BUILT ON THEM (D252, D253):**
+> 1. **The town hall's trigger is *the last founder dies*, and the gift is a tribute/monument to
+>    the founding members.** ⛔ Not the forgiving alternative — a ratio crosses in silence, a
+>    funeral is an event the village already narrates.
+> 2. **After the town hall comes fishing and hunting** (`buildings-plan.md §10`, now step 0 then 1).
 >
-> **⭐⭐ THE NEXT THING TO BUILD IS THE TOWN HALL, AND ITS DESIGN IS SETTLED (D251).** It is
-> **a gift, like the library** — not a purchase — and its catalyst is **the village outgrowing its
-> founders.** ⛔ **It is NOT a knowledge building with extras.** Joe's list: it **triggers nomads**
-> asking to move in; it **itemises everything** — crops, animals, technologies, techniques,
-> buildings, *"in a collectors' sort of way"*; it carries **charts of population, food produced
-> and consumed**; and **§8's knowledge screen is one tab of it.** *The village's administrative
-> self-awareness.*
-> - ⚠️ **Literacy is NOT a prerequisite** (his call) — *"a granary is necessary and cheap"* and
->   will usually come first anyway. **Expected, not enforced.**
-> - **⛔ THE ONE THING STILL OPEN IS THE EXACT TRIGGER**, and it is his: *the last founder dies*
->   (a sharper moment) or *the founders are outnumbered by the native-born* (forgiving of an
->   unlucky death). **Ask before building.**
-> - ⭐ **It unblocks Phase 4's slice 3**, which `tech-tree.md §8` puts inside it.
+> **✅ WHAT IS BUILT AND GREEN** (`specs/town-hall.md`, slice 1 of four): the last founder dies →
+> a **stopping moment naming all four** → a **Civic button appears with a ★** → the player places
+> it → the crew raise it (**materials free, work owed**, exactly like the library) → it stands, is
+> drawn, and clicking it **lists the founders by name**. `Villager.Founder`, `CivicSystem` (a
+> thirteenth system — **nomads land there next**), `BuildingKind.TownHall = 11`, and
+> `BuildingRow.Civic` / `.Singleton` as **data columns a modder can reach**.
+> ⛔ **THERE ARE NO TABS.** Collections, knowledge and charts are slices 2–4.
 >
-> **⭐ The alternative he named is fishing and hunting** — `buildings-plan.md §10` step 1, food
-> breadth — which he chose earlier as what follows Phase 4. Either is live; the town hall is the
-> one that unblocks something.
+> **⭐⭐ MEASURED: THE SHIPPED VILLAGE IS OWED ITS HALL IN YEAR 58, WITH 35 ALIVE.** The suite's
+> fixture reaches it in year 30 with 14 — *and that is why exactly two goldens moved and the
+> shipped pair did not.* Well clear of D227's *"you just stabilised, now build a library?"*.
+>
+> **⛔⛔ TWO THINGS ARE RECORDED RATHER THAN TICKED, AND THEY ARE THE FIRST THINGS TO DO:**
+> - **NOBODY HAS LOOKED AT THE VIEW.** The button, the map colour, the inspector panel and the
+>   moment are built and compiled; the view has **no automated verification of any kind** (D160).
+>   ⭐ *Looking at it is the test, and it needs Joe.* The thing to look at is **the year-58 moment**.
+> - **The 200-year clean-log playthrough has not been run.** DoD item 6.
+>
+> **✅ AND JOE PLAYED IT AND IT WORKED** — the moment fired at **Year 58, exactly as measured**,
+> he placed the hall and it was built. His three follow-ups are done (D254, D255): **a 20x speed**,
+> **`Skip 1y` / `Skip 10y` QA buttons** (debug builds only — ten years in a quarter of a second),
+> and **the village log is timestamped and set one point smaller.**
+> - ⚠️ **ONE THING IS OFFERED AND NOT DONE, AND IT IS HIS CALL:** ten narrating call sites still
+>   write the date *mid-sentence* (*"Amos was born to the Thatcher household — Spring, Year 2."*),
+>   so about half the stamped lines say it twice. **Taking it out is a change to the game's
+>   narrative voice across five systems**, and two of those lines carry `Day 4, Spring, Year 58`,
+>   which is more precise than the stamp. **Ask him before doing it.**
+>
+> **⭐ AND ONE FINDING WORTH MORE THAN THE FEATURE: the unattended shipped village NEVER LEARNS TO
+> WRITE**, in fifty-eight years. A granary is player-placed, nobody places one in an unattended
+> run, so `FirstGranaryTick` stays zero and literacy never starts counting. **Had literacy been
+> made a prerequisite for the hall, that village could never have been given one** — Joe's
+> *"expected, not enforced"* (D251), vindicated by a guard that went red for the right reason.
 >
 > ⚠️ **ONE THING HE IS STILL TESTING:** the trade pin (D247). *"Seems to work the way i expect. i
 > think. ill keep testing."* **It displaces an incumbent** — pin somebody to a one-seat trade and
@@ -247,9 +265,9 @@ go looking for one.
 named one and was stale within the minute.
 
 
-**SUITE, FROM A RUN (2026-08-27, after D239):**
+**SUITE, FROM A RUN (2026-08-29, after the town hall's slice 1):**
 ```
-867 passed, 0 failed, 1 skipped of 868 — about 3m (was 18m52s before D179)
+880 passed, 0 failed, 1 skipped of 881 - 2m45s (was 18m52s before D179)
 ```
 
 **The one remaining skip is a ruling, not unfinished work: D143** — an unattended village is
@@ -489,11 +507,31 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Tools this project has that you would not guess
 
+- **⭐⭐ `Skip 1y` / `Skip 10y` IN THE CONTROL BAR — debug builds only (D254).** Ten years in about
+  **a quarter of a second**, against 10.7 real minutes at 1x. **Use it to reach a late-game QA
+  item instead of leaving the game running.** It steps the same `SimLoop.Step` everything else
+  does, so a skipped village is byte-identical to a played one; it **stops early on a moment**, and
+  leaves the game paused. ⛔ *Debug-gated deliberately — `DESIGN.md §1`'s meditative pace. It is a
+  tool, not a speed.*
+  - ⚠️ **And know the arithmetic before adding another speed button:** `target_ticks_per_second` is
+    **0.75** and a year is **480 ticks**, so 1x is **10.7 minutes a year** and 10x is **64 seconds
+    a year**. The sim itself does **58 years in 1.53 seconds** and the spiral guard does not bite
+    until **~20,000x**. *The speed buttons are a pacing choice; nothing about them is a limit.*
 - **`BCLONE_PROBE_WIDTHS`** (METHODOLOGY §6). Walks the control tree headless in two seconds and
   prints what every panel and inspector row claims as a **minimum width**, including the rows
   posed with their worst-case sentence. **A column is never narrower than its widest child**, so
   every width in `Main.BuildUi` is a *request* — three sessions have asked this question and two
   hand-rolled the same throwaway before it was kept.
+  - ⭐ **It now poses the control bar with every category the village will ever unlock** (D242's
+    blind spot, which had been left open inside the tool built to close it), and prints **the sum
+    of each row's items** beside `wants` — because *an `HFlowContainer`'s minimum is its widest
+    single child* and `wants` cannot see a new category at all.
+  - ⭐⭐ **AND IT PRINTS WHAT THE VILLAGE LOG WILL ACTUALLY RENDER** (`[log]` lines, D255), through
+    the real `LogMarkup` with the BBCode stripped back off. **It caught a sentence left hanging on
+    an em dash on its first run**, which nothing in the code would have shown. *Print what the
+    control will show before believing a string transform.*
+    ⚠️ It **steps the sim twelve years**, which every other probe deliberately does not — safe only
+    because it runs one line before `GetTree().Quit()`. **Anything added after it has to move.**
 - **`grep "food from the field"`** — `HaulTheHarvest` writes its reason — free space, both costs, which store won — so *"why did
   the farmer walk past the buffer?"* is one grep rather than an afternoon:
   `grep "food from the field" src/Bclone.Game/logs/<newest>.log`
@@ -503,6 +541,49 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Traps, in the order they will cost you
 
+- **⛔⛔ A GUARD WITH A BUILT-IN'S ID TYPED INTO IT BREAKS THE DAY A BUILT-IN IS ADDED, AND THE
+  FAILURE MESSAGE BLAMES THE WRONG THING (2026-08-29).** Adding `BuildingKind.TownHall = 11` turned
+  **eight guards red across two files** and not one of them was testing anything that had changed.
+  Three said `Id = 11` and failed as *"buildings[12] repeats id 11"* — **a true sentence about the
+  fixture that says nothing about the code.** Five more were modded-catalogue fixtures that now
+  omitted a built-in id.
+  - **⭐ The cure is one line: derive it.** `NextFreeId(config)` reads the highest id in the
+    catalogue and adds one, so the *next* built-in costs nobody an afternoon. **Read the numbers
+    out of the fixture rather than writing them into it** — the same rule D231/D233 wrote for
+    positions and quantities, applied to ids.
+  - ⭐ **And the repair is worth more than the break was:** the reordering fixture now carries the
+    new row **sixth of twelve in a descending list**, so position genuinely cannot pass for id
+    (D218's finding, given a sharper fixture).
+- **⛔⛔ A GOLDEN THAT *MUST* MOVE IS NOT A BUG — BUT PROVE IT IS THE FINGERPRINT AND NOT THE
+  VILLAGE, AND DO IT THE D211 WAY (2026-08-29).** Slice 1's own Definition of Done said **"no
+  golden moves"** and two moved. ⛔ **The DoD was wrong**, and it was corrected in place rather
+  than quietly met: *a village whose founders have all died IS a different village* — it is owed a
+  hall, and `Mark` reads that.
+  - **⭐ THE MEASUREMENT THAT SETTLES IT TAKES TWO MINUTES: delete the new mixes from `StateHash`
+    and re-run.** Both moved values came back **byte-identical to their old numbers**, which is
+    what says the hash's *shape* moved and the village did not. *Assumption would have been
+    indistinguishable from a real regression.*
+  - ⭐ **And which goldens HELD is the result:** the shipped 50-year pair, the map golden, both
+    farm goldens and all three per-site arms. **The two that moved were both *fixture* arms**,
+    because the fixture village loses its founders by year 30 and the shipped one has not by
+    year 50. *Ask why the ones that held, held.*
+- **⚠️ `if (false)` IS NOT A DELIBERATE BREAK — IT DOES NOT COMPILE HERE (2026-08-29).** The trap
+  further down says *"write breaks that compile — flip a bool, set a bound to zero"*, and the
+  obvious way to disable a block trips `CS0162 unreachable code` against D246's
+  `TreatWarningsAsErrors`. Same for dropping a clause from a condition: the now-unused local trips
+  `CS0219`. **Delete the block outright, or add `_ = theLocal;`** — and back the file up first.
+- **⛔⛔ THE WIDTH PROBE WAS STILL ONLY EVER MEASURING A YOUNG VILLAGE — INSIDE THE TOOL BUILT TO
+  STOP THAT (2026-08-29).** D242's whole lesson is *"every look anybody takes at the UI is a look
+  at a young village"*, and the bar probe measured the bar **as it starts**, with the conditional
+  Knowledge and Civic groups hidden. It poses them visible now.
+  - **⭐⭐ AND `wants` COULD NEVER HAVE SEEN THE PROBLEM ANYWAY: an `HFlowContainer`'s minimum
+    width is its WIDEST SINGLE CHILD.** Adding a whole category moved `wants` by **exactly zero**.
+    The number that decides wrapping is the **sum of the row's items**, which the probe now prints
+    beside it. *That is D242's collapse-into-a-corner property read from the other side.*
+  - **Measured: the Civic group costs 83px on a row that already wrapped (10 items/1261px →
+    11 items/1344px against 1240 available), and the bar's height is unchanged at 189.**
+    ⚠️ **That row is the one to watch** — it is the crowded one, and it is where the next category
+    will land.
 - **⛔⛔⛔ A GREEN RED-CHECK IS A CLAIM ABOUT YOUR FIXTURE BEFORE IT IS A CLAIM ABOUT THE CODE
   (2026-08-27).** The guard for D236 **passed against the live bug on its first run.** Posed with
   **firewood** — which the *market* also holds — a marketer's leg quietly rescued every load: 622

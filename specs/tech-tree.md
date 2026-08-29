@@ -255,6 +255,14 @@ tree?"*
 building). It is also where Joe's **charts** live (`DESIGN.md §4`), which is the same idea one
 level up: the town hall is the building whose product is *information about yourself*.
 
+> **⭐⭐ HOW IT ARRIVES IS SETTLED, AND IT IS NOT BUILT — IT IS GIVEN (D251, D252). SEE
+> `specs/town-hall.md`, WHICH IS THIS BUILDING'S SPEC.** It is **a gift, like the library**, and
+> the trigger is **the last founder's death** — *"the gift is given as a tribute/monument to
+> founding members"* (Joe, 2026-08-29). ⛔ **Not literacy, not a threshold, not a purchase.**
+> ⚠️ **And knowledge is about a fifth of what it is**: it also triggers nomads, itemises everything
+> the village has met, and carries the charts. *A session that builds "the knowledge screen, in a
+> building" has built the wrong thing.*
+
 #### 7f.1 The collections — and why they are permanent
 
 Every crop, tree, fish, animal, technique and **first master** the village has ever met. Joe's

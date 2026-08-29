@@ -403,6 +403,8 @@ Each step is a thing you could stop after, in the house style.
 
 ### What is left, in the order it now makes sense
 
+0. **THE TOWN HALL, AND IT IS NOW FIRST (D252, 2026-08-29).** Out of step 8 below and to the front, because Joe settled its trigger and it unblocks Phase 4's slice 3. **A gift, not a purchase** — the last founder dies and the village raises a hall in their name. Spec: `specs/town-hall.md`. *The rest of the civic layer — church, tavern — stays at step 8; only the town hall moved.*
+
 1. **~~1.~~ Food breadth** — hunter's hut, fishing hut. D19's prerequisite; makes catchment
    survivable. ⭐ **Joe chose this as what follows Phase 4** (2026-08-26).
 2. **~~6.~~ Stone's buildings** — quarry and mason, to finish the half above and gate the civic
