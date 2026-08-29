@@ -252,7 +252,8 @@ public sealed class SkillTests
     //   before the fixture ate what the game eats (D223): false 16154924796471685929
     //   before the village knew things (D225): false 18186071774726496737, true 11403972867442886560
     //   before the village was allowed to rest (D250): false 6192378668729777699, true 9064700070209210640
-    [InlineData(false, 17678494988155338593UL)]
+    //   before the founders were mourned (D252): false 17678494988155338593 (true UNMOVED)
+    [InlineData(false, 16683756764195047443UL)]
     [InlineData(true, 6976255911900204686UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
