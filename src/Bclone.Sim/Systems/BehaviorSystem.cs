@@ -3956,6 +3956,22 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
 
+                // ⭐⭐ AND THE COPSE PAYS FOR IT (D257, Joe: *"the copse of wood isnt infinite"*).
+                // Every so many trips, the nearest mature tree in the ring goes back to sapling —
+                // so `GatherYieldAt` reads a thinner ring on the very next trip and `RegrowthSystem`
+                // grows it back on its own sweep. **The equilibrium is emergent: work a hut harder
+                // and it settles thinner.**
+                //
+                // ⚠️ COUNTED OFF THE FORAGER'S OWN TALLY RATHER THAN ROLLED, so nothing here
+                // touches the RNG and no other system's draw order moves. It also makes the rate
+                // scale with the number of foragers for free, which is the pressure Joe asked for:
+                // seven hands on one hut thin it seven times as fast as one.
+                int per = world.Config.GathersPerThinnedTile;
+                if (patch is not null && per > 0 && villager.TotalGathers % per == 0)
+                {
+                    world.ThinTheRingOf(patch);
+                }
+
                 Household home = world.HouseholdOf(villager);
                 bool homeNeedsIt = home.Stockpile.Food < world.TargetFoodFor(home);
 

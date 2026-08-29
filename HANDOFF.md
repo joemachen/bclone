@@ -45,7 +45,18 @@
 >   narrative voice across five systems**, and two of those lines carry `Day 4, Spring, Year 58`,
 >   which is more precise than the stamp. **Ask him before doing it.**
 >
-> **⛔⛔ THE LIVE ITEM IS THE COPSE, AND IT IS JOE'S CALL (D256).** From his 111-year run:
+> **⛔⛔ THE LIVE ITEM IS THE COPSE'S RATE, AND IT IS JOE'S TO FEEL (D257).** ⭐ **The thinning is
+> BUILT and SHIPPED OFF**: `gathers_per_thinned_tile` in `data/sim.config.json`, at **0**. Every N
+> gathers sets the nearest mature tree in the ring back to a sapling and regrowth grows it up
+> again — **no new state, and the player watches the ring lighten.** Flip it to **3** to feel it
+> (measured: 49.8% mature wood against 55.8% unworked, averaged over a regrowth period); **1**
+> swings hard, **12** is barely visible. ⛔ **Turning it on moves five goldens and trips
+> `MarketRestockTests`' overflow allowance — one deliberate commit once he picks a number.**
+> ⚠️⚠️ **DO NOT TRY TO DERIVE THE RATE FROM AN UNATTENDED RUN.** Population there is capped by the
+> GRANARY, not by food (`StorageTests.CapacityIsWhatHoldsThePopulationFlat`), so every rate looks
+> inert on good seeds until it is harsh enough to kill a poor one. **Joe plays the other regime.**
+>
+> *The finding that got here (D256):* From his 111-year run:
 > *"forager huts should be capped at 2 workers max so the player cant milk one forager hut for the
 > whole game — the copse of wood isnt infinite."* ⭐ **He is right, and it is measured: one hut
 > saturates at seven foragers and carries a 44-person village from year 70 to 110.**

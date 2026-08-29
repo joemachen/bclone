@@ -3864,6 +3864,58 @@ public sealed class SimWorld
     /// bug report would carry.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Set one tile of a hut's ring back to sapling — <b>what a worked copse costs</b> (D257).
+    /// </summary>
+    /// <returns>Where it thinned, or null if the ring had no mature wood left to take.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ NEAREST FIRST, SCANNING OUT FROM THE HUT, AND THAT IS BOTH THE DIEGETIC AND THE
+    /// DETERMINISTIC ANSWER.</b> Foragers work the wood by the door before the wood at the edge, so
+    /// the ring thins from the middle outward and the rim stays dark — **the hut's reach becomes
+    /// something the player can see being used up.** ⛔ It also means **no RNG draw**: a seeded roll
+    /// would have moved the draw order of every other system and every golden with it, for reasons
+    /// that have nothing to do with foraging.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Returning null is a real answer, not a failure.</b> A ring with no mature wood left is
+    /// a hut already yielding nothing (<c>GatherYieldAt</c> reads the same tiles), and there is
+    /// nothing further to take from it. *"No forest, no food" is already the rule; this cannot make
+    /// it more true.*
+    /// </para>
+    /// </remarks>
+    internal GridPos? ThinTheRingOf(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        int radius = workplace.GatheringRadius;
+        if (radius <= 0)
+        {
+            return null;
+        }
+
+        for (int r = 0; r <= radius; r++)
+        {
+            for (int dy = -r; dy <= r; dy++)
+            {
+                int dx = r - Math.Abs(dy);
+                for (int side = 0; side < 2; side++)
+                {
+                    int offset = side == 0 ? -dx : dx;
+                    var at = new GridPos(workplace.Position.X + offset, workplace.Position.Y + dy);
+
+                    if (Map.Contains(at) && Map.TerrainAt(at) == Terrain.Forest
+                        && SetTerrain(at, Terrain.Sapling))
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     public bool SetTerrain(GridPos position, Terrain terrain)
     {
         Terrain before = Map.TerrainAt(position);

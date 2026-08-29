@@ -201,6 +201,24 @@
   // NOTE WHAT DID NOT CHANGE: a bald ring still yields nothing. This is
   // what the village budgets for, not what a trip is worth.
   "gather_yield": 145,
+  // THE COPSE THINS UNDER USE (D257, Joe: "the copse of wood isnt infinite").
+  // Every N completed gathers sets the nearest mature tree in the hut's ring
+  // back to a sapling; regrowth grows it up again on its own sweep. So a hut
+  // worked by seven foragers thins seven times as fast as one worked by one,
+  // and the yield per trip falls with it -- gather_yield x wooded / ring.
+  //
+  // ZERO IS OFF, AND OFF IS WHAT SHIPS TODAY. The rate cannot be measured in an
+  // unattended village: population there is capped by the GRANARY, not by food
+  // (StorageTests.CapacityIsWhatHoldsThePopulationFlat), so no food lever moves
+  // it until it is harsh enough to kill a poor valley. Joe plays the other
+  // regime -- "as long as i keep adding granaries" -- which is where this bites.
+  //
+  // MEASURED at 3, averaged across a whole regrowth period so the sweep's phase
+  // is out of it: a worked ring holds 49.8% mature wood against 55.8% unworked.
+  // Lower is harsher. 1 makes the ring swing hard; 12 is barely visible.
+  // Turning it on moves five goldens, so change it deliberately.
+  "gathers_per_thinned_tile": 0,
+
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
