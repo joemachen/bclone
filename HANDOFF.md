@@ -1,6 +1,6 @@
 # Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
 
-> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27/28, D236–D249.** Joe played to Year 44
+> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27/28, D236–D251.** Joe played to Year 44
 > and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
 > building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
 > His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
@@ -205,7 +205,7 @@ named one and was stale within the minute.
 
 **SUITE, FROM A RUN (2026-08-27, after D239):**
 ```
-864 passed, 0 failed, 1 skipped of 865 — about 5m (was 18m52s before D179)
+867 passed, 0 failed, 1 skipped of 868 — about 3m (was 18m52s before D179)
 ```
 
 **The one remaining skip is a ruling, not unfinished work: D143** — an unattended village is
@@ -471,6 +471,16 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
     the test demanded *"stone"*), and the food-limit guard asserted **zero gathering over two
     years and measured 327** — *which was the feature working*, because stores fall back through
     the limit and foraging resumes. **Three fixture bugs, one code bug, in one session.**
+- **⛔⛔ A COST THAT LOOKS SMALL ON THE AVERAGE VILLAGE IS A CLIFF ON THE ONE ALREADY STRETCHED
+  (D250, 2026-08-28).** The rest spell took a farm **ten ticks from its store** from 88% of what it
+  sowed down to **74%**, while the farm **beside** its store stayed at 95%. **A 120-tick autumn
+  has no slack to give**, so the tax came straight out of the harvest — and D178 had spent a whole
+  slice making that distant farm work.
+  - **⭐ Measure the MARGINAL case, not the median one.** The average village absorbed this
+    invisibly. If a change costs time, find the configuration that had none spare.
+  - ⚠️ **And the dial was NOT monotonic**: `rest_ticks` of 2 cost that farm *more* than 3 did
+    (80% against 86%). **One sample per value is not a curve** — say "best measured", not
+    "optimum".
 - **⛔⛔⛔ ASK THE COMPILER BEFORE YOU BELIEVE A GREP — AND CHECK THAT YOUR ENFORCEMENT IS ACTUALLY
   ENFORCING (D246, 2026-08-28).** `Directory.Build.props` has set `EnforceCodeStyleInBuild=true`
   since the first commit and **there was no `.editorconfig`**, so every `IDEnnnn` analyzer sat at
