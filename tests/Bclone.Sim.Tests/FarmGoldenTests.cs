@@ -200,7 +200,14 @@ public sealed class FarmGoldenTests
     // meant the change had leaked.
     //
     //   before a load could be put down where it was accepted: 5913960743801194628
-    private const ulong SeamGoldenHash = 1856781046300124051UL;
+    // ⭐⭐ RE-TAKEN FOR THE REST SPELL (D250, Joe: villagers should idle when they have no job).
+    // A laborer with nothing to do now sits for `rest_ticks` before asking again, where they
+    // used to re-ask every tick for their whole life. **Every village in the suite has spare
+    // hands, so every village golden moves** — this is the widest deliberate re-take since the
+    // arms were hashed by index.
+    //
+    //   before the village was allowed to rest: 1856781046300124051
+    private const ulong SeamGoldenHash = 5824784480959670577UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -231,7 +238,8 @@ public sealed class FarmGoldenTests
     //   before the village knew things (D225): 13041738680192547203
     //   before the founding master had to earn it here (D227): 267111501083800924
     //   before a load could be put down where it was accepted (2026-08-27): 2112570384239951269
-    private const ulong SeamBeforeAnybodyGotBetter = 15700858930161795428UL;
+    //   before the village was allowed to rest (D250): 15700858930161795428
+    private const ulong SeamBeforeAnybodyGotBetter = 2038884662017358556UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

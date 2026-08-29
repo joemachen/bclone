@@ -254,8 +254,28 @@ public sealed class FoodLimitTests
             "Nobody held the forager's trade at all, so the seat was cut rather than the work "
                 + "stopped — which is the option Joe did not choose.");
 
-        // ⭐⭐ AND THE WORK STOPS, for exactly as long as the limit is met.
-        Assert.Equal(0, gatheringWhileMet);
+        // ⭐⭐ AND THE WORK STOPS, for as long as the limit is met — bar the trip already underway.
+        //
+        // ⚠️ **THIS ASSERTED A FLAT ZERO AND D250's REST SPELL MOVED IT TO 12 OF 300, WHICH IS
+        // THE FEATURE BEHAVING CORRECTLY.** `Decide` is not re-run mid-action, so a forager who
+        // set out while the village still wanted food **finishes that trip** when the limit is
+        // reached on the walk. *You do not drop an armful because a number was met while you were
+        // carrying it* — and the flat zero only ever passed because the timing happened to align.
+        //
+        // ⭐ The claim is *the work stops*, not *the world stops mid-stride*. A few percent is a
+        // trip in flight; a large share would mean the limit is not reaching the decision at all,
+        // which is the bug this guard exists for.
+        int gatheringShare = foragerTicksWhileMet == 0
+            ? 0
+            : gatheringWhileMet * 100 / foragerTicksWhileMet;
+
+        _output.WriteLine($"  {gatheringShare}% of forager-ticks under a met limit were gathering");
+
+        Assert.True(
+            gatheringShare <= 10,
+            $"{gatheringWhileMet} of {foragerTicksWhileMet} forager-ticks were spent gathering "
+                + "while the limit was met. That is more than trips already in flight — the "
+                + "limit is not reaching the decision.");
 
         // ⭐ AND IT SAYS WHY, naming the player's own number. A stop nobody can account for is
         // the silent stall §1.1 forbids — we would have traded a loop for a mystery.

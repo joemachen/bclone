@@ -182,8 +182,13 @@ public sealed class MarketRestockTests
         Assert.True(wanted > 0, "No occupied homes, so the market wants nothing and this proves nothing.");
 
         StoreBuilding market = TheMarket(world);
-        market.Store.Add(Goods.Food, wanted - market.Store.Food);
-        market.Store.Add(Goods.Firewood, wanted - market.Store.Firewood);
+        // ⚠️ TOP UP ONLY IF SHORT — this was a bare `wanted - held` and went NEGATIVE when D250's
+        // rest spell shifted the timing enough that the market was already over-stocked by year
+        // eight. **The pose quietly assumed an under-stocked market**, which was true of every
+        // village the suite had run until it wasn't. *Ask what your fixture depends on before
+        // calling its red a regression* (D200).
+        market.Store.Add(Goods.Food, System.Math.Max(0, wanted - market.Store.Food));
+        market.Store.Add(Goods.Firewood, System.Math.Max(0, wanted - market.Store.Firewood));
 
         int restockTicks = 0;
         for (int i = 0; i < config.TicksPerSeason; i++)
@@ -191,8 +196,12 @@ public sealed class MarketRestockTests
             loop.StepOnce();
 
             // Keep it topped up: households drawing it down is not what is under test.
-            market.Store.Add(Goods.Food, wanted - market.Store.Food);
-            market.Store.Add(Goods.Firewood, wanted - market.Store.Firewood);
+            // ⚠️ Clamped for the same reason as the setup above — a marketer can deliver while
+            // this loop runs, leaving the market ABOVE `wanted`, and a bare subtraction then asks
+            // `Add` for a negative amount. Two instances of one assumption, and the first fix
+            // only caught the one that happened to fail first.
+            market.Store.Add(Goods.Food, System.Math.Max(0, wanted - market.Store.Food));
+            market.Store.Add(Goods.Firewood, System.Math.Max(0, wanted - market.Store.Firewood));
 
             restockTicks += world.Villagers.Count(v =>
                 v.Alive && v.State == VillagerState.StockingTheMarket);

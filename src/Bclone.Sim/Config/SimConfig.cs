@@ -231,6 +231,30 @@ public sealed record SimConfig
     // tree_stand_x/y likewise became generator output (D18) — see tree_stand_count
     // and tree_stand_ring_tiles.
 
+    /// <summary>Ticks somebody with nothing to do sits before asking again.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE VILLAGE'S SLACK, AND IT IS A FEATURE RATHER THAN A COST</b> (Joe, 2026-08-28).
+    /// Before this, <c>Resting</c> was the last line of <c>Decide</c> and lasted one tick, so a
+    /// villager with no job re-asked *"is there anything at all?"* every tick of their life.
+    /// <b>The sim had no way to say somebody was simply fine.</b>
+    /// </para>
+    /// <para>
+    /// <b>⛔ Only reached by somebody who has run out of work</b> — a forager mid-season never
+    /// gets here. It is not a working-hours dial and must not quietly become one; widening it to
+    /// interrupt a job is a design change, not a re-tune.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Four ticks is a starting number and is expected to move in play.</b> A village of
+    /// spare hands loses roughly this fraction of its fallback labour — clearing, hauling and
+    /// tidying — so raising it makes the village visibly less busy and lowers how much painted
+    /// ground it works through. **That is the dial to reach for when the village feels frantic**,
+    /// and the one to check first if painted ground stops being cleared.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("rest_ticks")]
+    public int RestTicks { get; init; } = 3;
+
     /// <summary>Wood one completed cut brings home.</summary>
     [JsonPropertyName("cut_yield")]
     public int CutYield { get; init; } = 12;
@@ -2491,6 +2515,15 @@ public sealed record SimConfig
         if (CutTicks <= 0)
         {
             throw new SimConfigException($"cut_ticks must be greater than zero (got {CutTicks}).");
+        }
+
+        // ⚠️ ZERO IS REFUSED RATHER THAN TREATED AS "OFF". A rest of nought ticks is the old
+        // behaviour — re-decide every tick, for ever — and it would be indistinguishable from
+        // the feature being broken. If the village should never rest, that is a design change
+        // and it should look like one.
+        if (RestTicks <= 0)
+        {
+            throw new SimConfigException($"rest_ticks must be greater than zero (got {RestTicks}).");
         }
 
         if (ForesterHutCapacity <= 0)

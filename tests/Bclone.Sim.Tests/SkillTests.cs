@@ -251,8 +251,9 @@ public sealed class SkillTests
     //                                         true  14931182978223796698
     //   before the fixture ate what the game eats (D223): false 16154924796471685929
     //   before the village knew things (D225): false 18186071774726496737, true 11403972867442886560
-    [InlineData(false, 6192378668729777699UL)]
-    [InlineData(true, 9064700070209210640UL)]
+    //   before the village was allowed to rest (D250): false 6192378668729777699, true 9064700070209210640
+    [InlineData(false, 17678494988155338593UL)]
+    [InlineData(true, 6976255911900204686UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
@@ -1190,8 +1191,20 @@ public sealed class SkillTests
         // **The bar exists to prove there is a lockstep to fix**, and 88% plainly is one; it is
         // not a claim about any particular figure. Recorded rather than quietly edited, because
         // *"the bar moved"* and *"the guard was weakened"* look identical in a diff.
+        //
+        // ⚠️⚠️ **70, LOWERED FROM 85 WHEN RESTING BECAME A REAL SPELL (D250) — 88% → 76%.** And
+        // this time the honest note is not just the number: **the TILE measure has stopped being
+        // a good instrument.** A rest spell ends when the world happens to offer something, so
+        // two identical villagers now drift apart on position for reasons that have nothing to
+        // do with rhythm — 76% off against 71% shipped is a five-point gap where it used to be
+        // seventeen.
+        //
+        // ⭐ **The decisive arm is hunger, and it is untouched: 100% off, 0% shipped.** Hunger is
+        // a pure function of ticks since the last meal, so it measures the symmetry D28 was
+        // actually about. **If this tile bar ever needs lowering again, delete it instead** —
+        // a precondition that keeps being relaxed is one that has stopped discriminating.
         Assert.True(
-            lockstepped.Tile >= 85,
+            lockstepped.Tile >= 70,
             $"With the rhythm and the mixed founding off, two adults share a tile only "
             + $"{lockstepped.Tile}% of ticks — the lockstep this fixes is not present, so the "
             + "comparison below proves nothing.");

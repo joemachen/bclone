@@ -2733,7 +2733,53 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐⭐ AND RESTING TAKES TIME NOW, WHICH IT NEVER DID (Joe, 2026-08-28): *"villagers should
+        // idle when they aren't hungry, have no jobs to do, no school… maybe idle IS resting.
+        // that will really decrease the productivity. i'm such a slave driver."*
+        //
+        // ⛔ **HE IS NOT: THE SIM HAD NO WAY TO SAY SOMEBODY WAS SIMPLY FINE.** `Resting` was the
+        // last line of `Decide` and lasted exactly one tick, so a villager re-asked *"is there
+        // anything at all?"* every tick for their whole life. **Idleness had no positive
+        // definition — it was the absence of an answer** — which is why the D236 livelock could
+        // eat the entire spare labour force for forty years and look like an ordinary village.
+        //
+        // ⭐ **A SPELL, NOT A SLIDER, AND IT REUSES THE ACTION CLOCK.** `rest_ticks` is how long
+        // somebody sits before asking again. Nothing new is hashed: `ActionTicksRemaining` is
+        // already state and already in the hash, so this adds a behaviour rather than a field.
+        //
+        // ⚠️ **IT DELIBERATELY DOES NOT INTERRUPT A JOB.** Only somebody who has run out of
+        // things to do gets here — a forager mid-season never does. That is the smallest change
+        // that gives the village visible slack, and widening it to working hours is one line
+        // when Joe wants it.
+        //
+        // ⭐ **This is also where the pub goes.** A rest spell is a span of time with a place
+        // attached; today the place is home, and a tavern or a church is the same span spent
+        // somewhere worth walking to. **The social buildings need no new mechanism, only a
+        // destination** — which is why doing this before them was the right order.
         villager.State = VillagerState.Resting;
+
+        // ⛔⛔ ONLY SOMEBODY WITH NO JOB AT ALL, AND A RED CHECK HAD TO TEACH ME THAT.
+        //
+        // The paragraph above claimed this "deliberately does not interrupt a job" and **that was
+        // not true as written**: the fall-through catches anybody whose job has nothing for them
+        // *this tick*, which mid-autumn is a farmhand between two tiles. Measured, it cost a farm
+        // ten ticks from its store **96% of what it sowed down to 74%** — and left the farm next
+        // to its store at 95%.
+        //
+        // ⚠️ **IT HIT THE MARGINAL CASE HARDEST, WHICH IS THE SHAPE TO WATCH FOR.** A distant
+        // farm has no slack in a 120-tick autumn, so a rest spell comes straight out of the
+        // harvest; a near one absorbs it. **A cost that looks small on the average village is a
+        // cliff on the one that was already stretched** — and D178 spent a whole slice making
+        // that distant farm work.
+        //
+        // ⭐ So it is scoped to `IsLaborer` — no workplace, which is exactly the population Joe
+        // pointed at (*"Laborer 4 of 10 able adults · spare hands"*) and exactly his words:
+        // *"no jobs to do"*. **Widening it to job-holders is a real economic change and wants
+        // its own measurement**, not a quiet edit here.
+        if (villager.IsLaborer)
+        {
+            villager.ActionTicksRemaining = world.Config.RestTicks;
+        }
     }
 
     /// <summary>
@@ -3863,6 +3909,13 @@ public sealed class BehaviorSystem : ISimSystem
     {
         switch (villager.State)
         {
+            case VillagerState.Resting:
+                // ⭐ A rest spell ends by asking again, and that is the whole of it. Nothing is
+                // produced, consumed or moved — which is the point: this is the one action in
+                // the game whose completion has no effect on the world.
+                Decide(world, villager);
+                return;
+
             case VillagerState.Gathering:
                 // Vigour scales what a trip actually brings home. This is where
                 // ageing stops being a countdown and starts being something the
