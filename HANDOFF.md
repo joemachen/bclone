@@ -1,10 +1,19 @@
 # Handoff — bclone: **✅ THE TOWN HALL'S SLICE 1 IS BUILT AND GREEN. NOBODY HAS LOOKED AT IT YET.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
-> **880 passing, 0 failing, 1 skipped of 881.** ⚠️ **The work is UNCOMMITTED on `main`** — a dirty
-> tree, nothing staged. `origin/main` is still at `8c35f1a`. No branch is in flight. The only other
-> branch is `slice/work-from-the-steading`, one unmerged commit, **93+ commits behind** and backed
-> up on `origin` — a decaying asset, not a parked one.
+> **880 passing, 0 failing, 1 skipped of 881.**
+>
+> **⛔⛔ ALL OF IT IS ON `slice/the-founders-hall`, FIVE COMMITS, AND `main` HAS NONE OF IT.**
+> Clean tree, everything committed, both projects build. **`main` and `origin/main` are still at
+> `8c35f1a`** — and the branch is **not pushed**, so it exists on this machine only.
+> ⚠️ **IF JOE PLAYS `main` HE WILL NOT SEE THE TOWN HALL, THE 20x, THE SKIP BUTTONS OR THE
+> TIMESTAMPS**, and will correctly report them missing. *That is D217 exactly — he played `main`,
+> saw a bug that was real on his build and fixed on a branch he was not running, and the session
+> that had done the work spent its reply diagnosing a build rather than a village.*
+> **Merge it, or say out loud that it is not merged.** ⭐ Nothing is blocking the merge but asking.
+>
+> The only other branch is `slice/work-from-the-steading`, one unmerged commit, **93+ commits
+> behind** and backed up on `origin` — a decaying asset, not a parked one.
 >
 > **⭐⭐ JOE SETTLED BOTH OPEN CALLS IN ONE MESSAGE, AND SLICE 1 WAS BUILT ON THEM (D252, D253):**
 > 1. **The town hall's trigger is *the last founder dies*, and the gift is a tribute/monument to
