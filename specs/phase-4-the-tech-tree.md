@@ -222,8 +222,16 @@ Per `METHODOLOGY.md §3`, and item 4 is the one this phase is not allowed to wai
      **21 of 22.** The other twenty-one cover slices 1 and 2, which is what made walking it
      possible before the phase was finished.
 5. No new errors in the log across a clean 200-year playthrough.
-6. `DESIGN.md` Progress Tracker + Decisions Log updated; `buildings-plan.md §10` and
-   `content-inventory.md` finding 5 reconciled (§1).
+6. ✅ **DONE 2026-08-28.** `DESIGN.md` Progress Tracker + Decisions Log updated; **`buildings-plan.md
+   §10` rewritten against reality and `content-inventory.md` finding 5 marked resolved** (D249,
+   Joe: *"go with reality"*). ⭐ §10 is now *what shipped, then what is left*, and it records that
+   knowledge arrived **by a different route than it proposed** — its step 8 was *"scriptorium,
+   then school"* and neither exists.
+
+> **✅✅ ALL SIX DEFINITION-OF-DONE ITEMS ARE NOW MET.** ⚠️ **That does not make the phase
+> finished** — slice 3, the knowledge screen, is still unbuilt and is blocked on the town hall
+> (§3). **A DoD is a bar for merging, not a claim that nothing is left**, and this phase was
+> merged before any of it was met, on Joe's call (D245).
 
 ---
 

@@ -2,7 +2,7 @@
 
 > Status: **draft, deliberately loose — catalogue brought current 2026-08-24 (D205).** This is a planning document, not a spec. Every number is absent on purpose and every entry is expected to move during QA. Owner: Joe + Claude.
 >
-> ⚠️ **What "current" means here, precisely:** §4's ✅ marks now match the sim — **ten buildings and three zones**, where this table previously claimed six and omitted five things that exist. It does **not** mean the roadmap in §10 is reconciled with `DESIGN.md §4`; **those two still disagree about where knowledge sits (step 8 of 11 here, Phase 4 there), and that is a design call rather than an editing one.** See `specs/content-inventory.md`.
+> ✅ **AND §10 IS RECONCILED WITH REALITY, 2026-08-28 (D249, Joe: *"go with reality"*).** It had said knowledge was step 8 of 11 while `DESIGN.md §4` called it Phase 4 — **D159's two-roadmaps failure, live for six weeks and named in this very paragraph without being fixed.** ⛔ *A document that says "these two disagree and that is a design call" is a document deferring its own correction; it stayed deferred until somebody asked what it meant.* The catalogue in §4 is unchanged — **eleven** buildings and three zones now, with the library.
 > Companion to `specs/building-placement.md`, which governs *how* buildings get put down. This governs *which ones exist and why*.
 
 ---
@@ -368,22 +368,59 @@ Not a documentation standard — a design filter. If a building's purpose needs 
 
 ---
 
-## 10. Suggested roadmap order
+## 10. Roadmap order — what shipped, and what is left
+
+> **⚠️ REWRITTEN AGAINST REALITY 2026-08-28 (D249, Joe: *"go with reality"*).** This was a
+> *suggested* order written before most of it existed, and the game then took a different route.
+> **It is now a record of what happened followed by a plan for what has not**, because a roadmap
+> that disagrees with the built game is worse than no roadmap: `DESIGN.md §4` said knowledge was
+> Phase 4 while this said step 8 of 11, and **that contradiction stood for six weeks** — D159's
+> failure, which cost this project six weeks the first time.
+>
+> ⛔ **The old numbering is kept beside each entry**, because five documents cite *"step 8"* and
+> similar by number, and silently renumbering would break every one of those references.
 
 Each step is a thing you could stop after, in the house style.
 
-1. **Food breadth** — hunter's hut, fishing hut. D19's prerequisite; makes catchment survivable.
-2. **Cemetery** — cheap, placeable, immediate generational payoff. D35.
-3. **Preservation** — root cellar, smokehouse. Gives winter an answer other than quantity, and gives the processing chain a second instance.
-4. **Crop and pasture zones** — extends the brush; introduces soil as a surface resource; §2.3 gets a second axis.
-5. ✅ **Forestry pair — DONE, and the second half did not land the way this line expected.** The
-   harvest brush shipped, and **planting shipped with it as an ordinary work mode, not as the tech
-   tree's first node** (D125). See §4.4's note: *the tree's own worked example is already spent.*
-6. **Stone** — quarry, mason. First use of the subsurface effort rule; gates the civic tier.
-7. **Iron and tools** — mine, charcoal burner, smelter, blacksmith. Tools multiply yields, which is where §2.1's skill pillar gets something to bite on.
-8. **Knowledge** — scriptorium, then school. **Before** re-locking is punishing (§5).
-9. **Trade** — post or dock. §2.4 finally gets a floor.
-10. **Civic layer** — town hall, church, tavern.
-11. **Branches** — the T3 table. By this point the pressures they answer have all been felt.
+### ✅ Done, and not in this order
 
-**The one hard dependency in that list** is 8 before any re-locking. The rest can reorder freely as QA dictates.
+- ✅ **~~5.~~ Forestry pair — DONE**, and the second half did not land the way this line expected.
+  The harvest brush shipped, and **planting shipped with it as an ordinary work mode, not as the
+  tech tree's first node** (D125). See §4.4: *the tree's own worked example is already spent.*
+- ✅ **~~8.~~ Knowledge — DONE, as Phase 4 (D225, D226), and by a different route than this
+  proposed.** ⛔ **This step said *"scriptorium, then school"* and NEITHER exists**: D204 took the
+  scriptorium off the path (recording is automatic at mastery) and the school is specified in
+  `school-and-education.md` and unbuilt. **What shipped instead is techniques and the library** —
+  a technique makes an existing trade better, and a library keeps it past its knower's death.
+  - ⭐ **Its stated hard dependency held, by accident rather than by sequencing.** *"Knowledge
+    before re-locking is punishing"* — re-locking is live, and the library shipped **with** it in
+    the same phase rather than before it, which is what makes losing a technique fair.
+- ◐ **~~6.~~ Stone — HALF DONE, and the half that shipped is the one this step did not name.**
+  Stone is quarried from seams by the harvest brush, carried, stored, limited, and **spent: a
+  granary costs 40 logs and 10 stone** (D213–D215). ⛔ **The quarry and the mason do not exist** —
+  the material chain arrived without the buildings, so *"first use of the subsurface effort
+  rule"* is done and *"gates the civic tier"* is not.
+
+### What is left, in the order it now makes sense
+
+1. **~~1.~~ Food breadth** — hunter's hut, fishing hut. D19's prerequisite; makes catchment
+   survivable. ⭐ **Joe chose this as what follows Phase 4** (2026-08-26).
+2. **~~6.~~ Stone's buildings** — quarry and mason, to finish the half above and gate the civic
+   tier the way the tier table assumes.
+3. **~~7.~~ Iron and tools** — mine, charcoal burner, smelter, blacksmith. Tools multiply yields,
+   which is where §2.1's skill pillar gets something to bite on. ⚠️ Iron is **mined and stored and
+   spent by nothing** today, exactly as stone was before D213.
+4. **~~2.~~ Cemetery** — cheap, placeable, immediate generational payoff. D35.
+5. **~~3.~~ Preservation** — root cellar, smokehouse. Gives winter an answer other than quantity,
+   and the processing chain a second instance.
+6. **~~4.~~ Crop and pasture zones** — extends the brush; §2.3 gets a second axis. ⚠️ Soil is
+   already generated, hashed and **read** since D178, so the surface-resource half of this is done.
+7. **~~9.~~ Trade** — post or dock. §2.4 finally gets a floor.
+8. **~~10.~~ Civic layer** — town hall, church, tavern. ⭐ **The town hall is now load-bearing
+   rather than flavour**: `tech-tree.md §8` makes the knowledge screen its interior, so Phase 4's
+   unbuilt slice 3 is waiting on this.
+9. **~~11.~~ Branches** — the T3 table. By this point the pressures they answer have all been felt.
+
+**⛔ The hard dependency that remains** is the town hall before the knowledge screen — and unlike
+the old one, it is *unsatisfied*: the screen is specified and cannot be built diegetically until
+the building exists. Everything else can reorder freely as QA dictates.

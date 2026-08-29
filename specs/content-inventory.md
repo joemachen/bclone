@@ -305,7 +305,24 @@ as **describing a plan that is no longer the plan.**
 listed three costs — the scriptorium's opportunity cost, the hard shelf cap, and tacit nodes.
 **Automatic recording removes the first**, so the cap is carrying that guard nearly alone.
 
-### 5. ⛔ Two roadmaps that disagree — D159, again, in a different pair of files
+### 5. ~~⛔ Two roadmaps that disagree — D159, again, in a different pair of files~~ — ✅ RESOLVED 2026-08-28 (D249)
+
+> **Joe: *"go with reality."*** `buildings-plan.md §10` is rewritten as *what shipped, then what is
+> left*, and `DESIGN.md §4` is unchanged because it was the one describing what actually happened.
+> **Knowledge shipped as Phase 4** — and by a different route than §10 proposed, which is the part
+> worth keeping: §10's step 8 was *"scriptorium, then school"* and **neither exists**.
+>
+> ⭐ **The finding was right and outlived its own argument.** It said a tech tree built then would
+> have almost nothing to gate — **true, and Phase 4 answered it by not building a gate at all.**
+> The first content is a technique that makes an existing trade better (`phase-4-the-tech-tree.md
+> §1`), which needs no buildings to exist. *The objection was sound; the resolution was to change
+> what the tree was, not when it arrived.*
+>
+> ⚠️ **It stood for six weeks after it was written**, and the disagreement was restated in
+> `buildings-plan.md`'s own header as *"a design call rather than an editing one"* — which is a
+> document deferring its own correction. **It stayed deferred until somebody asked what §10 was.**
+
+*The original finding, for the record:*
 
 | Source | Where knowledge sits |
 |---|---|
