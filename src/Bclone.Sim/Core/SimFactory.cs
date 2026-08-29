@@ -33,6 +33,7 @@ public static class SimFactory
         new RegrowthSystem(),   // 10. the valley grows back (D125)
         new SkillSystem(),      // 11. and the people who worked it got better at it (Phase 3)
         new KnowledgeSystem(),  // 12. and what the village knows is what those people know (Phase 4)
+        new CivicSystem(),      // 13. and what the village makes of itself: the founders' hall (D252)
     };
 
     // ⭐ WHY KNOWLEDGE TICKS LAST, AND DIRECTLY AFTER SKILL (Phase 4). The order is part of the

@@ -194,6 +194,29 @@ public sealed class Villager
     /// </summary>
     public int BirthYear { get; init; }
 
+    /// <summary>
+    /// Whether they are one of the people the village was founded by — <b>the four who arrived
+    /// with the cart</b> (D252, `specs/town-hall.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ MARKED, NOT DERIVED, AND THAT IS THE DECISION RATHER THAN THE DETAIL.</b> A founder
+    /// is arithmetically visible — <c>BirthYear</c> is <c>1 - founder_age</c> and nobody born here
+    /// has a negative one — but D195 is the standing warning about deriving state you then cannot
+    /// pose, and the derivation is a coincidence of two config keys rather than a fact about a
+    /// person. <b>It is also what lets the tribute NAME them</b>, which is the whole point:
+    /// *a monument that cannot say who it is for is a stats screen with a plaque on it.*
+    /// </para>
+    /// <para>
+    /// <b><c>init</c>-only, and that is the model saying it never changes.</b> Nobody becomes a
+    /// founder and no founder stops being one — dying does not un-found a village, which is
+    /// exactly why the flag has to outlive the person. ⚠️ The re-founding of a dead village
+    /// (`DESIGN.md §5`, nomads) will want a *second* generation of founders one day; that is a
+    /// different question and this flag deliberately does not answer it.
+    /// </para>
+    /// </remarks>
+    public bool Founder { get; init; }
+
     /// <summary>Years lived. Advances on the new-year boundary.</summary>
     public int AgeYears { get; set; }
 

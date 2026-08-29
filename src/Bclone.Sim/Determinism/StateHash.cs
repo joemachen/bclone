@@ -384,6 +384,34 @@ public static class StateHash
             }
         }
 
+        // ---- The founders' hall: the gift, the moment, and the building (D252) ----
+        //
+        // ⛔ ALL THREE ARE SIM STATE THE SIM READS. The gift changes what a building costs; the
+        // moment is a fires-once latch, so two runs disagreeing about it are one village that will
+        // be given a hall and one that will not; and the hall's position is a place people walk to.
+        //
+        // ⛔⛔ SPARSE, ALL THE WAY DOWN, AND THIS IS THE THIRD BLOCK IN THIS FILE TO SAY SO — the
+        // library's comment directly above records breaking exactly this rule and moving five
+        // goldens for a feature none of those villages used. **A village whose founders are still
+        // alive is not a different village from one that predates town halls.** Every guard in
+        // this suite that never reaches the trigger must hash byte-identically to before, and that
+        // is a claim to check with a `git diff`, not to notice.
+        if (world.SaidTheFoundersAreGone)
+        {
+            hash = MixByte(hash, 1);
+        }
+
+        if (world.ATownHallIsOwed)
+        {
+            hash = MixByte(hash, 1);
+        }
+
+        if (world.TownHall is { } townHall)
+        {
+            hash = MixUInt32(hash, (uint)townHall.Position.X);
+            hash = MixUInt32(hash, (uint)townHall.Position.Y);
+        }
+
         // ---- Goods on the ground (D96) ----
         // A heap is as much sim state as anything in a store — it is goods in a place, which
         // is the whole reason it can be walked to (D96, against D83's arms).

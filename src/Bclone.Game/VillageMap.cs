@@ -150,6 +150,12 @@ public partial class VillageMap : Control
     // build with. Cool blue against a palette that is otherwise earth and harvest.
     private static readonly Color LibraryColour = new("#6a7fc9");
 
+    // The town hall is cut stone with the founders' names on it — pale, and the lightest thing on
+    // the map. It is next to the library on the wheel because they are the two buildings that
+    // produce nothing the village can eat, burn or build with, and far enough from it that
+    // *"which of those two blue squares is which?"* is never a question.
+    private static readonly Color TownHallColour = new("#b9b2a6");
+
     /// <summary>The ring round a store with no room left (D140).</summary>
     /// <remarks>
     /// Warm amber rather than red. A full store is not a disaster — it is usually a village
@@ -1213,6 +1219,7 @@ public partial class VillageMap : Control
         DrawWorkplaces();
         DrawStores();
         DrawLibraries();
+        DrawTheTownHall();
         DrawHomes();
 
         // Over the buildings so it is not hidden by one, under the people so it never
@@ -1516,6 +1523,31 @@ public partial class VillageMap : Control
                 DrawArc(centre, size * 0.85f, 0f, Mathf.Tau, 24, LibraryColour, width: 2f);
             }
         }
+    }
+
+    /// <summary>The founders' hall, if one stands (D252).</summary>
+    /// <remarks>
+    /// <b>⛔ DRAWN IN THE SAME COMMIT AS THE FEATURE</b>, which is the rule seven features in this
+    /// repo have broken — the library itself shipped built, tested and <em>invisible</em>. **A sim
+    /// feature is not done until something in the view calls it, and no test in this suite can tell
+    /// you that.**
+    /// ⭐ <b>Slightly larger than everything else</b>, deliberately: it is the one building the
+    /// village raised for a reason other than living, and it should read as the middle of the town
+    /// from across the map.
+    /// </remarks>
+    private void DrawTheTownHall()
+    {
+        if (_world!.TownHall is not { } hall)
+        {
+            return;
+        }
+
+        Vector2 centre = ToScreen(hall.Position);
+        float size = Mathf.Max(9f, _pixelsPerTile * 0.95f);
+        var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+        DrawRect(rect, TownHallColour with { A = 0.9f });
+        DrawRect(rect, TownHallColour, filled: false, width: 2f);
     }
 
     private void DrawStores()

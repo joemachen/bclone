@@ -1749,6 +1749,33 @@ public sealed record SimConfig
             // the answer to wanting more.
             Shelves = LibraryShelves,
         },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.TownHall,
+            Name = "town hall",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, TownHallLogs),
+                new MaterialCost(World.Goods.Stone, TownHallStone),
+            },
+            WorkTicks = TownHallWorkTicks,
+
+            // ⛔ IT HAS A PRICE EVEN THOUGH THE FIRST ONE IS FREE, AND THAT IS D108's RULE RATHER
+            // THAN A CHOICE. `Mark` reads `no materials and no work` to mean *free and instant* —
+            // a row costing nothing would make the town hall appear finished the moment it was
+            // marked, which is the one exception D230 spent a decision removing from demolition.
+            // The gift zeroes the MATERIALS at the moment it is spent; the work always stands.
+            //
+            // ⭐ No seats, no store, no shelves, no house capacity: it employs nobody, holds
+            // nothing and houses nobody. **Every column here is zero on purpose** — the building's
+            // entire output is information, and none of it is a good. `Civic` is what says that is
+            // a reason to exist rather than an empty row.
+            Civic = true,
+
+            // ⛔ THE FIRST SINGLETON IN THE GAME (D38). `building-placement.md` has listed the
+            // town hall as *the* example of a build-once building since long before one existed.
+            Singleton = true,
+        },
     };
 
     [JsonPropertyName("skills")]
@@ -1889,6 +1916,40 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("library_shelves")]
     public int LibraryShelves { get; init; } = 3;
+
+    /// <summary>Logs a town hall takes to build.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ A PLACEHOLDER, AND IT IS MARKED AS ONE</b> (`specs/town-hall.md §11`). **The first
+    /// town hall is free** — it is a gift, and the only one the village will ever have (D38, D252)
+    /// — so this price is reached by a modded config, a re-founded village, or a player who pulled
+    /// theirs down. *Nothing in the shipped game spends it yet, which is exactly why it should not
+    /// be mistaken for a measured number.*
+    /// </para>
+    /// <para>
+    /// <b>Priced above the library</b>, because `TECH-EXAMPLE.md` puts the town hall at *80 Stone,
+    /// 50 Planks, 20 Iron* — three goods the village cannot make — and the shape worth preserving
+    /// from that is *"the most expensive thing here"*, not the goods.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("town_hall_logs")]
+    public int TownHallLogs { get; init; } = 60;
+
+    /// <summary>Stone a town hall takes to build. See <see cref="TownHallLogs"/> — a placeholder.</summary>
+    [JsonPropertyName("town_hall_stone")]
+    public int TownHallStone { get; init; } = 40;
+
+    /// <summary>
+    /// Ticks of work a town hall takes, once the materials are on site.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ THIS ONE IS NOT A PLACEHOLDER, AND IT IS THE HALF THE PLAYER ACTUALLY FEELS.</b> The
+    /// gift covers materials and never work (D232), so **every village that is given a town hall
+    /// pays this number** — the crew still have to raise it. It is the largest in the catalogue,
+    /// deliberately: a monument the builders put up in an afternoon is not a monument.
+    /// </remarks>
+    [JsonPropertyName("town_hall_work_ticks")]
+    public int TownHallWorkTicks { get; init; } = 90;
 
     /// <summary>
     /// The techniques that exist — <b>rows, not code</b> (`specs/tech-tree.md`).
@@ -3071,13 +3132,17 @@ public sealed record SimConfig
             // refused it**, correctly, before it had a column saying what it was for. *The
             // validator caught that a library needed a reason to exist before the library did*,
             // which is the best argument for having written it.
+            // ⭐ AND CIVIC IS A FIFTH, FOR THE SAME REASON AND CAUGHT THE SAME WAY (D252). The
+            // town hall holds no goods, employs nobody, houses nobody and shelves no techniques —
+            // **so this guard refused it too**, correctly, before it had a column saying what it
+            // was for. *Second building, second time; the validator is earning its keep.*
             if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
-                && row.Shelves <= 0)
+                && row.Shelves <= 0 && !row.Civic)
             {
                 throw new SimConfigException(
                     $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody, "
-                    + "houses nobody and keeps no records. The village would raise it and it would "
-                    + "do nothing for ever.");
+                    + "houses nobody, keeps no records and is not civic. The village would raise "
+                    + "it and it would do nothing for ever.");
             }
         }
 

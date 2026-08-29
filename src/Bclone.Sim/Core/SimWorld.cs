@@ -91,6 +91,14 @@ public sealed class SimWorld
     /// </remarks>
     public List<Library> Libraries { get; } = new();
 
+    /// <summary>The town hall, if one stands. <b>There is never more than one</b> (D38).</summary>
+    /// <remarks>
+    /// <b>A nullable field rather than a list, and that is the singleton stated in the type</b> —
+    /// <em>a list that can only hold one thing is a list somebody will eventually put two things
+    /// in.</em> See <see cref="TownHall"/> and `specs/town-hall.md`.
+    /// </remarks>
+    public TownHall? TownHall { get; internal set; }
+
     /// <summary>
     /// The tick the village's first granary began keeping count, or 0 if none ever has.
     /// </summary>
@@ -171,6 +179,35 @@ public sealed class SimWorld
     /// </para>
     /// </remarks>
     public bool AFreeLibraryIsOwed { get; internal set; }
+
+    /// <summary>
+    /// Whether the village has been given a town hall it has not yet put anywhere.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE SAME GIFT MECHANISM AS THE LIBRARY, ON PURPOSE</b> (`specs/town-hall.md §4`).
+    /// The materials are free, the crew still raise it, and <b>the player chooses the spot</b> —
+    /// three rulings Joe already made once, and a second gift that behaved differently would be a
+    /// second thing to learn for no reason.
+    /// </para>
+    /// <para>
+    /// <b>⛔ EXACTLY ONE, EVER — and here that is stronger than the library's "exactly one free".</b>
+    /// A town hall is a <b>singleton</b> (D38), so there is no second one to charge for. Pulling it
+    /// down does not re-offer the gift: <em>the founders only die once.</em> Moving it (D229) is
+    /// the answer to putting it in the wrong place.
+    /// </para>
+    /// </remarks>
+    public bool ATownHallIsOwed { get; internal set; }
+
+    /// <summary>
+    /// Whether the village has already been told its founders are all gone.
+    /// </summary>
+    /// <remarks>
+    /// <b>Fires once, ever.</b> Separate from <see cref="ATownHallIsOwed"/> because the gift is
+    /// spent when the hall is marked and this is not — <em>"has this village outlived its
+    /// founders?"</em> stays true afterwards, and a later slice's collections tab reads it.
+    /// </remarks>
+    public bool SaidTheFoundersAreGone { get; internal set; }
 
     /// <summary>Whether any standing library has a shelf free.</summary>
     public bool AnyShelfFree()
@@ -4041,6 +4078,15 @@ public sealed class SimWorld
             }
         }
 
+        // ⭐ MOVING IT IS THE ANSWER TO PUTTING IT IN THE WRONG PLACE, and it is why demolishing it
+        // does not re-offer the gift (`specs/town-hall.md §4`). *The founders only die once.*
+        if (TownHall is { } hall && hall.Position == from)
+        {
+            hall.MoveTo(to);
+            TravelCost.Forget();
+            return true;
+        }
+
         for (int i = 0; i < Workplaces.Count; i++)
         {
             if (Workplaces[i].Position == from && !Workplaces[i].IsSite)
@@ -4211,6 +4257,18 @@ public sealed class SimWorld
             }
         }
 
+        // ⛔ PULLING IT DOWN DOES NOT RE-OFFER THE GIFT, and the sentence says so rather than
+        // leaving the player to find out (`specs/town-hall.md §4`). *The founders only die once.*
+        // Moving it (D229) is the answer to having put it in the wrong place.
+        if (TownHall is { } hall && hall.Position == tile)
+        {
+            TownHall = null;
+            Narrate($"{Capitalised(hall.Name)} was pulled down. The founders' names went with it, "
+                + "and the village will have to raise another at its own cost to keep them. "
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+            return;
+        }
+
         for (int i = 0; i < Workplaces.Count; i++)
         {
             if (Workplaces[i].Position == tile && !Workplaces[i].IsSite)
@@ -4219,6 +4277,40 @@ public sealed class SimWorld
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// Whether the village already has one of these, standing or marked out.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ A SITE COUNTS, AND THAT IS THE HALF THAT IS EASY TO MISS.</b> A marked-out building is
+    /// a building the village is going to have; refusing the second only once the first is finished
+    /// would let a player queue five town halls and watch four of them fail at completion, in
+    /// silence, having spent the timber. <b>The refusal has to happen where the player is looking.</b>
+    /// ⭐ A relocation passes <c>alreadyStanding: true</c> and never reaches here — <em>moving the
+    /// one hall is not building a second one.</em>
+    /// </remarks>
+    private bool OneIsAlreadyMarkedOrStanding(BuildingKind kind)
+    {
+        // ⚠️ THE STANDING HALF IS AS GENERIC AS THE WORLD IS, AND NO MORE — said plainly rather
+        // than dressed up. There is no one list of standing buildings to scan: stores, workplaces,
+        // libraries and the hall are four collections, and the civic one is the only singleton the
+        // game has. **The day a second singleton exists, this needs the same clause for wherever
+        // that one is kept** — which is a hole in `SimWorld`'s shape rather than in this rule.
+        if (TownHall is not null && BuildingsCatalog[kind]?.Civic == true)
+        {
+            return true;
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Construction?.Kind == kind)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>What kind of building stands on a tile, or null.</summary>
@@ -4235,6 +4327,11 @@ public sealed class SimWorld
             {
                 return BuildingKind.Library;
             }
+        }
+
+        if (TownHall is { } civic && civic.Position == tile)
+        {
+            return BuildingKind.TownHall;
         }
 
         for (int i = 0; i < Workplaces.Count; i++)
@@ -4264,6 +4361,11 @@ public sealed class SimWorld
             {
                 return Libraries[i].Name;
             }
+        }
+
+        if (TownHall is { } civic && civic.Position == tile)
+        {
+            return civic.Name;
         }
 
         for (int i = 0; i < Workplaces.Count; i++)
@@ -4460,6 +4562,32 @@ public sealed class SimWorld
         // ⭐ And the data-driven rule is the better sentence anyway: **you must be able to write
         // before you can build somewhere to write things down.** Any building with shelves waits
         // on literacy, including one this sim has never heard of.
+        // ⛔ ONE, EVER — THE FIRST SINGLETON IN THE GAME (D38, D252). ⭐ Asked of the ROW, which is
+        // the rule the literacy gate below learned the hard way: `kind == BuildingKind.TownHall`
+        // would fire on a modder's building that happens to hold id 11, and would miss a modder's
+        // own singleton entirely.
+        //
+        // ⚠️ IT COUNTS SITES AS WELL AS STANDING BUILDINGS. A marked-out hall is a hall the
+        // village is going to have, and refusing the second only once the first is finished would
+        // let a player queue five of them and watch four fail silently. `alreadyStanding` is the
+        // relocation's flag — moving the one hall is not building a second one.
+        if (alreadyStanding is false && BuildingsCatalog[kind]?.Singleton == true
+            && OneIsAlreadyMarkedOrStanding(kind))
+        {
+            string what = BuildingsCatalog[kind]!.Name;
+
+            // ⚠️ THE TWO CASES GET DIFFERENT SENTENCES, AND THAT IS D43 RATHER THAN POLISH. A
+            // player who marked one out ten seconds ago and is told *"the village has one
+            // already"* is being told something they can see is not true — nothing is standing.
+            // **A refusal has to name the thing that is actually in the way**, or it reads as the
+            // game being wrong rather than as the player being early.
+            return PlacementVerdict.No(TownHall is not null
+                ? $"The village has a {what} already, and there is only ever one. Move it if it "
+                    + "is in the wrong place."
+                : $"A {what} is already marked out and waiting to be built, and there is only "
+                    + "ever one. Pull the site down first if you want it somewhere else.");
+        }
+
         if (alreadyStanding is false && BuildingsCatalog[kind]?.Shelves > 0 && !HasLiteracy)
         {
             return PlacementVerdict.No(FirstGranaryTick == 0
@@ -4627,6 +4755,17 @@ public sealed class SimWorld
             recipe = new BuildingRecipe(recipe.WorkTicks);
             Narrate("The timber and stone for the library were gathered by the village. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
+        // ⭐ THE SAME GIFT, THE SAME PLACE, THE SAME TWO RULES (D252): the materials fall away and
+        // the work stands, because a building that appeared finished would be the only one in the
+        // game nobody built. Asked of the ROW, like the library's above.
+        if (ATownHallIsOwed && BuildingsCatalog[kind]?.Civic == true)
+        {
+            ATownHallIsOwed = false;
+            recipe = new BuildingRecipe(recipe.WorkTicks);
+            Narrate("The timber and stone for the founders' hall were gathered by the village. "
+                + $"Nobody was asked to. {Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
         string name = NameFor(kind);
@@ -5582,6 +5721,23 @@ public sealed class SimWorld
             });
 
             Narrate($"{Capitalised(name)} stands, with {row.Shelves} shelves waiting. "
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
+        // ⭐ A civic building is a fifth thing (D252) — not a store, not a workplace, not a home,
+        // not a library. The town hall is the only row that is one, and `CanBuildAt` has already
+        // refused a second, so this assignment cannot quietly overwrite a standing hall.
+        if (row.Civic)
+        {
+            TownHall = new TownHall
+            {
+                Position = position,
+                Name = name,
+                RaisedAtTick = Tick,
+            };
+
+            Narrate($"{Capitalised(name)} stands. The founders' names are cut into the lintel, "
+                + $"and the village has somewhere to keep what it has been. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
@@ -6653,6 +6809,10 @@ public sealed class SimWorld
                     BirthYear = 1 - config.FounderAge,
                     AgeYears = config.FounderAge,
                     LifeStage = LifeStage.Adult,
+
+                    // ⭐ THE ONLY PLACE THIS IS EVER SET (D252). Everybody else in the game's
+                    // history is born here, and `HouseholdSystem` does not write it.
+                    Founder = true,
                 };
 
                 household.AddMember(villager.Id);
@@ -6930,6 +7090,15 @@ public sealed class SimWorld
             {
                 return true;
             }
+        }
+
+        // ⭐ AND THE TOWN HALL, THE FIFTH — added because the line above ASKED FOR IT IN ADVANCE:
+        // *"a new kind of building is a new line here or it can be built on top of."* The warning
+        // was written by the session that added the fourth, and it is the cheapest one in this
+        // file to honour. (D252.)
+        if (TownHall?.Position == position)
+        {
+            return true;
         }
 
         for (int i = 0; i < StoreBuildings.Count; i++)

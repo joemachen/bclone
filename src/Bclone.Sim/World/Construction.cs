@@ -187,6 +187,36 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     Library = 10,
+
+    /// <summary>
+    /// A town hall — the monument the village raises to the people who founded it, and the place
+    /// it afterwards keeps its own records (`specs/town-hall.md`, `tech-tree.md §7f`, D251, D252).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE FIRST SINGLETON IN THE GAME</b> (D38; `building-placement.md` has listed the town
+    /// hall as <em>the</em> example of a build-once building since long before one existed). Every
+    /// other kind is multi-instance, so the refusal sentence for a second one is genuinely new
+    /// machinery rather than an existing rule applied.
+    /// </para>
+    /// <para>
+    /// <b>⛔ AND IT IS NOT A KNOWLEDGE BUILDING WITH EXTRAS</b> (D251, Joe). Knowledge is about a
+    /// fifth of it: it also triggers <b>nomads</b>, <b>itemises everything the village has ever
+    /// met</b> — crops, animals, techniques, buildings, <em>"in a collectors' sort of way"</em> —
+    /// and carries the <b>charts</b>. §8's knowledge screen is one tab. <em>A session that builds
+    /// "the knowledge screen, in a building" has built the wrong thing.</em>
+    /// </para>
+    /// <para>
+    /// <b>⭐ It produces no food, no goods and no labour</b>, which makes it the first building in
+    /// this game whose entire output is information about yourself — and the reason it is
+    /// <b>given</b> rather than bought: <em>nobody sells you a monument to your own dead.</em>
+    /// </para>
+    /// <para>
+    /// <b>Appended, never renumbered</b> — the same rule <see cref="Goods"/>, <see cref="JobKind"/>
+    /// and the buildings catalogue all carry.
+    /// </para>
+    /// </remarks>
+    TownHall = 11,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

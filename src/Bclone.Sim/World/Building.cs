@@ -178,6 +178,52 @@ public sealed record BuildingRow
     /// </remarks>
     [JsonPropertyName("house_capacity")]
     public int HouseCapacity { get; init; }
+
+    /// <summary>
+    /// Whether the village keeps its own records here — <b>the fifth reason a building may exist</b>
+    /// (`specs/town-hall.md`, D252).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE VALIDATOR ASKED FOR THIS BEFORE THE TOWN HALL DID, EXACTLY AS IT DID FOR SHELVES.</b>
+    /// <c>SimConfig.ValidateBuildings</c> refuses a row that <em>"stores nothing, employs nobody,
+    /// houses nobody and keeps no records"</em> — and a town hall does none of those four. It holds
+    /// no goods, employs nobody, houses nobody and shelves no techniques; <b>its entire output is
+    /// information about the village itself</b>. That is a reason to exist and it needed a column
+    /// saying so. <em>The guard catching the second building it was not written for is the best
+    /// argument for having written it.</em>
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Not the same thing as <see cref="Shelves"/>.</b> A library stores <em>techniques</em>,
+    /// which the sim reads and applies. A civic building stores <em>what happened</em>, which
+    /// nothing in the sim reads and nothing may ever grant a bonus for (`tech-tree.md §7f.1`) —
+    /// the day a collections entry confers something, this becomes the ratchet §11 exists to
+    /// prevent.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("civic")]
+    public bool Civic { get; init; }
+
+    /// <summary>
+    /// Whether the village may only ever have one of these standing.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ D38, AND `building-placement.md` HAS LISTED THE TOWN HALL AS *THE* EXAMPLE OF A
+    /// BUILD-ONCE BUILDING SINCE LONG BEFORE ONE EXISTED</b> — <em>"most buildings are
+    /// multi-instance; a few (a town hall) are singletons."</em> The town hall is the first, so
+    /// the refusal sentence is genuinely new machinery rather than an existing rule applied.
+    /// </para>
+    /// <para>
+    /// <b>A separate column from <see cref="Civic"/> on purpose.</b> They happen to coincide on
+    /// the one row that has either today, and they are different claims: <em>what it is for</em>
+    /// and <em>how many of it there may be</em>. Collapsing them would make the next singleton
+    /// — a cathedral, a trading post — inherit a records screen it has no use for, which is
+    /// D108's mistake in a new place.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("singleton")]
+    public bool Singleton { get; init; }
 }
 
 /// <summary>

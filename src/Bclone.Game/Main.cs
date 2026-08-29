@@ -237,6 +237,7 @@ public partial class Main : Control
         ProbeTheInspectorRows();
         ProbeTheControlBar();
 
+        ProbeTheLogLines();
         GD.Print("[widths] done.");
         GetTree().Quit();
     }
@@ -257,6 +258,52 @@ public partial class Main : Control
     /// are obvious here and neither is guessable from the layout code.</b>
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// What the village log will actually render, run through the real markup and stripped of it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ KEPT BECAUSE IT EARNED ITS KEEP IN ONE RUN (2026-08-29).</b> Written as a throwaway
+    /// to check the new timestamp column, it immediately printed
+    /// <em>"Agnes is dangerously cold and is going in to get warm —"</em>: **taking the date off
+    /// the end of a sentence that joined it with an em dash left the line hanging mid-thought.**
+    /// No amount of reading <c>Stamped</c> would have shown that. *Print what the control will
+    /// actually show before believing a string transform.*
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT STEPS THE SIM, WHICH THE OTHER PROBES DELIBERATELY DO NOT.</b> A fresh village has
+    /// three log lines and none of the interesting shapes, so a probe of tick zero would report
+    /// almost nothing. **That is only acceptable because it runs LAST, one line before
+    /// <c>GetTree().Quit()</c>** — nothing observes the world afterwards. ⛔ *If anything is ever
+    /// added after this call, this has to move or stop stepping.*
+    /// </para>
+    /// <para>
+    /// It goes through <see cref="LogMarkup"/> rather than reimplementing it, then strips the
+    /// BBCode back off — so what it prints is what the panel would show, including the stamp, the
+    /// stripping and the season lines that deliberately have no stamp.
+    /// </para>
+    /// </remarks>
+    private void ProbeTheLogLines()
+    {
+        GD.Print("[log] --- what the village log renders, twelve years in ---");
+        _loop.Step(_loop.World.Config.TicksPerYear * 12);
+
+        IReadOnlyList<LogEntry> seen = _sink.Entries;
+        int shown = 0;
+        for (int i = 0; i < seen.Count && shown < 18; i++)
+        {
+            if (!Shown(seen[i]))
+            {
+                continue;
+            }
+
+            shown++;
+            string plain = System.Text.RegularExpressions.Regex.Replace(
+                LogMarkup(seen[i]), @"\[[^\]]*\]", string.Empty);
+            GD.Print("[log] " + plain.TrimEnd());
+        }
+    }
+
     private void ProbeTheControlBar()
     {
         if (_controlBar is null)
@@ -265,7 +312,27 @@ public partial class Main : Control
             return;
         }
 
-        GD.Print($"[widths] --- control bar: is {_controlBar.Size.X:F0} wide "
+        // ⛔⛔ POSED AT ITS WIDEST, BECAUSE MEASURING IT AS IT STARTS IS THE BUG THIS PROBE EXISTS
+        // TO CATCH (D242, extended 2026-08-29 for the town hall). **Every look anybody takes at
+        // the UI is a look at a young village** — and this bar's two conditional groups, Knowledge
+        // and Civic, are hidden until the village can write and until its founders are gone. The
+        // bar the player has in year sixty is a bar with two more categories in it, and until now
+        // *the tool built to measure the growing bar was itself only ever measuring the young one.*
+        //
+        // ⚠️ Shown, then measured, then put back — the probe quits immediately afterwards, but
+        // leaving the game in a state it could not have reached on its own is how an instrument
+        // starts lying about something else.
+        bool knowledgeWas = _libraryCategory.Visible;
+        bool civicWas = _civicCategory.Visible;
+        _libraryCategory.Visible = true;
+        _civicCategory.Visible = true;
+
+        // A flow container's minimum is recomputed on the next layout pass, not on assignment.
+        _controlBar.QueueSort();
+        ForceUpdateTransform();
+
+        GD.Print($"[widths] --- control bar, POSED with every category the village will ever "
+            + $"unlock: is {_controlBar.Size.X:F0} wide "
             + $"of a {Size.X:F0} window, and {_controlBar.Size.Y:F0} tall ---");
 
         foreach (Node child in _controlBar.GetChildren())
@@ -276,13 +343,40 @@ public partial class Main : Control
             }
 
             float wants = row.GetCombinedMinimumSize().X;
+
+            // ⭐⭐ THE NUMBER THAT ACTUALLY DECIDES WRAPPING, AND `wants` IS NOT IT (2026-08-29).
+            // **An `HFlowContainer`'s minimum width is its WIDEST SINGLE CHILD** — so `wants` is
+            // blind to how many buttons are on the row, and adding a whole category moved it by
+            // exactly zero. *That is the property that made the flow container collapse the bar
+            // into a corner in the first place (D242), read from the other side.*
+            //
+            // What fills a row is the SUM, and that is what says how close the bar is to needing
+            // another line. Printed beside `wants` rather than instead of it: the two answer
+            // different questions, and the day one of them is the bug you want both on screen.
+            float laidEndToEnd = 0f;
+            int shown = 0;
+            foreach (Node grandchild in row.GetChildren())
+            {
+                if (grandchild is Control item && item.Visible)
+                {
+                    laidEndToEnd += item.GetCombinedMinimumSize().X;
+                    shown++;
+                }
+            }
+
             string verdict = wants > _controlBar.Size.X + 1f
                 ? "  ⛔ WANTS MORE THAN IT HAS — this row runs off the screen"
-                : string.Empty;
+                : laidEndToEnd > _controlBar.Size.X + 1f
+                    ? "  ⚠️ wraps — its contents do not fit on one line"
+                    : string.Empty;
 
             GD.Print($"[widths] bar    {row.GetType().Name} wants {wants:F0}, "
+                + $"{shown} items end to end want {laidEndToEnd:F0}, "
                 + $"is {row.Size.X:F0} x {row.Size.Y:F0}{verdict}");
         }
+
+        _libraryCategory.Visible = knowledgeWas;
+        _civicCategory.Visible = civicWas;
     }
 
     /// <summary>
@@ -495,6 +589,8 @@ public partial class Main : Control
     /// </remarks>
     private Button _libraryButton = null!;
     private VBoxContainer _libraryCategory = null!;
+    private Button _townHallButton = null!;
+    private VBoxContainer _civicCategory = null!;
 
     /// <summary>
     /// Show the library only once the village can write, and glow while the gift is unspent.
@@ -516,10 +612,56 @@ public partial class Main : Control
         _libraryButton.Text = world.AFreeLibraryIsOwed ? "Library ★" : "Library";
     }
 
+    /// <summary>
+    /// Show the town hall only once the founders are gone, and glow while the gift is unplaced.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE SAME THREE RULES AS THE LIBRARY BUTTON, FOR THE SAME REASON</b> (Joe, from play,
+    /// about the library: <i>"the library is in the UI from the beginning — shouldn't it show up
+    /// once gifted?"</i>). A button you have been looking at for fifty years is not a surprise
+    /// when it unlocks, and the tint means <em>"this is the gift"</em> rather than <em>"this is a
+    /// town hall"</em>.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT DOES NOT GO AWAY ONCE THE HALL STANDS</b>, and the reason is the singleton refusal
+    /// (D38): hiding the button would leave a player who pulled theirs down with no way to raise
+    /// another, and a control that vanishes is harder to reason about than one that says no.
+    /// <b>Pressing it while one stands gets the sentence</b> — <em>"there is only ever one"</em> —
+    /// which is `SimWorld.CanBuildAt`'s job, not this method's.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The Civic group appears mid-play, which is the failure mode D242 cost an evening on.</b>
+    /// The bottom bar grows by a whole category the year the founders die, exactly as it did the
+    /// year the village learned to write — and that bug was invisible because <em>every look
+    /// anybody takes at the UI is a look at a young village.</em> The bar wraps now
+    /// (<c>HFlowContainer</c> + <c>spanWidth</c>), so this is a second category it has to absorb
+    /// rather than a second bug. <b>Ask what this bar looks like in year sixty.</b>
+    /// </para>
+    /// </remarks>
+    private void RefreshTheTownHallButton(SimWorld world)
+    {
+        _civicCategory.Visible = world.SaidTheFoundersAreGone;
+
+        _townHallButton.Modulate = world.ATownHallIsOwed
+            ? new Color(1f, 0.85f, 0.4f)
+            : Colors.White;
+
+        _townHallButton.Text = world.ATownHallIsOwed ? "Town hall ★" : "Town hall";
+    }
+
     private PanelContainer? _momentPanel;
     private Label _momentTitle = null!;
     private Label _momentBody = null!;
     private double _speedBeforeTheMoment = 1.0;
+
+    /// <summary>Whether the game should stay paused after the next moment is dismissed.</summary>
+    /// <remarks>
+    /// Set by <c>SkipYears</c> when a skip stopped early on a moment. <b>The player skipped TO
+    /// that moment; handing them a running village the instant they read it is the same
+    /// complaint the skip exists to answer.</b>
+    /// </remarks>
+    private bool _stayPausedAfterTheMoment;
 
     /// <summary>The passing moment — celebrated, but the village keeps working.</summary>
     private PanelContainer? _passingPanel;
@@ -628,7 +770,16 @@ public partial class Main : Control
             _momentTitle.Text = moment.Title;
             _momentBody.Text = moment.Body;
 
-            _speedBeforeTheMoment = _driver.IsPaused ? 1.0 : _driver.SpeedMultiplier;
+            // ⚠️ THE `IsPaused ? 1.0` ARM STOPPED BEING DEFENSIVE THE DAY `SkipYears` ARRIVED.
+            // A moment could not previously fire while paused — the sim was not stepping — so the
+            // branch was there for a case that could not happen. **A skip steps the loop directly
+            // and then pauses**, so it can, and resuming to 1.0 would start the village running
+            // the instant the player dismissed the very moment they had skipped to. *A defensive
+            // branch is a claim about what cannot happen, and a new control can make it happen.*
+            _speedBeforeTheMoment = _stayPausedAfterTheMoment
+                ? 0.0
+                : _driver.IsPaused ? 1.0 : _driver.SpeedMultiplier;
+            _stayPausedAfterTheMoment = false;
             SetSpeed(0.0);
 
             _momentPanel!.Visible = true;
@@ -743,6 +894,7 @@ public partial class Main : Control
 
         ShowAnyMoment(world);
         RefreshTheLibraryButton(world);
+        RefreshTheTownHallButton(world);
 
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
 
@@ -1452,6 +1604,16 @@ public partial class Main : Control
             }
         }
 
+        // ⛔ THE FIFTH LIST, AND IT IS HERE IN THE SAME COMMIT AS THE BUILDING (D252). The comment
+        // directly above records the library shipping built, paid for, watched being raised, and
+        // then reading as *"open ground"* — because this method knew about three kinds of thing
+        // that can stand on a tile and did not know about a fourth. **A fifth was always going to
+        // arrive; this is it.**
+        if (world.TownHall is { } hall && hall.Position == tile)
+        {
+            DescribeTheTownHall(world, hall, lines);
+        }
+
         if (lines.Count == 0)
         {
             DescribeBareGround(world, tile, lines);
@@ -1708,6 +1870,55 @@ public partial class Main : Control
             lines.Add("Full. The next technique anybody works out has nowhere to go, and "
                 + "will die with them unless another library stands.");
         }
+    }
+
+    /// <summary>What the town hall says when you click it — <b>who it is for</b>.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE FOUNDERS ARE THE WHOLE PANEL, AND THAT IS SLICE 1's ENTIRE CLAIM</b>
+    /// (`specs/town-hall.md §6`): <em>standing in the village, it says what it is and who it is
+    /// for.</em> The collections, the charts and the knowledge roster are slices 2–4 and none of
+    /// them is here — but the tribute is, because the tribute is the reason the building exists.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE ORDERING OF THE SLICES IS A DEFENCE, NOT AN ACCIDENT.</b> `DESIGN.md §1`'s
+    /// non-negotiable most at risk in this building is <em>people, not a spreadsheet</em> — charts
+    /// and itemised collections are literally a spreadsheet. **Building the Founders panel first
+    /// means the first thing anybody ever sees inside a town hall is four people.**
+    /// </para>
+    /// </remarks>
+    private static void DescribeTheTownHall(SimWorld world, TownHall hall, List<string> lines)
+    {
+        Separate(lines);
+
+        lines.Add($"{hall.Name} — raised to the people who founded this village");
+
+        int named = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager founder = world.Villagers[i];
+            if (!founder.Founder)
+            {
+                continue;
+            }
+
+            named++;
+
+            // ⚠️ A founder is dead by the time this building can stand — the hall's own trigger is
+            // the last of them dying — so this reads their age at death, which `AgeYears` stops
+            // advancing at. **Written as a life rather than as a row**: the register that keeps
+            // this panel from being a stat block is the same one D195's at-risk line uses.
+            lines.Add($"  · {founder.Name}, who lived {Years(founder.AgeYears)} "
+                + $"and saw {founder.WintersSurvived} winters here");
+        }
+
+        if (named == 0)
+        {
+            lines.Add("Nobody's names are cut into the lintel, which should not be possible.");
+        }
+
+        lines.Add(string.Empty);
+        lines.Add("The village keeps its records here. There is nothing to read yet.");
     }
 
     private static void DescribeStore(SimWorld world, StoreBuilding store, List<string> lines)
@@ -2134,7 +2345,7 @@ public partial class Main : Control
     /// </remarks>
     private string LogMarkup(LogEntry entry)
     {
-        string safe = entry.Message.Replace("[", "[lb]", StringComparison.Ordinal);
+        string safe = Stamped(entry, out string when).Replace("[", "[lb]", StringComparison.Ordinal);
 
         // ⭐ THE CATEGORY DECIDES THE COLOUR NOW, AND `_celebrated` ONLY DECIDES EMPHASIS.
         // D241 picked celebrations out by identity because the sim had no category to offer; it
@@ -2145,10 +2356,105 @@ public partial class Main : Control
         Color colour = ColourOf(entry.Category);
         string tinted = $"[color=#{colour.ToRgba32():x8}]{safe}[/color]";
 
+        // ⭐ THE STAMP IS DIMMED AND THE SENTENCE IS NOT. It is a finding aid, not a thing to read
+        // — the eye should land on the prose and use the column only when it is looking for a
+        // date. A stamp in the line's own colour would make every entry start with the least
+        // interesting words in it.
+        string stamp = when.Length == 0
+            ? string.Empty
+            : $"[color=#{StampColour.ToRgba32():x8}]{when}[/color]  ";
+
         return _celebrated.Contains(entry.Message)
-            ? $"[b]{tinted}[/b]\n"
-            : $"{tinted}\n";
+            ? $"{stamp}[b]{tinted}[/b]\n"
+            : $"{stamp}{tinted}\n";
     }
+
+    /// <summary>
+    /// The entry's own date, and its sentence with the now-redundant prose date taken off.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ HALF THE LOG ALREADY ENDS WITH THE DATE, SO A STAMP BOLTED ON THE FRONT WOULD SAY IT
+    /// TWICE.</b> **Measured over a sixty-year run, not guessed: 94 of 193 stamped lines (48%)**
+    /// end with exactly the date their own tick produces. **The stamp replaces that rather than
+    /// joining it** — and because the prose form is longer than the stamp, <b>this makes those
+    /// lines SHORTER, not longer.</b>
+    /// </para>
+    /// <para>
+    /// <b>⛔⛔ SEASONAL SUMMARIES GET NO STAMP, AND FINDING OUT WHY IS THE REASON TO PROBE BEFORE
+    /// SHIPPING.</b> They are written at the turn INTO a season but are ABOUT the one just ended —
+    /// so a stamp read <em>"Y1 Sum · Spring of Year 1 — the village foraged 12 times"</em>, which
+    /// looks like the log contradicting itself. **The stamp was right and it still read as a bug.**
+    /// ⭐ They already carry their own date, in better English than a stamp, so the sim's own
+    /// <c>LogCategory.Season</c> answers this — <em>no parsing, and no view-side rule about which
+    /// sentences are retrospective.</em> ⚠️ They are **42% of a sixty-year log**, so the column is
+    /// deliberately ragged: unstamped season lines read as headers between stamped entries, and a
+    /// player who filters seasons off (one click, the biggest noise cut there is) sees every
+    /// remaining line stamped.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>THE OTHER 52% STILL SAY THE DATE MID-SENTENCE AND ARE LEFT ALONE ON PURPOSE</b> —
+    /// <em>"Amos was born to the Thatcher household — Spring, Year 2. The village is now 5."</em>
+    /// Ten narrating call sites across `HouseholdSystem`, `MortalitySystem`, `AgeingSystem`,
+    /// `LabourAllocator` and the founding write it into the middle of a clause. **Taking those out
+    /// is a change to the game's narrative voice, which is Joe's call rather than a refactor** —
+    /// and two of them (the deaths) carry <c>Day 4, Spring, Year 58</c>, which is more precise than
+    /// any stamp. *Recorded rather than done.*
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT IS NOT PARSING THE SENTENCE, AND THE DISTINCTION MATTERS BECAUSE D241 REFUSED TO
+    /// PARSE ONE.</b> That ruling was about inferring *meaning* from prose — which line is a
+    /// celebration — and it stands. This asks a different question: the view **constructs** the
+    /// exact string the clock would have produced for this entry's own tick and tests whether the
+    /// sentence ends with it. **A match is proof, not a guess**, and a miss changes nothing:
+    /// the eleven sentences that carry the date mid-clause (<em>"X starved to death at 77, Day 4,
+    /// Spring, Year 58. They had survived…"</em>) simply keep it, and are still stamped.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE HONEST ALTERNATIVE, NAMED SO NOBODY THINKS THIS WAS THE ONLY OPTION:</b> take the
+    /// dates out of all 47 sentences at the source. **That is the cleaner end state and it is a
+    /// change to the game's narrative voice across every system**, which is Joe's call rather than
+    /// a refactor — several of those sentences are written to end on the date. If he wants it,
+    /// this method collapses to two lines.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The clock is derived from the tick, never stored</b> (<see cref="SimClock.FromTick"/>),
+    /// so this is the same calendar the sim used when it wrote the line — not a second opinion
+    /// about what time it was.
+    /// </para>
+    /// </remarks>
+    private string Stamped(LogEntry entry, out string when)
+    {
+        SimClock at = SimClock.FromTick(entry.Tick, _loop.World.Config);
+
+        // "Y58 Spr" — the year first, because that is what a player scanning sixty years is
+        // looking for, and three letters of season because the four are distinguishable at three.
+        // Empty for a seasonal summary, which dates itself; see this method's remarks.
+        when = entry.Category == LogCategory.Season
+            ? string.Empty
+            : $"Y{at.Year} {at.Season.ToString()[..3]}";
+
+        string prose = $" {at.SeasonAndYear()}.";
+        if (!entry.Message.EndsWith(prose, StringComparison.Ordinal))
+        {
+            return entry.Message;
+        }
+
+        // ⛔⛔ AND THE CUT LEAVES A DANGLING CONNECTIVE IF YOU DO NOT TIDY AFTER IT — which is not
+        // a thing I reasoned out, it is a thing the rendered output said out loud:
+        // *"Agnes is dangerously cold and is going in to get warm —"*. **Some sentences join the
+        // date with an em dash rather than a full stop**, so removing the date removes what the
+        // dash was pointing at and leaves the line hanging mid-thought.
+        // ⭐ *Print what the control will actually show before believing a string transform.*
+        string cut = entry.Message[..^prose.Length].TrimEnd(' ', '—', '-', ',', ';', ':');
+
+        return cut.Length == 0 || cut[^1] is '.' or '!' or '?'
+            ? cut
+            : cut + ".";
+    }
+
+    /// <summary>The village log's timestamp column — present, and quiet.</summary>
+    private static readonly Color StampColour = new("#7f8c94");
 
     private static int LivingHouseholds(SimWorld world)
     {
@@ -2574,11 +2880,17 @@ public partial class Main : Control
         // ⚠️ **Turning BBCode on is what made a second font size reachable at all.** The lesson
         // is not "remember bold": it is that enabling markup enables every theme slot the markup
         // can name, and overriding one of them is overriding none of them.
-        _villageLog.AddThemeFontSizeOverride("normal_font_size", RowSize);
-        _villageLog.AddThemeFontSizeOverride("bold_font_size", RowSize);
-        _villageLog.AddThemeFontSizeOverride("italics_font_size", RowSize);
-        _villageLog.AddThemeFontSizeOverride("bold_italics_font_size", RowSize);
-        _villageLog.AddThemeFontSizeOverride("mono_font_size", RowSize);
+        // ⭐ AND THE LOG ALONE RUNS SMALLER THAN EVERY OTHER PANEL SINCE 2026-08-29 (Joe, asking
+        // for timestamps: *"smaller font to compensate for the extra text"*). ⚠️ **It is the one
+        // panel that is READ rather than SCANNED** — every other list is short labelled rows, and
+        // this is prose that has to hold sixty years of it. **The variants are all set together
+        // for the reason the paragraph above records**: overriding one theme slot is overriding
+        // none of them.
+        _villageLog.AddThemeFontSizeOverride("normal_font_size", LogSize);
+        _villageLog.AddThemeFontSizeOverride("bold_font_size", LogSize);
+        _villageLog.AddThemeFontSizeOverride("italics_font_size", LogSize);
+        _villageLog.AddThemeFontSizeOverride("bold_italics_font_size", LogSize);
+        _villageLog.AddThemeFontSizeOverride("mono_font_size", LogSize);
         body.AddChild(_villageLog);
 
         // ⭐⭐ ONE SWITCH PER CATEGORY (Joe, 2026-08-27: *"a filter for each category… optimize
@@ -3105,8 +3417,22 @@ public partial class Main : Control
         controls.AddChild(SpeedButton("4x", 4.0));
         controls.AddChild(SpeedButton("10x", 10.0));
 
+        // ⭐ 20x (Joe, 2026-08-29, for QA: *"i also sometimes dont want to spend 20 minutes
+        // starting up to get to a later-stage QA item"*).
+        //
+        // ⚠️ AND IT IS NOWHERE NEAR THE CEILING, WHICH IS WORTH KNOWING BEFORE ANYONE ADDS 40x.
+        // `target_ticks_per_second` is **0.75**, so 20x asks for 15 ticks a second — a quarter of
+        // a tick per frame at 60fps, against `max_ticks_per_frame` of 250. **The spiral guard does
+        // not begin to bite until roughly 20,000x.** The limit is not the driver and it is not the
+        // sim: measured, the sim runs **58 years in 1.53 seconds** (18,218 ticks/sec, ~24,000x).
+        // *The speed buttons are a pacing choice, not a performance one* — which is why the answer
+        // to "get me to year 58" is `SkipYears` below and not a bigger number here.
+        controls.AddChild(SpeedButton("20x", 20.0));
+
         _speedLabel = Body(string.Empty);
         controls.AddChild(_speedLabel);
+
+        AddTheSkipControls(controls);
 
         controls.AddChild(new VSeparator());
 
@@ -4552,6 +4878,13 @@ public partial class Main : Control
         _libraryCategory = Category("Knowledge", _libraryButton);
         row.AddChild(_libraryCategory);
 
+        // The town hall, hidden until the founders are gone and highlighted while it is the gift
+        // (D252). Its own category: the hall is not a knowledge building with extras, and putting
+        // it under "Knowledge" would say the opposite of what D251 settled.
+        _townHallButton = BuildButton("Town hall", BuildingKind.TownHall);
+        _civicCategory = Category("Civic", _townHallButton);
+        row.AddChild(_civicCategory);
+
         // The brush (D42). Its own category because it is a different kind of decision: the
         // others place one thing, this says where a whole neighbourhood may grow — and the
         // village decides which tiles, and when, and whether at all.
@@ -4629,6 +4962,97 @@ public partial class Main : Control
         return group;
     }
 
+    /// <summary>
+    /// ⭐ The QA fast-forward — <b>debug builds only</b> (Joe, 2026-08-29).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE SPEED BUTTONS WERE NEVER GOING TO ANSWER HIS QUESTION, AND THE ARITHMETIC SAYS
+    /// SO.</b> A year is 480 ticks at 0.75 ticks/second, so **one year is 10.7 real minutes at 1x
+    /// and 64 seconds at 10x.** The 20x he asked for halves that to 32 seconds a year —
+    /// <b>still half an hour to reach the town hall at year 58.</b> ⭐ Measured, the sim runs those
+    /// 58 years in **1.53 seconds**. *The gap between 31 minutes and 1.5 seconds is the whole
+    /// reason this control exists rather than a bigger multiplier.*
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT STOPS EARLY ON A MOMENT, AND THAT IS THE DESIGN RATHER THAN A COURTESY.</b> The
+    /// thing being skipped towards is usually the thing that raises one — a gift, a discovery, the
+    /// founders' hall. **A skip that ran straight past the event you were skipping to would be
+    /// worse than no skip**, because you would have to do it again, more carefully, from a save
+    /// you do not have.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ DEBUG BUILDS ONLY, AND THAT IS A NON-NEGOTIABLE CALL RATHER THAN CAUTION.</b>
+    /// `DESIGN.md §1` makes the **meditative pace** a constraint on every feature; a button that
+    /// skips a decade is a different game, and shipping one to a player would be answering the
+    /// pillar with a control that opts out of it. <b>Speed is pacing; a skip is a tool.</b>
+    /// `run.bat` builds debug, so Joe has it and an export never will.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It leaves the game paused.</b> Landing at speed on the year you wanted to inspect and
+    /// immediately watching it scroll past is the same complaint one level down.
+    /// </para>
+    /// </remarks>
+    private void AddTheSkipControls(Container controls)
+    {
+        if (!OS.IsDebugBuild())
+        {
+            return;
+        }
+
+        controls.AddChild(new VSeparator());
+
+        var year = new Button { Text = "Skip 1y", TooltipText = "QA only: run one year at once." };
+        year.Pressed += () => SkipYears(1);
+        controls.AddChild(year);
+
+        var decade = new Button { Text = "Skip 10y", TooltipText = "QA only: run ten years at once." };
+        decade.Pressed += () => SkipYears(10);
+        controls.AddChild(decade);
+    }
+
+    /// <summary>Run <paramref name="years"/> of sim at once, stopping early on a moment.</summary>
+    /// <remarks>
+    /// <b>⚠️ IT STEPS THE SAME <c>SimLoop.Step</c> EVERYTHING ELSE DOES, ONE TICK AT A TIME.</b>
+    /// Nothing here reaches past the loop or touches the driver's accumulator except to reset it,
+    /// so **a village skipped through is byte-identical to one played through at 1x** — the
+    /// property `FixedTimestepDriver` already guarantees, and the reason a skip is safe to hand a
+    /// tester at all. ⛔ *The moment this method learns a shortcut, that stops being true and QA
+    /// stops testing the game.*
+    /// </remarks>
+    private void SkipYears(int years)
+    {
+        int ticks = _loop.World.Config.TicksPerYear * years;
+        int momentsBefore = _loop.World.Moments.Count;
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        int ran = 0;
+        for (; ran < ticks; ran++)
+        {
+            _loop.Step(1);
+
+            if (_loop.World.Moments.Count > momentsBefore)
+            {
+                ran++;
+                break;
+            }
+        }
+
+        watch.Stop();
+
+        bool onAMoment = _loop.World.Moments.Count > momentsBefore;
+
+        // ⚠️ The accumulator holds real time that has not become ticks yet. Left alone, the first
+        // frame after a skip would run whatever was owed before it — a lurch on top of a jump.
+        _driver.ResetAccumulator();
+        _stayPausedAfterTheMoment = onAMoment;
+        SetSpeed(0.0);
+
+        GD.Print($"[skip] ran {ran} ticks ({ran / (float)_loop.World.Config.TicksPerYear:F1} years) "
+            + $"in {watch.Elapsed.TotalSeconds:F2}s, now {_loop.World.Clock}"
+            + (onAMoment ? " — stopped early on a moment" : string.Empty));
+    }
+
     private Button SpeedButton(string text, double multiplier)
     {
         var button = new Button { Text = text, CustomMinimumSize = new Vector2(64, 0) };
@@ -4660,6 +5084,19 @@ public partial class Main : Control
     /// </para>
     /// </remarks>
     private const int RowSize = 13;
+
+    /// <summary>
+    /// The village log's own size — <b>one point smaller than every other panel</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ Joe, 2026-08-29, asking for timestamps: *"smaller font to compensate for the extra
+    /// text."*</b> ⚠️ **The timestamp does not actually make a line longer** — the prose date it
+    /// replaces is longer than the stamp that replaces it (see <c>Stamped</c>) — but the log is
+    /// the one panel that is **read rather than scanned**, and it is the only one that has to hold
+    /// sixty years of prose in a fixed box. **12, not 11**: at 11 the log stops matching the
+    /// column it sits in and starts looking like a different application.
+    /// </remarks>
+    private const int LogSize = 12;
 
     private static Label Heading(string text)
     {
