@@ -113,6 +113,70 @@ public sealed record SimConfig
     [JsonPropertyName("gather_yield")]
     public int GatherYield { get; init; } = 24;
 
+    /// <summary>
+    /// How many completed gathers set one tile of a hut's ring back to sapling —
+    /// <b>the copse thinning under use</b> (D257, Joe). Zero switches it off.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS IS THE ONLY WAY "THINNER YIELD PER TRIP" CAN EXIST, AND THAT IS PROVEN RATHER
+    /// THAN ARGUED.</b> A trip is worth <c>gather_yield × wooded ÷ ring</c>. **The constant has 9%
+    /// of headroom** — 145 against a derived floor of 132, below which
+    /// <c>VillageEconomyTests</c> fails the build — so lowering it is not available. And with the
+    /// density term **static**, any change to the formula is a flat nerf wearing a different hat.
+    /// <b>Measured: a hut's ring sat at 55% wooded in year 0 and 55% in year 110</b>, because
+    /// gathering added food and touched nothing else. *The copse could not thin because nothing
+    /// took anything out of it.*
+    /// </para>
+    /// <para>
+    /// <b>⛔ SO A GATHER NOW COSTS THE WOOD, AND EVERY PIECE OF THAT ALREADY EXISTED.</b> Thinning
+    /// sets <see cref="Terrain.Forest"/> to <see cref="Terrain.Sapling"/>;
+    /// <c>WoodedTilesAround</c> counts only Forest, so the ring's yield falls at once; and
+    /// <c>RegrowthSystem</c> matures saplings back on its own sweep. **The equilibrium is where
+    /// thinning meets regrowth, and it is emergent rather than tuned** — more foragers on one hut
+    /// thin faster, so the hut settles thinner, which is exactly Joe's *"the copse of wood isnt
+    /// infinite."*
+    /// </para>
+    /// <para>
+    /// <b>⭐ It is diegetic, and the player can SEE it.</b> Saplings have had a colour and a
+    /// sentence since D221, so a hard-worked ring visibly lightens around the hut and a rested one
+    /// darkens again. *A pressure the player watches happen is `DESIGN.md §1`'s legibility;
+    /// a number going down in a panel is not.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Counted, not rolled.</b> It fires on the forager's own gather tally, so **nothing here
+    /// touches the RNG** and the draw order of every other system is unmoved. *A seeded roll would
+    /// have been the obvious way and would have shifted every golden for reasons unrelated to the
+    /// feature.*
+    /// </para>
+    /// <para>
+    /// <b>⛔⛔ ZERO — OFF — AND THAT IS A DELIBERATE HAND-OVER RATHER THAN AN UNFINISHED FEATURE.
+    /// THE RATE CANNOT BE MEASURED HERE, AND THAT IS THE FINDING.</b> Swept at 30, 12, 6, 3, 2 and
+    /// 1 across three seeds: **the ring visibly thins at every rate** (55% → 46% at three, and it
+    /// oscillates 55/16/58 at one) **and the population does not move at all on the good seeds
+    /// until the rate is aggressive enough to kill the poor one.** The reason is already written
+    /// into this suite: <c>StorageTests.CapacityIsWhatHoldsThePopulationFlat</c> — **an unattended
+    /// village is capped by its granary, not by its food**, so no food lever can bite until it
+    /// drops below a ceiling that is not about food.
+    /// </para>
+    /// <para>
+    /// <b>⭐ Joe plays in the other regime and said so in the same breath he asked for this:</b>
+    /// <em>"not much will change at year 200 as long as i keep adding granaries and
+    /// foragers/farmers."</em> **Adding granaries raises the ceiling until food IS the constraint**
+    /// — which is exactly where this pressure lands and exactly where an unattended harness cannot
+    /// follow him. *The number is his to feel, not mine to derive.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Off also means no golden moved.</b> A village that never thins is byte-identical to one
+    /// from before this existed. **Turning it on moves five** (both fifty-year pairs and the farm's)
+    /// and trips <c>MarketRestockTests</c>'s 80-point overflow allowance at 116 — *timing shifted,
+    /// not a mechanism broken (D200's family), but it wants understanding rather than a raised
+    /// threshold.* **That is one deliberate commit once the rate is settled, not two.**
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("gathers_per_thinned_tile")]
+    public int GathersPerThinnedTile { get; init; }
+
     /// <summary>Ticks spent gathering once at the source.</summary>
     [JsonPropertyName("gather_ticks")]
     public int GatherTicks { get; init; } = 3;
