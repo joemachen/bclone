@@ -1,6 +1,50 @@
-# Handoff — bclone: **▶️ PHASE 4 IS OPEN AND HALF BUILT — and Phase 4 was not the problem. The village stopped working in Year 3.**
+# Handoff — bclone: **▶️ PHASE 4 IS ON `main`, ITS DoD IS FULLY MET, AND THE NEXT BUILD IS THE TOWN HALL.**
 
-> **⛔⛔⛔ READ THIS BEFORE THE PHASE 4 NOTES BELOW. 2026-08-27/28, D236–D251.** Joe played to Year 44
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29.** `main` = `origin/main`, clean tree,
+> **867 passing, 0 failing, 1 skipped of 868.** No branch is in flight. The only other branch is
+> `slice/work-from-the-steading`, which is one unmerged commit, **93+ commits behind**, and now
+> backed up on `origin` — a decaying asset, not a parked one.
+>
+> **✅ ALL SEVEN OF JOE'S PLAY-REPORTED ITEMS ARE DONE**, the **QA walk was performed** (D248 —
+> the first in this project not waived), and **all six of Phase 4's Definition-of-Done items are
+> met** (D249 closed the last). ⚠️ **That does NOT mean Phase 4 is finished:** *slice 3, the
+> knowledge screen, is unbuilt.* A DoD is the bar for merging.
+>
+> **⭐⭐ THE NEXT THING TO BUILD IS THE TOWN HALL, AND ITS DESIGN IS SETTLED (D251).** It is
+> **a gift, like the library** — not a purchase — and its catalyst is **the village outgrowing its
+> founders.** ⛔ **It is NOT a knowledge building with extras.** Joe's list: it **triggers nomads**
+> asking to move in; it **itemises everything** — crops, animals, technologies, techniques,
+> buildings, *"in a collectors' sort of way"*; it carries **charts of population, food produced
+> and consumed**; and **§8's knowledge screen is one tab of it.** *The village's administrative
+> self-awareness.*
+> - ⚠️ **Literacy is NOT a prerequisite** (his call) — *"a granary is necessary and cheap"* and
+>   will usually come first anyway. **Expected, not enforced.**
+> - **⛔ THE ONE THING STILL OPEN IS THE EXACT TRIGGER**, and it is his: *the last founder dies*
+>   (a sharper moment) or *the founders are outnumbered by the native-born* (forgiving of an
+>   unlucky death). **Ask before building.**
+> - ⭐ **It unblocks Phase 4's slice 3**, which `tech-tree.md §8` puts inside it.
+>
+> **⭐ The alternative he named is fishing and hunting** — `buildings-plan.md §10` step 1, food
+> breadth — which he chose earlier as what follows Phase 4. Either is live; the town hall is the
+> one that unblocks something.
+>
+> ⚠️ **ONE THING HE IS STILL TESTING:** the trade pin (D247). *"Seems to work the way i expect. i
+> think. ill keep testing."* **It displaces an incumbent** — pin somebody to a one-seat trade and
+> whoever held it is moved off with a sentence naming the player as the reason. **If that reads as
+> the village being arbitrary rather than as him deciding, the thing to change is who gives way.**
+>
+> ⏸️ **AND HUNGER IS DELIBERATELY PARKED.** He said it feels like hunger goes 0→100 too fast
+> *and* that food is too abundant — then: *"leave hunger alone for now. ill revisit that later."*
+> ⛔ **Do not tune it unasked.** When it comes back he wants **a measured proposal first**, and the
+> shape is *slower hunger + more food per meal* ≈ the same food per year in fewer, larger meals.
+> ⚠️ `food_per_meal` is the dial D223 spent a decision aligning between fixture and game, and
+> hunger feeds the survival floor and the birth gate — **a derived economy, not a slider.**
+
+---
+
+## The stretch before this one — kept because its lessons are still live
+
+> **⛔⛔ THE ECONOMY BUG THAT DEFINED THIS STRETCH (D236–D239), because its lessons outlive it.** Joe played to Year 44
 > and reported *"I painted stone deposits in year 25 and they never harvested, which upheld the
 > building of my 2nd granary."* **That was the smallest visible corner of a stalled economy.**
 > His audit trail says: **clearing runs 40 / 16 / 4 times in Years 1–3 and then once, in Year 31**;
@@ -235,7 +279,8 @@ and has **no automated verification of any kind** (D160). Looking at it is the t
 
 ## ⭐ What to do next — `DESIGN.md §4`'s queue, in its order
 
-> **⭐⭐ START HERE — THE LIVE CALLS, 2026-08-27.** Everything numbered below is done.
+> **⭐ THE LIVE CALLS AS OF 2026-08-29 ARE IN THE BANNER AT THE TOP OF THIS FILE.** What follows
+> is the record of how the queue emptied — kept for the reasoning, not as a to-do list.
 >
 > 0. **⭐⭐ JOE SHOULD REPLAY SEED 12345 BEFORE ANYTHING ELSE.** D236–D239 changed how the village
 >    works, and **the acceptance criteria are in his log, not in the suite**: clearing must not
@@ -471,6 +516,21 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
     the test demanded *"stone"*), and the food-limit guard asserted **zero gathering over two
     years and measured 327** — *which was the feature working*, because stores fall back through
     the limit and foraging resumes. **Three fixture bugs, one code bug, in one session.**
+- **⛔⛔ A GUARD FORBIDS WHAT IT ASSERTS, NOT WHAT IT IS FILED UNDER (D247, 2026-08-28).** Joe
+  explicitly overruled `NoPublicApiLetsACallerAssignAVillagerToAWorkplace` so a villager could be
+  pinned to a trade — **and it never forbade that.** It blocks a public method taking a `Villager`
+  **and a `Workplace`**: naming a person into a *building*. A method taking a `Villager` and a
+  `JobKind` passes untouched, and §2.2 survives whole. ⭐ **Read what a guard actually says before
+  spending permission to break it** — the answer was better than the overrule.
+  - ⚠️ **And the feature still needed FIVE mechanisms**, reading *0 of 4,311 ticks* through four of
+    them. The last is the unobvious one: **a pin has to outrank COST in the candidate sort**, or
+    displacing the incumbent just lets the cost sort hire him straight back for living nearer.
+- **⛔⛔ A CONTROL THAT ACCEPTS INPUT IT CAN NEVER ACT ON IS A BUTTON YOU CANNOT PRESS, FROM THE
+  OTHER SIDE (2026-08-29).** The professions panel let Joe ask for **six jobs against four able
+  adults**, and three rows sat reading *"asked 1 · nobody working of 0 seats"* — numbers he had
+  typed that could never come true. ⭐ **The distinction worth keeping:** asking for more foragers
+  than the *village wants* is a real instruction the sim can honour later (D106, correctly
+  ceiling-less); asking for more *people than exist* is arithmetic, not a preference.
 - **⛔⛔ A COST THAT LOOKS SMALL ON THE AVERAGE VILLAGE IS A CLIFF ON THE ONE ALREADY STRETCHED
   (D250, 2026-08-28).** The rest spell took a farm **ten ticks from its store** from 88% of what it
   sowed down to **74%**, while the farm **beside** its store stayed at 95%. **A 120-tick autumn
