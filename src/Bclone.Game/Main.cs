@@ -947,8 +947,8 @@ public partial class Main : Control
             {
                 int elsewhere = world.TotalFood() - inStores;
                 held.Text = elsewhere > 0
-                    ? $"{inStores}  (+{elsewhere} in homes and huts)"
-                    : $"{inStores}";
+                    ? $"{inStores.Grouped()}  (+{elsewhere.Grouped()} in homes and huts)"
+                    : inStores.Grouped();
                 continue;
             }
 
@@ -1825,9 +1825,9 @@ public partial class Main : Control
         if (workplace.Kind == JobKind.Farmer)
         {
             lines.Add(workplace.Store.Held > 0
-                ? $"Holding: {DescribeGoods(workplace.Store)} — {workplace.Store.Held} of "
-                    + $"{workplace.Store.Capacity}. Past that, the harvest goes to a store."
-                : $"Holding: nothing. It keeps up to {workplace.Store.Capacity} of its own "
+                ? $"Holding: {DescribeGoods(workplace.Store)} — {workplace.Store.Held.Grouped()} of "
+                    + $"{workplace.Store.Capacity.Grouped()}. Past that, the harvest goes to a store."
+                : $"Holding: nothing. It keeps up to {workplace.Store.Capacity.Grouped()} of its own "
                     + "harvest before the walk gets longer.");
         }
         else if (workplace.Store.Held > 0)
@@ -1862,7 +1862,16 @@ public partial class Main : Control
 
         for (int i = 0; i < library.Records.Count; i++)
         {
-            lines.Add($"  · {world.TechniquesCatalog[library.Records[i]].Name}");
+            // ⭐ THE SHELF SAYS WHO WORKED IT OUT (Joe, 2026-08-29: *"the written technique should
+            // source who found the technique. right now it is blank"*). ⚠️ The name is on the
+            // record rather than looked up, because by the time anybody reads this shelf that
+            // person has usually been dead for decades — which is what the library is FOR.
+            LibraryRecord record = library.Records[i];
+            string what = world.TechniquesCatalog[record.TechniqueId].Name;
+
+            lines.Add(record.FoundBy.Length > 0
+                ? $"  · {what} — worked out by {record.FoundBy}"
+                : $"  · {what}");
         }
 
         if (!library.HasRoom)
@@ -1932,9 +1941,9 @@ public partial class Main : Control
         // decides how big the village gets — so it belongs on screen, not just in a
         // spec.
         lines.Add(store.Store.IsFull
-            ? $"Full: {store.Store.Held} of {store.Store.Capacity} — nothing more will fit."
-            : $"Space: {store.Store.Held} of {store.Store.Capacity} used, " +
-              $"{store.Store.FreeSpace} free");
+            ? $"Full: {store.Store.Held.Grouped()} of {store.Store.Capacity.Grouped()} — nothing more will fit."
+            : $"Space: {store.Store.Held.Grouped()} of {store.Store.Capacity.Grouped()} used, " +
+              $"{store.Store.FreeSpace.Grouped()} free");
     }
 
     private static void DescribeHome(SimWorld world, Household household, List<string> lines)
@@ -2192,7 +2201,7 @@ public partial class Main : Control
             var goods = (Goods)i;
             if (store[goods] > 0)
             {
-                parts.Add($"{store[goods]} {NameOf(goods)}");
+                parts.Add($"{store[goods].Grouped()} {NameOf(goods)}");
             }
         }
 

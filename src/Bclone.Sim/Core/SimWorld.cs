@@ -232,13 +232,13 @@ public sealed class SimWorld
     /// a later slice's fire will take**, so *"whichever happened to be first in memory"* would make
     /// a fire's outcome unreproducible from the seed.
     /// </remarks>
-    internal Library? WriteDown(int techniqueId)
+    internal Library? WriteDown(int techniqueId, string foundBy)
     {
         for (int i = 0; i < Libraries.Count; i++)
         {
             if (Libraries[i].HasRoom)
             {
-                Libraries[i].Records.Add(techniqueId);
+                Libraries[i].Records.Add(new LibraryRecord(techniqueId, foundBy));
                 return Libraries[i];
             }
         }
@@ -284,7 +284,7 @@ public sealed class SimWorld
                 lost.Append(i == library.Records.Count - 1 ? " and " : ", ");
             }
 
-            lost.Append(TechniquesCatalog[library.Records[i]].Name);
+            lost.Append(TechniquesCatalog[library.Records[i].TechniqueId].Name);
         }
 
         Narrate($"{Capitalised(library.Name)} was pulled down, and with it the village's record "
@@ -296,7 +296,7 @@ public sealed class SimWorld
     {
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].Records.Contains(techniqueId))
+            if (Libraries[i].Holds(techniqueId))
             {
                 return true;
             }

@@ -380,7 +380,12 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)library.Records.Count);
             for (int r = 0; r < library.Records.Count; r++)
             {
-                hash = MixUInt32(hash, (uint)library.Records[r]);
+                // ⚠️ THE TECHNIQUE ONLY, NOT THE NAME BESIDE IT (D258). The finder's name is
+                // HISTORY, not machinery — nothing in the sim reads it, and it is a pure
+                // function of who mastered the trade, which the villagers are already hashed
+                // for. **Mixing it would move every golden with a library for a field that
+                // cannot make two runs of one seed differ.**
+                hash = MixUInt32(hash, (uint)library.Records[r].TechniqueId);
             }
         }
 

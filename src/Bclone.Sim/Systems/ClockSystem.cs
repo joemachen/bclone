@@ -86,7 +86,7 @@ public sealed class ClockSystem : ISimSystem
         // it — that number is the whole story of the winter about to happen.
         if (current.IsWinter)
         {
-            world.Narrate($"Winter came to Year {current.Year}. Foraging stops. {stored} food stored.", LogCategory.Season);
+            world.Narrate($"Winter came to Year {current.Year}. Foraging stops. {stored.Grouped()} food stored.", LogCategory.Season);
             return;
         }
 
@@ -108,12 +108,12 @@ public sealed class ClockSystem : ISimSystem
             Villager only = world.Villagers[0];
             world.Narrate(
                 $"{only.Name} survived winter {only.WintersSurvived} " +
-                $"({stored} food left). {current.Season} of Year {current.Year} begins.", LogCategory.Season);
+                $"({stored.Grouped()} food left). {current.Season} of Year {current.Year} begins.", LogCategory.Season);
         }
         else
         {
             world.Narrate(
-                $"The village came through winter with {stored} food left — " +
+                $"The village came through winter with {stored.Grouped()} food left — " +
                 $"{world.Population} alive. {current.Season} of Year {current.Year} begins.", LogCategory.Season);
         }
     }
@@ -128,11 +128,11 @@ public sealed class ClockSystem : ISimSystem
             // season's food costs four trips at thirty and seven at fifty.
             string effort = only.Stage == VigourStage.Prime ? string.Empty : $" (vigour {only.Vigour}%)";
             return $"{previous.Season} of Year {previous.Year} — {only.Name} foraged {foraged} times{effort}. " +
-                   $"{stored} food stored.";
+                   $"{stored.Grouped()} food stored.";
         }
 
         return $"{previous.Season} of Year {previous.Year} — the village foraged {foraged} times. " +
-               $"{stored} food stored.";
+               $"{stored.Grouped()} food stored.";
     }
 
     /// <summary>

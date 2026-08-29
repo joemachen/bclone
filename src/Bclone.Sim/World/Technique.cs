@@ -260,8 +260,48 @@ public sealed class Library
     /// they are different villages that made the same choices at different times, and the shelf a
     /// record sits on is what a later slice's fire will take.
     /// </remarks>
-    public List<int> Records { get; } = new();
+    public List<LibraryRecord> Records { get; } = new();
+
+    /// <summary>Whether this library holds a record of a technique.</summary>
+    public bool Holds(int techniqueId)
+    {
+        for (int i = 0; i < Records.Count; i++)
+        {
+            if (Records[i].TechniqueId == techniqueId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>Whether there is room for one more.</summary>
     public bool HasRoom => Records.Count < Shelves;
 }
+
+/// <summary>
+/// One thing written on one shelf — <b>a technique, and the soul who worked it out</b>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>⭐⭐ THE NAME IS THE POINT, AND IT WAS MISSING</b> (Joe, 2026-08-29, from play: *"the written
+/// technique should source who found the technique. right now it is blank"*). A shelf held a
+/// technique id and nothing else, so the library could say *what* the village knew and never
+/// *who* it learned it from. **That is the one building in the game whose whole job is
+/// remembering, keeping an anonymous record.**
+/// </para>
+/// <para>
+/// <b>⛔ THE NAME IS COPIED, NOT LOOKED UP, AND THAT IS THE WHOLE REASON THIS IS A FIELD.</b> By
+/// the time anybody reads the shelf the person is usually **dead for decades** — that is what a
+/// library is <em>for</em> (§3a: *a record preserves the method, not the proficiency*). A villager
+/// id would go stale the day the roster is trimmed, and <c>LastKnowerOf</c> answers a different
+/// question: *who held this most recently*, which is not who found it.
+/// </para>
+/// <para>
+/// ⚠️ <b>It confers nothing and must never confer anything</b> (`tech-tree.md §7f.1`). This is a
+/// line of history, exactly like a collections entry — the day it grants a bonus, the library has
+/// become the ratchet §11 exists to prevent.
+/// </para>
+/// </remarks>
+public readonly record struct LibraryRecord(int TechniqueId, string FoundBy);

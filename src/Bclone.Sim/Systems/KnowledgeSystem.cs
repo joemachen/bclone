@@ -123,7 +123,7 @@ public sealed class KnowledgeSystem : ISimSystem
             // or the log would fill with it for ever.
             if (now == KnowledgeState.Known && !world.IsWrittenDown(id))
             {
-                Library? shelved = world.WriteDown(id);
+                Library? shelved = world.WriteDown(id, knower?.Name ?? world.LastKnowerOf(id));
                 if (shelved is not null)
                 {
                     world.KnowledgeStates[id] = KnowledgeState.Established;

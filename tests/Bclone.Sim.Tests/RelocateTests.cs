@@ -313,7 +313,7 @@ public sealed class RelocateTests
             Name = "library 1",
             Shelves = Config.LibraryShelves,
         };
-        library.Records.Add(2);
+        library.Records.Add(new LibraryRecord(2, "Wendell"));
         world.Libraries.Add(library);
 
         GridPos to = Buildable(world, from);

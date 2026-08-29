@@ -91,7 +91,7 @@ public sealed class MortalitySystem : ISimSystem
             CauseOfDeath.OldAge =>
                 $"{villager.Name} died of old age at {villager.AgeYears}, " +
                 $"having survived {villager.WintersSurvived} winters and gathered " +
-                $"{world.HouseholdOf(villager).Stockpile.LifetimeGathered} food across a full life.",
+                $"{world.HouseholdOf(villager).Stockpile.LifetimeGathered.Grouped()} food across a full life.",
 
             CauseOfDeath.Starvation =>
                 $"{villager.Name} starved to death at {villager.AgeYears}, " +
