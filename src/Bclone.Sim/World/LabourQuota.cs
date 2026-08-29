@@ -517,9 +517,52 @@ public readonly record struct LabourQuota
         builders = Asked(world, JobKind.Builder, builders, hands);
         farmers = Asked(world, JobKind.Farmer, farmers, hands);
 
+        // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
+        //
+        // ⛔ WITHOUT THIS THE TWO CONTROLS FIGHT AND THE VILLAGE OSCILLATES. `ShedSurplus` refuses
+        // to shed a pinned villager; if the quota still said *"the village wants nought foragers"*
+        // then every slack pass would try to release somebody it cannot release, and
+        // `ExplainTheIdle` would narrate a shortfall the player had themselves created and cannot
+        // see. **The quota has to know what the player has already spent.**
+        //
+        // ⚠️ A FLOOR, NOT A SETTING. It only ever raises the number, and only to the count of
+        // people actually pinned to that trade — so pinning three foragers in a village that
+        // wanted five changes nothing at all, which is the common case.
+        foragers = AtLeastPinned(world, JobKind.Forager, foragers);
+        foresters = AtLeastPinned(world, JobKind.Forester, foresters);
+        woodcutters = AtLeastPinned(world, JobKind.Woodcutter, woodcutters);
+        marketers = AtLeastPinned(world, JobKind.Marketer, marketers);
+        builders = AtLeastPinned(world, JobKind.Builder, builders);
+        farmers = AtLeastPinned(world, JobKind.Farmer, farmers);
+
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
             farmers);
+    }
+
+    /// <summary>Never fewer than the people the player has kept on this trade.</summary>
+    /// <remarks>
+    /// <b>Counts the living and able only</b>, so a pin on somebody who has died or grown too old
+    /// stops counting on its own rather than holding a seat open for a ghost — the same reason
+    /// <c>KnowledgeSystem</c> derives its state from who is alive instead of banking a flag.
+    /// <para>
+    /// ⭐ <b>Returns <paramref name="decided"/> untouched when nobody is pinned</b>, which is what
+    /// keeps every existing golden byte-identical: an unpinned village never reaches the max.
+    /// </para>
+    /// </remarks>
+    private static int AtLeastPinned(SimWorld world, JobKind kind, int decided)
+    {
+        int pinned = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.CanWork && villager.PinnedTrade == kind)
+            {
+                pinned++;
+            }
+        }
+
+        return pinned > decided ? pinned : decided;
     }
 
     /// <summary>What the player asked for on this kind of work, or what the village decided.</summary>

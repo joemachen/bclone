@@ -213,8 +213,14 @@ Per `METHODOLOGY.md §3`, and item 4 is the one this phase is not allowed to wai
 1. `tech-tree.md` and this spec current and **reconciled with what was actually built**.
 2. Node content in **data files** — a modder can add a technique (`DESIGN.md §3`).
 3. Unit tests passing; **determinism green**; goldens moved once, deliberately, with a stated reason.
-4. **⛔ THE QA WALK IN §5, PERFORMED AND TICKED.** Not *"the checklist is good"* — D164 and D168 both
-   refused that, and D203 waived the walk itself. **The document and the walk are different things.**
+4. ✅ **THE QA WALK IN §5 — PERFORMED BY JOE AND SIGNED OFF, 2026-08-28** (*"i walked it we're
+   good"*). **The debt Phase 3 opened and Phase 4 refused to inherit is paid.** Not *"the checklist
+   is good"* — D164 and D168 both refused that, and D203 waived the walk itself. **The document
+   and the walk are different things**, and this time the walk happened.
+   - ⚠️ **Check 21 could not be walked and is not claimed** — *"the knowledge screen answers what
+     does this village know, and who knows it, at a glance"* needs slice 3, which is unbuilt.
+     **21 of 22.** The other twenty-one cover slices 1 and 2, which is what made walking it
+     possible before the phase was finished.
 5. No new errors in the log across a clean 200-year playthrough.
 6. `DESIGN.md` Progress Tracker + Decisions Log updated; `buildings-plan.md §10` and
    `content-inventory.md` finding 5 reconciled (§1).

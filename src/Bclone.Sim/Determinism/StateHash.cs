@@ -559,6 +559,19 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)villager.Rhythm);
         }
 
+        // ⭐ THE TRADE THE PLAYER KEEPS THEM ON, and it MUST be hashed because it changes what
+        // somebody does — the P0 rule this file is built on. **Sparse, like `Rhythm` above and
+        // for the same reason:** mixing it unconditionally would put a fresh zero into every
+        // villager in every village nobody has pinned anybody in, and move every golden for a
+        // feature none of them uses. That is the mistake recorded against the library count.
+        //
+        // ⚠️ `+ 1` so that a pin on the trade whose enum value is 0 is distinguishable from no
+        // pin at all — `(int)JobKind.Forager` is 0, and `if (x != 0)` would silently never mix it.
+        if (villager.PinnedTrade is JobKind pinned)
+        {
+            hash = MixUInt32(hash, (uint)pinned + 1u);
+        }
+
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
         // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
         // mixes nothing for a villager who has never held a job and cannot depend on the

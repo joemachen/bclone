@@ -74,6 +74,36 @@ public sealed class Villager
     /// <summary>Workplace they currently hold a job at, or 0 for none.</summary>
     public int WorkplaceId { get; set; }
 
+    /// <summary>The trade the player has kept them on, or null if the village decides.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ A TRADE, NEVER A WORKPLACE — AND THAT DISTINCTION IS THE WHOLE REASON THIS IS
+    /// ALLOWED TO EXIST.</b> Joe, 2026-08-22, asking for it: <i>"a job dropdown on the villager
+    /// inspector, and a 'permanent?' checkbox that locks that person to that trade."</i>
+    /// </para>
+    /// <para>
+    /// <b>⛔ The Banished pattern §2.2 deletes is slotting a NAMED WORKER INTO A BUILDING</b>, and
+    /// <c>LabourTests.NoPublicApiLetsACallerAssignAVillagerToAWorkplace</c> exists to make that
+    /// unexpressible. **This does not do it.** The player says *what Hattie does*; **proximity,
+    /// household and catchment still choose WHICH hut she walks to**, so every
+    /// <see cref="JobReason"/> sentence stays true and answerable.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It is D51's precedent exactly, one axis over.</b> <c>SetStaffing</c> was allowed
+    /// because it sets a <em>count</em> and leaves the person to the sim; this is allowed because
+    /// it sets a <em>trade</em> and leaves the place to the sim. **Joe offered to overrule the
+    /// guard and did not need to — the guard never forbade this.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Hashed sparsely</b> (<c>StateHash.MixVillager</c>), like <see cref="Rhythm"/>: a
+    /// village nobody has pinned anybody in mixes nothing, so every existing golden is untouched.
+    /// </para>
+    /// </remarks>
+    public JobKind? PinnedTrade { get; set; }
+
+    /// <summary>True when the player has kept them on a trade.</summary>
+    public bool IsPinned => PinnedTrade is not null;
+
     /// <summary>
     /// Plain-language reason they hold this job, naming the runner-up where there
     /// was one.

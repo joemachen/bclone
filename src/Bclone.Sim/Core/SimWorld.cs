@@ -6183,6 +6183,54 @@ public sealed class SimWorld
     /// one decision in this game that stops the world.
     /// </para>
     /// </remarks>
+    /// <summary>Keep this person on a trade, or hand them back to the village.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe, 2026-08-22, and overruled into existence 2026-08-28.</b> Raised against D182's
+    /// finding that careers are discontinuous — Agnes held foraging 44% of her adult life against
+    /// Mabel's 70% on trading. **His ruling on the discontinuity itself was that it is fine**
+    /// (*"that is just the natural flow of life"*); what he wanted beside it was agency.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT TAKES A TRADE AND NOT A WORKPLACE, WHICH IS WHY §2.2 SURVIVES IT.</b> The pattern
+    /// that pillar deletes is naming a worker into a *building*;
+    /// <c>LabourTests.NoPublicApiLetsACallerAssignAVillagerToAWorkplace</c> makes that
+    /// unexpressible and **this signature does not trip it, deliberately.** The player says what
+    /// Hattie does; **the sim still says which hut**, so every <c>JobReason</c> stays answerable.
+    /// ⭐ *Joe offered to overrule that guard. It turned out not to need overruling — which is a
+    /// better answer than taking him up on it.*
+    /// </para>
+    /// <para>
+    /// <b>Null hands them back.</b> There is no separate "unpin" verb, for the reason D139 records
+    /// about stock limits: a control with two ways to say *the player has no opinion* grows a
+    /// state where neither is true.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Like <c>SetStaffing</c>, the village does not re-plan on the spot</b> — it lands at
+    /// the next labour pass. Re-running the allocator from a UI click would make this the one
+    /// decision in the game that stops the world.
+    /// </para>
+    /// </remarks>
+    public void SetPinnedTrade(Villager villager, JobKind? trade)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        if (villager.PinnedTrade == trade)
+        {
+            return;
+        }
+
+        villager.PinnedTrade = trade;
+
+        Narrate(
+            trade is JobKind kept
+                ? $"{villager.Name} is to stay on {JobsCatalog.NameOf(kept)} from now on. "
+                    + $"{Clock.SeasonAndYear()}."
+                : $"{villager.Name} goes back to whatever the village needs. "
+                    + $"{Clock.SeasonAndYear()}.",
+            LogCategory.Ordinary);
+    }
+
     public void SetStaffing(Workplace workplace, int places)
     {
         ArgumentNullException.ThrowIfNull(workplace);

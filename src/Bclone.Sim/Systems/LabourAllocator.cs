@@ -48,6 +48,7 @@ internal static class LabourAllocator
     /// <param name="Cost">Travel cost from where this villager rests to the workplace.</param>
     /// <param name="VillagerId">Who is claiming it.</param>
     /// <param name="WorkplaceId">What they are claiming.</param>
+    /// <param name="Pinned">Whether the player has kept this villager on this trade.</param>
     /// <remarks>
     /// It carried a <c>Rank</c> as well until D108 — <em>"what the player marked is staffed
     /// before a house the village marked for itself"</em> (D102), expressed as a site's place
@@ -56,7 +57,7 @@ internal static class LabourAllocator
     /// <see cref="SimWorld.NextToBuild"/>, which is the head of that same queue. The
     /// guarantee moved to the errand rather than being dropped.
     /// </remarks>
-    private readonly record struct Candidate(int Cost, int VillagerId, int WorkplaceId);
+    private readonly record struct Candidate(int Cost, int VillagerId, int WorkplaceId, bool Pinned);
 
     // ---------------------------------------------------------------
     //  The two entry points
@@ -86,6 +87,7 @@ internal static class LabourAllocator
 
         LabourQuota quota = LabourQuota.For(world);
         ReleaseUnfit(world);
+        MakeRoomForPins(world, quota);
 
         // Snapshot before clearing, so a job change can say what it changed from.
         // Churn that cannot explain itself is worse than no churn at all (D20).
@@ -135,6 +137,7 @@ internal static class LabourAllocator
         LabourQuota quota = LabourQuota.For(world);
 
         ReleaseUnfit(world);
+        MakeRoomForPins(world, quota);
         List<int> shed = ShedSurplus(world, quota);
         Match(world, quota, previousWorkplaces: null);
         ExplainTheIdle(world, quota, shed);
@@ -204,6 +207,22 @@ internal static class LabourAllocator
         // stable — see the note on Candidate.
         candidates.Sort(static (a, b) =>
         {
+            // ⭐⭐ A PIN OUTRANKS THE WALK, AND THIS IS THE LAST OF THE FIVE PIECES.
+            //
+            // ⛔ Displacing the incumbent was not enough on its own: `MakeRoomForPins` let go of
+            // Ambrose, and the cost sort — doing exactly its job — **hired him straight back**
+            // ahead of the person the player had pinned, because he lived nearer. Four correct
+            // mechanisms and the feature still measured **0 of 4,311 ticks**.
+            //
+            // ⚠️ **This is the one place cost is not the first question**, and it is a deliberate
+            // hole in D58's rule rather than an oversight: the player has said who does this, so
+            // the walk is a consequence rather than a criterion. **The village still chooses
+            // WHICH hut** — cost decides that, one line down — which is what keeps §2.2 intact.
+            if (a.Pinned != b.Pinned)
+            {
+                return a.Pinned ? -1 : 1;
+            }
+
             int byCost = a.Cost.CompareTo(b.Cost);
             if (byCost != 0)
             {
@@ -263,6 +282,22 @@ internal static class LabourAllocator
                 continue;
             }
 
+            // ⭐⭐ SOMEBODY THE PLAYER HAS KEPT ON ANOTHER TRADE IS NOT A CANDIDATE FOR THIS ONE.
+            //
+            // ⛔ THE SHED PASS ALONE IS NOT ENOUGH, and this is the half that would have been
+            // missed: `Reshuffle` tears EVERY allocation down before rebuilding, so on that tick
+            // a pinned villager holds no job and looks exactly like anybody else. Refusing to
+            // shed them protects the slack pass; refusing to offer them elsewhere is what
+            // survives the reshuffle.
+            //
+            // ⚠️ It does not force them INTO their trade — the quota floor above makes the seat
+            // wanted, and the ordinary cost-first match then fills it with the person who is
+            // available for it, which by this line is them. **The village still picks the hut.**
+            if (villager.IsPinned && villager.PinnedTrade != kind)
+            {
+                continue;
+            }
+
             GridPos home = world.RestingPlaceOf(villager);
 
             for (int w = 0; w < world.Workplaces.Count; w++)
@@ -302,7 +337,7 @@ internal static class LabourAllocator
                     continue;
                 }
 
-                candidates.Add(new Candidate(cost, villager.Id, workplace.Id));
+                candidates.Add(new Candidate(cost, villager.Id, workplace.Id, villager.PinnedTrade == kind));
             }
         }
 
@@ -494,6 +529,24 @@ internal static class LabourAllocator
                 continue;
             }
 
+            // ⭐⭐ PINNED TO A TRADE THE VILLAGE HAS NOWHERE TO DO. This sentence was written while
+            // chasing a red check that turned out to have four other causes — the hypothesis was
+            // wrong about that bug and right that the state exists and said nothing.
+            //
+            // ⛔ **A player can make that same mistake in one click** — keep somebody on forestry
+            // before building the hut — and would have got the same silence. It is the player's
+            // own standing order starving them, which is the most answerable kind of idleness
+            // there is and was the least explained.
+            if (villager.IsPinned && !AnySeatFor(world, villager.PinnedTrade!.Value))
+            {
+                villager.JobReason =
+                    $"No work: you keep {villager.Name} on "
+                    + $"{world.JobsCatalog.NameOf(villager.PinnedTrade.Value)}, and the village "
+                    + "has nowhere to do it. Build somewhere, or hand them back.";
+                world.LogVillager(LogLevel.Debug, villager, "labour", villager.JobReason);
+                continue;
+            }
+
             Workplace? reachable = NearestReachable(world, villager, out _);
             if (reachable is null)
             {
@@ -625,6 +678,129 @@ internal static class LabourAllocator
     /// Give up jobs held by the dead, by children, and by anyone whose home has moved
     /// out of catchment.
     /// </summary>
+    /// <summary>Let go of an unpinned worker so somebody the player kept can take the seat.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ THE HALF THAT THREE EARLIER FIXES ALL MISSED, AND THE RED CHECK HAD TO SAY IT THREE
+    /// TIMES.</b> Refusing to shed a pinned villager, refusing to offer them another trade, and
+    /// flooring the quota at the pin count are each necessary and **together still not enough**:
+    /// if an *unpinned* villager already holds the only seat, the trade sits exactly at quota,
+    /// <see cref="ShedSurplus"/> never fires (it only sheds when <em>over</em>), and the pinned
+    /// villager is locked out for ever. Measured: <b>0 of 4,311 ticks</b>, with the hut showing
+    /// free places and the quota wanting one.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A pin is a CLAIM on the trade, not merely a refusal to be moved off it</b> — that is
+    /// what Joe asked for (*"lock that person to that trade"*), and half of it is worthless.
+    /// The unpinned holder who gives way is <b>the furthest-travelling</b>, exactly as
+    /// <see cref="ShedSurplus"/> chooses, so the village stays consistent about who moves.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It can never displace another pinned villager</b>, so two pins on a one-seat trade
+    /// settle rather than fight: the second simply waits, and `ExplainTheIdle` says why.
+    /// </para>
+    /// </remarks>
+    private static void MakeRoomForPins(SimWorld world, LabourQuota quota)
+    {
+        for (int k = 0; k < KindsInOrder.Length; k++)
+        {
+            JobKind kind = KindsInOrder[k];
+
+            int waiting = 0;
+            for (int i = 0; i < world.Villagers.Count; i++)
+            {
+                Villager villager = world.Villagers[i];
+                if (villager.CanWork && !villager.HasJob && villager.PinnedTrade == kind)
+                {
+                    waiting++;
+                }
+            }
+
+            // ⚠️⚠️ THE ROOM THAT MATTERS IS IN THE QUOTA, NOT IN THE BUILDING — and the first
+            // draft of this asked about seats and did nothing at all. The forester's hut had two
+            // places and one worker, so there *was* a free seat; but `MatchOneKind` stops at
+            // `held < wanted` and the village wanted one forester, which Ambrose already was.
+            // **Dorcas waited nine years beside an empty chair.**
+            //
+            // ⭐ *"Is there a spare seat?"* and *"does the village want another of these?"* are
+            // different questions, and only the second one gates hiring.
+            while (waiting > 0
+                && (CountHolding(world, kind) >= quota.For(kind) || !AnyFreeSeatFor(world, kind)))
+            {
+                Villager? furthest = null;
+                int furthestCost = -1;
+
+                for (int i = 0; i < world.Villagers.Count; i++)
+                {
+                    Villager villager = world.Villagers[i];
+                    if (villager.IsPinned || !villager.HasJob)
+                    {
+                        continue;
+                    }
+
+                    Workplace? workplace = world.FindWorkplace(villager.WorkplaceId);
+                    if (workplace is null || workplace.Kind != kind)
+                    {
+                        continue;
+                    }
+
+                    int cost = CostBetween(world, villager, workplace);
+                    if (cost >= furthestCost)
+                    {
+                        furthest = villager;
+                        furthestCost = cost;
+                    }
+                }
+
+                if (furthest is null)
+                {
+                    break;
+                }
+
+                world.FindWorkplace(furthest.WorkplaceId)!.WorkerIds.Remove(furthest.Id);
+                Release(
+                    furthest,
+                    $"No work: you keep somebody else on {world.JobsCatalog.NameOf(kind)}, and "
+                        + $"{furthest.Name} had the longest walk to it.");
+                waiting--;
+            }
+        }
+    }
+
+    /// <summary>Whether any workplace of this kind has a seat going spare.</summary>
+    private static bool AnyFreeSeatFor(SimWorld world, JobKind kind)
+    {
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Kind == kind && !workplace.IsSite && !workplace.IsFull)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether anywhere in the village does this trade at all.</summary>
+    /// <remarks>
+    /// <b>A standing site does not count.</b> Nobody is ever posted to a construction site (D108),
+    /// so a half-built forester's hut is not somewhere a pinned forester can work — and telling
+    /// the player it is would be the reassuring-but-wrong sentence D237 spent a decision on.
+    /// </remarks>
+    private static bool AnySeatFor(SimWorld world, JobKind kind)
+    {
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.Workplaces[i].Kind == kind && !world.Workplaces[i].IsSite)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static void ReleaseUnfit(SimWorld world)
     {
         for (int i = 0; i < world.Villagers.Count; i++)
@@ -653,6 +829,30 @@ internal static class LabourAllocator
             {
                 workplace.WorkerIds.Remove(villager.Id);
                 Release(villager, $"No work: moved too far from {workplace.Name} to keep working there.");
+                continue;
+            }
+
+            // ⭐⭐ AND SOMEBODY THE PLAYER HAS KEPT ON A TRADE LETS GO OF ANY OTHER ONE.
+            //
+            // ⛔ THE RED CHECK FOUND THIS AND NOTHING ELSE WOULD HAVE. Pinning Dorcas to forestry
+            // while she held a forager's job did **nothing at all** — 0 of 4,311 ticks on the
+            // pinned trade. `BuildCandidates` only ever offers work to somebody with **no** job,
+            // and `ShedSurplus` only releases people from a trade that is **over quota**; hers
+            // was not. So she sat in the wrong trade for ever, and both halves of the feature
+            // looked correct in isolation.
+            //
+            // ⭐ This is the third arm of the same idea the two above it express: *let go of
+            // anyone who can no longer do this job.* A pin makes the job wrong for them in
+            // exactly the way distance or age does — **the reason is the player rather than the
+            // world, and the mechanism is identical.**
+            if (villager.IsPinned && villager.PinnedTrade != workplace.Kind)
+            {
+                workplace.WorkerIds.Remove(villager.Id);
+                Release(
+                    villager,
+                    $"No work: you keep {villager.Name} on "
+                        + $"{world.JobsCatalog.NameOf(villager.PinnedTrade!.Value)}, so they have "
+                        + $"left {workplace.Name}.");
             }
         }
     }
@@ -687,6 +887,21 @@ internal static class LabourAllocator
                     Villager villager = world.Villagers[i];
                     Workplace? workplace = villager.HasJob ? world.FindWorkplace(villager.WorkplaceId) : null;
                     if (workplace is null || workplace.Kind != kind)
+                    {
+                        continue;
+                    }
+
+                    // ⭐⭐ A PINNED VILLAGER IS NEVER THE ONE SHED. This is the whole of what the
+                    // player bought: the reshuffle moves people every three years and the slack
+                    // pass every sixty ticks, and *"Hattie is a forager"* has to survive both or
+                    // the control is decoration.
+                    //
+                    // ⚠️ AND IT CANNOT SPIN. `while (held > wanted)` would loop for ever if every
+                    // holder were pinned, so the `furthest is null` break below is now
+                    // load-bearing rather than defensive — it is the exit when the only people
+                    // left on this trade are ones the player keeps there. `LabourQuota` also
+                    // floors the trade at its pin count, so the two agree rather than fight.
+                    if (villager.IsPinned && villager.PinnedTrade == kind)
                     {
                         continue;
                     }

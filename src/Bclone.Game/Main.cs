@@ -69,6 +69,11 @@ public partial class Main : Control
     private ItemList _roster = null!;
     private RichTextLabel _inspector = null!;
     private VBoxContainer _staffingRow = null!;
+
+    /// <summary>The per-villager trade pins — one toggle per trade.</summary>
+    private VBoxContainer _pinRow = null!;
+    private Label _pinLabel = null!;
+    private readonly List<(JobKind Trade, Button Button)> _pinButtons = new();
     private Label _staffingLabel = null!;
     private VBoxContainer _queueRow = null!;
     private Label _queueLabel = null!;
@@ -966,6 +971,35 @@ public partial class Main : Control
         // the builder's hut now. A −1/+1 on a footprint would set a number nothing reads,
         // which is worse than a control that is not there.
         Workplace? selected = SelectedWorkplace();
+        // ⭐⭐ THE PIN ROW, AND IT SHIPS IN THE SAME COMMIT AS THE SIM FEATURE — the rule this
+        // project has paid for seven times (*"a sim feature is not done until something in the
+        // view calls it"*). It shows only when a villager is selected, because a control with no
+        // subject is worse than an absent one.
+        Villager? pinnable = world.FindVillager(_selectedVillagerId);
+        if (pinnable is not null && !pinnable.Alive)
+        {
+            pinnable = null;
+        }
+
+        _pinRow.Visible = pinnable is not null;
+        if (pinnable is not null)
+        {
+            _pinLabel.Text = pinnable.PinnedTrade is JobKind kept
+                ? $"Kept on {world.JobsCatalog.NameOf(kept)} — press it again to hand them back:"
+                : $"Kept on: (the village decides where {pinnable.Name} works)";
+
+            foreach ((JobKind trade, Button button) in _pinButtons)
+            {
+                button.Text = ProfessionName(trade);
+                button.SetPressedNoSignal(pinnable.PinnedTrade == trade);
+
+                // ⚠️ A trade nowhere in the village can still be pressed — the sim says why
+                // rather than the button refusing, because "you kept them on forestry and there
+                // is no forester's hut" is more use than a control that does nothing.
+                button.Disabled = !pinnable.CanWork;
+            }
+        }
+
         Workplace? staffable = selected is { IsSite: false } ? selected : null;
 
         _staffingRow.Visible = staffable is not null;
@@ -1303,6 +1337,24 @@ public partial class Main : Control
     /// the answer from then on.
     /// </para>
     /// </remarks>
+    /// <summary>Keep the selected villager on a trade, or hand them back.</summary>
+    /// <remarks>
+    /// <b>Pressing the trade they are already kept on hands them back</b>, which is why there is
+    /// no separate "release" control: one button per trade, and the pressed one is the answer to
+    /// *"what is this person kept on?"*. ⚠️ The sim owns the decision — this only asks.
+    /// </remarks>
+    private void TogglePin(JobKind trade)
+    {
+        Villager? villager = _loop.World.FindVillager(_selectedVillagerId);
+        if (villager is null)
+        {
+            return;
+        }
+
+        _loop.World.SetPinnedTrade(villager, villager.PinnedTrade == trade ? null : trade);
+        RefreshInspector(_loop.World);
+    }
+
     private void ChangeStaffing(int delta)
     {
         Workplace? workplace = SelectedWorkplace();
@@ -2689,6 +2741,28 @@ public partial class Main : Control
         // reasoning ("a button that comes and goes is a button you hunt for") — and the
         // reason it is safe to reverse is that the buttons now sit inside the panel that
         // says what they would act on. A control with no subject is worse than an absent one.
+        // ⭐⭐ KEEPING A NAMED VILLAGER ON A TRADE (Joe, 2026-08-22, built 2026-08-28) — the first
+        // per-VILLAGER control in the game; every other one acts on a building or on the village.
+        //
+        // ⛔ A BUTTON PER TRADE RATHER THAN A DROPDOWN. Joe asked for a dropdown and a
+        // *"permanent?"* checkbox, which is two controls and two clicks for one decision. Six
+        // trades fit on a wrapped row, the current pin reads off which button is pressed, and
+        // pressing the pressed one hands them back — **so the checkbox has nothing left to do.**
+        //
+        // ⚠️ It sits ABOVE staffing deliberately: staffing is about a building you have selected,
+        // this is about a person, and the inspector shows one or the other.
+        _pinLabel = Muted("Kept on:");
+        (_pinRow, HFlowContainer pinControls) = InspectorRow(body, _pinLabel);
+
+        foreach (JobKind trade in System.Enum.GetValues<JobKind>())
+        {
+            JobKind captured = trade;
+            var button = new Button { ToggleMode = true };
+            button.Pressed += () => TogglePin(captured);
+            _pinButtons.Add((captured, button));
+            pinControls.AddChild(button);
+        }
+
         _staffingLabel = Muted("Staffing:");
         (_staffingRow, HFlowContainer staffingControls) = InspectorRow(body, _staffingLabel);
 
