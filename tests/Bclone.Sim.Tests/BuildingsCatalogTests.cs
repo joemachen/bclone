@@ -317,7 +317,7 @@ public sealed class BuildingsCatalogTests
         {
             new BuildingRow
             {
-                Id = 11,
+                Id = NextFreeId(config),
                 Name = "folly",
                 WorkTicks = 10,
                 Materials = new[] { new MaterialCost(Goods.Logs, 5) },
@@ -338,7 +338,7 @@ public sealed class BuildingsCatalogTests
         SimConfig config = VillageFixtures.Village;
         var rows = new List<BuildingRow>(config.BuildingRows)
         {
-            new BuildingRow { Id = 11, Name = "wagon shed", Stores = StoreKind.Cart, StoreCapacity = 50 },
+            new BuildingRow { Id = NextFreeId(config), Name = "wagon shed", Stores = StoreKind.Cart, StoreCapacity = 50 },
         };
 
         SimConfigException blew = Assert.Throws<SimConfigException>(
@@ -370,7 +370,7 @@ public sealed class BuildingsCatalogTests
         {
             new BuildingRow
             {
-                Id = 11,
+                Id = NextFreeId(config),
                 Name = "boathouse",
                 Stores = StoreKind.Shed,
                 StoreCapacity = 200,
@@ -382,11 +382,36 @@ public sealed class BuildingsCatalogTests
         SimWorld world = World(config with { Buildings = rows }, out InMemoryLogSink sink);
         GridPos site = SomewhereBuildable(world);
 
-        PlacementVerdict verdict = world.Mark((BuildingKind)11, site);
+        PlacementVerdict verdict = world.Mark((BuildingKind)NextFreeId(config), site);
 
         Assert.True(verdict.Allowed, verdict.Reason);
         Assert.Contains(
             "boathouse", Said(sink), System.StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The first id no built-in building occupies — <b>read from the catalogue, not written in</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ THESE THREE GUARDS ALL SAID <c>Id = 11</c> AND ALL THREE BROKE THE DAY AN ELEVENTH
+    /// BUILT-IN ARRIVED</b> (the town hall, D252) — not because they were testing the wrong thing,
+    /// but because they had a built-in's id typed into them. **Each failed as *"buildings[12]
+    /// repeats id 11"*, which is a true sentence about the fixture and says nothing about the
+    /// code.** ⭐ Derived, the next built-in costs nobody an afternoon: *read the numbers out of
+    /// the fixture rather than writing them into it.*
+    /// </remarks>
+    private static int NextFreeId(SimConfig config)
+    {
+        int highest = -1;
+        for (int i = 0; i < config.BuildingRows.Count; i++)
+        {
+            if (config.BuildingRows[i].Id > highest)
+            {
+                highest = config.BuildingRows[i].Id;
+            }
+        }
+
+        return highest + 1;
     }
 
     /// <summary>A tile the village may build on, found rather than assumed.</summary>

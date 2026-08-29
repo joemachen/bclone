@@ -84,7 +84,18 @@ public sealed class ModdedBuildingTests
         { "id": 9, "name": "farmhouse",                             "seats": 2, "local_store_cap": 100, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ] },
 
         // The modder's own building. Nothing in the sim has ever heard of it.
-        { "id": 10, "name": "boathouse", "stores": "Shed", "store_capacity": 200, "seats": 2, "local_store_cap": 40, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 15 }, { "goods": "Stone", "amount": 2 } ] }
+        //
+        // ⭐⭐ AND IT DELIBERATELY SITS AT THE LIBRARY'S OWN ID, WHICH IS NOT A COINCIDENCE. It is
+        // what caught the literacy gate asking `kind == BuildingKind.Library` instead of asking the
+        // ROW whether it has shelves — *a modder's boathouse refused for want of literacy it had
+        // no use for.* **Do not move it off 10 to tidy up.**
+        { "id": 10, "name": "boathouse", "stores": "Shed", "store_capacity": 200, "seats": 2, "local_store_cap": 40, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 15 }, { "goods": "Stone", "amount": 2 } ] },
+
+        // ⭐ The modder's own CIVIC building, at the id the town hall holds in the shipped
+        // catalogue (D252). Two things at once: the validator refuses a catalogue missing a
+        // built-in id, so a row has to be here at all — and `civic` and `singleton` are columns a
+        // modder can reach in JSON, which is the claim this whole file exists to make.
+        { "id": 11, "name": "moot hall", "civic": true, "singleton": true, "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 20 } ] }
       ]
     }
     """;
@@ -138,7 +149,7 @@ public sealed class ModdedBuildingTests
         SimWorld world = World(ConfigWithABoathouse(), out _);
         BuildingsCatalog catalog = world.BuildingsCatalog;
 
-        Assert.Equal(11, catalog.Count);
+        Assert.Equal(12, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -265,6 +276,7 @@ public sealed class ModdedBuildingTests
             { "id": 7,  "name": "gatherer's hut",  "gathering_radius": 8,                      "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 6,  "name": "builder's hut" },
             { "id": 5,  "name": "house",           "house_capacity": 5,                        "work_ticks": 30, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+            { "id": 11, "name": "moot hall",       "civic": true, "singleton": true,           "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 20 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },
@@ -284,6 +296,13 @@ public sealed class ModdedBuildingTests
         Assert.Equal("storage shed", catalog.NameOf(BuildingKind.Shed));
         Assert.Equal("farmhouse", catalog.NameOf(BuildingKind.Farmhouse));
         Assert.Equal("boathouse", catalog.NameOf(Boathouse));
+
+        // The row that sits in the MIDDLE of a descending list is the sharpest one here (D252).
+        // Id 11 is listed sixth of twelve, so a catalogue that indexed by position would read it
+        // as the house -- which is exactly D218's finding, that a fixture listing rows in id
+        // order cannot tell id from position.
+        Assert.Equal("moot hall", catalog.NameOf(BuildingKind.TownHall));
+        Assert.True(catalog[BuildingKind.TownHall]!.Civic);
 
         // And the columns follow their rows, not their lines.
         Assert.Equal(StoreKind.Granary, catalog.StoresAs(BuildingKind.Granary));
