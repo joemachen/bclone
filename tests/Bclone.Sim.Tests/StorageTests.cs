@@ -250,7 +250,35 @@ public sealed class StorageTests
         //
         // Measured over 200 years — the unbounded village swings between 24 and 86,
         // the shipped one between 24 and 35.
-        SimConfig bounded = Config;
+        // ⛔⛔ THE SEAT CAP IS POSED AWAY HERE, BY NAME, AND THAT NEEDS DEFENDING (D262).
+        //
+        // A gathering hut seats two now, and **that became the binding cap before the granary
+        // ever was** — measured: both arms of this test settle at 7–21 people, identical, because
+        // one hut's two seats stop the village a long way below any amount of food the granary
+        // could hold. Doubling the granary changes nothing, which is the guard reporting the
+        // truth about a village whose bottleneck is somewhere else.
+        //
+        // ⚠️ **THIS IS THE THIRD TIME THIS GUARD HAS LOST ITS SUBJECT**, and the file above says
+        // so: D134 skipped it because the TIMBER SHED had become the binding cap at 343/343, and
+        // it was un-skipped on 2026-08-28 once that expired. The pattern is the point — a claim
+        // about capacity can only be measured on a village that capacity actually limits.
+        //
+        // ⭐ So the OTHER bottleneck is posed out of the way rather than the guard being skipped
+        // again. Eight seats is what a hut held before Joe's cap, and it is enough village to
+        // reach the granary: 24–35 bounded against 24–86 unbounded, which is the band this was
+        // written for. ⚠️ **This is not `VillageFixtures.Village` and must never become it** —
+        // the shipped two are exercised by `GathererHutTests`, `LabourAllocationTests` and
+        // `RingsCompeteTests`; what is posed away here is a cap on a subject this guard is not
+        // about. Posing beats skipping: a guard that runs on a stated fixture still catches a
+        // granary regression, and a skipped one catches nothing.
+        //
+        // ⭐ Measured while choosing this: raising `FoundingGatheringHuts` instead does not work.
+        // Three huts moves both arms together (16–29 against 16–29, still no daylight), and
+        // **four or more kills the founding outright** — 0–0 in both arms, because a hut sited
+        // clear of every other ring ends up too far out to feed anybody. Nothing ships above one,
+        // so that is a note rather than a bug report, but it is worth knowing before anybody
+        // raises the key.
+        SimConfig bounded = Config with { GathererHutCapacity = 8 };
         SimConfig unbounded = bounded with { GranaryCapacity = 100_000_000 };
 
         (int Low, int High) boundedBand = Band(bounded);

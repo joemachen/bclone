@@ -130,17 +130,38 @@ public sealed class StoneCostsTests
         SimLoop loop = Loop(config);
         SimWorld world = loop.World;
 
-        ColdStartTests.PlayTheOpening(world);
+        ColdStartTests.PlayTheOpening(world, paintASeam: false);
         loop.Step(config.TicksPerYear * 50);
 
+        // ⛔⛔ AGAINST THE SAME FOUNDING THAT DID PAINT A SEAM, NOT AGAINST A REMEMBERED
+        // NUMBER (D262). This asserted `alive >= 15` and went red at 12 the day a gathering hut
+        // stopped seating seven — not because stone had cost anybody their life, but because
+        // **every** village in the suite is smaller now. A flat bar cannot tell those two apart,
+        // and it is the difference this guard exists to measure.
+        SimLoop control = Loop(config);
+        ColdStartTests.PlayTheOpening(control.World, paintASeam: true);
+        control.Step(config.TicksPerYear * 50);
+
         int alive = CountAlive(world);
+        int withStone = CountAlive(control.World);
+
         _output.WriteLine(
             $"no seam ever painted, huts priced at {config.GathererHutStone} stone: "
-            + $"{alive} alive after 50 years, {world.TotalFood()} food");
+            + $"{alive} alive after 50 years, {world.TotalFood()} food "
+            + $"(the same founding WITH a seam painted: {withStone} alive)");
 
+        // Anti-vacuity (D7): two dead villages agree perfectly.
+        Assert.True(withStone > config.StartingPopulation,
+            $"The control village never grew either ({withStone} alive), so the comparison "
+            + "says nothing about stone.");
+
+        // ⭐ THE CLAIM, AND IT IS A CLAIM ABOUT PEOPLE RATHER THAN BUILDINGS: going without
+        // stone leaves a couple of huts unbuilt, and the village lives anyway. Half the control
+        // is the bar — below that the price is not costing buildings, it is costing lives.
         Assert.True(
-            alive >= 15,
-            $"Pricing the huts in stone cost the founding its village — {alive} alive.");
+            alive * 2 >= withStone,
+            $"Pricing the huts in stone cost the founding its village — {alive} alive "
+            + $"against {withStone} in the founding that painted a seam.");
     }
 
     /// <summary>

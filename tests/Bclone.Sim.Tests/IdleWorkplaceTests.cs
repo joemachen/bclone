@@ -200,6 +200,22 @@ public sealed class IdleWorkplaceTests
 
         Workplace hut = FirstOf(world, JobKind.Forester);
         world.SetStaffing(hut, hut.Capacity);
+
+        // ⛔ SOMEBODY IS KEPT ON THE TRADE, RATHER THAN HOPED FOR (D262). This ran a year and
+        // trusted the quota to post a forester, and with a two-seat gathering hut it no longer
+        // does reliably — measured: *"nobody was ever posted to the forester's hut."* ⭐ The
+        // subject here is the IDLE NOTE, not who the village chooses to employ, so the villager
+        // is pinned: `SetPinnedTrade` is the player's own control, and using it is a plainer
+        // premise than any amount of stepping and hoping.
+        foreach (Villager villager in world.Villagers)
+        {
+            if (villager.Alive && villager.CanWork)
+            {
+                world.SetPinnedTrade(villager, JobKind.Forester);
+                break;
+            }
+        }
+
         loop.Step(Config.TicksPerYear);
 
         // Fell its ground flat, then cap the logs. It may not fell and it has everything to

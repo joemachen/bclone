@@ -118,7 +118,16 @@ public sealed class CopseThinningTests
     public void SwitchedOnTheRingIsThinnerThanItWouldHaveBeen()
     {
         SimConfig off = Shipped with { GathersPerThinnedTile = 0 };
-        SimConfig on = Shipped with { GathersPerThinnedTile = 3 };
+        // ⛔ ONE GATHER A TILE, NOT THREE (D262). ⚠️ **THE CAP MADE THINNING TOO SLOW TO SEE.**
+        // A hut seats two now instead of seven, so the same thirty years produce 556 gathers
+        // where they used to produce four times as many — about six thinned tiles a year, which
+        // `RegrowthSystem` matures faster than they appear. Measured at three: **ring saplings
+        // 0 → 0, grass 47 → 47**, a wood that was never touched.
+        //
+        // ⭐ The rate is posed rather than the guard re-timed, because this is a guard about
+        // WHAT THINNING LEAVES — young wood, not grass — and not about how fast it arrives.
+        // (The rate itself ships at 0, off; `gathers_per_thinned_tile` is Joe's dial.)
+        SimConfig on = Shipped with { GathersPerThinnedTile = 1 };
 
         SimLoop quiet = Loop(off, 12345UL);
         SimLoop worked = Loop(on, 12345UL);
@@ -176,7 +185,16 @@ public sealed class CopseThinningTests
     [Fact]
     public void ItSetsTheWoodBackRatherThanClearingIt()
     {
-        SimConfig on = Shipped with { GathersPerThinnedTile = 3 };
+        // ⛔ ONE GATHER A TILE, NOT THREE (D262). ⚠️ **THE CAP MADE THINNING TOO SLOW TO SEE.**
+        // A hut seats two now instead of seven, so the same thirty years produce 556 gathers
+        // where they used to produce four times as many — about six thinned tiles a year, which
+        // `RegrowthSystem` matures faster than they appear. Measured at three: **ring saplings
+        // 0 → 0, grass 47 → 47**, a wood that was never touched.
+        //
+        // ⭐ The rate is posed rather than the guard re-timed, because this is a guard about
+        // WHAT THINNING LEAVES — young wood, not grass — and not about how fast it arrives.
+        // (The rate itself ships at 0, off; `gathers_per_thinned_tile` is Joe's dial.)
+        SimConfig on = Shipped with { GathersPerThinnedTile = 1 };
         SimLoop loop = Loop(on, 12345UL);
         SimWorld world = loop.World;
 
@@ -194,8 +212,17 @@ public sealed class CopseThinningTests
         int grassAfter = Count(world, hut, Terrain.Grass);
         int saplingsBefore = 0;
 
+        // The gather count is printed because it is what the rate above is chosen against —
+        // whoever next finds this red should read it before touching the threshold.
+        long gathers = 0;
+        foreach (Villager v in world.Villagers)
+        {
+            gathers += v.TotalGathers;
+        }
+
         _output.WriteLine($"ring saplings {saplingsBefore} → {saplingsAfter}, "
-            + $"grass {grassBefore} → {grassAfter}");
+            + $"grass {grassBefore} → {grassAfter}; {world.Population} alive, "
+            + $"{gathers} gathers ever, {hut.WorkerIds.Count} at the hut");
 
         // The wood becomes young wood. Grass is what FELLING leaves, and a forager fells nothing.
         Assert.True(

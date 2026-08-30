@@ -92,6 +92,15 @@ public sealed class MarketTests
         // marketer produces nothing, so a village with an empty larder and berries to
         // pick cannot afford to have anyone shuffling what it already owns.
         SimLoop loop = Build(Config);
+        // ⛔ THE EMPTY LARDER IS POSED NOW, BECAUSE IT USED TO BE FREE (D262). A warm start
+        // never spent `cart_food`, so a founding with its buildings already up woke with zero
+        // food anywhere and *"the village is short of food"* was true without anybody arranging
+        // it. ⭐ That was a bug, and a fixture that depends on a bug is testing the bug.
+        for (int i = 0; i < loop.World.StoreBuildings.Count; i++)
+        {
+            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Food);
+        }
+
         loop.StepOnce();
 
         Assert.True(LabourQuota.VillageIsShortOfFood(loop.World));

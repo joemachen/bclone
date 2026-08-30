@@ -281,6 +281,15 @@ public sealed class PlacementTests
         // winter would take them, and a half-built store is a better outcome than a
         // finished one nobody lived to use.
         SimLoop loop = Build(Config);
+        // ⛔ THE EMPTY LARDER IS POSED NOW, BECAUSE IT USED TO BE FREE (D262). A warm start
+        // never spent `cart_food`, so a founding with its buildings already up woke with zero
+        // food anywhere and *"the village is short of food"* was true without anybody arranging
+        // it. ⭐ That was a bug, and a fixture that depends on a bug is testing the bug.
+        for (int i = 0; i < loop.World.StoreBuildings.Count; i++)
+        {
+            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Food);
+        }
+
         loop.StepOnce();
 
         SimWorld world = loop.World;

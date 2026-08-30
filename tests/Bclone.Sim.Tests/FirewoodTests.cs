@@ -280,7 +280,17 @@ public sealed class FirewoodTests
             $"Deaths: {froze} froze, {starved} starved, {aged} of old age, " +
             $"{loop.World.Villagers.Count} ever born.");
 
-        Assert.True(peak >= 25,
+        // ⛔ 25 → 15 (D262). ⚠️ **THE FUEL CHAIN DID NOT GET WORSE; THE FOOD CEILING CAME
+        // DOWN.** A gathering hut seats two now, and nobody in a test builds a second one, so an
+        // unattended village tops out at what one hut can feed — measured here: **peaks at 21 in
+        // year 61, with ZERO frozen**, which is the half of this guard that is actually about
+        // firewood and which never moved. Holding the old bar would fail the fuel chain for a
+        // shortage of berry pickers.
+        //
+        // ⭐ Fifteen still carries the claim: four founders to fifteen is a village that paired,
+        // fed, housed and HEATED itself for three centuries, which is what "the chain keeps up
+        // with a growing village" means. The zero-frozen assertion below is the sharp end.
+        Assert.True(peak >= 15,
             $"With fuel burning, the village only ever reached {peak} from " +
             $"{config.StartingPopulation} founders — the chain is not keeping up with it.");
 

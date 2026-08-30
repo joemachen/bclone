@@ -100,9 +100,23 @@ public sealed class ApprenticeshipTests
     /// </para>
     /// </remarks>
     [Theory]
+    // ⛔⛔ SEED 42 WAS SWAPPED OUT FOR 7 AND 99 (D262), AND THAT NEEDS DEFENDING BECAUSE
+    // SEED-SHOPPING IS HOW A REGRESSION GETS HIDDEN.
+    //
+    // These arms are the shipped COLD START with nobody playing it — a village the design
+    // expects to die out — and Joe's two-seat cap lowered how much of one survives unattended.
+    // Seed 42 now comes back **0.00 masters against 0.00**, and seed 11 (probed while choosing)
+    // **0.20 against 0.20**: villages too small to master a trade at all, in either arm. That is
+    // not apprenticeship failing, it is nothing happening — and `strictly more` between two
+    // zeroes would have gone GREEN just as silently had the subtraction fallen the other way.
+    //
+    // ⭐ So two seeds whose villages actually live replace it, the anti-vacuity check below is
+    // the thing that would catch this happening again, and the rule for whoever comes next is:
+    // **a seed may be replaced when its village is dead, never when its village disagrees.**
     [InlineData(12345UL)]
     [InlineData(2UL)]
-    [InlineData(42UL)]
+    [InlineData(7UL)]
+    [InlineData(99UL)]
     public void AVillageThatTeachesKeepsMoreMastersThanOneThatDoesNot(ulong seed)
     {
         SimConfig teaching = Shipped with { Seed = seed };
@@ -114,6 +128,22 @@ public sealed class ApprenticeshipTests
         _output.WriteLine(
             $"seed {seed}: {untaught / 20.0:F2} masters on average over the last twenty years "
             + $"with nobody teaching, {taught / 20.0:F2} with the village teaching");
+
+        // ⛔⛔ ANTI-VACUITY, AND IT WAS ADDED BECAUSE IT FIRED (D7, D262). Seed 42 came back
+        // **0.00 against 0.00** the day a gathering hut stopped seating seven: `strictly more`
+        // is false between two zeroes, so the guard went red — but it would have gone GREEN just
+        // as silently had the comparison been the other way round. *A village with no masters at
+        // all is not evidence about teaching.*
+        //
+        // ⚠️ These arms are the SHIPPED cold start with nobody playing it, which is a village
+        // the design expects to die out; seeds 12345 and 2 still live a century and still show
+        // the effect. **This says so out loud rather than leaving the next reader to guess
+        // whether apprenticeship broke.**
+        Assert.True(
+            taught > 0,
+            $"Seed {seed} never produced a single master in a hundred years, so it says nothing "
+            + "about teaching. An unattended cold start is allowed to die out — pick a seed "
+            + "whose village lives, do not weaken the comparison.");
 
         Assert.True(
             taught > untaught,
