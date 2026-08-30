@@ -1,7 +1,8 @@
-# Handoff — bclone: **✅ THE TOWN HALL'S SLICE 1 IS BUILT AND GREEN. NOBODY HAS LOOKED AT IT YET.**
+# Handoff — bclone: **✅ TWO SEATS PER GATHERING HUT IS DONE AND GREEN. THREE CALLS ARE WAITING ON JOE.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
-> **880 passing, 0 failing, 1 skipped of 881.**
+> **894 passing, 0 failing, 1 skipped of 895** — on `slice/two-seats-per-hut`.
+> ⚠️ **`main` is at 881 and does NOT have the cap.**
 >
 > **✅✅ ALL OF IT IS MERGED TO `main` AND PUSHED (2026-08-29, Joe: *"Both: Merge to main, push the
 > branch"*).** A clean fast-forward, so **`main`, `origin/main`, `slice/the-founders-hall` and
@@ -45,34 +46,67 @@
 >   narrative voice across five systems**, and two of those lines carry `Day 4, Spring, Year 58`,
 >   which is more precise than the stamp. **Ask him before doing it.**
 >
-> **⛔⛔⛔ THE LIVE JOB IS RECONCILING 28 GUARDS TO A SMALLER VILLAGE (D262), AND IT IS ON
-> `slice/two-seats-per-hut` — NOT ON `main`.** ✅ **Joe's call is taken: two seats per gathering hut,
-> and the unattended-survival promise withdrawn with it** (*"my QA trumps your tests"*). The cap,
-> competing rings and the warm start's missing food are all built. ⭐ **Measured: nothing dies out —
-> the shipped seeds settle at 20, 23 and 15 against peaks of 26, 32 and 18.** *Villages top out
-> around twenty instead of forty-four, which is the pressure he asked for.*
-> ◐ **28 GUARDS ARE RED (from 55) AND THE BRANCH MUST NOT MERGE UNTIL THEY ARE JUDGED ONE BY ONE.**
-> ✅ **Done: the four survival guards carry Joe's sentence** — `MapGenerationTests` asks *can a
-> village live here at all* at a peak of 12 (measured 26/32/18, was 30–49); the growth guards
-> moved 25 → 15 against a measured 21. The modded catalogues state seats, the derived-seats guard
-> is reversed, and the capacity-refusal pose uses the key.
-> ⛔ **What is left clusters in `LabourAllocationTests` (5), `FarmTests` + `FarmMemoryTests` (6),
-> `SkillTests` (4), and the four goldens — move those LAST, one commit, one stated reason.**
-> ⚠️ **Several fixtures were quietly depending on the warm start being EMPTY** (*"a village founded
-> with an empty larder has no spare hands by definition"* was true without anybody arranging it).
-> **A fixture that depends on a bug is a fixture that was testing the bug** — pose the emptiness
-> with `BuildWithBareStores`, do not restore the bug.
-> ⚠️⚠️ **AND EXPECT EACH FIX TO MOVE THE COUNT BOTH WAYS.** Bounding the spare-hands top-up by
-> seats was *more* correct and took 27 to 28. **This is a rebalance, not a list — measure after
-> every step.**
-> ⛔⛔⛔ **DO NOT SET `GathererHutCapacity = 8` IN `VillageFixtures.Village` TO GO GREEN.** It fixes
-> most of them in one edit **and stops every one of them exercising the shipped seat count while
-> reading as passing.** *That is D157 green-and-blind, bought on purpose — the fifth time this
-> project has been offered that trade.*
+> **✅✅ THE RECONCILIATION IS DONE AND THE SUITE IS GREEN AT TWO SEATS (D262–D264).**
+> **894 passing, 0 failing, 1 skipped of 895**, on `slice/two-seats-per-hut` — **NOT on `main`.**
+> Joe's call taken as an override (*"my QA trumps your tests"*); the cap, competing rings and the
+> warm start's missing food are all built. ⭐ **Measured: nothing dies out** — the shipped seeds
+> settle at 20, 23 and 15 against peaks of 26, 32 and 18.
+>
+> **⭐⭐ TWO REAL SIM BUGS CAME OUT OF IT, WHICH IS WHY IT WAS WORTH DOING BY HAND:**
+> - **`LabourQuota` was booking hands for seats that do not exist.** It took as many as it needed
+>   to feed everyone and gave every spare body to the berry patch — harmless at seven seats, a
+>   labour bug at two. **Measured: *"nobody was ever posted to the forester's hut"***, five hands
+>   queued for a room that holds two while farming, timber and the market went unstaffed. Bounded
+>   by `SimWorld.GatheringSeats()` in both places now; `ForagersToFeedEveryone` stays the honest
+>   need so the panel can still say *"the village wants five"* while two sit down.
+> - **`GatheringSeats` asked `Capacity` where `Workplace.Places` exists** — the field whose own doc
+>   says *"an override cannot be honoured by half the code and ignored by the other half."* It was
+>   booking hands for seats the player had switched off.
+> - **And the village had stopped saying it reorganised itself at all.** `NarrateChanges` only
+>   counted building-to-building moves; the churn is now job ↔ labourer pool, and a winter (D44)
+>   erased what anybody had held. **Not one narrated reshuffle, and not one *"Moved to"*, in a
+>   hundred and fifty years.** `Villager.LastWorkplaceId` is the fix — unhashed on the same footing
+>   as `JobReason`, which it exists only to word.
+>
+> **⛔⛔ THREE THINGS ARE JOE'S CALL AND ARE DELIBERATELY NOT TAKEN:**
+> 1. **THE OPENING GOT HARDER, MEASURABLY.** A hut seats two; the founding is two couples. With the
+>    single-hut opening **household 1 worked 1.2% of its able-adult ticks over twenty years against
+>    household 2's 5.2%** — his own *"one couple stays home"*. Two huts and both couples work.
+>    ⚠️ Only `ColdStartTests.NeitherFoundingHouseholdRestsWhileTheOtherWorks` poses the second hut
+>    (`PlayTheOpeningWithTwoGatheringHuts`); folding it into the shared opening **turned that guard
+>    green and reddened four others** — measured. **Whether the shipped opening is now two huts is
+>    a design decision.**
+> 2. **THE BUILDER'S HUT READS 21 SEATS** and is the only building left that does not read 2 (D265).
+>    The arithmetic is right — `BuilderHutCapacity` is every hand a 20-household village can spare
+>    (D108, D16) — but **one builder's hut now serves the whole game**, which is the thing the cap
+>    was built to stop being true of the forager.
+> 3. **`gathers_per_thinned_tile` still ships at 0** (D257). Flip it to 3 to feel the copse thin.
+>
+> **⚠️ WHAT THE RECONCILIATION TAUGHT, FOR WHOEVER DOES THE NEXT ONE:**
+> - **Half the red was fixtures owning premises they used to get free.** A warm start never spent
+>   `cart_food`, so *"a village founded with an empty larder has no spare hands by definition"* was
+>   true without anybody arranging it, and the farm guards were **measuring the granary rather than
+>   the farm**. Pose it (`BuildWithBareStores`, `FarmFixtures.WithNothingInTheStores`); **do not
+>   restore the bug** — removing the fix costs 19 guards (46 red against 27).
+> - **The count moves both ways.** Bounding the spare-hands top-up by seats was *more* correct and
+>   took 27 → 28. Measure after every step.
+> - **Three guards had lost their subject, not their tuning.** `StorageTests` compares a bounded
+>   granary against an unbounded one and both arms settle at 7–21 — **the third time that guard has
+>   been overtaken by a different bottleneck** (D134's timber shed was the second). The lockstep
+>   guard's tile measure was **deleted on the written instruction it was carrying**. The rhythm's
+>   cost was a **stock read at an instant** and is now trips over fifty years.
+> - **A seed may be replaced when its village is dead, never when its village disagrees.** Seed 42
+>   left `ApprenticeshipTests` at **0.00 masters in both arms**, where *strictly more* would have
+>   passed just as silently the other way round; an anti-vacuity check now catches it.
+> ⛔⛔⛔ **DO NOT SET `GathererHutCapacity = 8` IN `VillageFixtures.Village`.** It fixes most of the
+> suite in one edit **and stops every one of those guards exercising the shipped seat count while
+> reading as passing** — D157 green-and-blind, the fifth time this project has been offered that
+> trade. *It is posed in exactly one place, `StorageTests`, which spends eight lines saying why.*
 > ⚠️ **And a hard limit found on the way: `MaxHomeToWorkTiles` IS the ring**, so two huts with no
 > overlap sit twice as far apart as anybody may walk to work. **Spreading huts is the player's job,
 > done with painted neighbourhoods; an unattended fixture cannot do it, and placing more huts made
-> thin valleys WORSE.**
+> thin valleys WORSE** — measured again here: `FoundingGatheringHuts` at three moves nothing and at
+> **four or more kills the founding outright**.
 >
 > **⭐ The copse's thinning rate is still his to feel (D257), and the old note stands:** He has asked three
 > times for a **2-seat forager hut**. ✅ **The other half of his design — rings that COMPETE — is
