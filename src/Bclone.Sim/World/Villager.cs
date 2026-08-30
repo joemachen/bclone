@@ -74,6 +74,40 @@ public sealed class Villager
     /// <summary>Workplace they currently hold a job at, or 0 for none.</summary>
     public int WorkplaceId { get; set; }
 
+    /// <summary>
+    /// The last place they actually worked — <b>memory that survives the labourer pool</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ D20's promise stopped being keepable without it, and D262 is why.</b> *"A reshuffle
+    /// that cannot explain itself is worse than no reshuffle"* — so a villager whose work moves
+    /// says **"Moved to the market. The forager's hut had no room this year"** rather than a bare
+    /// *"Took work at"*. The allocator built that sentence from the id the villager held when the
+    /// pass began.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>NOTHING SURVIVES A WINTER IN THAT FIELD.</b> Nobody gathers in winter (D44), so the
+    /// winter pass sheds every forager to <c>0</c>, and by the spring reshuffle the id they held
+    /// *"when the pass began"* is nothing. **Every year has a winter**, so building-to-building
+    /// moves became unsayable — measured on the shipped fixture: not one *"Moved to"* in a
+    /// hundred and fifty years, and a village that reorganised itself annually in silence.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It matters far more since the two-seat cap than it ever did before.</b> Hands the
+    /// huts cannot seat go to the labourers and come back somewhere else, so *"the forager's hut
+    /// had no room this year"* is now the commonest true thing the village has to tell a player
+    /// — and it is exactly the sentence that says **build another hut**.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Deliberately not in <c>StateHash</c>, on the same footing as <c>JobReason</c></b>,
+    /// which it exists only to word. Divergence is still caught:
+    /// <c>TheSameSeedGivesIdenticalAssignmentsAndIdenticalReasons</c> hashes the reason strings
+    /// themselves, precisely because *"a desync in a runner-up's name would not move a single
+    /// integer"*.
+    /// </para>
+    /// </remarks>
+    public int LastWorkplaceId { get; set; }
+
     /// <summary>The trade the player has kept them on, or null if the village decides.</summary>
     /// <remarks>
     /// <para>

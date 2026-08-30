@@ -104,6 +104,11 @@ internal static class LabourAllocator
 
         for (int i = 0; i < world.Villagers.Count; i++)
         {
+            if (world.Villagers[i].WorkplaceId != 0)
+            {
+                world.Villagers[i].LastWorkplaceId = world.Villagers[i].WorkplaceId;
+            }
+
             world.Villagers[i].WorkplaceId = 0;
 
             // Cleared with the job, so a reshuffle that gives somebody a shorter walk does
@@ -254,7 +259,12 @@ internal static class LabourAllocator
                 continue;
             }
 
-            int previous = previousWorkplaces is null ? 0 : previousWorkplaces[IndexOf(world, villager)];
+            // ⭐ THE SNAPSHOT FIRST, THE LONGER MEMORY SECOND. Within one pass the snapshot is
+            // the truth — it is what they held when the pass began. `LastWorkplaceId` is what
+            // is left when a winter has already emptied the huts, which is most of the time
+            // since D262 (see `Villager.LastWorkplaceId`).
+            int snapshot = previousWorkplaces is null ? 0 : previousWorkplaces[IndexOf(world, villager)];
+            int previous = snapshot != 0 ? snapshot : villager.LastWorkplaceId;
             Assign(world, villager, workplace, candidate.Cost, candidates, i, previous);
             held++;
         }
@@ -638,8 +648,35 @@ internal static class LabourAllocator
         for (int i = 0; i < before.Length && i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (before[i] == 0 || villager.WorkplaceId == 0 || before[i] == villager.WorkplaceId)
+            if (before[i] == villager.WorkplaceId)
             {
+                continue;
+            }
+
+            // ⭐⭐ THE POOL COUNTS AS SOMEWHERE TO GO, AND D262 IS WHY IT HAD TO (Joe's two-seat
+            // cap). This used to skip anybody whose id was zero on either side — *only a move
+            // from one building to another was a move* — and that was fine while the quota
+            // soaked every spare hand into the berry patch, because hands really did travel
+            // building to building.
+            //
+            // ⛔ WITH TWO SEATS A HUT THEY DO NOT. A hand that cannot be seated goes back to the
+            // labourers, and comes back to the same hut next spring — job → 0 → the same job,
+            // which the old test skipped at both ends. **Measured: not one narrated reshuffle in
+            // a hundred and fifty years**, and the per-villager reason never once said "Moved
+            // to". The village was reorganising itself every single year and saying nothing,
+            // which is precisely what D20 forbids: *a reshuffle that cannot explain itself is
+            // worse than no reshuffle.*
+            if (villager.WorkplaceId == 0)
+            {
+                if (!villager.CanWork)
+                {
+                    // Retired, or died, or grew too old for it — that is a life event and the
+                    // village narrates it elsewhere. Reporting it as a labour move would put
+                    // the same death in the log twice, wearing a job title.
+                    continue;
+                }
+
+                movers.Add($"{villager.Name} to the labourers");
                 continue;
             }
 
@@ -947,6 +984,13 @@ internal static class LabourAllocator
 
     private static void Release(Villager villager, string why)
     {
+        // Remembered before it is thrown away, so next year's sentence can name the place they
+        // were let go from. See `Villager.LastWorkplaceId` — a winter used to erase this.
+        if (villager.WorkplaceId != 0)
+        {
+            villager.LastWorkplaceId = villager.WorkplaceId;
+        }
+
         villager.WorkplaceId = 0;
         villager.JobReason = why;
 

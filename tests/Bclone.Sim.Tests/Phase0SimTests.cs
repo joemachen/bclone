@@ -172,11 +172,21 @@ public sealed class Phase0SimTests
     {
         var (loop, _) = Phase0Fixtures.Build(Config);
 
+        // ⛔ WHAT WAS IN HAND BEFORE THE GATHER, because it stopped being nothing (D262).
+        // A warm start never spent `cart_food`, so this fixture opened with empty stores and
+        // *"what the villager has"* and *"what this trip brought back"* were the same number by
+        // accident. The founder now walks to a stocked granary first, so the total is **457
+        // where the trip is worth 67** — and a guard about one gather has no business asserting
+        // the size of the founding cart. ⚠️ Sampled inside the loop, on the tick before the one
+        // that gathers: a baseline taken at the founding would still be measuring the walk.
+        int before = 0;
+
         // Food is carried now rather than banked where it is picked (D30), so the
         // yield lands in the villager's arms first and in the larder when they get
         // home. Both are the same gather; this waits for it to arrive.
         for (int i = 0; i < 100; i++)
         {
+            before = loop.World.Villager.CarriedFood + loop.World.Stockpile.Food;
             loop.StepOnce();
             if (loop.World.Villager.TotalGathers > 0)
             {
@@ -196,7 +206,7 @@ public sealed class Phase0SimTests
 
         Assert.Equal(
             loop.World.GatherYieldAt(hut),
-            loop.World.Villager.CarriedFood + loop.World.Stockpile.Food);
+            loop.World.Villager.CarriedFood + loop.World.Stockpile.Food - before);
     }
 
     [Fact]

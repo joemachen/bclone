@@ -16,6 +16,42 @@ namespace Bclone.Sim.Tests;
 /// </remarks>
 internal static class FarmFixtures
 {
+    /// <summary>
+    /// Empty the village's stores — <b>a founding that has to eat what it grows</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ POSED NOW, BECAUSE IT USED TO BE FREE (D262).</b> A warm start never spent
+    /// `cart_food`, so a village founded with its buildings already up woke with **zero food
+    /// anywhere**, and every guard below inherited a hungry village without asking for one.
+    /// ⭐ *A fixture that depends on a bug is a fixture that is testing the bug*, so the
+    /// premise is stated here rather than left to the founding's arithmetic.
+    /// </para>
+    /// <para>
+    /// <b>⛔ AND IT IS THE PREMISE THESE GUARDS ACTUALLY WANT.</b> They measure a farm's own
+    /// sow-and-reap discipline — *does a spring commit ground the autumn can take?* — which is
+    /// only under test while the village NEEDS what the field grows. Fed from a full granary the
+    /// labour picture is a different regime: nobody forages, spare hands arrive at the farm, and
+    /// what the guard measures is the granary rather than the farm.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Not every farm guard wants it</b> — anything about the market wants a village calm
+    /// enough to staff one, and a village short of food will not (`LabourQuota`, §4a). So this is
+    /// called by name where it is meant, never folded into the loop helper.
+    /// </para>
+    /// </remarks>
+    internal static SimLoop WithNothingInTheStores(SimLoop loop)
+    {
+        ArgumentNullException.ThrowIfNull(loop);
+
+        for (int i = 0; i < loop.World.StoreBuildings.Count; i++)
+        {
+            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Food);
+        }
+
+        return loop;
+    }
+
     /// <summary>Raise a farmhouse outright, without waiting years for a builder.</summary>
     internal static Workplace RaiseAFarm(SimWorld world, GridPos? at = null)
     {

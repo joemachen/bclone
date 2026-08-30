@@ -77,7 +77,7 @@ public sealed class FarmMemoryTests
     [Fact]
     public void ADistantFarmEndsUpCommittingMoreGroundThanThePredictionGaveIt()
     {
-        SimLoop loop = Loop(Config);
+        SimLoop loop = FarmFixtures.WithNothingInTheStores(Loop(Config));
         SimWorld world = loop.World;
 
         Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 10, out int walk);
@@ -159,7 +159,7 @@ public sealed class FarmMemoryTests
     [Fact]
     public void AYearWithNoCropTeachesTheFarmNothing()
     {
-        SimLoop loop = Loop(Config);
+        SimLoop loop = FarmFixtures.WithNothingInTheStores(Loop(Config));
         SimWorld world = loop.World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         FarmFixtures.GiveItGround(world, farm, reach: 3);

@@ -193,7 +193,19 @@ public sealed class LabourAllocationTests
 
         Assert.False(LabourQuota.VillageIsShortOfFood(loop.World));
         Assert.True(quota.Foresters > 0, "A fed village with couples waiting should build.");
-        Assert.Equal(quota.Hands, quota.Foragers + quota.Foresters + quota.Woodcutters);
+
+        // ⛔ THIS USED TO READ `Assert.Equal(quota.Hands, foragers + foresters + woodcutters)` —
+        // *"the quota spends the whole village"* — and D262 ended that. A gathering hut holds
+        // two, so once the seats are full **the hands that are left are not booked at all**;
+        // they go back to the labourer pool to clear, haul and tidy. ⚠️ The old equality would
+        // now only pass if the quota went back to booking hands for seats that do not exist,
+        // which is the bug this branch fixed: measured, *nobody was ever posted to the
+        // forester's hut* because five hands were queued for a room that holds two.
+        int booked = quota.Foragers + quota.Farmers + quota.Foresters
+            + quota.Woodcutters + quota.Marketers + quota.Builders;
+
+        Assert.True(booked <= quota.Hands,
+            $"The quota booked {booked} of {quota.Hands} hands — {quota}");
     }
 
     [Fact]
@@ -445,20 +457,53 @@ public sealed class LabourAllocationTests
         Assert.True(silent > 0, "Nobody is working, so this guard checked nothing.");
     }
 
+    /// <summary>
+    /// Cut a single tile off from the rest of the valley — <b>ground nobody can walk to</b>.
+    /// </summary>
+    /// <remarks>
+    /// Far from the founding site, so drowning its four neighbours cannot cut the village
+    /// itself in half. The tile is left dry; only the ring around it is flooded.
+    /// </remarks>
+    private static GridPos TheIslandIn(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+        var island = new GridPos(site.X, site.Y + (world.Map.Height / 3));
+
+        world.SetTerrain(island, Terrain.Grass);
+        world.SetTerrain(new GridPos(island.X + 1, island.Y), Terrain.Water);
+        world.SetTerrain(new GridPos(island.X - 1, island.Y), Terrain.Water);
+        world.SetTerrain(new GridPos(island.X, island.Y + 1), Terrain.Water);
+        world.SetTerrain(new GridPos(island.X, island.Y - 1), Terrain.Water);
+
+        return island;
+    }
+
     [Fact]
     public void CapacityRefusalNamesTheFullWorkplace()
     {
         // One seat per site and a village that outgrows them: the refusal has to say
         // "you need another site", not "no".
         //
-        // Posed directly rather than hoped for: one seat everywhere, four founders.
-        // Three of them have nowhere to fit from the very first tick, so the message
-        // cannot be missed by a village that happened not to grow.
+        // ⛔⛔ D262 CHANGED WHAT IT TAKES TO REACH THIS SENTENCE, AND THE OLD POSE CAN NO
+        // LONGER REACH IT AT ALL. It used to be enough to give the village one seat and four
+        // hands: the quota dumped every spare hand onto foraging, three of them found the hut
+        // full, and the refusal fired. **The quota does not do that any more** — it books
+        // `min(what is needed, what is seated)`, so once the seats are full it stops asking,
+        // and nobody is ever sent to a full building. *That is the fix, not a regression: five
+        // hands queued for a room that holds two was how the forester's hut ended up with
+        // nobody in it.*
         //
-        // The gathering seat is squeezed through the RING now rather than through a
-        // capacity key: a hut prices its own seats from the ground it can reach
-        // (`GathererHutCapacity`), so a ring of one tile is a hut with one pair of hands.
-        // That is the same posing done through the number that still exists.
+        // ⭐ So the refusal survives in exactly one shape now, and finding it was the useful part
+        // of this edit: **a seat the village counts but nobody can walk to.** Two huts of one
+        // seat each, the second one on an island in the river — the village wants two foragers
+        // because it can see two seats, only one of them is reachable, and the hand left over is
+        // owed the sentence that names the full building rather than a flat "no".
+        //
+        // ⚠️ DISTANCE ALONE CANNOT DO THIS ANY MORE, and the first attempt at this pose assumed
+        // it could. There is no distance fence — `MaxHomeToWorkTiles` narrates a long commute
+        // (*"they bring back about 34% of what a pair of hands at the door would"*) and does not
+        // forbid it. Measured: a founder walked **32 tiles** to the far hut without complaint.
+        // Impassable ground is the only thing left that makes a seat unfillable.
         SimConfig config = Config with
         {
             GathererHutCapacity = 1,
@@ -470,7 +515,26 @@ public sealed class LabourAllocationTests
             // is a true sentence about the wrong building.
             MarketCapacity = 0,
         };
-        SimLoop loop = Build(config);
+
+        // Bare stores, so `foodComesFirst` zeroes timber, fuel, market and building outright
+        // and the only work in the valley is the gathering the pose is about.
+        SimLoop loop = BuildWithBareStores(config);
+
+        // The island: one tile of ground with water on every side of it. It raises what the
+        // village WANTS by one seat without raising what it can staff.
+        GridPos island = TheIslandIn(loop.World);
+
+        loop.World.Workplaces.Add(new Workplace
+        {
+            Store = new Stockpile(loop.World.GoodsCatalog.Count),
+            Id = 9001,
+            Kind = JobKind.Forager,
+            Name = "forager's hut 2",
+            Position = island,
+            Capacity = 1,
+            GatheringRadius = config.GathererHutRingTiles,
+        });
+
         loop.StepOnce();
 
         string? found = null;
@@ -543,13 +607,55 @@ public sealed class LabourAllocationTests
     public void AJobChangeSaysWhatItChangedFrom()
     {
         // "A reshuffle that cannot explain itself is worse than no reshuffle" (D20).
-        // Over a century somebody's work must move, and when it does the sentence on
-        // that villager has to name the place they left.
+        // When somebody's work moves, the sentence on that villager has to name the place
+        // they left.
+        //
+        // ⛔⛔ POSED NOW, BECAUSE WAITING FOR ONE STOPPED WORKING (D262). This used to run a
+        // century and a half and trust that *somebody's* work would move building-to-building.
+        // With two seats a hut it does not: a hand the huts cannot seat goes to the labourers
+        // and comes back to the same hut next spring, so the common change is job → pool → the
+        // same job. **Measured on the shipped fixture: not one "Moved to" in a hundred and
+        // fifty years.** ⚠️ A guard that waits for an event the game no longer produces is a
+        // guard that passes on nothing, so the event is arranged instead.
+        //
+        // The arrangement is the ordinary one a player makes: **a second hut, nearer.** The
+        // allocator's own rule is that nobody walks past a nearer opening
+        // (`NobodyIsSentPastANearerOpening`), so the far hut's forager should move — and say
+        // which hut they came from when they do.
         SimConfig config = Config;
         SimLoop loop = Build(config);
 
+        loop.Step(config.TicksPerYear);
+        loop.StepOnce();
+
+        Villager? forager = null;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            Workplace? held = villager.HasJob ? loop.World.FindWorkplace(villager.WorkplaceId) : null;
+            if (held is not null && held.GatheringRadius > 0)
+            {
+                forager = villager;
+                break;
+            }
+        }
+
+        Assert.NotNull(forager);
+        _output.WriteLine($"before: {forager!.Name} — {forager.JobReason}");
+
+        // On their doorstep, so the move is not a matter of a tile or two.
+        loop.World.Workplaces.Add(new Workplace
+        {
+            Store = new Stockpile(loop.World.GoodsCatalog.Count),
+            Id = 9002,
+            Kind = JobKind.Forager,
+            Name = "forager's hut 2",
+            Position = loop.World.RestingPlaceOf(forager),
+            Capacity = 2,
+            GatheringRadius = config.GathererHutRingTiles,
+        });
+
         string? moved = null;
-        for (int year = 1; year <= 150 && moved is null; year++)
+        for (int year = 1; year <= 10 && moved is null; year++)
         {
             loop.Step(config.TicksPerYear);
             loop.StepOnce();
@@ -562,6 +668,11 @@ public sealed class LabourAllocationTests
                     break;
                 }
             }
+        }
+
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            _output.WriteLine($"  {villager.Name}: job {villager.WorkplaceId} — {villager.JobReason}");
         }
 
         _output.WriteLine(moved ?? "(nobody ever changed work)");
@@ -683,7 +794,19 @@ public sealed class LabourAllocationTests
         // gone the only thing that can cut a workplace off is water, and whether a given seed's
         // river cuts anybody off is a property of that valley rather than of this design.
         // Asserting either way would be asserting something about seed 12345's geography.
-        Assert.True(peak >= 25,
+        // ⛔ 25 → 15 (D262, Joe's two-seat cap). ⚠️ **THE NUMBER MOVED BECAUSE THE CEILING DID,
+        // NOT BECAUSE THE VILLAGE GOT WORSE AT LIVING.** A founding hut seats two now instead of
+        // seven, so an unattended village — nobody building a second hut, because there is no
+        // player in a test — tops out at what one hut can feed. Measured here: **peaks at 21 in
+        // year 61 and is still alive at 151.** That is the design working; *"build another hut"*
+        // is the answer, and only a player can give it.
+        //
+        // ⭐ Fifteen is chosen to keep the claim this guard was written to make. It is not
+        // *"the village grew a bit"* — 4 founders to 15 is nearly four times over, which no
+        // village that cannot pair, feed and house itself for a century and a half reaches. It
+        // sits under the measured 21 with room for a seed's luck and well above the 4 that would
+        // mean the fence's removal broke walking to work.
+        Assert.True(peak >= 15,
             $"The village never grew without a distance fence: it peaked at {peak} from "
             + $"{config.StartingPopulation} founders.");
         Assert.True(reachable > 0, "Nobody could walk to any work at the village's largest.");

@@ -2358,6 +2358,14 @@ public sealed class SimWorld
     /// the honest need, so the panel can still say *"the village wants five"* while only two can
     /// sit down — which is the sentence that tells the player to build another hut.
     /// </para>
+    /// <para>
+    /// ⛔ <b>COUNTED IN <see cref="Workplace.Places"/>, NOT <c>Capacity</c>, and the first cut of
+    /// this method got it wrong.</b> `Places` is the override reconciled with what physically
+    /// fits, and its own doc names the reason: *an override cannot be honoured by half the code
+    /// and ignored by the other half — which is this project's most repeated bug.* Asking
+    /// `Capacity` here would have the quota book hands for seats **the player has already turned
+    /// off**, which is the same bug this method was written to end, one field over.
+    /// </para>
     /// </remarks>
     public int GatheringSeats()
     {
@@ -2368,7 +2376,7 @@ public sealed class SimWorld
             Workplace place = Workplaces[i];
             if (place.GatheringRadius > 0 && !place.IsSite)
             {
-                seats += place.Capacity;
+                seats += place.Places;
             }
         }
 

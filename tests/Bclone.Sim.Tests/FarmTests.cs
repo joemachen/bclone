@@ -228,7 +228,7 @@ public sealed class FarmTests
     [Fact]
     public void AFarmerWhoseBufferIsFullCarriesTheHarvestFurther()
     {
-        SimLoop loop = Loop(Config);
+        SimLoop loop = FarmFixtures.WithNothingInTheStores(Loop(Config));
         SimWorld world = loop.World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         FarmFixtures.GiveItGround(world, farm, reach: 2);
@@ -407,7 +407,7 @@ public sealed class FarmTests
     public void AFarmBringsInMostOfWhatItSows()
     {
         SimConfig config = Config;
-        SimLoop loop = Loop(config);
+        SimLoop loop = FarmFixtures.WithNothingInTheStores(Loop(config));
         SimWorld world = loop.World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
 
@@ -542,7 +542,7 @@ public sealed class FarmTests
     private static int BroughtInWithTheGranary(int walkAway, out int walk, out int tilesReaped)
     {
         SimConfig config = Config;
-        SimLoop loop = Loop(config);
+        SimLoop loop = FarmFixtures.WithNothingInTheStores(Loop(config));
         SimWorld world = loop.World;
 
         GridPos site = world.Map.FoundingSite;

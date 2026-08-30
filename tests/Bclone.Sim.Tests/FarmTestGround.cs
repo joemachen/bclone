@@ -99,7 +99,10 @@ internal static class FarmTestGround
     internal static int TilesReapedOverTenYears(
         SimConfig config, int walkAway, out int walk, out int broughtIn)
     {
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        // Nothing in the stores, so the farm is measured while the village needs what it grows
+        // — see `FarmFixtures.WithNothingInTheStores` for why that stopped being free (D262).
+        SimLoop loop = FarmFixtures.WithNothingInTheStores(
+            SimFactory.CreatePhase0(config, new InMemoryLogSink()));
         SimWorld world = loop.World;
 
         Workplace farm = SiteAFarm(world, walkAway, out walk);

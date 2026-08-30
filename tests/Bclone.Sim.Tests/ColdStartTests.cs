@@ -551,7 +551,10 @@ public sealed class ColdStartTests
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
-        PlayTheOpening(world);
+        // ⛔ TWO HUTS, BECAUSE ONE SEATS TWO AND THIS VILLAGE IS TWO COUPLES (D262). See
+        // `PlayTheOpeningWithTwoGatheringHuts` — with a single hut the nearer couple takes both
+        // seats and the measurement is 1.2% against 5.2%.
+        PlayTheOpeningWithTwoGatheringHuts(world);
 
         int[] founding = { 1, 2 };
         var adultTicks = new long[3];
@@ -765,6 +768,38 @@ public sealed class ColdStartTests
     internal static void PlayTheOpening(SimWorld world) => PlayTheOpening(world, paintASeam: true);
 
     /// <summary>
+    /// The opening, plus a <b>second gathering hut clear of the first</b> (D262).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ A HUT SEATS TWO AND THE FOUNDING IS TWO COUPLES, so one hut is one couple's
+    /// livelihood.</b> Measured on the shipped config over twenty years with the single-hut
+    /// opening: **household 1 worked 1.2% of its able-adult ticks and household 2 worked 5.2%**
+    /// — four times the share, which is Joe's own *"one couple stays home"* arriving through the
+    /// front door of a change meant to make placement matter.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The answer is the one the cap exists to force</b>: *"the player has to build more
+    /// if it wants more forest"* (Joe, 2026-08-29). Two huts, and both couples work.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>SEPARATE FROM <see cref="PlayTheOpening(SimWorld)"/> ON PURPOSE, AND THE
+    /// FIRST ATTEMPT FOLDED IT IN.</b> That opening is shared by dozens of guards, and a second
+    /// hut moves every one of them — measured: it turned this guard green and reddened four
+    /// others (both food-limit guards, the pinned trade, and the length of a rest) by shifting
+    /// which founder holds which job on which tick. ⚠️ **Whether the SHIPPED opening should now
+    /// be two huts is a design call, not a test convenience**, and it is Joe's to make.
+    /// </para>
+    /// </remarks>
+    internal static void PlayTheOpeningWithTwoGatheringHuts(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        PlayTheOpening(world, paintASeam: true);
+        MarkInTheBestWoodland(world, world.Map.FoundingSite, clearOfExistingRings: true);
+    }
+
+    /// <summary>
     /// The opening, with the option of NOT sending anybody to the rock.
     /// </summary>
     /// <remarks>
@@ -939,7 +974,35 @@ public sealed class ColdStartTests
     /// walk the food economy is derived against — the same rule the warm start's
     /// <c>WhereTheTreesAre</c> follows, expressed here through the public API a player has.
     /// </remarks>
-    internal static void MarkInTheBestWoodland(SimWorld world, GridPos site)
+    internal static void MarkInTheBestWoodland(SimWorld world, GridPos site) =>
+        MarkInTheBestWoodland(world, site, clearOfExistingRings: false);
+
+    /// <summary>
+    /// The wooded tile with the most trees around it — <b>optionally clear of every hut
+    /// already standing</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE SECOND HUT IS PART OF THE OPENING NOW (D262, Joe's two-seat cap), and this is
+    /// the arm that sites it.</b> A hut seats two. Four founders are two couples, and one hut
+    /// gives the pair who live nearer both seats — measured on the shipped config over twenty
+    /// years: **household 1 worked 1.2% of its adult ticks and household 2 worked 5.2%**, which
+    /// is Joe's own *"one couple stays home"* arriving through the front door.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>And the answer is the one the cap was built to force</b>: *"the player has to build
+    /// more if it wants more forest"* (Joe, 2026-08-29). A second hut is not a workaround here,
+    /// it is the opening the design now asks for — the same way the pile and the builder's hut
+    /// became part of it.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Clear of the first hut's ring, or it buys nothing.</b> Two huts on one copse share
+    /// its trees (D260) — stacked exactly, the pair is worth one hut — so a second hut sited by
+    /// tree count alone lands beside the first and feeds nobody extra.
+    /// </para>
+    /// </remarks>
+    internal static void MarkInTheBestWoodland(
+        SimWorld world, GridPos site, bool clearOfExistingRings)
     {
         int reach = VillageEconomy.MaxHomeToWorkTiles(world.Config);
         int ring = world.Config.GathererHutRingTiles;
@@ -954,6 +1017,11 @@ public sealed class ColdStartTests
                 var at = new GridPos(site.X + dx, site.Y + dy);
                 if (site.ManhattanDistanceTo(at) > reach
                     || !world.CanBuildAt(BuildingKind.GathererHut, at).Allowed)
+                {
+                    continue;
+                }
+
+                if (clearOfExistingRings && ReachesAGatheringHut(world, at, ring))
                 {
                     continue;
                 }
@@ -989,6 +1057,31 @@ public sealed class ColdStartTests
         {
             world.Mark(BuildingKind.GathererHut, chosen);
         }
+    }
+
+    /// <summary>
+    /// Would a hut here draw on wood some standing hut already draws on?
+    /// </summary>
+    /// <remarks>
+    /// Half a ring apart, not a whole one: <c>MaxHomeToWorkTiles</c> IS the gatherer ring, so
+    /// two rings that do not touch at all sit twice the budgeted commute apart. The founding
+    /// makes the same trade in <c>SimWorld.OverlapsAGatheringRing</c>.
+    /// </remarks>
+    private static bool ReachesAGatheringHut(SimWorld world, GridPos centre, int radius)
+    {
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace other = world.Workplaces[i];
+            bool gathers = other.GatheringRadius > 0
+                || other.Construction?.Kind == BuildingKind.GathererHut;
+
+            if (gathers && centre.ManhattanDistanceTo(other.Position) <= radius)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     internal static void MarkSomewhereNear(
