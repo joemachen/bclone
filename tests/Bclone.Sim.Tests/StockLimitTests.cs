@@ -316,7 +316,8 @@ public sealed class StockLimitTests
     //   before the founding master had to earn it here (D227): 4920274858378762864
     //   before the village was allowed to rest (D250): 12773056701491009975
     //   before the founders were mourned (D252): 12629455119177359054
-    private const ulong FixtureFiftyYearHash = 5042347838377458292UL;
+    //   before the huts were capped at two (D262): 5042347838377458292
+    private const ulong FixtureFiftyYearHash = 8070719233468439432UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -360,7 +361,8 @@ public sealed class StockLimitTests
     //   before the village knew things (D225): 7401438735914669492
     //   before the founding master had to earn it here (D227): 2484458184593448340
     //   before the village was allowed to rest (D250): 6906044992716880690
-    private const ulong ShippedFiftyYearHash = 2864896199077825277UL;
+    //   before the huts were capped at two (D262): 2864896199077825277
+    private const ulong ShippedFiftyYearHash = 778583940525783184UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

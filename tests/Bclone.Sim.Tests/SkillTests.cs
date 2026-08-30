@@ -253,8 +253,10 @@ public sealed class SkillTests
     //   before the village knew things (D225): false 18186071774726496737, true 11403972867442886560
     //   before the village was allowed to rest (D250): false 6192378668729777699, true 9064700070209210640
     //   before the founders were mourned (D252): false 17678494988155338593 (true UNMOVED)
-    [InlineData(false, 16683756764195047443UL)]
-    [InlineData(true, 6976255911900204686UL)]
+    //   before the huts were capped at two (D262): false 16683756764195047443,
+    //                                              true  6976255911900204686
+    [InlineData(false, 14899915986336060167UL)]
+    [InlineData(true, 9768080546410864531UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
