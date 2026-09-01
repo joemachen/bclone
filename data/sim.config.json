@@ -633,6 +633,14 @@
   "builder_hut_x": -1,
   "builder_hut_y": -1,
 
+  // How many hands one builder's hut holds. Joe, 2026-08-30: "One builder's hut should
+  // have 3 employees only. If the user wants more builders, they can build a new builder's
+  // hut." This was DERIVED until then (every hand a 20-household village could spare once
+  // it had fed and heated itself, which came to 21) and is now stated, like every other
+  // workplace except the forester's hut. NOTE: a builder's hut is free and instant, so
+  // "build another" is a click rather than a decision -- see BuilderHutSeats.
+  "builder_hut_seats": 3,
+
   // ---- Firewood (decision D29) -------------------------------
   // The first workplace that CONSUMES an input rather than only
   // producing one. It can stand idle for want of logs, which is a state

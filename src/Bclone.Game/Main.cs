@@ -501,7 +501,7 @@ public partial class Main : Control
         // ⭐ THIS DELIBERATELY ASKS ABOUT `_momentPanel` ONLY, NOT THE PASSING BANNER (2026-08-27).
         // A moment that does not stop the village must not take the keyboard either — the whole
         // point of it is that play continues, and a banner that swallowed the speed keys for
-        // fourteen seconds would be the interruption `Moment.Stops` exists to avoid.
+        // fourteen seconds would be the interruption `Moment.WaitsToBeDismissed` exists to avoid.
         if (_momentPanel is { Visible: true })
         {
             if (key.Keycode is Key.Space or Key.Escape or Key.Enter)
@@ -653,15 +653,34 @@ public partial class Main : Control
     private PanelContainer? _momentPanel;
     private Label _momentTitle = null!;
     private Label _momentBody = null!;
-    private double _speedBeforeTheMoment = 1.0;
-
-    /// <summary>Whether the game should stay paused after the next moment is dismissed.</summary>
+    /// <summary>The speed the player had set before an alert slowed the village down.</summary>
     /// <remarks>
-    /// Set by <c>SkipYears</c> when a skip stopped early on a moment. <b>The player skipped TO
-    /// that moment; handing them a running village the instant they read it is the same
-    /// complaint the skip exists to answer.</b>
+    /// <para>
+    /// <b>⭐⭐ AN ALERT SLOWS THE VILLAGE TO 1×; IT DOES NOT STOP IT</b> (Joe, 2026-08-30):
+    /// *"they should both slow the game down to 1x. If it was already at 1x no change. Presently
+    /// gifts pause the game; slow it down to 1x only … after acknowledging the alert, the game
+    /// goes back to whatever speed the user was at before the alert."*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>WHAT THAT REPLACES, AND WHY THE OLD ARGUMENT NO LONGER HOLDS.</b> The gift modal used
+    /// to pause outright, on the reasoning that *"at 4× or 10× an unpaused panel slides past
+    /// unread"*. **A panel does not slide past at 1×** — that was an argument against 10×, and it
+    /// is answered by slowing down rather than by stopping. ⭐ Slowing keeps §1.2's promise
+    /// (interruptions remove time pressure, never add it) **without taking the village away from
+    /// the player mid-look**, which is what a hard pause does to a discovery worth watching.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>ONE HOLD SHARED BY BOTH KINDS OF ALERT, AND THAT IS NOT TIDINESS.</b> A passing
+    /// banner can still be up when a gift modal arrives. Two independent remember-and-restore
+    /// pairs would have the second one record **1×** as *"the speed the player was at"* and hand
+    /// that back — quietly stealing the 10× they actually chose. The first alert to slow the
+    /// village takes the hold; the last one to leave gives it back.
+    /// </para>
     /// </remarks>
-    private bool _stayPausedAfterTheMoment;
+    private double _speedBeforeTheAlert = 1.0;
+
+    /// <summary>True while an alert is holding the village at 1×.</summary>
+    private bool _slowedForAnAlert;
 
     /// <summary>The passing moment — celebrated, but the village keeps working.</summary>
     private PanelContainer? _passingPanel;
@@ -701,10 +720,12 @@ public partial class Main : Control
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⭐⭐ IT PAUSES, AND THAT IS THE POINT RATHER THAN A CONVENIENCE</b> (Joe, 2026-08-26).
-    /// At 4× or 10× an unpaused panel slides past unread, and a gift you half-noticed is not a
-    /// gift. <b>Pausing also REMOVES time pressure rather than adding it</b>, which is the test
-    /// §1.2 sets for anything that interrupts.
+    /// <b>⭐⭐ IT SLOWS THE VILLAGE TO 1× RATHER THAN PAUSING IT</b> (Joe, 2026-08-30 — see
+    /// <c>_speedBeforeTheAlert</c>). The 2026-08-26 original paused outright, on the reasoning
+    /// that *"at 4× or 10× an unpaused panel slides past unread"*. **That is an argument against
+    /// 10×, and slowing down answers it** — a panel does not slide past at 1× — while leaving the
+    /// player the village they were watching. §1.2's test is still met: the interruption removes
+    /// time pressure, it does not add any.
     /// </para>
     /// <para>
     /// <b>⭐ It restores the speed the player was at, not 1×.</b> Resuming slower than they left is
@@ -728,7 +749,7 @@ public partial class Main : Control
         for (int i = world.Moments.Count - 1; i >= 0; i--)
         {
             Moment passing = world.Moments[i];
-            if (passing.Stops)
+            if (passing.WaitsToBeDismissed)
             {
                 continue;
             }
@@ -744,11 +765,21 @@ public partial class Main : Control
             _passingBody.Text = passing.Body;
             _passingPanel!.Visible = true;
             _passingUntilMsec = Time.GetTicksMsec() + PassingMomentMsec;
+
+            // ⭐ A DISCOVERY SLOWS THE VILLAGE TOO, WHICH IT NEVER USED TO (Joe, 2026-08-30):
+            // *"technique alerts dont affect game speed; change that to slow down to 1x."* At 10×
+            // the fourteen seconds this banner is up are two and a half village years, and the
+            // news it carries — somebody worked something out — is exactly the kind of thing
+            // §1.2 says the player should get to look at.
+            SlowDownForAnAlert();
         }
 
         if (_passingPanel is { Visible: true } && Time.GetTicksMsec() >= _passingUntilMsec)
         {
             _passingPanel.Visible = false;
+
+            // The banner fading IS the acknowledgement — there is no button on it.
+            LetTheVillageBackUpToSpeed();
         }
 
         if (_momentPanel is { Visible: true })
@@ -758,7 +789,7 @@ public partial class Main : Control
 
         for (int i = 0; i < world.Moments.Count; i++)
         {
-            if (!world.Moments[i].Stops)
+            if (!world.Moments[i].WaitsToBeDismissed)
             {
                 continue;
             }
@@ -770,17 +801,15 @@ public partial class Main : Control
             _momentTitle.Text = moment.Title;
             _momentBody.Text = moment.Body;
 
-            // ⚠️ THE `IsPaused ? 1.0` ARM STOPPED BEING DEFENSIVE THE DAY `SkipYears` ARRIVED.
-            // A moment could not previously fire while paused — the sim was not stepping — so the
-            // branch was there for a case that could not happen. **A skip steps the loop directly
-            // and then pauses**, so it can, and resuming to 1.0 would start the village running
-            // the instant the player dismissed the very moment they had skipped to. *A defensive
-            // branch is a claim about what cannot happen, and a new control can make it happen.*
-            _speedBeforeTheMoment = _stayPausedAfterTheMoment
-                ? 0.0
-                : _driver.IsPaused ? 1.0 : _driver.SpeedMultiplier;
-            _stayPausedAfterTheMoment = false;
-            SetSpeed(0.0);
+            // ⭐⭐ SLOWED TO 1×, NOT PAUSED (Joe, 2026-08-30). See `_speedBeforeTheAlert`.
+            //
+            // ⛔ THE THREE CASES THAT USED TO NEED THEIR OWN BRANCHES ARE NOW ONE SENTENCE, and
+            // that is the point of putting the rule in `SlowDownForAnAlert`: it only ever slows
+            // down. **A paused village stays paused** — which is what `SkipYears` needs and what
+            // the old `_stayPausedAfterTheMoment` flag existed to arrange — a village at 1× is
+            // untouched, and only a village running faster than the player can read gives
+            // anything up, and gets it straight back when the panel closes.
+            SlowDownForAnAlert();
 
             _momentPanel!.Visible = true;
             return;
@@ -875,7 +904,53 @@ public partial class Main : Control
         }
 
         _momentPanel.Visible = false;
-        SetSpeed(_speedBeforeTheMoment);
+        LetTheVillageBackUpToSpeed();
+    }
+
+    /// <summary>Bring the village down to 1× for an alert, remembering where it was.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ IT ONLY EVER SLOWS DOWN.</b> A player at 1× sees no change, which is Joe's own
+    /// condition; a player who is <b>paused</b> stays paused, and that is what keeps `Skip 1y` /
+    /// `Skip 10y` honest — a skip stops early on a moment and pauses, and starting the village
+    /// running the instant they read the thing they skipped to is the complaint the skip exists
+    /// to answer.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The first alert to take the hold keeps it.</b> A second one arriving while the
+    /// village is already held must not overwrite the remembered speed with the 1× the first one
+    /// imposed.
+    /// </para>
+    /// </remarks>
+    private void SlowDownForAnAlert()
+    {
+        if (_slowedForAnAlert || _driver.IsPaused || _driver.SpeedMultiplier <= 1.0)
+        {
+            return;
+        }
+
+        _speedBeforeTheAlert = _driver.SpeedMultiplier;
+        _slowedForAnAlert = true;
+        SetSpeed(1.0);
+    }
+
+    /// <summary>Give the player their speed back, once no alert is still holding it.</summary>
+    /// <remarks>
+    /// <b>⚠️ BOTH PANELS ARE ASKED, NOT JUST THE ONE BEING CLOSED.</b> Dismissing a gift while a
+    /// discovery banner is still on screen would otherwise jump straight back to 10× and leave
+    /// the banner to slide past unread — the exact failure the slowdown exists to prevent.
+    /// </remarks>
+    private void LetTheVillageBackUpToSpeed()
+    {
+        if (!_slowedForAnAlert
+            || _momentPanel is { Visible: true }
+            || _passingPanel is { Visible: true })
+        {
+            return;
+        }
+
+        _slowedForAnAlert = false;
+        SetSpeed(_speedBeforeTheAlert);
     }
 
     private void SetSpeed(double multiplier)
@@ -1026,9 +1101,26 @@ public partial class Main : Control
 
             // Trimmed for a narrow column (D149) — "you asked for" became "asked", because the
             // − N + control is on the line directly above and says whose number it is.
-            places.Text = asked is int wanted && wanted != working
+            string row = asked is int wanted && wanted != working
                 ? $"{count} · asked {wanted} · village wants {quota.For(kind)}"
                 : $"{count} · village wants {quota.For(kind)}";
+
+            // ⭐⭐ AND WHY IT WANTS NONE, WHEN THE PLAYER HAS ASKED FOR SOME (Joe, 2026-08-30).
+            // **That is the one combination that reads as a contradiction** — *"asked 1 · village
+            // wants 0"* — and it is the row he was looking at. Every other row is short because
+            // there is nothing to reconcile: a village that wants none and was asked for none is
+            // simply agreeing with itself.
+            //
+            // ⚠️ Same method as the inspector, so the two panels cannot drift apart, which was
+            // the actual complaint. The label wraps (D113), so the extra clause costs a line
+            // rather than running off the edge of the column.
+            if (quota.For(kind) == 0 && asked is int some && some > 0
+                && LabourQuota.WhyTheVillageWantsNone(world, kind) is string reason)
+            {
+                row += $" — {reason}";
+            }
+
+            places.Text = row;
         }
 
         // And what the 1 is one OF, which is the whole of Joe's question.
@@ -1715,19 +1807,58 @@ public partial class Main : Control
 
         lines.Add($"{workplace.Name} — a workplace ({Describe(workplace.Kind)})");
 
-        lines.Add(workplace.WorkerIds.Count == 0
-            ? $"Nobody works here. Room for {workplace.Places}."
-            : $"Worked by {WorkerNames(world, workplace)} — {workplace.WorkerIds.Count} of " +
-              $"{workplace.Places} places filled");
+        // ⭐⭐ WHO IS HERE, AND — WHEN NOBODY IS, OR WHEN THEY HAVE NOTHING TO DO — WHY
+        // (Joe, 2026-08-30). *"I dont like that because the village 'wants' 0 of a type of work,
+        // the workplace shows as unstaffed, even though it is staffed and the worker is just
+        // idle … show 'X works here, but there is no need for this work at this time because of
+        // X, Y, Z'. They are inconsistent now and i want them to be aligned."*
+        //
+        // ⛔ HE WAS READING TWO TRUE SENTENCES THAT DID NOT ADD UP: this panel said *"Nobody
+        // works here. Room for 2."* while the professions column said *"nobody working of 2 seats
+        // · asked 1 · village wants 0."* **Neither said why**, so the only way to reconcile them
+        // was to already know how the quota works.
+        //
+        // ⭐ The reason comes from `LabourQuota.WhyTheVillageWantsNone` — the same method the
+        // professions row now reads, asked of the same state the decision was made from. *Two
+        // panels explaining one decision in two places is how they come to disagree (D139, D195).*
+        int wanted = LabourQuota.For(world).For(workplace.Kind);
+        string plural = world.JobsCatalog.PluralOf(workplace.Kind);
+        string? why = wanted == 0 ? LabourQuota.WhyTheVillageWantsNone(world, workplace.Kind) : null;
+
+        string noNeed = wanted > 0
+            ? string.Empty
+            : why is null
+                ? $"the village needs no {plural} at the moment"
+                : $"the village needs no {plural} at the moment, because {why}";
+
+        if (workplace.WorkerIds.Count == 0)
+        {
+            lines.Add(noNeed.Length == 0
+                ? $"Nobody works here yet — the village wants {wanted} on this work and has "
+                  + $"nobody to spare. Room for {workplace.Places}."
+                : $"Nobody works here — {noNeed}. Room for {workplace.Places}.");
+        }
+        else
+        {
+            string filled = $"Worked by {WorkerNames(world, workplace)} — "
+                + $"{workplace.WorkerIds.Count} of {workplace.Places} places filled";
+
+            // ⭐ JOE'S SENTENCE, VERBATIM IN SHAPE: *"X works here, but there is no need for this
+            // work at this time because of X, Y, Z."* A staffed building whose trade the village
+            // has no call for is the case that read as a contradiction across two panels.
+            lines.Add(noNeed.Length == 0 ? filled : $"{filled}, though {noNeed}.");
+        }
 
         // Who decided that number (D51). Said in words rather than shown as a widget
         // state, because "the village decides" and "you said two" are different facts
         // about the same building and the player should be able to tell which they are
         // looking at.
+        //
+        // ⚠️ The "it wants N" half moved into the line above, where it now travels with its
+        // reason. Repeating it here read as a second, quieter opinion about the same number.
         lines.Add(workplace.StaffingOverride is int set
             ? $"Staffing: you have asked for {set}. Room for {workplace.Capacity}."
-            : $"Staffing: left to the village — it wants {LabourQuota.For(world).For(workplace.Kind)} " +
-              $"on this kind of work. Room for {workplace.Capacity}.");
+            : $"Staffing: left to the village. Room for {workplace.Capacity}.");
 
         // ⭐ WHAT THE GROUND IS WORTH, AND THIS IS NOT POLISH (`forests-and-gathering.md`
         // §7.1). A gatherer's hut whose ring has been felled brings back less and less, and a
@@ -3611,7 +3742,16 @@ public partial class Main : Control
             ? bar.Size.Y
             : ControlsReserve;
 
-        float room = Size.Y - Edge - (Edge + reserve);
+        // ⛔ THE WIDTH IS THE LAYOUT WIDTH AND IS NOT CONVERTED, WHICH IS THE WHOLE POINT.
+        // The column is laid out to `ColumnWidthFor` exactly as before and then DRAWN at
+        // `PanelScale`, so it takes a fifth less of the window than it used to — which is what
+        // Joe asked for. *Dividing it here was the first cut of this change and it gave the
+        // panels the same screen width with more text in it, which is the opposite.*
+        //
+        // ⚠️ The HEIGHT cap is converted, because it is a limit rather than a size: `room` is
+        // real estate on screen, and a column drawn at four fifths can hold `1 / PanelScale`
+        // more rows inside the same strip before it has to start scrolling.
+        float room = (Size.Y - Edge - (Edge + reserve)) / PanelScale;
         float wide = ColumnWidthFor(Size.X);
 
         foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
@@ -3623,10 +3763,18 @@ public partial class Main : Control
             // `ColumnWidthFor`: a fixed 400 a side is a fifth of a big screen and four fifths
             // of a small one, and Joe was playing on a small one.
             bool right = scroll.AnchorLeft > 0.5f;
+            // Offsets stay in plain edge units: the pivot below is the column's own outer edge,
+            // so scaling holds that edge still and the gap to the window is `Edge` either way.
             scroll.OffsetLeft = right ? -(Edge + wide) : Edge;
             scroll.OffsetRight = right ? -Edge : Edge + wide;
 
             scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(wanted, Mathf.Max(0f, room)));
+
+            // ⭐ SCALED LAST, ABOUT THE EDGE IT IS ANCHORED TO (Joe, 2026-08-30 — see
+            // `PanelScale`). Set every frame beside the offsets rather than once at build time:
+            // the pivot depends on the column's width, and that changes with the window.
+            scroll.PivotOffset = new Vector2(right ? scroll.Size.X : 0f, 0f);
+            scroll.Scale = new Vector2(PanelScale, PanelScale);
 
             // ⚠️ AND IT ONLY TAKES THE MOUSE WHEN IT HAS SOMETHING TO DO WITH IT. A
             // ScrollContainer stops clicks, and this one covers the whole column — so the
@@ -3680,6 +3828,33 @@ public partial class Main : Control
 
     /// <summary>Where the share stops paying for itself. The old fixed width, kept as the cap.</summary>
     private const float MaxColumnWidth = 400f;
+
+    /// <summary>
+    /// How much of its natural size a side column is drawn at — <b>four fifths</b> (Joe, 2026-08-30).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ *"Make all of the UI info panels 20% smaller (height and width), to give more UI space
+    /// back to the user."*</b> Applied as one scale on the two columns rather than as twenty edits
+    /// to font sizes and paddings — which is what "20% smaller" actually means, keeps every panel
+    /// in proportion with every other, and is one number to change if he wants it back.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>THE LAYOUT IS DONE IN UNSCALED UNITS AND THEN SCALED, WHICH IS WHY <see
+    /// cref="FitColumns"/> DIVIDES.</b> A column is laid out to a logical width and height and
+    /// drawn at 0.8 of it, so the space it is allowed to occupy on screen has to be converted
+    /// back into logical units before it is handed to the container — otherwise the panels would
+    /// shrink AND stop using the room they were given, which is a fifth of the screen wasted
+    /// rather than returned.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The pivot is the column's own outer edge</b>, so a scaled panel hugs the side of the
+    /// window it is anchored to. Scaling about the default top-left would leave the right-hand
+    /// column floating twenty per cent of a column away from the edge — a gap that reads as a
+    /// layout bug rather than as more room.
+    /// </para>
+    /// </remarks>
+    private const float PanelScale = 0.8f;
 
     /// <summary>A panel stacked into one of the side columns.</summary>
     /// <remarks>
@@ -5054,7 +5229,6 @@ public partial class Main : Control
         // ⚠️ The accumulator holds real time that has not become ticks yet. Left alone, the first
         // frame after a skip would run whatever was owed before it — a lurch on top of a jump.
         _driver.ResetAccumulator();
-        _stayPausedAfterTheMoment = onAMoment;
         SetSpeed(0.0);
 
         GD.Print($"[skip] ran {ran} ticks ({ran / (float)_loop.World.Config.TicksPerYear:F1} years) "

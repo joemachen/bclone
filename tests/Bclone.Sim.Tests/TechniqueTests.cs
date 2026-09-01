@@ -844,7 +844,9 @@ public sealed class TechniqueTests
 
         _output.WriteLine($"\"{moment.Title}\" — {moment.Body}");
 
-        Assert.False(moment.Stops, "A discovery must not stop the village; only a gift does.");
+        Assert.False(
+            moment.WaitsToBeDismissed,
+            "A discovery must not wait to be dismissed; only a gift does.");
         Assert.Contains(master.Name, moment.Title, System.StringComparison.Ordinal);
 
         // ⭐ AND IT SAYS WHERE THE TECHNIQUE NOW LIVES, which was the whole of Joe's request —

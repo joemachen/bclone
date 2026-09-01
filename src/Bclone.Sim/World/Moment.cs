@@ -39,19 +39,26 @@ public sealed record Moment
     /// just a line in the village log."</i>
     /// </para>
     /// <para>
-    /// <b>A gift STOPS</b> (D232's original, and its reasoning is untouched: <i>"at 4× or 10× an
-    /// unpaused panel slides past unread"</i>, and a free library is something the player must
-    /// act on by placing it). <b>A discovery PASSES</b> — it is news, not a decision, and a
-    /// technique arrives every few decades in the ordinary run of a village. Stopping the world
-    /// for each one would turn the rarity that justifies the modal into the frequency that
-    /// discredits it.
+    /// <b>A gift WAITS</b> — a free library is something the player must act on by placing it, so
+    /// its panel stays up until they say "Go on". <b>A discovery PASSES</b> — it is news, not a
+    /// decision, and its banner fades on its own after fourteen seconds. A technique arrives every
+    /// few decades in the ordinary run of a village; holding the world for each one would turn the
+    /// rarity that justifies the modal into the frequency that discredits it.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>RENAMED FROM <c>Stops</c> ON 2026-08-30, BECAUSE IT STOPPED STOPPING ANYTHING.</b>
+    /// Joe: *"presently gifts pause the game; slow it down to 1x only."* **Neither kind of moment
+    /// pauses the village now** — both slow it to 1× and hand the player's speed back afterwards
+    /// (`Main._speedBeforeTheAlert`) — so the one thing this flag still decides is **whether the
+    /// panel waits for a person or fades by itself**. ⭐ *A field named for a behaviour it no
+    /// longer has is how a settled decision comes undone (D240, half a rename).*
     /// </para>
     /// <para>
     /// ⚠️ <b>The distinction is "is there anything to do about it?"</b> and not "is it
     /// important?". Losing a technique is important and is a log line, because there is nothing
-    /// to be done at the moment it happens. <b>Keep the bar for stopping at what the player must
+    /// to be done at the moment it happens. <b>Keep the bar for waiting at what the player must
     /// answer</b>, or this flag becomes a way to make everything urgent.
     /// </para>
     /// </remarks>
-    public bool Stops { get; init; } = true;
+    public bool WaitsToBeDismissed { get; init; } = true;
 }

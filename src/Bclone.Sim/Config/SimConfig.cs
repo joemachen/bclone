@@ -651,10 +651,10 @@ public sealed record SimConfig
 
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     /// <remarks>
-    /// <b>A position is content; the hut's SEATS are not.</b> Where a building sits is a fact
-    /// about the valley that a modder may move freely, and how many hands fit in it is a
-    /// consequence of the economy — so this is typed and
-    /// <c>VillageEconomy.BuilderHutCapacity</c> is derived (D16, D50).
+    /// <b>A position is content, and so are the hut's seats since 2026-08-30.</b> Where a building
+    /// sits is a fact about the valley a modder may move freely; how many hands fit in it was a
+    /// consequence of the economy until Joe stated it at three (see <see cref="BuilderHutSeats"/>,
+    /// which carries what the derivation was and why it went).
     /// <para>
     /// Only a warm start reads it. In the game as it ships the founders arrive to an empty
     /// valley and the hut is the player's first act (D70).
@@ -666,6 +666,43 @@ public sealed record SimConfig
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     [JsonPropertyName("builder_hut_y")]
     public int BuilderHutY { get; init; } = -1;
+
+    /// <summary>
+    /// Hands a builder's hut holds — <b>three, stated</b> (Joe, 2026-08-30).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ JOE'S CALL, AND IT OVERTURNS THE DERIVATION D108 GAVE THIS BUILDING:</b> *"One
+    /// builder's hut should have 3 employees only. If the user wants more builders, they can build
+    /// a new builder's hut."* — asked after seeing the professions panel read *"Builder — nobody
+    /// working of 21 seats"* in a village of ten adults.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>WHAT 21 WAS, BECAUSE IT WAS NOT A BUG.</b> <c>VillageEconomy.BuilderHutCapacity</c>
+    /// derived *every hand a 20-household village could spare once it had fed and heated itself*
+    /// — 40 hands, less 15 feeding 100 mouths, less 4 on fuel. The hut was **the pool of hands on
+    /// building** rather than a room with chairs in it, and it was derived rather than typed for
+    /// the reason D16 and D50 record: <c>woodcutter_hut_capacity</c> was a hand-picked three from
+    /// when a village was a dozen people, the yields moved when the horizon did and the capacities
+    /// did not, and **thirty-six people froze.**
+    /// </para>
+    /// <para>
+    /// ⭐ <b>What changed is the sentence around it.</b> Since the gathering hut was capped at two
+    /// (D262), every other workplace in the game seats two, and *"one builder's hut serves the
+    /// whole game"* had become the exact thing that cap was built to stop being true of the
+    /// forager. **A seat count that only one building is exempt from is a rule with a hole in it.**
+    /// </para>
+    /// <para>
+    /// ⚠⚠ <b>AND THE HOLE IS NOT CLOSED BY THIS NUMBER ALONE — THE BUILDER'S HUT IS FREE AND
+    /// INSTANT.</b> It costs nothing but the ground and goes up the tick it is marked (D108: the
+    /// building every other building waits on cannot charge timber without making a circle). **So
+    /// "build another hut" is a click, not a decision**, and three seats is a pacing rule rather
+    /// than a constraint — exactly the gap D260's competing rings had to close before the forager's
+    /// two seats meant anything. *Recorded, not fixed: what a builder's hut should cost is Joe's.*
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("builder_hut_seats")]
+    public int BuilderHutSeats { get; init; } = 3;
 
     // ⚠️ THERE IS DELIBERATELY NO `gatherer_hut_x` / `gatherer_hut_y`, and I added the pair
     // before measuring what they did. Every other founding building sits at a configured
@@ -1792,7 +1829,9 @@ public sealed record SimConfig
 
             // ⭐ FREE AND INSTANT, LIKE THE STOCKPILE (D108). It is the one building that must exist
             // before any other can be raised, so charging timber for it would be the same circle.
-            Seats = null,
+            //
+            // ⛔ SEATS ARE STATED NOW, NOT DERIVED (Joe, 2026-08-30) — see `BuilderHutSeats`.
+            Seats = BuilderHutSeats < 1 ? 1 : BuilderHutSeats,
         },
         new BuildingRow
         {
@@ -2739,6 +2778,14 @@ public sealed record SimConfig
                 $"farm_store_cap must be greater than zero (got {FarmStoreCap}).");
         }
 
+        if (BuilderHutSeats <= 0)
+        {
+            throw new SimConfigException(
+                $"builder_hut_seats must be greater than zero (got {BuilderHutSeats}) — a hut with "
+                + "no seat can never build anything, and nothing in the village is raised without "
+                + "one (D108).");
+        }
+
         if (FarmhouseSeats <= 0)
         {
             throw new SimConfigException(
@@ -3234,11 +3281,11 @@ public sealed record SimConfig
                     + "other store must state how much it holds.");
             }
 
-            // ⚠️ The forager's hut left this list in D262: it states its seats now, like the
-            // woodcutter, the market and the farmhouse. Only the forester's hut (what the
-            // woodcutters can eat) and the builder's hut (the economy horizon) are still solved.
-            bool economyDerivesTheSeats =
-                kind is BuildingKind.ForesterHut or BuildingKind.BuilderHut;
+            // ⚠️ Two buildings have left this list in as many days. The forager's hut states its
+            // seats since D262 and the builder's hut since 2026-08-30, so **only the forester's
+            // hut still solves for them** — what the woodcutters can eat, plus a hand for
+            // building. Every other workplace says how many work there.
+            bool economyDerivesTheSeats = kind is BuildingKind.ForesterHut;
             bool anybodyWorksThere = false;
             for (int j = 0; j < JobsCatalog.Count; j++)
             {
@@ -3249,8 +3296,8 @@ public sealed record SimConfig
             {
                 throw new SimConfigException(
                     $"buildings[{i}] (id {row.Id}, {row.Name}) is a workplace with no seats. Only "
-                    + "the forager's hut, the forester's hut and the builder's hut have them "
-                    + "derived; every other workplace must state how many work there.");
+                    + "the forester's hut has them derived; every other workplace must state how "
+                    + "many work there.");
             }
 
             // ⭐ SHELVES ARE A FOURTH REASON TO EXIST, AND THIS CHECK IS WHY THEY HAD TO BE.

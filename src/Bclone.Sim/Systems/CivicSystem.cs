@@ -112,7 +112,7 @@ public sealed class CivicSystem : ISimSystem
             "The last of the founders is gone",
             TributeTo(world),
 
-            // ⭐ IT STOPS, LIKE THE LIBRARY'S GIFT AND UNLIKE A DISCOVERY (`Moment.Stops`). The
+            // ⭐ IT WAITS, LIKE THE LIBRARY'S GIFT AND UNLIKE A DISCOVERY (`Moment.WaitsToBeDismissed`). The
             // test is *"is there anything to do about it?"* and there is: somewhere to put a
             // building. At 4× an unpaused panel slides past unread (D232).
             stops: true,

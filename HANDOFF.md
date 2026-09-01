@@ -1,8 +1,28 @@
-# Handoff — bclone: **✅ TWO SEATS PER GATHERING HUT IS DONE AND GREEN. THREE CALLS ARE WAITING ON JOE.**
+# Handoff — bclone: **✅ TWO SEATS, THREE BUILDERS, AND FOUR PANEL CHANGES NOBODY HAS LOOKED AT YET.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
-> **894 passing, 0 failing, 1 skipped of 895** — on `slice/two-seats-per-hut`.
-> ⚠️ **`main` is at 881 and does NOT have the cap.**
+> **897 passing, 0 failing, 1 skipped of 898** — on `slice/two-seats-per-hut`.
+> ⚠️ **`main` is at 881 and does NOT have any of this.**
+>
+> **✅ FIVE MORE THINGS FROM JOE'S PLAY ON 2026-08-30 (D266–D269), ALL BUILT AND GREEN:**
+> - **A workplace says WHY nobody is needed** — *"nobody works here — the village needs no
+>   foresters at the moment, because the logs limit of 200 is met"* — in the **same words** the
+>   professions column uses, from one method (`LabourQuota.WhyTheVillageWantsNone`) that reads the
+>   state the quota reads. He was looking at two true sentences that did not add up.
+>   ⛔ **And `IdleNote` stopped flagging every empty building**: it fired for *every* unstaffed
+>   workplace, so a hut standing quiet because the player's own limit was met got the same marker
+>   as one the village was crying out for — D147's own rule broken by D147's own method.
+> - **The builder's hut holds three** (`builder_hut_seats`), stated where it was derived. Four
+>   goldens moved for it, in one commit. See the open call below — the hut is still free.
+> - **Alerts slow the village to 1× rather than pausing it**, and hand back the speed the player
+>   chose. One hold shared by both kinds, so a gift arriving under a discovery banner cannot
+>   record 1× as *"the speed they were at"*. `Moment.Stops` → **`WaitsToBeDismissed`**.
+> - **The side panels are drawn at four fifths** (`Main.PanelScale`). ⚠️ The first cut divided the
+>   column WIDTH by the scale too and gave the same screen width with more text in it — the
+>   opposite of the ask. Measured with the headless probe: lays out at 346, drawn at 277.
+> - ⚠️ **NOBODY HAS LOOKED AT ANY OF THE FOUR ON SCREEN.** They compile, the suite is green and
+>   the game starts clean headless — which is what the view has always had (D160), and seven
+>   features have shipped here broken because that was mistaken for verification.
 >
 > **✅✅ ALL OF IT IS MERGED TO `main` AND PUSHED (2026-08-29, Joe: *"Both: Merge to main, push the
 > branch"*).** A clean fast-forward, so **`main`, `origin/main`, `slice/the-founders-hall` and
@@ -76,11 +96,13 @@
 >    (`PlayTheOpeningWithTwoGatheringHuts`); folding it into the shared opening **turned that guard
 >    green and reddened four others** — measured. **Whether the shipped opening is now two huts is
 >    a design decision.**
-> 2. **THE BUILDER'S HUT READS 21 SEATS** and is the only building left that does not read 2 (D265).
->    The arithmetic is right — `BuilderHutCapacity` is every hand a 20-household village can spare
->    (D108, D16) — but **one builder's hut now serves the whole game**, which is the thing the cap
->    was built to stop being true of the forager.
-> 3. **`gathers_per_thinned_tile` still ships at 0** (D257). Flip it to 3 to feel the copse thin.
+> 2. **`gathers_per_thinned_tile` still ships at 0** (D257). Flip it to 3 to feel the copse thin.
+> 3. ⛔ **WHAT A BUILDER'S HUT SHOULD COST.** He capped it at **three** seats the morning after
+>    D265 raised it (D267) — but **the hut is free and instant** (D108: the building every other
+>    building waits on cannot charge timber without making a circle), so *"build another hut"* is a
+>    click rather than a decision and three seats is a pacing rule rather than a constraint.
+>    ⭐ *This is exactly the gap D260's competing rings had to close before the forager's two seats
+>    meant anything.* Recorded, not fixed.
 >
 > **⚠️ WHAT THE RECONCILIATION TAUGHT, FOR WHOEVER DOES THE NEXT ONE:**
 > - **Half the red was fixtures owning premises they used to get free.** A warm start never spent

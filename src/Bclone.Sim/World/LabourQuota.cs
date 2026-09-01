@@ -675,6 +675,83 @@ public readonly record struct LabourQuota
             && world.StockLimits.IsMet(limited, world.InStores(limited)),
     };
 
+    /// <summary>
+    /// Why the village is asking for nobody on this work — <b>a clause, not a sentence</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ JOE, 2026-08-30, FROM PLAY:</b> *"i dont like that because the village 'wants' 0 of
+    /// a type of work, the workplace shows as unstaffed … can we update the inspector panel to
+    /// show 'X works here, but there is no need for this work at this time because of X, Y, Z'?
+    /// they are inconsistent now and i want them to be aligned."* He was looking at a forester's
+    /// hut reading **"nobody working of 2 seats · asked 1 · village wants 0"** in one panel and
+    /// **"Nobody works here. Room for 2."** in the other — two true sentences, neither of which
+    /// says the thing he needed, which is *why*.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>IT LIVES HERE BECAUSE THE DECISION DOES.</b> Every clause below is read off the same
+    /// state the arithmetic above reads, in the same order, and <see cref="StoppedByAStockLimit"/>
+    /// is called rather than re-stated. **A second opinion about why the village decided something
+    /// is a second opinion that will one day disagree with it** — which is exactly D139 and D195,
+    /// and is why the at-risk line and the village log share one method too.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>IT RETURNS NULL RATHER THAN GUESSING.</b> A village wants nobody on a trade for
+    /// plenty of ordinary reasons that have no remedy and no name — there is simply other work.
+    /// Naming a cause that is not the cause is worse than naming none, and the caller has a plain
+    /// fallback. *This method's job is to be right, not to always answer.*
+    /// </para>
+    /// </remarks>
+    public static string? WhyTheVillageWantsNone(SimWorld world, JobKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        // 1. The player's own stop outranks everything, and it is not a complaint (D136).
+        if (world.JobLimits.For(kind) == 0)
+        {
+            return "you have asked the village for none on this work";
+        }
+
+        // 2. Nothing can be picked in winter (D44), so the village does not staff a patch then.
+        if (kind == JobKind.Forager && !SeasonRules.IsGatherable(world.Clock.Season))
+        {
+            return "nothing can be gathered in winter";
+        }
+
+        // 3. §4a's one-sentence policy: a village short of hands feeds itself before it builds.
+        //    The same four trades this zeroes in `For`, named the same way round.
+        if (SeasonRules.IsGatherable(world.Clock.Season)
+            && VillageIsShortOfFood(world)
+            && kind is JobKind.Woodcutter or JobKind.Forester or JobKind.Marketer or JobKind.Builder)
+        {
+            return "every hand is on food until the village is fed";
+        }
+
+        // 4. A limit the player set, met. ⭐ Asked of the same method the quota asks, so a
+        //    forester with bare ground to plant is correctly NOT reported as capped (D146).
+        if (StoppedByAStockLimit(world, kind)
+            && world.JobsCatalog.LimitedBy(kind) is Goods limited)
+        {
+            string good = world.GoodsCatalog.NameOf(limited);
+            return world.StockLimits.For(limited) is int stop
+                ? $"the {good} limit of {stop} is met"
+                : $"the village has all the {good} it wants";
+        }
+
+        // 5. And the two whose demand is simply an errand count.
+        if (kind == JobKind.Builder && BuildersWanted(world) == 0)
+        {
+            return "there is nothing marked to build";
+        }
+
+        if (kind == JobKind.Marketer && MarketersWanted(world) == 0)
+        {
+            return "there is nothing worth moving between the stores";
+        }
+
+        return null;
+    }
+
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
     private static int Take(ref int free, int wanted)
     {

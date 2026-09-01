@@ -235,6 +235,96 @@ public sealed class IdleWorkplaceTests
         Assert.Null(world.IdleNote(hut));
     }
 
+    // ---------------------------------------------------------------
+    //  § Why nobody is here — Joe, 2026-08-30
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⛔⛔ An empty building the village has no use for is <b>not</b> flagged.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ JOE'S COMPLAINT, AND IT IS THIS FILE'S OWN RULE BROKEN BY THIS FILE'S OWN METHOD:</b>
+    /// *"i dont like that because the village 'wants' 0 of a type of work, the workplace shows as
+    /// unstaffed … they are inconsistent now and i want them to be aligned."* `IdleNote` returned
+    /// *"Nobody is working forester's hut 2."* for **every** unstaffed workplace, so a hut standing
+    /// quiet because the player's own log limit was met got the same marker as one the village was
+    /// crying out for.
+    /// </para>
+    /// <para>
+    /// ⚠️ That is *"a marker that lit up for all of them would be wallpaper"* — the sentence at
+    /// the top of this file — arriving in the one branch nobody had applied it to.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AHutTheVillageWantsNobodyAtIsNotFlagged()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        Workplace hut = FirstOf(world, JobKind.Forester);
+
+        // The player's own cap, met: the village wants no foresters and this is not a fault.
+        // Stepped a full pass so the allocator empties the hut rather than the test doing it.
+        world.SetStockLimit(Goods.Logs, 0);
+        loop.Step(Config.TicksPerYear + 1);
+
+        _output.WriteLine($"wants {LabourQuota.For(world).For(JobKind.Forester)} foresters; "
+            + $"note: {world.IdleNote(hut) ?? "(silent)"}");
+
+        Assert.Equal(0, LabourQuota.For(world).For(JobKind.Forester));
+        Assert.Null(world.IdleNote(hut));
+    }
+
+    /// <summary>
+    /// ⭐ And the sentence says <b>why</b>, in the same words both panels read.
+    /// </summary>
+    /// <remarks>
+    /// <b>⛔ THE POINT IS THAT THERE IS ONE SOURCE.</b> The inspector and the professions column
+    /// were each explaining the same decision in their own words, which is how D139 and D195 both
+    /// started. <c>WhyTheVillageWantsNone</c> reads the state the quota reads, in the quota's own
+    /// order, and calls <c>StoppedByAStockLimit</c> rather than restating it.
+    /// </remarks>
+    [Fact]
+    public void TheVillageSaysWhyItWantsNobodyOnATrade()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        world.SetStockLimit(Goods.Logs, 0);
+        loop.StepOnce();
+
+        string? why = LabourQuota.WhyTheVillageWantsNone(world, JobKind.Forester);
+        _output.WriteLine(why ?? "(no reason given)");
+
+        Assert.NotNull(why);
+        Assert.Contains("limit", why!, System.StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⛔ It gives no reason rather than a wrong one when the village <em>does</em> want hands.
+    /// </summary>
+    /// <remarks>
+    /// <b>The anti-vacuity half (D7).</b> A method that always returns a sentence would pass the
+    /// guard above while saying something untrue at every other moment of the game — and a wrong
+    /// cause on screen is worse than none, because the player acts on it.
+    /// </remarks>
+    [Fact]
+    public void ItNamesNoReasonWhenTheVillageWantsTheWorkDone()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        loop.StepOnce();
+
+        int wanted = LabourQuota.For(world).For(JobKind.Forager);
+        string? why = LabourQuota.WhyTheVillageWantsNone(world, JobKind.Forager);
+
+        _output.WriteLine($"the village wants {wanted} foragers; reason given: {why ?? "(none)"}");
+
+        Assert.True(wanted > 0, "The fixture wants no foragers, so this guard proves nothing.");
+        Assert.Null(why);
+    }
+
     /// <summary>A construction site explains itself in the build queue, not with a ring.</summary>
     [Fact]
     public void AConstructionSiteIsNeverFlagged()

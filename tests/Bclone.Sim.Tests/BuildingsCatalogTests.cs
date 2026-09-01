@@ -276,12 +276,14 @@ public sealed class BuildingsCatalogTests
         Assert.Equal(config.WoodcutterHutCapacity, catalog[BuildingKind.WoodcutterHut].Seats);
         Assert.Equal(config.MarketCapacity, catalog[BuildingKind.Market].Seats);
         Assert.Equal(config.FarmhouseSeats, catalog[BuildingKind.Farmhouse].Seats);
-        // ⭐ THE FORAGER'S HUT LEFT THE DERIVED SET IN D262 and states two, like every other
-        // workplace the player can see. Only the forester's hut (what the woodcutters can eat)
-        // and the builder's hut (the economy horizon) are still solved.
+        // ⛔⛔ THE DERIVED SET IS DOWN TO ONE BUILDING, AND IT LOST TWO IN TWO DAYS. The
+        // forager's hut states its seats since D262 and **the builder's hut since 2026-08-30**
+        // (Joe: *"one builder's hut should have 3 employees only"* — it was solving for every
+        // hand a 20-household village could spare, which came to 21). ⭐ Only the forester's hut
+        // still derives: what the woodcutters can eat, plus a hand for building.
         Assert.Equal(config.GathererHutCapacity, catalog[BuildingKind.GathererHut].Seats);
+        Assert.Equal(config.BuilderHutSeats, catalog[BuildingKind.BuilderHut].Seats);
         Assert.Null(catalog[BuildingKind.ForesterHut].Seats);
-        Assert.Null(catalog[BuildingKind.BuilderHut].Seats);
     }
 
     /// <summary>

@@ -79,7 +79,7 @@ public sealed class SimWorld
         bool stops = true,
         LogCategory category = LogCategory.Discovery)
     {
-        Moments.Add(new Moment { Title = title, Body = body, Stops = stops });
+        Moments.Add(new Moment { Title = title, Body = body, WaitsToBeDismissed = stops });
         Narrate(body, category);
     }
 
@@ -1475,7 +1475,23 @@ public sealed class SimWorld
 
         if (workplace.WorkerIds.Count == 0)
         {
-            return $"Nobody is working {workplace.Name}.";
+            // ⛔⛔ AN EMPTY BUILDING THE VILLAGE HAS NO USE FOR IS NOT A FAULT (Joe, 2026-08-30).
+            // This fired for every unstaffed workplace, so a forester's hut standing quiet
+            // because the player's own log limit was met got the same marker as one the village
+            // was crying out for. **That is D147's own rule broken by D147's own method**: *"a
+            // marker that fired for all of them would be the always-on alert D42 and D123
+            // deleted."*
+            //
+            // ⭐ The sentence has not been lost, it has moved to where it can be complete: the
+            // inspector says *"nobody works here — the village needs no foresters at the moment,
+            // because the logs limit of 200 is met"*, which is the thing Joe actually wanted and
+            // which a one-line marker could never carry.
+            //
+            // ⚠️ Still flagged when the village DOES want hands here, because that is a real
+            // shortage with a real remedy — and `LabourSystem` narrates the same state on its edge.
+            return LabourQuota.For(this).For(workplace.Kind) > 0
+                ? $"Nobody is working {workplace.Name}."
+                : null;
         }
 
         return workplace.Kind switch
@@ -6062,7 +6078,6 @@ public sealed class SimWorld
         return kind switch
         {
             BuildingKind.ForesterHut => VillageEconomy.RequiredForesterSeats(Config),
-            BuildingKind.BuilderHut => VillageEconomy.BuilderHutCapacity(Config),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(kind), kind, "That workplace states no seats and the economy derives none."),
         };
@@ -6800,9 +6815,10 @@ public sealed class SimWorld
         // the building that could have raised them — otherwise the fixture villages the
         // whole suite is written against could never build a house again.
         //
-        // Its seats are DERIVED (VillageEconomy.BuilderHutCapacity), not typed;
-        // `woodcutter_hut_capacity` is the recorded case where capacities were typed while
-        // the yields around them moved, and thirty-six people froze (D50).
+        // ⛔ ITS SEATS ARE STATED NOW (`builder_hut_seats`, Joe 2026-08-30), where they were
+        // derived from the economy horizon until this morning — 21 hands in a village of ten.
+        // Read through `SeatsIn` like every other founding building, so a warm start and a
+        // player-raised hut cannot disagree about how many fit in one.
         Workplaces.Add(new Workplace
         {
             Store = NewStockpile(),
@@ -6810,7 +6826,7 @@ public sealed class SimWorld
             Kind = JobKind.Builder,
             Name = NameFor(BuildingKind.BuilderHut),
             Position = Offset(origin, config.BuilderHutX, config.BuilderHutY),
-            Capacity = VillageEconomy.BuilderHutCapacity(config),
+            Capacity = SeatsIn(BuildingKind.BuilderHut),
         });
 
         // ⭐⭐ AND THE SUPPLIES THEY ARRIVED WITH, WHICH A WARM START HAD BEEN THROWING AWAY

@@ -160,33 +160,48 @@ public sealed class BuildersHutTests
     }
 
     /// <summary>
-    /// ⭐ Its seats are derived from the economy, not typed into a config file.
+    /// ⭐ Its seats are what the catalogue says, and a warm start gets the same number.
     /// </summary>
     /// <remarks>
-    /// <b><c>woodcutter_hut_capacity</c> is the recorded case</b> (D50): the yields were
-    /// re-derived when the economy horizon moved and the capacities were not, the village
-    /// could not physically make enough firewood however many hands were free, and thirty-six
-    /// people froze. Guarded non-vacuously — a bigger horizon has to move the number, or this
-    /// would pass against a constant.
+    /// <para>
+    /// ⛔⛔ <b>THIS GUARD USED TO ASSERT THE OPPOSITE, AND JOE OVERTURNED IT ON 2026-08-30:</b>
+    /// *"One builder's hut should have 3 employees only. If the user wants more builders, they can
+    /// build a new builder's hut."* The seats were derived from the economy horizon
+    /// (<c>VillageEconomy.BuilderHutCapacity</c>, now retired) and came to **21 in a village of
+    /// ten adults**, which is what he saw in the professions panel.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The D50 argument the old guard carried has not gone away, it has moved.</b>
+    /// <c>woodcutter_hut_capacity</c> is the recorded case where yields were re-derived and
+    /// capacities were not, and thirty-six people froze. **The protection now is that this is one
+    /// stated number in one place, read through <c>SeatsIn</c> by both the founding and the
+    /// player's own hut** — so the two cannot drift apart, which is the half of D50 that actually
+    /// bit.
+    /// </para>
+    /// <para>
+    /// ⭐ Guarded against the catalogue rather than the constant, so a modder who changes
+    /// `builder_hut_seats` moves the founding with it.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void TheHutsSeatsAreDerivedFromTheEconomy()
+    public void TheHutsSeatsAreWhatTheCatalogueStates()
     {
         SimConfig config = VillageFixtures.Village;
         SimWorld world = World(config);
 
         Workplace? hut = HutIn(world);
         Assert.NotNull(hut);
-        Assert.Equal(VillageEconomy.BuilderHutCapacity(config), hut!.Capacity);
+        Assert.Equal(config.BuilderHutSeats, hut!.Capacity);
         Assert.True(hut.Capacity >= 1, "A hut with no seat can never build anything.");
 
-        int wider = VillageEconomy.BuilderHutCapacity(
-            config with { EconomyHorizonHouseholds = config.EconomyHorizonHouseholds * 2 });
+        // Non-vacuous: a catalogue that said something else would move the founding's hut too.
+        SimWorld wider = World(config with { BuilderHutSeats = config.BuilderHutSeats + 4 });
+        Workplace? widerHut = HutIn(wider);
 
-        _output.WriteLine($"seats at {config.EconomyHorizonHouseholds} households: {hut.Capacity}; "
-            + $"at {config.EconomyHorizonHouseholds * 2}: {wider}");
+        _output.WriteLine($"seats at builder_hut_seats {config.BuilderHutSeats}: {hut.Capacity}; "
+            + $"at {config.BuilderHutSeats + 4}: {widerHut!.Capacity}");
 
-        Assert.True(wider > hut.Capacity, "The seats do not follow the economy they are derived from.");
+        Assert.Equal(config.BuilderHutSeats + 4, widerHut.Capacity);
     }
 
     // ---------------------------------------------------------------

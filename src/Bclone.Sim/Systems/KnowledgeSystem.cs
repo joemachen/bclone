@@ -142,7 +142,7 @@ public sealed class KnowledgeSystem : ISimSystem
                 // case that said nothing**, which is §1.1 failing in the player's favour.
                 //
                 // ⚠️ It does NOT stop the game (`stops: false`). A gift must be acted on; this is
-                // news. See `Moment.Stops`.
+                // news. See `Moment.WaitsToBeDismissed`.
                 if (was == KnowledgeState.Unknown)
                 {
                     // ⚠️ The state has to be settled BEFORE the `continue`, and the first draft

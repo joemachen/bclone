@@ -255,8 +255,11 @@ public sealed class SkillTests
     //   before the founders were mourned (D252): false 17678494988155338593 (true UNMOVED)
     //   before the huts were capped at two (D262): false 16683756764195047443,
     //                                              true  6976255911900204686
-    [InlineData(false, 14899915986336060167UL)]
-    [InlineData(true, 9768080546410864531UL)]
+    //   before the builder's hut was capped at three (2026-08-30):
+    //                                              false 14899915986336060167,
+    //                                              true  9768080546410864531
+    [InlineData(false, 16804319504790807004UL)]
+    [InlineData(true, 4069910012555344042UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
