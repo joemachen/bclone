@@ -323,7 +323,18 @@ public sealed class BehaviorSystem : ISimSystem
                 // this is the difference between catchment meaning something and the
                 // whole village trooping to the same thicket regardless of where
                 // they live.
-                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Gathering);
+                //
+                // ⛔⛔ AND WHAT THEY DO ON ARRIVAL IS THEIR TRADE'S, NOT ALWAYS A GATHER. This
+                // hardcoded `Gathering`, which was true while foraging was the only walk to food
+                // — and **silently redirected a fisher into a berry patch** the day fishing
+                // shipped: posted, walking, arriving, and gathering nothing because a fishery has
+                // no ring. *Two trades share this leg now; the arrival state has to ask which.*
+                Workplace atWork = WorkplaceOf(world, villager)!;
+                Travel(
+                    world,
+                    villager,
+                    atWork.Position,
+                    atWork.Kind == JobKind.Fisher ? VillagerState.Fishing : VillagerState.Gathering);
                 return;
 
             case VillagerState.TravelingToTrees:
@@ -3504,6 +3515,17 @@ public sealed class BehaviorSystem : ISimSystem
         if (onArrival == VillagerState.Gathering)
         {
             BeginGathering(world, villager, world.Config);
+            return;
+        }
+
+        // ⚠️ A CAST HAS TO BE STARTED THE SAME WAY A GATHER IS. Arriving in the `Fishing` state
+        // is not fishing — without a duration the villager stands on the bank holding the state
+        // and `CompleteAction` is never reached, which is exactly what shipped.
+        if (onArrival == VillagerState.Fishing)
+        {
+            villager.State = VillagerState.Fishing;
+            villager.ActionTicksRemaining =
+                world.WorkTicksFor(villager, JobKind.Fisher, world.Config.FishTicks);
             return;
         }
 

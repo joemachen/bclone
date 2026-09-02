@@ -1035,9 +1035,28 @@ internal static class LabourAllocator
     // ---------------------------------------------------------------
 
     /// <summary>Job kinds, in the order the village cares about them.</summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>A TRADE MISSING FROM THIS LIST IS A TRADE NOBODY IS EVER POSTED TO, AND IT FAILS
+    /// SILENTLY.</b> `LabourQuota` can want three fishers all day; if the kind is not walked here,
+    /// <c>Match</c> never builds a candidate list for it and the building stands empty for ever.
+    /// **That shipped once** — fishing went out with a good, a building, a placement rule, a
+    /// behaviour branch, a button and six guards, and Joe built one and watched nothing happen:
+    /// *"i added a fisher, but the game never staffed it or worked it."*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The quota and this list are two halves of one fact and neither compiles against the
+    /// other.</b> `AJobKindTheAllocatorNeverWalksIsNeverStaffed` is the guard that now says so.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Fishing sits beside foraging because it answers the same need</b>, and ahead of it
+    /// because it is the better source (Joe: *"foraging is bottom of the totem pole"*). The order
+    /// here is the order seats are claimed, so it is the ranking made real.
+    /// </para>
+    /// </remarks>
     private static readonly JobKind[] KindsInOrder =
     {
-        JobKind.Forager, JobKind.Farmer, JobKind.Forester, JobKind.Woodcutter,
+        JobKind.Fisher, JobKind.Forager, JobKind.Farmer, JobKind.Forester, JobKind.Woodcutter,
         JobKind.Marketer, JobKind.Builder,
     };
 

@@ -141,89 +141,82 @@ public sealed class PlacementTests
         Assert.Contains("outside the valley", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// ⛔⛔ A distant site is allowed and <b>says nothing at all</b> — the warning is gone.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-09-02: *"remove the distance warning altogether."*</b> It had said *"that is
+    /// 11 tiles from the village; it budgets 8"*, and one day earlier it was rewritten to state
+    /// the cost instead (D272). **A day of play settled it anyway: a warning that fires on most of
+    /// the map is not a warning, it is a status bar.** `MaxHomeToWorkTiles` is 8 in a valley 120
+    /// tiles across.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The fishing hut is what made it undeniable</b> — the river is 2.5% of the valley
+    /// and always at the periphery, so a fishery could never be placed *without* the warning. The
+    /// game was nagging about the one spot it had just told the player to build on.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>This guard is the anti-creep half.</b> D43's *"legal, but perhaps unwise"* line is
+    /// still there for crops and for a farm far from its store — so the temptation to add distance
+    /// back to it is real, and this says out loud that it was removed on purpose.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void AFarSiteIsAllowedButWarnedAbout()
+    public void ADistantSiteIsAllowedAndSaysNothingAboutTheDistance()
     {
-        // D43's whole position: the player may build somewhere unwise, and is told at
-        // the time. Refusing would make the map feel arbitrary — "why not there?" has
-        // no good answer beyond a hidden constant — and allowing it silently would
-        // fail §1.1 outright.
         SimConfig config = Config;
         SimWorld world = Build(config).World;
         GridPos village = world.Households[0].Home();
 
-        PlacementVerdict? warned = null;
-        for (int distance = 8; distance < 40 && warned is null; distance++)
+        int checked_ = 0;
+        for (int distance = 9; distance < 40; distance++)
         {
             var far = new GridPos(village.X + distance, village.Y);
             PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Granary, far);
-            if (verdict.Allowed && verdict.HasWarning)
+            if (!verdict.Allowed)
             {
-                warned = verdict;
+                continue;
             }
+
+            checked_++;
+            Assert.False(
+                verdict.HasWarning
+                    && verdict.Warning.Contains("tiles", System.StringComparison.OrdinalIgnoreCase),
+                $"A granary {distance} tiles out was warned about: \"{verdict.Warning}\"");
         }
 
-        Assert.True(warned is not null, "Nowhere legal was far enough to warn about (D7).");
-        _output.WriteLine(warned!.Value.Warning);
-
-        Assert.True(warned.Value.Allowed, "A distant site must be allowed, not refused.");
-
-        // ⭐ IT MUST NAME A CONSEQUENCE, NOT JUST A DISTANCE (Joe, 2026-09-01). This used to
-        // assert the literal words *"tiles from the village"*, which is the half of the sentence
-        // that told him nothing: *"people spend their time walking anywhere — im not sure what
-        // this warning or line does now?"* A guard that pins the phrasing protects the phrasing;
-        // what is worth protecting is that the warning says **what it will cost**, which is the
-        // rule `LabourAllocator.DescribeTheCommute` already states for the same fact.
-        Assert.Contains("tiles out", warned.Value.Warning, System.StringComparison.Ordinal);
-        Assert.True(
-            warned.Value.Warning.Contains("walk each way", System.StringComparison.Ordinal)
-                || warned.Value.Warning.Contains("the rest is road", System.StringComparison.Ordinal),
-            $"The warning names a distance and no consequence: \"{warned.Value.Warning}\"");
+        _output.WriteLine($"{checked_} distant sites offered, none warned about for distance");
+        Assert.True(checked_ > 0, "Nowhere distant was buildable, so this guard proves nothing.");
     }
 
     /// <summary>
-    /// ⭐ A workplace and a store are warned about <b>differently</b>, because they cost
-    /// differently.
+    /// ⭐ And the fact did not vanish — <b>it moved to the villager who walks it</b>.
     /// </summary>
     /// <remarks>
-    /// <b>A far workplace loses yield</b> — the hands posted there spend the day on the road
-    /// instead of working. <b>A far store loses nothing itself</b>; what it costs is every load
-    /// anybody ever carries to it. ⚠️ One sentence for both would have to be vague enough to
-    /// cover both, which is what the old *"people will spend their days walking to it"* was.
+    /// <b>This is why removing the warning is a deletion rather than a regression.</b>
+    /// `LabourAllocator.DescribeTheCommute` puts the same arithmetic on the PERSON — *"it is 19
+    /// tiles to the forester's hut, so they bring back about a third of what a pair of hands at
+    /// the door would"* — which is the moment it is true of somebody rather than of a tile.
+    /// `SimWorld.ShareOfTheDayThatIsWork` is still the one copy of the sum.
     /// </remarks>
     [Fact]
-    public void AFarWorkplaceAndAFarStoreAreWarnedAboutDifferently()
+    public void TheCostOfALongWalkIsToldToWhoeverWalksIt()
     {
         SimConfig config = Config;
         SimWorld world = Build(config).World;
-        GridPos village = world.Households[0].Home();
 
-        string? store = null;
-        string? workplace = null;
+        int budget = VillageEconomy.MaxHomeToWorkTiles(config);
+        int atTheDoor = world.ShareOfTheDayThatIsWork(0);
+        int farOut = world.ShareOfTheDayThatIsWork(budget * 3 * TravelCostField.BaseTileCost);
 
-        for (int distance = 8; distance < 40 && (store is null || workplace is null); distance++)
-        {
-            var far = new GridPos(village.X + distance, village.Y);
+        _output.WriteLine($"a pair of hands at the door works {atTheDoor}% of the day; "
+            + $"{budget * 3} tiles out, {farOut}%");
 
-            PlacementVerdict asStore = world.CanBuildAt(BuildingKind.Granary, far);
-            if (store is null && asStore.Allowed && asStore.HasWarning)
-            {
-                store = asStore.Warning;
-            }
-
-            PlacementVerdict asWork = world.CanBuildAt(BuildingKind.WoodcutterHut, far);
-            if (workplace is null && asWork.Allowed && asWork.HasWarning)
-            {
-                workplace = asWork.Warning;
-            }
-        }
-
-        _output.WriteLine($"store:     {store ?? "(none)"}");
-        _output.WriteLine($"workplace: {workplace ?? "(none)"}");
-
-        Assert.True(store is not null && workplace is not null, "Nowhere far enough to warn (D7).");
-        Assert.Contains("every load", store!, System.StringComparison.Ordinal);
-        Assert.Contains("pair of hands", workplace!, System.StringComparison.Ordinal);
+        Assert.True(
+            farOut < atTheDoor,
+            "A long walk costs nothing, so the sentence the villager is told means nothing.");
     }
 
     // ---------------------------------------------------------------

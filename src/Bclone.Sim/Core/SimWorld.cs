@@ -4981,44 +4981,31 @@ public sealed class SimWorld
         // to be sown would be the quieter half of a two-part mistake.
         string? standingCrop = WarningForBuildingOverACrop(position);
 
-        // ⭐⭐ IT SAYS WHAT THE WALK COSTS, NOT HOW LONG IT IS (Joe, 2026-09-01).
+        // ⛔⛔ THE DISTANCE WARNING IS GONE (Joe, 2026-09-02: *"remove the distance warning
+        // altogether"*), AND IT WENT OUT ONE DAY AFTER BEING REWRITTEN.
         //
-        // ⛔ IT USED TO READ *"That is 11 tiles from the village; it budgets 8. People will spend
-        // their days walking to it."* Joe, placing a stockpile: *"people spend their time walking
-        // anywhere — im not sure what this warning or line does now?"* **He is right that it did
-        // not tell him anything he could act on.** *"It budgets 8"* is a fact about a derivation
-        // he cannot see, and *"people will spend their days walking"* is true of every building in
-        // the game.
+        // It said *"that is 11 tiles from the village; it budgets 8"*, and Joe's first question
+        // was the right one: *"people spend their time walking anywhere — im not sure what this
+        // warning or line does now?"* D272 answered that by making it state the cost rather than
+        // the budget — *"a pair of hands here does about 14% of the work a pair at the door
+        // would"* — and one day of play settled it anyway: **a warning that fires on most of the
+        // map is not a warning, it is a status bar.** `MaxHomeToWorkTiles` is 8 in a valley 120
+        // tiles across, so nearly anywhere the player might expand tripped it.
         //
-        // ⭐ `LabourAllocator.DescribeTheCommute` had already written the rule this broke:
-        // *"it says what it COSTS, not how far it is. 'Nineteen tiles' is a number the player must
-        // convert into a consequence; 'brings back about a third of what a nearer pair of hands
-        // would' is the consequence."* This is the same fact one panel over and it was the last
-        // place still quoting the number.
+        // ⚠️ **The fishing hut is what made that undeniable**: the river is 2.5% of the valley
+        // and always at the periphery (`pathfinding-and-water.md §12`), so a fishery could never
+        // be placed WITHOUT the warning — the game nagging about the one spot it had just told
+        // the player to build on.
         //
-        // ⚠️ AND THE CONSEQUENCE IS NOT THE SAME FOR EVERY BUILDING, which is why there are two
-        // sentences. A workplace loses YIELD — hands at the far end spend the day on the road
-        // instead of working. A store loses nothing itself; **what it costs is every load anybody
-        // ever carries to it**, which is a different sentence and an honest one.
-        int walk = TravelCost.Cost(village, position) / TravelCostField.BaseTileCost;
-        int budget = VillageEconomy.MaxHomeToVillageTiles(Config);
-        string? tooFar = null;
-
-        if (walk > budget)
-        {
-            tooFar = SeatsHereIfAny(kind) > 0
-                ? $"That is {walk} tiles out, against the {budget} the village's food is worked "
-                    + $"out on. A pair of hands here does about "
-                    + $"{ShareOfTheDayThatIsWork(TravelCost.Cost(village, position))}% of the work "
-                    + "a pair at the door would — the rest is road."
-                : $"That is {walk} tiles out, against the {budget} the village's food is worked "
-                    + $"out on. Nobody works here, but every load carried in or out is a "
-                    + $"{walk}-tile walk each way.";
-        }
-
+        // ⭐ The consequence itself is not lost, and that is why this is a deletion rather than a
+        // regression: `LabourAllocator.DescribeTheCommute` still puts the same sentence on the
+        // VILLAGER who actually walks it — *"it is 19 tiles to the forester's hut, so they bring
+        // back about a third of what a pair of hands at the door would"* — which is the moment it
+        // is true of somebody rather than of a tile. **The fact moved to where it has a subject.**
+        // `SimWorld.ShareOfTheDayThatIsWork` is still the one copy of the arithmetic.
         string? longHaul = WarningForAFarmFarFromAStore(kind, position);
 
-        if (standingCrop is null && tooFar is null && longHaul is null)
+        if (standingCrop is null && longHaul is null)
         {
             return PlacementVerdict.Fine;
         }
@@ -5026,7 +5013,7 @@ public sealed class SimWorld
         return PlacementVerdict.Yes(
             string.Join(
                 ' ',
-                new[] { standingCrop, longHaul, tooFar }.Where(
+                new[] { standingCrop, longHaul }.Where(
                     static line => !string.IsNullOrEmpty(line))));
     }
 
@@ -6332,20 +6319,6 @@ public sealed class SimWorld
         int whole = walking + atTheDoor;
 
         return whole <= 0 ? 100 : atTheDoor * 100 / whole;
-    }
-
-    /// <summary>Seats a building of this kind has, or zero if nobody works there.</summary>
-    private int SeatsHereIfAny(BuildingKind kind)
-    {
-        for (int i = 0; i < JobsCatalog.Count; i++)
-        {
-            if ((int?)JobsCatalog[i].WorksAt == (int)kind)
-            {
-                return SeatsIn(kind);
-            }
-        }
-
-        return 0;
     }
 
     private void ReleaseWorkers(Workplace workplace)

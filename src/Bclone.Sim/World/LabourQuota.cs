@@ -43,7 +43,8 @@ public readonly record struct LabourQuota
         int builders = 0,
         int farmers = 0,
         int slots = 0,
-        int[]? needed = null)
+        int[]? needed = null,
+        int fishers = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -60,6 +61,7 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Marketer] = marketers;
         _byJob[(int)JobKind.Builder] = builders;
         _byJob[(int)JobKind.Farmer] = farmers;
+        _byJob[(int)JobKind.Fisher] = fishers;
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -278,6 +280,9 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Builder] = buildersWanted;
         needed[(int)JobKind.Farmer] = world.FarmerSeatsWithGroundToWork();
 
+        // A fishery is wanted for exactly the reason a berry patch is: mouths.
+        needed[(int)JobKind.Fisher] = toFeedEveryone;
+
         // WHILE THERE IS FOOD TO GATHER AND THE VILLAGE IS SHORT OF IT, EVERY HAND
         // GATHERS. Timber, fuel, building and the market all yield — a marketer most
         // readily of anything, since they produce nothing at all. That is §4a's
@@ -408,8 +413,31 @@ public readonly record struct LabourQuota
         // ⚠️ IT BOUNDS WHAT IS TAKEN, NEVER WHAT IS WANTED — `ForagersToFeedEveryone` stays the
         // honest need, so the panel can still say *"the village wants five"* while two sit down.
         // **That sentence is what tells the player to build another hut.**
+        // ⭐⭐ FISHING FIRST, BECAUSE IT IS THE BETTER SOURCE (Joe, 2026-09-02: *"a step up from
+        // foraging in terms of food per worker — **foraging is bottom of the totem pole**"*).
+        //
+        // ⛔ THE ORDER IS THE RANKING. Both trades answer the same need, so whichever is asked
+        // first gets the hands — and a cast is worth 100 against a forager's 77. A village that
+        // has built a fishery should man it before it sends anybody to the berries.
+        //
+        // ⚠️ AND IT IS NOT GATED ON `canGather`. Nothing can be picked in winter (D44) and a
+        // river does not stop, which is the whole reason a fishery outranks a patch — it is the
+        // one food source that works in the season the village is most at risk in.
+        int fishSeats = TotalCapacityFor(world, JobKind.Fisher);
+        int fishable = toFeedEveryone < fishSeats ? toFeedEveryone : fishSeats;
+        int fishers = foodIsEnough ? 0 : Take(ref free, fishable);
+
+        // What the fishers could not cover, the berry patches answer for — so a village with a
+        // fishery big enough needs no foragers at all, which is the ranking arriving as a
+        // consequence rather than as a rule.
+        int stillToFeed = toFeedEveryone - fishers;
+        if (stillToFeed < 0)
+        {
+            stillToFeed = 0;
+        }
+
         int seats = world.GatheringSeats();
-        int seatable = toFeedEveryone < seats ? toFeedEveryone : seats;
+        int seatable = stillToFeed < seats ? stillToFeed : seats;
         int foragers = canGather && !foodIsEnough ? Take(ref free, seatable) : 0;
 
         // ⭐ THE FARM, AND IT SITS HERE FOR A STATED REASON (`crops-and-orchards.md`, D161).
@@ -588,6 +616,7 @@ public readonly record struct LabourQuota
         marketers = Asked(world, JobKind.Marketer, marketers, hands);
         builders = Asked(world, JobKind.Builder, builders, hands);
         farmers = Asked(world, JobKind.Farmer, farmers, hands);
+        fishers = Asked(world, JobKind.Fisher, fishers, hands);
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -606,10 +635,11 @@ public readonly record struct LabourQuota
         marketers = AtLeastPinned(world, JobKind.Marketer, marketers);
         builders = AtLeastPinned(world, JobKind.Builder, builders);
         farmers = AtLeastPinned(world, JobKind.Farmer, farmers);
+        fishers = AtLeastPinned(world, JobKind.Fisher, fishers);
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
-            farmers, slots: 0, needed: needed);
+            farmers, slots: 0, needed: needed, fishers: fishers);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
