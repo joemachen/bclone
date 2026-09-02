@@ -6156,6 +6156,18 @@ public sealed class SimWorld
         Workplaces.Remove(workplace);
     }
 
+    /// <summary>
+    /// Let a workplace's people go — <b>both halves of "who works here"</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>THE `WorkerIds.Clear()` WAS MISSING UNTIL 2026-09-01.</b> The doc on
+    /// <c>RetireWorkplace</c> says *"the next thing a workplace owns gets released here and
+    /// nowhere else"*, and <c>WorkerIds</c> is a thing it owns. It was safe only because the
+    /// caller discards the whole object forty lines later — **between those two points the world
+    /// genuinely disagreed with itself**, and an early return added anywhere in that stretch
+    /// would leave a phantom that nothing but a three-yearly reshuffle can clear
+    /// (<c>LabourAllocator.Release</c> carries the full argument).
+    /// </remarks>
     private void ReleaseWorkers(Workplace workplace)
     {
         for (int i = 0; i < Villagers.Count; i++)
@@ -6166,6 +6178,8 @@ public sealed class SimWorld
                 Villagers[i].JobReason = $"{workplace.Name} is gone.";
             }
         }
+
+        workplace.WorkerIds.Clear();
     }
 
     private int NextWorkplaceId()

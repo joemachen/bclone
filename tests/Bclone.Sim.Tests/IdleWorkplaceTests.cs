@@ -264,14 +264,21 @@ public sealed class IdleWorkplaceTests
 
         Workplace hut = FirstOf(world, JobKind.Forester);
 
-        // The player's own cap, met: the village wants no foresters and this is not a fault.
-        // Stepped a full pass so the allocator empties the hut rather than the test doing it.
-        world.SetStockLimit(Goods.Logs, 0);
-        loop.Step(Config.TicksPerYear + 1);
+        // ⛔ ON ITS FEET FIRST — THIS GUARD WAS PASSING AGAINST A CORPSE. Capping logs at 0 from
+        // the founding stops the fuel chain before it starts and all four founders were dead by
+        // Year 2; `IdleNote` is null for a hut in a dead village too, so the assertion below held
+        // for entirely the wrong reason. *Found while writing the guard two tests down.*
+        loop.Step(Config.TicksPerYear * 20);
 
-        _output.WriteLine($"wants {LabourQuota.For(world).For(JobKind.Forester)} foresters; "
+        // The player's own cap, met: the village wants no foresters and this is not a fault.
+        world.SetStockLimit(Goods.Logs, 0);
+        loop.Step(Config.TicksPerYear * 2);
+
+        _output.WriteLine($"population {world.Population}; "
+            + $"wants {LabourQuota.For(world).For(JobKind.Forester)} foresters; "
             + $"note: {world.IdleNote(hut) ?? "(silent)"}");
 
+        Assert.True(world.Population > 0, "The village died, so this guard proves nothing.");
         Assert.Equal(0, LabourQuota.For(world).For(JobKind.Forester));
         Assert.Null(world.IdleNote(hut));
     }
@@ -323,6 +330,125 @@ public sealed class IdleWorkplaceTests
 
         Assert.True(wanted > 0, "The fixture wants no foragers, so this guard proves nothing.");
         Assert.Null(why);
+    }
+
+    // ---------------------------------------------------------------
+    //  § A job is a job — Joe, 2026-09-01
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ A trade the village has no call for <b>keeps the hands the player asked for</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, on a forester's hut reading *"nobody working of 2 seats · asked 1 · village wants
+    /// 0"*:</b> *"It **IS** staffed and somebody **DOES** work there, even if there is presently
+    /// no demand … the only time a building should say it is not staffed is if there are 0
+    /// villagers assigned to work there."*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>THE PANEL WAS NOT LYING — THE HUT REALLY DID EMPTY</b>, and that is what this guard
+    /// exists to stop. `LabourQuota.Asked` used to return 0 outright when a stock limit was met,
+    /// so `ShedSurplus` released everybody and the building stood vacant. **That contradicted
+    /// D238, which is Joe's own earlier call**: *"a met stock limit stops the job and LEAVES THE
+    /// TRADE … the seat is kept rather than cut, because proficiency accrues per trade."*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The work still stops — that is the other half and it is guarded separately</b>
+    /// (`StockLimitTests.AFirewoodLimitStopsTheWoodcutters`). The stop lives where the work
+    /// happens, not on the roster.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ATradeWithNoCallForItKeepsTheHandsThePlayerAskedFor()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        // ⛔ THE VILLAGE GETS ON ITS FEET FIRST, AND THE FIRST DRAFT DID NOT LET IT.
+        // Capping logs at 0 from the founding stops the fuel chain before it starts: measured,
+        // **all four founders were dead by Year 2** and the quota read `0 hands for 0 mouths`,
+        // so `Asked` returned `min(1, 2 seats, 0 hands)` = 0 and the guard failed for a reason
+        // that had nothing to do with what it was testing. *A dead village agrees with anything.*
+        loop.Step(Config.TicksPerYear * 20);
+
+        // The player's own number, which is what the professions panel writes.
+        world.SetJobLimit(JobKind.Forester, 1);
+
+        // And the player's own cap, met — so the village wants no felling done at all.
+        world.SetStockLimit(Goods.Logs, 0);
+        loop.Step(Config.TicksPerYear * 2);
+
+        Workplace hut = FirstOf(world, JobKind.Forester);
+        int posted = 0;
+        foreach (Villager villager in world.Villagers)
+        {
+            if (villager.Alive && villager.WorkplaceId == hut.Id)
+            {
+                posted++;
+            }
+        }
+
+        _output.WriteLine($"asked 1, village wants {LabourQuota.For(world).For(JobKind.Forester)}, "
+            + $"{hut.WorkerIds.Count} in WorkerIds, {posted} villagers posted there");
+        // Anti-vacuity (D7): a dead village has no seats to keep and would pass on nothing.
+        Assert.True(world.Population > 0, "The village died, so this guard proves nothing.");
+
+        Assert.Equal(1, LabourQuota.For(world).For(JobKind.Forester));
+        Assert.True(hut.WorkerIds.Count > 0, "The hut emptied — the seat was cut, not kept.");
+        Assert.Equal(hut.WorkerIds.Count, posted);
+    }
+
+    /// <summary>
+    /// ⛔ The two halves of "who works here" never disagree, whatever released them.
+    /// </summary>
+    /// <remarks>
+    /// <b>`Villager.WorkplaceId` and `Workplace.WorkerIds` are one fact stored twice</b>, and
+    /// `Release` used to null only the villager — five of its six call sites did the
+    /// `WorkerIds.Remove` by hand and the sixth was correct by accident. ⚠️ **A phantom entry is
+    /// unrecoverable**: every repair loop skips `!villager.HasJob`, so only the three-yearly
+    /// blanket `WorkerIds.Clear()` can remove it, while `IsFull` stays wrong and the hut silently
+    /// refuses hires. *That is the bug that would make a panel say "nobody works here" about a
+    /// staffed building, or the reverse.*
+    /// </remarks>
+    [Fact]
+    public void TheRosterAndTheBuildingsAlwaysAgreeAboutWhoWorksWhere()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        // Churn it: limits on and off, so shedding, refilling and reshuffling all run.
+        for (int year = 1; year <= 30; year++)
+        {
+            world.SetStockLimit(Goods.Logs, year % 2 == 0 ? 0 : null);
+            world.SetStockLimit(Goods.Firewood, year % 3 == 0 ? 0 : null);
+            loop.Step(Config.TicksPerYear);
+
+            foreach (Workplace workplace in world.Workplaces)
+            {
+                foreach (int id in workplace.WorkerIds)
+                {
+                    Villager? held = world.FindVillager(id);
+                    Assert.True(
+                        held is not null && held.WorkplaceId == workplace.Id,
+                        $"Year {year}: {workplace.Name} lists villager {id}, who does not hold it.");
+                }
+            }
+
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.HasJob)
+                {
+                    continue;
+                }
+
+                Workplace? at = world.FindWorkplace(villager.WorkplaceId);
+                Assert.True(
+                    at is not null && at.WorkerIds.Contains(villager.Id),
+                    $"Year {year}: {villager.Name} holds workplace {villager.WorkplaceId}, "
+                    + "which does not list them.");
+            }
+        }
     }
 
     /// <summary>A construction site explains itself in the build queue, not with a ring.</summary>

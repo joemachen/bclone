@@ -1856,9 +1856,15 @@ public partial class Main : Control
         //
         // ⚠️ The "it wants N" half moved into the line above, where it now travels with its
         // reason. Repeating it here read as a second, quieter opinion about the same number.
+        // ⚠️ BOTH ARMS SAY `Capacity` DELIBERATELY, AND THIS IS THE ONE PLACE IT IS RIGHT.
+        // The line above reports `Places` — the seats in force — and this one is about the
+        // BUILDING: *"you asked for 1; the hut holds 2"* is the sentence that tells the player
+        // their own override is what is binding. Until 2026-09-01 the two lines used the same
+        // word "Room for" for those two different facts, so with an override set the panel
+        // printed two different numbers eight lines apart and neither said which was which.
         lines.Add(workplace.StaffingOverride is int set
-            ? $"Staffing: you have asked for {set}. Room for {workplace.Capacity}."
-            : $"Staffing: left to the village. Room for {workplace.Capacity}.");
+            ? $"Staffing: you have asked for {set}, and the building holds {workplace.Capacity}."
+            : $"Staffing: left to the village. The building holds {workplace.Capacity}.");
 
         // ⭐ WHAT THE GROUND IS WORTH, AND THIS IS NOT POLISH (`forests-and-gathering.md`
         // §7.1). A gatherer's hut whose ring has been felled brings back less and less, and a
@@ -4800,7 +4806,12 @@ public partial class Main : Control
         {
             if (workplace.Kind == kind)
             {
-                seats += workplace.Capacity;
+                // ⛔ `Places`, NOT `Capacity` (2026-09-01). `Places` is `StaffingOverride ?? Capacity`
+            // — what `IsFull` and the allocator both use — so counting `Capacity` here had the
+            // professions row describing a rule that is not in force: turn a 2-seat hut down to
+            // one and the inspector said *"1 of 1 places filled"* while this column said
+            // *"1 working of 2 seats"*, eight pixels apart.
+            seats += workplace.Places;
             }
         }
 

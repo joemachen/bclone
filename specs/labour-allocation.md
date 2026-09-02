@@ -110,6 +110,14 @@ Filling the scarce work first hands it to whoever genuinely lives nearest, and i
 
 When a quota shrinks (population falls, or a stand fills), release the **furthest-travelling** worker first, not the highest id. Longest commute is the weakest claim, and it is a reason that can be stated.
 
+**[revised 2026-09-01 — a job is a job.]** Shedding is bounded below by **the player's own profession number**, which `LabourQuota.Asked` now returns whatever the village's own figure is. Joe, on a forester's hut reading *"nobody working of 2 seats · asked 1 · village wants 0"*:
+
+> *"It **IS** staffed and somebody **DOES** work there, even if there is presently no demand … the only time a building should say it is not staffed is if there are 0 villagers assigned to work there."* … *"a villager's #1 priority is still their user-assigned role. If no work is required in that role, then the villager focus on laborer-work. If no laborer work is required, the villager idles at home. **Hunger has nothing to do with whether or not they are assigned a job.**"*
+
+**This is D238 finished rather than reversed.** D238 already ruled that *a met stock limit stops the job and leaves the trade* — because proficiency accrues per trade — and it was built only in `BehaviorSystem`. The quota went on cutting the seat, so `ShedSurplus` emptied the building anyway.
+
+⛔ **The stop lives where the work happens, never on the roster.** Every capped trade already has its own gate — `BehaviorSystem` for the woodcutter (D139) and the forager (D238), `SimWorld.MayFell` for the forester (D146), `SimWorld.MaySow` for the farmer — so removing the roster-level override changes *who holds a job*, not *what gets made*. Red-checked: disabling the woodcutter's gate runs firewood to **489 against a limit of 40**, which is Joe's original report reproduced.
+
 ---
 
 ## 5. Determinism

@@ -611,11 +611,44 @@ public readonly record struct LabourQuota
     /// </para>
     /// <para>
     /// <b>A stock limit is a stop, not a preference</b>, which is what the panel says it is:
-    /// <em>how much to keep before the work stops</em>. So a limit that has been reached wins
-    /// over the staffing number. That is a narrow exception to D106's *applied last* rule,
-    /// and the distinction is worth keeping: D106 was protecting the player's number from the
-    /// food floor and the building cap — the village's own opinions — not from another
-    /// instruction the player gave.
+    /// <em>how much to keep before the work stops</em>. ⛔⛔ <b>THAT WAS ENFORCED HERE UNTIL
+    /// 2026-09-01 AND IT WAS ENFORCED IN THE WRONG PLACE.</b> The clause read
+    /// <c>if (decided == 0 &amp;&amp; StoppedByAStockLimit(world, kind)) return 0;</c> — so a met limit
+    /// did not merely stop the work, it <b>took the job away</b>, and the allocator then emptied
+    /// the building.
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ JOE, 2026-09-01, ON A FORESTER'S HUT READING "nobody working of 2 seats · asked 1
+    /// · village wants 0":</b> *"It **IS** staffed and somebody **DOES** work there, even if there
+    /// is presently no demand … the only time a building should say it is not staffed is if there
+    /// are 0 villagers assigned to work there."* And the rule behind it: *"a villager's #1
+    /// priority is still their user-assigned role. If no work is required in that role, then the
+    /// villager focus on laborer-work … **Hunger has nothing to do with whether or not they are
+    /// assigned a job.**"*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>THIS IS D238 FINISHED RATHER THAN REVERSED.</b> D238 is Joe's own earlier call —
+    /// *"a met stock limit stops the job and LEAVES THE TRADE … the seat is kept rather than cut,
+    /// because proficiency accrues per trade"* — and it was only ever built in
+    /// <c>BehaviorSystem</c>. **The quota went on cutting the seat the whole time.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>AND REMOVING IT DOES NOT BRING BACK THE BUG IT WAS WRITTEN FOR, WHICH WAS MEASURED
+    /// RATHER THAN ASSUMED.</b> Every capped trade already stops where the work happens:
+    /// <c>BehaviorSystem</c> for the woodcutter (D139) and the forager (D238),
+    /// <see cref="SimWorld.MayFell"/> for the forester (D146), <see cref="SimWorld.MaySow"/> for
+    /// the farmer. Red-checked by disabling the woodcutter's gate: firewood ran to **489 against
+    /// a limit of 40**, which is Joe's original report (*"452 at a limit of 50"*) reproduced —
+    /// so the gate is what holds the limit and this clause was holding nothing.
+    /// **The whole suite passed with it gone and not one golden moved.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It also settles the food floor without touching it.</b> `foodComesFirst` above still
+    /// zeroes <c>decided</c> for four trades, and this method now ignores <c>decided</c> entirely
+    /// whenever the player has set a number — which the professions panel does for every trade
+    /// from the first frame. So *"hunger has nothing to do with whether you are assigned a job"*
+    /// falls out of D106's ordering rather than needing §4a to be dismantled. **§4a still governs
+    /// any trade left unset, which is how the fixtures run.**
     /// </para>
     /// </remarks>
     private static int Asked(SimWorld world, JobKind kind, int decided, int hands)
@@ -623,13 +656,6 @@ public readonly record struct LabourQuota
         if (world.JobLimits.For(kind) is not int asked)
         {
             return decided;
-        }
-
-        // The village's figure is already zero when a limit has been met, so this is simply
-        // "a stop the player set outranks a number the player set".
-        if (decided == 0 && StoppedByAStockLimit(world, kind))
-        {
-            return 0;
         }
 
         int seats = TotalCapacityFor(world, kind);

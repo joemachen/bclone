@@ -794,8 +794,8 @@ internal static class LabourAllocator
                     break;
                 }
 
-                world.FindWorkplace(furthest.WorkplaceId)!.WorkerIds.Remove(furthest.Id);
                 Release(
+                    world,
                     furthest,
                     $"No work: you keep somebody else on {world.JobsCatalog.NameOf(kind)}, and "
                         + $"{furthest.Name} had the longest walk to it.");
@@ -851,21 +851,19 @@ internal static class LabourAllocator
             Workplace? workplace = world.FindWorkplace(villager.WorkplaceId);
             if (workplace is null)
             {
-                Release(villager, "No work: their workplace no longer exists.");
+                Release(world, villager, "No work: their workplace no longer exists.");
                 continue;
             }
 
             if (!villager.CanWork)
             {
-                workplace.WorkerIds.Remove(villager.Id);
-                Release(villager, villager.Alive ? "No work: too young to work." : "No work: died.");
+                Release(world, villager, villager.Alive ? "No work: too young to work." : "No work: died.");
                 continue;
             }
 
             if (!CanReach(world, villager, workplace))
             {
-                workplace.WorkerIds.Remove(villager.Id);
-                Release(villager, $"No work: moved too far from {workplace.Name} to keep working there.");
+                Release(world, villager, $"No work: moved too far from {workplace.Name} to keep working there.");
                 continue;
             }
 
@@ -884,8 +882,8 @@ internal static class LabourAllocator
             // world, and the mechanism is identical.**
             if (villager.IsPinned && villager.PinnedTrade != workplace.Kind)
             {
-                workplace.WorkerIds.Remove(villager.Id);
                 Release(
+                    world,
                     villager,
                     $"No work: you keep {villager.Name} on "
                         + $"{world.JobsCatalog.NameOf(villager.PinnedTrade!.Value)}, so they have "
@@ -959,20 +957,30 @@ internal static class LabourAllocator
                     break;
                 }
 
-                world.FindWorkplace(furthest.WorkplaceId)!.WorkerIds.Remove(furthest.Id);
-
                 // Wanting none of a kind of work is a different statement from wanting
-                // fewer, and it is the one the player most needs to read: it is the
-                // village choosing food over building, in the moment it chooses.
-                Release(
-                    furthest,
-                    wanted == 0
-                        ? $"No work: every hand went back to food — a household is going hungry, " +
-                          $"so nothing is cut until the village is fed. Yours was the longest walk " +
-                          $"at {Tiles(furthestCost)} tiles."
-                        : $"No work: the village needs only {wanted} {Counted(world, kind, wanted)} for its " +
-                          $"{quota.Mouths} mouths, and yours was the longest walk at " +
-                          $"{Tiles(furthestCost)} tiles.");
+                // fewer, and it is the one the player most needs to read.
+                //
+                // ⛔ IT USED TO SAY "every hand went back to food" FOR EVERY REASON A QUOTA CAN
+                // BE ZERO (2026-09-01). That is one of at least five — a met stock limit, winter,
+                // nothing marked to build, nothing to move, and the food floor — so four times
+                // out of five the village explained itself with a sentence that was simply
+                // untrue, in the audit trail this project debugs from (D236).
+                //
+                // ⭐ The cause comes from `LabourQuota.WhyTheVillageWantsNone`, which is the same
+                // method the professions row and the workplace inspector read. *One decision
+                // explained in three places is three places that can disagree.*
+                string why = wanted == 0
+                    ? LabourQuota.WhyTheVillageWantsNone(world, kind) is string cause
+                        ? $"No work: {cause}. Yours was the longest walk at "
+                          + $"{Tiles(furthestCost)} tiles."
+                        : $"No work: the village has no call for "
+                          + $"{world.JobsCatalog.PluralOf(kind)} at the moment, and yours was the "
+                          + $"longest walk at {Tiles(furthestCost)} tiles."
+                    : $"No work: the village needs only {wanted} {Counted(world, kind, wanted)} for its "
+                      + $"{quota.Mouths} mouths, and yours was the longest walk at "
+                      + $"{Tiles(furthestCost)} tiles.";
+
+                Release(world, furthest, why);
 
                 shed.Add(furthest.Id);
                 held--;
@@ -982,13 +990,36 @@ internal static class LabourAllocator
         return shed;
     }
 
-    private static void Release(Villager villager, string why)
+    /// <summary>
+    /// Let somebody go — <b>from the roster and from the building, which are one fact</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>IT TOOK THE WORLD SO IT COULD CLEAR `WorkerIds` TOO (2026-09-01).</b> This used to
+    /// null only <see cref="Villager.WorkplaceId"/>, and **five of its six call sites did the
+    /// <c>WorkerIds.Remove</c> by hand on the line above**. The sixth omitted it and was correct
+    /// only by accident — it fires when the lookup already failed, so there was nothing to remove
+    /// from. *A method that reads as "let this person go" and does half the job is a seventh call
+    /// site waiting to desync.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>AND A DESYNC HERE IS UNRECOVERABLE, WHICH IS WHY IT IS WORTH THE ARGUMENT.</b> Every
+    /// repair loop in this file skips <c>!villager.HasJob</c>, so a phantom id left in
+    /// <c>WorkerIds</c> is invisible to <see cref="TakeUpSlack"/> for ever. Only
+    /// <see cref="Reshuffle"/>'s blanket <c>Clear()</c> removes it — up to three years later — and
+    /// meanwhile <c>IsFull</c> and <c>OpenPositions</c> are wrong, so **the hut silently refuses
+    /// hires**. It is also exactly the shape that makes a panel say *"nobody works here"* about a
+    /// staffed building, which is the complaint this slice began with.
+    /// </para>
+    /// </remarks>
+    private static void Release(SimWorld world, Villager villager, string why)
     {
         // Remembered before it is thrown away, so next year's sentence can name the place they
         // were let go from. See `Villager.LastWorkplaceId` — a winter used to erase this.
         if (villager.WorkplaceId != 0)
         {
             villager.LastWorkplaceId = villager.WorkplaceId;
+            world.FindWorkplace(villager.WorkplaceId)?.WorkerIds.Remove(villager.Id);
         }
 
         villager.WorkplaceId = 0;
