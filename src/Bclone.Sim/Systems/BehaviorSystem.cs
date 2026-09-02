@@ -100,6 +100,7 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.TravelingToFood => "walking to forage",
         VillagerState.Gathering => "gathering",
         VillagerState.Fishing => "fishing",
+        VillagerState.TravelingToWater => "walking to the water",
         VillagerState.TravelingHome => "walking home",
         VillagerState.TravelingToTrees => "walking to the stand",
         VillagerState.Cutting => "felling",
@@ -329,12 +330,11 @@ public sealed class BehaviorSystem : ISimSystem
                 // — and **silently redirected a fisher into a berry patch** the day fishing
                 // shipped: posted, walking, arriving, and gathering nothing because a fishery has
                 // no ring. *Two trades share this leg now; the arrival state has to ask which.*
-                Workplace atWork = WorkplaceOf(world, villager)!;
-                Travel(
-                    world,
-                    villager,
-                    atWork.Position,
-                    atWork.Kind == JobKind.Fisher ? VillagerState.Fishing : VillagerState.Gathering);
+                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Gathering);
+                return;
+
+            case VillagerState.TravelingToWater:
+                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Fishing);
                 return;
 
             case VillagerState.TravelingToTrees:
@@ -497,6 +497,17 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsForaging(VillagerState state) =>
         state is VillagerState.TravelingToFood or VillagerState.Gathering;
 
+    /// <summary>
+    /// On a fishing errand — <b>deliberately NOT part of <see cref="IsForaging"/></b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Keeping the two apart is the whole fix: `IsForaging` is what the winter recall reads,
+    /// and a river does not freeze over. A fisher is on a work errand and holds the job for it,
+    /// but is not foraging.
+    /// </remarks>
+    private static bool IsFishing(VillagerState state) =>
+        state is VillagerState.TravelingToWater or VillagerState.Fishing;
+
     private static bool IsCutting(VillagerState state) =>
         state is VillagerState.TravelingToTrees or VillagerState.Cutting;
 
@@ -516,8 +527,8 @@ public sealed class BehaviorSystem : ISimSystem
             or VillagerState.HaulingToFarm;
 
     private static bool IsOnAWorkErrand(VillagerState state) =>
-        IsForaging(state) || IsCutting(state) || IsSplitting(state) || IsTrading(state)
-        || IsBuilding(state) || IsFarming(state);
+        IsForaging(state) || IsFishing(state) || IsCutting(state) || IsSplitting(state)
+        || IsTrading(state) || IsBuilding(state) || IsFarming(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -534,6 +545,11 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsForaging(state))
         {
             return JobKind.Forager;
+        }
+
+        if (IsFishing(state))
+        {
+            return JobKind.Fisher;
         }
 
         if (IsCutting(state))
@@ -2429,7 +2445,7 @@ public sealed class BehaviorSystem : ISimSystem
             }
             else
             {
-                villager.State = VillagerState.TravelingToFood;
+                villager.State = VillagerState.TravelingToWater;
                 Travel(world, villager, job.Position, VillagerState.Fishing);
             }
 

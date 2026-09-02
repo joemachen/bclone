@@ -254,10 +254,151 @@ public sealed class FishingTests
         Assert.True(caught > 0, $"{fisher.Name} held the job for a year and never caught anything.");
     }
 
-    /// <summary>Raise a fishing hut outright, without waiting for a builder.</summary>
-    private static Workplace RaiseAFishery(SimWorld world)
+    /// <summary>
+    /// ⭐⭐ A fisher <b>walks the whole way to a distant hut and arrives</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ OTTO'S LOOP, GUARDED (Joe, 2026-09-02).</b> *"Otto the fisherman seems to be
+    /// caught in a loop between walking to the fishing hut (far away) and stopping to eat, resting
+    /// at home — he never goes to the fishing hut and never catches any fish."*
+    /// </para>
+    /// <para>
+    /// <b>The cause was a reused state.</b> Fishing walked in `VillagerState.TravelingToFood`, and
+    /// two predicates read that as foraging: `ErrandKind` maps it to `JobKind.Forager`, so
+    /// `HoldsTheJobFor` was false for a fisher and **`GoHome` fired on the very next tick** — for
+    /// ever. `IsForaging` also meant **winter recalled him**, which is the one season a fishery
+    /// exists for. ⭐ *A state is not a label; it is whatever every predicate in the file
+    /// classifies it as.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>I SAW THIS EXACT LOOP IN MY OWN FIXTURE AND DISMISSED IT.</b> While posing the
+    /// staffing guard a fisher oscillated for three years toward a hut twenty-two tiles off; I
+    /// wrote it off as a starving-village artefact of the pose and moved the villager instead of
+    /// asking why. **It was this bug, and it went to Joe.** *A fixture that misbehaves is
+    /// evidence, not an inconvenience.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFisherWalksTheWholeWayToADistantHut()
     {
-        GridPos bank = ABankTile(world);
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAFishery(world, TheFurthestBankTile(world));
+        loop.Step(config.TicksPerYear + 1);
+
+        Villager fisher = world.Villagers.First(v => v.Alive && v.WorkplaceId == hut.Id);
+        int walk = world.TravelCost.Cost(fisher.Position, hut.Position)
+            / TravelCostField.BaseTileCost;
+
+        // Somewhere to put a catch, so the village genuinely wants the trip made.
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.TakeAll(Goods.Food);
+        }
+
+        bool arrived = false;
+        for (int tick = 0; tick < config.TicksPerYear && !arrived; tick++)
+        {
+            loop.StepOnce();
+            arrived = fisher.Position == hut.Position;
+        }
+
+        _output.WriteLine($"{fisher.Name} started {walk} tiles from the hut and "
+            + $"{(arrived ? "arrived" : "never got there")}");
+
+        Assert.True(walk > 1, "The fisher started at the hut, so this guard proves nothing.");
+        Assert.True(
+            arrived,
+            $"{fisher.Name} held the job for a year and never reached the hut {walk} tiles away — "
+            + "something is recalling them mid-walk.");
+    }
+
+    /// <summary>⛔ And winter does not recall a fisher, which is the season they matter in.</summary>
+    /// <remarks>
+    /// Nothing can be picked in winter (D44) and a river does not stop. <b>The winter recall reads
+    /// `IsForaging`</b>, so a fisher walking in a foraging state was marched home every winter —
+    /// deleting the fishery in exactly the season D19 says outlying households cannot feed
+    /// themselves.
+    /// </remarks>
+    [Fact]
+    public void WinterDoesNotRecallAFisher()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAFishery(world);
+        loop.Step(config.TicksPerYear + 1);
+
+        Villager fisher = world.Villagers.First(v => v.Alive && v.WorkplaceId == hut.Id);
+        fisher.Position = hut.Position;
+
+        // Run to winter, keeping room for a catch so the only question is the season.
+        int caught = 0;
+        for (int tick = 0; tick < config.TicksPerYear * 2 && caught == 0; tick++)
+        {
+            loop.StepOnce();
+
+            if (world.Clock.Season != Season.Winter)
+            {
+                continue;
+            }
+
+            foreach (StoreBuilding store in world.StoreBuildings)
+            {
+                store.Store.TakeAll(Goods.Food);
+            }
+
+            caught = fisher.Carried[Goods.Fish];
+        }
+
+        _output.WriteLine($"in winter {fisher.Name} was holding {caught} fish");
+        Assert.True(caught > 0, "Winter stopped the fishing, and a river does not freeze here.");
+    }
+
+    /// <summary>
+    /// The <b>furthest</b> buildable bank tile — for the guard about a long walk.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <c>ABankTile</c> returns the NEAREST, and on the shipped seed that is one tile from
+    /// the founding site — so a guard about walking a long way was measuring a walk of one.
+    /// Joe's Otto was **seventeen tiles out**, which is the case that broke.
+    /// </remarks>
+    private static GridPos TheFurthestBankTile(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+        GridPos best = ABankTile(world);
+        int furthest = -1;
+
+        for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
+        {
+            for (int x = world.Map.MinX; x < world.Map.MinX + world.Map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                if (!world.CanBuildAt(BuildingKind.FishingHut, at).Allowed)
+                {
+                    continue;
+                }
+
+                int cost = world.TravelCost.Cost(site, at);
+                if (cost != TravelCostField.Unreachable && cost > furthest)
+                {
+                    furthest = cost;
+                    best = at;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>Raise a fishing hut outright, without waiting for a builder.</summary>
+    private static Workplace RaiseAFishery(SimWorld world, GridPos? at = null)
+    {
+        GridPos bank = at ?? ABankTile(world);
         Assert.True(world.Mark(BuildingKind.FishingHut, bank).Allowed);
 
         Workplace site = world.Workplaces.Single(

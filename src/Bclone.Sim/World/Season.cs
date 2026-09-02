@@ -147,6 +147,20 @@ public enum VillagerState
     Fishing,
 
     /// <summary>
+    /// On the way to the water — <b>and it is a state of its own for a reason</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>FISHING FIRST REUSED <see cref="TravelingToFood"/> AND THAT SHIPPED A LIVELOCK.</b>
+    /// Two predicates in `BehaviorSystem` read that state as *foraging*: `ErrandKind` maps it to
+    /// `JobKind.Forager`, so `HoldsTheJobFor` was false for a fisher and **`GoHome` fired on the
+    /// very next tick, every tick** — Joe watched a fisherman walk two steps toward a hut
+    /// seventeen tiles off, turn round, eat, rest, and start again for years. And `IsForaging`
+    /// meant **winter recalled him**, which is the one season a fishery exists for.
+    /// ⭐ *A state is not a label; it is what every predicate in the file will classify it as.*
+    /// </remarks>
+    TravelingToWater,
+
+    /// <summary>
     /// Carrying a harvest to the farm's own store, which is underfoot (`farm_store_cap`).
     /// </summary>
     /// <remarks>
