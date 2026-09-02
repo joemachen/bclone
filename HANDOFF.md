@@ -1,7 +1,7 @@
-# Handoff — bclone: **✅ ON `main`, 900 GREEN. NEXT IS THE REST SLICE; TWO CALLS WAITING ON JOE.**
+# Handoff — bclone: **✅ EVERYBODY RESTS IN SPELLS. ONE GUARD SKIPPED, WAITING ON JOE.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
-> **901 passing, 0 failing, 1 skipped of 902** — **on `main`, merged and pushed 2026-09-01.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-02.**
+> **898 passing, 0 failing, 2 skipped of 900** — **on `main`, merged and pushed 2026-09-01.**
 > `main` = `origin/main` = `slice/two-seats-per-hut`, a clean fast-forward. ⭐ *D217's trap is not
 > live: the build Joe plays and the remote are one thing.*
 >
@@ -31,14 +31,34 @@
 > carried in or out is a 9-tile walk each way"* for a store. One arithmetic
 > (`SimWorld.ShareOfTheDayThatIsWork`), read by the placement warning and the commute note both.
 >
-> **⭐⭐ NEXT SLICE IS THE REST SHARE (Joe: "rest slice next").** `rest_share_percent` at 10 to
-> start. ⛔⛔ **IT MUST BE DERIVED, NOT BOLTED ON**: `VillageEconomy.TripsPerYear` is
-> `available ÷ RoundTripTicks`, so the rest share comes out of `available` and every anchor
-> re-solves. Bolt 10% on top and every village is 10% poorer against unchanged anchors and the
-> thin valleys die — **that is D50's shape, which fired twice this week already.**
-> ⚠️ **Measure the FARM specifically**: autumn is a deadline, not a rate. The one previous
-> attempt at resting job-holders measured **96% → 74% of what a farm sowed** (D250), which is why
-> the rest spell is scoped to `IsLaborer` today.
+> **✅✅ THE REST SLICE IS DONE (D275–D276, 2026-09-02) — AND IT WAS NOT THE SLICE THE HANDOFF
+> PLANNED.** This section used to say *"next is a DERIVED `rest_share_percent` folded into
+> `VillageEconomy.TripsPerYear`"*. ⛔ **That was the wrong slice and the probe is what said so:**
+> job-holders already rested **9–16%** of their ticks, so Joe's 10% was already there and there was
+> nothing to subtract — taxing `available` again would have charged an economy that had already
+> paid. **What they lacked was a SPELL**: `Decide` set `Resting` for everyone and
+> `ActionTicksRemaining` only for the jobless, so a job-holder rested one tick and re-asked on the
+> next. *One gate removed in `BehaviorSystem`.*
+> ⭐ **Costs at most 0.4 points of working time** (out-on-the-work share, four shipped seeds; one
+> byte-identical), and **D250's distant-farm cliff of 88%→74% no longer reproduces** — 87% either
+> way, verified by pushing `rest_ticks` to 50 to prove the probe could still see a change at all.
+> ⚠️ **Safe for hunger and cold by structure**: `TryEat` and `TrySeekWarmth` run ABOVE the
+> `ActionTicksRemaining` gate and warmth zeroes it; `HearthSystem` reads position, not state.
+>
+> ⏸ **`ApprenticeshipTests` IS SKIPPED, ON JOE'S CALL, AND IT IS THE BAR THAT EXPIRED.** D227 set
+> a per-seed strictly-more bar when the arms made **5.15 against 8.40 masters**; villages are ~5×
+> smaller since the seat caps and it now reads **0.70 against 1.10**. Teaching cannot be
+> mechanically harmed by resting — the bonus scales by the same `worth` and the master check reads
+> `WorkplaceId`. **TO RESTORE: aggregate across 8–10 seeds, keeping per-seed numbers printed.**
+> That reverses D227's explicit *"per-seed is stronger than aggregating"*, which is why it is
+> waiting on Joe rather than done.
+>
+> ⛔⛔ **AND THE LESSON WORTH CARRYING: TWO OF THE THREE INSTRUMENTS I REACHED FOR WERE BLIND, AND
+> ONLY THE RED CHECK CAUGHT THEM.** *Consecutive ticks in `Resting`* reads **129 either way** — a
+> flicker re-enters the state every tick and looks exactly like a spell. *Was a job-holder ever
+> mid-countdown* is true either way — somebody can be hired three ticks into a spell. **The
+> discriminator is proportion: 0% against 56%.** *Never ship a guard for a behaviour change without
+> reverting the change and watching it go red.*
 >
 > **⭐⭐ 2026-09-01 — "A JOB IS A JOB" (D270–D271), AND NOT ONE GOLDEN MOVED.** Joe, on a
 > forester's hut reading *"nobody working of 2 seats · asked 1 · village wants 0"*: *"It **IS**

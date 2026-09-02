@@ -363,16 +363,34 @@ public sealed record SimConfig
     /// <b>The sim had no way to say somebody was simply fine.</b>
     /// </para>
     /// <para>
-    /// <b>⛔ Only reached by somebody who has run out of work</b> — a forager mid-season never
-    /// gets here. It is not a working-hours dial and must not quietly become one; widening it to
-    /// interrupt a job is a design change, not a re-tune.
+    /// <b>⭐ IT IS A WORKING-HOURS DIAL NOW, AND THAT IS A DELIBERATE REVERSAL</b> (Joe,
+    /// 2026-09-02: *"I want villagers to have an idle rest period, even in their respective work
+    /// seasons"*). This paragraph used to read: *"Only reached by somebody who has run out of
+    /// work — a forager mid-season never gets here. It is not a working-hours dial and must not
+    /// quietly become one; widening it to interrupt a job is a design change, not a re-tune."*
+    /// ⚠️ **It was a design change, it was measured, and it was taken** — kept here verbatim
+    /// because a rule that is reversed silently is a rule that gets re-argued from scratch.
     /// </para>
     /// <para>
-    /// ⚠️ <b>Four ticks is a starting number and is expected to move in play.</b> A village of
-    /// spare hands loses roughly this fraction of its fallback labour — clearing, hauling and
-    /// tidying — so raising it makes the village visibly less busy and lowers how much painted
-    /// ground it works through. **That is the dial to reach for when the village feels frantic**,
-    /// and the one to check first if painted ground stops being cleared.
+    /// ⛔ <b>The premise behind the ask turned out to be wrong, which is why the change is small.</b>
+    /// Joe asked for *"like 10% of time resting to start"* — and the measurement said job-holders
+    /// **already** spent 9–16% of their ticks in <c>Resting</c>. What they did not have was a
+    /// <em>spell</em>: the state was set for everyone and the span only for the jobless, so a
+    /// job-holder rested one tick and re-asked the next. **The quantity was there; it flickered.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Three ticks, and the observable span is FOUR</b> — the tick that sets the counter is
+    /// itself a rest tick, then three more decrement it. Both numbers are right; this doc used to
+    /// say "four ticks" beside a key of 3 and read as a typo. <b>Expected to move in play</b>: a
+    /// village of spare hands loses roughly this fraction of its fallback labour — clearing,
+    /// hauling and tidying — so raising it makes the village visibly less busy. **That is the dial
+    /// to reach for when the village feels frantic**, and the one to check first if painted ground
+    /// stops being cleared.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The response is NOT monotonic and one sample per value is not a curve</b> (D250): two
+    /// ticks cost a distant farm <em>more</em> than three did, 80% against 86%. **Three is the best
+    /// measured, not the optimum.**
     /// </para>
     /// </remarks>
     [JsonPropertyName("rest_ticks")]

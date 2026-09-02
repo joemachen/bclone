@@ -99,7 +99,23 @@ public sealed class ApprenticeshipTests
     /// of the three. <em>See the sampling comment above.</em>
     /// </para>
     /// </remarks>
-    [Theory]
+    [Theory(Skip =
+        "⏸ 2026-09-02, Joe's call to ship the rest slice with this red. NOT a regression in "
+        + "apprenticeship, and NOT a seed swap. The per-seed strictly-more bar has stopped "
+        + "discriminating: D227 set it when these arms produced 5.15 against 8.40 masters, and "
+        + "the villages are ~5x smaller now, so it reads 0.70 against 1.10 — teaching 'wins' by "
+        + "four tenths of a person. Widening the rest spell to job-holders nudged seed 2's "
+        + "trajectory across that line (1.20 taught against 2.10 untaught). Teaching cannot be "
+        + "mechanically harmed by resting: the apprentice bonus is `worth * bonus / 100`, so it "
+        + "scales by the same factor as solo learning, and the master-nearby check reads "
+        + "WorkplaceId rather than state. Three fixes were tried and each only moved which seed "
+        + "sits on the edge — masters per adult (populations are 19.8 against 19.6, so it "
+        + "changes nothing), a 20-to-50-year window, and counting rest as active work. "
+        + "TO RESTORE: ask the question across 8-10 seeds and require teaching to win overall, "
+        + "keeping the per-seed numbers printed so a real collapse is still visible — which "
+        + "reverses D227's explicit 'per-seed is stronger than aggregating' and is why it was "
+        + "not done unilaterally. A skip is a claim about the world and goes stale like any "
+        + "other (D134): re-run it before trusting this note.")]
     // ⛔⛔ SEED 42 WAS SWAPPED OUT FOR 7 AND 99 (D262), AND THAT NEEDS DEFENDING BECAUSE
     // SEED-SHOPPING IS HOW A REGRESSION GETS HIDDEN.
     //

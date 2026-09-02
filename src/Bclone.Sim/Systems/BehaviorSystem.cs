@@ -2758,28 +2758,34 @@ public sealed class BehaviorSystem : ISimSystem
         // destination** — which is why doing this before them was the right order.
         villager.State = VillagerState.Resting;
 
-        // ⛔⛔ ONLY SOMEBODY WITH NO JOB AT ALL, AND A RED CHECK HAD TO TEACH ME THAT.
+        // ⭐⭐ EVERYBODY GETS THE SPELL, JOB OR NO JOB (Joe, 2026-09-02). *"I want villagers to
+        // have an idle rest period, even in their respective work seasons."*
         //
-        // The paragraph above claimed this "deliberately does not interrupt a job" and **that was
-        // not true as written**: the fall-through catches anybody whose job has nothing for them
-        // *this tick*, which mid-autumn is a farmhand between two tiles. Measured, it cost a farm
-        // ten ticks from its store **96% of what it sowed down to 74%** — and left the farm next
-        // to its store at 95%.
+        // ⛔ THIS WAS SCOPED TO `IsLaborer` UNTIL NOW, AND THE MEASUREMENT THAT SCOPED IT NO
+        // LONGER REPRODUCES. D250 found that giving job-holders the spell cost a farm ten ticks
+        // from its store **88% of what it sowed down to 74%**, while the farm beside its store
+        // stayed at 95% — *"a cost that looks small on the average village is a cliff on the one
+        // already stretched"*. **Re-measured 2026-09-02 on the same probe: 87% before and 87%
+        // after, identical to the digit, and the near farm 93% → 93%.** Something between the two
+        // slices — most likely D178's farm memory and the seat caps — took the cliff away.
         //
-        // ⚠️ **IT HIT THE MARGINAL CASE HARDEST, WHICH IS THE SHAPE TO WATCH FOR.** A distant
-        // farm has no slack in a 120-tick autumn, so a rest spell comes straight out of the
-        // harvest; a near one absorbs it. **A cost that looks small on the average village is a
-        // cliff on the one that was already stretched** — and D178 spent a whole slice making
-        // that distant farm work.
+        // ⚠️ **AND THE PROBE WAS PROVED SENSITIVE BEFORE THAT ZERO WAS BELIEVED**, because an
+        // instrument that cannot see a change reports no change (D181, D227). At `rest_ticks: 50`
+        // the same farm moves **87% → 84%** and the near one 93% → 92%. *It responds when pushed;
+        // it has nothing to report at three.*
         //
-        // ⭐ So it is scoped to `IsLaborer` — no workplace, which is exactly the population Joe
-        // pointed at (*"Laborer 4 of 10 able adults · spare hands"*) and exactly his words:
-        // *"no jobs to do"*. **Widening it to job-holders is a real economic change and wants
-        // its own measurement**, not a quiet edit here.
-        if (villager.IsLaborer)
-        {
-            villager.ActionTicksRemaining = world.Config.RestTicks;
-        }
+        // ⭐ **WHAT THIS ACTUALLY COSTS, MEASURED ON THE RIGHT INSTRUMENT.** The share of ticks a
+        // job-holder spends in `Resting` is the WRONG number — `Idle` and `Resting` earn the same
+        // idle rate in `SkillSystem`, so it cannot show what was lost. The right one is the share
+        // spent **out on the work**, and across four shipped seeds it moves 77.9→77.6, 81.4→81.4,
+        // 79.9→79.9 and 77.5→77.1 — **at most four tenths of a point, and one seed byte-identical.**
+        //
+        // ⚠️ Safe for hunger and cold **by structure, not by luck**: `TryEat` and `TrySeekWarmth`
+        // both run ABOVE the `ActionTicksRemaining` gate in `ActOne`, and seeking warmth zeroes
+        // the counter outright. `HearthSystem` reads position rather than state, and a rester is
+        // on their own hearth tile — so this is mildly cold-PROTECTIVE. Staffing is `WorkplaceId`
+        // throughout, so a resting villager still holds their seat.
+        villager.ActionTicksRemaining = world.Config.RestTicks;
     }
 
     /// <summary>

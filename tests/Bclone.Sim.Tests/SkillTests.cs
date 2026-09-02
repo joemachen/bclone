@@ -261,8 +261,10 @@ public sealed class SkillTests
     //   before the fire got hungrier (2026-09-01): false 16804319504790807004,
     //                                             true  4069910012555344042
     //   before winter cost 20 in the fixture too (2026-09-01): false 7687562070926004820
-    [InlineData(false, 13795718776793115179UL)]
-    [InlineData(true, 19523974609292821UL)]
+    //   before job-holders rested in spells (2026-09-02): false 13795718776793115179,
+    //                                                    true  19523974609292821
+    [InlineData(false, 6280070700300926173UL)]
+    [InlineData(true, 47097500781508764UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

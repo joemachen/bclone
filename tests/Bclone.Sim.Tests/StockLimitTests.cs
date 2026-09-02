@@ -320,7 +320,8 @@ public sealed class StockLimitTests
     //   before the builder's hut was capped at three (2026-08-30): 8070719233468439432
     //   before the fire got hungrier (2026-09-01): 15019749670195753039
     //   before winter cost 20 in the fixture too (2026-09-01): 3963224460235965406
-    private const ulong FixtureFiftyYearHash = 3512506285116327781UL;
+    //   before job-holders rested in spells (2026-09-02): 3512506285116327781
+    private const ulong FixtureFiftyYearHash = 18088862711615675308UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -367,7 +368,8 @@ public sealed class StockLimitTests
     //   before the huts were capped at two (D262): 2864896199077825277
     //   before the builder's hut was capped at three (2026-08-30): 778583940525783184
     //   before the fire got hungrier (2026-09-01): 7526008860437144418
-    private const ulong ShippedFiftyYearHash = 13822301328619150389UL;
+    //   before job-holders rested in spells (2026-09-02): 13822301328619150389
+    private const ulong ShippedFiftyYearHash = 801842139213225914UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

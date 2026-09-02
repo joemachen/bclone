@@ -427,10 +427,22 @@
   // There are no stands any more: a forester works the ground their own
   // hut was given, and cut_yield is what one tree of it is worth.
   "cut_yield": 12,
+  // How long a rest lasts before somebody asks what to do next. The observable
+  // span is FOUR ticks, not three: the tick that sets the counter is itself a
+  // rest tick, then three more decrement it. Both numbers are right.
+  //
+  // Everyone gets this now, job or no job (Joe, 2026-09-02: "I want villagers
+  // to have an idle rest period, even in their respective work seasons"). It
+  // was scoped to the jobless until then, on a D250 measurement that no longer
+  // reproduces - see BehaviorSystem for the re-measurement and the red check
+  // that proved the probe could still see a change at all.
+  //
+  // Raise it to make the village visibly less busy; check it first if painted
+  // ground stops being cleared. NOT monotonic - two ticks cost a distant farm
+  // MORE than three did (80% against 86%), so three is the best measured
+  // rather than the optimum.
   "rest_ticks": 3,
 
-  // How long somebody with nothing to do sits before asking again. Raise it to make
-  // the village visibly less busy; check it first if painted ground stops being cleared.
   "cut_ticks": 4,
   // DERIVED (VillageEconomy.RequiredForesterSeats), not picked. 3 -> 6.
   // Enough hands to keep the woodcutters in logs and still leave one for
