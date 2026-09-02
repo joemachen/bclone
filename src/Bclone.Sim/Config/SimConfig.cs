@@ -1592,6 +1592,13 @@ public sealed record SimConfig
             Id = (int)World.Goods.Food,
             Name = "food",
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+
+            // ⭐ THE ONLY EDIBLE GOOD TODAY, AND THE NUMBER IS DELIBERATELY 1 RATHER THAN
+            // `FoodPerMeal`. This answers *"can it be eaten?"* and not yet *"how well?"* — a meal
+            // still costs `food_per_meal` units of whatever is being eaten, so the survival floor
+            // is untouched. See `GoodRow.Nutrition`: the day two rows carry DIFFERENT non-zero
+            // values, `RequiredGatherYield` and `MouthsFedByOneAdult` have to be re-derived first.
+            Nutrition = 1,
         },
         new GoodRow
         {
@@ -3138,6 +3145,49 @@ public sealed record SimConfig
                 throw new SimConfigException(
                     $"goods[{i}] ('{good.Name}') names no store kind in stored_by, so nothing "
                     + "in the village could ever hold it.");
+            }
+
+            if (good.Nutrition < 0)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has nutrition {good.Nutrition}. Zero means "
+                    + "nobody can eat it; negative means nothing.");
+            }
+        }
+
+        // ⛔⛔ EVERY EDIBLE GOOD MUST BE WORTH THE SAME, AND THIS GUARD IS THE WHOLE REASON THE
+        // FOOD DERIVATION SURVIVED THIS SLICE.
+        //
+        // `VillageEconomy` solves the survival floor against `food_per_meal` — **one number for
+        // one food** — and `food-catalog.md` states the consequence plainly: a catalogue of
+        // nutritional values means the floor must be solved against *"the worst food a village
+        // might be living on, or the derivation has to change shape."* `RequiredGatherYield` and
+        // `MouthsFedByOneAdult` have no valid form until somebody answers that.
+        //
+        // ⭐ So a second edible good is allowed and a second VALUE is not. This throws at load
+        // rather than letting a village quietly starve against a floor solved for a diet it is not
+        // eating — which is D48, D49 and D50's shape, and each of those was a village that died.
+        int worth = 0;
+        for (int i = 0; i < GoodsCatalog.Count; i++)
+        {
+            if (GoodsCatalog[i].Nutrition <= 0)
+            {
+                continue;
+            }
+
+            if (worth == 0)
+            {
+                worth = GoodsCatalog[i].Nutrition;
+                continue;
+            }
+
+            if (GoodsCatalog[i].Nutrition != worth)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{GoodsCatalog[i].Name}') is worth {GoodsCatalog[i].Nutrition} to a hungry "
+                    + $"villager where another edible good is worth {worth}. Every edible good "
+                    + "must be worth the same until the survival floor is re-derived against a "
+                    + "diet rather than against one food (see GoodRow.Nutrition).");
             }
         }
 

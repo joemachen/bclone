@@ -574,7 +574,19 @@ public sealed class SimWorld
     /// player is being told what is in the buildings; use <see cref="FoodTheVillageHolds"/> for
     /// any question of the form *does the village have enough food?*
     /// </remarks>
-    public int FoodInGranaries() => TotalAccepting(Goods.Food, static store => store.Food);
+    public int FoodInGranaries()
+    {
+        int total = 0;
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+
+        for (int i = 0; i < edible.Count; i++)
+        {
+            Goods goods = edible[i];
+            total += TotalAccepting(goods, store => store[goods]);
+        }
+
+        return total;
+    }
 
     /// <summary>
     /// ⭐ All the food the village is holding — its stores <em>and</em> its workplaces (D161).
@@ -604,10 +616,15 @@ public sealed class SimWorld
     public int FoodTheVillageHolds()
     {
         int total = FoodInGranaries();
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            total += Workplaces[i].Store.Food;
+            Stockpile store = Workplaces[i].Store;
+            for (int g = 0; g < edible.Count; g++)
+            {
+                total += store[edible[g]];
+            }
         }
 
         return total;
@@ -1419,6 +1436,52 @@ public sealed class SimWorld
     /// </remarks>
     public bool FoodLimitIsMet() => StockLimits.IsMet(Goods.Food, FoodTheVillageHolds());
 
+    /// <summary>Whether a store would ever take anything anybody can eat.</summary>
+    /// <remarks>
+    /// <b>⭐ THE "IS THIS A FOOD STORE?" QUESTION, ASKED OF THE CATALOGUE.</b> It used to be
+    /// `CanEverHold(Goods.Food)` in three places — correct while food was one good, and wrong the
+    /// moment a fishery fills a granary with fish. `goods-catalog.md §2.2` named this exact seam:
+    /// *"every reader of 'how much food has the village got' has to ask a capability question
+    /// instead of naming a good."*
+    /// </remarks>
+    public bool CanEverHoldFood(StoreBuilding store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+        for (int i = 0; i < edible.Count; i++)
+        {
+            if (store.CanEverHold(edible[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether a store would take anything edible <em>right now</em>.</summary>
+    /// <remarks>
+    /// The narrower sibling of <see cref="CanEverHoldFood"/>: this one respects the player's
+    /// filter and whether the store is being emptied, so it answers *"is there anywhere to put
+    /// this catch?"* rather than *"is this the kind of building food lives in?"*.
+    /// </remarks>
+    public bool AcceptsFood(StoreBuilding store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+        for (int i = 0; i < edible.Count; i++)
+        {
+            if (store.Accepts(edible[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Why this workplace cannot do its job right now, or <c>null</c> if it can.
     /// </summary>
@@ -1743,7 +1806,7 @@ public sealed class SimWorld
             for (int s = 0; s < StoreBuildings.Count && nearest; s++)
             {
                 StoreBuilding store = StoreBuildings[s];
-                if (!store.CanEverHold(Goods.Food))
+                if (!CanEverHoldFood(store))
                 {
                     continue;
                 }
@@ -1765,7 +1828,7 @@ public sealed class SimWorld
     public int HaulWalkFrom(GridPos position)
     {
         StoreBuilding? store = NearestStoreAccepting(
-            position, Goods.Food, static place => place.CanEverHold(Goods.Food));
+            position, Goods.Food, CanEverHoldFood);
 
         return store is null ? -1 : TravelCost.TicksBetween(position, store.Position);
     }
@@ -7821,7 +7884,7 @@ public sealed class SimWorld
         int room = 0;
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (StoreBuildings[i].Accepts(Goods.Food))
+            if (AcceptsFood(StoreBuildings[i]))
             {
                 room += StoreBuildings[i].Store.FreeSpace;
             }

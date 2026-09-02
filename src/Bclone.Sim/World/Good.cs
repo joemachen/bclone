@@ -129,6 +129,41 @@ public sealed record GoodRow
     /// </remarks>
     [JsonPropertyName("stored_by")]
     public IReadOnlyList<StoreKind> StoredBy { get; init; } = new List<StoreKind>();
+
+    /// <summary>
+    /// What one unit of it is worth to a hungry person — <b>0 for anything nobody can eat</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS IS THE CAPABILITY QUESTION `goods-catalog.md §2.2` SAID WOULD BE NEEDED, ARRIVING
+    /// ON THE DAY IT PREDICTED.</b> That ruling kept fish, meat, wheat, cheese and apples as one
+    /// good — *"varieties are flavour and unlock, not new goods"* — and wrote down its own expiry:
+    /// *"when that lands, **every reader of 'how much food has the village got' has to ask a
+    /// capability question instead of naming a good**."* Joe asked for fish and meat as real goods
+    /// on 2026-09-02, so it landed.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>EVERY EDIBLE GOOD IS WORTH THE SAME TODAY, AND THAT IS THE WHOLE REASON THIS SLICE
+    /// IS SAFE.</b> `food-catalog.md` states the danger exactly: *"it lands on a derivation, not on
+    /// a blank page — `VillageEconomy` solves the survival floor against `food_per_meal`, one
+    /// number for one food."* **If a unit of fish and a unit of venison were worth different
+    /// amounts, `RequiredGatherYield` and `MouthsFedByOneAdult` would have no valid form** — the
+    /// floor would have to be solved against the worst diet a village might be living on. So this
+    /// field exists to answer *"can it be eaten?"* and **not yet** *"how well?"*.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The moment two rows carry different non-zero values, the survival floor has to be
+    /// re-derived before anything ships</b> (`DESIGN.md §5`'s nutrition axis, still unchecked).
+    /// That is a separate feature and it has a body count — D48, D49 and D50 are each a village
+    /// that died because a yield moved and the floor did not.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("nutrition")]
+    public int Nutrition { get; init; }
+
+    /// <summary>Whether anybody can eat it. Derived, so there is one fact and not two.</summary>
+    [JsonIgnore]
+    public bool Edible => Nutrition > 0;
 }
 
 /// <summary>
@@ -181,6 +216,19 @@ public sealed class GoodsCatalog
 
             _storedBy[row.Id] = mask;
         }
+
+        // ⭐ The edible list, built once. See `EdibleGoods` for why it is not walked per call
+        // and why the order is the id order rather than the file order.
+        var edible = new List<Goods>();
+        for (int id = 0; id < _rows.Length; id++)
+        {
+            if (_rows[id] is { Edible: true })
+            {
+                edible.Add((Goods)id);
+            }
+        }
+
+        EdibleGoods = edible;
     }
 
     /// <summary>How many goods exist.</summary>
@@ -215,4 +263,40 @@ public sealed class GoodsCatalog
     /// <summary>Whether a kind of store will hold this good at all.</summary>
     public bool StoredBy(Goods goods, StoreKind kind) =>
         (_storedBy[(int)goods] & (1 << (int)kind)) != 0;
+
+    /// <summary>Whether anybody can eat it.</summary>
+    public bool Edible(Goods goods) => Edible((int)goods);
+
+    /// <summary>Whether anybody can eat it — by id, for goods a mod added.</summary>
+    public bool Edible(int id) => id >= 0 && id < _rows.Length && _rows[id].Edible;
+
+    /// <summary>What one unit of it is worth to a hungry person. Zero if nobody can eat it.</summary>
+    public int NutritionOf(Goods goods) => _rows[(int)goods].Nutrition;
+
+    /// <summary>
+    /// Every good anybody can eat, in id order — <b>the list that replaces naming
+    /// <c>Goods.Food</c></b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS IS THE ONE PLACE THE SIM ASKS "WHAT COUNTS AS FOOD?"</b>, and it exists because
+    /// `goods-catalog.md §2.2` predicted the day it would be needed: *"every reader of 'how much
+    /// food has the village got' has to ask a capability question instead of naming a good — D76's
+    /// seam, on the one axis the whole economy is derived from."*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>BUILT ONCE, NOT WALKED PER CALL.</b> `FoodTheVillageHolds` is read by the birth gate,
+    /// the forager quota, the farmer quota, the fetch errand and the market — several of them
+    /// inside per-villager loops. A LINQ scan of the catalogue on every one of those would be a
+    /// per-tick allocation in the hottest path in the sim, which is the shape D179 spent a session
+    /// unpicking (an O(n²) Dijkstra doing 92 million iterations a flow field).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>In id order, and that is load-bearing rather than tidy.</b> Anything that iterates
+    /// goods and writes to the world — filling a larder, loading a market round — must do it in a
+    /// fixed order or two runs of one seed diverge (§5's determinism rules). Ids are the order
+    /// everything else in this file already uses.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<Goods> EdibleGoods { get; }
 }

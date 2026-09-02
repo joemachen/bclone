@@ -1977,14 +1977,14 @@ public partial class Main : Control
         if (workplace.Kind == JobKind.Farmer)
         {
             lines.Add(workplace.Store.Held > 0
-                ? $"Holding: {DescribeGoods(workplace.Store)} — {workplace.Store.Held.Grouped()} of "
+                ? $"Holding: {DescribeGoods(world, workplace.Store)} — {workplace.Store.Held.Grouped()} of "
                     + $"{workplace.Store.Capacity.Grouped()}. Past that, the harvest goes to a store."
                 : $"Holding: nothing. It keeps up to {workplace.Store.Capacity.Grouped()} of its own "
                     + "harvest before the walk gets longer.");
         }
         else if (workplace.Store.Held > 0)
         {
-            lines.Add($"Holding: {DescribeGoods(workplace.Store)}");
+            lines.Add($"Holding: {DescribeGoods(world, workplace.Store)}");
         }
         else if (workplace.Kind == JobKind.Woodcutter)
         {
@@ -2087,7 +2087,7 @@ public partial class Main : Control
         Separate(lines);
 
         lines.Add($"{store.Name} — a {Describe(world, store.Kind)}");
-        lines.Add($"Holding: {DescribeGoods(store.Store)}");
+        lines.Add($"Holding: {DescribeGoods(world, store.Store)}");
 
         // Capacity is derived rather than typed in (D33), and it is the number that
         // decides how big the village gets — so it belongs on screen, not just in a
@@ -2117,7 +2117,7 @@ public partial class Main : Control
             lines.Add($"Home to {HouseholdNames(world, household)}");
         }
 
-        lines.Add($"Larder: {DescribeGoods(household.Stockpile)}");
+        lines.Add($"Larder: {DescribeGoods(world, household.Stockpile)}");
     }
 
     private static void DescribeBareGround(SimWorld world, GridPos tile, List<string> lines)
@@ -2341,19 +2341,23 @@ public partial class Main : Control
     }
 
     /// <summary>Only the goods actually present, so an empty shelf is not three zeroes.</summary>
-    private static string DescribeGoods(Stockpile store)
+    /// <remarks>
+    /// ⛔ <b>BOUNDED BY THE STOCKPILE'S OWN SLOTS, NOT BY THE ENUM.</b> This read
+    /// `Stockpile.Kinds`, which is `Enum.GetValues&lt;Goods&gt;().Length` and can only ever return six —
+    /// against `Stockpile`'s own warning that *"iterating 0..Kinds over a village that has more
+    /// goods than the enum silently ignores every good above the sixth."* A panel whose whole job
+    /// is to say what is here would have quietly stopped saying it.
+    /// </remarks>
+    private static string DescribeGoods(SimWorld world, Stockpile store)
     {
-        // Every good, by index. Written three times by hand until stone and tools
-        // arrived, which is the point at which a panel whose whole job is to say what is
-        // here would have started silently omitting things.
         var parts = new List<string>();
 
-        for (int i = 0; i < Stockpile.Kinds; i++)
+        for (int i = 0; i < store.Slots; i++)
         {
             var goods = (Goods)i;
             if (store[goods] > 0)
             {
-                parts.Add($"{store[goods].Grouped()} {NameOf(goods)}");
+                parts.Add($"{store[goods].Grouped()} {world.GoodsCatalog.NameOf(goods)}");
             }
         }
 
@@ -2361,16 +2365,6 @@ public partial class Main : Control
     }
 
     /// <summary>A good's name as a player would say it.</summary>
-    private static string NameOf(Goods goods) => goods switch
-    {
-        Goods.Food => "food",
-        Goods.Logs => "logs",
-        Goods.Firewood => "firewood",
-        Goods.Stone => "stone",
-        Goods.Tools => "tools",
-        _ => goods.ToString().ToLowerInvariant(),
-    };
-
     private static string Describe(JobKind kind) => kind switch
     {
         JobKind.Forager => "food is gathered here",
@@ -2854,10 +2848,15 @@ public partial class Main : Control
         table.AddThemeConstantOverride("h_separation", 10);
         table.AddThemeConstantOverride("v_separation", 2);
 
-        foreach (Goods goods in Enum.GetValues<Goods>())
+        // ⛔ THE CATALOGUE, NOT THE ENUM. `Stockpile` warns against exactly this loop bound:
+        // *"iterating 0..Kinds over a village that has more goods than the enum silently
+        // ignores every good above the sixth"* — so a mod-added good had a working slot in the
+        // sim, a stock limit, a place in the hash, and no row on screen.
+        for (int id = 0; id < _loop.World.GoodsCatalog.Count; id++)
         {
+            var goods = (Goods)id;
             table.AddChild(Chip(ChipColour(goods)));
-            table.AddChild(Body(GoodsName(goods)));
+            table.AddChild(Body(GoodsName(_loop.World, goods)));
 
             Label held = Body(string.Empty);
             held.HorizontalAlignment = HorizontalAlignment.Right;
@@ -2986,6 +2985,12 @@ public partial class Main : Control
         Goods.Stone => new Color(0.62f, 0.62f, 0.64f),
         Goods.Tools => new Color(0.72f, 0.76f, 0.82f),
         Goods.Iron => new Color(0.55f, 0.36f, 0.30f),
+
+        // ⚠️ A MOD-ADDED GOOD GETS A CHIP RATHER THAN A CRASH, and it is deliberately drab.
+        // `goods-catalog.md §9.4` asks whether a mod-added good needs a display colour and calls
+        // it *"the first thing a modder will ask for"*. Until that is answered, a neutral chip is
+        // the honest answer: the row is legible, and the greyness says *nobody chose this colour*
+        // rather than implying somebody did.
         _ => new Color(1, 1, 1, 0.4f),
     };
 
@@ -3356,10 +3361,10 @@ public partial class Main : Control
         // things and only the second one survives somebody calling it from elsewhere.
         (_acceptRow, HFlowContainer acceptControls) = InspectorRow(body, Muted("Takes:"));
 
-        for (int g = 0; g < Stockpile.Kinds; g++)
+        for (int g = 0; g < _loop.World.GoodsCatalog.Count; g++)
         {
             var goods = (Goods)g;
-            var button = new Button { Text = GoodsName(goods), ToggleMode = true };
+            var button = new Button { Text = GoodsName(_loop.World, goods), ToggleMode = true };
             button.Pressed += () => ToggleSelectedAccepts(goods);
             acceptControls.AddChild(button);
             _acceptButtons.Add((goods, button));
@@ -4699,7 +4704,7 @@ public partial class Main : Control
         row.AddThemeConstantOverride("separation", 6);
         stack.AddChild(row);
 
-        Label name = Muted(GoodsName(goods));
+        Label name = Muted(GoodsName(_loop.World, goods));
         name.CustomMinimumSize = new Vector2(74, 0);
         row.AddChild(name);
 
@@ -4855,17 +4860,29 @@ public partial class Main : Control
     /// load-bearing the moment the overview listed all six — a new good would have shown up
     /// under its enum spelling, which is the version of a name nobody chose.
     /// </remarks>
-    private static string GoodsName(Goods goods) => goods switch
+    /// <summary>
+    /// What a good is called on screen — <b>asked of the catalogue, capitalised for a heading</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THIS WAS SIX NAMED ARMS AND A DEFAULT THAT THREW</b>, on D108's rule that every
+    /// value be named. That rule is right for a <em>closed</em> enum and wrong here: `Goods` has
+    /// been open since D210 (*"a seventh good is held, hashed and carried like any other"*), so
+    /// **the first good a modder added would crash the overview panel** the moment it was drawn —
+    /// and `GoodsCatalog.NameOf` had the answer the whole time. `goods-catalog.md §2.1` forbids the
+    /// sim switching on a good by name; the view had simply never been held to it.
+    /// </para>
+    /// <para>
+    /// ⭐ Capitalisation is the view's business, not the catalogue's. The row holds *"food"*
+    /// because that is the word the village uses in a sentence (*"12 food"*); a table heading
+    /// wants *"Food"*. **One word, two presentations, and the row keeps the word.**
+    /// </para>
+    /// </remarks>
+    private static string GoodsName(SimWorld world, Goods goods)
     {
-        Goods.Food => "Food",
-        Goods.Logs => "Logs",
-        Goods.Firewood => "Firewood",
-        Goods.Stone => "Stone",
-        Goods.Tools => "Tools",
-        Goods.Iron => "Iron",
-        _ => throw new ArgumentOutOfRangeException(
-            nameof(goods), goods, "That good has no name on screen."),
-    };
+        string name = world.GoodsCatalog.NameOf(goods);
+        return name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
+    }
 
     /// <summary>
     /// How much of a good the limit is actually measured against.
