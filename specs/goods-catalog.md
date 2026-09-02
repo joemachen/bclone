@@ -42,6 +42,16 @@ for the first six ids, not a second source of truth.*
 
 ### 2.2 Food varieties stay `Goods.Food`
 
+> **✅ THIS RULING EXPIRED ON 2026-09-02, EXACTLY AS IT SAID IT WOULD (D277).** Joe asked for
+> fish and meat as real goods. `GoodRow.Nutrition` is the capability question this section
+> predicted — zero means nobody can eat it — and `GoodsCatalog.EdibleGoods` is the one place
+> the sim asks *"what counts as food?"*.
+>
+> ⛔ **But only half of it expired.** Every edible good is still worth the SAME per unit,
+> **enforced at load**, so `food_per_meal` remains one number and the survival floor is
+> untouched. *Foods being worth different amounts is still ahead of us, and
+> `food-catalog.md`'s warning still stands: it lands on a derivation, not a blank page.*
+
 Fish, meat, wheat, cheese and apples remain **one good**, per `professions.md` (Joe) and
 `crops-and-orchards.md §4` — *varieties are flavour and unlock, not new goods.* **This is what
 takes the target from ~70 to ~35.**
