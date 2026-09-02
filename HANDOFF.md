@@ -1,7 +1,28 @@
 # Handoff — bclone: **✅ TWO SEATS, THREE BUILDERS, AND FOUR PANEL CHANGES NOBODY HAS LOOKED AT YET.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
-> **897 passing, 0 failing, 1 skipped of 898** — on `slice/two-seats-per-hut`.
+> **899 passing, 0 failing, 1 skipped of 900** — on `slice/two-seats-per-hut`.
+>
+> **⭐⭐ 2026-09-01 — "A JOB IS A JOB" (D270–D271), AND NOT ONE GOLDEN MOVED.** Joe, on a
+> forester's hut reading *"nobody working of 2 seats · asked 1 · village wants 0"*: *"It **IS**
+> staffed and somebody **DOES** work there."* ⛔ **The panel was not lying — the hut really did
+> empty.** `LabourQuota.Asked` cut the seat when a stock limit was met, which contradicted
+> **D238, Joe's own earlier call** (*"a met stock limit stops the job and LEAVES the trade"*) —
+> built in `BehaviorSystem` and never in the quota.
+> ⭐ **THE RULE NOW: the stop lives where the work happens, never on the roster.** The player's
+> profession number is the answer. Every capped trade already gates itself (woodcutter D139,
+> forager D238, forester `MayFell`, farmer `MaySow`), which is why removing the override was
+> safe — **red-checked at 489 firewood against a limit of 40** with the woodcutter's gate
+> disabled, reproducing Joe's own *"452 at a limit of 50"*.
+> ⚠️ **§4a WAS NOT TOUCHED and did not need to be** — the plan called it the riskiest edit.
+> `Asked` ignores the village's figure whenever the player has set a number, and the panel sets
+> one for every trade from the first frame, so *"hunger has nothing to do with whether you are
+> assigned a job"* falls out of D106's ordering. **§4a still governs any trade left unset, which
+> is how the fixtures run** — do not delete it.
+> ⛔⛔ **AND A TRAP FOR THE NEXT PERSON: TWO GUARDS WERE PASSING AGAINST A CORPSE.** Posing
+> *"cap logs at 0 from the founding"* stops the fuel chain before it starts — **all four founders
+> dead by Year 2** — and `IdleNote` is null for a hut in a dead village too. **Let the village
+> stand up for twenty years before posing a limit, and assert `Population > 0`** (D7).
 > ⚠️ **`main` is at 881 and does NOT have any of this.**
 >
 > **✅ FIVE MORE THINGS FROM JOE'S PLAY ON 2026-08-30 (D266–D269), ALL BUILT AND GREEN:**
