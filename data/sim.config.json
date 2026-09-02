@@ -672,15 +672,22 @@
   // Asserted against the shipped file now, not just the test fixture -
   // the two diverge, and this gap lived entirely in that divergence.
   //
-  // 2 -> 3 (2026-09-01), and it is a CONSEQUENCE rather than a choice:
-  // doubling firewood_per_winter_day doubled what a winter costs, and
-  // ShippedConfigTests immediately said heating 20 households needs 3
-  // seats where the hut held 2. That guard is D50 - the run where the
-  // yields moved and the capacities did not, the village physically
-  // could not make more firewood however many hands were free, and
-  // thirty-six people froze. It fired the moment the burn changed,
-  // which is exactly what it is for.
-  "woodcutter_hut_capacity": 3,
+  // STAYS AT TWO, and Joe ruled on it the day it was questioned
+  // (2026-09-01): "I want 2 seats at a woodcutter. players have to build
+  // another building if they want more woodcutters. or they can upgrade
+  // the buildings later."
+  //
+  // It went to 3 for an afternoon, because doubling firewood_per_winter_
+  // day doubled what a winter costs and ShippedConfigTests said heating
+  // 20 households needs 3 seats. That guard is D50 - yields moved, the
+  // capacities did not, the village physically could not make more
+  // firewood however many hands were free, and thirty-six people froze.
+  //
+  // WHAT CHANGED IS THE ANSWER, NOT THE ARITHMETIC. D50's village had no
+  // recourse; this one does. A hut is a CAP now (D256, D262, D267) and
+  // the recourse is a second hut - so the protection moves from "the hut
+  // is big enough" to "the village SAYS when one hut is not enough".
+  "woodcutter_hut_capacity": 2,
   "logs_per_split": 6,
   "split_ticks": 4,
 

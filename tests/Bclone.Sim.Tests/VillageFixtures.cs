@@ -85,7 +85,11 @@ public static class VillageFixtures
                 // so every test in the suite was running a fuel economy four times hungrier
                 // than the game. That gap is precisely what METHODOLOGY §3 exists for and
                 // what D48, D49 and D50 each were.
-                FirewoodBurnIntervalDays = 4,
+                // ⛔ 4 → 3 (Joe, 2026-09-01: *"winter should cost 20"*). The comment above is
+                // about closing the fixture/shipped gap and it closed only half of it: at an
+                // interval of 4 a fixture winter cost **15** where the game's cost 20, so every
+                // guard in the suite was still running a milder winter than the game ships.
+                FirewoodBurnIntervalDays = 3,
 
                 // A real valley, generated (D18). The forage sites and the tree stands
                 // this used to ask for are retired — food comes from a hut the player

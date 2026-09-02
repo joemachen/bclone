@@ -42,7 +42,8 @@ public readonly record struct LabourQuota
         int marketers = 0,
         int builders = 0,
         int farmers = 0,
-        int slots = 0)
+        int slots = 0,
+        int[]? needed = null)
     {
         Hands = hands;
         Mouths = mouths;
@@ -59,6 +60,11 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Marketer] = marketers;
         _byJob[(int)JobKind.Builder] = builders;
         _byJob[(int)JobKind.Farmer] = farmers;
+
+        // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
+        // a quota posed by a test without one reads as "it got what it needed" rather than as a
+        // shortfall it never had.
+        _neededByJob = needed ?? _byJob;
     }
 
     /// <summary>Villagers able to do a day's work.</summary>
@@ -92,6 +98,39 @@ public readonly record struct LabourQuota
     /// the day a modder adds one.</b>
     /// </remarks>
     private readonly int[] _byJob;
+
+    /// <summary>
+    /// What each trade would want <b>if there were seats for it</b>, by job id.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE HALF THAT MAKES A SEAT CAP HONEST, AND WITHOUT IT THE CAP IS A SILENT
+    /// SHORTAGE.</b> Joe, 2026-09-01: *"I want 2 seats at a woodcutter. Players have to build
+    /// another building if they want more woodcutters."* ⛔ **That answer only works if the
+    /// player is told.** <see cref="For(JobKind)"/> is capped by <c>TotalCapacityFor</c>, so a village
+    /// needing three woodcutters and holding two seats reported *"village wants 2"* — perfectly
+    /// true, and it hides the very fact the player has to act on.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It is the same shape as <see cref="ForagersToFeedEveryone"/></b>, which has always
+    /// stayed honest beside a capped <c>Foragers</c> for exactly this reason — generalised to
+    /// every trade now that every trade is capped.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Captured BEFORE the food floor zeroes anything</b> (`foodComesFirst`), deliberately.
+    /// A hungry village still needs its firewood; what it does not have is the hands to spare
+    /// this minute. *"You need another woodcutter's hut"* stays true through a hard winter, and
+    /// is most worth saying then.
+    /// </para>
+    /// </remarks>
+    private readonly int[] _neededByJob;
+
+    /// <summary>What this trade would want if there were seats for it.</summary>
+    public int Needed(JobKind kind)
+    {
+        int id = (int)kind;
+        return id >= 0 && id < _neededByJob.Length ? _neededByJob[id] : 0;
+    }
 
     /// <summary>Hands the village wants foraging.</summary>
     public int Foragers => _byJob[(int)JobKind.Forager];
@@ -225,6 +264,19 @@ public readonly record struct LabourQuota
         int forestersForHouses = ForestersWanted(world);
         int marketersWanted = MarketersWanted(world);
         int buildersWanted = BuildersWanted(world);
+
+        // ⭐ SNAPSHOT OF WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE, taken here because
+        // here is the last moment it is unqualified — before the food floor zeroes four trades
+        // and before every one of them is capped by the seats that exist. See `_neededByJob`:
+        // it is what lets a panel say *"you need another woodcutter's hut"* instead of quietly
+        // reporting the two seats as if two were the answer.
+        var needed = new int[BuiltIn];
+        needed[(int)JobKind.Forager] = toFeedEveryone;
+        needed[(int)JobKind.Woodcutter] = woodcutters;
+        needed[(int)JobKind.Forester] = forestersForHuts + forestersForHouses;
+        needed[(int)JobKind.Marketer] = marketersWanted;
+        needed[(int)JobKind.Builder] = buildersWanted;
+        needed[(int)JobKind.Farmer] = world.FarmerSeatsWithGroundToWork();
 
         // WHILE THERE IS FOOD TO GATHER AND THE VILLAGE IS SHORT OF IT, EVERY HAND
         // GATHERS. Timber, fuel, building and the market all yield — a marketer most
@@ -557,7 +609,7 @@ public readonly record struct LabourQuota
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
-            farmers);
+            farmers, slots: 0, needed: needed);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>

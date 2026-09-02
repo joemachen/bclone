@@ -1120,6 +1120,21 @@ public partial class Main : Control
                 row += $" — {reason}";
             }
 
+            // ⭐⭐ AND WHEN THE VILLAGE NEEDS MORE THAN IT HAS ROOM FOR, IT SAYS SO (Joe,
+            // 2026-09-01). *"I want 2 seats at a woodcutter. Players have to build another
+            // building if they want more woodcutters."* ⛔ **That answer only works if the player
+            // is told**, and this row could not tell them: `quota.For` is capped by the seats
+            // that exist, so a village needing three woodcutters and holding two reported
+            // *"village wants 2"* — true, and it hides the one fact worth acting on.
+            //
+            // ⚠️ This is the sentence that does for every trade what competing rings (D260) did
+            // for the forager: **it is what stops a seat cap being a silent shortage.**
+            if (quota.Needed(kind) > seats && world.JobsCatalog.WorksAt(kind) is BuildingKind at)
+            {
+                row += $" — it needs {quota.Needed(kind)}; build another "
+                    + $"{world.BuildingsCatalog[at]?.Name ?? "one"}";
+            }
+
             places.Text = row;
         }
 

@@ -100,27 +100,43 @@ public sealed class RestingTests
         ColdStartTests.PlayTheOpening(world);
         loop.Step(config.TicksPerYear * 10);
 
-        // Find somebody actually mid-rest, then watch how long they stay there.
+        // ⛔ WHOEVER ACTUALLY RESTS, NOT `Villagers[0]` (2026-09-01). This watched one arbitrary
+        // villager, and a rest SPELL is only given to somebody with no job at all
+        // (`BehaviorSystem`, `IsLaborer`) — so the guard passed or failed on whether villager
+        // zero happened to be unemployed that decade. It went red when the fixture's winter got
+        // hungrier and Dorcas picked up a trade: **the rest spell was working perfectly and the
+        // guard was looking at the wrong person.**
+        //
+        // ⚠️ This will matter again the moment job-holders start resting too — watching the
+        // whole roster is the version of this claim that survives that change.
+        var runs = new int[world.Villagers.Count];
         int longest = 0;
-        int run = 0;
-        Villager watched = world.Villagers[0];
+        string who = "nobody";
 
         for (int tick = 0; tick < config.TicksPerYear; tick++)
         {
             loop.StepOnce();
 
-            if (watched.Alive && watched.State == VillagerState.Resting)
+            for (int i = 0; i < world.Villagers.Count && i < runs.Length; i++)
             {
-                run++;
-                longest = System.Math.Max(longest, run);
-            }
-            else
-            {
-                run = 0;
+                Villager villager = world.Villagers[i];
+                if (villager.Alive && villager.State == VillagerState.Resting)
+                {
+                    runs[i]++;
+                    if (runs[i] > longest)
+                    {
+                        longest = runs[i];
+                        who = villager.Name;
+                    }
+                }
+                else
+                {
+                    runs[i] = 0;
+                }
             }
         }
 
-        _output.WriteLine($"{watched.Name}'s longest unbroken rest was {longest} ticks "
+        _output.WriteLine($"{who}'s longest unbroken rest was {longest} ticks "
             + $"(rest_ticks is {config.RestTicks})");
 
         Assert.True(

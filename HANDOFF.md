@@ -1,7 +1,7 @@
 # Handoff — bclone: **✅ ON `main`, 900 GREEN. NEXT IS THE REST SLICE; TWO CALLS WAITING ON JOE.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
-> **900 passing, 0 failing, 1 skipped of 901** — **on `main`, merged and pushed 2026-09-01.**
+> **901 passing, 0 failing, 1 skipped of 902** — **on `main`, merged and pushed 2026-09-01.**
 > `main` = `origin/main` = `slice/two-seats-per-hut`, a clean fast-forward. ⭐ *D217's trap is not
 > live: the build Joe plays and the remote are one thing.*
 >
@@ -11,14 +11,20 @@
 > ⛔⛔ **AND D50's GUARD CAUGHT THE BILL THE SAME MINUTE** — *"woodcutter_hut_capacity is 2 but
 > heating 20 households needs 3 seats"*, which is the sentence from the run where thirty-six
 > people froze. Raised 2 → 3 **as a consequence, not a choice**.
-> ⚠️ **TWO OPEN CALLS FOR JOE, BOTH IN D273:**
-> 1. **Should a woodcutter's hut seat 3, or should the player build a second one?** Raising it
->    sits against the two-seat doctrine (D256, D262, D267). It was raised because that was the
->    conservative move inside a firewood change — **the doctrinal answer is his.**
-> 2. **The fixture and the shipped file disagree about the burn interval** — 4 in
->    `VillageFixtures`, 3 in `data/sim.config.json`, so a fixture winter costs 15 where the
->    game's costs 20. The fixture's own comment is about closing exactly this gap and closed only
->    half of it. Untouched here because it moves goldens for a reason nobody asked for.
+> ✅ **BOTH OF D273's OPEN CALLS ARE ANSWERED (D274, Joe):**
+> 1. **A woodcutter's hut seats TWO** — *"players have to build another building if they want
+>    more woodcutters. Or they can upgrade the buildings later."* ⛔⛔ **So D50's protection moved
+>    from capacity to legibility, which is a HARDER guard, not a weaker one**: *"build another"*
+>    is only an answer if the player is told. `LabourQuota.Needed(kind)` keeps the honest figure
+>    beside the capped one — generalising `ForagersToFeedEveryone` to all six trades — and the
+>    professions row now reads *"… it needs 3; build another woodcutter's hut"*.
+>    ⚠️ **That sentence is DORMANT in a real game and it took three attempts to prove reachable.**
+>    Woodcutter demand divides the shortfall by what one makes a year, so at the shipped
+>    `firewood_per_split` of 50 the answer is **1 for any village this game grows**; the 3 the
+>    horizon needs belongs to a twenty-household settlement nobody reaches. *If a trade's
+>    "build another" sentence ever needs testing, pose the cost, not the population.*
+> 2. **The fixture's winter costs 20 now, like the game's** — `FirewoodBurnIntervalDays` 4 → 3.
+>    Every guard in the suite had been running a 15-firewood winter against a shipped 20.
 >
 > **✅ AND THE DISTANCE WARNING SAYS WHAT IT COSTS (D272)** — *"a pair of hands here does about
 > 14% of the work a pair at the door would — the rest is road"* for a workplace, *"every load

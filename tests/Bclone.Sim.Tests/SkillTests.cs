@@ -260,7 +260,8 @@ public sealed class SkillTests
     //                                              true  9768080546410864531
     //   before the fire got hungrier (2026-09-01): false 16804319504790807004,
     //                                             true  4069910012555344042
-    [InlineData(false, 7687562070926004820UL)]
+    //   before winter cost 20 in the fixture too (2026-09-01): false 7687562070926004820
+    [InlineData(false, 13795718776793115179UL)]
     [InlineData(true, 19523974609292821UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {

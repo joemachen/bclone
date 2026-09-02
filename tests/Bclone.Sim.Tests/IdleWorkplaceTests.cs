@@ -451,6 +451,84 @@ public sealed class IdleWorkplaceTests
         }
     }
 
+    /// <summary>
+    /// ⭐⭐ When one hut cannot hold what the village needs, <b>the village says the true
+    /// number</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-09-01:</b> *"I want 2 seats at a woodcutter. Players have to build another
+    /// building if they want more woodcutters. Or they can upgrade the buildings later."*
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>THAT ANSWER IS ONLY AN ANSWER IF THE PLAYER IS TOLD.</b> `LabourQuota.For` is
+    /// capped by the seats that exist, so a village needing three woodcutters and holding two
+    /// reported *"village wants 2"* — true, and it hides the one fact worth acting on. **A seat
+    /// cap with no sentence beside it is D50 wearing a design's clothes**: the village that
+    /// *"physically could not make more firewood however many hands were free"*, arriving by
+    /// choice instead of by accident.
+    /// </para>
+    /// <para>
+    /// ⚠️ **POSED, BECAUSE THE SHIPPED VILLAGE DOES NOT REACH IT.** The economy horizon is
+    /// twenty households and a real forty-year village is nearer seven, so it needs one
+    /// woodcutter and never sees this. *A sentence that only fires at the horizon is a sentence
+    /// nobody has ever read* — so it is exercised here at a capacity of one rather than left to
+    /// a village that has to get large first.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillageThatNeedsMoreSeatsThanItHasSaysTheTrueNumber()
+    {
+        // ⚠️ ONE SEAT AND EXPENSIVE FUEL, AND THE SECOND HALF IS NOT DECORATION. Woodcutter
+        // demand is the shortfall divided by what one woodcutter makes in a year, and at the
+        // shipped `firewood_per_split` of 50 that answer is **1 for any village this game
+        // actually grows** — the 3 seats the horizon needs belong to a twenty-household
+        // settlement nobody reaches. Measured: a sixteen-person village needed 0 all year.
+        // Cheap splits make the same shortfall cost more hands, which is the state being posed.
+        SimConfig config = Config with { WoodcutterHutCapacity = 1, FirewoodPerSplit = 4 };
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        loop.Step(config.TicksPerYear * 40);
+
+        // ⚠️ SAMPLED ACROSS A YEAR, NOT AT ONE TICK. `WoodcuttersWanted` reads the shed, so on
+        // any given tick a stocked village needs nobody — the first draft of this guard read
+        // *"needs 0"* and failed for the fuel chain working. **A demand that comes and goes with
+        // the season has to be watched over a season**, which is D200's and D227's lesson about
+        // spot readings of a fluctuating stock, one system over.
+        int seats = LabourQuota.TotalCapacityFor(world, JobKind.Woodcutter);
+        int mostNeeded = 0;
+        int cappedThen = 0;
+
+        for (int tick = 0; tick < config.TicksPerYear; tick++)
+        {
+            loop.StepOnce();
+            LabourQuota now = LabourQuota.For(world);
+
+            if (now.Needed(JobKind.Woodcutter) > mostNeeded)
+            {
+                mostNeeded = now.Needed(JobKind.Woodcutter);
+                cappedThen = now.For(JobKind.Woodcutter);
+            }
+        }
+
+        _output.WriteLine($"{world.Population} alive; {seats} woodcutter seats; over one year the "
+            + $"village needed at most {mostNeeded} and asked for {cappedThen}");
+
+        Assert.True(world.Population > 0, "The village died, so this guard proves nothing.");
+
+        // The shortfall exists …
+        Assert.True(
+            mostNeeded > seats,
+            $"One seat covered {world.Population} people all year, so nothing is being hidden "
+            + "and this guard is not exercising the sentence it exists for (D7).");
+
+        // … and the capped figure is the one that would have hidden it.
+        Assert.True(
+            cappedThen <= seats,
+            "The capped figure exceeded the seats, so the cap is not being applied at all.");
+    }
+
     /// <summary>A construction site explains itself in the build queue, not with a ring.</summary>
     [Fact]
     public void AConstructionSiteIsNeverFlagged()

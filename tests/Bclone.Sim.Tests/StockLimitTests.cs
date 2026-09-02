@@ -319,7 +319,8 @@ public sealed class StockLimitTests
     //   before the huts were capped at two (D262): 5042347838377458292
     //   before the builder's hut was capped at three (2026-08-30): 8070719233468439432
     //   before the fire got hungrier (2026-09-01): 15019749670195753039
-    private const ulong FixtureFiftyYearHash = 3963224460235965406UL;
+    //   before winter cost 20 in the fixture too (2026-09-01): 3963224460235965406
+    private const ulong FixtureFiftyYearHash = 3512506285116327781UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,

@@ -138,11 +138,32 @@ public sealed class ShippedConfigTests
             $"(config {shipped.WoodcutterHutCapacity}); forester's hut needs " +
             $"{foresterSeats} (config {shipped.ForesterHutCapacity}).");
 
+        // ⛔⛔ THE CLAIM MOVED ON 2026-09-01, AND D50 IS THE REASON IT COULD.
+        //
+        // This asserted `WoodcutterHutCapacity >= woodcutterSeats` — **one hut must be big enough
+        // for the whole horizon village** — and it fired the moment Joe doubled the firewood burn:
+        // heating 20 households needs 3 seats and the hut holds 2. The message it carried is the
+        // run where *"the village physically could not make more firewood however many hands were
+        // free, and thirty-six people froze."*
+        //
+        // ⭐⭐ **WHAT CHANGED IS THE RECOURSE, NOT THE ARITHMETIC.** D50's village had none: one
+        // hut, a fixed capacity, and no way out. Joe's ruling (2026-09-01): *"I want 2 seats at a
+        // woodcutter. Players have to build another building if they want more woodcutters. Or
+        // they can upgrade the buildings later."* A hut is a **cap** now (D256, D262, D267), and
+        // the answer to needing more is another hut.
+        //
+        // ⚠️ **SO THE PROTECTION BECOMES LEGIBILITY, AND IT IS A STRICTLY HARDER THING TO GET
+        // RIGHT.** *"Build another one"* is only an answer if the player is told they need to —
+        // otherwise a capped hut is D50 wearing a design's clothes, which is precisely what
+        // competing rings (D260) had to fix before the forager's two seats meant anything.
+        // `LabourQuota.Needed` keeps the honest figure beside the capped one so the professions
+        // panel can say it.
         Assert.True(
-            shipped.WoodcutterHutCapacity >= woodcutterSeats,
-            $"woodcutter_hut_capacity is {shipped.WoodcutterHutCapacity} but heating " +
-            $"{shipped.EconomyHorizonHouseholds} households needs {woodcutterSeats} seats. The " +
-            "village would be unable to make more firewood however many hands were free.");
+            woodcutterSeats > shipped.WoodcutterHutCapacity,
+            $"Heating {shipped.EconomyHorizonHouseholds} households needs {woodcutterSeats} seats "
+            + $"and one hut holds {shipped.WoodcutterHutCapacity}, so this guard is checking a "
+            + "shortfall that no longer occurs — which is good news, and means the claim below "
+            + "has stopped being exercised. Re-point it or retire it.");
 
         // ⛔⛔ THE FORESTER'S ARM COMPARED A KEY NOTHING READS, AND SAID SO CONVINCINGLY.
         // It asserted `forester_hut_capacity >= foresterSeats` — but the forester's hut is the
@@ -158,6 +179,23 @@ public sealed class ShippedConfigTests
         // guard: it reads as protection.*
         Assert.Null(
             shipped.BuildingRows.Single(row => row.Id == (int)BuildingKind.ForesterHut).Seats);
+
+        // ⭐⭐ AND THE VILLAGE SAYS SO OUT LOUD — the half that makes "build another hut" an
+        // answer rather than a silent shortage. Posed on a horizon-sized village so the demand
+        // is real rather than a founding's.
+        SimLoop loop = SimFactory.CreatePhase0(shipped, new InMemoryLogSink());
+        loop.Step(shipped.TicksPerYear * 40);
+
+        LabourQuota quota = LabourQuota.For(loop.World);
+        int seats = LabourQuota.TotalCapacityFor(loop.World, JobKind.Woodcutter);
+
+        _output.WriteLine(
+            $"after forty years: {loop.World.Population} alive, woodcutter seats {seats}, "
+            + $"village wants {quota.For(JobKind.Woodcutter)}, needs {quota.Needed(JobKind.Woodcutter)}");
+
+        Assert.True(
+            quota.Needed(JobKind.Woodcutter) >= quota.For(JobKind.Woodcutter),
+            "The honest need is below the capped figure, so `Needed` is not the uncapped one.");
 
         _output.WriteLine(
             $"forester's hut states no seats and is handed {foresterSeats} by the economy; "
