@@ -671,7 +671,16 @@
   //
   // Asserted against the shipped file now, not just the test fixture -
   // the two diverge, and this gap lived entirely in that divergence.
-  "woodcutter_hut_capacity": 2,
+  //
+  // 2 -> 3 (2026-09-01), and it is a CONSEQUENCE rather than a choice:
+  // doubling firewood_per_winter_day doubled what a winter costs, and
+  // ShippedConfigTests immediately said heating 20 households needs 3
+  // seats where the hut held 2. That guard is D50 - the run where the
+  // yields moved and the capacities did not, the village physically
+  // could not make more firewood however many hands were free, and
+  // thirty-six people froze. It fired the moment the burn changed,
+  // which is exactly what it is for.
+  "woodcutter_hut_capacity": 3,
   "logs_per_split": 6,
   "split_ticks": 4,
 
@@ -707,9 +716,18 @@
   // costs rather than population - a pressure that traces back to a
   // player decision (DESIGN.md §2.3).
   //
-  // Still one log per burn, and still the switch that turns fuel off
-  // entirely when it is zero (Phase 0's world has no winter fuel).
-  "firewood_per_winter_day": 1,
+  // Still the switch that turns fuel off entirely when it is zero
+  // (Phase 0's world has no winter fuel).
+  //
+  // 1 -> 2 (Joe, 2026-09-01): "firewood needs to be consumed 2x faster
+  // in winter - houses dont burn it fast enough."
+  //
+  // Exactly 2x, and the RHYTHM is why this key moved rather than the
+  // interval. A winter costs ceil(days_per_season / interval) x this,
+  // so at a 30-day winter the interval can only give 8, 10, 15 or 30 -
+  // there is no 20 on that dial. Two logs every three days is 20 and
+  // keeps the three-day beat the interval comment above argued for.
+  "firewood_per_winter_day": 2,
 
   // How many days one burn lasts (Joe, 2026-08-11: "make firewood
   // consumption take longer. like 4x longer. it goes too fast").

@@ -208,7 +208,8 @@ public sealed class FarmGoldenTests
     //
     //   before the village was allowed to rest: 1856781046300124051
     //   before the huts were capped at two (D262): 5824784480959670577
-    private const ulong SeamGoldenHash = 6716701650818163431UL;
+    //   before the fire got hungrier (2026-09-01): 6716701650818163431
+    private const ulong SeamGoldenHash = 3921975159594428461UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -241,7 +242,8 @@ public sealed class FarmGoldenTests
     //   before a load could be put down where it was accepted (2026-08-27): 2112570384239951269
     //   before the village was allowed to rest (D250): 15700858930161795428
     //   before the huts were capped at two (D262): 2038884662017358556
-    private const ulong SeamBeforeAnybodyGotBetter = 2945337393414434771UL;
+    //   before the fire got hungrier (2026-09-01): 2945337393414434771
+    private const ulong SeamBeforeAnybodyGotBetter = 12024391942491487759UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

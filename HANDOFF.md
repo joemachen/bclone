@@ -1,7 +1,38 @@
-# Handoff — bclone: **✅ TWO SEATS, THREE BUILDERS, AND FOUR PANEL CHANGES NOBODY HAS LOOKED AT YET.**
+# Handoff — bclone: **✅ ON `main`, 900 GREEN. NEXT IS THE REST SLICE; TWO CALLS WAITING ON JOE.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-08-29 (evening).**
-> **899 passing, 0 failing, 1 skipped of 900** — on `slice/two-seats-per-hut`.
+> **900 passing, 0 failing, 1 skipped of 901** — **on `main`, merged and pushed 2026-09-01.**
+> `main` = `origin/main` = `slice/two-seats-per-hut`, a clean fast-forward. ⭐ *D217's trap is not
+> live: the build Joe plays and the remote are one thing.*
+>
+> **✅ THE FIRE BURNS TWICE AS FAST (D273, Joe)** — `firewood_per_winter_day` 1 → 2, exactly 2×,
+> keeping the three-day beat (the interval dial cannot reach 20 on a 30-day winter). **Measured
+> before it was believed: zero frozen either way**, peak 20 against 21, peak year 60 → 262.
+> ⛔⛔ **AND D50's GUARD CAUGHT THE BILL THE SAME MINUTE** — *"woodcutter_hut_capacity is 2 but
+> heating 20 households needs 3 seats"*, which is the sentence from the run where thirty-six
+> people froze. Raised 2 → 3 **as a consequence, not a choice**.
+> ⚠️ **TWO OPEN CALLS FOR JOE, BOTH IN D273:**
+> 1. **Should a woodcutter's hut seat 3, or should the player build a second one?** Raising it
+>    sits against the two-seat doctrine (D256, D262, D267). It was raised because that was the
+>    conservative move inside a firewood change — **the doctrinal answer is his.**
+> 2. **The fixture and the shipped file disagree about the burn interval** — 4 in
+>    `VillageFixtures`, 3 in `data/sim.config.json`, so a fixture winter costs 15 where the
+>    game's costs 20. The fixture's own comment is about closing exactly this gap and closed only
+>    half of it. Untouched here because it moves goldens for a reason nobody asked for.
+>
+> **✅ AND THE DISTANCE WARNING SAYS WHAT IT COSTS (D272)** — *"a pair of hands here does about
+> 14% of the work a pair at the door would — the rest is road"* for a workplace, *"every load
+> carried in or out is a 9-tile walk each way"* for a store. One arithmetic
+> (`SimWorld.ShareOfTheDayThatIsWork`), read by the placement warning and the commute note both.
+>
+> **⭐⭐ NEXT SLICE IS THE REST SHARE (Joe: "rest slice next").** `rest_share_percent` at 10 to
+> start. ⛔⛔ **IT MUST BE DERIVED, NOT BOLTED ON**: `VillageEconomy.TripsPerYear` is
+> `available ÷ RoundTripTicks`, so the rest share comes out of `available` and every anchor
+> re-solves. Bolt 10% on top and every village is 10% poorer against unchanged anchors and the
+> thin valleys die — **that is D50's shape, which fired twice this week already.**
+> ⚠️ **Measure the FARM specifically**: autumn is a deadline, not a rate. The one previous
+> attempt at resting job-holders measured **96% → 74% of what a farm sowed** (D250), which is why
+> the rest spell is scoped to `IsLaborer` today.
 >
 > **⭐⭐ 2026-09-01 — "A JOB IS A JOB" (D270–D271), AND NOT ONE GOLDEN MOVED.** Joe, on a
 > forester's hut reading *"nobody working of 2 seats · asked 1 · village wants 0"*: *"It **IS**

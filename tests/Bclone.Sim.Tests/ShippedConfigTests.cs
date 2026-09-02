@@ -144,10 +144,24 @@ public sealed class ShippedConfigTests
             $"{shipped.EconomyHorizonHouseholds} households needs {woodcutterSeats} seats. The " +
             "village would be unable to make more firewood however many hands were free.");
 
-        Assert.True(
-            shipped.ForesterHutCapacity >= foresterSeats,
-            $"forester_hut_capacity is {shipped.ForesterHutCapacity} but keeping the woodcutters " +
-            $"in logs and still leaving a hand to build needs {foresterSeats}.");
+        // ⛔⛔ THE FORESTER'S ARM COMPARED A KEY NOTHING READS, AND SAID SO CONVINCINGLY.
+        // It asserted `forester_hut_capacity >= foresterSeats` — but the forester's hut is the
+        // one building whose row still leaves `Seats` null, so `SimWorld.SeatsIn` hands it
+        // `RequiredForesterSeats` and **the config key seats nobody**. The check could only ever
+        // fail by someone editing a dead number, and it duly failed the moment the firewood burn
+        // doubled (2026-09-01) while the hut was already seating the 3 it needed.
+        //
+        // ⭐ So the claim becomes the one that is actually load-bearing: **the hut must still be
+        // deriving**, because the instant somebody states its seats it inherits `woodcutter_hut_
+        // capacity`'s whole history (D16, D50 — yields moved, capacities did not, thirty-six
+        // people froze). *A guard comparing a number the game does not use is worse than no
+        // guard: it reads as protection.*
+        Assert.Null(
+            shipped.BuildingRows.Single(row => row.Id == (int)BuildingKind.ForesterHut).Seats);
+
+        _output.WriteLine(
+            $"forester's hut states no seats and is handed {foresterSeats} by the economy; "
+            + $"forester_hut_capacity ({shipped.ForesterHutCapacity}) seats nobody.");
     }
 
     /// <summary>

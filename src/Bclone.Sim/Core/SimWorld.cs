@@ -4870,12 +4870,40 @@ public sealed class SimWorld
         // to be sown would be the quieter half of a two-part mistake.
         string? standingCrop = WarningForBuildingOverACrop(position);
 
+        // ⭐⭐ IT SAYS WHAT THE WALK COSTS, NOT HOW LONG IT IS (Joe, 2026-09-01).
+        //
+        // ⛔ IT USED TO READ *"That is 11 tiles from the village; it budgets 8. People will spend
+        // their days walking to it."* Joe, placing a stockpile: *"people spend their time walking
+        // anywhere — im not sure what this warning or line does now?"* **He is right that it did
+        // not tell him anything he could act on.** *"It budgets 8"* is a fact about a derivation
+        // he cannot see, and *"people will spend their days walking"* is true of every building in
+        // the game.
+        //
+        // ⭐ `LabourAllocator.DescribeTheCommute` had already written the rule this broke:
+        // *"it says what it COSTS, not how far it is. 'Nineteen tiles' is a number the player must
+        // convert into a consequence; 'brings back about a third of what a nearer pair of hands
+        // would' is the consequence."* This is the same fact one panel over and it was the last
+        // place still quoting the number.
+        //
+        // ⚠️ AND THE CONSEQUENCE IS NOT THE SAME FOR EVERY BUILDING, which is why there are two
+        // sentences. A workplace loses YIELD — hands at the far end spend the day on the road
+        // instead of working. A store loses nothing itself; **what it costs is every load anybody
+        // ever carries to it**, which is a different sentence and an honest one.
         int walk = TravelCost.Cost(village, position) / TravelCostField.BaseTileCost;
         int budget = VillageEconomy.MaxHomeToVillageTiles(Config);
-        string? tooFar = walk > budget
-            ? $"That is {walk} tiles from the village; it budgets {budget}. "
-                + "People will spend their days walking to it."
-            : null;
+        string? tooFar = null;
+
+        if (walk > budget)
+        {
+            tooFar = SeatsHereIfAny(kind) > 0
+                ? $"That is {walk} tiles out, against the {budget} the village's food is worked "
+                    + $"out on. A pair of hands here does about "
+                    + $"{ShareOfTheDayThatIsWork(TravelCost.Cost(village, position))}% of the work "
+                    + "a pair at the door would — the rest is road."
+                : $"That is {walk} tiles out, against the {budget} the village's food is worked "
+                    + $"out on. Nobody works here, but every load carried in or out is a "
+                    + $"{walk}-tile walk each way.";
+        }
 
         string? longHaul = WarningForAFarmFarFromAStore(kind, position);
 
@@ -6168,6 +6196,47 @@ public sealed class SimWorld
     /// would leave a phantom that nothing but a three-yearly reshuffle can clear
     /// (<c>LabourAllocator.Release</c> carries the full argument).
     /// </remarks>
+    /// <summary>
+    /// What share of a working day survives the walk, at this travel cost.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ONE COPY OF THE ARITHMETIC, TWO SENTENCES.</b> The placement warning
+    /// (<see cref="CanBuildAt"/>) and the commute note on a villager
+    /// (<c>LabourAllocator.DescribeTheCommute</c>) are the same fact told at two moments — before
+    /// you build, and about the person who ended up walking it. *Two copies of one calculation is
+    /// how they come to disagree*, which is D139's and D195's recorded shape.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b><c>GatherTicks</c> is the yardstick for every trade, deliberately.</b> It is the one
+    /// job whose round trip is entirely walk-plus-work, so it is the honest unit for *"how much of
+    /// the day is road"*; using each trade's own work ticks would make the same distance report
+    /// different costs and turn a warning into a puzzle.
+    /// </para>
+    /// </remarks>
+    public int ShareOfTheDayThatIsWork(int travelCost)
+    {
+        int walking = TravelCost.TicksForCost(travelCost) * 2;
+        int atTheDoor = Config.GatherTicks;
+        int whole = walking + atTheDoor;
+
+        return whole <= 0 ? 100 : atTheDoor * 100 / whole;
+    }
+
+    /// <summary>Seats a building of this kind has, or zero if nobody works there.</summary>
+    private int SeatsHereIfAny(BuildingKind kind)
+    {
+        for (int i = 0; i < JobsCatalog.Count; i++)
+        {
+            if ((int?)JobsCatalog[i].WorksAt == (int)kind)
+            {
+                return SeatsIn(kind);
+            }
+        }
+
+        return 0;
+    }
+
     private void ReleaseWorkers(Workplace workplace)
     {
         for (int i = 0; i < Villagers.Count; i++)

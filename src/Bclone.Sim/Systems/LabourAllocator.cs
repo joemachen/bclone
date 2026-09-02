@@ -444,11 +444,11 @@ internal static class LabourAllocator
 
         // Trips are what a year of work actually produces, and a trip is the walk there and
         // back plus the work at the end. Somebody on the doorstep is the yardstick.
-        int walking = world.TravelCost.TicksForCost(cost) * 2;
-        int atTheDoor = world.Config.GatherTicks;
-        int theirs = walking + atTheDoor;
-
-        int share = theirs <= 0 ? 100 : atTheDoor * 100 / theirs;
+        //
+        // ⭐ ASKED OF THE WORLD SINCE 2026-09-01, so the sentence the player reads BEFORE they
+        // build (`SimWorld.CanBuildAt`) and the one they read AFTERWARDS about the person who
+        // walks it are the same arithmetic rather than two copies of it.
+        int share = world.ShareOfTheDayThatIsWork(cost);
 
         return $"It is {tiles} tiles to {workplace.Name} — beyond the {budget} the village's "
             + $"food is budgeted for, so they bring back about {share}% of what a pair of "

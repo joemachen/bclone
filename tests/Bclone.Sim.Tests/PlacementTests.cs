@@ -167,7 +167,63 @@ public sealed class PlacementTests
         _output.WriteLine(warned!.Value.Warning);
 
         Assert.True(warned.Value.Allowed, "A distant site must be allowed, not refused.");
-        Assert.Contains("tiles from the village", warned.Value.Warning, System.StringComparison.Ordinal);
+
+        // ⭐ IT MUST NAME A CONSEQUENCE, NOT JUST A DISTANCE (Joe, 2026-09-01). This used to
+        // assert the literal words *"tiles from the village"*, which is the half of the sentence
+        // that told him nothing: *"people spend their time walking anywhere — im not sure what
+        // this warning or line does now?"* A guard that pins the phrasing protects the phrasing;
+        // what is worth protecting is that the warning says **what it will cost**, which is the
+        // rule `LabourAllocator.DescribeTheCommute` already states for the same fact.
+        Assert.Contains("tiles out", warned.Value.Warning, System.StringComparison.Ordinal);
+        Assert.True(
+            warned.Value.Warning.Contains("walk each way", System.StringComparison.Ordinal)
+                || warned.Value.Warning.Contains("the rest is road", System.StringComparison.Ordinal),
+            $"The warning names a distance and no consequence: \"{warned.Value.Warning}\"");
+    }
+
+    /// <summary>
+    /// ⭐ A workplace and a store are warned about <b>differently</b>, because they cost
+    /// differently.
+    /// </summary>
+    /// <remarks>
+    /// <b>A far workplace loses yield</b> — the hands posted there spend the day on the road
+    /// instead of working. <b>A far store loses nothing itself</b>; what it costs is every load
+    /// anybody ever carries to it. ⚠️ One sentence for both would have to be vague enough to
+    /// cover both, which is what the old *"people will spend their days walking to it"* was.
+    /// </remarks>
+    [Fact]
+    public void AFarWorkplaceAndAFarStoreAreWarnedAboutDifferently()
+    {
+        SimConfig config = Config;
+        SimWorld world = Build(config).World;
+        GridPos village = world.Households[0].Home();
+
+        string? store = null;
+        string? workplace = null;
+
+        for (int distance = 8; distance < 40 && (store is null || workplace is null); distance++)
+        {
+            var far = new GridPos(village.X + distance, village.Y);
+
+            PlacementVerdict asStore = world.CanBuildAt(BuildingKind.Granary, far);
+            if (store is null && asStore.Allowed && asStore.HasWarning)
+            {
+                store = asStore.Warning;
+            }
+
+            PlacementVerdict asWork = world.CanBuildAt(BuildingKind.WoodcutterHut, far);
+            if (workplace is null && asWork.Allowed && asWork.HasWarning)
+            {
+                workplace = asWork.Warning;
+            }
+        }
+
+        _output.WriteLine($"store:     {store ?? "(none)"}");
+        _output.WriteLine($"workplace: {workplace ?? "(none)"}");
+
+        Assert.True(store is not null && workplace is not null, "Nowhere far enough to warn (D7).");
+        Assert.Contains("every load", store!, System.StringComparison.Ordinal);
+        Assert.Contains("pair of hands", workplace!, System.StringComparison.Ordinal);
     }
 
     // ---------------------------------------------------------------

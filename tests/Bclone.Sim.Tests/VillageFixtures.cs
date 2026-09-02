@@ -76,7 +76,7 @@ public static class VillageFixtures
 
                 // Fuel back ON for the village: households to heat, and a labour
                 // system for firewood to compete inside (D17, D29).
-                FirewoodPerWinterDay = 1,
+                FirewoodPerWinterDay = 2,
 
                 // ⚠️ AND THE BURN INTERVAL THE GAME ACTUALLY SHIPS. Found by a probe asking
                 // why a village was not breeding: the fixture wanted **43 firewood in every
