@@ -78,6 +78,9 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color WaterColour = new("#2f5f7a");
 
+    /// <summary>A fishing hut — the river's colour, lifted so the hut reads against it.</summary>
+    private static readonly Color FisheryColour = new(0.42f, 0.68f, 0.78f);
+
     /// <summary>Generated woodland. Quieter than the tree stand that stands in it.</summary>
     private static readonly Color ForestColour = new("#2a3d2c");
 
@@ -2451,6 +2454,10 @@ public partial class VillageMap : Control
         JobKind.Forager => BerryColour,
         JobKind.Forester => TreeColour,
         JobKind.Woodcutter => HutColour,
+
+        // ⭐ The river's own colour, lightened — a fishing hut should read as belonging to the
+        // water it has to stand against, which is the one thing that decides where it can go.
+        JobKind.Fisher => FisheryColour,
         _ => MarketColour,
     };
 

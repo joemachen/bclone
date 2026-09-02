@@ -27,7 +27,12 @@ public sealed class ModdedJobTests
 
     public ModdedJobTests(ITestOutputHelper output) => _output = output;
 
-    private static JobKind Fisher => (JobKind)6;
+    /// <summary>The modder's own trade — <b>an id the enum has no name for</b>.</summary>
+    /// <remarks>
+    /// ⚠️ 6 → 7 when fishing shipped (2026-09-02). `JobKind.Boatman` exists now, and this
+    /// alias's whole job is to be a trade the enum cannot name.
+    /// </remarks>
+    private static JobKind Boatman => (JobKind)7;
 
     /// <summary>
     /// A catalogue with a seventh trade, written the way a modder would write it.
@@ -38,7 +43,7 @@ public sealed class ModdedJobTests
     /// <c>household_names</c> all follow, and the validator refuses a catalogue missing a built-in
     /// id so it cannot be got half-right.
     /// </remarks>
-    private static string JsonWithFisher => """
+    private static string JsonWithBoatman => """
     {
       "jobs": [
         { "id": 0, "name": "forager",    "plural": "foragers",    "doing": "gathering",          "works_at": "GathererHut" },
@@ -48,50 +53,58 @@ public sealed class ModdedJobTests
         { "id": 4, "name": "builder",    "plural": "builders",    "doing": "building",           "works_at": "BuilderHut" },
         { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Food" },
 
+        { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing",            "works_at": "FishingHut",    "limited_by": "Fish" },
+
         // The modder's own trade. Nothing in the sim has ever heard of it.
-        { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "at the water",       "limited_by": "Food" }
+        //
+        // ⚠️ IT MOVED 6 → 7 WHEN FISHING SHIPPED (2026-09-02), and that is the point rather than
+        // an inconvenience: this row exists to be an id the enum cannot name, and 6 stopped being
+        // one the day `JobKind.Boatman` existed. **The example mod was a fisherman; the game grew
+        // one.** Renamed too — two trades called "fisher" is a failure message nobody can read.
+        { "id": 7, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "limited_by": "Food" }
       ]
     }
     """;
 
-    private static SimConfig ConfigWithFisher() =>
-        SimConfigLoader.Parse(JsonWithFisher, "<modded>");
+    private static SimConfig ConfigWithBoatman() =>
+        SimConfigLoader.Parse(JsonWithBoatman, "<modded>");
 
     // -----------------------------------------------------------------
 
     [Fact]
     public void AModderCanAddATradeInDataAlone()
     {
-        var catalog = new JobsCatalog(ConfigWithFisher().JobsCatalog);
+        var catalog = new JobsCatalog(ConfigWithBoatman().JobsCatalog);
 
-        Assert.Equal(7, catalog.Count);
+        // 7 → 8 when the built-in fisher shipped (2026-09-02).
+        Assert.Equal(8, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a trade no switch has
         // ever named.
-        Assert.Equal("fisher", catalog.NameOf(Fisher));
-        Assert.Equal("fishers", catalog.PluralOf(Fisher));
-        Assert.Equal("at the water", catalog.DoingOf(Fisher));
+        Assert.Equal("boatman", catalog.NameOf(Boatman));
+        Assert.Equal("boatmen", catalog.PluralOf(Boatman));
+        Assert.Equal("at the water", catalog.DoingOf(Boatman));
 
-        _output.WriteLine($"{catalog.NameOf(Fisher)} / {catalog.PluralOf(Fisher)} — "
-            + $"{catalog.DoingOf(Fisher)}");
+        _output.WriteLine($"{catalog.NameOf(Boatman)} / {catalog.PluralOf(Boatman)} — "
+            + $"{catalog.DoingOf(Boatman)}");
     }
 
     [Fact]
     public void ATradeMayHaveNoWorkplaceAtAll()
     {
-        var catalog = new JobsCatalog(ConfigWithFisher().JobsCatalog);
+        var catalog = new JobsCatalog(ConfigWithBoatman().JobsCatalog);
 
         // ⭐ Legal and deliberate. A laborer is already *"the villagers no job currently wants"*
         // (D66) — a trade with no building of its own is a shape this game already has, so a
         // modder is not forced to invent one.
-        Assert.Null(catalog.WorksAt(Fisher));
+        Assert.Null(catalog.WorksAt(Boatman));
         Assert.Equal(BuildingKind.Farmhouse, catalog.WorksAt(JobKind.Farmer));
     }
 
     [Fact]
     public void TheBuiltInSixAreUntouchedByAdditions()
     {
-        var catalog = new JobsCatalog(ConfigWithFisher().JobsCatalog);
+        var catalog = new JobsCatalog(ConfigWithBoatman().JobsCatalog);
 
         // ⛔ Ids are appended, never renumbered — every golden and every saved staffing figure is
         // pinned to them.
@@ -128,7 +141,8 @@ public sealed class ModdedJobTests
         string shuffled = """
         {
           "jobs": [
-            { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "at the water" },
+            { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing", "works_at": "FishingHut", "limited_by": "Fish" },
+            { "id": 7, "name": "boatman",    "plural": "boatmen",     "doing": "at the water" },
             { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Food" },
             { "id": 4, "name": "builder",    "plural": "builders",    "doing": "building",           "works_at": "BuilderHut" },
             { "id": 3, "name": "marketer",   "plural": "traders",     "doing": "the market",         "works_at": "Market" },
@@ -141,12 +155,12 @@ public sealed class ModdedJobTests
 
         var catalog = new JobsCatalog(SimConfigLoader.Parse(shuffled, "<shuffled>").JobsCatalog);
 
-        // ⛔ If position won, `Goods.Forager` would read "fisher" here — a village whose every
+        // ⛔ If position won, `Goods.Forager` would read "boatman" here — a village whose every
         // trade quietly means something else, with nothing to see and nothing thrown.
         Assert.Equal("forager", catalog.NameOf(JobKind.Forager));
         Assert.Equal("forester", catalog.NameOf(JobKind.Forester));
         Assert.Equal("farmer", catalog.NameOf(JobKind.Farmer));
-        Assert.Equal("fisher", catalog.NameOf(Fisher));
+        Assert.Equal("boatman", catalog.NameOf(Boatman));
 
         // And the cross-references survive with them, not just the names.
         Assert.Equal(BuildingKind.GathererHut, catalog.WorksAt(JobKind.Forager));
@@ -178,7 +192,7 @@ public sealed class ModdedJobTests
 
         // And the seventh reads zero rather than throwing — the village simply has no opinion
         // about it yet.
-        Assert.Equal(0, quota.For(Fisher));
+        Assert.Equal(0, quota.For(Boatman));
     }
 
     [Fact]
@@ -219,7 +233,7 @@ public sealed class ModdedJobTests
     [Fact]
     public void ATradeWithNoPluralIsRefusedAtLoad()
     {
-        string noPlural = JsonWithFisher.Replace(
+        string noPlural = JsonWithBoatman.Replace(
             """fisher",     "plural": "fishers",""",
             """fisher",     "plural": "",""");
 
@@ -236,7 +250,7 @@ public sealed class ModdedJobTests
     [Fact]
     public void TwoTradesSharingAnIdAreRefusedAtLoad()
     {
-        string duplicated = JsonWithFisher.Replace(
+        string duplicated = JsonWithBoatman.Replace(
             """{ "id": 6, "name": "fisher",""",
             """{ "id": 5, "name": "fisher",""");
 

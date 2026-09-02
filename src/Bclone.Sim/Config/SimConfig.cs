@@ -507,6 +507,62 @@ public sealed record SimConfig
     [JsonPropertyName("gatherer_hut_work_ticks")]
     public int GathererHutWorkTicks { get; init; } = 40;
 
+    /// <summary>Timber a fishing hut costs.</summary>
+    [JsonPropertyName("fishing_hut_logs")]
+    public int FishingHutLogs { get; init; } = 25;
+
+    /// <summary>Stone a fishing hut costs.</summary>
+    [JsonPropertyName("fishing_hut_stone")]
+    public int FishingHutStone { get; init; } = 3;
+
+    /// <summary>Work a fishing hut takes to raise.</summary>
+    [JsonPropertyName("fishing_hut_work_ticks")]
+    public int FishingHutWorkTicks { get; init; } = 40;
+
+    /// <summary>
+    /// Hands a fishing hut holds — <b>four</b> (Joe, 2026-09-02).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE SEAT COUNT IS THE RANK OF A FOOD SOURCE NOW.</b> Forager 2, farm 2, hunter 3,
+    /// fisher 4 — Joe: *"fishing provides a consistent source of food that does not run out — up
+    /// to 4 seats. A step up from foraging in terms of food per worker. **Foraging is bottom of the
+    /// totem pole.**"*
+    /// </para>
+    /// <para>
+    /// ⚠️ It is the largest seat count of any food building, and that is the whole point: a
+    /// fishery is what a village should want to leave foraging FOR. The cost that balances it is
+    /// distance — the river is 2.5% of the valley and always at the periphery.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fishing_hut_seats")]
+    public int FishingHutSeats { get; init; } = 4;
+
+    /// <summary>
+    /// Fish one trip brings back — <b>flat, and it never runs out</b> (Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ NO RING, NO SHARE, NO DEPLETION — AND THAT IS THE DESIGN RATHER THAN A SHORTCUT.</b>
+    /// Joe: *"fishing provides a consistent source of food that does not run out."* So a fishing
+    /// hut has no <c>GatheringRadius</c>, does not compete with anything, and does not thin what it
+    /// works. **It is the one food source a village can rely on**, and what it costs is the walk.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A step up from foraging, measured against what a forager ACTUALLY brings home rather
+    /// than against `gather_yield`.</b> The raw key is 145, but that is the value of a trip at a
+    /// fully wooded ring; a real hut's ring runs around 55% wooded, so a forager carries roughly
+    /// **80**. This is set above that on purpose, and `FishingIsAStepUpFromForaging` guards the
+    /// comparison so the two cannot drift back together.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fish_yield")]
+    public int FishYield { get; init; } = 100;
+
+    /// <summary>Ticks one cast takes. The same as a gather — the yield is the difference.</summary>
+    [JsonPropertyName("fish_ticks")]
+    public int FishTicks { get; init; } = 3;
+
     /// <summary>What a forester's hut costs to raise.</summary>
     [JsonPropertyName("forester_hut_logs")]
     public int ForesterHutLogs { get; init; } = 25;
@@ -1640,6 +1696,22 @@ public sealed record SimConfig
             YieldPerTile = 8,
             StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
         },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Fish,
+            Name = "fish",
+            SourceName = "the river",
+
+            // ⚠️ STORED WHERE FOOD IS STORED, AND THE GRANARY MATTERS MOST. `StoreForTheLoad`
+            // sends a food load to a granary rather than the nearest store *"because the birth
+            // gate reads granaries"* — so fish that could only go in a shed would feed nobody's
+            // children.
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+
+            // Worth what food is worth. A second VALUE throws at load until the survival floor is
+            // re-derived against a diet (D277, `GoodRow.Nutrition`).
+            Nutrition = 1,
+        },
     };
 
     /// <summary>
@@ -1713,6 +1785,19 @@ public sealed record SimConfig
             Doing = "farming",
             WorksAt = BuildingKind.Farmhouse,
             LimitedBy = World.Goods.Food,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Fisher,
+            Name = "fisher",
+            Plural = "fishers",
+            Doing = "fishing",
+            WorksAt = BuildingKind.FishingHut,
+
+            // ⛔ LIMITED BY FISH, NOT BY FOOD. The player's food limit already stops the whole
+            // food chain through `FoodTheVillageHolds`, which counts fish since D277; this column
+            // is the good a limit on THIS TRADE reads, and the trade makes fish.
+            LimitedBy = World.Goods.Fish,
         },
     };
 
@@ -1963,6 +2048,24 @@ public sealed record SimConfig
             // ⛔ THE FIRST SINGLETON IN THE GAME (D38). `building-placement.md` has listed the
             // town hall as *the* example of a build-once building since long before one existed.
             Singleton = true,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.FishingHut,
+            Name = "fishing hut",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, FishingHutLogs),
+                new MaterialCost(World.Goods.Stone, FishingHutStone),
+            },
+            WorkTicks = FishingHutWorkTicks,
+            Seats = FishingHutSeats,
+
+            // ⛔ NO GatheringRadius, DELIBERATELY. A ring would enrol it in D260's competition
+            // — `SharersOf` asks `GatheringRadius > 0` and never `JobKind`, so a fishing hut with
+            // one would start competing with FORAGER huts over TREES. Joe's fishery *"does not run
+            // out"*, so it has nothing to share and nothing to thin.
+            MustTouch = Terrain.Water,
         },
     };
 

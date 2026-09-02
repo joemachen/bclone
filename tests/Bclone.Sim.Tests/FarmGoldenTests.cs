@@ -211,7 +211,8 @@ public sealed class FarmGoldenTests
     //   before the fire got hungrier (2026-09-01): 6716701650818163431
     //   before winter cost 20 in the fixture too (2026-09-01): 3921975159594428461
     //   before job-holders rested in spells (2026-09-02): 7582696266582066515
-    private const ulong SeamGoldenHash = 864017416367517461UL;
+    //   before fishing added a seventh good (2026-09-02): 864017416367517461
+    private const ulong SeamGoldenHash = 6423725063573751493UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -247,7 +248,8 @@ public sealed class FarmGoldenTests
     //   before the fire got hungrier (2026-09-01): 2945337393414434771
     //   before winter cost 20 in the fixture too (2026-09-01): 12024391942491487759
     //   before job-holders rested in spells (2026-09-02): 12765428660570679341
-    private const ulong SeamBeforeAnybodyGotBetter = 3898924203131512042UL;
+    //   before fishing added a seventh good (2026-09-02): 3898924203131512042
+    private const ulong SeamBeforeAnybodyGotBetter = 9165233745633703210UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

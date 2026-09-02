@@ -217,6 +217,21 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     TownHall = 11,
+
+    /// <summary>
+    /// A hut on the riverbank — <b>the first building that gives the river a purpose</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⛔ THE FIRST BUILDING WITH A POSITIVE TERRAIN REQUIREMENT.</b> Every refusal in
+    /// <c>CanBuildAt</c> until now was either an impossibility (water, occupied, off-map,
+    /// unreachable) or a warn-and-allow; *"it must touch water"* is a fourth kind.
+    /// <para>
+    /// ⭐ `pathfinding-and-water.md §12` records that the village always forms away from the
+    /// river — *"the river is scenery again; it is just enforced scenery now."* **This is what
+    /// stops that being true.**
+    /// </para>
+    /// </remarks>
+    FishingHut = 12,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

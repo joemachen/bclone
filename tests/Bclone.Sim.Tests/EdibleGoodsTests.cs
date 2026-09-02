@@ -61,7 +61,8 @@ public sealed class EdibleGoodsTests
         SimConfig edibleLogs = config with { GoodsCatalog = rows };
         SimWorld world = SimFactory.CreatePhase0(edibleLogs, new InMemoryLogSink()).World;
 
-        Assert.Equal(2, world.GoodsCatalog.EdibleGoods.Count);
+        // Food and fish ship edible; the posed logs make three.
+        Assert.Equal(3, world.GoodsCatalog.EdibleGoods.Count);
 
         int before = world.FoodTheVillageHolds();
         StoreBuilding granary = world.StoreBuildings.First(s => s.Kind == StoreKind.Granary);
@@ -102,10 +103,11 @@ public sealed class EdibleGoodsTests
         Assert.Contains("worth the same", blew.Message, System.StringComparison.Ordinal);
     }
 
-    /// <summary>Nothing but food is edible in the game as it ships.</summary>
+    /// <summary>Exactly the foods the game ships are edible — no more, no fewer.</summary>
     /// <remarks>
     /// The anti-vacuity half (D7): the two guards above would both pass on a catalogue where
-    /// everything was edible, which is not the game.
+    /// everything was edible, which is not the game. ⚠️ **It is a whitelist rather than a count**,
+    /// so a good that becomes edible by accident fails here by name.
     /// </remarks>
     [Fact]
     public void OnlyFoodIsEdibleToday()
@@ -115,6 +117,6 @@ public sealed class EdibleGoodsTests
 
         _output.WriteLine(string.Join(", ", world.GoodsCatalog.EdibleGoods));
 
-        Assert.Equal(new[] { Goods.Food }, world.GoodsCatalog.EdibleGoods);
+        Assert.Equal(new[] { Goods.Food, Goods.Fish }, world.GoodsCatalog.EdibleGoods);
     }
 }

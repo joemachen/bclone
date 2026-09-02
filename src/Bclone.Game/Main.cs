@@ -1249,7 +1249,7 @@ public partial class Main : Control
 
             foreach ((JobKind trade, Button button) in _pinButtons)
             {
-                button.Text = ProfessionName(trade);
+                button.Text = ProfessionName(_loop.World, trade);
                 button.SetPressedNoSignal(pinnable.PinnedTrade == trade);
 
                 // ⚠️ A trade nowhere in the village can still be pressed — the sim says why
@@ -4533,7 +4533,7 @@ public partial class Main : Control
         row.AddThemeConstantOverride("separation", 6);
         stack.AddChild(row);
 
-        Label name = Muted(ProfessionName(kind));
+        Label name = Muted(ProfessionName(_loop.World, kind));
         name.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
         row.AddChild(name);
 
@@ -4676,17 +4676,23 @@ public partial class Main : Control
     /// rather than keeping its own list, so there is now exactly one place a job is named.
     /// </para>
     /// </remarks>
-    private static string ProfessionName(JobKind kind) => kind switch
+    /// <remarks>
+    /// ⛔⛔ <b>THIS WAS SIX NAMED ARMS AND A DEFAULT THAT THREW, AND IT IS THE SAME BUG AS
+    /// <c>GoodsName</c> ONE PANEL OVER.</b> D108's every-value-named rule is right for a closed
+    /// enum; `JobKind` has been open since D218 (*"a seventh trade has a slot here the day a
+    /// modder adds one"*), so a seventh trade **crashed the professions panel on every frame** —
+    /// measured when fishing shipped: the suite was 905 green and the game threw **3,609 times in
+    /// two hundred ticks**, which is what a headless run is for.
+    /// <para>
+    /// ⭐ `JobsCatalog.NameOf` had the answer the whole time, and `jobs-catalog.md` already
+    /// forbids the sim switching on a trade by name — the view had simply never been held to it.
+    /// </para>
+    /// </remarks>
+    private static string ProfessionName(SimWorld world, JobKind kind)
     {
-        JobKind.Forager => "Forager",
-        JobKind.Forester => "Forester",
-        JobKind.Woodcutter => "Woodcutter",
-        JobKind.Marketer => "Marketer",
-        JobKind.Builder => "Builder",
-        JobKind.Farmer => "Farmer",
-        _ => throw new ArgumentOutOfRangeException(
-            nameof(kind), kind, "That kind of work has no name on screen."),
-    };
+        string name = world.JobsCatalog.NameOf(kind);
+        return name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
+    }
 
     /// <summary>One good's limit: a name, a "village decides" tick, a number, and the stock.</summary>
     private Control BuildStockLimitRow(Goods goods)
@@ -4850,7 +4856,7 @@ public partial class Main : Control
     private string TradeOf(Villager villager)
     {
         Workplace? job = _loop.World.FindWorkplace(villager.WorkplaceId);
-        return job is null ? "working" : ProfessionName(job.Kind).ToLowerInvariant();
+        return job is null ? "working" : ProfessionName(_loop.World, job.Kind).ToLowerInvariant();
     }
 
     /// <summary>What a good is called on screen.</summary>
@@ -5069,7 +5075,13 @@ public partial class Main : Control
             // profession became `forager` in D188. This was the last place still saying the
             // old word, which is the same one-job-two-names bug arriving in a third panel.
             BuildButton("Forager", BuildingKind.GathererHut),
-            BuildButton("Farmhouse", BuildingKind.Farmhouse)));
+            BuildButton("Farmhouse", BuildingKind.Farmhouse),
+
+            // ⛔ THE BUTTON IS THE ONLY THING THAT MAKES A BUILDING EXIST. Seven features have
+            // shipped here working in the sim and unreachable in the view — D227's library drew
+            // as open ground, Move and Empty shipped with no buttons at all. **Placeable is not
+            // reachable.**
+            BuildButton("Fishing hut", BuildingKind.FishingHut)));
 
         row.AddChild(Category(
             "Resources",

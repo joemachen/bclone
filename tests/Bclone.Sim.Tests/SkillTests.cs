@@ -263,8 +263,10 @@ public sealed class SkillTests
     //   before winter cost 20 in the fixture too (2026-09-01): false 7687562070926004820
     //   before job-holders rested in spells (2026-09-02): false 13795718776793115179,
     //                                                    true  19523974609292821
-    [InlineData(false, 6280070700300926173UL)]
-    [InlineData(true, 47097500781508764UL)]
+    //   before fishing added a seventh good (2026-09-02): false 6280070700300926173,
+    //                                                   true  47097500781508764
+    [InlineData(false, 18060915153750279005UL)]
+    [InlineData(true, 16268336284570708028UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

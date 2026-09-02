@@ -105,6 +105,16 @@ public enum JobKind
     /// </para>
     /// </remarks>
     Farmer = 5,
+
+    /// <summary>
+    /// Works a fishing hut on the riverbank — <b>food that does not run out</b> (Joe, 2026-09-02).
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ A step up from foraging per worker, and the ranking is deliberate</b>: forager 2 seats,
+    /// fisher 4. The seat count is the RANK of a food source now — *"foraging is bottom of the
+    /// totem pole"* — and a fishery is the first thing a village should want to leave it for.
+    /// </remarks>
+    Fisher = 6,
 }
 
 /// <summary>

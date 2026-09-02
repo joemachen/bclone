@@ -94,6 +94,32 @@ public sealed record BuildingRow
     public StoreKind? Stores { get; init; }
 
     /// <summary>
+    /// Ground this building must <b>touch</b> to stand — null for anything that may go anywhere.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ A FOURTH KIND OF PLACEMENT RULE, AND THE FIRST POSITIVE ONE.</b> Every refusal in
+    /// <c>SimWorld.CanBuildAt</c> until now was an <em>impossibility</em> — under water, occupied,
+    /// off the map, no route — or a <em>warn-and-allow</em>. `building-placement.md §7` puts it
+    /// plainly: *"hard refusals stay hard … because those are not judgement calls, they are
+    /// impossibilities."* **"It must touch water" is neither**: the ground is perfectly good, it is
+    /// simply not the ground this building is for.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A ROW, NEVER A `kind == BuildingKind.FishingHut` CHECK.</b> That rule is hard-won:
+    /// comparing by kind fired on a modder's building holding the same id, and <c>CanBuildAt</c>
+    /// already carries the warning. **A modder's tide-mill is in this rule the day it states the
+    /// column**, which is what makes the row real rather than decorative.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Touching is orthogonal, and it is NOT the same question as reachable</b> — see
+    /// <c>CanBuildAt</c>, where D110/D111 is the recorded case of confusing the two.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("must_touch")]
+    public Terrain? MustTouch { get; init; }
+
+    /// <summary>
     /// How much that store holds, or <b>null to let the economy derive it</b>.
     /// </summary>
     /// <remarks>

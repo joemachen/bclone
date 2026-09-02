@@ -570,6 +570,7 @@ public sealed class Villager
             VillagerState.Idle => "standing idle",
             VillagerState.TravelingToFood => $"walking to {where}",
             VillagerState.Gathering => "gathering berries",
+        VillagerState.Fishing => "fishing",
             VillagerState.TravelingHome => "walking home",
             VillagerState.TravelingToTrees => $"walking to {where}",
             VillagerState.Cutting => "felling trees",

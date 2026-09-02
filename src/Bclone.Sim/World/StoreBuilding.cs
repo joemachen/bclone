@@ -373,4 +373,21 @@ public enum Goods
 
     /// <summary>Ore, cleared from a visible seam or mined (D84, D90).</summary>
     Iron = 5,
+
+    /// <summary>
+    /// Pulled from the river — <b>the first food that is not foraged or farmed</b> (D19).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐⭐ <b>THE FIRST GOOD ADDED SINCE FOOD BECAME A CAPABILITY</b> (D277), and it is why that
+    /// slice was done first: `nutrition` is what makes this edible, and every reader of *"how much
+    /// food has the village got"* already asks the catalogue rather than naming <see cref="Food"/>.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Worth exactly what food is worth per unit, and that is enforced at load.</b> A
+    /// second edible good is allowed; a second nutritional VALUE is not, until the survival floor
+    /// is re-derived against a diet rather than against one food (see <c>GoodRow.Nutrition</c>).
+    /// </para>
+    /// </remarks>
+    Fish = 6,
 }

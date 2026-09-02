@@ -222,6 +222,9 @@ public sealed class SkillSystem : ISimSystem
         // Out on it — the walk there, the work itself, and the load home.
         VillagerState.TravelingToFood => true,
         VillagerState.Gathering => true,
+
+        // Out on it, exactly like a gather — the line is in the water and the person is at work.
+        VillagerState.Fishing => true,
         VillagerState.TravelingHome => true,
         VillagerState.TravelingToTrees => true,
         VillagerState.Cutting => true,

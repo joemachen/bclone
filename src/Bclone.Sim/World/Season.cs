@@ -142,6 +142,11 @@ public enum VillagerState
     Reaping,
 
     /// <summary>
+    /// At the water with a line in — <b>the one kind of work winter does not stop</b>.
+    /// </summary>
+    Fishing,
+
+    /// <summary>
     /// Carrying a harvest to the farm's own store, which is underfoot (`farm_store_cap`).
     /// </summary>
     /// <remarks>

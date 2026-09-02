@@ -1436,6 +1436,34 @@ public sealed class SimWorld
     /// </remarks>
     public bool FoodLimitIsMet() => StockLimits.IsMet(Goods.Food, FoodTheVillageHolds());
 
+    /// <summary>Whether any of the four tiles around this one is the ground named.</summary>
+    /// <remarks>
+    /// <b>Orthogonal, not diagonal</b>, and the same shape as <c>RegrowthSystem.TouchesWood</c> —
+    /// which is the only other adjacency question in the sim, so the two agree about what
+    /// "touching" means rather than each deciding for itself.
+    /// </remarks>
+    private bool Touches(GridPos position, Terrain terrain)
+    {
+        return Is(position.X + 1, position.Y) || Is(position.X - 1, position.Y)
+            || Is(position.X, position.Y + 1) || Is(position.X, position.Y - 1);
+
+        bool Is(int x, int y)
+        {
+            var at = new GridPos(x, y);
+            return Map.Contains(at) && Map.TerrainAt(at) == terrain;
+        }
+    }
+
+    /// <summary>What the village calls a kind of ground, for a refusal a person can act on.</summary>
+    private static string NameOfTerrain(Terrain terrain) => terrain switch
+    {
+        Terrain.Water => "water",
+        Terrain.Forest => "woodland",
+        Terrain.Rock => "stone",
+        Terrain.IronDeposit => "an iron seam",
+        _ => terrain.ToString().ToLowerInvariant(),
+    };
+
     /// <summary>Whether a store would ever take anything anybody can eat.</summary>
     /// <remarks>
     /// <b>⭐ THE "IS THIS A FOOD STORE?" QUESTION, ASKED OF THE CATALOGUE.</b> It used to be
@@ -4925,6 +4953,26 @@ public sealed class SimWorld
         if (!TravelCost.CanReach(village, position))
         {
             return PlacementVerdict.No("There is no route to there from the village.");
+        }
+
+        // ⛔⛔ GROUND THIS BUILDING MUST TOUCH — THE FIRST POSITIVE TERRAIN RULE IN THE GAME.
+        //
+        // ⚠️ IT SITS **BELOW** THE REACHABILITY CHECK ABOVE, AND THAT ORDER IS D110/D111.
+        // *"NOT WATER IS NOT THE SAME AS NOT CUT OFF BY WATER."* A tile that touches the river
+        // touches it on **both banks**, and the far bank is perfectly good ground that nobody can
+        // walk to. `PaintTheStarterZone` made exactly this mistake — it skipped water tiles and
+        // painted the far side anyway — and seed 11 froze a whole village for it.
+        //
+        // ⭐ So the player is told the true reason. A hut across the river is refused for having
+        // no route, by the check above, and never reaches this one; a hut in a meadow is refused
+        // here for being nowhere near the water. **Two different mistakes, two different
+        // sentences**, which is what stops *"why not there?"* being unanswerable (D43).
+        if (BuildingsCatalog[kind]?.MustTouch is Terrain wanted && !Touches(position, wanted))
+        {
+            string ground = NameOfTerrain(wanted);
+            return PlacementVerdict.No(
+                $"A {BuildingsCatalog[kind]!.Name} has to stand against {ground}, and nothing "
+                + $"beside that tile is {ground}.");
         }
 
         // Legal, but perhaps unwise — and that is the player's call to make (D43). Two

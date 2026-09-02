@@ -34,7 +34,14 @@ public sealed class ModdedBuildingTests
 
     private static BuildingKind Boathouse => (BuildingKind)BoathouseId;
 
-    private static JobKind Fisher => (JobKind)6;
+    /// <summary>The modder's own trade — <b>an id the enum has no name for</b>.</summary>
+    /// <remarks>
+    /// ⚠️ <b>It was 6 until fishing shipped (2026-09-02) and had to move to 7</b>, because
+    /// `JobKind.Fisher` now exists and this alias's whole job is to be a trade the enum cannot
+    /// name. Renamed with it: two trades called "fisher" in one file is a failure message nobody
+    /// can read.
+    /// </remarks>
+    private static JobKind Boatman => (JobKind)7;
 
     /// <summary>
     /// A catalogue with an eleventh building and a seventh trade that staffs it.
@@ -66,9 +73,17 @@ public sealed class ModdedBuildingTests
         { "id": 4, "name": "builder",    "plural": "builders",    "doing": "building",           "works_at": "BuilderHut" },
         { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Food" },
 
+        { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing",            "works_at": "FishingHut",    "limited_by": "Fish" },
+
         // The modder's own trade, and it staffs the modder's own building — by an id the enum
         // has no name for.
-        { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "at the water",       "works_at": 10,              "limited_by": "Food" }
+        //
+        // ⚠️ IT MOVED 6 → 7 WHEN FISHING SHIPPED (2026-09-02), and the move is the point rather
+        // than an inconvenience: this row's whole job is to be an id the enum cannot name, and 6
+        // stopped being one the day `JobKind.Fisher` existed. **The example mod was a fisherman;
+        // the game grew one.** Renamed too, so two trades called "fisher" cannot be confused for
+        // each other in a failure message.
+        { "id": 7, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Food" }
       ],
 
       "buildings": [
@@ -95,7 +110,11 @@ public sealed class ModdedBuildingTests
         // catalogue (D252). Two things at once: the validator refuses a catalogue missing a
         // built-in id, so a row has to be here at all — and `civic` and `singleton` are columns a
         // modder can reach in JSON, which is the claim this whole file exists to make.
-        { "id": 11, "name": "moot hall", "civic": true, "singleton": true, "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 20 } ] }
+        { "id": 11, "name": "moot hall", "civic": true, "singleton": true, "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 20 } ] },
+
+        // ⭐ THE FISHING HUT, AND `must_touch` IS A COLUMN A MODDER CAN REACH — which is the
+        // claim this file exists to make, applied to the newest kind of placement rule.
+        { "id": 12, "name": "fishing hut", "seats": 4, "must_touch": "Water", "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ] }
       ]
     }
     """;
@@ -149,7 +168,8 @@ public sealed class ModdedBuildingTests
         SimWorld world = World(ConfigWithABoathouse(), out _);
         BuildingsCatalog catalog = world.BuildingsCatalog;
 
-        Assert.Equal(12, catalog.Count);
+        // 12 → 13 when the fishing hut shipped (2026-09-02).
+        Assert.Equal(13, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -181,9 +201,9 @@ public sealed class ModdedBuildingTests
     {
         SimWorld world = World(ConfigWithABoathouse(), out _);
 
-        Assert.Equal(Boathouse, world.JobsCatalog.WorksAt(Fisher));
-        Assert.Equal(BoathouseId, world.JobsCatalog.WorksAtId(Fisher));
-        Assert.Equal(Fisher, world.BuildingsCatalog.EmployedBy(Boathouse));
+        Assert.Equal(Boathouse, world.JobsCatalog.WorksAt(Boatman));
+        Assert.Equal(BoathouseId, world.JobsCatalog.WorksAtId(Boatman));
+        Assert.Equal(Boatman, world.BuildingsCatalog.EmployedBy(Boathouse));
     }
 
     /// <summary>⭐ And it can actually be put up, and named, and worked at.</summary>
@@ -229,7 +249,7 @@ public sealed class ModdedBuildingTests
         }
 
         Assert.NotNull(stall);
-        Assert.Equal(Fisher, stall!.Kind);
+        Assert.Equal(Boatman, stall!.Kind);
         Assert.Equal(2, stall.Capacity);
         Assert.Equal(40, stall.Store.Capacity);
     }
@@ -277,6 +297,7 @@ public sealed class ModdedBuildingTests
             { "id": 6,  "name": "builder's hut", "seats": 3 },
             { "id": 5,  "name": "house",           "house_capacity": 5,                        "work_ticks": 30, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 11, "name": "moot hall",       "civic": true, "singleton": true,           "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 20 } ] },
+            { "id": 12, "name": "fishing hut",     "seats": 4, "must_touch": "Water",            "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },

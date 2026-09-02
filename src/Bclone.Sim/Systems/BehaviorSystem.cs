@@ -99,6 +99,7 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.Idle => "idle",
         VillagerState.TravelingToFood => "walking to forage",
         VillagerState.Gathering => "gathering",
+        VillagerState.Fishing => "fishing",
         VillagerState.TravelingHome => "walking home",
         VillagerState.TravelingToTrees => "walking to the stand",
         VillagerState.Cutting => "felling",
@@ -616,8 +617,16 @@ public sealed class BehaviorSystem : ISimSystem
         // goes to a GRANARY rather than to whatever store is closest, because the birth
         // gate reads granaries. Letting the day's gathering land in the market would
         // make the village's population ceiling depend on where somebody was standing.
+        // ⛔ ANYTHING EDIBLE GOES TO A GRANARY, NOT JUST `Goods.Food`. This read
+        // `load == Goods.Food`, which was correct while food was one good and became a trap the
+        // moment a fisher carried a catch: fish is stored by granary, market and cart and NOT by
+        // a shed, so a fisherman sent to find a shed would have walked home holding it.
+        // ⭐ The reason for preferring a granary is unchanged and is the reason this is not a
+        // tidiness rule — **the birth gate reads granaries** (D33), so letting a day's food land
+        // in the market would make the village's population ceiling depend on where somebody
+        // happened to be standing.
         Goods load = TheLoad(villager);
-        StoreKind wanted = load == Goods.Food ? StoreKind.Granary : StoreKind.Shed;
+        StoreKind wanted = world.GoodsCatalog.Edible(load) ? StoreKind.Granary : StoreKind.Shed;
 
         // THE PREFERRED KIND FIRST, THEN ANYWHERE THAT WILL TAKE IT (D76).
         //
@@ -2381,10 +2390,52 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        Workplace? job = WorkplaceOf(world, villager);
+
+        // ⭐⭐ FISHING, AND IT SITS ABOVE FORAGING BECAUSE IT IS THE BETTER SOURCE (Joe,
+        // 2026-09-02): *"fishing provides a consistent source of food that does not run out … a
+        // step up from foraging in terms of food per worker. **Foraging is bottom of the totem
+        // pole.**"*
+        //
+        // ⛔ AND IT WORKS IN WINTER, WHICH IS THE HALF THAT MATTERS MOST. A gatherer is gated on
+        // `SeasonRules.IsGatherable` — nothing can be picked in winter (D44) — and a river does
+        // not stop. **That is the real reason a fishery outranks a berry patch**, and it is the
+        // answer D19 asked for: a village whose only raw food is foraged has one season in four
+        // where its outlying households simply cannot feed themselves.
+        //
+        // ⚠️ No ring, no share, no thinning. `SharersOf` enrols anything with a
+        // `GatheringRadius` in D260's competition, so a fishing hut deliberately has none — it
+        // would otherwise start competing with FORAGER huts over TREES.
+        bool canFish = villager.CanWork && job?.Kind == JobKind.Fisher;
+
+        if (needsFood && canFish)
+        {
+            if (villager.Position == job!.Position)
+            {
+                villager.State = VillagerState.Fishing;
+                villager.ActionTicksRemaining =
+                    world.WorkTicksFor(villager, JobKind.Fisher, config.FishTicks);
+            }
+            else
+            {
+                villager.State = VillagerState.TravelingToFood;
+                Travel(world, villager, job.Position, VillagerState.Fishing);
+            }
+
+            return;
+        }
+
+        // A fisher with a full village says so, the same way a forager does (D216).
+        if (canFish && !needsFood)
+        {
+            villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string full
+                ? $"Nothing to fish for — {full}."
+                : string.Empty;
+        }
+
         // Foraging is a JOB, not something anyone wanders off and does. Held via
         // LabourSystem, which decides who works where and records why - and, since
         // there are several forage sites now, WHICH ONE.
-        Workplace? job = WorkplaceOf(world, villager);
         bool canForage = villager.CanWork
             && job?.Kind == JobKind.Forager
             && SeasonRules.IsGatherable(world.Clock.Season);
@@ -3921,6 +3972,39 @@ public sealed class BehaviorSystem : ISimSystem
                 // the game whose completion has no effect on the world.
                 Decide(world, villager);
                 return;
+
+            case VillagerState.Fishing:
+            {
+                // ⭐⭐ FLAT, AND THAT IS THE WHOLE OF WHAT A FISHERY IS (Joe): *"a consistent
+                // source of food that does not run out."* No ring to read, no share to divide, no
+                // tile to set back — the three things a gather does after this line and a cast
+                // does not. **What it costs is the walk**, which the river charges by being 2.5%
+                // of the valley and always at the edge.
+                //
+                // ⚠️ Vigour still scales it, like every other kind of work. An old fisher brings
+                // back less than a young one, and the floor of one is on the PERSON — there is no
+                // second condition here the way a bald ring is for a gatherer, because a river is
+                // never bald.
+                int caught = world.Config.FishYield * villager.Vigour / 100;
+                caught = world.YieldWithTechnique(JobKind.Fisher, caught);
+
+                villager.Carried.Receive(Goods.Fish, caught < 1 ? 1 : caught);
+
+                // Home if home is short, the store if it is not — the same rule a forager's
+                // catch follows, so the two kinds of food behave the same once they are in
+                // somebody's arms.
+                Household hearth = world.HouseholdOf(villager);
+                bool wantedAtHome = hearth.Stockpile.Food < world.TargetFoodFor(hearth);
+                villager.State = wantedAtHome
+                    ? VillagerState.TravelingHome
+                    : VillagerState.HaulingToStore;
+
+                world.Log(LogLevel.Debug, "behavior",
+                    $"Caught {caught} fish, bound for "
+                    + $"{(wantedAtHome ? "home" : StoreForTheLoad(world, villager)?.Name ?? "the ground")}"
+                    + $" — {world.Clock}.");
+                return;
+            }
 
             case VillagerState.Gathering:
                 // Vigour scales what a trip actually brings home. This is where
