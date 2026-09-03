@@ -1681,9 +1681,10 @@ public sealed class BehaviorSystem : ISimSystem
                 continue;
             }
 
-            for (int g = 0; g < MarketGoods.Length; g++)
+            Goods[] carried = MarketGoodsIn(world);
+            for (int g = 0; g < carried.Length; g++)
             {
-                Goods goods = MarketGoods[g];
+                Goods goods = carried[g];
                 if (!market.CanEverHold(goods) || !market.Accepts(goods))
                 {
                     continue;
@@ -1724,7 +1725,31 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>Food and firewood — what a market is allowed to hold (D141's filter aside).</summary>
-    private static readonly Goods[] MarketGoods = { Goods.Food, Goods.Firewood };
+    /// <summary>
+    /// What a market is allowed to hold and move — <b>read from the catalogue, not typed here</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THIS WAS <c>{ Goods.Food, Goods.Firewood }</c>, AND FISH COULD NEVER REACH A
+    /// MARKET</b> (2026-09-03). Worse, <see cref="LoadForTheMarket"/> looped over this array and
+    /// then branched <c>if (goods == Goods.Food) … else … Goods.Firewood</c> inside the loop — so
+    /// a third good would have been **picked up as itself and put down as firewood**. *A
+    /// two-element array and a two-armed branch agree with each other right up until there are
+    /// three.*
+    /// </remarks>
+    private static Goods[] MarketGoodsIn(SimWorld world)
+    {
+        var carried = new List<Goods>();
+        for (int id = 0; id < world.GoodsCatalog.Count; id++)
+        {
+            var goods = (Goods)id;
+            if (world.GoodsCatalog.StoredBy(goods, StoreKind.Market))
+            {
+                carried.Add(goods);
+            }
+        }
+
+        return carried.ToArray();
+    }
 
     /// <summary>
     /// Take an armful for the market's own store (`storage-and-distribution.md §14.8`, D197).
@@ -1748,9 +1773,10 @@ public sealed class BehaviorSystem : ISimSystem
 
         int wanted = VillageEconomy.MarketStockWanted(world.Config, OccupiedHomes(world));
 
-        for (int g = 0; g < MarketGoods.Length; g++)
+        Goods[] carried = MarketGoodsIn(world);
+        for (int g = 0; g < carried.Length; g++)
         {
-            Goods goods = MarketGoods[g];
+            Goods goods = carried[g];
             int room = wanted - HeldOf(market.Store, goods);
 
             if (!market.Accepts(goods) || room < load || market.Store.FreeSpace < load)
@@ -1764,14 +1790,11 @@ public sealed class BehaviorSystem : ISimSystem
                 continue;
             }
 
-            if (goods == Goods.Food)
-            {
-                villager.Carried.Receive(Goods.Food, take);
-            }
-            else
-            {
-                villager.Carried.Receive(Goods.Firewood, take);
-            }
+            // ⛔ THE GOOD THAT WAS ACTUALLY TAKEN. This was an if/else over food and firewood
+            // inside a loop over the market's goods — correct while there were exactly two, and a
+            // silent corruption the moment there were three: a load of fish would have been taken
+            // from the source and received as FIREWOOD.
+            villager.Carried.Receive(goods, take);
 
             villager.State = VillagerState.StockingTheMarket;
             return;
@@ -1938,9 +1961,30 @@ public sealed class BehaviorSystem : ISimSystem
                 continue;
             }
 
+            // ⛔ WHAT THE BUFFER ACTUALLY HOLDS, NOT `Goods.Food` (2026-09-03). This named food
+            // outright — correct while a farmhouse was the only building with a buffer, and inert
+            // the day a fishery got one: the marketer walked to a hut brimming with **fish** and
+            // collected nothing, because the errand had asked for something that was not there.
+            // *`BufferWorthClearing` had already been taught to see fish; the errand it feeds
+            // had not, so the leg said yes and then did nothing.*
+            Goods? holding = null;
+            IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+            for (int g = 0; g < edible.Count && holding is null; g++)
+            {
+                if (workplace.Store[edible[g]] > 0)
+                {
+                    holding = edible[g];
+                }
+            }
+
+            if (holding is null)
+            {
+                continue;
+            }
+
             // Household 0 is the errand saying *nobody is waiting for this* — the same
             // sentinel a stranded-larder collection already uses.
-            Offer(workplace.Position, 0, Goods.Food, delivering: false);
+            Offer(workplace.Position, 0, holding.Value, delivering: false);
         }
 
         // ⭐⭐ AND THE FOURTH LEG: STOCK THE MARKET ITSELF (§14.8, D197, Joe).
@@ -2258,27 +2302,36 @@ public sealed class BehaviorSystem : ISimSystem
         // before they get through the door. Nobody starves holding dinner. This is
         // D10's rule — never kill someone for a scheduling artifact — applied to a
         // scheduling artifact that did not exist when D10 was written.
-        if (villager.CarriedFood >= mealCost)
+        // ⛔⛔ ANYTHING EDIBLE, NOT `Goods.Food` — AND THIS LINE IS WHY FISH WAS DECORATIVE.
+        //
+        // D277 made *"how much food has the village got"* a capability question and **left the
+        // eating naming a good.** So `FoodTheVillageHolds` counted fish — the birth gate and the
+        // food limit believed the village fed — while a household holding nothing but fish
+        // **starved beside it**. Measured on the fishery guard: *population 3 → 0, five starved.*
+        // ⭐ D79's recorded failure by a new road: the granary was full of something the eating
+        // code could not see.
+        if (world.FoodIn(villager.Carried) >= mealCost)
         {
-            villager.Carried.TryTake(Goods.Food, mealCost);
+            world.TakeAMealFrom(villager.Carried, mealCost);
             Feed(villager, config);
             world.LogVillager(LogLevel.Debug, villager, "needs",
                 $"ate {mealCost} from their own arms (hunger was {villager.Hunger})");
             return true;
         }
 
-        if (world.HouseholdOf(villager).Stockpile.Food < mealCost)
+        Stockpile larder = world.HouseholdOf(villager).Stockpile;
+        if (world.FoodIn(larder) < mealCost)
         {
             return false;
         }
 
-        if (!world.HouseholdOf(villager).Stockpile.TryTake(Goods.Food, mealCost))
+        if (!world.TakeAMealFrom(larder, mealCost))
         {
             // Unreachable given the check above; if it ever fires, something else
             // is mutating the stockpile and we want to know loudly.
             world.Log(LogLevel.Error, "behavior",
                 $"{villager.Name} tried to eat {mealCost} food but only " +
-                $"{world.HouseholdOf(villager).Stockpile.Food} was available. This is a bug.");
+                $"{world.FoodIn(larder)} was available. This is a bug.");
             return false;
         }
 
@@ -3436,10 +3489,21 @@ public sealed class BehaviorSystem : ISimSystem
             // this project has paid for that before.
             if (family is null && villager.ErrandHouseholdId == 0)
             {
-                int clearing = Smallest(load, load, workplace.Store.Food);
-                if (clearing > 0 && workplace.Store.TryTake(Goods.Food, clearing))
+                // ⛔⛔ WHATEVER IS EDIBLE, NOT `Goods.Food` — AND THE COMMENT ABOVE PREDICTED THIS
+                // EXACT FAILURE. *"A trader walks to the farm, finds nothing they know how to pick
+                // up, and goes home empty-handed for ever."* That is precisely what a fishery got:
+                // the leg was offered, the walk was made, and a hut holding three hundred fish was
+                // asked for food. **Fourth farm-shaped assumption in this one errand** — after
+                // `BufferWorthClearing`, the `Offer`, and `MarketGoods`.
+                IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+                for (int g = 0; g < edible.Count; g++)
                 {
-                    villager.Carried.Receive(Goods.Food, clearing);
+                    int clearing = Smallest(load, load, workplace.Store[edible[g]]);
+                    if (clearing > 0 && workplace.Store.TryTake(edible[g], clearing))
+                    {
+                        villager.Carried.Receive(edible[g], clearing);
+                        break;
+                    }
                 }
 
                 break;
@@ -4026,11 +4090,38 @@ public sealed class BehaviorSystem : ISimSystem
                 int caught = world.Config.FishYield * villager.Vigour / 100;
                 caught = world.YieldWithTechnique(JobKind.Fisher, caught);
 
-                villager.Carried.Receive(Goods.Fish, caught < 1 ? 1 : caught);
+                caught = caught < 1 ? 1 : caught;
 
-                // Home if home is short, the store if it is not — the same rule a forager's
-                // catch follows, so the two kinds of food behave the same once they are in
-                // somebody's arms.
+                // ⭐⭐ THE HUT'S OWN STORE FIRST, AND THE WALK ONLY WHEN IT WILL NOT FIT (Joe,
+                // 2026-09-03: *"the fishing hut should have 300 storage space … the fisherman also
+                // brings it to storage when it is full"*).
+                //
+                // ⭐ This is the farmhouse's rule one building over, and it is what makes the long
+                // cast affordable: **a fisher who can put the catch down stays and casts again**,
+                // so the trips saved pay for the ticks spent. The buffer is also what a marketer
+                // comes for, so a fishery feeds the village without its fisher ever walking home.
+                Workplace? at = WorkplaceOf(world, villager);
+                int intoTheHut = at is null ? 0 : at.Store.Add(Goods.Fish, caught);
+                int leftOver = caught - intoTheHut;
+
+                if (leftOver <= 0)
+                {
+                    // ⚠️ STILL AT THE HUT, SO CAST AGAIN. Returning without a state change would
+                    // leave them holding `Fishing` with no ticks, and `Decide` re-runs next tick
+                    // and sends them back here — which works, but says nothing in the log and
+                    // reads as a villager frozen mid-action to anybody watching the panel.
+                    villager.ActionTicksRemaining =
+                        world.WorkTicksFor(villager, JobKind.Fisher, world.Config.FishTicks);
+
+                    world.Log(LogLevel.Debug, "behavior",
+                        $"Caught {caught} fish, put down at {at!.Name} — {world.Clock}.");
+                    return;
+                }
+
+                // The hut is full: carry what would not fit, the same way a farmer carries a
+                // harvest their buffer could not take.
+                villager.Carried.Receive(Goods.Fish, leftOver);
+
                 Household hearth = world.HouseholdOf(villager);
                 bool wantedAtHome = hearth.Stockpile.Food < world.TargetFoodFor(hearth);
                 villager.State = wantedAtHome
@@ -4038,7 +4129,7 @@ public sealed class BehaviorSystem : ISimSystem
                     : VillagerState.HaulingToStore;
 
                 world.Log(LogLevel.Debug, "behavior",
-                    $"Caught {caught} fish, bound for "
+                    $"Caught {caught} fish, {intoTheHut} put down and {leftOver} bound for "
                     + $"{(wantedAtHome ? "home" : StoreForTheLoad(world, villager)?.Name ?? "the ground")}"
                     + $" — {world.Clock}.");
                 return;

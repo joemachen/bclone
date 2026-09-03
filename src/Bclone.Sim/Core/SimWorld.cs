@@ -1464,6 +1464,68 @@ public sealed class SimWorld
         _ => terrain.ToString().ToLowerInvariant(),
     };
 
+    /// <summary>How much edible food a pile holds — <b>a larder, a pair of arms, a buffer</b>.</summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>D277 CONVERTED THE VILLAGE TOTALS AND LEFT THE LARDER NAMING `Goods.Food`, AND
+    /// THAT MADE FISH DECORATIVE.</b> `FoodTheVillageHolds` counted fish from the day it shipped,
+    /// so the birth gate and the food limit believed the village fed — while `TryEat` could only
+    /// take `Goods.Food` and a household holding nothing but fish **starved beside it**. Measured
+    /// on the fishery guard: *population 3 → 0, five starved.*
+    /// </para>
+    /// <para>
+    /// ⭐ That is D79's recorded failure exactly — *"a village must never starve with a full
+    /// granary and an empty larder"* — reached by a new road: **the granary was full of something
+    /// the eating code could not see.**
+    /// </para>
+    /// </remarks>
+    public int FoodIn(Stockpile store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        int total = 0;
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+        for (int i = 0; i < edible.Count; i++)
+        {
+            total += store[edible[i]];
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// Take a meal's worth out of a pile, from whatever is edible — <b>in id order</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Id order, and it is not tidiness.</b> Anything that walks goods and writes to the
+    /// world must do so in a fixed order or two runs of one seed diverge (§5). It also means the
+    /// village eats its oldest good first — food before fish — which is arbitrary but stable, and
+    /// stops mattering the day spoilage gives it a reason.
+    /// </remarks>
+    public bool TakeAMealFrom(Stockpile store, int cost)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        if (cost <= 0 || FoodIn(store) < cost)
+        {
+            return false;
+        }
+
+        int owed = cost;
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+        for (int i = 0; i < edible.Count && owed > 0; i++)
+        {
+            int here = store[edible[i]];
+            int take = here < owed ? here : owed;
+            if (take > 0 && store.TryTake(edible[i], take))
+            {
+                owed -= take;
+            }
+        }
+
+        return owed == 0;
+    }
+
     /// <summary>Whether a store would ever take anything anybody can eat.</summary>
     /// <remarks>
     /// <b>⭐ THE "IS THIS A FOOD STORE?" QUESTION, ASKED OF THE CATALOGUE.</b> It used to be
@@ -2357,14 +2419,55 @@ public sealed class SimWorld
         return null;
     }
 
+    /// <summary>
+    /// Whether a workplace's own buffer is <b>full enough to be worth a marketer's walk</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>BOTH HALVES OF THIS WERE FARM-SHAPED AND NEITHER COULD SEE A FISHERY</b>
+    /// (2026-09-03). It asked <c>workplace.Store.Food &gt; 0</c>, so a hut brimming with **fish**
+    /// read as empty; and it measured "nearly full" against <c>crop_yield_per_tile</c>, which is
+    /// what one tile of a FARM gives up. *A farmhouse was the only building with a buffer when
+    /// this was written, and it was written as though it always would be.*
+    /// </para>
+    /// <para>
+    /// ⭐ It asks the catalogue now (D277's <c>EdibleGoods</c> door) and measures the room against
+    /// <b>what this workplace puts down in one go</b>, so the farm's own answer is unchanged and a
+    /// fishery gets the same rule honestly rather than by coincidence.
+    /// </para>
+    /// </remarks>
     public bool BufferWorthClearing(Workplace workplace)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        return !workplace.IsSite
-            && workplace.Store.Food > 0
-            && workplace.Store.FreeSpace < Config.CropYieldPerTile;
+        if (workplace.IsSite)
+        {
+            return false;
+        }
+
+        bool holdsFood = false;
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+        for (int i = 0; i < edible.Count && !holdsFood; i++)
+        {
+            holdsFood = workplace.Store[edible[i]] > 0;
+        }
+
+        return holdsFood && workplace.Store.FreeSpace < OneLoadFrom(workplace);
     }
+
+    /// <summary>
+    /// What a workplace puts into its own buffer in one go — <b>the measure of "nearly full"</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Asked of the trade rather than the building's name</b>, so a modder's building
+    /// inherits it through the job that works there. The farm's number is unchanged, which is the
+    /// thing the guards check: a change that alters the farm is this change leaking.
+    /// </remarks>
+    private int OneLoadFrom(Workplace workplace) => workplace.Kind switch
+    {
+        JobKind.Fisher => Config.FishYield,
+        _ => Config.CropYieldPerTile,
+    };
 
     private string? ForesterIdleNote(Workplace hut)
     {

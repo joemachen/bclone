@@ -245,7 +245,10 @@ public sealed class FishingTests
         for (int tick = 0; tick < config.TicksPerYear && caught == 0; tick++)
         {
             loop.StepOnce();
-            caught = fisher.Carried[Goods.Fish];
+            // ⚠️ THE HUT'S STORE AS WELL AS THE ARMS. Since the buffer landed, a catch goes
+            // DOWN at the hut and the fisher casts again — so watching only the arms reports
+            // zero for a fishery that is working perfectly.
+            caught = fisher.Carried[Goods.Fish] + hut.Store[Goods.Fish];
         }
 
         _output.WriteLine($"{fisher.Name} was holding {caught} fish; a cast is worth "
@@ -359,6 +362,136 @@ public sealed class FishingTests
         Assert.True(caught > 0, "Winter stopped the fishing, and a river does not freeze here.");
     }
 
+    // ---------------------------------------------------------------
+    //  § The hut holds its catch — Joe, 2026-09-03
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ The catch goes into <b>the hut's own store</b>, not straight home.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe:</b> *"The fishing hut should have **300 storage space** which the marketer fetches.
+    /// The fisherman also brings it to storage when it is full."* ⭐ It is the farmhouse's pattern
+    /// exactly — `BuildingRow.LocalStoreCap`, and the reason it exists: **the store underfoot
+    /// fills first and the walk lengthens once it is full.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>WRITTEN BEFORE THE FEATURE, DELIBERATELY.</b> Fishing has now shipped broken twice
+    /// — unstaffable (D279) and unable to walk (D281) — and on both occasions every placement and
+    /// yield guard passed while the thing did nothing. *The end-to-end claim goes first now.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheCatchGoesIntoTheHutsOwnStore()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAFishery(world);
+        loop.Step(config.TicksPerYear + 1);
+
+        Villager fisher = world.Villagers.First(v => v.Alive && v.WorkplaceId == hut.Id);
+        fisher.Position = hut.Position;
+
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.TakeAll(Goods.Food);
+        }
+
+        int inTheHut = 0;
+        for (int tick = 0; tick < config.TicksPerYear && inTheHut == 0; tick++)
+        {
+            loop.StepOnce();
+            inTheHut = hut.Store[Goods.Fish];
+        }
+
+        _output.WriteLine($"{hut.Name} holds {inTheHut} fish of {hut.Store.Capacity} it can take");
+
+        Assert.Equal(config.FishingHutStoreCap, hut.Store.Capacity);
+        Assert.True(inTheHut > 0, "The catch never reached the hut's own store.");
+    }
+
+    /// <summary>
+    /// ⭐⭐ A marketer <b>runs the fishery's buffer dry</b>, the way one runs a farm's.
+    /// </summary>
+    /// <remarks>
+    /// <b>⛔ TWO THINGS BLOCKED FISH FROM THIS PATH, AND BOTH WERE FARM-SHAPED.</b>
+    /// <c>SimWorld.BufferWorthClearing</c> asked <c>workplace.Store.Food &gt; 0</c> — so a hut full
+    /// of fish read as empty — and measured "nearly full" against <c>CropYieldPerTile</c>, a
+    /// farm's number. And <c>MarketGoods</c> was a hardcoded <c>{ Food, Firewood }</c> with an
+    /// <c>if (goods == Goods.Food) … else … Firewood</c> **inside its own loop**, which would have
+    /// put a load of fish down as firewood.
+    /// </remarks>
+    [Fact]
+    public void AMarketerRunsTheFisheryBufferDry()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAFishery(world);
+        loop.Step(config.TicksPerYear + 1);
+
+        // ⚠️ A MARKETER IS PINNED, because the village will not spare one here and should not.
+        // Marketers are asked LAST of every trade (D14: *"a marketer moves goods that already
+        // exist, so a village that cannot spare anyone loses convenience rather than lives"*), and
+        // a four-adult founding has nobody left by the time the question is reached — measured:
+        // *"wants 0 marketers, 0 posted"*, with the errand correctly counted. **That is the sim
+        // being right about priorities**, so the pose supplies the hand. A pin is a floor the
+        // quota cannot argue down, which is exactly what a posed hand needs to be.
+        Villager trader = world.Villagers.First(
+            v => v.Alive && v.CanWork && v.WorkplaceId != hut.Id);
+        world.SetPinnedTrade(trader, JobKind.Marketer);
+
+        // Fill the buffer outright, so the question is only whether anybody comes for it.
+        //
+        // ⛔⚠️ AND KEEP THE STORES STOCKED WHILE DOING IT. Three hundred fish in a buffer counts
+        // toward `FoodTheVillageHolds`, so the village concludes it is fed and stops foraging —
+        // while the fish sits somewhere only a marketer can reach. **Measured: population 3 → 0,
+        // five starved.** *That is a real trap and not only a fixture artefact* — a full fishery
+        // with nobody to empty it is D79's "full granary, empty larder" one building over — but it
+        // is not what this guard is about, so the larders are kept full while the question is put.
+        foreach (Household household in world.Households)
+        {
+            int wanted = world.TargetFoodFor(household);
+            if (world.FoodIn(household.Stockpile) < wanted)
+            {
+                household.Stockpile.Add(Goods.Food, wanted);
+            }
+        }
+
+        hut.Store.Receive(Goods.Fish, hut.Store.Capacity);
+        int filled = hut.Store[Goods.Fish];
+
+        Assert.True(world.BufferWorthClearing(hut),
+            "A fishery brimming with fish is not seen as worth clearing.");
+
+        int lowest = filled;
+        for (int tick = 0; tick < config.TicksPerYear * 2; tick++)
+        {
+            loop.StepOnce();
+            lowest = System.Math.Min(lowest, hut.Store[Goods.Fish]);
+
+            if (tick % 60 == 0)
+            {
+                foreach (Household household in world.Households)
+                {
+                    int wanted = world.TargetFoodFor(household);
+                    if (world.FoodIn(household.Stockpile) < wanted)
+                    {
+                        household.Stockpile.Add(Goods.Food, wanted);
+                    }
+                }
+            }
+        }
+
+
+        _output.WriteLine($"the buffer went from {filled} down to {lowest}");
+        Assert.True(lowest < filled, "Nobody ever came to empty the fishery.");
+    }
+
     /// <summary>
     /// The <b>furthest</b> buildable bank tile — for the guard about a long walk.
     /// </summary>
@@ -417,29 +550,132 @@ public sealed class FishingTests
     //  § What it is worth
     // ---------------------------------------------------------------
 
-    /// <summary>⭐ A fisher out-earns a forager, measured against what a forager actually brings.</summary>
+    /// <summary>
+    /// ⭐⭐ A fisher out-earns a forager <b>over a year</b> — both measured while actually working.
+    /// </summary>
     /// <remarks>
-    /// <b>⚠️ AGAINST THE REAL YIELD, NOT AGAINST <c>gather_yield</c>.</b> The raw key is 145, but
-    /// that is the value of a trip at a <b>fully wooded</b> ring; a real hut's ring runs around
-    /// half that, so comparing against the key would compare a fishery to a forest that does not
-    /// exist. <c>GatherYieldAt</c> is what a forager actually carries home.
+    /// <para>
+    /// <b>⛔ THIS GUARD USED TO COMPARE ONE CAST AGAINST ONE TRIP, AND THAT COMPARISON WAS
+    /// MEANINGLESS.</b> It read <c>fish_yield</c> (100) against <c>GatherYieldAt</c> (77) and
+    /// concluded fishing won. But a per-load comparison silently assumes <b>both jobs get the same
+    /// number of loads</b>, and they do not: measured over a year in the fixture village, a fisher
+    /// lands <b>~8 casts</b> and a forager makes <b>~7 trips</b> — against the <c>TripsPerYear</c>
+    /// ceiling of 17 that neither of them reaches.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Which is why <c>fish_ticks</c> could go 3 → 10 without touching the economy.</b> The
+    /// cast was never the bottleneck — a fisher spends about a fifth of the year casting and the
+    /// rest walking, eating and sleeping. Measured: <b>800 fish a year at three ticks and 800 at
+    /// ten</b>, while time spent casting went 26 ticks → 94. Joe asked for a slower cast and got
+    /// exactly that and nothing else.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Do not "simplify" this back to comparing the two config keys.</b> That is the bug
+    /// this guard replaced, and it would pass while a longer cast quietly starved the fishery.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void FishingIsAStepUpFromForaging()
+    public void AFisherOutEarnsAForagerOverAYear()
     {
-        SimWorld world = World();
-        Workplace hut = world.Workplaces.First(w => w.GatheringRadius > 0);
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
 
-        int forager = world.GatherYieldAt(hut);
-        int fisher = Config.FishYield;
+        Workplace hut = RaiseAFishery(world);
+        loop.Step(config.TicksPerYear + 1);
 
-        _output.WriteLine($"a forager's trip is worth {forager}; a cast is worth {fisher}");
+        Villager fisher = world.Villagers.First(v => v.Alive && v.WorkplaceId == hut.Id);
+        fisher.Position = hut.Position;
 
-        Assert.True(forager > 0, "The fixture's hut has no trees, so this compares nothing.");
+        int caught = 0;
+        int held = FishEverywhere(world);
+
+        for (int tick = 0; tick < config.TicksPerYear; tick++)
+        {
+            loop.StepOnce();
+
+            int now = FishEverywhere(world);
+            if (now > held)
+            {
+                caught += now - held;
+            }
+
+            held = now;
+        }
+
+        int foraged = WhatAForagerBringsInAYear(config, out int busiest, out int perTrip);
+
+        _output.WriteLine(
+            $"over one year a fisher landed {caught} fish; in a village with no fishery the busiest "
+            + $"forager spent {busiest} ticks gathering = ~{busiest / config.GatherTicks} trips of "
+            + $"{perTrip} = ~{foraged} food (the TripsPerYear ceiling neither reaches is "
+            + $"{VillageEconomy.TripsPerYear(config)})");
+
+        Assert.True(perTrip > 0, "The fixture's hut has no trees, so this compares nothing.");
+        Assert.True(foraged > 0, "No one foraged all year, so there is nothing to compare against.");
         Assert.True(
-            fisher > forager,
-            $"A cast brings back {fisher} against a forager's {forager}. Joe's ranking is that "
-            + "foraging is bottom of the totem pole, so a fishery has to beat it.");
+            caught > foraged,
+            $"A fisher landed {caught} in the year against a forager's {foraged}. Joe's ranking is "
+            + "that foraging is bottom of the totem pole, so a fishery has to beat it over a year "
+            + "— not merely per load.");
+    }
+
+    /// <summary>
+    /// What the busiest forager brings home in a year, <b>in a village with no fishery in it</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>THE REFERENCE MUST COME FROM AN UNTOUCHED VILLAGE, AND THIS COST A RED CHECK TO
+    /// LEARN.</b> Measuring both sides in the same world looks tidier and is nearly worthless:
+    /// halving <c>fish_yield</c> also makes the village poorer, so the foragers make fewer trips
+    /// and the comparison quietly re-balances — measured, <b>400 fish against 308 food, still
+    /// passing</b>, when the honest reference was 539. <b>A guard whose baseline moves with the
+    /// thing it is guarding is not a guard.</b>
+    /// </remarks>
+    private static int WhatAForagerBringsInAYear(SimConfig config, out int busiest, out int perTrip)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        loop.Step(config.TicksPerYear + 1);
+
+        var gatherTicks = new Dictionary<int, int>();
+        for (int tick = 0; tick < config.TicksPerYear; tick++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Alive && villager.State == VillagerState.Gathering)
+                {
+                    gatherTicks[villager.Id] = gatherTicks.GetValueOrDefault(villager.Id) + 1;
+                }
+            }
+        }
+
+        Workplace ring = world.Workplaces.First(w => w.GatheringRadius > 0);
+        perTrip = world.GatherYieldAt(ring);
+        busiest = gatherTicks.Count == 0 ? 0 : gatherTicks.Values.Max();
+        return busiest / config.GatherTicks * perTrip;
+    }
+
+    /// <summary>Fish is only ever destroyed by eating, so a rise in the total is production.</summary>
+    private static int FishEverywhere(SimWorld world)
+    {
+        int total = 0;
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            total += store.Store[Goods.Fish];
+        }
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            total += workplace.Store[Goods.Fish];
+        }
+
+        foreach (Villager villager in world.Villagers)
+        {
+            total += villager.Carried[Goods.Fish];
+        }
+
+        return total;
     }
 
     /// <summary>⛔ A fishing hut has no ring, so it competes with nothing and thins nothing.</summary>

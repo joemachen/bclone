@@ -242,8 +242,22 @@ public sealed class BuildingsCatalogTests
 
             Assert.Equal(kind == BuildingKind.GathererHut ? config.GathererHutRingTiles : 0,
                 row.GatheringRadius);
-            Assert.Equal(kind == BuildingKind.Farmhouse ? config.FarmStoreCap : 0,
-                row.LocalStoreCap);
+            // ⛔ THE BUFFER IS NO LONGER THE FARMHOUSE'S ALONE (2026-09-03). A fishing hut holds
+            // its catch for the same reason and by the same column — Joe: *"the fishing hut should
+            // have 300 storage space which the marketer fetches."*
+            //
+            // ⭐ The claim is unchanged and is still worth making: **a building has a buffer on
+            // purpose or not at all.** An accidental one keeps goods where the market cannot reach
+            // them, which is the failure this guard exists for; it is a named list now rather than
+            // a single name.
+            int buffer = kind switch
+            {
+                BuildingKind.Farmhouse => config.FarmStoreCap,
+                BuildingKind.FishingHut => config.FishingHutStoreCap,
+                _ => 0,
+            };
+
+            Assert.Equal(buffer, row.LocalStoreCap);
             Assert.Equal(kind == BuildingKind.Home ? config.MaxHouseholdSize : 0,
                 row.HouseCapacity);
         }

@@ -1,6 +1,12 @@
 # Content: Food & Production Catalog
 
-> Status: **reference / not yet implemented.** ⚠️ Written before D37 cut spoilage and D39 confirmed it: the preservation-versus-spoilage axis this leans on is **not** part of the design. The rest — the raw sources and the processing tier above them — is still the roadmap. · Owner: Joe + Claude Code
+> Status: **reference / partly implemented — Tier 0 `Fish` shipped 2026-09-03.**
+> ⭐ **The first entry in `§3` is real**: a fishing hut on the bank, four seats, a 300-catch buffer a
+> marketer runs dry, and `Fish` as a `GoodRow` with `Nutrition` (D277, D282–D284). ⚠️ **Every edible
+> good must share one nutrition value and the config refuses to load otherwise** — the survival
+> floor in `VillageEconomy` is derived from a single figure, so `§0`'s nutrition axis is still
+> genuinely absent. The rest of this catalogue remains unbuilt.
+> ⛔ Original status, kept: ⚠️ Written before D37 cut spoilage and D39 confirmed it: the preservation-versus-spoilage axis this leans on is **not** part of the design. The rest — the raw sources and the processing tier above them — is still the roadmap. · Owner: Joe + Claude Code
 > This is a **content catalog**, not a behavioral system spec. It defines *what* foods and
 > production chains exist. The *mechanics* (spoilage rates, preservation math, exact building
 > requirements, yields) belong to a future system spec — likely something like

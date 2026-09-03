@@ -559,9 +559,47 @@ public sealed record SimConfig
     [JsonPropertyName("fish_yield")]
     public int FishYield { get; init; } = 100;
 
-    /// <summary>Ticks one cast takes. The same as a gather — the yield is the difference.</summary>
+    /// <summary>
+    /// Ticks one cast takes — <b>the longest action in the game, on purpose</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe, 2026-09-03:</b> *"He does reach the hut and fishes, but **catches fish too
+    /// quickly** — he should spend a few more ticks 'fishing' at the fishing hut."*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Every other work duration in the game is three or four</b> — gather 3, cut 4, sow 3,
+    /// reap 3, split 4, rest 3. Ten is deliberately out of that band, because a cast is the one
+    /// job whose whole character is waiting. **It is also the first action long enough for mastery
+    /// to express more than two tiers**: `WorkTicksFor` notes that *"a three-tick action can only
+    /// become two."*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>A longer cast is fewer casts, so it is a yield change wearing a pacing change's
+    /// clothes</b> — which is why `fish_yield` was re-measured against it rather than left alone.
+    /// The two are set together and must move together.
+    /// </para>
+    /// </remarks>
     [JsonPropertyName("fish_ticks")]
-    public int FishTicks { get; init; } = 3;
+    public int FishTicks { get; init; } = 10;
+
+    /// <summary>
+    /// What a fishing hut can hold before the catch has to be walked away — <b>300</b> (Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The farmhouse's <c>local_store_cap</c>, one building over</b>, and the same sentence
+    /// justifies it: the store underfoot fills first and **the walk lengthens once it is full**.
+    /// Joe: *"the fishing hut should have 300 storage space which the marketer fetches. The
+    /// fisherman also brings it to storage when it is full."*
+    /// </para>
+    /// <para>
+    /// ⭐ It is what makes the long cast affordable: a fisher stops walking home after every catch
+    /// and simply keeps casting, so the trips saved pay for the ticks spent.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fishing_hut_store_cap")]
+    public int FishingHutStoreCap { get; init; } = 300;
 
     /// <summary>What a forester's hut costs to raise.</summary>
     [JsonPropertyName("forester_hut_logs")]
@@ -2061,6 +2099,10 @@ public sealed record SimConfig
             WorkTicks = FishingHutWorkTicks,
             Seats = FishingHutSeats,
 
+            // ⭐ A store of its own, exactly like the farmhouse's (Joe). `SimWorld` reads this
+            // into the workplace's `Stockpile.Capacity` when the hut is finished.
+            LocalStoreCap = FishingHutStoreCap,
+
             // ⛔ NO GatheringRadius, DELIBERATELY. A ring would enrol it in D260's competition
             // — `SharersOf` asks `GatheringRadius > 0` and never `JobKind`, so a fishing hut with
             // one would start competing with FORAGER huts over TREES. Joe's fishery *"does not run
@@ -2904,6 +2946,19 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"farm_store_cap must be greater than zero (got {FarmStoreCap}).");
+        }
+
+        if (FishingHutStoreCap <= 0)
+        {
+            throw new SimConfigException(
+                $"fishing_hut_store_cap must be greater than zero (got {FishingHutStoreCap}) — a "
+                + "hut with nowhere to put a catch would send its fisher walking after every cast.");
+        }
+
+        if (FishTicks <= 0)
+        {
+            throw new SimConfigException(
+                $"fish_ticks must be greater than zero (got {FishTicks}).");
         }
 
         if (BuilderHutSeats <= 0)
