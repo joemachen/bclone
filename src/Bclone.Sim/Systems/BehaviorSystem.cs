@@ -992,7 +992,7 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         int foodFloor = world.TargetFoodFor(household) * share / 100;
-        if (household.Stockpile.Food < foodFloor)
+        if (world.FoodIn(household.Stockpile) < foodFloor)
         {
             return Goods.Food;
         }
@@ -1159,10 +1159,10 @@ public sealed class BehaviorSystem : ISimSystem
         // which is the property spec §14.4 turns into a test.
         int foodWanted = world.TargetFoodFor(household);
         int foodFloor = foodWanted * config.SharingKeepPercent / 100;
-        if (household.Stockpile.Food < foodFloor
-            && WorthTheTrip(config, foodWanted - household.Stockpile.Food, foodWanted))
+        int atHome = world.FoodIn(household.Stockpile);
+        if (atHome < foodFloor && WorthTheTrip(config, foodWanted - atHome, foodWanted))
         {
-            StoreBuilding? source = NearestStoreHolding(world, villager.Position, Goods.Food);
+            StoreBuilding? source = NearestStoreHoldingFood(world, villager.Position);
             if (source is not null)
             {
                 return source;
@@ -1923,7 +1923,8 @@ public sealed class BehaviorSystem : ISimSystem
                 ? VillageEconomy.FirewoodStoreWantedPerHousehold(config)
                 : 0;
 
-            Consider(household, occupied, Goods.Food, household.Stockpile.Food, foodWanted);
+            Consider(
+                household, occupied, Goods.Food, world.FoodIn(household.Stockpile), foodWanted);
             Consider(household, occupied, Goods.Firewood, household.Stockpile.Firewood, fuelWanted);
         }
 
@@ -2342,7 +2343,7 @@ public sealed class BehaviorSystem : ISimSystem
         // the wrong conclusion about how often people eat.
         world.LogVillager(LogLevel.Debug, villager, "needs",
             $"ate {mealCost} from the {world.HouseholdOf(villager).Name} larder " +
-            $"(hunger was {villager.Hunger}, {world.HouseholdOf(villager).Stockpile.Food} left)");
+            $"(hunger was {villager.Hunger}, {world.FoodIn(world.HouseholdOf(villager).Stockpile)} left)");
 
         Feed(villager, config);
         return true;
@@ -2433,7 +2434,7 @@ public sealed class BehaviorSystem : ISimSystem
         // the trade instead would throw away proficiency, which accrues per trade and is the
         // whole of Phase 3.
         bool needsFood = !world.FoodLimitIsMet()
-            && (household.Stockpile.Food < world.TargetFoodFor(household)
+            && (world.FoodIn(household.Stockpile) < world.TargetFoodFor(household)
                 || world.FoodTheVillageHolds() < world.FoodTheVillageHasRoomFor());
 
         // FETCH — before work, because a household with an empty larder has a more
@@ -3225,13 +3226,8 @@ public sealed class BehaviorSystem : ISimSystem
         // Priority and exclusivity are different rules and only one of them was wanted. That is
         // D142's shape exactly — a rule that reached some of its call sites — and the fix is
         // the same: both halves in one place, with the second reading what the first left.
-        int foodShort = world.TargetFoodFor(household) - household.Stockpile.Food;
-        int food = Smallest(foodShort, load, target.Store.Food);
-        if (food > 0 && target.Store.TryTake(Goods.Food, food))
-        {
-            villager.Carried.Receive(Goods.Food, food);
-            load -= food;
-        }
+        int foodShort = world.TargetFoodFor(household) - world.FoodIn(household.Stockpile);
+        load -= MoveFood(world, target.Store, villager.Carried, Smallest(foodShort, load, load));
 
         // ⚠️ A FREE HAND, NOT A FREE TRIP. If food took the whole armful there is nothing left
         // to carry and this does nothing — the second trip is then carry capacity doing its
@@ -3251,6 +3247,99 @@ public sealed class BehaviorSystem : ISimSystem
         }
     }
 
+
+    /// <summary>
+    /// Move up to <paramref name="upTo"/> of <b>anything edible</b> from one pile to another,
+    /// returning how much moved.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>&#9940; THE FIFTH PLACE THAT NAMED <c>Goods.Food</c> WHERE IT SHOULD HAVE ASKED.</b>
+    /// D277 made <em>"what counts as food?"</em> one question with one answer; D283 taught the
+    /// mouth; <b>this teaches the hands.</b> Joe found the gap by looking at a granary:
+    /// <em>"do the villagers actually eat the fish? I don't see any fish in any home larders."</em>
+    /// They could not — every errand that stocks a larder took <c>Goods.Food</c> by name, so
+    /// <b>2,325 fish were decoration</b> and a villager died beside them.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>In catalogue order, deliberately.</b> What to carry is data rather than a rule
+    /// written in here, and a village that has only ever seen one food moves byte-for-byte as it
+    /// did before fish existed — the sparse-hash rule, which is what keeps the goldens still.
+    /// </para>
+    /// </remarks>
+    private static int MoveFood(SimWorld world, Stockpile from, Stockpile into, int upTo)
+    {
+        if (upTo <= 0)
+        {
+            return 0;
+        }
+
+        int moved = 0;
+        IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+
+        for (int i = 0; i < edible.Count && moved < upTo; i++)
+        {
+            Goods goods = edible[i];
+            int room = upTo - moved;
+            int held = from[goods];
+            int take = room < held ? room : held;
+
+            if (take > 0 && from.TryTake(goods, take))
+            {
+                into.Receive(goods, take);
+                moved += take;
+            }
+        }
+
+        return moved;
+    }
+
+    /// <summary>The nearest store holding <b>anything the village can eat</b>.</summary>
+    /// <remarks>
+    /// ⛔ <c>NearestStoreHolding(…, Goods.Food)</c> was the other half of the same bug: a
+    /// granary holding nothing but fish <b>was not a source</b>, so the errand never fired and
+    /// the larders ran down in silence beside it. <em>Nothing errors — it simply never happens</em>,
+    /// which is why the overview could read thousands of fish while a household starved.
+    /// </remarks>
+    private static StoreBuilding? NearestStoreHoldingFood(SimWorld world, GridPos from)
+    {
+        StoreBuilding? best = null;
+        int bestCost = int.MaxValue;
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (!HoldsFoodItWillGiveUp(world, store))
+            {
+                continue;
+            }
+
+            int cost = world.TravelCost.TicksBetween(from, store.Position);
+            if (cost < bestCost)
+            {
+                bestCost = cost;
+                best = store;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>Whether this store is holding food it would actually hand over.</summary>
+    private static bool HoldsFoodItWillGiveUp(SimWorld world, StoreBuilding store)
+    {
+        IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+
+        for (int i = 0; i < edible.Count; i++)
+        {
+            if (store.Store[edible[i]] > 0 && store.Accepts(edible[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static int Smallest(int a, int b, int c)
     {
@@ -3301,10 +3390,24 @@ public sealed class BehaviorSystem : ISimSystem
         // Food carried straight back from a gather IS production, though, so that
         // one is added rather than received.
         larder.Receive(Goods.Firewood, villager.CarriedFirewood);
-        larder.Add(Goods.Food, villager.CarriedFood);
-
         villager.Carried.TakeAll(Goods.Firewood);
-        villager.Carried.TakeAll(Goods.Food);
+
+        // ⛔ EVERY EDIBLE, NOT `Goods.Food` — AND THE COMMENT BELOW IS WHY THIS WAS MISSED.
+        // *"Everything else stays in their arms"* is the right rule for a log and the wrong
+        // one for a fish, and it read as correct because the sentence is about TIMBER. So a
+        // villager fetched fish from the granary, walked home, and **stood in the doorway
+        // holding it** — the last link in the chain Joe spotted from the other end: *"I don't
+        // see any fish in any home larders."*
+        IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+        for (int i = 0; i < edible.Count; i++)
+        {
+            int carried = villager.Carried[edible[i]];
+            if (carried > 0)
+            {
+                larder.Add(edible[i], carried);
+                villager.Carried.TakeAll(edible[i]);
+            }
+        }
 
         // ⭐ EVERYTHING ELSE STAYS IN THEIR ARMS, WHICH IS THE RULE THIS ALWAYS HELD FOR
         // TIMBER (D211). A larder is what a household eats and burns; a log in one is a log
@@ -3436,11 +3539,10 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
             }
 
-            int foodWanted = world.TargetFoodFor(recipient) - recipient.Stockpile.Food;
-            int food = Smallest(foodWanted, load, store.Store.Food);
-            if (food > 0 && store.Store.TryTake(Goods.Food, food))
+            int foodWanted = world.TargetFoodFor(recipient) - world.FoodIn(recipient.Stockpile);
+            if (MoveFood(world, store.Store, villager.Carried, Smallest(foodWanted, load, load))
+                > 0)
             {
-                villager.Carried.Receive(Goods.Food, food);
                 villager.State = VillagerState.DeliveringToHome;
                 return;
             }
@@ -3514,11 +3616,10 @@ public sealed class BehaviorSystem : ISimSystem
                 break;
             }
 
-            int shortOf = world.TargetFoodFor(family) - family.Stockpile.Food;
-            int fromTheBuffer = Smallest(shortOf, load, workplace.Store.Food);
-            if (fromTheBuffer > 0 && workplace.Store.TryTake(Goods.Food, fromTheBuffer))
+            int shortOf = world.TargetFoodFor(family) - world.FoodIn(family.Stockpile);
+            if (MoveFood(world, workplace.Store, villager.Carried, Smallest(shortOf, load, load))
+                > 0)
             {
-                villager.Carried.Receive(Goods.Food, fromTheBuffer);
                 villager.State = VillagerState.DeliveringToHome;
                 return;
             }
@@ -3545,11 +3646,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             // Everything, because there is nobody left to keep any of it for. This once
             // subtracted a `keepFood` and a `keepFuel`, both of which were const zero.
-            int food = Smallest(household.Stockpile.Food, load, household.Stockpile.Food);
-            if (food > 0 && household.Stockpile.TryTake(Goods.Food, food))
-            {
-                villager.Carried.Receive(Goods.Food, food);
-            }
+            int food = MoveFood(world, household.Stockpile, villager.Carried, load);
 
             int fuel = Smallest(household.Stockpile.Firewood, load - food, household.Stockpile.Firewood);
             if (fuel > 0 && household.Stockpile.TryTake(Goods.Firewood, fuel))
@@ -3577,10 +3674,21 @@ public sealed class BehaviorSystem : ISimSystem
             // Received, never Add — a delivery is goods changing hands, and routing it
             // through Add would credit this household with producing what somebody
             // else gathered. That is the bug Stockpile.Receive exists for.
-            recipient.Stockpile.Receive(Goods.Food, villager.CarriedFood);
             recipient.Stockpile.Receive(Goods.Firewood, villager.CarriedFirewood);
-            villager.Carried.TakeAll(Goods.Food);
             villager.Carried.TakeAll(Goods.Firewood);
+
+            // The same edible-aware hand-over as the larder deposit, for the same reason:
+            // a marketer who carried fish to a door would otherwise walk away still holding it.
+            IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+            for (int i = 0; i < edible.Count; i++)
+            {
+                int carried = villager.Carried[edible[i]];
+                if (carried > 0)
+                {
+                    recipient.Stockpile.Receive(edible[i], carried);
+                    villager.Carried.TakeAll(edible[i]);
+                }
+            }
         }
 
         villager.ErrandHouseholdId = 0;
@@ -4123,7 +4231,8 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.Carried.Receive(Goods.Fish, leftOver);
 
                 Household hearth = world.HouseholdOf(villager);
-                bool wantedAtHome = hearth.Stockpile.Food < world.TargetFoodFor(hearth);
+                bool wantedAtHome =
+                    world.FoodIn(hearth.Stockpile) < world.TargetFoodFor(hearth);
                 villager.State = wantedAtHome
                     ? VillagerState.TravelingHome
                     : VillagerState.HaulingToStore;
@@ -4192,7 +4301,7 @@ public sealed class BehaviorSystem : ISimSystem
                 }
 
                 Household home = world.HouseholdOf(villager);
-                bool homeNeedsIt = home.Stockpile.Food < world.TargetFoodFor(home);
+                bool homeNeedsIt = world.FoodIn(home.Stockpile) < world.TargetFoodFor(home);
 
                 villager.State = homeNeedsIt ? VillagerState.TravelingHome : VillagerState.HaulingToStore;
 

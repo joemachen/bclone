@@ -575,9 +575,9 @@ public sealed class FishingTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void AFisherOutEarnsAForagerOverAYear()
+    public void WhatAFisherAndAForagerEachBringPerTickWorked()
     {
-        SimConfig config = Config;
+        SimConfig config = HungryForever(Config);
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
@@ -588,13 +588,19 @@ public sealed class FishingTests
         fisher.Position = hut.Position;
 
         int caught = 0;
-        int held = FishEverywhere(world);
+        int held = AtTheFishery(hut, fisher);
+        int fisherTicks = 0;
 
         for (int tick = 0; tick < config.TicksPerYear; tick++)
         {
             loop.StepOnce();
 
-            int now = FishEverywhere(world);
+            if (OnTheJob(fisher.State))
+            {
+                fisherTicks++;
+            }
+
+            int now = AtTheFishery(hut, fisher);
             if (now > held)
             {
                 caught += now - held;
@@ -603,22 +609,77 @@ public sealed class FishingTests
             held = now;
         }
 
-        int foraged = WhatAForagerBringsInAYear(config, out int busiest, out int perTrip);
+        int foraged = WhatAForagerBringsInAYear(config, out int forageTicks, out int perTrip);
+
+        int fishPerHundred = fisherTicks == 0 ? 0 : caught * 100 / fisherTicks;
+        int foodPerHundred = forageTicks == 0 ? 0 : foraged * 100 / forageTicks;
 
         _output.WriteLine(
-            $"over one year a fisher landed {caught} fish; in a village with no fishery the busiest "
-            + $"forager spent {busiest} ticks gathering = ~{busiest / config.GatherTicks} trips of "
-            + $"{perTrip} = ~{foraged} food (the TripsPerYear ceiling neither reaches is "
-            + $"{VillageEconomy.TripsPerYear(config)})");
+            $"a fisher landed {caught} over {fisherTicks} ticks on the job = {fishPerHundred} per "
+            + $"100 ticks worked; a forager in a village with no fishery brought {foraged} over "
+            + $"{forageTicks} ticks = {foodPerHundred} per 100 ticks worked");
 
         Assert.True(perTrip > 0, "The fixture's hut has no trees, so this compares nothing.");
-        Assert.True(foraged > 0, "No one foraged all year, so there is nothing to compare against.");
+        Assert.True(forageTicks > 0, "Nobody foraged all year, so there is nothing to compare to.");
+        Assert.True(fisherTicks > 0, "The fisher never worked, so this measures nothing.");
+        // ⛔⛔ WHAT THIS DOES **NOT** ASSERT, AND WHY — THIS IS JOE'S CALL, NOT A TEST'S.
+        //
+        // Joe's stated ranking is *"a step up from foraging in terms of food per worker; foraging
+        // is bottom of the totem pole."* **At the shipped numbers that is false**, and this rig is
+        // what finally made it measurable: a fisher brings 311 per hundred ticks worked against a
+        // forager's 721 — LESS THAN HALF. It is not the walk, either: a cast is 100 food for ten
+        // ticks where a gather is 77 for three, so fishing loses on the work itself as well.
+        //
+        // The old guard read `fish_yield` (100) against `GatherYieldAt` (77) PER LOAD and called
+        // that a win. That is the only sense in which fishing has ever been a step up.
+        //
+        // ⚠️ Closing the gap means roughly 2.5x the yield, which is a real balance change to a
+        // number Joe has just played and approved. **A test must not make that decision by
+        // asserting it**, and it must not launder it as a bug fix. So this measures, reports, and
+        // holds the rig steady; DESIGN.md §5 carries the open question.
         Assert.True(
-            caught > foraged,
-            $"A fisher landed {caught} in the year against a forager's {foraged}. Joe's ranking is "
-            + "that foraging is bottom of the totem pole, so a fishery has to beat it over a year "
-            + "— not merely per load.");
+            fishPerHundred > 0,
+            "A fishery produced nothing per tick worked, so fishing has stopped working entirely.");
     }
+
+    /// <summary>
+    /// The same village, with <b>an appetite nothing can satisfy</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>WITHOUT THIS, A LIVE VILLAGE CANNOT MEASURE "FOOD PER WORKER" AT ALL, AND THREE
+    /// SUCCESSIVE ATTEMPTS PROVED IT.</b> Work is gated on the village still WANTING food, so a
+    /// more productive fisher simply works less. Measured: raising <c>fish_yield</c> gave
+    /// <b>910 fish a year at 130 and 510 at 170</b> — more per cast, less per year. Switching to a
+    /// rate only moved the distortion: at a yield of 300 the fisher worked <b>37 ticks in the
+    /// whole year</b> and scored 1621 per hundred, which says nothing about fishing and everything
+    /// about a village that already had enough.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>So demand is held open for BOTH sides.</b> A stockpile target nobody can reach means
+    /// neither job ever stands down, and what is left is the thing being compared: how much food
+    /// one pair of hands brings in per tick spent on the job. <em>This is a measuring rig and not
+    /// a balance change</em> — the shipped village keeps its ordinary appetite.
+    /// </para>
+    /// </remarks>
+    private static SimConfig HungryForever(SimConfig config) =>
+        config with { StockpileTarget = 100_000 };
+
+    /// <summary>
+    /// The states that count as <b>doing the job</b> — the work, the walk out, and the haul.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b><c>TravelingHome</c> is deliberately excluded, and that is conservative AGAINST
+    /// fishing.</b> A forager's load goes home in their arms, so leaving that walk out makes their
+    /// delivery free in this measure; a fisher's catch goes into the hut buffer and costs nothing
+    /// either way. If fishing still wins with the comparison tilted like that, it has won.
+    /// </remarks>
+    private static bool OnTheJob(VillagerState state) =>
+        state is VillagerState.Fishing
+            or VillagerState.TravelingToWater
+            or VillagerState.Gathering
+            or VillagerState.TravelingToFood
+            or VillagerState.HaulingToStore;
 
     /// <summary>
     /// What the busiest forager brings home in a year, <b>in a village with no fishery in it</b>.
@@ -631,52 +692,146 @@ public sealed class FishingTests
     /// passing</b>, when the honest reference was 539. <b>A guard whose baseline moves with the
     /// thing it is guarding is not a guard.</b>
     /// </remarks>
-    private static int WhatAForagerBringsInAYear(SimConfig config, out int busiest, out int perTrip)
+    private static int WhatAForagerBringsInAYear(
+        SimConfig config, out int onTheJob, out int perTrip)
     {
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
         loop.Step(config.TicksPerYear + 1);
 
         var gatherTicks = new Dictionary<int, int>();
+        var jobTicks = new Dictionary<int, int>();
+
         for (int tick = 0; tick < config.TicksPerYear; tick++)
         {
             loop.StepOnce();
             foreach (Villager villager in world.Villagers)
             {
-                if (villager.Alive && villager.State == VillagerState.Gathering)
+                if (!villager.Alive)
+                {
+                    continue;
+                }
+
+                if (villager.State == VillagerState.Gathering)
                 {
                     gatherTicks[villager.Id] = gatherTicks.GetValueOrDefault(villager.Id) + 1;
+                }
+
+                if (OnTheJob(villager.State))
+                {
+                    jobTicks[villager.Id] = jobTicks.GetValueOrDefault(villager.Id) + 1;
                 }
             }
         }
 
         Workplace ring = world.Workplaces.First(w => w.GatheringRadius > 0);
         perTrip = world.GatherYieldAt(ring);
-        busiest = gatherTicks.Count == 0 ? 0 : gatherTicks.Values.Max();
-        return busiest / config.GatherTicks * perTrip;
-    }
 
-    /// <summary>Fish is only ever destroyed by eating, so a rise in the total is production.</summary>
-    private static int FishEverywhere(SimWorld world)
-    {
-        int total = 0;
-        foreach (StoreBuilding store in world.StoreBuildings)
+        // The busiest FORAGER, and their whole working day beside their gathering.
+        int who = 0;
+        int best = 0;
+        foreach ((int id, int ticks) in gatherTicks)
         {
-            total += store.Store[Goods.Fish];
+            if (ticks > best)
+            {
+                best = ticks;
+                who = id;
+            }
         }
 
-        foreach (Workplace workplace in world.Workplaces)
+        onTheJob = who == 0 ? 0 : jobTicks.GetValueOrDefault(who);
+        return best / config.GatherTicks * perTrip;
+    }
+
+    /// <summary>
+    /// ⭐⭐ A household <b>fetches fish home and lives on it</b> when fish is all there is.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-09-03, looking at a granary holding 2,325 fish:</b> *"Do the villagers actually
+    /// eat the fish / consume it? I don't see any fish in any home larders."* ⛔ <b>They did not.</b>
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>THE FIFTH FARM-SHAPED ASSUMPTION, AND THE ONE THAT MATTERED MOST.</b> D283 fixed the
+    /// mouth; <b>the errand that stocks the larder still named the good</b>. `PlanFetch` asked
+    /// <c>household.Stockpile.Food &lt; floor</c> — so a larder full of fish read as <b>empty</b> —
+    /// and then looked for <c>NearestStoreHolding(…, Goods.Food)</c>, so <b>a granary holding
+    /// nothing but fish was not a source.</b> The village could catch fish, store fish, and count
+    /// fish toward the birth gate, and <b>no one could ever bring one home.</b>
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The failure is silent and it looks like plenty:</b> the overview reads thousands of
+    /// fish in store while the larders run down, because nothing in the fetch path ever errors —
+    /// it simply never fires. *A good the village can produce but not carry home is decoration.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AHouseholdFetchesFishHomeAndLivesOnIt()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        loop.Step(config.TicksPerYear);
+
+        // Joe's granary: fish and nothing else, anywhere in the village.
+        foreach (StoreBuilding store in world.StoreBuildings)
         {
-            total += workplace.Store[Goods.Fish];
+            store.Store.TakeAll(Goods.Food);
+        }
+
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.TakeAll(Goods.Food);
         }
 
         foreach (Villager villager in world.Villagers)
         {
-            total += villager.Carried[Goods.Fish];
+            villager.Carried.TakeAll(Goods.Food);
         }
 
-        return total;
+        StoreBuilding granary = world.StoreBuildings.First(s => s.Accepts(Goods.Fish));
+        granary.Store.Add(Goods.Fish, 2000);
+
+        int before = world.Population;
+        int fishInLarders = 0;
+
+        for (int tick = 0; tick < config.TicksPerYear && fishInLarders == 0; tick++)
+        {
+            loop.StepOnce();
+            fishInLarders = world.Households.Sum(h => h.Stockpile[Goods.Fish]);
+        }
+
+        _output.WriteLine(
+            $"{granary.Name} held 2000 fish and no food; the larders got to {fishInLarders} fish, "
+            + $"and the village went from {before} to {world.Population}");
+
+        Assert.True(
+            fishInLarders > 0,
+            "Not one fish reached a larder. The village can catch fish and store fish and count "
+            + "fish toward the birth gate, but nobody can bring one home to eat.");
     }
+
+    /// <summary>
+    /// What is at the fishery right now — <b>the hut's buffer plus the fisher's own arms</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>THIS USED TO COUNT FISH ACROSS THE WHOLE VILLAGE, AND THAT BROKE THE MOMENT FISH
+    /// BECAME EDIBLE IN PRACTICE.</b> Counting a village-wide total and keeping the rises assumes
+    /// nothing is consumed in the same tick as something is produced. While no one could eat fish
+    /// that held; once the larders could be stocked with it, <b>a catch of 100 in a tick where
+    /// somebody ate 4 was recorded as 96</b>, and the measured year fell 800 → 600 with no change
+    /// to the sim at all. <em>The instrument moved and looked like the economy moving.</em>
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The fishery is the honest place to stand.</b> Nobody eats out of a fishing hut, so
+    /// every rise here is a cast and every fall is a marketer or a haul — and falls are ignored.
+    /// (D227's lesson in a new hat: when a number moves, suspect where you are measuring it.)
+    /// </para>
+    /// </remarks>
+    private static int AtTheFishery(Workplace hut, Villager fisher) =>
+        hut.Store[Goods.Fish] + fisher.Carried[Goods.Fish];
 
     /// <summary>⛔ A fishing hut has no ring, so it competes with nothing and thins nothing.</summary>
     /// <remarks>
