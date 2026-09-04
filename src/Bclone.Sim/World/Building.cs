@@ -156,6 +156,31 @@ public sealed record BuildingRow
     public int GatheringRadius { get; init; }
 
     /// <summary>
+    /// How far it hunts, in tiles. <b>Zero for a building that does not hunt.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>A SECOND REACH, AND IT IS SEPARATE FROM <see cref="GatheringRadius"/> ON
+    /// PURPOSE.</b> <c>SharersOf</c> asks <c>GatheringRadius &gt; 0</c> and deliberately never
+    /// asks <c>JobKind</c>, so that *"a modder's building is in the rule the day it exists"*
+    /// (D260). That is right for a gathering ring — and it means <b>any building given one
+    /// immediately starts competing for TREES.</b> <b>Game is not wood.</b> A lodge sharing a
+    /// <c>GatheringRadius</c> would halve a forager's yield by standing near them, and nothing
+    /// anywhere would say so.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>THE HONEST COST, RECORDED WHERE THE THIRD ONE WOULD BE ADDED:</b> there are now
+    /// two fields meaning *"how far this building reaches"*, and <b>a third would be a smell
+    /// rather than a feature</b>. If a fourth harvesting building ever appears, the right move
+    /// is to give a ring <b>the resource it competes for</b> and collapse both fields into it.
+    /// *That refactor is cheap today and expensive later; it is not taken now only because two
+    /// is not yet a pattern.* See `specs/hunting.md §3`.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("hunting_radius")]
+    public int HuntingRadius { get; init; }
+
+    /// <summary>
     /// Its own buffer, in goods. <b>Zero for a workplace that hauls everything away.</b>
     /// </summary>
     /// <remarks>

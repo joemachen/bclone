@@ -265,8 +265,18 @@ public sealed class SkillTests
     //                                                    true  19523974609292821
     //   before fishing added a seventh good (2026-09-02): false 6280070700300926173,
     //                                                   true  47097500781508764
-    [InlineData(false, 18060915153750279005UL)]
-    [InlineData(true, 16268336284570708028UL)]
+
+    // ⭐ MOVED 2026-09-03, ONE REASON FOR ALL FIVE GOLDENS IN THE SUITE: **the state hash
+    // became sparse over goods.** `MixStore` and the household's lifetime-produced loop both
+    // mixed a zero for every catalogue slot, so ADDING A GOOD CHANGED THE HASH OF EVERY VILLAGE
+    // THAT HAD NEVER SEEN IT — `Meat` and `Leather` moved five goldens belonging to valleys with
+    // no hunter in them. Both loops now mix (slot, amount) pairs for non-empty slots only, which
+    // is the shape every other control in that file already used. **A catalogue can grow for
+    // free from here**, which matters because Joe has asked for several kinds of game meat.
+    // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
+    // Were 18060915153750279005 (fixture) and 16268336284570708028 (shipped).
+    [InlineData(false, 16372151027884281488UL)]
+    [InlineData(true, 4358305643559986011UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

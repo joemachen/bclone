@@ -232,6 +232,23 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     FishingHut = 12,
+
+    /// <summary>
+    /// Where hunters work — <b>and the second building whose placement asks about the ground</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The fishing hut must touch water; this one needs <b>forest within its reach</b>, because
+    /// game lives in the woods (Joe). Two different mistakes get two different sentences (D43).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>IT HAS NO <c>GatheringRadius</c>, AND THAT IS LOAD-BEARING.</b> <c>SharersOf</c>
+    /// asks <c>GatheringRadius &gt; 0</c> and deliberately never asks <c>JobKind</c>, so a lodge
+    /// given a ring would silently start <b>competing with forager huts over TREES</b>. Game is
+    /// not wood. It carries <c>HuntingRadius</c> instead — see `specs/hunting.md §3`.
+    /// </para>
+    /// </remarks>
+    HunterLodge = 13,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

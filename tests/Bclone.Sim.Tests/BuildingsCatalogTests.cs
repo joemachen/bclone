@@ -254,10 +254,20 @@ public sealed class BuildingsCatalogTests
             {
                 BuildingKind.Farmhouse => config.FarmStoreCap,
                 BuildingKind.FishingHut => config.FishingHutStoreCap,
+                BuildingKind.HunterLodge => config.HunterLodgeStoreCap,
                 _ => 0,
             };
 
             Assert.Equal(buffer, row.LocalStoreCap);
+
+            // ⛔⛔ AND THE HUNTING REACH IS A SEPARATE COLUMN THAT MUST ALSO BELONG TO ONE
+            // BUILDING. This is the guard that would catch the trap `specs/hunting.md §3`
+            // names: if a lodge ever gains a `GatheringRadius`, the assertion above fails and
+            // says so — because a ring enrols it in D260's competition and it would start
+            // halving FORAGERS' yields over TREES, which is not what a hunter takes.
+            Assert.Equal(
+                kind == BuildingKind.HunterLodge ? config.HuntingRadius : 0,
+                row.HuntingRadius);
             Assert.Equal(kind == BuildingKind.Home ? config.MaxHouseholdSize : 0,
                 row.HouseCapacity);
         }

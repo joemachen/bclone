@@ -36,8 +36,18 @@ public sealed class ModdedGoodTests
 
     public ModdedGoodTests(ITestOutputHelper output) => _output = output;
 
-    /// <summary>The id the modded good takes — the first free one above the built-in six.</summary>
-    private const int PitchId = 6;
+    /// <summary>
+    /// The id the modded good takes — <b>the first free one above the built-ins</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THIS WAS 6, AND 6 STOPPED BEING FREE THE DAY FISH SHIPPED.</b> The validator
+    /// checks that every built-in ID is PRESENT, not what it is called — so a row named "pitch"
+    /// sitting at 6 satisfied <c>Goods.Fish</c>'s slot, and this whole file went on claiming to
+    /// prove *"a good the enum has never heard of"* while testing one the enum knows perfectly
+    /// well. **It passed the entire time.** Found when <c>Meat</c> and <c>Leather</c> took 7 and
+    /// 8 and the loader finally said something.
+    /// </remarks>
+    private const int PitchId = 9;
 
     private static Goods Pitch => (Goods)PitchId;
 
@@ -45,7 +55,7 @@ public sealed class ModdedGoodTests
     /// A config with a seventh good, written the way a modder would write it.
     /// </summary>
     /// <remarks>
-    /// The six built-ins have to be restated because a <c>goods</c> array <b>replaces</b> the
+    /// The built-ins have to be restated because a <c>goods</c> array <b>replaces</b> the
     /// list rather than appending to it — the same wholesale-replacement rule
     /// <c>household_names</c> and <c>skills</c> follow, and the validator refuses a catalogue
     /// missing a built-in id precisely so this cannot be got half-right.
@@ -59,9 +69,12 @@ public sealed class ModdedGoodTests
         { "id": 3, "name": "stone",    "source_name": "a stone seam", "yield_per_tile": 12, "stored_by": ["Shed", "Cart"] },
         { "id": 4, "name": "tools",    "stored_by": ["Shed", "Cart"] },
         { "id": 5, "name": "iron",     "source_name": "an iron seam", "yield_per_tile": 8,  "stored_by": ["Shed", "Cart"] },
+        { "id": 6, "name": "fish",     "source_name": "the river",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 7, "name": "meat",     "source_name": "the woods",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 8, "name": "leather",  "source_name": "the woods",    "stored_by": ["Shed", "Cart"] },
 
-        // The modder's own good. Nothing in the sim has ever heard of it.
-        { "id": 6, "name": "pitch",    "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Shed"] }
+        // The modder's own good, above every built-in. Nothing in the sim has heard of it.
+        { "id": 9, "name": "pitch",    "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Shed"] }
       ]
     }
     """;
@@ -78,7 +91,7 @@ public sealed class ModdedGoodTests
         SimConfig config = ConfigWithPitch();
         var catalog = new GoodsCatalog(config.GoodsCatalog);
 
-        Assert.Equal(7, catalog.Count);
+        Assert.Equal(10, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a good no switch
         // has ever named.
@@ -115,10 +128,10 @@ public sealed class ModdedGoodTests
 
         // Every stockpile in the run is sized from the catalogue, so the seventh has a slot —
         // this is the six-good ceiling, gone.
-        Assert.Equal(7, world.Households[0].Stockpile.Slots);
+        Assert.Equal(10, world.Households[0].Stockpile.Slots);
 
         StoreBuilding shed = FindShed(world);
-        Assert.Equal(7, shed.Store.Slots);
+        Assert.Equal(10, shed.Store.Slots);
 
         // ⭐ The shed takes it because the ROW says so — `stored_by: ["Shed"]` — not because
         // anything in the sim was taught about pitch.
@@ -164,6 +177,74 @@ public sealed class ModdedGoodTests
         Assert.NotEqual(StateHash.Compute(a), StateHash.Compute(b));
     }
 
+    /// <summary>
+    /// ⭐⭐ A good <b>nobody holds</b> does not change the hash — so a catalogue may grow for free.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THIS WAS FALSE UNTIL 2026-09-03, AND IT COST FIVE GOLDENS TO NOTICE.</b>
+    /// <c>MixStore</c> mixed every slot including the empty ones, so <b>adding <c>Meat</c> and
+    /// <c>Leather</c> changed the hash of every village that had never seen either</b> — a
+    /// fourteen-year-old valley with no hunter in it suddenly read as a different world.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It broke the rule written on every other control in the hash</b>: zones, stock
+    /// limits, profession targets, ground stacks and pending piles are all sparse precisely so
+    /// *a village that never uses a feature hashes byte-identically*. Stores were the last dense
+    /// loop, and goods are the one catalogue expected to keep growing — Joe has already asked for
+    /// *"different types of game meat"*, and **every one of them would have churned the goldens.**
+    /// </para>
+    /// <para>
+    /// ⭐ The pair of guards below is what keeps the fix honest: an EMPTY slot must vanish, and a
+    /// single unit in it must still show.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AGoodNobodyHoldsDoesNotChangeTheHash()
+    {
+        // ⚠️ THE SAME CATALOGUE PLUS ONE ROW — not the hand-written modded one. Comparing
+        // against `ConfigWithPitch()` compares two DIFFERENT economies: that JSON restates every
+        // built-in and its `stored_by` lists do not match the shipped rows, so the villages
+        // diverge for reasons that have nothing to do with the extra good. **The claim is about
+        // one added row and nothing else**, so the fixture's own catalogue is the base.
+        SimConfig plain = VillageFixtures.Village;
+
+        var grown = new GoodRow[plain.GoodsCatalog.Count + 1];
+        for (int i = 0; i < plain.GoodsCatalog.Count; i++)
+        {
+            grown[i] = plain.GoodsCatalog[i];
+        }
+
+        grown[^1] = new GoodRow
+        {
+            Id = plain.GoodsCatalog.Count,
+            Name = "pitch",
+            SourceName = "a tar seep",
+            StoredBy = new[] { StoreKind.Shed },
+        };
+
+        SimConfig withPitch = plain with { GoodsCatalog = grown };
+
+        SimLoop a = SimFactory.CreatePhase0(plain, new InMemoryLogSink());
+        SimLoop b = SimFactory.CreatePhase0(withPitch, new InMemoryLogSink());
+
+        _output.WriteLine(
+            $"at tick 0: {StateHash.Compute(a.World):X16} against {StateHash.Compute(b.World):X16}");
+
+        a.Step(plain.TicksPerYear * 4);
+        b.Step(plain.TicksPerYear * 4);
+
+        ulong without = StateHash.Compute(a.World);
+        ulong with = StateHash.Compute(b.World);
+
+        _output.WriteLine(
+            $"four years in: without pitch in the catalogue {without:X16}, with it {with:X16} "
+            + $"({a.World.Households[0].Stockpile.Slots} slots against "
+            + $"{b.World.Households[0].Stockpile.Slots})");
+
+        Assert.Equal(without, with);
+    }
+
     [Fact]
     public void OneGrainOfPitchIsEnoughToShowUp()
     {
@@ -193,7 +274,7 @@ public sealed class ModdedGoodTests
         // returned -1 and `Set` answered **false** — *the player sets a limit, the control reports
         // no change, and nothing anywhere says why.* Silent refusal is the worst of the three
         // possible failures, because there is nothing to read.
-        Assert.Equal(7, world.StockLimits.Slots);
+        Assert.Equal(10, world.StockLimits.Slots);
 
         Assert.True(world.StockLimits.Set(Pitch, 120), "a modded good can be limited");
         Assert.Equal(120, world.StockLimits.For(Pitch));
@@ -263,7 +344,7 @@ public sealed class ModdedGoodTests
     public void TwoGoodsSharingAnIdAreRefusedAtLoad()
     {
         string duplicated = JsonWithPitch.Replace(
-            """{ "id": 6, "name": "pitch",""",
+            """{ "id": 9, "name": "pitch",""",
             """{ "id": 5, "name": "pitch",""");
 
         SimConfigException error = Assert.Throws<SimConfigException>(

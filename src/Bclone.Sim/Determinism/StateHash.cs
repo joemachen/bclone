@@ -198,12 +198,21 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)household.Id);
             hash = MixUInt32(hash, (uint)household.LastBirthYear);
 
-            // The larder and what it has ever produced, every good of it — the same
-            // loop MixStore uses, for the same reason.
+            // The larder and what it has ever produced — the same loop MixStore uses, and
+            // ⭐ SPARSE FOR THE SAME REASON (2026-09-03). This was the SECOND dense goods loop and
+            // the one that hid: making `MixStore` sparse did not stop a new catalogue row moving
+            // the hash, because a household nobody had ever seen a hunter in still mixed a zero
+            // here for meat and another for leather. **Two loops, one rule, and finding the second
+            // took a guard that failed at tick 0 rather than four years in.**
             hash = MixStore(hash, household.Stockpile);
             for (int g = 0; g < household.Stockpile.Slots; g++)
             {
-                hash = MixUInt32(hash, (uint)household.Stockpile.Produced((Goods)g));
+                int made = household.Stockpile.Produced((Goods)g);
+                if (made != 0)
+                {
+                    hash = MixUInt32(hash, (uint)g);
+                    hash = MixUInt32(hash, (uint)made);
+                }
             }
 
             hash = MixUInt32(hash, (uint)household.MemberIds.Count);
@@ -477,9 +486,30 @@ public static class StateHash
         // free — where `Stockpile.Kinds` would have silently stopped at the sixth and left the
         // village holding something the hash never saw. That is the same trap one level up: not a
         // crash, but two runs that read identical and are not.
+        // ⭐⭐ SPARSE, AND THE INDEX GOES IN WITH THE VALUE (2026-09-03). This used to mix every
+        // slot including the empty ones, which meant **adding a good to the catalogue changed the
+        // hash of every village that had never seen it** — five goldens moved for `Meat` and
+        // `Leather`, neither of which any of those villages contains.
+        //
+        // ⛔ THAT BROKE THIS PROJECT'S OWN RULE, WHICH IS WRITTEN ON EVERY OTHER CONTROL IN THIS
+        // FILE: *a village that never uses a feature must hash byte-identically.* Zones, stock
+        // limits, profession targets, ground stacks and pending piles are all sparse for exactly
+        // this reason; stores were the one dense loop left, and goods are the one catalogue that
+        // is expected to keep growing — Joe has already asked for *"different types of game
+        // meat."* **Every one of those would have churned the goldens again.**
+        //
+        // ⚠️ THE INDEX IS WHAT MAKES SPARSE SAFE. Mixing values alone relied on position, so
+        // dropping the empties would make {0,0,5} and {5,0,0} collide. Mixing (slot, amount) pairs
+        // for the non-empty slots only is the same shape the stock-limit loop above already uses,
+        // and `OneGrainOfPitchIsEnoughToShowUp` is the guard that a single unit still shows.
         for (int i = 0; i < store.Slots; i++)
         {
-            hash = MixUInt32(hash, (uint)store[(Goods)i]);
+            int held = store[(Goods)i];
+            if (held != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)held);
+            }
         }
 
         return hash;

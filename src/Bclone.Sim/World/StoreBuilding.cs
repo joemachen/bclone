@@ -390,4 +390,29 @@ public enum Goods
     /// </para>
     /// </remarks>
     Fish = 6,
+
+    /// <summary>
+    /// Taken from wild game — <b>the food that is worth the most and costs the most to get</b>
+    /// (D19, and D3057's argument for hunting over livestock).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Worth exactly what food and fish are worth per unit, and that is enforced at
+    /// load.</b> A third edible good is free; a second nutritional VALUE is still refused until the
+    /// survival floor is re-derived against a diet rather than against one food. See
+    /// <c>GoodRow.Nutrition</c> — the rule that made <see cref="Fish"/> cheap to add is what makes
+    /// this one cheap too.
+    /// </remarks>
+    Meat = 7,
+
+    /// <summary>
+    /// Hide off the same animal — <b>the first good with no consumer</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>It accumulates on purpose, and that is not an oversight to be tidied away.</b> The
+    /// chain is <em>hunting → leather → tailor → clothing</em> (D2753's build order, in those
+    /// words), and `specs/clothing.md` has been blocked partly on *"there is no leather"* since it
+    /// was written. **A pile of hides nobody can use yet is the visible half of that dependency**,
+    /// and the tailor is what spends it.
+    /// </remarks>
+    Leather = 8,
 }

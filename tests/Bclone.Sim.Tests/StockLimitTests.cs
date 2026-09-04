@@ -322,7 +322,17 @@ public sealed class StockLimitTests
     //   before winter cost 20 in the fixture too (2026-09-01): 3963224460235965406
     //   before job-holders rested in spells (2026-09-02): 3512506285116327781
     //   before fishing added a seventh good (2026-09-02): 18088862711615675308
-    private const ulong FixtureFiftyYearHash = 5305272553712677516UL;
+    
+    // ⭐ MOVED 2026-09-03, ONE REASON FOR ALL FIVE GOLDENS IN THE SUITE: **the state hash
+    // became sparse over goods.** `MixStore` and the household's lifetime-produced loop both
+    // mixed a zero for every catalogue slot, so ADDING A GOOD CHANGED THE HASH OF EVERY VILLAGE
+    // THAT HAD NEVER SEEN IT — `Meat` and `Leather` moved five goldens belonging to valleys with
+    // no hunter in them. Both loops now mix (slot, amount) pairs for non-empty slots only, which
+    // is the shape every other control in that file already used. **A catalogue can grow for
+    // free from here**, which matters because Joe has asked for several kinds of game meat.
+    // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
+    // Were 5305272553712677516 (fixture) and 3152227146507966874 (shipped).
+    private const ulong FixtureFiftyYearHash = 16514536704114624503UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -371,7 +381,7 @@ public sealed class StockLimitTests
     //   before the fire got hungrier (2026-09-01): 7526008860437144418
     //   before job-holders rested in spells (2026-09-02): 13822301328619150389
     //   before fishing added a seventh good (2026-09-02): 801842139213225914
-    private const ulong ShippedFiftyYearHash = 3152227146507966874UL;
+    private const ulong ShippedFiftyYearHash = 9724963182474327659UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

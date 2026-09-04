@@ -41,7 +41,8 @@ public sealed class ModdedBuildingTests
     /// name. Renamed with it: two trades called "fisher" in one file is a failure message nobody
     /// can read.
     /// </remarks>
-    private static JobKind Boatman => (JobKind)7;
+    // ⚠️ 8, not 7 — `JobKind.Hunter` took 7 when hunting shipped.
+    private static JobKind Boatman => (JobKind)8;
 
     /// <summary>
     /// A catalogue with an eleventh building and a seventh trade that staffs it.
@@ -83,7 +84,8 @@ public sealed class ModdedBuildingTests
         // stopped being one the day `JobKind.Fisher` existed. **The example mod was a fisherman;
         // the game grew one.** Renamed too, so two trades called "fisher" cannot be confused for
         // each other in a failure message.
-        { "id": 7, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Food" }
+        { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting",            "works_at": "HunterLodge",   "limited_by": "Meat" },
+        { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Food" }
       ],
 
       "buildings": [
@@ -114,7 +116,8 @@ public sealed class ModdedBuildingTests
 
         // ⭐ THE FISHING HUT, AND `must_touch` IS A COLUMN A MODDER CAN REACH — which is the
         // claim this file exists to make, applied to the newest kind of placement rule.
-        { "id": 12, "name": "fishing hut", "seats": 4, "must_touch": "Water", "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ] }
+        { "id": 12, "name": "fishing hut", "seats": 4, "must_touch": "Water", "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ]},
+        { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 }, { "goods": "Stone", "amount": 12 } ] }
       ]
     }
     """;
@@ -168,8 +171,9 @@ public sealed class ModdedBuildingTests
         SimWorld world = World(ConfigWithABoathouse(), out _);
         BuildingsCatalog catalog = world.BuildingsCatalog;
 
-        // 12 → 13 when the fishing hut shipped (2026-09-02).
-        Assert.Equal(13, catalog.Count);
+        // 12 → 13 when the fishing hut shipped (2026-09-02); → 14 with the hunter's lodge
+        // (2026-09-03). The modder's boathouse is the fifteenth.
+        Assert.Equal(14, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -298,6 +302,7 @@ public sealed class ModdedBuildingTests
             { "id": 5,  "name": "house",           "house_capacity": 5,                        "work_ticks": 30, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 11, "name": "moot hall",       "civic": true, "singleton": true,           "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 20 } ] },
             { "id": 12, "name": "fishing hut",     "seats": 4, "must_touch": "Water",            "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
+            { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12,             "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },

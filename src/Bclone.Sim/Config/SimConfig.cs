@@ -615,6 +615,82 @@ public sealed record SimConfig
     [JsonPropertyName("fishing_hut_store_cap")]
     public int FishingHutStoreCap { get; init; } = 900;
 
+    /// <summary>What a hunter's lodge costs to raise — dearer than a fishing hut.</summary>
+    /// <remarks>
+    /// ⭐ <b>It is the top of the food totem pole, so it is the dearest of the three</b> (Joe:
+    /// *"hunting ultimately yields more food"*). A fishery is two walls on a bank; a lodge has to
+    /// hang and keep a carcass.
+    /// </remarks>
+    [JsonPropertyName("hunter_lodge_logs")]
+    public int HunterLodgeLogs { get; init; } = 40;
+
+    /// <summary>Stone in a hunter's lodge.</summary>
+    [JsonPropertyName("hunter_lodge_stone")]
+    public int HunterLodgeStone { get; init; } = 12;
+
+    /// <summary>Ticks of a builder's work a hunter's lodge takes.</summary>
+    [JsonPropertyName("hunter_lodge_work_ticks")]
+    public int HunterLodgeWorkTicks { get; init; } = 40;
+
+    /// <summary>How many hunters a lodge seats — <b>three</b> (Joe).</summary>
+    /// <remarks>
+    /// ⭐ <b>Stated, not derived</b>, and for D274's reason: the player builds another lodge
+    /// rather than crowding one. Joe, 2026-09-02: *"3 hunters per hunting lodge."*
+    /// </remarks>
+    [JsonPropertyName("hunter_lodge_seats")]
+    public int HunterLodgeSeats { get; init; } = 3;
+
+    /// <summary>
+    /// What a lodge holds before the meat has to be walked away — <b>three hunts</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Set as a MULTIPLE OF THE YIELD, because D290 is what happens otherwise.</b> A
+    /// fishing hut held exactly one cast for a while, so the fisher hauled after every single one
+    /// and the buffer had silently stopped being a buffer while both numbers still read as the
+    /// ones asked for. `TheLodgeHoldsMoreThanOneHunt` guards the ratio here for the same reason.
+    /// </remarks>
+    [JsonPropertyName("hunter_lodge_store_cap")]
+    public int HunterLodgeStoreCap { get; init; } = 900;
+
+    /// <summary>
+    /// How far a lodge hunts, in tiles — <b>wider than a gathering ring</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>NOT a <c>gathering_radius</c>, and the distinction is load-bearing</b> — see
+    /// <c>BuildingRow.HuntingRadius</c>. Game ranges further than a person picking berries, which
+    /// is also why a lodge covers more ground than a forager's hut for the same walk.
+    /// </remarks>
+    [JsonPropertyName("hunting_radius")]
+    public int HuntingRadius { get; init; } = 12;
+
+    /// <summary>Ticks one hunt takes — <b>the longest action in the game</b>.</summary>
+    /// <remarks>
+    /// <b>Joe:</b> *"it takes longer and isn't instantaneous."* A cast is ten (D282); a hunt is
+    /// half again as long, and it is the slowest thing anybody in this village does.
+    /// </remarks>
+    [JsonPropertyName("hunt_ticks")]
+    public int HuntTicks { get; init; } = 15;
+
+    /// <summary>
+    /// Meat off one animal at a fully wooded range, before vigour.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>PROVISIONAL UNTIL THE RIG SAYS OTHERWISE, AND THE RIG IS THE ONLY THING THAT
+    /// MAY SET IT.</b> `specs/hunting.md §7`: food per hour worked, with demand held open — never
+    /// per load. **The per-load comparison has now been wrong twice** (D286, D288), most recently
+    /// telling us fishing beat foraging while it was making 311 against 721.
+    /// </remarks>
+    [JsonPropertyName("meat_yield")]
+    public int MeatYield { get; init; } = 300;
+
+    /// <summary>Hide off the same animal, before vigour.</summary>
+    /// <remarks>
+    /// ⭐ <b>Much smaller than the meat, and it is not food.</b> One animal is a lot of dinner
+    /// and one hide. Nothing spends leather yet — the tailor does, and does not exist.
+    /// </remarks>
+    [JsonPropertyName("leather_yield")]
+    public int LeatherYield { get; init; } = 10;
+
     /// <summary>What a forester's hut costs to raise.</summary>
     [JsonPropertyName("forester_hut_logs")]
     public int ForesterHutLogs { get; init; } = 25;
@@ -1764,6 +1840,27 @@ public sealed record SimConfig
             // re-derived against a diet (D277, `GoodRow.Nutrition`).
             Nutrition = 1,
         },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Meat,
+            Name = "meat",
+            SourceName = "the woods",
+
+            // Stored where food is stored, and the granary matters most — the birth gate reads
+            // granaries, so meat that could only go in a shed would feed nobody's children.
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+            Nutrition = 1,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Leather,
+            Name = "leather",
+            SourceName = "the woods",
+
+            // ⚠️ A SHED, NOT A GRANARY. It is a material, not a meal, and putting it where food
+            // lives would have hides eating granary space the birth gate is measured against.
+            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
+        },
     };
 
     /// <summary>
@@ -1850,6 +1947,19 @@ public sealed record SimConfig
             // food chain through `FoodTheVillageHolds`, which counts fish since D277; this column
             // is the good a limit on THIS TRADE reads, and the trade makes fish.
             LimitedBy = World.Goods.Fish,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Hunter,
+            Name = "hunter",
+            Plural = "hunters",
+            Doing = "hunting",
+            WorksAt = BuildingKind.HunterLodge,
+
+            // ⛔ LIMITED BY MEAT, the same way the fisher is limited by fish: this column is the
+            // good a limit on THIS TRADE reads, and the trade makes meat. The leather is a
+            // by-product and nothing caps it, because nothing spends it yet.
+            LimitedBy = World.Goods.Meat,
         },
     };
 
@@ -2122,6 +2232,25 @@ public sealed record SimConfig
             // one would start competing with FORAGER huts over TREES. Joe's fishery *"does not run
             // out"*, so it has nothing to share and nothing to thin.
             MustTouch = Terrain.Water,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.HunterLodge,
+            Name = "hunter's lodge",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, HunterLodgeLogs),
+                new MaterialCost(World.Goods.Stone, HunterLodgeStone),
+            },
+            WorkTicks = HunterLodgeWorkTicks,
+            Seats = HunterLodgeSeats,
+            LocalStoreCap = HunterLodgeStoreCap,
+
+            // ⛔⛔ `HuntingRadius`, NOT `GatheringRadius`, AND THE WHOLE FEATURE TURNS ON IT.
+            // `SharersOf` asks `GatheringRadius > 0` and never `JobKind`, so a ring here would
+            // enrol the lodge in D260's competition and it would start halving FORAGERS' yields
+            // by standing near them — over TREES, which is not what it takes. Game is not wood.
+            HuntingRadius = HuntingRadius,
         },
     };
 

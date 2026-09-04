@@ -115,6 +115,23 @@ public enum JobKind
     /// totem pole"* — and a fishery is the first thing a village should want to leave it for.
     /// </remarks>
     Fisher = 6,
+
+    /// <summary>
+    /// Take wild game from the woods — <b>slower than a cast, and worth more</b> (Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-09-02:</b> *"Hunting ultimately yields more food, but it takes longer and
+    /// isn't instantaneous. 3 hunters per hunting lodge."* So the totem pole he has stated, bottom
+    /// to top, is <b>foraging → fishing → hunting</b>.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>THE VALUE IS 7 AND IT IS APPENDED, NEVER INSERTED.</b> Job kinds are hashed by
+    /// position, so renumbering would silently reinterpret every golden as being about a different
+    /// trade — the warning <see cref="Forester"/> already carries, for the same reason.
+    /// </para>
+    /// </remarks>
+    Hunter = 7,
 }
 
 /// <summary>

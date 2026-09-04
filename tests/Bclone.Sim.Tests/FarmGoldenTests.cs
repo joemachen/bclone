@@ -212,7 +212,17 @@ public sealed class FarmGoldenTests
     //   before winter cost 20 in the fixture too (2026-09-01): 3921975159594428461
     //   before job-holders rested in spells (2026-09-02): 7582696266582066515
     //   before fishing added a seventh good (2026-09-02): 864017416367517461
-    private const ulong SeamGoldenHash = 6423725063573751493UL;
+    
+    // ⭐ MOVED 2026-09-03, ONE REASON FOR ALL FIVE GOLDENS IN THE SUITE: **the state hash
+    // became sparse over goods.** `MixStore` and the household's lifetime-produced loop both
+    // mixed a zero for every catalogue slot, so ADDING A GOOD CHANGED THE HASH OF EVERY VILLAGE
+    // THAT HAD NEVER SEEN IT — `Meat` and `Leather` moved five goldens belonging to valleys with
+    // no hunter in them. Both loops now mix (slot, amount) pairs for non-empty slots only, which
+    // is the shape every other control in that file already used. **A catalogue can grow for
+    // free from here**, which matters because Joe has asked for several kinds of game meat.
+    // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
+    // Was 6423725063573751493.
+    private const ulong SeamGoldenHash = 43611776109798678UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -249,7 +259,8 @@ public sealed class FarmGoldenTests
     //   before winter cost 20 in the fixture too (2026-09-01): 12024391942491487759
     //   before job-holders rested in spells (2026-09-02): 12765428660570679341
     //   before fishing added a seventh good (2026-09-02): 3898924203131512042
-    private const ulong SeamBeforeAnybodyGotBetter = 9165233745633703210UL;
+    // Was 9165233745633703210; moved with the rest for the sparse-hash reason above.
+    private const ulong SeamBeforeAnybodyGotBetter = 6372774407505034433UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
