@@ -82,7 +82,25 @@ public sealed class LabourSystem : ISimSystem
         ulong reshuffleInterval = (ulong)config.TicksPerYear * (ulong)config.LabourReshuffleYears;
         if (world.Tick % reshuffleInterval == 0UL)
         {
-            LabourAllocator.Reshuffle(world);
+            // ⭐ THE PLAYER MAY SWITCH THE SHARE-OUT OFF, AND SLACK TAKES ITS PLACE (Joe,
+            // 2026-09-03). A reshuffle tears every allocation down and rebuilds it, which is what
+            // moves a fifteen-year woodcutter onto a market cart; a player who has arranged their
+            // village deliberately is entitled to keep the arrangement.
+            //
+            // ⛔ SLACK RUNS INSTEAD OF IT RATHER THAN NOTHING RUNNING, AND THAT IS THE WHOLE
+            // SAFETY OF THE SWITCH. Empty seats still get filled, anyone who can no longer do the
+            // job is still let go, and the professions numbers are still obeyed — so the village
+            // keeps reacting to what happens to it and merely stops rearranging itself for fun.
+            // **Turning the labour system off at a boundary would strand every new adult.**
+            if (world.VillageSharesOutWork)
+            {
+                LabourAllocator.Reshuffle(world);
+            }
+            else
+            {
+                LabourAllocator.TakeUpSlack(world);
+            }
+
             SayIfWorkIsGoingUndone(world);
             return;
         }

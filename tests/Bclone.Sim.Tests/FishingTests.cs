@@ -370,6 +370,49 @@ public sealed class FishingTests
 
     // ---------------------------------------------------------------
     //  § The hut holds its catch — Joe, 2026-09-03
+
+    /// <summary>
+    /// ⭐⭐ The hut holds <b>more than one cast</b>, or it is not a buffer.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ TWO NUMBERS THAT ARE COUPLED, WHERE NEITHER SAYS SO ON ITS OWN.</b> D288 raised
+    /// <c>fish_yield</c> to 300 and <c>fishing_hut_store_cap</c> was 300, so <b>a catch filled the
+    /// buffer exactly</b>: the hut held one cast, the fisher hauled after every single one, and
+    /// the marketer had nothing to come for. <b>Both numbers still read as the ones Joe asked
+    /// for</b> — 300 storage, and a yield he had just approved — and the feature they were
+    /// supposed to add had quietly switched itself off.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A capacity is only meaningful in CASTS</b>, which is why this guard is a ratio and
+    /// not a number. Joe's call, 2026-09-03: <b>900, three casts.</b> Two would do; three leaves
+    /// room for the marketer to be late.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>This is the D50 shape</b> — *capacities that do not move when yields do* — and it is
+    /// the second time it has bitten this project. **The guard exists so the next person to move
+    /// either number is told, rather than left to rediscover it from a fisherman who never stops
+    /// walking.**
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheHutHoldsMoreThanOneCast()
+    {
+        SimConfig config = Config;
+        int casts = config.FishingHutStoreCap / config.FishYield;
+
+        _output.WriteLine(
+            $"a cast is worth {config.FishYield} and the hut holds {config.FishingHutStoreCap} "
+            + $"— {casts} casts");
+
+        Assert.True(
+            casts >= 2,
+            $"A fishing hut holds {config.FishingHutStoreCap} and a cast is worth "
+            + $"{config.FishYield}, so the buffer takes {casts} cast(s). At one, the fisher hauls "
+            + "after every cast and the marketer has nothing to fetch — the buffer has stopped "
+            + "being a buffer. Raise fishing_hut_store_cap with fish_yield.");
+    }
+
     // ---------------------------------------------------------------
 
     /// <summary>

@@ -171,6 +171,17 @@ public static class StateHash
             }
         }
 
+        // The share-out switch (Joe, 2026-09-03), in the same shape and for the same reason as
+        // the two controls above: it is mixed ONLY WHEN IT IS OFF, so a village played without
+        // ever opening Settings mixes nothing at all and hashes exactly as it did before the
+        // switch existed. **A preference that changes the sim is sim state** — it decides whether
+        // the three-yearly reshuffle runs — so leaving it out of the hash would let two divergent
+        // runs agree, which is the trap D51 records one control over.
+        if (!world.VillageSharesOutWork)
+        {
+            hash = MixUInt32(hash, 0x5748_4152u);
+        }
+
         // ---- Village ----
         // Every villager and every household, in id order. A hash that covered only
         // the first villager would let the rest of the village desync in silence.

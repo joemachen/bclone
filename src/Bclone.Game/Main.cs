@@ -4176,6 +4176,29 @@ public partial class Main : Control
         idle.AddThemeFontSizeOverride("font_size", 12);
         idle.Toggled += on => _map.ShowIdleMarkers(on);
         body.AddChild(idle);
+
+        // ⭐ THE SHARE-OUT SWITCH (Joe, 2026-09-03): *"give the user the option to toggle the
+        // 'work share' function on/off."* Every three years the village tears every allocation
+        // down and rebuilds it, which is how a fifteen-year woodcutter ends up pushing a cart —
+        // and a player who has arranged their village on purpose is entitled to keep it.
+        //
+        // ⛔ UNDER ITS OWN HEADING, NOT WITH THE MARKERS. Everything above this line changes what
+        // is DRAWN; this changes what the village DOES. Filing a rule among the view preferences
+        // is how a player switches off a mechanic while believing they dimmed an icon.
+        body.AddChild(Muted("How the village runs"));
+
+        var share = new CheckBox
+        {
+            Text = "share the work out every few years",
+            ButtonPressed = true,
+        };
+        share.AddThemeFontSizeOverride("font_size", 12);
+        share.Toggled += on => _loop.World.VillageSharesOutWork = on;
+        body.AddChild(share);
+
+        body.AddChild(Caption(
+            "Off: nobody is moved between jobs unless you change a professions number. "
+            + "Empty seats are still filled and a death is still answered."));
     }
 
     /// <summary>

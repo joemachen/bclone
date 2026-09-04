@@ -584,7 +584,8 @@ public sealed record SimConfig
     public int FishTicks { get; init; } = 10;
 
     /// <summary>
-    /// What a fishing hut can hold before the catch has to be walked away — <b>300</b> (Joe).
+    /// What a fishing hut can hold before the catch has to be walked away — <b>900</b>, three
+    /// casts (Joe).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -597,9 +598,22 @@ public sealed record SimConfig
     /// ⭐ It is what makes the long cast affordable: a fisher stops walking home after every catch
     /// and simply keeps casting, so the trips saved pay for the ticks spent.
     /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND THAT IS WHY IT IS NO LONGER 300: D288 RAISED <c>fish_yield</c> TO 300 AND A CATCH
+    /// THEN FILLED THE BUFFER EXACTLY.</b> The hut held **one cast**, so the fisher hauled after
+    /// every single one and the marketer had nothing to come for — *the buffer had stopped being a
+    /// buffer, while both numbers still read as the ones Joe asked for.* He took the call
+    /// (2026-09-03): **900, three casts.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>THESE TWO NUMBERS ARE COUPLED AND NEITHER SAYS SO ON ITS OWN.</b> A capacity is only
+    /// meaningful in **casts**, so moving <c>fish_yield</c> silently re-prices this one. *If the
+    /// yield moves again, this moves with it* — and `TheHutHoldsMoreThanOneCast` is the guard that
+    /// says so out loud rather than leaving it to be rediscovered a third time.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("fishing_hut_store_cap")]
-    public int FishingHutStoreCap { get; init; } = 300;
+    public int FishingHutStoreCap { get; init; } = 900;
 
     /// <summary>What a forester's hut costs to raise.</summary>
     [JsonPropertyName("forester_hut_logs")]

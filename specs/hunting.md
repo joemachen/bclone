@@ -148,6 +148,8 @@ interpolation the way villagers already glide. So:
 - The picture cannot lie about the sim, because it *is* the sim's number rendered.
 - Hunting a range thinner visibly empties it of animals, for free.
 
-⚠️ **Expectation to set with Joe: there are no models.** The whole game is coloured rectangles
+✅ **Joe, 2026-09-03: *"no models is fine for now — but we're going to have to add models in eventually."*** So this is a **staging decision, not the end state**, and it is recorded here because slice 3's whole architecture depends on which it is. ⭐ **Drawing game from the abundance number survives the change**: when models arrive they replace the SHAPE, not the source — the thing being drawn is still a number the sim already keeps, so nothing about determinism, the state hash, or pathfinding changes when the rectangles become animals. *A herd of entities would have had to be torn out; a view of a number does not.*
+
+⚠️ **Until then, there are no models.** The whole game is coloured rectangles
 and circles (`DrawRect`/`DrawCircle`, zero textures). Game will read as small moving shapes in
 the trees — which is what every other living thing in this village looks like.

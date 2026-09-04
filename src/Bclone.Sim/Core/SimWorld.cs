@@ -426,6 +426,42 @@ public sealed class SimWorld
     public JobLimits JobLimits { get; } = new();
 
     /// <summary>
+    /// Whether the village <b>shares the work out among itself</b> every few years, or leaves
+    /// everyone where they stand — <b>on unless the player switches it off</b> (Joe, 2026-09-03).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ WHAT IT SWITCHES OFF IS THE TEARDOWN, AND NOTHING ELSE.</b>
+    /// <see cref="Systems.LabourAllocator.Reshuffle"/> clears <em>every</em> allocation in the
+    /// village and rebuilds it from scratch, which is how somebody who has spent fifteen years
+    /// becoming a good woodcutter ends up a marketer. With this off, that pass does not run and
+    /// <see cref="Systems.LabourAllocator.TakeUpSlack"/> runs in its place.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>THE VILLAGE DOES NOT STOP REACTING, AND IT MUST NOT.</b> Slack still fills empty
+    /// seats, still lets go of anyone who can no longer do the job, and still answers a death the
+    /// same tick (D47) — *"the one person who split logs dies in the first week of winter"* is not
+    /// something a preference may switch off. **What stops is the churn, not the labour system.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>So "off" means: your professions numbers are the only thing that moves anybody.</b>
+    /// A player who never touches the panel and switches this off gets a village that keeps the
+    /// arrangement it has — which is the point, and also the failure mode: nobody is ever
+    /// re-matched to a nearer workplace, so a bad early posting is now permanent until you say
+    /// otherwise. *That is a fair trade to offer and a rotten one to make silently*, which is why
+    /// it is a switch and not a tuning value.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Player intent, so it lives here beside <see cref="JobLimits"/> and
+    /// <see cref="StockLimits"/> rather than in <see cref="Config"/></b> — a config value is what
+    /// the world is made of; this is something somebody decided during a run. It is hashed
+    /// <b>only when it is off</b>, so a village that never opens Settings is byte-identical to one
+    /// from before the switch existed.
+    /// </para>
+    /// </remarks>
+    public bool VillageSharesOutWork { get; set; } = true;
+
+    /// <summary>
     /// Set or clear how many people should be on a kind of work, and say what it will cost.
     /// </summary>
     /// <remarks>
