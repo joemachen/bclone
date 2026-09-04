@@ -1049,15 +1049,17 @@ internal static class LabourAllocator
     /// other.</b> `AJobKindTheAllocatorNeverWalksIsNeverStaffed` is the guard that now says so.
     /// </para>
     /// <para>
-    /// ⭐ <b>Fishing sits beside foraging because it answers the same need</b>, and ahead of it
-    /// because it is the better source (Joe: *"foraging is bottom of the totem pole"*). The order
-    /// here is the order seats are claimed, so it is the ranking made real.
+    /// ⭐ <b>Hunting, then fishing, then foraging — all three answer the same need, and the
+    /// order here is the order seats are claimed, so it is Joe's ranking made real</b>
+    /// (*"hunting ultimately yields more food… foraging is bottom of the totem pole"*).
+    /// ⚠️ <b>It must match <c>LabourQuota</c>'s order</b>, which takes hands in the same
+    /// sequence — the two are halves of one fact and neither compiles against the other.
     /// </para>
     /// </remarks>
     private static readonly JobKind[] KindsInOrder =
     {
-        JobKind.Fisher, JobKind.Forager, JobKind.Farmer, JobKind.Forester, JobKind.Woodcutter,
-        JobKind.Marketer, JobKind.Builder,
+        JobKind.Hunter, JobKind.Fisher, JobKind.Forager, JobKind.Farmer, JobKind.Forester,
+        JobKind.Woodcutter, JobKind.Marketer, JobKind.Builder,
     };
 
     private static int CountHolding(SimWorld world, JobKind kind)

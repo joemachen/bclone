@@ -101,6 +101,8 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.Gathering => "gathering",
         VillagerState.Fishing => "fishing",
         VillagerState.TravelingToWater => "walking to the water",
+        VillagerState.Hunting => "hunting",
+        VillagerState.TravelingToGame => "walking out to the woods",
         VillagerState.TravelingHome => "walking home",
         VillagerState.TravelingToTrees => "walking to the stand",
         VillagerState.Cutting => "felling",
@@ -333,6 +335,12 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Gathering);
                 return;
 
+            case VillagerState.TravelingToGame:
+                Travel(
+                    world, villager, WorkplaceOf(world, villager)!.Position,
+                    VillagerState.Hunting);
+                return;
+
             case VillagerState.TravelingToWater:
                 Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Fishing);
                 return;
@@ -508,6 +516,18 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsFishing(VillagerState state) =>
         state is VillagerState.TravelingToWater or VillagerState.Fishing;
 
+    /// <summary>
+    /// On a hunting errand — <b>also deliberately NOT part of <see cref="IsForaging"/></b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>The same trap as the fishery, and a stronger reason not to fall into it.</b>
+    /// `IsForaging` is what the winter recall reads; D3057 chose hunting over livestock
+    /// precisely for *"year-round outdoor work for the 86%-idle winter"*, so a hunter marched
+    /// home in December would delete the single best argument for the building.
+    /// </remarks>
+    private static bool IsHunting(VillagerState state) =>
+        state is VillagerState.TravelingToGame or VillagerState.Hunting;
+
     private static bool IsCutting(VillagerState state) =>
         state is VillagerState.TravelingToTrees or VillagerState.Cutting;
 
@@ -527,8 +547,8 @@ public sealed class BehaviorSystem : ISimSystem
             or VillagerState.HaulingToFarm;
 
     private static bool IsOnAWorkErrand(VillagerState state) =>
-        IsForaging(state) || IsFishing(state) || IsCutting(state) || IsSplitting(state)
-        || IsTrading(state) || IsBuilding(state) || IsFarming(state);
+        IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
+        || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -550,6 +570,14 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsFishing(state))
         {
             return JobKind.Fisher;
+        }
+
+        // ⛔ D281 IN ONE LINE. Miss this arm and a hunter's errand classifies as somebody
+        // else's, `HoldsTheJobFor` goes false, and the recall in `Decide` sends them home on
+        // the very next tick — for ever, silently, exactly as it did to Otto the fisherman.
+        if (IsHunting(state))
+        {
+            return JobKind.Hunter;
         }
 
         if (IsCutting(state))
@@ -2487,6 +2515,38 @@ public sealed class BehaviorSystem : ISimSystem
         // ⚠️ No ring, no share, no thinning. `SharersOf` enrols anything with a
         // `GatheringRadius` in D260's competition, so a fishing hut deliberately has none — it
         // would otherwise start competing with FORAGER huts over TREES.
+        // ⭐⭐ HUNTING IS ASKED BEFORE FISHING, WHICH IS BEFORE FORAGING — Joe's totem pole,
+        // in the order the branches are written. A hunter with a lodge works it.
+        //
+        // ⚠️ NOT SEASON-GATED, and that is the point of the building rather than an oversight:
+        // nothing can be picked in winter (D44), and game does not stop.
+        bool canHunt = villager.CanWork && job?.Kind == JobKind.Hunter;
+
+        if (needsFood && canHunt)
+        {
+            if (villager.Position == job!.Position)
+            {
+                villager.State = VillagerState.Hunting;
+                villager.ActionTicksRemaining =
+                    world.WorkTicksFor(villager, JobKind.Hunter, config.HuntTicks);
+            }
+            else
+            {
+                villager.State = VillagerState.TravelingToGame;
+                Travel(world, villager, job.Position, VillagerState.Hunting);
+            }
+
+            return;
+        }
+
+        // A hunter with a full village says so, the same way a forager and a fisher do (D216).
+        if (canHunt && !needsFood)
+        {
+            villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string enough
+                ? enough
+                : string.Empty;
+        }
+
         bool canFish = villager.CanWork && job?.Kind == JobKind.Fisher;
 
         if (needsFood && canFish)
@@ -3717,6 +3777,18 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⚠⚠ AND A HUNT THE SAME WAY. Arriving in the `Hunting` state is not hunting — without
+        // a duration the villager stands in the lodge holding the state and `CompleteAction` is
+        // never reached. **That is precisely what shipped for the fishery (D279)**, and it is
+        // written out here rather than trusted to be remembered.
+        if (onArrival == VillagerState.Hunting)
+        {
+            villager.State = VillagerState.Hunting;
+            villager.ActionTicksRemaining =
+                world.WorkTicksFor(villager, JobKind.Hunter, world.Config.HuntTicks);
+            return;
+        }
+
         if (onArrival == VillagerState.HaulingToStore)
         {
             // The load goes into the building, and only then does it exist anywhere
@@ -4241,6 +4313,68 @@ public sealed class BehaviorSystem : ISimSystem
                     $"Caught {caught} fish, {intoTheHut} put down and {leftOver} bound for "
                     + $"{(wantedAtHome ? "home" : StoreForTheLoad(world, villager)?.Name ?? "the ground")}"
                     + $" — {world.Clock}.");
+                return;
+            }
+
+            case VillagerState.Hunting:
+            {
+                // ⭐⭐ WHAT THE WOODS AROUND THE LODGE ARE WORTH, THEN WHAT THE PERSON IS WORTH —
+                // the forager's two-step, one building over. `HuntYieldAt` thins the yield by how
+                // wooded the range is, so **where the player sites a lodge is the decision** and a
+                // lodge in thin scrub is honestly worth less than one in deep woods.
+                //
+                // ⛔ IT COUNTS TREES WHOLE WHERE A FORAGER DIVIDES THEM. Nobody fells anything
+                // here and a forager picking berries under the same trees takes nothing a hunter
+                // wanted, so D260's shared-count rule has nothing to divide. **Two lodges sharing a
+                // wood is a real question and it belongs to slice 2**, where game depletes — what
+                // they would share is the ABUNDANCE, and that number does not exist yet.
+                Workplace? lodge = WorkplaceOf(world, villager);
+                int meat = lodge is null ? 0 : world.HuntYieldAt(lodge);
+                meat = meat * villager.Vigour / 100;
+                meat = world.YieldWithTechnique(JobKind.Hunter, meat);
+                meat = meat < 1 ? 1 : meat;
+
+                // ⭐ THE FIRST ACTION IN THE GAME THAT MAKES TWO GOODS, and the hide is why hunting
+                // was chosen over livestock (D3057): *"hides for clothing."* Nothing spends leather
+                // yet — the tailor does, and does not exist — so it piles up, visibly, which is the
+                // honest half of a dependency `specs/clothing.md` has carried since it was written.
+                int hide = world.Config.LeatherYield * villager.Vigour / 100;
+                hide = hide < 1 ? 1 : hide;
+
+                // The lodge's own store first and the walk only when it will not fit — the
+                // fishery's rule, which is the farmhouse's rule, and the reason all three exist:
+                // the store underfoot fills first and the walk lengthens once it is full.
+                //
+                // ⚠️ THE MEAT DECIDES WHETHER THEY STAY, NOT THE HIDE. Leather is a tenth of the
+                // load and a granary will not take it at all, so letting it drive the errand would
+                // send a hunter home over a scrap while the meat sat in a full lodge.
+                int intoTheLodge = lodge is null ? 0 : lodge.Store.Add(Goods.Meat, meat);
+                int leftOver = meat - intoTheLodge;
+
+                villager.Carried.Receive(Goods.Leather, hide);
+
+                if (leftOver <= 0)
+                {
+                    villager.ActionTicksRemaining =
+                        world.WorkTicksFor(villager, JobKind.Hunter, world.Config.HuntTicks);
+
+                    world.Log(LogLevel.Debug, "behavior",
+                        $"Took {meat} meat and {hide} leather, meat put down at {lodge!.Name} "
+                        + $"— {world.Clock}.");
+                    return;
+                }
+
+                villager.Carried.Receive(Goods.Meat, leftOver);
+
+                Household lodgeHome = world.HouseholdOf(villager);
+                bool wantedAtHome = world.FoodIn(lodgeHome.Stockpile) < world.TargetFoodFor(lodgeHome);
+                villager.State = wantedAtHome
+                    ? VillagerState.TravelingHome
+                    : VillagerState.HaulingToStore;
+
+                world.Log(LogLevel.Debug, "behavior",
+                    $"Took {meat} meat and {hide} leather, {intoTheLodge} put down and "
+                    + $"{leftOver} carried — {world.Clock}.");
                 return;
             }
 

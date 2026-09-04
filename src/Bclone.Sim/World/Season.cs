@@ -183,6 +183,21 @@ public enum VillagerState
     ///
     /// Appended, never renumbered, like every other hashed enum in this project.
     /// </remarks>
+    /// <summary>
+    /// Out after game — <b>its own state, and that is not tidiness</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>D281 IS WHY THIS IS NOT <see cref="TravelingToFood"/> REUSED.</b> Fishing
+    /// walked in that state and TWO predicates read it as foraging: <c>ErrandKind</c> mapped it
+    /// to <c>Forager</c>, so <c>HoldsTheJobFor</c> was false for a fisher and the recall fired
+    /// **every tick for ever**; and <c>IsForaging</c> meant **winter marched him home**, deleting
+    /// the fishery in the season it exists for. *A reused state is a reused classification.*
+    /// </remarks>
+    TravelingToGame,
+
+    /// <summary>Working a hunt at the lodge — the longest action in the game.</summary>
+    Hunting,
+
     ClearingAStore,
 }
 

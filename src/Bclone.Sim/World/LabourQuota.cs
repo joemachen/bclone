@@ -44,7 +44,8 @@ public readonly record struct LabourQuota
         int farmers = 0,
         int slots = 0,
         int[]? needed = null,
-        int fishers = 0)
+        int fishers = 0,
+        int hunters = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -62,6 +63,7 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Builder] = builders;
         _byJob[(int)JobKind.Farmer] = farmers;
         _byJob[(int)JobKind.Fisher] = fishers;
+        _byJob[(int)JobKind.Hunter] = hunters;
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -423,14 +425,32 @@ public readonly record struct LabourQuota
         // ⚠️ AND IT IS NOT GATED ON `canGather`. Nothing can be picked in winter (D44) and a
         // river does not stop, which is the whole reason a fishery outranks a patch — it is the
         // one food source that works in the season the village is most at risk in.
+        // ⭐⭐ HUNTING FIRST OF ALL THREE, BECAUSE THE ORDER IS THE RANKING (Joe).
+        // *"Hunting ultimately yields more food… foraging is bottom of the totem pole."* All
+        // three trades answer the same need, so whichever is asked first gets the hands, and a
+        // village that has built a lodge should man it before it mans anything else.
+        //
+        // ⚠️ NOT GATED ON `canGather` either, and for a stronger reason than the fishery: game
+        // does not stop for winter, and D3057 chose hunting over livestock precisely for *"year
+        // -round outdoor work for the 86%-idle winter."* **A lodge is what winter is for.**
+        int lodgeSeats = TotalCapacityFor(world, JobKind.Hunter);
+        int huntable = toFeedEveryone < lodgeSeats ? toFeedEveryone : lodgeSeats;
+        int hunters = foodIsEnough ? 0 : Take(ref free, huntable);
+
+        int afterHunting = toFeedEveryone - hunters;
+        if (afterHunting < 0)
+        {
+            afterHunting = 0;
+        }
+
         int fishSeats = TotalCapacityFor(world, JobKind.Fisher);
-        int fishable = toFeedEveryone < fishSeats ? toFeedEveryone : fishSeats;
+        int fishable = afterHunting < fishSeats ? afterHunting : fishSeats;
         int fishers = foodIsEnough ? 0 : Take(ref free, fishable);
 
         // What the fishers could not cover, the berry patches answer for — so a village with a
         // fishery big enough needs no foragers at all, which is the ranking arriving as a
         // consequence rather than as a rule.
-        int stillToFeed = toFeedEveryone - fishers;
+        int stillToFeed = afterHunting - fishers;
         if (stillToFeed < 0)
         {
             stillToFeed = 0;
@@ -617,6 +637,7 @@ public readonly record struct LabourQuota
         builders = Asked(world, JobKind.Builder, builders, hands);
         farmers = Asked(world, JobKind.Farmer, farmers, hands);
         fishers = Asked(world, JobKind.Fisher, fishers, hands);
+        hunters = Asked(world, JobKind.Hunter, hunters, hands);
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -636,10 +657,11 @@ public readonly record struct LabourQuota
         builders = AtLeastPinned(world, JobKind.Builder, builders);
         farmers = AtLeastPinned(world, JobKind.Farmer, farmers);
         fishers = AtLeastPinned(world, JobKind.Fisher, fishers);
+        hunters = AtLeastPinned(world, JobKind.Hunter, hunters);
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
-            farmers, slots: 0, needed: needed, fishers: fishers);
+            farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>

@@ -650,7 +650,7 @@ public sealed record SimConfig
     /// ones asked for. `TheLodgeHoldsMoreThanOneHunt` guards the ratio here for the same reason.
     /// </remarks>
     [JsonPropertyName("hunter_lodge_store_cap")]
-    public int HunterLodgeStoreCap { get; init; } = 900;
+    public int HunterLodgeStoreCap { get; init; } = 1800;
 
     /// <summary>
     /// How far a lodge hunts, in tiles — <b>wider than a gathering ring</b>.
@@ -681,7 +681,7 @@ public sealed record SimConfig
     /// telling us fishing beat foraging while it was making 311 against 721.
     /// </remarks>
     [JsonPropertyName("meat_yield")]
-    public int MeatYield { get; init; } = 300;
+    public int MeatYield { get; init; } = 600;
 
     /// <summary>Hide off the same animal, before vigour.</summary>
     /// <remarks>

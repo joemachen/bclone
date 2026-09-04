@@ -226,6 +226,13 @@ public sealed class SkillSystem : ISimSystem
         // Out on it, exactly like a gather — the line is in the water and the person is at work.
         VillagerState.Fishing => true,
         VillagerState.TravelingToWater => true,
+
+        // Hunting is work and the walk out to it is work, the same as a cast and the walk to
+        // the bank. ⭐ The `_ => throw` below is what made this a decision rather than an
+        // omission: a new state cannot default quietly into "not work" and silently stop a
+        // whole trade accruing proficiency.
+        VillagerState.TravelingToGame => true,
+        VillagerState.Hunting => true,
         VillagerState.TravelingHome => true,
         VillagerState.TravelingToTrees => true,
         VillagerState.Cutting => true,

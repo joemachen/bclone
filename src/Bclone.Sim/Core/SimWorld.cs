@@ -1186,6 +1186,54 @@ public sealed class SimWorld
         return share;
     }
 
+    /// <summary>
+    /// How many forest tiles lie within <paramref name="reach"/> of a spot — <b>what a lodge has
+    /// to hunt</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>DELIBERATELY NOT <see cref="WoodedShareAround"/>, AND THE DIFFERENCE IS THE WHOLE
+    /// DESIGN.</b> That one divides each tile by <c>SharersOf</c> — D260's rule that *a tree two
+    /// huts can both reach is one tree*. <b>This counts trees whole</b>, because a lodge is not
+    /// competing for wood with anybody: nobody FELLS anything here, the trees are where the game
+    /// lives, and a forager picking berries under them takes nothing a hunter wanted.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Two lodges sharing a wood is a different question, and it belongs to slice 2.</b>
+    /// Game depletes and recovers (`specs/hunting.md §4`), so what two lodges share is the
+    /// ABUNDANCE, not the tiles — and that number does not exist yet. Dividing by sharers here
+    /// would be the right answer to the wrong question, and would silently make a second lodge
+    /// worthless before there is anything for it to run out of.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Asked of a POSITION rather than a workplace</b>, because placement asks it before any
+    /// workplace exists — *"is there anything to hunt here?"* is a question about the ground.
+    /// </para>
+    /// </remarks>
+    public int ForestTilesWithin(GridPos centre, int reach)
+    {
+        if (reach <= 0)
+        {
+            return 0;
+        }
+
+        int trees = 0;
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            int span = reach - Math.Abs(dy);
+            for (int dx = -span; dx <= span; dx++)
+            {
+                var at = new GridPos(centre.X + dx, centre.Y + dy);
+                if (Map.Contains(at) && Map.TerrainAt(at) == Terrain.Forest)
+                {
+                    trees++;
+                }
+            }
+        }
+
+        return trees;
+    }
+
     /// <summary>Fixed-point denominator for a shared tile. LCM of 1..10, so ties divide exactly.</summary>
     public const int ShareScale = 2520;
 
@@ -2502,8 +2550,38 @@ public sealed class SimWorld
     private int OneLoadFrom(Workplace workplace) => workplace.Kind switch
     {
         JobKind.Fisher => Config.FishYield,
+        JobKind.Hunter => Config.MeatYield,
         _ => Config.CropYieldPerTile,
     };
+
+    /// <summary>
+    /// What one hunt is worth at this lodge — <b>the yield, thinned by how wooded the range is</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>The forager's shape, one building over.</b> <c>GatherYieldAt</c> prices a trip by the
+    /// wooded share of a ring; this prices a hunt by the wooded share of a range, so **where the
+    /// player puts a lodge is the decision** and a lodge in thin scrub is honestly worth less.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>It counts trees WHOLE, where the forager divides them</b> — see
+    /// <see cref="ForestTilesWithin"/>. Nobody fells anything here and a forager under the same
+    /// trees takes nothing a hunter wanted, so D260's shared-count rule has nothing to divide.
+    /// </para>
+    /// </remarks>
+    public int HuntYieldAt(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        int reach = BuildingsCatalog[BuildingKind.HunterLodge]?.HuntingRadius ?? 0;
+        if (reach <= 0)
+        {
+            return 0;
+        }
+
+        int range = VillageEconomy.TilesInRing(reach);
+        return range <= 0 ? 0 : Config.MeatYield * ForestTilesWithin(workplace.Position, reach) / range;
+    }
 
     private string? ForesterIdleNote(Workplace hut)
     {
@@ -5112,6 +5190,21 @@ public sealed class SimWorld
             return PlacementVerdict.No(
                 $"A {BuildingsCatalog[kind]!.Name} has to stand against {ground}, and nothing "
                 + $"beside that tile is {ground}.");
+        }
+
+        // ⭐ AND A LODGE NEEDS SOMETHING TO HUNT — the same shape one building over, and the third
+        // question the ground gets asked. Joe: *game lives in the forest*, so a lodge in open
+        // meadow is not a lodge, it is a shed with a job title.
+        //
+        // ⚠️ A REACH, NOT A TOUCH, WHICH IS WHY IT IS NOT `MustTouch`. A fishery stands ON the
+        // bank; a lodge stands where its RANGE holds woods, and the range is wide. Asking it to
+        // touch a tree would put every lodge in the treeline and none of them near a village.
+        if (BuildingsCatalog[kind]?.HuntingRadius is int reach and > 0
+            && ForestTilesWithin(position, reach) == 0)
+        {
+            return PlacementVerdict.No(
+                $"A {BuildingsCatalog[kind]!.Name} needs woods to hunt, and there is not a tree "
+                + $"within {reach} tiles of there.");
         }
 
         // Legal, but perhaps unwise — and that is the player's call to make (D43). Two

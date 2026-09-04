@@ -3,7 +3,8 @@
 **Decisions:** D19, D253, D262, D277, D286, D288 — and **D3057(b)**, which chose hunting over
 livestock and is the argument for everything below.
 **Phase:** food breadth, immediately after fishing (D253: *"after town hall is fishing and hunting"*).
-**Status:** ⛔ **specced, NOT started.** Written 2026-09-03, before any code.
+**Status:** ◡ **slice 1 SHIPPED 2026-09-03; slices 2 and 3 not started.**
+The lodge is placeable, staffable and worked; `Meat` and `Leather` are real; the buffer holds three hunts and a marketer runs it dry; `meat_yield` is **600**, set by §7's rig (D293). ⛔ **Game does not deplete yet** — §4's thinning and recovery is slice 2, so a range is inexhaustible today and that is a known gap rather than the design.
 **Owner:** Joe + Claude Code
 
 ---

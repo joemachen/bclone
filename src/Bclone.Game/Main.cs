@@ -5104,7 +5104,8 @@ public partial class Main : Control
             // shipped here working in the sim and unreachable in the view — D227's library drew
             // as open ground, Move and Empty shipped with no buttons at all. **Placeable is not
             // reachable.**
-            BuildButton("Fishing hut", BuildingKind.FishingHut)));
+            BuildButton("Fishing hut", BuildingKind.FishingHut),
+            BuildButton("Hunter's lodge", BuildingKind.HunterLodge)));
 
         row.AddChild(Category(
             "Resources",
