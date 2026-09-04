@@ -355,10 +355,16 @@ public sealed class FishingTests
                 store.Store.TakeAll(Goods.Food);
             }
 
-            caught = fisher.Carried[Goods.Fish];
+            // ⛔ THE FISHERY, NOT THE FISHER'S ARMS — AND `fish_yield` 300 IS WHAT TAUGHT US.
+            //
+            // This read `fisher.Carried` and went red the moment the yield rose (D288), because a
+            // catch of 300 fits a 300 buffer **exactly**: the whole cast goes into the hut and the
+            // man carries nothing. **The claim here is that winter does not stop the fishing**, and
+            // a guard that can be reddened by a buffer being big enough was never testing it.
+            caught = hut.Store[Goods.Fish] + fisher.Carried[Goods.Fish];
         }
 
-        _output.WriteLine($"in winter {fisher.Name} was holding {caught} fish");
+        _output.WriteLine($"in winter {fisher.Name}'s fishery had taken {caught} fish");
         Assert.True(caught > 0, "Winter stopped the fishing, and a river does not freeze here.");
     }
 
@@ -575,7 +581,7 @@ public sealed class FishingTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void WhatAFisherAndAForagerEachBringPerTickWorked()
+    public void AFisherOutEarnsAForagerPerTickWorked()
     {
         SimConfig config = HungryForever(Config);
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
@@ -622,24 +628,23 @@ public sealed class FishingTests
         Assert.True(perTrip > 0, "The fixture's hut has no trees, so this compares nothing.");
         Assert.True(forageTicks > 0, "Nobody foraged all year, so there is nothing to compare to.");
         Assert.True(fisherTicks > 0, "The fisher never worked, so this measures nothing.");
-        // ⛔⛔ WHAT THIS DOES **NOT** ASSERT, AND WHY — THIS IS JOE'S CALL, NOT A TEST'S.
+        // ⭐⭐ AND NOW IT ASSERTS IT, BECAUSE JOE PRICED IT (D288, 2026-09-03: *"raise fish yield
+        // ~2.5x"*). The rig above is what made the claim measurable at all; this is the claim.
         //
-        // Joe's stated ranking is *"a step up from foraging in terms of food per worker; foraging
-        // is bottom of the totem pole."* **At the shipped numbers that is false**, and this rig is
-        // what finally made it measurable: a fisher brings 311 per hundred ticks worked against a
-        // forager's 721 — LESS THAN HALF. It is not the walk, either: a cast is 100 food for ten
-        // ticks where a gather is 77 for three, so fishing loses on the work itself as well.
+        // ⚠️ 2.5x was not quite enough and the number went to 3x on the measurement: `fish_yield`
+        // 250 reads **691 against a forager's 721 — still short**, so the letter of the ask would
+        // have failed its own purpose. 300 reads **830, about 1.15x**, which is a step up a player
+        // can feel rather than one inside the noise.
         //
-        // The old guard read `fish_yield` (100) against `GatherYieldAt` (77) PER LOAD and called
-        // that a win. That is the only sense in which fishing has ever been a step up.
-        //
-        // ⚠️ Closing the gap means roughly 2.5x the yield, which is a real balance change to a
-        // number Joe has just played and approved. **A test must not make that decision by
-        // asserting it**, and it must not launder it as a bug fix. So this measures, reports, and
-        // holds the rig steady; DESIGN.md §5 carries the open question.
+        // ⛔ **Do not re-tune `fish_yield` without re-running this**, and do not compare loads
+        // instead of hours: the guard this replaced read `fish_yield` (100) against
+        // `GatherYieldAt` (77) PER LOAD and called that a win, which is the only sense in which
+        // fishing was EVER a step up — it was 311 against 721 per hour worked at the time.
         Assert.True(
-            fishPerHundred > 0,
-            "A fishery produced nothing per tick worked, so fishing has stopped working entirely.");
+            fishPerHundred > foodPerHundred,
+            $"A fisher made {fishPerHundred} food per 100 ticks worked against a forager's "
+            + $"{foodPerHundred}. Joe's ranking is that foraging is bottom of the totem pole, so a "
+            + "fishery has to beat it per worker — measured over hours worked, never per load.");
     }
 
     /// <summary>

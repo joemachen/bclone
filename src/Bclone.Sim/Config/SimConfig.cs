@@ -557,7 +557,7 @@ public sealed record SimConfig
     /// </para>
     /// </remarks>
     [JsonPropertyName("fish_yield")]
-    public int FishYield { get; init; } = 100;
+    public int FishYield { get; init; } = 300;
 
     /// <summary>
     /// Ticks one cast takes — <b>the longest action in the game, on purpose</b>.
