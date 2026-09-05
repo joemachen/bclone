@@ -455,6 +455,116 @@ public sealed class HuntingTests
         return world.Workplaces.Single(w => w.Kind == JobKind.Fisher && !w.IsSite);
     }
 
+    // ---------------------------------------------------------------
+    //  § It runs out, and it comes back — slice 2
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ Hunting <b>thins the wood, and the wood comes back</b> — the pressure, both halves.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe's fishery *"does not run out"*; this does, and the contrast is the design.</b> D3057
+    /// chose hunting over livestock partly for *"depletion as a §2.3 pressure"*, and D256 is the
+    /// standing complaint it answers for this trade: *"the player can't milk one hut for the whole
+    /// game."*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>IT EMPTIES TILES OF GAME AND FELLS NOTHING.</b> Doing this through
+    /// <c>ThinTheRingOf</c> — which turns forest into sapling — would have made a hunter a logger
+    /// and put lodges back into competition with forager huts over wood, *the exact thing
+    /// <c>HuntingRadius</c> exists to prevent* (D292). **The trees are asserted unchanged here**,
+    /// because that is the half a future refactor is most likely to break.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void HuntingThinsTheGameAndItComesBack()
+    {
+        SimConfig config = Config with { StockpileTarget = 100_000 };
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace lodge = RaiseALodge(world);
+        int reach = config.HuntingRadius;
+
+        int treesBefore = world.ForestTilesWithin(lodge.Position, reach);
+        int gameBefore = world.GameTilesWithin(lodge.Position, reach);
+        int worthBefore = world.HuntYieldAt(lodge);
+
+        loop.Step(config.TicksPerYear * 2);
+
+        int treesAfter = world.ForestTilesWithin(lodge.Position, reach);
+        int gameAfter = world.GameTilesWithin(lodge.Position, reach);
+        int worthAfter = world.HuntYieldAt(lodge);
+
+        _output.WriteLine(
+            $"after two years: {world.GameRange.Count} tiles hunted out; game-bearing tiles "
+            + $"{gameBefore} -> {gameAfter}; a hunt worth {worthBefore} -> {worthAfter}; "
+            + $"TREES {treesBefore} -> {treesAfter}");
+
+        Assert.True(gameBefore > 0, "The lodge had nothing to hunt, so this measures nothing.");
+        Assert.True(
+            gameAfter < gameBefore,
+            "Two years of hunting emptied no tiles of game — the lodge is a faucet, not a trade.");
+        Assert.True(
+            worthAfter < worthBefore,
+            "The wood thinned and a hunt was worth exactly as much, so depletion reaches the "
+            + "yield through nothing at all.");
+
+        // ⛔ THE HALF THAT MUST NOT HAVE HAPPENED.
+        Assert.Equal(treesBefore, treesAfter);
+
+        // And it comes back: stop hunting and let the recovery clock run out.
+        foreach (Villager villager in world.Villagers)
+        {
+            villager.WorkplaceId = 0;
+        }
+
+        world.SetJobLimit(JobKind.Hunter, 0);
+        loop.Step((config.GameReturnsDays * config.TicksPerDay) + config.TicksPerDay);
+
+        int recovered = world.GameTilesWithin(lodge.Position, reach);
+        _output.WriteLine(
+            $"after {config.GameReturnsDays} quiet days: {world.GameRange.Count} still hunted out, "
+            + $"{recovered} game-bearing tiles back of {gameBefore}");
+
+        Assert.True(
+            recovered > gameAfter,
+            "The game never came back, so a hunted wood is dead ground rather than a thinned one.");
+    }
+
+    /// <summary>
+    /// ⭐⭐ A village with <b>no lodge in it hashes byte-identically</b> — depletion is sparse.
+    /// </summary>
+    /// <remarks>
+    /// <b>D291's rule, applied on the way in rather than retrofitted.</b> Two loops in the state
+    /// hash mixed a zero per catalogue slot and cost five goldens when `Meat` and `Leather`
+    /// arrived; <c>GameRange</c> is a sparse list from its first commit, and this is the guard
+    /// that says a valley nobody hunts in cannot tell that hunting exists.
+    /// </remarks>
+    [Fact]
+    public void AVillageWithNoLodgeCannotTellDepletionExists()
+    {
+        SimConfig config = Config;
+
+        SimLoop a = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        a.Step(config.TicksPerYear * 6);
+
+        SimLoop b = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        b.World.GameRange.Recover(b.World.Clock.Tick);
+        b.Step(config.TicksPerYear * 6);
+
+        ulong untouched = Determinism.StateHash.Compute(a.World);
+        ulong swept = Determinism.StateHash.Compute(b.World);
+
+        _output.WriteLine(
+            $"{a.World.GameRange.Count} tiles hunted out either way; {untouched:X16} against "
+            + $"{swept:X16}");
+
+        Assert.Equal(0, a.World.GameRange.Count);
+        Assert.Equal(untouched, swept);
+    }
+
     private static int LeatherEverywhere(SimWorld world)
     {
         int total = 0;

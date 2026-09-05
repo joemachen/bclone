@@ -488,7 +488,16 @@ public sealed class GeneratedMap
         position.X >= MinX && position.X < MinX + Width
         && position.Y >= MinY && position.Y < MinY + Height;
 
-    private int IndexOf(GridPos position) =>
+    /// <summary>
+    /// This tile's slot in map order, or <b>-1 if it is off the valley</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Public since 2026-09-05</b>, because hunting's depletion is stored sparsely BY
+    /// INDEX and the alternative was a second way to number tiles — which is D145's rule
+    /// exactly: *a thing is safe when it is read at one chokepoint and at risk the moment
+    /// there are two ways to do it.*
+    /// </remarks>
+    public int IndexOf(GridPos position) =>
         Contains(position) ? ((position.Y - MinY) * Width) + (position.X - MinX) : -1;
 
     /// <summary>Every tile, in a fixed order — for hashing and for drawing.</summary>

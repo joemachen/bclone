@@ -415,6 +415,15 @@ public sealed class SimWorld
     /// </remarks>
     public StockLimits StockLimits { get; }
 
+    /// <summary>
+    /// Where the game has been hunted out — <b>empty until somebody builds a lodge</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Sparse, so the sparse-hash rule holds on the way in</b> (D291): a village with no
+    /// hunter in it holds an empty list and mixes nothing.
+    /// </remarks>
+    public GameRange GameRange { get; } = new();
+
     /// <summary>How many people the player wants on each kind of work (D106).</summary>
     /// <remarks>
     /// Banished's professions panel. <b>The player always has an opinion</b> — every
@@ -1232,6 +1241,94 @@ public sealed class SimWorld
         }
 
         return trees;
+    }
+
+    /// <summary>
+    /// Forest tiles in reach that <b>still hold game</b> — the wood minus what has been hunted out.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>This is what a lodge is actually worth, and <see cref="ForestTilesWithin"/> is what it
+    /// COULD be worth.</b> Placement asks the second question (*"is there anything here at all?"*);
+    /// the yield asks this one (*"is there anything LEFT?"*).
+    /// </remarks>
+    public int GameTilesWithin(GridPos centre, int reach)
+    {
+        if (reach <= 0)
+        {
+            return 0;
+        }
+
+        int living = 0;
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            int span = reach - Math.Abs(dy);
+            for (int dx = -span; dx <= span; dx++)
+            {
+                var at = new GridPos(centre.X + dx, centre.Y + dy);
+                if (Map.Contains(at)
+                    && Map.TerrainAt(at) == Terrain.Forest
+                    && !GameRange.IsHuntedOut(Map.IndexOf(at)))
+                {
+                    living++;
+                }
+            }
+        }
+
+        return living;
+    }
+
+    /// <summary>
+    /// Empty a few tiles of game around a lodge — <b>what a hunt costs the wood</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>IT DOES NOT FELL ANYTHING, AND THAT IS THE WHOLE DIFFERENCE FROM
+    /// <see cref="ThinTheRingOf"/>.</b> That one turns a forest tile into a sapling, because a
+    /// forager's ring really is the trees. Doing the same here would make a hunter a logger and
+    /// put lodges back in competition with forager huts over wood — <b>the exact thing
+    /// <c>HuntingRadius</c> exists to prevent</b> (D292). The trees are untouched; the game in
+    /// them is not.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Nearest-first, like the ring thinning</b>, so a lodge works out from its door and the
+    /// walk lengthens as the near wood empties — which is the pressure, felt rather than stated.
+    /// </para>
+    /// </remarks>
+    internal int ThinTheGameAround(Workplace lodge)
+    {
+        ArgumentNullException.ThrowIfNull(lodge);
+
+        int reach = BuildingsCatalog[BuildingKind.HunterLodge]?.HuntingRadius ?? 0;
+        int wanted = Config.TilesHuntedOutPerHunt;
+        if (reach <= 0 || wanted <= 0)
+        {
+            return 0;
+        }
+
+        ulong back = Clock.Tick + (ulong)(Config.GameReturnsDays * Config.TicksPerDay);
+        int taken = 0;
+
+        for (int r = 0; r <= reach && taken < wanted; r++)
+        {
+            for (int dy = -r; dy <= r && taken < wanted; dy++)
+            {
+                int dx = r - Math.Abs(dy);
+                for (int side = 0; side < 2 && taken < wanted; side++)
+                {
+                    int offset = side == 0 ? -dx : dx;
+                    var at = new GridPos(lodge.Position.X + offset, lodge.Position.Y + dy);
+
+                    if (Map.Contains(at)
+                        && Map.TerrainAt(at) == Terrain.Forest
+                        && GameRange.HuntOut(Map.IndexOf(at), back))
+                    {
+                        taken++;
+                    }
+                }
+            }
+        }
+
+        return taken;
     }
 
     /// <summary>Fixed-point denominator for a shared tile. LCM of 1..10, so ties divide exactly.</summary>
@@ -2580,7 +2677,9 @@ public sealed class SimWorld
         }
 
         int range = VillageEconomy.TilesInRing(reach);
-        return range <= 0 ? 0 : Config.MeatYield * ForestTilesWithin(workplace.Position, reach) / range;
+        return range <= 0
+            ? 0
+            : Config.MeatYield * GameTilesWithin(workplace.Position, reach) / range;
     }
 
     private string? ForesterIdleNote(Workplace hut)

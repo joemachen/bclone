@@ -4341,6 +4341,16 @@ public sealed class BehaviorSystem : ISimSystem
                 int hide = world.Config.LeatherYield * villager.Vigour / 100;
                 hide = hide < 1 ? 1 : hide;
 
+                // ⭐⭐ AND THE WOOD IS THINNER FOR IT (slice 2). This is the half that makes a
+                // lodge a DECISION rather than a faucet — Joe's fishery *"does not run out"*
+                // and this does. ⛔ It empties tiles of GAME and fells nothing: doing it through
+                // `ThinTheRingOf` would turn a hunter into a logger and put lodges back into
+                // competition with forager huts over wood (D292).
+                if (lodge is not null)
+                {
+                    world.ThinTheGameAround(lodge);
+                }
+
                 // The lodge's own store first and the walk only when it will not fit — the
                 // fishery's rule, which is the farmhouse's rule, and the reason all three exist:
                 // the store underfoot fills first and the walk lengthens once it is full.

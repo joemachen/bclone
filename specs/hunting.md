@@ -3,8 +3,8 @@
 **Decisions:** D19, D253, D262, D277, D286, D288 — and **D3057(b)**, which chose hunting over
 livestock and is the argument for everything below.
 **Phase:** food breadth, immediately after fishing (D253: *"after town hall is fishing and hunting"*).
-**Status:** ◡ **slice 1 SHIPPED 2026-09-03; slices 2 and 3 not started.**
-The lodge is placeable, staffable and worked; `Meat` and `Leather` are real; the buffer holds three hunts and a marketer runs it dry; `meat_yield` is **600**, set by §7's rig (D293). ⛔ **Game does not deplete yet** — §4's thinning and recovery is slice 2, so a range is inexhaustible today and that is a known gap rather than the design.
+**Status:** ◡ **slices 1 and 2 SHIPPED 2026-09-05; slice 3 not started.**
+The lodge is placeable, staffable and worked; `Meat` and `Leather` are real; the buffer holds three hunts and a marketer runs it dry. **Game thins as it is hunted and comes back on its own clock** — measured, a lodge takes its range from 81 game-bearing tiles to 63 in two years and back to 81 after 90 quiet days. `meat_yield` is **750**, set against the DEPLETED equilibrium by §7's rig (D295). ⛔ **Slice 3 — seeing the animals — is not built**, which is why Joe sees nothing roaming yet.
 **Owner:** Joe + Claude Code
 
 ---
@@ -77,6 +77,16 @@ correct about map edges and non-forest tiles.
   **The contrast is the design**: fishing is reliable and modest, hunting is rich and exhaustible.
 - Depletion is **stored sparsely** and recovers in `RegrowthSystem`. ⚠️ **Sparse-hash rule:** a
   village that never builds a lodge must hash byte-identically to one in a world without hunting.
+
+⛔⛔ **CORRECTION, 2026-09-05 — §2's LAST BULLET WAS WRONG AND THIS PARAGRAPH REPLACES IT.**
+It said depletion should reuse *"the forest-exhaustion machinery rather than inventing a
+second one"*. **That machinery is `ThinTheRingOf`, which turns a forest tile into a
+sapling — it FELLS THE TREE.** Hunting through it would have made a hunter a logger and put
+lodges straight back into competition with forager huts over wood, *which is the exact
+thing `HuntingRadius` exists to prevent* (§3, D292). **Game is a second quantity on the same
+ground, not a smaller forest**, so `GameRange` is its own sparse store and
+`HuntingThinsTheGameAndItComesBack` asserts the tree count is unchanged. *The spec was
+written before the machinery was read; reusing it would have quietly undone §3.*
 
 ---
 

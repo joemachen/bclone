@@ -182,6 +182,19 @@ public static class StateHash
             hash = MixUInt32(hash, 0x5748_4152u);
         }
 
+        // Where the game has been hunted out (hunting slice 2), sparse for the same reason
+        // as everything above it: a village that never builds a lodge holds an empty list and
+        // mixes nothing, so it hashes exactly as it did before hunting existed.
+        //
+        // ⚠️ THE RETURN TICK GOES IN WITH THE TILE. Two valleys hunted in the same places but
+        // at different times are different worlds — one of them gets its game back first — and
+        // a hash over the tiles alone would call them identical.
+        for (int i = 0; i < world.GameRange.Count; i++)
+        {
+            hash = MixUInt32(hash, (uint)world.GameRange.TileAt(i));
+            hash = MixUInt64(hash, world.GameRange.ReturnsAt(i));
+        }
+
         // ---- Village ----
         // Every villager and every household, in id order. A hash that covered only
         // the first villager would let the rest of the village desync in silence.

@@ -650,7 +650,7 @@ public sealed record SimConfig
     /// ones asked for. `TheLodgeHoldsMoreThanOneHunt` guards the ratio here for the same reason.
     /// </remarks>
     [JsonPropertyName("hunter_lodge_store_cap")]
-    public int HunterLodgeStoreCap { get; init; } = 1800;
+    public int HunterLodgeStoreCap { get; init; } = 2250;
 
     /// <summary>
     /// How far a lodge hunts, in tiles — <b>wider than a gathering ring</b>.
@@ -681,13 +681,35 @@ public sealed record SimConfig
     /// telling us fishing beat foraging while it was making 311 against 721.
     /// </remarks>
     [JsonPropertyName("meat_yield")]
-    public int MeatYield { get; init; } = 600;
+    public int MeatYield { get; init; } = 750;
 
     /// <summary>Hide off the same animal, before vigour.</summary>
     /// <remarks>
     /// ⭐ <b>Much smaller than the meat, and it is not food.</b> One animal is a lot of dinner
     /// and one hide. Nothing spends leather yet — the tailor does, and does not exist.
     /// </remarks>
+    /// <summary>
+    /// Tiles one hunt empties of game — <b>what makes a lodge exhaustible</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>The contrast with the fishery IS the design.</b> Joe asked for fishing that *"does
+    /// not run out"*; hunting is the other half, and D3057 chose it over livestock partly for
+    /// *"depletion as a §2.3 pressure"*. A lodge in a small wood works itself thin and the player
+    /// has to spread out — which is D256's *"the player can't milk one hut for the whole game"*
+    /// arriving for the trade that was built after it.
+    /// </remarks>
+    [JsonPropertyName("tiles_hunted_out_per_hunt")]
+    public int TilesHuntedOutPerHunt { get; init; } = 1;
+
+    /// <summary>Days before the game comes back to a hunted-out tile.</summary>
+    /// <remarks>
+    /// ⚠️ <b>Against the regrowth period rather than invented</b>: cleared woodland takes 144 days
+    /// to come back (D224, settled by Joe's play), and game returning to a wood nobody has felled
+    /// should be quicker than the trees themselves growing.
+    /// </remarks>
+    [JsonPropertyName("game_returns_days")]
+    public int GameReturnsDays { get; init; } = 90;
+
     [JsonPropertyName("leather_yield")]
     public int LeatherYield { get; init; } = 10;
 

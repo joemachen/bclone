@@ -45,6 +45,17 @@ internal sealed class RegrowthSystem : ISimSystem
         ArgumentNullException.ThrowIfNull(world);
 
         SimConfig config = world.Config;
+
+        // ⭐ GAME COMES BACK ON ITS OWN CLOCK, BEFORE THE TREES DO. It is stamped with a
+        // return tick when it is hunted out, so this is a prune rather than a sweep — and it
+        // is what keeps `GameRange` sparse, which is what keeps a village with no lodge in it
+        // hashing byte-identically (D291).
+        //
+        // ⚠️ It sits ABOVE the early return below, because a valley whose regrowth period is
+        // zero has switched the TREES off, not the animals — two different clocks, and
+        // conflating them would silently make hunted ground permanent in that config.
+        world.GameRange.Recover(world.Clock.Tick);
+
         int period = config.RegrowthPeriodDays * config.TicksPerDay;
         if (period <= 0)
         {
