@@ -44,7 +44,7 @@ public sealed class LabourAllocationTests
         SimLoop loop = Build(config, seed);
         for (int i = 0; i < loop.World.StoreBuildings.Count; i++)
         {
-            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Food);
+            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Produce);
         }
 
         return loop;
@@ -180,7 +180,7 @@ public sealed class LabourAllocationTests
 
             foreach (Household household in loop.World.Households)
             {
-                household.Stockpile.Add(Goods.Food, loop.World.TargetFoodFor(household));
+                household.Stockpile.Add(Goods.Produce, loop.World.TargetFoodFor(household));
             }
 
             quota = LabourQuota.For(loop.World);
@@ -222,7 +222,7 @@ public sealed class LabourAllocationTests
 
         foreach (Household household in loop.World.Households)
         {
-            household.Stockpile.Add(Goods.Food, loop.World.TargetFoodFor(household) * 10);
+            household.Stockpile.Add(Goods.Produce, loop.World.TargetFoodFor(household) * 10);
             household.Stockpile.Add(Goods.Logs, Config.LogsPerHouse * 10);
         }
 

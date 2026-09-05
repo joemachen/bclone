@@ -187,7 +187,7 @@ public sealed class MarketRestockTests
         // eight. **The pose quietly assumed an under-stocked market**, which was true of every
         // village the suite had run until it wasn't. *Ask what your fixture depends on before
         // calling its red a regression* (D200).
-        market.Store.Add(Goods.Food, System.Math.Max(0, wanted - market.Store.Food));
+        market.Store.Add(Goods.Produce, System.Math.Max(0, wanted - market.Store[Goods.Produce]));
         market.Store.Add(Goods.Firewood, System.Math.Max(0, wanted - market.Store.Firewood));
 
         int restockTicks = 0;
@@ -200,7 +200,7 @@ public sealed class MarketRestockTests
             // this loop runs, leaving the market ABOVE `wanted`, and a bare subtraction then asks
             // `Add` for a negative amount. Two instances of one assumption, and the first fix
             // only caught the one that happened to fail first.
-            market.Store.Add(Goods.Food, System.Math.Max(0, wanted - market.Store.Food));
+            market.Store.Add(Goods.Produce, System.Math.Max(0, wanted - market.Store[Goods.Produce]));
             market.Store.Add(Goods.Firewood, System.Math.Max(0, wanted - market.Store.Firewood));
 
             restockTicks += world.Villagers.Count(v =>
@@ -321,7 +321,7 @@ public sealed class MarketRestockTests
             int homes = world.Households.Count(h => world.LivingMembersOf(h) > 0);
             int wanted = VillageEconomy.MarketStockWanted(config, homes);
 
-            foreach (Goods goods in new[] { Goods.Food, Goods.Firewood })
+            foreach (Goods goods in new[] { Goods.Produce, Goods.Firewood })
             {
                 int over = TheMarket(world).Store[goods] - wanted;
                 if (over > worstOverfill)

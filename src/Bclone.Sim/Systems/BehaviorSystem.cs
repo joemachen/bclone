@@ -619,7 +619,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// walked to a store picked for firewood.
     /// </para>
     /// <para>
-    /// <b>Empty arms answer <see cref="Goods.Food"/></b>, as the old chain's fallback answered
+    /// <b>Empty arms answer <see cref="Goods.Produce"/></b>, as the old chain's fallback answered
     /// firewood: no caller asks this without a load, and a destination for nothing is spent on
     /// nothing either way.
     /// </para>
@@ -634,7 +634,7 @@ public sealed class BehaviorSystem : ISimSystem
             }
         }
 
-        return Goods.Food;
+        return Goods.Produce;
     }
 
     /// <summary>Where a load in someone's arms is going.</summary>
@@ -672,8 +672,8 @@ public sealed class BehaviorSystem : ISimSystem
         // goes to a GRANARY rather than to whatever store is closest, because the birth
         // gate reads granaries. Letting the day's gathering land in the market would
         // make the village's population ceiling depend on where somebody was standing.
-        // ⛔ ANYTHING EDIBLE GOES TO A GRANARY, NOT JUST `Goods.Food`. This read
-        // `load == Goods.Food`, which was correct while food was one good and became a trap the
+        // ⛔ ANYTHING EDIBLE GOES TO A GRANARY, NOT JUST `Goods.Produce`. This read
+        // `load == Goods.Produce`, which was correct while food was one good and became a trap the
         // moment a fisher carried a catch: fish is stored by granary, market and cart and NOT by
         // a warehouse, so a fisherman sent to find a warehouse would have walked home holding it.
         // ⭐ The reason for preferring a granary is unchanged and is the reason this is not a
@@ -1022,7 +1022,7 @@ public sealed class BehaviorSystem : ISimSystem
         int foodFloor = world.TargetFoodFor(household) * share / 100;
         if (world.FoodIn(household.Stockpile) < foodFloor)
         {
-            return Goods.Food;
+            return Goods.Produce;
         }
 
         // Fuel only matters where it is burned. Hauling it about in spring is time not
@@ -1757,9 +1757,9 @@ public sealed class BehaviorSystem : ISimSystem
     /// What a market is allowed to hold and move — <b>read from the catalogue, not typed here</b>.
     /// </summary>
     /// <remarks>
-    /// ⛔⛔ <b>THIS WAS <c>{ Goods.Food, Goods.Firewood }</c>, AND FISH COULD NEVER REACH A
+    /// ⛔⛔ <b>THIS WAS <c>{ Goods.Produce, Goods.Firewood }</c>, AND FISH COULD NEVER REACH A
     /// MARKET</b> (2026-09-03). Worse, <see cref="LoadForTheMarket"/> looped over this array and
-    /// then branched <c>if (goods == Goods.Food) … else … Goods.Firewood</c> inside the loop — so
+    /// then branched <c>if (goods == Goods.Produce) … else … Goods.Firewood</c> inside the loop — so
     /// a third good would have been **picked up as itself and put down as firewood**. *A
     /// two-element array and a two-armed branch agree with each other right up until there are
     /// three.*
@@ -1848,7 +1848,7 @@ public sealed class BehaviorSystem : ISimSystem
         if (market is not null)
         {
             villager.Carried.TryTake(
-                Goods.Food, market.Store.Add(Goods.Food, villager.CarriedFood));
+                Goods.Produce, market.Store.Add(Goods.Produce, villager.CarriedProduce));
             villager.Carried.TryTake(
                 Goods.Firewood, market.Store.Add(Goods.Firewood, villager.CarriedFirewood));
         }
@@ -1952,7 +1952,7 @@ public sealed class BehaviorSystem : ISimSystem
                 : 0;
 
             Consider(
-                household, occupied, Goods.Food, world.FoodIn(household.Stockpile), foodWanted);
+                household, occupied, Goods.Produce, world.FoodIn(household.Stockpile), foodWanted);
             Consider(household, occupied, Goods.Firewood, household.Stockpile.Firewood, fuelWanted);
         }
 
@@ -1990,7 +1990,7 @@ public sealed class BehaviorSystem : ISimSystem
                 continue;
             }
 
-            // ⛔ WHAT THE BUFFER ACTUALLY HOLDS, NOT `Goods.Food` (2026-09-03). This named food
+            // ⛔ WHAT THE BUFFER ACTUALLY HOLDS, NOT `Goods.Produce` (2026-09-03). This named food
             // outright — correct while a farmhouse was the only building with a buffer, and inert
             // the day a fishery got one: the marketer walked to a hut brimming with **fish** and
             // collected nothing, because the errand had asked for something that was not there.
@@ -2192,7 +2192,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// <remarks>
     /// <para>
     /// <b>⛔ THIS WAS A HAND-WRITTEN SWITCH AND ITS DEFAULT ARM WAS WRONG</b> (D210):
-    /// <c>Goods.Food =&gt; store.Food, Goods.Logs =&gt; store.Logs, _ =&gt; store.Firewood</c> —
+    /// <c>Goods.Produce =&gt; store.Food, Goods.Logs =&gt; store.Logs, _ =&gt; store.Firewood</c> —
     /// so *"how much stone?"*, *"how much iron?"* and *"how much in tools?"* all answered with
     /// <b>the firewood count</b>.
     /// </para>
@@ -2331,7 +2331,7 @@ public sealed class BehaviorSystem : ISimSystem
         // before they get through the door. Nobody starves holding dinner. This is
         // D10's rule — never kill someone for a scheduling artifact — applied to a
         // scheduling artifact that did not exist when D10 was written.
-        // ⛔⛔ ANYTHING EDIBLE, NOT `Goods.Food` — AND THIS LINE IS WHY FISH WAS DECORATIVE.
+        // ⛔⛔ ANYTHING EDIBLE, NOT `Goods.Produce` — AND THIS LINE IS WHY FISH WAS DECORATIVE.
         //
         // D277 made *"how much food has the village got"* a capability question and **left the
         // eating naming a good.** So `FoodTheVillageHolds` counted fish — the birth gate and the
@@ -2757,7 +2757,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // which is D147's finding and why that marker was worth building.
                 villager.WorkNote = !world.MaySow() && SeasonRules.IsSowing(world.Clock.Season)
                     ? $"Nothing to sow at {job.Name} — you asked the village to keep "
-                      + $"{world.StockLimits.For(Goods.Food)} food and it has "
+                      + $"{world.StockLimits.For(Goods.Produce)} food and it has "
                       + $"{world.FoodTheVillageHolds()}."
                     : SeasonRules.IsSowing(world.Clock.Season)
                         ? $"Every tile at {job.Name} is already sown."
@@ -3310,7 +3310,7 @@ public sealed class BehaviorSystem : ISimSystem
 
     /// <summary>The nearest store holding <b>anything the village can eat</b>.</summary>
     /// <remarks>
-    /// ⛔ <c>NearestStoreHolding(…, Goods.Food)</c> was the other half of the same bug: a
+    /// ⛔ <c>NearestStoreHolding(…, Goods.Produce)</c> was the other half of the same bug: a
     /// granary holding nothing but fish <b>was not a source</b>, so the errand never fired and
     /// the larders ran down in silence beside it. <em>Nothing errors — it simply never happens</em>,
     /// which is why the overview could read thousands of fish while a household starved.
@@ -3406,7 +3406,7 @@ public sealed class BehaviorSystem : ISimSystem
         larder.Receive(Goods.Firewood, villager.CarriedFirewood);
         villager.Carried.TakeAll(Goods.Firewood);
 
-        // ⛔ EVERY EDIBLE, NOT `Goods.Food` — AND THE COMMENT BELOW IS WHY THIS WAS MISSED.
+        // ⛔ EVERY EDIBLE, NOT `Goods.Produce` — AND THE COMMENT BELOW IS WHY THIS WAS MISSED.
         // *"Everything else stays in their arms"* is the right rule for a log and the wrong
         // one for a fish, and it read as correct because the sentence is about TIMBER. So a
         // villager fetched fish from the granary, walked home, and **stood in the doorway
@@ -3605,7 +3605,7 @@ public sealed class BehaviorSystem : ISimSystem
             // this project has paid for that before.
             if (family is null && villager.ErrandHouseholdId == 0)
             {
-                // ⛔⛔ WHATEVER IS EDIBLE, NOT `Goods.Food` — AND THE COMMENT ABOVE PREDICTED THIS
+                // ⛔⛔ WHATEVER IS EDIBLE, NOT `Goods.Produce` — AND THE COMMENT ABOVE PREDICTED THIS
                 // EXACT FAILURE. *"A trader walks to the farm, finds nothing they know how to pick
                 // up, and goes home empty-handed for ever."* That is precisely what a fishery got:
                 // the leg was offered, the walk was made, and a hut holding three hundred fish was
@@ -4060,10 +4060,10 @@ public sealed class BehaviorSystem : ISimSystem
     {
         if (WorkplaceOf(world, villager) is Workplace farm)
         {
-            villager.Carried.TryTake(Goods.Food, farm.Store.Add(Goods.Food, villager.CarriedFood));
+            villager.Carried.TryTake(Goods.Produce, farm.Store.Add(Goods.Produce, villager.CarriedProduce));
         }
 
-        if (villager.CarriedFood > 0 || villager.IsCarrying)
+        if (villager.CarriedProduce > 0 || villager.IsCarrying)
         {
             HaulOrSetDown(world, villager);
             return;
@@ -4103,12 +4103,12 @@ public sealed class BehaviorSystem : ISimSystem
         // room for a fraction of an armful is not room. Asking the honest question makes the
         // buffer do what `farm_store_cap` was described as doing: it absorbs whole loads while
         // it can, and when it cannot the walk is long ONCE rather than one-and-a-half times.
-        int toTheFarm = farm.Store.FreeSpace < villager.CarriedFood
+        int toTheFarm = farm.Store.FreeSpace < villager.CarriedProduce
             ? int.MaxValue
             : world.TravelCost.Cost(villager.Position, farm.Position);
 
         StoreBuilding? store = world.NearestStoreAccepting(
-            villager.Position, Goods.Food, static place => !place.Store.IsFull);
+            villager.Position, Goods.Produce, static place => !place.Store.IsFull);
 
         int toAStore = store is null
             ? int.MaxValue
@@ -4128,7 +4128,7 @@ public sealed class BehaviorSystem : ISimSystem
             world.Log(
                 LogLevel.Debug,
                 "goods",
-                $"{villager.Name} #{villager.Id}: {villager.CarriedFood} food from the field — "
+                $"{villager.Name} #{villager.Id}: {villager.CarriedProduce} food from the field — "
                 + $"{farm.Name} has {farm.Store.FreeSpace} free of {farm.Store.Capacity} "
                 + $"(cost {(toTheFarm == int.MaxValue ? "no room" : toTheFarm.ToString())}), "
                 + $"nearest store {(store is null ? "none" : store.Name)} "
@@ -4369,7 +4369,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // a household with a forager in it feeds itself directly, no round
                 // trip through a building — while surplus ends up somewhere the whole
                 // village can draw on. It is also just what a person would do.
-                villager.Carried.Receive(Goods.Food, yield);
+                villager.Carried.Receive(Goods.Produce, yield);
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
 
@@ -4528,7 +4528,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // that was reaped, not of the farm**, because a field can span better and worse
                 // ground and the player should be able to see that on the map.
                 int crop = world.CropYieldAt(reaped) * villager.Vigour / 100;
-                villager.Carried.Receive(Goods.Food, crop < 1 ? 1 : crop);
+                villager.Carried.Receive(Goods.Produce, crop < 1 ? 1 : crop);
 
                 if (WorkplaceOf(world, villager) is Workplace theirFarm)
                 {

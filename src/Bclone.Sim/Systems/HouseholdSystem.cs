@@ -372,7 +372,7 @@ public sealed class HouseholdSystem : ISimSystem
         b.PartnerId = a.Id;
 
         // ⚠️ THE GOODS ARE ALREADY IN — `TakeDowry` moves them, because what a larder holds
-        // may be meat or fish rather than `Goods.Food`, and a dowry is a quantity of FOOD.
+        // may be meat or fish rather than `Goods.Produce`, and a dowry is a quantity of FOOD.
         // `SimWorld.MoveFood` uses `Receive`, so this is still goods changing hands rather
         // than goods produced.
 
@@ -392,7 +392,7 @@ public sealed class HouseholdSystem : ISimSystem
     private static int TakeDowry(
         SimWorld world, Household from, Stockpile into, SimConfig config)
     {
-        // ⛔ WHAT THE LARDER ACTUALLY HOLDS, NOT `Goods.Food`. A family living on meat used
+        // ⛔ WHAT THE LARDER ACTUALLY HOLDS, NOT `Goods.Produce`. A family living on meat used
         // to send its child away with nothing: the share was a percentage of one good, and
         // then `TryTake` on that same good failed and returned 0. **Both halves were wrong
         // and they hid each other** — the amount looked like a rounding artefact rather than

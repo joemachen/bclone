@@ -90,8 +90,8 @@ public sealed class GoodsOnTheGroundTests
         // Set a heap down and take it straight back up: the world must return to exactly
         // where it was, which is only true if an empty list mixes nothing at all.
         ulong before = StateHash.Compute(world);
-        world.SetDown(world.Map.FoundingSite, Goods.Food, 25);
-        Assert.Equal(25, world.TakeFromGround(world.Map.FoundingSite, Goods.Food, 99));
+        world.SetDown(world.Map.FoundingSite, Goods.Produce, 25);
+        Assert.Equal(25, world.TakeFromGround(world.Map.FoundingSite, Goods.Produce, 99));
         Assert.Empty(world.GroundStacks);
 
         Assert.Equal(before, StateHash.Compute(world));
@@ -127,7 +127,7 @@ public sealed class GoodsOnTheGroundTests
         int room = world.FoodTheVillageHasRoomFor();
 
         GridPos field = world.Map.FoundingSite;
-        world.SetDown(field, Goods.Food, 500);
+        world.SetDown(field, Goods.Produce, 500);
         world.SetDown(field, Goods.Logs, 500);
         world.SetDown(field, Goods.Firewood, 500);
 
@@ -174,11 +174,11 @@ public sealed class GoodsOnTheGroundTests
 
         world.SetDown(at, Goods.Logs, 10);
         world.SetDown(at, Goods.Logs, 15);
-        world.SetDown(at, Goods.Food, 5);
+        world.SetDown(at, Goods.Produce, 5);
 
         Assert.Equal(2, world.GroundStacks.Count);
         Assert.Equal(25, world.GroundStackAt(at, Goods.Logs));
-        Assert.Equal(5, world.GroundStackAt(at, Goods.Food));
+        Assert.Equal(5, world.GroundStackAt(at, Goods.Produce));
     }
 
     /// <summary>An emptied heap goes, rather than lingering as a zero.</summary>

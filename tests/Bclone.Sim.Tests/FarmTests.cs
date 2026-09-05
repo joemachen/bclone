@@ -144,7 +144,7 @@ public sealed class FarmTests
         int reaped = tiles - TilesOf(world, farm, Terrain.Ripe);
         _output.WriteLine(
             $"{world.Clock.SeasonAndYear()}: {reaped} of {tiles} tiles reaped; "
-            + $"{farm.Store.Food} food in {farm.Name}, {world.FoodTheVillageHolds()} in the village");
+            + $"{farm.Store[Goods.Produce]} food in {farm.Name}, {world.FoodTheVillageHolds()} in the village");
 
         Assert.True(reaped > 0, "A whole autumn passed and not one tile was reaped.");
         Assert.True(
@@ -170,11 +170,11 @@ public sealed class FarmTests
         loop.Step(Config.TicksPerSeason);
 
         _output.WriteLine(
-            $"{farm.Name} holds {farm.Store.Food} of {Config.FarmStoreCap}; "
+            $"{farm.Name} holds {farm.Store[Goods.Produce]} of {Config.FarmStoreCap}; "
             + $"the village holds {world.FoodTheVillageHolds()}");
 
         Assert.True(
-            farm.Store.Food > 0,
+            farm.Store[Goods.Produce] > 0,
             "Nothing ever reached Workplace.Store — professions.md §4's fifth element is "
             + "still dead, and the buffer farm_store_cap describes does not exist.");
     }
@@ -203,12 +203,12 @@ public sealed class FarmTests
 
         Assert.Equal(Config.FarmStoreCap, farm.Store.Capacity);
 
-        int took = farm.Store.Add(Goods.Food, Config.FarmStoreCap + 50);
+        int took = farm.Store.Add(Goods.Produce, Config.FarmStoreCap + 50);
         int refused = Config.FarmStoreCap + 50 - took;
 
         _output.WriteLine(
             $"offered {Config.FarmStoreCap + 50}, took {took}, refused {refused}, "
-            + $"holding {farm.Store.Food} of {farm.Store.Capacity}");
+            + $"holding {farm.Store[Goods.Produce]} of {farm.Store.Capacity}");
 
         Assert.Equal(Config.FarmStoreCap, took);
         Assert.Equal(50, refused);
@@ -237,17 +237,17 @@ public sealed class FarmTests
         FarmFixtures.StepToTheStartOf(loop, Season.Fall);
 
         // Full before a single tile is reaped, so every armful has to go somewhere else.
-        farm.Store.Add(Goods.Food, Config.FarmStoreCap);
+        farm.Store.Add(Goods.Produce, Config.FarmStoreCap);
         int held = world.FoodTheVillageHolds();
 
         loop.Step(Config.TicksPerSeason);
 
         int now = world.FoodTheVillageHolds();
         _output.WriteLine(
-            $"village food {held} → {now}; {farm.Name} holds {farm.Store.Food} of "
+            $"village food {held} → {now}; {farm.Name} holds {farm.Store[Goods.Produce]} of "
             + $"{farm.Store.Capacity}");
 
-        Assert.Equal(Config.FarmStoreCap, farm.Store.Food);
+        Assert.Equal(Config.FarmStoreCap, farm.Store[Goods.Produce]);
         Assert.True(
             now > held,
             "A season's harvest went into a full buffer and out of the world — D96 and D144, "
@@ -279,14 +279,14 @@ public sealed class FarmTests
     {
         SimWorld world = Loop(Config).World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
-        farm.Store.Add(Goods.Food, Config.FarmStoreCap);
+        farm.Store.Add(Goods.Produce, Config.FarmStoreCap);
 
         GridPos stood = farm.Position;
-        int before = world.TotalFood() + world.GroundStackAt(stood, Goods.Food);
+        int before = world.TotalFood() + world.GroundStackAt(stood, Goods.Produce);
 
         world.Demolish(farm);
 
-        int spilled = world.GroundStackAt(stood, Goods.Food);
+        int spilled = world.GroundStackAt(stood, Goods.Produce);
         int after = world.TotalFood() + spilled;
 
         _output.WriteLine(
@@ -730,20 +730,20 @@ public sealed class FarmTests
 
         // Full enough that it can no longer take a whole armful — the exact state that
         // lengthens the farmer's walk, and the reason this errand exists.
-        farm.Store.Add(Goods.Food, Config.FarmStoreCap);
+        farm.Store.Add(Goods.Produce, Config.FarmStoreCap);
         Assert.True(
             farm.Store.FreeSpace < Config.CropYieldPerTile,
             "The buffer can still take a whole load, so there is nothing here to clear.");
 
-        int before = farm.Store.Food;
+        int before = farm.Store[Goods.Produce];
         loop.Step(Config.TicksPerYear);
 
         _output.WriteLine(
-            $"{farm.Name} held {before} of {farm.Store.Capacity}, now {farm.Store.Food}; "
+            $"{farm.Name} held {before} of {farm.Store.Capacity}, now {farm.Store[Goods.Produce]}; "
             + $"the village holds {world.FoodTheVillageHolds()}");
 
         Assert.True(
-            farm.Store.Food < before,
+            farm.Store[Goods.Produce] < before,
             "A year passed and the farm's buffer never moved — §3.2's \"running it dry is the "
             + "market's job\" is still unbuilt.");
 
@@ -784,10 +784,10 @@ public sealed class FarmTests
 
         int seed = Config.FarmStoreCap - Config.CropYieldPerTile;
         Assert.True(seed > 0, "The cap cannot hold even one armful, so this proves nothing.");
-        farm.Store.Add(Goods.Food, seed);
+        farm.Store.Add(Goods.Produce, seed);
 
         _output.WriteLine(
-            $"holding {farm.Store.Food} of {farm.Store.Capacity}, {farm.Store.FreeSpace} free "
+            $"holding {farm.Store[Goods.Produce]} of {farm.Store.Capacity}, {farm.Store.FreeSpace} free "
             + $"against an armful of {Config.CropYieldPerTile}");
 
         Assert.False(
@@ -795,10 +795,10 @@ public sealed class FarmTests
             "A buffer that can still take a whole armful is doing its job, and clearing it is "
             + "the churn that killed the village in D34.");
 
-        farm.Store.Add(Goods.Food, Config.FarmStoreCap);
+        farm.Store.Add(Goods.Produce, Config.FarmStoreCap);
 
         _output.WriteLine(
-            $"holding {farm.Store.Food} of {farm.Store.Capacity}, {farm.Store.FreeSpace} free");
+            $"holding {farm.Store[Goods.Produce]} of {farm.Store.Capacity}, {farm.Store.FreeSpace} free");
 
         Assert.True(WorthClearing(world, farm));
     }
@@ -809,7 +809,7 @@ public sealed class FarmTests
     /// </summary>
     private static bool WorthClearing(SimWorld world, Workplace workplace) =>
         !workplace.IsSite
-        && workplace.Store.Food > 0
+        && workplace.Store[Goods.Produce] > 0
         && workplace.Store.FreeSpace < world.Config.CropYieldPerTile;
 
     /// <summary>
@@ -836,8 +836,8 @@ public sealed class FarmTests
         // A farm right beside the granary is never STRICTLY nearer from the granary's own
         // doorstep, and one out in the fields is nearer to somebody standing in the fields.
         Workplace farm = FarmFixtures.RaiseAFarm(world);
-        farm.Store.Add(Goods.Food, 50);
-        granary.Store.Add(Goods.Food, 50);
+        farm.Store.Add(Goods.Produce, 50);
+        granary.Store.Add(Goods.Produce, 50);
 
         Workplace? fromTheGranary = NearerFarm(world, granary.Position, granary);
         Workplace? fromTheFarm = NearerFarm(world, farm.Position, granary);
@@ -858,7 +858,7 @@ public sealed class FarmTests
         SimWorld world = Loop(Config).World;
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
         Workplace farm = FarmFixtures.RaiseAFarm(world);
-        granary.Store.Add(Goods.Food, 50);
+        granary.Store.Add(Goods.Produce, 50);
 
         Assert.Null(NearerFarm(world, farm.Position, granary));
     }
@@ -900,7 +900,7 @@ public sealed class FarmTests
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
-            if (workplace.IsSite || workplace.Store.Food <= 0)
+            if (workplace.IsSite || workplace.Store[Goods.Produce] <= 0)
             {
                 continue;
             }

@@ -1773,8 +1773,8 @@ public sealed record SimConfig
     {
         new GoodRow
         {
-            Id = (int)World.Goods.Food,
-            Name = "food",
+            Id = (int)World.Goods.Produce,
+            Name = "produce",
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
 
             // ⭐ THE ONLY EDIBLE GOOD TODAY, AND THE NUMBER IS DELIBERATELY 1 RATHER THAN
@@ -1933,7 +1933,7 @@ public sealed record SimConfig
             Plural = "farmers",
             Doing = "farming",
             WorksAt = BuildingKind.Farmhouse,
-            LimitedBy = World.Goods.Food,
+            LimitedBy = World.Goods.Produce,
         },
         new JobRow
         {
@@ -3493,7 +3493,7 @@ public sealed record SimConfig
         }
 
         // ⛔ The enum is an alias for the first ids (`goods-catalog.md §2.1`). If the catalogue
-        // does not cover them, `Goods.Food` indexes a row that is not there — and it would fail
+        // does not cover them, `Goods.Produce` indexes a row that is not there — and it would fail
         // as a null reference deep in the sim rather than here, at load, with a sentence.
         for (int id = 0; id < builtIn; id++)
         {

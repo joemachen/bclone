@@ -70,7 +70,7 @@ public sealed class ColdStartTests
 
         _output.WriteLine(
             $"{world.Population} founders, {world.Households.Count} households, "
-            + $"{world.StoreBuildings.Count} building, {world.TheCart!.Store.Food} food in it");
+            + $"{world.StoreBuildings.Count} building, {world.TheCart!.Store[Goods.Produce]} food in it");
     }
 
     /// <summary>They brought tools, and nothing in the valley can replace them (D82).</summary>
@@ -96,7 +96,7 @@ public sealed class ColdStartTests
 
         StoreBuilding cart = world.TheCart!;
         _output.WriteLine(
-            $"the cart: {cart.Store.Food} food, {cart.Store.Logs} logs, "
+            $"the cart: {cart.Store[Goods.Produce]} food, {cart.Store.Logs} logs, "
             + $"{cart.Store[Goods.Tools]} tools, {cart.Store.FreeSpace} spare of "
             + $"{config.CartCapacity}");
 
@@ -104,7 +104,7 @@ public sealed class ColdStartTests
         Assert.True(config.CartTools > 0, "The founders arrive with tools (Joe's opening).");
 
         // The whole load fitted, so nothing was quietly left behind at the roadside.
-        Assert.Equal(config.CartFood, cart.Store.Food);
+        Assert.Equal(config.CartFood, cart.Store[Goods.Produce]);
 
         // ⭐ AND NO TIMBER, EVER (D90 step 4). The cart is a food-and-tools box: it will not
         // take logs, so `cart_logs` is gone rather than zeroed and the wagon cannot be
@@ -265,7 +265,7 @@ public sealed class ColdStartTests
 
         _output.WriteLine(
             $"painted {world.Zones.ResidentialTiles} tiles; cart holds "
-            + $"{world.TheCart!.Store.Food} food, {world.TheCart!.Store.Logs} logs");
+            + $"{world.TheCart!.Store[Goods.Produce]} food, {world.TheCart!.Store.Logs} logs");
 
         loop.Step(config.TicksPerYear);
 

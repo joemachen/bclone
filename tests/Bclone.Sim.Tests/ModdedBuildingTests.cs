@@ -72,7 +72,7 @@ public sealed class ModdedBuildingTests
         { "id": 2, "name": "woodcutter", "plural": "woodcutters", "doing": "splitting firewood", "works_at": "WoodcutterHut", "limited_by": "Firewood" },
         { "id": 3, "name": "marketer",   "plural": "traders",     "doing": "the market",         "works_at": "Market" },
         { "id": 4, "name": "builder",    "plural": "builders",    "doing": "building",           "works_at": "BuilderHut" },
-        { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Food" },
+        { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Produce" },
 
         { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing",            "works_at": "FishingHut",    "limited_by": "Fish" },
 
@@ -85,7 +85,7 @@ public sealed class ModdedBuildingTests
         // the game grew one.** Renamed too, so two trades called "fisher" cannot be confused for
         // each other in a failure message.
         { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting",            "works_at": "HunterLodge",   "limited_by": "Meat" },
-        { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Food" }
+        { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Produce" }
       ],
 
       "buildings": [

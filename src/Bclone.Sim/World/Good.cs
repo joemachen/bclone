@@ -36,7 +36,7 @@ namespace Bclone.Sim.World;
 /// <b>Id 0 IS a good here, unlike <see cref="SkillRow"/>.</b> That is deliberate and it is the one
 /// place these two rows differ: a skill id of zero must never name anything, because a villager who
 /// has done no work has no row and a default <c>int</c> would quietly mean *foraging*. A good id of
-/// zero is <see cref="Goods.Food"/>, which <see cref="Stockpile"/> has indexed from zero since D82
+/// zero is <see cref="Goods.Produce"/>, which <see cref="Stockpile"/> has indexed from zero since D82
 /// and which every golden is pinned to.
 /// </para>
 /// </remarks>
@@ -52,7 +52,7 @@ public sealed record GoodRow
     /// <remarks>
     /// <b>⛔ IT USED TO LIVE IN TWO PLACES, WITH THE SAME WORDS IN BOTH.</b>
     /// <c>Stockpile.Name</c> and <c>SimWorld</c> each carried
-    /// <c>Goods.Food =&gt; "food", Goods.Logs =&gt; "logs", Goods.Firewood =&gt; "firewood"</c>.
+    /// <c>Goods.Produce =&gt; "produce", Goods.Logs =&gt; "logs", Goods.Firewood =&gt; "firewood"</c>.
     /// That is D148's finding and D188's — <em>two vocabularies for one thing</em> — in code rather
     /// than in the view, and it is exactly the drift a row exists to stop.
     /// </remarks>
@@ -240,7 +240,7 @@ public sealed class GoodsCatalog
     /// <summary>The row for one good, by id — for goods a mod added, which have no enum value.</summary>
     public GoodRow this[int id] => _rows[id];
 
-    /// <summary>What the village calls it: <em>"food"</em>, <em>"logs"</em>.</summary>
+    /// <summary>What the village calls it: <em>"produce"</em>, <em>"logs"</em>.</summary>
     public string NameOf(Goods goods) => _rows[(int)goods].Name;
 
     /// <summary>
@@ -275,7 +275,7 @@ public sealed class GoodsCatalog
 
     /// <summary>
     /// Every good anybody can eat, in id order — <b>the list that replaces naming
-    /// <c>Goods.Food</c></b>.
+    /// <c>Goods.Produce</c></b>.
     /// </summary>
     /// <remarks>
     /// <para>

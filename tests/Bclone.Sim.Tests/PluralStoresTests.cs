@@ -128,7 +128,7 @@ public sealed class PluralStoresTests
             : first;
 
         int before = world.FoodInGranaries();
-        second.Store.Add(Goods.Food, 100);
+        second.Store.Add(Goods.Produce, 100);
 
         _output.WriteLine($"{before} food before, {world.FoodInGranaries()} after adding 100 to a second granary.");
         Assert.Equal(before + 100, world.FoodInGranaries());
@@ -203,7 +203,7 @@ public sealed class PluralStoresTests
         // have changed behaviour while claiming not to.
         SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
 
-        Assert.Equal(world.AnyStoreOf(StoreKind.Granary).Store.Food, world.FoodInGranaries());
+        Assert.Equal(world.AnyStoreOf(StoreKind.Granary).Store[Goods.Produce], world.FoodInGranaries());
         Assert.Equal(world.AnyStoreOf(StoreKind.Warehouse).Store.Logs, world.LogsInWarehouses());
         Assert.Equal(world.AnyStoreOf(StoreKind.Warehouse).Store.Firewood, world.FirewoodInWarehouses());
         Assert.Equal(world.AnyStoreOf(StoreKind.Granary).Store.Capacity, world.GranaryCapacity());

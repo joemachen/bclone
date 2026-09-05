@@ -233,7 +233,7 @@ public sealed class FishingTests
         // sim being right rather than a bug.
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            store.Store.TakeAll(Goods.Food);
+            store.Store.TakeAll(Goods.Produce);
         }
 
         // ⭐ STOOD ON THE BANK, which is the half the first draft claimed and did not do. Left to
@@ -299,7 +299,7 @@ public sealed class FishingTests
         // Somewhere to put a catch, so the village genuinely wants the trip made.
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            store.Store.TakeAll(Goods.Food);
+            store.Store.TakeAll(Goods.Produce);
         }
 
         bool arrived = false;
@@ -352,7 +352,7 @@ public sealed class FishingTests
 
             foreach (StoreBuilding store in world.StoreBuildings)
             {
-                store.Store.TakeAll(Goods.Food);
+                store.Store.TakeAll(Goods.Produce);
             }
 
             // ⛔ THE FISHERY, NOT THE FISHER'S ARMS — AND `fish_yield` 300 IS WHAT TAUGHT US.
@@ -446,7 +446,7 @@ public sealed class FishingTests
 
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            store.Store.TakeAll(Goods.Food);
+            store.Store.TakeAll(Goods.Produce);
         }
 
         int inTheHut = 0;
@@ -467,10 +467,10 @@ public sealed class FishingTests
     /// </summary>
     /// <remarks>
     /// <b>⛔ TWO THINGS BLOCKED FISH FROM THIS PATH, AND BOTH WERE FARM-SHAPED.</b>
-    /// <c>SimWorld.BufferWorthClearing</c> asked <c>workplace.Store.Food &gt; 0</c> — so a hut full
+    /// <c>SimWorld.BufferWorthClearing</c> asked <c>workplace.Store[Goods.Produce] &gt; 0</c> — so a hut full
     /// of fish read as empty — and measured "nearly full" against <c>CropYieldPerTile</c>, a
     /// farm's number. And <c>MarketGoods</c> was a hardcoded <c>{ Food, Firewood }</c> with an
-    /// <c>if (goods == Goods.Food) … else … Firewood</c> **inside its own loop**, which would have
+    /// <c>if (goods == Goods.Produce) … else … Firewood</c> **inside its own loop**, which would have
     /// put a load of fish down as firewood.
     /// </remarks>
     [Fact]
@@ -507,7 +507,7 @@ public sealed class FishingTests
             int wanted = world.TargetFoodFor(household);
             if (world.FoodIn(household.Stockpile) < wanted)
             {
-                household.Stockpile.Add(Goods.Food, wanted);
+                household.Stockpile.Add(Goods.Produce, wanted);
             }
         }
 
@@ -530,7 +530,7 @@ public sealed class FishingTests
                     int wanted = world.TargetFoodFor(household);
                     if (world.FoodIn(household.Stockpile) < wanted)
                     {
-                        household.Stockpile.Add(Goods.Food, wanted);
+                        household.Stockpile.Add(Goods.Produce, wanted);
                     }
                 }
             }
@@ -802,8 +802,8 @@ public sealed class FishingTests
     /// <para>
     /// ⛔⛔ <b>THE FIFTH FARM-SHAPED ASSUMPTION, AND THE ONE THAT MATTERED MOST.</b> D283 fixed the
     /// mouth; <b>the errand that stocks the larder still named the good</b>. `PlanFetch` asked
-    /// <c>household.Stockpile.Food &lt; floor</c> — so a larder full of fish read as <b>empty</b> —
-    /// and then looked for <c>NearestStoreHolding(…, Goods.Food)</c>, so <b>a granary holding
+    /// <c>household.Stockpile[Goods.Produce] &lt; floor</c> — so a larder full of fish read as <b>empty</b> —
+    /// and then looked for <c>NearestStoreHolding(…, Goods.Produce)</c>, so <b>a granary holding
     /// nothing but fish was not a source.</b> The village could catch fish, store fish, and count
     /// fish toward the birth gate, and <b>no one could ever bring one home.</b>
     /// </para>
@@ -825,17 +825,17 @@ public sealed class FishingTests
         // Joe's granary: fish and nothing else, anywhere in the village.
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            store.Store.TakeAll(Goods.Food);
+            store.Store.TakeAll(Goods.Produce);
         }
 
         foreach (Household household in world.Households)
         {
-            household.Stockpile.TakeAll(Goods.Food);
+            household.Stockpile.TakeAll(Goods.Produce);
         }
 
         foreach (Villager villager in world.Villagers)
         {
-            villager.Carried.TakeAll(Goods.Food);
+            villager.Carried.TakeAll(Goods.Produce);
         }
 
         StoreBuilding granary = world.StoreBuildings.First(s => s.Accepts(Goods.Fish));

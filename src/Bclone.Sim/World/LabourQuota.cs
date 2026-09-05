@@ -405,7 +405,7 @@ public readonly record struct LabourQuota
         // deliberately avoided.
         // What the village holds, not only what is in the granaries (D161): a player's food
         // limit is about the village's stock, and a farm's buffer is part of it.
-        bool foodIsEnough = limits.IsMet(Goods.Food, world.FoodTheVillageHolds());
+        bool foodIsEnough = limits.IsMet(Goods.Produce, world.FoodTheVillageHolds());
 
         // ⛔⛔ BOUNDED BY THE SEATS THAT ACTUALLY EXIST (D262). Taking more hands than the huts
         // can seat books them for a job with no room and **leaves them idle**, because they are
@@ -787,7 +787,7 @@ public readonly record struct LabourQuota
         // shape: a met food limit stops the sowing (`SimWorld.MaySow`), and a farm with a crop
         // still standing has work a cap has no business cancelling — so a professions number
         // the player typed must not be overruled while it does.
-        JobKind.Farmer => world.StockLimits.IsMet(Goods.Food, world.FoodTheVillageHolds())
+        JobKind.Farmer => world.StockLimits.IsMet(Goods.Produce, world.FoodTheVillageHolds())
             && world.FarmerSeatsWithGroundToWork() == 0,
 
         // ⭐ ANYTHING ELSE — INCLUDING A TRADE A MOD ADDED — IS STOPPED BY ITS ROW'S LIMIT IF IT

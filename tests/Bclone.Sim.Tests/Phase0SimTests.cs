@@ -113,7 +113,7 @@ public sealed class Phase0SimTests
         int foodBefore = 0;
         for (int i = 0; i < 500; i++)
         {
-            foodBefore = world.Stockpile.Food + world.Villager.CarriedFood;
+            foodBefore = world.Stockpile[Goods.Produce] + world.Villager.CarriedProduce;
             loop.StepOnce();
             if (world.Villager.JustAte)
             {
@@ -124,7 +124,7 @@ public sealed class Phase0SimTests
         Assert.True(world.Villager.JustAte, "Expected the villager to eat within 500 ticks.");
         Assert.Equal(
             foodBefore - Config.FoodPerMeal,
-            world.Stockpile.Food + world.Villager.CarriedFood);
+            world.Stockpile[Goods.Produce] + world.Villager.CarriedProduce);
         Assert.True(world.Villager.Hunger < Config.EatThreshold);
     }
 
@@ -153,12 +153,12 @@ public sealed class Phase0SimTests
         {
             loop.StepOnce();
 
-            if (loop.World.Stockpile.Food >= Config.FoodPerMeal)
+            if (loop.World.Stockpile[Goods.Produce] >= Config.FoodPerMeal)
             {
                 Assert.True(
                     loop.World.Villager.Hunger < Config.HungerMax,
                     $"Hunger hit max at tick {loop.World.Tick} with " +
-                    $"{loop.World.Stockpile.Food} food in store.");
+                    $"{loop.World.Stockpile[Goods.Produce]} food in store.");
             }
         }
     }
@@ -186,7 +186,7 @@ public sealed class Phase0SimTests
         // home. Both are the same gather; this waits for it to arrive.
         for (int i = 0; i < 100; i++)
         {
-            before = loop.World.Villager.CarriedFood + loop.World.Stockpile.Food;
+            before = loop.World.Villager.CarriedProduce + loop.World.Stockpile[Goods.Produce];
             loop.StepOnce();
             if (loop.World.Villager.TotalGathers > 0)
             {
@@ -206,7 +206,7 @@ public sealed class Phase0SimTests
 
         Assert.Equal(
             loop.World.GatherYieldAt(hut),
-            loop.World.Villager.CarriedFood + loop.World.Stockpile.Food - before);
+            loop.World.Villager.CarriedProduce + loop.World.Stockpile[Goods.Produce] - before);
     }
 
     [Fact]
@@ -224,7 +224,7 @@ public sealed class Phase0SimTests
         // the season turns — otherwise the life log announces "Foraging stops" and
         // then reports a gather on the next line.
         int gathersAtWinterStart = loop.World.Villager.TotalGathers;
-        int atWinterStart = loop.World.Stockpile.Food;
+        int atWinterStart = loop.World.Stockpile[Goods.Produce];
 
         while (loop.World.Clock.IsWinter)
         {
@@ -239,7 +239,7 @@ public sealed class Phase0SimTests
         }
 
         Assert.Equal(gathersAtWinterStart, loop.World.Villager.TotalGathers);
-        Assert.True(loop.World.Stockpile.Food < atWinterStart, "Winter should drain the store.");
+        Assert.True(loop.World.Stockpile[Goods.Produce] < atWinterStart, "Winter should drain the store.");
     }
 
     [Fact]
@@ -251,8 +251,8 @@ public sealed class Phase0SimTests
         // A gather can overshoot the target by one yield, but never more —
         // otherwise the villager is hoarding instead of resting.
         Assert.True(
-            loop.World.Stockpile.Food <= Config.StockpileTarget + Config.GatherYield,
-            $"Stockpile ran away to {loop.World.Stockpile.Food}.");
+            loop.World.Stockpile[Goods.Produce] <= Config.StockpileTarget + Config.GatherYield,
+            $"Stockpile ran away to {loop.World.Stockpile[Goods.Produce]}.");
     }
 
     [Fact]
@@ -263,7 +263,7 @@ public sealed class Phase0SimTests
         for (int i = 0; i < 20_000; i++)
         {
             loop.StepOnce();
-            Assert.True(loop.World.Stockpile.Food >= 0);
+            Assert.True(loop.World.Stockpile[Goods.Produce] >= 0);
         }
     }
 
@@ -325,7 +325,7 @@ public sealed class Phase0SimTests
         Phase0Fixtures.RunUntilDeath(loop);
 
         ulong hashAtDeath = StateHash.Compute(loop.World);
-        int foodAtDeath = loop.World.Stockpile.Food;
+        int foodAtDeath = loop.World.Stockpile[Goods.Produce];
         GridPos posAtDeath = loop.World.Villager.Position;
 
         int ageAtDeath = loop.World.Villager.AgeYears;
@@ -334,7 +334,7 @@ public sealed class Phase0SimTests
         loop.Step(2_000);
 
         Assert.Equal(VillagerState.Dead, loop.World.Villager.State);
-        Assert.Equal(foodAtDeath, loop.World.Stockpile.Food);
+        Assert.Equal(foodAtDeath, loop.World.Stockpile[Goods.Produce]);
         Assert.Equal(posAtDeath, loop.World.Villager.Position);
 
         // The clock keeps turning, but the story is over: no more ageing, and no

@@ -78,8 +78,8 @@ public sealed class WorkplaceStoreTests
 
         // The move. A hundred is `farm_store_cap`'s stated default (D161).
         const int Moved = 100;
-        Assert.True(granary.Store.TryTake(Goods.Food, Moved), "The granary had no food to move.");
-        Assert.Equal(Moved, workplace.Store.Add(Goods.Food, Moved));
+        Assert.True(granary.Store.TryTake(Goods.Produce, Moved), "The granary had no food to move.");
+        Assert.Equal(Moved, workplace.Store.Add(Goods.Produce, Moved));
 
         int after = world.FoodTheVillageHolds();
         int roomAfter = world.FoodTheVillageHasRoomFor();
@@ -91,7 +91,7 @@ public sealed class WorkplaceStoreTests
 
         // Anti-vacuity (D7): the move has to have actually happened, or this compares two
         // identical worlds and passes for the wrong reason.
-        Assert.Equal(Moved, workplace.Store.Food);
+        Assert.Equal(Moved, workplace.Store[Goods.Produce]);
 
         Assert.Equal(before, after);
         Assert.Equal(roomBefore, roomAfter);
@@ -128,8 +128,8 @@ public sealed class WorkplaceStoreTests
         int all = 0;
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            int held = store.Store.Food;
-            if (held > 0 && store.Store.TryTake(Goods.Food, held))
+            int held = store.Store[Goods.Produce];
+            if (held > 0 && store.Store.TryTake(Goods.Produce, held))
             {
                 all += held;
             }
@@ -137,7 +137,7 @@ public sealed class WorkplaceStoreTests
 
         Assert.True(all > bar, $"The village's stores hold {all}, which is not above the bar of "
             + $"{bar} — this fixture cannot pose the case.");
-        workplace.Store.Add(Goods.Food, all);
+        workplace.Store.Add(Goods.Produce, all);
 
         _output.WriteLine(
             $"all {all} of the village's stored food is in {workplace.Name}; the birth gate's bar is "
@@ -180,24 +180,24 @@ public sealed class WorkplaceStoreTests
         // equation balances for the wrong reason.
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
         Workplace workplace = world.Workplaces[0];
-        Assert.True(granary.Store.TryTake(Goods.Food, 100));
-        workplace.Store.Add(Goods.Food, 100);
+        Assert.True(granary.Store.TryTake(Goods.Produce, 100));
+        workplace.Store.Add(Goods.Produce, 100);
 
         int held = world.FoodTheVillageHolds();
         int inLarders = 0;
         foreach (Household household in world.Households)
         {
-            inLarders += household.Stockpile.Food;
+            inLarders += household.Stockpile[Goods.Produce];
         }
 
         _output.WriteLine(
-            $"stores {world.FoodInGranaries()} + workplaces {workplace.Store.Food} "
+            $"stores {world.FoodInGranaries()} + workplaces {workplace.Store[Goods.Produce]} "
             + $"= the village holds {held}; larders hold {inLarders}; "
             + $"TotalFood is {world.TotalFood()}");
 
         // Anti-vacuity on both tiers this is drawing a line between (D7).
         Assert.True(inLarders > 0, "No household has any food, so this guard is watching nothing.");
-        Assert.True(workplace.Store.Food > 0, "No workplace holds anything, so the middle tier "
+        Assert.True(workplace.Store[Goods.Produce] > 0, "No workplace holds anything, so the middle tier "
             + "is zero and this passes whether or not it is counted.");
 
         Assert.Equal(held + inLarders, world.TotalFood());

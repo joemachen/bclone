@@ -215,18 +215,18 @@ public sealed class FarmDemandTests
         int uncapped = LabourQuota.For(world).Farmers;
         Assert.True(uncapped > 0, "Nobody wanted to sow even before the limit was set.");
 
-        world.SetStockLimit(Goods.Food, 0);
+        world.SetStockLimit(Goods.Produce, 0);
         int capped = LabourQuota.For(world).Farmers;
         _output.WriteLine($"spring: {uncapped} wanted uncapped, {capped} at a food limit of 0");
         Assert.Equal(0, capped);
 
         // And the harvest still comes in — the limit set at the moment it is read.
-        world.SetStockLimit(Goods.Food, null);
+        world.SetStockLimit(Goods.Produce, null);
         FarmFixtures.SowEveryTileOf(world, farm);
         FarmFixtures.StepToTheStartOf(loop, Season.Fall);
 
         int beforeTheCap = LabourQuota.For(world).Farmers;
-        world.SetStockLimit(Goods.Food, 0);
+        world.SetStockLimit(Goods.Produce, 0);
         int reaping = LabourQuota.For(world).Farmers;
 
         _output.WriteLine(

@@ -49,7 +49,7 @@ public sealed class FoodLimitTests
 
         if (foodLimit > 0)
         {
-            world.SetStockLimit(Goods.Food, foodLimit);
+            world.SetStockLimit(Goods.Produce, foodLimit);
         }
 
         // Plenty of painted trees, so laborer work is always available to be chosen wrongly.
@@ -119,7 +119,7 @@ public sealed class FoodLimitTests
         SimConfig config = VillageFixtures.Village;
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
-        Assert.Null(world.StockLimits.For(Goods.Food));
+        Assert.Null(world.StockLimits.For(Goods.Produce));
         Assert.Equal(
             world.TargetFoodForTheGranary(),
             world.FoodTheVillageHasRoomFor());
@@ -144,7 +144,7 @@ public sealed class FoodLimitTests
         loop.Step(config.TicksPerYear * 10);
 
         // Nothing wanted at all: the limit is the reason, and it names the limit.
-        world.SetStockLimit(Goods.Food, 0);
+        world.SetStockLimit(Goods.Produce, 0);
         string? byLimit = world.WhyTheVillageWantsNoMoreFood();
         _output.WriteLine($"limit 0: {byLimit}");
 
@@ -152,7 +152,7 @@ public sealed class FoodLimitTests
         Assert.Contains("asked the village to keep", byLimit);
 
         // Room to spare and a high limit: the village wants more, so there is nothing to say.
-        world.SetStockLimit(Goods.Food, 100000);
+        world.SetStockLimit(Goods.Produce, 100000);
         _output.WriteLine($"limit 100000: {world.WhyTheVillageWantsNoMoreFood() ?? "(still wants food)"}");
         Assert.Null(world.WhyTheVillageWantsNoMoreFood());
     }
@@ -193,7 +193,7 @@ public sealed class FoodLimitTests
         // is met by definition, whatever this fixture's economy happens to be doing.
         int holds = world.FoodTheVillageHolds();
         Assert.True(holds > 0, "The village stored no food in ten years, so this is vacuous.");
-        world.SetStockLimit(Goods.Food, holds / 2);
+        world.SetStockLimit(Goods.Produce, holds / 2);
         Assert.True(world.FoodLimitIsMet(), "The limit must be met, or nothing is being tested.");
 
         // ⚠️ COUNTED ONLY ON THE TICKS WHERE THE LIMIT IS ACTUALLY MET, and the first draft of

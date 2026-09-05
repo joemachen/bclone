@@ -1396,7 +1396,7 @@ public static class VillageEconomy
 
         switch (goods)
         {
-            case Goods.Food:
+            case Goods.Produce:
                 return RequiredStockpilePerAdult(config) * people;
 
             case Goods.Firewood:

@@ -411,14 +411,14 @@ public sealed class ShippedConfigTests
             bool anyoneStrandedNow = false;
             foreach (Household household in world.Households)
             {
-                if (world.LivingMembersOf(household) == 0 || household.Stockpile.Food > 0)
+                if (world.LivingMembersOf(household) == 0 || household.Stockpile[Goods.Produce] > 0)
                 {
                     continue;
                 }
 
                 // Empty larder. Is there food they could have walked to?
                 StoreBuilding? source = world.NearestStore(
-                    household.Home(), StoreKind.Granary, static store => store.Store.Food > 0);
+                    household.Home(), StoreKind.Granary, static store => store.Store[Goods.Produce] > 0);
 
                 if (source is not null)
                 {

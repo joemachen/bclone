@@ -346,12 +346,12 @@ public sealed class Villager
     public int CarriedFirewood => Carried.Firewood;
 
     /// <summary>Food in their arms — used once fetching lands.</summary>
-    public int CarriedFood => Carried.Food;
+    public int CarriedProduce => Carried[Goods.Produce];
 
     /// <summary>True when they are hauling anything at all.</summary>
     /// <remarks>
     /// <b>Every good, not the three that had a field.</b> This read
-    /// <c>CarriedLogs &gt; 0 || CarriedFirewood &gt; 0 || CarriedFood &gt; 0</c>, which is what
+    /// <c>CarriedLogs &gt; 0 || CarriedFirewood &gt; 0 || CarriedProduce &gt; 0</c>, which is what
     /// made a villager holding stone look empty-handed to every caller — including
     /// <c>ArriveAt</c>, whose set-down is the conservation rule's last line of defence.
     /// </remarks>

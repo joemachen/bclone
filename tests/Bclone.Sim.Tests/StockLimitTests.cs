@@ -560,9 +560,9 @@ public sealed class StockLimitTests
     public void ANegativeLimitIsReadAsStopMakingThis()
     {
         var limits = new StockLimits(Stockpile.Kinds);
-        limits.Set(Goods.Food, -20);
+        limits.Set(Goods.Produce, -20);
 
-        Assert.Equal(0, limits.For(Goods.Food));
+        Assert.Equal(0, limits.For(Goods.Produce));
     }
 
     // ---------------------------------------------------------------
@@ -768,11 +768,11 @@ public sealed class StockLimitTests
 
         loop.Step(config.TicksPerYear * 10);
 
-        PlacementVerdict verdict = world.SetStockLimit(Goods.Food, 5);
+        PlacementVerdict verdict = world.SetStockLimit(Goods.Produce, 5);
 
         Assert.True(verdict.Allowed, "The village must do as it is told.");
         Assert.False(string.IsNullOrWhiteSpace(verdict.Warning), "It must also say something.");
-        Assert.Equal(5, world.StockLimits.For(Goods.Food));
+        Assert.Equal(5, world.StockLimits.For(Goods.Produce));
         _output.WriteLine(verdict.Warning);
     }
 
@@ -791,9 +791,9 @@ public sealed class StockLimitTests
         loop.Step(config.TicksPerYear * 10);
 
         int floor = VillageEconomy.SurvivalFloorFor(
-            config, Goods.Food, world.Population, world.Households.Count);
+            config, Goods.Produce, world.Population, world.Households.Count);
 
-        PlacementVerdict verdict = world.SetStockLimit(Goods.Food, floor * 4);
+        PlacementVerdict verdict = world.SetStockLimit(Goods.Produce, floor * 4);
 
         Assert.True(verdict.Allowed);
         Assert.True(
@@ -963,7 +963,7 @@ public sealed class StockLimitTests
 
         int start = capped.World.FoodInGranaries();
         int limit = start + 100;
-        capped.World.SetStockLimit(Goods.Food, limit);
+        capped.World.SetStockLimit(Goods.Produce, limit);
         capped.Step(after);
 
         SimLoop free = SimFactory.CreatePhase0(config, new InMemoryLogSink());

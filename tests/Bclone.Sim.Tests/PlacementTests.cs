@@ -336,7 +336,7 @@ public sealed class PlacementTests
         // it. ⭐ That was a bug, and a fixture that depends on a bug is testing the bug.
         for (int i = 0; i < loop.World.StoreBuildings.Count; i++)
         {
-            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Food);
+            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Produce);
         }
 
         loop.StepOnce();

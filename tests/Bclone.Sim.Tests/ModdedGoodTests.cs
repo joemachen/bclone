@@ -63,7 +63,7 @@ public sealed class ModdedGoodTests
     private static string JsonWithPitch => """
     {
       "goods": [
-        { "id": 0, "name": "food",     "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 0, "name": "produce",     "stored_by": ["Granary", "Market", "Cart"] },
         { "id": 1, "name": "logs",     "source_name": "woodland",     "yield_per_tile": 12, "stored_by": ["Warehouse"] },
         { "id": 2, "name": "firewood", "stored_by": ["Warehouse", "Market", "Cart"] },
         { "id": 3, "name": "stone",    "source_name": "a stone seam", "yield_per_tile": 12, "stored_by": ["Warehouse", "Cart"] },
@@ -109,9 +109,9 @@ public sealed class ModdedGoodTests
         var catalog = new GoodsCatalog(ConfigWithPitch().GoodsCatalog);
 
         // ⛔ Ids are appended, never renumbered — the rule every golden is pinned to. If adding
-        // a good could shift `Goods.Food` off id 0, every saved limit and every seed would
+        // a good could shift `Goods.Produce` off id 0, every saved limit and every seed would
         // silently mean something else.
-        Assert.Equal("food", catalog.NameOf(Goods.Food));
+        Assert.Equal("produce", catalog.NameOf(Goods.Produce));
         Assert.Equal("logs", catalog.NameOf(Goods.Logs));
         Assert.Equal("iron", catalog.NameOf(Goods.Iron));
         Assert.Equal(12, catalog.YieldPerTileOf(Goods.Logs));
@@ -153,7 +153,7 @@ public sealed class ModdedGoodTests
         // decoration. The granary's row-set does not include pitch, so it refuses — and this
         // is the assertion that would fail if `KindAccepts` quietly fell back to "yes".
         Assert.False(granary.Accepts(Pitch), "a granary is food, and only food");
-        Assert.True(granary.Accepts(Goods.Food));
+        Assert.True(granary.Accepts(Goods.Produce));
     }
 
     // -----------------------------------------------------------------

@@ -85,7 +85,7 @@ public sealed class StoreFilterTests
 
         Assert.False(verdict.Allowed);
         Assert.False(granary.Accepts(Goods.Logs));
-        Assert.True(granary.Accepts(Goods.Food));
+        Assert.True(granary.Accepts(Goods.Produce));
     }
 
     /// <summary>A store told to take nothing says so once, and then obeys (D42).</summary>
@@ -313,7 +313,7 @@ public sealed class StoreFilterTests
 
         Villager carrier = world.Villagers[0];
         carrier.Position = warehouse.Position;
-        carrier.Carried.TakeAll(Goods.Food);
+        carrier.Carried.TakeAll(Goods.Produce);
         carrier.Carried.TakeAll(Goods.Logs);
         carrier.Carried.TakeAll(Goods.Firewood);
         carrier.Carried.Receive(Goods.Logs, 5);

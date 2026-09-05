@@ -16,12 +16,12 @@ namespace Bclone.Sim.Tests;
 /// <b>Joe, 2026-09-05, reading his own overview:</b> it showed <b>Food 0</b> while the stock-limits
 /// table two rows down showed <b>have 3,043</b>. ⛔ <b>Two panels on one screen disagreeing about
 /// the same question</b> — and the overview was the wrong one, because it summed
-/// <c>Goods.Food</c> alone.
+/// <c>Goods.Produce</c> alone.
 /// </para>
 /// <para>
 /// ⚠️ <b>This is D283's family and it keeps coming back.</b> D277 made *"what counts as food?"* one
 /// question with one answer; D283 taught the mouth; D285 taught the hands. Each time, the
-/// stragglers were the places that read <c>Stockpile.Food</c> and looked perfectly reasonable.
+/// stragglers were the places that read <c>Stockpile[Goods.Produce]</c> and looked perfectly reasonable.
 /// </para>
 /// </remarks>
 public sealed class FoodIsAnUmbrellaTests
@@ -47,7 +47,7 @@ public sealed class FoodIsAnUmbrellaTests
         StoreBuilding granary = world.StoreBuildings.First(s => s.Accepts(Goods.Meat));
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            store.Store.TakeAll(Goods.Food);
+            store.Store.TakeAll(Goods.Produce);
         }
 
         int bare = world.TotalFood();
@@ -67,8 +67,8 @@ public sealed class FoodIsAnUmbrellaTests
     /// <remarks>
     /// <para>
     /// <b>⛔ THE DOWRY WAS BROKEN IN BOTH HALVES AND THEY HID EACH OTHER.</b> The share was
-    /// <c>Stockpile.Food × dowry_percent</c> — zero for a family living on meat — and then
-    /// <c>TryTake(Goods.Food, …)</c> would have failed anyway. **A couple starting out got
+    /// <c>Stockpile[Goods.Produce] × dowry_percent</c> — zero for a family living on meat — and then
+    /// <c>TryTake(Goods.Produce, …)</c> would have failed anyway. **A couple starting out got
     /// nothing**, and the number looked like a rounding artefact rather than a family whose food
     /// the code could not see.
     /// </para>
@@ -86,14 +86,14 @@ public sealed class FoodIsAnUmbrellaTests
         Household from = world.Households[0];
         var into = new Stockpile(world.GoodsCatalog.Count);
 
-        from.Stockpile.TakeAll(Goods.Food);
+        from.Stockpile.TakeAll(Goods.Produce);
         from.Stockpile.Receive(Goods.Meat, 300);
 
         int moved = world.MoveFood(from.Stockpile, into, 120);
 
         _output.WriteLine(
             $"a larder of 300 meat and no food gave up {moved}; "
-            + $"{into[Goods.Meat]} meat arrived and {into[Goods.Food]} food");
+            + $"{into[Goods.Meat]} meat arrived and {into[Goods.Produce]} food");
 
         Assert.Equal(120, moved);
         Assert.Equal(120, into[Goods.Meat]);
@@ -129,12 +129,12 @@ public sealed class FoodIsAnUmbrellaTests
         int single = 0;
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            single += store.Store[Goods.Food];
+            single += store.Store[Goods.Produce];
         }
 
         foreach (Household household in world.Households)
         {
-            single += household.Stockpile[Goods.Food];
+            single += household.Stockpile[Goods.Produce];
         }
 
         _output.WriteLine(

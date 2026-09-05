@@ -52,7 +52,7 @@ public sealed class EdibleGoodsTests
                 // quietly restricted to one kind of building.
                 rows[i] = rows[i] with
                 {
-                    Nutrition = config.GoodsCatalog[(int)Goods.Food].Nutrition,
+                    Nutrition = config.GoodsCatalog[(int)Goods.Produce].Nutrition,
                     StoredBy = new[] { StoreKind.Granary, StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
                 };
             }
@@ -92,7 +92,7 @@ public sealed class EdibleGoodsTests
         {
             if (rows[i].Id == (int)Goods.Logs)
             {
-                rows[i] = rows[i] with { Nutrition = config.GoodsCatalog[(int)Goods.Food].Nutrition + 1 };
+                rows[i] = rows[i] with { Nutrition = config.GoodsCatalog[(int)Goods.Produce].Nutrition + 1 };
             }
         }
 
@@ -118,6 +118,6 @@ public sealed class EdibleGoodsTests
         _output.WriteLine(string.Join(", ", world.GoodsCatalog.EdibleGoods));
 
         Assert.Equal(
-            new[] { Goods.Food, Goods.Fish, Goods.Meat }, world.GoodsCatalog.EdibleGoods);
+            new[] { Goods.Produce, Goods.Fish, Goods.Meat }, world.GoodsCatalog.EdibleGoods);
     }
 }

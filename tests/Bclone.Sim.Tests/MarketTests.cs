@@ -33,7 +33,7 @@ public sealed class MarketTests
         SimWorld world = Build(Config).World;
 
         Assert.Equal(StoreKind.Market, world.AnyStoreOf(StoreKind.Market).Kind);
-        Assert.True(world.AnyStoreOf(StoreKind.Market).Accepts(Goods.Food));
+        Assert.True(world.AnyStoreOf(StoreKind.Market).Accepts(Goods.Produce));
         Assert.True(world.AnyStoreOf(StoreKind.Market).Accepts(Goods.Firewood));
         Assert.False(world.AnyStoreOf(StoreKind.Market).Accepts(Goods.Logs));
 
@@ -98,7 +98,7 @@ public sealed class MarketTests
         // it. ⭐ That was a bug, and a fixture that depends on a bug is testing the bug.
         for (int i = 0; i < loop.World.StoreBuildings.Count; i++)
         {
-            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Food);
+            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Produce);
         }
 
         loop.StepOnce();
@@ -159,7 +159,7 @@ public sealed class MarketTests
             {
                 if (loop.World.LivingMembersOf(household) == 0)
                 {
-                    total += household.Stockpile.Food + household.Stockpile.Firewood;
+                    total += household.Stockpile[Goods.Produce] + household.Stockpile.Firewood;
                 }
             }
         }
@@ -426,7 +426,7 @@ public sealed class MarketTests
             bool storesHaveFood = false;
             foreach (StoreBuilding store in loop.World.StoreBuildings)
             {
-                if (store.Store.Food > 0)
+                if (store.Store[Goods.Produce] > 0)
                 {
                     storesHaveFood = true;
                     break;
@@ -441,7 +441,7 @@ public sealed class MarketTests
                 }
 
                 householdTicks++;
-                if (storesHaveFood && household.Stockpile.Food == 0)
+                if (storesHaveFood && household.Stockpile[Goods.Produce] == 0)
                 {
                     dry++;
                 }
@@ -477,24 +477,24 @@ public sealed class MarketTests
         SimWorld world = Build(config).World;
 
         Household household = world.Households[0];
-        household.Stockpile.TryTake(Goods.Food, household.Stockpile.Food);
+        household.Stockpile.TryTake(Goods.Produce, household.Stockpile[Goods.Produce]);
 
         StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
-        market.Store.Add(Goods.Food, 200);
+        market.Store.Add(Goods.Produce, 200);
         market.Store.Add(Goods.Firewood, 200);
 
         // Put somebody at the market's door with an empty larder behind them.
         Villager villager = world.FindVillager(household.MemberIds[0])!;
         villager.Position = market.Position;
-        villager.Carried.TakeAll(Goods.Food);
+        villager.Carried.TakeAll(Goods.Produce);
         villager.Carried.TakeAll(Goods.Firewood);
 
         Bclone.Sim.Systems.BehaviorSystem.CollectForTest(world, villager);
 
         _output.WriteLine(
-            $"came away with {villager.CarriedFood} food and {villager.CarriedFirewood} firewood.");
+            $"came away with {villager.CarriedProduce} food and {villager.CarriedFirewood} firewood.");
 
-        Assert.True(villager.CarriedFood > 0,
+        Assert.True(villager.CarriedProduce > 0,
             "They went to the market for food and did not pick any up.");
     }
 
@@ -532,7 +532,7 @@ public sealed class MarketTests
         b.Step(config.TicksPerYear * 150);
 
         Assert.Equal(StateHash.Compute(a.World), StateHash.Compute(b.World));
-        Assert.Equal(a.World.AnyStoreOf(StoreKind.Market).Store.Food, b.World.AnyStoreOf(StoreKind.Market).Store.Food);
+        Assert.Equal(a.World.AnyStoreOf(StoreKind.Market).Store[Goods.Produce], b.World.AnyStoreOf(StoreKind.Market).Store[Goods.Produce]);
     }
 
     [Fact]
@@ -545,7 +545,7 @@ public sealed class MarketTests
         loop.Step(Config.TicksPerYear * 5);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.Villagers[0].Carried.Receive(Goods.Food, 1);
+        loop.World.Villagers[0].Carried.Receive(Goods.Produce, 1);
         Assert.NotEqual(before, StateHash.Compute(loop.World));
 
         ulong carried = StateHash.Compute(loop.World);
@@ -587,7 +587,7 @@ public sealed class MarketTests
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
-            household.Stockpile.Add(Goods.Food, world.TargetFoodFor(household));
+            household.Stockpile.Add(Goods.Produce, world.TargetFoodFor(household));
             household.Stockpile.Add(
                 Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
         }
@@ -598,7 +598,7 @@ public sealed class MarketTests
 
         // Now a farm that cannot take another armful of its own crop.
         Workplace farm = FarmFixtures.RaiseAFarm(world);
-        farm.Store.Add(Goods.Food, farm.Store.Capacity);
+        farm.Store.Add(Goods.Produce, farm.Store.Capacity);
 
         Assert.True(
             world.BufferWorthClearing(farm),
@@ -632,7 +632,7 @@ public sealed class MarketTests
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
-            household.Stockpile.Add(Goods.Food, world.TargetFoodFor(household));
+            household.Stockpile.Add(Goods.Produce, world.TargetFoodFor(household));
             household.Stockpile.Add(
                 Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
         }
@@ -654,10 +654,10 @@ public sealed class MarketTests
             $"The farm's buffer ({farm.Store.Capacity}) cannot hold even one armful of "
             + $"{config.CropYieldPerTile}, so there is no boundary to test.");
 
-        farm.Store.Add(Goods.Food, roomForOneMore);
+        farm.Store.Add(Goods.Produce, roomForOneMore);
 
         _output.WriteLine(
-            $"farm holds {farm.Store.Food} of {farm.Store.Capacity}, "
+            $"farm holds {farm.Store[Goods.Produce]} of {farm.Store.Capacity}, "
             + $"{farm.Store.FreeSpace} free against an armful of {config.CropYieldPerTile}");
 
         Assert.False(world.BufferWorthClearing(farm));
@@ -665,7 +665,7 @@ public sealed class MarketTests
 
         // ⭐ And one unit past the boundary it turns over — without this the guard would pass
         // against a condition that is simply never true.
-        farm.Store.Add(Goods.Food, 1);
+        farm.Store.Add(Goods.Produce, 1);
         Assert.True(world.BufferWorthClearing(farm));
         Assert.True(LabourQuota.MarketersWanted(world) > 0);
     }
@@ -690,7 +690,7 @@ public sealed class MarketTests
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
-            household.Stockpile.Add(Goods.Food, world.TargetFoodFor(household));
+            household.Stockpile.Add(Goods.Produce, world.TargetFoodFor(household));
             household.Stockpile.Add(
                 Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
         }
@@ -701,8 +701,8 @@ public sealed class MarketTests
 
         for (int held = 0; held <= capacity; held += Math.Max(1, capacity / 12))
         {
-            farm.Store.TryTake(Goods.Food, farm.Store.Food);
-            farm.Store.Add(Goods.Food, held);
+            farm.Store.TryTake(Goods.Produce, farm.Store[Goods.Produce]);
+            farm.Store.Add(Goods.Produce, held);
 
             bool worthClearing = world.BufferWorthClearing(farm);
             bool quotaAsksForOne = LabourQuota.MarketersWanted(world) > 0;

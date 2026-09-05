@@ -227,10 +227,10 @@ public sealed class AgeingTests
     /// </remarks>
     private static int FoodBroughtIn(SimWorld world)
     {
-        int total = world.HouseholdOf(world.Villager).Stockpile.Produced(Goods.Food);
+        int total = world.HouseholdOf(world.Villager).Stockpile.Produced(Goods.Produce);
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            total += store.Store.Produced(Goods.Food);
+            total += store.Store.Produced(Goods.Produce);
         }
 
         return total;

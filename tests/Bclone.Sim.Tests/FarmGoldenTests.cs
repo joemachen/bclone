@@ -401,9 +401,9 @@ public sealed class FarmGoldenTests
                 coverage.SownAtMost = sown;
             }
 
-            if (farm.Store.Food > coverage.FoodBuffered)
+            if (farm.Store[Goods.Produce] > coverage.FoodBuffered)
             {
-                coverage.FoodBuffered = farm.Store.Food;
+                coverage.FoodBuffered = farm.Store[Goods.Produce];
             }
 
             // A laborer taking a painted tile is what step C is for, and D157 records that

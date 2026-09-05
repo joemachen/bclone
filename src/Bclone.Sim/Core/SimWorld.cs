@@ -1257,7 +1257,7 @@ public sealed class SimWorld
                 continue;
             }
 
-            store.Store.Receive(Goods.Food, config.CartFood);
+            store.Store.Receive(Goods.Produce, config.CartFood);
             return;
         }
     }
@@ -1518,7 +1518,7 @@ public sealed class SimWorld
     /// the shape D216 was careful about for the same reason.
     /// </para>
     /// </remarks>
-    public bool FoodLimitIsMet() => StockLimits.IsMet(Goods.Food, FoodTheVillageHolds());
+    public bool FoodLimitIsMet() => StockLimits.IsMet(Goods.Produce, FoodTheVillageHolds());
 
     /// <summary>Whether any of the four tiles around this one is the ground named.</summary>
     /// <remarks>
@@ -1551,10 +1551,10 @@ public sealed class SimWorld
     /// <summary>How much edible food a pile holds — <b>a larder, a pair of arms, a buffer</b>.</summary>
     /// <remarks>
     /// <para>
-    /// ⛔⛔ <b>D277 CONVERTED THE VILLAGE TOTALS AND LEFT THE LARDER NAMING `Goods.Food`, AND
+    /// ⛔⛔ <b>D277 CONVERTED THE VILLAGE TOTALS AND LEFT THE LARDER NAMING `Goods.Produce`, AND
     /// THAT MADE FISH DECORATIVE.</b> `FoodTheVillageHolds` counted fish from the day it shipped,
     /// so the birth gate and the food limit believed the village fed — while `TryEat` could only
-    /// take `Goods.Food` and a household holding nothing but fish **starved beside it**. Measured
+    /// take `Goods.Produce` and a household holding nothing but fish **starved beside it**. Measured
     /// on the fishery guard: *population 3 → 0, five starved.*
     /// </para>
     /// <para>
@@ -1613,7 +1613,7 @@ public sealed class SimWorld
     /// <summary>Whether a store would ever take anything anybody can eat.</summary>
     /// <remarks>
     /// <b>⭐ THE "IS THIS A FOOD STORE?" QUESTION, ASKED OF THE CATALOGUE.</b> It used to be
-    /// `CanEverHold(Goods.Food)` in three places — correct while food was one good, and wrong the
+    /// `CanEverHold(Goods.Produce)` in three places — correct while food was one good, and wrong the
     /// moment a fishery fills a granary with fish. `goods-catalog.md §2.2` named this exact seam:
     /// *"every reader of 'how much food has the village got' has to ask a capability question
     /// instead of naming a good."*
@@ -1786,7 +1786,7 @@ public sealed class SimWorld
         if (SeasonRules.IsSowing(Clock.Season) && !MaySow())
         {
             return $"{farm.Name} has stopped sowing — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Food)} food and it has {FoodTheVillageHolds()}.";
+                + $"{StockLimits.For(Goods.Produce)} food and it has {FoodTheVillageHolds()}.";
         }
 
         // ⚠️ A HARVEST STANDING IN AUTUMN WITH NOBODY TAKING IT. The one sentence in this
@@ -2002,7 +2002,7 @@ public sealed class SimWorld
     public int HaulWalkFrom(GridPos position)
     {
         StoreBuilding? store = NearestStoreAccepting(
-            position, Goods.Food, CanEverHoldFood);
+            position, Goods.Produce, CanEverHoldFood);
 
         return store is null ? -1 : TravelCost.TicksBetween(position, store.Position);
     }
@@ -2509,7 +2509,7 @@ public sealed class SimWorld
     /// <remarks>
     /// <para>
     /// ⛔⛔ <b>BOTH HALVES OF THIS WERE FARM-SHAPED AND NEITHER COULD SEE A FISHERY</b>
-    /// (2026-09-03). It asked <c>workplace.Store.Food &gt; 0</c>, so a hut brimming with **fish**
+    /// (2026-09-03). It asked <c>workplace.Store[Goods.Produce] &gt; 0</c>, so a hut brimming with **fish**
     /// read as empty; and it measured "nearly full" against <c>crop_yield_per_tile</c>, which is
     /// what one tile of a FARM gives up. *A farmhouse was the only building with a buffer when
     /// this was written, and it was written as though it always would be.*
@@ -2860,7 +2860,7 @@ public sealed class SimWorld
     /// cannot see it is D81's seam for the seventh time.
     /// </para>
     /// </remarks>
-    public bool MaySow() => !StockLimits.IsMet(Goods.Food, FoodTheVillageHolds());
+    public bool MaySow() => !StockLimits.IsMet(Goods.Produce, FoodTheVillageHolds());
 
     /// <summary>
     /// Seats at farmhouses the year still has work for — <b>the village's demand for farmers</b>.
@@ -6938,11 +6938,11 @@ public sealed class SimWorld
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>&#9940; THE FIFTH PLACE THAT NAMED <c>Goods.Food</c> WHERE IT SHOULD HAVE ASKED.</b>
+    /// <b>&#9940; THE FIFTH PLACE THAT NAMED <c>Goods.Produce</c> WHERE IT SHOULD HAVE ASKED.</b>
     /// D277 made <em>"what counts as food?"</em> one question with one answer; D283 taught the
     /// mouth; <b>this teaches the hands.</b> Joe found the gap by looking at a granary:
     /// <em>"do the villagers actually eat the fish? I don't see any fish in any home larders."</em>
-    /// They could not — every errand that stocks a larder took <c>Goods.Food</c> by name, so
+    /// They could not — every errand that stocks a larder took <c>Goods.Produce</c> by name, so
     /// <b>2,325 fish were decoration</b> and a villager died beside them.
     /// </para>
     /// <para>
@@ -6952,7 +6952,7 @@ public sealed class SimWorld
     /// </para>
     /// <para>
     /// ⭐ <b>It lives here rather than in <c>BehaviorSystem</c> because a second caller arrived</b>
-    /// (2026-09-05): the marriage dowry moved <c>Goods.Food</c> by name, so <b>a family living on
+    /// (2026-09-05): the marriage dowry moved <c>Goods.Produce</c> by name, so <b>a family living on
     /// meat sent its child away with nothing.</b> Two places wanting *"move up to N of anything
     /// edible"* is one place too many for a private helper — D145: a rule is safe while it is
     /// read at one chokepoint and at risk the moment there are two ways to do it.
@@ -6987,7 +6987,7 @@ public sealed class SimWorld
 
     /// <summary>Food held anywhere in the village — <b>every kind of it</b>.</summary>
     /// <remarks>
-    /// ⛔ <b>THIS SUMMED <c>Goods.Food</c> ALONE, AND IT IS WHAT JOE SAW.</b> The overview read
+    /// ⛔ <b>THIS SUMMED <c>Goods.Produce</c> ALONE, AND IT IS WHAT JOE SAW.</b> The overview read
     /// *"Food 0"* from here while the stock-limits panel read 3,043 from
     /// <see cref="FoodTheVillageHolds"/> — <b>two panels on one screen disagreeing, and this
     /// was the wrong one.</b> Fish and meat were invisible to it, so `ClockSystem`'s season
@@ -8155,7 +8155,7 @@ public sealed class SimWorld
         // own rule — `SetStockLimit` already warns at the moment it is set, because *a game that
         // refuses the player's number is arguing with them, and one that obeys it silently has
         // killed them without saying so.*
-        int wanted = StockLimits.For(Goods.Food) ?? TargetFoodForTheGranary();
+        int wanted = StockLimits.For(Goods.Produce) ?? TargetFoodForTheGranary();
 
         // Across every store the village can actually put food in (D76, D79) — the
         // granaries it has built, the pile the player dropped on day one, and the cart
@@ -8186,7 +8186,7 @@ public sealed class SimWorld
             return null;
         }
 
-        if (StockLimits.For(Goods.Food) is int limit && holds >= limit)
+        if (StockLimits.For(Goods.Produce) is int limit && holds >= limit)
         {
             return $"you asked the village to keep {limit} food and it has {holds}";
         }
@@ -8289,7 +8289,7 @@ public sealed class SimWorld
         //
         // NO TIMBER, and it is a wagon that will not take any (D90 step 4). What the cart
         // holds is what you arrived in: your food and your tools.
-        cart.Store.Receive(Goods.Food, config.CartFood);
+        cart.Store.Receive(Goods.Produce, config.CartFood);
         cart.Store.Receive(Goods.Tools, config.CartTools);
 
         // ⛔ AND NOTHING ELSE (Joe, D215). Stone was added here for one commit and taken out

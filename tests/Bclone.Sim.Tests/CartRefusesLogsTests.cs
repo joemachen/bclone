@@ -90,7 +90,7 @@ public sealed class CartRefusesLogsTests
         SimWorld world = Loop(ShippedConfig.Load()).World;
         StoreBuilding cart = world.TheCart!;
 
-        Assert.True(cart.Accepts(Goods.Food));
+        Assert.True(cart.Accepts(Goods.Produce));
         Assert.True(cart.Accepts(Goods.Tools));
         Assert.True(cart.Accepts(Goods.Firewood));
         Assert.True(cart.Accepts(Goods.Stone));
@@ -187,7 +187,7 @@ public sealed class CartRefusesLogsTests
 
         StoreBuilding cart = world.TheCart!;
         _output.WriteLine(
-            $"five years, trees painted and no store placed: the cart holds {cart.Store.Food} "
+            $"five years, trees painted and no store placed: the cart holds {cart.Store[Goods.Produce]} "
             + $"food and {cart.Store.Logs} logs of {cart.Store.Capacity}; "
             + $"{world.TotalFood()} food in the village");
 

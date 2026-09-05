@@ -140,7 +140,7 @@ public sealed class RelocateTests
         SimWorld world = loop.World;
 
         StoreBuilding granary = StandAGranary(world, out GridPos from);
-        granary.Store.Receive(Goods.Food, 200);
+        granary.Store.Receive(Goods.Produce, 200);
 
         GridPos to = Buildable(world, from);
         PlacementVerdict refused = world.MarkRelocation(from, to);
@@ -152,7 +152,7 @@ public sealed class RelocateTests
         Assert.Contains("200", refused.Reason, System.StringComparison.Ordinal);
 
         // ⭐ And emptying it is the whole of the remedy.
-        granary.Store.TakeAll(Goods.Food);
+        granary.Store.TakeAll(Goods.Produce);
         Assert.True(world.MarkRelocation(from, to).Allowed);
     }
 
@@ -174,7 +174,7 @@ public sealed class RelocateTests
         StoreBuilding full = StandAGranary(world, out GridPos from);
         StandAGranary(world, out GridPos _);
 
-        full.Store.Receive(Goods.Food, 120);
+        full.Store.Receive(Goods.Produce, 120);
         Assert.False(world.MarkRelocation(from, Buildable(world, from)).Allowed);
 
         full.Emptying = true;
@@ -199,14 +199,14 @@ public sealed class RelocateTests
         SimWorld world = Loop().World;
         StoreBuilding granary = StandAGranary(world, out GridPos _);
 
-        Assert.True(granary.Accepts(Goods.Food));
+        Assert.True(granary.Accepts(Goods.Produce));
 
         granary.Emptying = true;
-        Assert.False(granary.Accepts(Goods.Food));
+        Assert.False(granary.Accepts(Goods.Produce));
 
         // ⭐ And clearing the request puts it straight back to work.
         granary.Emptying = false;
-        Assert.True(granary.Accepts(Goods.Food));
+        Assert.True(granary.Accepts(Goods.Produce));
     }
 
     /// <summary>
@@ -231,7 +231,7 @@ public sealed class RelocateTests
             world.Demolish(other);
         }
 
-        only.Store.Receive(Goods.Food, 90);
+        only.Store.Receive(Goods.Produce, 90);
         only.Emptying = true;
         loop.Step(Config.TicksPerYear);
 

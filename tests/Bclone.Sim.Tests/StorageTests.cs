@@ -52,11 +52,11 @@ public sealed class StorageTests
         // have to genuinely disagree about what they will hold.
         SimWorld world = Build(Config).World;
 
-        Assert.True(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Food));
+        Assert.True(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Produce));
         Assert.False(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Logs));
         Assert.False(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Firewood));
 
-        Assert.False(world.AnyStoreOf(StoreKind.Warehouse).Accepts(Goods.Food));
+        Assert.False(world.AnyStoreOf(StoreKind.Warehouse).Accepts(Goods.Produce));
         Assert.True(world.AnyStoreOf(StoreKind.Warehouse).Accepts(Goods.Logs));
         Assert.True(world.AnyStoreOf(StoreKind.Warehouse).Accepts(Goods.Firewood));
     }
@@ -71,7 +71,7 @@ public sealed class StorageTests
         foreach (Workplace workplace in world.Workplaces)
         {
             Assert.NotNull(workplace.Store);
-            Assert.Equal(0, workplace.Store.Food);
+            Assert.Equal(0, workplace.Store[Goods.Produce]);
             Assert.Equal(0, workplace.Store.Logs);
             Assert.Equal(0, workplace.Store.Firewood);
         }
@@ -88,7 +88,7 @@ public sealed class StorageTests
         loop.Step(Config.TicksPerYear);
 
         ulong before = StateHash.Compute(loop.World);
-        loop.World.AnyStoreOf(StoreKind.Granary).Store.Add(Goods.Food, 1);
+        loop.World.AnyStoreOf(StoreKind.Granary).Store.Add(Goods.Produce, 1);
         ulong afterGranary = StateHash.Compute(loop.World);
         Assert.NotEqual(before, afterGranary);
 
@@ -152,13 +152,13 @@ public sealed class StorageTests
         // ever falls — which is the direction nobody notices.
         var store = new Stockpile(Stockpile.Kinds) { Capacity = 10 };
 
-        Assert.Equal(6, store.Add(Goods.Food, 6));
+        Assert.Equal(6, store.Add(Goods.Produce, 6));
         Assert.Equal(4, store.Add(Goods.Logs, 9));      // only four would fit
         Assert.Equal(0, store.Add(Goods.Firewood, 1));  // and now nothing does
 
         Assert.True(store.IsFull);
         Assert.Equal(10, store.Held);
-        Assert.Equal(6, store.Food);
+        Assert.Equal(6, store[Goods.Produce]);
         Assert.Equal(4, store.Logs);
         Assert.Equal(0, store.Firewood);
     }
@@ -173,7 +173,7 @@ public sealed class StorageTests
         store.Add(Goods.Logs, 10);
 
         Assert.Equal(0, store.Add(Goods.Firewood, 5));
-        Assert.Equal(0, store.Add(Goods.Food, 5));
+        Assert.Equal(0, store.Add(Goods.Produce, 5));
     }
 
     [Fact]
@@ -380,29 +380,29 @@ public sealed class StorageTests
 
         // A household short of a little of each, and a store standing at the villager's feet
         // holding both — the case Otto was in.
-        home.Stockpile.TryTake(Goods.Food, home.Stockpile.Food);
+        home.Stockpile.TryTake(Goods.Produce, home.Stockpile[Goods.Produce]);
         home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
-        home.Stockpile.Receive(Goods.Food, world.TargetFoodFor(home) - 5);
-        market.Store.Receive(Goods.Food, 200);
+        home.Stockpile.Receive(Goods.Produce, world.TargetFoodFor(home) - 5);
+        market.Store.Receive(Goods.Produce, 200);
         market.Store.Receive(Goods.Firewood, 200);
 
-        villager.Carried.TakeAll(Goods.Food);
+        villager.Carried.TakeAll(Goods.Produce);
         villager.Carried.TakeAll(Goods.Firewood);
         villager.Position = market.Position;
 
         BehaviorSystem.CollectForTest(world, villager);
 
         _output.WriteLine(
-            $"{villager.Name} came away with {villager.CarriedFood} food and "
+            $"{villager.Name} came away with {villager.CarriedProduce} food and "
             + $"{villager.CarriedFirewood} firewood, of a {Config.CarryCapacity} armful");
 
-        Assert.True(villager.CarriedFood > 0, "They did not take the food they came for.");
+        Assert.True(villager.CarriedProduce > 0, "They did not take the food they came for.");
         Assert.True(
             villager.CarriedFirewood > 0,
             "They walked home with a free hand and will come straight back for the firewood — "
             + "which is the trip Joe watched as jitter.");
         Assert.True(
-            villager.CarriedFood + villager.CarriedFirewood <= Config.CarryCapacity,
+            villager.CarriedProduce + villager.CarriedFirewood <= Config.CarryCapacity,
             "A fetch must still be one armful (D32).");
     }
 
@@ -426,22 +426,22 @@ public sealed class StorageTests
         StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
 
         // Short of far more food than one person can carry.
-        home.Stockpile.TryTake(Goods.Food, home.Stockpile.Food);
+        home.Stockpile.TryTake(Goods.Produce, home.Stockpile[Goods.Produce]);
         home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
-        market.Store.Receive(Goods.Food, 500);
+        market.Store.Receive(Goods.Produce, 500);
         market.Store.Receive(Goods.Firewood, 200);
 
-        villager.Carried.TakeAll(Goods.Food);
+        villager.Carried.TakeAll(Goods.Produce);
         villager.Carried.TakeAll(Goods.Firewood);
         villager.Position = market.Position;
 
         BehaviorSystem.CollectForTest(world, villager);
 
         _output.WriteLine(
-            $"{villager.Name} came away with {villager.CarriedFood} food and "
+            $"{villager.Name} came away with {villager.CarriedProduce} food and "
             + $"{villager.CarriedFirewood} firewood");
 
-        Assert.Equal(Config.CarryCapacity, villager.CarriedFood);
+        Assert.Equal(Config.CarryCapacity, villager.CarriedProduce);
         Assert.Equal(0, villager.CarriedFirewood);
     }
 
@@ -488,7 +488,7 @@ public sealed class StorageTests
         warehouse.Store.Receive(Goods.Firewood, 500);
 
         // Full of food, so only the fuel arm is in play.
-        home.Stockpile.Receive(Goods.Food, world.TargetFoodFor(home));
+        home.Stockpile.Receive(Goods.Produce, world.TargetFoodFor(home));
 
         int wanted = VillageEconomy.FirewoodStoreWantedPerHousehold(Config);
         home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
@@ -524,7 +524,7 @@ public sealed class StorageTests
         StoreBuilding warehouse = world.AnyStoreOf(StoreKind.Warehouse);
         warehouse.Store.Receive(Goods.Firewood, 500);
 
-        home.Stockpile.Receive(Goods.Food, world.TargetFoodFor(home));
+        home.Stockpile.Receive(Goods.Produce, world.TargetFoodFor(home));
         home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
 
         _output.WriteLine($"{home.Name} has no firewood at all in winter; a fetch must be planned.");

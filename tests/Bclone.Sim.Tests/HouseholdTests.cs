@@ -75,10 +75,10 @@ public sealed class HouseholdTests
         var poor = NewHousehold();
         var rich = new Household { Id = 2, Name = "Fletcher", HomePosition = new GridPos(9, 0), Stockpile = new Stockpile(Stockpile.Kinds) };
 
-        rich.Stockpile.Add(Goods.Food, 80);
+        rich.Stockpile.Add(Goods.Produce, 80);
 
-        Assert.Equal(0, poor.Stockpile.Food);
-        Assert.Equal(80, rich.Stockpile.Food);
+        Assert.Equal(0, poor.Stockpile[Goods.Produce]);
+        Assert.Equal(80, rich.Stockpile[Goods.Produce]);
     }
 
     // ---------------------------------------------------------------

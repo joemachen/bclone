@@ -53,7 +53,7 @@ public sealed class ModdedJobTests
         { "id": 2, "name": "woodcutter", "plural": "woodcutters", "doing": "splitting firewood", "works_at": "WoodcutterHut", "limited_by": "Firewood" },
         { "id": 3, "name": "marketer",   "plural": "traders",     "doing": "the market",         "works_at": "Market" },
         { "id": 4, "name": "builder",    "plural": "builders",    "doing": "building",           "works_at": "BuilderHut" },
-        { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Food" },
+        { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Produce" },
 
         { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing",            "works_at": "FishingHut",    "limited_by": "Fish" },
         { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting",            "works_at": "HunterLodge",   "limited_by": "Meat" },
@@ -64,7 +64,7 @@ public sealed class ModdedJobTests
         // an inconvenience: this row exists to be an id the enum cannot name, and 6 stopped being
         // one the day `JobKind.Boatman` existed. **The example mod was a fisherman; the game grew
         // one.** Renamed too — two trades called "fisher" is a failure message nobody can read.
-        { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "limited_by": "Food" }
+        { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "limited_by": "Produce" }
       ]
     }
     """;
@@ -147,7 +147,7 @@ public sealed class ModdedJobTests
             { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing", "works_at": "FishingHut", "limited_by": "Fish" },
             { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting", "works_at": "HunterLodge", "limited_by": "Meat" },
             { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water" },
-            { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Food" },
+            { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Produce" },
             { "id": 4, "name": "builder",    "plural": "builders",    "doing": "building",           "works_at": "BuilderHut" },
             { "id": 3, "name": "marketer",   "plural": "traders",     "doing": "the market",         "works_at": "Market" },
             { "id": 2, "name": "woodcutter", "plural": "woodcutters", "doing": "splitting firewood", "works_at": "WoodcutterHut", "limited_by": "Firewood" },

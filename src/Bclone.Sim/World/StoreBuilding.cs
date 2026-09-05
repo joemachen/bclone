@@ -359,7 +359,24 @@ public sealed class StoreBuilding
 /// </remarks>
 public enum Goods
 {
-    Food = 0,
+    /// <summary>
+    /// Plant food — <b>berries and mushrooms picked wild, wheat and corn grown</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THIS WAS CALLED `Food`, AND THE NAME CAUSED FIVE BUGS.</b> Once fish and meat
+    /// existed, *food* became an umbrella over three goods — but the FIRST one kept the word,
+    /// so `Stockpile[Goods.Produce]` read as *"the household's food"* while meaning one third of it.
+    /// D277, D283, D285 and D298 are all that mistake: a dowry that sent a meat-eating
+    /// family's child away with nothing, a hunger line that said *"nothing left to eat"* over
+    /// a full larder, a granary of fish nobody could eat. **Each looked perfectly reasonable.**
+    /// </para>
+    /// <para>
+    /// ⭐ <b>`Produce` cannot be misread as "all food"</b> (Joe, 2026-09-05), and the value
+    /// stays **0** — ids are hashed by position, so the rename moves no golden.
+    /// </para>
+    /// </remarks>
+    Produce = 0,
     Logs = 1,
     Firewood = 2,
 
@@ -381,7 +398,7 @@ public enum Goods
     /// <para>
     /// ⭐⭐ <b>THE FIRST GOOD ADDED SINCE FOOD BECAME A CAPABILITY</b> (D277), and it is why that
     /// slice was done first: `nutrition` is what makes this edible, and every reader of *"how much
-    /// food has the village got"* already asks the catalogue rather than naming <see cref="Food"/>.
+    /// food has the village got"* already asks the catalogue rather than naming <see cref="Produce"/>.
     /// </para>
     /// <para>
     /// ⚠️ <b>Worth exactly what food is worth per unit, and that is enforced at load.</b> A

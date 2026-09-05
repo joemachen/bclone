@@ -2857,14 +2857,14 @@ public partial class Main : Control
         // ignores every good above the sixth"* — so a mod-added good had a working slot in the
         // sim, a stock limit, a place in the hash, and no row on screen.
         // ⭐⭐ FOOD IS AN UMBRELLA (Joe, 2026-09-05), AND THE PANEL USED TO CONTRADICT THE ONE
-        // BELOW IT. This row read `InStores(Goods.Food)` — one good — so it said **Food 0** while
+        // BELOW IT. This row read `InStores(Goods.Produce)` — one good — so it said **Food 0** while
         // the stock-limits table said **have 3,043** from `FoodTheVillageHolds()`. Two panels, one
         // screen, two different answers to the same question, and this was the wrong one.
         //
         // ⚠️ The total comes from the sim rather than being re-added here: `FoodTheVillageHolds`
         // is what the birth gate, the food limit and the labour quota all read, so the number on
         // screen is now the number the village actually decides on.
-        table.AddChild(Chip(ChipColour(Goods.Food)));
+        table.AddChild(Chip(ChipColour(Goods.Produce)));
         table.AddChild(Body("Food"));
 
         _foodTotal = Body(string.Empty);
@@ -3006,7 +3006,7 @@ public partial class Main : Control
     /// </remarks>
     private static Color ChipColour(Goods goods) => goods switch
     {
-        Goods.Food => new Color(0.82f, 0.35f, 0.38f),
+        Goods.Produce => new Color(0.82f, 0.35f, 0.38f),
         Goods.Logs => new Color(0.45f, 0.33f, 0.20f),
         Goods.Firewood => new Color(0.88f, 0.55f, 0.24f),
         Goods.Stone => new Color(0.62f, 0.62f, 0.64f),
@@ -4804,7 +4804,7 @@ public partial class Main : Control
         // raised, it is a floor they never saw.
         int startsAt = goods switch
         {
-            Goods.Food => 2000,
+            Goods.Produce => 2000,
             Goods.Firewood => 400,
             _ => 200,
         };
@@ -4937,9 +4937,9 @@ public partial class Main : Control
     /// sim switching on a good by name; the view had simply never been held to it.
     /// </para>
     /// <para>
-    /// ⭐ Capitalisation is the view's business, not the catalogue's. The row holds *"food"*
+    /// ⭐ Capitalisation is the view's business, not the catalogue's. The row holds *"produce"*
     /// because that is the word the village uses in a sentence (*"12 food"*); a table heading
-    /// wants *"Food"*. **One word, two presentations, and the row keeps the word.**
+    /// wants *"Produce"*. **One word, two presentations, and the row keeps the word.**
     /// </para>
     /// </remarks>
     private static string GoodsName(SimWorld world, Goods goods)
@@ -4984,7 +4984,7 @@ public partial class Main : Control
     /// </remarks>
     private static int HeldFor(SimWorld world, Goods goods) => goods switch
     {
-        Goods.Food => world.FoodTheVillageHolds(),
+        Goods.Produce => world.FoodTheVillageHolds(),
         Goods.Logs => world.LogsInWarehouses(),
         Goods.Firewood => world.FirewoodInWarehouses(),
         _ => world.InStores(goods),

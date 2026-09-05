@@ -30,7 +30,7 @@ namespace Bclone.Sim.World;
 /// D57, D76, D79, D81). One array, one method per verb, and a new good is an enum value.
 /// </para>
 /// <para>
-/// <b>The named readers stay</b> — <see cref="Food"/>, <see cref="Logs"/>,
+/// <b>The named readers stay</b> — <see cref="Logs"/>,
 /// <see cref="Firewood"/>. They are what the state hash, the panel and most of the suite
 /// ask for, they read as English at the call site, and unlike the old <em>mutators</em>
 /// they cannot go stale: there is one array underneath them now, so a reader and the
@@ -156,8 +156,19 @@ public sealed class Stockpile
     /// <summary>How much of one good was ever produced here, for the epitaph.</summary>
     public int Produced(Goods goods) => _produced[Index(goods)];
 
-    /// <summary>Food on hand.</summary>
-    public int Food => _held[(int)Goods.Food];
+    // ⛔⛔ THERE IS DELIBERATELY NO `Food` (OR `Produce`) ACCESSOR HERE, AND THAT IS THE FIX
+    // FOR A BUG CLASS RATHER THAN A STYLE CHOICE. `Stockpile[Goods.Produce]` was
+    // `_held[(int)Goods.Produce]` under the doc comment *"Food on hand"* — which is what six
+    // separate places read when they meant ALL food, because that is exactly what it looked
+    // like it said (D277, D283, D285, D298).
+    //
+    // ⭐ Ask `this[Goods.Produce]` for the one good, or `SimWorld.FoodIn(store)` for every
+    // kind of food. **Both read as the question they answer.** `Logs` and `Firewood` below
+    // keep their accessors on purpose: neither has an umbrella to be confused with.
+    //
+    // ⚠️ Renaming it to `Produce` was the obvious move and is worse — it would sit one line
+    // under `Produced(Goods)`, the lifetime counter, and `store.Produce` beside
+    // `store.Produced(Goods.Produce)` is not an improvement on anything.
 
     /// <summary>
     /// Felled timber on hand.
@@ -195,7 +206,7 @@ public sealed class Stockpile
     public int Firewood => _held[(int)Goods.Firewood];
 
     /// <summary>Total food ever gathered here, for the epitaph.</summary>
-    public int LifetimeGathered => _produced[(int)Goods.Food];
+    public int LifetimeGathered => _produced[(int)Goods.Produce];
 
     /// <summary>Total logs ever felled here.</summary>
     public int LifetimeLogsFelled => _produced[(int)Goods.Logs];
@@ -311,7 +322,7 @@ public sealed class Stockpile
     /// <remarks>
     /// <para>
     /// <b>⭐ THIS WAS A SWITCH, AND EVERY ARM OF IT PRODUCED EXACTLY WHAT ITS OWN DEFAULT ARM
-    /// ALREADY DID</b> (D210). <c>Goods.Food =&gt; "food"</c> beside
+    /// ALREADY DID</b> (D210). <c>Goods.Produce =&gt; "produce"</c> beside
     /// <c>_ =&gt; goods.ToString().ToLowerInvariant()</c> — three hand-written arms restating the
     /// fallback. It was **the second of two places carrying those same three words**, the other
     /// being <c>SimWorld</c>, which is D148 and D188's finding in code.

@@ -125,7 +125,7 @@ public sealed class MarketServiceAreaTests
             }
 
             bool beatsEveryStore = world.StoreBuildings
-                .Where(s => s.CanEverHold(Goods.Food))
+                .Where(s => s.CanEverHold(Goods.Produce))
                 .Select(s => world.TravelCost.Cost(home, s.Position))
                 .Where(c => c != TravelCostField.Unreachable)
                 .All(c => here < c);

@@ -215,7 +215,7 @@ public sealed class HuntingTests
 
             foreach (StoreBuilding store in world.StoreBuildings)
             {
-                store.Store.TakeAll(Goods.Food);
+                store.Store.TakeAll(Goods.Produce);
             }
 
             // ⚠️ THE LODGE, NOT THE HUNTER'S ARMS — D290's lesson, applied before it can bite.
