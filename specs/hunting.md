@@ -3,8 +3,8 @@
 **Decisions:** D19, D253, D262, D277, D286, D288 — and **D3057(b)**, which chose hunting over
 livestock and is the argument for everything below.
 **Phase:** food breadth, immediately after fishing (D253: *"after town hall is fishing and hunting"*).
-**Status:** ◡ **slices 1 and 2 SHIPPED 2026-09-05; slice 3 not started.**
-The lodge is placeable, staffable and worked; `Meat` and `Leather` are real; the buffer holds three hunts and a marketer runs it dry. **Game thins as it is hunted and comes back on its own clock** — measured, a lodge takes its range from 81 game-bearing tiles to 63 in two years and back to 81 after 90 quiet days. `meat_yield` is **750**, set against the DEPLETED equilibrium by §7's rig (D295). ⛔ **Slice 3 — seeing the animals — is not built**, which is why Joe sees nothing roaming yet.
+**Status:** ◡ **slice 1 SHIPPED; slice 2 built and then DELETED on Joe's call (D297); slice 3 not started.**
+The lodge is placeable, staffable and worked; `Meat` and `Leather` are real; the buffer holds three hunts and a marketer runs it dry. **Available game is a function of standing woodland and nothing else** — see §4. `meat_yield` is **600** (D293's measurement against undepleted woods: 833 per hundred ticks worked against a fisher's 687). ⛔ **Slice 3 — seeing the animals — is not built**, which is why Joe sees nothing roaming yet.
 **Owner:** Joe + Claude Code
 
 ---
@@ -65,30 +65,32 @@ later; it is not taken now only because two is not yet a pattern.*
 
 ## 4. Where game comes from
 
-**Game lives in the forest** (Joe's call). Abundance in a lodge's range derives from the wooded
-share of it — the same shape as `WoodedShareAround`, which is already asked of a ring and already
-correct about map edges and non-forest tiles.
+**Game lives in the forest, and the standing wood is the whole of it** (Joe, 2026-09-05):
 
-- A lodge in deep woods is worth hunting from. A lodge in a meadow is not, and **says so at
-  placement** the way the fishing hut says *"it must touch water"* (D43: two different mistakes
-  must get two different sentences).
-- ⛔ **Hunting thins the game, and game recovers.** This is the opposite of fishing, which was
-  deliberately given *no* depletion (*"a consistent source of food that does not run out"*).
-  **The contrast is the design**: fishing is reliable and modest, hunting is rich and exhaustible.
-- Depletion is **stored sparsely** and recovers in `RegrowthSystem`. ⚠️ **Sparse-hash rule:** a
-  village that never builds a lodge must hash byte-identically to one in a world without hunting.
+> *"Foraging food should only deplete if the woodland around the hut is felled. The volume of
+> mature trees in the vicinity of the forager's hut should dictate the volume of gatherable food,
+> right? Similar for hunting and animals. More trees = max available animals, less trees = less
+> available animals."*
 
-⛔⛔ **CORRECTION, 2026-09-05 — §2's LAST BULLET WAS WRONG AND THIS PARAGRAPH REPLACES IT.**
-It said depletion should reuse *"the forest-exhaustion machinery rather than inventing a
-second one"*. **That machinery is `ThinTheRingOf`, which turns a forest tile into a
-sapling — it FELLS THE TREE.** Hunting through it would have made a hunter a logger and put
-lodges straight back into competition with forager huts over wood, *which is the exact
-thing `HuntingRadius` exists to prevent* (§3, D292). **Game is a second quantity on the same
-ground, not a smaller forest**, so `GameRange` is its own sparse store and
-`HuntingThinsTheGameAndItComesBack` asserts the tree count is unchanged. *The spec was
-written before the machinery was read; reusing it would have quietly undone §3.*
+- `HuntYieldAt` is `meat_yield × ForestTilesWithin / TilesInRing` — the forager's shape one
+  building over. **Where the player sites a lodge is the decision**, and a lodge in thin scrub is
+  honestly worth less.
+- **Felling is the only thing that reduces it; regrowth is the only thing that restores it.** Fell
+  a wood and the trip AND the hunt both fall; let it come back and both rise. One rule for two
+  trades, and the tension it creates is **wood against food** — which the player already feels
+  every time they cut for a building.
+- ⛔ **It counts trees WHOLE where the forager divides them** (D260's shared-count rule). Nobody
+  fells anything here, and a forager picking berries under the same trees takes nothing a hunter
+  wanted, so there is nothing to share.
 
----
+⛔⛔ **THERE IS NO SEPARATE DEPLETION, AND THIS SECTION USED TO SAY THERE SHOULD BE.** It called for
+depletion *"stored sparsely"* recovering in `RegrowthSystem`, *"reusing the forest-exhaustion
+machinery"*. **That was built (D295) and then deleted (D297) on Joe's call**, and two things were
+wrong with it: it was a second clock the player could not see, and the machinery it named is
+`ThinTheRingOf`, which turns forest into sapling — **it fells the tree**, so hunting through it
+would have made a hunter a logger and undone §3 in one line. *The spec was written before the
+machinery was read.* `FellingTheWoodTakesTheFoodAndTheGameWithIt` is the guard that now carries
+this section.
 
 ## 5. The goods
 

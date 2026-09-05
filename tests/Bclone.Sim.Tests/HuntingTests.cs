@@ -456,113 +456,113 @@ public sealed class HuntingTests
     }
 
     // ---------------------------------------------------------------
-    //  § It runs out, and it comes back — slice 2
+    //  § The woodland is the resource — Joe, 2026-09-05
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// ⭐⭐ Hunting <b>thins the wood, and the wood comes back</b> — the pressure, both halves.
+    /// ⭐⭐⭐ <b>Felling the wood takes the food and the game with it — and replanting brings both
+    /// back.</b>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Joe's fishery *"does not run out"*; this does, and the contrast is the design.</b> D3057
-    /// chose hunting over livestock partly for *"depletion as a §2.3 pressure"*, and D256 is the
-    /// standing complaint it answers for this trade: *"the player can't milk one hut for the whole
-    /// game."*
+    /// <b>Joe, 2026-09-05, and this guard is his sentence made executable:</b> *"Foraging food
+    /// should only deplete if the woodland around the hut is felled. The volume of mature trees in
+    /// the vicinity of the forager's hut should dictate the volume of gatherable food — similar
+    /// for hunting and animals. More trees = max available animals, less trees = less available
+    /// animals."*
     /// </para>
     /// <para>
-    /// ⛔ <b>IT EMPTIES TILES OF GAME AND FELLS NOTHING.</b> Doing this through
-    /// <c>ThinTheRingOf</c> — which turns forest into sapling — would have made a hunter a logger
-    /// and put lodges back into competition with forager huts over wood, *the exact thing
-    /// <c>HuntingRadius</c> exists to prevent* (D292). **The trees are asserted unchanged here**,
-    /// because that is the half a future refactor is most likely to break.
+    /// ⛔⛔ <b>THIS REPLACED A WHOLE MECHANIC.</b> Hunting briefly had its own per-tile depletion
+    /// store (D295) which thinned the game every hunt on its own clock. Joe replaced it with one
+    /// rule covering both trades, and **standing woodland is now the only thing that moves either
+    /// yield.** So this is the guard the deleted ones were traded for — *two guards were removed
+    /// and this one must carry both claims.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Both halves matter and the second is the one that would rot quietly.</b> A yield that
+    /// falls when the wood is cut and never recovers is a valley that dies once; recovery is what
+    /// makes felling a DECISION rather than a mistake. Felled ground goes to <c>Grass</c>, and
+    /// <c>RegrowthSystem</c> walks it back Grass → Sapling → Forest, so this runs long enough to
+    /// clear both stages.
     /// </para>
     /// </remarks>
     [Fact]
-    public void HuntingThinsTheGameAndItComesBack()
+    public void FellingTheWoodTakesTheFoodAndTheGameWithIt()
     {
-        SimConfig config = Config with { StockpileTarget = 100_000 };
+        SimConfig config = Config;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         Workplace lodge = RaiseALodge(world);
-        int reach = config.HuntingRadius;
+        Workplace ring = world.Workplaces.First(w => w.GatheringRadius > 0);
 
-        int treesBefore = world.ForestTilesWithin(lodge.Position, reach);
-        int gameBefore = world.GameTilesWithin(lodge.Position, reach);
-        int worthBefore = world.HuntYieldAt(lodge);
+        int forageBefore = world.GatherYieldAt(ring);
+        int huntBefore = world.HuntYieldAt(lodge);
 
-        loop.Step(config.TicksPerYear * 2);
+        Assert.True(forageBefore > 0, "The hut's ring has no trees, so this measures nothing.");
+        Assert.True(huntBefore > 0, "The lodge has no woods, so this measures nothing.");
 
-        int treesAfter = world.ForestTilesWithin(lodge.Position, reach);
-        int gameAfter = world.GameTilesWithin(lodge.Position, reach);
-        int worthAfter = world.HuntYieldAt(lodge);
+        // Fell every tree in both reaches — the same transition a harvested tile makes
+        // (`SimWorld.HarvestOne` sets felled ground to Grass).
+        int felled = 0;
+        felled += FellAround(world, ring.Position, ring.GatheringRadius);
+        felled += FellAround(world, lodge.Position, config.HuntingRadius);
+
+        int forageAfter = world.GatherYieldAt(ring);
+        int huntAfter = world.HuntYieldAt(lodge);
 
         _output.WriteLine(
-            $"after two years: {world.GameRange.Count} tiles hunted out; game-bearing tiles "
-            + $"{gameBefore} -> {gameAfter}; a hunt worth {worthBefore} -> {worthAfter}; "
-            + $"TREES {treesBefore} -> {treesAfter}");
+            $"felled {felled} tiles: a trip {forageBefore} -> {forageAfter}, "
+            + $"a hunt {huntBefore} -> {huntAfter}");
 
-        Assert.True(gameBefore > 0, "The lodge had nothing to hunt, so this measures nothing.");
         Assert.True(
-            gameAfter < gameBefore,
-            "Two years of hunting emptied no tiles of game — the lodge is a faucet, not a trade.");
+            forageAfter < forageBefore,
+            "The wood came down and a foraging trip was worth exactly as much. Standing trees are "
+            + "supposed to be the only thing that sets it.");
         Assert.True(
-            worthAfter < worthBefore,
-            "The wood thinned and a hunt was worth exactly as much, so depletion reaches the "
-            + "yield through nothing at all.");
+            huntAfter < huntBefore,
+            "The wood came down and a hunt was worth exactly as much. More trees means more game "
+            + "and fewer means less — that is the whole rule.");
 
-        // ⛔ THE HALF THAT MUST NOT HAVE HAPPENED.
-        Assert.Equal(treesBefore, treesAfter);
+        // ⭐ AND IT COMES BACK. Grass -> Sapling -> Forest, with a young-sapling stage in
+        // between, so several regrowth periods have to pass before the trees are mature again.
+        loop.Step(config.RegrowthPeriodDays * config.TicksPerDay * 4);
 
-        // And it comes back: stop hunting and let the recovery clock run out.
-        foreach (Villager villager in world.Villagers)
-        {
-            villager.WorkplaceId = 0;
-        }
+        int forageBack = world.GatherYieldAt(ring);
+        int huntBack = world.HuntYieldAt(lodge);
 
-        world.SetJobLimit(JobKind.Hunter, 0);
-        loop.Step((config.GameReturnsDays * config.TicksPerDay) + config.TicksPerDay);
-
-        int recovered = world.GameTilesWithin(lodge.Position, reach);
         _output.WriteLine(
-            $"after {config.GameReturnsDays} quiet days: {world.GameRange.Count} still hunted out, "
-            + $"{recovered} game-bearing tiles back of {gameBefore}");
+            $"after four regrowth periods: a trip {forageAfter} -> {forageBack}, "
+            + $"a hunt {huntAfter} -> {huntBack}");
 
         Assert.True(
-            recovered > gameAfter,
-            "The game never came back, so a hunted wood is dead ground rather than a thinned one.");
+            forageBack > forageAfter,
+            "The wood never grew back, so felling is permanent and a valley dies once.");
+        Assert.True(
+            huntBack > huntAfter,
+            "The game never came back with the trees, so the two are not actually tied together.");
     }
 
-    /// <summary>
-    /// ⭐⭐ A village with <b>no lodge in it hashes byte-identically</b> — depletion is sparse.
-    /// </summary>
-    /// <remarks>
-    /// <b>D291's rule, applied on the way in rather than retrofitted.</b> Two loops in the state
-    /// hash mixed a zero per catalogue slot and cost five goldens when `Meat` and `Leather`
-    /// arrived; <c>GameRange</c> is a sparse list from its first commit, and this is the guard
-    /// that says a valley nobody hunts in cannot tell that hunting exists.
-    /// </remarks>
-    [Fact]
-    public void AVillageWithNoLodgeCannotTellDepletionExists()
+    /// <summary>Cut down every tree within reach, returning how many fell.</summary>
+    private static int FellAround(SimWorld world, GridPos centre, int reach)
     {
-        SimConfig config = Config;
+        int felled = 0;
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            int span = reach - System.Math.Abs(dy);
+            for (int dx = -span; dx <= span; dx++)
+            {
+                var at = new GridPos(centre.X + dx, centre.Y + dy);
+                if (world.Map.Contains(at)
+                    && world.Map.TerrainAt(at) == Terrain.Forest
+                    && world.SetTerrain(at, Terrain.Grass))
+                {
+                    felled++;
+                }
+            }
+        }
 
-        SimLoop a = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        a.Step(config.TicksPerYear * 6);
-
-        SimLoop b = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        b.World.GameRange.Recover(b.World.Clock.Tick);
-        b.Step(config.TicksPerYear * 6);
-
-        ulong untouched = Determinism.StateHash.Compute(a.World);
-        ulong swept = Determinism.StateHash.Compute(b.World);
-
-        _output.WriteLine(
-            $"{a.World.GameRange.Count} tiles hunted out either way; {untouched:X16} against "
-            + $"{swept:X16}");
-
-        Assert.Equal(0, a.World.GameRange.Count);
-        Assert.Equal(untouched, swept);
+        return felled;
     }
 
     private static int LeatherEverywhere(SimWorld world)
