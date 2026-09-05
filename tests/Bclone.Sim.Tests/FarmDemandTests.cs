@@ -177,20 +177,42 @@ public sealed class FarmDemandTests
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// ⭐ A met food limit stops the sowing and <b>never</b> the reaping.
+    /// ⭐ A met food limit stops the <b>reaping</b> and never the sowing — <b>the other way round
+    /// since 2026-09-05</b>.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// D145's sweep asks one question of every control — <em>does the player's state reach the
-    /// code that does the work?</em> — and the answer for a farm has to be *yes, and only as
-    /// far as it should go*. A limit says how much to keep; leaving a standing harvest to rot
-    /// because the granary happens to be full would spend a year of the player's work in order
-    /// to obey them, and `crops-and-orchards.md §5.1` means use-it-or-lose-it to punish
-    /// inattention rather than obedience.
+    /// <b>Joe, 2026-09-05:</b> *"Farmers should plant in spring whether or not the food limit is
+    /// met — they just shouldn't gather it if the limit is met."*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>SPRING HAPPENS ONCE, AND THAT IS THE WHOLE ARGUMENT.</b> A limit met in April used to
+    /// stop the sowing, and then <em>nothing could be harvested that autumn however hungry the
+    /// village became in between</em> — the field was empty and no amount of eating could refill
+    /// it. **A ceiling on the store was silently acting as a ceiling on the year.** On the harvest
+    /// the same gate costs nothing: the crop stands, the village eats into its store, the total
+    /// drops under the limit, and the farmers walk back out for exactly what was needed.
+    /// </para>
+    /// <para>
+    /// ⚠️⚠️ <b>THE ARGUMENT THIS REVERSED IS KEPT HERE, BECAUSE IT IS NOT WRONG.</b> The old rule
+    /// existed so that *"leaving a standing harvest to rot because the granary happens to be full
+    /// would spend a year of the player's work in order to obey them"*, and
+    /// `crops-and-orchards.md §5.1` means use-it-or-lose-it **to punish inattention rather than
+    /// obedience**. That risk is real and it is now live: <c>CropSystem.Rot</c> takes whatever is
+    /// still standing at winter, so a village held at its cap right through autumn loses the crop
+    /// and gets a log line saying so.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The two failures are not symmetrical, which is why the trade is worth taking.</b>
+    /// Unsown ground is a year lost <em>with no way back</em>; unreaped crop is a year lost
+    /// <em>only if the player never dips below their own cap</em> — and if they do, the harvest
+    /// comes in by itself. **The third option is to gate neither**, which is recorded in D300 as
+    /// Joe's to take: the limit already stops foragers, fishers and hunters, so a farm finishing
+    /// what it started would not be the village ignoring him.
     /// </para>
     /// <para>
     /// Both arms in one test on purpose: they are the same predicate
-    /// (<see cref="SimWorld.MaySow"/>) read at two seasons, and a guard for either one alone
+    /// (<see cref="SimWorld.MayReap"/>) read at two seasons, and a guard for either one alone
     /// would pass against a rule that stopped everything or stopped nothing.
     /// </para>
     /// <para>
@@ -202,25 +224,29 @@ public sealed class FarmDemandTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void AMetFoodLimitStopsTheSowingAndNotTheReaping()
+    public void AMetFoodLimitStopsTheReapingAndNotTheSowing()
     {
         SimLoop loop = Loop(Config);
         SimWorld world = loop.World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         FarmFixtures.GiveItGround(world, farm, reach: 2);
 
-        // The control arm first (D145's own lesson — the food limit's guard was nearly
-        // vacuous because the granary's capacity was doing the stopping).
+        // Spring: the cap must NOT reach the sowing.
         FarmFixtures.StepToTheStartOf(loop, Season.Spring);
         int uncapped = LabourQuota.For(world).Farmers;
         Assert.True(uncapped > 0, "Nobody wanted to sow even before the limit was set.");
 
         world.SetStockLimit(Goods.Produce, 0);
-        int capped = LabourQuota.For(world).Farmers;
-        _output.WriteLine($"spring: {uncapped} wanted uncapped, {capped} at a food limit of 0");
-        Assert.Equal(0, capped);
+        int sowingCapped = LabourQuota.For(world).Farmers;
+        _output.WriteLine(
+            $"spring: {uncapped} wanted uncapped, {sowingCapped} at a food limit of 0");
 
-        // And the harvest still comes in — the limit set at the moment it is read.
+        Assert.True(
+            sowingCapped > 0,
+            "A met food limit stopped the sowing. Spring happens once — an empty field in April "
+            + "cannot be harvested in October however hungry the village gets in between.");
+
+        // Autumn: the cap MUST reach the reaping.
         world.SetStockLimit(Goods.Produce, null);
         FarmFixtures.SowEveryTileOf(world, farm);
         FarmFixtures.StepToTheStartOf(loop, Season.Fall);
@@ -234,8 +260,6 @@ public sealed class FarmDemandTests
             + $"{world.StandingCropTiles(farm)} tiles standing");
 
         Assert.True(beforeTheCap > 0, "Nobody wanted to reap even before the limit was set.");
-        Assert.True(
-            reaping > 0,
-            "A met food limit left a standing harvest to rot — the cap belongs on the sowing.");
+        Assert.Equal(0, reaping);
     }
 }

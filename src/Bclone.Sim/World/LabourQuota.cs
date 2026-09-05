@@ -740,8 +740,8 @@ public readonly record struct LabourQuota
     /// ⚠️ <b>AND REMOVING IT DOES NOT BRING BACK THE BUG IT WAS WRITTEN FOR, WHICH WAS MEASURED
     /// RATHER THAN ASSUMED.</b> Every capped trade already stops where the work happens:
     /// <c>BehaviorSystem</c> for the woodcutter (D139) and the forager (D238),
-    /// <see cref="SimWorld.MayFell"/> for the forester (D146), <see cref="SimWorld.MaySow"/> for
-    /// the farmer. Red-checked by disabling the woodcutter's gate: firewood ran to **489 against
+    /// <see cref="SimWorld.MayFell"/> for the forester (D146), <see cref="SimWorld.MayReap"/> for
+    /// the farmer (on the HARVEST since D300, not the sowing). Red-checked by disabling the woodcutter's gate: firewood ran to **489 against
     /// a limit of 40**, which is Joe's original report (*"452 at a limit of 50"*) reproduced —
     /// so the gate is what holds the limit and this clause was holding nothing.
     /// **The whole suite passed with it gone and not one golden moved.**

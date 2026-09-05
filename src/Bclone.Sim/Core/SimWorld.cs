@@ -1782,11 +1782,14 @@ public sealed class SimWorld
         // ⭐ THE MET LIMIT, AND IT IS D147'S OWN FINDING: the one case where "the player
         // already knows" is not good enough, because the number lives two windows away from
         // the building that stopped. Said only in the season it actually stops anything —
-        // sowing is spring's work, and a farm idle in July is idle because it is July.
-        if (SeasonRules.IsSowing(Clock.Season) && !MaySow())
+        // and since 2026-09-05 that season is AUTUMN, not spring: the limit gates the
+        // harvest now, and sowing goes ahead regardless so the year is not thrown away in
+        // April on the strength of a number that may be false by August.
+        if (SeasonRules.IsReaping(Clock.Season) && !MayReap())
         {
-            return $"{farm.Name} has stopped sowing — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Produce)} food and it has {FoodTheVillageHolds()}.";
+            return $"{farm.Name} has stopped reaping — you asked the village to keep "
+                + $"{StockLimits.For(Goods.Produce)} food and it has {FoodTheVillageHolds()}. "
+                + "The crop stands until the village eats into it, and winter takes the rest.";
         }
 
         // ⚠️ A HARVEST STANDING IN AUTUMN WITH NOBODY TAKING IT. The one sentence in this
@@ -2860,7 +2863,31 @@ public sealed class SimWorld
     /// cannot see it is D81's seam for the seventh time.
     /// </para>
     /// </remarks>
-    public bool MaySow() => !StockLimits.IsMet(Goods.Produce, FoodTheVillageHolds());
+    /// <summary>
+    /// Whether a farm may <b>bring the harvest in</b> — <c>false</c> once the player's food limit
+    /// is met.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS GATE USED TO BE ON SOWING, WHICH IS THE ONE PLACE IT COULD DO REAL DAMAGE</b>
+    /// (Joe, 2026-09-05): *"farmers should plant in spring whether or not the food limit is met —
+    /// they just shouldn't gather it if the limit is met."*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Spring happens once.</b> A limit met in April stopped the sowing, and then nothing
+    /// could be harvested that autumn <em>however hungry the village became in between</em> — the
+    /// field was empty and no amount of eating could refill it. **A limit is a ceiling on the
+    /// store, and it was silently acting as a ceiling on the whole year.**
+    /// </para>
+    /// <para>
+    /// ⭐ <b>On reaping it costs nothing and reads as storage on the stalk.</b> The crop stands
+    /// there; the village eats; the total drops under the limit; the farmers walk back out and
+    /// bring in exactly what was needed. ⚠️ What is still standing when winter arrives rots, and
+    /// <c>CropSystem.Rot</c> already narrates that loss — which is the honest bill for capping
+    /// food while keeping farmers on, and the signal to lower one or raise the other.
+    /// </para>
+    /// </remarks>
+    public bool MayReap() => !StockLimits.IsMet(Goods.Produce, FoodTheVillageHolds());
 
     /// <summary>
     /// Seats at farmhouses the year still has work for — <b>the village's demand for farmers</b>.
@@ -2899,7 +2926,12 @@ public sealed class SimWorld
     /// </remarks>
     public int FarmerSeatsWithGroundToWork()
     {
-        bool sowing = SeasonRules.IsSowing(Clock.Season) && MaySow();
+        bool sowing = SeasonRules.IsSowing(Clock.Season);
+
+        // ⚠️ AND THE HARVEST ARM ANSWERS TO THE LIMIT (2026-09-05, Joe). Without this the
+        // gate below never bites: `StoppedByAStockLimit` asks for a met limit AND no ground
+        // to work, so a standing crop kept the seats open and the cap stopped nothing.
+        bool reaping = MayReap();
         int seats = 0;
 
         for (int i = 0; i < Workplaces.Count; i++)
@@ -2917,7 +2949,7 @@ public sealed class SimWorld
 
                 // Bare ground in spring is a year waiting to be committed; a standing crop
                 // in any season is this year's food, and somebody has to be here to take it.
-                if ((sowing && IsSowable(here)) || IsStandingCrop(here))
+                if ((sowing && IsSowable(here)) || (reaping && IsStandingCrop(here)))
                 {
                     seats += farm.Places;
                     break;
@@ -2957,8 +2989,8 @@ public sealed class SimWorld
             return null;
         }
 
-        bool sowing = SeasonRules.IsSowing(Clock.Season) && MaySow();
-        bool reaping = SeasonRules.IsReaping(Clock.Season);
+        bool sowing = SeasonRules.IsSowing(Clock.Season);
+        bool reaping = SeasonRules.IsReaping(Clock.Season) && MayReap();
         if (!sowing && !reaping)
         {
             return null;

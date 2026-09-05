@@ -2755,10 +2755,10 @@ public sealed class BehaviorSystem : ISimSystem
                 // gets its own sentence rather than one shrug (§1.1). The order matters: a
                 // met limit is the reason the player cannot see from the farm's own panel,
                 // which is D147's finding and why that marker was worth building.
-                villager.WorkNote = !world.MaySow() && SeasonRules.IsSowing(world.Clock.Season)
-                    ? $"Nothing to sow at {job.Name} — you asked the village to keep "
-                      + $"{world.StockLimits.For(Goods.Produce)} food and it has "
-                      + $"{world.FoodTheVillageHolds()}."
+                villager.WorkNote = !world.MayReap() && SeasonRules.IsReaping(world.Clock.Season)
+                    ? $"Not bringing the harvest in at {job.Name} — you asked the village to "
+                      + $"keep {world.StockLimits.For(Goods.Produce)} food and it has "
+                      + $"{world.FoodTheVillageHolds()}. It stands until the village eats."
                     : SeasonRules.IsSowing(world.Clock.Season)
                         ? $"Every tile at {job.Name} is already sown."
                         : SeasonRules.IsReaping(world.Clock.Season)

@@ -2872,25 +2872,41 @@ public partial class Main : Control
         _foodTotal.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         table.AddChild(_foodTotal);
 
-        for (int id = 0; id < _loop.World.GoodsCatalog.Count; id++)
+        // ⛔ THE FOODS COME FIRST, TOGETHER, AND THAT IS NOT COSMETIC. The first cut indented
+        // every edible where it already stood in catalogue order — which put Fish (6) and Meat
+        // (7) below Iron (5), so the panel read as though **iron had two kinds of food indented
+        // under it**. Joe, immediately: *"why are fish and meat indented under iron?"*
+        //
+        // ⚠️ An indent is a claim about WHAT OWNS WHAT, so the rows have to be arranged to match
+        // it. Catalogue order still decides the order WITHIN each group, so a modder's good lands
+        // somewhere predictable rather than wherever the loop happened to reach it.
+        for (int pass = 0; pass < 2; pass++)
         {
-            var goods = (Goods)id;
-            bool edible = _loop.World.GoodsCatalog.Edible(goods);
+            bool foods = pass == 0;
 
-            table.AddChild(Chip(ChipColour(goods)));
+            for (int id = 0; id < _loop.World.GoodsCatalog.Count; id++)
+            {
+                var goods = (Goods)id;
+                if (_loop.World.GoodsCatalog.Edible(goods) != foods)
+                {
+                    continue;
+                }
 
-            // ⭐ Every food sits UNDER the total, which is what makes the sum readable as a sum.
-            // Once Joe's subtypes land — venison, trout, wheat — they fall in here for free.
-            table.AddChild(Body(edible
-                ? $"    {GoodsName(_loop.World, goods)}"
-                : GoodsName(_loop.World, goods)));
+                table.AddChild(Chip(ChipColour(goods)));
 
-            Label held = Body(string.Empty);
-            held.HorizontalAlignment = HorizontalAlignment.Right;
-            held.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            table.AddChild(held);
+                // ⭐ Every food sits UNDER the total, which is what makes the sum read as a sum.
+                // Once Joe's subtypes land — venison, trout, wheat — they fall in here for free.
+                table.AddChild(Body(foods
+                    ? $"    {GoodsName(_loop.World, goods)}"
+                    : GoodsName(_loop.World, goods)));
 
-            _goodsReadouts.Add((goods, held));
+                Label held = Body(string.Empty);
+                held.HorizontalAlignment = HorizontalAlignment.Right;
+                held.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+                table.AddChild(held);
+
+                _goodsReadouts.Add((goods, held));
+            }
         }
 
         return table;
