@@ -52,7 +52,13 @@ public sealed class NeedsSystem : ISimSystem
             // Hitting maximum hunger with food in store is not a story beat — it is
             // a bug, and saying "nothing left to eat" while sitting on sixty food
             // would be the log lying to the player.
-            if (!wasAtMax && world.HouseholdOf(villager).Stockpile.Food < BehaviorSystem.MealCostFor(villager, config))
+            // ⛔ ANYTHING EDIBLE, NOT `Goods.Food` — AND THE COMMENT ABOVE IS WHY IT MATTERS.
+            // *"Saying 'nothing left to eat' while sitting on sixty food would be the log
+            // lying to the player"* — and a larder holding nothing but meat is exactly that
+            // case, now that a village can live on meat and fish (D277, D283).
+            if (!wasAtMax
+                && world.FoodIn(world.HouseholdOf(villager).Stockpile)
+                    < BehaviorSystem.MealCostFor(villager, config))
             {
                 world.Narrate(
                     $"{villager.Name} has nothing left to eat — {world.Clock.SeasonAndYear()}.", LogCategory.Death);

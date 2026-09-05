@@ -6932,13 +6932,74 @@ public sealed class SimWorld
         }
     }
 
-    /// <summary>Food held anywhere in the village.</summary>
+    /// <summary>
+    /// Move up to <paramref name="upTo"/> of <b>anything edible</b> from one pile to another,
+    /// returning how much moved.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>&#9940; THE FIFTH PLACE THAT NAMED <c>Goods.Food</c> WHERE IT SHOULD HAVE ASKED.</b>
+    /// D277 made <em>"what counts as food?"</em> one question with one answer; D283 taught the
+    /// mouth; <b>this teaches the hands.</b> Joe found the gap by looking at a granary:
+    /// <em>"do the villagers actually eat the fish? I don't see any fish in any home larders."</em>
+    /// They could not — every errand that stocks a larder took <c>Goods.Food</c> by name, so
+    /// <b>2,325 fish were decoration</b> and a villager died beside them.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>In catalogue order, deliberately.</b> What to carry is data rather than a rule
+    /// written in here, and a village that has only ever seen one food moves byte-for-byte as it
+    /// did before fish existed — the sparse-hash rule, which is what keeps the goldens still.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It lives here rather than in <c>BehaviorSystem</c> because a second caller arrived</b>
+    /// (2026-09-05): the marriage dowry moved <c>Goods.Food</c> by name, so <b>a family living on
+    /// meat sent its child away with nothing.</b> Two places wanting *"move up to N of anything
+    /// edible"* is one place too many for a private helper — D145: a rule is safe while it is
+    /// read at one chokepoint and at risk the moment there are two ways to do it.
+    /// </para>
+    /// </remarks>
+    public int MoveFood(Stockpile from, Stockpile into, int upTo)
+    {
+        if (upTo <= 0)
+        {
+            return 0;
+        }
+
+        int moved = 0;
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+
+        for (int i = 0; i < edible.Count && moved < upTo; i++)
+        {
+            Goods goods = edible[i];
+            int room = upTo - moved;
+            int held = from[goods];
+            int take = room < held ? room : held;
+
+            if (take > 0 && from.TryTake(goods, take))
+            {
+                into.Receive(goods, take);
+                moved += take;
+            }
+        }
+
+        return moved;
+    }
+
+    /// <summary>Food held anywhere in the village — <b>every kind of it</b>.</summary>
+    /// <remarks>
+    /// ⛔ <b>THIS SUMMED <c>Goods.Food</c> ALONE, AND IT IS WHAT JOE SAW.</b> The overview read
+    /// *"Food 0"* from here while the stock-limits panel read 3,043 from
+    /// <see cref="FoodTheVillageHolds"/> — <b>two panels on one screen disagreeing, and this
+    /// was the wrong one.</b> Fish and meat were invisible to it, so `ClockSystem`'s season
+    /// summary and `LabourQuota`'s ration check were both reading a village poorer than the one
+    /// on screen. *D283's family: the totals were converted and the stragglers were not.*
+    /// </remarks>
     public int TotalFood()
     {
         int total = 0;
         foreach (Stockpile store in AllStores())
         {
-            total += store.Food;
+            total += FoodIn(store);
         }
 
         return total;

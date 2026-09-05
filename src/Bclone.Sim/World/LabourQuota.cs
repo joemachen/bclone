@@ -1185,7 +1185,7 @@ public readonly record struct LabourQuota
             {
                 // A house with nobody in it and goods still on the shelf. Only a
                 // marketer can reach it (D34).
-                if (household.Stockpile.Food + household.Stockpile.Firewood > 0)
+                if (world.FoodIn(household.Stockpile) + household.Stockpile.Firewood > 0)
                 {
                     errands++;
                 }
@@ -1197,7 +1197,7 @@ public readonly record struct LabourQuota
             // exactly at target", because a household is above target every time its
             // forager walks in and treating that as work to do had marketers stripping
             // families the moment they got ahead.
-            if (household.Stockpile.Food < world.TargetFoodFor(household)
+            if (world.FoodIn(household.Stockpile) < world.TargetFoodFor(household)
                 || household.Stockpile.Firewood
                     < VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config))
             {

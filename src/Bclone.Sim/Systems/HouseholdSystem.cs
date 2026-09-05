@@ -362,7 +362,8 @@ public sealed class HouseholdSystem : ISimSystem
         // new household starts on empty and can be wiped out by its first winter
         // before anyone has foraged a thing - a death with no decision behind it,
         // which is exactly what the legibility non-negotiable rules out.
-        int dowry = TakeDowry(oldHome, config) + TakeDowry(partnerHome, config);
+        int dowry = TakeDowry(world, oldHome, household.Stockpile, config)
+            + TakeDowry(world, partnerHome, household.Stockpile, config);
 
         MoveIn(world, a, household, home);
         MoveIn(world, b, household, home);
@@ -370,8 +371,10 @@ public sealed class HouseholdSystem : ISimSystem
         a.PartnerId = b.Id;
         b.PartnerId = a.Id;
 
-        // A dowry is goods changing hands, not goods produced.
-        household.Stockpile.Receive(Goods.Food, dowry);
+        // ⚠️ THE GOODS ARE ALREADY IN — `TakeDowry` moves them, because what a larder holds
+        // may be meat or fish rather than `Goods.Food`, and a dowry is a quantity of FOOD.
+        // `SimWorld.MoveFood` uses `Receive`, so this is still goods changing hands rather
+        // than goods produced.
 
         world.Narrate(home is null
             ? $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
@@ -386,15 +389,21 @@ public sealed class HouseholdSystem : ISimSystem
     /// Food a parent household gives a departing child, capped so a generous family
     /// cannot starve itself sending someone away.
     /// </summary>
-    private static int TakeDowry(Household from, SimConfig config)
+    private static int TakeDowry(
+        SimWorld world, Household from, Stockpile into, SimConfig config)
     {
-        int share = from.Stockpile.Food * config.DowryPercent / 100;
+        // ⛔ WHAT THE LARDER ACTUALLY HOLDS, NOT `Goods.Food`. A family living on meat used
+        // to send its child away with nothing: the share was a percentage of one good, and
+        // then `TryTake` on that same good failed and returned 0. **Both halves were wrong
+        // and they hid each other** — the amount looked like a rounding artefact rather than
+        // a family whose food the code could not see. (D283's family; D277's door.)
+        int share = world.FoodIn(from.Stockpile) * config.DowryPercent / 100;
         if (share > config.StockpileTarget)
         {
             share = config.StockpileTarget;
         }
 
-        return from.Stockpile.TryTake(Goods.Food, share) ? share : 0;
+        return world.MoveFood(from.Stockpile, into, share);
     }
 
     private static void MoveIn(

@@ -1448,7 +1448,10 @@ public partial class VillageMap : Control
     {
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            if (!store.CanEverHold(Goods.Food))
+            // The capability, not the good — `SimWorld.CanEverHoldFood` exists for exactly
+            // this and its own remarks claimed all three sites had been converted. This was
+            // the third.
+            if (!world.CanEverHoldFood(store))
             {
                 continue;
             }

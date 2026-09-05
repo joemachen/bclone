@@ -3287,7 +3287,7 @@ public sealed class BehaviorSystem : ISimSystem
         // D142's shape exactly — a rule that reached some of its call sites — and the fix is
         // the same: both halves in one place, with the second reading what the first left.
         int foodShort = world.TargetFoodFor(household) - world.FoodIn(household.Stockpile);
-        load -= MoveFood(world, target.Store, villager.Carried, Smallest(foodShort, load, load));
+        load -= world.MoveFood(target.Store, villager.Carried, Smallest(foodShort, load, load));
 
         // ⚠️ A FREE HAND, NOT A FREE TRIP. If food took the whole armful there is nothing left
         // to carry and this does nothing — the second trip is then carry capacity doing its
@@ -3307,52 +3307,6 @@ public sealed class BehaviorSystem : ISimSystem
         }
     }
 
-
-    /// <summary>
-    /// Move up to <paramref name="upTo"/> of <b>anything edible</b> from one pile to another,
-    /// returning how much moved.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>&#9940; THE FIFTH PLACE THAT NAMED <c>Goods.Food</c> WHERE IT SHOULD HAVE ASKED.</b>
-    /// D277 made <em>"what counts as food?"</em> one question with one answer; D283 taught the
-    /// mouth; <b>this teaches the hands.</b> Joe found the gap by looking at a granary:
-    /// <em>"do the villagers actually eat the fish? I don't see any fish in any home larders."</em>
-    /// They could not — every errand that stocks a larder took <c>Goods.Food</c> by name, so
-    /// <b>2,325 fish were decoration</b> and a villager died beside them.
-    /// </para>
-    /// <para>
-    /// ⚠️ <b>In catalogue order, deliberately.</b> What to carry is data rather than a rule
-    /// written in here, and a village that has only ever seen one food moves byte-for-byte as it
-    /// did before fish existed — the sparse-hash rule, which is what keeps the goldens still.
-    /// </para>
-    /// </remarks>
-    private static int MoveFood(SimWorld world, Stockpile from, Stockpile into, int upTo)
-    {
-        if (upTo <= 0)
-        {
-            return 0;
-        }
-
-        int moved = 0;
-        IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
-
-        for (int i = 0; i < edible.Count && moved < upTo; i++)
-        {
-            Goods goods = edible[i];
-            int room = upTo - moved;
-            int held = from[goods];
-            int take = room < held ? room : held;
-
-            if (take > 0 && from.TryTake(goods, take))
-            {
-                into.Receive(goods, take);
-                moved += take;
-            }
-        }
-
-        return moved;
-    }
 
     /// <summary>The nearest store holding <b>anything the village can eat</b>.</summary>
     /// <remarks>
@@ -3600,7 +3554,7 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             int foodWanted = world.TargetFoodFor(recipient) - world.FoodIn(recipient.Stockpile);
-            if (MoveFood(world, store.Store, villager.Carried, Smallest(foodWanted, load, load))
+            if (world.MoveFood(store.Store, villager.Carried, Smallest(foodWanted, load, load))
                 > 0)
             {
                 villager.State = VillagerState.DeliveringToHome;
@@ -3677,7 +3631,7 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             int shortOf = world.TargetFoodFor(family) - world.FoodIn(family.Stockpile);
-            if (MoveFood(world, workplace.Store, villager.Carried, Smallest(shortOf, load, load))
+            if (world.MoveFood(workplace.Store, villager.Carried, Smallest(shortOf, load, load))
                 > 0)
             {
                 villager.State = VillagerState.DeliveringToHome;
@@ -3706,7 +3660,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             // Everything, because there is nobody left to keep any of it for. This once
             // subtracted a `keepFood` and a `keepFuel`, both of which were const zero.
-            int food = MoveFood(world, household.Stockpile, villager.Carried, load);
+            int food = world.MoveFood(household.Stockpile, villager.Carried, load);
 
             int fuel = Smallest(household.Stockpile.Firewood, load - food, household.Stockpile.Firewood);
             if (fuel > 0 && household.Stockpile.TryTake(Goods.Firewood, fuel))

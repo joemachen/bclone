@@ -1018,15 +1018,6 @@ public partial class Main : Control
             (Goods goods, Label held) = _goodsReadouts[i];
             int inStores = world.InStores(goods);
 
-            if (goods == Goods.Food)
-            {
-                int elsewhere = world.TotalFood() - inStores;
-                held.Text = elsewhere > 0
-                    ? $"{inStores.Grouped()}  (+{elsewhere.Grouped()} in homes and huts)"
-                    : inStores.Grouped();
-                continue;
-            }
-
             // ⭐ AND WHAT IS LYING IN THE YARD (D134). A valley has one timber store, it fills,
             // and everything hauled in after that is set down outside it — measured at 320 logs
             // in store against 5,977 on the ground. Reading "Logs 320" while a mountain sits in
@@ -1039,11 +1030,23 @@ public partial class Main : Control
             //
             // Full and unwilling are different states with different remedies — empty a store,
             // versus change what it takes — so the sentence has to tell them apart.
+            // ⚠️ `Grouped()` on every good, not just food. Four figures of stone read as "1968"
+            // in one row and "1,968" in another, which is the panel looking unfinished for no
+            // reason anybody chose.
             int inHeaps = world.OnTheGround(goods);
             held.Text = inHeaps > 0
-                ? $"{inStores}  (+{inHeaps} on the ground — {WhyItIsOnTheGround(world, goods)})"
-                : $"{inStores}";
+                ? $"{inStores.Grouped()}  (+{inHeaps.Grouped()} on the ground — "
+                    + $"{WhyItIsOnTheGround(world, goods)})"
+                : inStores.Grouped();
         }
+
+        // The umbrella, split the way the old Food row was: what the stores hold, and what is out
+        // in the larders behind it.
+        int foodInStores = world.FoodInGranaries();
+        int foodElsewhere = world.TotalFood() - foodInStores;
+        _foodTotal.Text = foodElsewhere > 0
+            ? $"{foodInStores.Grouped()}  (+{foodElsewhere.Grouped()} in homes and huts)"
+            : foodInStores.Grouped();
 
         // What each limited good actually stands at, beside the number the player set —
         // so "nobody is splitting logs" and "you asked for 200 and there are 214" are the
@@ -1413,7 +1416,8 @@ public partial class Main : Control
         {
             $"{villager.Name}, aged {villager.AgeYears}",
             villager.Alive ? $"Currently: {villager.DescribeState(workplace?.Name)}" : "Dead.",
-            $"Household: the {household.Name} household ({household.Stockpile.Food} food, " +
+            $"Household: the {household.Name} household "
+                + $"({_loop.World.FoodIn(household.Stockpile)} food, " +
                 $"{household.Stockpile.Firewood} firewood, {household.Stockpile.Logs} logs)",
             $"Hunger: {hungerPercent}%",
         };
@@ -2852,11 +2856,34 @@ public partial class Main : Control
         // *"iterating 0..Kinds over a village that has more goods than the enum silently
         // ignores every good above the sixth"* — so a mod-added good had a working slot in the
         // sim, a stock limit, a place in the hash, and no row on screen.
+        // ⭐⭐ FOOD IS AN UMBRELLA (Joe, 2026-09-05), AND THE PANEL USED TO CONTRADICT THE ONE
+        // BELOW IT. This row read `InStores(Goods.Food)` — one good — so it said **Food 0** while
+        // the stock-limits table said **have 3,043** from `FoodTheVillageHolds()`. Two panels, one
+        // screen, two different answers to the same question, and this was the wrong one.
+        //
+        // ⚠️ The total comes from the sim rather than being re-added here: `FoodTheVillageHolds`
+        // is what the birth gate, the food limit and the labour quota all read, so the number on
+        // screen is now the number the village actually decides on.
+        table.AddChild(Chip(ChipColour(Goods.Food)));
+        table.AddChild(Body("Food"));
+
+        _foodTotal = Body(string.Empty);
+        _foodTotal.HorizontalAlignment = HorizontalAlignment.Right;
+        _foodTotal.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        table.AddChild(_foodTotal);
+
         for (int id = 0; id < _loop.World.GoodsCatalog.Count; id++)
         {
             var goods = (Goods)id;
+            bool edible = _loop.World.GoodsCatalog.Edible(goods);
+
             table.AddChild(Chip(ChipColour(goods)));
-            table.AddChild(Body(GoodsName(_loop.World, goods)));
+
+            // ⭐ Every food sits UNDER the total, which is what makes the sum readable as a sum.
+            // Once Joe's subtypes land — venison, trout, wheat — they fall in here for free.
+            table.AddChild(Body(edible
+                ? $"    {GoodsName(_loop.World, goods)}"
+                : GoodsName(_loop.World, goods)));
 
             Label held = Body(string.Empty);
             held.HorizontalAlignment = HorizontalAlignment.Right;
@@ -2986,6 +3013,13 @@ public partial class Main : Control
         Goods.Tools => new Color(0.72f, 0.76f, 0.82f),
         Goods.Iron => new Color(0.55f, 0.36f, 0.30f),
 
+        // The three that shipped without one and read as drab white beside the food they
+        // belong to. Fish takes the river's blue, meat a deeper red than the berries above
+        // it, leather the tan of the hide it is.
+        Goods.Fish => new Color(0.38f, 0.60f, 0.78f),
+        Goods.Meat => new Color(0.66f, 0.26f, 0.28f),
+        Goods.Leather => new Color(0.60f, 0.45f, 0.30f),
+
         // ⚠️ A MOD-ADDED GOOD GETS A CHIP RATHER THAN A CRASH, and it is deliberately drab.
         // `goods-catalog.md §9.4` asks whether a mod-added good needs a display colour and calls
         // it *"the first thing a modder will ask for"*. Until that is answered, a neutral chip is
@@ -2996,6 +3030,9 @@ public partial class Main : Control
 
     /// <summary>Every goods row's amount label, so the tick can fill them in.</summary>
     private readonly List<(Goods Goods, Label Held)> _goodsReadouts = new();
+
+    /// <summary>The Food row — <b>every kind of food, which no single good answers</b>.</summary>
+    private Label _foodTotal = null!;
 
     /// <summary>The whole valley, small, with a box round what you are looking at.</summary>
     /// <remarks>
@@ -4477,8 +4514,6 @@ public partial class Main : Control
     /// </remarks>
     private static readonly (string Name, string Reason)[] ProfessionsNotYetHired =
     {
-        ("Fisherman", "no fishing hut — needs building beside water"),
-        ("Hunter", "no lodge, and leather is not a good yet"),
         ("Tailor", "waiting on the hunter for leather"),
 
         // ⭐ The farmer moved OFF this list and into the real rows above
