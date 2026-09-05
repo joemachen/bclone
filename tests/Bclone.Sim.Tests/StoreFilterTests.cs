@@ -26,17 +26,17 @@ public sealed class StoreFilterTests
     private static SimWorld World() =>
         SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
 
-    private static StoreBuilding ShedIn(SimWorld world)
+    private static StoreBuilding WarehouseIn(SimWorld world)
     {
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            if (store.Kind == StoreKind.Shed)
+            if (store.Kind == StoreKind.Warehouse)
             {
                 return store;
             }
         }
 
-        throw new Xunit.Sdk.XunitException("No shed in the founding village.");
+        throw new Xunit.Sdk.XunitException("No warehouse in the founding village.");
     }
 
     /// <summary>⭐ Turning one good off leaves the others on.</summary>
@@ -49,20 +49,20 @@ public sealed class StoreFilterTests
     public void TurningOneGoodOffLeavesTheRestAlone()
     {
         SimWorld world = World();
-        StoreBuilding shed = ShedIn(world);
+        StoreBuilding warehouse = WarehouseIn(world);
 
-        Assert.True(shed.Accepts(Goods.Logs));
-        Assert.True(shed.Accepts(Goods.Firewood));
+        Assert.True(warehouse.Accepts(Goods.Logs));
+        Assert.True(warehouse.Accepts(Goods.Firewood));
 
-        Assert.True(world.SetStoreAccepts(shed, Goods.Logs, accepted: false).Allowed);
+        Assert.True(world.SetStoreAccepts(warehouse, Goods.Logs, accepted: false).Allowed);
 
         _output.WriteLine(
-            $"{shed.Name}: logs {shed.Accepts(Goods.Logs)}, firewood {shed.Accepts(Goods.Firewood)}, "
-            + $"stone {shed.Accepts(Goods.Stone)}");
+            $"{warehouse.Name}: logs {warehouse.Accepts(Goods.Logs)}, firewood {warehouse.Accepts(Goods.Firewood)}, "
+            + $"stone {warehouse.Accepts(Goods.Stone)}");
 
-        Assert.False(shed.Accepts(Goods.Logs));
-        Assert.True(shed.Accepts(Goods.Firewood));
-        Assert.True(shed.Accepts(Goods.Stone));
+        Assert.False(warehouse.Accepts(Goods.Logs));
+        Assert.True(warehouse.Accepts(Goods.Firewood));
+        Assert.True(warehouse.Accepts(Goods.Stone));
     }
 
     /// <summary>⭐ It narrows only — a granary cannot be told to hold timber.</summary>
@@ -93,22 +93,22 @@ public sealed class StoreFilterTests
     public void AStoreThatWillTakeNothingSaysSoOnce()
     {
         SimWorld world = World();
-        StoreBuilding shed = ShedIn(world);
+        StoreBuilding warehouse = WarehouseIn(world);
 
         PlacementVerdict last = default;
         for (int g = 0; g < Stockpile.Kinds; g++)
         {
-            if (shed.CanEverHold((Goods)g))
+            if (warehouse.CanEverHold((Goods)g))
             {
-                last = world.SetStoreAccepts(shed, (Goods)g, accepted: false);
+                last = world.SetStoreAccepts(warehouse, (Goods)g, accepted: false);
             }
         }
 
-        _output.WriteLine($"a shed that takes nothing: \"{last.Warning}\"");
+        _output.WriteLine($"a warehouse that takes nothing: \"{last.Warning}\"");
 
         Assert.True(last.Allowed, "The game argued with the player instead of obeying (D42).");
         Assert.False(string.IsNullOrWhiteSpace(last.Warning), "It obeyed without saying so.");
-        Assert.False(shed.Accepts(Goods.Logs));
+        Assert.False(warehouse.Accepts(Goods.Logs));
     }
 
     /// <summary>
@@ -141,44 +141,44 @@ public sealed class StoreFilterTests
     {
         SimConfig config = Config;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        StoreBuilding shed = ShedIn(loop.World);
+        StoreBuilding warehouse = WarehouseIn(loop.World);
 
         // The moment it exists, exactly as Joe did it.
-        Assert.True(loop.World.SetStoreAccepts(shed, Goods.Firewood, accepted: false).Allowed);
-        Assert.True(shed.Accepts(Goods.Logs), "It must still take logs, or nothing is tested.");
+        Assert.True(loop.World.SetStoreAccepts(warehouse, Goods.Firewood, accepted: false).Allowed);
+        Assert.True(warehouse.Accepts(Goods.Logs), "It must still take logs, or nothing is tested.");
 
         int worst = 0;
         int everMade = 0;
         for (int tick = 0; tick < config.TicksPerYear * 20; tick++)
         {
             loop.StepOnce();
-            worst = System.Math.Max(worst, shed.Store.Firewood);
+            worst = System.Math.Max(worst, warehouse.Store.Firewood);
             everMade = System.Math.Max(everMade, loop.World.TotalFirewood());
         }
 
         _output.WriteLine(
-            $"20 years: {shed.Name} held at most {worst} firewood while refusing it; the village "
+            $"20 years: {warehouse.Name} held at most {worst} firewood while refusing it; the village "
             + $"made {everMade} in all, and holds {loop.World.OnTheGround(Goods.Firewood)} "
             + "on the ground.");
 
         // ⚠️ ANTI-VACUITY FIRST (D7), and it is not decoration here: the guard for D132's bug
-        // was green for weeks because its village died before anybody felled a log. A shed
+        // was green for weeks because its village died before anybody felled a log. A warehouse
         // that never sees firewood because none was ever made proves nothing at all.
         Assert.True(everMade > 0, "Nobody ever split a log in twenty years, so this is vacuous.");
-        Assert.True(shed.Store.Logs > 0, "Nothing ever went into the store either.");
+        Assert.True(warehouse.Store.Logs > 0, "Nothing ever went into the store either.");
 
         Assert.Equal(0, worst);
     }
 
-    /// <summary>⛔ A load the shed refuses must still get somewhere, not circle for ever.</summary>
+    /// <summary>⛔ A load the warehouse refuses must still get somewhere, not circle for ever.</summary>
     /// <remarks>
     /// <para>
     /// <b>Joe's Year-44 village, and the most expensive bug this project has had</b> (found
-    /// 2026-08-27 in his own audit trail). His shed refused a good, so every armful of it was
-    /// walked to the shed, <b>refused on arrival</b>, and set down at the shed's own door — and
+    /// 2026-08-27 in his own audit trail). His warehouse refused a good, so every armful of it was
+    /// walked to the warehouse, <b>refused on arrival</b>, and set down at the warehouse's own door — and
     /// <c>NearestGroundStack</c>, which DOES ask <c>Accepts</c>, then declared that heap worth
     /// fetching. Somebody picked it up, <c>StoreForTheLoad</c> sent them straight back to the
-    /// same shed, and the village did that <b>about fifteen thousand times</b>: 1,439 failed
+    /// same warehouse, and the village did that <b>about fifteen thousand times</b>: 1,439 failed
     /// trips to one tile in the last 900 ticks alone, by fourteen different villagers.
     /// </para>
     /// <para>
@@ -194,7 +194,7 @@ public sealed class StoreFilterTests
     /// years later, in silence.
     /// </para>
     /// <para>
-    /// ⚠️ <b>The guard above was green through all of it.</b> It asserts the shed stays empty —
+    /// ⚠️ <b>The guard above was green through all of it.</b> It asserts the warehouse stays empty —
     /// which was perfectly true — and only <em>prints</em> what ended up on the ground. That is
     /// D144's <i>"tested at its predicate and never at its deposit"</i> arriving a second time,
     /// so this one asserts the <b>outcome</b>: the goods have to actually arrive somewhere.
@@ -206,19 +206,19 @@ public sealed class StoreFilterTests
         SimConfig config = Config;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
-        StoreBuilding shed = ShedIn(world);
+        StoreBuilding warehouse = WarehouseIn(world);
 
         // ⚠️ LOGS, NOT FIREWOOD, AND THE FIRST DRAFT OF THIS GUARD FOUND OUT WHY. Firewood is
         // held by the MARKET as well (`stored_by`), so a marketer's leg — which asks `Accepts`
         // properly — quietly rescued every load and the guard passed against the live bug:
-        // 622 firewood in the market, none on the ground. Logs are held by the shed and the
+        // 622 firewood in the market, none on the ground. Logs are held by the warehouse and the
         // pile and nothing else, which is Joe's own case and leaves no third party to save it.
         var pile = PileOnClearGroundIn(world);
         Assert.True(pile.Accepts(Goods.Logs), "The pile must take logs, or nothing is tested.");
 
-        // Exactly as Joe did it: the shed is told to refuse, and it is not full.
-        Assert.True(world.SetStoreAccepts(shed, Goods.Logs, accepted: false).Allowed);
-        Assert.False(shed.Store.IsFull, "A full shed would take a different branch entirely.");
+        // Exactly as Joe did it: the warehouse is told to refuse, and it is not full.
+        Assert.True(world.SetStoreAccepts(warehouse, Goods.Logs, accepted: false).Allowed);
+        Assert.False(warehouse.Store.IsFull, "A full warehouse would take a different branch entirely.");
 
         int everMade = 0;
         for (int tick = 0; tick < config.TicksPerYear * 20; tick++)
@@ -230,14 +230,14 @@ public sealed class StoreFilterTests
         int onTheGround = world.OnTheGround(Goods.Logs);
 
         _output.WriteLine(
-            $"20 years: the village handled {everMade} logs in all. {shed.Name} refused them and "
-            + $"holds {shed.Store.Logs}; {pile.Name} holds {pile.Store.Logs} with "
+            $"20 years: the village handled {everMade} logs in all. {warehouse.Name} refused them and "
+            + $"holds {warehouse.Store.Logs}; {pile.Name} holds {pile.Store.Logs} with "
             + $"{pile.Store.FreeSpace} free; {onTheGround} are lying on the ground.");
 
         // ⚠️ ANTI-VACUITY FIRST (D7). A village that never felled anything proves nothing, and
         // the guard above this one records exactly that failure being green for weeks.
         Assert.True(everMade > 0, "Nobody ever felled a tree in twenty years, so this is vacuous.");
-        Assert.Equal(0, shed.Store.Logs);
+        Assert.Equal(0, warehouse.Store.Logs);
 
         // ⭐⭐ THE CLAIM, AND IT IS ABOUT THE DEPOSIT RATHER THAN THE PREDICATE. A store that
         // would have taken these logs stood there with room the whole time, so logs on the
@@ -307,28 +307,28 @@ public sealed class StoreFilterTests
     public void AnArmfulLeavesBehindWhatTheStoreWillNotHave()
     {
         SimWorld world = World();
-        StoreBuilding shed = ShedIn(world);
+        StoreBuilding warehouse = WarehouseIn(world);
 
-        Assert.True(world.SetStoreAccepts(shed, Goods.Firewood, accepted: false).Allowed);
+        Assert.True(world.SetStoreAccepts(warehouse, Goods.Firewood, accepted: false).Allowed);
 
         Villager carrier = world.Villagers[0];
-        carrier.Position = shed.Position;
+        carrier.Position = warehouse.Position;
         carrier.Carried.TakeAll(Goods.Food);
         carrier.Carried.TakeAll(Goods.Logs);
         carrier.Carried.TakeAll(Goods.Firewood);
         carrier.Carried.Receive(Goods.Logs, 5);
         carrier.Carried.Receive(Goods.Firewood, 7);
 
-        int logsBefore = shed.Store.Logs;
+        int logsBefore = warehouse.Store.Logs;
         Bclone.Sim.Systems.BehaviorSystem.ArriveWithALoadForTest(world, carrier);
 
         _output.WriteLine(
-            $"{shed.Name} refusing firewood took {shed.Store.Logs - logsBefore} of 5 logs and "
-            + $"{shed.Store.Firewood} firewood; {world.OnTheGround(Goods.Firewood)} firewood is "
+            $"{warehouse.Name} refusing firewood took {warehouse.Store.Logs - logsBefore} of 5 logs and "
+            + $"{warehouse.Store.Firewood} firewood; {world.OnTheGround(Goods.Firewood)} firewood is "
             + "on the ground.");
 
-        Assert.Equal(logsBefore + 5, shed.Store.Logs);
-        Assert.Equal(0, shed.Store.Firewood);
+        Assert.Equal(logsBefore + 5, warehouse.Store.Logs);
+        Assert.Equal(0, warehouse.Store.Firewood);
 
         // Conservation: the seven pieces still exist somewhere a villager can reach.
         Assert.Equal(0, carrier.CarriedFirewood);
@@ -352,7 +352,7 @@ public sealed class StoreFilterTests
         Assert.Equal(StateHash.Compute(untouched), StateHash.Compute(filtered));
 
         Assert.True(
-            filtered.SetStoreAccepts(ShedIn(filtered), Goods.Logs, accepted: false).Allowed);
+            filtered.SetStoreAccepts(WarehouseIn(filtered), Goods.Logs, accepted: false).Allowed);
 
         Assert.NotEqual(StateHash.Compute(untouched), StateHash.Compute(filtered));
     }

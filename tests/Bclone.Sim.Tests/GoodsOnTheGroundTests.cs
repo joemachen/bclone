@@ -122,8 +122,8 @@ public sealed class GoodsOnTheGroundTests
         SimWorld world = Loop(config).World;
 
         int food = world.TotalFood();
-        int logs = world.LogsInSheds();
-        int firewood = world.FirewoodInSheds();
+        int logs = world.LogsInWarehouses();
+        int firewood = world.FirewoodInWarehouses();
         int room = world.FoodTheVillageHasRoomFor();
 
         GridPos field = world.Map.FoundingSite;
@@ -133,12 +133,12 @@ public sealed class GoodsOnTheGroundTests
 
         _output.WriteLine(
             $"1500 goods on the ground: food {food} -> {world.TotalFood()}, "
-            + $"logs {logs} -> {world.LogsInSheds()}, firewood {firewood} -> "
-            + $"{world.FirewoodInSheds()}, room {room} -> {world.FoodTheVillageHasRoomFor()}");
+            + $"logs {logs} -> {world.LogsInWarehouses()}, firewood {firewood} -> "
+            + $"{world.FirewoodInWarehouses()}, room {room} -> {world.FoodTheVillageHasRoomFor()}");
 
         Assert.Equal(food, world.TotalFood());
-        Assert.Equal(logs, world.LogsInSheds());
-        Assert.Equal(firewood, world.FirewoodInSheds());
+        Assert.Equal(logs, world.LogsInWarehouses());
+        Assert.Equal(firewood, world.FirewoodInWarehouses());
         Assert.Equal(room, world.FoodTheVillageHasRoomFor());
     }
 
@@ -225,19 +225,19 @@ public sealed class GoodsOnTheGroundTests
         GridPos at = world.Map.FoundingSite;
         world.SetDown(at, Goods.Logs, 120);
 
-        int inStoresBefore = world.LogsInSheds();
+        int inStoresBefore = world.LogsInWarehouses();
         loop.Step(config.TicksPerYear / 2);
 
         _output.WriteLine(
             $"half a year on: {OnTheGround(world)} still on the ground, "
-            + $"logs in stores {inStoresBefore} -> {world.LogsInSheds()}");
+            + $"logs in stores {inStoresBefore} -> {world.LogsInWarehouses()}");
 
         Assert.Equal(0, world.GroundStackAt(at, Goods.Logs));
 
-        // And it went into a shed rather than being shuffled to another patch of dirt.
+        // And it went into a warehouse rather than being shuffled to another patch of dirt.
         Assert.True(
-            world.LogsInSheds() > inStoresBefore,
-            $"The heap left the ground but the stores still hold {world.LogsInSheds()}.");
+            world.LogsInWarehouses() > inStoresBefore,
+            $"The heap left the ground but the stores still hold {world.LogsInWarehouses()}.");
 
         // ⚠️ NOT `Assert.Empty(world.GroundStacks)` ANY MORE, which is a claim about the whole
         // valley and was only ever true because the valley was quiet. A village that fells
@@ -254,7 +254,7 @@ public sealed class GoodsOnTheGroundTests
     /// <para>
     /// <b>The failure this guard exists for is a loop, not a stall.</b> Without the condition
     /// in <see cref="SimWorld.NearestGroundStack"/>, a spare hand picks up the heap beside a
-    /// full shed, walks it back to the same full shed, and sets it down again — forever, and
+    /// full warehouse, walks it back to the same full warehouse, and sets it down again — forever, and
     /// at the cost of every idle tick in the village.
     /// </para>
     /// <para>
@@ -385,7 +385,7 @@ public sealed class GoodsOnTheGroundTests
 
         // Every store packed, so wherever this load goes it will be refused. Filled with
         // logs rather than food so nobody eats the evidence.
-        StoreBuilding shed = world.AnyStoreOf(StoreKind.Shed);
+        StoreBuilding warehouse = world.AnyStoreOf(StoreKind.Warehouse);
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             Stockpile store = world.StoreBuildings[i].Store;
@@ -394,25 +394,25 @@ public sealed class GoodsOnTheGroundTests
 
         Assert.All(world.StoreBuildings, store => Assert.True(store.Store.IsFull));
 
-        // One villager, one armful, standing at the shed door with it.
+        // One villager, one armful, standing at the warehouse door with it.
         Villager carrier = world.Villagers[0];
-        carrier.Position = shed.Position;
+        carrier.Position = warehouse.Position;
         carrier.Carried.TakeAll(Goods.Logs);
         carrier.Carried.Receive(Goods.Logs, 60);
         carrier.State = VillagerState.HaulingToStore;
         carrier.ActionTicksRemaining = 0;
 
-        int held = shed.Store.Held;
+        int held = warehouse.Store.Held;
         loop.StepOnce();
 
         _output.WriteLine(
-            $"{carrier.Name} arrived at a full shed with 60 logs: {carrier.CarriedLogs} still "
-            + $"carried, {OnTheGround(world)} on the ground, shed {held} -> {shed.Store.Held}");
+            $"{carrier.Name} arrived at a full warehouse with 60 logs: {carrier.CarriedLogs} still "
+            + $"carried, {OnTheGround(world)} on the ground, warehouse {held} -> {warehouse.Store.Held}");
 
         // ⭐ The load still exists. Before D96 this assertion read 0 = 0 + 0: Add took what
         // fitted (nothing) and ArriveAt zeroed the arms anyway.
         Assert.Equal(60, OnTheGround(world) + carrier.CarriedLogs);
-        Assert.Equal(held, shed.Store.Held);
+        Assert.Equal(held, warehouse.Store.Held);
     }
 
     /// <summary>And it happens in play, not only when a test poses it.</summary>

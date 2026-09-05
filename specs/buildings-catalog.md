@@ -46,7 +46,7 @@ tests), plus **one ceiling nobody had counted**. They decide six things.
 
 | Surface | Where | Becomes |
 |---|---|---|
-| Its name — *"granary"*, *"storage shed"*, *"woodcutter's hut"* | `SimWorld.NameFor` | `Name` |
+| Its name — *"granary"*, *"warehouse"*, *"woodcutter's hut"* | `SimWorld.NameFor` | `Name` |
 | What it costs and how long it takes | `BuildingRecipe.For` | `Materials` + `WorkTicks` |
 | Which store it becomes, if any | `SimWorld.RaiseStore`, `SimWorld.Demolish` | `Stores` |
 | How much that store holds | `SimWorld.RaiseStore` → `VillageEconomy` | `StoreCapacity` — **or null, see §2.2** |
@@ -111,7 +111,7 @@ says capacity is *mostly* data, which is true of **stores** and not of **seats**
 |---|---|---|
 | Granary | ✅ **stated** — `granary_capacity` (D219) | — |
 | Market | two stated numbers multiplied | ✅ **stated** — `market_capacity` |
-| Shed | ⛔ **derived** — a horizon of households, their firewood, the logs to split it, a house's timber, floored at a granary | — |
+| Warehouse | ⛔ **derived** — a horizon of households, their firewood, the logs to split it, a house's timber, floored at a granary | — |
 | Stockpile | ⛔ **derived** — the first buildings' logs *and stone*, plus the founders' firewood | — |
 | Woodcutter's hut | — | ✅ **stated** — `woodcutter_hut_capacity` |
 | Farmhouse | — | ✅ **stated** — `farmhouse_seats` |
@@ -122,7 +122,7 @@ says capacity is *mostly* data, which is true of **stores** and not of **seats**
 
 > **⭐ The rule, and it is principled rather than a shortcut: a STATED capacity is data; a DERIVED
 > capacity is the survival floor, and the survival floor is `VillageEconomy`'s business (D16).**
-> Forcing `ShedCapacity` into a row would mean typing a number that is currently *solved* — the
+> Forcing `WarehouseCapacity` into a row would mean typing a number that is currently *solved* — the
 > exact move D16 exists to refuse, and the one D219 called *"the derivation was the fault"* only
 > because there the derivation was making a promise about people rather than about a box.
 
@@ -184,7 +184,7 @@ default arm gain real behaviour (as `LimitedBy` did), or is it one bool read onc
 ```
 BuildingRow
   Id               int          appended, never renumbered — 0..9 are the built-in ten
-  Name             string       the label: "granary", "storage shed", "woodcutter's hut"
+  Name             string       the label: "granary", "warehouse", "woodcutter's hut"
   Materials        list         what it costs: (good id, amount), sorted by good id, no zeros
   WorkTicks        int          work owed once the materials are on site. 0 with no materials = free and instant
   Stores           StoreKind?   the store it becomes, or none
@@ -330,7 +330,7 @@ buttons and mods get an *"Other"* group.
 5. **Should the per-building recipe keys fold into the rows?** `granary_logs`, `hut_stone`,
    `farmhouse_work_ticks` and their eighteen siblings are read by the default rows and by nothing
    else, so they would move cleanly — **except `logs_per_house`, `hut_logs`, `hut_stone` and
-   `home_stone`, which the shed's capacity, the stockpile's capacity and the timber quota all derive
+   `home_stone`, which the warehouse's capacity, the stockpile's capacity and the timber quota all derive
    against.** ⚠️ **That makes it a re-derivation rather than a move**, and several guards do
    `Config with { LogsPerHouse = … }`. **A separate slice with no behaviour in it, or never** — the
    keys are honest dials as they stand, and the row is what a modder writes.

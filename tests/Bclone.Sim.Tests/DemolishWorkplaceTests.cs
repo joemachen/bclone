@@ -91,7 +91,7 @@ public sealed class DemolishWorkplaceTests
         Workplace hut = Assert.Single(
             world.Workplaces, place => place.Kind == JobKind.Builder && !place.IsSite);
 
-        int logsBefore = world.LogsInSheds();
+        int logsBefore = world.LogsInWarehouses();
         GridPos where = hut.Position;
 
         world.Demolish(hut);
@@ -100,8 +100,8 @@ public sealed class DemolishWorkplaceTests
             world.Workplaces, place => place.Kind == JobKind.Builder && !place.IsSite);
         Assert.False(world.SomethingStandsAt(where));
 
-        _output.WriteLine($"logs {logsBefore} -> {world.LogsInSheds()} after pulling down a free hut");
-        Assert.Equal(logsBefore, world.LogsInSheds());
+        _output.WriteLine($"logs {logsBefore} -> {world.LogsInWarehouses()} after pulling down a free hut");
+        Assert.Equal(logsBefore, world.LogsInWarehouses());
     }
 
     /// <summary>Nobody keeps a job at a building that is no longer there.</summary>

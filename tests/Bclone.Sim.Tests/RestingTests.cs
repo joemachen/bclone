@@ -137,7 +137,7 @@ public sealed class RestingTests
             foreach (Villager villager in world.Villagers)
             {
                 // The job is read on the same tick as the state: somebody who rests and is then
-                // shed must not be counted on the strength of a job they no longer hold.
+                // warehouse must not be counted on the strength of a job they no longer hold.
                 if (!villager.Alive || !villager.HasJob
                     || villager.State != VillagerState.Resting)
                 {

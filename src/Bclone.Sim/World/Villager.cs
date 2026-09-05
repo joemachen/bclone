@@ -87,7 +87,7 @@ public sealed class Villager
     /// </para>
     /// <para>
     /// ⛔ <b>NOTHING SURVIVES A WINTER IN THAT FIELD.</b> Nobody gathers in winter (D44), so the
-    /// winter pass sheds every forager to <c>0</c>, and by the spring reshuffle the id they held
+    /// winter pass warehouses every forager to <c>0</c>, and by the spring reshuffle the id they held
     /// *"when the pass began"* is nothing. **Every year has a winter**, so building-to-building
     /// moves became unsayable — measured on the shipped fixture: not one *"Moved to"* in a
     /// hundred and fifty years, and a village that reorganised itself annually in silence.
@@ -332,7 +332,7 @@ public sealed class Villager
     public required Stockpile Carried { get; init; }
 
     /// <summary>
-    /// Logs in their arms right now, between the stumps and the shed.
+    /// Logs in their arms right now, between the stumps and the warehouse.
     /// </summary>
     /// <remarks>
     /// <b>A named reader over the one array</b>, exactly as <see cref="Stockpile.Logs"/> is —

@@ -123,7 +123,7 @@ public sealed record GoodRow
     /// </para>
     /// <para>
     /// Parsed from strings by the global <c>JsonStringEnumConverter</c> on
-    /// <c>SimConfigLoader.Options</c>, so a row reads <c>"stored_by": ["Shed", "Cart"]</c> rather
+    /// <c>SimConfigLoader.Options</c>, so a row reads <c>"stored_by": ["Warehouse", "Cart"]</c> rather
     /// than a list of integers a modder would have to look up.
     /// </para>
     /// </remarks>

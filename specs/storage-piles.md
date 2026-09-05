@@ -23,8 +23,8 @@ Two halves of one fix:
 
 Joe's fourth cold start built the woodcutter's hut and everyone still froze. The panel said
 **"Holding: nothing — no logs here to split."** `BehaviorSystem` fetches the hut's logs from
-`NearestStore(hut, StoreKind.Shed, …)` — **sheds only** — and he had marked a hut but no
-shed, so every log sat in the cart where the hut could not see it.
+`NearestStore(hut, StoreKind.Warehouse, …)` — **warehouses only** — and he had marked a hut but no
+warehouse, so every log sat in the cart where the hut could not see it.
 
 **That is the fourth site of one bug.** `TryTakeBuildingTimber` (D72), `StoreForTheLoad`
 (D72) and the builder's material fetch (D75) were the first three, each patched by adding
@@ -32,11 +32,11 @@ shed, so every log sat in the cart where the hut could not see it.
 decision points switching on `StoreKind` and 14 hard-coded kinds passed to finders.**
 
 > **A fifth patch is not a fix, it is the next instalment.** The seam is the question being
-> asked. *"Where is the nearest shed?"* is a question about buildings; *"where can I put
+> asked. *"Where is the nearest warehouse?"* is a question about buildings; *"where can I put
 > these logs?"* is a question about goods, and only the second survives a new kind of store.
 
 **It is not a config problem.** `VillageFixtures.Village` and `data/sim.config.json` match on
-every economy number, derived ones included. The test passes because it marks a shed first
+every economy number, derived ones included. The test passes because it marks a warehouse first
 and Joe did not.
 
 ---
@@ -68,7 +68,7 @@ widen it rather than to teach 23 switches about a new kind.
 
 ### 4.1b The capacity side, and the third instalment (D81)
 
-D79 widened the **totals** — `FirewoodInSheds`, `LogsInSheds` — after a cold start with a
+D79 widened the **totals** — `FirewoodInWarehouses`, `LogsInWarehouses` — after a cold start with a
 cart full of firewood reported having none. **The capacity side was never looked at**, and it
 had the same bug:
 
@@ -95,7 +95,7 @@ below, from the other end.
 
 ### 4.1 What must NOT change
 
-`LabourQuota.WoodcuttersWanted` counts **firewood in sheds**, deliberately (D29): a pile in
+`LabourQuota.WoodcuttersWanted` counts **firewood in warehouses**, deliberately (D29): a pile in
 somebody's house is not supply because no errand reaches it. **A storage pile is reachable
 supply and therefore counts**; a household larder still does not. That distinction is the
 whole of D29 and must survive this slice — the guard is that the village must not freeze
@@ -118,12 +118,12 @@ with a full pile, which is D29's original failure in a new costume.
 
 ## 6. Failure modes
 
-- **A fifth sheds-only site.** The point of §4. Any new call that names a `StoreKind` to
+- **A fifth warehouses-only site.** The point of §4. Any new call that names a `StoreKind` to
   decide where goods go is this bug again.
 - **The pile becoming the granary.** It accepts everything, so only its capacity restrains
   it. Derived and small.
 - **D29 in a new costume:** a village freezing beside a full pile because the fuel demand
-  still only counts sheds. §4.1, and it gets a test.
+  still only counts warehouses. §4.1, and it gets a test.
 - **Tuning the cart to make winter survivable.** Refused three times already (D72, D73, D75)
   and refused again: the dials are stated in `specs/cold-start.md §7.2`.
 
@@ -133,7 +133,7 @@ with a full pile, which is D29's original failure in a new costume.
 
 1. **Determinism green**; the pile is a `StoreBuilding` and hashes like one.
 2. **⭐ Joe's play survives winter 1 — on `ShippedConfig.Load()`, not the fixture.** Place a
-   pile, paint residential, mark a woodcutter, **mark no shed**. This is the exact sequence
+   pile, paint residential, mark a woodcutter, **mark no warehouse**. This is the exact sequence
    that killed his village and the reason the slice exists.
 3. **The hut is fed from a pile.** Directly: logs in a pile, a hut, and firewood comes out.
 4. **A village with only a pile still freezes if the fuel chain is broken** — the D29 guard,

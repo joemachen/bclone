@@ -90,7 +90,7 @@ public sealed class LogsNeverRestInLardersTests
         loop.Step(config.TicksPerYear * 60);
 
         int felled = world.LifetimeLogsFelled();
-        _output.WriteLine($"60 years; {felled} logs felled, {world.LogsInSheds()} in sheds now.");
+        _output.WriteLine($"60 years; {felled} logs felled, {world.LogsInWarehouses()} in warehouses now.");
 
         Assert.True(
             felled > 0,

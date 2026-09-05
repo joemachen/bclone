@@ -45,7 +45,7 @@ public sealed record BuildingRow
     public int Id { get; init; }
 
     /// <summary>
-    /// What the village calls it — <em>"granary"</em>, <em>"storage shed"</em>.
+    /// What the village calls it — <em>"granary"</em>, <em>"warehouse"</em>.
     /// </summary>
     /// <remarks>
     /// <b>The label, not the identity.</b> <c>SimWorld.NameFor</c> numbers it — <em>"granary 2"</em>
@@ -65,7 +65,7 @@ public sealed record BuildingRow
     /// — <c>logs_per_house</c>, <c>granary_logs</c>, <c>hut_stone</c> and the rest — rather than
     /// having those numbers restated here. That is deliberate and it is recorded in
     /// `buildings-catalog.md §3`: <c>logs_per_house</c> is <b>an economy anchor the recipe happens
-    /// to spend</b>, read by the shed's capacity, the stockpile's capacity and the timber quota, so
+    /// to spend</b>, read by the warehouse's capacity, the stockpile's capacity and the timber quota, so
     /// folding it into a row is a re-derivation rather than a move. <b>A modded row states its own
     /// cost inline</b>, which is the whole point.
     /// </para>
@@ -125,7 +125,7 @@ public sealed record BuildingRow
     /// <remarks>
     /// <para>
     /// <b>⭐ A STATED CAPACITY IS DATA; A DERIVED ONE IS THE SURVIVAL FLOOR</b>
-    /// (`buildings-catalog.md §2.2`). The granary is a box of a stated size (D219). The shed and the
+    /// (`buildings-catalog.md §2.2`). The granary is a box of a stated size (D219). The warehouse and the
     /// stockpile are <em>solved</em> — a horizon of households, their firewood, the logs to split
     /// it, the stone the first huts cost — and typing those numbers in would be the exact move D16
     /// exists to refuse.

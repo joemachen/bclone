@@ -122,7 +122,7 @@ three lists the building selection panel already reconciles.
 
 Consequences, stated because they are the design and not an accident:
 
-- A **woodcutter's hut**, a **market** and a **shed** have roofs. Working at one is
+- A **woodcutter's hut**, a **market** and a **warehouse** have roofs. Working at one is
   sheltered.
 - A **berry patch** and a **tree stand** do not. Foraging and logging are outdoor work,
   which is exactly the asymmetry clothing later removes.
@@ -150,7 +150,7 @@ without firewood**, and the shipped model kills only because its window is 10. S
 question *"why did somebody freeze?"* has exactly one honest answer in this game, and it
 is **the woodpile ran out** — not bad luck, not weather, not a threshold nobody could
 see. Every death this system produces should be traceable to a fuel chain that failed:
-too few woodcutters, a shed too far, a winter longer than the pile.
+too few woodcutters, a warehouse too far, a winter longer than the pile.
 
 That is the pressure the player answers, and it is why (b) — moving the day-counts until
 a body count comes out right — was refused. **The day-counts describe a human being in

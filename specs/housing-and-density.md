@@ -3,7 +3,7 @@
 **Decisions:** D153 (this document's reason for existing), D71 (no roof, no children), D42
 (the residential brush), D33 (the granary is the population ceiling), D143 (an unattended
 village should die out), D98 (delete rather than zero).
-Neighbours: `buildings-plan.md` (the Home row, and the *tier of shed* precedent),
+Neighbours: `buildings-plan.md` (the Home row, and the *tier of warehouse* precedent),
 `tech-tree.md` §5 (`SCALE` gating), `phase-1-households-and-labour.md` (household formation).
 **Status:** ⚠️ **Written after the first slice, not before it** — the change was small enough
 to measure directly, and the measuring is what produced the design. Current as of D153.
@@ -110,4 +110,4 @@ with the second dwelling, when it has two values on its first day.
 **The larger dwelling and its tech gate.** The seam is: append a `BuildingKind`, give it a
 recipe and a `HouseholdCapacity` arm, gate it `SCALE` per `tech-tree.md` §5, and add the
 per-house field at that moment. `buildings-plan.md` already records the shape for its sibling
-case — *"a bigger one is a **tier of shed**, not a new building."*
+case — *"a bigger one is a **tier of warehouse**, not a new building."*

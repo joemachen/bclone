@@ -287,7 +287,7 @@ public sealed class HousesAreBuiltTests
 
         _output.WriteLine(
             $"two years after marking a granary in spring: {world.Population} alive, "
-            + $"{frozen} frozen, {Homes(world)} houses, {world.FirewoodInSheds()} firewood");
+            + $"{frozen} frozen, {Homes(world)} houses, {world.FirewoodInWarehouses()} firewood");
 
         Assert.True(
             Homes(world) > 0,
@@ -386,7 +386,7 @@ public sealed class HousesAreBuiltTests
     /// </para>
     /// <para>
     /// So this presses the button the player presses and then watches the valley: mark a
-    /// granary and then a shed, send the shed to the front, and the shed must be what gets
+    /// granary and then a warehouse, send the warehouse to the front, and the warehouse must be what gets
     /// raised. <b>The anti-vacuity half is the arm that presses nothing</b> — the same village,
     /// left alone, must finish the granary first, or this would pass on a queue that was never
     /// reordered.
@@ -413,27 +413,27 @@ public sealed class HousesAreBuiltTests
             loop.Step(config.TicksPerYear * 20);
 
             int granariesBefore = Granaries(world);
-            int shedsBefore = Sheds(world);
+            int warehousesBefore = Warehouses(world);
 
             MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 5);
-            MarkSomewhereNear(world, BuildingKind.Shed, world.Map.FoundingSite, 7);
+            MarkSomewhereNear(world, BuildingKind.Warehouse, world.Map.FoundingSite, 7);
 
             System.Collections.Generic.List<Workplace> queue = world.BuildQueue();
             Assert.True(queue.Count >= 2, "Both sites must be queued for there to be a race.");
 
-            Workplace shed = queue[^1];
-            Assert.Equal(BuildingKind.Shed, shed.Construction!.Kind);
+            Workplace warehouse = queue[^1];
+            Assert.Equal(BuildingKind.Warehouse, warehouse.Construction!.Kind);
 
-            // ⭐ Both arms get the same stone, because a shed costs some now (D213) and this
+            // ⭐ Both arms get the same stone, because a warehouse costs some now (D213) and this
             // guard is about the ORDER two buildings are raised in, not about whether the
             // village can afford either.
             SeamFixtures.PaintStoneForBuilding(world);
 
             if (promote)
             {
-                while (world.QueuePositionOf(shed) > 1)
+                while (world.QueuePositionOf(warehouse) > 1)
                 {
-                    Assert.True(world.MoveInBuildQueue(shed, -1));
+                    Assert.True(world.MoveInBuildQueue(warehouse, -1));
                 }
             }
 
@@ -443,12 +443,12 @@ public sealed class HousesAreBuiltTests
             {
                 loop.StepOnce();
 
-                if (Sheds(world) > shedsBefore)
+                if (Warehouses(world) > warehousesBefore)
                 {
                     output.WriteLine(
-                        $"{(promote ? "promoted" : "left alone")}: the shed finished first, "
+                        $"{(promote ? "promoted" : "left alone")}: the warehouse finished first, "
                         + $"year {world.Clock.Year}");
-                    return BuildingKind.Shed;
+                    return BuildingKind.Warehouse;
                 }
 
                 if (Granaries(world) > granariesBefore)
@@ -476,12 +476,12 @@ public sealed class HousesAreBuiltTests
         // Anti-vacuity: left alone, the queue must genuinely have raised the other one first.
         Assert.Equal(BuildingKind.Granary, leftAlone!.Value);
 
-        Assert.Equal(BuildingKind.Shed, promoted!.Value);
+        Assert.Equal(BuildingKind.Warehouse, promoted!.Value);
     }
 
     private static int Granaries(SimWorld world) => StoresOfKind(world, StoreKind.Granary);
 
-    private static int Sheds(SimWorld world) => StoresOfKind(world, StoreKind.Shed);
+    private static int Warehouses(SimWorld world) => StoresOfKind(world, StoreKind.Warehouse);
 
     private static int StoresOfKind(SimWorld world, StoreKind kind)
     {
@@ -664,7 +664,7 @@ public sealed class HousesAreBuiltTests
         // Two sites, in queue order. The first will never see a log; the second is handed
         // everything it needs up front.
         MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 4);
-        MarkSomewhereNear(world, BuildingKind.Shed, world.Map.FoundingSite, 6);
+        MarkSomewhereNear(world, BuildingKind.Warehouse, world.Map.FoundingSite, 6);
 
         Workplace? starved = null;
         Workplace? stocked = null;
@@ -679,7 +679,7 @@ public sealed class HousesAreBuiltTests
             {
                 starved = place;
             }
-            else if (site.Kind == BuildingKind.Shed)
+            else if (site.Kind == BuildingKind.Warehouse)
             {
                 stocked = place;
             }
@@ -694,7 +694,7 @@ public sealed class HousesAreBuiltTests
         // Anti-vacuity: the starved one must really be ahead of it, or nothing is blocked.
         Assert.True(
             starved!.EffectiveQueueRank < stocked.EffectiveQueueRank,
-            $"The granary ranks {starved.EffectiveQueueRank} against the shed's "
+            $"The granary ranks {starved.EffectiveQueueRank} against the warehouse's "
             + $"{stocked.EffectiveQueueRank}, so nothing is in front of anything.");
 
         for (int tick = 0; tick < config.TicksPerYear && !stocked.Construction.IsFinished; tick++)
@@ -712,13 +712,13 @@ public sealed class HousesAreBuiltTests
         }
 
         _output.WriteLine(
-            $"a year with no timber anywhere: the stocked shed is "
+            $"a year with no timber anywhere: the stocked warehouse is "
             + $"{(stocked.Construction.IsFinished ? "built" : "STILL A SITE")}, the starved "
             + $"granary holds {starved.Construction!.LogsDelivered} logs.");
 
         Assert.True(
             stocked.Construction.IsFinished,
-            "A shed with every log it needs went unbuilt for a year because the site ahead of "
+            "A warehouse with every log it needs went unbuilt for a year because the site ahead of "
             + "it in the queue was waiting on timber that does not exist. The queue is meant to "
             + "decide where materials go, not to stop a pair of hands working.");
     }

@@ -7,7 +7,7 @@ public enum StoreKind
     Granary = 0,
 
     /// <summary>Materials — logs, firewood, and the stone, lumber and cloth to come.</summary>
-    Shed = 1,
+    Warehouse = 1,
 
     /// <summary>
     /// The market — food and firewood, kept near the homes (D14).
@@ -17,7 +17,7 @@ public enum StoreKind
     /// whose contents arrive by somebody's work rather than by producers dropping
     /// things off. It holds both kinds deliberately: the point is to be the short trip
     /// for whatever a household is short of, and sending them to the granary for one
-    /// and the shed for the other would put the walking back.
+    /// and the warehouse for the other would put the walking back.
     /// </remarks>
     Market = 2,
 
@@ -34,7 +34,7 @@ public enum StoreKind
     /// <para>
     /// <b>It holds anything EXCEPT timber</b> (D90 step 4, landed with D96). It used to hold
     /// everything, because the founders' load is not sorted into a granary's worth of food
-    /// and a shed's worth of timber — it is what they could carry. <b>Logs are the one thing
+    /// and a warehouse's worth of timber — it is what they could carry. <b>Logs are the one thing
     /// that plausibly will not fit</b>, and Joe's opening turns on that: you cannot take
     /// timber until you have somewhere to put it, which is what gives the storage pile its
     /// reason back.
@@ -69,7 +69,7 @@ public enum StoreKind
     /// <para>
     /// <b>It costs nothing but the ground it stands on</b>, which is what makes it the right
     /// first move: a village with nowhere to put things cannot begin, and asking it to build
-    /// a shed out of timber it has nowhere to stack is a circle. Joe's opening starts here
+    /// a warehouse out of timber it has nowhere to stack is a circle. Joe's opening starts here
     /// for the same reason Banished's does.
     /// </para>
     /// <para>
@@ -86,7 +86,7 @@ public enum StoreKind
 }
 
 /// <summary>
-/// A building that exists to hold things: a granary, or a materials shed.
+/// A building that exists to hold things: a granary, or a materials warehouse.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -106,7 +106,7 @@ public enum StoreKind
 /// </para>
 /// <para>
 /// It is also the honest division: no village has ever kept its food and its timber in
-/// the same shed, because one of them rots.
+/// the same warehouse, because one of them rots.
 /// </para>
 /// <para>
 /// <b>The sim does not model that rot, deliberately</b> (D37). Spoilage was proposed as
@@ -143,7 +143,7 @@ public sealed class StoreBuilding
     /// <remarks>
     /// The capacity is set when the building is founded, from
     /// <see cref="VillageEconomy.GranaryCapacity"/> or
-    /// <see cref="VillageEconomy.ShedCapacity"/> — never typed in.
+    /// <see cref="VillageEconomy.WarehouseCapacity"/> — never typed in.
     /// </remarks>
     public required Stockpile Store { get; init; }
 
@@ -206,7 +206,7 @@ public sealed class StoreBuilding
     /// <remarks>
     /// <b>⚠️ WITHOUT THIS, SWITCHING OFF THE LAST GOOD SWITCHED EVERYTHING BACK ON.</b> Zero
     /// means no opinion, so clearing the final bit landed straight back on the default and a
-    /// shed the player had just told to take nothing accepted everything again — while the
+    /// warehouse the player had just told to take nothing accepted everything again — while the
     /// game had said out loud that it would take nothing. Caught by
     /// <c>AStoreThatWillTakeNothingSaysSoOnce</c> on its first run, which is what that guard is
     /// for: the empty case is exactly where a bitmask sentinel goes wrong.
@@ -266,7 +266,7 @@ public sealed class StoreBuilding
     /// <remarks>
     /// <para>
     /// <b>Joe's distinction, in his words:</b> *"I want to separate the actual storage buildings
-    /// (storage pile, granary, shed, warehouse, etc) from the market (distribution building)."*
+    /// (storage pile, granary, warehouse, warehouse, etc) from the market (distribution building)."*
     /// The market is where goods are put **near the people who need them**; everywhere else is
     /// where the village's production is **kept**.
     /// </para>
@@ -304,7 +304,7 @@ public sealed class StoreBuilding
     /// </para>
     /// <list type="bullet">
     /// <item><b>Granary</b> — food, and only food (D32).</item>
-    /// <item><b>Shed</b> — materials, which is what it has always been for: logs, firewood,
+    /// <item><b>Warehouse</b> — materials, which is what it has always been for: logs, firewood,
     /// stone, tools and iron. The market does not take them, because it exists to be the short
     /// trip for whatever a HOUSEHOLD is short of (D14, D78).</item>
     /// <item><b>Market</b> — food and firewood, near the homes.</item>
@@ -350,7 +350,7 @@ public sealed class StoreBuilding
 /// <b>Stone and tools exist before anything makes or spends them, deliberately.</b> Joe's
 /// call: do the indexed-goods refactor when the first new good lands, not before and not
 /// after — so the good is what proves the refactor, and the machinery around it (limits,
-/// hashing, the panel, what a shed will take) lands in one piece rather than being
+/// hashing, the panel, what a warehouse will take) lands in one piece rather than being
 /// retrofitted per good. <b>Stone gets its source in slice C3</b>, where the map generator
 /// places rock and the player paints it to be cleared; <b>tools get their workshop</b> when
 /// D17 comes off the shelf. Until then the only tools in the world are the ones the founders

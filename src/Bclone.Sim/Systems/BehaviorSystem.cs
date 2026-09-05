@@ -640,7 +640,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// <summary>Where a load in someone's arms is going.</summary>
     /// <remarks>
     /// Decided by what they are carrying rather than remembered on the villager: food
-    /// goes to the granary, materials to the shed, and there is no third answer to get
+    /// goes to the granary, materials to the warehouse, and there is no third answer to get
     /// out of step (D32).
     /// </remarks>
     private static StoreBuilding? StoreForTheLoad(SimWorld world, Villager villager)
@@ -675,13 +675,13 @@ public sealed class BehaviorSystem : ISimSystem
         // ⛔ ANYTHING EDIBLE GOES TO A GRANARY, NOT JUST `Goods.Food`. This read
         // `load == Goods.Food`, which was correct while food was one good and became a trap the
         // moment a fisher carried a catch: fish is stored by granary, market and cart and NOT by
-        // a shed, so a fisherman sent to find a shed would have walked home holding it.
+        // a warehouse, so a fisherman sent to find a warehouse would have walked home holding it.
         // ⭐ The reason for preferring a granary is unchanged and is the reason this is not a
         // tidiness rule — **the birth gate reads granaries** (D33), so letting a day's food land
         // in the market would make the village's population ceiling depend on where somebody
         // happened to be standing.
         Goods load = TheLoad(villager);
-        StoreKind wanted = world.GoodsCatalog.Edible(load) ? StoreKind.Granary : StoreKind.Shed;
+        StoreKind wanted = world.GoodsCatalog.Edible(load) ? StoreKind.Granary : StoreKind.Warehouse;
 
         // THE PREFERRED KIND FIRST, THEN ANYWHERE THAT WILL TAKE IT (D76).
         //
@@ -691,7 +691,7 @@ public sealed class BehaviorSystem : ISimSystem
         // depend on where somebody happened to be standing (D33).
         //
         // But a preference that cannot be satisfied must not become a refusal, which is what
-        // it was: with no shed built, a villager holding logs found nothing and this method
+        // it was: with no warehouse built, a villager holding logs found nothing and this method
         // fell through to the cart by name — one more place that had to be told about each
         // new store. Asking "what will take this?" needs telling about none of them.
         //
@@ -707,7 +707,7 @@ public sealed class BehaviorSystem : ISimSystem
         // only granary is across the water, and somebody holding an armful must still be
         // given somewhere to walk rather than standing still with goods nothing can spend.
         // ⛔⛔ AND NEVER THE MARKET, WHICH IS A DISTRIBUTION BUILDING (D199, Joe: *"I want to
-        // separate the actual storage buildings — storage pile, granary, shed, warehouse — from
+        // separate the actual storage buildings — storage pile, granary, warehouse, warehouse — from
         // the market"*). The two fallbacks here ask *"what will take this?"* rather than naming
         // kinds — deliberately, so a new store needs telling nothing — and the market accepts
         // food and firewood. **So a full granary quietly turned the market into the overflow
@@ -729,12 +729,12 @@ public sealed class BehaviorSystem : ISimSystem
         // `SimWorld.NearestGroundStack`. **Two finders that disagree about where a good may go**
         // is a livelock rather than an inefficiency:
         //
-        //   1. the armful is sent to the shed, unasked whether the shed takes it;
-        //   2. `ArriveAt` asks per good, and the shed REFUSES it;
-        //   3. `SetDownWhereTheyStand` leaves a heap at the shed's own door;
+        //   1. the armful is sent to the warehouse, unasked whether the warehouse takes it;
+        //   2. `ArriveAt` asks per good, and the warehouse REFUSES it;
+        //   3. `SetDownWhereTheyStand` leaves a heap at the warehouse's own door;
         //   4. `NearestGroundStack` — which DOES ask — sees the pile has room and calls that
         //      heap worth fetching;
-        //   5. somebody fetches it, lands back here, and is sent to the same shed. Goto 2.
+        //   5. somebody fetches it, lands back here, and is sent to the same warehouse. Goto 2.
         //
         // ⚠️ **It cost the whole village, not one walk.** Tidying outranked clearing, so the
         // loop ate every spare hand: painted ground stopped being cleared after **Year 3**, and
@@ -760,7 +760,7 @@ public sealed class BehaviorSystem : ISimSystem
         //
         // Every branch above rejects a store with no room, which is right while somewhere
         // else has room and catastrophic when nowhere does: he demolished the cart, the
-        // storage pile filled, and the sim threw "the village has no Shed and no cart" —
+        // storage pile filled, and the sim threw "the village has no Warehouse and no cart" —
         // every tick, forever — while a perfectly good pile stood in the square.
         //
         // A village whose stores are full is a village with a PROBLEM, not a village with
@@ -896,8 +896,8 @@ public sealed class BehaviorSystem : ISimSystem
     /// </para>
     /// <para>
     /// <b>Asked by what holds logs, not by which building does (D76).</b> This line named
-    /// <see cref="StoreKind.Shed"/> and was the fourth site of one bug: Joe marked a
-    /// woodcutter's hut, marked no shed, and the hut reported <em>"no logs here to split"</em>
+    /// <see cref="StoreKind.Warehouse"/> and was the fourth site of one bug: Joe marked a
+    /// woodcutter's hut, marked no warehouse, and the hut reported <em>"no logs here to split"</em>
     /// while four hundred logs sat in the cart. His village froze around a working hut it
     /// could not feed.
     /// </para>
@@ -939,7 +939,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// Splitting them killed a founding household in the first winter: they were short
     /// of food <em>and</em> firewood, the granary was picked because food comes first,
     /// the granary was empty — so they walked there and back for ten days and froze
-    /// with a hundred and sixteen firewood sitting in the shed.
+    /// with a hundred and sixteen firewood sitting in the warehouse.
     /// </para>
     /// <para>
     /// Food before firewood where both are available, because hunger kills in six days
@@ -1272,7 +1272,7 @@ public sealed class BehaviorSystem : ISimSystem
         // clear never even looks for a store. The note said the ground *"is still being
         // cleared"*, which was a comfortable lie: **nobody was clearing it and nobody ever
         // would.** A site can be marked on a tile that still has a tree on it — measured, a
-        // shed marked near the founding site reported `clear ground False` the moment it was
+        // warehouse marked near the founding site reported `clear ground False` the moment it was
         // laid out — and laborers only fell PAINTED ground (D87). So unless the player happened
         // to paint that exact tile, the site was stuck for the rest of the run.
         //
@@ -1336,7 +1336,7 @@ public sealed class BehaviorSystem : ISimSystem
         // Measured, after two playthroughs where a marked hut sat at "0 of 25 logs" with
         // a builder assigned to it and 426 logs standing in the village: the builder was
         // funded all along and simply could not see the timber. This is the third place
-        // that read sheds-only and had to learn about the cart — TryTakeBuildingTimber
+        // that read warehouses-only and had to learn about the cart — TryTakeBuildingTimber
         // and StoreForTheLoad were the other two — which says the seam is the KIND check
         // rather than any one call site.
         //
@@ -1344,10 +1344,10 @@ public sealed class BehaviorSystem : ISimSystem
         // good order, so a granary short of both timber and stone is filled in a fixed sequence
         // — two runs of one seed send the builder to the same store for the same thing.
         Goods wantedGood = site.NextMaterialWanted() ?? Goods.Logs;
-        StoreBuilding? shed = world.NearestStoreAccepting(
+        StoreBuilding? warehouse = world.NearestStoreAccepting(
             villager.Position, wantedGood, store => store.Store[wantedGood] > 0);
 
-        if (shed is null)
+        if (warehouse is null)
         {
             // ⭐ THE HEAD OF THE QUEUE IS STARVED — SO WORK A SITE THAT IS NOT (D135).
             //
@@ -1390,7 +1390,7 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         villager.WorkNote = string.Empty;
-        HeadFor(world, villager, shed.Position, VillagerState.FetchingMaterials);
+        HeadFor(world, villager, warehouse.Position, VillagerState.FetchingMaterials);
         return true;
     }
 
@@ -1424,11 +1424,11 @@ public sealed class BehaviorSystem : ISimSystem
         Travel(world, villager, target, state);
     }
 
-    /// <summary>A builder at a shed, picking up as many logs as the site still wants.</summary>
+    /// <summary>A builder at a warehouse, picking up as many logs as the site still wants.</summary>
     /// <remarks>
     /// <b>The site is asked for again rather than remembered</b> (D108). This used to read
     /// <c>WorkplaceOf(villager).Construction</c>, which is the hut now and has none — a
-    /// builder would have walked to the shed, picked nothing up, walked to the site,
+    /// builder would have walked to the warehouse, picked nothing up, walked to the site,
     /// delivered nothing, and repeated it forever. Re-asking the queue is the same question
     /// <see cref="WorkTheSite"/> asked when it sent them, so the answer is the same one
     /// unless the player has reordered the queue mid-errand — in which case carrying for the
@@ -2020,7 +2020,7 @@ public sealed class BehaviorSystem : ISimSystem
         //
         // ⛔ THE SPEC HAS ASSUMED A STOCKED MARKET SINCE THE DAY IT SHIPPED AND NOTHING EVER
         // PUT ANYTHING IN IT. §14.5: *"households fetch from the market as well as the granary
-        // and shed, nearest-first — which is what makes a stocked market shorten the trip
+        // and warehouse, nearest-first — which is what makes a stocked market shorten the trip
         // rather than just move it."* The store exists, is sized, and stands empty; the
         // marketer collects at the granary and walks straight past it to the house.
         // **D185's shape for the third time — the behaviour existed and the demand did not.**
@@ -2650,24 +2650,24 @@ public sealed class BehaviorSystem : ISimSystem
             // The limit only ever reached `LabourQuota`, which decides how many woodcutters the
             // village ASKS for. Since D109 the player's number is the one that staffs the hut,
             // so a woodcutter Joe posted himself went on splitting for ever and the limit never
-            // touched them. Measured once the shed was big enough to show it:
+            // touched them. Measured once the warehouse was big enough to show it:
             // **firewood settled at 401 against a limit of 40.**
             //
             // Checked here, where the work actually happens, so it holds however the villager
             // came to be standing at the hut. Not an idle villager — they fall through to the
             // spare work below, which is the same thing a woodcutter with no logs does.
-            if (world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInSheds()))
+            if (world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInWarehouses()))
             {
                 villager.WorkNote =
                     $"Nothing to split — you asked the village to keep "
                     + $"{world.StockLimits.For(Goods.Firewood)} firewood and it has "
-                    + $"{world.FirewoodInSheds()}.";
+                    + $"{world.FirewoodInWarehouses()}.";
             }
             else
             {
-            // The nearest shed that actually has a batch in it. Naming THAT shed rather
-            // than "the shed" is the point of the refusal: with more than one, "the
-            // shed has no logs" would be a sentence the player could not check.
+            // The nearest warehouse that actually has a batch in it. Naming THAT warehouse rather
+            // than "the warehouse" is the point of the refusal: with more than one, "the
+            // warehouse has no logs" would be a sentence the player could not check.
             StoreBuilding? yard = NearestStoreWithLogs(world, job.Position, config.LogsPerSplit);
             if (yard is null)
             {
@@ -2826,7 +2826,7 @@ public sealed class BehaviorSystem : ISimSystem
                           + "off, and its ground is wooded again."
                         : $"{job.Name} has stopped felling — you asked the village "
                           + $"to keep {world.StockLimits.For(Goods.Logs)} logs and it has "
-                          + $"{world.LogsInSheds()}. Its ground is wooded again."
+                          + $"{world.LogsInWarehouses()}. Its ground is wooded again."
                     : $"Nothing bare left to plant at {job.Name} — its ground is wooded again.";
 
                 if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
@@ -3006,7 +3006,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// <para>
     /// <b>Only a heap a store would actually take</b> — the condition lives in
     /// <see cref="SimWorld.NearestGroundStack"/> and is what stops somebody shuttling a load
-    /// back and forth to a full shed. A village with no room leaves its heaps alone, and
+    /// back and forth to a full warehouse. A village with no room leaves its heaps alone, and
     /// tidies up when it has somewhere to tidy into.
     /// </para>
     /// <para>
@@ -3414,9 +3414,9 @@ public sealed class BehaviorSystem : ISimSystem
     /// <remarks>
     /// <para>
     /// <b>Logs are never household goods, and letting them become so is a leak that
-    /// cannot drain.</b> A house is paid for by the whole village out of a shed (D25),
+    /// cannot drain.</b> A house is paid for by the whole village out of a warehouse (D25),
     /// and goods live in buildings (D30) — so `TryTakeBuildingTimber`, the woodcutter
-    /// and every builder all read sheds. Nothing anywhere reads
+    /// and every builder all read warehouses. Nothing anywhere reads
     /// <c>Household.Stockpile.Logs</c> except the state hash. A log that reaches a
     /// larder is dead for the rest of the run.
     /// </para>
@@ -3432,7 +3432,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// </para>
     /// <para>
     /// So the timber stays in their arms and <see cref="ArriveAt"/> turns them round
-    /// toward a shed. Keeping it on the villager rather than teleporting it is the
+    /// toward a warehouse. Keeping it on the villager rather than teleporting it is the
     /// point: goods move only by trips people make.
     /// </para>
     /// </remarks>
@@ -3491,7 +3491,7 @@ public sealed class BehaviorSystem : ISimSystem
                 "goods",
                 $"{villager.Name} came home with {held} {world.GoodsCatalog.NameOf(goods)} and "
                 + "the village has nowhere to put them, so they are stranded in the larder "
-                + "where nothing can spend them. Build a stockpile or a shed.");
+                + "where nothing can spend them. Build a stockpile or a warehouse.");
 
             larder.Receive(goods, held);
             villager.Carried.TakeAll(goods);
@@ -3526,9 +3526,9 @@ public sealed class BehaviorSystem : ISimSystem
     /// <summary>Is there anywhere in the village at all that will take this good?</summary>
     /// <remarks>
     /// <para>
-    /// <b>⭐ IT ASKS WHAT IT NEEDS TO KNOW, WHICH IS NOT "IS THERE A SHED" (D132).</b> This was
-    /// <c>AnyShedStanding</c> and it compared <c>Kind == StoreKind.Shed</c> — so a village with
-    /// a <b>storage pile and no shed</b> was told it had nowhere to put timber, and every
+    /// <b>⭐ IT ASKS WHAT IT NEEDS TO KNOW, WHICH IS NOT "IS THERE A WAREHOUSE" (D132).</b> This was
+    /// <c>AnyShedStanding</c> and it compared <c>Kind == StoreKind.Warehouse</c> — so a village with
+    /// a <b>storage pile and no warehouse</b> was told it had nowhere to put timber, and every
     /// interrupted trip emptied its armful into a larder where nothing can spend it. **A pile
     /// takes anything**; it is the one store that does.
     /// </para>
@@ -3544,7 +3544,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// </para>
     /// <para>
     /// <c>Accepts</c> is the question every other timber path already asks —
-    /// <see cref="SimWorld.LogsInSheds"/> counts by it, <c>HaulOrSetDown</c> falls back to it
+    /// <see cref="SimWorld.LogsInWarehouses"/> counts by it, <c>HaulOrSetDown</c> falls back to it
     /// (D76). This one place asked by name instead, and needed telling about each new kind of
     /// store. Asking "what will take this?" needs telling about none of them.
     /// </para>
@@ -4512,7 +4512,7 @@ public sealed class BehaviorSystem : ISimSystem
                     wood = 1;
                 }
 
-                // Picked up, not banked. The logs go to the shed on the way home,
+                // Picked up, not banked. The logs go to the warehouse on the way home,
                 // which is what makes them the village's rather than this family's.
                 villager.Carried.Receive(Goods.Logs, wood);
                 villager.State = VillagerState.HaulingToStore;
@@ -4655,12 +4655,12 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.MakingFirewood:
-                // Logs come out of the SHED, which stands beside the hut — a woodyard.
+                // Logs come out of the WAREHOUSE, which stands beside the hut — a woodyard.
                 // That adjacency is the whole reason this is not a teleport, and a
                 // test asserts the two buildings stay neighbours.
                 //
                 // It replaces a sweep across every household's private pile, which was
-                // a shed in all but name and could not be seen, sited or reasoned about.
+                // a warehouse in all but name and could not be seen, sited or reasoned about.
                 StoreBuilding? woodyard = NearestStoreWithLogs(
                     world, villager.Position, world.Config.LogsPerSplit);
 
@@ -4683,13 +4683,13 @@ public sealed class BehaviorSystem : ISimSystem
                     firewood = 1;
                 }
 
-                // Straight into the shed beside them, rather than home with the
+                // Straight into the warehouse beside them, rather than home with the
                 // woodcutter. Carrying the village's whole fuel supply back to one
                 // house is what froze the household next door (D29), and the daily
                 // sharing policy only existed to undo it.
                 //
-                // Back into the shed the logs came out of where it will take them, so a
-                // woodyard stays one place rather than becoming a two-shed shuffle.
+                // Back into the warehouse the logs came out of where it will take them, so a
+                // woodyard stays one place rather than becoming a two-warehouse shuffle.
                 //
                 // ⛔ IT USED TO ASK ONLY WHETHER THE YARD WAS FULL, AND THAT PUT FIREWOOD IN
                 // A STORE THE PLAYER HAD JUST SAID WOULD NOT TAKE IT (D144). Joe, playing:

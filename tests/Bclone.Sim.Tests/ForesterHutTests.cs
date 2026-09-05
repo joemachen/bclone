@@ -193,7 +193,7 @@ public sealed class ForesterHutTests
         // permanent. So sample it: the wood must be visibly thinner at some point than the
         // day the hut was staffed.
         // Measured when this was written: 13 tiles given, 13 wooded at the start and 13 at
-        // the end — and **48 logs in the shed**. The felling was never in doubt.
+        // the end — and **48 logs in the warehouse**. The felling was never in doubt.
         int thinnest = woodedBefore;
         for (int step = 0; step < config.TicksPerYear * 3; step += 10)
         {
@@ -207,7 +207,7 @@ public sealed class ForesterHutTests
 
         _output.WriteLine($"{given} tiles given; wooded {woodedBefore} → thinnest {thinnest} → "
             + $"{CountOwnedForest(world, hut)} after three years, "
-            + $"{world.LogsInSheds()} logs in store");
+            + $"{world.LogsInWarehouses()} logs in store");
 
         Assert.True(thinnest < woodedBefore,
             "Three years of foresters and not one tree came down on their own ground.");
@@ -435,7 +435,7 @@ public sealed class ForesterHutTests
     /// has met its cap."</i> D145 stopped the forester outright on the reasoning that freeing
     /// hands is half of what a limit is for — which is true of the woodcutter, whose only errand
     /// makes the good being capped, and wrong here: putting trees back adds no logs, and a wood
-    /// left half-felled because the shed filled is the state §0.1 spends its whole argument on.
+    /// left half-felled because the warehouse filled is the state §0.1 spends its whole argument on.
     /// </remarks>
     [Fact]
     public void ACappedHutPlantsRatherThanStopping()

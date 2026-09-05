@@ -39,7 +39,7 @@ public sealed class StockLimitTests
     //   before stone and tools (D82): fixture 11013974864926656020, shipped 3491502518393071633
     //
     // D79 moved them a second time and for a bigger reason: the fuel quota had been reading
-    // firewood in SHEDS, so a village whose fuel sat in a cart or a pile believed it had
+    // firewood in WAREHOUSES, so a village whose fuel sat in a cart or a pile believed it had
     // none and put every spare hand on the chain forever. Correcting what the village can
     // see changes what it does, which changes its history. That is the golden working.
     //
@@ -141,7 +141,7 @@ public sealed class StockLimitTests
     // wrong change; this one moved for a reason that took measuring to state correctly.
     // ⭐ RE-TAKEN FOR STEP C AND FOR TWO BUGS FOUND INSIDE IT (D152). These were already red
     // when this session opened — they carry everything step C did to the economy (D124–D141:
-    // the sites retiring, regrowth, persistent harvest paint, the shed ceiling, the log
+    // the sites retiring, regrowth, persistent harvest paint, the warehouse ceiling, the log
     // ambition) — and two more landed on top, both of which change every village whether or
     // not anybody sets a limit:
     //
@@ -533,9 +533,9 @@ public sealed class StockLimitTests
         SimWorld without = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
         SimWorld with = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
-        StoreBuilding shed = with.AnyStoreOf(StoreKind.Shed);
-        Assert.True(shed.Accepts(goods), $"A shed must hold {goods} — it is a material.");
-        Assert.Equal(7, shed.Store.Receive(goods, 7));
+        StoreBuilding warehouse = with.AnyStoreOf(StoreKind.Warehouse);
+        Assert.True(warehouse.Accepts(goods), $"A warehouse must hold {goods} — it is a material.");
+        Assert.Equal(7, warehouse.Store.Receive(goods, 7));
 
         Assert.NotEqual(StateHash.Compute(without), StateHash.Compute(with));
     }
@@ -622,7 +622,7 @@ public sealed class StockLimitTests
     /// <para>
     /// The behavioural claim of the whole slice. Asserted as <em>the stock stops climbing</em>
     /// rather than as <em>the quota reads zero</em>, because a quota is a statement about what
-    /// the village wants and the player asked about the shed.
+    /// the village wants and the player asked about the warehouse.
     /// </para>
     /// <para>
     /// The band is generous on purpose. Work already in flight lands after the limit is met —
@@ -642,13 +642,13 @@ public sealed class StockLimitTests
         // Let the village get on its feet first, then ask it to stop well below where it
         // would otherwise settle.
         loop.Step(config.TicksPerYear * 20);
-        int unlimited = world.FirewoodInSheds();
+        int unlimited = world.FirewoodInWarehouses();
 
         world.SetStockLimit(Goods.Firewood, 40);
         loop.Step(config.TicksPerYear * 20);
 
-        int limited = world.FirewoodInSheds();
-        _output.WriteLine($"firewood in sheds: {unlimited} unlimited, {limited} capped at 40");
+        int limited = world.FirewoodInWarehouses();
+        _output.WriteLine($"firewood in warehouses: {unlimited} unlimited, {limited} capped at 40");
 
         // ⭐⭐ IT ASSERTS THAT PRODUCTION STOPPED, WHICH IS STRONGER THAN THE BOUND IT REPLACES
         // (D192). The old guard allowed one batch of overshoot, which was a guess at how much
@@ -665,9 +665,9 @@ public sealed class StockLimitTests
         // the uncapped one, and twenty more years does not move it. A limit that merely slowed
         // production would keep climbing here and pass any fixed bound generous enough to
         // absorb the overshoot.
-        int settled = world.FirewoodInSheds();
+        int settled = world.FirewoodInWarehouses();
         loop.Step(config.TicksPerYear * 20);
-        int stillSettled = world.FirewoodInSheds();
+        int stillSettled = world.FirewoodInWarehouses();
 
         int frozen = world.Villagers.Count(v => !v.Alive && v.CauseOfDeath == CauseOfDeath.Cold);
         _output.WriteLine(
@@ -688,9 +688,9 @@ public sealed class StockLimitTests
 
         // ⭐⭐ AND NOBODY FROZE FOR IT, WHICH IS THE HALF WORTH ASSERTING MOST. A stock limit is
         // the player saying *stop*, and D62's whole claim is that the player sets a ceiling
-        // while the village goes on keeping itself alive. **The sheds do drain to nothing here**
-        // — households hold their own fuel, and forty in a shed was never what kept anyone warm
-        // — so a guard that only watched the shed would read this as a catastrophe. It is not:
+        // while the village goes on keeping itself alive. **The warehouses do drain to nothing here**
+        // — households hold their own fuel, and forty in a warehouse was never what kept anyone warm
+        // — so a guard that only watched the warehouse would read this as a catastrophe. It is not:
         // thirty people, forty years, nobody cold.
         Assert.Equal(0, frozen);
         Assert.True(
@@ -711,7 +711,7 @@ public sealed class StockLimitTests
     /// </para>
     /// <para>
     /// <b>⚠️ THE PEAK, NOT THE STOCK AT ONE INSTANT, AND D96 IS WHY.</b> This read
-    /// <c>FirewoodInSheds()</c> after exactly forty years — which is tick 19,200, which is the
+    /// <c>FirewoodInWarehouses()</c> after exactly forty years — which is tick 19,200, which is the
     /// first tick of spring, which is the annual <em>trough</em>: the village has just burned
     /// a winter's fuel. Closing the conservation leak (D96) left the village with 40% more
     /// food, so it grew from 29 people to 36 on the same firewood production — 6,548 ever cut
@@ -735,7 +735,7 @@ public sealed class StockLimitTests
         for (int tick = 0; tick < config.TicksPerYear * 40; tick++)
         {
             loop.StepOnce();
-            int held = loop.World.FirewoodInSheds();
+            int held = loop.World.FirewoodInWarehouses();
             if (held > peak)
             {
                 peak = held;
@@ -744,7 +744,7 @@ public sealed class StockLimitTests
 
         _output.WriteLine(
             $"unlimited village peaked at {peak} firewood in forty years, and holds "
-            + $"{loop.World.FirewoodInSheds()} at the end of the fortieth winter");
+            + $"{loop.World.FirewoodInWarehouses()} at the end of the fortieth winter");
 
         Assert.True(peak > 40, $"Only ever {peak} firewood, so a limit of 40 binds nothing.");
     }
@@ -842,8 +842,8 @@ public sealed class StockLimitTests
         ambitious.World.SetStockLimit(Goods.Logs, 200);
         ambitious.Step(years);
 
-        int without = content.World.LogsInSheds();
-        int with = ambitious.World.LogsInSheds();
+        int without = content.World.LogsInWarehouses();
+        int with = ambitious.World.LogsInWarehouses();
         _output.WriteLine(
             $"logs held after 12 years: {without} with no opinion, {with} asked for 200. "
             + $"alive: {content.World.Population} and {ambitious.World.Population}.");
@@ -908,11 +908,11 @@ public sealed class StockLimitTests
         loop.Step(config.TicksPerYear * 20);
         Assert.True(StaffEvery(world, JobKind.Forester) > 0, "Nowhere to post a forester.");
 
-        int atTheLimit = world.LogsInSheds();
+        int atTheLimit = world.LogsInWarehouses();
         world.SetStockLimit(Goods.Logs, atTheLimit + 20);
         loop.Step(config.TicksPerYear * 15);
 
-        int held = world.LogsInSheds();
+        int held = world.LogsInWarehouses();
         _output.WriteLine(
             $"logs in store: {atTheLimit} when the limit of {atTheLimit + 20} was set, "
             + $"{held} fifteen years later.");

@@ -129,7 +129,7 @@ Two reasons, and the second is the load-bearing one:
 **Consequence to watch:** meat still reaches the granary, and the granary gates births
 (D33). So livestock raises the population ceiling by the food it adds. That is intended —
 D39's *"the winter buffer is priced, not capped"* — but it means `EconomyHorizonHouseholds`
-and the shed and hut capacities D50 is a record of may need re-checking once meat flows.
+and the warehouse and hut capacities D50 is a record of may need re-checking once meat flows.
 **Check it; do not assume it.**
 
 ---
@@ -168,8 +168,8 @@ with a stated threshold has no rounding rule to get wrong and nothing to hash ba
 
 A new good, `Stockpile.Hay`, counted in `Held` like everything else.
 
-**It gets its own store — a barn — and does not share the shed.** D52 is the argument: the
-shed is one room, and packing it with logs left firewood nowhere to go and cost the village
+**It gets its own store — a barn — and does not share the warehouse.** D52 is the argument: the
+warehouse is one room, and packing it with logs left firewood nowhere to go and cost the village
 a third of its population for a century. Adding a third good to the same room re-runs that
 with an extra way to fail, and the player could not tell which shortage was biting —
 non-negotiable 1. A barn is a `StoreBuilding` with a capacity, which is machinery that
@@ -180,7 +180,7 @@ already exists.
 `JobKind.Herdsman` — one job, two seasonal faces, which is new and worth stating plainly:
 
 - **Growing seasons:** cut hay at the pasture, carry it to the barn. Structurally identical
-  to a logger (`home → stand → shed → home`), so it costs what a logger costs and can be
+  to a logger (`home → stand → warehouse → home`), so it costs what a logger costs and can be
   derived on the same basis.
 - **Winter:** carry hay from the barn out to the pasture and feed the herd. **Outdoors**, so
   `Shelter.Outdoors` applies and D53's break-off rule bites — see §7.
@@ -222,7 +222,7 @@ So the herd may starve in this slice. **The herdsman may not.**
   is not written into `LabourQuota.For`, the pasture sits there and the slice measures as a
   no-op — the exact failure `specs/clothing.md §5` records.
 - **Make-work in the other direction.** D52 deleted a winter fill that was bounded by
-  *"is any shed not yet full?"* rather than by any real demand. Hay demand must be bounded
+  *"is any warehouse not yet full?"* rather than by any real demand. Hay demand must be bounded
   by **what the herd will eat**, derived, not by barn space.
 - **Livestock becoming load-bearing.** §5. Guarded, not hoped for.
 - **The herd as an unloseable ratchet.** If animals can never die, the pasture is a

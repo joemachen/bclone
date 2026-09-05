@@ -281,9 +281,9 @@ public sealed class ShippedConfigTests
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
-        // A pile and no shed, which is the arrangement that stranded them: a pile takes
+        // A pile and no warehouse, which is the arrangement that stranded them: a pile takes
         // timber, so the village HAS somewhere to put logs, and the old predicate could not
-        // see it. This is also just what the opening looks like before anybody builds a shed.
+        // see it. This is also just what the opening looks like before anybody builds a warehouse.
         ColdStartTests.PlayTheOpeningWithoutAShed(world);
 
         int worst = 0;
@@ -291,7 +291,7 @@ public sealed class ShippedConfigTests
         for (int year = 1; year <= 300; year++)
         {
             loop.Step(config.TicksPerYear);
-            everCut = System.Math.Max(everCut, world.LogsInSheds());
+            everCut = System.Math.Max(everCut, world.LogsInWarehouses());
 
             for (int i = 0; i < world.Households.Count; i++)
             {
@@ -458,7 +458,7 @@ public sealed class ShippedConfigTests
         int marked = 0;
         foreach (BuildingKind kind in new[]
                  {
-                     BuildingKind.Granary, BuildingKind.Shed,
+                     BuildingKind.Granary, BuildingKind.Warehouse,
                      BuildingKind.Market, BuildingKind.WoodcutterHut,
                  })
         {
@@ -495,7 +495,7 @@ public sealed class ShippedConfigTests
 
         _output.WriteLine(
             $"A century later: {world.Population} alive, " +
-            $"{CountStores(world, StoreKind.Granary)} granaries, {CountStores(world, StoreKind.Shed)} sheds.");
+            $"{CountStores(world, StoreKind.Granary)} granaries, {CountStores(world, StoreKind.Warehouse)} warehouses.");
 
         Assert.True(world.Population >= config.StartingPopulation,
             $"Marking four buildings killed the village — it finished at {world.Population}.");

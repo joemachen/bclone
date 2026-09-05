@@ -974,12 +974,12 @@ public sealed record SimConfig
     /// and one undifferentiated pile would delete the per-household inequality D14
     /// exists to create.
     /// </remarks>
-    [JsonPropertyName("storage_shed_x")]
-    public int StorageShedX { get; init; } = -2;
+    [JsonPropertyName("storage_warehouse_x")]
+    public int StorageWarehouseX { get; init; } = -2;
 
     /// <summary>Where materials are kept.</summary>
-    [JsonPropertyName("storage_shed_y")]
-    public int StorageShedY { get; init; }
+    [JsonPropertyName("storage_warehouse_y")]
+    public int StorageWarehouseY { get; init; }
 
     /// <summary>Firewood one household burns per day of winter.</summary>
     /// <remarks>
@@ -1122,7 +1122,7 @@ public sealed record SimConfig
     // ⭐⭐ WHICH BUILDINGS PAY, AND IT WAS MEASURED RATHER THAN CHOSEN (D213, D214). Everything
     // the **player marks** pays; the two free buildings and the **house** do not.
     //
-    //   STORES (granary 10, shed 8, market 10) — a granary the village cannot pay for waits, the
+    //   STORES (granary 10, warehouse 8, market 10) — a granary the village cannot pay for waits, the
     //   settlement carries on out of its pile, and the site says what it is short of. Measured at
     //   fifty years: identical to charging nothing until somebody marks one.
     //
@@ -1162,13 +1162,13 @@ public sealed record SimConfig
     [JsonPropertyName("granary_work_ticks")]
     public int GranaryWorkTicks { get; init; } = 60;
 
-    /// <summary>Logs a storage shed takes to build.</summary>
-    [JsonPropertyName("shed_logs")]
-    public int ShedLogs { get; init; } = 30;
+    /// <summary>Logs a warehouse takes to build.</summary>
+    [JsonPropertyName("warehouse_logs")]
+    public int WarehouseLogs { get; init; } = 30;
 
-    /// <summary>Ticks of work a storage shed takes.</summary>
-    [JsonPropertyName("shed_work_ticks")]
-    public int ShedWorkTicks { get; init; } = 45;
+    /// <summary>Ticks of work a warehouse takes.</summary>
+    [JsonPropertyName("warehouse_work_ticks")]
+    public int WarehouseWorkTicks { get; init; } = 45;
 
     /// <summary>Logs a market takes to build.</summary>
     [JsonPropertyName("market_logs")]
@@ -1182,9 +1182,9 @@ public sealed record SimConfig
     [JsonPropertyName("granary_stone")]
     public int GranaryStone { get; init; } = 10;
 
-    /// <summary>Stone a storage shed takes to build.</summary>
-    [JsonPropertyName("shed_stone")]
-    public int ShedStone { get; init; } = 8;
+    /// <summary>Stone a warehouse takes to build.</summary>
+    [JsonPropertyName("warehouse_stone")]
+    public int WarehouseStone { get; init; } = 8;
 
     /// <summary>Stone a market takes to build.</summary>
     [JsonPropertyName("market_stone")]
@@ -1409,7 +1409,7 @@ public sealed record SimConfig
     /// <remarks>
     /// <b>Small on purpose.</b> The cart accepts every good, unlike every other store, so
     /// its capacity rather than its rules is the only thing stopping it being the granary
-    /// and the shed at once. A village that never outgrows its wagon never has to build.
+    /// and the warehouse at once. A village that never outgrows its wagon never has to build.
     /// </remarks>
     [JsonPropertyName("cart_capacity")]
     public int CartCapacity { get; init; } = 200;
@@ -1426,7 +1426,7 @@ public sealed record SimConfig
 
     // `cart_logs` WAS HERE AND IS GONE (D90 step 4, D95, landed with D96). It was a start on
     // the first house, and it existed because of D72 — building timber was drawn only from
-    // sheds and a cold start has none, so even felled logs could not become a house. The
+    // warehouses and a cold start has none, so even felled logs could not become a house. The
     // harvest brush gave the village its own way to timber and that gate lifted without
     // anybody noticing.
     //
@@ -1794,13 +1794,13 @@ public sealed record SimConfig
             // ⛔ No cart. The founders' load is what they could carry, and logs are the one thing
             // that plausibly will not fit in a wagon you arrived in (D90 step 4) — the refusal that
             // makes the storage pile load-bearing.
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Pile },
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Pile },
         },
         new GoodRow
         {
             Id = (int)World.Goods.Firewood,
             Name = "firewood",
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Market, StoreKind.Cart, StoreKind.Pile },
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Market, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
@@ -1808,13 +1808,13 @@ public sealed record SimConfig
             Name = "stone",
             SourceName = "a stone seam",
             YieldPerTile = 12,
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
             Id = (int)World.Goods.Tools,
             Name = "tools",
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
@@ -1822,7 +1822,7 @@ public sealed record SimConfig
             Name = "iron",
             SourceName = "an iron seam",
             YieldPerTile = 8,
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
@@ -1832,7 +1832,7 @@ public sealed record SimConfig
 
             // ⚠️ STORED WHERE FOOD IS STORED, AND THE GRANARY MATTERS MOST. `StoreForTheLoad`
             // sends a food load to a granary rather than the nearest store *"because the birth
-            // gate reads granaries"* — so fish that could only go in a shed would feed nobody's
+            // gate reads granaries"* — so fish that could only go in a warehouse would feed nobody's
             // children.
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
 
@@ -1847,7 +1847,7 @@ public sealed record SimConfig
             SourceName = "the woods",
 
             // Stored where food is stored, and the granary matters most — the birth gate reads
-            // granaries, so meat that could only go in a shed would feed nobody's children.
+            // granaries, so meat that could only go in a warehouse would feed nobody's children.
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
             Nutrition = 1,
         },
@@ -1857,9 +1857,9 @@ public sealed record SimConfig
             Name = "leather",
             SourceName = "the woods",
 
-            // ⚠️ A SHED, NOT A GRANARY. It is a material, not a meal, and putting it where food
+            // ⚠️ A WAREHOUSE, NOT A GRANARY. It is a material, not a meal, and putting it where food
             // lives would have hides eating granary space the birth gate is measured against.
-            StoredBy = new[] { StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
         },
     };
 
@@ -1977,7 +1977,7 @@ public sealed record SimConfig
     /// </para>
     /// <para>
     /// <b>⭐ AND THAT IS NOT A WORKAROUND, IT IS WHAT KEEPS ONE SOURCE OF TRUTH.</b> Restating
-    /// <c>logs_per_house</c> as a row literal would make it two numbers that must agree — the shed's
+    /// <c>logs_per_house</c> as a row literal would make it two numbers that must agree — the warehouse's
     /// capacity, the stockpile's capacity and the timber quota all derive against it, and every
     /// <c>Config with { LogsPerHouse = … }</c> in the suite would quietly stop meaning anything.
     /// <b>Folding those keys into the rows is a separate slice with no behaviour in it</b>
@@ -2016,15 +2016,15 @@ public sealed record SimConfig
         },
         new BuildingRow
         {
-            Id = (int)BuildingKind.Shed,
-            Name = "storage shed",
+            Id = (int)BuildingKind.Warehouse,
+            Name = "warehouse",
             Materials = new[]
             {
-                new MaterialCost(World.Goods.Logs, ShedLogs),
-                new MaterialCost(World.Goods.Stone, ShedStone),
+                new MaterialCost(World.Goods.Logs, WarehouseLogs),
+                new MaterialCost(World.Goods.Stone, WarehouseStone),
             },
-            WorkTicks = ShedWorkTicks,
-            Stores = StoreKind.Shed,
+            WorkTicks = WarehouseWorkTicks,
+            Stores = StoreKind.Warehouse,
 
             // ⛔ DERIVED, and it must stay derived (D16): a horizon of households, the firewood they
             // want, the logs to split it out of, a house's timber, floored at a granary. Typing that
@@ -3641,12 +3641,12 @@ public sealed record SimConfig
             var kind = (BuildingKind)row.Id;
 
             bool economyDerivesTheStore =
-                kind is BuildingKind.Shed or BuildingKind.Pile or BuildingKind.Market;
+                kind is BuildingKind.Warehouse or BuildingKind.Pile or BuildingKind.Market;
             if (row.Stores is not null && row.StoreCapacity is null && !economyDerivesTheStore)
             {
                 throw new SimConfigException(
                     $"buildings[{i}] (id {row.Id}, {row.Name}) is a store with no capacity. Only "
-                    + "the shed, the stockpile and the market have one derived for them; every "
+                    + "the warehouse, the stockpile and the market have one derived for them; every "
                     + "other store must state how much it holds.");
             }
 

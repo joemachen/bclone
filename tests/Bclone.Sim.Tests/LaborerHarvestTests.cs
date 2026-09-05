@@ -101,12 +101,12 @@ public sealed class LaborerHarvestTests
         }
 
         PaintForestNear(world, 8);
-        int before = world.LogsInSheds();
+        int before = world.LogsInWarehouses();
 
         loop.Step(config.TicksPerYear);
 
-        _output.WriteLine($"logs in reach: {before} -> {world.LogsInSheds()}");
-        Assert.True(world.LogsInSheds() > before, "Cleared timber never reached a store.");
+        _output.WriteLine($"logs in reach: {before} -> {world.LogsInWarehouses()}");
+        Assert.True(world.LogsInWarehouses() > before, "Cleared timber never reached a store.");
     }
 
     /// <summary>Nothing painted, nobody clearing — the brush is the only way to fell.</summary>
@@ -293,7 +293,7 @@ public sealed class LaborerHarvestTests
 
         _output.WriteLine(
             $"{painted} painted, {world.Zones.HarvestTiles} still painted ten years on, "
-            + $"{world.Population} alive, {world.LogsInSheds()} logs in store");
+            + $"{world.Population} alive, {world.LogsInWarehouses()} logs in store");
 
         Assert.True(painted > 0, "Nothing was painted, so this proves nothing.");
 
@@ -302,8 +302,8 @@ public sealed class LaborerHarvestTests
 
         // And it was worked rather than ignored — the timber has to have arrived somewhere.
         Assert.True(
-            world.LogsInSheds() > 0,
-            "Ten years of painted woodland and not one log in the shed: the ground is "
+            world.LogsInWarehouses() > 0,
+            "Ten years of painted woodland and not one log in the warehouse: the ground is "
             + "painted and nobody is working it.");
 
         Assert.True(world.Population > 0);

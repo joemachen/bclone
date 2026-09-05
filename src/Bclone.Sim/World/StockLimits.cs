@@ -145,11 +145,11 @@ public sealed class StockLimits
     /// <b>The caller passes the total, and which total it is matters more than it looks.</b>
     /// A limit must read the same supply the good's demand function reads, or the two
     /// disagree and the village acts on one while the player is shown the other.
-    /// <c>LabourQuota.WoodcuttersWanted</c> counts <em>only firewood in the shed</em>,
+    /// <c>LabourQuota.WoodcuttersWanted</c> counts <em>only firewood in the warehouse</em>,
     /// deliberately: firewood stacked in somebody else's home is not supply, because no
     /// errand reaches it. D29 is the record of the other reading — the village believed
     /// itself stocked, staffed one woodcutter, and froze to extinction with a hundred and
-    /// eighty firewood sitting in homes and an empty shed.
+    /// eighty firewood sitting in homes and an empty warehouse.
     /// </para>
     /// <para>
     /// So this takes the total rather than fetching one, and the caller is responsible for

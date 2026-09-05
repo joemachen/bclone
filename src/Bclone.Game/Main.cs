@@ -1005,7 +1005,7 @@ public partial class Main : Control
             $"{adults} adults · {children} children · {elders} elders";
 
         // WHAT IS IN THE STORES, one row per good (D83). Totals across every granary and
-        // shed, not the first of each (D38) — a village that has built a second one should
+        // warehouse, not the first of each (D38) — a village that has built a second one should
         // see what is in it.
         //
         // Food carries what is NOT in the stores in the same row rather than in a sentence
@@ -2381,7 +2381,7 @@ public partial class Main : Control
     /// <remarks>
     /// <para>
     /// <b>⛔ ALL THREE OF THESE SENTENCES WERE WRONG, AND ONE OF THEM CONTRADICTED THE OPENING
-    /// MECHANIC</b> (found 2026-08-28). The shed said *"holds logs and firewood"* and holds
+    /// MECHANIC</b> (found 2026-08-28). The warehouse said *"holds logs and firewood"* and holds
     /// **stone, tools and iron** as well; the pile said *"holds anything"* and **refuses food**;
     /// the cart said *"holds anything"* and **refuses logs** since D90.
     /// </para>
@@ -2403,7 +2403,7 @@ public partial class Main : Control
         string what = kind switch
         {
             StoreKind.Granary => "granary",
-            StoreKind.Shed => "storage shed",
+            StoreKind.Warehouse => "warehouse",
             StoreKind.Market => "market",
             StoreKind.Pile => "stockpile — cleared ground",
             StoreKind.Cart => "cart the founders arrived in",
@@ -4919,9 +4919,9 @@ public partial class Main : Control
     /// <remarks>
     /// <para>
     /// <b>The same total <c>LabourQuota</c> reads, and it must stay that way.</b> Firewood is
-    /// counted in the sheds, not everywhere, because a pile in somebody else's home is not
+    /// counted in the warehouses, not everywhere, because a pile in somebody else's home is not
     /// supply — no errand reaches it. Showing the player a village-wide total beside a limit
-    /// that governs the shed would explain a stopped woodcutter with a number that had
+    /// that governs the warehouse would explain a stopped woodcutter with a number that had
     /// nothing to do with why it stopped, which is D29 wearing a UI.
     /// </para>
     /// <para>
@@ -4943,15 +4943,15 @@ public partial class Main : Control
     /// </para>
     /// <para>
     /// ⚠️ <b>The arms are the sim's own reads, per good, and not a tidy single call</b>: logs
-    /// and firewood genuinely are counted in the sheds by <c>LabourQuota</c>, and collapsing all
+    /// and firewood genuinely are counted in the warehouses by <c>LabourQuota</c>, and collapsing all
     /// five to <c>InStores</c> would break the invariant in the other direction.
     /// </para>
     /// </remarks>
     private static int HeldFor(SimWorld world, Goods goods) => goods switch
     {
         Goods.Food => world.FoodTheVillageHolds(),
-        Goods.Logs => world.LogsInSheds(),
-        Goods.Firewood => world.FirewoodInSheds(),
+        Goods.Logs => world.LogsInWarehouses(),
+        Goods.Firewood => world.FirewoodInWarehouses(),
         _ => world.InStores(goods),
     };
 
@@ -5118,7 +5118,7 @@ public partial class Main : Control
             "Storage & trade",
             BuildButton("Stockpile", BuildingKind.Pile),
             BuildButton("Granary", BuildingKind.Granary),
-            BuildButton("Shed", BuildingKind.Shed),
+            BuildButton("Warehouse", BuildingKind.Warehouse),
             BuildButton("Market", BuildingKind.Market)));
 
         // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else on

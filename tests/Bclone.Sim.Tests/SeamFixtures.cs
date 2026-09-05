@@ -59,7 +59,7 @@ internal static class SeamFixtures
     /// Enough stone painted that a village asked to build a store can actually pay for it.
     /// </summary>
     /// <remarks>
-    /// <b>Called by every test that marks a granary, a shed or a market</b> (D213). Those three
+    /// <b>Called by every test that marks a granary, a warehouse or a market</b> (D213). Those three
     /// cost stone now, and stone comes from nowhere but the brush — so a test that marks one
     /// without this is not testing building, it is testing that the village cannot afford it,
     /// which <c>StoneCostsTests</c> already does on purpose.

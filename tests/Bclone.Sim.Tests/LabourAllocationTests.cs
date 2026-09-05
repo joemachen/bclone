@@ -337,20 +337,20 @@ public sealed class LabourAllocationTests
             // Every other kind is asked for exactly what the village already has, so
             // the forager is the only surplus and this test stays about the one thing
             // it is named for. Omitting the marketers made the quota ask for none and
-            // shed the lot alongside the forager.
+            // warehouse the lot alongside the forager.
             marketers: CountWorking(world, JobKind.Marketer),
 
             // AND THE BUILDERS, for exactly the same reason and one decision later
             // (D102). A forty-year village used to hold no builders at all, because
             // nothing was ever marked; houses are construction sites now, so it holds
-            // some almost always — and leaving this at its default of zero shed all four
+            // some almost always — and leaving this at its default of zero warehouse all four
             // of them alongside the forager.
             builders: CountWorking(world, JobKind.Builder));
 
-        System.Collections.Generic.List<int> shed = LabourAllocator.ShedSurplus(world, quota);
+        System.Collections.Generic.List<int> warehouse = LabourAllocator.ShedSurplus(world, quota);
 
-        Assert.Single(shed);
-        Assert.Equal(furthest.Id, shed[0]);
+        Assert.Single(warehouse);
+        Assert.Equal(furthest.Id, warehouse[0]);
         Assert.Contains("longest walk", furthest.JobReason, System.StringComparison.Ordinal);
         _output.WriteLine(furthest.JobReason);
     }

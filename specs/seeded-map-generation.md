@@ -56,7 +56,7 @@ In draw order, which is part of the seed contract:
 1. **The river.** One watercourse along the valley's long axis, wandering. Water is the first terrain that is not merely decoration — see §10.1.
 2. **Forest stands.** Clusters, not scatter — a stand is a place you go to, and `JobKind.Logger` already assumes one.
 3. **Forage sites.** Spread the way D24 requires: a ring at roughly settlement width plus a couple further out. **This is a constraint the generator inherits, not a free choice** — D24 is a record of what happens when sites cluster in one place.
-4. **The founding site** — where the first homes, granary and shed go. Chosen by the generator as a spot that meets the budget in §3.
+4. **The founding site** — where the first homes, granary and warehouse go. Chosen by the generator as a spot that meets the budget in §3.
 5. **Soil quality** — named here so the field exists in the data model, unused until §2.3's soil depletion lands.
 
 **Not generated yet:** biome variety. One valley archetype, generated differently each time. See §10.3.
@@ -175,7 +175,7 @@ Zero margin — and the collapse is the classic shape: **people starve with 1,74
 
 **The distance to work is a hard bound rather than part of the score.** `VillageEconomy.MaxHomeToWorkTiles` states it, `ChooseSite` refuses to build beyond it, and the economy is derived from it. That inverts what the derivation used to be: it scanned where a spiral *happened* to drop twenty homes and took the worst, so the budget was whatever the layout gave it. **Now the budget is a promise the village keeps rather than a measurement it discovers**, which is what lets one economy serve every seed.
 
-A couple with nowhere left to build stays where they are and the village says so — a legible constraint (the valley is full), not an error, and the timber goes back in the shed rather than evaporating.
+A couple with nowhere left to build stays where they are and the village says so — a legible constraint (the valley is full), not an error, and the timber goes back in the warehouse rather than evaporating.
 
 **Result: 291 tests green, and every one of twelve seeds holds a village for 200 years.** The economy re-derived to `gather_yield` 86 and `firewood_per_split` 141.
 

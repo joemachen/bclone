@@ -203,7 +203,7 @@ public sealed class ColdStartTests
     /// exists to stop happening twice. Two bugs made the opening unwinnable rather than hard
     /// (D72): a family that already existed and had no roof was invisible to
     /// <c>ForestersWanted</c>, so the village wanted nobody at the tree stand; and building
-    /// timber was drawn only from sheds, of which a cold start has none, so even felled logs
+    /// timber was drawn only from warehouses, of which a cold start has none, so even felled logs
     /// could not become a house.
     /// </para>
     /// <para>
@@ -233,28 +233,28 @@ public sealed class ColdStartTests
         // Somewhere to put timber, and the hut that turns it into firewood — without which a
         // house is a roof with no fire under it, and D45 kills at day 25 of 30.
         //
-        // ⭐ THE PILE FIRST, AND A SHED CANNOT TAKE ITS PLACE (D90 step 4). A shed costs 30
+        // ⭐ THE PILE FIRST, AND A WAREHOUSE CANNOT TAKE ITS PLACE (D90 step 4). A warehouse costs 30
         // logs and is a construction site, so it cannot be what holds the village's first
         // timber — the cart will not take logs any more, and a founding with nowhere to put
         // a felled tree sets it down in a field where nothing can spend it. The pile costs
-        // the ground it stands on and stands the tick it is marked (D98). The shed stays,
+        // the ground it stands on and stands the tick it is marked (D98). The warehouse stays,
         // built out of the pile, because this guard is about a village that grows.
         MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
 
-        // ⭐ AND SOMEBODY TO BUILD (D108). The shed and the hut below are construction
+        // ⭐ AND SOMEBODY TO BUILD (D108). The warehouse and the hut below are construction
         // sites, and a site is an errand the builder's hut's crew walks out to rather than
         // somewhere anybody is posted — so without a hut this village marks three buildings
         // and raises none of them. Measured, before this line was added: 0 alive, 4 frozen,
         // 0 homes. It costs nothing but the ground, which is exactly why it is free.
         MarkSomewhereNear(world, BuildingKind.BuilderHut, site, 2);
-        MarkSomewhereNear(world, BuildingKind.Shed, site, 2);
+        MarkSomewhereNear(world, BuildingKind.Warehouse, site, 2);
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
 
         // ⭐ AND SOMEWHERE TO GET FOOD AND TIMBER, WHICH THIS GUARD USED TO GET FREE FROM THE
         // MAP (D157). The four moves above are the whole of the opening as it was written, and
         // they were enough while the generator laid berry patches and tree stands down before
         // the founders arrived. Since C-4 retired both, this village had **no food source and
-        // no source of logs anywhere in the valley** — the shed and the woodcutter's hut are
+        // no source of logs anywhere in the valley** — the warehouse and the woodcutter's hut are
         // construction sites with nothing to build them from, and the cart holds 0 logs by
         // D90's rule. Measured without this line: 0 alive, 4 frozen, 0 homes.
         //
@@ -289,7 +289,7 @@ public sealed class ColdStartTests
 
         // AND IT SURVIVES (D75). This was unwinnable through three playthroughs and six
         // bugs, and the last of them was a builder who was funded, standing beside 426
-        // logs, unable to see them because the fetch read sheds and the timber was in the
+        // logs, unable to see them because the fetch read warehouses and the timber was in the
         // cart. Nothing was tuned to get here — the cart still holds what it held when the
         // village was dying, which is the point: it was never a difficulty problem.
         Assert.True(
@@ -299,13 +299,13 @@ public sealed class ColdStartTests
     }
 
     /// <summary>
-    /// ⭐ Joe's own opening, on the config the game loads: a pile, land, a hut. No shed.
+    /// ⭐ Joe's own opening, on the config the game loads: a pile, land, a hut. No warehouse.
     /// </summary>
     /// <remarks>
     /// <para>
     /// <b>This is the run that killed his village, scripted.</b> He placed a woodcutter's hut
-    /// and never a shed, and the hut reported <em>"no logs here to split"</em> while the
-    /// timber sat in the cart — because the fetch named <c>StoreKind.Shed</c>. That was the
+    /// and never a warehouse, and the hut reported <em>"no logs here to split"</em> while the
+    /// timber sat in the cart — because the fetch named <c>StoreKind.Warehouse</c>. That was the
     /// fourth site of one bug, and D76 replaced the question rather than patching the fifth.
     /// </para>
     /// <para>
@@ -325,7 +325,7 @@ public sealed class ColdStartTests
 
         PlayTheOpening(world);
 
-        // The opening asks for a pile and nothing else — no shed, no granary. Food goes back
+        // The opening asks for a pile and nothing else — no warehouse, no granary. Food goes back
         // to the cart they arrived in; timber cannot, so it goes to the pile (D90 step 4).
         Assert.Equal(2, world.StoreBuildings.Count);
         Assert.Contains(world.StoreBuildings, store => store.Kind == StoreKind.Cart);
@@ -336,7 +336,7 @@ public sealed class ColdStartTests
         int frozen = CountDeaths(world, CauseOfDeath.Cold);
         _output.WriteLine(
             $"Joe's opening on the shipped config: {world.Population} alive, {frozen} frozen, "
-            + $"{world.FirewoodInSheds()} firewood in stores");
+            + $"{world.FirewoodInWarehouses()} firewood in stores");
 
         Assert.True(
             world.Population == config.StartingPopulation,
@@ -388,7 +388,7 @@ public sealed class ColdStartTests
 
         _output.WriteLine(
             $"{painted} tiles painted; forest {forestBefore} -> {forestAfter}, "
-            + $"{world.LogsInSheds()} logs in reach, {world.Population} alive");
+            + $"{world.LogsInWarehouses()} logs in reach, {world.Population} alive");
 
         Assert.True(
             forestAfter < forestBefore,
@@ -403,7 +403,7 @@ public sealed class ColdStartTests
     /// <b>Joe played the opening twice and both villages starved in winter 2.</b> Every
     /// guard here stopped at one year, so the game was tested precisely up to the point it
     /// began going wrong. His cart held <b>541 firewood</b> and nobody was foraging: with no
-    /// shed built, <c>FirewoodInSheds</c> read zero however much fuel was standing about, so
+    /// warehouse built, <c>FirewoodInWarehouses</c> read zero however much fuel was standing about, so
     /// the fuel quota kept every spare hand on the chain and the berry patches sat empty
     /// (D79).
     /// </para>
@@ -428,7 +428,7 @@ public sealed class ColdStartTests
         int frozen = CountDeaths(world, CauseOfDeath.Cold);
         _output.WriteLine(
             $"five years on: {world.Population} alive, {starved} starved, {frozen} frozen, "
-            + $"{world.TotalFood()} food and {world.FirewoodInSheds()} firewood in reach");
+            + $"{world.TotalFood()} food and {world.FirewoodInWarehouses()} firewood in reach");
 
         Assert.True(
             starved == 0,
@@ -667,7 +667,7 @@ public sealed class ColdStartTests
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>No pile and no shed.</b> Joe, playing: <em>"so far I've found that I don't actually
+    /// <b>No pile and no warehouse.</b> Joe, playing: <em>"so far I've found that I don't actually
     /// need the pile at the start. It doesn't get used at all because the cart stores wood and
     /// I haven't harvested any other resources."</em> He is right, and the reason is that
     /// <b>D76's motivation was fixed by D76's own change</b> — the pile was introduced because
@@ -739,7 +739,7 @@ public sealed class ColdStartTests
         SeamFixtures.PaintNearest(world, Terrain.Rock, 4);
 
     /// <summary>
-    /// The opening as it stands before anybody builds a shed: a storage pile takes the timber.
+    /// The opening as it stands before anybody builds a warehouse: a storage pile takes the timber.
     /// </summary>
     /// <remarks>
     /// A pile accepts every kind of goods and is the one store that does, so this village has
@@ -823,7 +823,7 @@ public sealed class ColdStartTests
 
         // 2. ⭐ SOMEWHERE TO PUT TIMBER, AND THE PILE IS LOAD-BEARING AGAIN (D90 step 4).
         //
-        // This said "NO PILE AND NO SHED — that is the test", on D89's measurement that Joe
+        // This said "NO PILE AND NO WAREHOUSE — that is the test", on D89's measurement that Joe
         // never needed one: the cart held the wood, so the pile did nothing. THE CART NO
         // LONGER TAKES LOGS, which is the whole of D90's answer to D89 — a wagon that cannot
         // hold timber cannot be strangled by it — and D90 says in as many words that this is
@@ -833,11 +833,11 @@ public sealed class ColdStartTests
         // Measured rather than argued. Without this line the founding is exactly D95's
         // failure: foresters fell, the cart refuses the load, they set it down (first drop
         // at t16), and goods on the ground are supply-invisible — so 864 logs lie in a field
-        // that LogsInSheds cannot see, no builder is ever funded, the hut never stands and
+        // that LogsInWarehouses cannot see, no builder is ever funded, the hut never stands and
         // all four freeze. That is the design working, not a bug: the first thing the player
         // places is somewhere to keep things, which is Banished's opening and D76's.
         //
-        // A shed will not do instead, and that asymmetry is the point: a shed costs 30 logs
+        // A warehouse will not do instead, and that asymmetry is the point: a warehouse costs 30 logs
         // and is a construction site, so it cannot be the thing that holds the first timber.
         // A pile costs the ground it stands on and goes up the tick it is marked (D98).
         MarkSomewhereNear(world, BuildingKind.Pile, site, 2);
@@ -851,7 +851,7 @@ public sealed class ColdStartTests
         // building every other building waits on, so charging timber for it is a circle.
         MarkSomewhereNear(world, BuildingKind.BuilderHut, site, 2);
 
-        // 4. Something to make firewood with. Still no shed — the pile is the store.
+        // 4. Something to make firewood with. Still no warehouse — the pile is the store.
         MarkSomewhereNear(world, BuildingKind.WoodcutterHut, site, 3);
 
         // 5. ⭐ SOMEWHERE TO GET FOOD, WHICH THE VALLEY NO LONGER PROVIDES BY ITSELF.

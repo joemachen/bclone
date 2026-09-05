@@ -606,10 +606,10 @@ public sealed class HouseholdSystem : ISimSystem
         // for belongs to an older fuel economy.
         //
         // ⚠️ AND A VILLAGE-WIDE REPLACEMENT WAS CONSIDERED AND REFUSED, on the design's own
-        // grounds rather than on taste. `VillageEconomy.ShedCapacity` already rules it out by
-        // name: *"Food is what regulates the village… the shed binding as well would mean two
+        // grounds rather than on taste. `VillageEconomy.WarehouseCapacity` already rules it out by
+        // name: *"Food is what regulates the village… the warehouse binding as well would mean two
         // constraints fighting for the same job, and the player could not tell which one was
-        // stopping them — which is non-negotiable 1 failing."* `SimWorld.FirewoodInSheds()` is
+        // stopping them — which is non-negotiable 1 failing."* `SimWorld.FirewoodInWarehouses()` is
         // what such a check would read, if this is ever revisited.
         //
         // ⚠️ THE DISASTER IT WAS ADDED FOR IS RECORDED IN `DESIGN.md` D153 AND NOWHERE ELSE,

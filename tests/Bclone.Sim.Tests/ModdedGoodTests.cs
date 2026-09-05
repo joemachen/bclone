@@ -64,17 +64,17 @@ public sealed class ModdedGoodTests
     {
       "goods": [
         { "id": 0, "name": "food",     "stored_by": ["Granary", "Market", "Cart"] },
-        { "id": 1, "name": "logs",     "source_name": "woodland",     "yield_per_tile": 12, "stored_by": ["Shed"] },
-        { "id": 2, "name": "firewood", "stored_by": ["Shed", "Market", "Cart"] },
-        { "id": 3, "name": "stone",    "source_name": "a stone seam", "yield_per_tile": 12, "stored_by": ["Shed", "Cart"] },
-        { "id": 4, "name": "tools",    "stored_by": ["Shed", "Cart"] },
-        { "id": 5, "name": "iron",     "source_name": "an iron seam", "yield_per_tile": 8,  "stored_by": ["Shed", "Cart"] },
+        { "id": 1, "name": "logs",     "source_name": "woodland",     "yield_per_tile": 12, "stored_by": ["Warehouse"] },
+        { "id": 2, "name": "firewood", "stored_by": ["Warehouse", "Market", "Cart"] },
+        { "id": 3, "name": "stone",    "source_name": "a stone seam", "yield_per_tile": 12, "stored_by": ["Warehouse", "Cart"] },
+        { "id": 4, "name": "tools",    "stored_by": ["Warehouse", "Cart"] },
+        { "id": 5, "name": "iron",     "source_name": "an iron seam", "yield_per_tile": 8,  "stored_by": ["Warehouse", "Cart"] },
         { "id": 6, "name": "fish",     "source_name": "the river",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
         { "id": 7, "name": "meat",     "source_name": "the woods",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
-        { "id": 8, "name": "leather",  "source_name": "the woods",    "stored_by": ["Shed", "Cart"] },
+        { "id": 8, "name": "leather",  "source_name": "the woods",    "stored_by": ["Warehouse", "Cart"] },
 
         // The modder's own good, above every built-in. Nothing in the sim has heard of it.
-        { "id": 9, "name": "pitch",    "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Shed"] }
+        { "id": 9, "name": "pitch",    "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
       ]
     }
     """;
@@ -130,17 +130,17 @@ public sealed class ModdedGoodTests
         // this is the six-good ceiling, gone.
         Assert.Equal(10, world.Households[0].Stockpile.Slots);
 
-        StoreBuilding shed = FindShed(world);
-        Assert.Equal(10, shed.Store.Slots);
+        StoreBuilding warehouse = FindWarehouse(world);
+        Assert.Equal(10, warehouse.Store.Slots);
 
-        // ⭐ The shed takes it because the ROW says so — `stored_by: ["Shed"]` — not because
+        // ⭐ The warehouse takes it because the ROW says so — `stored_by: ["Warehouse"]` — not because
         // anything in the sim was taught about pitch.
-        Assert.True(shed.Accepts(Pitch), "the shed's row says it stores pitch");
+        Assert.True(warehouse.Accepts(Pitch), "the warehouse's row says it stores pitch");
 
-        shed.Store.Receive(Pitch, 40);
-        Assert.Equal(40, shed.Store[Pitch]);
+        warehouse.Store.Receive(Pitch, 40);
+        Assert.Equal(40, warehouse.Store[Pitch]);
 
-        _output.WriteLine($"shed holds {shed.Store[Pitch]} pitch of {shed.Store.Slots} slots");
+        _output.WriteLine($"warehouse holds {warehouse.Store[Pitch]} pitch of {warehouse.Store.Slots} slots");
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public sealed class ModdedGoodTests
         // to `Enum.GetValues<Goods>().Length`, so a village holding pitch would have hashed
         // *exactly as though it held none*. That is not a crash — it is two runs that read
         // identical and are not, which is the determinism failure this project treats as P0.
-        FindShed(a).Store.Receive(Pitch, 1);
+        FindWarehouse(a).Store.Receive(Pitch, 1);
 
         Assert.NotEqual(StateHash.Compute(a), StateHash.Compute(b));
     }
@@ -220,7 +220,7 @@ public sealed class ModdedGoodTests
             Id = plain.GoodsCatalog.Count,
             Name = "pitch",
             SourceName = "a tar seep",
-            StoredBy = new[] { StoreKind.Shed },
+            StoredBy = new[] { StoreKind.Warehouse },
         };
 
         SimConfig withPitch = plain with { GoodsCatalog = grown };
@@ -253,7 +253,7 @@ public sealed class ModdedGoodTests
         SimWorld before = WorldWithPitch();
         ulong empty = StateHash.Compute(before);
 
-        FindShed(before).Store.Receive(Pitch, 1);
+        FindWarehouse(before).Store.Receive(Pitch, 1);
         ulong withOne = StateHash.Compute(before);
 
         Assert.NotEqual(empty, withOne);
@@ -312,7 +312,7 @@ public sealed class ModdedGoodTests
         string missingFood = """
         {
           "goods": [
-            { "id": 1, "name": "logs", "stored_by": ["Shed"] }
+            { "id": 1, "name": "logs", "stored_by": ["Warehouse"] }
           ]
         }
         """;
@@ -328,7 +328,7 @@ public sealed class ModdedGoodTests
     public void AGoodNoStoreWillTakeIsRefusedAtLoad()
     {
         string homeless = JsonWithPitch.Replace(
-            """"source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Shed"]"""",
+            """"source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"]"""",
             """"source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": []"""");
 
         SimConfigException error = Assert.Throws<SimConfigException>(
@@ -369,7 +369,7 @@ public sealed class ModdedGoodTests
         return SimFactory.CreatePhase0(config, new InMemoryLogSink(), 42UL).World;
     }
 
-    private static StoreBuilding FindShed(SimWorld world) => FindStore(world, StoreKind.Shed);
+    private static StoreBuilding FindWarehouse(SimWorld world) => FindStore(world, StoreKind.Warehouse);
 
     private static StoreBuilding FindStore(SimWorld world, StoreKind kind)
     {

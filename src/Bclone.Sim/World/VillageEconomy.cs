@@ -201,9 +201,9 @@ public static class VillageEconomy
         // budget, so neither kind of work is quietly cheaper.*
         var stand = new GridPos(MaxHomeToWorkTiles(config), 0);
 
-        var shed = new GridPos(config.StorageShedX, config.StorageShedY);
+        var warehouse = new GridPos(config.StorageWarehouseX, config.StorageWarehouseY);
 
-        // Home to the stand, the stand to the SHED, and the shed home again.
+        // Home to the stand, the stand to the WAREHOUSE, and the warehouse home again.
         //
         // The middle leg is new (D30) and it is not a rounding error: a logger no
         // longer banks timber where they stand, they carry it to a building. The spec
@@ -215,8 +215,8 @@ public static class VillageEconomy
         int fromVillage = MaxHomeToVillageTiles(config);
         var worstHome = new GridPos(fromVillage, 0);
 
-        int worst = worstHome.ManhattanDistanceTo(stand) + stand.ManhattanDistanceTo(shed)
-            + shed.ManhattanDistanceTo(worstHome);
+        int worst = worstHome.ManhattanDistanceTo(stand) + stand.ManhattanDistanceTo(warehouse)
+            + warehouse.ManhattanDistanceTo(worstHome);
 
         return (worst * config.TravelTicksPerUnit) + config.CutTicks;
     }
@@ -1225,25 +1225,25 @@ public static class VillageEconomy
         RequiredStockpilePerAdult(config) * config.BirthFoodPercent / 100;
 
     /// <summary>
-    /// How much one storage shed holds, across logs and firewood together.
+    /// How much one warehouse holds, across logs and firewood together.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>The stated target: a shed holds the village's winter fuel, and the logs
+    /// <b>The stated target: a warehouse holds the village's winter fuel, and the logs
     /// waiting to become it.</b> Sized for
     /// <see cref="SimConfig.EconomyHorizonHouseholds"/> — the same village the rest of
-    /// the economy is budgeted for — because a shed too small to hold a winter's
+    /// the economy is budgeted for — because a warehouse too small to hold a winter's
     /// firewood does not create pressure, it freezes people.
     /// </para>
     /// <para>
     /// Deliberately more generous than the granary, and the asymmetry is the design.
     /// Food is what regulates the village (births are gated on it), so the granary is
-    /// where a ceiling <em>should</em> bind. The shed binding as well would mean two
+    /// where a ceiling <em>should</em> bind. The warehouse binding as well would mean two
     /// constraints fighting for the same job, and the player could not tell which one
     /// was stopping them — which is non-negotiable 1 failing.
     /// </para>
     /// </remarks>
-    public static int ShedCapacity(SimConfig config)
+    public static int WarehouseCapacity(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -1256,7 +1256,7 @@ public static class VillageEconomy
             / (config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit)) + config.LogsPerHouse;
 
         // ⭐ AND NEVER LESS THAN A GRANARY (Joe, D139), which is this method's own stated
-        // intent finally enforced rather than assumed. The paragraph above promises the shed
+        // intent finally enforced rather than assumed. The paragraph above promises the warehouse
         // is *"deliberately more generous than the granary"*, because food is what regulates
         // the village and a second ceiling fighting the first is Non-Negotiable 1 failing —
         // the player cannot tell which constraint stopped them.
@@ -1264,7 +1264,7 @@ public static class VillageEconomy
         // ⛔ IT HAD INVERTED BY AN ORDER OF MAGNITUDE: 343 against the granary's 2,850. The
         // derivation prices the logs needed to MAKE the winter's firewood, so raising
         // `firewood_per_split` to 50 (Joe, chasing a different problem) divided that term by
-        // seven and quietly shrank the shed. A number derived from one lever moving under
+        // seven and quietly shrank the warehouse. A number derived from one lever moving under
         // another is exactly what D134 then measured — a village at **Logs 15 in store and
         // 1,968 on the ground**, capped from year five, which is what Joe played for
         // twenty-seven years and read as "there's never enough wood".

@@ -13,7 +13,7 @@ namespace Bclone.Sim.World;
 /// <b>⭐ It is deliberately NOT a <see cref="StoreBuilding"/>, and that is the restraint
 /// rather than an omission.</b> D96 took both of the restraints on offer, and the first —
 /// <em>goods on the ground are supply-invisible</em> — is bought by this type existing at all.
-/// <c>TotalFood</c>, <c>LogsInSheds</c>, <c>FirewoodInSheds</c>, <c>FoodTheVillageHasRoomFor</c>
+/// <c>TotalFood</c>, <c>LogsInWarehouses</c>, <c>FirewoodInWarehouses</c>, <c>FoodTheVillageHasRoomFor</c>
 /// and the labour quota all walk <see cref="Core.SimWorld.StoreBuildings"/>; a heap is not in
 /// that list, so <b>not one of them had to be taught to skip it</b>.
 /// </para>

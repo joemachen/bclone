@@ -719,7 +719,7 @@ public sealed class MapGenerationTests
     public void EveryVillageCanReachItsOwnBuildings()
     {
         // §6 of the pathfinding spec: until bridges exist (D40) the generator owes the
-        // village a valley it can live in. A shed on the far bank is as useless as one
+        // village a valley it can live in. A warehouse on the far bank is as useless as one
         // under water, and the difference is invisible on the map.
         SimConfig config = Config;
 
@@ -888,7 +888,7 @@ public sealed class MapGenerationTests
             text.AppendLine();
         }
 
-        text.AppendLine("  . grass   ~ water   \" forest   F forage   T stand   h home   G granary   S shed   M market");
+        text.AppendLine("  . grass   ~ water   \" forest   F forage   T stand   h home   G granary   S warehouse   M market");
         return text.ToString();
     }
 
@@ -901,7 +901,7 @@ public sealed class MapGenerationTests
                 return building.Kind switch
                 {
                     StoreKind.Granary => 'G',
-                    StoreKind.Shed => 'S',
+                    StoreKind.Warehouse => 'S',
                     _ => 'M',
                 };
             }

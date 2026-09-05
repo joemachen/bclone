@@ -10,7 +10,7 @@
 
 Let the player choose **where buildings go, and how many of them there are.**
 
-Everything in the game so far happens *to* the player. The village founds itself at a spot the generator picked, with one granary, one shed, one market and one hut at fixed offsets, and then it lives or dies on constants. **This is the system that turns the game from a simulation you watch into one you play**, and several decisions are already queued behind it:
+Everything in the game so far happens *to* the player. The village founds itself at a spot the generator picked, with one granary, one warehouse, one market and one hut at fixed offsets, and then it lives or dies on constants. **This is the system that turns the game from a simulation you watch into one you play**, and several decisions are already queued behind it:
 
 - **D33** — granary capacity is the village's population ceiling, and today it is a config line. Placement turns *"how big can my village get"* into *"how much granary have you built"*.
 - **D36** — the market shortens fetch trips by only 6%, because it stands two tiles from the granary. Where it goes is the whole point of it.
@@ -63,7 +63,7 @@ That is not automatically wrong — *"a village that dies should die because of 
 - *"Is there food in the granary?"* → across **all** granaries.
 - *"Where do I take this load?"* → the **nearest** granary that has room.
 - *"How big can the village get?"* → derived from **total** granary capacity.
-- *"The shed has no logs"* → the **nearest reachable** shed, and the refusal should name it.
+- *"The warehouse has no logs"* → the **nearest reachable** warehouse, and the refusal should name it.
 
 **This is the slice that must land first**, and it is worth doing even if placement stalled afterwards: the singleton assumption is a bug the moment anything creates a second store.
 
@@ -73,8 +73,8 @@ That is not automatically wrong — *"a village that dies should die because of 
 
 | | Placeable | Notes |
 |---|---|---|
-| Granary, storage shed, market | **Yes**, many | The D33/D36 payoff |
-| Woodcutter's hut | **Yes**, many | Its position is a real trade-off — near the shed for logs, near homes for the worker |
+| Granary, warehouse, market | **Yes**, many | The D33/D36 payoff |
+| Woodcutter's hut | **Yes**, many | Its position is a real trade-off — near the warehouse for logs, near homes for the worker |
 | Homes | **Not placed — zoned.** See §11.1, §12 | The player paints a residential area; the village builds inside it as needed |
 | Forage sites, tree stands | **No** | They are terrain. You find them, you do not put them there |
 | Bridges | Later (D40) | Needs the tech tree |
@@ -90,7 +90,7 @@ A building should not appear the instant it is paid for — that would make plac
 The shape that matches everything already built (D29's processing chain, D36's marketer):
 
 1. The player marks a **site**. Nothing exists yet but a footprint and an intention.
-2. Materials are **hauled to it** — the same trips the market already makes, from the shed.
+2. Materials are **hauled to it** — the same trips the market already makes, from the warehouse.
 3. Somebody **builds** it. That is labour, out of the same quota as everything else, and it competes.
 4. It becomes a building.
 
@@ -178,7 +178,7 @@ Anywhere in the valley, with §7's refusals and warnings doing the work. Consist
 
 ### 11.5 What does the *first* playable version need?
 
-If this is too big for one slice, the smallest version that is genuinely worth playing is: **§4's seam, plus placeable granaries and sheds, materials hauled and built by hand.** That alone delivers D33 — build another granary, grow past your ceiling — which is the clearest cause-and-effect the game has ever offered the player.
+If this is too big for one slice, the smallest version that is genuinely worth playing is: **§4's seam, plus placeable granaries and warehouses, materials hauled and built by hand.** That alone delivers D33 — build another granary, grow past your ceiling — which is the clearest cause-and-effect the game has ever offered the player.
 
 ---
 
@@ -294,10 +294,10 @@ Small and green before the next, as with the fuel chain and storage. Each is a t
 
 **1. ~~The singleton seam (§4).~~ ✅ Done 2026-07-28.** No player-facing change: the village founds itself and behaves exactly as it did, and a test asserts the plural helpers give the same answers as the old singular ones on a one-store village. What changed is that a *second* store would no longer be ignored.
    - `SimWorld.Granary`/`.StorageShed`/`.Market` were **deleted rather than kept alongside** the plural API, so the compiler enumerated all fifteen call sites and each got a decision rather than a rename. `AnyStoreOf(kind)` remains for naming and tests, deliberately awkward to call.
-   - The decisions: *"is there food?"* → **all** granaries. *"Where do I deposit?"* → **nearest with room**, by travel cost, skipping unreachable ones (a granary across the river is not a long walk, it is no walk at all). *"Can we build a house?"* → drawn from **every** shed, a little from each, since a house is paid for by the whole village (D25). *"How big can the village get?"* → `CeilingForCapacity`, from **total** granary capacity, so a bigger granary unlocked through the tech tree raises it the same way a second ordinary one does (D39).
-   - The woodcutter's refusal changed with it. *"The storage shed has no logs"* was unverifiable once more than one shed could exist — **which** shed? — so it now says no shed within reach of the hut has a batch.
+   - The decisions: *"is there food?"* → **all** granaries. *"Where do I deposit?"* → **nearest with room**, by travel cost, skipping unreachable ones (a granary across the river is not a long walk, it is no walk at all). *"Can we build a house?"* → drawn from **every** warehouse, a little from each, since a house is paid for by the whole village (D25). *"How big can the village get?"* → `CeilingForCapacity`, from **total** granary capacity, so a bigger granary unlocked through the tech tree raises it the same way a second ordinary one does (D39).
+   - The woodcutter's refusal changed with it. *"The warehouse has no logs"* was unverifiable once more than one warehouse could exist — **which** warehouse? — so it now says no warehouse within reach of the hut has a batch.
 
-**2. Placing a building. ✅ Built 2026-07-28, both halves** — the sim, then a build menu, a ghost under the cursor and `CanBuildAt`'s refusals shown as words.** Granary, shed, market, woodcutter's hut. Construction sites are `Workplace`s of kind `Builder`, so they inherit allocation, catchment and refusal reasons rather than growing a parallel system — and the job disappears when the building exists. Materials are hauled from the nearest shed that has logs; work cannot start until they arrive. Building is funded from spare hands and **yields first**, alongside cutting logs for houses.
+**2. Placing a building. ✅ Built 2026-07-28, both halves** — the sim, then a build menu, a ghost under the cursor and `CanBuildAt`'s refusals shown as words.** Granary, warehouse, market, woodcutter's hut. Construction sites are `Workplace`s of kind `Builder`, so they inherit allocation, catchment and refusal reasons rather than growing a parallel system — and the job disappears when the building exists. Materials are hauled from the nearest warehouse that has logs; work cannot start until they arrive. Building is funded from spare hands and **yields first**, alongside cutting logs for houses.
    - `CanBuildAt` is **pure** — asks questions, changes nothing — so the view can call it under the cursor every frame and show the answer before anybody commits. Refusals are sentences (*"the ground there is under water"*, *"there is no route to there from the village"*); a site that is merely far is **allowed and warned about**, which is D43's position.
    - Demolition returns half the logs and **loses whatever was inside, out loud** — measured: *"the granary was pulled down — 20 logs recovered, and the 1465 goods inside it were lost."* An abandoned site gives its delivered logs back in full.
    - Measured end to end: a granary marked in year 12 was standing a year later. **This is D33 paying off** — the village can now be told to grow past its old ceiling.

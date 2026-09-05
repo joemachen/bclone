@@ -13,7 +13,7 @@ namespace Bclone.Sim.Tests;
 /// <remarks>
 /// <para>
 /// <b>⛔ THE SPEC ASSUMED A STOCKED MARKET FROM THE DAY IT SHIPPED AND NOTHING EVER PUT ANYTHING
-/// IN IT.</b> §14.5: *"households fetch from the market as well as the granary and shed,
+/// IN IT.</b> §14.5: *"households fetch from the market as well as the granary and warehouse,
 /// nearest-first — which is what makes a stocked market shorten the trip rather than just move
 /// it."* The store existed, was sized, and stood empty. **D185's shape for the third time: the
 /// behaviour existed and the demand did not.**
@@ -284,7 +284,7 @@ public sealed class MarketRestockTests
     /// <remarks>
     /// <para>
     /// <b>Joe:</b> *"I want to separate the actual storage buildings (storage pile, granary,
-    /// shed, warehouse, etc) from the market (distribution building)."* Everything in the market
+    /// warehouse, warehouse, etc) from the market (distribution building)."* Everything in the market
     /// should have been carried there **on purpose**, by a trader.
     /// </para>
     /// <para>

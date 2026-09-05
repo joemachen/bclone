@@ -104,7 +104,7 @@ public sealed class CartRefusesLogsTests
         SimWorld world = Loop(ShippedConfig.Load()).World;
 
         Assert.Equal(0, world.TheCart!.Store.Logs);
-        Assert.Equal(0, world.LogsInSheds());
+        Assert.Equal(0, world.LogsInWarehouses());
         Assert.Equal(0, world.TotalLogs());
     }
 
@@ -144,7 +144,7 @@ public sealed class CartRefusesLogsTests
 
         _output.WriteLine(
             $"half a year, no store placed: {onGround} logs on the ground, {carried} still "
-            + $"carried, {world.LogsInSheds()} in stores, {world.Population} alive");
+            + $"carried, {world.LogsInWarehouses()} in stores, {world.Population} alive");
 
         Assert.True(onGround > 0, "Trees were painted and no timber ever reached the ground.");
         Assert.Equal(0, world.TheCart!.Store.Logs);
@@ -208,7 +208,7 @@ public sealed class CartRefusesLogsTests
     /// <para>
     /// <b>This is what keeps step 4 fair, and it ships in the same slice for D89's reason.</b>
     /// Goods on the ground are supply-invisible by design, so a founding that paints trees and
-    /// places no store fells timber into a field where <c>LogsInSheds</c> cannot see it — and
+    /// places no store fells timber into a field where <c>LogsInWarehouses</c> cannot see it — and
     /// the hut reports <em>"no logs here to split"</em> while four hundred logs lie about.
     /// Silence there would be the untraceable failure §1.1 forbids and D88 rules out twice.
     /// </para>
@@ -265,7 +265,7 @@ public sealed class CartRefusesLogsTests
         }
 
         _output.WriteLine(
-            $"with a pile: {world.LogsInSheds()} logs in reach after half a year");
-        Assert.True(world.LogsInSheds() > 0);
+            $"with a pile: {world.LogsInWarehouses()} logs in reach after half a year");
+        Assert.True(world.LogsInWarehouses() > 0);
     }
 }

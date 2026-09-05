@@ -1,7 +1,7 @@
 namespace Bclone.Sim.World;
 
 /// <summary>
-/// Goods held somewhere — a home's larder, a workshop's buffer, a granary, a shed.
+/// Goods held somewhere — a home's larder, a workshop's buffer, a granary, a warehouse.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -107,14 +107,14 @@ public sealed class Stockpile
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Total, not per good</b>, because it is physical room: a shed packed with logs
+    /// <b>Total, not per good</b>, because it is physical room: a warehouse packed with logs
     /// has nowhere to stack firewood, and being made to choose is the interesting part.
     /// A per-good cap would be three independent shelves that never compete, which is
     /// bookkeeping wearing a constraint's clothes.
     /// </para>
     /// <para>
     /// Unlimited by default, and that default is deliberate. A home larder and a
-    /// workplace buffer are <em>not</em> capped in this slice — the granary and the shed
+    /// workplace buffer are <em>not</em> capped in this slice — the granary and the warehouse
     /// are what the pressure is about (spec §5, slice 5), and giving every store a
     /// number invites four made-up numbers instead of one derived one. Home larders get
     /// their cap with the market, where a short fetch is the answer to a small larder.

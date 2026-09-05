@@ -354,21 +354,21 @@ public readonly record struct LabourQuota
         // you asked for 200 firewood and the village has 214" a sentence the game can say.
         //
         // EACH LIMIT READS THE SAME SUPPLY ITS DEMAND FUNCTION READS, and that is not a
-        // detail. WoodcuttersWanted counts firewood IN THE SHED, deliberately: a pile in
+        // detail. WoodcuttersWanted counts firewood IN THE WAREHOUSE, deliberately: a pile in
         // somebody else's home is not supply because no errand reaches it. A limit counting
         // firewood everywhere would disagree with the demand it caps, and D29 is the record
         // of what that costs — the village believed itself stocked, staffed one woodcutter,
         // and froze to extinction with a hundred and eighty firewood in homes and an empty
-        // shed. Reading the wrong total here would be that bug with the player's own number
+        // warehouse. Reading the wrong total here would be that bug with the player's own number
         // on it.
         StockLimits limits = world.StockLimits;
 
-        if (limits.IsMet(Goods.Firewood, world.FirewoodInSheds()))
+        if (limits.IsMet(Goods.Firewood, world.FirewoodInWarehouses()))
         {
             woodcutters = 0;
         }
 
-        if (limits.IsMet(Goods.Logs, world.LogsInSheds()))
+        if (limits.IsMet(Goods.Logs, world.LogsInWarehouses()))
         {
             // ⭐ A MET LOG LIMIT STOPS THE FELLING, NOT THE PROFESSION (Joe, D146). *"A capped
             // hut can replant. Priority should be replant → extra-hands labour. It just
@@ -513,7 +513,7 @@ public readonly record struct LabourQuota
         // twelve, which is the whole settlement. Food production drops to its bare
         // floor for as long as the work lasts, and the village dies with the buildings
         // finished. Measured: four buildings marked in year 15, two granaries and two
-        // sheds standing, nobody alive a century later.
+        // warehouses standing, nobody alive a century later.
         //
         // Half is the same margin FuelBudgetInHands uses and for the same reason: the
         // floor is what the village must not fall below, not what it should live on.
@@ -563,13 +563,13 @@ public readonly record struct LabourQuota
         // hands it drank were never idle — they are the labourers who carry food to the
         // larders and firewood to the homes. Twelve years at a 200-log ambition: the woodpile
         // worked, 174 → 266 logs produced and 242 held, and **the population fell from ten to
-        // four**. A village that hauls nothing starves beside full sheds, which is D29's
+        // four**. A village that hauls nothing starves beside full warehouses, which is D29's
         // lesson arriving through the player's own number.
         //
         // Half is the margin building already uses (above) and for the same reason. Placed
         // after building too, because a stockpile is the most discretionary want in the
         // village: houses the player marked are a plan, and a number in a box is a wish.
-        if (limits.For(Goods.Logs) is int wantedInStore && world.LogsInSheds() < wantedInStore)
+        if (limits.For(Goods.Logs) is int wantedInStore && world.LogsInWarehouses() < wantedInStore)
         {
             foresters += Take(
                 ref free,
@@ -585,10 +585,10 @@ public readonly record struct LabourQuota
         // without one, and the sentence LabourAllocator writes for them says so.
         //
         // The first version sent every spare winter hand to the woods, bounded by the
-        // stands' seats and by "is any shed not yet full?" — which bounds the SHED, not
+        // stands' seats and by "is any warehouse not yet full?" — which bounds the WAREHOUSE, not
         // the work. Demand for timber is answered twice further up this method and funded
         // before this point, so every hand the fill added was cutting logs nothing wanted.
-        // It packed the sheds, crowded out the firewood the birth gate reads, and cost the
+        // It packed the warehouses, crowded out the firewood the birth gate reads, and cost the
         // village a third of its population. D52 has the measurements.
         //
         // So the idle winter is narrowed rather than filled. Removing the food floor still
@@ -710,7 +710,7 @@ public readonly record struct LabourQuota
     /// <para>
     /// <b>And it was two bugs wearing one coat.</b> Woodcutters that never stop turn every
     /// log into firewood, so the same run had **452 firewood and 8 logs**, and no granary or
-    /// shed could ever be afforded — *"even when they clear half a forest every year, there
+    /// warehouse could ever be afforded — *"even when they clear half a forest every year, there
     /// aren't enough logs to build."*
     /// </para>
     /// <para>
@@ -775,12 +775,12 @@ public readonly record struct LabourQuota
     /// </remarks>
     private static bool StoppedByAStockLimit(SimWorld world, JobKind kind) => kind switch
     {
-        JobKind.Woodcutter => world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInSheds()),
+        JobKind.Woodcutter => world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInWarehouses()),
 
         // ⭐ AND A FORESTER IS ONLY STOPPED WHEN THERE IS NOTHING TO PUT BACK EITHER (D146).
         // A met log limit stops the felling; a hut with bare ground of its own still has work,
         // so a professions number the player typed must not be overruled while it does.
-        JobKind.Forester => world.StockLimits.IsMet(Goods.Logs, world.LogsInSheds())
+        JobKind.Forester => world.StockLimits.IsMet(Goods.Logs, world.LogsInWarehouses())
             && world.ForesterSeatsWithGroundToPlant() == 0,
 
         // ⭐ AND A FARMER ONLY WHEN THERE IS NOTHING LEFT TO BRING IN. Exactly the forester's
@@ -976,11 +976,11 @@ public readonly record struct LabourQuota
             }
         }
 
-        // Timber standing ANYWHERE in the village — the shed, a workplace buffer, or
+        // Timber standing ANYWHERE in the village — the warehouse, a workplace buffer, or
         // in somebody's arms on the way there.
         //
         // Counting only household piles was right until goods moved into buildings
-        // (D30), and then silently wrong: logs go to the shed now, so every household
+        // (D30), and then silently wrong: logs go to the warehouse now, so every household
         // read zero, the village believed it had no timber at all, and it put half its
         // hands on the tree stand forever. It finished a century with five thousand
         // firewood, six people ever born, and nobody left alive — no starvation, no
@@ -1007,7 +1007,7 @@ public readonly record struct LabourQuota
     /// it, less whatever is already stacked against the wall.
     /// </para>
     /// <para>
-    /// <b>Demand is counted per home and supply only from the sheds</b> — see the comment
+    /// <b>Demand is counted per home and supply only from the warehouses</b> — see the comment
     /// in the body for the village that froze proving why. This used to say the opposite,
     /// on the grounds that "the sharing policy moves it around anyway"; that policy was
     /// deleted by D30 and the reading it justified outlived it by several slices.
@@ -1017,7 +1017,7 @@ public readonly record struct LabourQuota
     {
         ArgumentNullException.ThrowIfNull(world);
 
-        // ---- Demand is per home; supply is the shed, and only the shed ----
+        // ---- Demand is per home; supply is the warehouse, and only the warehouse ----
         //
         // This used to compare two village-wide totals: all the firewood anywhere,
         // against what every home together wanted. The stated reason was that "the
@@ -1028,7 +1028,7 @@ public readonly record struct LabourQuota
         // somebody else's home is not supply; there is no errand that reaches it. Adding
         // it in let a surplus in one house cancel a shortage in another, and the village
         // believed itself stocked. Measured: it froze to extinction over four years with
-        // a hundred and eighty firewood sitting in homes, an empty shed, and the quota
+        // a hundred and eighty firewood sitting in homes, an empty warehouse, and the quota
         // reading 191 against a need of 210 — so it staffed one woodcutter for a village
         // that needed every hand it had. The right stuff in the wrong place, which is
         // the shape nearly every goods bug here has had.
@@ -1036,14 +1036,14 @@ public readonly record struct LabourQuota
         // So the two halves are asked separately, and the direction matters:
         //   demand — what homes are short of, counted per home so surpluses never
         //            cancel shortages, plus the winter the village is about to burn;
-        //   supply — what is in the shed, because that is what a fetch can reach.
+        //   supply — what is in the warehouse, because that is what a fetch can reach.
         //
-        // Cutting MORE firewood is only the answer when the shed cannot cover the
+        // Cutting MORE firewood is only the answer when the warehouse cannot cover the
         // demand. If it can, the wood already exists and what those homes need is a
-        // trip, not a woodcutter — and staffing one anyway is not harmless: the shed
+        // trip, not a woodcutter — and staffing one anyway is not harmless: the warehouse
         // holds logs and firewood in the same room, so firewood nobody needs crowds
         // out the logs the village builds with. Measured that too, in the other
-        // direction: the shed packed to six hundred firewood, logs could not be
+        // direction: the warehouse packed to six hundred firewood, logs could not be
         // deposited, no house was ever raised again and the village dwindled to three
         // people without a single soul freezing.
         int demand = 0;
@@ -1076,11 +1076,11 @@ public readonly record struct LabourQuota
         // rather than a switch, which is what a woodpile IS.
         demand += homes * VillageEconomy.FirewoodPerHouseholdPerWinter(world.Config);
 
-        // Across every shed (D38): a household can fetch from any of them, so all of
+        // Across every warehouse (D38): a household can fetch from any of them, so all of
         // them are supply. Reading one would have had the village cutting wood it
-        // already had the moment somebody built a second shed — the same shape as the
+        // already had the moment somebody built a second warehouse — the same shape as the
         // bug where this counted firewood stranded in homes.
-        int shortfall = demand - world.FirewoodInSheds();
+        int shortfall = demand - world.FirewoodInWarehouses();
         if (shortfall <= 0)
         {
             return 0;
@@ -1222,7 +1222,7 @@ public readonly record struct LabourQuota
         //
         // ⚠️ IT IS STILL BOUNDED BY ERRANDS THAT EXIST, which is the half §5.1 of
         // `stock-limits-and-laborers.md` warns about by name: D52 deleted a winter labour fill
-        // bounded by *"is any shed not yet full?"* and it cost the village a third of its
+        // bounded by *"is any warehouse not yet full?"* and it cost the village a third of its
         // population for a century. A farm with room in its buffer asks for nobody.
         for (int i = 0; i < world.Workplaces.Count; i++)
         {

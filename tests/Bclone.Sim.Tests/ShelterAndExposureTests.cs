@@ -98,7 +98,7 @@ public sealed class ShelterAndExposureTests
     [Fact]
     public void ARoofWithNoFireSlowsTheColdButDoesNotStopIt()
     {
-        // The middle row of D45's table, and the reason it exists. A shed is not a
+        // The middle row of D45's table, and the reason it exists. A warehouse is not a
         // hearth: it buys time, which is a different thing from safety.
         SimConfig config = Config;
         SimWorld world = InWinter(config);
@@ -106,7 +106,7 @@ public sealed class ShelterAndExposureTests
         Villager underARoof = world.Villagers[0];
         Villager inTheOpen = world.Villagers[1];
 
-        underARoof.Position = world.AnyStoreOf(StoreKind.Shed).Position;
+        underARoof.Position = world.AnyStoreOf(StoreKind.Warehouse).Position;
         inTheOpen.Position = FarFromAnyBuilding(world);
         underARoof.Cold = 0;
         inTheOpen.Cold = 0;
@@ -192,7 +192,7 @@ public sealed class ShelterAndExposureTests
         villager.Cold = 0;
 
         GridPos open = FarFromAnyBuilding(world);
-        GridPos roof = world.AnyStoreOf(StoreKind.Shed).Position;
+        GridPos roof = world.AnyStoreOf(StoreKind.Warehouse).Position;
 
         // Deliberately under each individual threshold in each individual state.
         int spell = config.ExposureTicksOutdoors - 1;

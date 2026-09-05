@@ -26,7 +26,7 @@ forester has nowhere on earth to put a load. **0 homes, nothing built at all.** 
 
 ## 2. Which pillars this serves
 
-- **§1.1 legibility.** A load that vanishes because the shed was full is the untraceable
+- **§1.1 legibility.** A load that vanishes because the warehouse was full is the untraceable
   outcome this project keeps promising not to ship. Today it genuinely vanishes — see §3.
 - **§0.1, the cozy half.** *"The village is full"* stops being a state that only resolves by
   somebody standing still holding an armful (D80's crash, patched from the top).
@@ -52,7 +52,7 @@ villager.CarriedFood = 0;                          // ...and the rest is gone
 `Stockpile.Add` clamps to `FreeSpace` and **returns how much it actually took**; its own
 remarks say *"the return value is the whole point and it must not be ignored… callers deposit
 what fits and keep the rest"*. This caller ignores it. `RaiseTheBuilding` one file over gets
-it right — *"anything the site could not take stays in their arms and goes back to a shed on
+it right — *"anything the site could not take stays in their arms and goes back to a warehouse on
 the next errand — never dropped, per the conservation rule."*
 
 So D80's fix — walk to the store that *would* take it and hold the load until there is room —
@@ -120,7 +120,7 @@ chosen first, so the population ceiling still does not depend on where anybody w
 |---|---|
 | What it is | `GroundStack`: a `Goods`, an amount, a `GridPos`. |
 | Where it lives | `SimWorld.GroundStacks`, a list of its own — **not** `StoreBuildings`. |
-| Counted by `TotalFood`, `LogsInSheds`, `FirewoodInSheds`, the quota, the birth gate? | **No.** Those all walk `StoreBuildings`. A stack is not in that list, so no reader had to be taught to skip it. |
+| Counted by `TotalFood`, `LogsInWarehouses`, `FirewoodInWarehouses`, the quota, the birth gate? | **No.** Those all walk `StoreBuildings`. A stack is not in that list, so no reader had to be taught to skip it. |
 | Capacity | **None.** It is a heap on the ground. |
 | Decay | **None** (D96, Joe: spoilage is not available and was refused once already, D37). |
 | Shelter | **None.** It is not a building. |
@@ -171,7 +171,7 @@ store."*
   and tidying before felling is what stops a painted valley producing heaps faster than it
   produces order.
 - **⭐ Only fires when a store will actually take the load.** Without that condition a
-  villager picks up a heap beside a full shed and walks it back to the same full shed forever.
+  villager picks up a heap beside a full warehouse and walks it back to the same full warehouse forever.
   With it, a village whose stores are full simply leaves its heaps alone until there is room —
   which is the self-correcting behaviour D96 predicted, and it needs no rule telling anybody to.
 - **The tile is remembered on `ErrandX/ErrandY`**, like clearing and for the same reason: the
@@ -288,7 +288,7 @@ before any other painted tile.
 ```csharp
 BuildingKind kind = building.Kind switch {
     StoreKind.Granary => BuildingKind.Granary,
-    StoreKind.Shed    => BuildingKind.Shed,
+    StoreKind.Warehouse    => BuildingKind.Warehouse,
     _                 => BuildingKind.Market,   // ← a pile, and the cart, refund like a market
 };
 ```
@@ -350,7 +350,7 @@ Against **both** `VillageFixtures.Village` and the shipped config, per METHODOLO
 3. **⭐ Somebody comes and gets it.** A heap, a store with room, and a spare hand: the heap
    reaches the store.
 4. **Nobody comes when there is no room.** The heap stays put and nobody shuttles.
-5. **A heap is not supply.** `TotalFood`, `LogsInSheds`, `FirewoodInSheds` and
+5. **A heap is not supply.** `TotalFood`, `LogsInWarehouses`, `FirewoodInWarehouses` and
    `FoodTheVillageHasRoomFor` are unchanged by a hundred logs lying in a field.
 6. **Setting down is last resort.** A village with room never puts anything on the ground —
    asserted over a played run, not by inspection.
@@ -380,8 +380,8 @@ Against **both** `VillageFixtures.Village` and the shipped config, per METHODOLO
     logs, which is D89's silent strangling in a new costume and the failure §1.1 forbids.
 16. **`JoesOpeningSurvivesOnTheShippedConfig` and the whole cold-start file stay green** —
     the gate. **`PlayTheOpening` places a pile again**, because D90's rule now binds: you
-    cannot take timber until you have somewhere to put it, and a shed cannot stand in for a
-    pile because a shed costs 30 logs and is a construction site.
+    cannot take timber until you have somewhere to put it, and a warehouse cannot stand in for a
+    pile because a warehouse costs 30 logs and is a construction site.
 
 **Everything**
 

@@ -23,7 +23,7 @@ public enum Shelter
     Outdoors = 0,
 
     /// <summary>
-    /// A roof with no fire under it — a woodcutter's hut, a market, a shed, or a home
+    /// A roof with no fire under it — a woodcutter's hut, a market, a warehouse, or a home
     /// whose household has run out of firewood.
     /// </summary>
     /// <remarks>

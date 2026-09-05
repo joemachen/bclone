@@ -19,7 +19,7 @@ public static class SimConfigLoader
         AllowTrailingCommas = true,
         PropertyNameCaseInsensitive = true,
 
-        // ⭐ So a modder writes `"stored_by": ["Shed", "Cart"]` rather than a list of integers
+        // ⭐ So a modder writes `"stored_by": ["Warehouse", "Cart"]` rather than a list of integers
         // they would have to look up (D210, `goods-catalog.md`). Safe to add globally and that
         // was checked rather than assumed: the only enum this config has ever deserialized is
         // `SkillRow.GrownBy`, which carries its own copy of this converter and already expects

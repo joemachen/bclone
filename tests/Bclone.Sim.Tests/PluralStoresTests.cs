@@ -33,7 +33,7 @@ public sealed class PluralStoresTests
 
     private static SimConfig Config => VillageFixtures.Village;
 
-    /// <summary>A village with an extra granary and shed dropped in beside the first.</summary>
+    /// <summary>A village with an extra granary and warehouse dropped in beside the first.</summary>
     /// <remarks>
     /// Added directly rather than through a placement system, which does not exist yet.
     /// That is the point of testing the seam separately: it can be proven closed before
@@ -44,7 +44,7 @@ public sealed class PluralStoresTests
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
 
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
-        StoreBuilding shed = world.AnyStoreOf(StoreKind.Shed);
+        StoreBuilding warehouse = world.AnyStoreOf(StoreKind.Warehouse);
 
         world.StoreBuildings.Add(new StoreBuilding
         {
@@ -60,10 +60,10 @@ public sealed class PluralStoresTests
         {
             Catalog = world.GoodsCatalog,
             Id = 5,
-            Kind = StoreKind.Shed,
-            Name = "the second shed",
-            Position = FreeSpotNear(world, shed.Position),
-            Store = new Stockpile(world.GoodsCatalog.Count) { Capacity = shed.Store.Capacity },
+            Kind = StoreKind.Warehouse,
+            Name = "the second warehouse",
+            Position = FreeSpotNear(world, warehouse.Position),
+            Store = new Stockpile(world.GoodsCatalog.Count) { Capacity = warehouse.Store.Capacity },
         });
 
         return world;
@@ -138,14 +138,14 @@ public sealed class PluralStoresTests
     public void LogsInASecondShedCanBuildAHouse()
     {
         // House timber is drawn village-wide (D25), so splitting the logs across two
-        // sheds must not stop a house being raised. Before this slice it would have:
-        // the draw came from one shed and the rest were invisible.
+        // warehouses must not stop a house being raised. Before this slice it would have:
+        // the draw came from one warehouse and the rest were invisible.
         SimConfig config = Config;
         SimWorld world = WithASecondOfEach(config);
 
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            if (store.Kind == StoreKind.Shed)
+            if (store.Kind == StoreKind.Warehouse)
             {
                 store.Store.TryTake(Goods.Logs, store.Store.Logs);
             }
@@ -155,18 +155,18 @@ public sealed class PluralStoresTests
         int half = (config.LogsPerHouse / 2) + 1;
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            if (store.Kind == StoreKind.Shed)
+            if (store.Kind == StoreKind.Warehouse)
             {
                 store.Store.Add(Goods.Logs, half);
             }
         }
 
         _output.WriteLine(
-            $"{world.LogsInSheds()} logs across two sheds, {half} in each, " +
+            $"{world.LogsInWarehouses()} logs across two warehouses, {half} in each, " +
             $"a house needs {config.LogsPerHouse}.");
 
-        Assert.True(world.LogsInSheds() >= config.LogsPerHouse);
-        Assert.True(half < config.LogsPerHouse, "Neither shed alone should be enough, or this proves nothing.");
+        Assert.True(world.LogsInWarehouses() >= config.LogsPerHouse);
+        Assert.True(half < config.LogsPerHouse, "Neither warehouse alone should be enough, or this proves nothing.");
     }
 
     [Fact]
@@ -204,8 +204,8 @@ public sealed class PluralStoresTests
         SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
 
         Assert.Equal(world.AnyStoreOf(StoreKind.Granary).Store.Food, world.FoodInGranaries());
-        Assert.Equal(world.AnyStoreOf(StoreKind.Shed).Store.Logs, world.LogsInSheds());
-        Assert.Equal(world.AnyStoreOf(StoreKind.Shed).Store.Firewood, world.FirewoodInSheds());
+        Assert.Equal(world.AnyStoreOf(StoreKind.Warehouse).Store.Logs, world.LogsInWarehouses());
+        Assert.Equal(world.AnyStoreOf(StoreKind.Warehouse).Store.Firewood, world.FirewoodInWarehouses());
         Assert.Equal(world.AnyStoreOf(StoreKind.Granary).Store.Capacity, world.GranaryCapacity());
     }
 

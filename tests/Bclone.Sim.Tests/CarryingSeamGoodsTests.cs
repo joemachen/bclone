@@ -104,7 +104,7 @@ public sealed class CarryingSeamGoodsTests
     /// <c>main</c>, where D211 had not landed and a cleared seam was simply destroyed — but the
     /// report named a store the guards above never used, so it gets its own.
     /// <para>
-    /// The tests above run a warm-start village, which has a shed. <b>A founding has a stockpile
+    /// The tests above run a warm-start village, which has a warehouse. <b>A founding has a stockpile
     /// and a cart</b>, and a stockpile holds a good by <em>being</em> a stockpile
     /// (<c>KindAccepts</c>: <c>Kind == StoreKind.Pile || …</c>) rather than by the catalogue
     /// listing it — a different question, asked here.

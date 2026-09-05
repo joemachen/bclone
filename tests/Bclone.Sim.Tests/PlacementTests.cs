@@ -102,7 +102,7 @@ public sealed class PlacementTests
         SimWorld world = Build(Config).World;
 
         PlacementVerdict verdict = world.CanBuildAt(
-            BuildingKind.Shed, world.AnyStoreOf(StoreKind.Granary).Position);
+            BuildingKind.Warehouse, world.AnyStoreOf(StoreKind.Granary).Position);
 
         _output.WriteLine(verdict.Reason);
         Assert.False(verdict.Allowed);
@@ -293,30 +293,30 @@ public sealed class PlacementTests
     [Fact]
     public void ABuildingCostsTheLogsItSaidItWould()
     {
-        // Conservation across the new movement. Logs leave a shed, arrive at a site,
+        // Conservation across the new movement. Logs leave a warehouse, arrive at a site,
         // and become a building — none of them invented, none quietly lost.
         SimConfig config = Config;
         SimLoop loop = Build(config);
         SimWorld world = loop.World;
 
-        // A shed costs stone as well as timber now (D213) — see the granary test above.
+        // A warehouse costs stone as well as timber now (D213) — see the granary test above.
         SeamFixtures.PaintStoneForBuilding(world);
         loop.Step(config.TicksPerYear * 12);
 
-        GridPos spot = SomewhereBuildable(world, BuildingKind.Shed);
-        int logsBefore = world.LogsInSheds();
-        world.Mark(BuildingKind.Shed, spot);
+        GridPos spot = SomewhereBuildable(world, BuildingKind.Warehouse);
+        int logsBefore = world.LogsInWarehouses();
+        world.Mark(BuildingKind.Warehouse, spot);
 
-        int before = CountStores(world, StoreKind.Shed);
-        for (int year = 1; year <= 25 && CountStores(world, StoreKind.Shed) == before; year++)
+        int before = CountStores(world, StoreKind.Warehouse);
+        for (int year = 1; year <= 25 && CountStores(world, StoreKind.Warehouse) == before; year++)
         {
             loop.Step(config.TicksPerYear);
         }
 
-        Assert.True(CountStores(world, StoreKind.Shed) > before, "The shed was never built.");
+        Assert.True(CountStores(world, StoreKind.Warehouse) > before, "The warehouse was never built.");
         _output.WriteLine(
-            $"{logsBefore} logs in store before, {world.LogsInSheds()} after; " +
-            $"a shed costs {config.ShedLogs}.");
+            $"{logsBefore} logs in store before, {world.LogsInWarehouses()} after; " +
+            $"a warehouse costs {config.WarehouseLogs}.");
 
         Assert.True(world.TotalLogs() <= world.LifetimeLogsFelled(),
             "Building is creating logs out of nothing.");
@@ -415,11 +415,11 @@ public sealed class PlacementTests
         }
 
         int delivered = site.Construction!.LogsDelivered;
-        int before = world.LogsInSheds();
+        int before = world.LogsInWarehouses();
         world.CancelConstruction(site);
 
-        _output.WriteLine($"{delivered} logs were on site; store went {before} -> {world.LogsInSheds()}.");
-        Assert.Equal(before + delivered, world.LogsInSheds());
+        _output.WriteLine($"{delivered} logs were on site; store went {before} -> {world.LogsInWarehouses()}.");
+        Assert.Equal(before + delivered, world.LogsInWarehouses());
         Assert.DoesNotContain(world.Workplaces, w => w.IsSite);
     }
 

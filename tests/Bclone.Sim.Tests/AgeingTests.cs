@@ -102,7 +102,7 @@ public sealed class AgeingTests
     /// <para>
     /// <b>⚠️ AND THE ATTRIBUTION I RECORDED IN D142 WAS WRONG, which is why this was measured
     /// again rather than reasoned about.</b> I had it down to planting-by-default enriching her
-    /// hut's ring over her lifetime, plus D139's shed floor. **The ring is flat**: 110 wooded
+    /// hut's ring over her lifetime, plus D139's warehouse floor. **The ring is flat**: 110 wooded
     /// tiles of 289 at year one and 105 at year forty-five, worth 66 a trip and then 62.
     /// Nothing about the valley changed. Both of those decisions moved the number by moving
     /// which years she happened to make a second trip in — noise in a metric that only had

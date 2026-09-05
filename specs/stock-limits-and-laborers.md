@@ -87,11 +87,11 @@ StockLimits : one nullable int per Goods value
 
 **It must read the same supply the quota reads, or the two will disagree.**
 
-`WoodcuttersWanted` deliberately counts **only firewood in the shed** — not firewood
+`WoodcuttersWanted` deliberately counts **only firewood in the warehouse** — not firewood
 anywhere — because *"firewood stacked in somebody else's home is not supply; there is no
 errand that reaches it"*. D29 records what the other reading cost: the village believed
 itself stocked, staffed one woodcutter, and froze to extinction with 180 firewood sitting in
-homes and an empty shed.
+homes and an empty warehouse.
 
 A limit that counts *all firewood everywhere* would re-run that precisely. **So each good's
 limit reads the same total its demand function reads**, and the spec says so here rather
@@ -108,7 +108,7 @@ every seam in the valley come out of the ground, and got no explanation. §1.1's
 D145's *"a control needs one door"* on the good the door was never cut for.
 
 - **`SimWorld.MayTake(goods)` is that door**, and **`MayFell` reads it** rather than naming the
-  Logs limit. Byte-identical: `InStores(Goods.Logs)` and `LogsInSheds()` are the same sum over the
+  Logs limit. Byte-identical: `InStores(Goods.Logs)` and `LogsInWarehouses()` are the same sum over the
   same stores, because `store.Logs` *is* `store[Goods.Logs]`.
 - **The tile is skipped, never un-painted** — D127's standing instruction. A seam the village is
   currently full of is *work that is waiting*, and it comes back when the stores are spent down.
@@ -221,8 +221,8 @@ before there is anyone to staff them. It is correctly specced and merely early.
 
 ### 5.1 The trap this must not fall into
 
-**D52 deleted a winter labour fill that was bounded by *"is any shed not yet full?"*** —
-a bound on the shed rather than on the work — and it cost the village a third of its
+**D52 deleted a winter labour fill that was bounded by *"is any warehouse not yet full?"*** —
+a bound on the warehouse rather than on the work — and it cost the village a third of its
 population for a century. **Laborer hauling must be bounded by errands that exist**, exactly
 as `MarketersWanted` is bounded by errands and never by spare hands (D36). A laborer with
 nothing to haul is **idle, and that is a correct state**, not a gap to fill. §0's core loop

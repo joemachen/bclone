@@ -40,7 +40,7 @@ own warning about it.
 
 | | Count | Members | Declared in |
 |---|---|---|---|
-| `BuildingKind` | **11** | Granary, Shed, Market, WoodcutterHut, Pile, Home, BuilderHut, GathererHut *(named "forager's hut" since D240)*, ForesterHut, Farmhouse, **Library** *(D226)* | `World/Construction.cs` |
+| `BuildingKind` | **11** | Granary, Warehouse, Market, WoodcutterHut, Pile, Home, BuilderHut, GathererHut *(named "forager's hut" since D240)*, ForesterHut, Farmhouse, **Library** *(D226)* | `World/Construction.cs` |
 | `JobKind` | **6** | Forager, Forester, Woodcutter, Marketer, Builder, Farmer | `World/Workplace.cs:21` |
 | `Goods` | **6** *(and open to 62 since D210 — the enum is an alias for the first ids)* | Food, Logs, Firewood, Stone, Tools, Iron | `World/StoreBuilding.cs` |
 | `Terrain` | **9** | Grass, Water, Forest, Rock, IronDeposit, Sapling, Field, Sown, Ripe | `World/GeneratedMap.cs:20` |
@@ -63,7 +63,7 @@ crops are the other (`crops-and-orchards.md §4`).
 
 | Thing | Produced by | Consumed by |
 |---|---|---|
-| `Goods.Stone` | ✅ quarried from `Terrain.Rock` via the harvest brush | ✅ **BUILDINGS, since D213** — a granary costs 40 logs **and 10 stone**; the shed and market likewise, the huts 3 each |
+| `Goods.Stone` | ✅ quarried from `Terrain.Rock` via the harvest brush | ✅ **BUILDINGS, since D213** — a granary costs 40 logs **and 10 stone**; the warehouse and market likewise, the huts 3 each |
 | `Goods.Iron` | ✅ mined from `Terrain.IronDeposit` via the harvest brush | **nothing** |
 | `Goods.Tools` | ⛔ only the founders' cart | **nothing** |
 
@@ -185,7 +185,7 @@ spec* (D159); this closed the status half only.
 >
 > ⚠️ **And one thing did NOT move, deliberately:** the per-building recipe keys (`granary_logs`,
 > `hut_stone`, …) still price the built-in ten. **`logs_per_house` is an economy anchor the recipe
-> happens to spend** — the shed's capacity, the stockpile's and the timber quota all derive against
+> happens to spend** — the warehouse's capacity, the stockpile's and the timber quota all derive against
 > it — so folding it in is a re-derivation rather than a move.
 >
 > *Original text, for the record:*
@@ -197,7 +197,7 @@ spec* (D159); this closed the status half only.
 >   capacity have to be derived? it should be a set number."* **He is right — the set number already
 >   exists**, `granary_feeds_people: 30`; the derivation only converts people into food so the
 >   building's meaning does not drift when `food_per_meal` moves. The market is likewise two stated
->   numbers. **So capacity is mostly data**, and only the shed, stockpile, builder's hut and
+>   numbers. **So capacity is mostly data**, and only the warehouse, stockpile, builder's hut and
 >   gatherer's hut are genuinely derived from other systems.
 
 
@@ -269,7 +269,7 @@ and it is the natural first slice whenever building resumes, because **it unbloc
 tier and the house-upgrade ladder together.**
 
 **✅✅ BUILT 2026-08-25 (D213), on Joe'''s call — `specs/multi-material-construction.md`.** A recipe
-holds N materials, the granary, shed and market cost stone, and **which buildings pay was measured
+holds N materials, the granary, warehouse and market cost stone, and **which buildings pay was measured
 rather than chosen** (stone on the huts took a founding from 24 alive to 7). ⛔ **And it surfaced
 a live stall nobody had counted:** D135'''s starved-head escape asked for a site that *already had
 every material*, which was nearly always true while timber was the only one — with stone in play a

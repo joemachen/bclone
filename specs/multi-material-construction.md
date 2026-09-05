@@ -64,7 +64,7 @@ reachable for the first time.
 | Building | Logs | Stone | Why |
 |---|---|---|---|
 | Granary | 40 | **10** | The player marks it. A durable civic store — `buildings-plan.md` lists *"stone granary"* under the civic tier |
-| Shed | 30 | **8** | Same |
+| Warehouse | 30 | **8** | Same |
 | Market | 35 | **10** | Same |
 | Gatherer's / woodcutter's / forester's hut, farmhouse | 25 | **3** | Joe, D214: *"a nominal amount"*. One seam tile is 12 stone, so clearing a single rock buys four huts |
 | Home | 30 | **0** | ⛔⛔ The one building the **village** decides to raise (D42). A stone price here gates growth on a resource an unattended valley never gathers |
@@ -145,7 +145,7 @@ for ever. The huts that needed three stone stayed sites and everybody froze.
 `NextFootprintToClear`'s exception one good over, and **its comment had already written the
 reason** — *"nearest-first never gets to it"*.
 
-- ⚠️ **Only when nothing in store can serve it.** If a shed already holds the stone, a builder
+- ⚠️ **Only when nothing in store can serve it.** If a warehouse already holds the stone, a builder
   fetches it and this is not clearing work at all. The rule is *"the village cannot otherwise get
   this"*, not *"a site wants this"* — the latter would send laborers to the rock every time a
   granary was marked.

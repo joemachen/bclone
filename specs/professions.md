@@ -45,7 +45,7 @@ interesting part of its slice and it gets argued there.
 | 2 | **A building the player places** | Its hut. Gives the job a position, a catchment and a name — *"a building is a livelihood the player sited"* (D84). | exists (`BuildingKind`, `Mark`, `Complete`) |
 | 3 | **Seats** | `Capacity`, staffed per-building (D104) or village-wide (D106). | exists |
 | 4 | **A local store with a stated cap** | Output accumulates at the hut, then is carried to a village store. | ✅ **Alive on the farm (D162); still dead everywhere else — see §5** |
-| 5 | **A destination for its output** | Food → granary, materials → shed. Asked by good, never by building (D76). | exists (`StoreForTheLoad`) |
+| 5 | **A destination for its output** | Food → granary, materials → warehouse. Asked by good, never by building (D76). | exists (`StoreForTheLoad`) |
 
 Optional sixth parts, each already with a precedent:
 
@@ -133,12 +133,12 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 |---|---|---|---|---|---|
 | **Laborer** | none, by design | — | clears & hauls | — | ✅ clearing, tidying. ⛔ carry-to-site (D93) |
 | **Builder** | builder's hut | — | raises buildings; later roads, bridges, fences | — | ✅ **hut built (D110)**. Free and instant; seats derived; a site is an errand, not a seat |
-| **Forester** | forester's hut | owned ground | logs → shed | 50 logs | ⚠️ job exists (D96 rename); hut, ground and worker-pricing built and waiting (D86, C3c) |
-| **Woodcutter** | woodcutter's hut | — | firewood → shed | 50 firewood | ✅ built. Local store new. |
+| **Forester** | forester's hut | owned ground | logs → warehouse | 50 logs | ⚠️ job exists (D96 rename); hut, ground and worker-pricing built and waiting (D86, C3c) |
+| **Woodcutter** | woodcutter's hut | — | firewood → warehouse | 50 firewood | ✅ built. Local store new. |
 | **Forager** | forager's hut | forest nearby | food → granary | 100 food | ✅ **BUILT** (D112–D130). Forage sites retired; named "forager" since D188/D240. §6.1 below is spent |
 | **Fisherman** | fishing hut | **beside water** | food → granary | 100 food | ❌ new |
-| **Hunter** | hunter's lodge | **in forest** | food → granary; leather → shed | 50 + 50 | ❌ new |
-| **Tailor** | tailor's | — | clothing → shed | 50 clothing | ❌ new; `clothing.md` blocked on its input |
+| **Hunter** | hunter's lodge | **in forest** | food → granary; leather → warehouse | 50 + 50 | ❌ new |
+| **Tailor** | tailor's | — | clothing → warehouse | 50 clothing | ❌ new; `clothing.md` blocked on its input |
 | **Market worker** | market | — | moves goods to homes | large | ✅ built (D14, D36) |
 
 **Not exhaustive** (Joe). `buildings-plan.md §4` carries the fuller catalogue — herdsman,
@@ -148,7 +148,7 @@ shape or argues why not.
 ### 4.1 New goods
 
 `Goods` is append-only (`StoreBuilding.cs:176`). This model needs **`Leather`** and
-**`Clothing`**, both materials, both accepted by the shed.
+**`Clothing`**, both materials, both accepted by the warehouse.
 
 **Fish and meat are `Goods.Food`, not goods of their own** (Joe). Nothing yet distinguishes them
 mechanically, `food-catalog.md §7` warns explicitly against building a recipe tree, and appending

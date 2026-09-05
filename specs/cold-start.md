@@ -76,7 +76,7 @@ from birth. That is the whole difficulty of this slice.
 | Where do they eat? | The cart, as a store. **D10 is not negotiable** — a meal must be takeable where they stand, and Phase 0 killed somebody who starved beside a full larder. |
 | Where do they rest? | At the cart. |
 | What shelter are they in? | `Shelter.Outdoors`. This is the whole tension. |
-| Where does their work go? | The cart, until a shed stands. |
+| Where does their work go? | The cart, until a warehouse stands. |
 | Can they pair and have children? | **Yes, and this needs a decision — see §7.1.** |
 
 ---
@@ -106,7 +106,7 @@ One `StoreBuilding` present at founding, at the founding site.
    `MaxHomeToWorkTiles`, the bound the whole food economy is derived against.
 3. **Mark a woodcutter's hut**, or nobody makes firewood and everybody dies under a roof
    five days before spring.
-4. **Mark a shed and a granary** when the cart runs short.
+4. **Mark a warehouse and a granary** when the cart runs short.
 
 **Every one of those already works.** The build menu (D38, D43), the brush (D42) and the
 home-building (D42, `LogsPerHouse`) are all shipped. This slice removes the head start, it
@@ -121,7 +121,7 @@ stated behaviour rather than a crash:
 
 | Reader | Reads | With nothing built |
 |---|---|---|
-| `VillageEconomy.CutRoundTripTicks` | `StorageShedX/Y` | Budget against the **founding site**, which is where goods go until a shed exists. |
+| `VillageEconomy.CutRoundTripTicks` | `StorageWarehouseX/Y` | Budget against the **founding site**, which is where goods go until a warehouse exists. |
 | `VillageEconomy.FirewoodRoundTripTicks` | `WoodcutterHutX/Y` | Same. |
 | `Household.ChooseSite` | nearest granary | Fall back to the founding site — the cart is the store. |
 
@@ -224,7 +224,7 @@ reporting itself short. Doing (2) first means editing three guards to permit som
 ### 7.1d Joe's third run — houses yes, hut no; and the year is too short to play
 
 The hunger-line fix (D73) landed and the village still does not raise what is marked.
-Joe: *"they built the houses but not the woodcutter's hut"*, with the shed reading
+Joe: *"they built the houses but not the woodcutter's hut"*, with the warehouse reading
 **"0 of 30 logs — 30 still to come. Work: 0 of 45 ticks done. Staffing: left to the
 village — it wants 0 on this kind of work."**
 
@@ -294,7 +294,7 @@ because winter 1's difficulty is tuned against whichever rate the founders actua
   set. Doing nothing must kill.
 - **A crash rather than a consequence.** Nothing may throw because a building is missing.
   Every fallback in §6 is stated, and the degenerate cases get the same treatment
-  `BehaviorSystem` already gives a village with no shed: put it down, and **say so loudly**
+  `BehaviorSystem` already gives a village with no warehouse: put it down, and **say so loudly**
   (METHODOLOGY §4).
 - **The steady state moving.** §6, guarded by the golden hash.
 - **The founders being unable to eat.** D10. A meal must be takeable where they stand, and

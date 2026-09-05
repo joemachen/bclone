@@ -118,7 +118,7 @@ When the last knower of a **Known** node dies and there is no record, the node r
 
 **Lost arts leave wreckage.** A re-locked node does not simply grey out. It leaves physical evidence in the village:
 
-- Tools in the shed that nobody can make another of, wearing out one by one.
+- Tools in the warehouse that nobody can make another of, wearing out one by one.
 - A building that still stands, still works, and cannot be repaired or rebuilt when it fails.
 - Products in storage that will not be replaced.
 
@@ -377,7 +377,7 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 | Penning | SCALE | |
 | ★ Husbandry | PEOPLE | *Timber Barn.* Joe's **Animal Husbandry**. ⛔ **Blocked by D61** — *"I don't want animals available to the user until they trade for it"* — and `TECH-EXAMPLE.md` puts the barn **two tiers before the trading post.** See §9a |
 | ★ Dairying | PEOPLE | *Dairy House.* Milk → butter and cheese. **Cheese is preservation that is not a rot mechanic** — it keeps because of what it is |
-| ★ Draught animals | ADJ (herder + builder) | *Cartwright Shed.* Joe's **Heavy Haulage**. Feeds hauling and the road branch |
+| ★ Draught animals | ADJ (herder + builder) | *Cartwright Warehouse.* Joe's **Heavy Haulage**. Feeds hauling and the road branch |
 | ★ **Livestock Processing** | PEOPLE | *Slaughterhouse & Butchery.* Meat, hides, tallow, bone — **the input to four other branches** |
 | ★ **Avian & Insect Culture** | PEOPLE + SCALE | *Pigeon Aviary & Sericulture.* Silk, guano, and postal birds. ⚠️ The most speculative node Joe wrote; deepest in the branch |
 
@@ -402,12 +402,12 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 |---|---|---|
 | Drying | DOING | |
 | ★ Salting | TERRAIN (salt) or IMPORT | Joe folds this into **Curing Methods** with smoking |
-| ★ Smoking | CRISIS | *Smokehouse & Salting Shed.* The bark winter |
+| ★ Smoking | CRISIS | *Smokehouse & Salting Warehouse.* The bark winter |
 | ★ Root cellar | SCALE | Joe's **Primitive Preservation**, and he places it at **T1 — much earlier than SCALE implies.** Worth taking: it is the cheapest possible answer to winter |
 | **Granary** | SCALE | **Feeds the Knowing branch — the literacy route.** ⚠️ **Absent from `TECH-EXAMPLE.md` entirely** — almost certainly an oversight, since the granary is the population ceiling (D33) |
 | Icehouse | TERRAIN + SCALE | |
 | ★ **Fermentation** | DOING | *Brewery & Cider Mill.* Ale and cider — **and now an input to morale** (D207), which is what D39's *"wine from berries, beer from wheat"* was always for |
-| ★ **Logistics Management** | SCALE | *Vaulted Warehouse.* `buildings-plan.md §6` already ruled a bigger shed is **a tier of shed, not a new building** — reconcile |
+| ★ **Logistics Management** | SCALE | *Vaulted Warehouse.* `buildings-plan.md §6` already ruled a bigger warehouse is **a tier of warehouse, not a new building** — reconcile |
 
 > **⛔ THIS BRANCH IS WHERE SPOILAGE TRIED TO COME BACK, AND JOE REFUSED IT AGAIN (D208).**
 > `TECH-EXAMPLE.md` has fodder rotting *"5% per day"* uncovered, plus root cellars *"slowing

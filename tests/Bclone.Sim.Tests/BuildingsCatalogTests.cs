@@ -30,7 +30,7 @@ namespace Bclone.Sim.Tests;
 /// originally run with <em>"barn"</em>, and the guard kept it — which reads as though the granary
 /// had been renamed. <b>It had not, and a barn is real content:</b> `TECH-EXAMPLE.md`,
 /// `livestock.md` and `tech-tree.md §9` all carry a <b>Timber Barn</b> as its own building, the hay
-/// store D52 refuses to put in the shed. <b>A fixture word that will shortly name a different
+/// store D52 refuses to put in the warehouse. <b>A fixture word that will shortly name a different
 /// building is a fixture that reads as a bug</b> — so it is a word this game can never have.
 /// </para>
 /// </remarks>
@@ -78,7 +78,7 @@ public sealed class BuildingsCatalogTests
         SimWorld world = World(VillageFixtures.Village);
 
         Assert.Equal("granary", world.BuildingsCatalog.NameOf(BuildingKind.Granary));
-        Assert.Equal("storage shed", world.BuildingsCatalog.NameOf(BuildingKind.Shed));
+        Assert.Equal("warehouse", world.BuildingsCatalog.NameOf(BuildingKind.Warehouse));
         Assert.Equal("market", world.BuildingsCatalog.NameOf(BuildingKind.Market));
         Assert.Equal("woodcutter's hut", world.BuildingsCatalog.NameOf(BuildingKind.WoodcutterHut));
         Assert.Equal("builder's hut", world.BuildingsCatalog.NameOf(BuildingKind.BuilderHut));
@@ -181,7 +181,7 @@ public sealed class BuildingsCatalogTests
         BuildingsCatalog catalog = World(VillageFixtures.Village).BuildingsCatalog;
 
         Assert.Equal(StoreKind.Granary, catalog.StoresAs(BuildingKind.Granary));
-        Assert.Equal(StoreKind.Shed, catalog.StoresAs(BuildingKind.Shed));
+        Assert.Equal(StoreKind.Warehouse, catalog.StoresAs(BuildingKind.Warehouse));
         Assert.Equal(StoreKind.Market, catalog.StoresAs(BuildingKind.Market));
         Assert.Equal(StoreKind.Pile, catalog.StoresAs(BuildingKind.Pile));
 
@@ -219,7 +219,7 @@ public sealed class BuildingsCatalogTests
         // the case that mattered: `Complete`'s old default arm would have made an unknown building
         // a market, staff and all.
         Assert.Null(catalog.EmployedBy(BuildingKind.Granary));
-        Assert.Null(catalog.EmployedBy(BuildingKind.Shed));
+        Assert.Null(catalog.EmployedBy(BuildingKind.Warehouse));
         Assert.Equal(JobKind.Marketer, catalog.EmployedBy(BuildingKind.Market));
     }
 
@@ -293,7 +293,7 @@ public sealed class BuildingsCatalogTests
         BuildingsCatalog catalog = World(config).BuildingsCatalog;
 
         Assert.Equal(config.GranaryCapacity, catalog[BuildingKind.Granary].StoreCapacity);
-        Assert.Null(catalog[BuildingKind.Shed].StoreCapacity);
+        Assert.Null(catalog[BuildingKind.Warehouse].StoreCapacity);
         Assert.Null(catalog[BuildingKind.Pile].StoreCapacity);
         Assert.Null(catalog[BuildingKind.Market].StoreCapacity);
 
@@ -367,7 +367,7 @@ public sealed class BuildingsCatalogTests
         SimConfig config = VillageFixtures.Village;
         var rows = new List<BuildingRow>(config.BuildingRows)
         {
-            new BuildingRow { Id = NextFreeId(config), Name = "wagon shed", Stores = StoreKind.Cart, StoreCapacity = 50 },
+            new BuildingRow { Id = NextFreeId(config), Name = "wagon warehouse", Stores = StoreKind.Cart, StoreCapacity = 50 },
         };
 
         SimConfigException blew = Assert.Throws<SimConfigException>(
@@ -401,7 +401,7 @@ public sealed class BuildingsCatalogTests
             {
                 Id = NextFreeId(config),
                 Name = "boathouse",
-                Stores = StoreKind.Shed,
+                Stores = StoreKind.Warehouse,
                 StoreCapacity = 200,
                 Materials = new[] { new MaterialCost(Goods.Logs, 10) },
                 WorkTicks = 10,

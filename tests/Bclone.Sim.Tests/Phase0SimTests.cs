@@ -392,7 +392,7 @@ public sealed class Phase0SimTests
         // Inside the valley, which is what "their world" means and what the villager
         // must never leave. It used to assert they stayed between home and the berry
         // patch, which was true when those were the only two places anyone went —
-        // there is a granary and a shed to walk to now, and both are on the other side
+        // there is a granary and a warehouse to walk to now, and both are on the other side
         // of home.
         var (loop, _) = Phase0Fixtures.Build(Config);
         SimConfig config = Config;

@@ -91,7 +91,7 @@ What the exiles arrive able to do. **Ten of these are built.**
 |---|---|---|---|
 | Home | Zoned | — | Shelter, household, birth. Built inside the residential brush. ✅ |
 | Granary | Placed | — | Food store; total capacity is the population ceiling (D33). ✅ |
-| Storage shed | Placed | — | Raw and refined materials. ✅ |
+| Storage warehouse | Placed | — | Raw and refined materials. ✅ |
 | **Storage pile** | Placed | — | Cleared ground with goods stacked on it — **the one building that costs nothing**, and the first the player places (D76). ✅ |
 | Market | Placed | — | Manned redistribution within a catchment (D14). ✅ |
 | Woodcutter's hut | Placed | — | Logs → firewood. ✅ |
@@ -148,7 +148,7 @@ Requires scale, accumulated knowledge, or both.
 | **Iron mine** | Placed | Civic | — | Ore. Effort-limited; consumes props. |
 | **Smelter** | Placed | By knowledge | ✓ | Ore + charcoal → iron. |
 | **Blacksmith** | Placed | By knowledge | ✓ | Iron + wood → **tools**, and fittings for better buildings. Tools raise yields, which is §2.1's hook. |
-| **Tool shed** | Placed | Civic | — | Tools are real, stockpiled, auto-distributed. Reconcile with the existing store set. |
+| **Tool warehouse** | Placed | Civic | — | Tools are real, stockpiled, auto-distributed. Reconcile with the existing store set. |
 | **Scriptorium** | Placed | By knowledge | ✓ | **Writes knowledge down.** See §5 — this is load-bearing. |
 | **School** | Placed | Civic | ✓ | ⭐ **Specified 2026-08-24 (D209), and it is the first T2 building with a full design behind it.** A **teacher** works it; **children attend 12–16** if there are open slots, and **another school is built when there are not**; graduates enter work **more proficient**. ⛔ **It is not free** — `adult_age` is 12, so every year at school is a working year the village gives up. `specs/school-and-education.md` |
 | **Trading post / dock** | Placed | Civic | — | §2.4, currently unbuilt in any form. Dock if on navigable water; post if not. |
@@ -206,7 +206,7 @@ here** and is genuinely new ground.
 | Sawmill · Quarry & Slate Works · Clay Pit & Brick Kiln | Sawpit · Quarry · Clay pit + Kiln |
 | Gristmill & Bakery · Dairy House · Brewery & Cider Mill | Mill + Bakery · Creamery · Brewery |
 | Slaughterhouse & Butchery · Tannery · Weaver's Cottage | Butcher · Tannery · Weaver |
-| Smokehouse & Salting Shed · Root Cellar | Smokehouse · Root cellar |
+| Smokehouse & Salting Warehouse · Root Cellar | Smokehouse · Root cellar |
 | Smelter & Foundry · Blacksmith Forge · Deep Shaft Mine | Smelter · Blacksmith · Iron mine |
 | Scriptorium · Town Hall · Trading Post / Dock | Scriptorium · Town hall · Trading post |
 | Apothecary & Infirmary | Herbalist's cottage → Physician's house |
@@ -221,12 +221,12 @@ here** and is genuinely new ground.
 | **Stone Cottage** · **Insulated Manor** | ⭐⭐ **The house-upgrade ladder on a fuel axis** — wood hut *(high burn)* → stone *(50% less)* → insulated *(80% less)*. **This closes `DESIGN.md §5`'s open decision**, which asked for exactly this in exactly these words |
 | **Compost Pit** | Manure and spoiled food → fertiliser. **Makes the herd branch feed the ground branch** — the web-not-columns shape §7a argues for |
 | **Basic Well** | ⚠️ **Answers `§9`'s open question 1 — water IS a resource.** But Joe makes it *default unlocked*, where `tech-tree.md §9.7` had clean water taught by an outbreak |
-| **Cartwright Shed** | Wagons and handcarts. The first thing in this game that would change **how much one person can carry**, which is `carry_capacity` — a load-bearing number |
+| **Cartwright Warehouse** | Wagons and handcarts. The first thing in this game that would change **how much one person can carry**, which is `carry_capacity` — a load-bearing number |
 | **Glassworks** · **Paper Mill & Ink Workshop** | ⭐ **Supply chains under things that were previously switches.** Writing now needs paper and ink to be *made*; the glasshouse needs panes. Good — it gives literacy a material cost rather than a flag |
 | **Cooperage** · **Oil Rendering Station** · **Soapery** | Barrels, lamp oil, soap and candles from tallow and beeswax |
 | **Pigeon Aviary & Sericulture** | Silk, guano, postal birds. ⚠️ The most speculative entry in the document |
 | **Tier 4 entirely** — Glasshouse, Boiler House, Aqueduct, Blast Furnace, Great Library | **Beyond anything previously designed.** A late game made of *thermal automation* rather than more of the same |
-| **Barn tiers** (Lean-To → Timber → Stone Homestead) | The *tier of shed* pattern §6 already blessed, applied to livestock |
+| **Barn tiers** (Lean-To → Timber → Stone Homestead) | The *tier of warehouse* pattern §6 already blessed, applied to livestock |
 
 ### 4.5c ⛔ What it omits — and several are things its own costs require
 
@@ -240,7 +240,7 @@ consumes what it does not make is the gap that bites at build time:
 | ⛔ **Charcoal burner** | *"4 Charcoal per day"* is a stated fuel cost across the glasshouse and boiler. **Nothing makes charcoal** |
 | ⛔ **Mason's yard** | *Cut Stone* appears in ~15 construction costs. The quarry extracts; nothing dresses |
 | ⛔ **Cemetery** | D35, and this document calls it *"possibly the highest-value building in the game"* |
-| ⛔ **Builder's hut, storage shed, storage pile, forager's hut, farmhouse, all three zones** | **All built and shipping.** Joe's document is a forward plan, not an inventory — noted so nobody reads the omission as a deletion |
+| ⛔ **Builder's hut, warehouse, storage pile, forager's hut, farmhouse, all three zones** | **All built and shipping.** Joe's document is a forward plan, not an inventory — noted so nobody reads the omission as a deletion |
 | Pasture zone, tailor, orchard, bridge, vineyard | In this catalogue, absent from his |
 
 ### 4.5d ⚠️ Four §6 cuts are re-proposed, and a cut that comes back should be re-decided
@@ -250,7 +250,7 @@ consumes what it does not make is the gap that bites at build time:
 | §6 cut | Re-proposed as | Standing |
 |---|---|---|
 | *"Separate library — not a building"* | **Imperial Great Library** | ⛔ **`tech-tree.md §7c` also treats it as a building with shelf caps and fire, and D196 has a woodcutter learning *in* it.** Two of three say building. **The cut looks like the outlier** |
-| *"Warehouse — a tier of shed, not a new building"* | **Vaulted Warehouse** | Consistent with the cut if it ships as a shed tier |
+| *"Warehouse — a tier of warehouse, not a new building"* | **Vaulted Warehouse** | Consistent with the cut if it ships as a warehouse tier |
 | *"Chandler / candles — flavour with no mechanic"* | **Soapery & Candle Workshop** | ⚠️ Still needs a mechanic. *There is no night work, because there is no twitch play* |
 | *"Gold, gems, jewellery — nothing for them to attach to"* | *"highest gold value per weight unit"* | ⚠️ **Trade arriving may legitimately reopen this**, but it is a reversal |
 
@@ -312,7 +312,7 @@ Cutting is the more useful half of a catalogue. Each of these was considered and
 | **Cobbler** | Folded into the tailor. Boots are a product, not a building. |
 | ~~**Separate library**~~ ⛔ **REVERSED — it IS a building, and it shipped** (D226; annotated 2026-08-28) | ~~The library is the room the scriptorium's output lives in. Not a building.~~ `BuildingKind.Library` exists, is placeable, holds a hard shelf cap, is gifted once and can be demolished. `content-inventory.md` finding 3 named the three-way disagreement and `phase-4-the-tech-tree.md §2.2` resolved it **on recency**. ⚠️ The scriptorium it was cut in favour of is itself deferred (D204), so the cut outlived its own premise. |
 | **Windmill *and* watermill** | One mill, sited by terrain. This makes the mill a *placement decision*, which is worth more than a second entry in a menu. |
-| **Warehouse** | The storage shed already exists. A bigger one is a **tier of shed**, not a new building. |
+| **Warehouse** | The warehouse already exists. A bigger one is a **tier of warehouse**, not a new building. |
 | **City center** | The town hall. Pick one name. |
 | **Gold, gems, jewellery** | No combat, no score, no wealth condition. Nothing for them to attach to. |
 | **Fishing minigame** | ✅ Already dropped. Recorded here so it stays dropped. |

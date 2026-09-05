@@ -368,7 +368,7 @@ public sealed class Workplace
     /// <para>
     /// A buffer at the point of production (D30): a few logs beside the stumps, a
     /// little firewood at the hut. Not the village's whole stock — that belongs in a
-    /// granary or a shed, and carrying it there is the trip that makes distribution
+    /// granary or a warehouse, and carrying it there is the trip that makes distribution
     /// work somebody does rather than a rule the world enforces from nowhere.
     /// </para>
     /// <para>

@@ -124,7 +124,7 @@ internal static class LabourAllocator
     }
 
     /// <summary>
-    /// Between reshuffles: let go of anyone who can no longer do the job, shed
+    /// Between reshuffles: let go of anyone who can no longer do the job, warehouse
     /// anyone the village no longer needs, and give the work to whoever is free.
     /// </summary>
     /// <remarks>
@@ -294,7 +294,7 @@ internal static class LabourAllocator
 
             // ⭐⭐ SOMEBODY THE PLAYER HAS KEPT ON ANOTHER TRADE IS NOT A CANDIDATE FOR THIS ONE.
             //
-            // ⛔ THE SHED PASS ALONE IS NOT ENOUGH, and this is the half that would have been
+            // ⛔ THE WAREHOUSE PASS ALONE IS NOT ENOUGH, and this is the half that would have been
             // missed: `Reshuffle` tears EVERY allocation down before rebuilding, so on that tick
             // a pinned villager holds no job and looks exactly like anybody else. Refusing to
             // shed them protects the slack pass; refusing to offer them elsewhere is what
@@ -722,7 +722,7 @@ internal static class LabourAllocator
     /// TIMES.</b> Refusing to shed a pinned villager, refusing to offer them another trade, and
     /// flooring the quota at the pin count are each necessary and **together still not enough**:
     /// if an *unpinned* villager already holds the only seat, the trade sits exactly at quota,
-    /// <see cref="ShedSurplus"/> never fires (it only sheds when <em>over</em>), and the pinned
+    /// <see cref="ShedSurplus"/> never fires (it only warehouses when <em>over</em>), and the pinned
     /// villager is locked out for ever. Measured: <b>0 of 4,311 ticks</b>, with the hut showing
     /// free places and the quota wanting one.
     /// </para>
@@ -904,7 +904,7 @@ internal static class LabourAllocator
     /// </remarks>
     internal static List<int> ShedSurplus(SimWorld world, LabourQuota quota)
     {
-        var shed = new List<int>();
+        var warehouse = new List<int>();
 
         for (int k = 0; k < KindsInOrder.Length; k++)
         {
@@ -982,12 +982,12 @@ internal static class LabourAllocator
 
                 Release(world, furthest, why);
 
-                shed.Add(furthest.Id);
+                warehouse.Add(furthest.Id);
                 held--;
             }
         }
 
-        return shed;
+        return warehouse;
     }
 
     /// <summary>

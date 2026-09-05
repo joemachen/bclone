@@ -263,18 +263,18 @@ public sealed class BuildersHutTests
         GridPos first = ClearGroundNear(world, BuildingKind.Granary);
         Assert.True(world.Mark(BuildingKind.Granary, first).Allowed);
 
-        GridPos second = ClearGroundNear(world, BuildingKind.Shed);
-        Assert.True(world.Mark(BuildingKind.Shed, second).Allowed);
+        GridPos second = ClearGroundNear(world, BuildingKind.Warehouse);
+        Assert.True(world.Mark(BuildingKind.Warehouse, second).Allowed);
 
         Assert.Equal(2, world.BuildQueue().Count);
         Assert.Equal(world.BuildQueue()[0].Id, world.NextToBuild()!.Id);
         Assert.Equal(BuildingKind.Granary, world.NextToBuild()!.Construction!.Kind);
 
-        // ▼ Later on the granary, and the shed is what the crew goes to instead.
+        // ▼ Later on the granary, and the warehouse is what the crew goes to instead.
         Assert.True(world.MoveInBuildQueue(world.BuildQueue()[0], +1));
 
         Assert.Equal(world.BuildQueue()[0].Id, world.NextToBuild()!.Id);
-        Assert.Equal(BuildingKind.Shed, world.NextToBuild()!.Construction!.Kind);
+        Assert.Equal(BuildingKind.Warehouse, world.NextToBuild()!.Construction!.Kind);
     }
 
     /// <summary>
@@ -286,7 +286,7 @@ public sealed class BuildersHutTests
     /// on the far bank of the river, and because the whole crew works the head of the queue,
     /// <b>every builder spent a century walking toward a place they could never arrive at.</b>
     /// Eight sites behind it were never raised, four households of eleven were ever roofed,
-    /// thirteen hundred logs sat in the shed, nobody starved and nobody froze — the village
+    /// thirteen hundred logs sat in the warehouse, nobody starved and nobody froze — the village
     /// simply aged out. **That is the silent unrecoverable death §0.1 rules out**, and it is
     /// the cost of the queue being an order rather than a set of separate workplaces.
     /// </para>
@@ -499,7 +499,7 @@ public sealed class BuildersHutTests
         loop.Step(config.TicksPerYear);
 
         _output.WriteLine($"a year with no builder's hut: {world.BuildQueue().Count} sites still "
-            + $"waiting, {world.LogsInSheds()} logs in store");
+            + $"waiting, {world.LogsInWarehouses()} logs in store");
 
         // Everything marked is still a footprint — including the houses the village marked
         // for itself, which is the harshest half of the rule and the whole of Joe's design.

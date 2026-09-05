@@ -53,7 +53,7 @@ public sealed class EdibleGoodsTests
                 rows[i] = rows[i] with
                 {
                     Nutrition = config.GoodsCatalog[(int)Goods.Food].Nutrition,
-                    StoredBy = new[] { StoreKind.Granary, StoreKind.Shed, StoreKind.Cart, StoreKind.Pile },
+                    StoredBy = new[] { StoreKind.Granary, StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
                 };
             }
         }

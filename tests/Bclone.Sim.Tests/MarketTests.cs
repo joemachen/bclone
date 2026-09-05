@@ -619,7 +619,7 @@ public sealed class MarketTests
     /// <remarks>
     /// <b>The half that keeps this bounded by errands rather than by spare hands</b> (D36), and
     /// the trap `stock-limits-and-laborers.md §5.1` names outright: **D52 deleted a winter
-    /// labour fill bounded by *"is any shed not yet full?"* and it cost the village a third of
+    /// labour fill bounded by *"is any warehouse not yet full?"* and it cost the village a third of
     /// its population for a century.** An arm that counted every workplace with any food in it
     /// would be that bound wearing a different hat.
     /// </remarks>

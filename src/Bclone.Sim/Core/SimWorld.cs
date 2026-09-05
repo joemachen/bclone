@@ -579,7 +579,7 @@ public sealed class SimWorld
     public List<Workplace> Workplaces { get; } = new();
 
     /// <summary>
-    /// Buildings that exist to hold things — the granary and the materials shed.
+    /// Buildings that exist to hold things — the granary and the materials warehouse.
     /// </summary>
     /// <remarks>
     /// Ordered by id and never reordered, for the same reason the villagers are: this
@@ -667,20 +667,20 @@ public sealed class SimWorld
     }
 
     /// <summary>Total logs anywhere a household or a builder could fetch them from.</summary>
-    public int LogsInSheds() => TotalAccepting(Goods.Logs, static store => store.Logs);
+    public int LogsInWarehouses() => TotalAccepting(Goods.Logs, static store => store.Logs);
 
     /// <summary>
     /// Total firewood the village can actually reach — the supply the fuel quota reads.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Any store that takes firewood, not only a shed (D79).</b> D29's rule is that a pile
+    /// <b>Any store that takes firewood, not only a warehouse (D79).</b> D29's rule is that a pile
     /// in <em>somebody's house</em> is not supply, because no errand reaches it — and that
     /// still holds, because household larders are not stores. But a cart and a storage pile
-    /// are, and reading only sheds made them invisible.
+    /// are, and reading only warehouses made them invisible.
     /// </para>
     /// <para>
-    /// <b>Measured by Joe, twice, and it starved his village.</b> A cold start has no shed,
+    /// <b>Measured by Joe, twice, and it starved his village.</b> A cold start has no warehouse,
     /// so this returned zero however much fuel was standing about: `WoodcuttersWanted` saw a
     /// village with no firewood at all and put every spare hand on the fuel chain, forever.
     /// His cart held <b>541 firewood</b> and nobody was foraging — <em>"they were cold too,
@@ -692,7 +692,7 @@ public sealed class SimWorld
     /// anything that answers <em>how much has the village got?</em> had the same bug.
     /// </para>
     /// </remarks>
-    public int FirewoodInSheds() => TotalAccepting(Goods.Firewood, static store => store.Firewood);
+    public int FirewoodInWarehouses() => TotalAccepting(Goods.Firewood, static store => store.Firewood);
 
     /// <summary>
     /// How much of any good the village's stores hold between them.
@@ -764,12 +764,12 @@ public sealed class SimWorld
     /// <b>Ask by what a store holds, not by which building it is.</b> This is the fix for a
     /// bug that has now been patched four times: <c>TryTakeBuildingTimber</c>,
     /// <c>StoreForTheLoad</c>, the builder's material fetch and the woodcutter's log fetch
-    /// each named <see cref="StoreKind.Shed"/> and each went blind the moment the goods were
+    /// each named <see cref="StoreKind.Warehouse"/> and each went blind the moment the goods were
     /// somewhere else. The founders' cart was the first store to expose it and the storage
     /// pile would have been the fifth.
     /// </para>
     /// <para>
-    /// <em>"Where is the nearest shed?"</em> is a question about buildings.
+    /// <em>"Where is the nearest warehouse?"</em> is a question about buildings.
     /// <em>"Where can I put these logs?"</em> is a question about goods, and only the second
     /// survives a new kind of store. <see cref="NearestStore"/> stays for the cases that
     /// genuinely mean a particular building — naming one, or refunding a demolition — but
@@ -1486,7 +1486,7 @@ public sealed class SimWorld
     /// <b>⚠️ It reads <see cref="InStores"/> for every good, and that is not a widening of what
     /// <see cref="MayFell"/> counted.</b> `stock-limits-and-laborers.md §4.1` is emphatic that a
     /// limit must read the same supply the good's demand function reads — D29 froze a village to
-    /// extinction on the other reading. <c>InStores(Goods.Logs)</c> and <see cref="LogsInSheds"/>
+    /// extinction on the other reading. <c>InStores(Goods.Logs)</c> and <see cref="LogsInWarehouses"/>
     /// are the same sum over the same stores (<c>store.Logs</c> <em>is</em>
     /// <c>store[Goods.Logs]</c>), so the forester's question is unchanged to the byte. The spec's
     /// own answer for a good with no demand function yet — stone, iron, tools — is <em>"the limit
@@ -2596,10 +2596,10 @@ public sealed class SimWorld
             return null;
         }
 
-        if (hut.Mode != WorkMode.PlantOnly && StockLimits.IsMet(Goods.Logs, LogsInSheds()))
+        if (hut.Mode != WorkMode.PlantOnly && StockLimits.IsMet(Goods.Logs, LogsInWarehouses()))
         {
             return $"{hut.Name} has stopped — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Logs)} logs and it has {LogsInSheds()}.";
+                + $"{StockLimits.For(Goods.Logs)} logs and it has {LogsInWarehouses()}.";
         }
 
         return hut.Mode == WorkMode.PlantOnly
@@ -2609,10 +2609,10 @@ public sealed class SimWorld
 
     private string? WoodcutterIdleNote(Workplace hut)
     {
-        if (StockLimits.IsMet(Goods.Firewood, FirewoodInSheds()))
+        if (StockLimits.IsMet(Goods.Firewood, FirewoodInWarehouses()))
         {
             return $"{hut.Name} has stopped — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodInSheds()}.";
+                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodInWarehouses()}.";
         }
 
         return NearestStoreAccepting(
@@ -3281,7 +3281,7 @@ public sealed class SimWorld
     /// <para>
     /// <b>⭐ This is the sentence that keeps D90 step 4 fair.</b> The cart stopped taking logs,
     /// so a founding that paints trees and places no store fells timber into a field where
-    /// <c>LogsInSheds</c> cannot see it — goods on the ground are supply-invisible by design —
+    /// <c>LogsInWarehouses</c> cannot see it — goods on the ground are supply-invisible by design —
     /// and the hut then reports <em>"no logs here to split"</em> while four hundred logs lie
     /// about. <b>That is D89's silent strangling in a new costume</b>, and D89 is the decision
     /// that named it as a legibility failure before a balance one.
@@ -3367,8 +3367,8 @@ public sealed class SimWorld
     /// <remarks>
     /// <para>
     /// <b>⭐ Only a heap a store would actually take.</b> Without that condition somebody
-    /// picks up the load beside a full shed and carries it straight back to the same full
-    /// shed, forever. With it, a village whose stores are all full simply leaves its heaps
+    /// picks up the load beside a full warehouse and carries it straight back to the same full
+    /// warehouse, forever. With it, a village whose stores are all full simply leaves its heaps
     /// alone until there is room — which is the self-correcting behaviour D96 predicted, and
     /// it needs no rule telling anybody to.
     /// </para>
@@ -3981,7 +3981,7 @@ public sealed class SimWorld
         // four cleared in five years and not one stone reaching a store**, while the huts that
         // needed three of it stayed sites and everybody froze.
         //
-        // ⚠️ ONLY WHEN NOTHING IN STORE CAN SERVE IT. If a shed already holds the stone, a
+        // ⚠️ ONLY WHEN NOTHING IN STORE CAN SERVE IT. If a warehouse already holds the stone, a
         // builder fetches it and this is not clearing work at all — the rule is *"the village
         // cannot otherwise get this"*, not *"a site wants this"*, which would send laborers to
         // the rock every time a granary was marked.
@@ -5194,7 +5194,7 @@ public sealed class SimWorld
 
         // ⭐ AND A LODGE NEEDS SOMETHING TO HUNT — the same shape one building over, and the third
         // question the ground gets asked. Joe: *game lives in the forest*, so a lodge in open
-        // meadow is not a lodge, it is a shed with a job title.
+        // meadow is not a lodge, it is a warehouse with a job title.
         //
         // ⚠️ A REACH, NOT A TOUCH, WHICH IS WHY IT IS NOT `MustTouch`. A fishery stands ON the
         // bank; a lodge stands where its RANGE holds woods, and the range is wide. Asking it to
@@ -5565,7 +5565,7 @@ public sealed class SimWorld
     /// killed seed 11 of twelve: <c>ChooseSite</c> put a house at (-1,-5) on the far bank,
     /// and because the whole crew works the head of the queue, <b>every builder spent a
     /// century walking toward a place they could never arrive at</b> — eight sites behind it
-    /// never raised, four households of eleven ever roofed, thirteen hundred logs in the shed,
+    /// never raised, four households of eleven ever roofed, thirteen hundred logs in the warehouse,
     /// nobody starved, nobody frozen, the village simply aged out. That is the silent
     /// unrecoverable death §0.1 rules out.
     /// </para>
@@ -5973,9 +5973,9 @@ public sealed class SimWorld
             }
         }
 
-        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a warehouse by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
-        // because `shed` was simply null and the logs went nowhere.
+        // because `warehouse` was simply null and the logs went nowhere.
         string recovered = ReturnToStore(building.Position, back);
 
         Narrate(held > 0
@@ -6043,9 +6043,9 @@ public sealed class SimWorld
         string name = workplace.Name;
         RetireWorkplace(workplace);
 
-        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a warehouse by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
-        // because `shed` was simply null and the logs went nowhere.
+        // because `warehouse` was simply null and the logs went nowhere.
         string recovered = ReturnToStore(workplace.Position, back);
 
         Narrate(back.Count > 0
@@ -6131,9 +6131,9 @@ public sealed class SimWorld
         IReadOnlyList<MaterialCost> back = site.Construction.Abandon();
         RetireWorkplace(site);
 
-        // ANYWHERE THAT TAKES IT, not a shed by name (D132). Asking for the kind
+        // ANYWHERE THAT TAKES IT, not a warehouse by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
-        // because `shed` was simply null and the logs went nowhere.
+        // because `warehouse` was simply null and the logs went nowhere.
         string recovered = ReturnToStore(site.Position, back);
 
         Narrate($"{site.Construction.Name} was abandoned before it was built — " +
@@ -6389,7 +6389,7 @@ public sealed class SimWorld
     /// <b>⭐ THE EXEMPTION `buildings-catalog.md §2.2` NAMES ON THE RECORD, AND IT IS PRINCIPLED
     /// RATHER THAN A SHORTCUT: a STATED capacity is data; a DERIVED one is the survival floor, and
     /// the survival floor is <see cref="VillageEconomy"/>'s business (D16).</b> A granary is a box
-    /// of a stated size (D219). A shed is <em>solved</em> — a horizon of households, the firewood
+    /// of a stated size (D219). A warehouse is <em>solved</em> — a horizon of households, the firewood
     /// they want, the logs to split it out of, a house's timber, floored at a granary — and typing
     /// that number into a row is exactly the move D16 exists to refuse.
     /// </para>
@@ -6409,7 +6409,7 @@ public sealed class SimWorld
 
         return kind switch
         {
-            BuildingKind.Shed => VillageEconomy.ShedCapacity(Config),
+            BuildingKind.Warehouse => VillageEconomy.WarehouseCapacity(Config),
             BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
             BuildingKind.Market => VillageEconomy.MarketCapacity(Config),
             _ => throw new ArgumentOutOfRangeException(
@@ -7197,7 +7197,7 @@ public sealed class SimWorld
         // That distinction used to matter because the berry patches and the stands were
         // features of the valley and stayed either way. **There is nothing above any more**,
         // so a cold start now begins with no work of any kind — which is the whole of Joe's
-        // *"no forest, no food"*. What follows — the hut, the granary, the shed, the market —
+        // *"no forest, no food"*. What follows — the hut, the granary, the warehouse, the market —
         // is what somebody had to raise, and in the cold start that somebody is the player.
         // The founding happens here rather than at the end of the constructor, and only
         // because there is nothing left to wait for: the reason it normally goes last is
@@ -7210,7 +7210,7 @@ public sealed class SimWorld
         }
 
         // ⭐ THE BUILDER'S HUT, AND A WARM START HAS ONE (D108). Nothing is raised without
-        // it, so a founding that ships with a granary, a shed and a market must ship with
+        // it, so a founding that ships with a granary, a warehouse and a market must ship with
         // the building that could have raised them — otherwise the fixture villages the
         // whole suite is written against could never build a house again.
         //
@@ -7346,10 +7346,10 @@ public sealed class SimWorld
         {
             Catalog = GoodsCatalog,
             Id = 2,
-            Kind = StoreKind.Shed,
-            Name = NameFor(BuildingKind.Shed),
-            Position = Offset(origin, config.StorageShedX, config.StorageShedY),
-            Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.ShedCapacity(config) },
+            Kind = StoreKind.Warehouse,
+            Name = NameFor(BuildingKind.Warehouse),
+            Position = Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY),
+            Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.WarehouseCapacity(config) },
         });
 
         // The market (D14) — the one store that is also a workplace, because its
@@ -7720,9 +7720,9 @@ public sealed class SimWorld
     /// <para>
     /// The offsets are a village <em>layout</em>, drawn up without knowing what the
     /// valley looks like, so on a generated map any of them can land in the river.
-    /// Measured on seed 1: the shed and the woodcutter's hut both came down in the
+    /// Measured on seed 1: the warehouse and the woodcutter's hut both came down in the
     /// water, so no logs could be stored and no firewood made, and all four founders
-    /// froze in the first winter. Nothing in the log said "your shed is in the river" —
+    /// froze in the first winter. Nothing in the log said "your warehouse is in the river" —
     /// it just said they were cold.
     /// </para>
     /// <para>
@@ -7776,7 +7776,7 @@ public sealed class SimWorld
     /// <remarks>
     /// Without this, two buildings whose offsets both landed in the river nudged to the
     /// same dry tile and stood on top of each other — and a granary drawn underneath a
-    /// shed is a granary nobody can see, which makes "why is nobody fetching food?"
+    /// warehouse is a granary nobody can see, which makes "why is nobody fetching food?"
     /// unanswerable by looking.
     /// </remarks>
     internal bool SomethingStandsAt(GridPos position)
@@ -7862,7 +7862,7 @@ public sealed class SimWorld
     /// </para>
     /// <para>
     /// Homes are asked first and win, because a home is the only thing that can hold a
-    /// fire. A hut, a market and a shed have roofs but no hearth; a berry patch and a
+    /// fire. A hut, a market and a warehouse have roofs but no hearth; a berry patch and a
     /// tree stand have neither, which is what makes foraging and logging <em>outdoor
     /// work</em> — the asymmetry clothing later removes (D19/D39).
     /// </para>
@@ -8035,7 +8035,7 @@ public sealed class SimWorld
     /// The work question, as against the birth question above. <b>A village cannot want
     /// more food than it has somewhere to put</b>, and a forager standing at a full
     /// store should go and do something else — which is exactly the pressure capacity
-    /// was added to create (spec §4: "a full shed means a producer has somewhere to
+    /// was added to create (spec §4: "a full warehouse means a producer has somewhere to
     /// stop").
     /// </para>
     /// <para>

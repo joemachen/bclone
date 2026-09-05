@@ -77,7 +77,7 @@ public sealed class PinnedTradeTests
         //   1. `ReleaseUnfit` lets go of a pinned villager holding some OTHER trade. Without it
         //      she keeps her old job for ever, because `BuildCandidates` only offers work to
         //      somebody with none.
-        //   2. `ShedSurplus` never sheds a pinned villager.
+        //   2. `ShedSurplus` never warehouses a pinned villager.
         //   3. `BuildCandidates` never offers a pinned villager a different trade — which is what
         //      survives the reshuffle, where (2) does not, because the reshuffle tears every
         //      allocation down and on that tick she looks like anybody else.

@@ -12,7 +12,7 @@ namespace Bclone.Sim.World;
 public enum BuildingKind
 {
     Granary = 0,
-    Shed = 1,
+    Warehouse = 1,
     Market = 2,
     WoodcutterHut = 3,
 

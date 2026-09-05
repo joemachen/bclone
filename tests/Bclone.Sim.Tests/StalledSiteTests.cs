@@ -74,15 +74,15 @@ public sealed class StalledSiteTests
         Workplace site = SiteFor(world, BuildingKind.Granary);
 
         // ⭐⭐ POSED AS JOE'S VILLAGE ACTUALLY WAS, and the first draft of this guard was not.
-        // It left the shed empty and then asserted the sentence named STONE — but a fresh
+        // It left the warehouse empty and then asserted the sentence named STONE — but a fresh
         // valley has no logs either, and the note reports the first material the village cannot
         // get, so it correctly said "40 logs". **The pose was wrong, not the code.** His
         // Fernhollow held 206 logs and 0 stone, which is the case worth guarding: the timber is
         // there, the site still cannot be raised, and only one material explains it.
-        StoreBuilding shed = Assert.Single(
-            world.StoreBuildings, store => store.Kind == StoreKind.Shed);
-        Assert.True(world.SetStoreAccepts(shed, Goods.Logs, accepted: true).Allowed);
-        shed.Store.Add(Goods.Logs, site.Construction!.Recipe.Materials[0].Amount * 4);
+        StoreBuilding warehouse = Assert.Single(
+            world.StoreBuildings, store => store.Kind == StoreKind.Warehouse);
+        Assert.True(world.SetStoreAccepts(warehouse, Goods.Logs, accepted: true).Allowed);
+        warehouse.Store.Add(Goods.Logs, site.Construction!.Recipe.Materials[0].Amount * 4);
 
         // ⚠️ ANTI-VACUITY (D7): this proves nothing unless the granary really does want stone
         // and the village really has none. The founders' cart carries food and tools only
@@ -124,18 +124,18 @@ public sealed class StalledSiteTests
         // Give the village everything the site could possibly want, so the ONLY thing left is
         // somebody's legs. Read the materials out of the recipe rather than writing numbers in
         // — an instrument that assumes a simpler world measures something else.
-        StoreBuilding shed = Assert.Single(
-            world.StoreBuildings, store => store.Kind == StoreKind.Shed);
+        StoreBuilding warehouse = Assert.Single(
+            world.StoreBuildings, store => store.Kind == StoreKind.Warehouse);
 
         foreach (MaterialCost material in site.Construction!.Recipe.Materials)
         {
             Assert.True(
-                world.SetStoreAccepts(shed, material.Goods, accepted: true).Allowed);
-            shed.Store.Add(material.Goods, material.Amount * 4);
+                world.SetStoreAccepts(warehouse, material.Goods, accepted: true).Allowed);
+            warehouse.Store.Add(material.Goods, material.Amount * 4);
         }
 
         _output.WriteLine(
-            $"the shed holds {site.Construction.Recipe.Describe(world.GoodsCatalog)} over, "
+            $"the warehouse holds {site.Construction.Recipe.Describe(world.GoodsCatalog)} over, "
             + $"and the site says: {world.SiteWaitingNote(site) ?? "(nothing)"}");
 
         Assert.Null(world.SiteWaitingNote(site));

@@ -90,7 +90,7 @@ public sealed class ModdedBuildingTests
 
       "buildings": [
         { "id": 0, "name": "granary",          "stores": "Granary", "store_capacity": 2500, "work_ticks": 60, "materials": [ { "goods": "Logs", "amount": 40 }, { "goods": "Stone", "amount": 10 } ] },
-        { "id": 1, "name": "storage shed",     "stores": "Shed",                            "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 8 } ] },
+        { "id": 1, "name": "warehouse",     "stores": "Warehouse",                            "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 8 } ] },
         { "id": 2, "name": "market",           "stores": "Market",  "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 }, { "goods": "Stone", "amount": 10 } ] },
         { "id": 3, "name": "woodcutter's hut",                      "seats": 3,             "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ] },
         { "id": 4, "name": "stockpile",        "stores": "Pile" },
@@ -106,7 +106,7 @@ public sealed class ModdedBuildingTests
         // what caught the literacy gate asking `kind == BuildingKind.Library` instead of asking the
         // ROW whether it has shelves — *a modder's boathouse refused for want of literacy it had
         // no use for.* **Do not move it off 10 to tidy up.**
-        { "id": 10, "name": "boathouse", "stores": "Shed", "store_capacity": 200, "seats": 2, "local_store_cap": 40, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 15 }, { "goods": "Stone", "amount": 2 } ] },
+        { "id": 10, "name": "boathouse", "stores": "Warehouse", "store_capacity": 200, "seats": 2, "local_store_cap": 40, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 15 }, { "goods": "Stone", "amount": 2 } ] },
 
         // ⭐ The modder's own CIVIC building, at the id the town hall holds in the shipped
         // catalogue (D252). Two things at once: the validator refuses a catalogue missing a
@@ -178,7 +178,7 @@ public sealed class ModdedBuildingTests
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
         Assert.Equal("boathouse", catalog.NameOf(Boathouse));
-        Assert.Equal(StoreKind.Shed, catalog.StoresAs(Boathouse));
+        Assert.Equal(StoreKind.Warehouse, catalog.StoresAs(Boathouse));
         Assert.Equal(200, catalog[Boathouse].StoreCapacity);
         Assert.Equal(2, catalog[Boathouse].Seats);
         Assert.Equal(40, catalog[Boathouse].LocalStoreCap);
@@ -240,7 +240,7 @@ public sealed class ModdedBuildingTests
         }
 
         Assert.NotNull(store);
-        Assert.Equal(StoreKind.Shed, store!.Kind);
+        Assert.Equal(StoreKind.Warehouse, store!.Kind);
         Assert.Equal(200, store.Store.Capacity);
 
         Workplace? stall = null;
@@ -294,7 +294,7 @@ public sealed class ModdedBuildingTests
         string shuffled = """
         {
           "buildings": [
-            { "id": 10, "name": "boathouse",       "stores": "Shed",    "store_capacity": 200, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 15 } ] },
+            { "id": 10, "name": "boathouse",       "stores": "Warehouse",    "store_capacity": 200, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 15 } ] },
             { "id": 9,  "name": "farmhouse",       "seats": 2, "local_store_cap": 100,         "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 8,  "name": "forester's hut",                                              "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 7,  "name": "gatherer's hut",  "seats": 2, "gathering_radius": 8,           "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
@@ -306,7 +306,7 @@ public sealed class ModdedBuildingTests
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },
-            { "id": 1,  "name": "storage shed",    "stores": "Shed",                           "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+            { "id": 1,  "name": "warehouse",    "stores": "Warehouse",                           "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 0,  "name": "granary",         "stores": "Granary", "store_capacity": 2500, "work_ticks": 60, "materials": [ { "goods": "Logs", "amount": 40 } ] }
           ]
         }
@@ -319,7 +319,7 @@ public sealed class ModdedBuildingTests
         // ⛔ If position won, `BuildingKind.Granary` would read "boathouse" here — a village whose
         // every building quietly means something else.
         Assert.Equal("granary", catalog.NameOf(BuildingKind.Granary));
-        Assert.Equal("storage shed", catalog.NameOf(BuildingKind.Shed));
+        Assert.Equal("warehouse", catalog.NameOf(BuildingKind.Warehouse));
         Assert.Equal("farmhouse", catalog.NameOf(BuildingKind.Farmhouse));
         Assert.Equal("boathouse", catalog.NameOf(Boathouse));
 

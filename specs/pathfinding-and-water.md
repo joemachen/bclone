@@ -155,7 +155,7 @@ Slice 3 — bridges — is a separate spec and needs the tech tree and placement
 
 §6 said the generator owed the village a valley it could live in, and the first implementation read that as *"the founding site must not be in the river"*. It was not enough, in two ways, and seed 1 demonstrated both at once:
 
-- **The village's own buildings were placed at fixed offsets with no terrain check.** The shed and the woodcutter's hut both came down *in the water*. No logs could be stored, no firewood made, and all four founders froze in the first winter — **peak population zero**. Nothing in the log said "your shed is in the river"; it said they were cold.
+- **The village's own buildings were placed at fixed offsets with no terrain check.** The warehouse and the woodcutter's hut both came down *in the water*. No logs could be stored, no firewood made, and all four founders froze in the first winter — **peak population zero**. Nothing in the log said "your warehouse is in the river"; it said they were cold.
 - **Founding homes were still dropped on a spiral**, so they could land in the river too, and a family standing on water cannot take a step.
 
 **Dry is not the same as reachable**, and that is the sharper half. A building on the far bank is exactly as useless as one under water and looks perfectly fine on the map. Placement now asks *"can the village walk here from the founding site?"* — one flow field from the origin, reused for every candidate — and the founding site itself is chosen as the land mass holding the most work.

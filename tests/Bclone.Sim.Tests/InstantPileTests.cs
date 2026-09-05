@@ -246,12 +246,12 @@ public sealed class InstantPileTests
         SimWorld world = World(VillageFixtures.Village);
 
         GridPos at = WoodedGroundNear(world)!.Value;
-        Assert.True(world.Mark(BuildingKind.Shed, at).Allowed);
+        Assert.True(world.Mark(BuildingKind.Warehouse, at).Allowed);
 
         Assert.True(world.Zones.IsHarvest(at));
 
-        // …and the shed's site exists straight away, unlike a pile's.
-        Assert.Contains(world.Workplaces, place => place.Construction?.Kind == BuildingKind.Shed);
+        // …and the warehouse's site exists straight away, unlike a pile's.
+        Assert.Contains(world.Workplaces, place => place.Construction?.Kind == BuildingKind.Warehouse);
         Assert.Empty(world.BuildingsWaitingOnTheGround);
     }
 
@@ -277,10 +277,10 @@ public sealed class InstantPileTests
         SimWorld world = loop.World;
 
         GridPos at = WoodedGroundNear(world)!.Value;
-        Assert.True(world.Mark(BuildingKind.Shed, at).Allowed);
+        Assert.True(world.Mark(BuildingKind.Warehouse, at).Allowed);
 
         Workplace site = Assert.Single(
-            world.Workplaces, place => place.Construction?.Kind == BuildingKind.Shed);
+            world.Workplaces, place => place.Construction?.Kind == BuildingKind.Warehouse);
 
         // Give it every log it wants, so materials can never be the reason it is not built.
         BuildFixtures.StockTheSite(site);
@@ -344,15 +344,15 @@ public sealed class InstantPileTests
         StoreBuilding pile = Assert.Single(
             world.StoreBuildings, store => store.Kind == StoreKind.Pile);
 
-        int logsBefore = world.LogsInSheds();
+        int logsBefore = world.LogsInWarehouses();
         world.Demolish(pile);
 
         _output.WriteLine(
-            $"pulled the pile down: logs in stores {logsBefore} -> {world.LogsInSheds()} "
+            $"pulled the pile down: logs in stores {logsBefore} -> {world.LogsInWarehouses()} "
             + $"(a market would have returned "
             + $"{config.MarketLogs * config.DemolitionReturnsPercent / 100})");
 
-        Assert.Equal(logsBefore, world.LogsInSheds());
+        Assert.Equal(logsBefore, world.LogsInWarehouses());
         Assert.DoesNotContain(world.StoreBuildings, store => store.Kind == StoreKind.Pile);
     }
 
@@ -366,21 +366,21 @@ public sealed class InstantPileTests
         StoreBuilding cart = Assert.Single(world.StoreBuildings);
         Assert.Equal(StoreKind.Cart, cart.Kind);
 
-        // ⭐ A SHED HAS TO BE STANDING OR THIS GUARD IS VACUOUS (D7). `Demolish` hands its
-        // refund to the nearest shed, and a cold start has none — so without one this would
+        // ⭐ A WAREHOUSE HAS TO BE STANDING OR THIS GUARD IS VACUOUS (D7). `Demolish` hands its
+        // refund to the nearest warehouse, and a cold start has none — so without one this would
         // pass on a village where the bug could not fire, which is the exact shape of
         // failure D78 and D89 both record.
-        world.Mark(BuildingKind.Shed, ClearGroundNear(world));
+        world.Mark(BuildingKind.Warehouse, ClearGroundNear(world));
         Workplace site = Assert.Single(
-            world.Workplaces, place => place.Construction?.Kind == BuildingKind.Shed);
+            world.Workplaces, place => place.Construction?.Kind == BuildingKind.Warehouse);
         world.Complete(site);
 
-        StoreBuilding shed = world.AnyStoreOf(StoreKind.Shed);
+        StoreBuilding warehouse = world.AnyStoreOf(StoreKind.Warehouse);
 
-        int before = shed.Store.Logs;
+        int before = warehouse.Store.Logs;
         world.Demolish(cart);
 
-        _output.WriteLine($"pulled the cart down: shed logs {before} -> {shed.Store.Logs}");
-        Assert.Equal(before, shed.Store.Logs);
+        _output.WriteLine($"pulled the cart down: warehouse logs {before} -> {warehouse.Store.Logs}");
+        Assert.Equal(before, warehouse.Store.Logs);
     }
 }

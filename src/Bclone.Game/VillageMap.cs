@@ -66,7 +66,7 @@ public partial class VillageMap : Control
     private static readonly Color GridLine = new("#343d3d");
     private static readonly Color HomeColour = new("#b98a52");
     private static readonly Color GranaryColour = new("#d8c56a");
-    private static readonly Color ShedColour = new("#8a7a63");
+    private static readonly Color WarehouseColour = new("#8a7a63");
     private static readonly Color BerryColour = new("#5aa04a");
     private static readonly Color TreeColour = new("#2f6b3a");
 
@@ -1464,7 +1464,7 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
-    /// The granary and the materials shed.
+    /// The granary and the materials warehouse.
     /// </summary>
     /// <remarks>
     /// Drawn as squares like homes, because they are the same sort of thing — a place
@@ -1568,14 +1568,14 @@ public partial class VillageMap : Control
             Color colour = building.Kind switch
             {
                 StoreKind.Granary => GranaryColour,
-                StoreKind.Shed => ShedColour,
+                StoreKind.Warehouse => WarehouseColour,
                 _ => MarketColour,
             };
             DrawRect(rect, colour with { A = 0.85f });
             DrawRect(rect, colour, filled: false, width: 2f);
 
             // ⭐ A FULL STORE SAYS SO ON THE MAP (Joe, D140). D134 is the reason it has to:
-            // a village can sit at "Logs 15" with 1,968 stranded outside a shed that filled
+            // a village can sit at "Logs 15" with 1,968 stranded outside a warehouse that filled
             // in year five, and every symptom of that reads as a shortage. The Overview line
             // says it in words now; this is the same fact where the player is actually
             // looking, on the building that is causing it.

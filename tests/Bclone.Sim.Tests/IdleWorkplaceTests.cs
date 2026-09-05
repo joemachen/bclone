@@ -98,7 +98,7 @@ public sealed class IdleWorkplaceTests
         hut.WorkerIds.Add(world.Villagers[0].Id);
 
         // And something to split, or the note would be about logs rather than the limit.
-        world.AnyStoreOf(StoreKind.Shed).Store.Add(Goods.Logs, Config.LogsPerSplit * 4);
+        world.AnyStoreOf(StoreKind.Warehouse).Store.Add(Goods.Logs, Config.LogsPerSplit * 4);
         Assert.Null(world.IdleNote(hut));
 
         world.SetStockLimit(Goods.Firewood, 0);
@@ -491,7 +491,7 @@ public sealed class IdleWorkplaceTests
 
         loop.Step(config.TicksPerYear * 40);
 
-        // ⚠️ SAMPLED ACROSS A YEAR, NOT AT ONE TICK. `WoodcuttersWanted` reads the shed, so on
+        // ⚠️ SAMPLED ACROSS A YEAR, NOT AT ONE TICK. `WoodcuttersWanted` reads the warehouse, so on
         // any given tick a stocked village needs nobody — the first draft of this guard read
         // *"needs 0"* and failed for the fuel chain working. **A demand that comes and goes with
         // the season has to be watched over a season**, which is D200's and D227's lesson about

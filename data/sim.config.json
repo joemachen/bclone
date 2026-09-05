@@ -711,7 +711,7 @@
   // with nobody left to build and no slack for a long winter, which is
   // useless the moment anything pushes on it.
   // Re-derived twice: 36 -> 141 when the valley became generated and the
-  // haul to the shed got longer, then 141 -> 22 when hunger slowed. Fewer
+  // haul to the warehouse got longer, then 141 -> 22 when hunger slowed. Fewer
   // meals means fewer ticks lost to eating, so a woodcutter fits far more
   // batches into a year and each one can be much smaller.
   //
@@ -863,14 +863,14 @@
   // whose larder it is, but who is near the granary and who has hands
   // to send.
   //
-  // These place the FOUNDING granary and shed, near the homes, so a
+  // These place the FOUNDING granary and warehouse, near the homes, so a
   // village always has somewhere to put things. Every store after them
   // the player sites themselves (D43) - and WHERE the granary goes is
   // the first decision in the game that storage makes interesting.
   "granary_x": 1,
   "granary_y": -1,
-  "storage_shed_x": -2,
-  "storage_shed_y": 0,
+  "storage_warehouse_x": -2,
+  "storage_warehouse_y": 0,
 
   // What one person can carry in one trip. This is the whole reason a
   // fetch is a journey rather than a teleport with extra steps: an
@@ -950,22 +950,22 @@
   // purchases.
   "granary_logs": 40,
   "granary_work_ticks": 60,
-  "shed_logs": 30,
-  "shed_work_ticks": 45,
+  "warehouse_logs": 30,
+  "warehouse_work_ticks": 45,
   "market_logs": 35,
   "market_work_ticks": 50,
   "hut_logs": 25,
   "hut_work_ticks": 40,
 
   // The stone half of a recipe (D213). ONLY THE STORES THE PLAYER MARKS: a
-  // granary, a shed and a market are durable civic buildings and Joe's own
+  // granary, a warehouse and a market are durable civic buildings and Joe's own
   // TECH-EXAMPLE prices even a root cellar in wood AND cut stone. The huts and
   // the house pay nothing, and that split was measured rather than chosen --
   // see the block above granary_stone in SimConfig.cs for the fifty-year
   // numbers. A village that never marks a store never needs stone; one that
   // marks a granary it cannot pay for keeps running and is told what it wants.
   "granary_stone": 10,
-  "shed_stone": 8,
+  "warehouse_stone": 8,
   "market_stone": 10,
 
   // And a nominal amount on the huts (Joe, D214). One seam tile is 12 stone,
@@ -1055,7 +1055,7 @@
   "starting_residential_radius": 4,
 
   // THE COLD START (D70). The founders arrive to an empty valley with a cart:
-  // no granary, no shed, no market, no woodcutter's hut, no homes, and nothing
+  // no granary, no warehouse, no market, no woodcutter's hut, no homes, and nothing
   // painted to build them on. Every one of those is the player's to raise, and
   // starting_residential_radius above is not applied at all while this is false.
   //
@@ -1073,7 +1073,7 @@
   //
   // The capacity is small on purpose. The cart accepts every kind of goods,
   // unlike every other store, so its size rather than its rules is the only
-  // thing stopping it being the granary and the shed at once.
+  // thing stopping it being the granary and the warehouse at once.
   //
   // The tools are NOT a dial and cannot be one yet: nothing in the game makes
   // or spends them, so they are a stock the player can see and cannot use. The

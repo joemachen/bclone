@@ -40,12 +40,12 @@ public sealed class StorageTests
         }
 
         Assert.Equal(StoreKind.Granary, world.AnyStoreOf(StoreKind.Granary).Kind);
-        Assert.Equal(StoreKind.Shed, world.AnyStoreOf(StoreKind.Shed).Kind);
-        Assert.NotEqual(world.AnyStoreOf(StoreKind.Granary).Position, world.AnyStoreOf(StoreKind.Shed).Position);
+        Assert.Equal(StoreKind.Warehouse, world.AnyStoreOf(StoreKind.Warehouse).Kind);
+        Assert.NotEqual(world.AnyStoreOf(StoreKind.Granary).Position, world.AnyStoreOf(StoreKind.Warehouse).Position);
     }
 
     [Fact]
-    public void TheGranaryTakesFoodAndTheShedTakesMaterials()
+    public void TheGranaryTakesFoodAndTheWarehouseTakesMaterials()
     {
         // The whole of D32 in one assertion. One undifferentiated pile would delete
         // the per-household inequality D14 exists to create, so the two buildings
@@ -56,9 +56,9 @@ public sealed class StorageTests
         Assert.False(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Logs));
         Assert.False(world.AnyStoreOf(StoreKind.Granary).Accepts(Goods.Firewood));
 
-        Assert.False(world.AnyStoreOf(StoreKind.Shed).Accepts(Goods.Food));
-        Assert.True(world.AnyStoreOf(StoreKind.Shed).Accepts(Goods.Logs));
-        Assert.True(world.AnyStoreOf(StoreKind.Shed).Accepts(Goods.Firewood));
+        Assert.False(world.AnyStoreOf(StoreKind.Warehouse).Accepts(Goods.Food));
+        Assert.True(world.AnyStoreOf(StoreKind.Warehouse).Accepts(Goods.Logs));
+        Assert.True(world.AnyStoreOf(StoreKind.Warehouse).Accepts(Goods.Firewood));
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class StorageTests
         ulong afterGranary = StateHash.Compute(loop.World);
         Assert.NotEqual(before, afterGranary);
 
-        loop.World.AnyStoreOf(StoreKind.Shed).Store.Add(Goods.Logs, 1);
+        loop.World.AnyStoreOf(StoreKind.Warehouse).Store.Add(Goods.Logs, 1);
         ulong afterShed = StateHash.Compute(loop.World);
         Assert.NotEqual(afterGranary, afterShed);
 
@@ -166,7 +166,7 @@ public sealed class StorageTests
     [Fact]
     public void CapacityCountsEveryKindOfGoodsTogether()
     {
-        // Total, not per good — a shed packed with logs has nowhere to stack firewood.
+        // Total, not per good — a warehouse packed with logs has nowhere to stack firewood.
         // A per-good cap would be three shelves that never compete, which is
         // bookkeeping wearing a constraint's clothes.
         var store = new Stockpile(Stockpile.Kinds) { Capacity = 10 };
@@ -215,10 +215,10 @@ public sealed class StorageTests
     /// swing less. They now swing **35 against 34** — indistinguishable, and one person wide.
     /// </para>
     /// <para>
-    /// The granary is no longer what holds the population flat. <b>The timber shed is.</b>
-    /// Measured for D134: a village fills `storage shed 1` to 343/343 by year five and stays
+    /// The granary is no longer what holds the population flat. <b>The timber warehouse is.</b>
+    /// Measured for D134: a village fills `warehouse 1` to 343/343 by year five and stays
     /// there for ever, with 5,977 logs stranded in heaps outside it, so it can never build
-    /// past one shed's worth of stock however much food it has. Both arms of this test are
+    /// past one warehouse's worth of stock however much food it has. Both arms of this test are
     /// capped by that long before the granary matters, which is why doubling the granary
     /// changes nothing — the test is correct and the village has a different bottleneck.
     /// </para>
@@ -230,9 +230,9 @@ public sealed class StorageTests
     /// </remarks>
     /// <remarks>
     /// <b>⭐ UN-SKIPPED 2026-08-28, AND IT PASSES.</b> It was skipped on the grounds that
-    /// <i>"the granary is no longer the binding cap — the timber shed is, at 343/343 … restore
+    /// <i>"the granary is no longer the binding cap — the timber warehouse is, at 343/343 … restore
     /// when D134's open question is answered."</i> <b>Both halves of that expired without anybody
-    /// noticing.</b> <c>VillageEconomy.ShedCapacity</c> is floored on the granary's now — it
+    /// noticing.</b> <c>VillageEconomy.WarehouseCapacity</c> is floored on the granary's now — it
     /// <em>"had inverted by an order of magnitude: 343 against the granary's 2,850"</em> — and
     /// D143 answered D134's question by ruling the whole second-store family working as designed.
     /// <para>
@@ -259,7 +259,7 @@ public sealed class StorageTests
         // truth about a village whose bottleneck is somewhere else.
         //
         // ⚠️ **THIS IS THE THIRD TIME THIS GUARD HAS LOST ITS SUBJECT**, and the file above says
-        // so: D134 skipped it because the TIMBER SHED had become the binding cap at 343/343, and
+        // so: D134 skipped it because the TIMBER WAREHOUSE had become the binding cap at 343/343, and
         // it was un-skipped on 2026-08-28 once that expired. The pattern is the point — a claim
         // about capacity can only be measured on a village that capacity actually limits.
         //
@@ -484,8 +484,8 @@ public sealed class StorageTests
 
         Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
         Household home = world.HouseholdOf(villager);
-        StoreBuilding shed = world.AnyStoreOf(StoreKind.Shed);
-        shed.Store.Receive(Goods.Firewood, 500);
+        StoreBuilding warehouse = world.AnyStoreOf(StoreKind.Warehouse);
+        warehouse.Store.Receive(Goods.Firewood, 500);
 
         // Full of food, so only the fuel arm is in play.
         home.Stockpile.Receive(Goods.Food, world.TargetFoodFor(home));
@@ -507,7 +507,7 @@ public sealed class StorageTests
     /// <remarks>
     /// Without this, a threshold set absurdly high — or a predicate accidentally inverted —
     /// would pass the guard above while quietly switching fetching off, and a village that
-    /// never fetches freezes beside a full shed.
+    /// never fetches freezes beside a full warehouse.
     /// </remarks>
     [Fact]
     public void ButAHouseholdThatIsGenuinelyShortStillSendsSomebody()
@@ -521,8 +521,8 @@ public sealed class StorageTests
 
         Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
         Household home = world.HouseholdOf(villager);
-        StoreBuilding shed = world.AnyStoreOf(StoreKind.Shed);
-        shed.Store.Receive(Goods.Firewood, 500);
+        StoreBuilding warehouse = world.AnyStoreOf(StoreKind.Warehouse);
+        warehouse.Store.Receive(Goods.Firewood, 500);
 
         home.Stockpile.Receive(Goods.Food, world.TargetFoodFor(home));
         home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);

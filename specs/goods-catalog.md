@@ -140,7 +140,7 @@ an unreachable seam and a destroyed yield look identical from the store.
 
 #### The fix: the arms became the indexed load D82 never gave them
 
-`Villager.Carried` is a `Stockpile`, sized from the run's catalogue like every larder, shed and
+`Villager.Carried` is a `Stockpile`, sized from the run's catalogue like every larder, warehouse and
 cart, and **the named readers survive as readers** — exactly the split `Stockpile` itself records,
 where `Food`/`Logs`/`Firewood` stayed and the named *mutators* went so the compiler makes every
 write say which good it means. Everything *generic* about a load is a loop over the catalogue now:
@@ -315,16 +315,16 @@ comparing entries to find a position that `(int)goods` gives directly. **The sam
    Recorded here as *"now that stone accumulates, nothing spends it"* and it was true for
    exactly one day. **The harvest brush obeys the stock limit now** (D212,
    `stock-limits-and-laborers.md §4.2`) so *"keep 100 stone"* stops the village clearing seams,
-   and **a granary, a shed and a market cost stone** (D213,
+   and **a granary, a warehouse and a market cost stone** (D213,
    `multi-material-construction.md`) so there is something to spend it on. ⚠️ **The wider
    point survives and is worth keeping:** a store's capacity is total across goods by design,
    so any good with no consumer competes for room with the ones that have. *Original note,
    for the record:* `Stockpile.Capacity` is physical room *across every good*, deliberately
-   (*"a shed packed with logs has nowhere to stack firewood, and being made to choose is the
+   (*"a warehouse packed with logs has nowhere to stack firewood, and being made to choose is the
    interesting part"*). Stone has no consumer: `BuildingRecipe` is **one material slot**
    (`content-inventory.md` finding 2). **And the harvest brush answers to no stock limit** — it is
    a standing instruction the player paints and only the player unmarks (D127), which is right, and
-   which means *paint a seam and the shed fills with stone the village cannot spend.* Not a bug in
+   which means *paint a seam and the warehouse fills with stone the village cannot spend.* Not a bug in
    the fix — the yield existing is strictly better than it vanishing — but the pressure is real and
    its answer is multi-material recipes, not a cap here.
 4. **Does a mod-added good need a display colour?** The view has one per good
