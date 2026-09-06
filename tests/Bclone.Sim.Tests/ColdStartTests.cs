@@ -173,6 +173,69 @@ public sealed class ColdStartTests
             + "of the player.");
     }
 
+    /// <summary>
+    /// ⭐ When the last one dies, the village says so — once, and without stopping the game.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe watched this happen and could not tell it had</b> (2026-09-06): a founding froze in
+    /// Winter of Year 1, the overview read <i>"0 villagers in 0 households"</i>, and the clock ran
+    /// on into Year 2 with nothing anywhere saying the village was dead. He concluded the game had
+    /// started empty. <b>An unattended village dying is D143 working as designed; the silence
+    /// around it was the bug.</b>
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The three claims are separate and all three matter.</b> That it fires at all; that it
+    /// fires <em>exactly once</em> (the moment is derived from `Population == 0` rather than
+    /// flagged, so a second raise would mean the transition is being re-entered); and that it
+    /// does <b>not</b> stop the game — Joe's nomads are meant to be able to revive a dead village
+    /// later, so a modal here would have to be un-designed the day they land.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void WhenTheLastOneDiesTheVillageSaysSo()
+    {
+        SimConfig config = ColdVillage;
+        SimLoop loop = Build(config);
+
+        loop.Step(config.TicksPerYear * 2);
+
+        Assert.Equal(0, loop.World.Population);
+
+        var empty = new List<Moment>();
+        foreach (Moment moment in loop.World.Moments)
+        {
+            if (moment.Title.Contains("is empty", System.StringComparison.Ordinal))
+            {
+                empty.Add(moment);
+            }
+        }
+
+        _output.WriteLine(
+            $"{loop.World.Moments.Count} moments raised in two unattended years; "
+            + $"{empty.Count} of them the village emptying"
+            + (empty.Count > 0 ? $" — \"{empty[0].Title}\": {empty[0].Body}" : string.Empty));
+
+        Assert.True(
+            empty.Count > 0,
+            "Everybody died and nothing said the village was gone — which is what Joe read as "
+            + "the game having started with no villagers.");
+
+        // ⭐ ONCE. `Population == 0` is true on every tick after the last death, so a raiser that
+        // asked the question anywhere but at the moment of the kill would fire it every tick for
+        // the rest of the run — hundreds of banners, and a log nobody could read.
+        Assert.True(
+            empty.Count == 1,
+            $"The village announced it was empty {empty.Count} times.");
+
+        // ⛔ AND IT MUST NOT STOP THE GAME (Joe: nomads may revive a dead village later).
+        Assert.False(
+            empty[0].WaitsToBeDismissed,
+            "The empty-village banner waits to be dismissed, so the game halts on it — Joe asked "
+            + "for it to keep running so a dead valley can still be looked at, and so nomads "
+            + "have something to come back to.");
+    }
+
     /// <summary>Nobody freezes before winter, so the deaths are winter's and not a bug.</summary>
     /// <remarks>
     /// The anti-vacuity half (D7) of the guard above, and a real risk rather than a

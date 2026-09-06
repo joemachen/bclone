@@ -113,7 +113,49 @@ public sealed class MortalitySystem : ISimSystem
         };
 
         world.Narrate(epitaph, LogCategory.Death);
+
+        // ⭐⭐ AND IF THAT WAS THE LAST OF THEM, SAY SO (Joe, 2026-09-06). He watched a founding
+        // freeze in Winter of Year 1, looked at an overview reading *"0 villagers in 0
+        // households"*, and reasonably concluded **the game had started empty** — the clock ran
+        // on into Year 2 with nothing anywhere saying the village had died. *An unattended
+        // village dying is D143 working exactly as intended; the silence around it was not.*
+        //
+        // ⛔ IT DOES NOT STOP THE GAME (`stops: false`), and that is his call rather than a
+        // default: *"eventually we will add nomads to the game — and after a village dies out
+        // nomads can potentially revive a village if it hasn't all crumbled from lack of
+        // maintenance. So leaving the game going is perfect for now."* **A modal here would have
+        // to be dismissed before the thing it announces could be looked at**, and it would have
+        // to be un-designed the day nomads land.
+        //
+        // ⚠️ NO "HAVE WE SAID IT YET" FLAG, BECAUSE THE TRANSITION CANNOT REPEAT. `Population`
+        // counts the living, and this runs having just marked one dead — so it reads zero on
+        // exactly the tick the last villager dies and never again. *A flag would be state that
+        // has to be hashed, or state that quietly desyncs two runs; deriving it is neither.*
+        if (world.Population == 0)
+        {
+            world.RaiseMoment(
+                $"{world.Name} is empty",
+                $"The last of {world.Name} is gone — {villager.Name} {LastWords(cause)} {world.Clock}. "
+                + "The valley keeps its buildings and its stores for now, and the woods will "
+                + "take them back if nobody comes.",
+                stops: false,
+                LogCategory.Death);
+        }
     }
+
+    /// <summary>How the last one went, for the banner that says the village is empty.</summary>
+    /// <remarks>
+    /// ⚠️ <b>Its own wording rather than the epitaph's.</b> An epitaph is about a person and
+    /// reads as one — <i>"they had survived 0 winters"</i> — which is the wrong register for the
+    /// sentence that ends a village. This says only how it happened.
+    /// </remarks>
+    private static string LastWords(CauseOfDeath cause) => cause switch
+    {
+        CauseOfDeath.Cold => "froze",
+        CauseOfDeath.Starvation => "starved",
+        CauseOfDeath.OldAge => "died of old age",
+        _ => "died",
+    };
 
     /// <summary>Where somebody was when the cold finished them (D45).</summary>
     /// <remarks>

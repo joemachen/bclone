@@ -236,6 +236,15 @@ public partial class Main : Control
                 + (panel.Visible ? string.Empty : " (hidden)"));
         }
 
+        // ⭐⭐ THE TWO SELF-SCROLLING PANELS, MEASURED — because they are the two that can hold
+        // their content correctly and draw NONE of it. Both were `size 288x0` for the life of
+        // D306: an `ItemList` and a `ScrollFollowing` `RichTextLabel` each report a minimum
+        // height of zero, so a `ScrollContainer` around either lays it out at nothing. **Joe saw
+        // a blank roster beside "6 villagers in 2 households".** *A count beside a drawn height
+        // is the only pair that can say this; neither number alone can.*
+        ProbeASelfScroller("roster", _roster, _roster.ItemCount, "items");
+        ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
+
         ProbeTheInspectorRows();
         ProbeTheControlBar();
         ProbeTheProfessionsPanel();
@@ -243,6 +252,21 @@ public partial class Main : Control
         ProbeTheLogLines();
         GD.Print("[widths] done.");
         GetTree().Quit();
+        return;
+
+        static void ProbeASelfScroller(string tag, Control control, int held, string unit)
+        {
+            bool wrapped = control.GetParent()?.GetParent() is ScrollContainer;
+            GD.Print(
+                $"[widths] {tag}: {held} {unit}, drawn {control.Size.X:F0}x{control.Size.Y:F0}, "
+                + $"min {control.GetCombinedMinimumSize().Y:F0}"
+                + (control.Size.Y < 1f
+                    ? "  ⛔ ZERO TALL — it holds its content and draws none of it"
+                    : string.Empty)
+                + (wrapped
+                    ? "  ⛔ inside a ScrollContainer, which lays it out at its minimum"
+                    : string.Empty));
+        }
     }
 
     /// <summary>The control bar at the bottom, which the column probe never looked at.</summary>
@@ -377,10 +401,19 @@ public partial class Main : Control
             entry.Button.Visible = true;
         }
 
+        // Every child of the filter row AND the tab note at once — wider than any real tab,
+        // which is the deliberate over-estimate this probe exists to make.
         bool filterWas = _filterRow.Visible;
-        bool noteWas = _harvestNote.Visible;
+        bool noteWas = _tabNote.Visible;
         _filterRow.Visible = true;
-        _harvestNote.Visible = true;
+        _tabNote.Visible = true;
+        foreach (Node chip in _filterRow.GetChildren())
+        {
+            if (chip is Control control)
+            {
+                control.Visible = true;
+            }
+        }
 
         // A flow container's minimum is recomputed on the next layout pass, not on assignment.
         _controlBar.QueueSort();
@@ -437,7 +470,49 @@ public partial class Main : Control
         }
 
         _filterRow.Visible = filterWas;
-        _harvestNote.Visible = noteWas;
+        _tabNote.Visible = noteWas;
+
+        // ⭐⭐ AND THE HEIGHT OF EACH TAB IN TURN, WHICH IS THE THING JOE ACTUALLY REPORTED.
+        // The pose above measures the widest the bar can ever be; this measures whether the bar
+        // MOVES. **A bar that is two rows on two tabs and three on the third makes the map jump
+        // every time the player switches**, and no width figure can say so — only the same
+        // number read three times can. *The over-estimate and the comparison are different
+        // questions and the probe now answers both.*
+        BuildTab wasOn = _tab;
+        var heights = new List<string>();
+        float first = -1f;
+        bool steady = true;
+
+        foreach (BuildTab tab in new[] { BuildTab.Build, BuildTab.Removal, BuildTab.Harvest })
+        {
+            _tab = tab;
+            RefreshTheStrip();
+            _controlBar.QueueSort();
+            ForceUpdateTransform();
+
+            float tall = _controlBar.Size.Y;
+            heights.Add($"{tab} {tall:F0}");
+
+            if (first < 0f)
+            {
+                first = tall;
+            }
+            else if (Mathf.Abs(tall - first) > 1f)
+            {
+                steady = false;
+            }
+        }
+
+        _tab = wasOn;
+        RefreshTheStrip();
+        _controlBar.QueueSort();
+        ForceUpdateTransform();
+
+        GD.Print(
+            $"[widths] bar height per tab: {string.Join(", ", heights)}"
+            + (steady
+                ? "  ✅ one height on every tab"
+                : "  ⛔ THE BAR CHANGES HEIGHT — the map will jump as the player switches tabs"));
     }
 
     /// <summary>
@@ -680,8 +755,14 @@ public partial class Main : Control
 
     private HFlowContainer _stripRow = null!;
 
-    /// <summary>Who does the harvesting — shown with the HARVEST tab and nowhere else.</summary>
-    private Label _harvestNote = null!;
+    /// <summary>What the tab in front of you does — the row that keeps the bar one height.</summary>
+    /// <remarks>
+    /// ⛔ <b>It replaces <c>_harvestNote</c>, which lived in the strip row and showed on one tab
+    /// of three.</b> That is what made the bar change height as Joe switched tabs. This label
+    /// sits in the filter row and is written for every tab, so the row is always exactly one
+    /// line tall and the bar never moves under the cursor.
+    /// </remarks>
+    private Label _tabNote = null!;
 
     /// <summary>
     /// Show the library only once the village can write, and glow while the gift is unspent.
@@ -3153,7 +3234,11 @@ public partial class Main : Control
     /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
     private void BuildLogPanel()
     {
-        VBoxContainer body = InColumn(right: true, ListHeight, "Village log");
+        // ⛔ HEIGHT 0 for the same reason as the roster: a `RichTextLabel` with
+        // `ScrollFollowing` scrolls itself, so a `ScrollContainer` around it lays it out at its
+        // minimum of zero. Measured: `chars 73, size 288x0` — **every line the village had
+        // narrated was present and none of it was drawn.** See `BuildRosterPanel`.
+        VBoxContainer body = InColumn(right: true, 0, "Village log");
 
         // ⭐ BBCODE IS ON SO A CELEBRATION CAN READ AS ONE (Joe, 2026-08-27: a discovery should be
         // *"a different font color in the village log"*). ⚠️ **Everything appended must go through
@@ -3165,6 +3250,7 @@ public partial class Main : Control
             ScrollFollowing = true,
             BbcodeEnabled = true,
             SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, ListHeight),
         };
 
         // A RichTextLabel does not go through `Body`, so it kept Godot's 16 while everything
@@ -3302,9 +3388,23 @@ public partial class Main : Control
     /// <summary>Everyone alive, and what they are doing about it.</summary>
     private void BuildRosterPanel()
     {
-        VBoxContainer body = InColumn(right: false, ListHeight, "The village");
+        // ⛔⛔ HEIGHT 0 — NO SCROLL WRAPPER — BECAUSE AN `ItemList` SCROLLS ITSELF.
+        // Passing `ListHeight` here wraps the list in a `ScrollContainer`, and a scroll
+        // container lays its content out at the content's MINIMUM height — that is what makes
+        // scrolling possible. An `ItemList` reports a minimum of **0** (it scrolls internally),
+        // and `SizeFlagsVertical = ExpandFill` buys nothing inside a scroll because there is no
+        // spare space to expand into. Measured: `items 4, size 288x0`. **The village was listed
+        // correctly and drawn zero pixels tall**, which is what Joe saw as a blank panel.
+        // ⚠️ D306's own lesson arriving from the other side: it gave every panel its own scroll
+        // because panels used to borrow the column's — and the two panels whose content already
+        // scrolled are the two it broke. *A self-scrolling control needs a HEIGHT, not a scroll.*
+        VBoxContainer body = InColumn(right: false, 0, "The village");
 
-        _roster = new ItemList { SizeFlagsVertical = SizeFlags.ExpandFill };
+        _roster = new ItemList
+        {
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, ListHeight),
+        };
         _roster.AddThemeFontSizeOverride("font_size", RowSize);
         _roster.ItemSelected += OnVillagerSelected;
         body.AddChild(_roster);
@@ -3929,19 +4029,17 @@ public partial class Main : Control
 
         controls.AddChild(new VSeparator());
 
-        _detailButton = new Button { CustomMinimumSize = new Vector2(140, 0) };
-        _detailButton.Pressed += CycleDetail;
-        controls.AddChild(_detailButton);
-
-        // ⭐ WHERE THE GOOD GROUND IS (D178). Without it, per-site yield is an invisible
-        // multiplier and siting a farm is a lottery — which is what D67 refused for ore and
-        // what §1.1 refuses in general. Off by default: it answers a question the player asks
-        // occasionally, and a permanent wash over the valley is D42's standing alert in
-        // another medium.
-        _soilButton = new Button { CustomMinimumSize = new Vector2(110, 0) };
-        _soilButton.Pressed += ToggleSoil;
-        controls.AddChild(_soilButton);
-        RefreshSoilButton();
+        // ⛔⛔ ROUTES, GROUND, PROFESSIONS AND LIMITS HAVE LEFT THIS BAR (Joe, 2026-09-06:
+        // *"move all of these from the control bar into settings"*). ⭐ **Professions and Limits
+        // needed no new home** — every titled panel is registered in `_windows` by `Floating`,
+        // so both have been switchable from Settings since the day they were written, and
+        // adding them again would have made two controls for one state. *He asked not to
+        // duplicate them and the registry is why that was already true.*
+        // ⭐ Routes and Ground move to Settings' **"On the map"** group, beside the full-store
+        // and idle markers and the wildlife — every one of them answers *"what is drawn on the
+        // valley"*, which is the question this bar had no business holding a quarter of.
+        // ⚠️ They are still BUTTONS rather than checkboxes: Routes is a three-way cycle and
+        // Ground is on/off-with-a-reading, and a checkbox cannot say either.
 
         // With a valley this size and free panning, getting lost is easy and a way
         // back is not optional.
@@ -3952,19 +4050,10 @@ public partial class Main : Control
         // ⭐ THE WAY BACK TO EVERY WINDOW YOU SWITCHED OFF (Joe). It lives on the control bar
         // rather than in a panel, because the control bar is the one thing that is always
         // there — a settings menu reachable only from a window you might have hidden would be
-        // a door that locks behind you.
-        // ⭐ The professions window opens from here for the same reason Settings does: it is a
-        // panel the player goes to deliberately rather than one they watch. It also lives in
-        // the Settings window list, but a control the game expects to be used every few years
-        // should not be two clicks deep.
-        var professions = new Button { Text = "Professions" };
-        professions.Pressed += () => _professionsPanel.Visible = !_professionsPanel.Visible;
-        controls.AddChild(professions);
-
-        var limits = new Button { Text = "Limits" };
-        limits.Pressed += () => _stockLimitsPanel.Visible = !_stockLimitsPanel.Visible;
-        controls.AddChild(limits);
-
+        // a door that locks behind you. **It is the last of the four to survive here, and it
+        // is the one that cannot move**: Settings is now the door to Routes, Ground,
+        // Professions and Limits alike, so a Settings button hidden inside Settings would lock
+        // every one of them away at once.
         var settings = new Button { Text = "Settings" };
         settings.Pressed += () => _settingsPanel.Visible = !_settingsPanel.Visible;
         controls.AddChild(settings);
@@ -3986,6 +4075,23 @@ public partial class Main : Control
         _filterRow = FlowRow();
         _filterRow.AddChild(Muted("Show:"));
         AddTheFilters(_filterRow);
+
+        // ⛔⛔ THE BAR MUST NOT CHANGE HEIGHT WHEN THE TAB CHANGES (Joe, 2026-09-06: *"the bar
+        // height collapses if a category doesn't have a 'show' filter. and its weird that the
+        // bar changes heights. set it to the same height across all 3."*). **Hiding this row
+        // was what moved it** — only BUILD has categories to filter, so two tabs in three drew
+        // a two-row bar and one drew three, and the map jumped every time he switched.
+        //
+        // ⭐ **THE ROW STAYS; ITS CONTENTS SWAP.** Reserving a blank strip would have held the
+        // height and said nothing — this holds the height and answers *"what does this tab
+        // do?"*, which REMOVAL and HARVEST had no line for at all. *A constant height bought
+        // with a sentence costs the same pixels as one bought with a spacer.*
+        // ⚠️ `_harvestNote` used to live in the strip row below and is folded in here, because
+        // two tabs owning two different sentences in two different rows is how the height
+        // started varying in the first place.
+        _tabNote = Muted(string.Empty);
+        _filterRow.AddChild(_tabNote);
+
         body.AddChild(_filterRow);
 
         _stripRow = FlowRow();
@@ -4804,6 +4910,28 @@ public partial class Main : Control
         // one annoying you.
         body.AddChild(Muted("On the map"));
 
+        // ⭐ ROUTES AND GROUND, MOVED OFF THE CONTROL BAR (Joe, 2026-09-06). They sit at the top
+        // of this group because they are the two that change what the whole valley looks like,
+        // where the four below them each add or remove one mark.
+        // ⚠️ Buttons, not checkboxes, and deliberately: Routes cycles through three detail
+        // levels and Ground carries its own state in its label. **A checkbox that cycles is a
+        // control that lies about what it will do next.**
+        _detailButton = new Button { CustomMinimumSize = new Vector2(140, 0) };
+        _detailButton.AddThemeFontSizeOverride("font_size", 12);
+        _detailButton.Pressed += CycleDetail;
+        body.AddChild(_detailButton);
+
+        // ⭐ WHERE THE GOOD GROUND IS (D178). Without it, per-site yield is an invisible
+        // multiplier and siting a farm is a lottery — which is what D67 refused for ore and
+        // what §1.1 refuses in general. Off by default: it answers a question the player asks
+        // occasionally, and a permanent wash over the valley is D42's standing alert in
+        // another medium.
+        _soilButton = new Button { CustomMinimumSize = new Vector2(110, 0) };
+        _soilButton.AddThemeFontSizeOverride("font_size", 12);
+        _soilButton.Pressed += ToggleSoil;
+        body.AddChild(_soilButton);
+        RefreshSoilButton();
+
         var markers = new CheckBox { Text = "mark stores with no room", ButtonPressed = true };
         markers.AddThemeFontSizeOverride("font_size", 12);
         markers.Toggled += on => _map.ShowFullMarkers(on);
@@ -5565,12 +5693,6 @@ public partial class Main : Control
         Add(BuildTab.Harvest, BuildCategory.Resources, "Unmark", ToolMark.Unmark,
             () => _map.BeginHarvesting(HarvestBrush.Everything, -1));
 
-        // ⭐ THE SENTENCE THAT SAYS WHO ACTUALLY DOES IT, kept from the old harvest row. Painting
-        // ground is the one act on this bar with no building behind it, so without this line
-        // nothing on screen says the work falls to whoever is spare.
-        _harvestNote = Muted("— painted ground is felled or dug by whoever is spare");
-        _stripRow.AddChild(_harvestNote);
-
         void Add(BuildTab tab, BuildCategory category, string label, ToolMark mark, System.Action act)
         {
             Button button = StripButton(label, new ToolGlyph(mark), act);
@@ -5660,8 +5782,24 @@ public partial class Main : Control
     /// </remarks>
     private void RefreshTheStrip()
     {
-        _filterRow.Visible = _tab == BuildTab.Build;
-        _harvestNote.Visible = _tab == BuildTab.Harvest;
+        // ⛔ THE ROW ITSELF NEVER HIDES — that is the whole of Joe's constant-height ask. What
+        // changes is which of its children are showing: the chips on BUILD, one sentence
+        // otherwise. **Both are a single line, so the bar is three rows on every tab.**
+        bool building = _tab == BuildTab.Build;
+        foreach (Node child in _filterRow.GetChildren())
+        {
+            if (child is Control control)
+            {
+                control.Visible = building;
+            }
+        }
+
+        _tabNote.Visible = !building;
+        _tabNote.Text = _tab switch
+        {
+            BuildTab.Removal => "— taking a building back is a builder's job, and costs half what raising it did",
+            _ => "— painted ground is felled or dug by whoever is spare",
+        };
 
         foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
         {
