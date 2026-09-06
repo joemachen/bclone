@@ -47,8 +47,8 @@ with **no code change**, closing D221's hole. ⛔ **The first task was not the b
 could not say what tool was in the player's hand — seven `Begin*` methods setting eight private
 fields nothing read back — **so no tab could light up.** One `MapTool` and one `SetTool` writer
 replaced them and **fixed three live bugs**, the worst being that demolishing a hut mid-stroke made
-the rest of that stroke paint housing land nobody asked for. ⚠️ **Move and Empty's tabs are the
-session's reading, not Joe's word** (`specs/build-bar.md §8.1`).
+the rest of that stroke paint housing land nobody asked for. ✅ **Move and Empty's tabs are
+confirmed** (Joe, 2026-09-06) — BUILD and REMOVAL respectively.
 
 **✅ JOE VERIFIED D307's THREE FIXES** (2026-09-06: *"Tested - they're great!"*) — right-side
 windows drag left, nothing escapes the screen, panels are solid. **Do not re-open any of them.**
@@ -103,10 +103,13 @@ causes are worth not re-deriving, not because anything here is open:**
 ## ▶️ NEXT, IN ORDER
 
 1. **⛔ COMPILE AND LOOK AT THE BUILD BAR.** See the banner. Until that is done nothing else starts.
-2. **Then Joe looks at it**, which is the only test the view has (D11, D160). What to ask him:
-   whether the strip is legible with the word under each mark, and whether **Move and Empty** are
-   on the right tabs — his three-tab answer named the buildings, the land brush and the harvest
-   modes and no more.
+2. **Then Joe looks at it**, which is the only test the view has (D11, D160). ⛔ **Do not re-ask
+   about Move and Empty — he confirmed both on 2026-09-06.** What is still worth asking: whether
+   the strip is legible with the word under each mark, and **whether BUILD + ALL is too tall** —
+   thirteen buildings and three tools is the widest this bar has ever been, and it wraps rather
+   than clips, so it eats the valley in height. *That is the complaint D305 came from.* The cheap
+   fix is defaulting the chip to something other than ALL, and it is his call because it changes
+   what he sees on launch.
 3. **Then the rest of the UI pass**: **materials/ingredients categories** in the panels, and **meat
    and fish subtypes** (venison, trout, wheat), which Joe deferred until the panels can group them.
 4. **⭐⭐ THEN GRIDLESS, AND IT GETS ITS OWN SESSION** (Joe, 2026-09-06: *"let's do gridless after

@@ -49,8 +49,11 @@ buildings catalogue** instead of being ten hand-written buttons.
    - **BUILD** — every placeable building, plus **Paint land** (the housing brush) and **Move**.
    - **REMOVAL** — **Demolish**, **Take back** (unpainting homes), **Empty**.
    - **HARVEST** — **Trees / Stone / Iron / All**, plus **Unmark**.
-   ⚠️ **Move and Empty were not named in his answer and are this spec's reading of it**: Move is
-   a placement act, Empty takes goods out of a store. Flagged rather than assumed silently.
+   ✅ **Move and Empty are confirmed** (Joe, 2026-09-06: *"sounds like move and empty are on the
+   right tabs"*). They were not named in his three-tab answer, so this spec put Move under BUILD as
+   a placement act and Empty under REMOVAL as taking goods out, **flagged rather than assumed
+   silently** — and he took the flag. *That is what flagging is for; the alternative was a
+   quiet guess nobody could have found later.*
 2. **Catalogue-driven now.** ⛔ **The category stays out of the sim** — `buildings-catalog.md
    §8.1` settled that it is *"a column the sim does not want … it is presentation"*, and this
    spec does not reopen it. The mapping lives in the view.
@@ -203,7 +206,7 @@ hole. What exists instead:
 
 0. ⛔ **NOTHING HERE HAS BEEN COMPILED.** The three checks in §6 are unrun. That is the first
    thing the next session does, and a build error in this work is expected rather than surprising.
-1. **Move and Empty's tabs** — §3.1. This spec's reading, not Joe's word.
+1. ~~**Move and Empty's tabs**~~ ✅ **CLOSED 2026-09-06 — his word now, see §3.1.**
 2. **Icon-and-word, or icon-and-tooltip?** This spec commits to the word, on §1.1. If forty-five
    buildings make the strip too tall even filtered, the word is what gives — and that is a
    legibility trade, so it is Joe's, not a tuning decision.
