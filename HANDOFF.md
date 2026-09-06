@@ -5,6 +5,20 @@
 > ⚠️ **The sim has not moved in the last seven commits.** Everything since the Produce rename is
 > view-layer, so *any* test movement while touching the UI means the change leaked.
 >
+> ## ⛔⛔ IT IS NOT ON `main`, AND `main` IS WHAT JOE PLAYS
+>
+> **D308 is five commits on `claude/handoff-review-next-steps-w37oks` (tip `d660e2b`). `main` is
+> still `53ff336` — D307.** Joe launched the game, saw the old bar and asked why nothing had
+> changed; **it is D217 in the other direction, and it cost a round trip.** *A branch nobody is
+> running lies to whoever plays the game.*
+>
+> ```
+> git fetch origin && git checkout claude/handoff-review-next-steps-w37oks
+> ```
+>
+> ⛔ **It does not go to `main` until it compiles.** Merging code nobody has built into the build
+> he plays is how D217 happened the first time.
+>
 > ## ⛔⛔ THE FIRST THING THIS SESSION DOES IS BUILD THE VIEW
 >
 > **D308 — the build bar — was written in a container with NO `dotnet` AND NO GODOT.** The SDK
@@ -17,6 +31,12 @@
 > dotnet test                                          # must still read 927 / 0 / 2 of 929
 > BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
 > ```
+>
+> ⚠️⚠️ **AND A FAILED BUILD LOOKS EXACTLY LIKE NO CHANGE AT ALL.** Godot runs the last assembly
+> that *did* build — the old one — with **no error dialog**. So checking the branch out, launching,
+> and seeing the same bar proves nothing. `METHODOLOGY §116` records it: *"a build menu was written,
+> wired up and never appeared, because nothing had compiled it and the assembly Godot ran was a day
+> old."* **The tell is in the build output, never on screen.**
 >
 > ⭐ **Fix the compile errors before reading anything else in this file.** The design decisions are
 > recorded in `DESIGN.md` D308 and `specs/build-bar.md`; the *code* is unproven.
