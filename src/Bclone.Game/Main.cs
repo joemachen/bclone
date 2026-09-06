@@ -245,6 +245,7 @@ public partial class Main : Control
         ProbeASelfScroller("roster", _roster, _roster.ItemCount, "items");
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
 
+        ProbeFolding();
         ProbeTheInspectorRows();
         ProbeTheControlBar();
         ProbeTheProfessionsPanel();
@@ -478,41 +479,139 @@ public partial class Main : Control
         // every time the player switches**, and no width figure can say so — only the same
         // number read three times can. *The over-estimate and the comparison are different
         // questions and the probe now answers both.*
+        // ⛔⛔ EVERY TAB **AND EVERY FILTER**, because the first version of this probe measured
+        // the tabs at the default filter and reported a steady 151 — and Joe then found BUILD
+        // taller than the others and *"build → civic collapses the bottom bar when empty"*.
+        // **The strip row is what moves**: ALL wraps to two rows, and a category with nothing in
+        // it has no rows at all. *A probe that varies one dimension of a two-dimensional space
+        // reports a steadiness that does not exist.*
         BuildTab wasOn = _tab;
+        BuildCategory? filterWasSet = _filter;
         var heights = new List<string>();
-        float first = -1f;
-        bool steady = true;
+        float shortest = float.MaxValue;
+        float tallest = 0f;
+        string shortestAt = string.Empty;
+        string tallestAt = string.Empty;
 
         foreach (BuildTab tab in new[] { BuildTab.Build, BuildTab.Removal, BuildTab.Harvest })
         {
-            _tab = tab;
-            RefreshTheStrip();
-            _controlBar.QueueSort();
-            ForceUpdateTransform();
-
-            float tall = _controlBar.Size.Y;
-            heights.Add($"{tab} {tall:F0}");
-
-            if (first < 0f)
+            foreach (BuildCategory? category in TheFilterStates(tab))
             {
-                first = tall;
-            }
-            else if (Mathf.Abs(tall - first) > 1f)
-            {
-                steady = false;
+                _tab = tab;
+                _filter = category;
+                RefreshTheStrip();
+                _controlBar.QueueSort();
+                ForceUpdateTransform();
+
+                float tall = _controlBar.Size.Y;
+                string where = $"{tab}/{(category is null ? "ALL" : category.ToString())}";
+                heights.Add($"{where} {tall:F0}");
+
+                if (tall < shortest)
+                {
+                    shortest = tall;
+                    shortestAt = where;
+                }
+
+                if (tall > tallest)
+                {
+                    tallest = tall;
+                    tallestAt = where;
+                }
             }
         }
 
         _tab = wasOn;
+        _filter = filterWasSet;
         RefreshTheStrip();
         _controlBar.QueueSort();
         ForceUpdateTransform();
 
+        GD.Print($"[widths] bar height, every tab and filter: {string.Join(", ", heights)}");
         GD.Print(
-            $"[widths] bar height per tab: {string.Join(", ", heights)}"
-            + (steady
-                ? "  ✅ one height on every tab"
-                : "  ⛔ THE BAR CHANGES HEIGHT — the map will jump as the player switches tabs"));
+            tallest - shortest <= 1f
+                ? $"[widths] bar height: ✅ {tallest:F0} everywhere"
+                : $"[widths] bar height: ⛔ {shortest:F0} at {shortestAt} to {tallest:F0} at "
+                    + $"{tallestAt} — the map jumps by {tallest - shortest:F0}px");
+    }
+
+    /// <summary>
+    /// ⭐ Does folding a panel actually make it smaller? — Joe, 2026-09-06.
+    /// </summary>
+    /// <remarks>
+    /// <b>*"the panels do not minimize properly, the shape stays open but the content
+    /// minimizes."*</b> A fold that hides the contents and leaves the frame at full size is worse
+    /// than no fold at all: it costs the same map room and loses the information. **Only a height
+    /// read on both sides of the toggle can say whether it worked**, which is why this poses the
+    /// fold rather than trusting that `Visible = false` shrinks anything.
+    /// </remarks>
+    private void ProbeFolding()
+    {
+        GD.Print("[widths] --- folding, panel by panel ---");
+
+        // ⛔⛔ MINIMUM HEIGHT, NOT `Size.Y`, AND THE FIRST VERSION OF THIS PROBE GOT IT WRONG.
+        // Godot settles an anchored control's SIZE in its own layout pass, so reading `Size.Y`
+        // in the same synchronous block returns the height from before the fold — it reported
+        // `444 → 444` while the panel's minimum had correctly dropped to 37 and the offsets were
+        // already a zero-height rectangle. **The probe was measuring staleness and calling it a
+        // bug.** The minimum is what the layout will settle to, and it is available immediately.
+        var open = new List<float>(_docked.Count);
+        foreach ((PanelContainer panel, bool _) in _docked)
+        {
+            open.Add(panel.GetCombinedMinimumSize().Y);
+        }
+
+        foreach (Button header in _headers)
+        {
+            header.ButtonPressed = false;
+        }
+
+        foreach ((PanelContainer panel, bool _) in _docked)
+        {
+            panel.QueueSort();
+        }
+
+        ForceUpdateTransform();
+
+        int stuck = 0;
+        for (int i = 0; i < _docked.Count; i++)
+        {
+            (PanelContainer panel, bool _) = _docked[i];
+            if (!panel.Visible)
+            {
+                continue;
+            }
+
+            float folded = panel.GetCombinedMinimumSize().Y;
+
+            // ⛔ AND THE OFFSETS HAVE TO BE A ZERO-HEIGHT RECTANGLE, or the minimum is irrelevant:
+            // a panel whose top and bottom are pinned apart renders that far apart whatever it
+            // wants to be. That is exactly what `ArrangeDefaults` used to do.
+            bool free = Mathf.Abs(panel.OffsetBottom - panel.OffsetTop) < 1f;
+            bool shrank = folded < open[i] - 1f && free;
+            if (!shrank)
+            {
+                stuck++;
+            }
+
+            GD.Print(
+                $"[widths] fold: wants {open[i]:F0} open → {folded:F0} folded, "
+                + $"offsets {panel.OffsetTop:F0}..{panel.OffsetBottom:F0}"
+                + (free ? string.Empty : " ⛔ PINNED APART")
+                + (shrank ? string.Empty : "  ⛔ THE FRAME WILL NOT SHRINK"));
+        }
+
+        foreach (Button header in _headers)
+        {
+            header.ButtonPressed = true;
+        }
+
+        ForceUpdateTransform();
+
+        GD.Print(
+            stuck == 0
+                ? "[widths] fold: ✅ every panel shrinks when folded"
+                : $"[widths] fold: ⛔ {stuck} panels keep their full height when folded");
     }
 
     /// <summary>
@@ -4167,6 +4266,11 @@ public partial class Main : Control
                 float wanted = (Size.X - (Edge * 2f)) / Mathf.Max(0.01f, _uiScale);
                 panel.OffsetLeft = Edge;
                 panel.OffsetRight = Edge + wanted - Size.X;
+
+                // ⭐ AND ONCE IT IS AS WIDE AS IT IS GOING TO BE, PIN HOW TALL IT IS. Width has
+                // to be settled first: the strip wraps to the width it is given, so measuring
+                // the height before this line would measure a bar of the wrong shape.
+                PinTheBarHeight(wanted);
             }
 
             panel.PivotOffset = new Vector2(
@@ -4387,8 +4491,18 @@ public partial class Main : Control
                 y = Edge;
             }
 
+            // ⛔⛔ THE BOTTOM EDGE IS NOT PINNED, AND PINNING IT IS WHAT BROKE FOLDING.
+            // This used to write `OffsetBottom = y + panel.Size.Y`, which fixes the panel's
+            // HEIGHT to whatever it happened to be at arrange time — so `contents.Visible =
+            // false` hid the contents and **left the frame at full size.** Joe: *"the panels do
+            // not minimize properly, the shape stays open but the content minimizes."* Measured
+            // before the fix: all five panels `open 444 → folded 444`.
+            // ⭐ Top and bottom equal means a zero-height rectangle that Godot clamps up to the
+            // panel's own minimum — so the frame is **always exactly as tall as what is in it**,
+            // which is what makes a fold a fold. *A window that reserves the room it is not
+            // using costs the map the same pixels either way.*
             panel.OffsetTop = y;
-            panel.OffsetBottom = y + panel.Size.Y;
+            panel.OffsetBottom = y;
 
             if (right)
             {
@@ -5562,6 +5676,125 @@ public partial class Main : Control
     }
 
     /// <summary>ALL, and one chip per category.</summary>
+    /// <summary>
+    /// ⭐⭐ ONE HEIGHT FOR THE CONTROL BAR, WHATEVER TAB AND FILTER THE PLAYER IS ON.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-09-06, twice:</b> *"the build tab still pushes the whole bottom bar taller
+    /// than the cancel tab, removal tab, and harvest tab. build → civic collapses the bottom bar
+    /// when empty … uniform height across all please!"*
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>THE FIRST ATTEMPT FIXED ONE ROW AND MEASURED ONE DIMENSION, AND THAT IS THE
+    /// LESSON.</b> D312 stopped the *filter row* hiding and the probe then reported a steady 151
+    /// across the three tabs — **because it walked the tabs at one filter.** The strip row is the
+    /// other axis: ALL wraps to two rows, a category with nothing in it has none, and the
+    /// placement sentence is a third row that comes and goes with the tool in your hand.
+    /// *A probe that varies one dimension of a two-dimensional space reports a steadiness that
+    /// does not exist, and it reported it convincingly enough to ship.*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>So the bar is pinned to its own tallest configuration rather than to any row's
+    /// height.</b> Every tab × every filter is measured with the placement line reserved, and the
+    /// largest wins. It is recomputed only when something that could change the answer changes —
+    /// the width, the UI scale, or how many buildings are unlocked — because it costs a layout
+    /// pass per state and `FitFloaters` runs every frame.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The honest limit:</b> the placement line is reserved at two lines, so a warning long
+    /// enough to wrap to three still grows the bar. That is the one remaining case, and it is
+    /// left rather than clipped — <c>Wrapped</c> exists because this project decided a sentence
+    /// the player cannot finish is worse than a bar that moves.
+    /// </para>
+    /// </remarks>
+    private void PinTheBarHeight(float wanted)
+    {
+        if (_controlBar is null)
+        {
+            return;
+        }
+
+        // The three things that can change the answer. Anything else — the tab, the filter, the
+        // tool — is a state this method already walks, so it must not trigger a recompute.
+        int earned = 0;
+        foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
+        {
+            if (EarnedYet(entry.Kind))
+            {
+                earned++;
+            }
+        }
+
+        var key = new Vector3(Mathf.Round(wanted), Mathf.Round(_uiScale * 1000f), earned);
+        if (key == _barPinnedFor)
+        {
+            return;
+        }
+
+        _barPinnedFor = key;
+
+        BuildTab wasOn = _tab;
+        BuildCategory? filterWas = _filter;
+        bool noteWas = _placementLabel.Visible;
+        string noteText = _placementLabel.Text;
+
+        // Reserved rather than posed with a real sentence: the messages come from the map AND
+        // from the sim's own refusals, so there is no list to take a longest from.
+        _placementLabel.Visible = true;
+        _placementLabel.Text = "\n";
+
+        // Measure from unpinned, or the pin from the last window size becomes a floor that can
+        // only ever grow — a bar that never gets shorter when the window gets wider.
+        _controlBar.CustomMinimumSize = new Vector2(0f, 0f);
+
+        float tallest = 0f;
+        foreach (BuildTab tab in new[] { BuildTab.Build, BuildTab.Removal, BuildTab.Harvest })
+        {
+            foreach (BuildCategory? category in TheFilterStates(tab))
+            {
+                _tab = tab;
+                _filter = category;
+                RefreshTheStrip();
+                _controlBar.QueueSort();
+                ForceUpdateTransform();
+                tallest = Mathf.Max(tallest, _controlBar.Size.Y);
+            }
+        }
+
+        _tab = wasOn;
+        _filter = filterWas;
+        _placementLabel.Visible = noteWas;
+        _placementLabel.Text = noteText;
+        RefreshTheStrip();
+
+        _controlBar.CustomMinimumSize = new Vector2(0f, tallest);
+        _controlBar.QueueSort();
+    }
+
+    /// <summary>What the bar's pinned height was last computed for — width, scale, unlocks.</summary>
+    private Vector3 _barPinnedFor = new(-1f, -1f, -1f);
+
+    /// <summary>Every filter the player can be looking at on a tab — ALL, plus the categories.</summary>
+    /// <remarks>
+    /// Only BUILD has a filter row, so the other two tabs have exactly one state. Used by the
+    /// width probe, which has to walk tab × filter rather than tab alone (D314).
+    /// </remarks>
+    private static IEnumerable<BuildCategory?> TheFilterStates(BuildTab tab)
+    {
+        yield return null;
+
+        if (tab != BuildTab.Build)
+        {
+            yield break;
+        }
+
+        foreach (BuildCategory category in System.Enum.GetValues<BuildCategory>())
+        {
+            yield return category;
+        }
+    }
+
     private void AddTheFilters(Container into)
     {
         foreach ((BuildCategory? Category, string Label) entry in new (BuildCategory?, string)[]
