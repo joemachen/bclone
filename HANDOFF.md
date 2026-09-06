@@ -1,9 +1,48 @@
-# Handoff — bclone: **✅ HUNTING IS DONE, FOOD MEANS FOOD, AND THE UI IS WINDOWS**
+# Handoff — bclone: **✅ THE BUILD BAR IS BUILT — AND NOBODY HAS COMPILED IT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-06.**
-> **927 passing, 0 failing, 2 skipped of 929** — on `main`, pushed. `main` = `origin/main`.
-> ⚠️ **The sim has not moved in the last four commits.** Everything since the Produce rename is
+> **927 passing, 0 failing, 2 skipped of 929** — as of the last session that could run them.
+> ⚠️ **The sim has not moved in the last seven commits.** Everything since the Produce rename is
 > view-layer, so *any* test movement while touching the UI means the change leaked.
+>
+> ## ⛔⛔ IT IS NOT ON `main`, AND `main` IS WHAT JOE PLAYS
+>
+> **D308 is five commits on `claude/handoff-review-next-steps-w37oks` (tip `d660e2b`). `main` is
+> still `53ff336` — D307.** Joe launched the game, saw the old bar and asked why nothing had
+> changed; **it is D217 in the other direction, and it cost a round trip.** *A branch nobody is
+> running lies to whoever plays the game.*
+>
+> ```
+> git fetch origin && git checkout claude/handoff-review-next-steps-w37oks
+> ```
+>
+> ⛔ **It does not go to `main` until it compiles.** Merging code nobody has built into the build
+> he plays is how D217 happened the first time.
+>
+> ## ✅ IT COMPILES. ⚠️ NOBODY HAS LOOKED AT IT.
+>
+> **CI on `d660e2b`: 927 / 0 / 2 of 929, and `Build the Godot view` at 0 warnings, 0 errors.**
+> So D308 builds and the sim has not moved.
+>
+> ⭐⭐ **AND CHECK CI BEFORE ASKING JOE TO BUILD ANYTHING.** This session's container had no
+> `dotnet` and no Godot — the SDK download host is blocked by the environment's egress policy — and
+> it declared the work unverified and asked him to compile it by hand. **`ci.yml` runs on every push
+> to every branch and has a `Build the Godot view` step; it had already answered.** *A missing
+> local toolchain is not a missing toolchain.*
+>
+> ⚠️ **What is genuinely still owed is what CI cannot do.** It installs no Godot by design, so:
+>
+> ```
+> BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
+> ```
+>
+> **has never run, and no glyph has been looked at.** The strip's width and the mark-inside-a-button
+> geometry are still guesses.
+>
+> ⚠️ **And a failed local build looks exactly like no change at all.** Godot runs the last assembly
+> that *did* build — the old one — with **no error dialog**. `METHODOLOGY §116` records it: *"a
+> build menu was written, wired up and never appeared, because nothing had compiled it and the
+> assembly Godot ran was a day old."* **The tell is in the build output, never on screen.**
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
 
@@ -22,6 +61,20 @@ fired **3,609 times** while the suite was green. It also prints panel widths and
 ---
 
 ## What landed since the last handoff
+
+**✅ THE BUILD BAR (D308) — ⚠️ BUILT BUT UNPROVEN.** One strip: speed and BUILD / REMOVAL / HARVEST
+tabs on the chrome row, category chips under it, the icon strip under that. ⭐⭐ **The menu reads
+the catalogue now**, which is what D223 deferred and `buildings-catalog.md §8.2` said to decide *at
+exactly this redesign* — a row in `data/sim.config.json` gets a button, a drawn mark and a group
+with **no code change**, closing D221's hole. ⛔ **The first task was not the bar**: `VillageMap`
+could not say what tool was in the player's hand — seven `Begin*` methods setting eight private
+fields nothing read back — **so no tab could light up.** One `MapTool` and one `SetTool` writer
+replaced them and **fixed three live bugs**, the worst being that demolishing a hut mid-stroke made
+the rest of that stroke paint housing land nobody asked for. ✅ **Move and Empty's tabs are
+confirmed** (Joe, 2026-09-06) — BUILD and REMOVAL respectively.
+
+**✅ JOE VERIFIED D307's THREE FIXES** (2026-09-06: *"Tested - they're great!"*) — right-side
+windows drag left, nothing escapes the screen, panels are solid. **Do not re-open any of them.**
 
 **✅ FISHING, FINISHED (D282–D290).** A cast is 10 ticks; the hut holds **900** (three casts). ⭐ The
 longer cast cost the economy **nothing** — measured 800 fish a year at three ticks and 800 at ten,
@@ -58,10 +111,10 @@ are free windows, arranged once at launch, with **Reset window positions** in Se
 
 ---
 
-## ⚠️ WHAT JOE IS WAITING ON — read before touching the UI
+## ✅ SETTLED — the window work is verified and closed
 
-He is mid-review of the window work and has just reported (2026-09-06, fixed but **unverified by
-him**):
+Joe tested and confirmed all three on 2026-09-06 (*"Tested - they're great!"*). **Kept because the
+causes are worth not re-deriving, not because anything here is open:**
 
 1. **Right-hand windows could not move left.** Right-anchored panels have **negative** offsets
    (distance back from the right edge), and the clamp treated `OffsetLeft` as a screen X — so it
@@ -70,29 +123,39 @@ him**):
 3. **Panels are solid**, except the control bar, which spans the window and would wall off the
    valley.
 
-⭐ **He has not confirmed any of these three yet.** Ask before assuming they are good.
+## ▶️ NEXT, IN ORDER
 
-## ▶️ NEXT: THE BUILD BAR
-
-The second half of his UI mockup: **one icon strip with BUILD / REMOVAL / HARVEST tabs**, speed
-controls on the same bar, an ALL filter. Two things known in advance:
-
-- ⛔ **`VillageMap` has no current-mode getter.** `BeginBuilding` / `BeginDemolishing` /
-  `BeginHarvesting` set a private brush and nothing can read it, **so no tab can light up**. That
-  is new view state and it is the first task.
-- ⭐ **Icons are drawn, not imported** — `TradeGlyph` is the pattern (polygons and rects, colours
-  borrowed from the map). D26: this project ships **no image assets**, and the code rejects emoji
-  as font-dependent.
-
-Queued behind it: **materials/ingredients categories** in the panels, and **meat and fish subtypes**
-(venison, trout, wheat) which Joe deferred until the panels can group them.
+1. **⛔ COMPILE AND LOOK AT THE BUILD BAR.** See the banner. Until that is done nothing else starts.
+2. **Then Joe looks at it**, which is the only test the view has (D11, D160). ⛔ **Do not re-ask
+   about Move and Empty — he confirmed both on 2026-09-06.** What is still worth asking: whether
+   the strip is legible with the word under each mark, and **whether BUILD + ALL is too tall** —
+   thirteen buildings and three tools is the widest this bar has ever been, and it wraps rather
+   than clips, so it eats the valley in height. *That is the complaint D305 came from.* The cheap
+   fix is defaulting the chip to something other than ALL, and it is his call because it changes
+   what he sees on launch.
+3. **Then the rest of the UI pass**: **materials/ingredients categories** in the panels, and **meat
+   and fish subtypes** (venison, trout, wheat), which Joe deferred until the panels can group them.
+4. **⭐⭐ THEN GRIDLESS, AND IT GETS ITS OWN SESSION** (Joe, 2026-09-06: *"let's do gridless after
+   the UI work is complete"*). ⛔ **Do not fold it into feature work** — it is the largest statement
+   in the design doc. D303 already recorded what survives it: nothing in the animals, the berries or
+   the heaps is in `GeneratedMap`, `TravelCostField`, `ZoneMap`, `StateHash` or the economy, and
+   *"for each tile, hash (x,y)"* becomes *"sample the region, hash a quantised position"*. **The one
+   call site that has to move is `IsWoodland`.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - **The food limit gates the HARVEST, not the sowing** (D300, his call). ⚠️ It reverses a recorded
   decision: `crops-and-orchards.md §5.1` wanted use-it-or-lose-it to *"punish inattention rather
   than obedience"*, and unreaped crop now rots at winter. **He accepted the rot** and floated a
-  future tech unlock letting crops stand into winter. A third option — gate neither — is recorded.
+  future tech unlock letting crops stand into winter.
+  - **⏸️ THE THIRD OPTION, RESTATED FOR HIM ON 2026-09-06 AND STILL HIS: GATE NEITHER.** Farmers
+    sow in spring *and* reap in autumn regardless of the cap. ⭐ **For it:** the limit already stops
+    foragers, fishers and hunters through `foodIsEnough`, so a farm finishing what it *started* is
+    not the village ignoring him — and it deletes rot-by-obedience entirely, which is the one
+    failure `crops-and-orchards.md §5.1` explicitly does not want. ⛔ **Against it:** a harvest
+    lands in a lump, so the cap stops meaning *"stop at N"* for the one trade that can overshoot by
+    a whole field. **He has not answered.** If he takes it, it is the harvest arm plus
+    `FarmerSeatsWithGroundToWork`, and it wants its own §7 entry.
 - **`gathers_per_thinned_tile` stays 0 for ever** (D297) but is kept as a modder dial.
 - **`ApprenticeshipTests` stays skipped** (D287, his explicit call). *Do not "fix" it* — restoring
   it means reversing D227.
@@ -579,6 +642,25 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔ THE SESSION CONTAINER MAY HAVE NO TOOLCHAIN — AND CI IS A TOOLCHAIN (2026-09-06, D308).**
+  No `dotnet`, no Godot, and `dotnet-install.sh` refused at the proxy;
+  `builds.dotnet.microsoft.com` is denied by the environment's egress policy. **Three commits of
+  view work were written without a single local compile, declared unverified in four documents, and
+  Joe was asked to build them by hand.**
+  - **⭐⭐ AND `ci.yml` HAD ALREADY DONE IT.** It runs `on: push: branches: ['**']`, and its last
+    step is `Build the Godot view` — added precisely because *"a broken view sailed through a green
+    CI"*. **The answer was sitting in a workflow log the whole time, and this session had read
+    `ci.yml` earlier that hour to check the SDK version.** *Check the run before asking a human to
+    be your compiler:* `actions_list` → `list_workflow_runs` filtered to the branch, then
+    `get_job_logs`.
+  - ⚠️ **Know what CI does NOT cover, or the correction becomes its own overclaim.** It installs no
+    Godot by design (*"Bclone.Sim is deliberately engine-free"*), so **`BCLONE_PROBE_WIDTHS` and
+    looking at the thing are still Joe's** — which is D11/D160's hole, unchanged.
+  - ⛔ **A status line still must not read as verified past what was actually run.** D159's reason: a
+    spec that lies about its own status is worse than no spec, because it is read at the moment a
+    session is orienting. **"Compiles, unmeasured" is a different sentence from both "unproven" and
+    "done", and it is the true one here.**
 
 - **⛔⛔ A GUARD WITH A BUILT-IN'S ID TYPED INTO IT BREAKS THE DAY A BUILT-IN IS ADDED, AND THE
   FAILURE MESSAGE BLAMES THE WRONG THING (2026-08-29).** Adding `BuildingKind.TownHall = 11` turned

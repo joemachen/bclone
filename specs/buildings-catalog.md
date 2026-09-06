@@ -283,13 +283,15 @@ game.**
    *Without it, every guard is green and blind, because a catalogue written in id order cannot tell
    id from position.* **Three instances of this now (D157, D218); assume the fourth.**
 
-### Slice 3 — the view catches up
-`Main.BuildUi`'s build menu is **ten hand-written buttons in four categories**
-(`BuildButton("Granary", BuildingKind.Granary)`), and `VillageMap` tests `_building ==
-BuildingKind.Market` twice for the market's service-area preview. **A modded building has no
-button**, so it exists and the player cannot reach it — *this project's fifth instance of a feature
-that shipped unreachable* (D221). ⚠️ **The view has no automated verification of any kind** (D11,
-D160): looking at it is the test.
+### Slice 3 — the view catches up ✅ **DONE (D308, 2026-09-06)**
+`Main.BuildTheStrip` walks the catalogue and builds a button, a drawn mark and a group per row —
+so **a modded building is reachable the day it has a row**, closing what was *this project's fifth
+instance of a feature that shipped unreachable* (D221). ⚠️ `VillageMap` still tests `_building ==
+BuildingKind.Market` twice for the market's service-area preview, and **that stays**: it is a
+preview in the view, not a rule in the sim. ⚠️ **The view has no automated verification of any
+kind** (D11, D160): looking at it is the test — and as of D308 nobody has looked yet.
+*Original note, kept for what it was measuring:* ~~`Main.BuildUi`'s build menu is **ten
+hand-written buttons in four categories** (`BuildButton("Granary", BuildingKind.Granary)`).~~
 
 ⛔ **The category is a column the sim does not want** (*"Works"*, *"Food"*, *"Stores"*) — it is
 presentation, and putting it on the row would be the sim carrying the view's vocabulary. **Joe's
@@ -315,8 +317,19 @@ buttons and mods get an *"Other"* group.
 
 1. ✅ **§2.4's warning column — ANSWERED: no column.** It would be read once, by one building, with
    no default arm to give it work. It becomes one when a second building hauls bulk to a store.
-2. **⏸️ DEFERRED ON JOE'S CALL, 2026-08-26 (D223) — does the menu become catalogue-driven?**
-   **Not now.** ⛔ **The hole is real and stays stated: a modded building has no button and the
+2. **✅ RESOLVED 2026-09-06 (D308) — YES, AND THE DEFERRAL ENDED EXACTLY WHERE IT SAID IT WOULD.**
+   Joe's call, taken on the build-bar redesign: **the menu reads the catalogue.** `Main.BuildTheStrip`
+   walks `0 .. BuildingsCatalog.Count - 1`, skips the house — placed by the land brush, never by a
+   button (D42, D102) — and gives every other row a button, a drawn mark and a group. **A row added
+   to `data/sim.config.json` is reachable with no code change**, which is what closes D221's hole.
+   ⭐ **And the cheap option below survived INSIDE the answer rather than instead of it**: built-ins
+   keep their hand-placed grouping and ordering in `CategoryOf`, and anything past them falls to
+   **Other** with the drab square `TradeGlyph` gives an unrecognised trade.
+   ⛔ **The category is still not a column** — §8.1 stands, and `BuildCategory` is a view enum.
+   ⚠️ **The names come from the catalogue now too**, which is the half that was a live bug: D240
+   found the bar saying *"gatherer's hut"* a year after the trade became *forager*, because the bar
+   held its own copy of every word. See `specs/build-bar.md`.
+   *The deferral, kept because its reasoning is what set the timing:* ⛔ **The hole is real and stays stated: a modded building has no button and the
    player cannot reach it** — this project's fifth feature that exists without being reachable
    (D221). **What defers it is that closing it now solves a smaller problem twice:** the bar is ten
    hand-written buttons in four groups, and **that does not scale to 45 buildings** whatever the
