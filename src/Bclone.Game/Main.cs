@@ -193,7 +193,7 @@ public partial class Main : Control
     /// column at 450"</em>; D169 wrote it again for Joe's *"how dumb the width of the windows
     /// on the right side of the screen are."* Both times the answer was invisible from the
     /// layout code, because <b>a column is never narrower than its widest child</b> —
-    /// <see cref="ColumnWidthFor"/> can hand a <see cref="ScrollContainer"/> whatever
+    /// a column could hand a <see cref="ScrollContainer"/> whatever
     /// <c>Offset</c> it likes and Godot will overrule it.
     /// </para>
     /// <para>
@@ -223,15 +223,17 @@ public partial class Main : Control
 
         _probed = true;
 
-        GD.Print($"[widths] window {Size.X:F0} x {Size.Y:F0}, "
-            + $"share {ColumnShareOfWindow:P0} = {ColumnWidthFor(Size.X):F0} a side");
+        GD.Print(
+            $"[widths] window {Size.X:F0} x {Size.Y:F0}, drawn at {_uiScale * 100f:F0}%");
 
-        foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
+        for (int i = 0; i < _docked.Count; i++)
         {
-            string side = scroll.AnchorLeft > 0.5f ? "right" : "left";
-            GD.Print($"[widths] --- {side} column: scroller wants "
-                + $"{scroll.GetCombinedMinimumSize().X:F0}, is {scroll.Size.X:F0} ---");
-            PrintWidths(column, side, 0);
+            (PanelContainer panel, bool right) = _docked[i];
+            GD.Print(
+                $"[widths] panel {(right ? "right" : "left ")} at "
+                + $"({panel.Position.X:F0}, {panel.Position.Y:F0}) "
+                + $"size {panel.Size.X:F0}x{panel.Size.Y:F0}"
+                + (panel.Visible ? string.Empty : " (hidden)"));
         }
 
         ProbeTheInspectorRows();
@@ -2728,8 +2730,6 @@ public partial class Main : Control
         //
         // **A column makes overlap impossible by construction** instead of by choosing sizes
         // carefully, which is the only kind of fix that survives adding a seventh panel.
-        _leftColumn = Column(Corner.TopLeft);
-        _rightColumn = Column(Corner.TopRight);
 
         BuildStatusPanel();
         BuildProfessionsPanel();
@@ -2780,25 +2780,6 @@ public partial class Main : Control
     private const int ListHeight = 190;
 
     /// <summary>
-    /// Room kept clear along the bottom for the controls, which are wider than the window.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The build menu is a long row and the roster is pinned to the same corner of the
-    /// screen, so the two overlapped and the controls drew straight over the names. A
-    /// measured constant rather than a computed one because the controls' height is settled
-    /// by their own contents, and asking a container for its size during layout is how
-    /// circular dependencies start.
-    /// </para>
-    /// <para>
-    /// <b>It is the columns' bottom edge now</b>, not just a gap the roster stood off by —
-    /// which is what makes "no panel is ever pushed off the screen" a property of the layout
-    /// rather than of how much anybody happens to have opened.
-    /// </para>
-    /// </remarks>
-    private const int ControlsReserve = 160;
-
-    /// <summary>
     /// What the village is: the date, what it holds, and anything it is asking for.
     /// </summary>
     /// <remarks>
@@ -2820,7 +2801,7 @@ public partial class Main : Control
     {
         // Titled, so it can be folded and switched off like everything else. It is Joe's
         // area 1 and the panel he calls the Overview, so it is called that.
-        VBoxContainer body = InColumn(_leftColumn, 0, "Overview");
+        VBoxContainer body = InColumn(right: false, 0, "Overview");
 
         // ⭐ THE VALLEY HAS A NAME NOW, and it is the heading rather than a line in the
         // middle: this is the one word that says which run you are watching. Derived from
@@ -3086,7 +3067,7 @@ public partial class Main : Control
     /// </remarks>
     private void BuildMinimapPanel()
     {
-        VBoxContainer body = InColumn(_rightColumn, 0, "The valley");
+        VBoxContainer body = InColumn(right: true, 0, "The valley");
 
         _minimap = new Minimap();
         _minimap.LookAt += tile => _map.CentreOn(tile);
@@ -3098,7 +3079,7 @@ public partial class Main : Control
     /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
     private void BuildLogPanel()
     {
-        VBoxContainer body = InColumn(_rightColumn, ListHeight, "Village log");
+        VBoxContainer body = InColumn(right: true, ListHeight, "Village log");
 
         // ⭐ BBCODE IS ON SO A CELEBRATION CAN READ AS ONE (Joe, 2026-08-27: a discovery should be
         // *"a different font color in the village log"*). ⚠️ **Everything appended must go through
@@ -3247,7 +3228,7 @@ public partial class Main : Control
     /// <summary>Everyone alive, and what they are doing about it.</summary>
     private void BuildRosterPanel()
     {
-        VBoxContainer body = InColumn(_leftColumn, ListHeight, "The village");
+        VBoxContainer body = InColumn(right: false, ListHeight, "The village");
 
         _roster = new ItemList { SizeFlagsVertical = SizeFlags.ExpandFill };
         _roster.AddThemeFontSizeOverride("font_size", RowSize);
@@ -3276,7 +3257,7 @@ public partial class Main : Control
         // ⚠️ A busy selection can still reach the control bar. The z-order rule below stops
         // that being fatal; making panels small, movable and resizable is the real answer and
         // is its own piece of work.
-        VBoxContainer body = InColumn(_rightColumn, 0, "Who they are, and why");
+        VBoxContainer body = InColumn(right: true, 0, "Who they are, and why");
 
         // ScrollActive so a long reason scrolls rather than being cut off. The one panel
         // whose job is explaining a decision must never truncate the explanation.
@@ -3461,7 +3442,7 @@ public partial class Main : Control
     /// to see how dumb the width of the windows on the right side of the screen are"*).</b>
     /// Every one of these rows used to be an <see cref="HBoxContainer"/> holding a sentence and
     /// some buttons, and <b>an HBox's minimum width is the sum of its children's</b> while a
-    /// column's is its widest child's. So <see cref="ColumnWidthFor"/> could hand the column
+    /// column's is its widest child's. So a column could be handed
     /// 27% of the window and Godot would overrule it the instant the player selected a
     /// building. <b>Measured with the probe rather than guessed</b>
     /// (<see cref="ProbeColumnWidths"/>): the idle row wanted <b>733</b> pixels, the ground row
@@ -3638,6 +3619,9 @@ public partial class Main : Control
         // standing orders are set and then watched, so the resting state of the screen is
         // the valley — but a player who presses the button wants the table, not a title bar
         // they then have to unfold.
+        // Registered so "Reset window positions" reaches it too — Joe asked for *all* panels,
+        // and a window the reset cannot find is a window that can still be lost.
+        _docked.Add((_panels[^1], false));
         _professionsPanel = _panels[^1];
         _professionsPanel.Visible = false;
 
@@ -3672,6 +3656,7 @@ public partial class Main : Control
         VBoxContainer body = Floating(
             Edge + 396f, Edge, 300f, 0f, Corner.TopLeft, "Stock limits", startOpen: true);
 
+        _docked.Add((_panels[^1], false));
         _stockLimitsPanel = _panels[^1];
         _stockLimitsPanel.Visible = false;
 
@@ -3945,66 +3930,6 @@ public partial class Main : Control
     /// <summary>Which corner a floating panel is pinned to.</summary>
     private enum Corner { TopLeft, TopRight, BottomLeft, BottomRight }
 
-    private VBoxContainer _leftColumn = null!;
-    private VBoxContainer _rightColumn = null!;
-
-    /// <summary>
-    /// A stack of panels down one side of the screen, which is what stops them overlapping.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⚠️ IT HAS A DEFINITE HEIGHT NOW, and that is Joe's <em>"when all panels are open,
-    /// the bottom panels go off screen."</em></b> It used to be pinned at the top and grown
-    /// downward, sized to its contents — which meant the contents decided how tall it was, and
-    /// once the overview grew a goods table there were more contents than window. A panel you
-    /// cannot see is the same bug as a button you cannot press (D113), arriving from the other
-    /// direction.
-    /// </para>
-    /// <para>
-    /// So the column runs from the top edge to just above the control bar, and the panels
-    /// inside it share <em>that</em>. The two list panels absorb the slack (see
-    /// <see cref="InColumn"/>), so there is always somewhere for the leftover height to go and
-    /// never a panel pushed past the bottom.
-    /// </para>
-    /// <para>
-    /// <b>Still not a mouse-blocker</b>, which was the original reason it was sized to its
-    /// contents: the filter is <c>Ignore</c>, so the column itself never takes a click and the
-    /// valley showing between the panels stays clickable. Only the panels stop clicks.
-    /// </para>
-    /// </remarks>
-    private VBoxContainer Column(Corner corner)
-    {
-        var scroll = new ScrollContainer
-        {
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-            VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
-            FollowFocus = false,
-        };
-
-        bool right = corner is Corner.TopRight or Corner.BottomRight;
-        scroll.AnchorLeft = scroll.AnchorRight = right ? 1f : 0f;
-        scroll.AnchorTop = scroll.AnchorBottom = 0f;
-        scroll.OffsetTop = Edge;
-        scroll.OffsetBottom = Edge;
-        // A starting width only — FitColumns re-reads it against the window every frame.
-        scroll.OffsetLeft = right ? -(Edge + MaxColumnWidth) : Edge;
-        scroll.OffsetRight = right ? -Edge : Edge + MaxColumnWidth;
-        scroll.GrowHorizontal = right ? GrowDirection.Begin : GrowDirection.End;
-        scroll.GrowVertical = GrowDirection.End;
-
-        var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
-        column.AddThemeConstantOverride("separation", Edge);
-        column.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        scroll.AddChild(column);
-
-        AddChild(scroll);
-        _columns.Add((scroll, column));
-        return column;
-    }
-
-    /// <summary>Each side's scroller and the stack of panels inside it.</summary>
-    private readonly List<(ScrollContainer Scroll, VBoxContainer Column)> _columns = new();
-
     /// <summary>Every floating panel, with the corner it hangs off, so scaling holds that corner.</summary>
     private readonly List<(PanelContainer Panel, bool Right, bool Bottom, bool Spans)> _floaters = new();
 
@@ -4046,134 +3971,34 @@ public partial class Main : Control
     }
 
     /// <summary>
-    /// Keep each column as tall as its panels, and never taller than the screen.
+    /// What still has to happen every frame now the columns are gone.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>⭐ Joe: <em>"when all panels are open, the bottom panels go off screen."</em></b> The
-    /// column was sized to its contents and grown downward, so the contents decided how tall
-    /// it was — and once there were more contents than window, the panels at the bottom were
-    /// simply not on the screen. A panel you cannot see is the same bug as a button you cannot
-    /// press (D113), arriving from the other end.
-    /// </para>
-    /// <para>
-    /// <b>Sized to the panels, capped at the room available</b>, and the cap is the whole
-    /// design: below the cap the column is exactly as tall as what is in it, so the valley
-    /// underneath stays clickable and nothing has changed. At the cap it scrolls — which costs
-    /// the clicks under the column, but only in the state where the panels were covering that
-    /// strip anyway. <b>Nothing the player opens can become unreachable.</b>
-    /// </para>
-    /// <para>
-    /// Recomputed every frame rather than on a signal, because every one of the things that
-    /// changes it — folding a panel, switching one off in Settings, an alert growing by three
-    /// lines, resizing the window — would otherwise need its own hook, and the one that got
-    /// forgotten would be the bug. It is two container measurements a frame.
-    /// </para>
+    /// ⛔ <b>THE COLUMNS WENT (2026-09-06) AND TOOK MOST OF THIS WITH THEM.</b> It used to size
+    /// two <c>ScrollContainer</c>s against the window, reserve room above the control bar, and
+    /// scale them — all of it there to lay panels out automatically. <b>Panels are windows the
+    /// player arranges now</b>, so the only thing left is the scaling, which
+    /// <see cref="FitFloaters"/> does for every panel at once.
     /// </remarks>
     private void FitColumns()
     {
-        // ⛔⛔ MEASURED RATHER THAN ASSUMED, BECAUSE THE BAR CAN GROW NOW (2026-08-27).
-        // `ControlsReserve` is 160 and the bar measured **189** the moment it started wrapping —
-        // so the columns would have run 29 pixels underneath it, which is the overlap this
-        // constant exists to prevent. **The wrap fix created the exact bug the constant was
-        // written for**, and only the probe caught it.
-        //
-        // ⚠️ The comment on `ControlsReserve` warns that asking a container for its size during
-        // layout is how circular dependencies start, and that is right — but this one is not
-        // circular. **The bar's height depends on the window width and its own contents; it
-        // never depends on the columns.** The dependency runs one way, so reading it here is a
-        // measurement rather than a negotiation. The constant stays as the floor for the frame
-        // before the bar has been laid out.
-        float reserve = _controlBar is { } bar && bar.Size.Y > ControlsReserve
-            ? bar.Size.Y
-            : ControlsReserve;
+        FitFloaters();
 
-        // ⛔ THE WIDTH IS THE LAYOUT WIDTH AND IS NOT CONVERTED, WHICH IS THE WHOLE POINT.
-        // The column is laid out to `ColumnWidthFor` exactly as before and then DRAWN at
-        // `_uiScale`, so it takes a fifth less of the window than it used to — which is what
-        // Joe asked for. *Dividing it here was the first cut of this change and it gave the
-        // panels the same screen width with more text in it, which is the opposite.*
+        // ⭐ ONCE, AND NOT ON THE FIRST FRAME. A panel has no settled height until Godot has run
+        // a layout pass or two over it, and arranging against a stale height stacks the windows
+        // ON TOP of one another — measured: three right-hand panels landing at y=14, 61 and 260
+        // when 14, 194 and 400 were wanted. **The probe waits twenty frames for the same reason.**
         //
-        // ⚠️ The HEIGHT cap is converted, because it is a limit rather than a size: `room` is
-        // real estate on screen, and a column drawn at four fifths can hold `1 / _uiScale`
-        // more rows inside the same strip before it has to start scrolling.
-        float room = (Size.Y - Edge - (Edge + reserve)) / _uiScale;
-        float wide = ColumnWidthFor(Size.X);
-
-        foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
+        // ⚠️ And then NEVER AGAIN automatically. Re-running it is precisely what Joe objected to:
+        // *"adding or removing windows from the settings panel resets the position of all four
+        // right-side-default panels — it shouldn't do that."*
+        if (!_arranged && Size.X > 0f && ++_settling > 8)
         {
-            float wanted = column.GetCombinedMinimumSize().Y;
-            bool overflowing = wanted > room;
-
-            // ⭐ AND AS WIDE AS THE WINDOW CAN SPARE, WHICH IT WAS NOT (Joe, D149). See
-            // `ColumnWidthFor`: a fixed 400 a side is a fifth of a big screen and four fifths
-            // of a small one, and Joe was playing on a small one.
-            bool right = scroll.AnchorLeft > 0.5f;
-            // Offsets stay in plain edge units: the pivot below is the column's own outer edge,
-            // so scaling holds that edge still and the gap to the window is `Edge` either way.
-            scroll.OffsetLeft = right ? -(Edge + wide) : Edge;
-            scroll.OffsetRight = right ? -Edge : Edge + wide;
-
-            scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(wanted, Mathf.Max(0f, room)));
-
-            // ⭐ SCALED LAST, ABOUT THE EDGE IT IS ANCHORED TO (Joe, 2026-08-30 — see
-            // `_uiScale`). Set every frame beside the offsets rather than once at build time:
-            // the pivot depends on the column's width, and that changes with the window.
-            scroll.PivotOffset = new Vector2(right ? scroll.Size.X : 0f, 0f);
-            scroll.Scale = new Vector2(_uiScale, _uiScale);
-
-            // ⚠️ AND IT ONLY TAKES THE MOUSE WHEN IT HAS SOMETHING TO DO WITH IT. A
-            // ScrollContainer stops clicks, and this one covers the whole column — so the
-            // gaps *between* panels, which were click-through when the column was a plain
-            // box, started swallowing clicks meant for the valley behind them. A brush that
-            // does nothing because you happened to click in a fourteen-pixel gap is
-            // indistinguishable from a broken brush.
-            //
-            // Ignored while everything fits (the panels still stop their own clicks, which
-            // is all that was ever wanted), and Stop only when there is genuinely something
-            // to scroll.
-            scroll.MouseFilter = overflowing ? MouseFilterEnum.Stop : MouseFilterEnum.Ignore;
+            ArrangeDefaults();
+            _arranged = true;
         }
     }
 
-    /// <summary>
-    /// How wide a column of panels is — <b>a share of the window, not a number</b>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⛔ IT WAS A FIXED 400 A SIDE, AND THAT IS A FIFTH OF A BIG SCREEN AND FOUR FIFTHS OF
-    /// A SMALL ONE (Joe, D149).</b> <i>"The visible playing window is tiny."</i> He was playing
-    /// at about 990 logical pixels wide: two 400s and three gaps left the valley **190 pixels**
-    /// — under a fifth of the window — for a game whose whole proposition is watching a place.
-    /// D116 tuned the type down inside these panels and never asked how wide the panels were.
-    /// </para>
-    /// <para>
-    /// <b>A share with both ends nailed down.</b> The share is what fixes the small window; the
-    /// ceiling is what stops a 4K screen handing over 1,100 pixels a side to panels that have
-    /// nothing more to say; the floor is what stops the rows inside clipping into nonsense. At
-    /// 1920 it lands on 400 and nothing moves, so this is a no-op on a maximised window and a
-    /// rescue on a small one.
-    /// </para>
-    /// <para>
-    /// Read every frame in <see cref="FitColumns"/> for the reason recorded there: everything
-    /// that changes it would otherwise need its own hook, and the forgotten one is the bug.
-    /// </para>
-    /// </remarks>
-    private static float ColumnWidthFor(float windowWidth) =>
-        Mathf.Clamp(windowWidth * ColumnShareOfWindow, MinColumnWidth, MaxColumnWidth);
-
-    /// <summary>The share of the window one column of panels may take.</summary>
-    /// <remarks>
-    /// Two columns, so the panels never take more than 54% between them and the valley always
-    /// keeps the larger half of the window.
-    /// </remarks>
-    private const float ColumnShareOfWindow = 0.27f;
-
-    /// <summary>Narrow enough to leave a valley, wide enough that the rows inside still read.</summary>
-    private const float MinColumnWidth = 240f;
-
-    /// <summary>Where the share stops paying for itself. The old fixed width, kept as the cap.</summary>
-    private const float MaxColumnWidth = 400f;
 
     /// <summary>
     /// How much of its natural size a side column is drawn at — <b>four fifths</b> (Joe, 2026-08-30).
@@ -4244,26 +4069,123 @@ public partial class Main : Control
     /// whole window, so "behind it" means placing a granary under the button you just pressed.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// A window that <b>starts</b> on one side of the screen and is free after that.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THESE USED TO LIVE INSIDE A SCROLLING COLUMN, AND THAT IS WHAT JOE HIT.</b> Three of
+    /// his four complaints were one cause: *"most of them cannot go overtop of the middle 1/3rd of
+    /// the UI, they go underneath"* and *"adding or removing windows from the settings panel resets
+    /// the position of all four right-side-default panels."*
+    /// </para>
+    /// <para>
+    /// **A `ScrollContainer` clips its children — it has to, that is what scrolling is** — so a
+    /// panel dragged out of its column was cut off at the column's edge rather than moving. And a
+    /// `VBoxContainer` owns its children's positions, so hiding one shuffled the rest **and threw
+    /// away wherever they had been put.** Neither is a bug in the columns; it is what columns are.
+    /// They were simply the wrong container for windows the player can move.
+    /// </para>
+    /// <para>
+    /// ⭐ So every panel is free-floating now, and the side is only a <b>starting position</b>,
+    /// arranged once by <see cref="ArrangeDefaults"/> and never again — which is the whole of what
+    /// he asked for: *"it shouldn't do that. 'reset all panels' could maybe be a settings button."*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A panel that asked the column for a height needs its own scroll now.</b> The column
+    /// was doing that job; a roster of forty villagers in a 190px window would otherwise simply
+    /// run off the bottom of it.
+    /// </para>
+    /// </remarks>
     private VBoxContainer InColumn(
-        VBoxContainer column, float height, string? title = null, bool startOpen = true)
+        bool right, float height, string? title = null, bool startOpen = true)
     {
-        var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
-        panel.AddThemeStyleboxOverride("panel", PanelSkin());
+        VBoxContainer contents = Floating(
+            Edge, Edge, DefaultPanelWidth, 0f,
+            right ? Corner.TopRight : Corner.TopLeft, title, startOpen);
 
-        VBoxContainer contents = Dress(panel, title, startOpen);
+        _docked.Add((_panels[^1], right));
 
-        // ⚠️ THE HEIGHT BELONGS TO THE CONTENTS, NOT TO THE PANEL — and putting it on the
-        // panel is why "The village" and "Village log" **did not appear to fold at all**
-        // (Joe, playing). Folding hides the contents box; a minimum height on the panel
-        // outlives it, so both panels rolled up into a title strip with 280 and 210 pixels
-        // of empty bordered nothing hanging below it. The panel was folded and looked broken.
-        //
-        // On the contents, the height goes away with them, which is what "fold" means.
-        contents.CustomMinimumSize = new Vector2(0, height);
+        if (height <= 0f)
+        {
+            return contents;
+        }
 
-        column.AddChild(panel);
-        return contents;
+        var scroll = new ScrollContainer
+        {
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
+            CustomMinimumSize = new Vector2(0, height),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+        };
+
+        var inner = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        inner.AddThemeConstantOverride("separation", 4);
+        scroll.AddChild(inner);
+        contents.AddChild(scroll);
+
+        return inner;
     }
+
+    /// <summary>How wide a panel starts. It is free to be dragged, not resized.</summary>
+    private const float DefaultPanelWidth = 300f;
+
+    /// <summary>Panels that have a default side, in the order they were built.</summary>
+    private readonly List<(PanelContainer Panel, bool Right)> _docked = new();
+
+    /// <summary>
+    /// Put every window back where it started — <b>once at launch, and on request</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ Joe: *"'reset all panels' could maybe be a settings button."* Run once after the first
+    /// layout pass so the panels have real heights to stack by, and then **never automatically
+    /// again** — the entire complaint was windows moving when he had not asked them to.
+    /// </remarks>
+    private void ArrangeDefaults()
+    {
+        float leftY = Edge;
+        float rightY = Edge;
+
+        for (int i = 0; i < _docked.Count; i++)
+        {
+            (PanelContainer panel, bool right) = _docked[i];
+
+            // ⚠️ A hidden window takes no room in the stack. Otherwise switching one off in
+            // Settings would leave a gap where it used to be, which reads as a layout bug.
+            if (!panel.Visible)
+            {
+                continue;
+            }
+
+            float tall = Mathf.Max(panel.Size.Y, panel.GetCombinedMinimumSize().Y) * _uiScale;
+
+            // ⚠️ A stack taller than the window would push the last panels off the bottom with no
+            // handle left to drag them back by — the same trap the drag clamp exists for. Once the
+            // side is full, the rest start again at the top; overlapping is recoverable, off-screen
+            // is not.
+            float y = right ? rightY : leftY;
+            if (y + tall > Size.Y - Edge)
+            {
+                y = Edge;
+            }
+
+            panel.OffsetTop = y;
+            panel.OffsetBottom = y + panel.Size.Y;
+
+            if (right)
+            {
+                rightY = y + tall + Edge;
+            }
+            else
+            {
+                leftY = y + tall + Edge;
+            }
+        }
+    }
+
+    private bool _arranged;
+
+    private int _settling;
 
     private VBoxContainer Floating(
         float x,
@@ -4362,38 +4284,84 @@ public partial class Main : Control
     /// all four offsets moves the anchor itself, which is the thing layout reads.
     /// </para>
     /// <para>
-    /// ⚠️ <b>Divided by the scale, because the panel is drawn scaled.</b> The mouse moves in window
-    /// pixels and the offsets are in the panel's own unscaled units; without this the window
-    /// drifts away from the pointer, and the smaller the UI the worse it gets.
+    /// ⛔⛔ <b>IT MOVES IN SCREEN SPACE, AND THE FIRST DRAFT DID NOT.</b> Joe: *"the dragging feels
+    /// sluggish and slow — like the window moves faster than the cursor and the distance between
+    /// the two keeps growing."* **Exactly right, and it was arithmetic rather than feel.**
+    /// </para>
+    /// <para>
+    /// A <c>_GuiInput</c> event arrives <b>already transformed into the control's local space</b>,
+    /// and this panel is drawn at <c>_uiScale</c> — so <c>Relative</c> was already 1.25× the screen
+    /// delta at 80%. Dividing by the scale on top of that applied <b>1.5625×</b>, the panel drew at
+    /// 0.8 of it, and the window ran away from the pointer at 1.25× with the gap compounding for as
+    /// long as the drag lasted.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>So the delta is taken from the global mouse instead</b>, which is in screen pixels
+    /// whatever any ancestor is scaled to. That is one fact rather than a chain of two, and it
+    /// stays correct if the scale ever moves mid-drag.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>And it is clamped to the window</b> (Joe: *"panels aren't bound to the window and they
+    /// can get stuck outside it with no way to move them"*). The grip is what has to stay
+    /// reachable, so the clamp keeps a strip of the title bar on screen rather than the whole
+    /// panel — a window half off the right edge is a legitimate thing to want, one whose only
+    /// handle is off the edge is a lost window.
     /// </para>
     /// </remarks>
     private void MakeDraggable(Control grip, PanelContainer panel)
     {
         bool dragging = false;
+        Vector2 last = Vector2.Zero;
 
         grip.GuiInput += @event =>
         {
             if (@event is InputEventMouseButton click && click.ButtonIndex == MouseButton.Left)
             {
                 dragging = click.Pressed;
+                last = GetGlobalMousePosition();
                 grip.AcceptEvent();
                 return;
             }
 
-            if (!dragging || @event is not InputEventMouseMotion moved)
+            if (!dragging || @event is not InputEventMouseMotion)
             {
                 return;
             }
 
-            Vector2 by = moved.Relative / Mathf.Max(0.01f, _uiScale);
+            Vector2 now = GetGlobalMousePosition();
+            Vector2 by = now - last;
+            last = now;
 
-            panel.OffsetLeft += by.X;
-            panel.OffsetRight += by.X;
-            panel.OffsetTop += by.Y;
-            panel.OffsetBottom += by.Y;
-
+            MovePanel(panel, by);
             grip.AcceptEvent();
         };
+    }
+
+    /// <summary>Shift a floating panel by a screen-space delta, keeping its handle reachable.</summary>
+    /// <remarks>
+    /// ⚠️ <b>The OFFSETS move, never <c>Position</c>.</b> Layout recomputes position from the
+    /// anchors every frame, so a panel written to directly judders straight back under the cursor.
+    /// </remarks>
+    private void MovePanel(PanelContainer panel, Vector2 by)
+    {
+        float wide = panel.Size.X * _uiScale;
+        float tall = panel.Size.Y * _uiScale;
+
+        // What must stay on screen: enough of the top strip to grab, and enough width to see it.
+        const float Handle = 46f;
+
+        float left = panel.OffsetLeft + by.X;
+        float top = panel.OffsetTop + by.Y;
+
+        left = Mathf.Clamp(left, Handle - wide, Size.X - Handle);
+        top = Mathf.Clamp(top, 0f, Size.Y - Handle);
+
+        by = new Vector2(left - panel.OffsetLeft, top - panel.OffsetTop);
+
+        panel.OffsetLeft += by.X;
+        panel.OffsetRight += by.X;
+        panel.OffsetTop += by.Y;
+        panel.OffsetBottom += by.Y;
     }
 
     private VBoxContainer Dress(PanelContainer panel, string? title, bool startOpen)
@@ -4565,7 +4533,7 @@ public partial class Main : Control
     /// </remarks>
     private void BuildSettingsPanel()
     {
-        VBoxContainer body = InColumn(_rightColumn, 0, "Settings");
+        VBoxContainer body = InColumn(right: true, 0, "Settings");
         _settingsPanel = _panels[^1];
         _settingsPanel.Visible = false;
 
@@ -4578,6 +4546,11 @@ public partial class Main : Control
         // map."* It reaches every panel and the control bar, so the whole furniture shrinks
         // together rather than four font sizes drifting apart.
         body.AddChild(Muted("How big the furniture is"));
+
+        var reset = new Button { Text = "Reset window positions", Flat = true };
+        reset.AddThemeFontSizeOverride("font_size", 12);
+        reset.Pressed += ArrangeDefaults;
+        body.AddChild(reset);
 
         var sizing = new HBoxContainer();
         sizing.AddThemeConstantOverride("separation", 4);
@@ -4774,7 +4747,7 @@ public partial class Main : Control
     /// </para>
     /// <para>
     /// The minimum is deliberately small and not zero: at zero a column could be squeezed to a
-    /// sliver of one word per line, and <see cref="MinColumnWidth"/> is the floor that is
+    /// sliver of one word per line, and a panel's own minimum width is the floor that is
     /// supposed to decide how narrow a column gets.
     /// </para>
     /// </remarks>
