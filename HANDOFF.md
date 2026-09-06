@@ -1,43 +1,31 @@
-# Handoff — bclone: **✅ THE BUILD BAR IS BUILT — AND NOBODY HAS COMPILED IT**
+# Handoff — bclone: **✅ THE BUILD BAR IS ON `main`, MEASURED AND MERGED**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-06.**
-> **927 passing, 0 failing, 2 skipped of 929** — as of the last session that could run them.
-> ⚠️ **The sim has not moved in the last seven commits.** Everything since the Produce rename is
-> view-layer, so *any* test movement while touching the UI means the change leaked.
+> **928 passing, 0 failing, 2 skipped of 930** — run locally on `main`. `main` = `origin/main` =
+> `42a8c37`, and `claude/handoff-review-next-steps-w37oks` is merged into it.
+> **Joe asked for the merge once the bar held one height across its tabs, and it does.**
 >
-> ## ⛔⛔ IT IS NOT ON `main`, AND `main` IS WHAT JOE PLAYS
->
-> **D308 is five commits on `claude/handoff-review-next-steps-w37oks` (tip `d660e2b`). `main` is
-> still `53ff336` — D307.** Joe launched the game, saw the old bar and asked why nothing had
-> changed; **it is D217 in the other direction, and it cost a round trip.** *A branch nobody is
-> running lies to whoever plays the game.*
+> ## ⭐⭐ GODOT IS INSTALLED ON THIS MACHINE — THE VIEW CAN BE PROVEN HERE
 >
 > ```
-> git fetch origin && git checkout claude/handoff-review-next-steps-w37oks
+> dotnet build src/Bclone.Game/Bclone.Game.csproj      # the view actually compiles
+> BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game   # the only view "test"
 > ```
 >
-> ⛔ **It does not go to `main` until it compiles.** Merging code nobody has built into the build
-> he plays is how D217 happened the first time.
+> **`D:\Projects\Godot\Godot_v4.7.1-stable_mono_win64\Godot_v4.7.1-stable_mono_win64.exe`** —
+> `run.bat` names it, and the probe takes seconds. ⛔ **A previous session declared the build bar
+> unverifiable because ITS OWN container had no toolchain, and nearly made Joe compile it by
+> hand.** *Check `run.bat` for the path, and check CI, before ever saying the view cannot be
+> built.* **CI also builds the view on every push** (`ci.yml`, `Build the Godot view`) — what CI
+> cannot do is run the probe, because it installs no Godot by design.
 >
-> ## ✅ IT COMPILES. ⚠️ NOBODY HAS LOOKED AT IT.
+> ⭐ **THE PROBE NOW CATCHES TWO THINGS IT USED TO MISS**, both because Joe found them by playing:
+> it prints **held content beside drawn height** for the roster and the village log
+> (`roster: 4 items, drawn 288x190`), and it measures the **control bar on each tab in turn**
+> (`Build 151, Removal 151, Harvest 151  ✅ one height on every tab`).
 >
-> **CI on `d660e2b`: 927 / 0 / 2 of 929, and `Build the Godot view` at 0 warnings, 0 errors.**
-> So D308 builds and the sim has not moved.
->
-> ⭐⭐ **AND CHECK CI BEFORE ASKING JOE TO BUILD ANYTHING.** This session's container had no
-> `dotnet` and no Godot — the SDK download host is blocked by the environment's egress policy — and
-> it declared the work unverified and asked him to compile it by hand. **`ci.yml` runs on every push
-> to every branch and has a `Build the Godot view` step; it had already answered.** *A missing
-> local toolchain is not a missing toolchain.*
->
-> ⚠️ **What is genuinely still owed is what CI cannot do.** It installs no Godot by design, so:
->
-> ```
-> BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
-> ```
->
-> **has never run, and no glyph has been looked at.** The strip's width and the mark-inside-a-button
-> geometry are still guesses.
+> ⚠️ **Still owed: nobody has LOOKED at the glyphs.** The mark-inside-a-button geometry is
+> measured but not judged.
 >
 > ⚠️ **And a failed local build looks exactly like no change at all.** Godot runs the last assembly
 > that *did* build — the old one — with **no error dialog**. `METHODOLOGY §116` records it: *"a
@@ -125,14 +113,14 @@ causes are worth not re-deriving, not because anything here is open:**
 
 ## ▶️ NEXT, IN ORDER
 
-1. **⛔ COMPILE AND LOOK AT THE BUILD BAR.** See the banner. Until that is done nothing else starts.
-2. **Then Joe looks at it**, which is the only test the view has (D11, D160). ⛔ **Do not re-ask
-   about Move and Empty — he confirmed both on 2026-09-06.** What is still worth asking: whether
-   the strip is legible with the word under each mark, and **whether BUILD + ALL is too tall** —
-   thirteen buildings and three tools is the widest this bar has ever been, and it wraps rather
-   than clips, so it eats the valley in height. *That is the complaint D305 came from.* The cheap
-   fix is defaulting the chip to something other than ALL, and it is his call because it changes
-   what he sees on launch.
+1. **⭐ JOE LOOKS AT THE GLYPHS**, which is the only test the view has (D11, D160). ⛔ **Do not
+   re-ask about Move and Empty (confirmed 2026-09-06), the window fixes (*"Tested - they're
+   great!"*), or the bar height (measured at 151 on all three tabs).** What is still worth asking:
+   whether the strip is legible with the word under each mark, and **whether BUILD + ALL is too
+   tall** — thirteen buildings and three tools is the widest this bar has ever been, and it wraps
+   rather than clips, so it eats the valley in height. *That is the complaint D305 came from.* The
+   cheap fix is defaulting the chip to something other than ALL, and it is his call because it
+   changes what he sees on launch.
 3. **Then the rest of the UI pass**: **materials/ingredients categories** in the panels, and **meat
    and fish subtypes** (venison, trout, wheat), which Joe deferred until the panels can group them.
 4. **⭐⭐ THEN GRIDLESS, AND IT GETS ITS OWN SESSION** (Joe, 2026-09-06: *"let's do gridless after
@@ -141,6 +129,25 @@ causes are worth not re-deriving, not because anything here is open:**
    the heaps is in `GeneratedMap`, `TravelCostField`, `ZoneMap`, `StateHash` or the economy, and
    *"for each tile, hash (x,y)"* becomes *"sample the region, hash a quantised position"*. **The one
    call site that has to move is `IsWoodland`.**
+
+## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
+
+**The roster and the village log were both `288x0` for two commits** (D311). Joe sent a screenshot
+reading *"6 villagers in 2 households"* beside a blank panel.
+
+⭐ **A `ScrollContainer` lays its content out at the content's MINIMUM height** — that is what makes
+scrolling possible — and **an `ItemList` and a `ScrollFollowing` `RichTextLabel` each report a
+minimum of zero**, because each scrolls itself. `SizeFlagsVertical = ExpandFill` buys nothing
+inside a scroll: there is no spare space to expand into. **A self-scrolling control needs a
+`CustomMinimumSize`, not a wrapper.**
+
+⛔⛔ **AND IT WAS D306'S OWN FIX THAT CAUSED IT.** D306 gave every panel its own `ScrollContainer`
+because panels used to borrow the deleted column's — and **the two panels whose content already
+scrolled are the two it broke.** *A fix aimed at a container class will hit the members that did
+not need it.*
+
+⚠️ **The empty log is also why the previous stretch read as "the game starts with no villagers"** —
+four founders froze in Winter Year 1 and every line saying so rendered into nothing.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
