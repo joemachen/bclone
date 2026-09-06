@@ -551,7 +551,9 @@ public partial class VillageMap : Control
     /// <summary>Which harvest mode the brush is set to, or null when that is not the tool.</summary>
     public HarvestBrush? PendingHarvest => _harvestMode;
 
-    /// <summary>Raised whenever <see cref="Tool"/> changes, so the bar can relight itself.</summary>
+    /// <summary>
+    /// Raised whenever <b>what is in the player's hand</b> changes, so the bar can relight itself.
+    /// </summary>
     /// <remarks>
     /// ⭐ <b><see cref="Announce"/> is the seam and that is not a coincidence</b> — every
     /// <c>Begin*</c> already calls it to say what the tool does, so the one place that already
@@ -570,6 +572,15 @@ public partial class VillageMap : Control
         int groundFor = 0,
         int brush = 0)
     {
+        // ⚠️ THE WHOLE HAND, NOT JUST THE ENUM. Granary → Warehouse is `Building` → `Building`,
+        // and Trees → Stone is `Harvesting` → `Harvesting` — so a `Tool != tool` test would say
+        // nothing changed and **leave the bar lighting the button the player just moved off.**
+        // *The tool is the enum AND what it is set to.*
+        bool changed = Tool != tool
+            || _building != building
+            || _harvestMode != harvest
+            || _groundFor != groundFor;
+
         // ⛔ EVERY FIELD, EVERY TIME, IN ONE PLACE. The bug this replaces was never a wrong
         // value — it was a field somebody forgot to clear in one of seven near-identical
         // blocks, three times over.
@@ -582,7 +593,6 @@ public partial class VillageMap : Control
         _emptying = tool == MapTool.Emptying;
         _moveFrom = null;
 
-        bool changed = Tool != tool;
         Tool = tool;
 
         Announce();

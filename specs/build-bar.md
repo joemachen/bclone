@@ -1,8 +1,9 @@
 # Spec: The build bar — one strip, three tabs, and a menu that reads the catalogue
 
-> Status: **▶️ IN PROGRESS, 2026-09-06** — spec written first, code follows. Nothing here has
-> shipped yet; when it does, this line says so and the §7 entry number goes beside it.
-> · Owner: Joe + Claude Code
+> Status: **✅ BUILT, ⚠️ NOT YET COMPILED OR LOOKED AT (D308, 2026-09-06).** Every item in §7 is
+> done in code. ⛔ **The session that wrote it had no .NET SDK and no Godot** — the SDK download
+> host is blocked by policy — so `dotnet build src/Bclone.Game`, the width probe and Joe's eyes
+> are all still owed. **Do not read this line as verified.** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements Joe's UI mockup, second half. Resolves
 > `buildings-catalog.md §8.2` (D223's deferral) and closes `content-inventory.md` finding 5's
 > reachability hole.
@@ -200,6 +201,8 @@ hole. What exists instead:
 
 ## 8. Open
 
+0. ⛔ **NOTHING HERE HAS BEEN COMPILED.** The three checks in §6 are unrun. That is the first
+   thing the next session does, and a build error in this work is expected rather than surprising.
 1. **Move and Empty's tabs** — §3.1. This spec's reading, not Joe's word.
 2. **Icon-and-word, or icon-and-tooltip?** This spec commits to the word, on §1.1. If forty-five
    buildings make the strip too tall even filtered, the word is what gives — and that is a

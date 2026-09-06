@@ -1,9 +1,25 @@
-# Handoff — bclone: **✅ HUNTING IS DONE, FOOD MEANS FOOD, AND THE UI IS WINDOWS**
+# Handoff — bclone: **✅ THE BUILD BAR IS BUILT — AND NOBODY HAS COMPILED IT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-06.**
-> **927 passing, 0 failing, 2 skipped of 929** — on `main`, pushed. `main` = `origin/main`.
-> ⚠️ **The sim has not moved in the last four commits.** Everything since the Produce rename is
+> **927 passing, 0 failing, 2 skipped of 929** — as of the last session that could run them.
+> ⚠️ **The sim has not moved in the last seven commits.** Everything since the Produce rename is
 > view-layer, so *any* test movement while touching the UI means the change leaked.
+>
+> ## ⛔⛔ THE FIRST THING THIS SESSION DOES IS BUILD THE VIEW
+>
+> **D308 — the build bar — was written in a container with NO `dotnet` AND NO GODOT.** The SDK
+> download host is blocked by the environment's egress policy, so **nothing in the last three
+> commits has been compiled, and no glyph has been looked at.** A build error in that work is
+> *expected*, not surprising. Run, in this order:
+>
+> ```
+> dotnet build src/Bclone.Game/Bclone.Game.csproj      # ⛔ a root build does NOT compile the view
+> dotnet test                                          # must still read 927 / 0 / 2 of 929
+> BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
+> ```
+>
+> ⭐ **Fix the compile errors before reading anything else in this file.** The design decisions are
+> recorded in `DESIGN.md` D308 and `specs/build-bar.md`; the *code* is unproven.
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
 
@@ -22,6 +38,20 @@ fired **3,609 times** while the suite was green. It also prints panel widths and
 ---
 
 ## What landed since the last handoff
+
+**✅ THE BUILD BAR (D308) — ⚠️ BUILT BUT UNPROVEN.** One strip: speed and BUILD / REMOVAL / HARVEST
+tabs on the chrome row, category chips under it, the icon strip under that. ⭐⭐ **The menu reads
+the catalogue now**, which is what D223 deferred and `buildings-catalog.md §8.2` said to decide *at
+exactly this redesign* — a row in `data/sim.config.json` gets a button, a drawn mark and a group
+with **no code change**, closing D221's hole. ⛔ **The first task was not the bar**: `VillageMap`
+could not say what tool was in the player's hand — seven `Begin*` methods setting eight private
+fields nothing read back — **so no tab could light up.** One `MapTool` and one `SetTool` writer
+replaced them and **fixed three live bugs**, the worst being that demolishing a hut mid-stroke made
+the rest of that stroke paint housing land nobody asked for. ⚠️ **Move and Empty's tabs are the
+session's reading, not Joe's word** (`specs/build-bar.md §8.1`).
+
+**✅ JOE VERIFIED D307's THREE FIXES** (2026-09-06: *"Tested - they're great!"*) — right-side
+windows drag left, nothing escapes the screen, panels are solid. **Do not re-open any of them.**
 
 **✅ FISHING, FINISHED (D282–D290).** A cast is 10 ticks; the hut holds **900** (three casts). ⭐ The
 longer cast cost the economy **nothing** — measured 800 fish a year at three ticks and 800 at ten,
@@ -58,10 +88,10 @@ are free windows, arranged once at launch, with **Reset window positions** in Se
 
 ---
 
-## ⚠️ WHAT JOE IS WAITING ON — read before touching the UI
+## ✅ SETTLED — the window work is verified and closed
 
-He is mid-review of the window work and has just reported (2026-09-06, fixed but **unverified by
-him**):
+Joe tested and confirmed all three on 2026-09-06 (*"Tested - they're great!"*). **Kept because the
+causes are worth not re-deriving, not because anything here is open:**
 
 1. **Right-hand windows could not move left.** Right-anchored panels have **negative** offsets
    (distance back from the right edge), and the clamp treated `OffsetLeft` as a screen X — so it
@@ -70,29 +100,36 @@ him**):
 3. **Panels are solid**, except the control bar, which spans the window and would wall off the
    valley.
 
-⭐ **He has not confirmed any of these three yet.** Ask before assuming they are good.
+## ▶️ NEXT, IN ORDER
 
-## ▶️ NEXT: THE BUILD BAR
-
-The second half of his UI mockup: **one icon strip with BUILD / REMOVAL / HARVEST tabs**, speed
-controls on the same bar, an ALL filter. Two things known in advance:
-
-- ⛔ **`VillageMap` has no current-mode getter.** `BeginBuilding` / `BeginDemolishing` /
-  `BeginHarvesting` set a private brush and nothing can read it, **so no tab can light up**. That
-  is new view state and it is the first task.
-- ⭐ **Icons are drawn, not imported** — `TradeGlyph` is the pattern (polygons and rects, colours
-  borrowed from the map). D26: this project ships **no image assets**, and the code rejects emoji
-  as font-dependent.
-
-Queued behind it: **materials/ingredients categories** in the panels, and **meat and fish subtypes**
-(venison, trout, wheat) which Joe deferred until the panels can group them.
+1. **⛔ COMPILE AND LOOK AT THE BUILD BAR.** See the banner. Until that is done nothing else starts.
+2. **Then Joe looks at it**, which is the only test the view has (D11, D160). What to ask him:
+   whether the strip is legible with the word under each mark, and whether **Move and Empty** are
+   on the right tabs — his three-tab answer named the buildings, the land brush and the harvest
+   modes and no more.
+3. **Then the rest of the UI pass**: **materials/ingredients categories** in the panels, and **meat
+   and fish subtypes** (venison, trout, wheat), which Joe deferred until the panels can group them.
+4. **⭐⭐ THEN GRIDLESS, AND IT GETS ITS OWN SESSION** (Joe, 2026-09-06: *"let's do gridless after
+   the UI work is complete"*). ⛔ **Do not fold it into feature work** — it is the largest statement
+   in the design doc. D303 already recorded what survives it: nothing in the animals, the berries or
+   the heaps is in `GeneratedMap`, `TravelCostField`, `ZoneMap`, `StateHash` or the economy, and
+   *"for each tile, hash (x,y)"* becomes *"sample the region, hash a quantised position"*. **The one
+   call site that has to move is `IsWoodland`.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - **The food limit gates the HARVEST, not the sowing** (D300, his call). ⚠️ It reverses a recorded
   decision: `crops-and-orchards.md §5.1` wanted use-it-or-lose-it to *"punish inattention rather
   than obedience"*, and unreaped crop now rots at winter. **He accepted the rot** and floated a
-  future tech unlock letting crops stand into winter. A third option — gate neither — is recorded.
+  future tech unlock letting crops stand into winter.
+  - **⏸️ THE THIRD OPTION, RESTATED FOR HIM ON 2026-09-06 AND STILL HIS: GATE NEITHER.** Farmers
+    sow in spring *and* reap in autumn regardless of the cap. ⭐ **For it:** the limit already stops
+    foragers, fishers and hunters through `foodIsEnough`, so a farm finishing what it *started* is
+    not the village ignoring him — and it deletes rot-by-obedience entirely, which is the one
+    failure `crops-and-orchards.md §5.1` explicitly does not want. ⛔ **Against it:** a harvest
+    lands in a lump, so the cap stops meaning *"stop at N"* for the one trade that can overshoot by
+    a whole field. **He has not answered.** If he takes it, it is the harvest arm plus
+    `FarmerSeatsWithGroundToWork`, and it wants its own §7 entry.
 - **`gathers_per_thinned_tile` stays 0 for ever** (D297) but is kept as a modder dial.
 - **`ApprenticeshipTests` stays skipped** (D287, his explicit call). *Do not "fix" it* — restoring
   it means reversing D227.
@@ -579,6 +616,22 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔ THE SESSION CONTAINER MAY HAVE NO TOOLCHAIN, AND IT DOES NOT SAY SO UNTIL YOU REACH FOR ONE
+  (2026-09-06, D308).** No `dotnet`, no Godot, and `dotnet-install.sh` refused at the proxy —
+  `builds.dotnet.microsoft.com` is denied by the environment's egress policy. **Three commits of
+  view work were written without a single compile.**
+  - **⭐ Check first, not after.** `which dotnet` and `curl -sS "$HTTPS_PROXY/__agentproxy/status"`
+    cost ten seconds and change what the session should promise. **Say it in the banner and in the
+    commit message, in those words** — *"unverified: not compiled"* — because the next session's
+    first act depends on knowing it.
+  - ⚠️ **It is not a reason to stop.** The sim is a separate project and the view is not in the
+    solution, so the suite is unaffected *by construction* rather than by luck — and that sentence
+    is worth writing down every time, since it is the only thing that makes unverified view work
+    safe to hand over.
+  - ⛔ **What it does forbid is a status line that reads as verified.** `specs/build-bar.md`'s says
+    *"BUILT, NOT YET COMPILED OR LOOKED AT"* for exactly D159's reason: a spec that lies about its
+    own status is worse than no spec, because it is read at the moment a session is orienting.
 
 - **⛔⛔ A GUARD WITH A BUILT-IN'S ID TYPED INTO IT BREAKS THE DAY A BUILT-IN IS ADDED, AND THE
   FAILURE MESSAGE BLAMES THE WRONG THING (2026-08-29).** Adding `BuildingKind.TownHall = 11` turned
