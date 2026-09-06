@@ -330,10 +330,16 @@ public partial class Main : Control
             return;
         }
 
+        // ⚠️ The width it was ASKED for, read off the panel rather than repeated here — the
+        // first draft hard-coded 520 and went on saying it after the panel was narrowed to
+        // 380, which is a probe lying about the thing it exists to measure.
+        float given = _professionsPanel.Size.X;
         float wants = _professionsPanel.GetCombinedMinimumSize().X;
+
         GD.Print(
-            $"[widths] --- professions panel wants {wants:F0} of the 520 it is given ---"
-            + (wants > 520f ? "  ⚠️ TOO WIDE" : string.Empty));
+            $"[widths] --- professions panel wants {wants:F0}, is {given:F0} wide, drawn at "
+            + $"{_uiScale * 100f:F0}% ---"
+            + (wants > given ? "  ⚠️ TOO WIDE" : string.Empty));
 
         PrintWidths(_professionsPanel, "prof", 0);
     }
@@ -1211,6 +1217,7 @@ public partial class Main : Control
         // After the panels have been filled, because how tall a column wants to be depends on
         // what was just put in it — an alert that grew to six lines this tick included.
         FitColumns();
+        FitFloaters();
 
         // Alpha is the fraction of a tick elapsed, so villagers glide between tiles
         // instead of teleporting once a second.
@@ -2726,6 +2733,7 @@ public partial class Main : Control
 
         BuildStatusPanel();
         BuildProfessionsPanel();
+        BuildStockLimitsPanel();
         BuildRosterPanel();
 
         // Top of the right-hand column, which is where Banished puts it and where Joe's
@@ -3622,7 +3630,7 @@ public partial class Main : Control
         //
         // ⭐ Joe's mockup is a wide overlay anyway, so the constraint and the design agree.
         VBoxContainer body = Floating(
-            Edge, Edge, 520f, 0f, Corner.TopLeft, "Professions", startOpen: true);
+            Edge, Edge, 380f, 0f, Corner.TopLeft, "Professions", startOpen: true);
 
         // ⚠️ Taken off the end of `_panels` the way `BuildSettingsPanel` does, because
         // `Dress` owns the registration and handing the panel back would be a second way to
@@ -3642,8 +3650,32 @@ public partial class Main : Control
 
         body.AddChild(BuildProfessionsTable());
         body.AddChild(BuildTheNotHiredYet());
+    }
 
-        body.AddChild(Caption("Stock limits — how much to keep before the work stops"));
+    /// <summary>
+    /// The stock limits, in <b>their own window</b> (Joe, 2026-09-05).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// *"Separate the resource limits into its own panel."* ⭐ **They were only ever together
+    /// because both were lists of numbers**, which is a reason to put two things in one panel and
+    /// not a good one: professions are about **who does what**, limits are about **when to stop**,
+    /// and stacking nine goods under eight trades made a window tall enough to cover the valley.
+    /// </para>
+    /// <para>
+    /// ⚠️ Its own corner, so opening both does not bury one behind the other — and both are
+    /// draggable now anyway.
+    /// </para>
+    /// </remarks>
+    private void BuildStockLimitsPanel()
+    {
+        VBoxContainer body = Floating(
+            Edge + 396f, Edge, 300f, 0f, Corner.TopLeft, "Stock limits", startOpen: true);
+
+        _stockLimitsPanel = _panels[^1];
+        _stockLimitsPanel.Visible = false;
+
+        body.AddChild(Caption("How much to keep before the work stops."));
         body.AddChild(BuildStockLimitTable());
     }
 
@@ -3666,8 +3698,8 @@ public partial class Main : Control
     private GridContainer BuildProfessionsTable()
     {
         var table = new GridContainer { Columns = 4 };
-        table.AddThemeConstantOverride("h_separation", 8);
-        table.AddThemeConstantOverride("v_separation", 4);
+        table.AddThemeConstantOverride("h_separation", 6);
+        table.AddThemeConstantOverride("v_separation", 1);
 
         table.AddChild(new Control());
         table.AddChild(Muted("TYPE"));
@@ -3768,8 +3800,8 @@ public partial class Main : Control
     private GridContainer BuildStockLimitTable()
     {
         var table = new GridContainer { Columns = 5 };
-        table.AddThemeConstantOverride("h_separation", 8);
-        table.AddThemeConstantOverride("v_separation", 4);
+        table.AddThemeConstantOverride("h_separation", 6);
+        table.AddThemeConstantOverride("v_separation", 1);
 
         table.AddChild(new Control());
         table.AddChild(Muted("RESOURCE"));
@@ -3870,6 +3902,10 @@ public partial class Main : Control
         professions.Pressed += () => _professionsPanel.Visible = !_professionsPanel.Visible;
         controls.AddChild(professions);
 
+        var limits = new Button { Text = "Limits" };
+        limits.Pressed += () => _stockLimitsPanel.Visible = !_stockLimitsPanel.Visible;
+        controls.AddChild(limits);
+
         var settings = new Button { Text = "Settings" };
         settings.Pressed += () => _settingsPanel.Visible = !_settingsPanel.Visible;
         controls.AddChild(settings);
@@ -3969,6 +4005,46 @@ public partial class Main : Control
     /// <summary>Each side's scroller and the stack of panels inside it.</summary>
     private readonly List<(ScrollContainer Scroll, VBoxContainer Column)> _columns = new();
 
+    /// <summary>Every floating panel, with the corner it hangs off, so scaling holds that corner.</summary>
+    private readonly List<(PanelContainer Panel, bool Right, bool Bottom, bool Spans)> _floaters = new();
+
+    /// <summary>Scale every floating panel about the corner it hangs off.</summary>
+    /// <remarks>
+    /// ⚠️ <b>The pivot is the anchored corner</b>, the same rule the columns follow: scaling about
+    /// the origin would walk a bottom-anchored bar up off its edge and a right-anchored panel in
+    /// from the window. Set every frame rather than once, because the pivot depends on the panel's
+    /// own size and that changes with its contents.
+    /// </remarks>
+    private void FitFloaters()
+    {
+        for (int i = 0; i < _floaters.Count; i++)
+        {
+            (PanelContainer panel, bool right, bool bottom, bool spans) = _floaters[i];
+
+            // ⛔⛔ A BAR THAT SPANS THE WINDOW HAS TO BE WIDENED BEFORE IT IS SCALED, OR SHRINKING
+            // THE UI MAKES IT TALLER. The control bar is an `HFlowContainer`: it wraps to fit its
+            // width, so scaling it to four fifths leaves it four fifths as WIDE, which wraps more
+            // rows and eats more of the valley than it saved. **The opposite of what was asked
+            // for**, and it would have looked like the dial was backwards.
+            //
+            // ⭐ So its unscaled width is set to `window / scale`, and scaling brings it back to
+            // exactly the window. The bar keeps its full width and only its CONTENTS get smaller,
+            // which is the thing Joe was actually asking to shrink.
+            if (spans)
+            {
+                float wanted = (Size.X - (Edge * 2f)) / Mathf.Max(0.01f, _uiScale);
+                panel.OffsetLeft = Edge;
+                panel.OffsetRight = Edge + wanted - Size.X;
+            }
+
+            panel.PivotOffset = new Vector2(
+                right && !spans ? panel.Size.X : 0f,
+                bottom ? panel.Size.Y : 0f);
+
+            panel.Scale = new Vector2(_uiScale, _uiScale);
+        }
+    }
+
     /// <summary>
     /// Keep each column as tall as its panels, and never taller than the screen.
     /// </summary>
@@ -4014,14 +4090,14 @@ public partial class Main : Control
 
         // ⛔ THE WIDTH IS THE LAYOUT WIDTH AND IS NOT CONVERTED, WHICH IS THE WHOLE POINT.
         // The column is laid out to `ColumnWidthFor` exactly as before and then DRAWN at
-        // `PanelScale`, so it takes a fifth less of the window than it used to — which is what
+        // `_uiScale`, so it takes a fifth less of the window than it used to — which is what
         // Joe asked for. *Dividing it here was the first cut of this change and it gave the
         // panels the same screen width with more text in it, which is the opposite.*
         //
         // ⚠️ The HEIGHT cap is converted, because it is a limit rather than a size: `room` is
-        // real estate on screen, and a column drawn at four fifths can hold `1 / PanelScale`
+        // real estate on screen, and a column drawn at four fifths can hold `1 / _uiScale`
         // more rows inside the same strip before it has to start scrolling.
-        float room = (Size.Y - Edge - (Edge + reserve)) / PanelScale;
+        float room = (Size.Y - Edge - (Edge + reserve)) / _uiScale;
         float wide = ColumnWidthFor(Size.X);
 
         foreach ((ScrollContainer scroll, VBoxContainer column) in _columns)
@@ -4041,10 +4117,10 @@ public partial class Main : Control
             scroll.CustomMinimumSize = new Vector2(0, Mathf.Min(wanted, Mathf.Max(0f, room)));
 
             // ⭐ SCALED LAST, ABOUT THE EDGE IT IS ANCHORED TO (Joe, 2026-08-30 — see
-            // `PanelScale`). Set every frame beside the offsets rather than once at build time:
+            // `_uiScale`). Set every frame beside the offsets rather than once at build time:
             // the pivot depends on the column's width, and that changes with the window.
             scroll.PivotOffset = new Vector2(right ? scroll.Size.X : 0f, 0f);
-            scroll.Scale = new Vector2(PanelScale, PanelScale);
+            scroll.Scale = new Vector2(_uiScale, _uiScale);
 
             // ⚠️ AND IT ONLY TAKES THE MOUSE WHEN IT HAS SOMETHING TO DO WITH IT. A
             // ScrollContainer stops clicks, and this one covers the whole column — so the
@@ -4124,7 +4200,30 @@ public partial class Main : Control
     /// layout bug rather than as more room.
     /// </para>
     /// </remarks>
-    private const float PanelScale = 0.8f;
+    /// <summary>
+    /// How big the furniture is drawn, against the window — <b>one dial for every panel</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-09-05:</b> *"These all need to be smaller. Including the build bar. Smaller
+    /// please. Give me more room to see the game map."*
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>IT USED TO REACH THE COLUMNS AND NOTHING ELSE, WHICH IS WHY THE PROFESSIONS WINDOW
+    /// DWARFED EVERYTHING.</b> `FitColumns` scaled the two side columns and floating panels were
+    /// never in that list — so the new table and the control bar were drawn at **full size beside
+    /// panels drawn at four fifths**, and looked 25% too big because they were.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A setting rather than a constant</b> (his call): one number he can turn until the map
+    /// has the room he wants, instead of four hand-tuned font sizes that drift apart. Clamped so
+    /// it cannot be driven to something unreadable or off-screen.
+    /// </para>
+    /// </remarks>
+    private float _uiScale = 0.8f;
+
+    private const float MinUiScale = 0.55f;
+    private const float MaxUiScale = 1.15f;
 
     /// <summary>A panel stacked into one of the side columns.</summary>
     /// <remarks>
@@ -4231,6 +4330,11 @@ public partial class Main : Control
 
         VBoxContainer floated = Dress(panel, title, startOpen);
         AddChild(panel);
+
+        // ⭐ Registered so `FitColumns` can scale it with everything else. Before this the side
+        // columns were drawn at `_uiScale` and every floating panel at full size, which is the
+        // whole reason the professions window looked enormous beside the overview.
+        _floaters.Add((panel, right, bottom, spanWidth));
         return floated;
     }
 
@@ -4242,6 +4346,56 @@ public partial class Main : Control
     /// how two layouts come to disagree about what a panel is, and this project has a standing
     /// record of what that costs (D76, five instalments).
     /// </remarks>
+    /// <summary>
+    /// Let a grip drag its panel around, and <b>leave it where it is dropped</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-09-05:</b> *"it needs to be draggable/pinnable"* — and his call on what pinning
+    /// means: **moving it IS pinning it.** A window stays where you put it for the session rather
+    /// than snapping back to its corner.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The offsets move, not the position.</b> A panel is anchored to a corner and Godot
+    /// recomputes `Position` from the anchors every layout pass, so writing `Position` directly
+    /// would be undone on the next frame — the panel would judder back under the cursor. Nudging
+    /// all four offsets moves the anchor itself, which is the thing layout reads.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Divided by the scale, because the panel is drawn scaled.</b> The mouse moves in window
+    /// pixels and the offsets are in the panel's own unscaled units; without this the window
+    /// drifts away from the pointer, and the smaller the UI the worse it gets.
+    /// </para>
+    /// </remarks>
+    private void MakeDraggable(Control grip, PanelContainer panel)
+    {
+        bool dragging = false;
+
+        grip.GuiInput += @event =>
+        {
+            if (@event is InputEventMouseButton click && click.ButtonIndex == MouseButton.Left)
+            {
+                dragging = click.Pressed;
+                grip.AcceptEvent();
+                return;
+            }
+
+            if (!dragging || @event is not InputEventMouseMotion moved)
+            {
+                return;
+            }
+
+            Vector2 by = moved.Relative / Mathf.Max(0.01f, _uiScale);
+
+            panel.OffsetLeft += by.X;
+            panel.OffsetRight += by.X;
+            panel.OffsetTop += by.Y;
+            panel.OffsetBottom += by.Y;
+
+            grip.AcceptEvent();
+        };
+    }
+
     private VBoxContainer Dress(PanelContainer panel, string? title, bool startOpen)
     {
         var body = new VBoxContainer();
@@ -4289,7 +4443,32 @@ public partial class Main : Control
                 header.Text = open ? $"▾ {title}" : $"▸ {title}";
             };
 
-            body.AddChild(header);
+            // ⭐⭐ A SEPARATE GRIP RATHER THAN DRAGGING THE HEADER ITSELF (Joe: *"it needs to be
+            // draggable"*). The header is a toggle: dragging it would mean guessing, on every
+            // release, whether the player meant to move the panel or fold it — and guessing wrong
+            // either strands the panel or folds it under the cursor. **A grip that only drags and
+            // a title that only folds cannot be confused for one another**, which is the same
+            // argument that gave the map its own brush modes rather than one clever click.
+            var handle = new HBoxContainer();
+            handle.AddThemeConstantOverride("separation", 0);
+
+            var grip = new Button
+            {
+                Text = "⠿",
+                Flat = true,
+                TooltipText = "Drag to move this window",
+                MouseDefaultCursorShape = CursorShape.Move,
+            };
+
+            grip.AddThemeFontSizeOverride("font_size", 12);
+            grip.Modulate = new Color(1, 1, 1, 0.35f);
+            MakeDraggable(grip, panel);
+            handle.AddChild(grip);
+
+            header.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            handle.AddChild(header);
+
+            body.AddChild(handle);
             _headers.Add(header);
         }
 
@@ -4365,6 +4544,8 @@ public partial class Main : Control
     /// <summary>The settings panel itself, which is the one window not in that list.</summary>
     private PanelContainer _professionsPanel = null!;
 
+    private PanelContainer _stockLimitsPanel = null!;
+
     private PanelContainer _settingsPanel = null!;
 
     /// <summary>
@@ -4392,6 +4573,45 @@ public partial class Main : Control
         // headers list so `c` cannot fold the thing you opened to un-fold something else.
         _windows.RemoveAt(_windows.Count - 1);
         _headers.RemoveAt(_headers.Count - 1);
+
+        // ⭐ THE ONE DIAL JOE ASKED FOR: *"smaller please. give me more room to see the game
+        // map."* It reaches every panel and the control bar, so the whole furniture shrinks
+        // together rather than four font sizes drifting apart.
+        body.AddChild(Muted("How big the furniture is"));
+
+        var sizing = new HBoxContainer();
+        sizing.AddThemeConstantOverride("separation", 4);
+
+        Label reading = Muted(string.Empty);
+        reading.CustomMinimumSize = new Vector2(38, 0);
+        reading.HorizontalAlignment = HorizontalAlignment.Right;
+
+        void ShowScale() => reading.Text = $"{_uiScale * 100f:F0}%";
+
+        var smaller = new Button { Text = "−", Flat = true };
+        var bigger = new Button { Text = "+", Flat = true };
+
+        smaller.Pressed += () =>
+        {
+            _uiScale = Mathf.Max(MinUiScale, _uiScale - 0.05f);
+            ShowScale();
+        };
+
+        bigger.Pressed += () =>
+        {
+            _uiScale = Mathf.Min(MaxUiScale, _uiScale + 0.05f);
+            ShowScale();
+        };
+
+        smaller.AddThemeFontSizeOverride("font_size", 12);
+        bigger.AddThemeFontSizeOverride("font_size", 12);
+
+        sizing.AddChild(Muted("UI size"));
+        sizing.AddChild(smaller);
+        sizing.AddChild(reading);
+        sizing.AddChild(bigger);
+        body.AddChild(sizing);
+        ShowScale();
 
         body.AddChild(Caption("Windows — what is on screen"));
 
@@ -4735,7 +4955,7 @@ public partial class Main : Control
             Step = 10,
             Value = startsAt,
             Editable = true,
-            CustomMinimumSize = new Vector2(96, 0),
+            CustomMinimumSize = new Vector2(74, 0),
         };
 
         var clear = new Button { Text = "clear", Flat = true, Disabled = true };
