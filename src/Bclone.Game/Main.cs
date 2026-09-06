@@ -236,6 +236,7 @@ public partial class Main : Control
 
         ProbeTheInspectorRows();
         ProbeTheControlBar();
+        ProbeTheProfessionsPanel();
 
         ProbeTheLogLines();
         GD.Print("[widths] done.");
@@ -302,6 +303,39 @@ public partial class Main : Control
                 LogMarkup(seen[i]), @"\[[^\]]*\]", string.Empty);
             GD.Print("[log] " + plain.TrimEnd());
         }
+    }
+
+    /// <summary>
+    /// Measure the professions window, which is the first table this project has drawn.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>A `GridContainer`'s minimum width is the SUM of its column minimums</b>, which is why
+    /// this table could not live in a side column and why it needs measuring rather than
+    /// eyeballing. The bug it is guarding against is recorded twice already: an inspector row
+    /// wanting 733px against a 267px column, and six stock-limit rows holding the left column at
+    /// 450.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Measured while HIDDEN, and that is fine</b> — `GetCombinedMinimumSize` is a layout
+    /// question, not a drawing one. It is also the only way to measure it: the panel starts closed,
+    /// and D242's whole lesson is that a layout correct at startup can be wrong later.
+    /// </para>
+    /// </remarks>
+    private void ProbeTheProfessionsPanel()
+    {
+        if (_professionsPanel is null)
+        {
+            GD.Print("[widths] --- professions panel: NOT BUILT ---");
+            return;
+        }
+
+        float wants = _professionsPanel.GetCombinedMinimumSize().X;
+        GD.Print(
+            $"[widths] --- professions panel wants {wants:F0} of the 520 it is given ---"
+            + (wants > 520f ? "  ⚠️ TOO WIDE" : string.Empty));
+
+        PrintWidths(_professionsPanel, "prof", 0);
     }
 
     private void ProbeTheControlBar()
@@ -1092,21 +1126,30 @@ public partial class Main : Control
         LabourQuota quota = LabourQuota.For(world);
         for (int i = 0; i < _professionReadouts.Count; i++)
         {
-            (JobKind kind, Label places) = _professionReadouts[i];
+            (JobKind kind, Label maximum, Label notes) = _professionReadouts[i];
 
             int working = WorkingAt(world, kind);
             int seats = SeatsFor(world, kind);
             int? asked = world.JobLimits.For(kind);
 
-            string count = working == 0
-                ? $"nobody working of {seats} seats"
-                : $"{working} working of {seats} seats";
+            // The MAX half of the ASSIGNED / MAX cell. It cannot be written once at construction:
+            // seats appear and vanish as the player raises buildings and pulls them down.
+            maximum.Text = $"/ {seats}";
 
-            // Trimmed for a narrow column (D149) — "you asked for" became "asked", because the
-            // − N + control is on the line directly above and says whose number it is.
-            string row = asked is int wanted && wanted != working
-                ? $"{count} · asked {wanted} · village wants {quota.For(kind)}"
-                : $"{count} · village wants {quota.For(kind)}";
+            string row = $"Wants: {quota.For(kind)}";
+
+            // ⭐⭐ HOW MANY ARE ACTUALLY WORKING, AND ONLY WHEN IT DIFFERS FROM WHAT WAS ASKED (Joe,
+            // 2026-09-05). His mockup dropped this number, and it is the one he has already had to
+            // ask for once: D270/D271 exist because a hut with somebody in it read as unstaffed —
+            // *"it IS staffed and somebody DOES work there, even if there is presently no demand."*
+            //
+            // ⚠️ Silent when they agree, which is nearly always. A row that says "1 working" beside
+            // "1 assigned" every frame teaches the player to stop reading the column, and then the
+            // one time it matters they will not see it either.
+            if (asked is int wanted && wanted != working)
+            {
+                row += $" · {working} working of {wanted} asked";
+            }
 
             // ⭐⭐ AND WHY IT WANTS NONE, WHEN THE PLAYER HAS ASKED FOR SOME (Joe, 2026-08-30).
             // **That is the one combination that reads as a contradiction** — *"asked 1 · village
@@ -1120,7 +1163,7 @@ public partial class Main : Control
             if (quota.For(kind) == 0 && asked is int some && some > 0
                 && LabourQuota.WhyTheVillageWantsNone(world, kind) is string reason)
             {
-                row += $" — {reason}";
+                row += $"  ⚠ {reason}";
             }
 
             // ⭐⭐ AND WHEN THE VILLAGE NEEDS MORE THAN IT HAS ROOM FOR, IT SAYS SO (Joe,
@@ -1134,15 +1177,16 @@ public partial class Main : Control
             // for the forager: **it is what stops a seat cap being a silent shortage.**
             if (quota.Needed(kind) > seats && world.JobsCatalog.WorksAt(kind) is BuildingKind at)
             {
-                row += $" — it needs {quota.Needed(kind)}; build another "
+                row += $"  ⚠ needs {quota.Needed(kind)}, build another "
                     + $"{world.BuildingsCatalog[at]?.Name ?? "one"}";
             }
 
-            places.Text = row;
+            notes.Text = row;
         }
 
         // And what the 1 is one OF, which is the whole of Joe's question.
-        _laborerReadout.Text = $"{world.Laborers} of {world.AbleAdults} able adults";
+        _laborerReadout.Text =
+            $"Available adults: {world.AbleAdults}   |   Unassigned (laborers): {world.Laborers}";
 
         // The two standing alerts used to be composed here every frame and shown in the
         // overview. They are narrated by the sim on their edges now and read in the village
@@ -2681,7 +2725,7 @@ public partial class Main : Control
         _rightColumn = Column(Corner.TopRight);
 
         BuildStatusPanel();
-        BuildVillageOrdersPanel();
+        BuildProfessionsPanel();
         BuildRosterPanel();
 
         // Top of the right-hand column, which is where Banished puts it and where Joe's
@@ -3562,7 +3606,7 @@ public partial class Main : Control
     /// year runs.
     /// </para>
     /// </remarks>
-    private void BuildVillageOrdersPanel()
+    private void BuildProfessionsPanel()
     {
         // ⚠️ ROLLED UP BY DEFAULT, and that is the whole point rather than a compromise. These
         // are STANDING ORDERS — you set them and then watch the year — so the panel's resting
@@ -3570,11 +3614,175 @@ public partial class Main : Control
         // valley. Open, it is tall enough to reach the roster and the control bar; closed, it
         // costs one line. Joe asked for less on screen, and a panel that is only there when it
         // is wanted is more of an answer than a smaller one that is always there.
-        VBoxContainer body = InColumn(
-            _leftColumn, 0, "What the village is told", startOpen: false);
+        // ⛔⛔ A FLOATING WINDOW, NOT A COLUMN PANEL, AND THE TABLE IS WHY. A side column clamps
+        // to 240–400 logical px, and a `GridContainer`'s minimum width is the SUM of its column
+        // minimums — so a three-column table with a notes column in it re-opens the exact bug
+        // recorded at `BuildInspectorPanel` (an idle row wanting 733px against a 267px column) and
+        // again at the old stock-limit rows (six of them holding the left column at 450).
+        //
+        // ⭐ Joe's mockup is a wide overlay anyway, so the constraint and the design agree.
+        VBoxContainer body = Floating(
+            Edge, Edge, 520f, 0f, Corner.TopLeft, "Professions", startOpen: true);
 
-        body.AddChild(BuildProfessionsMenu());
-        body.AddChild(BuildStockLimitMenu());
+        // ⚠️ Taken off the end of `_panels` the way `BuildSettingsPanel` does, because
+        // `Dress` owns the registration and handing the panel back would be a second way to
+        // do it. It starts HIDDEN but OPEN, which are two different things and both matter:
+        // standing orders are set and then watched, so the resting state of the screen is
+        // the valley — but a player who presses the button wants the table, not a title bar
+        // they then have to unfold.
+        _professionsPanel = _panels[^1];
+        _professionsPanel.Visible = false;
+
+        // ⭐ What the village HAS, before what it is doing with it. The old panel opened with a
+        // "Laborer" row among the trades, which read as an eighth profession rather than as the
+        // pool the other seven are drawn from.
+        _laborerReadout = Body(string.Empty);
+        body.AddChild(_laborerReadout);
+        body.AddChild(Caption("Laborers are the spare hands: clearing ground, hauling and tidying."));
+
+        body.AddChild(BuildProfessionsTable());
+        body.AddChild(BuildTheNotHiredYet());
+
+        body.AddChild(Caption("Stock limits — how much to keep before the work stops"));
+        body.AddChild(BuildStockLimitTable());
+    }
+
+    /// <summary>
+    /// ⭐ The professions table — <b>type, what you asked for against what there is room for, and
+    /// what the village makes of it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe's mockup, built. The three-line-per-trade stack it replaces existed only because there
+    /// was no table: a name padded to 84px, a stepper, then a wrapped sentence indented under it.
+    /// Columns say the same things and line up while doing it.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The notes column must WRAP rather than widen</b>, or this table walks straight back
+    /// into the width bug it was moved out of the column to escape. <see cref="Wrapped"/> is the
+    /// tool — autowrap plus a floor — and every long clause the sim can produce goes through it.
+    /// </para>
+    /// </remarks>
+    private GridContainer BuildProfessionsTable()
+    {
+        var table = new GridContainer { Columns = 4 };
+        table.AddThemeConstantOverride("h_separation", 8);
+        table.AddThemeConstantOverride("v_separation", 4);
+
+        table.AddChild(new Control());
+        table.AddChild(Muted("TYPE"));
+        table.AddChild(Muted("ASSIGNED / MAX"));
+        table.AddChild(Muted("GOAL / NOTES"));
+
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            AddProfessionRow(table, kind);
+        }
+
+        return table;
+    }
+
+    /// <summary>Four cells for one trade.</summary>
+    private void AddProfessionRow(GridContainer table, JobKind kind)
+    {
+        table.AddChild(new TradeGlyph(kind));
+        table.AddChild(Body(ProfessionName(_loop.World, kind)));
+
+        // ---- assigned / max ----
+        var stepper = new HBoxContainer();
+        stepper.AddThemeConstantOverride("separation", 4);
+
+        // ⚠️ SEEDED AT ZERO AND MEANT (D136). Every profession carries an explicit number from the
+        // first frame; a laborer is not an unemployed villager, so an unstaffed founding is four
+        // people doing the work that is on the map.
+        int asked = 0;
+
+        Label amount = Body("0");
+        amount.CustomMinimumSize = new Vector2(18, 0);
+        amount.HorizontalAlignment = HorizontalAlignment.Right;
+
+        var fewer = new Button { Text = "−", Flat = true };
+        var more = new Button { Text = "+", Flat = true };
+
+        Label seats = Muted(string.Empty);
+        seats.CustomMinimumSize = new Vector2(26, 0);
+
+        void Apply()
+        {
+            amount.Text = $"{asked}";
+            Warn(_loop.World.SetJobLimit(kind, asked));
+        }
+
+        fewer.Pressed += () =>
+        {
+            asked = System.Math.Max(0, asked - 1);
+            Apply();
+        };
+
+        more.Pressed += () =>
+        {
+            int spoken = 0;
+            foreach (JobKind trade in System.Enum.GetValues<JobKind>())
+            {
+                spoken += _loop.World.JobLimits.For(trade) ?? 0;
+            }
+
+            int hands = _loop.World.AbleAdults;
+            if (spoken >= hands)
+            {
+                Warn(PlacementVerdict.Yes(
+                    $"There are only {hands} able "
+                    + $"{(hands == 1 ? "adult" : "adults")} in {_loop.World.Name}, and all of "
+                    + $"{(hands == 1 ? "them is" : "them are")} already spoken for. Take somebody "
+                    + "off another kind of work first."));
+                return;
+            }
+
+            asked++;
+            Apply();
+        };
+
+        stepper.AddChild(fewer);
+        stepper.AddChild(amount);
+        stepper.AddChild(more);
+        stepper.AddChild(seats);
+        table.AddChild(stepper);
+
+        // ---- goal / notes ----
+        Label notes = Wrapped(Muted(string.Empty));
+        table.AddChild(notes);
+
+        _professionReadouts.Add((kind, seats, notes));
+        Apply();
+    }
+
+    /// <summary>
+    /// The stock limits table — <b>resource, limit, clear, have</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Bounded by the ENUM where the overview's goods table is bounded by the CATALOGUE</b>,
+    /// so a mod-added good gets an overview row and no limit row. That mismatch predates this
+    /// redesign and is not its to fix, but it is written here rather than left to be rediscovered:
+    /// <c>EveryGoodTheGameHasCanBeLimited</c> currently pins the enum bound.
+    /// </remarks>
+    private GridContainer BuildStockLimitTable()
+    {
+        var table = new GridContainer { Columns = 5 };
+        table.AddThemeConstantOverride("h_separation", 8);
+        table.AddThemeConstantOverride("v_separation", 4);
+
+        table.AddChild(new Control());
+        table.AddChild(Muted("RESOURCE"));
+        table.AddChild(Muted("LIMIT"));
+        table.AddChild(new Control());
+        table.AddChild(Muted("HAVE"));
+
+        foreach (Goods goods in StockLimits.Kinds)
+        {
+            AddStockLimitRow(table, goods);
+        }
+
+        return table;
     }
 
     // Six hand-worked panel sizes used to live here and just above — a width and a height for
@@ -3654,6 +3862,14 @@ public partial class Main : Control
         // rather than in a panel, because the control bar is the one thing that is always
         // there — a settings menu reachable only from a window you might have hidden would be
         // a door that locks behind you.
+        // ⭐ The professions window opens from here for the same reason Settings does: it is a
+        // panel the player goes to deliberately rather than one they watch. It also lives in
+        // the Settings window list, but a control the game expects to be used every few years
+        // should not be two clicks deep.
+        var professions = new Button { Text = "Professions" };
+        professions.Pressed += () => _professionsPanel.Visible = !_professionsPanel.Visible;
+        controls.AddChild(professions);
+
         var settings = new Button { Text = "Settings" };
         settings.Pressed += () => _settingsPanel.Visible = !_settingsPanel.Visible;
         controls.AddChild(settings);
@@ -4147,6 +4363,8 @@ public partial class Main : Control
     private readonly List<(string Name, PanelContainer Panel)> _windows = new();
 
     /// <summary>The settings panel itself, which is the one window not in that list.</summary>
+    private PanelContainer _professionsPanel = null!;
+
     private PanelContainer _settingsPanel = null!;
 
     /// <summary>
@@ -4361,157 +4579,6 @@ public partial class Main : Control
     private Label? _placementLabel;
 
     /// <summary>
-    /// The build menu (D43) — the first controls in the game that change the world
-    /// rather than the view.
-    /// </summary>
-    /// <remarks>
-    /// Every other control here alters how you are looking: speed, pan, zoom, how much
-    /// explanation is drawn. These four buttons and a demolish are the first that ask
-    /// the village for something, so they get their own row rather than being mixed in
-    /// with the camera.
-    /// </remarks>
-    /// <summary>
-    /// The stock limits (D62) — how much of each good the village should keep.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Folded away behind a toggle, and that is the design rather than tidiness.</b> The
-    /// sim's default is null — <em>let the village decide</em> — and §1.2 says a game that
-    /// opens with a number against every good is the spreadsheet game whatever the numbers
-    /// say. A player who never opens this drawer plays exactly the village that existed
-    /// before it, and there is a golden hash test that says so. Putting three spin boxes on
-    /// screen permanently would undo that in the only place it actually matters: what the
-    /// player sees on the first frame.
-    /// </para>
-    /// <para>
-    /// <b>Each good gets a "village decides" tick alongside its number</b>, because null and
-    /// zero are different instructions — <em>no opinion</em> against <em>stop, I mean it</em>
-    /// — and a spin box alone cannot say the first. Conflating them in the UI would make the
-    /// sim's careful distinction unreachable from the game.
-    /// </para>
-    /// <para>
-    /// <b>The current stock sits beside the limit</b>, so a stopped workplace explains
-    /// itself where the decision was made: <em>200 · have 214</em> is the whole causal chain
-    /// in five characters, which is §1.1's test.
-    /// </para>
-    /// </remarks>
-    private VBoxContainer BuildStockLimitMenu()
-    {
-        var wrapper = new VBoxContainer();
-        wrapper.AddThemeConstantOverride("separation", 4);
-
-        // ⚠️ NO TOGGLE OF ITS OWN ANY MORE. It used to be a button that unfolded the control
-        // bar over the map; the panel it now lives in collapses by its own title, so a second
-        // level of folding would be two clicks to reach a number the player wants in front of
-        // them anyway. **A section label, not a control** — the rows are simply there.
-        var rows = new VBoxContainer();
-        rows.AddThemeConstantOverride("separation", 2);
-
-        wrapper.AddChild(Caption("Stock limits — how much to keep before the work stops"));
-        wrapper.AddChild(rows);
-
-        foreach (Goods goods in StockLimits.Kinds)
-        {
-            rows.AddChild(BuildStockLimitRow(goods));
-        }
-
-        return wrapper;
-    }
-
-    /// <summary>
-    /// Banished's professions panel: how many people on each kind of work, village-wide (D106).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Joe's ask, and his screenshot is the spec:</b> a row per profession, a number you
-    /// set, and <em>"of N"</em> for how many places exist. The per-building control (D104)
-    /// answers <em>"how many at THIS hut?"</em>; this answers <em>"how many woodcutters at
-    /// all?"</em>, which is the question you actually have an opinion about.
-    /// </para>
-    /// <para>
-    /// <b>Laborers are shown and not set</b>, because they are what is left over — the same
-    /// relationship Banished has, and the reason <c>Villager.IsLaborer</c> is a reader rather
-    /// than a stored state (D66). Take two hands off gathering and there are two more laborers;
-    /// there is nothing else "setting laborers" could mean that is not just that.
-    /// </para>
-    /// </remarks>
-    private VBoxContainer BuildProfessionsMenu()
-    {
-        var wrapper = new VBoxContainer();
-        wrapper.AddThemeConstantOverride("separation", 4);
-
-        // A section label rather than a toggle, for the reason given in BuildStockLimitMenu:
-        // the panel this lives in already collapses, and folding inside a fold is two clicks
-        // to reach the number the player opened the panel for.
-        var rows = new VBoxContainer();
-        rows.AddThemeConstantOverride("separation", 2);
-
-        wrapper.AddChild(Caption("Professions — how many people on each kind of work"));
-        wrapper.AddChild(rows);
-
-        // Laborers first, as in Joe's screenshot, and as a readout: they are the remainder.
-        // Two lines like the professions below it (D149), so the sentence keeps the width.
-        var laborStack = new VBoxContainer();
-        laborStack.AddThemeConstantOverride("separation", 0);
-
-        var laborRow = new HBoxContainer();
-        laborRow.AddThemeConstantOverride("separation", 6);
-        Label laborName = Muted("Laborer");
-        laborName.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
-        laborRow.AddChild(laborName);
-        _laborerReadout = Muted(string.Empty);
-        laborRow.AddChild(_laborerReadout);
-        laborStack.AddChild(laborRow);
-
-        var laborUnder = new HBoxContainer();
-        laborUnder.AddThemeConstantOverride("separation", 0);
-        laborUnder.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
-        Label laborWhat = Muted("spare hands: clearing, hauling, tidying");
-        laborWhat.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        laborWhat.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        laborUnder.AddChild(laborWhat);
-        laborStack.AddChild(laborUnder);
-
-        rows.AddChild(laborStack);
-
-        foreach (JobKind kind in JobLimits.Kinds)
-        {
-            rows.AddChild(BuildProfessionRow(kind));
-        }
-
-        // ⛔ AND THE ONES THAT DO NOT EXIST, greyed and with a reason each — the same rule the
-        // overview's goods table follows, for the same reason. A player who cannot see that
-        // fishing is coming has no way to tell it apart from fishing being absent on purpose.
-        // Behind a fold, because eleven rows that never change were half of why this panel
-        // pushed the roster off the bottom of the screen.
-        VBoxContainer inside = Foldaway(
-            $"Not hired yet — {ProfessionsNotYetHired.Length} more, and why",
-            out VBoxContainer roadmap);
-
-        foreach ((string name, string reason) in ProfessionsNotYetHired)
-        {
-            var row = new HBoxContainer();
-            row.AddThemeConstantOverride("separation", 6);
-
-            Label label = Muted(name);
-            label.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
-            label.Modulate = new Color(1, 1, 1, 0.3f);
-            row.AddChild(label);
-
-            Label why = Muted(reason);
-            why.Modulate = new Color(1, 1, 1, 0.3f);
-            why.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            why.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-            row.AddChild(why);
-
-            inside.AddChild(row);
-        }
-
-        wrapper.AddChild(roadmap);
-        return wrapper;
-    }
-
-    /// <summary>
     /// The professions this village cannot hire yet. <b>Delete a row when it ships.</b>
     /// </summary>
     /// <remarks>
@@ -4535,9 +4602,6 @@ public partial class Main : Control
         ("Teacher", "no school"),
         ("Physician", "illness is not modelled"),
     };
-
-    /// <summary>One column width for every profession name, real or promised.</summary>
-    private const int ProfessionNameWidth = 84;
 
     /// <summary>
     /// Show the sim's own warning, <b>if there is anywhere to show it yet</b>.
@@ -4574,153 +4638,6 @@ public partial class Main : Control
         _placementLabel.Text = verdict.Warning;
         _placementLabel.Visible = true;
     }
-
-    /// <summary>
-    /// One profession: a name, <b>− N +</b>, and how many places there are.
-    /// </summary>
-    /// <remarks>
-    /// <b>± buttons rather than a spin box</b> — the same control the per-building staffing row
-    /// uses (D104), because they set the same number from two ends (`professions.md §3.0`) and
-    /// two different widgets for one quantity is how a player comes to believe they are two
-    /// quantities. It is also narrower, which is what Joe asked the whole panel for.
-    /// </remarks>
-    private Control BuildProfessionRow(JobKind kind)
-    {
-        // ⭐ TWO LINES, AND THE SECOND ONE IS WHY (D149). The readout used to share a line with
-        // the name and the − N + control, which left it about sixty pixels once the column
-        // became a share of the window rather than a fixed 400 — and sixty pixels is ten
-        // characters, which is not a sentence. D148 had just finished proving that the *words*
-        // are the whole fix here: "0 of 2" is what confused Joe and "nobody working of 2 seats"
-        // is what did not. So the sentence keeps the width and the row gives up the line.
-        var stack = new VBoxContainer();
-        stack.AddThemeConstantOverride("separation", 0);
-
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 6);
-        stack.AddChild(row);
-
-        Label name = Muted(ProfessionName(_loop.World, kind));
-        name.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0);
-        row.AddChild(name);
-
-        // ⭐ THE "VILLAGE DECIDES" TICK IS GONE (Joe, 2026-08-11: *"remove all of the village
-        // decides from the jobs. we want it user-decided only for now."*)
-        //
-        // It expressed the difference between *no opinion* (null) and *none, I mean it*
-        // (zero), which D106 was careful to keep apart and the sim still does. **What has
-        // changed is that the player is never without an opinion**: every profession now
-        // carries an explicit number from the first frame, so there is one source of truth
-        // for who is working rather than two that argue — which is D109's whole argument,
-        // arriving through the panel rather than through the sim.
-        //
-        // ⭐ SEEDED AT NOUGHT — EVERYBODY STARTS A LABORER (Joe, D136). *"By default 4
-        // villagers are set as gatherer profession. The default should be laborers."*
-        //
-        // ⚠️ The comment this replaces argued the opposite and was right at the time: seeding
-        // from `LabourQuota.For(world).For(kind)` meant *"nothing moves until somebody moves
-        // it, and the first thing the player sees is what the village was already doing."*
-        // That reasoning belonged to a village that decided its own staffing. Since D109 the
-        // player always has an opinion and the quota no longer overrules one, so seeding from
-        // the quota is not a neutral starting point — it is the game silently making the
-        // first decision and attributing it to the player.
-        //
-        // A laborer is not an unemployed villager (§3.1): they clear painted ground, haul
-        // heaps and tidy. So an unstaffed founding is four people doing the work that is on
-        // the map, which is the honest opening — the player says what the village becomes.
-        int asked = 0;
-
-        Label amount = Muted("0");
-        amount.CustomMinimumSize = new Vector2(22, 0);
-        amount.HorizontalAlignment = HorizontalAlignment.Right;
-
-        var fewer = new Button { Text = "−", Flat = true };
-        var more = new Button { Text = "+", Flat = true };
-
-        void Apply()
-        {
-            amount.Text = $"{asked}";
-            Warn(_loop.World.SetJobLimit(kind, asked));
-        }
-
-        // Clamped at zero, and with no ceiling of its own: the panel is allowed to ask for
-        // more than the village would choose — that is the whole difference from a stock
-        // limit (D106) — and the sim says out loud when it cannot honour the number.
-        fewer.Pressed += () =>
-        {
-            asked = System.Math.Max(0, asked - 1);
-            Apply();
-        };
-
-        // ⭐⭐ AND THE VILLAGE CANNOT BE ASKED FOR MORE PEOPLE THAN IT HAS (Joe, 2026-08-29, with
-        // a screenshot showing **six jobs asked for against four able adults**): *"the total
-        // number of villagers assigned a profession should not be able to exceed the total number
-        // of adults available to work… the + shouldn't work."*
-        //
-        // ⛔ **THE OLD REASONING IS OVERTURNED DELIBERATELY, NOT OVERLOOKED.** The comment above
-        // says this panel has *"no ceiling of its own — the panel is allowed to ask for more than
-        // the village would choose (D106), and the sim says out loud when it cannot honour the
-        // number."* **That is right about the QUOTA and wrong about the HEADCOUNT**, and the
-        // difference is what the screenshot shows: asking for more foragers than the village
-        // wants is a real instruction the sim can act on later; asking for more *people* than
-        // exist is not a preference at all, it is arithmetic that cannot come true.
-        //
-        // ⭐ **The tell is that it was silently doing nothing.** Marketer read *"nobody working of
-        // 0 seats · asked 1"* — a number the player had typed that could never be honoured, sat
-        // beside two others in the same state. *A control that accepts input it can never act on
-        // is the same bug as a button you cannot press, from the other side.*
-        //
-        // ⚠️ **Able adults, not population** — children and elders are not labour, and
-        // `AbleAdults` is the number the panel already prints one row up as *"0 of 4 able
-        // adults"*, so the ceiling and the readout cannot disagree.
-        more.Pressed += () =>
-        {
-            int spoken = 0;
-            foreach (JobKind trade in System.Enum.GetValues<JobKind>())
-            {
-                spoken += _loop.World.JobLimits.For(trade) ?? 0;
-            }
-
-            int hands = _loop.World.AbleAdults;
-            if (spoken >= hands)
-            {
-                Warn(PlacementVerdict.Yes(
-                    $"There are only {hands} able "
-                    + $"{(hands == 1 ? "adult" : "adults")} in {_loop.World.Name}, and all of "
-                    + $"{(hands == 1 ? "them is" : "them are")} already spoken for. Take somebody "
-                    + "off another kind of work first."));
-                return;
-            }
-
-            asked++;
-            Apply();
-        };
-
-        row.AddChild(fewer);
-        row.AddChild(amount);
-        row.AddChild(more);
-
-        // The sentence, on its own line and indented under the name so the eye can still tell
-        // which row it belongs to. Wrapped rather than clipped: a readout that runs off the
-        // edge of a narrow column is the same bug as a button you cannot press (D113).
-        var under = new HBoxContainer();
-        under.AddThemeConstantOverride("separation", 0);
-        under.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
-
-        Label places = Muted(string.Empty);
-        places.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        places.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        under.AddChild(places);
-
-        stack.AddChild(under);
-
-        Apply();
-
-        _professionReadouts.Add((kind, places));
-        return stack;
-    }
-
-    /// <summary>How far the readout sits under its own profession's name.</summary>
-    private const int ProfessionIndent = 12;
 
     /// <summary>What a kind of work is called on screen. Every value named (D108).</summary>
     /// <summary>What a kind of work is called on screen — <b>the one place that decides</b>.</summary>
@@ -4760,56 +4677,50 @@ public partial class Main : Control
         return name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
     }
 
-    /// <summary>One good's limit: a name, a "village decides" tick, a number, and the stock.</summary>
-    private Control BuildStockLimitRow(Goods goods)
+    /// <summary>The "have N" labels, refreshed with everything else.</summary>
+    /// <summary>
+    /// The trades that do not exist yet, and what each is waiting on.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ Kept through the redesign because it earns its place: it answers *"where is the miner?"*
+    /// before the player has to ask, and a row deletes itself the day its trade ships — which is
+    /// how "Fisherman" and "Hunter" were caught still sitting in it two commits ago.
+    /// </remarks>
+    private Control BuildTheNotHiredYet()
     {
-        // ⭐ TWO LINES, AND MEASURING IS WHAT FOUND IT (D149). Making the columns a share of
-        // the window did nothing for the left one, because a column's minimum width is its
-        // widest child's — and a probe over the tree found **six of these rows at 438 pixels
-        // each**, holding the whole column at 450 however narrow the window was. A 190-pixel
-        // readout beside a 110-pixel spin box beside a name and a button does not fit a
-        // quarter of a small screen, and no amount of arithmetic outside it would have helped.
-        var stack = new VBoxContainer();
-        stack.AddThemeConstantOverride("separation", 0);
+        VBoxContainer inside = Foldaway(
+            $"Not hired yet — {ProfessionsNotYetHired.Length} more, and why",
+            out VBoxContainer roadmap);
 
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 6);
-        stack.AddChild(row);
+        var table = new GridContainer { Columns = 2 };
+        table.AddThemeConstantOverride("h_separation", 8);
+        table.AddThemeConstantOverride("v_separation", 2);
 
-        Label name = Muted(GoodsName(_loop.World, goods));
-        name.CustomMinimumSize = new Vector2(74, 0);
-        row.AddChild(name);
+        foreach ((string name, string reason) in ProfessionsNotYetHired)
+        {
+            Label label = Muted(name);
+            label.Modulate = new Color(1, 1, 1, 0.3f);
+            table.AddChild(label);
 
-        // ⭐ NO "VILLAGE DECIDES" TICK (Joe, D136): *"remove 'village decides' for stock
-        // limits. We'll revisit adding that later."* The same call he made for the professions,
-        // one panel along, and for the same reason — since D109 the player always has an
-        // opinion, so a control that hands the decision back is a second voice arguing with
-        // the first.
-        //
-        // ⚠️ "NO LIMIT" IS STILL REACHABLE, AND IT HAD TO BE. `null` is not the village
-        // deciding — it is *nobody has said*, which is the state every good starts in and the
-        // only one that means "do not cap this at all". Deleting the tick without replacing it
-        // would have forced a number onto every good at startup, and **a Food row defaulting to
-        // 200 would cap a granary that needs thousands** — the village quietly starved by a
-        // control the player never touched. So the tick becomes a button that clears.
-        // ⭐⭐ THE NUMBER SHOWN IS THE NUMBER IN FORCE (Joe, 2026-08-25): *"even though the
-        // default limit is set for all, there is also a 'no limit' that seems to override the
-        // default number… if there is a number, it should be the default limit."*
-        //
-        // ⚠️ THIS IS THE SECOND TIME THE SAME CONTRADICTION HAS BEEN REPORTED, AND IT IS BEING
-        // RESOLVED THE OTHER WAY ROUND. The first fix made the LABEL honest — it says "no limit"
-        // beside a box reading 200 — on the reasoning recorded below: that a Food row defaulting
-        // to 200 would cap a granary needing thousands and starve the village by a control
-        // nobody touched. That reasoning is still true, which is why the food default is 2000
-        // now (Joe, same message) rather than 200.
-        //
-        // The panel no longer shows a number it does not mean.
-        // ⚠️ FIREWOOD IS 400 BECAUSE 200 SAT BELOW THE VILLAGE'S OWN WINTER TARGET (Joe,
-        // 2026-08-25). That target is 360 — ten per household per winter, x180%% buffer, x20
-        // horizon households — so a 200 cap stood the woodcutter down at 56%% of it and the
-        // village would have frozen by a default nobody chose. **A default limit must sit
-        // ABOVE what the village would have done unasked**, or it is not a ceiling the player
-        // raised, it is a floor they never saw.
+            Label why = Wrapped(Muted(reason));
+            why.Modulate = new Color(1, 1, 1, 0.3f);
+            table.AddChild(why);
+        }
+
+        inside.AddChild(table);
+        return roadmap;
+    }
+
+    /// <summary>Five cells for one good's limit.</summary>
+    /// <remarks>
+    /// The controls are unchanged from the two-line rows this replaced — same <c>SpinBox</c>, same
+    /// defaults, same <c>SetStockLimit</c> call, same clear button. **Only the layout moved.**
+    /// </remarks>
+    private void AddStockLimitRow(GridContainer table, Goods goods)
+    {
+        table.AddChild(Chip(ChipColour(goods)));
+        table.AddChild(Body(GoodsName(_loop.World, goods)));
+
         int startsAt = goods switch
         {
             Goods.Produce => 2000,
@@ -4824,55 +4735,42 @@ public partial class Main : Control
             Step = 10,
             Value = startsAt,
             Editable = true,
-            CustomMinimumSize = new Vector2(110, 0),
+            CustomMinimumSize = new Vector2(96, 0),
         };
 
-        // "Clear" rather than "no limit", because the label beside it now REPORTS whether
-        // there is a limit and a button must not read like a state (D139).
         var clear = new Button { Text = "clear", Flat = true, Disabled = true };
 
-        // No minimum width any more: it wraps under the row instead of widening the column.
-        Label held = Muted(string.Empty);
-        held.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        held.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        Label held = Wrapped(Muted(string.Empty));
 
         void Set(int? limit)
         {
             clear.Disabled = limit is null;
-
-            // The sim's own sentence, in the channel that already carries the sim's own
-            // sentences (D43's placement warnings). One voice, not two — and through `Warn`,
-            // so this cannot be the next thing to fire before the control bar exists.
             Warn(_loop.World.SetStockLimit(goods, limit));
         }
 
         amount.ValueChanged += _ => Set((int)amount.Value);
         clear.Pressed += () => Set(null);
 
-        // ⭐ AND THE SIM IS TOLD, so the state matches the display from the first frame rather
-        // than from the first click. Straight to `SetStockLimit` rather than through `Set`
-        // above: `Set` routes the sim's reply through `Warn`, and this runs while the panels
-        // are still being built — the exact ordering hazard that method's own comment warns
-        // about. There is no player action to report here anyway; nobody has been refused.
         _loop.World.SetStockLimit(goods, startsAt);
         clear.Disabled = false;
 
-        row.AddChild(amount);
-        row.AddChild(clear);
-
-        var under = new HBoxContainer();
-        under.AddThemeConstantOverride("separation", 0);
-        under.AddChild(new Control { CustomMinimumSize = new Vector2(ProfessionIndent, 0) });
-        under.AddChild(held);
-        stack.AddChild(under);
+        table.AddChild(amount);
+        table.AddChild(clear);
+        table.AddChild(held);
 
         _stockLimitReadouts.Add((goods, held));
-        return stack;
     }
 
-    /// <summary>The "have N" labels, refreshed with everything else.</summary>
     private readonly List<(Goods Goods, Label Held)> _stockLimitReadouts = new();
-    private readonly List<(JobKind Kind, Label Places)> _professionReadouts = new();
+    /// <summary>
+    /// Two live cells per trade — <b>the max, and the notes</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ The seat count needs its own readout now that it lives in the ASSIGNED / MAX cell
+    /// rather than inside the sentence: seats change as buildings go up and come down, so it
+    /// cannot be written once at construction.
+    /// </remarks>
+    private readonly List<(JobKind Kind, Label Seats, Label Notes)> _professionReadouts = new();
     private Label _laborerReadout = null!;
 
     /// <summary>How many people are actually on this kind of work right now.</summary>
