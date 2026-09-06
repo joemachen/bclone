@@ -4214,6 +4214,14 @@ public partial class Main : Control
         wildlife.Toggled += on => _map.ShowGame(on);
         body.AddChild(wildlife);
 
+        // Its own switch rather than one "scenery" tick, because the two answer different
+        // questions: what the woods FEED and what they HOLD. A player hunting for a quieter
+        // map may well want one and not the other.
+        var forage = new CheckBox { Text = "berry patches in the woods", ButtonPressed = true };
+        forage.AddThemeFontSizeOverride("font_size", 12);
+        forage.Toggled += on => _map.ShowForage(on);
+        body.AddChild(forage);
+
         // ⭐ THE SHARE-OUT SWITCH (Joe, 2026-09-03): *"give the user the option to toggle the
         // 'work share' function on/off."* Every three years the village tears every allocation
         // down and rebuilds it, which is how a fifteen-year woodcutter ends up pushing a cart —

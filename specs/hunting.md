@@ -153,6 +153,11 @@ they have now been wrong twice.
 
 Joe wants to see animals moving in the forest. **The sim will not grow animal entities for it.**
 
+✅ **Shipped 2026-09-05, and it covers BERRIES too.** The same argument applies to forage:
+gatherable food is a function of standing woodland exactly as game is (D297), so berry
+patches are drawn from the forest tiles as well — **still**, where the animals roam, which is
+the cheapest way to tell the two apart. Felling a wood empties it of both.
+
 The abundance in a range is already a number; the animals the player sees are **drawn from it** —
 count and rough positions derived from the tile's abundance and a seed, moved by view-only
 interpolation the way villagers already glide. So:

@@ -1216,11 +1216,11 @@ public partial class VillageMap : Control
         DrawRect(new Rect2(Vector2.Zero, Size), Beyond);
         DrawValley();
 
-        // ⭐ THE WILDLIFE SITS ON THE GROUND, UNDER EVERYTHING THE PLAYER ACTS ON. Animals
+        // ⭐ WHAT LIVES AND GROWS SITS ON THE GROUND, UNDER EVERYTHING THE PLAYER ACTS ON. Animals
         // move, so the rule below would argue for drawing them late — but that rule is about
         // things the player needs to find, and these are scenery. A deer must never be
         // mistaken for a villager or hide a building, so it goes down with the terrain.
-        DrawTheGame();
+        DrawTheWoods();
 
         // Routes under everything, then workplaces, then homes, then people on top —
         // the things that move must never be hidden behind the things that do not.
@@ -2203,26 +2203,59 @@ public partial class VillageMap : Control
     //  Wildlife and heaps — Joe, 2026-09-05
     // ---------------------------------------------------------------
 
-    /// <summary>One animal for every this many forest tiles in view.</summary>
+    /// <summary>
+    /// One animal for every this much woodland — <b>24 tiles' worth</b>.
+    /// </summary>
     /// <remarks>
-    /// ⭐ <b>Conservative on purpose</b> (Joe: *"alive rather than infested"*). A hunter's lodge
-    /// reaches about eighty forest tiles, so this puts three or four animals in its range — enough
-    /// that the woods are moving, few enough that felling one wood is a visible loss rather than a
-    /// rounding error.
+    /// <para>
+    /// ⭐ <b>Conservative on purpose</b> (Joe: *"alive rather than infested"*, and after playing it:
+    /// *"density looks good for now"*). A hunter's lodge reaches about eighty forest tiles, so this
+    /// puts three or four animals in its range — enough that the woods are moving, few enough that
+    /// felling one wood is a visible loss rather than a rounding error.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Read it as "per 24 tiles' WORTH of wood", not "per 24 tiles".</b> The game is going
+    /// gridless eventually (`DESIGN.md §4.1`) and a density per unit of woodland survives that
+    /// change; a density per tile has to be rediscovered.
+    /// </para>
     /// </remarks>
     private const int TilesPerAnimal = 24;
 
-    /// <summary>Below this zoom an animal is a speck, so they are not drawn at all.</summary>
+    /// <summary>One berry patch for every 16 tiles' worth of wood — commoner than game.</summary>
     /// <remarks>
-    /// The same floor the grid lines use. Scenery that becomes noise at a distance is worse than
-    /// scenery that knows to stop.
+    /// Food in a wood should be commoner than deer in it. Same "per unit of woodland" reading as
+    /// <see cref="TilesPerAnimal"/>.
     /// </remarks>
-    private const float AnimalZoomFloor = 7f;
+    private const int TilesPerBerryPatch = 16;
+
+    /// <summary>Salts the second selection so berries do not land where animals do by accident.</summary>
+    /// <remarks>
+    /// ⛔ <b>They ARE allowed to share a tile</b> — Joe: *"animals and berries can be in the same
+    /// area, and they might be sometimes, especially since animals move over time."* An earlier
+    /// draft skipped any tile holding an animal, which was over-engineering: once the animals roam
+    /// a tile's width the two overlap constantly anyway, so the rule only held while nothing moved.
+    /// The salt is here to make the two selections <b>independent</b>, not exclusive.
+    /// </remarks>
+    private const int ForageSalt = 0x5BF0;
+
+    /// <summary>Below this zoom the woods are drawn bare, because a speck is noise.</summary>
+    /// <remarks>The same floor the grid lines use.</remarks>
+    private const float WoodsZoomFloor = 7f;
+
+    /// <summary>How far an animal strays from the wood it belongs to, in tiles.</summary>
+    /// <remarks>
+    /// ⭐ <b>Joe: *"I want animals to roam a bit more."*</b> This was <b>0.22</b>, which pinned an
+    /// animal inside its own tile — it jiggled rather than went anywhere.
+    /// </remarks>
+    private const float RoamTiles = 1.4f;
 
     private static readonly Color GameColour = new("#8a6a3f");
 
     /// <summary>Whether the woods are drawn with anything living in them.</summary>
     private bool _showGame = true;
+
+    /// <summary>Whether the woods are drawn with anything growing in them.</summary>
+    private bool _showForage = true;
 
     /// <summary>Turn the wildlife on or off (Settings).</summary>
     internal void ShowGame(bool shown)
@@ -2231,45 +2264,63 @@ public partial class VillageMap : Control
         QueueRedraw();
     }
 
+    /// <summary>Turn the berry patches on or off (Settings).</summary>
+    internal void ShowForage(bool shown)
+    {
+        _showForage = shown;
+        QueueRedraw();
+    }
+
     /// <summary>
-    /// ⭐⭐ The animals in the woods — <b>a picture of a number, not a herd of entities</b>.
+    /// Whether this ground is woodland — <b>the one seam the gridless change has to move</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Every *"is this woodland?"* in the drawing below goes through here rather than testing
+    /// the terrain in four places, so when tiles stop being the unit (`DESIGN.md §4.1`) there is
+    /// one call site to rewrite instead of a scatter.
+    /// </remarks>
+    private bool IsWoodland(GridPos tile) =>
+        _world is not null && _world.Map.Contains(tile)
+        && _world.Map.TerrainAt(tile) == Terrain.Forest;
+
+    /// <summary>
+    /// ⭐⭐ What lives and grows in the woods — <b>a picture of a number, not a herd of entities</b>.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Joe:</b> *"I want the user to see animals/game roaming the forest… a visual
-    /// representation of them on the map"*, and later: *"fewer animals in a smaller area of trees
-    /// and more in a larger tree zone."*
+    /// <b>Joe:</b> *"I want the user to see animals/game roaming the forest"*, and *"fewer animals
+    /// in a smaller area of trees and more in a larger tree zone"* — then berries beside them,
+    /// because the forest is where <b>produce</b> comes from too and that half had no picture.
     /// </para>
     /// <para>
-    /// ⛔⛔ <b>THE SIM GROWS NO ANIMALS FOR THIS, AND THAT IS THE WHOLE DESIGN.</b> Available game
-    /// is already a function of standing woodland (D297) — so the animals are drawn FROM the
-    /// forest tiles rather than tracked beside them. **No sim state, no state-hash surface, no
-    /// pathfinding, nothing to desync.** Fell a wood and it empties of animals for free, which is
-    /// the only feedback the player gets that the hunting yield has dropped.
+    /// ⛔⛔ <b>THE SIM GROWS NOTHING FOR THIS.</b> Available game and gatherable food are both
+    /// already functions of standing woodland (D297), so both are drawn FROM the forest tiles
+    /// rather than tracked beside them. **No sim state, no state-hash surface, no pathfinding,
+    /// nothing to desync** — and felling a wood empties it of animals AND berries for free, which
+    /// is the only feedback the player gets that both yields have fallen.
     /// </para>
     /// <para>
-    /// ⚠️ <b>DERIVED, NOT RANDOM — and this is the first pseudo-random-looking thing in the view,
-    /// so it is worth saying why it is not random.</b> Every other mark on this map is backed by
-    /// sim state, and even <c>FanOffset</c> derives its angle from a villager's RANK rather than a
-    /// roll, precisely so the arrangement does not jitter. A per-frame <c>GD.Randi</c> here would
-    /// make the woods boil. The tile's own coordinates are the seed, so a given tile either has an
-    /// animal or does not, for ever.
+    /// ⚠️ <b>DERIVED, NOT RANDOM.</b> Every other mark on this map is backed by sim state, and even
+    /// <c>FanOffset</c> takes its angle from a villager's RANK rather than a roll, precisely so the
+    /// arrangement does not jitter. A per-frame <c>GD.Randi</c> here would make the woods boil. The
+    /// tile's own coordinates are the seed, so a given tile either has an animal or a patch or
+    /// both, for ever.
     /// </para>
     /// <para>
-    /// ⭐ <b>They move on the SIM's clock, not the wall clock</b>, so a paused game looks paused
-    /// and 10× speed looks like 10× speed. Same reasoning as the villager interpolation, without
-    /// needing any of its bookkeeping — there is nothing to remember frame to frame.
+    /// ⭐ <b>The animals move on the SIM's clock</b>, so a paused game looks paused and 10× speed
+    /// looks like 10×. The berries do not move at all, which is the cheapest way to tell the two
+    /// apart at a glance: <em>what moves is alive, what stays is growing.</em>
     /// </para>
     /// <para>
-    /// ⚠️ <b>Culled to the visible tiles.</b> `Minimap` carries the warning this obeys: a
-    /// full-map per-frame walk is *"exactly the trap this project has been bitten by twice in the
-    /// sim"*. The per-entity passes below get away with walking their whole lists because those
-    /// are tens of items; forest tiles are thousands.
+    /// ⚠️ <b>One walk, both decorations, culled to the visible tiles.</b> `Minimap` carries the
+    /// warning this obeys: a full-map per-frame pass is *"exactly the trap this project has been
+    /// bitten by twice in the sim"*. The per-entity passes elsewhere get away with walking whole
+    /// lists only because those are tens of items; forest tiles are thousands.
     /// </para>
     /// </remarks>
-    private void DrawTheGame()
+    private void DrawTheWoods()
     {
-        if (!_showGame || _world is null || _pixelsPerTile < AnimalZoomFloor)
+        if (_world is null || _pixelsPerTile < WoodsZoomFloor || (!_showGame && !_showForage))
         {
             return;
         }
@@ -2281,7 +2332,9 @@ public partial class VillageMap : Control
         int minY = Mathf.FloorToInt(first.Y);
         int maxY = Mathf.CeilToInt(last.Y);
 
-        float radius = Mathf.Max(2f, _pixelsPerTile * 0.13f);
+        float beastRadius = Mathf.Max(2f, _pixelsPerTile * 0.13f);
+        float berryRadius = Mathf.Max(1f, _pixelsPerTile * 0.07f);
+        Color berryColour = GoodsPalette.ColourOf(Goods.Produce);
         double season = _world.Tick + _alpha;
 
         for (int y = minY; y <= maxY; y++)
@@ -2289,28 +2342,94 @@ public partial class VillageMap : Control
             for (int x = minX; x <= maxX; x++)
             {
                 var tile = new GridPos(x, y);
-                if (!_world.Map.Contains(tile) || _world.Map.TerrainAt(tile) != Terrain.Forest)
+                if (!IsWoodland(tile))
                 {
                     continue;
                 }
 
                 uint seed = Scramble(x, y);
-                if (seed % TilesPerAnimal != 0)
+                var home = new Vector2(x, y);
+
+                // ⚠️ BOTH TESTS RUN WHATEVER THE TOGGLES SAY. A display setting must never move
+                // what is where — switching the animals off is not allowed to relocate a berry.
+                bool beast = seed % TilesPerAnimal == 0;
+                bool patch = Scramble(x + ForageSalt, y - ForageSalt) % TilesPerBerryPatch == 0;
+
+                if (patch && _showForage)
                 {
-                    continue;
+                    DrawBerryPatch(home, seed, berryRadius, berryColour);
                 }
 
-                // A slow wander inside the tile it belongs to, phased off the same seed so no two
-                // animals move together. It never leaves its tile, which is what keeps the picture
-                // honest: the animal is that tile's worth of game, standing where the game is.
-                double phase = (seed % 628) / 100.0;
-                double drift = (season * 0.02) + phase;
-                var wander = new Vector2(
-                    (float)Math.Cos(drift) * 0.22f,
-                    (float)Math.Sin(drift * 0.7) * 0.22f);
-
-                DrawCircle(ToScreen(new Vector2(x, y) + wander), radius, GameColour);
+                if (beast && _showGame)
+                {
+                    DrawCircle(ToScreen(Roam(home, seed, season)), beastRadius, GameColour);
+                }
             }
+        }
+    }
+
+    /// <summary>
+    /// Where an animal has wandered to — <b>and never out of the woods</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ The path is a Lissajous figure — <c>cos(drift)</c> against <c>sin(drift × 0.7)</c> — so
+    /// the two axes never come back into step and the route reads as wandered rather than orbited.
+    /// **It only ever looked mechanical because it was tiny**; the shape did not need replacing,
+    /// the amplitude did.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>THE STEP-BACK IS WHAT MAKES ROAMING SAFE.</b> At the old ±0.22 an animal could not
+    /// leave its own tile, so nothing had to check where it went. At ±1.4 it will walk into the
+    /// river, onto a farm and through a roof — and *"the animal is that tile's worth of game"*
+    /// stops being true the moment one is standing in the water. So the full offset is tried, then
+    /// half, then home: **three terrain lookups at worst**, against a terrain pass that already
+    /// does thousands. ⚠️ It holds in the other direction too — an animal cannot wander out of a
+    /// felled wood and go on being drawn there.
+    /// </para>
+    /// </remarks>
+    private Vector2 Roam(Vector2 home, uint seed, double season)
+    {
+        double phase = (seed % 628) / 100.0;
+        double drift = (season * 0.012) + phase;
+
+        var offset = new Vector2(
+            (float)Math.Cos(drift) * RoamTiles,
+            (float)Math.Sin(drift * 0.7) * RoamTiles);
+
+        for (float reach = 1f; reach > 0.4f; reach -= 0.5f)
+        {
+            Vector2 spot = home + (offset * reach);
+            var on = new GridPos(Mathf.RoundToInt(spot.X), Mathf.RoundToInt(spot.Y));
+            if (IsWoodland(on))
+            {
+                return spot;
+            }
+        }
+
+        return home;
+    }
+
+    /// <summary>
+    /// A handful of berries under the trees — <b>still, where the animals move</b>.
+    /// </summary>
+    /// <remarks>
+    /// Three dots rather than one, so a patch reads as growing rather than as a good somebody
+    /// dropped — <see cref="DrawHeaps"/> already owns the single-square shape. Their arrangement
+    /// comes off the tile's own seed, so no two patches are laid out alike and none of them move.
+    /// </remarks>
+    private void DrawBerryPatch(Vector2 home, uint seed, float radius, Color colour)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            double angle = (((seed >> (i * 5)) % 628) / 100.0) + (i * 2.1);
+            float spread = 0.16f + (((seed >> (i * 3)) % 10) / 100f);
+
+            var at = new Vector2(
+                home.X + ((float)Math.Cos(angle) * spread),
+                home.Y + ((float)Math.Sin(angle) * spread));
+
+            DrawCircle(ToScreen(at), radius, colour);
         }
     }
 
@@ -2364,7 +2483,7 @@ public partial class VillageMap : Control
     /// </remarks>
     private void DrawHeaps()
     {
-        if (_world is null || _pixelsPerTile < AnimalZoomFloor)
+        if (_world is null || _pixelsPerTile < WoodsZoomFloor)
         {
             return;
         }
