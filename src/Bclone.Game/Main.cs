@@ -3997,6 +3997,11 @@ public partial class Main : Control
             ArrangeDefaults();
             _arranged = true;
         }
+
+        if (_arranged)
+        {
+            KeepWindowsOnScreen();
+        }
     }
 
 
@@ -4198,7 +4203,11 @@ public partial class Main : Control
         bool spanWidth = false)
     {
         var panel = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
-        panel.AddThemeStyleboxOverride("panel", PanelSkin());
+
+        // ⚠️ The bar is the one panel that stays see-through: it spans the window, so a solid
+        // one would wall off the bottom of the valley. Every other window is something the
+        // player reads, and the map showing through a table of numbers costs legibility.
+        panel.AddThemeStyleboxOverride("panel", PanelSkin(spanWidth ? 0.72f : 1f));
 
         bool right = corner is Corner.TopRight or Corner.BottomRight;
         bool bottom = corner is Corner.BottomLeft or Corner.BottomRight;
@@ -4344,24 +4353,108 @@ public partial class Main : Control
     /// </remarks>
     private void MovePanel(PanelContainer panel, Vector2 by)
     {
-        float wide = panel.Size.X * _uiScale;
-        float tall = panel.Size.Y * _uiScale;
+        Vector2 corner = DrawnTopLeft(panel);
 
-        // What must stay on screen: enough of the top strip to grab, and enough width to see it.
-        const float Handle = 46f;
+        Vector2 want = corner + by;
+        Vector2 allowed = ClampToWindow(panel, want);
 
-        float left = panel.OffsetLeft + by.X;
-        float top = panel.OffsetTop + by.Y;
-
-        left = Mathf.Clamp(left, Handle - wide, Size.X - Handle);
-        top = Mathf.Clamp(top, 0f, Size.Y - Handle);
-
-        by = new Vector2(left - panel.OffsetLeft, top - panel.OffsetTop);
+        by = allowed - corner;
 
         panel.OffsetLeft += by.X;
         panel.OffsetRight += by.X;
         panel.OffsetTop += by.Y;
         panel.OffsetBottom += by.Y;
+    }
+
+    /// <summary>Where a panel's top-left corner actually lands on screen, scaling included.</summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THIS IS WHAT THE RIGHT-HAND WINDOWS WERE MISSING, AND IT IS WHY ONLY THEY WERE
+    /// BROKEN.</b> Joe: *"the windows on the left side move smoothly. The windows on the right only
+    /// display in a small column on the right side and still suffer from the drifting issue, and
+    /// the inability to move left at all."*
+    /// </para>
+    /// <para>
+    /// A right-anchored panel is pinned to <c>AnchorLeft = AnchorRight = 1</c>, so its
+    /// <c>OffsetLeft</c> is <b>negative</b> — a distance back from the right edge, not a position
+    /// on screen. The first clamp treated it as a screen X and compared <b>-314 against a floor of
+    /// -254</b>, so every drag was shoved straight back to the right: the window could not go left,
+    /// sat in a narrow band, and *appeared* to drift because it was refusing to follow a cursor
+    /// that kept going. **Left-anchored panels have positive offsets, so they worked by accident.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <c>Position</c> is the laid-out rect whichever edge it is anchored to, so it is the
+    /// honest quantity — but the panel is then SCALED about its pivot, and for a right-anchored
+    /// panel that pivot is its right edge. So the drawn corner is the rect's corner pulled in by
+    /// the width the scaling removed.
+    /// </para>
+    /// </remarks>
+    private Vector2 DrawnTopLeft(PanelContainer panel)
+    {
+        Vector2 shrunk = panel.Size * (1f - _uiScale);
+
+        return new Vector2(
+            panel.Position.X + (panel.PivotOffset.X > 0.5f ? shrunk.X : 0f),
+            panel.Position.Y + (panel.PivotOffset.Y > 0.5f ? shrunk.Y : 0f));
+    }
+
+    /// <summary>Nudge a wanted corner back until enough of the window is reachable.</summary>
+    /// <remarks>
+    /// ⚠️ <b>The title strip is what has to stay on screen, not the whole panel.</b> A window
+    /// hanging half off the right edge is a legitimate thing to want; a window whose only handle is
+    /// past the edge is one the player cannot get back.
+    /// </remarks>
+    private Vector2 ClampToWindow(PanelContainer panel, Vector2 corner)
+    {
+        const float Handle = 60f;
+
+        float wide = panel.Size.X * _uiScale;
+        float tall = panel.Size.Y * _uiScale;
+
+        return new Vector2(
+            Mathf.Clamp(corner.X, Handle - wide, Size.X - Handle),
+            Mathf.Clamp(corner.Y, 0f, Mathf.Max(0f, Size.Y - Mathf.Min(Handle, tall))));
+    }
+
+    /// <summary>
+    /// Shove every window back inside the screen — <b>every frame, not only while dragging</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ Joe: *"all windows/panels can still be moved outside of the game window — they should not
+    /// be able to."* Clamping only on drag left three other ways out: the default arrangement, the
+    /// UI-size dial changing how much room a panel takes, and **the player resizing the window
+    /// smaller**, which moves the edge rather than the panel. Checking every frame closes all of
+    /// them at once and costs a comparison per window.
+    /// </remarks>
+    private void KeepWindowsOnScreen()
+    {
+        for (int i = 0; i < _docked.Count; i++)
+        {
+            PanelContainer panel = _docked[i].Panel;
+
+            // ⚠️ A hidden panel has no settled size — Godot reports the unconstrained content
+            // height, measured at 1,676 for a professions window that lays out at a fraction
+            // of it. Clamping against that shoves the window somewhere wrong, and it gets
+            // clamped honestly on the first frame it is actually shown.
+            if (!panel.Visible)
+            {
+                continue;
+            }
+
+            Vector2 corner = DrawnTopLeft(panel);
+            Vector2 allowed = ClampToWindow(panel, corner);
+
+            if (allowed.IsEqualApprox(corner))
+            {
+                continue;
+            }
+
+            Vector2 by = allowed - corner;
+            panel.OffsetLeft += by.X;
+            panel.OffsetRight += by.X;
+            panel.OffsetTop += by.Y;
+            panel.OffsetBottom += by.Y;
+        }
     }
 
     private VBoxContainer Dress(PanelContainer panel, string? title, bool startOpen)
@@ -4713,11 +4806,20 @@ public partial class Main : Control
     /// cannot read is worse than one that covers something.
     /// </para>
     /// </remarks>
-    private static StyleBoxFlat PanelSkin()
+    /// <summary>
+    /// The panel background — <b>solid, except the control bar</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ Joe, 2026-09-06: *"I want to remove the transparency from all panel backgrounds EXCEPT
+    /// the build menu."* Every window is something you read; the valley showing through a table of
+    /// numbers costs legibility and buys nothing. **The bar is the exception because it runs the
+    /// width of the screen** — solid, it would wall off the bottom of the valley entirely.
+    /// </remarks>
+    private static StyleBoxFlat PanelSkin(float alpha = 1f)
     {
         var skin = new StyleBoxFlat
         {
-            BgColor = new Color(0.08f, 0.09f, 0.10f, 0.72f),
+            BgColor = new Color(0.08f, 0.09f, 0.10f, alpha),
             BorderColor = new Color(0.58f, 0.53f, 0.40f, 0.55f),
         };
 

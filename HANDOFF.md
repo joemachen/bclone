@@ -1,270 +1,101 @@
-# Handoff — bclone: **✅ EVERYBODY RESTS IN SPELLS. ONE GUARD SKIPPED, WAITING ON JOE.**
+# Handoff — bclone: **✅ HUNTING IS DONE, FOOD MEANS FOOD, AND THE UI IS WINDOWS**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-02.**
-> **898 passing, 0 failing, 2 skipped of 900** — **on `main`, merged and pushed 2026-09-01.**
-> `main` = `origin/main` = `slice/two-seats-per-hut`, a clean fast-forward. ⭐ *D217's trap is not
-> live: the build Joe plays and the remote are one thing.*
->
-> **✅ THE FIRE BURNS TWICE AS FAST (D273, Joe)** — `firewood_per_winter_day` 1 → 2, exactly 2×,
-> keeping the three-day beat (the interval dial cannot reach 20 on a 30-day winter). **Measured
-> before it was believed: zero frozen either way**, peak 20 against 21, peak year 60 → 262.
-> ⛔⛔ **AND D50's GUARD CAUGHT THE BILL THE SAME MINUTE** — *"woodcutter_hut_capacity is 2 but
-> heating 20 households needs 3 seats"*, which is the sentence from the run where thirty-six
-> people froze. Raised 2 → 3 **as a consequence, not a choice**.
-> ✅ **BOTH OF D273's OPEN CALLS ARE ANSWERED (D274, Joe):**
-> 1. **A woodcutter's hut seats TWO** — *"players have to build another building if they want
->    more woodcutters. Or they can upgrade the buildings later."* ⛔⛔ **So D50's protection moved
->    from capacity to legibility, which is a HARDER guard, not a weaker one**: *"build another"*
->    is only an answer if the player is told. `LabourQuota.Needed(kind)` keeps the honest figure
->    beside the capped one — generalising `ForagersToFeedEveryone` to all six trades — and the
->    professions row now reads *"… it needs 3; build another woodcutter's hut"*.
->    ⚠️ **That sentence is DORMANT in a real game and it took three attempts to prove reachable.**
->    Woodcutter demand divides the shortfall by what one makes a year, so at the shipped
->    `firewood_per_split` of 50 the answer is **1 for any village this game grows**; the 3 the
->    horizon needs belongs to a twenty-household settlement nobody reaches. *If a trade's
->    "build another" sentence ever needs testing, pose the cost, not the population.*
-> 2. **The fixture's winter costs 20 now, like the game's** — `FirewoodBurnIntervalDays` 4 → 3.
->    Every guard in the suite had been running a 15-firewood winter against a shipped 20.
->
-> **✅ AND THE DISTANCE WARNING SAYS WHAT IT COSTS (D272)** — *"a pair of hands here does about
-> 14% of the work a pair at the door would — the rest is road"* for a workplace, *"every load
-> carried in or out is a 9-tile walk each way"* for a store. One arithmetic
-> (`SimWorld.ShareOfTheDayThatIsWork`), read by the placement warning and the commute note both.
->
-> **✅✅ THE REST SLICE IS DONE (D275–D276, 2026-09-02) — AND IT WAS NOT THE SLICE THE HANDOFF
-> PLANNED.** This section used to say *"next is a DERIVED `rest_share_percent` folded into
-> `VillageEconomy.TripsPerYear`"*. ⛔ **That was the wrong slice and the probe is what said so:**
-> job-holders already rested **9–16%** of their ticks, so Joe's 10% was already there and there was
-> nothing to subtract — taxing `available` again would have charged an economy that had already
-> paid. **What they lacked was a SPELL**: `Decide` set `Resting` for everyone and
-> `ActionTicksRemaining` only for the jobless, so a job-holder rested one tick and re-asked on the
-> next. *One gate removed in `BehaviorSystem`.*
-> ⭐ **Costs at most 0.4 points of working time** (out-on-the-work share, four shipped seeds; one
-> byte-identical), and **D250's distant-farm cliff of 88%→74% no longer reproduces** — 87% either
-> way, verified by pushing `rest_ticks` to 50 to prove the probe could still see a change at all.
-> ⚠️ **Safe for hunger and cold by structure**: `TryEat` and `TrySeekWarmth` run ABOVE the
-> `ActionTicksRemaining` gate and warmth zeroes it; `HearthSystem` reads position, not state.
->
-> ⏸ **`ApprenticeshipTests` IS SKIPPED, ON JOE'S CALL, AND IT IS THE BAR THAT EXPIRED.** D227 set
-> a per-seed strictly-more bar when the arms made **5.15 against 8.40 masters**; villages are ~5×
-> smaller since the seat caps and it now reads **0.70 against 1.10**. Teaching cannot be
-> mechanically harmed by resting — the bonus scales by the same `worth` and the master check reads
-> `WorkplaceId`. **TO RESTORE: aggregate across 8–10 seeds, keeping per-seed numbers printed.**
-> That reverses D227's explicit *"per-seed is stronger than aggregating"*, which is why it is
-> waiting on Joe rather than done.
->
-> ⛔⛔ **AND THE LESSON WORTH CARRYING: TWO OF THE THREE INSTRUMENTS I REACHED FOR WERE BLIND, AND
-> ONLY THE RED CHECK CAUGHT THEM.** *Consecutive ticks in `Resting`* reads **129 either way** — a
-> flicker re-enters the state every tick and looks exactly like a spell. *Was a job-holder ever
-> mid-countdown* is true either way — somebody can be hired three ticks into a spell. **The
-> discriminator is proportion: 0% against 56%.** *Never ship a guard for a behaviour change without
-> reverting the change and watching it go red.*
->
-> **⭐⭐ 2026-09-01 — "A JOB IS A JOB" (D270–D271), AND NOT ONE GOLDEN MOVED.** Joe, on a
-> forester's hut reading *"nobody working of 2 seats · asked 1 · village wants 0"*: *"It **IS**
-> staffed and somebody **DOES** work there."* ⛔ **The panel was not lying — the hut really did
-> empty.** `LabourQuota.Asked` cut the seat when a stock limit was met, which contradicted
-> **D238, Joe's own earlier call** (*"a met stock limit stops the job and LEAVES the trade"*) —
-> built in `BehaviorSystem` and never in the quota.
-> ⭐ **THE RULE NOW: the stop lives where the work happens, never on the roster.** The player's
-> profession number is the answer. Every capped trade already gates itself (woodcutter D139,
-> forager D238, forester `MayFell`, farmer `MaySow`), which is why removing the override was
-> safe — **red-checked at 489 firewood against a limit of 40** with the woodcutter's gate
-> disabled, reproducing Joe's own *"452 at a limit of 50"*.
-> ⚠️ **§4a WAS NOT TOUCHED and did not need to be** — the plan called it the riskiest edit.
-> `Asked` ignores the village's figure whenever the player has set a number, and the panel sets
-> one for every trade from the first frame, so *"hunger has nothing to do with whether you are
-> assigned a job"* falls out of D106's ordering. **§4a still governs any trade left unset, which
-> is how the fixtures run** — do not delete it.
-> ⛔⛔ **AND A TRAP FOR THE NEXT PERSON: TWO GUARDS WERE PASSING AGAINST A CORPSE.** Posing
-> *"cap logs at 0 from the founding"* stops the fuel chain before it starts — **all four founders
-> dead by Year 2** — and `IdleNote` is null for a hut in a dead village too. **Let the village
-> stand up for twenty years before posing a limit, and assert `Population > 0`** (D7).
-> ⚠️ **`main` is at 881 and does NOT have any of this.**
->
-> **✅ FIVE MORE THINGS FROM JOE'S PLAY ON 2026-08-30 (D266–D269), ALL BUILT AND GREEN:**
-> - **A workplace says WHY nobody is needed** — *"nobody works here — the village needs no
->   foresters at the moment, because the logs limit of 200 is met"* — in the **same words** the
->   professions column uses, from one method (`LabourQuota.WhyTheVillageWantsNone`) that reads the
->   state the quota reads. He was looking at two true sentences that did not add up.
->   ⛔ **And `IdleNote` stopped flagging every empty building**: it fired for *every* unstaffed
->   workplace, so a hut standing quiet because the player's own limit was met got the same marker
->   as one the village was crying out for — D147's own rule broken by D147's own method.
-> - **The builder's hut holds three** (`builder_hut_seats`), stated where it was derived. Four
->   goldens moved for it, in one commit. See the open call below — the hut is still free.
-> - **Alerts slow the village to 1× rather than pausing it**, and hand back the speed the player
->   chose. One hold shared by both kinds, so a gift arriving under a discovery banner cannot
->   record 1× as *"the speed they were at"*. `Moment.Stops` → **`WaitsToBeDismissed`**.
-> - **The side panels are drawn at four fifths** (`Main.PanelScale`). ⚠️ The first cut divided the
->   column WIDTH by the scale too and gave the same screen width with more text in it — the
->   opposite of the ask. Measured with the headless probe: lays out at 346, drawn at 277.
-> - ⚠️ **NOBODY HAS LOOKED AT ANY OF THE FOUR ON SCREEN.** They compile, the suite is green and
->   the game starts clean headless — which is what the view has always had (D160), and seven
->   features have shipped here broken because that was mistaken for verification.
->
-> **✅✅ ALL OF IT IS MERGED TO `main` AND PUSHED (2026-08-29, Joe: *"Both: Merge to main, push the
-> branch"*).** A clean fast-forward, so **`main`, `origin/main`, `slice/the-founders-hall` and
-> `origin/slice/the-founders-hall` are all the same commit** — `d0259a5`. Clean tree, both
-> projects build. ⭐ **D217's trap is not live: the build Joe plays and the remote are one thing.**
->
-> The only other branch is `slice/work-from-the-steading`, one unmerged commit, **93+ commits
-> behind** and backed up on `origin` — a decaying asset, not a parked one.
->
-> **⭐⭐ JOE SETTLED BOTH OPEN CALLS IN ONE MESSAGE, AND SLICE 1 WAS BUILT ON THEM (D252, D253):**
-> 1. **The town hall's trigger is *the last founder dies*, and the gift is a tribute/monument to
->    the founding members.** ⛔ Not the forgiving alternative — a ratio crosses in silence, a
->    funeral is an event the village already narrates.
-> 2. **After the town hall comes fishing and hunting** (`buildings-plan.md §10`, now step 0 then 1).
->
-> **✅ WHAT IS BUILT AND GREEN** (`specs/town-hall.md`, slice 1 of four): the last founder dies →
-> a **stopping moment naming all four** → a **Civic button appears with a ★** → the player places
-> it → the crew raise it (**materials free, work owed**, exactly like the library) → it stands, is
-> drawn, and clicking it **lists the founders by name**. `Villager.Founder`, `CivicSystem` (a
-> thirteenth system — **nomads land there next**), `BuildingKind.TownHall = 11`, and
-> `BuildingRow.Civic` / `.Singleton` as **data columns a modder can reach**.
-> ⛔ **THERE ARE NO TABS.** Collections, knowledge and charts are slices 2–4.
->
-> **⭐⭐ MEASURED: THE SHIPPED VILLAGE IS OWED ITS HALL IN YEAR 58, WITH 35 ALIVE.** The suite's
-> fixture reaches it in year 30 with 14 — *and that is why exactly two goldens moved and the
-> shipped pair did not.* Well clear of D227's *"you just stabilised, now build a library?"*.
->
-> **⛔⛔ TWO THINGS ARE RECORDED RATHER THAN TICKED, AND THEY ARE THE FIRST THINGS TO DO:**
-> - **NOBODY HAS LOOKED AT THE VIEW.** The button, the map colour, the inspector panel and the
->   moment are built and compiled; the view has **no automated verification of any kind** (D160).
->   ⭐ *Looking at it is the test, and it needs Joe.* The thing to look at is **the year-58 moment**.
-> - **The 200-year clean-log playthrough has not been run.** DoD item 6.
->
-> **✅ AND JOE PLAYED IT AND IT WORKED** — the moment fired at **Year 58, exactly as measured**,
-> he placed the hall and it was built. His three follow-ups are done (D254, D255): **a 20x speed**,
-> **`Skip 1y` / `Skip 10y` QA buttons** (debug builds only — ten years in a quarter of a second),
-> and **the village log is timestamped and set one point smaller.**
-> - ⚠️ **ONE THING IS OFFERED AND NOT DONE, AND IT IS HIS CALL:** ten narrating call sites still
->   write the date *mid-sentence* (*"Amos was born to the Thatcher household — Spring, Year 2."*),
->   so about half the stamped lines say it twice. **Taking it out is a change to the game's
->   narrative voice across five systems**, and two of those lines carry `Day 4, Spring, Year 58`,
->   which is more precise than the stamp. **Ask him before doing it.**
->
-> **✅✅ THE RECONCILIATION IS DONE AND THE SUITE IS GREEN AT TWO SEATS (D262–D264).**
-> **894 passing, 0 failing, 1 skipped of 895**, on `slice/two-seats-per-hut` — **NOT on `main`.**
-> Joe's call taken as an override (*"my QA trumps your tests"*); the cap, competing rings and the
-> warm start's missing food are all built. ⭐ **Measured: nothing dies out** — the shipped seeds
-> settle at 20, 23 and 15 against peaks of 26, 32 and 18.
->
-> **⭐⭐ TWO REAL SIM BUGS CAME OUT OF IT, WHICH IS WHY IT WAS WORTH DOING BY HAND:**
-> - **`LabourQuota` was booking hands for seats that do not exist.** It took as many as it needed
->   to feed everyone and gave every spare body to the berry patch — harmless at seven seats, a
->   labour bug at two. **Measured: *"nobody was ever posted to the forester's hut"***, five hands
->   queued for a room that holds two while farming, timber and the market went unstaffed. Bounded
->   by `SimWorld.GatheringSeats()` in both places now; `ForagersToFeedEveryone` stays the honest
->   need so the panel can still say *"the village wants five"* while two sit down.
-> - **`GatheringSeats` asked `Capacity` where `Workplace.Places` exists** — the field whose own doc
->   says *"an override cannot be honoured by half the code and ignored by the other half."* It was
->   booking hands for seats the player had switched off.
-> - **And the village had stopped saying it reorganised itself at all.** `NarrateChanges` only
->   counted building-to-building moves; the churn is now job ↔ labourer pool, and a winter (D44)
->   erased what anybody had held. **Not one narrated reshuffle, and not one *"Moved to"*, in a
->   hundred and fifty years.** `Villager.LastWorkplaceId` is the fix — unhashed on the same footing
->   as `JobReason`, which it exists only to word.
->
-> **⛔⛔ THREE THINGS ARE JOE'S CALL AND ARE DELIBERATELY NOT TAKEN:**
-> 1. **THE OPENING GOT HARDER, MEASURABLY.** A hut seats two; the founding is two couples. With the
->    single-hut opening **household 1 worked 1.2% of its able-adult ticks over twenty years against
->    household 2's 5.2%** — his own *"one couple stays home"*. Two huts and both couples work.
->    ⚠️ Only `ColdStartTests.NeitherFoundingHouseholdRestsWhileTheOtherWorks` poses the second hut
->    (`PlayTheOpeningWithTwoGatheringHuts`); folding it into the shared opening **turned that guard
->    green and reddened four others** — measured. **Whether the shipped opening is now two huts is
->    a design decision.**
-> 2. **`gathers_per_thinned_tile` still ships at 0** (D257). Flip it to 3 to feel the copse thin.
-> 3. ⛔ **WHAT A BUILDER'S HUT SHOULD COST.** He capped it at **three** seats the morning after
->    D265 raised it (D267) — but **the hut is free and instant** (D108: the building every other
->    building waits on cannot charge timber without making a circle), so *"build another hut"* is a
->    click rather than a decision and three seats is a pacing rule rather than a constraint.
->    ⭐ *This is exactly the gap D260's competing rings had to close before the forager's two seats
->    meant anything.* Recorded, not fixed.
->
-> **⚠️ WHAT THE RECONCILIATION TAUGHT, FOR WHOEVER DOES THE NEXT ONE:**
-> - **Half the red was fixtures owning premises they used to get free.** A warm start never spent
->   `cart_food`, so *"a village founded with an empty larder has no spare hands by definition"* was
->   true without anybody arranging it, and the farm guards were **measuring the granary rather than
->   the farm**. Pose it (`BuildWithBareStores`, `FarmFixtures.WithNothingInTheStores`); **do not
->   restore the bug** — removing the fix costs 19 guards (46 red against 27).
-> - **The count moves both ways.** Bounding the spare-hands top-up by seats was *more* correct and
->   took 27 → 28. Measure after every step.
-> - **Three guards had lost their subject, not their tuning.** `StorageTests` compares a bounded
->   granary against an unbounded one and both arms settle at 7–21 — **the third time that guard has
->   been overtaken by a different bottleneck** (D134's timber shed was the second). The lockstep
->   guard's tile measure was **deleted on the written instruction it was carrying**. The rhythm's
->   cost was a **stock read at an instant** and is now trips over fifty years.
-> - **A seed may be replaced when its village is dead, never when its village disagrees.** Seed 42
->   left `ApprenticeshipTests` at **0.00 masters in both arms**, where *strictly more* would have
->   passed just as silently the other way round; an anti-vacuity check now catches it.
-> ⛔⛔⛔ **DO NOT SET `GathererHutCapacity = 8` IN `VillageFixtures.Village`.** It fixes most of the
-> suite in one edit **and stops every one of those guards exercising the shipped seat count while
-> reading as passing** — D157 green-and-blind, the fifth time this project has been offered that
-> trade. *It is posed in exactly one place, `StorageTests`, which spends eight lines saying why.*
-> ⚠️ **And a hard limit found on the way: `MaxHomeToWorkTiles` IS the ring**, so two huts with no
-> overlap sit twice as far apart as anybody may walk to work. **Spreading huts is the player's job,
-> done with painted neighbourhoods; an unattended fixture cannot do it, and placing more huts made
-> thin valleys WORSE** — measured again here: `FoundingGatheringHuts` at three moves nothing and at
-> **four or more kills the founding outright**.
->
-> **⭐ The copse's thinning rate is still his to feel (D257), and the old note stands:** He has asked three
-> times for a **2-seat forager hut**. ✅ **The other half of his design — rings that COMPETE — is
-> built and shipped (D260): two huts on one copse are worth exactly one, and beyond twice the
-> radius they cost each other nothing.** ⛔ **The cap itself is blocked, and the cause is located to
-> the tick: two founders starve on Day 10 of Year 1**, because in the opening **foraging is the only
-> food tap and it needs a seat** — a villager without one has nowhere to get a meal.
-> ⭐ **The remedy is measured: 2 seats + a stocked granary at founding** turns seed 12345 from dying
-> into growing normally and plateauing at 17–20 against 43, *which is the pressure he asked for*.
-> ⛔ **But seed 42 still dies, and `MapGenerationTests.EverySeedProducesAValleyAVillageSurvivesIn`
-> promises every seed is survivable WITH THE PLAYER DOING NOTHING.** His design withdraws that
-> promise on purpose. **Ask him to confirm it, then the cap ships in one slice.**
-> ⚠️ **And a real oddity found on the way: the warm start has NO FOOD.** `RaiseTheCart` runs only on
-> a cold start, so `ShippedConfig.Established()` begins with `cart_food: 1200` unspent and zero food
-> in any store. **Seven seats were hiding it.**
->
-> **⭐ The copse's thinning rate is also his to feel (D257).** ⭐ **The thinning is
-> BUILT and SHIPPED OFF**: `gathers_per_thinned_tile` in `data/sim.config.json`, at **0**. Every N
-> gathers sets the nearest mature tree in the ring back to a sapling and regrowth grows it up
-> again — **no new state, and the player watches the ring lighten.** Flip it to **3** to feel it
-> (measured: 49.8% mature wood against 55.8% unworked, averaged over a regrowth period); **1**
-> swings hard, **12** is barely visible. ⛔ **Turning it on moves five goldens and trips
-> `MarketRestockTests`' overflow allowance — one deliberate commit once he picks a number.**
-> ⚠️⚠️ **DO NOT TRY TO DERIVE THE RATE FROM AN UNATTENDED RUN.** Population there is capped by the
-> GRANARY, not by food (`StorageTests.CapacityIsWhatHoldsThePopulationFlat`), so every rate looks
-> inert on good seeds until it is harsh enough to kill a poor one. **Joe plays the other regime.**
->
-> *The finding that got here (D256):* From his 111-year run:
-> *"forager huts should be capped at 2 workers max so the player cant milk one forager hut for the
-> whole game — the copse of wood isnt infinite."* ⭐ **He is right, and it is measured: one hut
-> saturates at seven foragers and carries a 44-person village from year 70 to 110.**
-> ⛔⛔ **BUT THE CAP WAS BUILT, MEASURED ACROSS FOUR VALUES AND THREE SEEDS, AND REVERTED — the
-> band where it works does not exist.** At **5–6 the good valleys are exactly as good as at 7**
-> (no pressure at all) **while the poor valley gets worse**; at **4** the pressure appears and
-> **Phase 3's apprenticeship pillar inverts** (a village that teaches keeps *fewer* masters,
-> because the forager's hut is where pairing happens); at **2–3, two valleys in three die out.**
-> ⭐ **The lever is yield against regrowth, not seats** — the ring regrows faster than any number
-> of foragers can strip it. **Sixth cause killed by measurement after the farm's five; do not add a
-> seventh by reasoning.** *Ask him whether the answer is slower regrowth, thinner yield, or a ring
-> that remembers what has been taken (the farm's memory, one building over).*
->
-> **⭐ AND ONE FINDING WORTH MORE THAN THE FEATURE: the unattended shipped village NEVER LEARNS TO
-> WRITE**, in fifty-eight years. A granary is player-placed, nobody places one in an unattended
-> run, so `FirstGranaryTick` stays zero and literacy never starts counting. **Had literacy been
-> made a prerequisite for the hall, that village could never have been given one** — Joe's
-> *"expected, not enforced"* (D251), vindicated by a guard that went red for the right reason.
->
-> ⚠️ **ONE THING HE IS STILL TESTING:** the trade pin (D247). *"Seems to work the way i expect. i
-> think. ill keep testing."* **It displaces an incumbent** — pin somebody to a one-seat trade and
-> whoever held it is moved off with a sentence naming the player as the reason. **If that reads as
-> the village being arbitrary rather than as him deciding, the thing to change is who gives way.**
->
-> ⏸️ **AND HUNGER IS DELIBERATELY PARKED.** He said it feels like hunger goes 0→100 too fast
-> *and* that food is too abundant — then: *"leave hunger alone for now. ill revisit that later."*
-> ⛔ **Do not tune it unasked.** When it comes back he wants **a measured proposal first**, and the
-> shape is *slower hunger + more food per meal* ≈ the same food per year in fewer, larger meals.
-> ⚠️ `food_per_meal` is the dial D223 spent a decision aligning between fixture and game, and
-> hunger feeds the survival floor and the birth gate — **a derived economy, not a slider.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-06.**
+> **927 passing, 0 failing, 2 skipped of 929** — on `main`, pushed. `main` = `origin/main`.
+> ⚠️ **The sim has not moved in the last four commits.** Everything since the Produce rename is
+> view-layer, so *any* test movement while touching the UI means the change leaked.
+
+## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
+
+**`dotnet build` at the root does NOT compile the game.** It builds `Bclone.Sim` and the tests
+only — the Godot project is built by Godot. Two hours were nearly lost to a clean root build over
+broken view code.
+
+```
+dotnet build src/Bclone.Game/Bclone.Game.csproj      # the view actually compiles
+BCLONE_PROBE_WIDTHS=1 <godot> --headless --path src/Bclone.Game   # the only view "test"
+```
+
+⭐ **The headless run is the only thing that catches view throws.** A `ProfessionName` crash once
+fired **3,609 times** while the suite was green. It also prints panel widths and positions.
+
+---
+
+## What landed since the last handoff
+
+**✅ FISHING, FINISHED (D282–D290).** A cast is 10 ticks; the hut holds **900** (three casts). ⭐ The
+longer cast cost the economy **nothing** — measured 800 fish a year at three ticks and 800 at ten,
+because a fisher only gets ~8 casts a year either way and the rest of the year is walking, eating
+and sleeping. ⛔ **`fish_yield` is 300**, and the guard that said fishing beat foraging was
+comparing **one cast against one trip** — meaningless, since the two trades do not get the same
+number of loads. Per *hour worked* it was 311 against 721. It is measured with demand held open now.
+
+**✅ HUNTING, ALL THREE SLICES (D291–D303).** Lodge, 3 seats, `Meat` + `Leather`, a buffer a
+marketer runs dry, `meat_yield` **600**. ⭐⭐ **Slice 2 was built and then DELETED on Joe's call**
+(D297): game depletion is not its own mechanic — **standing woodland is the only thing that moves
+either yield**, for foraging and hunting alike. Felling costs the village its berries *and* its
+game; replanting restores both. *That deleted `GameRange`, two config keys, a hash block and two
+guards, and added one.* ⛔ **`specs/hunting.md §4` told me to reuse the forest-exhaustion
+machinery, and that machinery FELLS THE TREE** — hunting through it would have made a hunter a
+logger. The spec is corrected in place.
+
+**✅ FOOD MEANS FOOD (D298–D301).** The overview read **Food 0** while the stock-limits table read
+**3,043** — two panels, one screen, and the overview was wrong. ⚠️ **Six more single-good readers
+went with it**, worst being a dowry that sent a meat-eating family's child away with **nothing**,
+and a hunger line that would say *"nothing left to eat"* over a full larder. ⭐ **`Goods.Food` is
+`Goods.Produce`**, and `Stockpile.Food` was **deleted rather than renamed** — the friendly accessor
+*is* the trap, and with no accessor a caller must write `store[Goods.Produce]` or
+`world.FoodIn(store)`, neither of which can be misread.
+
+**✅ THE SHED IS A WAREHOUSE (D294)**, data keys included. ⚠️ *"Shed" is also a verb here*
+(`ShedSurplus`) and a blind replace produced `List<int> warehouse = ShedSurplus(...)`.
+
+**✅ THE UI IS WINDOWS NOW (D304–D306).** Professions is a table with drawn glyphs; stock limits
+are their own window; both open from the control bar. ⛔⛔ **The two side columns are DELETED.** A
+`ScrollContainer` clips its children and a `VBoxContainer` owns their positions — so dragged panels
+were *cut off* at the column edge and hiding one *discarded* where the others had been put. Panels
+are free windows, arranged once at launch, with **Reset window positions** in Settings.
+
+---
+
+## ⚠️ WHAT JOE IS WAITING ON — read before touching the UI
+
+He is mid-review of the window work and has just reported (2026-09-06, fixed but **unverified by
+him**):
+
+1. **Right-hand windows could not move left.** Right-anchored panels have **negative** offsets
+   (distance back from the right edge), and the clamp treated `OffsetLeft` as a screen X — so it
+   shoved them right on every drag. Fixed by clamping the **drawn** corner (`DrawnTopLeft`).
+2. **Windows could leave the screen.** `KeepWindowsOnScreen` now runs every frame, not only on drag.
+3. **Panels are solid**, except the control bar, which spans the window and would wall off the
+   valley.
+
+⭐ **He has not confirmed any of these three yet.** Ask before assuming they are good.
+
+## ▶️ NEXT: THE BUILD BAR
+
+The second half of his UI mockup: **one icon strip with BUILD / REMOVAL / HARVEST tabs**, speed
+controls on the same bar, an ALL filter. Two things known in advance:
+
+- ⛔ **`VillageMap` has no current-mode getter.** `BeginBuilding` / `BeginDemolishing` /
+  `BeginHarvesting` set a private brush and nothing can read it, **so no tab can light up**. That
+  is new view state and it is the first task.
+- ⭐ **Icons are drawn, not imported** — `TradeGlyph` is the pattern (polygons and rects, colours
+  borrowed from the map). D26: this project ships **no image assets**, and the code rejects emoji
+  as font-dependent.
+
+Queued behind it: **materials/ingredients categories** in the panels, and **meat and fish subtypes**
+(venison, trout, wheat) which Joe deferred until the panels can group them.
+
+## ⏸️ OPEN, AND JOE'S TO CALL
+
+- **The food limit gates the HARVEST, not the sowing** (D300, his call). ⚠️ It reverses a recorded
+  decision: `crops-and-orchards.md §5.1` wanted use-it-or-lose-it to *"punish inattention rather
+  than obedience"*, and unreaped crop now rots at winter. **He accepted the rot** and floated a
+  future tech unlock letting crops stand into winter. A third option — gate neither — is recorded.
+- **`gathers_per_thinned_tile` stays 0 for ever** (D297) but is kept as a modder dial.
+- **`ApprenticeshipTests` stays skipped** (D287, his explicit call). *Do not "fix" it* — restoring
+  it means reversing D227.
 
 ---
 
