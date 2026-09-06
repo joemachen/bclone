@@ -4150,8 +4150,14 @@ public partial class Main : Control
     /// has the room he wants, instead of four hand-tuned font sizes that drift apart. Clamped so
     /// it cannot be driven to something unreadable or off-screen.
     /// </para>
+    /// <para>
+    /// ⭐ <b>The default is 75%</b> (Joe, 2026-09-06, having played the build bar at 80%). It is
+    /// the <em>opening</em> value only — the dial still runs 55–115% and the player's turn of it
+    /// wins. *A default is what the map looks like before anybody has opened Settings, which is
+    /// the only view most players will ever judge it on.*
+    /// </para>
     /// </remarks>
-    private float _uiScale = 0.8f;
+    private float _uiScale = 0.75f;
 
     private const float MinUiScale = 0.55f;
     private const float MaxUiScale = 1.15f;
