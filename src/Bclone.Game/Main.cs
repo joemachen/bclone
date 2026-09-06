@@ -5710,7 +5710,11 @@ public partial class Main : Control
     /// </remarks>
     private void PinTheBarHeight(float wanted)
     {
-        if (_controlBar is null)
+        // ⚠️ BOTH, AND THE SECOND IS NOT BELT-AND-BRACES. `_controlBar` is assigned at the TOP of
+        // `BuildControlPanel` and `_placementLabel` at the bottom, so a `FitFloaters` landing
+        // between them sees a bar with no label — the null warning was pointing at a real
+        // ordering hazard rather than at a formality.
+        if (_controlBar is null || _placementLabel is null)
         {
             return;
         }
