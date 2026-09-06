@@ -475,50 +475,144 @@ public partial class VillageMap : Control
     /// </remarks>
     private int _groundFor;
 
-    /// <summary>Start or stop painting where the village may live (D42).</summary>
-    public void BeginPainting(int direction)
+    /// <summary>
+    /// <b>What is in the player's hand</b> — one value, where there used to be eight fields.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>The bar needs to read this and could not.</b> Seven <c>Begin*</c> methods each set
+    /// some subset of <c>_building</c>, <c>_demolishing</c>, <c>_brush</c>, <c>_harvestMode</c>,
+    /// <c>_groundFor</c>, <c>_moving</c>, <c>_moveFrom</c> and <c>_emptying</c>, and nothing
+    /// could ask what the answer was — <b>so no tab could light up</b>.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND EIGHT FIELDS CLEARED IN SEVEN PLACES HAD ALREADY GONE WRONG THREE TIMES</b>
+    /// (`specs/build-bar.md §5.1`). Four of the seven never cleared <c>_groundFor</c>, which
+    /// <see cref="Announce"/> tests <em>first</em> — so pressing <b>Demolish</b> after painting
+    /// work ground announced <em>"Drag to give ground to forester's hut"</em>, and
+    /// <b>right-clicking to cancel</b> answered with <em>"Right-click to stop."</em> The third
+    /// was worse and is fixed in <see cref="PaintAround"/>. <b>One writer is the fix</b>, and it
+    /// is D145's rule: the moment two callers want the same clearing, it stops being private.
+    /// </para>
+    /// </remarks>
+    public enum MapTool
     {
-        _brush = direction;
-        _harvestMode = null;
-        _groundFor = 0;
-        _building = null;
-        _demolishing = false;
-        _moving = false;
+        /// <summary>Just looking. Nothing on the bar is lit.</summary>
+        None,
+
+        /// <summary>About to put a building down — <see cref="PendingBuilding"/> says which.</summary>
+        Building,
+
+        /// <summary>The next click pulls a building down.</summary>
+        Demolishing,
+
+        /// <summary>Painting where the village may live (D42).</summary>
+        PaintingHomes,
+
+        /// <summary>Taking that land back — and over a house, an order to pull it down.</summary>
+        ErasingHomes,
+
+        /// <summary>Marking what the village means to take — <see cref="PendingHarvest"/> says what.</summary>
+        Harvesting,
+
+        /// <summary>Rubbing that marking out.</summary>
+        Unmarking,
+
+        /// <summary>Giving ground to one building (D86). <b>Not on the bar</b> — see below.</summary>
+        PaintingGround,
+
+        /// <summary>Taking that building's ground back. <b>Not on the bar</b> — see below.</summary>
+        ErasingGround,
+
+        /// <summary>Picking a building up to put it down elsewhere (D229).</summary>
+        Moving,
+
+        /// <summary>Marking a store to be carried out into the others (D231).</summary>
+        Emptying,
+    }
+
+    /// <summary>What the player is holding right now.</summary>
+    /// <remarks>
+    /// ⚠️ <see cref="MapTool.PaintingGround"/> and <see cref="MapTool.ErasingGround"/> are on the
+    /// enum but <b>deliberately not on the build bar</b>: that brush belongs to a <em>building</em>
+    /// and is reached from that building's panel (D86, D93 — <em>"a control that is always there
+    /// but never says WHAT it acts on is the thing you hunt for"</em>). The bar needs the values
+    /// only so it can unlight every tab while one is in hand.
+    /// </remarks>
+    public MapTool Tool { get; private set; } = MapTool.None;
+
+    /// <summary>Which building is about to go down, or null when that is not the tool.</summary>
+    /// <remarks>
+    /// The strip lights the <em>button</em>, not just the tab, which is why this is public
+    /// alongside <see cref="Tool"/>.
+    /// </remarks>
+    public BuildingKind? PendingBuilding => _building;
+
+    /// <summary>Which harvest mode the brush is set to, or null when that is not the tool.</summary>
+    public HarvestBrush? PendingHarvest => _harvestMode;
+
+    /// <summary>Raised whenever <see cref="Tool"/> changes, so the bar can relight itself.</summary>
+    /// <remarks>
+    /// ⭐ <b><see cref="Announce"/> is the seam and that is not a coincidence</b> — every
+    /// <c>Begin*</c> already calls it to say what the tool does, so the one place that already
+    /// runs on every tool change is the one place this needs to fire from. <b>No new call
+    /// sites.</b>
+    /// </remarks>
+    public event System.Action? ToolChanged;
+
+    /// <summary>
+    /// <b>The only writer of the brush fields.</b> Everything else asks this.
+    /// </summary>
+    private void SetTool(
+        MapTool tool,
+        BuildingKind? building = null,
+        HarvestBrush? harvest = null,
+        int groundFor = 0,
+        int brush = 0)
+    {
+        // ⛔ EVERY FIELD, EVERY TIME, IN ONE PLACE. The bug this replaces was never a wrong
+        // value — it was a field somebody forgot to clear in one of seven near-identical
+        // blocks, three times over.
+        _building = building;
+        _harvestMode = harvest;
+        _groundFor = groundFor;
+        _brush = brush;
+        _demolishing = tool == MapTool.Demolishing;
+        _moving = tool == MapTool.Moving;
+        _emptying = tool == MapTool.Emptying;
         _moveFrom = null;
-        _emptying = false;
+
+        bool changed = Tool != tool;
+        Tool = tool;
+
         Announce();
         QueueRedraw();
+
+        // ⚠️ AFTER Announce, not before: the bar reads `Tool` when this fires, and a listener
+        // that ran first would light a tab the message had not caught up with.
+        if (changed)
+        {
+            ToolChanged?.Invoke();
+        }
     }
+
+    /// <summary>Start or stop painting where the village may live (D42).</summary>
+    public void BeginPainting(int direction) =>
+        SetTool(direction < 0 ? MapTool.ErasingHomes : MapTool.PaintingHomes, brush: direction);
 
     /// <summary>Start or stop marking what the village means to take (D87, D92).</summary>
-    public void BeginHarvesting(HarvestBrush mode, int direction)
-    {
-        _brush = direction;
-        _harvestMode = mode;
-        _groundFor = 0;
-        _building = null;
-        _demolishing = false;
-        _moving = false;
-        _moveFrom = null;
-        _emptying = false;
-        Announce();
-        QueueRedraw();
-    }
+    public void BeginHarvesting(HarvestBrush mode, int direction) =>
+        SetTool(
+            direction < 0 ? MapTool.Unmarking : MapTool.Harvesting,
+            harvest: mode,
+            brush: direction);
 
     /// <summary>Start or stop giving ground to one building (D86).</summary>
-    public void BeginPaintingGround(int workplaceId, int direction)
-    {
-        _brush = direction;
-        _harvestMode = null;
-        _groundFor = workplaceId;
-        _building = null;
-        _demolishing = false;
-        _moving = false;
-        _moveFrom = null;
-        _emptying = false;
-        Announce();
-        QueueRedraw();
-    }
+    public void BeginPaintingGround(int workplaceId, int direction) =>
+        SetTool(
+            direction < 0 ? MapTool.ErasingGround : MapTool.PaintingGround,
+            groundFor: workplaceId,
+            brush: direction);
 
     /// <summary>The tile under the cursor, and what the sim says about building on it.</summary>
     private GridPos _hovered;
@@ -528,30 +622,11 @@ public partial class VillageMap : Control
     public event System.Action<string>? PlacementMessageChanged;
 
     /// <summary>Start marking out a building. Null stops.</summary>
-    public void BeginBuilding(BuildingKind? kind)
-    {
-        _building = kind;
-        _demolishing = false;
-        _moving = false;
-        _moveFrom = null;
-        _emptying = false;
-        _brush = 0;
-        Announce();
-        QueueRedraw();
-    }
+    public void BeginBuilding(BuildingKind? kind) =>
+        SetTool(kind is null ? MapTool.None : MapTool.Building, building: kind);
 
     /// <summary>Next click pulls a building down.</summary>
-    public void BeginDemolishing()
-    {
-        _building = null;
-        _demolishing = true;
-        _brush = 0;
-        _moveFrom = null;
-        _moving = false;
-        _emptying = false;
-        Announce();
-        QueueRedraw();
-    }
+    public void BeginDemolishing() => SetTool(MapTool.Demolishing);
 
     /// <summary>The tile a move has picked up, waiting for somewhere to put it down.</summary>
     /// <remarks>
@@ -564,40 +639,22 @@ public partial class VillageMap : Control
     private bool _emptying;
 
     /// <summary>Pick a building up and put it down somewhere else (D229).</summary>
-    public void BeginMoving()
-    {
-        _building = null;
-        _demolishing = false;
-        _moving = false;
-        _moveFrom = null;
-        _emptying = false;
-        _brush = 0;
-        _emptying = false;
-        _moving = true;
-        _moveFrom = null;
-        Announce();
-        QueueRedraw();
-    }
+    public void BeginMoving() => SetTool(MapTool.Moving);
 
     /// <summary>Mark a store to be carried out into the others, or stop (D231).</summary>
-    public void BeginEmptying()
-    {
-        _building = null;
-        _demolishing = false;
-        _moving = false;
-        _moveFrom = null;
-        _emptying = false;
-        _brush = 0;
-        _moving = false;
-        _moveFrom = null;
-        _emptying = true;
-        Announce();
-        QueueRedraw();
-    }
+    public void BeginEmptying() => SetTool(MapTool.Emptying);
+
+    /// <summary>Put down whatever is in hand and go back to just looking.</summary>
+    /// <remarks>
+    /// ⭐ <b>The cancel path used to be <c>BeginBuilding(null)</c> followed by four hand-written
+    /// clears</b>, and it still left <c>_groundFor</c> and <c>_harvestMode</c> standing — so
+    /// right-clicking out of the work-ground brush answered the cancel with
+    /// <em>"Right-click to stop."</em>
+    /// </remarks>
+    public void PutTheToolDown() => SetTool(MapTool.None);
 
     /// <summary>Whether the player is in the middle of placing, demolishing or painting.</summary>
-    public bool IsPlacing =>
-        _building is not null || _demolishing || _moving || _emptying || _brush != 0;
+    public bool IsPlacing => Tool != MapTool.None;
 
     public override void _GuiInput(InputEvent @event)
     {
@@ -643,11 +700,7 @@ public partial class VillageMap : Control
 
         if (IsPlacing && click.ButtonIndex == MouseButton.Right)
         {
-            BeginBuilding(null);
-            _demolishing = false;
-            _moving = false;
-            _moveFrom = null;
-            _emptying = false;
+            PutTheToolDown();
             AcceptEvent();
             return;
         }
@@ -737,8 +790,15 @@ public partial class VillageMap : Control
                     Workplace? owner = _world!.FindWorkplace(_groundFor);
                     if (owner is null)
                     {
-                        _groundFor = 0;
-                        continue;
+                        // ⛔⛔ IT PUTS THE TOOL DOWN AND LEAVES THE STROKE, WHICH IS WHAT THE
+                        // COMMENT ABOVE HAS ALWAYS CLAIMED IT DID. It used to clear `_groundFor`
+                        // and `continue` — so every remaining tile of that stroke fell through
+                        // to the residential arm below and **painted housing land the player
+                        // never asked for**. It abandoned the tool and kept the brush.
+                        PlacementMessageChanged?.Invoke(
+                            "That building is gone, so there is nothing to give ground to.");
+                        SetTool(MapTool.None);
+                        return;
                     }
 
                     if (_brush < 0)
