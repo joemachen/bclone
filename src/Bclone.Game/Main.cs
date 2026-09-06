@@ -364,17 +364,31 @@ public partial class Main : Control
         // ⚠️ Shown, then measured, then put back — the probe quits immediately afterwards, but
         // leaving the game in a state it could not have reached on its own is how an instrument
         // starts lying about something else.
-        bool knowledgeWas = _libraryCategory.Visible;
-        bool civicWas = _civicCategory.Visible;
-        _libraryCategory.Visible = true;
-        _civicCategory.Visible = true;
+        // ⛔⛔ AND NOW IT HAS A THIRD WAY TO HIDE FROM ITS OWN INSTRUMENT: THE TABS. Two thirds of
+        // the strip is hidden at any moment, so a probe that measured what was showing would
+        // measure the BUILD tab, report a bar that fits, and ship the *"correct at startup, wrong
+        // later"* fault this whole method exists because of. **Every button on the strip is shown
+        // at once**, which is wider than any tab will ever be — a deliberate over-estimate, and
+        // the right direction to be wrong in.
+        var wereShowing = new List<(Button Button, bool Was)>(_strip.Count);
+        foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
+        {
+            wereShowing.Add((entry.Button, entry.Button.Visible));
+            entry.Button.Visible = true;
+        }
+
+        bool filterWas = _filterRow.Visible;
+        bool noteWas = _harvestNote.Visible;
+        _filterRow.Visible = true;
+        _harvestNote.Visible = true;
 
         // A flow container's minimum is recomputed on the next layout pass, not on assignment.
         _controlBar.QueueSort();
         ForceUpdateTransform();
 
-        GD.Print($"[widths] --- control bar, POSED with every category the village will ever "
-            + $"unlock: is {_controlBar.Size.X:F0} wide "
+        GD.Print($"[widths] --- control bar, POSED with every tab, every filter and every "
+            + $"category the village will ever unlock showing at once: "
+            + $"is {_controlBar.Size.X:F0} wide "
             + $"of a {Size.X:F0} window, and {_controlBar.Size.Y:F0} tall ---");
 
         foreach (Node child in _controlBar.GetChildren())
@@ -417,8 +431,13 @@ public partial class Main : Control
                 + $"is {row.Size.X:F0} x {row.Size.Y:F0}{verdict}");
         }
 
-        _libraryCategory.Visible = knowledgeWas;
-        _civicCategory.Visible = civicWas;
+        foreach ((Button button, bool was) in wereShowing)
+        {
+            button.Visible = was;
+        }
+
+        _filterRow.Visible = filterWas;
+        _harvestNote.Visible = noteWas;
     }
 
     /// <summary>
@@ -629,10 +648,40 @@ public partial class Main : Control
     /// breaks that rule**, because it is the only thing in the game that is meant to be in the
     /// way: the village is paused behind it and nothing else is competing for the space.
     /// </remarks>
-    private Button _libraryButton = null!;
-    private VBoxContainer _libraryCategory = null!;
-    private Button _townHallButton = null!;
-    private VBoxContainer _civicCategory = null!;
+    private Button? _libraryButton;
+    private Button? _townHallButton;
+
+    /// <summary>Which tab of the build bar is showing.</summary>
+    private BuildTab _tab = BuildTab.Build;
+
+    /// <summary>Which category the BUILD tab is narrowed to, or null for ALL.</summary>
+    private BuildCategory? _filter;
+
+    /// <summary>True once the village can write, so the library has a button.</summary>
+    private bool _literacy;
+
+    /// <summary>True once the founders are gone, so the town hall has one (D252).</summary>
+    private bool _foundersGone;
+
+    /// <summary>Every button on the strip, with what decides whether it is showing.</summary>
+    /// <remarks>
+    /// ⭐ <b>Built once and shown or hidden, never rebuilt.</b> Tearing the strip down on every
+    /// tab press would make the widths unmeasurable — <see cref="ProbeTheControlBar"/> has to be
+    /// able to pose the whole thing at once (`specs/build-bar.md §5.3`) — and it would throw away
+    /// the library's tint mid-frame.
+    /// </remarks>
+    private readonly List<(BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark)> _strip = new();
+
+    private readonly List<(BuildTab Tab, Button Button)> _tabButtons = new();
+
+    private readonly List<(BuildCategory? Category, Button Button)> _filterButtons = new();
+
+    private HFlowContainer _filterRow = null!;
+
+    private HFlowContainer _stripRow = null!;
+
+    /// <summary>Who does the harvesting — shown with the HARVEST tab and nowhere else.</summary>
+    private Label _harvestNote = null!;
 
     /// <summary>
     /// Show the library only once the village can write, and glow while the gift is unspent.
@@ -645,13 +694,27 @@ public partial class Main : Control
     /// </remarks>
     private void RefreshTheLibraryButton(SimWorld world)
     {
-        _libraryCategory.Visible = world.HasLiteracy;
+        if (_literacy != world.HasLiteracy)
+        {
+            _literacy = world.HasLiteracy;
+            RefreshTheStrip();
+        }
+
+        if (_libraryButton is null)
+        {
+            return;
+        }
 
         _libraryButton.Modulate = world.AFreeLibraryIsOwed
             ? new Color(1f, 0.85f, 0.4f)
             : Colors.White;
 
-        _libraryButton.Text = world.AFreeLibraryIsOwed ? "Library ★" : "Library";
+        // ⭐ THE NAME COMES FROM THE CATALOGUE AND THE STAR IS ADDED TO IT, rather than the word
+        // "Library" being typed here. D240 is why: the build bar said *"gatherer's hut"* for a
+        // year after the trade became *forager*, because the bar held its own copy of the word.
+        _libraryButton.Text = world.AFreeLibraryIsOwed
+            ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.Library)) + " ★"
+            : Titled(world.BuildingsCatalog.NameOf(BuildingKind.Library));
     }
 
     /// <summary>
@@ -683,13 +746,24 @@ public partial class Main : Control
     /// </remarks>
     private void RefreshTheTownHallButton(SimWorld world)
     {
-        _civicCategory.Visible = world.SaidTheFoundersAreGone;
+        if (_foundersGone != world.SaidTheFoundersAreGone)
+        {
+            _foundersGone = world.SaidTheFoundersAreGone;
+            RefreshTheStrip();
+        }
+
+        if (_townHallButton is null)
+        {
+            return;
+        }
 
         _townHallButton.Modulate = world.ATownHallIsOwed
             ? new Color(1f, 0.85f, 0.4f)
             : Colors.White;
 
-        _townHallButton.Text = world.ATownHallIsOwed ? "Town hall ★" : "Town hall";
+        _townHallButton.Text = world.ATownHallIsOwed
+            ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.TownHall)) + " ★"
+            : Titled(world.BuildingsCatalog.NameOf(BuildingKind.TownHall));
     }
 
     private PanelContainer? _momentPanel;
@@ -3895,8 +3969,35 @@ public partial class Main : Control
         settings.Pressed += () => _settingsPanel.Visible = !_settingsPanel.Visible;
         controls.AddChild(settings);
 
-        body.AddChild(BuildBuildMenu());
-        body.AddChild(BuildHarvestMenu());
+        // ⭐ THE TABS SIT WITH THE SPEED CONTROLS, NOT ABOVE THEM (Joe's mockup). One strip is
+        // the whole point: *"give me more room to see the game map"* (D305) was answered by
+        // shrinking the furniture, and this answers the other half by having less of it.
+        controls.AddChild(new VSeparator());
+        AddTheTabs(controls);
+
+        // Uncaptioned and on the end, because it belongs to no tab — it puts down whichever
+        // tool is in your hand, including the harvest brushes two rows below.
+        controls.AddChild(TheCancelButton());
+
+        // ⭐ THE FILTER, AND IT IS A ROW OF ITS OWN BECAUSE IT ANSWERS A DIFFERENT QUESTION.
+        // The tabs say what KIND of act; the chips say which buildings are worth looking at
+        // right now. `TECH-EXAMPLE.md` names forty-five buildings, and forty-five icons in one
+        // strip is a search rather than a browse — which is §1.2's click-farm in another medium.
+        _filterRow = FlowRow();
+        _filterRow.AddChild(Muted("Show:"));
+        AddTheFilters(_filterRow);
+        body.AddChild(_filterRow);
+
+        _stripRow = FlowRow();
+        body.AddChild(_stripRow);
+        BuildTheStrip();
+        RefreshTheStrip();
+
+        // ⭐ THE BAR RELIGHTS ITSELF FROM THE MAP, NOT FROM THE BUTTON THAT WAS PRESSED. Wiring
+        // each button to light its own tab would go wrong the moment anything else changed the
+        // tool — right-clicking to cancel, or the ground brush being handed over from a
+        // building's panel. **One source, and it is the thing that actually knows.**
+        _map.ToolChanged += RelightTheStrip;
 
         // ⚠️ PROFESSIONS AND STOCK LIMITS HAVE LEFT THIS BAR (Joe: *"the professions and stock
         // limits slide-up menus suck for UX"*). They were toggles that unfolded the control bar
@@ -5222,244 +5323,440 @@ public partial class Main : Control
             : "nothing in the village will take it";
     }
 
-    /// <summary>
-    /// What the village should take off the map — modes of one tool (D87, D92).
-    /// </summary>
+    // ---------------------------------------------------------------
+    //  The build bar (`specs/build-bar.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Which kind of act the strip is showing.</summary>
     /// <remarks>
-    /// <para>
-    /// <b>Its own row, and that is not cosmetic.</b> Six more buttons on the build row
-    /// pushed it past the window and clipped "Market", "Woodcutter" and "Demolish" off the
-    /// left edge — buttons that exist and cannot be pressed, which is D55's finding
-    /// arriving again from the other direction. Caught by taking a screenshot, which is the
-    /// only verification the view has (D11).
-    /// </para>
-    /// <para>
-    /// Ordered the way a player reaches for them: trees are the opening's timber, stone and
-    /// iron are what a building past a log hut will cost, and <em>All</em> is the
-    /// clear-this-area brush D67 asked for.
-    /// </para>
+    /// ⭐ <b>Three tabs and more than three brushes</b>, and the strays are placed by what the
+    /// player is <em>doing</em> rather than by growing the tab row (Joe, 2026-09-06). The land
+    /// brush and Move are things you add, so they are BUILD; taking land back and emptying a
+    /// store are things you undo, so they are REMOVAL.
+    /// ⚠️ <b>Move and Empty were this spec's reading rather than his word</b> —
+    /// `specs/build-bar.md §8.1`.
     /// </remarks>
-    private HFlowContainer BuildHarvestMenu()
+    private enum BuildTab
     {
-        // Wraps for the same reason as the build row above — this one fits today, and "fits
-        // today" is exactly what the build row could have said last week.
-        var row = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        row.AddThemeConstantOverride("h_separation", 8);
-        row.AddThemeConstantOverride("v_separation", 6);
-        row.AddChild(Muted("Harvest:"));
-
-        foreach ((string Label, HarvestBrush Mode) entry in new[]
-        {
-            ("Trees", HarvestBrush.Trees),
-            ("Stone", HarvestBrush.Stone),
-            ("Iron", HarvestBrush.Iron),
-            ("All", HarvestBrush.Everything),
-        })
-        {
-            HarvestBrush captured = entry.Mode;
-            var button = new Button { Text = entry.Label };
-            button.Pressed += () => _map.BeginHarvesting(captured, 1);
-            row.AddChild(button);
-        }
-
-        var unmark = new Button { Text = "Unmark" };
-        unmark.Pressed += () => _map.BeginHarvesting(HarvestBrush.Everything, -1);
-        row.AddChild(unmark);
-
-        row.AddChild(Muted("— painted ground is felled or dug by whoever is spare"));
-        return row;
+        Build,
+        Removal,
+        Harvest,
     }
 
     /// <summary>
-    /// Everything the player can put on the map, <b>in categories</b> (Joe's area 4).
+    /// What kind of thing a building is, <b>for the player</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THIS IS A VIEW ENUM AND IT MUST STAY ONE.</b> `buildings-catalog.md §8.1` settled
+    /// it: the category is <em>"a column the sim does not want — it is presentation, and putting
+    /// it on the row would be the sim carrying the view's vocabulary."</em> The catalogue answers
+    /// what a building <em>costs</em>, <em>stores</em> and <em>employs</em>; which shelf of a menu
+    /// it belongs on is nobody's business but this bar's.
+    /// </remarks>
+    private enum BuildCategory
+    {
+        Works,
+        Food,
+        Resources,
+        Storage,
+        Knowledge,
+        Civic,
+        Homes,
+
+        /// <summary>
+        /// A building this view has never heard of — a modder's, or a built-in added since.
+        /// </summary>
+        /// <remarks>
+        /// ⭐ <b>This is `buildings-catalog.md §8.2`'s recorded cheap option, arriving inside the
+        /// catalogue-driven answer rather than instead of it.</b> Built-ins keep their hand-placed
+        /// grouping and ordering; <b>anything past them appears automatically here</b>, with a
+        /// drawn mark and a name, on the day it has a row. D223's deferral is what this closes,
+        /// and D221's hole — <em>a feature the player cannot reach does not exist</em> — with it.
+        /// </remarks>
+        Other,
+    }
+
+    /// <summary>A flow row with the bar's spacing. Never an <c>HBoxContainer</c>.</summary>
+    /// <remarks>
+    /// ⛔ <b>An <c>HBoxContainer</c> has no way to fail gracefully</b> (D242): it has one line, and
+    /// children that do not fit simply leave the screen — <em>"Pause"</em> clipped to <em>"use"</em>
+    /// on the left edge and <em>"Cancel"</em> half off the right. A flow container puts the
+    /// overflow on a second row. <b>This bar grows by a whole category twice in a normal game</b>,
+    /// when the village learns to write and when its founders die, so it will need that.
+    /// ⚠️ Flow containers take <c>h_separation</c>/<c>v_separation</c>; the plain <c>separation</c>
+    /// an <c>HBoxContainer</c> uses is silently ignored.
+    /// </remarks>
+    private static HFlowContainer FlowRow()
+    {
+        var row = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        row.AddThemeConstantOverride("h_separation", 6);
+        row.AddThemeConstantOverride("v_separation", 4);
+        return row;
+    }
+
+    /// <summary>A catalogue name, as a button reads it.</summary>
+    /// <remarks>
+    /// The catalogue holds <em>"forager's hut"</em> because that is how a sentence says it. A
+    /// button starts its own sentence, so it gets the capital — and <b>only the capital</b>: the
+    /// word itself is never restated here, which is what D240 cost a year of the bar saying
+    /// <em>"gatherer's hut"</em> under a roster that said <em>forager</em>.
+    /// </remarks>
+    private static string Titled(string name) =>
+        name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
+
+    /// <summary>BUILD / REMOVAL / HARVEST.</summary>
+    private void AddTheTabs(Container into)
+    {
+        foreach ((BuildTab Tab, string Label) entry in new[]
+        {
+            (BuildTab.Build, "BUILD"),
+            (BuildTab.Removal, "REMOVAL"),
+            (BuildTab.Harvest, "HARVEST"),
+        })
+        {
+            BuildTab captured = entry.Tab;
+            var button = new Button { Text = entry.Label, ToggleMode = true };
+            button.Pressed += () =>
+            {
+                _tab = captured;
+                RefreshTheStrip();
+            };
+
+            _tabButtons.Add((captured, button));
+            into.AddChild(button);
+        }
+    }
+
+    /// <summary>ALL, and one chip per category.</summary>
+    private void AddTheFilters(Container into)
+    {
+        foreach ((BuildCategory? Category, string Label) entry in new (BuildCategory?, string)[]
+        {
+            (null, "All"),
+            (BuildCategory.Works, "Works"),
+            (BuildCategory.Food, "Food"),
+            (BuildCategory.Resources, "Resources"),
+            (BuildCategory.Storage, "Storage & trade"),
+            (BuildCategory.Knowledge, "Knowledge"),
+            (BuildCategory.Civic, "Civic"),
+            (BuildCategory.Homes, "Homes"),
+            (BuildCategory.Other, "Other"),
+        })
+        {
+            BuildCategory? captured = entry.Category;
+            var button = new Button { Text = entry.Label, ToggleMode = true };
+            button.Pressed += () =>
+            {
+                _filter = captured;
+                RefreshTheStrip();
+            };
+
+            _filterButtons.Add((captured, button));
+            into.AddChild(button);
+        }
+    }
+
+    /// <summary>Put down whatever is in hand.</summary>
+    private Button TheCancelButton()
+    {
+        var stop = new Button { Text = "Cancel" };
+        stop.Pressed += () => _map.PutTheToolDown();
+        return stop;
+    }
+
+    /// <summary>
+    /// Every button the bar will ever show, built once from the <b>catalogue</b>.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>The category caption sits ABOVE its buttons, not beside them</b>, and that is a
-    /// width decision rather than a taste one. This row already reached within thirty pixels
-    /// of the window edge, and D55 records what happens when it goes past: <em>"Market",
-    /// "Woodcutter" and "Demolish" clipped off the left edge — buttons that exist and cannot
-    /// be pressed.</em> Six captions beside their groups would have cost about four hundred
-    /// pixels the row has not got; above them they cost one line of height and nothing else.
+    /// ⭐⭐ <b>THIS IS WHAT D223 DEFERRED AND `buildings-catalog.md §8.2` SAID TO DECIDE HERE.</b>
+    /// The bar was ten hand-written <c>BuildButton("Granary", BuildingKind.Granary)</c> calls in
+    /// four groups, and §8.2's own words are that this <em>"does not scale to 45 buildings
+    /// whatever the data model underneath says … the menu wants a redesign when the content
+    /// lands, and THAT is the moment to decide whether it reads from the catalogue."</em> This is
+    /// that moment, and Joe's call is that it does.
     /// </para>
     /// <para>
-    /// <b>Grouping when a group holds one thing is the point, not an accident.</b> Food is a
-    /// single hut today and Works is a single hut; captioning them anyway is what makes it
-    /// visible that a village has one way to feed itself, which a flat row of eight buttons
-    /// never said.
+    /// ⛔ <b>The house is the one row skipped.</b> A house is placed by the land brush and never
+    /// by a button (D42, D102) — the village decides which tiles and when, and the player decides
+    /// where it <em>may</em>. Everything else in the catalogue gets a button, including a row that
+    /// did not exist when this code was written.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The names come from the catalogue too</b>, which is the half that is a bug fix rather
+    /// than a feature: D240 found the bar still saying <em>"gatherer's hut"</em> a year after the
+    /// trade became <em>forager</em>, because the bar held its own copy of every word.
     /// </para>
     /// </remarks>
-    private HFlowContainer BuildBuildMenu()
+    private void BuildTheStrip()
     {
-        // ⛔⛔ IT WRAPS, BECAUSE IT RAN OFF BOTH EDGES OF THE SCREEN (Joe, 2026-08-27, with a
-        // screenshot: *"the bottom menu doesn't fit in the screenview when the library button
-        // pops in"*). **"Pause" was clipped to "use" on the left and "Cancel" sat half off the
-        // right.**
-        //
-        // ⚠️ **AND IT IS A TIMED FAULT, WHICH IS WHY NOBODY CAUGHT IT.** The Knowledge group is
-        // hidden until the village learns to write (`RefreshTheLibraryButton`), so the row fits
-        // perfectly for the first fifteen-odd years of every game and then **grows by a whole
-        // category in the middle of play**. A layout that is correct at startup and wrong later
-        // is invisible to every check anybody makes at startup — which is all of them, since
-        // there is no view test project.
-        //
-        // ⭐ **An `HBoxContainer` has no way to fail gracefully: it has one line and children
-        // that do not fit simply leave the screen.** A flow container puts the overflow on a
-        // second row instead. That also settles the shape D223 parked — *"ten hand-written
-        // buttons in four groups does not scale to 45 buildings"* — because wrapping is what a
-        // menu that grows needs whether the buttons stay hand-written or become catalogue-driven.
-        //
-        // ⚠️ Flow containers take `h_separation`/`v_separation`; the plain `separation` an
-        // HBoxContainer uses is silently ignored, which would have left the groups touching.
-        var row = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        row.AddThemeConstantOverride("h_separation", 10);
-        row.AddThemeConstantOverride("v_separation", 6);
+        BuildingsCatalog catalogue = _loop.World.BuildingsCatalog;
 
-        row.AddChild(Muted("Build:"));
+        for (int id = 0; id < catalogue.Count; id++)
+        {
+            var kind = (BuildingKind)id;
+            if (kind == BuildingKind.Home)
+            {
+                continue;
+            }
 
-        // Works first, because it is first in the game (D108): nothing anywhere on this row is
-        // ever raised without a builder's hut. The group will hold roads, bridges and fences
-        // when the builder gets them (`professions.md §4`).
-        row.AddChild(Category("Works", BuildButton("Builder's hut", BuildingKind.BuilderHut)));
+            // ⚠️ ASKED OF THE VALUE, NOT OF A RANGE. `BuildingKind` is appended to and never
+            // renumbered, so a hand-written `id <= (int)BuildingKind.HunterLodge` would go stale
+            // the day a fifteenth built-in lands — quietly, by drawing it as a modder's square.
+            bool known = System.Enum.IsDefined(kind);
+            BuildingKind captured = kind;
 
-        // ⭐ THE FARM SHIPS WITH ITS BUTTON (`specs/crops-and-orchards.md`). Four slices of
-        // behaviour once landed with no controls at all, and D103's rule came out of it: a
-        // feature the player cannot reach is a feature that does not exist. Its ground is
-        // painted with the same work-ground brush the forester's hut already uses (D118), so
-        // the button is the only new thing the view owes it.
-        row.AddChild(Category(
-            "Food",
-            // ⭐ "Forager", not "Gatherer" (Joe, 2026-08-23). Every other work building on this
-            // bar is named for the trade that works it -- Forester, Woodcutter -- and the
-            // profession became `forager` in D188. This was the last place still saying the
-            // old word, which is the same one-job-two-names bug arriving in a third panel.
-            BuildButton("Forager", BuildingKind.GathererHut),
-            BuildButton("Farmhouse", BuildingKind.Farmhouse),
+            Button button = StripButton(
+                Titled(catalogue.NameOf(kind)),
+                new BuildingGlyph(kind, known),
+                () => _map.BeginBuilding(captured));
 
-            // ⛔ THE BUTTON IS THE ONLY THING THAT MAKES A BUILDING EXIST. Seven features have
-            // shipped here working in the sim and unreachable in the view — D227's library drew
-            // as open ground, Move and Empty shipped with no buttons at all. **Placeable is not
-            // reachable.**
-            BuildButton("Fishing hut", BuildingKind.FishingHut),
-            BuildButton("Hunter's lodge", BuildingKind.HunterLodge)));
+            if (kind == BuildingKind.Library)
+            {
+                _libraryButton = button;
+            }
+            else if (kind == BuildingKind.TownHall)
+            {
+                _townHallButton = button;
+            }
 
-        row.AddChild(Category(
-            "Resources",
-            BuildButton("Forester", BuildingKind.ForesterHut),
-            BuildButton("Woodcutter", BuildingKind.WoodcutterHut)));
-
-        // The pile leads its group because it leads the game (D76): it costs nothing but the
-        // ground, and a village with nowhere to put things cannot begin.
-        row.AddChild(Category(
-            "Storage & trade",
-            BuildButton("Stockpile", BuildingKind.Pile),
-            BuildButton("Granary", BuildingKind.Granary),
-            BuildButton("Warehouse", BuildingKind.Warehouse),
-            BuildButton("Market", BuildingKind.Market)));
-
-        // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else on
-        // this bar is about producing or keeping goods; a library keeps *techniques*, and it is
-        // the first building the village raises for a reason other than eating.
-        //
-        // ⛔ THE BUTTON SHIPS WITH THE BUILDING, which is D103's rule: a feature the player cannot
-        // reach does not exist. The build bar is still ten hand-written buttons and becoming
-        // catalogue-driven is deferred on Joe's call (D223) — **which makes remembering this line
-        // the cost of that deferral, and it is cheap while the catalogue is small.**
-        // ⭐⭐ THE LIBRARY BUTTON IS NOT THERE UNTIL IT IS EARNED (Joe, from play): *"the library is
-        // in the UI from the beginning — shouldn't it show up once gifted?"* **He is right, and the
-        // button sitting there for eighteen years was the gift being spoiled before it arrived** —
-        // a thing you have been looking at and cannot press is not a surprise when it unlocks.
-        //
-        // ⭐ AND IT IS HIGHLIGHTED WHEN IT IS NEW, which is his other half: *"with a highlight to
-        // show it's special/new."* The tint clears the moment the free one is spent, so the badge
-        // means *"this is the gift"* rather than *"this is a library"*.
-        _libraryButton = BuildButton("Library", BuildingKind.Library);
-        _libraryCategory = Category("Knowledge", _libraryButton);
-        row.AddChild(_libraryCategory);
-
-        // The town hall, hidden until the founders are gone and highlighted while it is the gift
-        // (D252). Its own category: the hall is not a knowledge building with extras, and putting
-        // it under "Knowledge" would say the opposite of what D251 settled.
-        _townHallButton = BuildButton("Town hall", BuildingKind.TownHall);
-        _civicCategory = Category("Civic", _townHallButton);
-        row.AddChild(_civicCategory);
+            _strip.Add((BuildTab.Build, CategoryOf(kind, known), button, kind, null));
+            _stripRow.AddChild(button);
+        }
 
         // The brush (D42). Its own category because it is a different kind of decision: the
         // others place one thing, this says where a whole neighbourhood may grow — and the
         // village decides which tiles, and when, and whether at all.
-        var paint = new Button { Text = "Paint land" };
-        paint.Pressed += () => _map.BeginPainting(1);
-
-        var erase = new Button { Text = "Take back" };
-        erase.Pressed += () => _map.BeginPainting(-1);
-
-        row.AddChild(Category("Homes", paint, erase));
+        Add(BuildTab.Build, BuildCategory.Homes, "Paint land", ToolMark.PaintLand,
+            () => _map.BeginPainting(1));
 
         // ⛔ MOVE AND EMPTY SHIP WITH THE SIM FEATURES THEY DRIVE, and their absence is what Joe
         // hit: *"I don't see anything in the UI that allows me to move a building?"* and *"no
         // option to 'empty' to another storage building."* **Both had been built and neither was
-        // reachable** — the third and fourth instances this session of a feature existing only in
-        // the sim. *Placeable is not reachable, and neither is relocatable.*
-        var move = new Button { Text = "Move" };
-        move.Pressed += () => _map.BeginMoving();
+        // reachable.** *Placeable is not reachable, and neither is relocatable.*
+        Add(BuildTab.Build, BuildCategory.Works, "Move", ToolMark.Move, () => _map.BeginMoving());
 
-        var empty = new Button { Text = "Empty" };
-        empty.Pressed += () => _map.BeginEmptying();
+        Add(BuildTab.Removal, BuildCategory.Works, "Demolish", ToolMark.Demolish,
+            () => _map.BeginDemolishing());
+        Add(BuildTab.Removal, BuildCategory.Homes, "Take back", ToolMark.TakeBack,
+            () => _map.BeginPainting(-1));
+        Add(BuildTab.Removal, BuildCategory.Storage, "Empty", ToolMark.Empty,
+            () => _map.BeginEmptying());
 
-        var demolish = new Button { Text = "Demolish" };
-        demolish.Pressed += () => _map.BeginDemolishing();
-        row.AddChild(Category("Removal", move, empty, demolish));
+        foreach ((string Label, HarvestBrush Mode, ToolMark Mark) entry in new[]
+        {
+            ("Trees", HarvestBrush.Trees, ToolMark.HarvestTrees),
+            ("Stone", HarvestBrush.Stone, ToolMark.HarvestStone),
+            ("Iron", HarvestBrush.Iron, ToolMark.HarvestIron),
+            ("All", HarvestBrush.Everything, ToolMark.HarvestAll),
+        })
+        {
+            HarvestBrush mode = entry.Mode;
+            Add(BuildTab.Harvest, BuildCategory.Resources, entry.Label, entry.Mark,
+                () => _map.BeginHarvesting(mode, 1));
+        }
 
-        row.AddChild(new VSeparator());
+        Add(BuildTab.Harvest, BuildCategory.Resources, "Unmark", ToolMark.Unmark,
+            () => _map.BeginHarvesting(HarvestBrush.Everything, -1));
 
-        // Uncaptioned and on the end, because it belongs to no category — it puts down
-        // whichever tool is in your hand, including the harvest brushes on the row below.
-        // Bottom-aligned so it lines up with the buttons rather than with the captions.
-        var stop = new Button { Text = "Cancel", SizeFlagsVertical = SizeFlags.ShrinkEnd };
-        stop.Pressed += () => _map.BeginBuilding(null);
-        row.AddChild(stop);
+        // ⭐ THE SENTENCE THAT SAYS WHO ACTUALLY DOES IT, kept from the old harvest row. Painting
+        // ground is the one act on this bar with no building behind it, so without this line
+        // nothing on screen says the work falls to whoever is spare.
+        _harvestNote = Muted("— painted ground is felled or dug by whoever is spare");
+        _stripRow.AddChild(_harvestNote);
 
-        // ⭐ STAFFING USED TO BE ON THIS ROW AND HAS MOVED TO THE BUILDING PANEL (Joe).
-        // The old note said it deliberately never came and went, "because a button the
-        // player has to hunt for" is worse — and D93 then recorded Joe's verdict on the
-        // result: "the staffing control is in a weird place right now". Both things were
-        // true. A control that is always there but never says WHAT it acts on is the
-        // thing you hunt for; beside the name of the building, it needs no explaining.
-
-        // HANDED BACK RATHER THAN INSERTED, which is the third and last version of this.
-        // It began by taking the UI root and testing `is VBoxContainer` — the root is a
-        // MarginContainer, so the whole menu was built, wired up and silently never added
-        // to anything. Then it took the column and a hand-counted index, which went stale
-        // the moment a line was added to the header and put the build menu above the time
-        // controls. Returning the row lets the caller decide where it goes, and there is
-        // nothing left to get wrong.
-        return row;
+        void Add(BuildTab tab, BuildCategory category, string label, ToolMark mark, System.Action act)
+        {
+            Button button = StripButton(label, new ToolGlyph(mark), act);
+            _strip.Add((tab, category, button, null, mark));
+            _stripRow.AddChild(button);
+        }
     }
 
-    private Button BuildButton(string text, BuildingKind kind)
+    /// <summary>One button on the strip: a drawn mark over its word.</summary>
+    /// <remarks>
+    /// ⭐ <b>THE WORD STAYS.</b> §1.1 is the hardest non-negotiable and an icon-only strip is a
+    /// memory test — the player would learn nine shapes or hover nine times. The mark is drawn
+    /// inside the button rather than beside it, so <b>the whole button is the click target</b>
+    /// and the mark is not a decoration you can miss.
+    /// ⚠️ The mark is anchored to the button's top centre by hand: a <c>Button</c> is not a
+    /// container, so nothing lays its children out, which is exactly what makes the position
+    /// predictable at every UI scale.
+    /// </remarks>
+    private static Button StripButton(string label, Control mark, System.Action act)
     {
-        var button = new Button { Text = text };
-        button.Pressed += () => _map.BeginBuilding(kind);
+        var button = new Button
+        {
+            Text = label,
+            Alignment = HorizontalAlignment.Center,
+            CustomMinimumSize = new Vector2(0, 48),
+
+            // ⭐ TOGGLE MODE SO THE HELD BUTTON CAN BE LIT WITHOUT TOUCHING `Modulate`. The
+            // library and the town hall already use `Modulate` to say *"this is the gift"*, and
+            // two meanings in one channel is how a highlight stops meaning anything.
+            ToggleMode = true,
+        };
+
+        mark.AnchorLeft = 0.5f;
+        mark.AnchorRight = 0.5f;
+        mark.AnchorTop = 0f;
+        mark.AnchorBottom = 0f;
+        mark.OffsetLeft = -7f;
+        mark.OffsetRight = 7f;
+        mark.OffsetTop = 4f;
+        mark.OffsetBottom = 18f;
+        button.AddChild(mark);
+
+        button.Pressed += act;
         return button;
     }
 
-    /// <summary>One captioned group of build buttons.</summary>
-    private static VBoxContainer Category(string caption, params Button[] buttons)
-    {
-        var group = new VBoxContainer();
-        group.AddThemeConstantOverride("separation", 1);
-        group.AddChild(Muted(caption));
-
-        var line = new HBoxContainer();
-        line.AddThemeConstantOverride("separation", 4);
-        foreach (Button button in buttons)
+    /// <summary>Which shelf of the menu a building belongs on. <b>View vocabulary only.</b></summary>
+    private static BuildCategory CategoryOf(BuildingKind kind, bool known) => !known
+        ? BuildCategory.Other
+        : kind switch
         {
-            line.AddChild(button);
+            // Works first, because it is first in the game (D108): nothing anywhere on this
+            // strip is ever raised without a builder's hut. The group will hold roads, bridges
+            // and fences when the builder gets them (`professions.md §4`).
+            BuildingKind.BuilderHut => BuildCategory.Works,
+
+            BuildingKind.GathererHut or BuildingKind.Farmhouse
+                or BuildingKind.FishingHut or BuildingKind.HunterLodge => BuildCategory.Food,
+
+            BuildingKind.ForesterHut or BuildingKind.WoodcutterHut => BuildCategory.Resources,
+
+            // The pile leads its group because it leads the game (D76): it costs nothing but
+            // the ground, and a village with nowhere to put things cannot begin.
+            BuildingKind.Pile or BuildingKind.Granary
+                or BuildingKind.Warehouse or BuildingKind.Market => BuildCategory.Storage,
+
+            // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else
+            // here is about producing or keeping goods; a library keeps *techniques*, and it is
+            // the first building the village raises for a reason other than eating.
+            BuildingKind.Library => BuildCategory.Knowledge,
+
+            // The hall is not a knowledge building with extras, and putting it under Knowledge
+            // would say the opposite of what D251 settled.
+            BuildingKind.TownHall => BuildCategory.Civic,
+
+            _ => BuildCategory.Other,
+        };
+
+    /// <summary>
+    /// Show what the tab and the chip ask for, and light what the player is holding.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>A BUILDING THE VILLAGE HAS NOT EARNED IS NOT ON THE STRIP AT ALL.</b> Joe, from play:
+    /// <em>"the library is in the UI from the beginning — shouldn't it show up once gifted?"</em>
+    /// <b>A button you have been looking at for eighteen years is not a surprise when it
+    /// unlocks</b>, and the same is true of the hall at year sixty (D252).
+    /// </remarks>
+    private void RefreshTheStrip()
+    {
+        _filterRow.Visible = _tab == BuildTab.Build;
+        _harvestNote.Visible = _tab == BuildTab.Harvest;
+
+        foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
+        {
+            bool onThisTab = entry.Tab == _tab;
+            bool pastTheFilter = _tab != BuildTab.Build || _filter is null || _filter == entry.Category;
+            entry.Button.Visible = onThisTab && pastTheFilter && EarnedYet(entry.Kind);
         }
 
-        group.AddChild(line);
-        return group;
+        // ⚠️ NO-SIGNAL, OR THIS METHOD CALLS ITSELF. Every one of these buttons is in toggle
+        // mode and every one of them re-enters here when pressed, so writing `ButtonPressed`
+        // directly would be a loop waiting on Godot's exact signal semantics to not close it.
+        // *Not relying on that is cheaper than checking it.*
+        foreach ((BuildTab tab, Button button) in _tabButtons)
+        {
+            button.SetPressedNoSignal(tab == _tab);
+        }
+
+        foreach ((BuildCategory? category, Button button) in _filterButtons)
+        {
+            button.SetPressedNoSignal(category == _filter);
+        }
+
+        RelightTheStrip();
     }
+
+    /// <summary>Whether the village has earned the right to see this button yet.</summary>
+    private bool EarnedYet(BuildingKind? kind) => kind switch
+    {
+        BuildingKind.Library => _literacy,
+        BuildingKind.TownHall => _foundersGone,
+        _ => true,
+    };
+
+    /// <summary>
+    /// Light the tab and the button for whatever is in the player's hand.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>This is what `VillageMap.MapTool` was built for.</b> Until it existed the seven
+    /// <c>Begin*</c> methods set eight private fields that nothing could read back, so
+    /// <b>no tab could light up</b> and the bar could not tell the player what they were holding
+    /// — which is §1.1's first duty.
+    /// </remarks>
+    private void RelightTheStrip()
+    {
+        VillageMap.MapTool tool = _map.Tool;
+        BuildTab? held = tool switch
+        {
+            VillageMap.MapTool.Building or VillageMap.MapTool.PaintingHomes
+                or VillageMap.MapTool.Moving => BuildTab.Build,
+            VillageMap.MapTool.Demolishing or VillageMap.MapTool.ErasingHomes
+                or VillageMap.MapTool.Emptying => BuildTab.Removal,
+            VillageMap.MapTool.Harvesting or VillageMap.MapTool.Unmarking => BuildTab.Harvest,
+
+            // ⚠️ The work-ground brush belongs to a BUILDING and is reached from that building's
+            // panel (D86, D93), so it is on no tab — and while it is in hand, nothing here lights.
+            _ => null,
+        };
+
+        foreach ((BuildTab tab, Button button) in _tabButtons)
+        {
+            // A pressed tab is where you are looking; the tint says where your hand is. They are
+            // different questions and they are answered in different channels on purpose.
+            button.Modulate = held == tab ? new Color(1f, 0.85f, 0.4f) : Colors.White;
+        }
+
+        BuildingKind? building = tool == VillageMap.MapTool.Building ? _map.PendingBuilding : null;
+        ToolMark? mark = MarkFor(tool, _map.PendingHarvest);
+
+        foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
+        {
+            entry.Button.SetPressedNoSignal(
+                (entry.Kind is not null && entry.Kind == building)
+                || (entry.Mark is not null && entry.Mark == mark));
+        }
+    }
+
+    /// <summary>Which mark on the strip a tool is drawn by, or null for the buildings.</summary>
+    /// <remarks>
+    /// ⚠️ <b>Harvesting is one tool and four buttons</b>, which is D92's *"modes of one tool"* seen
+    /// from the bar: the mode decides which tiles take the paint and is then forgotten, so
+    /// <c>MapTool.Harvesting</c> alone cannot say which button to light. It needs the mode beside
+    /// it, which is why <c>PendingHarvest</c> is public.
+    /// </remarks>
+    private static ToolMark? MarkFor(VillageMap.MapTool tool, HarvestBrush? harvest) => tool switch
+    {
+        VillageMap.MapTool.PaintingHomes => ToolMark.PaintLand,
+        VillageMap.MapTool.ErasingHomes => ToolMark.TakeBack,
+        VillageMap.MapTool.Demolishing => ToolMark.Demolish,
+        VillageMap.MapTool.Moving => ToolMark.Move,
+        VillageMap.MapTool.Emptying => ToolMark.Empty,
+        VillageMap.MapTool.Unmarking => ToolMark.Unmark,
+        VillageMap.MapTool.Harvesting => harvest switch
+        {
+            HarvestBrush.Trees => ToolMark.HarvestTrees,
+            HarvestBrush.Stone => ToolMark.HarvestStone,
+            HarvestBrush.Iron => ToolMark.HarvestIron,
+            HarvestBrush.Everything => ToolMark.HarvestAll,
+            _ => null,
+        },
+        _ => null,
+    };
 
     /// <summary>
     /// ⭐ The QA fast-forward — <b>debug builds only</b> (Joe, 2026-08-29).
