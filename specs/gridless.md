@@ -1,8 +1,23 @@
 # Spec: Gridless — free placement, real facings, and paths that bend
 
-> Status: ⛔ **AUDIT AND OPTIONS. NOT STARTED, AND ONE DECISION IS JOE'S BEFORE IT CAN BE.**
+> Status: ▶️ **OPTION C CHOSEN BY JOE (2026-09-06). SLICE 1 IS BUILT AND GREEN — `Fixed` (Q32.32)
+> and its guards, no behaviour, no golden moved.** Slices 2–4 are not started.
 > Every number below was measured against the code on 2026-09-06, not read out of `DESIGN.md`.
 > · Owner: Joe + Claude Code
+>
+> **⭐ His answer, and the reasoning he gave for it:** *"Things stop being locked to squares.
+> In game development and engine architecture, 'gridless' describes gameplay space and entity
+> interaction, not how terrain data or engine memory is organized under the hood."* Terrain
+> heightmaps and spatial partitioning stay gridded; **continuous placement, free rotation and
+> agent-driven navigation are what change.** That closes §10.2 as well: terrain stays tiled under
+> the hood **on purpose**, permanently, and it is not a compromise to be revisited.
+>
+> ⚠️ **One translation, and it is not a disagreement.** He described continuous coordinates as
+> *floating-point* `(x, y, z)`, which is the standard formulation everywhere except here: this sim
+> bans floats in state (D2), because determinism is *same seed ⇒ byte-identical state* and float
+> rounding breaks it. **Q32.32 gives the same continuous behaviour with exact reproducibility.**
+> The game is also 2D, and pathing reuses the one shared cost field rather than growing a second
+> NavMesh (`CLAUDE.md`).
 > Format per `METHODOLOGY.md §2`. Implements `DESIGN.md §4`'s *"two directions Joe set on
 > 2026-08-16"*, direction 1.
 
@@ -121,9 +136,17 @@ and B reads as gridless to anyone playing it, and C is invisible except through 
   free and is exactly hashable; a continuous angle is neither.* Recommend the compass.
 - **`Extent`** — a building's footprint in fixed-point units. Required by A, and **it is the piece
   that makes placement collision real** rather than "is this tile taken".
-- **Hash:** positions mix as their **quantised** fixed-point bits in a stated order. D303 already
-  designed for this: *"for each tile, hash (x,y)"* becomes *"sample the region, hash a quantised
-  position."*
+- **Hash:** positions mix as their **RAW** fixed-point bits, all sixty-four, in a stated order —
+  `StateHash.MixFixed`.
+  ⛔⛔ **THIS BULLET USED TO SAY "QUANTISED" AND THAT WOULD HAVE BEEN A DETERMINISM BUG.** The word
+  came from D303, which is right *about a different hash*: the map generator uses a hash as a
+  **pseudo-random source**, where quantising is the whole point because nearby queries must land in
+  one bucket so terrain is stable under a small movement. **`StateHash` is the opposite kind of
+  thing — a fingerprint** — and its entire contract is that any differing state byte differs the
+  hash. A quantising mixer would let two worlds whose villagers stand a fraction of a tile apart
+  hash *identically*, so **the determinism suite would go green across a genuine divergence.**
+  *Two jobs, two functions, never one.* Guarded by
+  `FixedTests.TheHashDistinguishesValuesThatDifferOnlyInTheirFraction`.
 
 ---
 
@@ -219,16 +242,42 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 
 ## 9. Definition of Done
 
-Written when an option is chosen. ⛔ **It must include the determinism test green on fixed-point
-arithmetic, and a stated, one-commit golden move** (D152).
+### Slice 1 — ✅ MET (2026-09-06)
+
+| # | Item | State |
+|---|---|---|
+| 1 | `Fixed` (Q32.32) exists, integer-only, **no `float`/`double` in its API at all** | ✅ `src/Bclone.Sim/Core/Fixed.cs` |
+| 2 | Rounding is one stated rule, asserted on **both sides of zero** | ✅ floor; −1.5 → −2 |
+| 3 | Overflow fails loudly, with both operands in the message | ✅ throws; anti-vacuity guard that fitting arithmetic does not |
+| 4 | Determinism extended to fixed-point arithmetic | ✅ scripted replay folded through `MixFixed`, pinned |
+| 5 | **No golden moved** | ✅ *stated as a `git diff` over the five golden files, not as "the tests passed"* |
+| 6 | Every guard red-checked, **and the reds counted** | ✅ 5 of 6 red; **one scored zero and is recorded** (§10.3) |
+| 7 | Suite green | ✅ 954 / 0 / 2 of 956 (was 928) |
+
+⛔ **Slices 2–4 each owe their own DoD, and slice 2 owes the one-commit golden move** (D152) —
+buildings gaining an extent and a facing is the change that moves them, with one stated reason.
 
 ---
 
 ## 10. Open
 
-1. **§7.4 — A or C.** Joe's, and it blocks slice 1.
-2. **Does terrain stay tiled forever under C?** If yes, say so in `DESIGN.md §4` so it is not
-   re-litigated every year.
-3. **`DESIGN.md §4`'s "Fixed already exists in the design" wants rewording** (§2.2) — it reads as
-   though the type is in the codebase, and a session that believes that will under-budget the
-   first slice.
+1. ~~**§7.4 — A or C.**~~ ✅ **CLOSED 2026-09-06: C.** ⚠️ And it turned out **slice 1 was never
+   actually gated by it** — `Fixed` is required identically under A and C, so the one slice that
+   could have started before the answer was the one the spec said could not. *Recorded so the next
+   dependency claim gets checked rather than inherited.*
+2. ~~**Does terrain stay tiled forever under C?**~~ ✅ **CLOSED 2026-09-06 by Joe, and it is a
+   deliberate architecture rather than a compromise:** terrain heightmaps and spatial partitioning
+   are gridded in essentially every gridless game. **Not to be re-litigated.**
+3. ⛔ **The locale guard scored ZERO on its red check and is kept anyway — knowingly.**
+   `FixedTests.TheLocaleCannotChangeWhatAFixedLooksLike` stays green when every
+   `InvariantCulture` in `Fixed.ToString` is swapped for `CurrentCulture`, because the
+   implementation is culture-proof *by construction*: it formats two integers with no specifier and
+   joins them with a literal `'.'`. **It guards nothing today.** It is kept as a ratchet — it fires
+   the day somebody reformats the fraction through a `decimal` or an `"F6"` — and the zero is
+   written down so nobody reads it as evidence the risk was faced.
+4. **`Fixed` has no `Sqrt`, deliberately.** Nothing calls it until real distances arrive; it lands
+   in the slice that needs it, with the guard that needs it.
+5. **What the game should DO when a tick throws** — `Fixed` overflow joins
+   `TravelCostField.TicksForCost`, `DeterministicRandom.NextUInt(0)` and `SimConfig` validation as
+   an in-tick throw. **There is no error boundary in `SimLoop`.** Not slice 1's question, and it
+   applies to all four.

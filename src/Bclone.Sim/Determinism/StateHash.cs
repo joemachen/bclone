@@ -693,6 +693,35 @@ public static class StateHash
         return hash;
     }
 
+    /// <summary>
+    /// Mix a fixed-point value — <b>all sixty-four bits of it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ RAW BITS, NEVER QUANTISED, AND THE DISTINCTION IS A DETERMINISM BUG IF IT IS
+    /// MISSED.</b> <c>specs/gridless.md §5</c> once said positions hash as *"quantised fixed-point
+    /// bits"*. That phrasing came from D303, and D303 is right — <em>about a different hash</em>.
+    /// The map generator uses a hash as a <b>pseudo-random source</b>, where quantising is the
+    /// whole point: nearby queries must land in one bucket so terrain is stable under a small
+    /// movement.
+    /// </para>
+    /// <para>
+    /// <b>This file is the opposite kind of thing: a fingerprint.</b> Its entire contract is that
+    /// any differing state byte differs the hash. A quantising mixer here would let two worlds
+    /// whose villagers stand a fraction of a tile apart hash <em>identically</em> — so the
+    /// determinism suite would go green across a genuine divergence, which is the trap every
+    /// sparse block in this file is written to avoid. <c>FixedTests</c> asserts that two values
+    /// differing only in their fraction hash differently, so this stays a fact rather than a
+    /// comment. **Two jobs, two functions, never one.**
+    /// </para>
+    /// <para>
+    /// ⚠️ Nothing in the sim hashes a <see cref="Fixed"/> yet — slice 1 introduces the type and no
+    /// behaviour. Its only caller today is the fixed-point replay guard, which is deliberate: an
+    /// unused mixer is the kind of API this project deletes.
+    /// </para>
+    /// </remarks>
+    public static ulong MixFixed(ulong hash, Fixed value) => MixUInt64(hash, (ulong)value.RawBits);
+
     /// <summary>Mix four bytes into the running hash.</summary>
     public static ulong MixUInt32(ulong hash, uint value)
     {

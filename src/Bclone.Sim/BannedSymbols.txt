@@ -40,9 +40,35 @@ T:System.Threading.Tasks.Task;Sim execution is single-threaded and ordered.
 ;     assumptions). Banning System.Linq outright is too blunt —
 ;     it is legitimate in tests and tooling.
 ;
-;   * Floats in sim STATE (Decision #2: integer-only for now,
-;     fixed-point Q32.32 when fractional math is genuinely needed).
-;     Note that FixedTimestepDriver deliberately uses doubles —
-;     it lives outside the sim and only decides HOW MANY ticks
-;     to run, never what happens inside one.
+;   * Floats in sim STATE (Decision #2: integer-only, fixed-point
+;     Q32.32 -- Bclone.Sim.Core.Fixed -- when fractional math is
+;     genuinely needed). FixedTimestepDriver deliberately uses
+;     doubles: it lives outside the sim and only decides HOW MANY
+;     ticks to run, never what happens inside one.
+;
+;     MEASURED 2026-09-06 (D317), so nobody re-tries this blind.
+;     Adding `T:System.Double` / `T:System.Single` here DOES compile
+;     and DOES fire -- but ONLY ON STATIC MEMBER ACCESS. Against the
+;     live codebase it flagged exactly seven sites, every one of them
+;     a `double.IsNaN` / `double.IsInfinity` VALIDATION call: the
+;     places that defend against bad doubles, not the places that
+;     could introduce one.
+;
+;     A probe added to a system measured what it MISSES, and it is
+;     everything that matters:
+;         private double _field;               -- NOT flagged
+;         double Method(double x) => x * 1.5;  -- NOT flagged
+;         (int)(c * 1.5)                       -- NOT flagged
+;     Declarations, parameters, return types and literal arithmetic
+;     all pass straight through. So the ban would cost seven
+;     `#pragma warning disable RS0030` exemptions, buy nothing
+;     against the actual hazard, and let this file CLAIM an
+;     enforcement it does not have.
+;     ** A guard that reads as protection and protects nothing is
+;     worse than the honest note it replaced. ** It stays a note.
+;
+;     The real guard is tests/Bclone.Sim.Tests/FloatBanTests.cs,
+;     which walks the public API by reflection. Its blind spot --
+;     private fields and method bodies -- is stated there and is
+;     red-checked rather than hoped about.
 ; ============================================================
