@@ -1216,6 +1216,12 @@ public partial class VillageMap : Control
         DrawRect(new Rect2(Vector2.Zero, Size), Beyond);
         DrawValley();
 
+        // ⭐ THE WILDLIFE SITS ON THE GROUND, UNDER EVERYTHING THE PLAYER ACTS ON. Animals
+        // move, so the rule below would argue for drawing them late — but that rule is about
+        // things the player needs to find, and these are scenery. A deer must never be
+        // mistaken for a villager or hide a building, so it goes down with the terrain.
+        DrawTheGame();
+
         // Routes under everything, then workplaces, then homes, then people on top —
         // the things that move must never be hidden behind the things that do not.
         DrawRoutes();
@@ -1224,6 +1230,11 @@ public partial class VillageMap : Control
         DrawLibraries();
         DrawTheTownHall();
         DrawHomes();
+
+        // ⚠️ Over the buildings, because a heap beside a full warehouse is the whole point:
+        // the overview says *"Stone 0 (+12 on the ground — no room in store)"* and until now
+        // there was nowhere on screen to find the twelve.
+        DrawHeaps();
 
         // Over the buildings so it is not hidden by one, under the people so it never
         // hides them — the same rule the rest of this method follows.
@@ -2187,6 +2198,196 @@ public partial class VillageMap : Control
             DrawRect(rect, occupied ? HomeColour : HomeColour with { A = 0.25f });
         }
     }
+
+    // ---------------------------------------------------------------
+    //  Wildlife and heaps — Joe, 2026-09-05
+    // ---------------------------------------------------------------
+
+    /// <summary>One animal for every this many forest tiles in view.</summary>
+    /// <remarks>
+    /// ⭐ <b>Conservative on purpose</b> (Joe: *"alive rather than infested"*). A hunter's lodge
+    /// reaches about eighty forest tiles, so this puts three or four animals in its range — enough
+    /// that the woods are moving, few enough that felling one wood is a visible loss rather than a
+    /// rounding error.
+    /// </remarks>
+    private const int TilesPerAnimal = 24;
+
+    /// <summary>Below this zoom an animal is a speck, so they are not drawn at all.</summary>
+    /// <remarks>
+    /// The same floor the grid lines use. Scenery that becomes noise at a distance is worse than
+    /// scenery that knows to stop.
+    /// </remarks>
+    private const float AnimalZoomFloor = 7f;
+
+    private static readonly Color GameColour = new("#8a6a3f");
+
+    /// <summary>Whether the woods are drawn with anything living in them.</summary>
+    private bool _showGame = true;
+
+    /// <summary>Turn the wildlife on or off (Settings).</summary>
+    internal void ShowGame(bool shown)
+    {
+        _showGame = shown;
+        QueueRedraw();
+    }
+
+    /// <summary>
+    /// ⭐⭐ The animals in the woods — <b>a picture of a number, not a herd of entities</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe:</b> *"I want the user to see animals/game roaming the forest… a visual
+    /// representation of them on the map"*, and later: *"fewer animals in a smaller area of trees
+    /// and more in a larger tree zone."*
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>THE SIM GROWS NO ANIMALS FOR THIS, AND THAT IS THE WHOLE DESIGN.</b> Available game
+    /// is already a function of standing woodland (D297) — so the animals are drawn FROM the
+    /// forest tiles rather than tracked beside them. **No sim state, no state-hash surface, no
+    /// pathfinding, nothing to desync.** Fell a wood and it empties of animals for free, which is
+    /// the only feedback the player gets that the hunting yield has dropped.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>DERIVED, NOT RANDOM — and this is the first pseudo-random-looking thing in the view,
+    /// so it is worth saying why it is not random.</b> Every other mark on this map is backed by
+    /// sim state, and even <c>FanOffset</c> derives its angle from a villager's RANK rather than a
+    /// roll, precisely so the arrangement does not jitter. A per-frame <c>GD.Randi</c> here would
+    /// make the woods boil. The tile's own coordinates are the seed, so a given tile either has an
+    /// animal or does not, for ever.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>They move on the SIM's clock, not the wall clock</b>, so a paused game looks paused
+    /// and 10× speed looks like 10× speed. Same reasoning as the villager interpolation, without
+    /// needing any of its bookkeeping — there is nothing to remember frame to frame.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Culled to the visible tiles.</b> `Minimap` carries the warning this obeys: a
+    /// full-map per-frame walk is *"exactly the trap this project has been bitten by twice in the
+    /// sim"*. The per-entity passes below get away with walking their whole lists because those
+    /// are tens of items; forest tiles are thousands.
+    /// </para>
+    /// </remarks>
+    private void DrawTheGame()
+    {
+        if (!_showGame || _world is null || _pixelsPerTile < AnimalZoomFloor)
+        {
+            return;
+        }
+
+        Vector2 first = ToTile(Vector2.Zero);
+        Vector2 last = ToTile(Size);
+        int minX = Mathf.FloorToInt(first.X);
+        int maxX = Mathf.CeilToInt(last.X);
+        int minY = Mathf.FloorToInt(first.Y);
+        int maxY = Mathf.CeilToInt(last.Y);
+
+        float radius = Mathf.Max(2f, _pixelsPerTile * 0.13f);
+        double season = _world.Tick + _alpha;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (!_world.Map.Contains(tile) || _world.Map.TerrainAt(tile) != Terrain.Forest)
+                {
+                    continue;
+                }
+
+                uint seed = Scramble(x, y);
+                if (seed % TilesPerAnimal != 0)
+                {
+                    continue;
+                }
+
+                // A slow wander inside the tile it belongs to, phased off the same seed so no two
+                // animals move together. It never leaves its tile, which is what keeps the picture
+                // honest: the animal is that tile's worth of game, standing where the game is.
+                double phase = (seed % 628) / 100.0;
+                double drift = (season * 0.02) + phase;
+                var wander = new Vector2(
+                    (float)Math.Cos(drift) * 0.22f,
+                    (float)Math.Sin(drift * 0.7) * 0.22f);
+
+                DrawCircle(ToScreen(new Vector2(x, y) + wander), radius, GameColour);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A stable value for a tile — <b>derived from where it is, never rolled</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Not an RNG, and not the sim's.</b> The sim's seeded RNG must never be advanced by
+    /// drawing (D2), and a view-local RNG would give a tile a different answer every frame. This
+    /// is a plain integer scramble of the coordinates: same tile, same answer, for ever, and no
+    /// state anywhere.
+    /// </remarks>
+    /// <remarks>
+    /// ⭐ <b>MEASURED RATHER THAN ASSUMED</b>, because a hash with a pattern in it would draw
+    /// the animals in stripes and the fix would be invisible from the code. Over a
+    /// 121×121 block: <b>1 tile in 22.4 selected against a target of 1 in 24</b>, and both
+    /// per-row and per-column counts ran 1–11 around a mean of 5.4 — no dead axis, no banding.
+    /// </remarks>
+    private static uint Scramble(int x, int y)
+    {
+        unchecked
+        {
+            uint h = (uint)((x * 73856093) ^ (y * 19349663));
+            h ^= h >> 13;
+            h *= 0x85EBCA6Bu;
+            h ^= h >> 16;
+            return h;
+        }
+    }
+
+    /// <summary>
+    /// ⭐⭐ Goods lying where somebody set them down — <b>state that had no picture until now</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe asked whether this was possible and a good idea. It is both, and it closes a
+    /// legibility gap rather than adding decoration.</b> `GroundStacks` have been real, hashed sim
+    /// state since D134 — position, good and amount — and the overview has been reporting them as
+    /// *"Stone 0 (+12 on the ground — no room in store)"* with **nowhere on screen to find the
+    /// twelve**. The player was told a number and denied the place.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A heap must not read as a building.</b> It is drawn small and offset low so a stack on
+    /// a workplace tile does not swallow the workplace, and it is not clickable — selection stays
+    /// the buildings' and the villagers', which are the things the player acts on.
+    /// </para>
+    /// <para>
+    /// ⭐ Coloured from <see cref="GoodsPalette"/>, which is why that table left <c>Main</c>: the
+    /// chip in the overview and the heap in the valley are one fact.
+    /// </para>
+    /// </remarks>
+    private void DrawHeaps()
+    {
+        if (_world is null || _pixelsPerTile < AnimalZoomFloor)
+        {
+            return;
+        }
+
+        float size = Mathf.Max(3f, _pixelsPerTile * 0.28f);
+
+        for (int i = 0; i < _world.GroundStacks.Count; i++)
+        {
+            GroundStack heap = _world.GroundStacks[i];
+            if (heap.Amount <= 0)
+            {
+                continue;
+            }
+
+            Vector2 centre = ToScreen(heap.Position) + new Vector2(0f, _pixelsPerTile * 0.22f);
+            var box = new Rect2(centre - (Vector2.One * size / 2f), new Vector2(size, size));
+
+            DrawRect(box, GoodsPalette.ColourOf(heap.Goods));
+            DrawRect(box, HeapEdge, filled: false, width: 1f);
+        }
+    }
+
+    private static readonly Color HeapEdge = new(0f, 0f, 0f, 0.45f);
 
     private void DrawVillagers()
     {

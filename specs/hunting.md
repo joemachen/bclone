@@ -3,8 +3,8 @@
 **Decisions:** D19, D253, D262, D277, D286, D288 — and **D3057(b)**, which chose hunting over
 livestock and is the argument for everything below.
 **Phase:** food breadth, immediately after fishing (D253: *"after town hall is fishing and hunting"*).
-**Status:** ◡ **slice 1 SHIPPED; slice 2 built and then DELETED on Joe's call (D297); slice 3 not started.**
-The lodge is placeable, staffable and worked; `Meat` and `Leather` are real; the buffer holds three hunts and a marketer runs it dry. **Available game is a function of standing woodland and nothing else** — see §4. `meat_yield` is **600** (D293's measurement against undepleted woods: 833 per hundred ticks worked against a fisher's 687). ⛔ **Slice 3 — seeing the animals — is not built**, which is why Joe sees nothing roaming yet.
+**Status:** ✅ **ALL THREE SLICES SHIPPED** (slice 2 was built and then deleted on Joe's call — D297).
+The lodge is placeable, staffable and worked; `Meat` and `Leather` are real; the buffer holds three hunts and a marketer runs it dry. **Available game is a function of standing woodland and nothing else** (§4). **The animals are drawn** (§9) — derived from forest tiles, no sim state, so felling a wood visibly empties it. `meat_yield` is **600**.
 **Owner:** Joe + Claude Code
 
 ---

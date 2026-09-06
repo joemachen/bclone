@@ -3011,38 +3011,13 @@ public partial class Main : Control
         SizeFlagsVertical = SizeFlags.ShrinkCenter,
     };
 
-    /// <summary>
-    /// What colour a good reads as. <b>Borrowed from the map where the map has one.</b>
-    /// </summary>
+    /// <summary>What colour a good reads as — <b>one answer, shared with the map</b>.</summary>
     /// <remarks>
-    /// Logs and firewood are the timber colours, stone and iron the seam colours, so a chip
-    /// in this panel and a tile in the valley mean the same thing — which is the only reason
-    /// to colour them at all. Food has no tile of its own since the thickets started being
-    /// forest, so it takes the berry colour it had.
+    /// ⭐ The table moved to <see cref="GoodsPalette"/> when goods started being drawn where
+    /// they lie (2026-09-05). A chip in this panel and a heap in the valley have to be the
+    /// same colour, or they are two facts rather than one.
     /// </remarks>
-    private static Color ChipColour(Goods goods) => goods switch
-    {
-        Goods.Produce => new Color(0.82f, 0.35f, 0.38f),
-        Goods.Logs => new Color(0.45f, 0.33f, 0.20f),
-        Goods.Firewood => new Color(0.88f, 0.55f, 0.24f),
-        Goods.Stone => new Color(0.62f, 0.62f, 0.64f),
-        Goods.Tools => new Color(0.72f, 0.76f, 0.82f),
-        Goods.Iron => new Color(0.55f, 0.36f, 0.30f),
-
-        // The three that shipped without one and read as drab white beside the food they
-        // belong to. Fish takes the river's blue, meat a deeper red than the berries above
-        // it, leather the tan of the hide it is.
-        Goods.Fish => new Color(0.38f, 0.60f, 0.78f),
-        Goods.Meat => new Color(0.66f, 0.26f, 0.28f),
-        Goods.Leather => new Color(0.60f, 0.45f, 0.30f),
-
-        // ⚠️ A MOD-ADDED GOOD GETS A CHIP RATHER THAN A CRASH, and it is deliberately drab.
-        // `goods-catalog.md §9.4` asks whether a mod-added good needs a display colour and calls
-        // it *"the first thing a modder will ask for"*. Until that is answered, a neutral chip is
-        // the honest answer: the row is legible, and the greyness says *nobody chose this colour*
-        // rather than implying somebody did.
-        _ => new Color(1, 1, 1, 0.4f),
-    };
+    private static Color ChipColour(Goods goods) => GoodsPalette.ColourOf(goods);
 
     /// <summary>Every goods row's amount label, so the tick can fill them in.</summary>
     private readonly List<(Goods Goods, Label Held)> _goodsReadouts = new();
@@ -4229,6 +4204,15 @@ public partial class Main : Control
         idle.AddThemeFontSizeOverride("font_size", 12);
         idle.Toggled += on => _map.ShowIdleMarkers(on);
         body.AddChild(idle);
+
+        // ⭐ The wildlife is scenery rather than a marker, but it belongs with the other two:
+        // all three answer *"what is drawn on the valley"*, and a player who wants a plainer
+        // map will look for them in one place. ⚠️ It is deliberately NOT on the "Routes:"
+        // cycle — that control says routes, and hiding animals under it would surprise.
+        var wildlife = new CheckBox { Text = "animals in the woods", ButtonPressed = true };
+        wildlife.AddThemeFontSizeOverride("font_size", 12);
+        wildlife.Toggled += on => _map.ShowGame(on);
+        body.AddChild(wildlife);
 
         // ⭐ THE SHARE-OUT SWITCH (Joe, 2026-09-03): *"give the user the option to toggle the
         // 'work share' function on/off."* Every three years the village tears every allocation
