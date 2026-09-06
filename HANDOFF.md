@@ -19,27 +19,30 @@
 > ⛔ **It does not go to `main` until it compiles.** Merging code nobody has built into the build
 > he plays is how D217 happened the first time.
 >
-> ## ⛔⛔ THE FIRST THING THIS SESSION DOES IS BUILD THE VIEW
+> ## ✅ IT COMPILES. ⚠️ NOBODY HAS LOOKED AT IT.
 >
-> **D308 — the build bar — was written in a container with NO `dotnet` AND NO GODOT.** The SDK
-> download host is blocked by the environment's egress policy, so **nothing in the last three
-> commits has been compiled, and no glyph has been looked at.** A build error in that work is
-> *expected*, not surprising. Run, in this order:
+> **CI on `d660e2b`: 927 / 0 / 2 of 929, and `Build the Godot view` at 0 warnings, 0 errors.**
+> So D308 builds and the sim has not moved.
+>
+> ⭐⭐ **AND CHECK CI BEFORE ASKING JOE TO BUILD ANYTHING.** This session's container had no
+> `dotnet` and no Godot — the SDK download host is blocked by the environment's egress policy — and
+> it declared the work unverified and asked him to compile it by hand. **`ci.yml` runs on every push
+> to every branch and has a `Build the Godot view` step; it had already answered.** *A missing
+> local toolchain is not a missing toolchain.*
+>
+> ⚠️ **What is genuinely still owed is what CI cannot do.** It installs no Godot by design, so:
 >
 > ```
-> dotnet build src/Bclone.Game/Bclone.Game.csproj      # ⛔ a root build does NOT compile the view
-> dotnet test                                          # must still read 927 / 0 / 2 of 929
 > BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
 > ```
 >
-> ⚠️⚠️ **AND A FAILED BUILD LOOKS EXACTLY LIKE NO CHANGE AT ALL.** Godot runs the last assembly
-> that *did* build — the old one — with **no error dialog**. So checking the branch out, launching,
-> and seeing the same bar proves nothing. `METHODOLOGY §116` records it: *"a build menu was written,
-> wired up and never appeared, because nothing had compiled it and the assembly Godot ran was a day
-> old."* **The tell is in the build output, never on screen.**
+> **has never run, and no glyph has been looked at.** The strip's width and the mark-inside-a-button
+> geometry are still guesses.
 >
-> ⭐ **Fix the compile errors before reading anything else in this file.** The design decisions are
-> recorded in `DESIGN.md` D308 and `specs/build-bar.md`; the *code* is unproven.
+> ⚠️ **And a failed local build looks exactly like no change at all.** Godot runs the last assembly
+> that *did* build — the old one — with **no error dialog**. `METHODOLOGY §116` records it: *"a
+> build menu was written, wired up and never appeared, because nothing had compiled it and the
+> assembly Godot ran was a day old."* **The tell is in the build output, never on screen.**
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
 
@@ -640,21 +643,24 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Traps, in the order they will cost you
 
-- **⛔⛔ THE SESSION CONTAINER MAY HAVE NO TOOLCHAIN, AND IT DOES NOT SAY SO UNTIL YOU REACH FOR ONE
-  (2026-09-06, D308).** No `dotnet`, no Godot, and `dotnet-install.sh` refused at the proxy —
+- **⛔⛔ THE SESSION CONTAINER MAY HAVE NO TOOLCHAIN — AND CI IS A TOOLCHAIN (2026-09-06, D308).**
+  No `dotnet`, no Godot, and `dotnet-install.sh` refused at the proxy;
   `builds.dotnet.microsoft.com` is denied by the environment's egress policy. **Three commits of
-  view work were written without a single compile.**
-  - **⭐ Check first, not after.** `which dotnet` and `curl -sS "$HTTPS_PROXY/__agentproxy/status"`
-    cost ten seconds and change what the session should promise. **Say it in the banner and in the
-    commit message, in those words** — *"unverified: not compiled"* — because the next session's
-    first act depends on knowing it.
-  - ⚠️ **It is not a reason to stop.** The sim is a separate project and the view is not in the
-    solution, so the suite is unaffected *by construction* rather than by luck — and that sentence
-    is worth writing down every time, since it is the only thing that makes unverified view work
-    safe to hand over.
-  - ⛔ **What it does forbid is a status line that reads as verified.** `specs/build-bar.md`'s says
-    *"BUILT, NOT YET COMPILED OR LOOKED AT"* for exactly D159's reason: a spec that lies about its
-    own status is worse than no spec, because it is read at the moment a session is orienting.
+  view work were written without a single local compile, declared unverified in four documents, and
+  Joe was asked to build them by hand.**
+  - **⭐⭐ AND `ci.yml` HAD ALREADY DONE IT.** It runs `on: push: branches: ['**']`, and its last
+    step is `Build the Godot view` — added precisely because *"a broken view sailed through a green
+    CI"*. **The answer was sitting in a workflow log the whole time, and this session had read
+    `ci.yml` earlier that hour to check the SDK version.** *Check the run before asking a human to
+    be your compiler:* `actions_list` → `list_workflow_runs` filtered to the branch, then
+    `get_job_logs`.
+  - ⚠️ **Know what CI does NOT cover, or the correction becomes its own overclaim.** It installs no
+    Godot by design (*"Bclone.Sim is deliberately engine-free"*), so **`BCLONE_PROBE_WIDTHS` and
+    looking at the thing are still Joe's** — which is D11/D160's hole, unchanged.
+  - ⛔ **A status line still must not read as verified past what was actually run.** D159's reason: a
+    spec that lies about its own status is worse than no spec, because it is read at the moment a
+    session is orienting. **"Compiles, unmeasured" is a different sentence from both "unproven" and
+    "done", and it is the true one here.**
 
 - **⛔⛔ A GUARD WITH A BUILT-IN'S ID TYPED INTO IT BREAKS THE DAY A BUILT-IN IS ADDED, AND THE
   FAILURE MESSAGE BLAMES THE WRONG THING (2026-08-29).** Adding `BuildingKind.TownHall = 11` turned

@@ -1,9 +1,9 @@
 # Spec: The build bar — one strip, three tabs, and a menu that reads the catalogue
 
-> Status: **✅ BUILT, ⚠️ NOT YET COMPILED OR LOOKED AT (D308, 2026-09-06).** Every item in §7 is
-> done in code. ⛔ **The session that wrote it had no .NET SDK and no Godot** — the SDK download
-> host is blocked by policy — so `dotnet build src/Bclone.Game`, the width probe and Joe's eyes
-> are all still owed. **Do not read this line as verified.** · Owner: Joe + Claude Code
+> Status: **✅ BUILT AND COMPILING; ⚠️ NOT YET MEASURED OR LOOKED AT (D308, 2026-09-06).**
+> **CI is green on `d660e2b`: the sim reads 927 / 0 / 2 of 929 and `Build the Godot view` reports
+> 0 warnings, 0 errors.** ⛔ **What is still owed is what CI cannot do**: it installs no Godot, so
+> **the width probe has never run and nobody has looked at the bar.** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements Joe's UI mockup, second half. Resolves
 > `buildings-catalog.md §8.2` (D223's deferral) and closes `content-inventory.md` finding 5's
 > reachability hole.
@@ -204,8 +204,10 @@ hole. What exists instead:
 
 ## 8. Open
 
-0. ⛔ **NOTHING HERE HAS BEEN COMPILED.** The three checks in §6 are unrun. That is the first
-   thing the next session does, and a build error in this work is expected rather than surprising.
+0. ⚠️ **THE BAR HAS NEVER BEEN MEASURED OR SEEN.** §6's checks 1 and 3 are green in CI; **check 2,
+   the width probe, needs a Godot install and CI has none** (`ci.yml`: *"Bclone.Sim is deliberately
+   engine-free, so CI needs no Godot install"*). So the strip's width and the mark-inside-a-button
+   geometry are still guesses.
 1. ~~**Move and Empty's tabs**~~ ✅ **CLOSED 2026-09-06 — his word now, see §3.1.**
 2. **Icon-and-word, or icon-and-tooltip?** This spec commits to the word, on §1.1. If forty-five
    buildings make the strip too tall even filtered, the word is what gives — and that is a
