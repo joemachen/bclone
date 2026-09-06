@@ -48,7 +48,13 @@ public sealed partial class TradeGlyph : Control
     /// The same rule <see cref="GoodsPalette"/> follows, and for the same reason: a mark in a panel
     /// and a thing in the valley meaning different colours would be two facts rather than one.
     /// </remarks>
-    private static Color ColourOf(JobKind kind) => kind switch
+    /// <remarks>
+    /// ⚠️ <b>Internal, because <see cref="BuildingGlyph"/> asks it</b>: a hut and the person who
+    /// works it read as the same colour, which is one fact rather than two. It also means these
+    /// five hexes are now borrowed from in a second place — see <c>VillageMap.TimberTone</c> and
+    /// its siblings, which is where a colour borrowed from the map <em>should</em> come from.
+    /// </remarks>
+    internal static Color ColourOf(JobKind kind) => kind switch
     {
         // Borrowed: the forester's trees, the river, the animals in the woods, the market's stall.
         JobKind.Forester => new Color("#2f6b3a"),

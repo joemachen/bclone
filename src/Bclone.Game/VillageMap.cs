@@ -2033,6 +2033,29 @@ public partial class VillageMap : Control
 
     internal static Color StoreColour => GranaryColour;
 
+    // ⭐ FOUR MORE, FOR THE BUILD BAR'S DRAWN ICONS (`specs/build-bar.md §4`). Same reason as
+    // the four above and as `GoodsPalette`: a mark on the bar and a building in the valley
+    // meaning different colours would be two facts rather than one. `BuildingGlyph` is the only
+    // caller, and it borrows from here rather than restating a hex — which is the one thing
+    // `TradeGlyph` did not do, and the reason its colours can drift from the map's.
+    internal static Color StoreTone => WarehouseColour;
+
+    internal static Color MarketTone => MarketColour;
+
+    internal static Color LibraryTone => LibraryColour;
+
+    internal static Color CivicTone => TownHallColour;
+
+    internal static Color TimberTone => TreeColour;
+
+    internal static Color FieldTone => FieldColour;
+
+    internal static Color WaterTone => FisheryColour;
+
+    internal static Color StoneTone => RockColour;
+
+    internal static Color IronTone => IronColour;
+
     /// <summary>
     /// A line from where somebody lives to where they work.
     /// </summary>
