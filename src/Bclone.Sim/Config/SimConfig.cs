@@ -3614,6 +3614,20 @@ public sealed record SimConfig
                     + "building wearing two names.");
             }
 
+            // ⛔ A building has to stand on at least one tile. Zero would make `CoveredTiles`
+            // return nothing — so the building would occupy no ground, refuse nothing, and be
+            // buildable on top of anything including itself. A negative extent is the same fault
+            // with a stranger shape. *Caught here rather than in the geometry, because a modder's
+            // typo should name the row it is in.*
+            if (row.ExtentWidth < 1 || row.ExtentHeight < 1)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, '{row.Name}') has extent "
+                    + $"{row.ExtentWidth}x{row.ExtentHeight}. A building stands on at least one "
+                    + "tile in each direction; anything less occupies no ground at all and could "
+                    + "be built on top of itself.");
+            }
+
             if (string.IsNullOrWhiteSpace(row.Name))
             {
                 throw new SimConfigException(

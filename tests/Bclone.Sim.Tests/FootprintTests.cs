@@ -1,3 +1,4 @@
+using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.World;
 using Xunit;
@@ -192,6 +193,71 @@ public sealed class FootprintTests
 
             Assert.True(ordered, $"{covered[i - 1]} then {covered[i]} is not row-major order.");
         }
+    }
+
+    /// <summary>⭐ A three-wide workplace stands on three tiles, and a data row is what says so.</summary>
+    /// <remarks>
+    /// <b>The plumbing guard.</b> <c>Footprint</c> could be perfect and reached by nothing — D98's
+    /// rule about a number that is always zero. This asserts the path from the
+    /// <c>extent_width</c> column, through <c>Workplace</c>, to the ground it occupies — and
+    /// therefore to <c>SomethingStandsAt</c>, which asks the footprint now rather than the position.
+    /// </remarks>
+    [Fact]
+    public void AThreeWideWorkplaceStandsOnThreeTiles()
+    {
+        var wide = new Workplace
+        {
+            Id = 1,
+            Kind = JobKind.Forager,
+            Name = "a long shed",
+            Position = new GridPos(10, 10),
+            Store = new Stockpile(16),
+            Capacity = 1,
+            ExtentWidth = 3,
+            ExtentHeight = 1,
+        };
+
+        List<GridPos> covered = wide.Footprint.CoveredTiles();
+        _output.WriteLine(string.Join(" ", covered));
+
+        Assert.Equal(3, covered.Count);
+        Assert.True(wide.Footprint.Covers(new GridPos(9, 10)));
+        Assert.True(wide.Footprint.Covers(new GridPos(11, 10)));
+
+        // ⭐ And an ordinary building is still one tile, so nothing that exists today moved.
+        var ordinary = new Workplace
+        {
+            Id = 2,
+            Kind = JobKind.Forager,
+            Name = "an ordinary hut",
+            Position = new GridPos(10, 10),
+            Store = new Stockpile(16),
+            Capacity = 1,
+        };
+
+        Assert.Single(ordinary.Footprint.CoveredTiles());
+    }
+
+    /// <summary>⛔ A building that stands on no ground at all is refused when the config loads.</summary>
+    /// <remarks>
+    /// A zero extent would make <c>CoveredTiles</c> return nothing — so the building would occupy
+    /// no ground, refuse nothing, and be buildable on top of itself. Caught in the config validator
+    /// rather than in the geometry, so a modder's typo names the row it is in.
+    /// </remarks>
+    [Fact]
+    public void ABuildingMustStandOnAtLeastOneTile()
+    {
+        SimConfig broken = VillageFixtures.Village with
+        {
+            Buildings = new[]
+            {
+                new BuildingRow { Id = 0, Name = "a rumour of a hut", ExtentWidth = 0 },
+            },
+        };
+
+        SimConfigException refused = Assert.Throws<SimConfigException>(broken.Validate);
+        _output.WriteLine(refused.Message);
+        Assert.Contains("at least one tile", refused.Message, StringComparison.Ordinal);
     }
 
     /// <summary>A building covers what it says it covers.</summary>

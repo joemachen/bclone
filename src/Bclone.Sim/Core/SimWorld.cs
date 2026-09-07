@@ -6412,6 +6412,13 @@ public sealed class SimWorld
             Position = position,
             Capacity = seats,
             GatheringRadius = row.GatheringRadius,
+
+            // ⭐ THE ROW'S EXTENT REACHES THE BUILDING (gridless 2b, D319), which is what makes
+            // `extent_width` real rather than a column nothing reads — D98's rule about a number
+            // that is always zero. Every shipped row is 1×1, so this changes nothing today and
+            // gives a modder a three-tile building the day they type one.
+            ExtentWidth = row.ExtentWidth,
+            ExtentHeight = row.ExtentHeight,
         });
     }
 
@@ -7890,9 +7897,17 @@ public sealed class SimWorld
             }
         }
 
+        // ⭐⭐ THROUGH THE FOOTPRINT, NOT THE POSITION (gridless 2b, D319). A workplace is the one
+        // kind of building whose row may state an extent, so it is the one that can cover ground
+        // its `Position` does not name. **For the 1×1 buildings this village actually raises the
+        // two are identical at every facing** — `Footprint.Covers` on a one-tile building is
+        // `Position == position` with more arithmetic — which is exactly why this slice adds
+        // multi-tile support without changing a single placement or moving a golden.
+        // ⚠️ The other four kinds below are one tile each by construction and stay a plain
+        // comparison; giving them a footprint would be four types of ceremony for one shape.
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Position == position)
+            if (Workplaces[i].Footprint.Covers(position))
             {
                 return true;
             }

@@ -1,3 +1,5 @@
+using Bclone.Sim.Core;
+
 namespace Bclone.Sim.World;
 
 /// <summary>Kinds of work. Data-driven content lands here in a later pass.</summary>
@@ -202,6 +204,35 @@ public sealed class Workplace
 
     /// <summary>Move it. Only a finished relocation may.</summary>
     internal void MoveTo(GridPos to) => _position = to;
+
+    /// <summary>Which way this building is turned (gridless 2b, D319).</summary>
+    /// <remarks>
+    /// ⭐ <b>Per instance, not per row</b> — <c>extent</c> is a property of the KIND of building and
+    /// lives on <see cref="BuildingRow"/>; which way <em>this</em> one faces is a property of the
+    /// building the player placed. <b>Zero for everything the village raises today</b>, so it costs
+    /// nothing until something sets it.
+    /// </remarks>
+    public Angle Facing { get; init; }
+
+    /// <summary>How many tiles across, before turning — from the building's row.</summary>
+    public int ExtentWidth { get; init; } = 1;
+
+    /// <summary>How many tiles deep, before turning — from the building's row.</summary>
+    public int ExtentHeight { get; init; } = 1;
+
+    /// <summary>The ground this building stands on.</summary>
+    /// <remarks>
+    /// ⭐ For the 1×1 buildings that are all this village has, this is exactly
+    /// <c>Footprint.OneTile(Position)</c> at any facing — see
+    /// <c>FootprintTests.NoRotationOfAOneTileBuildingEverLeavesItsTile</c>.
+    /// </remarks>
+    public Footprint Footprint => new()
+    {
+        Origin = _position,
+        Width = ExtentWidth,
+        Height = ExtentHeight,
+        Facing = Facing,
+    };
 
     /// <summary>
     /// How many people can physically work here at once. <b>A local fact about the

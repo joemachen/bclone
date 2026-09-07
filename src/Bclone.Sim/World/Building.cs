@@ -275,6 +275,34 @@ public sealed record BuildingRow
     /// </remarks>
     [JsonPropertyName("singleton")]
     public bool Singleton { get; init; }
+
+    /// <summary>
+    /// How many tiles across this building stands, before it is turned. <b>One by default.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ `specs/buildings-catalog.md §8` asked this question and deferred it in as many words</b>
+    /// — *"does a building row need a footprint? Everything is one tile today … out of scope, named
+    /// so it is not discovered mid-slice."* Gridless is the slice that needs it, so here it is, and
+    /// **the deferral is closed rather than inherited.**
+    /// </para>
+    /// <para>
+    /// ⭐⭐ <b>DEFAULT ONE, WHICH IS WHY THIS COLUMN MOVES NO GOLDEN.</b> Every building in the game
+    /// is a single tile, and a 1×1 footprint covers exactly its own tile at *every* facing — so
+    /// adding the column changes no coverage, no placement and no hash. *A village that has never
+    /// built anything wider than a tile is, to the hash, a village from before footprints existed.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>And a modder gets multi-tile buildings with no code change</b>, which is D222's promise
+    /// extended: a row stating <c>extent_width: 3</c> is three tiles wide the day it is typed.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("extent_width")]
+    public int ExtentWidth { get; init; } = 1;
+
+    /// <summary>How many tiles deep this building stands, before it is turned. One by default.</summary>
+    [JsonPropertyName("extent_height")]
+    public int ExtentHeight { get; init; } = 1;
 }
 
 /// <summary>
