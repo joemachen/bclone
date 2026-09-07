@@ -1,134 +1,114 @@
-# Handoff — bclone: **✅ THE BUILD BAR IS ON `main`, MEASURED AND MERGED**
+# Handoff — bclone: **▶️ GRIDLESS IS HALF BUILT — BUILDINGS ARE FREE, THE VALLEY IS NOT**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-06.**
-> **928 passing, 0 failing, 2 skipped of 930** — run locally on `main`. `main` = `origin/main` =
-> `42a8c37`, and `claude/handoff-review-next-steps-w37oks` is merged into it.
-> **Joe asked for the merge once the bar held one height across its tabs, and it does.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-07.**
+> **1004 passing, 0 failing, 2 skipped of 1006** — run locally on `main`. `main` = `origin/main`.
+> ⚠️ **NO GOLDEN HAS MOVED IN THE WHOLE GRIDLESS DIRECTION SO FAR**, and that is a claim made from
+> a `git diff` over the five golden constants every commit, not from "the tests passed". **The
+> first golden move is still ahead**, in the free-placement slice.
 >
-> ## ⭐⭐ GODOT IS INSTALLED ON THIS MACHINE — THE VIEW CAN BE PROVEN HERE
->
-> ```
-> dotnet build src/Bclone.Game/Bclone.Game.csproj      # the view actually compiles
-> BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game   # the only view "test"
-> ```
->
-> **`D:\Projects\Godot\Godot_v4.7.1-stable_mono_win64\Godot_v4.7.1-stable_mono_win64.exe`** —
-> `run.bat` names it, and the probe takes seconds. ⛔ **A previous session declared the build bar
-> unverifiable because ITS OWN container had no toolchain, and nearly made Joe compile it by
-> hand.** *Check `run.bat` for the path, and check CI, before ever saying the view cannot be
-> built.* **CI also builds the view on every push** (`ci.yml`, `Build the Godot view`) — what CI
-> cannot do is run the probe, because it installs no Godot by design.
->
-> ⭐ **THE PROBE NOW CATCHES TWO THINGS IT USED TO MISS**, both because Joe found them by playing:
-> it prints **held content beside drawn height** for the roster and the village log
-> (`roster: 4 items, drawn 288x190`), and it measures the **control bar on each tab in turn**
-> (`Build 151, Removal 151, Harvest 151  ✅ one height on every tab`).
->
-> ⚠️ **Still owed: nobody has LOOKED at the glyphs.** The mark-inside-a-button geometry is
-> measured but not judged.
->
-> ⚠️ **And a failed local build looks exactly like no change at all.** Godot runs the last assembly
-> that *did* build — the old one — with **no error dialog**. `METHODOLOGY §116` records it: *"a
-> build menu was written, wired up and never appeared, because nothing had compiled it and the
-> assembly Godot ran was a day old."* **The tell is in the build output, never on screen.**
+> ⭐ **Joe plays every build and files precise bugs.** Nine of the last ten decisions came from him
+> playing for ten minutes. **Two of them were features that existed only in the sim.**
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
 
 **`dotnet build` at the root does NOT compile the game.** It builds `Bclone.Sim` and the tests
-only — the Godot project is built by Godot. Two hours were nearly lost to a clean root build over
-broken view code.
+only — the Godot project is built by Godot.
 
 ```
 dotnet build src/Bclone.Game/Bclone.Game.csproj      # the view actually compiles
-BCLONE_PROBE_WIDTHS=1 <godot> --headless --path src/Bclone.Game   # the only view "test"
+BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game   # the only view "test"
 ```
 
-⭐ **The headless run is the only thing that catches view throws.** A `ProfessionName` crash once
-fired **3,609 times** while the suite was green. It also prints panel widths and positions.
+⭐ **GODOT IS INSTALLED ON THIS MACHINE:**
+`D:\Projects\Godot\Godot_v4.7.1-stable_mono_win64\Godot_v4.7.1-stable_mono_win64.exe` (`run.bat`
+names it). The probe takes seconds. ⛔ **A session once declared the view unverifiable because ITS
+container had no toolchain and nearly made Joe compile by hand** — check `run.bat`, and check CI,
+before ever saying the view cannot be built.
 
----
+⭐ **THE PROBE IS THE ONLY VIEW TEST AND IT NOW CHECKS FIVE THINGS.** Read all five lines:
+`roster:`/`vlog:` (held content **beside** drawn height), `fold:` (every panel shrinks),
+`bar height:` (**must stay 161** — the footer has wrapped and cost 20px twice now, so anything
+touching it gets re-measured), and `done.` — **if `done.` is missing, Godot did not quit and you
+have left a process running.**
 
-## What landed since the last handoff
+⚠️ **A failed local build looks exactly like no change at all.** Godot runs the last assembly that
+*did* build, with no error dialog. **The tell is in the build output, never on screen.**
+## What landed since the last handoff — gridless, D317 → D326
 
-**✅ THE BUILD BAR (D308) — ⚠️ BUILT BUT UNPROVEN.** One strip: speed and BUILD / REMOVAL / HARVEST
-tabs on the chrome row, category chips under it, the icon strip under that. ⭐⭐ **The menu reads
-the catalogue now**, which is what D223 deferred and `buildings-catalog.md §8.2` said to decide *at
-exactly this redesign* — a row in `data/sim.config.json` gets a button, a drawn mark and a group
-with **no code change**, closing D221's hole. ⛔ **The first task was not the bar**: `VillageMap`
-could not say what tool was in the player's hand — seven `Begin*` methods setting eight private
-fields nothing read back — **so no tab could light up.** One `MapTool` and one `SetTool` writer
-replaced them and **fixed three live bugs**, the worst being that demolishing a hut mid-stroke made
-the rest of that stroke paint housing land nobody asked for. ✅ **Move and Empty's tabs are
-confirmed** (Joe, 2026-09-06) — BUILD and REMOVAL respectively.
+**✅ THE NUMBER TYPES ARE BUILT AND GUARDED.** `Fixed` (Q32.32) and `Angle` (16-bit binary angle),
+both in `src/Bclone.Sim/Core/`. ⭐ **Rounding is FLOOR everywhere** — truncation folds the bucket at
+zero to twice the width of every other, and the valley straddles its own origin. **Overflow
+throws**; wrap would be silently wrong *identically on both machines*, so the determinism suite
+would stay green while a villager teleports. ⭐ **`Angle` needs no overflow policy at all**: a
+`ushort` rolling over at 65536 **is** a circle closing at 360°, so the whole `if (angle > 2π)`
+class of bug does not exist. *That is the payoff of the representation Joe chose.*
 
-**✅ JOE VERIFIED D307's THREE FIXES** (2026-09-06: *"Tested - they're great!"*) — right-side
-windows drag left, nothing escapes the screen, panels are solid. **Do not re-open any of them.**
+**⛔⛔ `Math.Sin` MAY NEVER BE CALLED FROM SIM CODE.** IEEE-754 mandates correct rounding for
+`+ - * /` and **square root** and *not* for the transcendentals, so sine can differ across
+platforms — **in the one way no test on a single machine can detect.** `Angle.Sin()` reads a
+checked-in 257-entry quarter-wave table; worst error 20,213 raw against a theoretical `h²/8` of
+20,212. ⭐ **`Math.Sqrt` is NOT banned** and `specs/tick-loop.md §6` says so out loud — *an
+over-broad rule gets ignored.*
 
-**✅ FISHING, FINISHED (D282–D290).** A cast is 10 ticks; the hut holds **900** (three casts). ⭐ The
-longer cast cost the economy **nothing** — measured 800 fish a year at three ticks and 800 at ten,
-because a fisher only gets ~8 casts a year either way and the rest of the year is walking, eating
-and sleeping. ⛔ **`fish_yield` is 300**, and the guard that said fishing beat foraging was
-comparing **one cast against one trip** — meaningless, since the two trades do not get the same
-number of loads. Per *hour worked* it was 311 against 721. It is measured with demand held open now.
+**✅ BUILDINGS HAVE A FOOTPRINT AND A FACING, IN EVERY STATE.** Ghost, construction site, finished
+building and demolition all draw the true extent at the true angle. **Middle-drag turns what is in
+your hand** (shift = fine), R steps a sixty-fourth, shift+R a quarter. ⭐ **The rule a player could
+be told: a building covers the tiles whose CENTRES it stands on** — not every tile it clips, which
+would make a turned building creep outward unpredictably. **A 1×1 covers its own tile at every one
+of 65,536 angles**, which is why facing landed on every building and moved no golden.
 
-**✅ HUNTING, ALL THREE SLICES (D291–D303).** Lodge, 3 seats, `Meat` + `Leather`, a buffer a
-marketer runs dry, `meat_yield` **600**. ⭐⭐ **Slice 2 was built and then DELETED on Joe's call**
-(D297): game depletion is not its own mechanic — **standing woodland is the only thing that moves
-either yield**, for foraging and hunting alike. Felling costs the village its berries *and* its
-game; replanting restores both. *That deleted `GameRange`, two config keys, a hash block and two
-guards, and added one.* ⛔ **`specs/hunting.md §4` told me to reuse the forest-exhaustion
-machinery, and that machinery FELLS THE TREE** — hunting through it would have made a hunter a
-logger. The spec is corrected in place.
+**✅ THE LONGHOUSE (3×1) IS THE FIRST BUILDING THAT IS NOT ONE TILE.** A storehouse rather than a
+dwelling, because housing is brush-painted and never placed by a button (D42, D102). It exists so
+extent and facing are **content** rather than machinery with nothing behind it.
 
-**✅ FOOD MEANS FOOD (D298–D301).** The overview read **Food 0** while the stock-limits table read
-**3,043** — two panels, one screen, and the overview was wrong. ⚠️ **Six more single-good readers
-went with it**, worst being a dowry that sent a meat-eating family's child away with **nothing**,
-and a hunger line that would say *"nothing left to eat"* over a full larder. ⭐ **`Goods.Food` is
-`Goods.Produce`**, and `Stockpile.Food` was **deleted rather than renamed** — the friendly accessor
-*is* the trap, and with no accessor a caller must write `store[Goods.Produce]` or
-`world.FoodIn(store)`, neither of which can be misread.
+**⛔⛔ AND THE MESSAGE THAT COST A VILLAGE (D322).** Joe marked six longhouses across two runs and
+nothing was built — correctly, because **a village with no builder's hut raises nothing**. But
+`BuildersWanted` returns `anythingToBuild ? seats : 0`, which is zero for *nothing marked* **and**
+for *nowhere to build from*, and all three consumers reported the first. He was told *"there is
+nothing marked to build"*, went hunting a placement bug, and everybody starved. **The one line that
+would have saved him — "needs 1, build a builder's hut" — was structurally dead**, because
+`Needed(Builder)` came from the same seat-capped number. *Fixed, and both halves are guarded.*
 
-**✅ THE SHED IS A WAREHOUSE (D294)**, data keys included. ⚠️ *"Shed" is also a verb here*
-(`ShedSurplus`) and a blind replace produced `List<int> warehouse = ShedSurplus(...)`.
+## ✅ SETTLED — do not re-open or re-ask
 
-**✅ THE UI IS WINDOWS NOW (D304–D306).** Professions is a table with drawn glyphs; stock limits
-are their own window; both open from the control bar. ⛔⛔ **The two side columns are DELETED.** A
-`ScrollContainer` clips its children and a `VBoxContainer` owns their positions — so dragged panels
-were *cut off* at the column edge and hiding one *discarded* where the others had been put. Panels
-are free windows, arranged once at launch, with **Reset window positions** in Settings.
+- **The window work** (D306, D307) — Joe: *"Tested - they're great!"*
+- **Move and Empty's tabs**, the bar height (161 on every tab and filter), the mid-build longhouse,
+  the amber "No builder's hut stands…" warning, and **every tile of a longhouse selecting,
+  naming and demolishing** — all confirmed by him in play.
+- **The cold start is fine as it is.** Joe, having lost a village: *"i just wasnt paying attention
+  and playing at 20x. pebcak."* ⛔ **Do not soften the opening.**
 
----
+## ▶️ NEXT, IN ORDER — and the first one is planned and approved
 
-## ✅ SETTLED — the window work is verified and closed
+1. **▶️ COMMIT B: THE BRUSH.** Approved, not started. **Left click paints, right click takes back**
+   — right-click is the *universal cancel* today (`PutTheToolDown`) and **five announce strings end
+   "Right-click to stop."**, so ⛔ **add `Escape` as the cancel** or the brush has none. **Scroll
+   resizes the brush** while one is held (the wheel branch is already unguarded by `IsPlacing`, so
+   it is one early branch); zoom otherwise. ⚠️ `BrushRadius` is a `private const int = 2` with no
+   field, setter or binding — it becomes state, and the code's own warning applies: *"Both loops
+   changed together — a preview that disagrees with the paint is worse than no preview."*
+   **Square and circle shapes**, chosen beside the brush rather than in Settings. **A smooth
+   painted outline** — Foundation's green border is a smooth polygon over a tiled zone.
+   ⚠️ `DrawTheBrushful`'s doc-comment is **stale**: it still says *"The diamond, not a square"* and
+   contradicts the inline comment below it.
+2. **⭐⭐ THEN GRIDLESS SLICE 3: FREE PLACEMENT**, and **this is where the first golden moves.**
+   ⛔ *"Turn grid snap off"* is **not a view toggle** — the snap **is the type**: `GridPos` all the
+   way down with four `Mathf.RoundToInt` calls at the edges. Continuous positions become sim state,
+   so they enter the hash. **One commit, one stated reason (D152).** The Settings snap toggle Joe
+   asked for rides along with it.
+3. **Then housing packing** — Joe's call: **pack nicely AS HOUSEHOLDS FORM**, not speculative
+   filling, so no empty houses stand before there are families. ⛔ **Two things found while scoping
+   it:** `MarkHome` calls `RaiseSiteFor` **without a facing**, so every home is `Angle.Zero` by
+   construction; and `HouseholdSystem.FindAnEmptyHome` **reassigns `HomePosition` between
+   households**, so any per-house geometry must move with it — *`specs/housing-and-density.md §5`
+   predicts exactly this.* ⭐ **Where the packing term goes is already clear:** `ChooseSite` is a
+   scored scan, `score = toWork + toStore` tie-broken on distance from the centre, with **no
+   neighbour term** — packing is a third term in that sum, not a new algorithm.
+4. **Then** materials/ingredients categories, and meat/fish subtypes (venison, trout, wheat).
 
-Joe tested and confirmed all three on 2026-09-06 (*"Tested - they're great!"*). **Kept because the
-causes are worth not re-deriving, not because anything here is open:**
-
-1. **Right-hand windows could not move left.** Right-anchored panels have **negative** offsets
-   (distance back from the right edge), and the clamp treated `OffsetLeft` as a screen X — so it
-   shoved them right on every drag. Fixed by clamping the **drawn** corner (`DrawnTopLeft`).
-2. **Windows could leave the screen.** `KeepWindowsOnScreen` now runs every frame, not only on drag.
-3. **Panels are solid**, except the control bar, which spans the window and would wall off the
-   valley.
-
-## ▶️ NEXT, IN ORDER
-
-1. **⭐ JOE LOOKS AT THE GLYPHS**, which is the only test the view has (D11, D160). ⛔ **Do not
-   re-ask about Move and Empty (confirmed 2026-09-06), the window fixes (*"Tested - they're
-   great!"*), or the bar height (measured at 151 on all three tabs).** What is still worth asking:
-   whether the strip is legible with the word under each mark, and **whether BUILD + ALL is too
-   tall** — thirteen buildings and three tools is the widest this bar has ever been, and it wraps
-   rather than clips, so it eats the valley in height. *That is the complaint D305 came from.* The
-   cheap fix is defaulting the chip to something other than ALL, and it is his call because it
-   changes what he sees on launch.
-3. **Then the rest of the UI pass**: **materials/ingredients categories** in the panels, and **meat
-   and fish subtypes** (venison, trout, wheat), which Joe deferred until the panels can group them.
-4. **⭐⭐ THEN GRIDLESS, AND IT GETS ITS OWN SESSION** (Joe, 2026-09-06: *"let's do gridless after
-   the UI work is complete"*). ⛔ **Do not fold it into feature work** — it is the largest statement
-   in the design doc. D303 already recorded what survives it: nothing in the animals, the berries or
-   the heaps is in `GeneratedMap`, `TravelCostField`, `ZoneMap`, `StateHash` or the economy, and
-   *"for each tile, hash (x,y)"* becomes *"sample the region, hash a quantised position"*. **The one
-   call site that has to move is `IsWoodland`.**
+⚠️ **Still unjudged by Joe:** the drawn glyphs on the build bar, and whether BUILD + ALL is too
+tall — thirteen buildings and three tools wraps rather than clips, which is the complaint D305 came
+from. **His call, because it changes what he sees on launch.**
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
@@ -166,6 +146,14 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 - **`gathers_per_thinned_tile` stays 0 for ever** (D297) but is kept as a modder dial.
 - **`ApprenticeshipTests` stays skipped** (D287, his explicit call). *Do not "fix" it* — restoring
   it means reversing D227.
+- ⛔ **THE DEMOLITION OF A ROTATED BUILDING DRAWS AT THE RIGHT ANGLE NOW (D325), BUT ONLY BECAUSE
+  IT IS ASKED WHILE THE BUILDING STILL STANDS.** Nothing records a facing once a building has
+  become a demolition site, so if that lookup ever moves later in the sequence it silently draws
+  zero again. *Named rather than guessed at.*
+- ⚠️ **`specs/gridless.md §10` carries four more open items**, including the locale guard that
+  scores zero on its red check and is kept knowingly as a ratchet, and the fact that **there is no
+  error boundary in `SimLoop`** — `Fixed` overflow joins three existing in-tick throw sites and
+  nothing catches any of them. **What the game should DO when a tick throws is unanswered.**
 
 ---
 
@@ -217,7 +205,8 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 > **⭐ READ `specs/phase-4-the-tech-tree.md` FIRST** — it is the phase plan, the four design calls
 > and the QA checklist in one document, and it is current.
 
-Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D224 back to D142**, then
+Read `CLAUDE.md`, then **`DESIGN.md` §0–§5 in full, §6, and §7 from D326 back to D300** (and
+`specs/gridless.md` in full — it is the live direction), then
 `METHODOLOGY.md`. **Then `specs/content-inventory.md`** — it is the audit of what actually exists
 against what the documents claim, and it is the shortest route to being oriented.
 
@@ -649,6 +638,61 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ A RED CHECK THAT EDITS BY PATTERN CAN EDIT THE WRONG LINE, AND THEN GREEN MEANS NOTHING
+  (2026-09-07, D326).** Reverting `StoreAt` to exact-position left its guard green and the guard
+  looked blind. It was innocent: the `perl` substitution matched the **first** of two identical
+  lines and had been quietly reverting a different method. **Verified by LINE NUMBER instead, it
+  reddened instantly.** ⭐ *A red check is itself an experiment; confirm the break landed where you
+  aimed it — `grep -c` the changed text — before believing a green.*
+- **⛔⛔ A SAFETY PROVIDED TWICE IS A SAFETY NO TEST CAN HOLD YOU TO (2026-09-06, D318).** A comment
+  called the `folded == 16384` branch *"the off-by-one the whole design turns on"*. Deleting it left
+  **all twenty-seven guards green** — a separate `step == 0` fast path was covering for it, and only
+  deleting **both** produced the fault. *Dead code presented as load-bearing.* The fast path is
+  gone; the guard now reddens alone.
+- **⭐⭐ A THING WITH THREE LIFECYCLE STATES NEEDS A GUARD ON ALL THREE (2026-09-07, D324).** Ghost,
+  construction site, finished building. The ghost drew from the row and the finished branch was
+  tested; **nobody asked what the site in between looked like**, and Joe found a longhouse drawn as
+  one square in the default orientation for the years it took to build. **The untested state is the
+  one somebody sees.**
+- **⛔ A GUARD CAN STOP ONE CALL SHORT OF THE STATE THE PLAYER REACHES (2026-09-06, D321).** The
+  multi-tile guard MARKED a longhouse and never RAISED one — and a marked building is a
+  construction *site*, which is a `Workplace`, which already worked. It was **blind by a single
+  `world.Complete(site)`** while the bug Joe hit — a finished store — went untouched.
+- **⚠️ AN INSTRUMENT THAT ASSUMES A DEFAULT BREAKS WHEN THE DEFAULT MOVES (2026-09-07, D326).** The
+  fold probe measured whatever state each panel was in. That was fine while every panel started
+  open, and became a **false positive** the moment one started folded: its "open" height was already
+  its folded height, so it duly "failed to shrink". It unfolds everything first now and restores
+  the original states.
+- **⛔⛔ ONE NUMBER ANSWERING TWO QUESTIONS WILL REPORT THE WRONG ONE (2026-09-07, D322).**
+  `BuildersWanted` returns `anythingToBuild ? seats : 0` — zero for *nothing marked* and for
+  *nowhere to build from* — and three consumers all said "nothing marked". **It cost a village.**
+  *D182 said this exactly, about a headcount read as availability: a number that is true can still
+  be evidence for the wrong claim. The fix is never to make the number lie less; it is to stop
+  asking one number two questions.*
+- **⚠️ AND THE REMEDY LINE CAN BE STRUCTURALLY DEAD.** The panel prints *"needs N, build another X"*
+  when `Needed > seats`. For **builders only**, `Needed` came from the same seat-capped number, so
+  it was `0 > 0` — false forever, for the one trade whose demand IS its seat count. **Every other
+  trade got the sentence.** *When one row of a table never says what the others say, ask why.*
+- **⛔ A COMMIT MESSAGE CAN OVERSTATE, AND THE NEXT SESSION WILL BELIEVE IT (2026-09-07, D325).**
+  D321's message said the occupancy conversion was *"whole now"*. **Two of five collections had been
+  converted.** Harmless while the other three were one tile, and false as written — caught only
+  because Joe asked whether the treatment reached every building.
+- **⚠️ HALF-CONVERTING A LOOKUP HAS NOW HAPPENED THREE TIMES.** `SomethingStandsAt`, then
+  `FacingOfWhatStandsAt`, then twelve sibling methods. **It happens because every site owns its own
+  loop.** One finder per collection, and every caller goes through it. ⭐ **And one of the twelve
+  compared `.X`/`.Y` component-wise** — the same defect in a different spelling, **invisible to a
+  grep for `Position ==`.**
+- **⛔ A `return;` CAN CUT OFF THE PROBE'S OWN `GetTree().Quit()` — AND THE PROCESS RUNS FOR EVER.**
+  A local function placed above the probe's tail left a headless Godot running. ⚠️ **`pkill -f
+  Godot` DOES NOTHING ON WINDOWS**, and I did not check it, so it ran **18 hours**. Use
+  `taskkill //PID n //F` and **then confirm with `tasklist`**. *A cleanup you did not verify is a
+  cleanup that did not happen.*
+- **⚠️ `perl -0777` NEEDS `\r?\n` IN THIS REPO.** Line endings are mixed — some files CRLF, some LF,
+  occasionally within one file. A pattern with bare `\n` silently matches nothing, and
+  `grep -c` on the replacement is the only way to know. The `Edit` tool fails outright on stale
+  content, which is safer but slower.
+
 
 - **⛔⛔ THE SESSION CONTAINER MAY HAVE NO TOOLCHAIN — AND CI IS A TOOLCHAIN (2026-09-06, D308).**
   No `dotnet`, no Godot, and `dotnet-install.sh` refused at the proxy;
@@ -1134,11 +1178,3 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
   places a farmhouse** — silent about what they do not reach, loud about what they do.
 
 ---
-
-## Working with Joe
-
-Technical, not a game or systems programmer. Casual, direct; **push back honestly**. **End every
-message with the explicit ask**, or he cannot tell who is blocking whom. **His play is the best
-bug-finder this project has** — and the clearest case is the jitter: he reported one symptom
-three times across three sessions, and it took all three to get past the two real bugs it was
-hiding to the one actually on his screen.
