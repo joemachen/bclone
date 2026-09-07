@@ -761,7 +761,7 @@ public partial class Main : Control
             // a sim capability the player cannot reach — this project's fifth such feature if it
             // shipped that way, and D227's standing rule is that a sim feature is not done until
             // something in the view calls it.
-            case Key.R: _map.TurnTheGhost(); break;
+            case Key.R: _map.TurnTheGhost(toTheQuarter: key.ShiftPressed); break;
             case Key.Home: _map.CentreOnTheVillage(); break;
 
             // H hides the furniture, C rolls it up. Two keys because they answer two different
@@ -4231,7 +4231,8 @@ public partial class Main : Control
         _placementLabel.Visible = false;
 
         body.AddChild(Wrapped(Muted(
-            "space to pause · 1-4 speed · WASD pan · wheel zoom · tab routes · g ground · "
+            "space to pause · 1-4 speed · WASD pan · wheel zoom · r turn · tab routes · "
+            + "g ground · "
             + "home recentre · c fold panels · h hide them")));
     }
 

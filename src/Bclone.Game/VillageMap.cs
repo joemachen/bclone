@@ -653,14 +653,25 @@ public partial class VillageMap : Control
     /// ⚠️ It deliberately does nothing when no building is held: R while holding a harvest brush
     /// should not silently turn something the player cannot see.
     /// </remarks>
-    public void TurnTheGhost()
+    public void TurnTheGhost(bool toTheQuarter = false)
     {
         if (_building is null)
         {
             return;
         }
 
-        _ghostFacing += Angle.FromTurnFraction(1, 16);
+        // ⭐ A SIXTY-FOURTH — 5.6° — BECAUSE A SIXTEENTH WAS TOO COARSE (Joe, 2026-09-07:
+        // *"i want finer control than a sixteenth for the turn increment"*). ⚠️ Still a UI choice
+        // rather than a limit of the type: `Angle` holds 65,536 poses (D318), and this number is
+        // one line to change again.
+        // ⭐⭐ AND SHIFT SNAPS TO THE QUARTER, which is what makes a fine step usable rather than
+        // tedious: sixteen taps to get back to square would be a worse control than the coarse one
+        // it replaced. *Fine by default, coarse on demand — the opposite way round would make the
+        // common case the awkward one.*
+        _ghostFacing += toTheQuarter
+            ? Angle.FromTurnFraction(1, 4)
+            : Angle.FromTurnFraction(1, 64);
+
         QueueRedraw();
     }
 
@@ -1158,7 +1169,13 @@ public partial class VillageMap : Control
         {
             { Allowed: false } => _verdict.Reason,
             { HasWarning: true } => _verdict.Warning + TheMarketsServiceArea(),
-            _ => "Click to mark it out. Right-click to stop." + TheMarketsServiceArea(),
+            // ⭐ THE TURN KEYS LIVE HERE, NOT IN THE PERMANENT HINT LINE (D323). Adding
+            // "(shift: quarter)" to the bar's footer wrapped it to another row — **measured at 181
+            // tall against 161** — which would have spent map room Joe had twice asked to get back,
+            // to explain a key that only matters while a building is in your hand. *A contextual
+            // hint costs nothing when it is not needed.*
+            _ => "Click to mark it out. R turns it, shift+R by a quarter. Right-click to stop."
+                + TheMarketsServiceArea(),
         });
     }
 
