@@ -350,6 +350,54 @@ public sealed class FootprintTests
         Assert.True(world.CanBuildAt(BuildingKind.Granary, new GridPos(anchor.X + 2, anchor.Y)).Allowed);
     }
 
+    /// <summary>
+    /// ⭐⭐ A SITE COVERS THE SAME GROUND AS THE GHOST AND THE FINISHED BUILDING (D324).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The state nothing guarded, and it is the middle one.</b> D321's guard raised the
+    /// building and checked the finished store; the ghost is drawn from the row. **Nobody ever
+    /// asked what the site in between looked like** — and Joe found it drawn as a single square in
+    /// the default orientation, for the years a longhouse takes to build.
+    /// </para>
+    /// <para>
+    /// ⚠️ *Three pictures of one building, and the two on either side were tested.* The site is
+    /// also the moment the footprint matters MOST, because it is the last point at which there is
+    /// still time to move it.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AMarkedBuildingReservesTheSameGroundItWillStandOn()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos anchor = SomewhereBuildable(world);
+        Angle turned = Angle.FromTurnFraction(1, 4);
+
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor, turned).Allowed);
+
+        Workplace site = world.Workplaces.Single(
+            w => w.Construction?.Kind == BuildingKind.Longhouse);
+
+        _output.WriteLine(
+            $"site: {site.ExtentWidth}x{site.ExtentHeight} facing {site.Facing}, "
+            + $"covering {site.Footprint.CoveredTiles().Count} tiles");
+
+        // ⛔ The extent, or the site draws one square while the ghost drew three.
+        Assert.Equal(3, site.ExtentWidth);
+        Assert.Equal(3, site.Footprint.CoveredTiles().Count);
+
+        // ⛔ AND THE FACING, which is the half Joe named separately: a site drawn in the default
+        // orientation is a picture of a building nobody asked for.
+        Assert.Equal(turned, site.Facing);
+
+        // ⭐ Turned a quarter, so it reserves ground ALONG Y where an unturned one runs along X.
+        Assert.True(site.Footprint.Covers(new GridPos(anchor.X, anchor.Y - 1)));
+        Assert.True(site.Footprint.Covers(new GridPos(anchor.X, anchor.Y + 1)));
+        Assert.False(site.Footprint.Covers(new GridPos(anchor.X + 1, anchor.Y)));
+    }
+
     /// <summary>Somewhere a three-tile building genuinely fits, found rather than assumed.</summary>
     private static GridPos SomewhereBuildable(SimWorld world)
     {

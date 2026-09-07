@@ -4767,6 +4767,15 @@ public sealed class SimWorld
             Name = $"{name} (being pulled down)",
             Position = tile,
             Capacity = 0,
+
+            // ⭐ A DEMOLITION DRAINS THE SAME SHAPE IT WILL LEAVE BEHIND (D324). The site inherits
+            // the extent so pulling down a three-tile longhouse empties three tiles rather than
+            // one — *"reverse construction" is only legible if it reverses the same picture.*
+            // ⚠️ Facing is not carried: nothing records which way a STANDING building was turned
+            // once it becomes a demolition site, and inventing a default here would draw the
+            // wrong angle confidently. Named rather than guessed.
+            ExtentWidth = BuildingsCatalog[kind.Value]?.ExtentWidth ?? 1,
+            ExtentHeight = BuildingsCatalog[kind.Value]?.ExtentHeight ?? 1,
             Construction = new ConstructionSite(new BuildingRecipe(work))
             {
                 Kind = kind.Value,

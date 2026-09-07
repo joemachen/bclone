@@ -1323,22 +1323,7 @@ public partial class VillageMap : Control
     private void DrawFootprint(
         Vector2 centre, float widthTiles, float heightTiles, ushort facing, Color fill, Color edge)
     {
-        float radians = facing * Mathf.Tau / 65536f;
-        float cos = Mathf.Cos(radians);
-        float sin = Mathf.Sin(radians);
-        float halfWidth = widthTiles * _pixelsPerTile / 2f;
-        float halfHeight = heightTiles * _pixelsPerTile / 2f;
-
-        Vector2 Corner(float x, float y) =>
-            centre + new Vector2((x * cos) - (y * sin), (x * sin) + (y * cos));
-
-        Vector2[] quad =
-        {
-            Corner(-halfWidth, -halfHeight),
-            Corner(halfWidth, -halfHeight),
-            Corner(halfWidth, halfHeight),
-            Corner(-halfWidth, halfHeight),
-        };
+        Vector2[] quad = FootprintQuad(centre, widthTiles, heightTiles, facing);
 
         DrawColoredPolygon(quad, fill);
 
@@ -1346,6 +1331,44 @@ public partial class VillageMap : Control
         {
             DrawLine(quad[i], quad[(i + 1) % 4], edge, 2f);
         }
+    }
+
+    /// <summary>
+    /// The four turned corners of a building — or of a BAND across it (D324).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>The band is what lets a construction site fill as it is built.</b> <c>from</c> and
+    /// <c>to</c> run 0 at the building's own top edge to 1 at its own bottom — <em>its</em> frame,
+    /// not the screen's — so a turned building fills along itself instead of being sliced
+    /// horizontally by a fill that does not know it has been turned.
+    /// </remarks>
+    private Vector2[] FootprintQuad(
+        Vector2 centre,
+        float widthTiles,
+        float heightTiles,
+        ushort facing,
+        float from = 0f,
+        float to = 1f)
+    {
+        float radians = facing * Mathf.Tau / 65536f;
+        float cos = Mathf.Cos(radians);
+        float sin = Mathf.Sin(radians);
+        float halfWidth = widthTiles * _pixelsPerTile / 2f;
+        float halfHeight = heightTiles * _pixelsPerTile / 2f;
+
+        float top = Mathf.Lerp(-halfHeight, halfHeight, from);
+        float bottom = Mathf.Lerp(-halfHeight, halfHeight, to);
+
+        Vector2 Corner(float x, float y) =>
+            centre + new Vector2((x * cos) - (y * sin), (x * sin) + (y * cos));
+
+        return new[]
+        {
+            Corner(-halfWidth, top),
+            Corner(halfWidth, top),
+            Corner(halfWidth, bottom),
+            Corner(-halfWidth, bottom),
+        };
     }
 
     private Vector2 ToScreen(Vector2 tile) => ((tile - _centreTile) * _pixelsPerTile) + (Size / 2f);
@@ -2267,8 +2290,17 @@ public partial class VillageMap : Control
             // buildings with labour buys, and it is the one you can actually see.
             if (workplace.Construction is { } site)
             {
-                float size = Mathf.Max(10f, _pixelsPerTile * 0.8f);
-                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+                // ⛔⛔ THE SITE SHOWS THE GROUND IT WILL TAKE, TURNED THE WAY IT WAS PLACED (D324,
+                // Joe: *"presently it only shows 1 square during the construction phase (and it is
+                // the default orientation, not the rotated/placed orientation)"*). D321 gave a site
+                // its extent and facing in the SIM and D320 taught only the FINISHED branch to draw
+                // them — so a longhouse was a three-tile ghost, a one-tile square for the years it
+                // took to build, and a three-tile building at the end.
+                // ⭐ **The site is the moment the footprint matters MOST**, because it is the last
+                // point at which there is still time to move it.
+                float wide = workplace.ExtentWidth * 0.8f;
+                float deep = workplace.ExtentHeight * 0.8f;
+                ushort facing = workplace.Facing.Raw;
 
                 // Every material plus the work, so a two-material building fills its ring
                 // honestly rather than showing full while its stone is still coming (D213).
@@ -2284,16 +2316,25 @@ public partial class VillageMap : Control
                 Color colourOfWork = pullingDown ? DemolishColour : SiteColour;
                 float shown = pullingDown ? 1f - done : done;
 
-                DrawRect(rect, colourOfWork with { A = 0.18f });
+                DrawColoredPolygon(
+                    FootprintQuad(centre, wide, deep, facing), colourOfWork with { A = 0.18f });
+
+                // ⭐ Filled from the building's own bottom edge rather than the screen's, so a
+                // turned site fills ALONG itself instead of being sliced by a horizontal band that
+                // does not know it has been turned.
                 if (shown > 0f)
                 {
-                    var filled = new Rect2(
-                        rect.Position + new Vector2(0f, rect.Size.Y * (1f - shown)),
-                        new Vector2(rect.Size.X, rect.Size.Y * shown));
-                    DrawRect(filled, colourOfWork with { A = 0.55f });
+                    DrawColoredPolygon(
+                        FootprintQuad(centre, wide, deep, facing, 1f - shown, 1f),
+                        colourOfWork with { A = 0.55f });
                 }
 
-                DrawRect(rect, colourOfWork, filled: false, width: 2f);
+                Vector2[] outline = FootprintQuad(centre, wide, deep, facing);
+                for (int edge = 0; edge < 4; edge++)
+                {
+                    DrawLine(outline[edge], outline[(edge + 1) % 4], colourOfWork, 2f);
+                }
+
                 continue;
             }
 
