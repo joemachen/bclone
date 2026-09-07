@@ -5322,7 +5322,17 @@ public sealed class SimWorld
         // `SimWorld.ShareOfTheDayThatIsWork` is still the one copy of the arithmetic.
         string? longHaul = WarningForAFarmFarFromAStore(kind, position);
 
-        if (standingCrop is null && longHaul is null)
+        // ⛔⛔ AND THE ONE THAT COST A VILLAGE (D322). Marking a building with no builder's hut
+        // standing said "Marked out. The village will raise it when it can spare the hands." —
+        // cheerful, and false: it cannot spare them, it has nowhere to put them, and nothing will
+        // ever be raised. **The truth was in the village log the whole time and the line the player
+        // reads at the moment of clicking contradicted it.**
+        // ⭐ A WARNING RATHER THAN A REFUSAL, deliberately: laying a village out before you have the
+        // hut is a reasonable thing to want, and this project's rule is that *a refusal is
+        // information, not a dismissal*. The ghost turns amber and says why; it does not say no.
+        string? noBuilders = WarningForNothingToRaiseItWith(kind);
+
+        if (standingCrop is null && longHaul is null && noBuilders is null)
         {
             return PlacementVerdict.Fine;
         }
@@ -5330,7 +5340,7 @@ public sealed class SimWorld
         return PlacementVerdict.Yes(
             string.Join(
                 ' ',
-                new[] { standingCrop, longHaul }.Where(
+                new[] { standingCrop, longHaul, noBuilders }.Where(
                     static line => !string.IsNullOrEmpty(line))));
     }
 
@@ -5413,6 +5423,31 @@ public sealed class SimWorld
     /// the always-on alert D42 and D123 deleted.
     /// </para>
     /// </remarks>
+    /// <summary>Nothing in the village can raise this, and the player should hear it now (D322).</summary>
+    /// <remarks>
+    /// ⚠️ Asks <c>HasABuildersHut</c> — a STANDING hut, not seats and not a staffed one — because
+    /// that is the same question the site inspector and the mark-time narration already ask, and
+    /// three surfaces disagreeing about one fact is what made this bug so expensive.
+    /// ⭐ Silent for free buildings: a pile or a builder's hut costs no work, so it goes up without
+    /// anybody building it — warning there would train the player to ignore the warning.
+    /// </remarks>
+    private string? WarningForNothingToRaiseItWith(BuildingKind kind)
+    {
+        if (HasABuildersHut())
+        {
+            return null;
+        }
+
+        BuildingRecipe recipe = BuildingRecipe.For(kind, Config);
+        if (recipe.TotalMaterials == 0 && recipe.WorkTicks == 0)
+        {
+            return null;
+        }
+
+        return "No builder's hut stands, so nobody will raise it — one costs nothing but the "
+            + "ground it stands on.";
+    }
+
     private string? WarningForBuildingOverACrop(GridPos position) =>
         Map.TerrainAt(position) switch
         {

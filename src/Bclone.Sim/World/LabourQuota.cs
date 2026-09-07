@@ -279,7 +279,15 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Woodcutter] = woodcutters;
         needed[(int)JobKind.Forester] = forestersForHuts + forestersForHouses;
         needed[(int)JobKind.Marketer] = marketersWanted;
-        needed[(int)JobKind.Builder] = buildersWanted;
+        // ⛔⛔ THE UNCAPPED WANT, NOT THE SEAT-CAPPED ONE (D322). This was `buildersWanted`, which
+        // is `anythingToBuild ? seats : 0` — so with no builder's hut it is 0, so `Needed > seats`
+        // is `0 > 0`, so **the "⚠ needs 1, build a builder's hut" line could never fire.** It was
+        // structurally dead for the one trade whose demand is defined as its own seat count, while
+        // every other trade got the sentence — Forager and Fisher both show it in Joe's screenshot.
+        // ⭐ `needed` is documented three lines up as "what the village would want IF SEATS WERE
+        // FREE". Builder was the one row not honouring its own comment.
+        needed[(int)JobKind.Builder] =
+            SomethingIsMarkedAndNobodyCanRaiseIt(world) ? 1 : buildersWanted;
         needed[(int)JobKind.Farmer] = world.FarmerSeatsWithGroundToWork();
 
         // A fishery is wanted for exactly the reason a berry patch is: mouths.
@@ -869,9 +877,22 @@ public readonly record struct LabourQuota
         }
 
         // 5. And the two whose demand is simply an errand count.
-        if (kind == JobKind.Builder && BuildersWanted(world) == 0)
+        // ⛔⛔ TWO CAUSES, TWO SENTENCES — AND CONFLATING THEM COST A VILLAGE (D322). This read
+        // `BuildersWanted(world) == 0` and reported "there is nothing marked to build" for BOTH
+        // reasons that expression can be zero. Joe marked six longhouses across two runs, was told
+        // nothing was marked, went looking for a placement bug, and his village starved while the
+        // real answer — build a builder's hut — was sitting in the village log all along.
+        if (kind == JobKind.Builder)
         {
-            return "there is nothing marked to build";
+            if (SomethingIsMarkedAndNobodyCanRaiseIt(world))
+            {
+                return "there is no builder's hut — one costs nothing but the ground it stands on";
+            }
+
+            if (BuildersWanted(world) == 0)
+            {
+                return "there is nothing marked to build";
+            }
         }
 
         if (kind == JobKind.Marketer && MarketersWanted(world) == 0)
@@ -1153,6 +1174,46 @@ public readonly record struct LabourQuota
         // raise takes a hand off the berries for no yield at all, which is the make-work D52
         // measured as costing the village a third of its population.
         return anythingToBuild ? seats : 0;
+    }
+
+    /// <summary>
+    /// ⛔ Is there something marked that nobody can raise? — the half <c>BuildersWanted</c> hides.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS EXISTS BECAUSE ONE ZERO WAS DOING TWO JOBS AND IT COST A VILLAGE (D322).</b>
+    /// <c>BuildersWanted</c> returns <c>anythingToBuild ? seats : 0</c>, so it is zero both when
+    /// nothing is marked <em>and</em> when plenty is marked and there is nowhere to build from —
+    /// and every consumer reported the first. Joe marked six longhouses across two runs, was told
+    /// *"there is nothing marked to build"*, and his village starved.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A number that is true can still be evidence for the wrong claim</b> — D182 said exactly
+    /// this about a headcount read as availability. *The fix is never to make the number lie less;
+    /// it is to stop asking one number two questions.*
+    /// </para>
+    /// </remarks>
+    public static bool SomethingIsMarkedAndNobodyCanRaiseIt(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        bool anythingToBuild = false;
+        int seats = 0;
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Construction is { IsFinished: false })
+            {
+                anythingToBuild = true;
+            }
+            else if (workplace.Kind == JobKind.Builder)
+            {
+                seats += workplace.Places;
+            }
+        }
+
+        return anythingToBuild && seats == 0;
     }
 
     /// <summary>
