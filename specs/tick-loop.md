@@ -138,7 +138,9 @@ These are enforced at build time by `Microsoft.CodeAnalysis.BannedApiAnalyzers` 
 | Iterating `Dictionary` / `HashSet` | .NET guarantees no ordering, and randomizes string hashing per process. | Arrays, `SortedDictionary`, or iterate a sorted key list. |
 | LINQ in sim logic | Hides allocation and ordering assumptions. | Explicit loops. |
 | Parallelism (`Parallel.*`, `Task`) in sim | Non-deterministic interleaving. | Single-threaded. |
-| Floats in **sim state** | Per Decision #2 — sim state is integer-only; fixed-point (`Q32.32`) gets introduced at the first system that genuinely needs fractional math. | `int` / `long`, later `Fixed`. |
+| Floats in **sim state** | Per Decision #2 — sim state is integer-only; fixed-point (`Q32.32`) gets introduced at the first system that genuinely needs fractional math. | `int` / `long`, and `Fixed` since D317. |
+| **`Math.Sin` / `Cos` / `Tan` / `Atan` / `Atan2` / `Exp` / `Log` / `Pow` in sim code** | ⛔ **IEEE-754 mandates correctly-rounded results for `+ - * /` and square root, and NOT for the transcendentals.** So these are free to differ across platforms, architectures and runtime versions — and a sine that differs by one bit on somebody else's machine breaks *same seed ⇒ byte-identical state* **in the one way no test on a single machine can ever detect.** | `Angle.Sin()` / `Angle.Cos()` (D318), which read a checked-in integer table. Tests may call `Math.Sin` freely as an oracle. |
+| ~~`Math.Sqrt`~~ — **NOT banned** | ⭐ **Stated because an over-broad rule gets ignored.** Square root is one of the five operations IEEE-754 *does* require to be correctly rounded, so it is bit-identical everywhere and is safe in sim code. `Fixed` has no `Sqrt` yet only because nothing needs one. | Allowed. |
 
 **Also required, but not analyzer-enforceable** (guard by review + tests):
 - `Bclone.Sim` must never reference Godot or any engine type. Enforced by the project having no such package reference and CI building it standalone.

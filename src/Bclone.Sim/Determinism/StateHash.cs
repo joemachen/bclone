@@ -722,6 +722,19 @@ public static class StateHash
     /// </remarks>
     public static ulong MixFixed(ulong hash, Fixed value) => MixUInt64(hash, (ulong)value.RawBits);
 
+    /// <summary>
+    /// Mix a binary angle — all sixteen bits, never a quantised bucket.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ D317's raw-not-quantised rule, one type over — and worth restating because Joe raised the
+    /// opposite rule from the other direction: *"quantize for the hash, not for the state"*. That is
+    /// right for a <b>bucketing</b> hash — draw-call batching, spatial keys, sprite-facing lookup —
+    /// and this file is the other kind. <b><c>StateHash</c> is a fingerprint</b>, so two villages
+    /// whose buildings face 0.0055° apart are different villages and must hash differently.
+    /// ⚠️ Nothing in the sim hashes an <c>Angle</c> yet; its caller is the guard in <c>AngleTests</c>.
+    /// </remarks>
+    public static ulong MixAngle(ulong hash, Angle value) => MixUInt32(hash, value.Raw);
+
     /// <summary>Mix four bytes into the running hash.</summary>
     public static ulong MixUInt32(ulong hash, uint value)
     {

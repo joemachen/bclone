@@ -1,8 +1,13 @@
 # Spec: Gridless — free placement, real facings, and paths that bend
 
-> Status: ▶️ **OPTION C CHOSEN BY JOE (2026-09-06). SLICE 1 IS BUILT AND GREEN — `Fixed` (Q32.32)
-> and its guards, no behaviour, no golden moved.** Slices 2–4 are not started.
-> Every number below was measured against the code on 2026-09-06, not read out of `DESIGN.md`.
+> Status: ▶️ **OPTION C CHOSEN BY JOE (2026-09-06). SLICES 1 AND 2a ARE BUILT AND GREEN** —
+> `Fixed` (Q32.32) and `Angle` (16-bit BAM) with deterministic trigonometry. **No behaviour in
+> either, and no golden moved by either.** Slice 2b (buildings gain extent and facing) is next;
+> 3 and 4 are not started.
+> ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
+> *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
+> slice. *A spec that edits its own audit to look current stops being evidence of anything.*
+> Every number in it was measured against the code, not read out of `DESIGN.md`.
 > · Owner: Joe + Claude Code
 >
 > **⭐ His answer, and the reasoning he gave for it:** *"Things stop being locked to squares.
@@ -132,8 +137,17 @@ and B reads as gridless to anyone playing it, and C is invisible except through 
   anywhere in it, its own determinism guards. **Written from nothing** (§2.2).
 - **`Point`** — `Fixed X, Fixed Y`, replacing `GridPos` for *things that move and things that are
   placed*. `GridPos` **survives as the index into terrain**, which is what §7.4 turns on.
-- **`Facing`** — a fixed-point angle, or a 16-step compass. ⚠️ *Sixteen steps is enough to look
-  free and is exactly hashable; a continuous angle is neither.* Recommend the compass.
+- **`Facing`** — ✅ **BUILT (D318): a 16-bit binary angle, `Core/Angle.cs`.** 0–65,535 maps linearly
+  to 0°–360°, so a step is **0.0054931640625°** — two bytes, exactly hashable, no float drift, and
+  continuous to the eye.
+  ⛔ **THIS BULLET USED TO RECOMMEND A 16-STEP COMPASS AND JOE OVERRULED IT, CORRECTLY.** The
+  compass reasoning was *"sixteen steps is enough to look free and is exactly hashable; a continuous
+  angle is neither"* — the second half of which is a **false dichotomy**. A `ushort` binary angle is
+  *both*: it is exactly hashable **and** free enough that no player will find its edges. Sixteen
+  poses is not *"placed facing any direction"*; 65,536 is.
+  ⭐ And it is better than the compass in a way neither of us argued for at the time: **wraparound
+  is the type's own arithmetic.** A `ushort` rolling over at 65536 *is* a circle closing at 360°, so
+  there is no normalisation step anywhere — the whole `if (angle > 2π)` class of bug does not exist.
 - **`Extent`** — a building's footprint in fixed-point units. Required by A, and **it is the piece
   that makes placement collision real** rather than "is this tile taken".
 - **Hash:** positions mix as their **RAW** fixed-point bits, all sixty-four, in a stated order —
@@ -146,7 +160,14 @@ and B reads as gridless to anyone playing it, and C is invisible except through 
   hash. A quantising mixer would let two worlds whose villagers stand a fraction of a tile apart
   hash *identically*, so **the determinism suite would go green across a genuine divergence.**
   *Two jobs, two functions, never one.* Guarded by
-  `FixedTests.TheHashDistinguishesValuesThatDifferOnlyInTheirFraction`.
+  `FixedTests.TheHashDistinguishesValuesThatDifferOnlyInTheirFraction` and
+  `AngleTests.TheHashDistinguishesAdjacentAngles`.
+  ⚠️ **AND THE SAME POINT ARRIVED FROM THE OTHER DIRECTION, SO IT IS WORTH SETTLING ONCE.** Joe,
+  2026-09-06: *"Quantize for the Hash, not for the State."* **That is correct — for a BUCKETING
+  hash**: draw-call batching, spatial hash keys, sprite-facing lookup, and D303's map generator all
+  *want* nearby values to collide, because collision is the feature. **`StateHash` is the other
+  kind — a fingerprint — where collision is the failure.** Both rules are right; they are about
+  different hashes, and conflating them is the bug.
 
 ---
 
@@ -230,8 +251,19 @@ expensive inference in this project.*
 
 1. **`Fixed` (Q32.32) and its guards.** No behaviour. Determinism test extended to fixed-point
    arithmetic. *Nothing else starts until this is green.*
-2. **Buildings gain `Extent` and `Facing`.** Placement collision becomes geometry. **Goldens move
-   once, here, with a stated reason.** The view draws the angle.
+2a. ✅ **`Angle` (16-bit BAM) and deterministic trigonometry — BUILT (D318).** No behaviour. The
+   sim had no trig at all and may not borrow the runtime's, so this is a checked-in sine table.
+2b. **Buildings gain `Extent` and `Facing`.** Placement becomes geometry: the sim stores the true
+   rotated rectangle and **derives which tiles it covers** (Joe's call), so terrain, clearing and
+   pathing stay tile-indexed and there is no second collision system.
+   ⚠️ **The spec used to promise "goldens move once, here" and that is now in doubt** — building
+   positions are not hashed today, and if extent and facing mix **sparsely** then a village where
+   nothing is rotated hashes byte-identically. *Treat a moved golden in 2b as a defect to explain,
+   not a number to re-take.*
+   ⛔ **Known cost, recorded so it is not discovered mid-slice:** occupancy is a list scan repeated
+   in SIX places — `SomethingStandsAt` walks five collections comparing `Position ==` exactly, and
+   `WhatStandsAt`, `NameOfWhatStandsAt`, `StoreAt`, `HouseholdAt` and `PullDownWhatStandsAt` are
+   five more with the same shape. Every one becomes extent-aware.
 3. **Villagers hold a `Point`.** Movement interpolates in fixed-point; the cost field is untouched.
 4. **String-pulled paths**, and then desire paths (§2.6) become writable for the first time.
 
