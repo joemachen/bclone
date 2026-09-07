@@ -247,6 +247,13 @@ public partial class Main : Control
 
         ProbeFolding();
         ProbeTheInspectorRows();
+
+        // ⛔ BEFORE `ProbeTheControlBar`, NOT AFTER, AND THE ORDER IS THE MEASUREMENT. That method
+        // poses the bar with every button showing at once — 1657px, wider than the 1280 window —
+        // and the restore does not shrink `Size.X` back within the same call. Asked afterwards,
+        // this measured every sentence against 377 pixels the player does not have.
+        ProbeThePlacementSentences();
+
         ProbeTheControlBar();
         ProbeTheProfessionsPanel();
 
@@ -536,6 +543,80 @@ public partial class Main : Control
     }
 
     /// <summary>
+    /// ⭐⭐ What the placement line actually renders each tool's sentence to (D327).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THE PLACEMENT LABEL IS THE ONE CONTROL <see cref="PinTheBarHeight"/> MEASURES WITH A
+    /// PLACEHOLDER RATHER THAN REAL TEXT.</b> It reserves a bare newline, for a stated reason — the
+    /// messages come from the map *and* from the sim's own refusals, so there is no list to take a
+    /// longest from. **The consequence is that a sentence which wraps at runtime grows the bar past
+    /// its own pin and nothing catches it**, which is exactly the 161 → 181 fault D323 found by
+    /// hand.
+    /// </para>
+    /// <para>
+    /// ⭐ The map's own sentences <em>are</em> a list, so they can be posed. This prints what each
+    /// one renders to and flags any that takes more than one line — D255's rule applied to the
+    /// other label: <em>print what the control will show before believing a string transform.</em>
+    /// </para>
+    /// <para>
+    /// ⚠️ Posed and put back, like every other pose in this probe. It reads the sentences from the
+    /// map rather than holding its own copies, or it would be measuring text the game does not say.
+    /// </para>
+    /// </remarks>
+    private void ProbeThePlacementSentences()
+    {
+        if (_placementLabel is null)
+        {
+            GD.Print("[widths] --- placement line: NOT BUILT ---");
+            return;
+        }
+
+        // ⛔⛔ MEASURED THROUGH THE FONT, NOT BY POSING THE TEXT AND READING `Size.Y` — AND THE
+        // FIRST VERSION DID THE SECOND AND REPORTED A GREEN THAT MEANT NOTHING (D327). The
+        // placement label is hidden whenever there is no message, so it is never laid out; posing
+        // it visible and re-sorting does not make the container reflow within the same call, and
+        // every sentence — including a 209-character one — duly measured **18 tall at 120 wide**,
+        // which is `WrappedTextMinWidth` rather than any line the player has. *A wrap check
+        // performed at the wrong width is exactly the instrument-that-assumes-a-default trap
+        // D326 paid for, and it passes everything.*
+        //
+        // ⭐ The font knows without being laid out. `GetStringSize` is what the label's own
+        // minimum-size calculation asks, so this is the same number by the same route.
+        Font font = _placementLabel.GetThemeFont("font");
+        int size = _placementLabel.GetThemeFontSize("font_size");
+        // ⛔⛔ THE WINDOW, NOT THE BAR, AND THE TWO DIFFER BY 377 PIXELS TODAY. The control bar is
+        // content-sized and its strip row already overflows — it measures 1657 against a 1280
+        // window — so a sentence that "fits the bar" can still be running off the screen. **The
+        // window is the ceiling that exists**, and `--resolution` is ignored here because
+        // `project.godot` lays the UI out at 1280 logical pixels and scales it: *there is no "it
+        // will fit on a bigger screen"* (D242).
+        float available = Mathf.Min(_controlBar?.Size.X ?? Size.X, Size.X);
+
+        GD.Print($"[widths] --- placement line has {available:F0} of a {Size.X:F0} window "
+            + $"(bar claims {_controlBar?.Size.X ?? 0f:F0}), font {size} ---");
+
+        foreach ((string Tool, string Sentence) posed in _map.EverySentenceAToolCanSay())
+        {
+            float wide = font.GetStringSize(
+                posed.Sentence, HorizontalAlignment.Left, -1f, size).X;
+
+            // ⚠️ A "tight" band, because the longest sentence sat at 6px spare when this probe was
+            // written and one added clause is 45. **A line with no headroom is a line the next
+            // edit wraps**, and the failure is invisible: the label grows the bar past the height
+            // `PinTheBarHeight` reserved for one line of it.
+            string verdict = wide > available
+                ? "  ⛔ WRAPS — this grows the bar past its pin"
+                : wide > available * 0.92f
+                    ? $"  ⚠️ tight — only {available - wide:F0} spare"
+                    : $"  ({available - wide:F0} spare)";
+
+            GD.Print($"[widths] say    {posed.Tool,-12} {posed.Sentence.Length,3} chars, "
+                + $"{wide:F0} of {available:F0}px{verdict}");
+        }
+    }
+
+    /// <summary>
     /// ⭐ Does folding a panel actually make it smaller? — Joe, 2026-09-06.
     /// </summary>
     /// <remarks>
@@ -778,6 +859,18 @@ public partial class Main : Control
             case Key.R: _map.TurnTheGhost(toTheQuarter: key.ShiftPressed); break;
             case Key.Home: _map.CentreOnTheVillage(); break;
 
+            // ⭐⭐ ESC IS THE CANCEL FOR EVERY TOOL (D327). Right-click used to be, and it is a
+            // brush's "take back" now — **a gesture removed without a replacement is a tool the
+            // player cannot put down**, so this is not a convenience.
+            // ⚠️ Correctly shadowed while a moment panel is up: that branch early-returns above
+            // this switch, and Esc there means "dismiss", which is the nearer meaning.
+            case Key.Escape: _map.PutTheToolDown(); break;
+
+            // The brush's shape, beside its own tools rather than in Settings (Joe's call). The
+            // button on the filter row says the same thing; a key is there because sizing with
+            // the wheel and shaping with the mouse would be two hands for one brush.
+            case Key.B: _map.CycleBrushShape(); break;
+
             // H hides the furniture, C rolls it up. Two keys because they answer two different
             // wants: "get out of the way, I am watching" and "I need more room to work".
             case Key.H: ToggleFurniture(); break;
@@ -882,6 +975,25 @@ public partial class Main : Control
     /// line tall and the bar never moves under the cursor.
     /// </remarks>
     private Label _tabNote = null!;
+
+    /// <summary>Square or round, for the brush (D327). Sits on the filter row, on every tab.</summary>
+    /// <remarks>
+    /// ⚠️ Nullable and null-checked in <see cref="RefreshTheStrip"/>, because that method runs from
+    /// inside <c>BuildControlPanel</c> before this is assigned — the same ordering hazard
+    /// <see cref="PinTheBarHeight"/> guards against with its two-field test.
+    /// </remarks>
+    private Button? _shapeButton;
+
+    /// <summary>Say which shape the brush is set to, on the button and after every change.</summary>
+    private void RelabelTheBrush()
+    {
+        if (_shapeButton is not null)
+        {
+            _shapeButton.Text = _map.BrushShapeInHand == BrushShape.Round
+                ? "Brush: round"
+                : "Brush: square";
+        }
+    }
 
     /// <summary>
     /// Show the library only once the village can write, and glow while the gift is unspent.
@@ -4219,6 +4331,19 @@ public partial class Main : Control
         _tabNote = Muted(string.Empty);
         _filterRow.AddChild(_tabNote);
 
+        // ⭐⭐ THE BRUSH'S SHAPE, BESIDE THE BRUSH RATHER THAN IN SETTINGS (Joe's call, D327).
+        // ⛔ **On the filter row, not the tool strip**, and the reason is measured rather than
+        // aesthetic: the strip already wraps to two rows on BUILD + ALL, so a fourth tool button
+        // there is a candidate third row — and the bar's height is pinned across every tab × filter
+        // from the tallest of them. **This row is one line on every tab and has room.**
+        // ⚠️ It is a BUTTON that reads its own state rather than a checkbox, per the rule this bar
+        // already follows: a checkbox cannot say which of two shapes is chosen.
+        _shapeButton = new Button { Text = string.Empty, TooltipText = "The brush's shape (B)" };
+        _shapeButton.Pressed += () => _map.CycleBrushShape();
+        _filterRow.AddChild(_shapeButton);
+        _map.BrushChanged += RelabelTheBrush;
+        RelabelTheBrush();
+
         body.AddChild(_filterRow);
 
         _stripRow = FlowRow();
@@ -6058,6 +6183,15 @@ public partial class Main : Control
             {
                 control.Visible = building;
             }
+        }
+
+        // ⛔ THE SHAPE BUTTON IS EXEMPT FROM THE LOOP ABOVE, WHICH HIDES THIS ROW'S CHILDREN OFF
+        // BUILD (D327). It is a setting rather than a filter — it belongs to the brush, and all
+        // three tabs have brushes on them. **Always visible is also what keeps this row one line
+        // on every tab**, which is the whole of Joe's constant-height ask.
+        if (_shapeButton is not null)
+        {
+            _shapeButton.Visible = true;
         }
 
         _tabNote.Visible = !building;

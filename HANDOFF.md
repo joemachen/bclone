@@ -1,7 +1,7 @@
-# Handoff — bclone: **▶️ GRIDLESS IS HALF BUILT — BUILDINGS ARE FREE, THE VALLEY IS NOT**
+# Handoff — bclone: **▶️ THE BRUSH IS A TOOL NOW — NEXT IS FREE PLACEMENT, WHERE THE FIRST GOLDEN MOVES**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-07.**
-> **1004 passing, 0 failing, 2 skipped of 1006** — run locally on `main`. `main` = `origin/main`.
+> **1023 passing, 0 failing, 2 skipped of 1025** — run locally on `main`. `main` = `origin/main`.
 > ⚠️ **NO GOLDEN HAS MOVED IN THE WHOLE GRIDLESS DIRECTION SO FAR**, and that is a claim made from
 > a `git diff` over the five golden constants every commit, not from "the tests passed". **The
 > first golden move is still ahead**, in the free-placement slice.
@@ -75,12 +75,55 @@ would have saved him — "needs 1, build a builder's hut" — was structurally d
 - **Move and Empty's tabs**, the bar height (161 on every tab and filter), the mid-build longhouse,
   the amber "No builder's hut stands…" warning, and **every tile of a longhouse selecting,
   naming and demolishing** — all confirmed by him in play.
+- **⭐ Two more confirmed by Joe in play on 2026-09-07:** **a rotated stockpile stays rotated**
+  (D326's free-building path, which drew square while its ghost drew turned), and **the professions
+  panel is folded under *The village***. *Both from the chair, which is the only place they could
+  be checked.*
 - **The cold start is fine as it is.** Joe, having lost a village: *"i just wasnt paying attention
   and playing at 20x. pebcak."* ⛔ **Do not soften the opening.**
 
-## ▶️ NEXT, IN ORDER — and the first one is planned and approved
+## ✅ COMMIT B1 IS BUILT — the brush is a tool you can aim (D327)
 
-1. **▶️ COMMIT B: THE BRUSH.** Approved, not started. **Left click paints, right click takes back**
+**Left paints, right takes back, ALT+wheel sizes it, and it is a square or a round.** `specs/brush.md`
+is the spec, written first. **1023 / 0 / 2 of 1025, and no golden moved** — stated as a `git diff`:
+nothing under `tests/`, `src/Bclone.Sim/` or `data/` was modified at all. ⚠️ **JOE HAS NOT PLAYED
+IT.** The view has no automated verification of any kind (D11, D160) and his eyes are the test — see
+the six-step walk at the bottom of this section.
+
+- ⭐⭐ **The structural half: `BrushStroke.TilesUnder` is the one shape function**, in `Bclone.Sim`
+  because nothing in `tests/` references `Bclone.Game`. The two loops it replaces carried the same
+  pasted comment warning that they must change together — **and one copy had already gone stale.**
+- ⛔ **`Escape` cancels every tool now.** Right-click still cancels everything that is not a brush.
+- ⛔⛔ **The harvest brush had never had an announce sentence of its own** and said *"Drag to paint
+  where the village may build homes."* Found while rewriting them; `build-bar.md §5.1a`.
+- ⚠️ **Size and shape are NOT written by `SetTool`** — deliberately, they outlive the tool in hand.
+- ⚠️ **`B` cycles the shape**, and a *"Brush: square/round"* button sits on the **filter row**, not
+  the tool strip: the strip already wraps on BUILD + ALL. **Bar height still 161 everywhere**,
+  measured.
+
+- ⛔⛔ **THE PLAIN WHEEL ALWAYS ZOOMS.** Sizing is **alt+wheel**. It was the bare wheel for one
+  commit and Joe rejected it in review: *"i dont want the brush sizing action to compete with zoom
+  function. i find it confusing."* **Do not re-propose overloading the wheel** — the player is
+  holding a brush exactly when they most want to zoom in and look. ✅ **Confirmed in play:
+  *"alt +scroll is perfect"*.**
+
+**✅ Joe approved the walk** (2026-09-07): right-drag takes back with an amber preview; `B` and the
+button both swap the shape; a building ghost still zooms and still right-click-cancels; `Esc` puts
+down every tool; the bar holds its height across the tabs. ⚠️ **Approved as DESCRIBED, except the
+sizing gesture, which he confirmed in play.** *The difference is worth keeping: a described gesture
+is not the view test, and this is the project with no automated view verification at all.*
+
+## ▶️ NEXT, IN ORDER
+
+1. ~~**COMMIT B: THE BRUSH.**~~ ✅ **B1 DONE (D327).** ⏸️ **B2 — the smooth painted outline — is
+   NOT started**, and it is net-new: nothing in the repo traces a contour, `DrawFootprint` is the
+   only polygon code, and the zone wash **overdraws each tile by 2% on purpose**, which destroys the
+   boundary an outline needs. ⛔ Its invalidation counter **must not enter `StateHash`**, or every
+   golden moves for a number that is not state. **"Foundation" appears nowhere in `src/`** — it is
+   the game Joe named, not a class to copy. *The original scoping is kept below.*
+   <details><summary>What B was scoped as, before Joe split it</summary>
+
+   **▶️ COMMIT B: THE BRUSH.** Approved, not started. **Left click paints, right click takes back**
    — right-click is the *universal cancel* today (`PutTheToolDown`) and **five announce strings end
    "Right-click to stop."**, so ⛔ **add `Escape` as the cancel** or the brush has none. **Scroll
    resizes the brush** while one is held (the wheel branch is already unguarded by `IsPlacing`, so
@@ -91,7 +134,8 @@ would have saved him — "needs 1, build a builder's hut" — was structurally d
    painted outline** — Foundation's green border is a smooth polygon over a tiled zone.
    ⚠️ `DrawTheBrushful`'s doc-comment is **stale**: it still says *"The diamond, not a square"* and
    contradicts the inline comment below it.
-2. **⭐⭐ THEN GRIDLESS SLICE 3: FREE PLACEMENT**, and **this is where the first golden moves.**
+   </details>
+2. **⭐⭐ NOW GRIDLESS SLICE 3: FREE PLACEMENT**, and **this is where the first golden moves.**
    ⛔ *"Turn grid snap off"* is **not a view toggle** — the snap **is the type**: `GridPos` all the
    way down with four `Mathf.RoundToInt` calls at the edges. Continuous positions become sim state,
    so they enter the hash. **One commit, one stated reason (D152).** The Settings snap toggle Joe
@@ -106,9 +150,9 @@ would have saved him — "needs 1, build a builder's hut" — was structurally d
    neighbour term** — packing is a third term in that sum, not a new algorithm.
 4. **Then** materials/ingredients categories, and meat/fish subtypes (venison, trout, wheat).
 
-⚠️ **Still unjudged by Joe:** the drawn glyphs on the build bar, and whether BUILD + ALL is too
-tall — thirteen buildings and three tools wraps rather than clips, which is the complaint D305 came
-from. **His call, because it changes what he sees on launch.**
+✅ **BOTH JUDGED AND CLOSED BY JOE (2026-09-07): *"the drawn glyphs are fine. build + all is fine
+for now."*** ⛔ **Do not re-open either.** The strip still wraps to two rows on BUILD + ALL and that
+is accepted — ⚠️ *which is why the brush's shape button went on the filter row and not the strip.*
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
@@ -639,6 +683,28 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Traps, in the order they will cost you
 
+- **⛔⛔⛔ A PROBE CAN MEASURE THE RIGHT THING AT THE WRONG WIDTH, AND THEN IT PASSES EVERYTHING
+  (2026-09-07, D327).** A new probe posed each placement sentence in `_placementLabel` and read
+  `Size.Y` — **every one came back "18 tall, 1 line", including a 209-character one.** It was
+  measuring at **120 pixels**, which is `WrappedTextMinWidth`: *a hidden label is never laid out,
+  and `QueueSort` + `ForceUpdateTransform` does not reflow the container within the same call.*
+  ⭐ **The tell was printing the width beside the verdict** — the answer was obviously impossible the
+  moment both numbers were on one line. It measures through the font now, against the **window**
+  rather than the bar (the bar is content-sized at **1657** against a 1280 window, so "fits the bar"
+  can still mean running off the screen), and it is red-checked with a 300-character sentence.
+  ⚠️ **It earned its keep immediately: the longest sentence sat at 1274 of 1280** and one added
+  clause would have wrapped it. *Print the denominator, not only the numerator.*
+- **⛔⛔ A FALL-THROUGH ARM CLAIMS EVERY CASE NOBODY WROTE A BRANCH FOR (2026-09-07, D327).**
+  `Announce` tested `_groundFor`, `_moving`, `_emptying` and then `_brush` — **never
+  `_harvestMode`** — so the harvest brush, a whole tab of the bar, announced *"Drag to paint where
+  the village may build homes"* for its entire life. **The fields were correct; the reading of them
+  was written as if residential were the only brush.** ⭐ *It survived because the wrong sentence was
+  plausible enough over a map that nobody read it twice.*
+- **⚠️ TWO COPIES OF A COMMENT SAYING "THESE MUST CHANGE TOGETHER" IS THE EVIDENCE THAT THEY WILL
+  NOT (2026-09-07, D327).** The paint loop and the preview loop each carried the same pasted block
+  warning that *"a preview that disagrees with the paint is worse than no preview"* — and one of the
+  two had already gone stale, saying *"The diamond, not a square"* three lines above an inline
+  comment saying **SQUARE, NOT A DIAMOND**. *A comment is not a mechanism. One function is.*
 - **⛔⛔⛔ A RED CHECK THAT EDITS BY PATTERN CAN EDIT THE WRONG LINE, AND THEN GREEN MEANS NOTHING
   (2026-09-07, D326).** Reverting `StoreAt` to exact-position left its guard green and the guard
   looked blind. It was innocent: the `perl` substitution matched the **first** of two identical

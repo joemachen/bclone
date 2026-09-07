@@ -455,13 +455,54 @@ public partial class VillageMap : Control
     /// <summary>Painting homes: 0 not, 1 painting, -1 erasing.</summary>
     private int _brush;
 
-    /// <summary>How wide the brush is, in tiles either side.</summary>
+    /// <summary>How wide the brush is, in tiles either side. <b>The wheel drives it</b> (D327).</summary>
     /// <remarks>
+    /// <para>
     /// A brush rather than a single tile, because a residential area is a
     /// <em>neighbourhood</em> — asking the player to paint it a tile at a time would be
-    /// exactly the click-farm zoning exists to avoid (D42).
+    /// exactly the click-farm zoning exists to avoid (D42). ⭐ <b>And a brush that is always the
+    /// same size is that click-farm again</b> the moment the ground the player has in mind is
+    /// bigger or smaller than five tiles across.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>DELIBERATELY NOT WRITTEN BY <see cref="SetTool"/>, unlike every other brush field.</b>
+    /// The size and the shape are settings that outlive what is in hand: picking up the harvest
+    /// brush after sizing the land brush must not silently resize it. <c>SetTool</c> stays the one
+    /// writer of the fields that say *what* is held (`specs/build-bar.md §5.1`, three bugs); these
+    /// two say *how*, and they are outside that set on purpose.
+    /// </para>
     /// </remarks>
-    private const int BrushRadius = 2;
+    private int _brushRadius = BrushStroke.DefaultRadius;
+
+    /// <summary>Whether the brush is a square or a round (D327). Square is what has always shipped.</summary>
+    private BrushShape _brushShape = BrushShape.Square;
+
+    /// <summary>What shape the brush is set to, so the bar can say so.</summary>
+    public BrushShape BrushShapeInHand => _brushShape;
+
+    /// <summary>Swap the brush between a square and a round — the bar's button and <c>B</c>.</summary>
+    /// <remarks>
+    /// ⚠️ Redraws and re-announces even when no brush is held, because the sentence and the preview
+    /// are the only places the setting is visible and the player may well set it before picking a
+    /// brush up.
+    /// </remarks>
+    public void CycleBrushShape()
+    {
+        _brushShape = _brushShape == BrushShape.Square ? BrushShape.Round : BrushShape.Square;
+        Announce();
+        QueueRedraw();
+        BrushChanged?.Invoke();
+    }
+
+    /// <summary>Raised when the brush's size or shape changes, so the bar can relabel its button.</summary>
+    public event System.Action? BrushChanged;
+
+    /// <summary>How the brush reads in a sentence — <em>"5×5 square"</em>.</summary>
+    private string TheBrushInWords()
+    {
+        int across = BrushStroke.Across(_brushRadius);
+        return $"{across}×{across} {(_brushShape == BrushShape.Round ? "round" : "square")}";
+    }
 
     /// <summary>
     /// Which harvest mode the brush is set to, or null when it is painting homes.
@@ -750,6 +791,10 @@ public partial class VillageMap : Control
     /// clears</b>, and it still left <c>_groundFor</c> and <c>_harvestMode</c> standing — so
     /// right-clicking out of the work-ground brush answered the cancel with
     /// <em>"Right-click to stop."</em>
+    /// ⭐ <b>Three ways in now (D327): <c>Escape</c>, the Cancel button, and right-click for
+    /// everything that is not a brush.</b> Right-click stopped being universal the day it started
+    /// taking paint back, so the cancel needed a gesture that works for every tool — and
+    /// <c>Escape</c> was free.
     /// </remarks>
     public void PutTheToolDown() => SetTool(MapTool.None);
 
@@ -797,9 +842,17 @@ public partial class VillageMap : Control
                 // Drag to paint. A neighbourhood is a shape you draw, not a sequence of
                 // clicks — the brush exists so that deciding where people live costs one
                 // gesture rather than forty (D42).
-                if (_brush != 0 && motion.ButtonMask.HasFlag(MouseButtonMask.Left))
+                //
+                // ⭐⭐ RIGHT-DRAG TAKES BACK (D327), and it is read from the mask rather than
+                // held in a field: the `Pressed: true` guard below throws every RELEASE away, so
+                // a field set on the press would never be cleared. *The event already knows.*
+                if (_brush != 0 && motion.ButtonMask.HasFlag(MouseButtonMask.Right))
                 {
-                    PaintAround(_hovered);
+                    PaintAround(_hovered, -1);
+                }
+                else if (_brush != 0 && motion.ButtonMask.HasFlag(MouseButtonMask.Left))
+                {
+                    PaintAround(_hovered, _brush);
                 }
 
                 Announce();
@@ -811,6 +864,24 @@ public partial class VillageMap : Control
 
         if (@event is not InputEventMouseButton { Pressed: true } click)
         {
+            return;
+        }
+
+        // ⭐⭐ RIGHT TAKES BACK WHILE A BRUSH IS HELD, AND STILL CANCELS OTHERWISE (D327, Joe's
+        // call). **One sentence a player can be told: left paints, right takes back** — and it
+        // does not depend on which brush button was last pressed. With an erase brush already in
+        // hand both buttons erase, which is harmless; the alternative (*right does the opposite of
+        // what is held*) makes the right button mean a different thing depending on state.
+        //
+        // ⛔ The cancel it displaces is `Escape`, bound in `Main._UnhandledKeyInput`, and the
+        // brush's own announce sentence says so. **A gesture removed without a replacement named
+        // in the same breath is a tool the player cannot put down.**
+        if (_brush != 0 && click.ButtonIndex == MouseButton.Right)
+        {
+            Vector2 taken = ToTile(click.Position);
+            PaintAround(new GridPos(Mathf.RoundToInt(taken.X), Mathf.RoundToInt(taken.Y)), -1);
+            QueueRedraw();
+            AcceptEvent();
             return;
         }
 
@@ -847,12 +918,32 @@ public partial class VillageMap : Control
             return;
         }
 
-        // Middle mouse is deliberately unbound. Rotation was asked for and deferred:
-        // the view is flat top-down, so rotating it would spin the map like paper on a
-        // table rather than orbit it, and that is a different feature to build once
-        // the view has depth.
+        // ⚠️ Middle mouse turns the building in your hand (D325) and is handled at the top of
+        // this method, above the `Pressed: true` guard, because a drag needs the release too.
+        // *This comment said it was "deliberately unbound" for a stretch after it was bound.*
         if (click.ButtonIndex is not (MouseButton.WheelUp or MouseButton.WheelDown))
         {
+            return;
+        }
+
+        // ⭐⭐ ALT+WHEEL SIZES THE BRUSH; THE PLAIN WHEEL ALWAYS ZOOMS (D327, Joe: *"i dont want the
+        // brush sizing action to compete with zoom function. i find it confusing."*).
+        // ⛔⛔ **IT WAS THE BARE WHEEL FOR ONE COMMIT AND THAT WAS THE WRONG CALL.** Overloading the
+        // wheel on whether a brush happens to be in hand makes the *same gesture* do two things
+        // depending on invisible state — and the player is holding a brush precisely when they are
+        // most likely to want to zoom in and look. **A modifier is a promise that the plain gesture
+        // never changes meaning**, which is what the zoom needs to be.
+        // ⚠️ Still guarded on `_brush != 0` rather than `IsPlacing`: a building ghost has no size to
+        // change, so alt+wheel over one falls through and zooms rather than doing nothing.
+        if (_brush != 0 && click.AltPressed)
+        {
+            int wanted = _brushRadius + (click.ButtonIndex == MouseButton.WheelUp ? 1 : -1);
+            _brushRadius = BrushStroke.Clamp(wanted);
+
+            Announce();
+            QueueRedraw();
+            BrushChanged?.Invoke();
+            AcceptEvent();
             return;
         }
 
@@ -874,117 +965,115 @@ public partial class VillageMap : Control
     /// stopping to wait on you — and nothing here is urgent enough to stop the clock
     /// for. That is a claim about what kind of decision building is.
     /// </remarks>
-    /// <summary>Paint or erase a brushful of residential land.</summary>
-    private void PaintAround(GridPos centre)
+    /// <summary>Paint or erase a brushful of ground.</summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐⭐ <b><paramref name="direction"/> COMES FROM THE GESTURE, NOT FROM THE TOOL</b> (D327).
+    /// <b>Left paints, right takes back</b> — one sentence a player can be told, and it does not
+    /// depend on which button they last pressed. <c>_brush</c> keeps its other job, *"is a brush in
+    /// hand"*; it no longer decides which way this stroke goes.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The shape is <see cref="BrushStroke"/>'s and this method does not own a loop any
+    /// more.</b> It and <see cref="DrawTheBrushful"/> were a copy-paste of each other, comment
+    /// block included — and the comment said *"a preview that disagrees with the paint is worse
+    /// than no preview"* while nothing but discipline held them together.
+    /// </para>
+    /// </remarks>
+    private void PaintAround(GridPos centre, int direction)
     {
         string? warning = null;
         int homesUnderTheBrush = 0;
         string? refused = null;
 
-        for (int dy = -BrushRadius; dy <= BrushRadius; dy++)
+        foreach (GridPos tile in BrushStroke.TilesUnder(centre, _brushRadius, _brushShape))
         {
-            for (int dx = -BrushRadius; dx <= BrushRadius; dx++)
+            // Ground given to one building (D86). Same stroke shape as the others — one
+            // sentence for the drag, never one per tile — and it stops rather than
+            // half-painting if the hut went away mid-stroke.
+            if (_groundFor != 0)
             {
-                // ⭐ SQUARE, NOT A DIAMOND (Joe, 2026-08-25). This was
-                // `Abs(dx) + Abs(dy) > BrushRadius` — Manhattan distance, which paints a
-                // rhombus. A brush the player drags over ground they can see should cover
-                // the rectangle they think it covers; the diamond left corners unpainted
-                // and made a dragged stroke scallop along its edges.
+                Workplace? owner = _world!.FindWorkplace(_groundFor);
+                if (owner is null)
+                {
+                    // ⛔⛔ IT PUTS THE TOOL DOWN AND LEAVES THE STROKE, WHICH IS WHAT THE
+                    // COMMENT ABOVE HAS ALWAYS CLAIMED IT DID. It used to clear `_groundFor`
+                    // and `continue` — so every remaining tile of that stroke fell through
+                    // to the residential arm below and **painted housing land the player
+                    // never asked for**. It abandoned the tool and kept the brush.
+                    PlacementMessageChanged?.Invoke(
+                        "That building is gone, so there is nothing to give ground to.");
+                    SetTool(MapTool.None);
+                    return;
+                }
+
+                if (direction < 0)
+                {
+                    _world.EraseWorkGround(owner, tile);
+                    continue;
+                }
+
+                PlacementVerdict given = _world.PaintWorkGround(owner, tile);
+                if (!given.Allowed)
+                {
+                    refused = given.Reason;
+                }
+                else if (given.HasWarning)
+                {
+                    warning = given.Warning;
+                }
+
+                continue;
+            }
+
+            if (_harvestMode is not null)
+            {
+                if (direction < 0)
+                {
+                    _world!.EraseHarvest(tile);
+                    continue;
+                }
+
+                // Refusals are silent per tile and counted for the stroke: a drag
+                // across mixed ground is MEANT to skip what the mode does not take,
+                // and forty sentences would bury the one that matters (D42, D92).
+                PlacementVerdict marked = _world!.PaintHarvest(tile, _harvestMode.Value);
+                if (!marked.Allowed)
+                {
+                    refused = marked.Reason;
+                }
+                else if (marked.HasWarning)
+                {
+                    warning = marked.Warning;
+                }
+
+                continue;
+            }
+
+            if (direction < 0)
+            {
+                // ⭐⭐ ERASING OVER HOUSES IS A DEMOLITION ORDER NOW (Joe, 2026-08-26), and the
+                // objection the sim used to make is answered here rather than argued away:
+                // *"pulling houses down because somebody adjusted a brush would be a cruel
+                // reading of an undo."* **True of an accident, false of an intent** — so the
+                // stroke is counted, warned about, and takes a SECOND deliberate stroke.
                 //
-                // ⚠️ It is 5x5 = 25 tiles now rather than 13, so ONE CLICK PAINTS NEARLY
-                // TWICE THE GROUND. Both loops changed together — this one and the preview
-                // outline (D198) — because a preview that disagrees with the paint is worse
-                // than no preview.
-
-                var tile = new GridPos(centre.X + dx, centre.Y + dy);
-
-                // Ground given to one building (D86). Same stroke shape as the others — one
-                // sentence for the drag, never one per tile — and it stops rather than
-                // half-painting if the hut went away mid-stroke.
-                if (_groundFor != 0)
+                // ⚠️ Armed per stroke rather than per tile, because a neighbourhood is erased
+                // with one drag: warning once and requiring one confirmation is the shape D42
+                // chose for painting and D221 for destroying a full store.
+                if (_world!.HouseholdAt(tile) is not null)
                 {
-                    Workplace? owner = _world!.FindWorkplace(_groundFor);
-                    if (owner is null)
-                    {
-                        // ⛔⛔ IT PUTS THE TOOL DOWN AND LEAVES THE STROKE, WHICH IS WHAT THE
-                        // COMMENT ABOVE HAS ALWAYS CLAIMED IT DID. It used to clear `_groundFor`
-                        // and `continue` — so every remaining tile of that stroke fell through
-                        // to the residential arm below and **painted housing land the player
-                        // never asked for**. It abandoned the tool and kept the brush.
-                        PlacementMessageChanged?.Invoke(
-                            "That building is gone, so there is nothing to give ground to.");
-                        SetTool(MapTool.None);
-                        return;
-                    }
-
-                    if (_brush < 0)
-                    {
-                        _world.EraseWorkGround(owner, tile);
-                        continue;
-                    }
-
-                    PlacementVerdict given = _world.PaintWorkGround(owner, tile);
-                    if (!given.Allowed)
-                    {
-                        refused = given.Reason;
-                    }
-                    else if (given.HasWarning)
-                    {
-                        warning = given.Warning;
-                    }
-
-                    continue;
+                    homesUnderTheBrush++;
                 }
 
-                if (_harvestMode is not null)
-                {
-                    if (_brush < 0)
-                    {
-                        _world!.EraseHarvest(tile);
-                        continue;
-                    }
+                _world.EraseResidential(tile);
+                continue;
+            }
 
-                    // Refusals are silent per tile and counted for the stroke: a drag
-                    // across mixed ground is MEANT to skip what the mode does not take,
-                    // and forty sentences would bury the one that matters (D42, D92).
-                    PlacementVerdict marked = _world!.PaintHarvest(tile, _harvestMode.Value);
-                    if (!marked.Allowed)
-                    {
-                        refused = marked.Reason;
-                    }
-                    else if (marked.HasWarning)
-                    {
-                        warning = marked.Warning;
-                    }
-
-                    continue;
-                }
-
-                if (_brush < 0)
-                {
-                    // ⭐⭐ ERASING OVER HOUSES IS A DEMOLITION ORDER NOW (Joe, 2026-08-26), and the
-                    // objection the sim used to make is answered here rather than argued away:
-                    // *"pulling houses down because somebody adjusted a brush would be a cruel
-                    // reading of an undo."* **True of an accident, false of an intent** — so the
-                    // stroke is counted, warned about, and takes a SECOND deliberate stroke.
-                    //
-                    // ⚠️ Armed per stroke rather than per tile, because a neighbourhood is erased
-                    // with one drag: warning once and requiring one confirmation is the shape D42
-                    // chose for painting and D221 for destroying a full store.
-                    if (_world!.HouseholdAt(tile) is not null)
-                    {
-                        homesUnderTheBrush++;
-                    }
-
-                    _world.EraseResidential(tile);
-                    continue;
-                }
-
-                PlacementVerdict verdict = _world!.PaintResidential(tile);
-                if (verdict.HasWarning)
-                {
-                    warning = verdict.Warning;
-                }
+            PlacementVerdict verdict = _world!.PaintResidential(tile);
+            if (verdict.HasWarning)
+            {
+                warning = verdict.Warning;
             }
         }
 
@@ -1041,7 +1130,7 @@ public partial class VillageMap : Control
 
         if (_brush != 0)
         {
-            PaintAround(where);
+            PaintAround(where, _brush);
             QueueRedraw();
             return;
         }
@@ -1171,7 +1260,19 @@ public partial class VillageMap : Control
     }
 
     /// <summary>Tell the shell what the cursor is currently over.</summary>
-    private void Announce()
+    private void Announce() => PlacementMessageChanged?.Invoke(TheSentenceForWhatIsHeld());
+
+    /// <summary>
+    /// <b>The sentence for whatever is in hand</b> — separated from saying it (D327).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>So the width probe can pose every one of them.</b> `PinTheBarHeight` reserves the
+    /// placement label at a bare newline rather than a real sentence, so a message that wraps at
+    /// runtime grows the bar past its own pin and nothing catches it. **A list nobody can enumerate
+    /// cannot be measured**, and these are a list — the sim's own refusals, which share the label,
+    /// are not. *One condition, two callers, applied to a string.*
+    /// </remarks>
+    private string TheSentenceForWhatIsHeld()
     {
         // ⚠️ THE GROUND BRUSH FIRST, because it is a positive brush and the residential
         // wording below would otherwise claim it. Joe saw exactly that: pressing "Give ground"
@@ -1182,56 +1283,59 @@ public partial class VillageMap : Control
             Workplace? owner = _world?.FindWorkplace(_groundFor);
             string whose = owner?.Name ?? "this building";
 
-            PlacementMessageChanged?.Invoke(_brush < 0
-                ? $"Drag to take ground back from {whose}. Right-click to stop."
-                : $"Drag to give ground to {whose} — its people work what you paint. "
-                    + "Right-click to stop.");
-            return;
+            return _brush < 0
+                ? $"Drag to take ground back from {whose}{TheBrushKeys(erasing: true)}"
+                : $"Drag to give ground to {whose}{TheBrushKeys(erasing: false)}";
         }
 
         if (_moving)
         {
-            PlacementMessageChanged?.Invoke(
-                "Click a building to move, then click where it should stand. A store must be "
-                + "empty first, and houses move by the land brush. Right-click to stop.");
-            return;
+            return "Click a building to move, then click where it should stand. A store must be "
+                + "empty first, and houses move by the land brush. Right-click or Esc to stop.";
         }
 
         if (_emptying)
         {
-            PlacementMessageChanged?.Invoke(
-                "Click a store to have its goods carried out to the others, or click it again to "
-                + "stop. Right-click to put the tool down.");
-            return;
+            return "Click a store to have its goods carried out to the others, or click it again "
+                + "to stop. Right-click or Esc to put the tool down.";
+        }
+
+        // ⛔⛔ THE HARVEST BRUSH HAD NO SENTENCE OF ITS OWN AND FELL THROUGH TO THE RESIDENTIAL
+        // ONE (found while rewriting these, D327). Marking a wood for felling announced
+        // *"Drag to paint where the village may build homes."* — **a sentence about the wrong
+        // tool, over a tool that is not that one**, which is `build-bar.md §5.1` bug 1 arriving
+        // from a third direction. It has to be tested BEFORE the `_brush` arms, for the same
+        // reason the ground brush is: those arms are written as if residential were the only
+        // brush, and they claim anything that reaches them.
+        if (_harvestMode is not null)
+        {
+            return _brush < 0
+                ? $"Drag to rub the marking out{TheBrushKeys(erasing: true)}"
+                : $"Drag to mark {WhatTheHarvestBrushTakes()} to take"
+                    + TheBrushKeys(erasing: false);
         }
 
         if (_brush > 0)
         {
-            PlacementMessageChanged?.Invoke(
-                "Drag to paint where the village may build homes. Right-click to stop.");
-            return;
+            return $"Drag to paint where homes may stand{TheBrushKeys(erasing: false)}";
         }
 
         if (_brush < 0)
         {
-            PlacementMessageChanged?.Invoke(
-                "Drag to take land back. Houses already standing stay put. Right-click to stop.");
-            return;
+            return $"Drag to take land back{TheBrushKeys(erasing: true)}";
         }
 
         if (_demolishing)
         {
-            PlacementMessageChanged?.Invoke("Click a building to pull it down. Right-click to stop.");
-            return;
+            return "Click a building to pull it down. Right-click or Esc to stop.";
         }
 
         if (_building is null)
         {
-            PlacementMessageChanged?.Invoke(string.Empty);
-            return;
+            return string.Empty;
         }
 
-        PlacementMessageChanged?.Invoke(_verdict switch
+        return _verdict switch
         {
             { Allowed: false } => _verdict.Reason,
             { HasWarning: true } => _verdict.Warning + TheMarketsServiceArea(),
@@ -1240,10 +1344,180 @@ public partial class VillageMap : Control
             // tall against 161** — which would have spent map room Joe had twice asked to get back,
             // to explain a key that only matters while a building is in your hand. *A contextual
             // hint costs nothing when it is not needed.*
-            _ => "Click to mark it out. Middle-drag turns it (shift for fine), R by a step. Right-click to stop."
+            // ⚠️ TRIMMED TO PAY FOR "or Esc" (D327). This is the longest sentence the label can be
+            // given — it carries the market's service area on top — and the width probe measured it
+            // at **1274px of the 1280 the window has**. Adding the new cancel to it without taking
+            // something out would have wrapped it, which grows the bar past the single line
+            // `PinTheBarHeight` reserves. *"shift for fine" → "shift: fine" is the cheapest three
+            // words in the sentence.*
+            _ => "Click to mark it out. Middle-drag turns it (shift: fine), R steps. "
+                + "Right-click or Esc to stop."
                 + TheMarketsServiceArea(),
-        });
+        };
     }
+
+    /// <summary>
+    /// ⭐ What every brush can do, in one clause — <b>written once because it is true of all four</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The size, the wheel and the right button are the same facts for the land brush, the harvest
+    /// brush and the ground brush. Four copies of one clause is four places for it to go stale —
+    /// which is exactly what happened to the shape comment this slice deleted.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>It lives here rather than in the bar's permanent hint line</b> (D323): adding one
+    /// clause to that footer wrapped the bar to another row, **measured at 181 against 161**. *A
+    /// contextual hint costs nothing when it is not needed.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Every one of these sentences must stay on ONE line at 1280 logical pixels.</b>
+    /// <c>PinTheBarHeight</c> reserves the placement label at a bare newline rather than posing a
+    /// real sentence, so a wrapped message grows the bar past its own pin and nothing catches it.
+    /// The width probe poses them (D327) — keep them there.
+    /// </para>
+    /// </remarks>
+    private string TheBrushKeys(bool erasing) => erasing
+        ? $" — {TheBrushInWords()}, alt+wheel resizes. Esc to stop."
+        : $" — {TheBrushInWords()}, alt+wheel resizes, right-drag takes back. Esc to stop.";
+
+    /// <summary>
+    /// ⭐⭐ Every sentence the placement line can be given by a tool — <b>for the width probe</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>Posed and put back.</b> It sets the hand fields directly rather than going through
+    /// <see cref="SetTool"/>, which would fire <see cref="ToolChanged"/> and relight the bar
+    /// mid-measurement — and restores every one of them afterwards. *An instrument that leaves the
+    /// game in a state it could not have reached on its own is how it starts lying about something
+    /// else* (D326's fold probe, the same lesson).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It reads the real sentences rather than holding copies</b>, or the probe would be
+    /// measuring text the game does not say — which is the whole failure mode it exists to catch.
+    /// ⚠️ The sim's own refusals share this label and are NOT here: there is no list to take them
+    /// from, which is the reason `PinTheBarHeight` reserves a placeholder in the first place.
+    /// </para>
+    /// </remarks>
+    public IEnumerable<(string Tool, string Sentence)> EverySentenceAToolCanSay()
+    {
+        MapTool wasTool = Tool;
+        BuildingKind? wasBuilding = _building;
+        HarvestBrush? wasHarvest = _harvestMode;
+        int wasGroundFor = _groundFor;
+        int wasBrush = _brush;
+        bool wasDemolishing = _demolishing;
+        bool wasMoving = _moving;
+        bool wasEmptying = _emptying;
+        int wasRadius = _brushRadius;
+        BrushShape wasShape = _brushShape;
+
+        var said = new List<(string, string)>();
+
+        // ⛔ THE BIGGEST BRUSH AND THE LONGEST SHAPE WORD, because a sentence that fits at 5×5
+        // square and wraps at 13×13 round is the "correct at startup, wrong later" fault every
+        // other pose in this probe exists to refuse. **Measure the widest the player can reach.**
+        _brushRadius = BrushStroke.MaxRadius;
+        _brushShape = BrushShape.Round;
+
+        void Say(string tool)
+        {
+            said.Add((tool, TheSentenceForWhatIsHeld()));
+        }
+
+        Clear();
+        _brush = 1;
+        Say("paint land");
+
+        _brush = -1;
+        Say("take land");
+
+        Clear();
+        _brush = 1;
+        _harvestMode = HarvestBrush.Everything;
+        Say("harvest");
+
+        _brush = -1;
+        Say("unmark");
+
+        // The longest workplace name the catalogue can produce, so the ground brush is posed at
+        // its widest rather than at whatever happens to stand in this village.
+        Clear();
+        _brush = 1;
+        _groundFor = LongestNamedWorkplace();
+        Say("give ground");
+
+        _brush = -1;
+        Say("take ground");
+
+        Clear();
+        _demolishing = true;
+        Say("demolish");
+
+        Clear();
+        _moving = true;
+        Say("move");
+
+        Clear();
+        _emptying = true;
+        Say("empty");
+
+        Clear();
+        _building = BuildingKind.Market;
+        _verdict = PlacementVerdict.Fine;
+        Say("place");
+
+        _building = wasBuilding;
+        _harvestMode = wasHarvest;
+        _groundFor = wasGroundFor;
+        _brush = wasBrush;
+        _demolishing = wasDemolishing;
+        _moving = wasMoving;
+        _emptying = wasEmptying;
+        _brushRadius = wasRadius;
+        _brushShape = wasShape;
+        Tool = wasTool;
+
+        return said;
+
+        void Clear()
+        {
+            _building = null;
+            _harvestMode = null;
+            _groundFor = 0;
+            _brush = 0;
+            _demolishing = false;
+            _moving = false;
+            _emptying = false;
+        }
+    }
+
+    /// <summary>Which standing workplace has the longest name — the ground brush's worst case.</summary>
+    private int LongestNamedWorkplace()
+    {
+        int id = 0;
+        int longest = -1;
+
+        foreach (Workplace place in _world?.Workplaces ?? [])
+        {
+            if (place.Name.Length > longest)
+            {
+                longest = place.Name.Length;
+                id = place.Id;
+            }
+        }
+
+        return id;
+    }
+
+    /// <summary>What the harvest brush is set to take, in the words the player chose it by.</summary>
+    private string WhatTheHarvestBrushTakes() => _harvestMode switch
+    {
+        HarvestBrush.Trees => "trees",
+        HarvestBrush.Stone => "stone",
+        HarvestBrush.Iron => "iron",
+        _ => "everything standing",
+    };
 
     /// <summary>
     /// ⭐⭐ What a market here would actually serve (D201, Joe) — <b>a count, not a ring</b>.
@@ -1495,15 +1769,6 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
-    /// The building about to be placed, under the cursor, coloured by what the sim says.
-    /// </summary>
-    /// <remarks>
-    /// Three colours for three answers, and the middle one is the point (D43): green is
-    /// fine, <b>amber is allowed but unwise</b>, red is impossible. The player may build
-    /// on amber. The words alongside say why it is amber, because a colour on its own
-    /// is the shrug this project keeps refusing.
-    /// </remarks>
-    /// <summary>
     /// ⭐⭐ The brushful about to be laid down, under the cursor (D198, Joe).
     /// </summary>
     /// <remarks>
@@ -1527,9 +1792,17 @@ public partial class VillageMap : Control
     /// a preview that can lie.
     /// </para>
     /// <para>
-    /// <b>The diamond, not a square</b>, because that is the shape <see cref="PaintAround"/>
-    /// actually lays down. A square preview over a diamond brush would be a new lie replacing an
-    /// old absence.
+    /// ⛔⛔ <b>THE SHAPE IS <see cref="BrushStroke"/>'S, AND NEITHER THIS METHOD NOR
+    /// <see cref="PaintAround"/> OWNS A LOOP ANY MORE (D327).</b> This doc-comment used to say
+    /// *"The diamond, not a square"* — three lines above an inline comment reading
+    /// <b>SQUARE, NOT A DIAMOND</b>, which is what the code actually did. **Both loops carried the
+    /// same pasted comment block warning that they had to change together, and one of the two
+    /// copies had already gone stale.** *That is the argument for one function, made by the code
+    /// itself.*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>And it follows the GESTURE, not the tool</b> — during a right-drag the preview shows
+    /// the erase colour, because the promise is being tested in exactly that moment.
     /// </para>
     /// </remarks>
     private void DrawTheBrushful()
@@ -1539,37 +1812,33 @@ public partial class VillageMap : Control
             return;
         }
 
-        for (int dy = -BrushRadius; dy <= BrushRadius; dy++)
+        int direction = TheStrokeInProgress();
+
+        foreach (GridPos tile in BrushStroke.TilesUnder(_hovered, _brushRadius, _brushShape))
         {
-            for (int dx = -BrushRadius; dx <= BrushRadius; dx++)
+            if (!_world.Map.Contains(tile))
             {
-                // ⭐ SQUARE, NOT A DIAMOND (Joe, 2026-08-25). This was
-                // `Abs(dx) + Abs(dy) > BrushRadius` — Manhattan distance, which paints a
-                // rhombus. A brush the player drags over ground they can see should cover
-                // the rectangle they think it covers; the diamond left corners unpainted
-                // and made a dragged stroke scallop along its edges.
-                //
-                // ⚠️ It is 5x5 = 25 tiles now rather than 13, so ONE CLICK PAINTS NEARLY
-                // TWICE THE GROUND. Both loops changed together — this one and the preview
-                // outline (D198) — because a preview that disagrees with the paint is worse
-                // than no preview.
-
-                var tile = new GridPos(_hovered.X + dx, _hovered.Y + dy);
-                if (!_world.Map.Contains(tile))
-                {
-                    continue;
-                }
-
-                Vector2 centre = ToScreen(tile);
-                float size = Mathf.Max(6f, _pixelsPerTile * 0.9f);
-                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-
-                Color colour = ColourForTheBrushOn(tile);
-                DrawRect(rect, colour with { A = 0.30f });
-                DrawRect(rect, colour with { A = 0.85f }, filled: false, width: 1f);
+                continue;
             }
+
+            Vector2 centre = ToScreen(tile);
+            float size = Mathf.Max(6f, _pixelsPerTile * 0.9f);
+            var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+
+            Color colour = ColourForTheBrushOn(tile, direction);
+            DrawRect(rect, colour with { A = 0.30f });
+            DrawRect(rect, colour with { A = 0.85f }, filled: false, width: 1f);
         }
     }
+
+    /// <summary>Which way the stroke under the cursor would go, right now (D327).</summary>
+    /// <remarks>
+    /// ⭐ <b>The right button outranks the tool</b>, because right always takes back. With no
+    /// button down this is simply the held brush, which is what the preview shows while the player
+    /// is only hovering.
+    /// </remarks>
+    private int TheStrokeInProgress() =>
+        Input.IsMouseButtonPressed(MouseButton.Right) ? -1 : _brush;
 
     /// <summary>What the brush would do to this tile, as a colour.</summary>
     /// <remarks>
@@ -1577,11 +1846,11 @@ public partial class VillageMap : Control
     /// tile with no paint on it would be telling the player they had done something wrong when
     /// they had not.
     /// </remarks>
-    private Color ColourForTheBrushOn(GridPos tile)
+    private Color ColourForTheBrushOn(GridPos tile, int direction)
     {
         SimWorld world = _world!;
 
-        if (_brush < 0)
+        if (direction < 0)
         {
             return GhostWarned;
         }
@@ -1612,6 +1881,22 @@ public partial class VillageMap : Control
         };
     }
 
+    /// <summary>
+    /// The building about to be placed, under the cursor, coloured by what the sim says.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Three colours for three answers, and the middle one is the point (D43): green is
+    /// fine, <b>amber is allowed but unwise</b>, red is impossible. The player may build
+    /// on amber. The words alongside say why it is amber, because a colour on its own
+    /// is the shrug this project keeps refusing.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>This comment spent a stretch stranded above <see cref="DrawTheBrushful"/></b>, whose
+    /// own summary followed it immediately — so the compiler bound the second one and this said
+    /// nothing about anything. Restored to the method it describes (D327).
+    /// </para>
+    /// </remarks>
     private void DrawTheGhost()
     {
         if (_building is null)

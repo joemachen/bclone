@@ -137,6 +137,24 @@ The `Begin*` methods do **not** all clear the same fields. `BeginBuilding`, `Beg
 All three are one cause — **eight fields that must agree, cleared in seven places** — and one
 `SetTool` is the fix. (3) additionally has to leave the stroke rather than `continue`.
 
+#### ⛔⛔ 5.1a A FOURTH INSTANCE, FOUND 2026-09-07 (D327) — AND IT WAS NOT A CLEARING BUG
+
+`Announce()` **never tested `_harvestMode` at all.** Marking a wood for felling fell through to the
+residential arm and announced *"Drag to paint where the village may build homes."* — **the harvest
+brush, which is a whole tab of the bar, had no sentence of its own for its entire life.**
+
+⭐ **So the cause was not the eight fields this section is about.** `SetTool` fixed the clearing and
+could not fix this: the fields were correct, and the *reading* of them was written as if residential
+were the only brush, so it claimed anything that reached it. **The ordering guard at the top of
+`Announce` — the ground brush first — is exactly the same shape**, which is what makes this the
+fourth instance rather than a new problem.
+
+⚠️ **The lesson to carry: a fall-through arm claims every case nobody wrote a branch for.** The
+ground brush got its early test because Joe saw it fire; the harvest brush never did, because
+*"drag to paint where the village may build homes"* is a plausible enough sentence over a map that
+nobody reads it twice. **An arm written as a default is a bug report waiting for somebody to look
+closely.**
+
 ### 5.2 The bar must never clip
 
 ⛔ **`HFlowContainer` everywhere, never `HBoxContainer`.** D242: an `HBoxContainer` has no way to

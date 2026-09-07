@@ -24,6 +24,20 @@ namespace Bclone.Sim.Tests;
 /// is D142's three call sites and D148's two meanings stated as a rule. <i>A preview computed
 /// from a second copy of the condition is a preview that can lie.</i>
 /// </para>
+/// <para>
+/// ⛔⛔ <b>WHAT THESE DO NOT GUARD, STATED SO NOBODY INHERITS THE WRONG CONFIDENCE (D327).</b>
+/// They assert <c>CanPaint*</c> ≡ <c>Paint*</c> <b>per tile</b>, and are therefore
+/// <b>shape-agnostic</b>: they would have stayed green through a preview that drew a circle over a
+/// square stroke — which is exactly the divergence the two copied loops in <c>VillageMap</c> were one
+/// careless edit away from, and one of those two comment blocks <em>had already gone stale saying
+/// so</em>. <b>The shape is <see cref="BrushShapeTests"/>'s question</b>, and the reason it can be
+/// asked at all is that both loops now call <c>BrushStroke.TilesUnder</c>.
+/// </para>
+/// <para>
+/// ⚠️ <b>And "both loops call it" is not assertable from here</b> — nothing in <c>tests/</c>
+/// references <c>Bclone.Game</c> (D11, D160), so that half is structural rather than guarded: there
+/// is one function, and neither caller owns a loop any more. *Recorded rather than papered over.*
+/// </para>
 /// </remarks>
 public sealed class BrushPreviewTests
 {
