@@ -1,4 +1,5 @@
 using Bclone.Sim.Config;
+using Bclone.Sim.Core;
 
 namespace Bclone.Sim.World;
 
@@ -249,6 +250,25 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     HunterLodge = 13,
+
+    /// <summary>
+    /// A long communal storehouse — <b>the first building that is not one tile</b> (D320).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe asked for a multi-tile longhouse</b>, and it is a storehouse rather than a
+    /// dwelling for a reason worth stating: housing in this game is painted with the land brush and
+    /// never placed by a button (D42, D102), so a longhouse that was a *home* would be a change to
+    /// how housing works rather than a demonstration of footprints.
+    /// </para>
+    /// <para>
+    /// ⭐⭐ <b>It exists to make extent and facing REAL rather than machinery with no content behind
+    /// it.</b> Every other building is 1×1, so until this row was typed nothing in the shipped game
+    /// could show that a building covers more than one tile or that turning it means anything —
+    /// which is D98's rule about a number that is always zero, one level up.
+    /// </para>
+    /// </remarks>
+    Longhouse = 14,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>
@@ -517,6 +537,16 @@ public sealed class ConstructionSite
     /// somebody swings the first hammer.*
     /// </para>
     /// </remarks>
+    /// <summary>Which way the finished building will face (gridless 2b, D320).</summary>
+    /// <remarks>
+    /// ⭐ <b>The site carries it, because the decision is made when the player marks the ground and
+    /// the building does not exist until years later.</b> Without this the facing would be chosen,
+    /// shown in the ghost, and then quietly thrown away the moment a builder finished the work —
+    /// which is the shape of D227's complaint, a feature that exists everywhere except where the
+    /// player would look for it.
+    /// </remarks>
+    public Angle Facing { get; init; }
+
     public bool Demolishing { get; init; }
 
     /// <summary>What it costs. Set once, at marking.</summary>

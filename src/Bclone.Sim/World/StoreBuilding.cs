@@ -1,3 +1,5 @@
+using Bclone.Sim.Core;
+
 namespace Bclone.Sim.World;
 
 /// <summary>What a store building is for.</summary>
@@ -138,6 +140,24 @@ public sealed class StoreBuilding
 
     /// <summary>Move it. Only a finished relocation may.</summary>
     internal void MoveTo(GridPos to) => _position = to;
+
+    /// <summary>Which way this store is turned (gridless 2b, D320).</summary>
+    public Angle Facing { get; init; }
+
+    /// <summary>How many tiles across, before turning — from the building's row.</summary>
+    public int ExtentWidth { get; init; } = 1;
+
+    /// <summary>How many tiles deep, before turning — from the building's row.</summary>
+    public int ExtentHeight { get; init; } = 1;
+
+    /// <summary>The ground this store stands on.</summary>
+    public Footprint Footprint => new()
+    {
+        Origin = _position,
+        Width = ExtentWidth,
+        Height = ExtentHeight,
+        Facing = Facing,
+    };
 
     /// <summary>Goods held here, and how much of them will fit.</summary>
     /// <remarks>

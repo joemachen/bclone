@@ -2252,6 +2252,39 @@ public sealed record SimConfig
             // by standing near them — over TREES, which is not what it takes. Game is not wood.
             HuntingRadius = HuntingRadius,
         },
+
+        // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).
+        // Three tiles by one, and it exists so that extent and facing are content the player can
+        // place rather than machinery with nothing behind it. Everything else is 1×1, so until
+        // this row nothing shipped could show a footprint covering more than its own tile.
+        //
+        // ⚠️ A STOREHOUSE RATHER THAN A DWELLING, and that is a design constraint rather than a
+        // preference: housing is painted with the land brush and never placed by a button (D42,
+        // D102), so a longhouse that was a home would be a change to how housing works instead of
+        // a demonstration of footprints.
+        //
+        // ⭐ Priced from the warehouse's own keys rather than new numbers — it is a warehouse that
+        // lies along the ground, so inventing `longhouse_logs` would be a second source of truth
+        // for one building (D16, and the granary's own note about deriving a capacity).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Longhouse,
+            Name = "longhouse",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, WarehouseLogs),
+                new MaterialCost(World.Goods.Stone, WarehouseStone),
+            },
+            WorkTicks = WarehouseWorkTicks,
+            Stores = StoreKind.Warehouse,
+            // ⚠️ STATED, because the economy derives a capacity for exactly three buildings —
+            // the warehouse, the stockpile and the market — and the validator says so out loud.
+            // ⭐ Three warehouses' worth, because it is three tiles of warehouse. *The extent is
+            // the reason for the number rather than a number picked to suit it.*
+            StoreCapacity = VillageEconomy.WarehouseCapacity(this) * 3,
+            ExtentWidth = 3,
+            ExtentHeight = 1,
+        },
     };
 
     [JsonPropertyName("skills")]

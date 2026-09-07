@@ -3476,7 +3476,7 @@ public sealed class SimWorld
     /// — pure (D198).
     /// </summary>
     /// <remarks>
-    /// <b>The <see cref="CanBuildAt"/> / <see cref="Mark"/> split, applied to the brush.</b> The
+    /// <b>The <see cref="CanBuildAt"/> / <see cref="Mark(BuildingKind, GridPos)"/> split, applied to the brush.</b> The
     /// view could show a ghost under the cursor for a *building* and could show nothing at all
     /// for a *brush*, because every paint method mixed the test with the doing — so the only way
     /// to ask *"would this tile take?"* was to paint it. Joe, playing: *"when I'm painting I
@@ -4160,7 +4160,7 @@ public sealed class SimWorld
     /// </para>
     /// <para>
     /// <b>The paint is still required</b>, so this is a change of priority and not of scope:
-    /// <see cref="Mark"/> puts it on, and a player who deliberately takes it off is telling
+    /// <see cref="Mark(BuildingKind, GridPos)"/> puts it on, and a player who deliberately takes it off is telling
     /// the village something. What moves is only which painted tile is taken first.
     /// </para>
     /// </remarks>
@@ -5380,7 +5380,16 @@ public sealed class SimWorld
     /// ⭐ <b>Building over a standing crop is allowed and said out loud</b> — see
     /// <see cref="WarningForBuildingOverACrop"/>.
     /// </remarks>
-    public PlacementVerdict Mark(BuildingKind kind, GridPos position)
+    public PlacementVerdict Mark(BuildingKind kind, GridPos position) =>
+        Mark(kind, position, Angle.Zero);
+
+    /// <summary>Mark a building out, turned the way the player is holding it (D320).</summary>
+    /// <remarks>
+    /// ⭐ <b>An overload rather than a changed signature</b>, because every existing caller means
+    /// "facing north" and saying so at ninety call sites would be noise. The facing rides on the
+    /// construction site and reaches the finished building years later.
+    /// </remarks>
+    public PlacementVerdict Mark(BuildingKind kind, GridPos position, Angle facing)
     {
         PlacementVerdict verdict = CanBuildAt(kind, position);
         if (!verdict.Allowed)
@@ -5463,7 +5472,7 @@ public sealed class SimWorld
             return verdict;
         }
 
-        RaiseSiteFor(kind, position, name, recipe, forHouseholdId: 0);
+        RaiseSiteFor(kind, position, name, recipe, forHouseholdId: 0, facing: facing);
         return verdict;
     }
 
@@ -5918,7 +5927,8 @@ public sealed class SimWorld
         string name,
         BuildingRecipe recipe,
         int forHouseholdId,
-        GridPos? movingFrom = null)
+        GridPos? movingFrom = null,
+        Angle facing = default)
     {
         Workplaces.Add(new Workplace
         {
@@ -5934,6 +5944,7 @@ public sealed class SimWorld
                 Name = name,
                 ForHouseholdId = forHouseholdId,
                 MovingFrom = movingFrom,
+                Facing = facing,
             },
         });
 
@@ -6266,7 +6277,7 @@ public sealed class SimWorld
             // kind fell through to `RaiseStore`, whose own two switches made it a market with a
             // market's capacity. **A building with no row now throws, and says which.**
             default:
-                RaiseFinished(plan.Kind, site.Position, plan.Name);
+                RaiseFinished(plan.Kind, site.Position, plan.Name, plan.Facing);
                 break;
         }
 
@@ -6283,8 +6294,10 @@ public sealed class SimWorld
     /// one of them and nobody notices for a phase; <c>StoreKind</c> has already taught this
     /// lesson five times (D76).
     /// </remarks>
-    private StoreBuilding RaiseStore(BuildingKind kind, GridPos position, string name)
+    private StoreBuilding RaiseStore(
+        BuildingKind kind, GridPos position, string name, Angle facing = default)
     {
+        BuildingRow? row = BuildingsCatalog[kind];
         // ⭐ THE STORE KIND IS A COLUMN NOW. Both of these were switches that named the market
         // rather than defaulting to it (D108) — they were the second and third silent defaults on
         // the path from `Complete`, and between them they would have turned any building kind
@@ -6303,6 +6316,12 @@ public sealed class SimWorld
             Name = name,
             Position = position,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = capacity },
+
+            // ⭐ The row's extent and the player's facing reach the store too (D320), so a long
+            // storehouse stands on the ground it actually occupies.
+            Facing = facing,
+            ExtentWidth = row?.ExtentWidth ?? 1,
+            ExtentHeight = row?.ExtentHeight ?? 1,
         };
 
         StoreBuildings.Add(building);
@@ -6340,7 +6359,8 @@ public sealed class SimWorld
     /// <see cref="Complete"/> for that reason.
     /// </para>
     /// </remarks>
-    private void RaiseFinished(BuildingKind kind, GridPos position, string name)
+    private void RaiseFinished(
+        BuildingKind kind, GridPos position, string name, Angle facing = default)
     {
         BuildingRow row = BuildingsCatalog[kind]
             ?? throw new ArgumentOutOfRangeException(
@@ -6348,7 +6368,7 @@ public sealed class SimWorld
 
         if (row.Stores is not null)
         {
-            RaiseStore(kind, position, name);
+            RaiseStore(kind, position, name, facing);
         }
 
         // ⭐ A library is a fourth thing a building can be (Phase 4 slice 2) — not a store, not a
@@ -6412,6 +6432,7 @@ public sealed class SimWorld
             Position = position,
             Capacity = seats,
             GatheringRadius = row.GatheringRadius,
+            Facing = facing,
 
             // ⭐ THE ROW'S EXTENT REACHES THE BUILDING (gridless 2b, D319), which is what makes
             // `extent_width` real rather than a column nothing reads — D98's rule about a number

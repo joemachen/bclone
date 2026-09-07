@@ -117,7 +117,8 @@ public sealed class ModdedBuildingTests
         // ⭐ THE FISHING HUT, AND `must_touch` IS A COLUMN A MODDER CAN REACH — which is the
         // claim this file exists to make, applied to the newest kind of placement rule.
         { "id": 12, "name": "fishing hut", "seats": 4, "must_touch": "Water", "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ]},
-        { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 }, { "goods": "Stone", "amount": 12 } ] }
+        { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 }, { "goods": "Stone", "amount": 12 } ] },
+        { "id": 14, "name": "longhouse", "stores": "Warehouse", "store_capacity": 900, "extent_width": 3, "extent_height": 1, "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] }
       ]
     }
     """;
@@ -172,8 +173,9 @@ public sealed class ModdedBuildingTests
         BuildingsCatalog catalog = world.BuildingsCatalog;
 
         // 12 → 13 when the fishing hut shipped (2026-09-02); → 14 with the hunter's lodge
-        // (2026-09-03). The modder's boathouse is the fifteenth.
-        Assert.Equal(14, catalog.Count);
+        // (2026-09-03); → 15 with the longhouse, the first building that is not one tile
+        // (2026-09-06, D320). The modder's boathouse is the sixteenth.
+        Assert.Equal(15, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -303,6 +305,7 @@ public sealed class ModdedBuildingTests
             { "id": 11, "name": "moot hall",       "civic": true, "singleton": true,           "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 20 } ] },
             { "id": 12, "name": "fishing hut",     "seats": 4, "must_touch": "Water",            "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12,             "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 } ] },
+            { "id": 14, "name": "longhouse",      "stores": "Warehouse", "store_capacity": 900, "extent_width": 3, "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },

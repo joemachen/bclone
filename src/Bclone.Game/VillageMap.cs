@@ -439,6 +439,16 @@ public partial class VillageMap : Control
     /// <summary>What the player is about to put down, or null when just looking.</summary>
     private BuildingKind? _building;
 
+    /// <summary>Which way the building in the player's hand is turned (gridless 2b, D320).</summary>
+    /// <remarks>
+    /// ⭐ <b>View state, not sim state, until the moment it is marked.</b> A ghost being turned is a
+    /// decision in progress; only placing it makes it a fact about the village.
+    /// ⚠️ <b>A sixteenth of a turn per press is a UI choice, not a limit of the type.</b>
+    /// <c>Angle</c> holds 65,536 of them (D318); 22.5° is simply what a keypress can aim. *If a
+    /// finer control ever wants it — a drag, a modifier — the type is already there.*
+    /// </remarks>
+    private Angle _ghostFacing;
+
     /// <summary>True when the next click pulls a building down instead of raising one.</summary>
     private bool _demolishing;
 
@@ -634,6 +644,25 @@ public partial class VillageMap : Control
     /// <summary>Start marking out a building. Null stops.</summary>
     public void BeginBuilding(BuildingKind? kind) =>
         SetTool(kind is null ? MapTool.None : MapTool.Building, building: kind);
+
+    /// <summary>Turn the building in the player's hand a sixteenth of a turn.</summary>
+    /// <remarks>
+    /// ⭐ <b>Bound to R</b>, because a facing the player cannot reach is a sim capability that does
+    /// not exist as far as the game is concerned — D227's rule, and this project has shipped four
+    /// features that way already.
+    /// ⚠️ It deliberately does nothing when no building is held: R while holding a harvest brush
+    /// should not silently turn something the player cannot see.
+    /// </remarks>
+    public void TurnTheGhost()
+    {
+        if (_building is null)
+        {
+            return;
+        }
+
+        _ghostFacing += Angle.FromTurnFraction(1, 16);
+        QueueRedraw();
+    }
 
     /// <summary>Next click pulls a building down.</summary>
     public void BeginDemolishing() => SetTool(MapTool.Demolishing);
@@ -1044,7 +1073,10 @@ public partial class VillageMap : Control
             return;
         }
 
-        PlacementVerdict verdict = _world!.Mark(_building!.Value, where);
+        // ⭐ THE FACING GOES WITH IT (gridless 2b, D320). Turning the ghost and then placing a
+        // building that faces north would be the feature existing everywhere except where the
+        // player looked for it.
+        PlacementVerdict verdict = _world!.Mark(_building!.Value, where, _ghostFacing);
         if (!verdict.Allowed)
         {
             // Stay in build mode: a refusal is information, not a dismissal, and
@@ -1259,6 +1291,46 @@ public partial class VillageMap : Control
         QueueRedraw();
     }
 
+    /// <summary>
+    /// Draw a building as the ground it actually stands on — turned (gridless 2b, D320).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b><c>DrawRect</c> cannot rotate</b>, which is why every building on this map was an
+    /// axis-aligned square until now and a finished workplace was a bare circle — a shape with no
+    /// direction to show. A quad over four turned corners can, and it is the same four corners the
+    /// sim uses in <c>Footprint</c>.
+    /// ⭐ <b>Floats and trigonometry are fine here.</b> This is presentation: it never feeds back
+    /// into sim state, so <c>Mathf.Cos</c> is exactly the right tool where <c>Angle.Cos()</c> is the
+    /// right one a layer down. *The boundary is the point, not the arithmetic.*
+    /// </remarks>
+    private void DrawFootprint(
+        Vector2 centre, float widthTiles, float heightTiles, ushort facing, Color fill, Color edge)
+    {
+        float radians = facing * Mathf.Tau / 65536f;
+        float cos = Mathf.Cos(radians);
+        float sin = Mathf.Sin(radians);
+        float halfWidth = widthTiles * _pixelsPerTile / 2f;
+        float halfHeight = heightTiles * _pixelsPerTile / 2f;
+
+        Vector2 Corner(float x, float y) =>
+            centre + new Vector2((x * cos) - (y * sin), (x * sin) + (y * cos));
+
+        Vector2[] quad =
+        {
+            Corner(-halfWidth, -halfHeight),
+            Corner(halfWidth, -halfHeight),
+            Corner(halfWidth, halfHeight),
+            Corner(-halfWidth, halfHeight),
+        };
+
+        DrawColoredPolygon(quad, fill);
+
+        for (int i = 0; i < 4; i++)
+        {
+            DrawLine(quad[i], quad[(i + 1) % 4], edge, 2f);
+        }
+    }
+
     private Vector2 ToScreen(Vector2 tile) => ((tile - _centreTile) * _pixelsPerTile) + (Size / 2f);
 
     private Vector2 ToScreen(GridPos tile) => ToScreen(new Vector2(tile.X, tile.Y));
@@ -1464,8 +1536,6 @@ public partial class VillageMap : Control
         }
 
         Vector2 centre = ToScreen(_hovered);
-        float size = Mathf.Max(10f, _pixelsPerTile * 0.9f);
-        var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
 
         Color colour = _verdict switch
         {
@@ -1474,8 +1544,16 @@ public partial class VillageMap : Control
             _ => GhostFine,
         };
 
-        DrawRect(rect, colour with { A = 0.35f });
-        DrawRect(rect, colour, filled: false, width: 2f);
+        // ⭐⭐ THE GHOST SHOWS THE GROUND, WHICH IS THE WHOLE POINT OF A PREVIEW (gridless 2b, D320).
+        // It drew a fixed 0.9-tile square for every building, which was honest while every building
+        // was one tile and becomes a lie the moment one is three. **This is the only place the
+        // player ever sees a footprint before committing to it**, so it is the one that had to
+        // learn the extent first.
+        BuildingRow? row = world.BuildingsCatalog[_building.Value];
+        float wide = Mathf.Max(1, row?.ExtentWidth ?? 1) * 0.9f;
+        float deep = Mathf.Max(1, row?.ExtentHeight ?? 1) * 0.9f;
+
+        DrawFootprint(centre, wide, deep, _ghostFacing.Raw, colour with { A = 0.35f }, colour);
 
         DrawTheHomesThisMarketWouldServe();
     }
@@ -2184,7 +2262,19 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            DrawCircle(centre, Mathf.Max(4f, _pixelsPerTile * 0.4f), colour);
+            // ⭐⭐ A FINISHED WORKPLACE WAS A BARE CIRCLE, WHICH IS A SHAPE WITH NO DIRECTION
+            // (gridless 2b, D320). It could not show a facing however hard it tried, and it could
+            // not show an extent either — so a three-tile longhouse and a one-tile hut drew
+            // identically. It is the ground it stands on now, turned the way it is turned.
+            // ⚠️ 0.8 of a tile rather than the full tile, so neighbouring buildings still read as
+            // separate things rather than one continuous slab.
+            DrawFootprint(
+                centre,
+                workplace.ExtentWidth * 0.8f,
+                workplace.ExtentHeight * 0.8f,
+                workplace.Facing.Raw,
+                colour,
+                colour with { A = 0.85f });
 
             // ⭐ AND A BUILDING THAT CANNOT DO ITS JOB SAYS SO (Joe, D147). The same shape as
             // D140's full-store ring, for the same reason and with the same switches — and it

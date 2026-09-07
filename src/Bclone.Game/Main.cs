@@ -756,6 +756,12 @@ public partial class Main : Control
             case Key.Key4: SetSpeed(10.0); break;
             case Key.Tab: CycleDetail(); break;
             case Key.G: ToggleSoil(); break;
+
+            // ⭐ R TURNS WHAT IS IN YOUR HAND (gridless 2b, D320). Without a key, facing would be
+            // a sim capability the player cannot reach — this project's fifth such feature if it
+            // shipped that way, and D227's standing rule is that a sim feature is not done until
+            // something in the view calls it.
+            case Key.R: _map.TurnTheGhost(); break;
             case Key.Home: _map.CentreOnTheVillage(); break;
 
             // H hides the furniture, C rolls it up. Two keys because they answer two different
