@@ -1,3 +1,5 @@
+using Bclone.Sim.Core;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -34,6 +36,26 @@ public sealed class TownHall
     /// the reason demolishing it does not re-offer the gift: <em>the founders only die once.</em>
     /// </remarks>
     public required GridPos Position { get => _position; init => _position = value; }
+
+    /// <summary>Which way it is turned, and the ground it stands on (D325).</summary>
+    /// <remarks>
+    /// ⭐ Given for the same reason a workplace and a store have one: **so a multi-tile row of this
+    /// kind works the day a modder types it**, rather than being the one building class that
+    /// silently ignores its own `extent` column. One tile and unturned today.
+    /// </remarks>
+    public Angle Facing { get; init; }
+
+    public int ExtentWidth { get; init; } = 1;
+
+    public int ExtentHeight { get; init; } = 1;
+
+    public Footprint Footprint => new()
+    {
+        Origin = _position,
+        Width = ExtentWidth,
+        Height = ExtentHeight,
+        Facing = Facing,
+    };
 
     /// <summary>Move it. Only a finished relocation may.</summary>
     internal void MoveTo(GridPos to) => _position = to;

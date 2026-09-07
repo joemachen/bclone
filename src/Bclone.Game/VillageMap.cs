@@ -653,6 +653,56 @@ public partial class VillageMap : Control
     /// ⚠️ It deliberately does nothing when no building is held: R while holding a harvest brush
     /// should not silently turn something the player cannot see.
     /// </remarks>
+    /// <summary>Whether a middle-button drag is currently turning the held building.</summary>
+    private bool _turningTheGhost;
+
+    /// <summary>
+    /// ⭐⭐ Turn the held building by a mouse drag — the finest control the type can offer (D325).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe asked whether full freedom means 1/360, and the honest answer is that it depends on
+    /// the DRAG, not on the type.</b> <c>Angle</c> holds 65,536 poses (D318). A drag can only reach
+    /// as many of them as it has pixels to spend, so the pixels-per-turn ratio <em>is</em> the
+    /// granularity.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>At <c>DegreesPerPixel</c> = 1 a full turn is a 360px drag and you can reach 360
+    /// positions — so yes, plain dragging is effectively 1/360.</b> ⚠️ <b>Holding shift makes it a
+    /// tenth of that</b>, which reaches 3,600 — and at that point the limit is the hand rather than
+    /// the arithmetic. *The remainder is carried between events rather than thrown away, so a slow
+    /// drag accumulates the fine steps a fast one skips.*
+    /// </para>
+    /// </remarks>
+    private void TurnTheGhostBy(float pixels, bool fine)
+    {
+        if (_building is null)
+        {
+            return;
+        }
+
+        // Raw steps per pixel: a full turn is 65,536, and a degree is 65,536/360.
+        float perPixel = 65536f / 360f * (fine ? 0.1f : 1f);
+
+        // ⚠️ CARRIED, NOT TRUNCATED. Rounding each event to whole steps would silently drop the
+        // fraction on every motion, so a slow careful drag would turn LESS than a fast one over
+        // the same distance — the opposite of what a fine control should do.
+        _turnRemainder += pixels * perPixel;
+
+        int steps = (int)_turnRemainder;
+        _turnRemainder -= steps;
+
+        if (steps == 0)
+        {
+            return;
+        }
+
+        _ghostFacing += Angle.FromRaw(unchecked((ushort)steps));
+        QueueRedraw();
+    }
+
+    private float _turnRemainder;
+
     public void TurnTheGhost(bool toTheQuarter = false)
     {
         if (_building is null)
@@ -716,6 +766,22 @@ public partial class VillageMap : Control
         // The ghost follows the cursor, and the verdict is recomputed as it moves.
         // CanBuildAt is pure, so asking it every frame costs nothing and changes
         // nothing — which is what lets the answer be shown BEFORE anybody commits.
+        // ⭐⭐ MIDDLE-DRAG TURNS THE BUILDING IN YOUR HAND (D325, Joe: *"holding down the middle
+        // mouse button and drag the mouse left or right to rotate. full freedom."*). Handled
+        // BEFORE the `Pressed: true` guard below, because a drag needs the RELEASE as much as the
+        // press and that guard throws every release away.
+        if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Middle } wheelClick)
+        {
+            _turningTheGhost = wheelClick.Pressed && _building is not null;
+            return;
+        }
+
+        if (_turningTheGhost && @event is InputEventMouseMotion turn)
+        {
+            TurnTheGhostBy(turn.Relative.X, turn.ShiftPressed);
+            return;
+        }
+
         if (@event is InputEventMouseMotion motion && IsPlacing)
         {
             Vector2 tile = ToTile(motion.Position);
@@ -1174,7 +1240,7 @@ public partial class VillageMap : Control
             // tall against 161** — which would have spent map room Joe had twice asked to get back,
             // to explain a key that only matters while a building is in your hand. *A contextual
             // hint costs nothing when it is not needed.*
-            _ => "Click to mark it out. R turns it, shift+R by a quarter. Right-click to stop."
+            _ => "Click to mark it out. Middle-drag turns it (shift for fine), R by a step. Right-click to stop."
                 + TheMarketsServiceArea(),
         });
     }
@@ -1717,10 +1783,16 @@ public partial class VillageMap : Control
 
             Vector2 centre = ToScreen(library.Position);
             float size = Mathf.Max(8f, _pixelsPerTile * 0.8f);
-            var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-
-            DrawRect(rect, LibraryColour with { A = 0.85f });
-            DrawRect(rect, LibraryColour, filled: false, width: 2f);
+            // ⭐ Through the footprint like every other building (D325), so a multi-tile library
+            // works the day a modder types one rather than being the class that ignores its own
+            // `extent` column. One tile today, so this draws exactly what the rect did.
+            DrawFootprint(
+                centre,
+                library.ExtentWidth * 0.8f,
+                library.ExtentHeight * 0.8f,
+                library.Facing.Raw,
+                LibraryColour with { A = 0.85f },
+                LibraryColour);
 
             // ⭐ A FULL LIBRARY SAYS SO ON THE MAP, for the same reason a full store does (D140):
             // the consequence of a full shelf is a technique dying with somebody years from now,
@@ -1752,10 +1824,14 @@ public partial class VillageMap : Control
 
         Vector2 centre = ToScreen(hall.Position);
         float size = Mathf.Max(9f, _pixelsPerTile * 0.95f);
-        var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-
-        DrawRect(rect, TownHallColour with { A = 0.9f });
-        DrawRect(rect, TownHallColour, filled: false, width: 2f);
+        // ⭐ Through the footprint like every other building (D325).
+        DrawFootprint(
+            centre,
+            hall.ExtentWidth * 0.95f,
+            hall.ExtentHeight * 0.95f,
+            hall.Facing.Raw,
+            TownHallColour with { A = 0.9f },
+            TownHallColour);
     }
 
     private void DrawStores()

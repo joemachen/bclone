@@ -4749,6 +4749,13 @@ public sealed class SimWorld
         }
 
         string name = NameOfWhatStandsAt(tile);
+
+        // ⭐ THE STANDING BUILDING'S TRUE ANGLE, ASKED BEFORE IT IS GONE (D325, Joe). D324 left
+        // this deliberately unset and said so — nothing recorded which way a building was turned
+        // once it became a demolition site, so the site drew the right SHAPE at the wrong ANGLE.
+        // *The fix is to ask while the building is still there rather than to guess afterwards.*
+        Angle facing = FacingOfWhatStandsAt(tile);
+
         int work = BuildingsCatalog.RecipeOf(kind.Value).WorkTicks
             * Config.DemolitionWorkPercent / 100;
 
@@ -4776,6 +4783,7 @@ public sealed class SimWorld
             // wrong angle confidently. Named rather than guessed.
             ExtentWidth = BuildingsCatalog[kind.Value]?.ExtentWidth ?? 1,
             ExtentHeight = BuildingsCatalog[kind.Value]?.ExtentHeight ?? 1,
+            Facing = facing,
             Construction = new ConstructionSite(new BuildingRecipe(work))
             {
                 Kind = kind.Value,
@@ -4811,6 +4819,34 @@ public sealed class SimWorld
     /// asymmetry with construction</b>, which <c>CancelConstruction</c> lets the player call off at
     /// any point. *A half-built house was never a house; a half-demolished one is no longer one.*
     /// </remarks>
+    /// <summary>Which way the building standing on this tile is turned (D325).</summary>
+    /// <remarks>
+    /// ⭐ Asked of the same collections <c>SomethingStandsAt</c> walks, and in the same order, so
+    /// *"what stands here?"* and *"which way is it facing?"* cannot disagree about which building
+    /// they mean. ⚠️ Homes, libraries and the town hall have no facing of their own yet and answer zero;
+    /// they are all one tile, so zero is the truth rather than a placeholder.
+    /// </remarks>
+    internal Angle FacingOfWhatStandsAt(GridPos tile)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Footprint.Covers(tile))
+            {
+                return Workplaces[i].Facing;
+            }
+        }
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Footprint.Covers(tile))
+            {
+                return StoreBuildings[i].Facing;
+            }
+        }
+
+        return Angle.Zero;
+    }
+
     public bool CancelDemolition(GridPos tile)
     {
         if (DemolitionSiteAt(tile) is not Workplace site)
@@ -6484,6 +6520,9 @@ public sealed class SimWorld
                 Position = position,
                 Name = name,
                 Shelves = row.Shelves,
+                Facing = facing,
+                ExtentWidth = row.ExtentWidth,
+                ExtentHeight = row.ExtentHeight,
             });
 
             Narrate($"{Capitalised(name)} stands, with {row.Shelves} shelves waiting. "
@@ -6500,6 +6539,9 @@ public sealed class SimWorld
                 Position = position,
                 Name = name,
                 RaisedAtTick = Tick,
+                Facing = facing,
+                ExtentWidth = row.ExtentWidth,
+                ExtentHeight = row.ExtentHeight,
             };
 
             Narrate($"{Capitalised(name)} stands. The founders' names are cut into the lintel, "
@@ -8015,7 +8057,8 @@ public sealed class SimWorld
         // player. There is one now, and ChooseSite calls it.
         for (int i = 0; i < Households.Count; i++)
         {
-            if (Households[i].HomePosition == position)
+            if (FootprintOf(BuildingKind.Home, Households[i].HomePosition ?? position).Covers(position)
+                && Households[i].HomePosition is not null)
             {
                 return true;
             }
@@ -8043,7 +8086,7 @@ public sealed class SimWorld
         // **A new kind of building is a new line here or it can be built on top of.**
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].Position == position)
+            if (Libraries[i].Footprint.Covers(position))
             {
                 return true;
             }
@@ -8053,7 +8096,7 @@ public sealed class SimWorld
         // *"a new kind of building is a new line here or it can be built on top of."* The warning
         // was written by the session that added the fourth, and it is the cheapest one in this
         // file to honour. (D252.)
-        if (TownHall?.Position == position)
+        if (TownHall?.Footprint.Covers(position) == true)
         {
             return true;
         }

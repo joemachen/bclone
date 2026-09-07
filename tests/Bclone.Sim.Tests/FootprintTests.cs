@@ -398,6 +398,53 @@ public sealed class FootprintTests
         Assert.False(site.Footprint.Covers(new GridPos(anchor.X + 1, anchor.Y)));
     }
 
+    /// <summary>
+    /// ⭐⭐ EVERY BUILDING CLASS HONOURS ITS ROW'S EXTENT — not just the two that were needed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe asked whether the longhouse treatment would reach every building, existing and
+    /// future (D325).</b> The honest risk was that it reached the two classes a longhouse happens
+    /// to use — workplace and store — and quietly skipped libraries, the town hall and homes,
+    /// which is exactly what had already happened once: D321's message claimed the occupancy
+    /// conversion was "whole" when only two of five collections had been converted.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>So this asserts the PROPERTY rather than the classes</b>: reflect over every type that
+    /// can stand on the ground and require it to expose a <c>Footprint</c>. A new building class
+    /// added later fails here on the day it is written, rather than on the day somebody makes one
+    /// three tiles wide. *A guard that lists the classes it knows about cannot catch the class
+    /// nobody thought of.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryBuildingThatStandsOnTheGroundHasAFootprint()
+    {
+        Type[] standOnGround =
+        {
+            typeof(Workplace),
+            typeof(StoreBuilding),
+            typeof(Library),
+            typeof(TownHall),
+        };
+
+        var missing = new List<string>();
+        foreach (Type type in standOnGround)
+        {
+            if (type.GetProperty("Footprint")?.PropertyType != typeof(Footprint))
+            {
+                missing.Add(type.Name);
+            }
+        }
+
+        _output.WriteLine($"{standOnGround.Length} building classes checked");
+
+        Assert.True(
+            missing.Count == 0,
+            "These stand on the ground and cannot say what ground they stand on, so a multi-tile "
+            + "row of their kind would occupy one tile: " + string.Join(", ", missing));
+    }
+
     /// <summary>Somewhere a three-tile building genuinely fits, found rather than assumed.</summary>
     private static GridPos SomewhereBuildable(SimWorld world)
     {
