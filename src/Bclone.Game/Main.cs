@@ -555,6 +555,20 @@ public partial class Main : Control
         // `444 → 444` while the panel's minimum had correctly dropped to 37 and the offsets were
         // already a zero-height rectangle. **The probe was measuring staleness and calling it a
         // bug.** The minimum is what the layout will settle to, and it is available immediately.
+        // ⚠️ UNFOLD EVERYTHING FIRST, AND PUT IT BACK AFTERWARDS (D326). This measured whatever
+        // state each panel happened to be in, which was fine while every panel started open — and
+        // became a FALSE POSITIVE the moment one started folded, because its "open" height was
+        // already its folded height and it duly "failed to shrink".
+        // *An instrument that assumes a default is an instrument that breaks when the default moves.*
+        var wereOpen = new List<bool>(_headers.Count);
+        foreach (Button header in _headers)
+        {
+            wereOpen.Add(header.ButtonPressed);
+            header.ButtonPressed = true;
+        }
+
+        ForceUpdateTransform();
+
         var open = new List<float>(_docked.Count);
         foreach ((PanelContainer panel, bool _) in _docked)
         {
@@ -601,9 +615,9 @@ public partial class Main : Control
                 + (shrank ? string.Empty : "  ⛔ THE FRAME WILL NOT SHRINK"));
         }
 
-        foreach (Button header in _headers)
+        for (int i = 0; i < _headers.Count; i++)
         {
-            header.ButtonPressed = true;
+            _headers[i].ButtonPressed = wereOpen[i];
         }
 
         ForceUpdateTransform();
@@ -1431,7 +1445,7 @@ public partial class Main : Control
             if (quota.For(kind) == 0 && asked is int some && some > 0
                 && LabourQuota.WhyTheVillageWantsNone(world, kind) is string reason)
             {
-                row += $"  ⚠ {reason}";
+                row += $"⚠ {reason}";
             }
 
             // ⭐⭐ AND WHEN THE VILLAGE NEEDS MORE THAN IT HAS ROOM FOR, IT SAYS SO (Joe,
@@ -1445,7 +1459,8 @@ public partial class Main : Control
             // for the forager: **it is what stops a seat cap being a silent shortage.**
             if (quota.Needed(kind) > seats && world.JobsCatalog.WorksAt(kind) is BuildingKind at)
             {
-                row += $"  ⚠ needs {quota.Needed(kind)}, build another "
+                row += (row.Length > 0 ? "  " : string.Empty)
+                    + $"⚠ needs {quota.Needed(kind)}, build another "
                     + $"{world.BuildingsCatalog[at]?.Name ?? "one"}";
             }
 
@@ -1885,7 +1900,7 @@ public partial class Main : Control
         Workplace? site = null;
         foreach (Workplace workplace in _loop.World.Workplaces)
         {
-            if (workplace.Position != tile)
+            if (!workplace.Footprint.Covers(tile))
             {
                 continue;
             }
@@ -1987,7 +2002,7 @@ public partial class Main : Control
 
         foreach (Workplace workplace in world.Workplaces)
         {
-            if (workplace.Position == tile)
+            if (workplace.Footprint.Covers(tile))
             {
                 DescribeWorkplace(world, workplace, lines);
             }
@@ -1995,7 +2010,7 @@ public partial class Main : Control
 
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            if (store.Position == tile)
+            if (store.Footprint.Covers(tile))
             {
                 DescribeStore(world, store, lines);
             }
@@ -2003,7 +2018,8 @@ public partial class Main : Control
 
         foreach (Household household in world.Households)
         {
-            if (household.HomePosition == tile)
+            if (household.HomePosition is GridPos where
+                && world.FootprintOf(BuildingKind.Home, where).Covers(tile))
             {
                 DescribeHome(world, household, lines);
             }
@@ -2022,7 +2038,7 @@ public partial class Main : Control
         // door that had just been declared closed.
         foreach (Library library in world.Libraries)
         {
-            if (library.Position == tile)
+            if (library.Footprint.Covers(tile))
             {
                 DescribeLibrary(world, library, lines);
             }
@@ -2033,7 +2049,7 @@ public partial class Main : Control
         // then reading as *"open ground"* — because this method knew about three kinds of thing
         // that can stand on a tile and did not know about a fourth. **A fifth was always going to
         // arrive; this is it.**
-        if (world.TownHall is { } hall && hall.Position == tile)
+        if (world.TownHall is { } hall && hall.Footprint.Covers(tile))
         {
             DescribeTheTownHall(world, hall, lines);
         }
@@ -2992,9 +3008,12 @@ public partial class Main : Control
         // carefully, which is the only kind of fix that survives adding a seventh panel.
 
         BuildStatusPanel();
+        // ⭐ THE ROSTER FIRST, SO PROFESSIONS STACKS BELOW IT (D326, Joe). `_docked` order IS the
+        // default stacking order, so "immediately below The village" is a build-order fact rather
+        // than a coordinate — which is what keeps it true when a panel above them changes height.
+        BuildRosterPanel();
         BuildProfessionsPanel();
         BuildStockLimitsPanel();
-        BuildRosterPanel();
 
         // Top of the right-hand column, which is where Banished puts it and where Joe's
         // screenshot has it — above the log, so the two things you glance at are together.
@@ -3808,7 +3827,7 @@ public partial class Main : Control
 
         foreach (StoreBuilding store in _loop.World.StoreBuildings)
         {
-            if (store.Position == tile)
+            if (store.Footprint.Covers(tile))
             {
                 return store;
             }
@@ -3890,7 +3909,7 @@ public partial class Main : Control
         //
         // ⭐ Joe's mockup is a wide overlay anyway, so the constraint and the design agree.
         VBoxContainer body = Floating(
-            Edge, Edge, 380f, 0f, Corner.TopLeft, "Professions", startOpen: true);
+            Edge, Edge, 380f, 0f, Corner.TopLeft, "Professions", startOpen: false);
 
         // ⚠️ Taken off the end of `_panels` the way `BuildSettingsPanel` does, because
         // `Dress` owns the registration and handing the panel back would be a second way to
@@ -3902,7 +3921,10 @@ public partial class Main : Control
         // and a window the reset cannot find is a window that can still be lost.
         _docked.Add((_panels[^1], false));
         _professionsPanel = _panels[^1];
-        _professionsPanel.Visible = false;
+        // ⭐ ON SCREEN BUT ROLLED UP (Joe, 2026-09-07). Hidden meant a player had to know it existed
+        // and go to Settings to find it; folded means it is a title bar they can open in one click.
+        // *A panel you cannot see and a panel you have not opened are different states.*
+        _professionsPanel.Visible = true;
 
         // ⭐ What the village HAS, before what it is doing with it. The old panel opened with a
         // "Laborer" row among the trades, which read as an eighth profession rather than as the

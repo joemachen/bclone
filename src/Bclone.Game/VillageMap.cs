@@ -1116,7 +1116,7 @@ public partial class VillageMap : Control
             // builder's job with a site of its own (Joe: "reverse-construction, essentially").
             foreach (Workplace workplace in _world!.Workplaces)
             {
-                if (workplace.Position == where && workplace.IsSite)
+                if (workplace.Footprint.Covers(where) && workplace.IsSite)
                 {
                     string name = workplace.Construction!.Name;
 

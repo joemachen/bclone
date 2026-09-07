@@ -445,6 +445,78 @@ public sealed class FootprintTests
             + "row of their kind would occupy one tile: " + string.Join(", ", missing));
     }
 
+    /// <summary>
+    /// ⭐⭐ EVERY TILE OF A LONGHOUSE ANSWERS — selection, naming, demolition and shelter (D326).
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe: *"to select the building i have to choose the middle tile - the 1st and 3rd tiles
+    /// arent selectable."*</b> `SomethingStandsAt` was footprint-aware; twelve sibling lookups were
+    /// not. ⛔ `MarkDemolition` disagreed with itself — it measured the building's ANGLE and then
+    /// said there was nothing there to pull down.
+    /// </remarks>
+    [Fact]
+    public void EveryTileOfALongBuildingAnswersWhenAsked()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos anchor = SomewhereBuildable(world);
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor).Allowed);
+
+        Workplace site = world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Longhouse);
+        BuildFixtures.StockTheSite(site);
+        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
+        {
+            site.Construction.Work();
+        }
+
+        world.Complete(site);
+
+        foreach (GridPos tile in new[]
+        {
+            new GridPos(anchor.X - 1, anchor.Y), anchor, new GridPos(anchor.X + 1, anchor.Y),
+        })
+        {
+            _output.WriteLine($"{tile}: {world.NameOnTheTile(tile)}");
+
+            Assert.NotNull(world.StoreAt(tile));
+            Assert.Equal(Shelter.Roof, world.ShelterAt(tile));
+            Assert.Contains("longhouse", world.NameOnTheTile(tile), StringComparison.OrdinalIgnoreCase);
+
+            // ⛔ The one Joe actually hit: the ends could not be pulled down.
+            Assert.True(
+                world.MarkDemolition(tile).Allowed,
+                $"Tile {tile} of the longhouse could not be marked for demolition.");
+
+            world.CancelDemolition(tile);
+        }
+    }
+
+    /// <summary>⭐ A FREE building keeps its facing too — the branch D320 missed (D326).</summary>
+    /// <remarks>
+    /// Joe: *"for stockpile and builders hut, the ghost rotates well, but the build at the default
+    /// square orientation."* `Mark` forks on whether the recipe costs anything, and only the costed
+    /// branch carried the angle — `RaiseFreeBuilding` had no parameter for it and `PendingBuilding`
+    /// had nowhere to put one. ⚠️ Both free rows are 1×1, so the symptom was **drawing**, not
+    /// placement; it becomes a placement bug the day any multi-tile building is also free.
+    /// </remarks>
+    [Fact]
+    public void AFreeBuildingKeepsTheFacingItWasPlacedWith()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos at = SomewhereBuildable(world);
+        Angle turned = Angle.FromTurnFraction(1, 8);
+
+        Assert.True(world.Mark(BuildingKind.Pile, at, turned).Allowed);
+
+        StoreBuilding pile = world.StoreAt(at)!;
+        _output.WriteLine($"the stockpile faces {pile.Facing}");
+
+        Assert.Equal(turned, pile.Facing);
+    }
+
     /// <summary>Somewhere a three-tile building genuinely fits, found rather than assumed.</summary>
     private static GridPos SomewhereBuildable(SimWorld world)
     {

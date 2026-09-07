@@ -920,7 +920,14 @@ public sealed class SimWorld
     /// remembered only <em>where</em> would have raised a pile on ground somebody asked for a
     /// hut on.
     /// </remarks>
-    private readonly record struct PendingBuilding(GridPos Position, BuildingKind Kind);
+    /// <summary>A free building waiting for its ground to be cleared.</summary>
+    /// <remarks>
+    /// ⚠️ <b>The angle is here for the same reason <c>Kind</c> is</b> — that field was added when the
+    /// builder's hut became the second free building, and the identical argument for the facing
+    /// was simply not made at the time (D326). Without it a free building marked on wooded ground
+    /// loses which way it was turned between the mark and the clearing, and cannot recover it.
+    /// </remarks>
+    private readonly record struct PendingBuilding(GridPos Position, BuildingKind Kind, Angle Facing);
 
     private readonly List<PendingBuilding> _waitingOnTheGround = new();
 
@@ -980,6 +987,7 @@ public sealed class SimWorld
             }
 
             BuildingKind kind = _waitingOnTheGround[i].Kind;
+            Angle facing = _waitingOnTheGround[i].Facing;
             _waitingOnTheGround.RemoveAt(i);
             string name = NameFor(kind);
 
@@ -993,7 +1001,7 @@ public sealed class SimWorld
                 return;
             }
 
-            RaiseFreeBuilding(kind, tile, name);
+            RaiseFreeBuilding(kind, tile, name, facing);
             Narrate($"{Capitalised(name)} was laid out on the ground the village just "
                 + $"cleared. {Clock.SeasonAndYear()}.", LogCategory.Building);
             return;
@@ -1006,7 +1014,8 @@ public sealed class SimWorld
     /// raised later when its ground is cleared — cannot disagree about what it becomes. The
     /// same argument <see cref="RaiseStore"/> makes about the two ways a store arrives.
     /// </remarks>
-    private void RaiseFreeBuilding(BuildingKind kind, GridPos position, string name)
+    private void RaiseFreeBuilding(
+        BuildingKind kind, GridPos position, string name, Angle facing = default)
     {
         // ⭐ IT IS THE SAME METHOD AS THE FINISHED PATH NOW, WHICH IS WHAT THIS METHOD'S OWN
         // REMARKS HAVE ASKED FOR SINCE D108: *"one place, so the two ways a free building can
@@ -1016,7 +1025,7 @@ public sealed class SimWorld
         //
         // ⚠️ Free-ness itself is not a column: `Mark` asks the recipe (D108), and a row that costs
         // nothing and owes no work is the whole of it.
-        RaiseFinished(kind, position, name);
+        RaiseFinished(kind, position, name, facing);
     }
 
     /// <summary>Whether anyone in the village builds — that is, whether a hut stands.</summary>
@@ -4801,7 +4810,7 @@ public sealed class SimWorld
     {
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Position == tile
+            if (Workplaces[i].Footprint.Covers(tile)
                 && Workplaces[i].Construction is { Demolishing: true })
             {
                 return Workplaces[i];
@@ -4888,7 +4897,7 @@ public sealed class SimWorld
 
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].Position == tile)
+            if (Libraries[i].Footprint.Covers(tile))
             {
                 Demolish(Libraries[i]);
                 return;
@@ -4898,7 +4907,7 @@ public sealed class SimWorld
         // ⛔ PULLING IT DOWN DOES NOT RE-OFFER THE GIFT, and the sentence says so rather than
         // leaving the player to find out (`specs/town-hall.md §4`). *The founders only die once.*
         // Moving it (D229) is the answer to having put it in the wrong place.
-        if (TownHall is { } hall && hall.Position == tile)
+        if (TownHall is { } hall && hall.Footprint.Covers(tile))
         {
             TownHall = null;
             Narrate($"{Capitalised(hall.Name)} was pulled down. The founders' names went with it, "
@@ -4909,7 +4918,7 @@ public sealed class SimWorld
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Position == tile && !Workplaces[i].IsSite)
+            if (Workplaces[i].Footprint.Covers(tile) && !Workplaces[i].IsSite)
             {
                 Demolish(Workplaces[i]);
                 return;
@@ -4961,20 +4970,20 @@ public sealed class SimWorld
 
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].Position == tile)
+            if (Libraries[i].Footprint.Covers(tile))
             {
                 return BuildingKind.Library;
             }
         }
 
-        if (TownHall is { } civic && civic.Position == tile)
+        if (TownHall is { } civic && civic.Footprint.Covers(tile))
         {
             return BuildingKind.TownHall;
         }
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Position == tile && !Workplaces[i].IsSite)
+            if (Workplaces[i].Footprint.Covers(tile) && !Workplaces[i].IsSite)
             {
                 return JobsCatalog.WorksAt(Workplaces[i].Kind);
             }
@@ -4995,20 +5004,20 @@ public sealed class SimWorld
 
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].Position == tile)
+            if (Libraries[i].Footprint.Covers(tile))
             {
                 return Libraries[i].Name;
             }
         }
 
-        if (TownHall is { } civic && civic.Position == tile)
+        if (TownHall is { } civic && civic.Footprint.Covers(tile))
         {
             return civic.Name;
         }
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Position == tile && !Workplaces[i].IsSite)
+            if (Workplaces[i].Footprint.Covers(tile) && !Workplaces[i].IsSite)
             {
                 return Workplaces[i].Name;
             }
@@ -5018,11 +5027,59 @@ public sealed class SimWorld
     }
 
     /// <summary>The store standing on a tile, or null.</summary>
+    /// <summary>
+    /// ⭐⭐ The five footprint-aware finders every "what is on this tile?" question goes through (D326).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ TWELVE METHODS WERE ASKING THIS QUESTION AND ONLY ONE KNEW ABOUT FOOTPRINTS.</b>
+    /// <c>SomethingStandsAt</c> was converted in D321 and D325; its siblings were not, so a
+    /// longhouse could be seen by the placement rules and be invisible to selection, demolition,
+    /// naming and shelter on two of its three tiles.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b><c>MarkDemolition</c> disagreed with ITSELF</b>: <c>FacingOfWhatStandsAt</c> found the
+    /// building and <c>NameOfWhatStandsAt</c> two lines later did not, so it answered *"There is
+    /// nothing there to pull down"* about a building whose angle it had just measured.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>One finder per collection, and every caller goes through them</b> — the half-conversion
+    /// has now happened twice, and it happened because each site owned its own loop.
+    /// </para>
+    /// </remarks>
+    public Workplace? WorkplaceCovering(GridPos tile)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Footprint.Covers(tile))
+            {
+                return Workplaces[i];
+            }
+        }
+
+        return null;
+    }
+
+    public Library? LibraryCovering(GridPos tile)
+    {
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Footprint.Covers(tile))
+            {
+                return Libraries[i];
+            }
+        }
+
+        return null;
+    }
+
+    public bool TownHallCovers(GridPos tile) => TownHall?.Footprint.Covers(tile) == true;
+
     public StoreBuilding? StoreAt(GridPos tile)
     {
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (StoreBuildings[i].Position == tile)
+            if (StoreBuildings[i].Footprint.Covers(tile))
             {
                 return StoreBuildings[i];
             }
@@ -5036,7 +5093,8 @@ public sealed class SimWorld
     {
         for (int i = 0; i < Households.Count; i++)
         {
-            if (Households[i].HomePosition == tile)
+            if (Households[i].HomePosition is GridPos home
+                && FootprintOf(BuildingKind.Home, home).Covers(tile))
             {
                 return Households[i];
             }
@@ -5586,13 +5644,13 @@ public sealed class SimWorld
             // now a price the village pays rather than an errand the player is sent on.
             if (!groundIsBusy)
             {
-                RaiseFreeBuilding(kind, position, name);
+                RaiseFreeBuilding(kind, position, name, facing);
                 Narrate($"{Capitalised(name)} was laid out on cleared ground. " +
                     $"{Clock.SeasonAndYear()}.", LogCategory.Building);
                 return verdict;
             }
 
-            var pending = new PendingBuilding(position, kind);
+            var pending = new PendingBuilding(position, kind, facing);
             if (!_waitingOnTheGround.Contains(pending))
             {
                 _waitingOnTheGround.Add(pending);
@@ -5936,7 +5994,7 @@ public sealed class SimWorld
     {
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Position == position
+            if (Workplaces[i].Footprint.Covers(position)
                 && Workplaces[i].Construction is { IsFinished: false })
             {
                 return Workplaces[i];
@@ -6208,7 +6266,7 @@ public sealed class SimWorld
         StoreBuilding? sameBuilding = null;
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (StoreBuildings[i].Position == workplace.Position)
+            if (StoreBuildings[i].Footprint.Covers(workplace.Position))
             {
                 sameBuilding = StoreBuildings[i];
                 break;
@@ -8165,7 +8223,10 @@ public sealed class SimWorld
                 continue;
             }
 
-            if (home.X != at.X || home.Y != at.Y)
+            // ⚠️ THIS WAS A COMPONENT-WISE COMPARE, WHICH IS THE SAME DEFECT IN A DIFFERENT
+            // SPELLING (D326) — grepping for `Position ==` would never have found it, and a
+            // villager standing on the far end of a long building was out in the weather.
+            if (!FootprintOf(BuildingKind.Home, home).Covers(at))
             {
                 continue;
             }
@@ -8179,7 +8240,7 @@ public sealed class SimWorld
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
             StoreBuilding store = StoreBuildings[i];
-            if (store.Position.X == at.X && store.Position.Y == at.Y)
+            if (store.Footprint.Covers(at))
             {
                 return Shelter.Roof;
             }
@@ -8188,7 +8249,7 @@ public sealed class SimWorld
         for (int i = 0; i < Workplaces.Count; i++)
         {
             Workplace workplace = Workplaces[i];
-            if (workplace.Position.X != at.X || workplace.Position.Y != at.Y)
+            if (!workplace.Footprint.Covers(at))
             {
                 continue;
             }
