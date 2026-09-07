@@ -1549,9 +1549,12 @@ public partial class VillageMap : Control
         // was one tile and becomes a lie the moment one is three. **This is the only place the
         // player ever sees a footprint before committing to it**, so it is the one that had to
         // learn the extent first.
-        BuildingRow? row = world.BuildingsCatalog[_building.Value];
-        float wide = Mathf.Max(1, row?.ExtentWidth ?? 1) * 0.9f;
-        float deep = Mathf.Max(1, row?.ExtentHeight ?? 1) * 0.9f;
+        // ⭐ Through the sim's own helper, so the ghost cannot disagree with what placement will
+        // actually refuse (D321). Two ways of asking "how big is this building?" is how a preview
+        // starts lying.
+        Footprint shape = world.FootprintOf(_building.Value, _hovered, _ghostFacing);
+        float wide = shape.Width * 0.9f;
+        float deep = shape.Height * 0.9f;
 
         DrawFootprint(centre, wide, deep, _ghostFacing.Raw, colour with { A = 0.35f }, colour);
 
@@ -1725,16 +1728,28 @@ public partial class VillageMap : Control
 
             Vector2 centre = ToScreen(building.Position);
             float size = Mathf.Max(8f, _pixelsPerTile * 0.8f);
-            var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-
             Color colour = building.Kind switch
             {
                 StoreKind.Granary => GranaryColour,
                 StoreKind.Warehouse => WarehouseColour,
                 _ => MarketColour,
             };
-            DrawRect(rect, colour with { A = 0.85f });
-            DrawRect(rect, colour, filled: false, width: 2f);
+
+            // ⛔⛔ THE LONGHOUSE DREW AS ONE SQUARE, AND THIS IS WHERE (D321, Joe: *"that's what a
+            // built longhouse looks like. 1 square."*). A `Rect2` through `DrawRect` can neither
+            // rotate nor stretch, so a three-tile storehouse and a one-tile granary drew
+            // identically — while the GHOST of the same building drew correctly at 3×1, because
+            // the ghost path already went through `DrawFootprint`.
+            // ⚠️ THE DATA WAS RIGHT THE WHOLE TIME — the inspector read "24 of 7,500 used", three
+            // warehouses' worth — so the extent reached the building and only the drawing never
+            // learned it. *A feature can be correct in the sim and absent from the game.*
+            DrawFootprint(
+                centre,
+                building.ExtentWidth * 0.8f,
+                building.ExtentHeight * 0.8f,
+                building.Facing.Raw,
+                colour with { A = 0.85f },
+                colour);
 
             // ⭐ A FULL STORE SAYS SO ON THE MAP (Joe, D140). D134 is the reason it has to:
             // a village can sit at "Logs 15" with 1,968 stranded outside a warehouse that filled
@@ -2031,9 +2046,12 @@ public partial class VillageMap : Control
             return 0;
         }
 
+        // ⭐ THE WHOLE FOOTPRINT, NOT THE ANCHOR (D321). Clicking the second or third tile of a
+        // longhouse selected nothing, which reads as the building being unclickable rather than as
+        // the anchor being special — the player has no way to know which tile is the anchor.
         foreach (Workplace workplace in _world!.Workplaces)
         {
-            if (workplace.Position == tile && !workplace.IsSite)
+            if (!workplace.IsSite && workplace.Footprint.Covers(tile))
             {
                 return workplace.Id;
             }

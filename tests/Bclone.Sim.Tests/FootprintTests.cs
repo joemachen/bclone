@@ -1,4 +1,5 @@
 using Bclone.Sim.Config;
+using Bclone.Sim.Logging;
 using Bclone.Sim.Core;
 using Bclone.Sim.World;
 using Xunit;
@@ -277,5 +278,99 @@ public sealed class FootprintTests
         Assert.True(shape.Covers(new GridPos(2, 1)));
         Assert.False(shape.Covers(new GridPos(1, 2)));
         Assert.False(shape.Covers(new GridPos(3, 1)));
+    }
+
+    /// <summary>
+    /// ⭐⭐ A THREE-TILE BUILDING REFUSES A NEIGHBOUR ON ITS SECOND TILE — end to end (D321).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the assertion that would have caught the one-square longhouse.</b> Every guard in
+    /// this file tested `Footprint` in isolation and every one passed while the longhouse occupied
+    /// a single tile in the actual game — because `StoreBuilding.Footprint` was written and read by
+    /// nothing, and `CanBuildAt` only ever validated the anchor.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>It goes through <c>CanBuildAt</c> rather than through <c>Footprint</c></b>, deliberately.
+    /// The geometry was never wrong; the wiring was. *A guard on the shape proves the shape, and
+    /// this bug was everywhere except the shape.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AThreeTileBuildingRefusesANeighbourOnItsSecondTile()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos anchor = SomewhereBuildable(world);
+
+        // The catalogue says three wide, so the sim must believe three wide.
+        Assert.Equal(3, world.BuildingsCatalog[BuildingKind.Longhouse]!.ExtentWidth);
+        Assert.Equal(3, world.FootprintOf(BuildingKind.Longhouse, anchor).CoveredTiles().Count);
+
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor).Allowed);
+
+        // ⛔⛔ RAISED, NOT JUST MARKED — AND THE FIRST VERSION OF THIS GUARD MISSED THAT.
+        // A marked building is a construction SITE, which is a `Workplace`, and workplaces already
+        // went through the footprint. So the guard passed while the bug Joe actually hit — a
+        // FINISHED store drawn and occupying one tile — was untouched. **Reverting the store fix
+        // left it green.** *A guard that stops one step short of the state the player reaches is
+        // D157's green-and-blind, and this one was blind by one call.*
+        Workplace site = world.Workplaces.Single(
+            w => w.Construction?.Kind == BuildingKind.Longhouse);
+        BuildFixtures.StockTheSite(site);
+        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
+        {
+            site.Construction.Work();
+        }
+
+        world.Complete(site);
+        Assert.Contains(world.StoreBuildings, s => s.Position == anchor);
+
+        // ⭐ The anchor is refused because something stands there — that much always worked.
+        Assert.False(world.CanBuildAt(BuildingKind.Granary, anchor).Allowed);
+
+        // ⛔ AND SO ARE THE OTHER TWO, which is the half that did not.
+        var left = new GridPos(anchor.X - 1, anchor.Y);
+        var right = new GridPos(anchor.X + 1, anchor.Y);
+
+        _output.WriteLine(
+            $"anchor {anchor}: left {world.CanBuildAt(BuildingKind.Granary, left).Reason}; "
+            + $"right {world.CanBuildAt(BuildingKind.Granary, right).Reason}");
+
+        Assert.False(
+            world.CanBuildAt(BuildingKind.Granary, left).Allowed,
+            "A granary was allowed on ground the longhouse already stands on.");
+        Assert.False(
+            world.CanBuildAt(BuildingKind.Granary, right).Allowed,
+            "A granary was allowed on ground the longhouse already stands on.");
+
+        // ⭐ ANTI-VACUITY (D7): one tile further out is still free, or this is just refusing
+        // everything and proving nothing.
+        Assert.True(world.CanBuildAt(BuildingKind.Granary, new GridPos(anchor.X + 2, anchor.Y)).Allowed);
+    }
+
+    /// <summary>Somewhere a three-tile building genuinely fits, found rather than assumed.</summary>
+    private static GridPos SomewhereBuildable(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+
+        for (int radius = 2; radius < 20; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (world.CanBuildAt(BuildingKind.Longhouse, at).Allowed
+                        && world.CanBuildAt(BuildingKind.Granary, new GridPos(at.X + 2, at.Y)).Allowed)
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("Nowhere in the valley fits a three-tile building.");
     }
 }

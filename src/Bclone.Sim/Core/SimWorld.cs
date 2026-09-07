@@ -5112,6 +5112,22 @@ public sealed class SimWorld
     /// lets the view call it every frame under the cursor and show the answer before
     /// anybody commits to it, which is the whole of D43's "warn and allow".
     /// </remarks>
+    /// <summary>The ground a building of this kind would stand on, marked here (D321).</summary>
+    /// <remarks>
+    /// ⭐ One place that knows how to turn a kind and a tile into a footprint, so placement, the
+    /// ghost and occupancy cannot drift apart. Facing is not a parameter yet: a building is only
+    /// turned at the moment it is marked, and every 1×1 building covers its own tile at every
+    /// angle regardless (`FootprintTests.NoRotationOfAOneTileBuildingEverLeavesItsTile`).
+    /// </remarks>
+    public Footprint FootprintOf(BuildingKind kind, GridPos position, Angle facing = default) =>
+        new()
+        {
+            Origin = position,
+            Width = BuildingsCatalog[kind]?.ExtentWidth ?? 1,
+            Height = BuildingsCatalog[kind]?.ExtentHeight ?? 1,
+            Facing = facing,
+        };
+
     public PlacementVerdict CanBuildAt(
         BuildingKind kind, GridPos position, bool alreadyStanding = false)
     {
@@ -5128,6 +5144,41 @@ public sealed class SimWorld
         if (SomethingStandsAt(position))
         {
             return PlacementVerdict.No("Something already stands there.");
+        }
+
+        // ⛔⛔ AND EVERY OTHER TILE THE BUILDING WILL COVER (D321). The three checks above ask
+        // about the ANCHOR only, which was the whole truth while every building was one tile and
+        // became a hole the day one was three: a longhouse could be marked with its far end in the
+        // river, over a neighbour, or off the map, and nothing would object until it stood there.
+        // ⚠️ Skipped when `alreadyStanding`, because a building being MOVED already covers its own
+        // tiles and would refuse itself — the same exemption the singleton check makes two checks
+        // further down, and for the same reason.
+        if (!alreadyStanding)
+        {
+            List<GridPos> covered = FootprintOf(kind, position).CoveredTiles();
+            for (int i = 0; i < covered.Count; i++)
+            {
+                GridPos tile = covered[i];
+                if (tile == position)
+                {
+                    continue;
+                }
+
+                if (!Map.Contains(tile))
+                {
+                    return PlacementVerdict.No("It would reach outside the valley.");
+                }
+
+                if (Map.TerrainAt(tile) == Terrain.Water)
+                {
+                    return PlacementVerdict.No("One end of it would stand in the water.");
+                }
+
+                if (SomethingStandsAt(tile))
+                {
+                    return PlacementVerdict.No("It is long enough to reach something already standing.");
+                }
+            }
         }
 
         // ⛔⛔ AN UNLOCK IS NOT A PLACEMENT RULE, AND CONFLATING THEM REFUSED A LIBRARY THE VILLAGE
@@ -5938,6 +5989,14 @@ public sealed class SimWorld
             Name = $"{name} (building)",
             Position = position,
             Capacity = 0,
+
+            // ⛔ A SITE RESERVES THE GROUND THE BUILDING WILL NEED (D321). Without this a
+            // three-tile longhouse occupied ONE tile while it was being built, so a second
+            // building could be marked on ground the first one was already promised — and the
+            // collision would only appear years later when it was raised.
+            ExtentWidth = BuildingsCatalog[kind]?.ExtentWidth ?? 1,
+            ExtentHeight = BuildingsCatalog[kind]?.ExtentHeight ?? 1,
+            Facing = facing,
             Construction = new ConstructionSite(recipe)
             {
                 Kind = kind,
@@ -7955,9 +8014,15 @@ public sealed class SimWorld
             return true;
         }
 
+        // ⛔⛔ THROUGH THE FOOTPRINT, AND LEAVING THIS ONE OUT WAS THE DEFECT (D321).
+        // `StoreBuilding.Footprint` was written and then read by NOTHING — so the longhouse, which
+        // IS a store, occupied one tile as far as every placement question was concerned and its
+        // other two were free ground. **A half-converted occupancy check is exactly the trap this
+        // method's own comment above was written about**: two rules for "is this tile free?", one
+        // of them wrong, and the wrong one facing the player.
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (StoreBuildings[i].Position == position)
+            if (StoreBuildings[i].Footprint.Covers(position))
             {
                 return true;
             }

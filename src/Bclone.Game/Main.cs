@@ -5999,8 +5999,8 @@ public partial class Main : Control
 
             // The pile leads its group because it leads the game (D76): it costs nothing but
             // the ground, and a village with nowhere to put things cannot begin.
-            BuildingKind.Pile or BuildingKind.Granary
-                or BuildingKind.Warehouse or BuildingKind.Market => BuildCategory.Storage,
+            BuildingKind.Pile or BuildingKind.Granary or BuildingKind.Warehouse
+                or BuildingKind.Market or BuildingKind.Longhouse => BuildCategory.Storage,
 
             // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else
             // here is about producing or keeping goods; a library keeps *techniques*, and it is
