@@ -677,6 +677,76 @@ public partial class VillageMap : Control
 
     /// <summary>The tile under the cursor, and what the sim says about building on it.</summary>
     private GridPos _hovered;
+
+    /// <summary>Where the cursor actually is, as the sim will believe it (gridless 2c, D330).</summary>
+    /// <remarks>
+    /// ⭐ <b><see cref="_hovered"/> stays</b> — it is *"which tile is the cursor over?"*, which the
+    /// brush, the map bounds and the market's service ring all still ask. This is *"where is the
+    /// cursor?"*, and it is what a building is placed at. **Two questions, two fields**, rather
+    /// than one field that has to mean both.
+    /// </remarks>
+    private Point _hoveredPoint;
+
+    /// <summary>Whether placement rounds to a tile centre. On by default (Joe's call, D330).</summary>
+    /// <remarks>
+    /// ⛔ <b>AN INPUT-LAYER SETTING, NOT A SIM ONE, AND THAT IS WHAT KEEPS IT HONEST.</b> It rounds
+    /// the point <em>before</em> <c>Mark</c> ever sees it, so the sim believes exactly what it is
+    /// told and there is no facade — which is the failure `gridless.md §7.2` refuses in as many
+    /// words: *a view that draws a building at 30° while the sim believes an axis-aligned tile is
+    /// D80 at architectural scale.*
+    /// ⚠️ Nothing in this project persists settings, so it comes back on at every launch. Harmless
+    /// while on is the default; worth knowing before anybody reports it as a bug.
+    /// </remarks>
+    private bool _snapToGrid = true;
+
+    /// <summary>Whether placement is snapping to tile centres, so the bar can say so.</summary>
+    public bool SnapsToGrid => _snapToGrid;
+
+    /// <summary>Turn snapping on or off.</summary>
+    public void SnapToGrid(bool on)
+    {
+        _snapToGrid = on;
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>
+    /// ⛔⛔ The cursor as a <see cref="Point"/> — <b>and the float stops here</b> (D330).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A float must never become sim state</b> (D2): determinism is *same seed ⇒ byte-identical*,
+    /// and float rounding breaks it. The cursor is unavoidably a float, so it is turned into an
+    /// <em>exact rational</em> at this boundary — <c>Fixed.FromRatio(round(tiles × 4096), 4096)</c>
+    /// — rather than converted bit-for-bit. **The sim receives a number it could have written
+    /// itself.**
+    /// </para>
+    /// <para>
+    /// ⭐ <b>1/4096 of a tile is far finer than a pixel at any zoom this game offers</b> — the map
+    /// draws at most a few dozen pixels per tile — so the quantisation is invisible, and it is
+    /// stated rather than hidden because it is the one place the two number systems touch.
+    /// </para>
+    /// </remarks>
+    private const int CursorSteps = 4096;
+
+    private Point PointUnderTheCursor(Vector2 screen)
+    {
+        Vector2 tile = ToTile(screen);
+
+        // ⭐ Plus half a tile on the way IN, because the view's integer tile coordinate is that
+        // tile's centre and the sim's is its corner — the same seam `ToScreen(Point)` crosses, in
+        // the other direction. *One conversion each way, and they are inverses.*
+        return new Point(
+            Fixed.FromRatio(Mathf.RoundToInt((tile.X + 0.5f) * CursorSteps), CursorSteps),
+            Fixed.FromRatio(Mathf.RoundToInt((tile.Y + 0.5f) * CursorSteps), CursorSteps));
+    }
+
+    /// <summary>Where a building put down right now would stand — snapped, or exactly here.</summary>
+    private Point WhereItWouldStand(Vector2 screen) =>
+        _snapToGrid
+            ? Point.CentreOf(new GridPos(
+                Mathf.RoundToInt(ToTile(screen).X), Mathf.RoundToInt(ToTile(screen).Y)))
+            : PointUnderTheCursor(screen);
     private PlacementVerdict _verdict = PlacementVerdict.Fine;
 
     /// <summary>Raised whenever the ghost's verdict changes, so the shell can say it.</summary>
@@ -831,15 +901,25 @@ public partial class VillageMap : Control
         {
             Vector2 tile = ToTile(motion.Position);
             var over = new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
-            if (over != _hovered)
+
+            // ⚠️ THE TILE GATE STAYS, AND A SECOND TEST RIDES BESIDE IT (D330). `over != _hovered`
+            // is a recompute throttle: it exists so `CanBuildAt` and a redraw do not run on every
+            // motion event. With snapping off the ghost moves *within* a tile, so it has to follow
+            // the cursor — but only then, and only while a building is in hand. **The throttle is
+            // kept where it still works rather than deleted because one case outgrew it.**
+            Point wouldStand = WhereItWouldStand(motion.Position);
+            bool freelyMoved = !_snapToGrid && _building is not null && wouldStand != _hoveredPoint;
+
+            if (over != _hovered || freelyMoved)
             {
                 _hovered = over;
+                _hoveredPoint = wouldStand;
                 if (_building is not null)
                 {
                     // ⭐ AT THE ANGLE IN YOUR HAND (D328). The ghost has been drawn with
                     // `_ghostFacing` since D320 and the verdict was computed without it, so a
                     // turned longhouse could be shown green over ground the sim had never checked.
-                    _verdict = _world.CanBuildAt(_building.Value, _hovered, facing: _ghostFacing);
+                    _verdict = _world.CanBuildAt(_building.Value, _hoveredPoint, facing: _ghostFacing);
                 }
 
                 // Drag to paint. A neighbourhood is a shape you draw, not a sequence of
@@ -1178,7 +1258,10 @@ public partial class VillageMap : Control
                 return;
             }
 
-            PlacementVerdict moved = _world!.MarkRelocation(from, where);
+            // ⭐ Where the cursor is, not the middle of the square under it (D330) — the same
+            // freedom placing a building has, because putting one down and moving one are the
+            // same act with a different starting point.
+            PlacementVerdict moved = _world!.MarkRelocation(from, WhereItWouldStand(at));
             PlacementMessageChanged?.Invoke(moved.Allowed
                 ? $"{_world.NameOnTheTile(where)} is being moved."
                 : moved.Reason);
@@ -1245,7 +1328,10 @@ public partial class VillageMap : Control
         // ⭐ THE FACING GOES WITH IT (gridless 2b, D320). Turning the ghost and then placing a
         // building that faces north would be the feature existing everywhere except where the
         // player looked for it.
-        PlacementVerdict verdict = _world!.Mark(_building!.Value, where, _ghostFacing);
+        // ⭐⭐ WHERE THE PLAYER PUT IT (gridless 2c, D330). `WhereItWouldStand` has already applied
+        // the snap setting, so the sim is told a position it could have written itself and believes
+        // exactly what is drawn. **The ghost and the building are the same geometry.**
+        PlacementVerdict verdict = _world!.Mark(_building!.Value, WhereItWouldStand(at), _ghostFacing);
         if (!verdict.Allowed)
         {
             // Stay in build mode: a refusal is information, not a dismissal, and
@@ -1353,8 +1439,19 @@ public partial class VillageMap : Control
             // something out would have wrapped it, which grows the bar past the single line
             // `PinTheBarHeight` reserves. *"shift for fine" → "shift: fine" is the cheapest three
             // words in the sentence.*
-            _ => "Click to mark it out. Middle-drag turns it (shift: fine), R steps. "
-                + "Right-click or Esc to stop."
+            // ⭐ AND WHICH WAY IT WILL LAND (D330). A player who has turned snapping off needs to
+            // know it is off at the moment they are aiming, not by noticing later that a granary
+            // sits half a tile out. *The contextual line again, for the same reason as the turn
+            // keys: it costs nothing when it is not needed.*
+            // ⚠️ AND THIS IS THE ONE SENTENCE WITH NO ROOM, WHICH IS WHY IT DROPS "Right-click or".
+            // It is the only message that carries the market's service area on top of itself, so
+            // it starts 47px from the edge where every other line has hundreds. **The probe posed
+            // both modes and measured the free one at 1348 of 1280 — it would have wrapped, and
+            // wrapping grows the bar past the single line `PinTheBarHeight` reserves.** Right-click
+            // still cancels a held building; the sentence names the gesture that works for every
+            // tool instead of both.
+            _ => (_snapToGrid ? "Click to mark it out. " : "Free — click to mark it out. ")
+                + "Middle-drag turns it (shift: fine), R steps. Esc to stop."
                 + TheMarketsServiceArea(),
         };
     }
@@ -1414,6 +1511,7 @@ public partial class VillageMap : Control
         bool wasEmptying = _emptying;
         int wasRadius = _brushRadius;
         BrushShape wasShape = _brushShape;
+        bool wasSnapping = _snapToGrid;
 
         var said = new List<(string, string)>();
 
@@ -1465,10 +1563,19 @@ public partial class VillageMap : Control
         _emptying = true;
         Say("empty");
 
+        // ⛔⛔ BOTH WAYS ROUND, BECAUSE THE FREE ONE IS LONGER AND IS NOT THE DEFAULT (D330).
+        // The probe poses whatever state the map is in, and snapping starts ON — so measuring
+        // once would have measured the SHORT sentence and reported 47px spare on a line that
+        // wraps the moment somebody turns snapping off. *D242's rule, which this probe exists to
+        // enforce: every look anybody takes at the UI is a look at the default state.*
         Clear();
         _building = BuildingKind.Market;
         _verdict = PlacementVerdict.Fine;
+        _snapToGrid = true;
         Say("place");
+
+        _snapToGrid = false;
+        Say("place free");
 
         _building = wasBuilding;
         _harvestMode = wasHarvest;
@@ -1479,6 +1586,7 @@ public partial class VillageMap : Control
         _emptying = wasEmptying;
         _brushRadius = wasRadius;
         _brushShape = wasShape;
+        _snapToGrid = wasSnapping;
         Tool = wasTool;
 
         return said;
@@ -2005,7 +2113,7 @@ public partial class VillageMap : Control
             return;
         }
 
-        Vector2 centre = ToScreen(_hovered);
+        Vector2 centre = ToScreen(_hoveredPoint);
 
         Color colour = _verdict switch
         {
@@ -2022,9 +2130,31 @@ public partial class VillageMap : Control
         // ⭐ Through the sim's own helper, so the ghost cannot disagree with what placement will
         // actually refuse (D321). Two ways of asking "how big is this building?" is how a preview
         // starts lying.
-        Footprint shape = world.FootprintOf(_building.Value, _hovered, _ghostFacing);
+        Footprint shape = world.FootprintOf(_building.Value, _hoveredPoint, _ghostFacing);
         float wide = shape.Width * 0.9f;
         float deep = shape.Height * 0.9f;
+
+        // ⭐⭐ AND THE TILES IT WILL CLAIM, UNDER IT (D330, Joe's call). **D319's rule is that a
+        // building covers the tiles whose CENTRES it stands on** — which was invisible while every
+        // building was 1×1 on a grid, because a 1×1 always covered its own tile at every one of
+        // 65,536 angles. **Free placement is exactly when it stops being obvious**: a nudge of half
+        // a tile changes which ground the building takes, and without this the player would have no
+        // way to see why. *§1.1 is the game explaining itself, and this is the moment it has to.*
+        // ⚠️ Drawn UNDER the rectangle and fainter, so the building is still the thing you are
+        // aiming and the coverage is the consequence you are being shown.
+        foreach (GridPos claimed in shape.CoveredTiles())
+        {
+            if (!world.Map.Contains(claimed))
+            {
+                continue;
+            }
+
+            float size = _pixelsPerTile * 0.94f;
+            Vector2 at = ToScreen(claimed);
+            DrawRect(
+                new Rect2(at - (Vector2.One * size / 2f), Vector2.One * size),
+                colour with { A = 0.16f });
+        }
 
         DrawFootprint(centre, wide, deep, _ghostFacing.Raw, colour with { A = 0.35f }, colour);
 

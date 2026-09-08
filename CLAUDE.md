@@ -35,10 +35,55 @@ If a request — from Joe or your own inference — would violate a Non-Negotiab
 - **Log richly** (METHODOLOGY §4). Structured, leveled, tick-stamped. Never swallow exceptions — catch, log with context, then handle or fail loudly.
 - **Keep it legible in code, too.** Favor clear, inspectable systems over clever ones, matching the game's own philosophy. Small reviewable changes over giant diffs.
 
+## Verification — before saying anything is done
+
+⛔ **All four, every time. "The tests passed" is not a verdict on this project.**
+
+```bash
+dotnet test bclone.sln --nologo -v q          # the suite, including determinism
+dotnet build src/Bclone.Game/Bclone.Game.csproj
+BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
+grep -rn "[0-9]\{15,\}" tests/Bclone.Sim.Tests/*.cs   # the goldens, before and after
+```
+
+- ⛔ **`dotnet build bclone.sln` does NOT compile the game** (D11), and `dotnet test` already builds
+  the solution — so the second line is the one that matters and it is not optional.
+- ⚠️ **READ the view's build output; do not trust its silence.** `src/Bclone.Game` sets
+  `TreatWarningsAsErrors=false` deliberately, because Godot's generators emit code nobody controls
+  (METHODOLOGY §5a) — **it reports and does not fail.** A `CS0414` warned there for months unseen.
+  Everything else in the repo fails the build on a warning, and `.editorconfig` promotes dead code
+  (`IDE0051`, `IDE0052`, `IDE0005`, `IDE0060`) with it. *Do not restate those as prose rules; the
+  build already enforces them. Do delete dead code outright rather than commenting it out.*
+- ⛔ **Do not run `test.bat`.** It ends in `pause` and will block until the session times out. It is
+  a convenience wrapper around the first line above.
+- ⚠️ **The probe is the only view verification that exists** (D11, D160). Read all its lines —
+  `bar height` must stay **161**, `tile centres` must stay ✅, and **if `done.` is missing a headless
+  Godot is still running**: `taskkill //PID n //F`, then confirm with `tasklist`.
+- **"No golden moved" is a `git diff`, not a passing suite.** A golden is a 19-to-20-digit number
+  however it is spelled — `const`, `InlineData`, or an argument.
+- ⛔ **Red-check every new guard, and count the reds** (D326). Verify the break landed where you
+  aimed it — by line number, `grep -c` the changed text — before believing a green. **A guard that
+  scores zero is kept and the zero is written down**, never quietly presented as evidence.
+
+⚠️ **The suite's own wall-clock is an instrument.** It went 4m55s → 9m in one commit with everything
+green (D329), and nothing but the clock reported it. If it moves a lot, find out why before
+committing.
+
 ## Update protocol (do this — it's load-bearing)
 - After each meaningful chunk of work, **update DESIGN.md §6 (Progress Tracker)**: move items between Done / In progress / Next up, and update the Current phase.
 - When you resolve an Open Decision (§5) or make a significant architectural choice, **append a one-line entry to DESIGN.md §7 (Decisions Log)** with the rationale, so future sessions inherit the reasoning.
 - If you discover a new pillar-level idea or a design tension, add it to DESIGN.md rather than only mentioning it in chat — chat is ephemeral, the doc is not.
+- **⛔ DOCS MOVE IN THE SAME COMMIT AS THE CODE.** If a mechanic, a data structure or a JSON schema
+  changes, `specs/`, `DESIGN.md` and `data/` change with it — not in a follow-up. **And a spec's
+  status line must be true when you write it** (D159): five specs claimed *"not started"* for
+  systems that had shipped, one of them for the slice merged that morning. *A spec that lies about
+  its own status is worse than no spec, because it is read at the moment a session is orienting.*
+- **⛔ LOG DEBT AND TRAPS IN `handoff.md` BEFORE FINISHING.** ⚠️ **But its trap list is NOT a to-do
+  list and must never be "resolved" or rewritten.** Each entry is a lesson a session paid for;
+  clearing them drops that knowledge silently, which happened on 2026-08-22 and cost an hour and
+  three quarters. **Edit the file, carry the traps forward, add one for what this session learned.**
+  The list that *is* actionable is the separate **⏸️ OPEN, AND JOE'S TO CALL** section — and it is
+  his, not yours.
 
 ## Before large moves
 - **The stack is settled** (D1): C# (.NET 8) + Godot 4, with the sim in a Godot-free class library. Anything that would couple `Bclone.Sim` to the engine is a design change, not a detail — raise it.

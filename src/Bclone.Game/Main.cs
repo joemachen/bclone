@@ -5192,6 +5192,23 @@ public partial class Main : Control
         // all three answer *"what is drawn on the valley"*, and a player who wants a plainer
         // map will look for them in one place. ⚠️ It is deliberately NOT on the "Routes:"
         // cycle — that control says routes, and hiding animals under it would surprise.
+        // ⭐⭐ SNAP TO GRID (D330, Joe's call: on by default). Filed under "On the map" beside the
+        // other four view toggles even though it changes what placement DOES — because it acts on
+        // the input before the sim sees it, so nothing about the village changes when it is off,
+        // only what the player is allowed to aim at.
+        var snap = new CheckBox
+        {
+            Text = "snap buildings to the grid",
+            ButtonPressed = true,
+        };
+        snap.AddThemeFontSizeOverride("font_size", 12);
+        snap.Toggled += on => _map.SnapToGrid(on);
+        body.AddChild(snap);
+
+        body.AddChild(Caption(
+            "Off, a building stands exactly where you put it, and the ghost shows the tiles it "
+            + "will claim."));
+
         var wildlife = new CheckBox { Text = "animals in the woods", ButtonPressed = true };
         wildlife.AddThemeFontSizeOverride("font_size", 12);
         wildlife.Toggled += on => _map.ShowGame(on);

@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ BUILDINGS ARE PLACED AT A `Point` — THE VIEW STILL SNAPS, AND THAT IS NEXT**
+# Handoff — bclone: **▶️ FREE PLACEMENT IS PLAYABLE — JOE HAS NOT PLAYED IT YET**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-07.**
 > **1037 passing, 0 failing, 2 skipped of 1039** — run locally on `main`, **2m02s** (was 4m55s).
@@ -120,9 +120,18 @@ is not the view test, and this is the project with no automated view verificatio
 
 ## ✅ GRIDLESS 2c IS BUILT — the anchor is continuous (D329)
 
-⚠️⚠️ **NOTHING A PLAYER CAN SEE HAS CHANGED YET, AND THAT IS DELIBERATE.** The view still snaps
-every placement to a tile centre, so the type and the fingerprint moved and the village did not.
-**The freedom is the next commit** — see ▶️ 1 below.
+▶️▶️ **AND THE VIEW LET GO (D330). JOE HAS NOT PLAYED IT.** Snap is a Settings toggle, **on by
+default**, so a player who never finds it sees exactly what they saw before. **The walk:** place a
+granary with snap on (lands on a tile centre as always); turn snap off and place one between two
+tiles (it stands where you put it, and the tinted coverage shows which tiles it claimed); turn a
+longhouse mid-placement with snap off (the refusal and the ghost agree); move one and demolish
+another (both keep their true angle and position); and **check nothing has shifted half a tile.**
+
+- ⛔ **The float never crosses into the sim.** The cursor becomes an exact rational —
+  `Fixed.FromRatio(round(tiles × 4096), 4096)` — at one boundary. D2 stays whole.
+- ⭐ **The snap rounds the point BEFORE `Mark` sees it**, so it is an input-layer setting and the
+  sim believes exactly what is drawn. *Not a facade, which §7.2 refuses by name.*
+- ⚠️ **Nothing persists settings anywhere in this project**, so snap returns to on at every launch.
 
 - ⛔⛔ **THE HALF-TILE SEAM IS THE THING TO KNOW BEFORE TOUCHING THE VIEW.** The view draws tile
   `(x, y)` **centred** on `ToScreen(x, y)` — which is why its grid lines are at −0.5 — while the sim
@@ -159,15 +168,10 @@ every placement to a tile centre, so the type and the fingerprint moved and the 
    ⚠️ `DrawTheBrushful`'s doc-comment is **stale**: it still says *"The diamond, not a square"* and
    contradicts the inline comment below it.
    </details>
-1. **▶️ THE VIEW LETS GO OF THE GRID** — the rest of 2c, and the first thing a player will see.
-   The ghost's position becomes a `Point`; a **snap toggle** (on by default) in Settings rounds it
-   before `Mark`; the ghost shows **the tiles it will claim** tinted under the rectangle, because
-   D319's coverage rule stops being obvious the moment placement is free (all three are Joe's
-   calls). ⛔ **The float must never cross into the sim** — the cursor becomes a `Point` through
-   `Fixed.FromRatio(round(tile × 4096), 4096)`, an exact rational. ⚠️ `_hovered`'s
-   `over != _hovered` gate is a recompute throttle keyed on tile change and becomes always-true;
-   **measure before deciding** whether it needs one. ⚠️ Nothing in this project persists settings,
-   so the toggle resets each launch — harmless, since snap-on is the default.
+1. ~~**THE VIEW LETS GO OF THE GRID**~~ ✅ **DONE (D330).** ▶️ **What is owed is Joe playing it.**
+   ⏸️ **Then `gridless.md §8` slice 3: villagers hold a `Point`** — movement interpolates in
+   fixed-point, the cost field is untouched, and after that string-pulled paths make §2.6's desire
+   paths writable for the first time.
 2. ~~**GRIDLESS SLICE 3: FREE PLACEMENT**~~ ✅ **THE SIM HALF IS DONE (D329).**, and **this is where the first golden moves.**
    ⛔ *"Turn grid snap off"* is **not a view toggle** — the snap **is the type**: `GridPos` all the
    way down with four `Mathf.RoundToInt` calls at the edges. Continuous positions become sim state,
@@ -715,6 +719,15 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ AN INSTRUMENT THAT MEASURES "WHATEVER STATE THE THING IS IN" MEASURES THE DEFAULT — AND
+  THE DEFAULT IS THE CASE THAT WORKS (2026-09-07, D330).** The width probe posed the placement
+  sentence once, and snapping starts ON, so it measured the short one and reported 47px spare. The
+  **free-placement** sentence was **1348 against the window's 1280 — it would have wrapped**, which
+  grows the bar past the single line `PinTheBarHeight` reserves. It poses **both modes** now.
+  ⭐ *Third instance of one rule: D242 (the bar measured young), D326 (the fold probe measured
+  whatever state each panel was in), and now this. **Pose every state a control can be in, not the
+  one it starts in.***
 
 - **⛔⛔⛔ TWO DOCUMENTS DISAGREED ABOUT WHICH SLICE CAME NEXT, AND ONE OF THEM WAS THE SPEC
   (2026-09-07, D329).** `gridless.md §8` numbered slice 3 as *"villagers hold a `Point`"*; this file

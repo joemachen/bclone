@@ -297,9 +297,24 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 | 7 | Determinism green throughout | ✅ |
 | 8 | Suite green | ✅ 1037 / 0 / 2 of 1039, **2m02s** (was 4m55s) |
 
-⚠️ **The view still snaps every placement to a tile centre**, so nothing a player can see has
-changed yet. That is deliberate: this slice moved the type and the fingerprint, and the freedom is
-the next commit.
+### Slice 2c, second half — ✅ MET (2026-09-07): the view lets go
+
+| # | Item | State |
+|---|---|---|
+| 1 | The ghost stands where the cursor is, and the building lands there | ✅ `WhereItWouldStand` is the one door |
+| 2 | ⛔ **No float ever becomes sim state** | ✅ the cursor becomes an exact rational — `Fixed.FromRatio(round(tiles × 4096), 4096)` — at one boundary |
+| 3 | Snap on by default, off = the true cursor point (Joe's call) | ✅ a Settings toggle; **input-layer, so the sim believes what it is told** |
+| 4 | The ghost shows the tiles it will claim (Joe's call) | ✅ tinted under the rectangle — D319's rule made visible at the moment it stops being obvious |
+| 5 | ⛔ The half-tile seam is crossed in **one place each way** | ✅ `ToScreen(Point)` out, `PointUnderTheCursor` in; the probe asserts they are inverses |
+| 6 | **No golden moves** | ✅ view only; `git diff` over `tests/` shows no 15-digit number changed |
+| 7 | Bar height 161, no sentence wraps | ✅ **and the probe caught one that would have** — see below |
+| 8 | Suite green | ✅ 1037 / 0 / 2 of 1039 |
+
+⛔⛔ **THE PROBE EARNED ITS KEEP TWICE IN ONE SLICE.** It poses **both** placement sentences now,
+because snapping starts ON and measuring once would have measured the short one: the free-placement
+line came back at **1348 of 1280 — it would have wrapped**, growing the bar past the single line
+`PinTheBarHeight` reserves. *D242's rule, enforced by the tool built for it: every look anybody
+takes at the UI is a look at the default state.*
 
 ### Slice 1 — ✅ MET (2026-09-06)
 
