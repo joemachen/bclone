@@ -1,7 +1,11 @@
-# Handoff — bclone: **▶️ FREE PLACEMENT IS PLAYABLE — JOE HAS NOT PLAYED IT YET**
+# Handoff — bclone: **▶️ FREE PLACEMENT WORKS NOW — NEXT IS MAKING THE VALLEY STOP LOOKING LIKE GRAPH PAPER**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-07.**
-> **1037 passing, 0 failing, 2 skipped of 1039** — run locally on `main`, **2m02s** (was 4m55s).
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
+> **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
+> ⛔⛔ **JOE PLAYED IT AND FREE PLACEMENT HAD A P0 IN IT (D331), NOW FIXED.** A hut placed between
+> four tiles and turned **claimed no ground at all** — unselectable, and no builder could ever raise
+> it. *A unit square contains a lattice point only while it is axis-aligned.* **His play found it in
+> an afternoon; the audit trail sized it in one grep.**
 > ⭐⭐ **THE FIRST GOLDEN MOVE HAS HAPPENED (D329): six moved, once, with the reason stated.**
 > `GoldenMapHash` and all three terrain fingerprints **held** — the map did not move.
 > ⛔ **It was proved to be the fingerprint and not the village BEFORE a number was re-taken:** the
@@ -120,7 +124,10 @@ is not the view test, and this is the project with no automated view verificatio
 
 ## ✅ GRIDLESS 2c IS BUILT — the anchor is continuous (D329)
 
-▶️▶️ **AND THE VIEW LET GO (D330). JOE HAS NOT PLAYED IT.** Snap is a Settings toggle, **on by
+⛔⛔ **AND THEN JOE PLAYED IT AND IT WAS BROKEN — SEE D331 BELOW.** The walk here is still the walk;
+what changed is that step 1 now works.
+
+▶️▶️ **THE VIEW LET GO (D330).** Snap is a Settings toggle, **on by
 default**, so a player who never finds it sees exactly what they saw before. **The walk:** place a
 granary with snap on (lands on a tile centre as always); turn snap off and place one between two
 tiles (it stands where you put it, and the tinted coverage shows which tiles it claimed); turn a
@@ -146,6 +153,27 @@ another (both keep their true angle and position); and **check nothing has shift
   `CoveredTiles`' scan and **the suite went 4m55s → 9m**; `Covers` was answering about one tile by
   building the whole list. Asked directly it is **2m02s**. *Watch that number.*
 
+## ⛔⛔ THE P0 JOE FOUND, AND WHAT IT MEANS FOR THE NEXT PERSON (D331)
+
+**He placed a woodcutter's hut in the middle of four squares, turned. It claimed ZERO tiles.**
+Unselectable by every finder, and **no builder could ever raise it** — `SiteAt` reads the site from
+the tile the builder is standing on (D108), so the crew arrived and there was nothing there. The log
+said it in one line: *marked out at tick 0, never mentioned again in 348 ticks*, while a builder
+stood idle with 130 logs.
+
+- ⭐⭐ **A unit square reliably contains a point of a unit lattice only while it is AXIS-ALIGNED.**
+  Turned 45° its reach is 1/√2 ≈ 0.707. **The grid hid this for the whole project's life**, because
+  every building sat on a tile centre; free placement reached it the same day it shipped.
+- ⛔ **`CanBuildAt` did not object, and the reason is worth carrying:** its refusal loop *iterates*
+  the covered tiles, so an empty list means the loop body never runs. **A check that iterates a set
+  says nothing about the empty set** — and it reads as thorough in review.
+- ⭐ **Two questions, two rules now.** *Which ground does it claim?* — the centre rule, with a floor:
+  **a building always stands on at least the tile its centre is in.** *May I build here?* — a
+  **separating-axis test between the rectangles**, which is what §7.3 promised and what tile
+  occupancy cannot do once two buildings straddle one boundary.
+- ⛔⛔ **TOUCHING IS APART (`>=`) AND BACKWARDS WOULD BREAK EVERY VILLAGE.** Two 1×1s on adjacent
+  tile centres are exactly one apart with radii summing to exactly one.
+
 ## ▶️ NEXT, IN ORDER
 
 1. ~~**COMMIT B: THE BRUSH.**~~ ✅ **B1 DONE (D327).** ⏸️ **B2 — the smooth painted outline — is
@@ -168,8 +196,27 @@ another (both keep their true angle and position); and **check nothing has shift
    ⚠️ `DrawTheBrushful`'s doc-comment is **stale**: it still says *"The diamond, not a square"* and
    contradicts the inline comment below it.
    </details>
-1. ~~**THE VIEW LETS GO OF THE GRID**~~ ✅ **DONE (D330).** ▶️ **What is owed is Joe playing it.**
-   ⏸️ **Then `gridless.md §8` slice 3: villagers hold a `Point`** — movement interpolates in
+1. **▶️ THE VALLEY STOPS LOOKING LIKE GRAPH PAPER — Joe's own question, and it is a RENDERING
+   slice, not a sim one.** He asked *"if the game is gridless, why is everything still in a grid?
+   why isnt the paint brush a smooth circle? why are forests grid-shaped?"* ⛔ **The sim being
+   tile-indexed is his own closed decision** (`gridless.md §10.2`, *"not to be re-litigated"*) —
+   Foundation's terrain data is gridded too. **What nobody has ever revisited is how it is DRAWN.**
+   His call: **zones first, then terrain.** The audit, ranked:
+   1. ⭐ **Literal grid lines, always on above 6px/tile, with NO user toggle** (`VillageMap.cs:2462`)
+      — *two lines to fix, and it is the top of the list.*
+   2. Zone washes: three per-tile rect passes with hard staircase borders (`:2571`).
+   3. Terrain: one flat axis-aligned square per non-grass tile, no blending (`:2681`).
+   4. ⭐⭐ **Forests have no trees at all** — a wood is a flat coloured rectangle; `DrawTheWoods`
+      draws animals and berries only, and its scatter is *already* sub-tile and deterministic.
+   5. The river is drawn by the generic terrain loop, though `CarveRiver` computes a per-column
+      centreline that a smooth shoreline could reconstruct.
+   6. Soil re-quantises an **already-smooth bilinear field** back into per-tile alpha squares.
+   ⚠️ **The window is walked SIX times a frame** — ~45,000 tile iterations and up to ~30,000
+   `DrawRect` calls at full zoom-out, with no caching. **`Minimap` is the precedent**: it bakes
+   terrain to a texture, invalidated by `SimWorld.TerrainGeneration`.
+   ⛔ **Nothing in the repo traces a contour** — `DrawFootprint` is the only polygon code, and the
+   wash's 2% overdraw exists specifically to *destroy* the boundary a smooth outline needs.
+2. ⏸️ **Then `gridless.md §8` slice 3: villagers hold a `Point`** — movement interpolates in
    fixed-point, the cost field is untouched, and after that string-pulled paths make §2.6's desire
    paths writable for the first time.
 2. ~~**GRIDLESS SLICE 3: FREE PLACEMENT**~~ ✅ **THE SIM HALF IS DONE (D329).**, and **this is where the first golden moves.**
@@ -719,6 +766,17 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ A CHECK THAT ITERATES A SET SAYS NOTHING ABOUT THE EMPTY SET (2026-09-08, D331).**
+  `CanBuildAt` refuses a placement by looping over the tiles the building would cover and objecting
+  to each — so when the footprint covered **nothing**, it objected to nothing and allowed a building
+  that could never be selected or built. **The code reads as thorough**; the hole is the case where
+  there is nothing to be thorough about. *Ask what your loop does over an empty collection.*
+- **⚠️ A GEOMETRIC RULE CAN BE TOTAL ON A GRID AND PARTIAL OFF IT (2026-09-08, D331).** *"A building
+  covers the tiles whose centres it stands on"* is exact, legible, and **guarantees nothing** — a
+  unit square only reliably contains a lattice point while it is axis-aligned. The rule was correct
+  for two years because the grid made the failing case unreachable. **When you remove a constraint,
+  re-ask what the rules that lived under it were quietly relying on.**
 
 - **⛔⛔⛔ AN INSTRUMENT THAT MEASURES "WHATEVER STATE THE THING IS IN" MEASURES THE DEFAULT — AND
   THE DEFAULT IS THE CASE THAT WORKS (2026-09-07, D330).** The width probe posed the placement

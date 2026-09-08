@@ -107,9 +107,7 @@ public readonly record struct Footprint
 
                 // Turn the tile's centre back into the building's own frame, where the rectangle
                 // is axis-aligned and the test is two comparisons.
-                Point local = (Point.CentreOf(tile) - centre).RotatedBy(-Facing);
-
-                if (Abs(local.X) <= halfWidth && Abs(local.Y) <= halfHeight)
+                if (tile == anchor || StandsOn(tile))
                 {
                     covered.Add(tile);
                 }
@@ -119,7 +117,32 @@ public readonly record struct Footprint
         return covered;
     }
 
-    /// <summary>Does this building stand on that tile?</summary>
+    /// <summary>
+    /// ⛔⛔ Does this building stand on that tile? — <b>and it ALWAYS stands on its own</b> (D331).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE CENTRE RULE ALONE CAN CLAIM NOTHING, AND JOE FOUND IT IN AN AFTERNOON.</b> D319's
+    /// rule is *a building covers the tiles whose CENTRES it stands on* — and a unit square
+    /// reliably contains a point of a unit lattice only while it is <b>axis-aligned</b>. Turned 45°
+    /// its axis-aligned reach falls to 1/√2 ≈ 0.707, so a 1×1 sitting between tile centres slips
+    /// past all four and this returned an <b>empty list</b>. **On the grid that was unreachable**;
+    /// free placement made it reachable the same day it shipped.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>What an empty footprint cost:</b> the building could not be selected, named or
+    /// demolished (all twelve finders go through <see cref="Covers"/>), <b>and no builder could ever
+    /// raise it</b> — <c>SiteAt</c> uses this too, and D108 means the builder reads the site from
+    /// the tile they are standing on, so they arrived and there was nothing there. <c>CanBuildAt</c>
+    /// raised no objection because its refusal loop iterates the covered tiles: *a check that
+    /// iterates a set says nothing about the empty set.*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The rule now, and it is one sentence a player could be told: a building always stands
+    /// on at least the tile its centre is in.</b> Added at the anchor's own place in the scan, so
+    /// the row-major order stays part of the contract.
+    /// </para>
+    /// </remarks>
     /// <remarks>
     /// <para>
     /// ⭐⭐ <b>ASKED DIRECTLY, NOT BY BUILDING THE WHOLE LIST AND SEARCHING IT (D329).</b> This was
@@ -142,13 +165,80 @@ public readonly record struct Footprint
     /// guard would object to. <c>FootprintTests</c> compares the two answers directly.
     /// </para>
     /// </remarks>
-    public bool Covers(GridPos tile)
+    public bool Covers(GridPos tile) => tile == Origin.ToTile() || StandsOn(tile);
+
+    /// <summary>The centre test on its own — <b>the arithmetic both callers share</b>.</summary>
+    /// <remarks>
+    /// ⛔ <b>ONE COPY, BECAUSE THERE USED TO BE TWO.</b> <see cref="Covers"/> is a fast path for the
+    /// question <see cref="CoveredTiles"/> answers in bulk, and D329 wrote the rotation out twice.
+    /// <see cref="Fixed"/> multiplication is not associative, so two copies is two chances to
+    /// reassociate one of them into a different answer that no determinism guard would object to.
+    /// </remarks>
+    private bool StandsOn(GridPos tile)
     {
         Point local = (Point.CentreOf(tile) - Origin).RotatedBy(-Facing);
 
         return Abs(local.X) <= Fixed.FromRatio(Width, 2)
             && Abs(local.Y) <= Fixed.FromRatio(Height, 2);
     }
+
+    /// <summary>
+    /// ⭐⭐ Do these two buildings occupy the same ground? — <b>the real geometry</b> (D331).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ COVERAGE AND COLLISION ARE TWO QUESTIONS AND THEY WANTED TWO ANSWERS.</b> *Which ground
+    /// does this building claim?* is the centre rule, and it is what makes ownership legible. *May I
+    /// build here?* is whether two rectangles share any space — and asking it through tile occupancy
+    /// was fine while everything sat on a tile centre and became wrong the moment placement was
+    /// free: **two huts a hair either side of a tile boundary claim different tiles and stand on top
+    /// of each other.** `gridless.md §7.3` promised this in as many words — *"collision becomes
+    /// geometry rather than is this tile taken"* — and this is that promise.
+    /// </para>
+    /// <para>
+    /// <b>The separating-axis test, over four axes</b> — two per rectangle, which is all an oriented
+    /// box needs. If any axis exists on which the two projections do not reach each other, they are
+    /// apart; if none does, they overlap.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>TOUCHING IS APART, AND THAT IS LOAD-BEARING RATHER THAN A ROUNDING CHOICE.</b> Two
+    /// 1×1 buildings on adjacent tile centres are exactly one apart with radii summing to exactly
+    /// one — so a strict test would call every neighbouring pair in every village an overlap and
+    /// refuse ground the game has always allowed. **`>=` separates**, and every golden depends on it.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Integer-only and order-sensitive.</b> Every product floors and <see cref="Fixed"/>
+    /// multiplication is not associative, so the grouping here is part of the answer — the same
+    /// warning <see cref="Point.RotatedBy"/> carries. The sine table's error (4.7 × 10⁻⁶, D318) is
+    /// far below a pixel and far below the half-tile margins this test works in.
+    /// </para>
+    /// </remarks>
+    public bool Overlaps(Footprint other)
+    {
+        Point apart = other.Origin - Origin;
+
+        return !ApartAlong(Across(Facing), apart, other)
+            && !ApartAlong(Along(Facing), apart, other)
+            && !ApartAlong(Across(other.Facing), apart, other)
+            && !ApartAlong(Along(other.Facing), apart, other);
+    }
+
+    /// <summary>Whether the two boxes fail to reach each other along one axis.</summary>
+    private bool ApartAlong(Point axis, Point apart, Footprint other) =>
+        Abs(Dot(apart, axis)) >= ReachAlong(axis) + other.ReachAlong(axis);
+
+    /// <summary>How far this box reaches from its centre along an axis.</summary>
+    private Fixed ReachAlong(Point axis) =>
+        Abs(Fixed.FromRatio(Width, 2) * Dot(Across(Facing), axis))
+        + Abs(Fixed.FromRatio(Height, 2) * Dot(Along(Facing), axis));
+
+    /// <summary>The building's own across-axis, as a unit vector.</summary>
+    private static Point Across(Angle facing) => new(facing.Cos(), facing.Sin());
+
+    /// <summary>The building's own along-axis — the across-axis turned a quarter.</summary>
+    private static Point Along(Angle facing) => new(-facing.Sin(), facing.Cos());
+
+    private static Fixed Dot(Point left, Point right) => (left.X * right.X) + (left.Y * right.Y);
 
     private static Fixed Abs(Fixed value) => value < Fixed.Zero ? -value : value;
 }

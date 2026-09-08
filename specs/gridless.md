@@ -342,16 +342,30 @@ buildings gaining an extent and a facing is the change that moves them, with one
 2. ~~**Does terrain stay tiled forever under C?**~~ ✅ **CLOSED 2026-09-06 by Joe, and it is a
    deliberate architecture rather than a compromise:** terrain heightmaps and spatial partitioning
    are gridded in essentially every gridless game. **Not to be re-litigated.**
-3. ⛔ **The locale guard scored ZERO on its red check and is kept anyway — knowingly.**
+3. ⛔⛔ **THE CENTRE RULE ALONE CAN CLAIM NOTHING, AND FREE PLACEMENT MADE IT REACHABLE IN A DAY**
+   (D331, found by Joe playing). §7.3's *"a building covers the tiles whose CENTRES it stands on"* is
+   what makes ownership legible — but **a unit square reliably contains a point of a unit lattice
+   only while it is axis-aligned.** Turned 45° its axis-aligned reach falls to 1/√2 ≈ 0.707, so a
+   1×1 between tile centres slips past all four and `CoveredTiles` came back **empty**: the building
+   could not be selected and **no builder could ever raise it**, because `SiteAt` reads the site from
+   the tile the builder is standing on (D108). ⭐ **The rule gained a floor** — *a building always
+   stands on at least the tile its centre is in* — and **collision became real geometry**, a
+   separating-axis test over the two rectangles, which is what §7.3 promised in as many words and
+   what tile occupancy could not do once two buildings could straddle one boundary. ⚠️ **Touching is
+   apart (`>=`), and that is load-bearing**: two 1×1s on adjacent tile centres are exactly one apart
+   with radii summing to exactly one, so a strict test would refuse every neighbouring pair in every
+   village.
+
+4. ⛔ **The locale guard scored ZERO on its red check and is kept anyway — knowingly.**
    `FixedTests.TheLocaleCannotChangeWhatAFixedLooksLike` stays green when every
    `InvariantCulture` in `Fixed.ToString` is swapped for `CurrentCulture`, because the
    implementation is culture-proof *by construction*: it formats two integers with no specifier and
    joins them with a literal `'.'`. **It guards nothing today.** It is kept as a ratchet — it fires
    the day somebody reformats the fraction through a `decimal` or an `"F6"` — and the zero is
    written down so nobody reads it as evidence the risk was faced.
-4. **`Fixed` has no `Sqrt`, deliberately.** Nothing calls it until real distances arrive; it lands
+5. **`Fixed` has no `Sqrt`, deliberately.** Nothing calls it until real distances arrive; it lands
    in the slice that needs it, with the guard that needs it.
-5. **What the game should DO when a tick throws** — `Fixed` overflow joins
+6. **What the game should DO when a tick throws** — `Fixed` overflow joins
    `TravelCostField.TicksForCost`, `DeterministicRandom.NextUInt(0)` and `SimConfig` validation as
    an in-tick throw. **There is no error boundary in `SimLoop`.** Not slice 1's question, and it
    applies to all four.

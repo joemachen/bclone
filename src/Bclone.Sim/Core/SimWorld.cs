@@ -5313,7 +5313,15 @@ public sealed class SimWorld
             return PlacementVerdict.No("The ground there is under water.");
         }
 
-        if (SomethingStandsAt(position))
+        // ⛔⛔ RECTANGLE AGAINST RECTANGLE, NOT TILE AGAINST TILE (D331). Tile occupancy answered
+        // this correctly while every building sat on a tile centre, and became wrong the moment
+        // placement was free: **two huts a hair either side of a boundary claim different tiles and
+        // stand on top of each other.** `gridless.md §7.3` promised *"collision becomes geometry
+        // rather than is this tile taken"*, and this is where that promise is kept.
+        // ⚠️ Skipped when `alreadyStanding` — the same exemption, and for the same reason, as the
+        // covered-tile loop below: a building being MOVED still stands where it was and would
+        // refuse itself.
+        if (!alreadyStanding && SomethingOverlaps(FootprintOf(kind, where, facing)))
         {
             return PlacementVerdict.No("Something already stands there.");
         }
@@ -5352,10 +5360,9 @@ public sealed class SimWorld
                     return PlacementVerdict.No("One end of it would stand in the water.");
                 }
 
-                if (SomethingStandsAt(tile))
-                {
-                    return PlacementVerdict.No("It is long enough to reach something already standing.");
-                }
+                // ⚠️ The overlap test above has already answered "is anything standing here?" for
+                // the whole rectangle. What is left for this loop is the GROUND — the two questions
+                // a footprint asks of tiles rather than of other buildings.
             }
         }
 
@@ -8186,6 +8193,67 @@ public sealed class SimWorld
     /// warehouse is a granary nobody can see, which makes "why is nobody fetching food?"
     /// unanswerable by looking.
     /// </remarks>
+    /// <summary>
+    /// ⭐⭐ Does any standing building share ground with this shape? — <b>the collision question</b>
+    /// (D331).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The same five collections <see cref="SomethingStandsAt"/> walks, in the same order</b>, so
+    /// the two cannot disagree about which building they mean — the rule D326 paid for twice. What
+    /// differs is the question: this one asks whether two rectangles share space, where that one
+    /// asks whether a building is filed under a tile.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Cheaper than what it replaces, not dearer</b>, which matters because the ghost calls
+    /// <c>CanBuildAt</c> on every motion event. The old path ran <see cref="SomethingStandsAt"/>
+    /// <em>once per covered tile</em>, and each of those walks five collections doing a rotation
+    /// per building; this walks them once.
+    /// </para>
+    /// </remarks>
+    internal bool SomethingOverlaps(Footprint shape)
+    {
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (Households[i].HomePosition is Point home
+                && FootprintOf(BuildingKind.Home, home).Overlaps(shape))
+            {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Footprint.Overlaps(shape))
+            {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Footprint.Overlaps(shape))
+            {
+                return true;
+            }
+        }
+
+        if (TownHall?.Footprint.Overlaps(shape) == true)
+        {
+            return true;
+        }
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Footprint.Overlaps(shape))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     internal bool SomethingStandsAt(GridPos position)
     {
         // HOMES COUNT, and leaving them out was a real bug rather than an omission:
