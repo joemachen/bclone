@@ -767,6 +767,12 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ## Traps, in the order they will cost you
 
+- **⛔⛔ A STATUS LINE EDITED AT ONE END CONTRADICTS ITSELF AT THE OTHER (2026-09-08, D332).**
+  `specs/brush.md`'s header was updated to say both slices were built and its *tail still said B2 was
+  not started* — shipped that way for one commit. **That is D159's exact failure, in the file that
+  warns about it**, and it happened because the edit targeted the phrase that was wrong rather than
+  the paragraph that was stale. ⭐ *A status line is rewritten whole or not at all.*
+
 - **⛔⛔ TWO DIFFERENT THINGS WERE BOTH CALLED "THE GRID", AND ONLY ONE OF THEM WAS A DECISION
   (2026-09-08, D332).** Joe asked why a gridless game still looks gridded. **The sim being
   tile-indexed is his own closed call** (`gridless.md §10.2`); **the tiles being VISIBLE was nobody's

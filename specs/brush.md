@@ -1,14 +1,19 @@
 # Spec: The brush — one tool, three layers, a shape you choose
 
-**Decisions:** D42, D86, D87, D92, D198, D221, D327. **Commit B** of the gridless stretch.
-**Status:** ✅ **B1 AND B2 BOTH BUILT (2026-09-07/08)** — size, shape, right-drag, Escape, one shape
-function, and the harvest brush's missing sentence. **1023 passing, 0 failing, 2 skipped of 1025;
-no golden moved** (a `git diff` over `tests/`, `src/Bclone.Sim/` and `data/` is empty — nothing but
-new files). Bar height still 161 on every tab × filter, measured. ⭐ **Joe approved the behaviour in
-review and then confirmed the sizing gesture in play: *"alt +scroll is perfect"*.** ⚠️ **The rest of
-the walk is approved-as-described rather than played** — said plainly, because the view has no
-automated verification of any kind and his eyes are the only test there is (D11, D160). **B2 (the smooth painted outline) is NOT started**, and this says so on purpose: a spec that
-lies about its own status is read at exactly the moment a session is orienting (D159).
+**Decisions:** D42, D86, D87, D92, D198, D221, D327, D332. **Commit B** of the gridless stretch.
+**Status:** ✅ **BOTH SLICES BUILT.** **B1** (2026-09-07, D327) — size, shape, right-drag, Escape, one
+shape function, and the harvest brush's missing sentence. **B2** (2026-09-08, D332) — the smooth
+painted outline, one outline round the brushful, and a switch for the grid lines.
+**1047 passing, 0 failing, 2 skipped of 1049; no golden moved** by either. Bar height still 161 on
+every tab × filter, and `zone outlines: ✅` in the probe. ⭐ **Joe confirmed the sizing gesture in
+play — *"alt +scroll is perfect"*** — and approved the rest of B1's walk as described. ⚠️ **B2 is
+unplayed by him as of this line**: the view has no automated verification of any kind and his eyes
+are the only test there is (D11, D160).
+
+⚠️ **This line contradicted itself for one commit** — it claimed both slices built and then said B2
+was not started, because the update edited the head and left the tail. **That is D159's exact
+failure, in the file that warns about it.** *Fixed in the commit after, and recorded rather than
+quietly corrected: a status line is edited as a whole or not at all.*
 
 ---
 
