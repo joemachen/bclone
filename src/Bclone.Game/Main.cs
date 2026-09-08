@@ -2009,23 +2009,10 @@ public partial class Main : Control
         // ⚠️ A site is still SELECTABLE — it has a queue position and a materials line to
         // read — but it is no longer STAFFABLE (D108). The caller decides which of those it
         // is asking about; this only decides what the player clicked on.
-        Workplace? site = null;
-        foreach (Workplace workplace in _loop.World.Workplaces)
-        {
-            if (!workplace.Footprint.Covers(tile))
-            {
-                continue;
-            }
-
-            if (!workplace.IsSite)
-            {
-                return workplace;
-            }
-
-            site ??= workplace;
-        }
-
-        return site;
+        // ⭐ Through the sim's own finders (D328), not a fourth copy of the loop. Standing first,
+        // then whatever else covers the tile — which can only be a site, because nothing may be
+        // raised on ground something already stands on.
+        return _loop.World.StandingWorkplaceCovering(tile) ?? _loop.World.WorkplaceCovering(tile);
     }
 
     /// <summary>Nudge the selected workplace's staffing, or clear the number you set.</summary>
@@ -2128,13 +2115,9 @@ public partial class Main : Control
             }
         }
 
-        foreach (Household household in world.Households)
+        if (world.HouseholdAt(tile) is Household household)
         {
-            if (household.HomePosition is GridPos where
-                && world.FootprintOf(BuildingKind.Home, where).Covers(tile))
-            {
-                DescribeHome(world, household, lines);
-            }
+            DescribeHome(world, household, lines);
         }
 
         // ⛔⛔ THE FOURTH LIST, AND LEAVING IT OUT MADE A FINISHED LIBRARY READ AS "OPEN GROUND"
@@ -2161,7 +2144,7 @@ public partial class Main : Control
         // then reading as *"open ground"* — because this method knew about three kinds of thing
         // that can stand on a tile and did not know about a fourth. **A fifth was always going to
         // arrive; this is it.**
-        if (world.TownHall is { } hall && hall.Footprint.Covers(tile))
+        if (world.TownHall is { } hall && world.TownHallCovers(tile))
         {
             DescribeTheTownHall(world, hall, lines);
         }
@@ -3937,15 +3920,7 @@ public partial class Main : Control
             return null;
         }
 
-        foreach (StoreBuilding store in _loop.World.StoreBuildings)
-        {
-            if (store.Footprint.Covers(tile))
-            {
-                return store;
-            }
-        }
-
-        return null;
+        return _loop.World.StoreAt(tile);
     }
 
     /// <summary>Hand the ground brush to whichever building is selected (D86).</summary>

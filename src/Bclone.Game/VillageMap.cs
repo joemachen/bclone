@@ -836,7 +836,10 @@ public partial class VillageMap : Control
                 _hovered = over;
                 if (_building is not null)
                 {
-                    _verdict = _world.CanBuildAt(_building.Value, _hovered);
+                    // ⭐ AT THE ANGLE IN YOUR HAND (D328). The ghost has been drawn with
+                    // `_ghostFacing` since D320 and the verdict was computed without it, so a
+                    // turned longhouse could be shown green over ground the sim had never checked.
+                    _verdict = _world.CanBuildAt(_building.Value, _hovered, facing: _ghostFacing);
                 }
 
                 // Drag to paint. A neighbourhood is a shape you draw, not a sequence of
@@ -1203,28 +1206,28 @@ public partial class VillageMap : Control
             // different acts. Calling off something nobody has finished is an undo and stays
             // instant; taking down something that stands is work, and since 2026-08-26 it is a
             // builder's job with a site of its own (Joe: "reverse-construction, essentially").
-            foreach (Workplace workplace in _world!.Workplaces)
+            // ⭐ One finder, then the question (D328). A standing building and a site cannot both
+            // cover a tile — nothing may be raised on ground something already stands on — so the
+            // first thing covering it is the thing this branch means.
+            if (_world!.WorkplaceCovering(where) is { IsSite: true } workplace)
             {
-                if (workplace.Footprint.Covers(where) && workplace.IsSite)
+                string name = workplace.Construction!.Name;
+
+                // A demolition already under way is not cancellable once begun -- the sim
+                // decides that, not this brush, so ask it rather than duplicating the rule.
+                if (workplace.Construction.Demolishing)
                 {
-                    string name = workplace.Construction!.Name;
-
-                    // A demolition already under way is not cancellable once begun -- the sim
-                    // decides that, not this brush, so ask it rather than duplicating the rule.
-                    if (workplace.Construction.Demolishing)
-                    {
-                        PlacementMessageChanged?.Invoke(_world.CancelDemolition(where)
-                            ? $"{name} is to stand after all."
-                            : $"{name} is already coming down; it is too late to stop it.");
-                        QueueRedraw();
-                        return;
-                    }
-
-                    _world.Demolish(workplace);
-                    PlacementMessageChanged?.Invoke($"{name} is gone.");
+                    PlacementMessageChanged?.Invoke(_world.CancelDemolition(where)
+                        ? $"{name} is to stand after all."
+                        : $"{name} is already coming down; it is too late to stop it.");
                     QueueRedraw();
                     return;
                 }
+
+                _world.Demolish(workplace);
+                PlacementMessageChanged?.Invoke($"{name} is gone.");
+                QueueRedraw();
+                return;
             }
 
             // Anything that STANDS -- a hut, a store, a library, a house -- is marked, and a
@@ -2450,15 +2453,7 @@ public partial class VillageMap : Control
         // ⭐ THE WHOLE FOOTPRINT, NOT THE ANCHOR (D321). Clicking the second or third tile of a
         // longhouse selected nothing, which reads as the building being unclickable rather than as
         // the anchor being special — the player has no way to know which tile is the anchor.
-        foreach (Workplace workplace in _world!.Workplaces)
-        {
-            if (!workplace.IsSite && workplace.Footprint.Covers(tile))
-            {
-                return workplace.Id;
-            }
-        }
-
-        return 0;
+        return _world!.StandingWorkplaceCovering(tile)?.Id ?? 0;
     }
 
     /// <summary>

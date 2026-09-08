@@ -4619,7 +4619,15 @@ public sealed class SimWorld
                 + "the village will carry them to the other stores.");
         }
 
-        PlacementVerdict verdict = CanBuildAt(kind.Value, to, alreadyStanding: true);
+        // ⛔⛔ THE FACING TRAVELS WITH THE BUILDING (D328), AND IT DID NOT. A moved granary
+        // silently arrived at `Angle.Zero` however it had been turned — **the same defect D325
+        // fixed for demolition, still live one door down**, and found the same way: by asking
+        // whether the treatment had reached every path rather than the one being worked on.
+        // ⭐ Read while the building still STANDS, which is D325's rule: nothing records a facing
+        // once the thing has become a site.
+        Angle facing = FacingOfWhatStandsAt(from);
+
+        PlacementVerdict verdict = CanBuildAt(kind.Value, to, alreadyStanding: true, facing: facing);
         if (!verdict.Allowed)
         {
             return verdict;
@@ -4635,7 +4643,8 @@ public sealed class SimWorld
             $"{NameOfWhatStandsAt(from)} (being moved)",
             new BuildingRecipe(recipe.WorkTicks),
             forHouseholdId: 0,
-            movingFrom: from);
+            movingFrom: from,
+            facing: facing);
 
         Narrate($"{NameOfWhatStandsAt(from)} is being moved to {to}. {Clock.SeasonAndYear()}.", LogCategory.Building);
         return verdict;
@@ -4670,33 +4679,37 @@ public sealed class SimWorld
             return true;
         }
 
-        for (int i = 0; i < Libraries.Count; i++)
+        // ⛔ THIS WAS `Position ==` ON THREE COLLECTIONS (D328), AND THE HONEST ACCOUNT IS THAT IT
+        // WAS NOT YET A BUG. Every movable workplace, every library and the town hall is one tile,
+        // so the anchor and the footprint agree — **the red check that restored the comparison
+        // scored ZERO, and that is written down rather than glossed** (`specs/gridless.md §10.3`'s
+        // habit). *The only multi-tile building in the game is the longhouse, which is a STORE, and
+        // `StoreAt` is footprint-aware and is asked first — so these arms are unreachable for the
+        // one shape that could tell them apart.*
+        // ⭐ It is converted because the finder is the rule, not because this arm was broken: an
+        // exception that has to be re-derived every time somebody reads it is how the half-
+        // conversion happened three times already.
+        if (LibraryCovering(from) is Library library)
         {
-            if (Libraries[i].Position == from)
-            {
-                Libraries[i].MoveTo(to);
-                TravelCost.Forget();
-                return true;
-            }
+            library.MoveTo(to);
+            TravelCost.Forget();
+            return true;
         }
 
         // ⭐ MOVING IT IS THE ANSWER TO PUTTING IT IN THE WRONG PLACE, and it is why demolishing it
         // does not re-offer the gift (`specs/town-hall.md §4`). *The founders only die once.*
-        if (TownHall is { } hall && hall.Position == from)
+        if (TownHall is { } hall && TownHallCovers(from))
         {
             hall.MoveTo(to);
             TravelCost.Forget();
             return true;
         }
 
-        for (int i = 0; i < Workplaces.Count; i++)
+        if (StandingWorkplaceCovering(from) is Workplace workplace)
         {
-            if (Workplaces[i].Position == from && !Workplaces[i].IsSite)
-            {
-                Workplaces[i].MoveTo(to);
-                TravelCost.Forget();
-                return true;
-            }
+            workplace.MoveTo(to);
+            TravelCost.Forget();
+            return true;
         }
 
         return false;
@@ -4830,30 +4843,40 @@ public sealed class SimWorld
     /// </remarks>
     /// <summary>Which way the building standing on this tile is turned (D325).</summary>
     /// <remarks>
-    /// ⭐ Asked of the same collections <c>SomethingStandsAt</c> walks, and in the same order, so
-    /// *"what stands here?"* and *"which way is it facing?"* cannot disagree about which building
-    /// they mean. ⚠️ Homes, libraries and the town hall have no facing of their own yet and answer zero;
-    /// they are all one tile, so zero is the truth rather than a placeholder.
+    /// ⭐ Asked of the same collections <c>SomethingStandsAt</c> walks, <b>and in the same order</b>,
+    /// so *"what stands here?"* and *"which way is it facing?"* cannot disagree about which building
+    /// they mean.
+    /// ⛔ <b>IT ONLY ASKED TWO OF THE FIVE</b> (D328) — libraries and the town hall carry a facing
+    /// and an extent from their row since D325, and this answered zero for both. A rotated library
+    /// would have been drawn square for the years it took to pull down. *The claim in the sentence
+    /// above was true of the ORDER and false of the LIST.*
+    /// ⚠️ <b>A home genuinely has no facing</b>: housing is painted with the land brush and never
+    /// placed by a button (D42, D102), so there is no moment at which a player could turn one.
+    /// Zero is the truth there rather than a placeholder — and it falls out of the same order.
     /// </remarks>
     internal Angle FacingOfWhatStandsAt(GridPos tile)
     {
-        for (int i = 0; i < Workplaces.Count; i++)
+        if (HouseholdAt(tile) is not null)
         {
-            if (Workplaces[i].Footprint.Covers(tile))
-            {
-                return Workplaces[i].Facing;
-            }
+            return Angle.Zero;
         }
 
-        for (int i = 0; i < StoreBuildings.Count; i++)
+        if (WorkplaceCovering(tile) is Workplace workplace)
         {
-            if (StoreBuildings[i].Footprint.Covers(tile))
-            {
-                return StoreBuildings[i].Facing;
-            }
+            return workplace.Facing;
         }
 
-        return Angle.Zero;
+        if (LibraryCovering(tile) is Library library)
+        {
+            return library.Facing;
+        }
+
+        if (TownHall is { } hall && TownHallCovers(tile))
+        {
+            return hall.Facing;
+        }
+
+        return StoreAt(tile) is StoreBuilding store ? store.Facing : Angle.Zero;
     }
 
     public bool CancelDemolition(GridPos tile)
@@ -4895,19 +4918,16 @@ public sealed class SimWorld
             return;
         }
 
-        for (int i = 0; i < Libraries.Count; i++)
+        if (LibraryCovering(tile) is Library library)
         {
-            if (Libraries[i].Footprint.Covers(tile))
-            {
-                Demolish(Libraries[i]);
-                return;
-            }
+            Demolish(library);
+            return;
         }
 
         // ⛔ PULLING IT DOWN DOES NOT RE-OFFER THE GIFT, and the sentence says so rather than
         // leaving the player to find out (`specs/town-hall.md §4`). *The founders only die once.*
         // Moving it (D229) is the answer to having put it in the wrong place.
-        if (TownHall is { } hall && hall.Footprint.Covers(tile))
+        if (TownHall is { } hall && TownHallCovers(tile))
         {
             TownHall = null;
             Narrate($"{Capitalised(hall.Name)} was pulled down. The founders' names went with it, "
@@ -4916,13 +4936,9 @@ public sealed class SimWorld
             return;
         }
 
-        for (int i = 0; i < Workplaces.Count; i++)
+        if (StandingWorkplaceCovering(tile) is Workplace workplace)
         {
-            if (Workplaces[i].Footprint.Covers(tile) && !Workplaces[i].IsSite)
-            {
-                Demolish(Workplaces[i]);
-                return;
-            }
+            Demolish(workplace);
         }
     }
 
@@ -4968,25 +4984,19 @@ public sealed class SimWorld
             return BuildingsCatalog.ThatStores(store.Kind);
         }
 
-        for (int i = 0; i < Libraries.Count; i++)
+        if (LibraryCovering(tile) is not null)
         {
-            if (Libraries[i].Footprint.Covers(tile))
-            {
-                return BuildingKind.Library;
-            }
+            return BuildingKind.Library;
         }
 
-        if (TownHall is { } civic && civic.Footprint.Covers(tile))
+        if (TownHallCovers(tile))
         {
             return BuildingKind.TownHall;
         }
 
-        for (int i = 0; i < Workplaces.Count; i++)
+        if (StandingWorkplaceCovering(tile) is Workplace workplace)
         {
-            if (Workplaces[i].Footprint.Covers(tile) && !Workplaces[i].IsSite)
-            {
-                return JobsCatalog.WorksAt(Workplaces[i].Kind);
-            }
+            return JobsCatalog.WorksAt(workplace.Kind);
         }
 
         return null;
@@ -5002,25 +5012,19 @@ public sealed class SimWorld
             return store.Name;
         }
 
-        for (int i = 0; i < Libraries.Count; i++)
+        if (LibraryCovering(tile) is Library library)
         {
-            if (Libraries[i].Footprint.Covers(tile))
-            {
-                return Libraries[i].Name;
-            }
+            return library.Name;
         }
 
-        if (TownHall is { } civic && civic.Footprint.Covers(tile))
+        if (TownHall is { } civic && TownHallCovers(tile))
         {
             return civic.Name;
         }
 
-        for (int i = 0; i < Workplaces.Count; i++)
+        if (StandingWorkplaceCovering(tile) is Workplace workplace)
         {
-            if (Workplaces[i].Footprint.Covers(tile) && !Workplaces[i].IsSite)
-            {
-                return Workplaces[i].Name;
-            }
+            return workplace.Name;
         }
 
         return "it";
@@ -5046,12 +5050,40 @@ public sealed class SimWorld
     /// ⭐ <b>One finder per collection, and every caller goes through them</b> — the half-conversion
     /// has now happened twice, and it happened because each site owned its own loop.
     /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND D326 ONLY GOT HALFWAY: TEN CALLERS STILL WALKED THEIR OWN COLLECTIONS</b>, found
+    /// while scoping free placement (D328). Only <see cref="StoreAt"/> and <see cref="HouseholdAt"/>
+    /// were actually being reused. <b>The one that mattered was <c>MoveWhatStandsAt</c>, which
+    /// compared <c>Position ==</c></b> — harmless on a tile grid and <em>silently never true</em>
+    /// the moment a position is a 64-bit fraction. *A half-conversion that is about to become a
+    /// continuous coordinate is a bug with a fuse on it.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Workplaces need FOUR finders, not one, because a workplace has four lives</b> — any at
+    /// all (occupancy), standing and finished (naming, demolition, moving), an unfinished site, and
+    /// a demolition site. **Named rather than given a boolean**, because a caller passing
+    /// <c>false</c> does not say which question it is asking.
+    /// </para>
     /// </remarks>
     public Workplace? WorkplaceCovering(GridPos tile)
     {
         for (int i = 0; i < Workplaces.Count; i++)
         {
             if (Workplaces[i].Footprint.Covers(tile))
+            {
+                return Workplaces[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The finished workplace standing on a tile — not a site. </summary>
+    public Workplace? StandingWorkplaceCovering(GridPos tile)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Footprint.Covers(tile) && !Workplaces[i].IsSite)
             {
                 return Workplaces[i];
             }
@@ -5232,7 +5264,7 @@ public sealed class SimWorld
         };
 
     public PlacementVerdict CanBuildAt(
-        BuildingKind kind, GridPos position, bool alreadyStanding = false)
+        BuildingKind kind, GridPos position, bool alreadyStanding = false, Angle facing = default)
     {
         if (!Map.Contains(position))
         {
@@ -5258,7 +5290,13 @@ public sealed class SimWorld
         // further down, and for the same reason.
         if (!alreadyStanding)
         {
-            List<GridPos> covered = FootprintOf(kind, position).CoveredTiles();
+            // ⛔⛔ AT THE ANGLE IT WILL ACTUALLY STAND (D328). This defaulted the facing to zero
+            // while `Mark`, `FootprintOf` and the ghost all carried one — **so for a turned
+            // multi-tile building the verdict and the picture were answers about two different
+            // shapes.** The ghost could be drawn green over a river the sim had not looked at.
+            // *Every other caller of `FootprintOf` had been given the facing; the one that decides
+            // whether the building may exist had not.*
+            List<GridPos> covered = FootprintOf(kind, position, facing).CoveredTiles();
             for (int i = 0; i < covered.Count; i++)
             {
                 GridPos tile = covered[i];
@@ -5580,7 +5618,7 @@ public sealed class SimWorld
     /// </remarks>
     public PlacementVerdict Mark(BuildingKind kind, GridPos position, Angle facing)
     {
-        PlacementVerdict verdict = CanBuildAt(kind, position);
+        PlacementVerdict verdict = CanBuildAt(kind, position, facing: facing);
         if (!verdict.Allowed)
         {
             return verdict;
@@ -6263,17 +6301,7 @@ public sealed class SimWorld
         // and leaving its store standing would be half a demolition — a granary-sized hole
         // in the village that still holds goods and still shows on the map. The store's own
         // demolition already takes the stall with it, so that is the one to run.
-        StoreBuilding? sameBuilding = null;
-        for (int i = 0; i < StoreBuildings.Count; i++)
-        {
-            if (StoreBuildings[i].Footprint.Covers(workplace.Position))
-            {
-                sameBuilding = StoreBuildings[i];
-                break;
-            }
-        }
-
-        if (sameBuilding is not null)
+        if (StoreAt(workplace.Position) is StoreBuilding sameBuilding)
         {
             Demolish(sameBuilding);
             return;
@@ -8113,13 +8141,13 @@ public sealed class SimWorld
         // Household.ChooseSite asked its OWN version of the same question, which did check
         // homes — two rules, one of them wrong, and the wrong one was the one facing the
         // player. There is one now, and ChooseSite calls it.
-        for (int i = 0; i < Households.Count; i++)
+        // ⚠️ THIS ARM USED TO READ `HomePosition ?? position`, WHICH MADE A HOMELESS HOUSEHOLD'S
+        // FOOTPRINT COVER WHATEVER IT WAS ASKED ABOUT and then relied on a null check two lines
+        // later to take it back. Correct, and only by arithmetic that had to be traced to believe.
+        // `HouseholdAt` asks the question once, plainly (D328).
+        if (HouseholdAt(position) is not null)
         {
-            if (FootprintOf(BuildingKind.Home, Households[i].HomePosition ?? position).Covers(position)
-                && Households[i].HomePosition is not null)
-            {
-                return true;
-            }
+            return true;
         }
 
         // ⭐⭐ THROUGH THE FOOTPRINT, NOT THE POSITION (gridless 2b, D319). A workplace is the one
@@ -8130,31 +8158,25 @@ public sealed class SimWorld
         // multi-tile support without changing a single placement or moving a golden.
         // ⚠️ The other four kinds below are one tile each by construction and stay a plain
         // comparison; giving them a footprint would be four types of ceremony for one shape.
-        for (int i = 0; i < Workplaces.Count; i++)
+        if (WorkplaceCovering(position) is not null)
         {
-            if (Workplaces[i].Footprint.Covers(position))
-            {
-                return true;
-            }
+            return true;
         }
 
         // ⚠️ AND THE LIBRARIES, WHICH ARE THE FOURTH KIND OF THING TO STAND ON A TILE. The comment
         // above is about exactly this going wrong once already — two rules for *"is this tile
         // free?"*, one of them missing a kind of building, and the wrong one facing the player.
         // **A new kind of building is a new line here or it can be built on top of.**
-        for (int i = 0; i < Libraries.Count; i++)
+        if (LibraryCovering(position) is not null)
         {
-            if (Libraries[i].Footprint.Covers(position))
-            {
-                return true;
-            }
+            return true;
         }
 
         // ⭐ AND THE TOWN HALL, THE FIFTH — added because the line above ASKED FOR IT IN ADVANCE:
         // *"a new kind of building is a new line here or it can be built on top of."* The warning
         // was written by the session that added the fourth, and it is the cheapest one in this
         // file to honour. (D252.)
-        if (TownHall?.Footprint.Covers(position) == true)
+        if (TownHallCovers(position))
         {
             return true;
         }
@@ -8165,15 +8187,7 @@ public sealed class SimWorld
         // other two were free ground. **A half-converted occupancy check is exactly the trap this
         // method's own comment above was written about**: two rules for "is this tile free?", one
         // of them wrong, and the wrong one facing the player.
-        for (int i = 0; i < StoreBuildings.Count; i++)
-        {
-            if (StoreBuildings[i].Footprint.Covers(position))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return StoreAt(position) is not null;
     }
 
     // ⭐ D56's PLACE-NAMING IS DELETED HERE, AND IT IS THE RIGHT KIND OF DELETION.
@@ -8210,54 +8224,36 @@ public sealed class SimWorld
     /// </remarks>
     public Shelter ShelterAt(GridPos at)
     {
-        for (int i = 0; i < Households.Count; i++)
+        // A family with no house shelters nobody, anywhere — including themselves. That
+        // is the whole tension of the founding (D70): until somebody raises a roof there
+        // is no Shelter.Roof and no Shelter.Fire in the valley, so open ground is the
+        // only state there is and winter is counted in days.
+        //
+        // ⚠️ THIS WAS A COMPONENT-WISE COMPARE, WHICH IS THE SAME DEFECT IN A DIFFERENT
+        // SPELLING (D326) — grepping for `Position ==` would never have found it, and a
+        // villager standing on the far end of a long building was out in the weather. It goes
+        // through the shared finder now (D328) rather than through a fourth copy of the loop.
+        if (HouseholdAt(at) is Household household)
         {
-            Household household = Households[i];
-
-            // A family with no house shelters nobody, anywhere — including themselves. That
-            // is the whole tension of the founding (D70): until somebody raises a roof there
-            // is no Shelter.Roof and no Shelter.Fire in the valley, so open ground is the
-            // only state there is and winter is counted in days.
-            if (household.HomePosition is not GridPos home)
-            {
-                continue;
-            }
-
-            // ⚠️ THIS WAS A COMPONENT-WISE COMPARE, WHICH IS THE SAME DEFECT IN A DIFFERENT
-            // SPELLING (D326) — grepping for `Position ==` would never have found it, and a
-            // villager standing on the far end of a long building was out in the weather.
-            if (!FootprintOf(BuildingKind.Home, home).Covers(at))
-            {
-                continue;
-            }
-
             // An empty house has nobody to keep the fire in, whatever is on its shelf.
             return LivingMembersOf(household) > 0 && household.Stockpile.Firewood > 0
                 ? Shelter.Fire
                 : Shelter.Roof;
         }
 
-        for (int i = 0; i < StoreBuildings.Count; i++)
+        if (StoreAt(at) is not null)
         {
-            StoreBuilding store = StoreBuildings[i];
-            if (store.Footprint.Covers(at))
-            {
-                return Shelter.Roof;
-            }
+            return Shelter.Roof;
         }
 
-        for (int i = 0; i < Workplaces.Count; i++)
+        // ⛔ TWO COLLECTIONS ARE DELIBERATELY NOT ASKED, AND THE OMISSION IS RECORDED RATHER THAN
+        // QUIETLY FIXED (D328). A library and a town hall have roofs, and standing in one ought to
+        // count — but `ShelterAt` feeds the cold model, so adding them is a **behaviour** change
+        // that would move goldens inside a commit whose whole claim is that none moved. *Measured
+        // first, taken separately, or not at all — but not smuggled into a refactor.*
+        if (WorkplaceCovering(at) is Workplace workplace && IsUnderCover(workplace.Kind))
         {
-            Workplace workplace = Workplaces[i];
-            if (!workplace.Footprint.Covers(at))
-            {
-                continue;
-            }
-
-            if (IsUnderCover(workplace.Kind))
-            {
-                return Shelter.Roof;
-            }
+            return Shelter.Roof;
         }
 
         return Shelter.Outdoors;
