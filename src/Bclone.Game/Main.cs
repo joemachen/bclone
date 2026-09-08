@@ -253,6 +253,7 @@ public partial class Main : Control
         // and the restore does not shrink `Size.X` back within the same call. Asked afterwards,
         // this measured every sentence against 377 pixels the player does not have.
         GD.Print(_map.TheCentreOfATileDrawsWhereTheTileDoes());
+        GD.Print(ZoneOutline.SelfCheck());
         ProbeThePlacementSentences();
 
         ProbeTheControlBar();
@@ -5208,6 +5209,19 @@ public partial class Main : Control
         body.AddChild(Caption(
             "Off, a building stands exactly where you put it, and the ghost shows the tiles it "
             + "will claim."));
+
+        // ⭐⭐ THE GRID LINES (D332, Joe: *"if the game is gridless, then why is everything still in
+        // a grid?"*). **They were always on above 6px/tile with no way to turn them off**, and they
+        // are the most literal answer to his question. On by default: they are useful while aiming,
+        // and placement is no longer bound to them.
+        var grid = new CheckBox
+        {
+            Text = "draw the tile grid",
+            ButtonPressed = true,
+        };
+        grid.AddThemeFontSizeOverride("font_size", 12);
+        grid.Toggled += on => _map.ShowGrid(on);
+        body.AddChild(grid);
 
         var wildlife = new CheckBox { Text = "animals in the woods", ButtonPressed = true };
         wildlife.AddThemeFontSizeOverride("font_size", 12);

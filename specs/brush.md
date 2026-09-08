@@ -1,7 +1,7 @@
 # Spec: The brush — one tool, three layers, a shape you choose
 
 **Decisions:** D42, D86, D87, D92, D198, D221, D327. **Commit B** of the gridless stretch.
-**Status:** ✅ **B1 BUILT AND GREEN (2026-09-07)** — size, shape, right-drag, Escape, one shape
+**Status:** ✅ **B1 AND B2 BOTH BUILT (2026-09-07/08)** — size, shape, right-drag, Escape, one shape
 function, and the harvest brush's missing sentence. **1023 passing, 0 failing, 2 skipped of 1025;
 no golden moved** (a `git diff` over `tests/`, `src/Bclone.Sim/` and `data/` is empty — nothing but
 new files). Bar height still 161 on every tab × filter, measured. ⭐ **Joe approved the behaviour in
@@ -170,8 +170,24 @@ three historical bugs); the two new fields are deliberately outside that set.
 | 10 | Bar height still **161** on every tab × filter, and no brush sentence wraps |
 | 11 | `DESIGN.md` §6 and §7 updated |
 
-### B2 — not started
+### B2 — ✅ MET (2026-09-08, D332)
 
-The smooth painted outline. Contour tracing per zone layer in tile space, corner-cut, cached, drawn
+| # | Item | State |
+|---|---|---|
+| 1 | The painted region has a **smooth border**, not a staircase | ✅ `ZoneOutline` — traced, straightened, corner-cut twice |
+| 2 | Work ground is traced **per owner** | ✅ or two farms whose fields touch would read as one |
+| 3 | The **brush preview is one outline**, not 25 boxes | ✅ traced from `BrushStroke.TilesUnder`, so the outline *is* the paint |
+| 4 | The per-tile **fill stays** | ✅ the harvest brush's filter means a drag across mixed ground is genuinely green on the trees and red on the stone (D198) |
+| 5 | Cached, and its counter **is not hashed** | ✅ `ZoneMap.Edits`; `grep Edits StateHash.cs` is 0 |
+| 6 | **No golden moves** | ✅ view only |
+| 7 | Guarded despite living where there are no tests | ✅ `ZoneOutline.SelfCheck` runs in the width probe, including a **ring round a hole** |
+
+⭐ **And the grid lines got a switch** — they had been drawn unconditionally above 6px/tile since the
+first commit, with no way to turn them off. *The most literal answer to Joe's "why is everything
+still in a grid?", and two lines.*
+
+⏸️ **Terrain, forests and the river are the next slice and are not this one.**
+
+*The original scoping, kept:* The smooth painted outline. Contour tracing per zone layer in tile space, corner-cut, cached, drawn
 over the existing wash. ⛔ Its invalidation counter **must not enter `StateHash`**, or every golden
 moves for a number that is not state. Its own DoD, when it is taken.

@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ FREE PLACEMENT WORKS NOW — NEXT IS MAKING THE VALLEY STOP LOOKING LIKE GRAPH PAPER**
+# Handoff — bclone: **▶️ THE PAINTED GROUND IS SMOOTH NOW — THE TERRAIN IS NOT, AND THAT IS NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
 > **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
@@ -196,26 +196,26 @@ stood idle with 130 logs.
    ⚠️ `DrawTheBrushful`'s doc-comment is **stale**: it still says *"The diamond, not a square"* and
    contradicts the inline comment below it.
    </details>
-1. **▶️ THE VALLEY STOPS LOOKING LIKE GRAPH PAPER — Joe's own question, and it is a RENDERING
-   slice, not a sim one.** He asked *"if the game is gridless, why is everything still in a grid?
-   why isnt the paint brush a smooth circle? why are forests grid-shaped?"* ⛔ **The sim being
+1. **▶️ THE TERRAIN STOPS LOOKING LIKE GRAPH PAPER — the second half of Joe's question.** ✅ **Zones
+   and the brush are DONE (D332)**, and the grid lines now have a switch. ⛔ **The sim being
    tile-indexed is his own closed decision** (`gridless.md §10.2`, *"not to be re-litigated"*) —
-   Foundation's terrain data is gridded too. **What nobody has ever revisited is how it is DRAWN.**
-   His call: **zones first, then terrain.** The audit, ranked:
-   1. ⭐ **Literal grid lines, always on above 6px/tile, with NO user toggle** (`VillageMap.cs:2462`)
-      — *two lines to fix, and it is the top of the list.*
-   2. Zone washes: three per-tile rect passes with hard staircase borders (`:2571`).
-   3. Terrain: one flat axis-aligned square per non-grass tile, no blending (`:2681`).
-   4. ⭐⭐ **Forests have no trees at all** — a wood is a flat coloured rectangle; `DrawTheWoods`
-      draws animals and berries only, and its scatter is *already* sub-tile and deterministic.
-   5. The river is drawn by the generic terrain loop, though `CarveRiver` computes a per-column
-      centreline that a smooth shoreline could reconstruct.
-   6. Soil re-quantises an **already-smooth bilinear field** back into per-tile alpha squares.
+   this is a **rendering** slice, and no golden can move for it. What is left, ranked by the audit:
+   1. Terrain: one flat axis-aligned square per non-grass tile, no blending (`VillageMap.cs:2681`).
+   2. ⭐⭐ **Forests have no trees at all** — a wood is a flat coloured rectangle; `DrawTheWoods`
+      draws animals and berries only, and **its scatter is already sub-tile and deterministic from
+      `Scramble(x, y)`**, so trees are the same mechanism it already has.
+   3. The river is drawn by the generic terrain loop, though `CarveRiver` computes a **per-column
+      centreline** a smooth shoreline could reconstruct — the cheapest terrain win, not the dearest.
+   4. Soil re-quantises an **already-smooth bilinear field** (`MakeSoilRegional`, integer bilinear
+      at lattice 8) back into per-tile alpha squares. Resampling it needs **zero sim change**.
+   ⚠️ **Forest clumps are Manhattan DIAMONDS of tiles** (`PaintForest`), so their edges are chunky
+   *and* faintly diagonal — smoothing the render will not hide that, and it is a generator question.
    ⚠️ **The window is walked SIX times a frame** — ~45,000 tile iterations and up to ~30,000
    `DrawRect` calls at full zoom-out, with no caching. **`Minimap` is the precedent**: it bakes
    terrain to a texture, invalidated by `SimWorld.TerrainGeneration`.
-   ⛔ **Nothing in the repo traces a contour** — `DrawFootprint` is the only polygon code, and the
-   wash's 2% overdraw exists specifically to *destroy* the boundary a smooth outline needs.
+   ⭐ **`ZoneOutline` is the tracer now and it is reusable** — boundary edges, chained loops,
+   collinear runs merged, Chaikin twice. **Its self-check runs in the width probe**, because it
+   lives in the view where there are no tests.
 2. ⏸️ **Then `gridless.md §8` slice 3: villagers hold a `Point`** — movement interpolates in
    fixed-point, the cost field is untouched, and after that string-pulled paths make §2.6's desire
    paths writable for the first time.
@@ -766,6 +766,21 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔ TWO DIFFERENT THINGS WERE BOTH CALLED "THE GRID", AND ONLY ONE OF THEM WAS A DECISION
+  (2026-09-08, D332).** Joe asked why a gridless game still looks gridded. **The sim being
+  tile-indexed is his own closed call** (`gridless.md §10.2`); **the tiles being VISIBLE was nobody's
+  call at all** — the grid lines had been drawn unconditionally since the first commit and had no
+  switch. ⭐ *Before answering "that is by design", check whether the thing being complained about is
+  the design or an artefact nobody ever chose.*
+- **⚠️ CORNER-CUTTING A STAIRCASE GIVES YOU A RIPPLE, NOT A CURVE (2026-09-08, D332).** Chaikin on a
+  polygon whose every side is half a tile long rounds each step and the result wobbles. **Merge the
+  collinear runs first**, then cut: long edges stay straight and only the corners soften. *The
+  smoothing step is not the step that makes it look smooth.*
+- **⚠️ A RING IS THE SHAPE THAT TELLS YOU A TRACER IS WRONG (2026-09-08, D332).** A painted region
+  with a hole in it has **two** borders. A tracer that returns one has swallowed the hole — and that
+  failure looks like success, because the outer loop is perfect. *Every contour guard should include
+  a shape with a hole.*
 
 - **⛔⛔⛔ A CHECK THAT ITERATES A SET SAYS NOTHING ABOUT THE EMPTY SET (2026-09-08, D331).**
   `CanBuildAt` refuses a placement by looping over the tiles the building would cover and objecting

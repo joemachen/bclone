@@ -204,6 +204,16 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color WorkGroundColour = new("#4a9ba8", 0.16f);
 
+    // ⭐ THE BORDERS ARE THE SAME HUES AT FULL STRENGTH (D332). The wash says *this ground is
+    // spoken for*; the line says *this far and no further*, and it is the line that has to survive
+    // being read at a glance over terrain. **Same colour, so it is obviously the same zone** —
+    // a border in a new hue would be a fourth thing to learn.
+    private static readonly Color ResidentialEdge = new("#b98a52", 0.55f);
+
+    private static readonly Color HarvestEdge = new("#d8892f", 0.70f);
+
+    private static readonly Color WorkGroundEdge = new("#4a9ba8", 0.65f);
+
     /// <summary>The selected building's own ground, brighter than everybody else's.</summary>
     private static readonly Color WorkGroundMine = new("#5fc8d8", 0.30f);
 
@@ -2000,7 +2010,12 @@ public partial class VillageMap : Control
         }
 
         int direction = TheStrokeInProgress();
+        var under = new HashSet<Vector2I>();
 
+        // ⛔ THE FILL STAYS PER TILE AND MUST. Each tile is coloured by what the sim says about
+        // THAT tile (D198) — the harvest brush's filter means a drag across mixed ground is green
+        // on the trees and red on the stone, and one colour for the whole brushful would be a
+        // preview that tells the player less than the click will.
         foreach (GridPos tile in BrushStroke.TilesUnder(_hovered, _brushRadius, _brushShape))
         {
             if (!_world.Map.Contains(tile))
@@ -2009,14 +2024,42 @@ public partial class VillageMap : Control
             }
 
             Vector2 centre = ToScreen(tile);
-            float size = Mathf.Max(6f, _pixelsPerTile * 0.9f);
+            float size = _pixelsPerTile * 1.02f;
             var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
 
-            Color colour = ColourForTheBrushOn(tile, direction);
-            DrawRect(rect, colour with { A = 0.30f });
-            DrawRect(rect, colour with { A = 0.85f }, filled: false, width: 1f);
+            DrawRect(rect, ColourForTheBrushOn(tile, direction) with { A = 0.26f });
+            under.Add(new Vector2I(tile.X, tile.Y));
+        }
+
+        // ⭐⭐ AND ONE OUTLINE ROUND THE LOT (D332, Joe: *"why isnt the paint brush a smooth
+        // circle?"*). It was twenty-five separately outlined boxes, which drew the GRID rather than
+        // the brush — every internal edge was a line saying nothing, because the tile boundaries
+        // inside a brushful are not a thing the player is choosing. **The shape they are aiming is
+        // its border.**
+        // ⚠️ Traced from `BrushStroke.TilesUnder`, so the outline is the paint: one shape function
+        // decides what lands (D327) and this draws a picture of that answer rather than a second
+        // opinion about it. *A round brush now looks round.*
+        float thickness = Mathf.Max(1.5f, _pixelsPerTile * 0.06f);
+        foreach (Vector2[] loop in ZoneOutline.Trace(under))
+        {
+            var onScreen = new Vector2[loop.Length];
+            for (int p = 0; p < loop.Length; p++)
+            {
+                onScreen[p] = ToScreen(loop[p]);
+            }
+
+            DrawPolyline(onScreen, BrushEdgeFor(direction), thickness, antialiased: true);
         }
     }
+
+    /// <summary>The colour of the brush's own border — what the stroke as a whole would do.</summary>
+    /// <remarks>
+    /// ⚠️ <b>The border is about the GESTURE, the fill is about each TILE.</b> They are allowed to
+    /// disagree, and that is the useful part: an amber outline over a mix of green and red tiles
+    /// says *"this takes back"* while the tiles still say which of them have anything to take.
+    /// </remarks>
+    private Color BrushEdgeFor(int direction) =>
+        direction < 0 ? GhostWarned with { A = 0.85f } : GhostFine with { A = 0.85f };
 
     /// <summary>Which way the stroke under the cursor would go, right now (D327).</summary>
     /// <remarks>
@@ -2459,8 +2502,15 @@ public partial class VillageMap : Control
 
         DrawRect(valley, ValleyEdge, filled: false, width: 2f);
 
-        // Only worth drawing the grid while tiles are big enough to read.
-        if (_pixelsPerTile < 6f)
+        // ⭐⭐ THE GRID LINES ARE THE LITERAL GRAPH PAPER, AND THEY HAD NO SWITCH (D332). Joe,
+        // playing the free-placement build: *"if the game is gridless, then why is everything still
+        // in a grid?"* **Two of the three things he was looking at are drawing, not simulation** —
+        // the sim being tile-indexed is his own settled call (`gridless.md §10.2`), and nothing had
+        // ever revisited whether the tiles should be *visible*.
+        // ⚠️ ON BY DEFAULT, because they are genuinely useful while you are aiming at ground — and
+        // placement is no longer bound to them, so this is now a preference rather than a readout.
+        // Only worth drawing at all while tiles are big enough to read.
+        if (!_showGrid || _pixelsPerTile < 6f)
         {
             return;
         }
@@ -2568,10 +2618,117 @@ public partial class VillageMap : Control
     /// and it should never compete with the people standing on it.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// ⭐⭐ Re-trace the painted borders, but only when the paint has actually moved (D332).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠️ <b>This walks the WHOLE map, not the visible window</b>, and that is deliberate: a region
+    /// half off screen has a border that runs off the edge, and tracing only what is visible would
+    /// draw a fence across the middle of it where the viewport happens to end. **The cost is paid
+    /// once per brush stroke rather than once per frame**, which is the trade the counter buys.
+    /// </para>
+    /// <para>
+    /// ⭐ Cheaper than what it sits beside: the visible window is already walked **six times a
+    /// frame** by the terrain, soil, zone and woods passes with no caching at all.
+    /// </para>
+    /// </remarks>
+    private void TraceTheZonesIfTheyMoved(ZoneMap zones)
+    {
+        if (_outlinesTracedAt == zones.Edits)
+        {
+            return;
+        }
+
+        _outlinesTracedAt = zones.Edits;
+        _zoneOutlines.Clear();
+
+        var residential = new HashSet<Vector2I>();
+        var harvest = new HashSet<Vector2I>();
+        var byOwner = new Dictionary<int, HashSet<Vector2I>>();
+        var owners = new List<int>();
+
+        SimConfig config = _world!.Config;
+
+        for (int y = config.MapMinY; y <= config.MapMaxY; y++)
+        {
+            for (int x = config.MapMinX; x <= config.MapMaxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                var at = new Vector2I(x, y);
+
+                if (zones.IsResidential(tile))
+                {
+                    residential.Add(at);
+                }
+
+                if (zones.IsHarvest(tile))
+                {
+                    harvest.Add(at);
+                }
+
+                int owner = zones.WorkGroundOwner(tile);
+                if (owner == 0)
+                {
+                    continue;
+                }
+
+                if (!byOwner.TryGetValue(owner, out HashSet<Vector2I>? theirs))
+                {
+                    theirs = new HashSet<Vector2I>();
+                    byOwner[owner] = theirs;
+
+                    // ⚠️ The owners are collected in a LIST as they are met, and the drawing walks
+                    // that — never the dictionary. *Hash-table order is not a thing to draw from.*
+                    owners.Add(owner);
+                }
+
+                theirs.Add(at);
+            }
+        }
+
+        Keep(residential, ResidentialEdge);
+        Keep(harvest, HarvestEdge);
+
+        for (int i = 0; i < owners.Count; i++)
+        {
+            Keep(byOwner[owners[i]], WorkGroundEdge);
+        }
+
+        void Keep(HashSet<Vector2I> tiles, Color edge)
+        {
+            foreach (Vector2[] loop in ZoneOutline.Trace(tiles))
+            {
+                _zoneOutlines.Add((edge, loop));
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⭐ The painted borders, drawn as one smooth line each instead of a staircase of rects.
+    /// </summary>
+    private void DrawTheZoneOutlines()
+    {
+        for (int i = 0; i < _zoneOutlines.Count; i++)
+        {
+            (Color edge, Vector2[] loop) = _zoneOutlines[i];
+
+            var onScreen = new Vector2[loop.Length];
+            for (int p = 0; p < loop.Length; p++)
+            {
+                onScreen[p] = ToScreen(loop[p]);
+            }
+
+            DrawPolyline(onScreen, edge, Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
+        }
+    }
+
     private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
     {
         ZoneMap zones = _world!.Zones;
         float size = _pixelsPerTile * 1.02f;
+
+        TraceTheZonesIfTheyMoved(zones);
 
         for (int y = minY; y <= maxY; y++)
         {
@@ -2639,6 +2796,12 @@ public partial class VillageMap : Control
                 DrawRect(rect, HarvestColour);
             }
         }
+
+        // ⭐⭐ AND THE BORDERS OVER ALL THREE (D332, Joe: *"why isnt the paint brush a smooth
+        // circle?"*). The washes stay per-tile — they are a tint on ground that IS tiled — and what
+        // stops the region looking like graph paper is its EDGE. *The paint is unchanged; only the
+        // picture of it is.*
+        DrawTheZoneOutlines();
     }
 
     /// <summary>
@@ -2973,6 +3136,40 @@ public partial class VillageMap : Control
 
     /// <summary>Whether one workplace's marker is switched on, ignoring the global switch.</summary>
     public bool IdleMarkerShownFor(int workplaceId) => !_idleMarkerMuted.Contains(workplaceId);
+
+    /// <summary>The smoothed borders of every painted region, and what they were traced from.</summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐⭐ <b>CACHED IN TILE SPACE AND TRANSFORMED EACH FRAME</b>, which is what makes this
+    /// affordable at all: tracing is O(painted tiles) and panning or zooming does not change the
+    /// shape, only where it lands. **Keyed on <c>ZoneMap.Edits</c>**, a monotonic counter that rises
+    /// only when a tile actually changes hands — the same shape <c>Minimap</c> uses against
+    /// <c>SimWorld.TerrainGeneration</c> to decide when to re-bake.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Work ground is traced PER OWNER</b>, or two farms whose fields touch would come out as
+    /// one shape and the border would stop answering *"whose is this?"* — which is the question
+    /// D86's brighter wash exists for.
+    /// </para>
+    /// </remarks>
+    private readonly List<(Color Edge, Vector2[] Loop)> _zoneOutlines = new();
+
+    private int _outlinesTracedAt = -1;
+
+    /// <summary>Whether the tile grid is drawn (D332). On by default.</summary>
+    /// <remarks>
+    /// ⚠️ <b>View-only, like the other map toggles</b> — nothing about the village changes, so the
+    /// hash cannot diverge on it. It is here rather than in the sim for the same reason the marker
+    /// toggles are.
+    /// </remarks>
+    private bool _showGrid = true;
+
+    /// <summary>Draw the tile grid, or stop.</summary>
+    public void ShowGrid(bool on)
+    {
+        _showGrid = on;
+        QueueRedraw();
+    }
 
     /// <summary>Whether the soil overlay is being drawn (D178).</summary>
     public bool SoilShown => _showSoil;

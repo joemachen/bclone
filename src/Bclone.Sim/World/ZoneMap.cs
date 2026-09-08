@@ -108,6 +108,26 @@ public sealed class ZoneMap
     }
 
     /// <summary>Paint or erase one tile. Returns true if it changed anything.</summary>
+    /// <summary>
+    /// ⭐ How many times any layer has changed — <b>so a drawing cache knows when it is stale</b>
+    /// (D332).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THIS MUST NEVER ENTER <c>StateHash</c>.</b> It is not sim state — it is a count of
+    /// edits, not a fact about the village, and two villages that reached the same painted ground by
+    /// different routes are the same village. **Mixing it would move every golden for a number that
+    /// describes the player's mouse rather than the world.**
+    /// </para>
+    /// <para>
+    /// ⭐ The shape is <c>SimWorld.TerrainGeneration</c>'s, which <c>Minimap</c> already uses to
+    /// decide when to re-bake its texture. *A monotonic counter is the cheapest honest answer to
+    /// "has this changed since I last looked?"* — cheaper than a hash and impossible to get subtly
+    /// wrong.
+    /// </para>
+    /// </remarks>
+    public int Edits { get; private set; }
+
     public bool SetResidential(GridPos position, bool painted)
     {
         int index = IndexOf(position);
@@ -117,6 +137,7 @@ public sealed class ZoneMap
         }
 
         _residential[index] = painted;
+        Edits++;
         ResidentialTiles += painted ? 1 : -1;
         return true;
     }
@@ -199,6 +220,7 @@ public sealed class ZoneMap
         }
 
         _workGround[index] = ownerId;
+        Edits++;
 
         if (current != 0)
         {
@@ -299,6 +321,7 @@ public sealed class ZoneMap
         }
 
         _harvest[index] = painted;
+        Edits++;
         HarvestTiles += painted ? 1 : -1;
 
         if (painted)
