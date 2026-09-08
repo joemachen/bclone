@@ -74,7 +74,7 @@ public sealed class RelocateTests
     /// <summary>Deliver a site's materials and work it to completion, as a crew would.</summary>
     private static void Finish(SimWorld world, GridPos site)
     {
-        Workplace found = world.Workplaces.Single(w => w.Position == site && w.IsSite);
+        Workplace found = world.Workplaces.Single(w => w.Tile == site && w.IsSite);
         ConstructionSite plan = found.Construction!;
 
         foreach (MaterialCost owed in plan.Recipe.Materials)
@@ -309,7 +309,7 @@ public sealed class RelocateTests
         GridPos from = Buildable(world);
         var library = new Library
         {
-            Position = from,
+            Position = Point.CentreOf(from),
             Name = "library 1",
             Shelves = Config.LibraryShelves,
         };
@@ -320,7 +320,7 @@ public sealed class RelocateTests
         Assert.True(world.MarkRelocation(from, to).Allowed);
         Finish(world, to);
 
-        Assert.Equal(to, library.Position);
+        Assert.Equal(to, library.Tile);
         Assert.True(world.IsWrittenDown(2));
     }
 

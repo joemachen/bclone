@@ -201,7 +201,7 @@ public sealed class HuntingTests
         loop.Step(config.TicksPerYear + 1);
 
         Villager hunter = world.Villagers.First(v => v.Alive && v.WorkplaceId == lodge.Id);
-        hunter.Position = lodge.Position;
+        hunter.Position = lodge.Tile;
 
         int taken = 0;
         for (int tick = 0; tick < config.TicksPerYear * 2 && taken == 0; tick++)
@@ -294,7 +294,7 @@ public sealed class HuntingTests
 
         _output.WriteLine(
             $"a forager's trip was worth {before} and is worth {after} with a lodge standing "
-            + $"{world.TravelCost.TicksBetween(ring.Position, lodge.Position)} tiles away; "
+            + $"{world.TravelCost.TicksBetween(ring.Tile, lodge.Tile)} tiles away; "
             + $"the lodge's gathering radius is {lodge.GatheringRadius}");
 
         Assert.Equal(0, lodge.GatheringRadius);
@@ -505,8 +505,8 @@ public sealed class HuntingTests
         // Fell every tree in both reaches — the same transition a harvested tile makes
         // (`SimWorld.HarvestOne` sets felled ground to Grass).
         int felled = 0;
-        felled += FellAround(world, ring.Position, ring.GatheringRadius);
-        felled += FellAround(world, lodge.Position, config.HuntingRadius);
+        felled += FellAround(world, ring.Tile, ring.GatheringRadius);
+        felled += FellAround(world, lodge.Tile, config.HuntingRadius);
 
         int forageAfter = world.GatherYieldAt(ring);
         int huntAfter = world.HuntYieldAt(lodge);

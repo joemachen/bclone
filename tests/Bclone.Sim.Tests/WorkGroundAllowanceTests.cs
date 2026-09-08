@@ -69,7 +69,7 @@ public sealed class WorkGroundAllowanceTests
             Id = id,
             Kind = JobKind.Forester,
             Name = $"forester's hut {id}",
-            Position = world.Map.FoundingSite,
+            Position = Point.CentreOf(world.Map.FoundingSite),
             Capacity = Hands,
         };
 

@@ -65,7 +65,7 @@ public sealed class RingsCompeteTests
             Id = 9000 + world.Workplaces.Count,
             Kind = JobKind.Forager,
             Name = $"hut at {at}",
-            Position = at,
+            Position = Point.CentreOf(at),
             Capacity = 2,
             GatheringRadius = world.Config.GathererHutRingTiles,
         };
@@ -96,7 +96,7 @@ public sealed class RingsCompeteTests
                     Id = 1,
                     Kind = JobKind.Forager,
                     Name = "probe",
-                    Position = at,
+                    Position = Point.CentreOf(at),
                     Capacity = 1,
                     GatheringRadius = world.Config.GathererHutRingTiles,
                 };

@@ -53,12 +53,12 @@ public sealed class ForesterHutTests
             site.Construction.Work();
         }
 
-        GridPos where = site.Position;
+        GridPos where = site.Tile;
         world.Complete(site);
 
         return Assert.Single(
             world.Workplaces,
-            place => place.Kind == JobKind.Forester && place.Position == where && !place.IsSite);
+            place => place.Kind == JobKind.Forester && place.Tile == where && !place.IsSite);
     }
 
     /// <summary>A buildable, bare tile near the village.</summary>
@@ -92,7 +92,7 @@ public sealed class ForesterHutTests
         {
             for (int dx = -reach; dx <= reach; dx++)
             {
-                var at = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                var at = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
                 if (!world.Map.Contains(at))
                 {
                     continue;

@@ -1,3 +1,4 @@
+using Bclone.Sim.Core;
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -46,8 +47,18 @@ public sealed class Household
     /// <para>
     /// <b>Set once a house is raised</b>, which is why it is no longer <c>init</c>.
     /// </para>
+    /// <para>
+    /// ⭐⭐ <b>A <see cref="Point"/> since gridless 2c (D329)</b>, like every other building anchor.
+    /// ⚠️ In practice a home is always on a tile centre and will stay there: housing is painted
+    /// with the land brush and the sim picks the tile (D42, D102, and Joe's call on this slice), so
+    /// there is no moment at which a player could put one between two squares. **It is the type
+    /// that changed, not where houses go** — which is exactly why no golden moved for it.
+    /// </para>
     /// </remarks>
-    public GridPos? HomePosition { get; set; }
+    public Point? HomePosition { get; set; }
+
+    /// <summary>Which tile the family's house is filed under — derived, never stored.</summary>
+    public GridPos? HomeTile => HomePosition?.ToTile();
 
     /// <summary>True once this family has a roof of their own.</summary>
     /// <remarks>
@@ -224,7 +235,7 @@ public sealed class Household
 
             // By walking, not by ruler (D111) — the same correction as NearestWorkDistance,
             // and it has to be the same or a home's two scores measure different worlds.
-            int distance = WalkingTiles(world, from, store.Position);
+            int distance = WalkingTiles(world, from, store.Tile);
             if (distance < nearest)
             {
                 nearest = distance;
@@ -246,7 +257,7 @@ public sealed class Household
         // look like rather than what "reject everything" looks like.
         if (nearest == int.MaxValue)
         {
-            GridPos fallback = world.TheCart?.Position ?? world.Map.FoundingSite;
+            GridPos fallback = world.TheCart?.Tile ?? world.Map.FoundingSite;
             nearest = WalkingTiles(world, from, fallback);
         }
 
@@ -285,7 +296,7 @@ public sealed class Household
 
             anyWorkAtAll = true;
 
-            int distance = WalkingTiles(world, from, workplace.Position);
+            int distance = WalkingTiles(world, from, workplace.Tile);
             if (distance < nearest)
             {
                 nearest = distance;

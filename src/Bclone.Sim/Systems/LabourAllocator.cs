@@ -324,7 +324,7 @@ internal static class LabourAllocator
                     continue;
                 }
 
-                int cost = world.TravelCost.Cost(home, workplace.Position);
+                int cost = world.TravelCost.Cost(home, workplace.Tile);
 
                 // ⭐ THE FENCE IS GONE (`forests-and-gathering.md §3`, Joe's third call). This
                 // was `cost > workplace.CatchmentRadius`, a hard cutoff at ten tiles, and it
@@ -573,7 +573,7 @@ internal static class LabourAllocator
                 villager.JobReason = closest is null
                     ? "No work: there is nowhere in the valley to work."
                     : $"No work: there is no way to walk from home to any of it. The nearest, "
-                      + $"{closest.Name}, is {world.RestingPlaceOf(villager).ManhattanDistanceTo(closest.Position)} "
+                      + $"{closest.Name}, is {world.RestingPlaceOf(villager).ManhattanDistanceTo(closest.Tile)} "
                       + "tiles off in a straight line — and the water is in the way.";
                 continue;
             }
@@ -1186,7 +1186,7 @@ internal static class LabourAllocator
     /// flicker as people walk about.
     /// </remarks>
     internal static int CostBetween(SimWorld world, Villager villager, Workplace workplace) =>
-        world.TravelCost.Cost(world.RestingPlaceOf(villager), workplace.Position);
+        world.TravelCost.Cost(world.RestingPlaceOf(villager), workplace.Tile);
 
     /// <summary>Whether any walk at all gets this villager from home to that work.</summary>
     /// <remarks>

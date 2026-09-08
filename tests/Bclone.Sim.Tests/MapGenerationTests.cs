@@ -288,12 +288,12 @@ public sealed class MapGenerationTests
 
         foreach (Workplace workplace in world.Workplaces)
         {
-            Check(places, workplace.Name, workplace.Position);
+            Check(places, workplace.Name, workplace.Tile);
         }
 
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            Check(places, store.Name, store.Position);
+            Check(places, store.Name, store.Tile);
         }
 
         _output.WriteLine($"{marked} marked, {places.Count} distinct names: "
@@ -462,7 +462,7 @@ public sealed class MapGenerationTests
                     // measuring with the ruler D121 deleted. **A home and the guard on it were
                     // grading different worlds**, which is the failure `Household` warns about
                     // in as many words: *"or a home's two scores measure different worlds."*
-                    int cost = world.TravelCost.Cost(household.Home(), workplace.Position);
+                    int cost = world.TravelCost.Cost(household.Home(), workplace.Tile);
                     if (cost != TravelCostField.Unreachable)
                     {
                         nearest = Math.Min(nearest, cost / TravelCostField.BaseTileCost);
@@ -695,12 +695,12 @@ public sealed class MapGenerationTests
 
             foreach (Workplace workplace in world.Workplaces)
             {
-                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(workplace.Position));
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(workplace.Tile));
             }
 
             foreach (StoreBuilding store in world.StoreBuildings)
             {
-                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(store.Position));
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(store.Tile));
             }
 
             foreach (Household household in world.Households)
@@ -730,7 +730,7 @@ public sealed class MapGenerationTests
 
             foreach (StoreBuilding store in world.StoreBuildings)
             {
-                Assert.True(world.TravelCost.CanReach(home, store.Position),
+                Assert.True(world.TravelCost.CanReach(home, store.Tile),
                     $"Seed {seed}: {store.Name} is cut off from the village.");
             }
 
@@ -738,7 +738,7 @@ public sealed class MapGenerationTests
             foreach (Workplace workplace in world.Workplaces)
             {
                 if (workplace.Kind == JobKind.Forager
-                    && world.TravelCost.CanReach(home, workplace.Position))
+                    && world.TravelCost.CanReach(home, workplace.Tile))
                 {
                     reachableForage++;
                 }
@@ -846,8 +846,8 @@ public sealed class MapGenerationTests
 
         foreach (Workplace workplace in world.Workplaces)
         {
-            int path = world.TravelCost.Cost(from, workplace.Position);
-            int straight = from.ManhattanDistanceTo(workplace.Position) * TravelCostField.BaseTileCost;
+            int path = world.TravelCost.Cost(from, workplace.Tile);
+            int straight = from.ManhattanDistanceTo(workplace.Tile) * TravelCostField.BaseTileCost;
 
             Assert.Equal(straight, path);
         }
@@ -896,7 +896,7 @@ public sealed class MapGenerationTests
     {
         foreach (StoreBuilding building in world.StoreBuildings)
         {
-            if (building.Position == here)
+            if (building.Tile == here)
             {
                 return building.Kind switch
                 {
@@ -909,7 +909,7 @@ public sealed class MapGenerationTests
 
         foreach (Workplace workplace in world.Workplaces)
         {
-            if (workplace.Position == here)
+            if (workplace.Tile == here)
             {
                 return workplace.Kind switch
                 {

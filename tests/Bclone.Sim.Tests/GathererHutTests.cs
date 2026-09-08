@@ -56,7 +56,7 @@ public sealed class GathererHutTests
         world.Complete(site);
 
         return Assert.Single(
-            world.Workplaces, place => place.GatheringRadius > 0 && place.Position == at);
+            world.Workplaces, place => place.GatheringRadius > 0 && place.Tile == at);
     }
 
     /// <summary>The most wooded buildable tile within a short walk — where a player would site it.</summary>
@@ -244,7 +244,7 @@ public sealed class GathererHutTests
             int span = radius - Math.Abs(dy);
             for (int dx = -span; dx <= span && felled < target; dx++)
             {
-                var at = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                var at = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
                 if (world.Map.Contains(at) && world.Map.TerrainAt(at) == Terrain.Forest)
                 {
                     world.SetTerrain(at, Terrain.Grass);
@@ -282,7 +282,7 @@ public sealed class GathererHutTests
             int span = radius - Math.Abs(dy);
             for (int dx = -span; dx <= span; dx++)
             {
-                var at = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                var at = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
                 if (world.Map.Contains(at) && world.Map.TerrainAt(at) == Terrain.Forest)
                 {
                     world.SetTerrain(at, Terrain.Grass);
@@ -315,7 +315,7 @@ public sealed class GathererHutTests
                     continue;
                 }
 
-                var at = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                var at = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
                 if (world.Map.Contains(at) && world.Map.TerrainAt(at) == Terrain.Grass)
                 {
                     world.SetTerrain(at, Terrain.Forest);
@@ -384,7 +384,7 @@ public sealed class GathererHutTests
             int span = radius - Math.Abs(dy);
             for (int dx = -span; dx <= span; dx++)
             {
-                var at = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                var at = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
                 if (world.Map.Contains(at) && world.Map.TerrainAt(at) == Terrain.Forest)
                 {
                     return at;

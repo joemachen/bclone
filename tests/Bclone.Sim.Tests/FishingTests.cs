@@ -239,7 +239,7 @@ public sealed class FishingTests
         // ⭐ STOOD ON THE BANK, which is the half the first draft claimed and did not do. Left to
         // walk it she spent a year oscillating: the hut this seed offers is twenty-two tiles out,
         // and the fetch errand outranks work, so an empty larder turned her round every time.
-        fisher.Position = hut.Position;
+        fisher.Position = hut.Tile;
 
         int caught = 0;
         for (int tick = 0; tick < config.TicksPerYear && caught == 0; tick++)
@@ -293,7 +293,7 @@ public sealed class FishingTests
         loop.Step(config.TicksPerYear + 1);
 
         Villager fisher = world.Villagers.First(v => v.Alive && v.WorkplaceId == hut.Id);
-        int walk = world.TravelCost.Cost(fisher.Position, hut.Position)
+        int walk = world.TravelCost.Cost(fisher.Position, hut.Tile)
             / TravelCostField.BaseTileCost;
 
         // Somewhere to put a catch, so the village genuinely wants the trip made.
@@ -306,7 +306,7 @@ public sealed class FishingTests
         for (int tick = 0; tick < config.TicksPerYear && !arrived; tick++)
         {
             loop.StepOnce();
-            arrived = fisher.Position == hut.Position;
+            arrived = fisher.Position == hut.Tile;
         }
 
         _output.WriteLine($"{fisher.Name} started {walk} tiles from the hut and "
@@ -337,7 +337,7 @@ public sealed class FishingTests
         loop.Step(config.TicksPerYear + 1);
 
         Villager fisher = world.Villagers.First(v => v.Alive && v.WorkplaceId == hut.Id);
-        fisher.Position = hut.Position;
+        fisher.Position = hut.Tile;
 
         // Run to winter, keeping room for a catch so the only question is the season.
         int caught = 0;
@@ -442,7 +442,7 @@ public sealed class FishingTests
         loop.Step(config.TicksPerYear + 1);
 
         Villager fisher = world.Villagers.First(v => v.Alive && v.WorkplaceId == hut.Id);
-        fisher.Position = hut.Position;
+        fisher.Position = hut.Tile;
 
         foreach (StoreBuilding store in world.StoreBuildings)
         {
@@ -634,7 +634,7 @@ public sealed class FishingTests
         loop.Step(config.TicksPerYear + 1);
 
         Villager fisher = world.Villagers.First(v => v.Alive && v.WorkplaceId == hut.Id);
-        fisher.Position = hut.Position;
+        fisher.Position = hut.Tile;
 
         int caught = 0;
         int held = AtTheFishery(hut, fisher);

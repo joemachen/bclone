@@ -19,7 +19,7 @@ internal static class HouseholdTestExtensions
     {
         ArgumentNullException.ThrowIfNull(household);
 
-        return household.HomePosition
+        return household.HomeTile
             ?? throw new InvalidOperationException(
                 $"The {household.Name} household has no house. This test assumes a village "
                 + "that has already built one — if that is the thing under test, ask "

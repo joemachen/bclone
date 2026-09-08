@@ -264,7 +264,7 @@ public sealed class MarketRestockTests
             foreach (Villager villager in world.Villagers)
             {
                 if (villager.State == VillagerState.StockingTheMarket
-                    && villager.Position == TheMarket(world).Position
+                    && villager.Position == TheMarket(world).Tile
                     && villager.IsCarrying)
                 {
                     // Standing on the market, carrying, still "stocking" — one tick of this is

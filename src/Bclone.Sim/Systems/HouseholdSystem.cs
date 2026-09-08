@@ -356,7 +356,7 @@ public sealed class HouseholdSystem : ISimSystem
 
         // A house if there is one — a couple taking over one standing empty — and null if
         // theirs is still being built (D102). Homeless is a real state, not an error.
-        GridPos? home = household.HomePosition;
+        GridPos? home = household.HomeTile;
 
         // Each family sends their child off with a share of the larder. Without it a
         // new household starts on empty and can be wiped out by its first winter
@@ -477,7 +477,7 @@ public sealed class HouseholdSystem : ISimSystem
 
             // Born at home, and there is always one: IsReadyForAChild refuses a household
             // with no roof (D71), so a child cannot be born into the open.
-            Position = household.HomePosition
+            Position = household.HomeTile
                 ?? throw new InvalidOperationException(
                     $"A child was born to the {household.Name} household, which has no house."),
         };

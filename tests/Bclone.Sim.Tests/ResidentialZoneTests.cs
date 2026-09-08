@@ -80,7 +80,7 @@ public sealed class ResidentialZoneTests
                     continue;
                 }
 
-                Assert.True(loop.World.Zones.IsResidential(site.Position),
+                Assert.True(loop.World.Zones.IsResidential(site.Tile),
                     $"A house is being raised at {site.Position}, which nobody painted.");
             }
         }

@@ -235,7 +235,7 @@ public sealed class ModdedBuildingTests
         StoreBuilding? store = null;
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
-            if (world.StoreBuildings[i].Position == site)
+            if (world.StoreBuildings[i].Tile == site)
             {
                 store = world.StoreBuildings[i];
             }
@@ -248,7 +248,7 @@ public sealed class ModdedBuildingTests
         Workplace? stall = null;
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
-            if (world.Workplaces[i].Position == site && !world.Workplaces[i].IsSite)
+            if (world.Workplaces[i].Tile == site && !world.Workplaces[i].IsSite)
             {
                 stall = world.Workplaces[i];
             }
@@ -422,7 +422,7 @@ public sealed class ModdedBuildingTests
         Workplace? found = null;
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
-            if (world.Workplaces[i].Position == site && world.Workplaces[i].IsSite)
+            if (world.Workplaces[i].Tile == site && world.Workplaces[i].IsSite)
             {
                 found = world.Workplaces[i];
             }

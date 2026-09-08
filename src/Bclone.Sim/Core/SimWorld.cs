@@ -797,7 +797,7 @@ public sealed class SimWorld
                 continue;
             }
 
-            int cost = TravelCost.Cost(from, store.Position);
+            int cost = TravelCost.Cost(from, store.Tile);
             if (cost != TravelCostField.Unreachable && cost < bestCost)
             {
                 bestCost = cost;
@@ -823,7 +823,7 @@ public sealed class SimWorld
                 continue;
             }
 
-            int cost = TravelCost.Cost(from, store.Position);
+            int cost = TravelCost.Cost(from, store.Tile);
             if (cost != TravelCostField.Unreachable && cost < bestCost)
             {
                 bestCost = cost;
@@ -927,7 +927,12 @@ public sealed class SimWorld
     /// was simply not made at the time (D326). Without it a free building marked on wooded ground
     /// loses which way it was turned between the mark and the clearing, and cannot recover it.
     /// </remarks>
-    private readonly record struct PendingBuilding(GridPos Position, BuildingKind Kind, Angle Facing);
+    /// <remarks>
+    /// ⚠️ <b><c>internal</c> so <c>StateHash</c> can see the whole record</b> (D329). It used to be
+    /// private, and the only thing outside this class could reach was a flattened list of tiles —
+    /// **so which building was waiting, and which way round, was sim state nothing hashed.**
+    /// </remarks>
+    internal readonly record struct PendingBuilding(Point Position, BuildingKind Kind, Angle Facing);
 
     private readonly List<PendingBuilding> _waitingOnTheGround = new();
 
@@ -954,12 +959,15 @@ public sealed class SimWorld
             var tiles = new List<GridPos>(_waitingOnTheGround.Count);
             for (int i = 0; i < _waitingOnTheGround.Count; i++)
             {
-                tiles.Add(_waitingOnTheGround[i].Position);
+                tiles.Add(_waitingOnTheGround[i].Position.ToTile());
             }
 
             return tiles;
         }
     }
+
+    /// <summary>The waiting list itself, for the one thing that needs all of it: the hash.</summary>
+    internal IReadOnlyList<PendingBuilding> BuildingsWaiting => _waitingOnTheGround;
 
     /// <summary>
     /// Raise any free building that was waiting for this tile to be cleared.
@@ -981,7 +989,7 @@ public sealed class SimWorld
 
         for (int i = 0; i < _waitingOnTheGround.Count; i++)
         {
-            if (_waitingOnTheGround[i].Position != tile)
+            if (_waitingOnTheGround[i].Position.ToTile() != tile)
             {
                 continue;
             }
@@ -1001,7 +1009,7 @@ public sealed class SimWorld
                 return;
             }
 
-            RaiseFreeBuilding(kind, tile, name, facing);
+            RaiseFreeBuilding(kind, Point.CentreOf(tile), name, facing);
             Narrate($"{Capitalised(name)} was laid out on the ground the village just "
                 + $"cleared. {Clock.SeasonAndYear()}.", LogCategory.Building);
             return;
@@ -1015,7 +1023,7 @@ public sealed class SimWorld
     /// same argument <see cref="RaiseStore"/> makes about the two ways a store arrives.
     /// </remarks>
     private void RaiseFreeBuilding(
-        BuildingKind kind, GridPos position, string name, Angle facing = default)
+        BuildingKind kind, Point position, string name, Angle facing = default)
     {
         // ⭐ IT IS THE SAME METHOD AS THE FINISHED PATH NOW, WHICH IS WHAT THIS METHOD'S OWN
         // REMARKS HAVE ASKED FOR SINCE D108: *"one place, so the two ways a free building can
@@ -1105,7 +1113,7 @@ public sealed class SimWorld
             int span = radius - Math.Abs(dy);
             for (int dx = -span; dx <= span; dx++)
             {
-                var at = new GridPos(workplace.Position.X + dx, workplace.Position.Y + dy);
+                var at = new GridPos(workplace.Tile.X + dx, workplace.Tile.Y + dy);
                 if (Map.Contains(at) && Map.TerrainAt(at) == Terrain.Forest)
                 {
                     wooded++;
@@ -1182,7 +1190,7 @@ public sealed class SimWorld
             int span = radius - Math.Abs(dy);
             for (int dx = -span; dx <= span; dx++)
             {
-                var at = new GridPos(workplace.Position.X + dx, workplace.Position.Y + dy);
+                var at = new GridPos(workplace.Tile.X + dx, workplace.Tile.Y + dy);
                 if (!Map.Contains(at) || Map.TerrainAt(at) != Terrain.Forest)
                 {
                     continue;
@@ -1284,7 +1292,7 @@ public sealed class SimWorld
                 continue;
             }
 
-            int distance = Math.Abs(other.Position.X - tile.X) + Math.Abs(other.Position.Y - tile.Y);
+            int distance = Math.Abs(other.Tile.X - tile.X) + Math.Abs(other.Tile.Y - tile.Y);
             if (distance <= other.GatheringRadius)
             {
                 sharers++;
@@ -1783,7 +1791,7 @@ public sealed class SimWorld
         }
 
         // Still a tile to sow or a tile to reap: it is working.
-        if (NextFieldToWork(farm, farm.Position) is not null)
+        if (NextFieldToWork(farm, farm.Tile) is not null)
         {
             return null;
         }
@@ -1937,7 +1945,7 @@ public sealed class SimWorld
     {
         ArgumentNullException.ThrowIfNull(farm);
 
-        return HaulWalkFrom(farm.Position);
+        return HaulWalkFrom(farm.Tile);
     }
 
     /// <summary>
@@ -1977,7 +1985,7 @@ public sealed class SimWorld
         for (int i = 0; i < Households.Count; i++)
         {
             Household household = Households[i];
-            if (household.HomePosition is not GridPos home || LivingMembersOf(household) == 0)
+            if (household.HomeTile is not GridPos home || LivingMembersOf(household) == 0)
             {
                 continue;
             }
@@ -1997,7 +2005,7 @@ public sealed class SimWorld
                     continue;
                 }
 
-                int theirs = TravelCost.Cost(home, store.Position);
+                int theirs = TravelCost.Cost(home, store.Tile);
                 nearest = theirs == TravelCostField.Unreachable || here < theirs;
             }
 
@@ -2016,7 +2024,7 @@ public sealed class SimWorld
         StoreBuilding? store = NearestStoreAccepting(
             position, Goods.Produce, CanEverHoldFood);
 
-        return store is null ? -1 : TravelCost.TicksBetween(position, store.Position);
+        return store is null ? -1 : TravelCost.TicksBetween(position, store.Tile);
     }
 
     /// <summary>
@@ -2594,7 +2602,7 @@ public sealed class SimWorld
         int range = VillageEconomy.TilesInRing(reach);
         return range <= 0
             ? 0
-            : Config.MeatYield * ForestTilesWithin(workplace.Position, reach) / range;
+            : Config.MeatYield * ForestTilesWithin(workplace.Tile, reach) / range;
     }
 
     private string? ForesterIdleNote(Workplace hut)
@@ -2605,7 +2613,7 @@ public sealed class SimWorld
         }
 
         // Still something to fell or something to plant: it is working.
-        if (NextGroundToWork(hut, hut.Position) is not null)
+        if (NextGroundToWork(hut, hut.Tile) is not null)
         {
             return null;
         }
@@ -2630,7 +2638,7 @@ public sealed class SimWorld
         }
 
         return NearestStoreAccepting(
-                hut.Position, Goods.Logs, store => store.Store.Logs >= Config.LogsPerSplit)
+                hut.Tile, Goods.Logs, store => store.Store.Logs >= Config.LogsPerSplit)
             is null
             ? $"{hut.Name} has no logs to split — no store in reach holds the "
                 + $"{Config.LogsPerSplit} a batch needs."
@@ -3485,7 +3493,7 @@ public sealed class SimWorld
     /// — pure (D198).
     /// </summary>
     /// <remarks>
-    /// <b>The <see cref="CanBuildAt"/> / <see cref="Mark(BuildingKind, GridPos)"/> split, applied to the brush.</b> The
+    /// <b>The <see cref="CanBuildAt(BuildingKind, Point, bool, Angle)"/> / <see cref="Mark(BuildingKind, GridPos)"/> split, applied to the brush.</b> The
     /// view could show a ghost under the cursor for a *building* and could show nothing at all
     /// for a *brush*, because every paint method mixed the test with the doing — so the only way
     /// to ask *"would this tile take?"* was to paint it. Joe, playing: *"when I'm painting I
@@ -4032,7 +4040,7 @@ public sealed class SimWorld
         for (int i = 0; i < Workplaces.Count; i++)
         {
             if (Workplaces[i].Construction is not { IsFinished: false } plan
-                || !GroundIsClearAt(Workplaces[i].Position))
+                || !GroundIsClearAt(Workplaces[i].Tile))
             {
                 continue;
             }
@@ -4177,7 +4185,7 @@ public sealed class SimWorld
     {
         for (int i = 0; i < _waitingOnTheGround.Count; i++)
         {
-            GridPos at = _waitingOnTheGround[i].Position;
+            GridPos at = _waitingOnTheGround[i].Position.ToTile();
             if (NeedsClearing(at) && TravelCost.CanReach(from, at))
             {
                 return at;
@@ -4194,8 +4202,8 @@ public sealed class SimWorld
             // a laborer who cannot walk to the head of the queue must fall through to work they
             // can reach rather than stand still.
             if (candidate.Construction is not { IsFinished: false }
-                || !NeedsClearing(candidate.Position)
-                || !TravelCost.CanReach(from, candidate.Position))
+                || !NeedsClearing(candidate.Tile)
+                || !TravelCost.CanReach(from, candidate.Tile))
             {
                 continue;
             }
@@ -4209,7 +4217,7 @@ public sealed class SimWorld
             }
         }
 
-        return head?.Position;
+        return head?.Tile;
 
         bool NeedsClearing(GridPos at) => Zones.IsHarvest(at) && HasSomethingToHarvest(at);
     }
@@ -4452,7 +4460,7 @@ public sealed class SimWorld
                 for (int side = 0; side < 2; side++)
                 {
                     int offset = side == 0 ? -dx : dx;
-                    var at = new GridPos(workplace.Position.X + offset, workplace.Position.Y + dy);
+                    var at = new GridPos(workplace.Tile.X + offset, workplace.Tile.Y + dy);
 
                     if (Map.Contains(at) && Map.TerrainAt(at) == Terrain.Forest
                         && SetTerrain(at, Terrain.Sapling))
@@ -4583,13 +4591,17 @@ public sealed class SimWorld
     /// one building the player never sited, so it is the one they never have to move by hand.</b>
     /// </para>
     /// <para>
-    /// <b>⭐ Validated by <see cref="CanBuildAt"/>, so every placement rule already written applies
+    /// <b>⭐ Validated by <see cref="CanBuildAt(BuildingKind, Point, bool, Angle)"/>, so every placement rule already written applies
     /// unchanged</b> — the water, the reachability, the *"something already stands there"*, the farm's
     /// distance warning, the library's literacy gate. *No second opinion about what a legal tile is,
     /// which is the mistake `Household.ChooseSite` made for a phase (D111).*
     /// </para>
     /// </remarks>
-    public PlacementVerdict MarkRelocation(GridPos from, GridPos to)
+    public PlacementVerdict MarkRelocation(GridPos from, GridPos to) =>
+        MarkRelocation(from, Point.CentreOf(to));
+
+    /// <summary>Pick a building up and put it down where the player pointed (D229, D329).</summary>
+    public PlacementVerdict MarkRelocation(GridPos from, Point to)
     {
         // ⚠️ THE HOUSE IS ASKED ABOUT FIRST, AND THE ORDER IS THE WHOLE ANSWER. A house is not in
         // the stores, the libraries or the workplaces — it is a position on a household — so
@@ -4670,7 +4682,7 @@ public sealed class SimWorld
     /// terrain, used for the same reason.
     /// </para>
     /// </remarks>
-    private bool MoveWhatStandsAt(GridPos from, GridPos to)
+    private bool MoveWhatStandsAt(GridPos from, Point to)
     {
         if (StoreAt(from) is StoreBuilding store)
         {
@@ -4794,7 +4806,7 @@ public sealed class SimWorld
             Id = NextWorkplaceId(),
             Kind = JobKind.Builder,
             Name = $"{name} (being pulled down)",
-            Position = tile,
+            Position = Point.CentreOf(tile),
             Capacity = 0,
 
             // ⭐ A DEMOLITION DRAINS THE SAME SHAPE IT WILL LEAVE BEHIND (D324). The site inherits
@@ -5125,7 +5137,7 @@ public sealed class SimWorld
     {
         for (int i = 0; i < Households.Count; i++)
         {
-            if (Households[i].HomePosition is GridPos home
+            if (Households[i].HomeTile is GridPos home
                 && FootprintOf(BuildingKind.Home, home).Covers(tile))
             {
                 return Households[i];
@@ -5177,7 +5189,7 @@ public sealed class SimWorld
                 continue;
             }
 
-            int distance = from.ManhattanDistanceTo(Workplaces[i].Position);
+            int distance = from.ManhattanDistanceTo(Workplaces[i].Tile);
             if (distance < nearest)
             {
                 nearest = distance;
@@ -5254,7 +5266,20 @@ public sealed class SimWorld
     /// turned at the moment it is marked, and every 1×1 building covers its own tile at every
     /// angle regardless (`FootprintTests.NoRotationOfAOneTileBuildingEverLeavesItsTile`).
     /// </remarks>
+    /// <summary>
+    /// ⭐ <b>The tile overload means "centred on that tile"</b>, which is what a tile-placed
+    /// building has always been (D329).
+    /// </summary>
+    /// <remarks>
+    /// It is not a compatibility shim: <c>Point.CentreOf</c> is the honest reading of *"a building
+    /// at tile (x, y)"*, and everything the SIM places — homes chosen inside a painted zone, the
+    /// founding layout, the two free gifts — genuinely does belong on a tile centre (Joe's call).
+    /// **Only what the player places by hand is free.**
+    /// </remarks>
     public Footprint FootprintOf(BuildingKind kind, GridPos position, Angle facing = default) =>
+        FootprintOf(kind, Point.CentreOf(position), facing);
+
+    public Footprint FootprintOf(BuildingKind kind, Point position, Angle facing = default) =>
         new()
         {
             Origin = position,
@@ -5264,8 +5289,20 @@ public sealed class SimWorld
         };
 
     public PlacementVerdict CanBuildAt(
-        BuildingKind kind, GridPos position, bool alreadyStanding = false, Angle facing = default)
+        BuildingKind kind, GridPos position, bool alreadyStanding = false, Angle facing = default) =>
+        CanBuildAt(kind, Point.CentreOf(position), alreadyStanding, facing);
+
+    /// <summary>
+    /// Whether this building may stand here — asked of a real position, not a square (D329).
+    /// </summary>
+    public PlacementVerdict CanBuildAt(
+        BuildingKind kind, Point where, bool alreadyStanding = false, Angle facing = default)
     {
+        // ⭐ THE TILE IS DERIVED, AND EVERY TILE-INDEXED QUESTION ASKS IT. Terrain, occupancy and
+        // the cost field stay tile-indexed for ever (`gridless.md §10.2`); what became continuous
+        // is where the building IS, not what the ground is like.
+        GridPos position = where.ToTile();
+
         if (!Map.Contains(position))
         {
             return PlacementVerdict.No("That is outside the valley.");
@@ -5296,7 +5333,7 @@ public sealed class SimWorld
             // shapes.** The ghost could be drawn green over a river the sim had not looked at.
             // *Every other caller of `FootprintOf` had been given the facing; the one that decides
             // whether the building may exist had not.*
-            List<GridPos> covered = FootprintOf(kind, position, facing).CoveredTiles();
+            List<GridPos> covered = FootprintOf(kind, where, facing).CoveredTiles();
             for (int i = 0; i < covered.Count; i++)
             {
                 GridPos tile = covered[i];
@@ -5536,7 +5573,7 @@ public sealed class SimWorld
             Id = -1,
             Kind = JobKind.Farmer,
             Name = "ghost",
-            Position = position,
+            Position = Point.CentreOf(position),
             Capacity = 1,
         });
 
@@ -5608,6 +5645,9 @@ public sealed class SimWorld
     /// <see cref="WarningForBuildingOverACrop"/>.
     /// </remarks>
     public PlacementVerdict Mark(BuildingKind kind, GridPos position) =>
+        Mark(kind, Point.CentreOf(position), Angle.Zero);
+
+    public PlacementVerdict Mark(BuildingKind kind, Point position) =>
         Mark(kind, position, Angle.Zero);
 
     /// <summary>Mark a building out, turned the way the player is holding it (D320).</summary>
@@ -5616,9 +5656,22 @@ public sealed class SimWorld
     /// "facing north" and saying so at ninety call sites would be noise. The facing rides on the
     /// construction site and reaches the finished building years later.
     /// </remarks>
-    public PlacementVerdict Mark(BuildingKind kind, GridPos position, Angle facing)
+    public PlacementVerdict Mark(BuildingKind kind, GridPos position, Angle facing) =>
+        Mark(kind, Point.CentreOf(position), facing);
+
+    /// <summary>
+    /// ⭐⭐ Mark a building out <b>where the player actually put it</b> (gridless 2c, D329).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>The tile overload above is not a shim.</b> Everything the sim places itself — a home
+    /// chosen inside a painted zone, the founding layout, the two free gifts — belongs on a tile
+    /// centre and says so by calling it (Joe's call). **Only what the player places by hand is
+    /// free**, and that comes through here.
+    /// </remarks>
+    public PlacementVerdict Mark(BuildingKind kind, Point where, Angle facing)
     {
-        PlacementVerdict verdict = CanBuildAt(kind, position, facing: facing);
+        GridPos position = where.ToTile();
+        PlacementVerdict verdict = CanBuildAt(kind, where, facing: facing);
         if (!verdict.Allowed)
         {
             return verdict;
@@ -5682,13 +5735,13 @@ public sealed class SimWorld
             // now a price the village pays rather than an errand the player is sent on.
             if (!groundIsBusy)
             {
-                RaiseFreeBuilding(kind, position, name, facing);
+                RaiseFreeBuilding(kind, where, name, facing);
                 Narrate($"{Capitalised(name)} was laid out on cleared ground. " +
                     $"{Clock.SeasonAndYear()}.", LogCategory.Building);
                 return verdict;
             }
 
-            var pending = new PendingBuilding(position, kind, facing);
+            var pending = new PendingBuilding(where, kind, facing);
             if (!_waitingOnTheGround.Contains(pending))
             {
                 _waitingOnTheGround.Add(pending);
@@ -5699,7 +5752,7 @@ public sealed class SimWorld
             return verdict;
         }
 
-        RaiseSiteFor(kind, position, name, recipe, forHouseholdId: 0, facing: facing);
+        RaiseSiteFor(kind, where, name, recipe, forHouseholdId: 0, facing: facing);
         return verdict;
     }
 
@@ -5714,7 +5767,7 @@ public sealed class SimWorld
     /// What D102 changes is only that the house then has to be built.
     /// </para>
     /// <para>
-    /// It does not go through <see cref="CanBuildAt"/>: <c>ChooseSite</c> has already found
+    /// It does not go through <see cref="CanBuildAt(BuildingKind, Point, bool, Angle)"/>: <c>ChooseSite</c> has already found
     /// painted, reachable, buildable ground and thrown if there was none, so asking again
     /// would be a second opinion that can only disagree.
     /// </para>
@@ -5755,7 +5808,7 @@ public sealed class SimWorld
             Zones.SetHarvest(position, true);
         }
 
-        RaiseSiteFor(BuildingKind.Home, position, "a house", recipe, householdId);
+        RaiseSiteFor(BuildingKind.Home, Point.CentreOf(position), "a house", recipe, householdId);
     }
 
     /// <summary>
@@ -5840,7 +5893,7 @@ public sealed class SimWorld
     /// unrecoverable death §0.1 rules out.
     /// </para>
     /// <para>
-    /// <b>It is the same question <see cref="CanBuildAt"/> refuses on</b>, asked from the same
+    /// <b>It is the same question <see cref="CanBuildAt(BuildingKind, Point, bool, Angle)"/> refuses on</b>, asked from the same
     /// anchor — so a site the player could never have marked cannot arrive by another door and
     /// stop the village building. <b>The site that produced it should never have been marked</b>
     /// (see <see cref="MarkHome"/>); skipping it here is the belt to that braces, because one
@@ -5936,8 +5989,8 @@ public sealed class SimWorld
         {
             Workplace candidate = Workplaces[i];
             if (candidate.Construction is not { IsFinished: false } plan
-                || !GroundIsClearAt(candidate.Position)
-                || !TravelCost.CanReach(village, candidate.Position))
+                || !GroundIsClearAt(candidate.Tile)
+                || !TravelCost.CanReach(village, candidate.Tile))
             {
                 continue;
             }
@@ -5970,8 +6023,8 @@ public sealed class SimWorld
         {
             Workplace candidate = Workplaces[i];
             if (candidate.Construction is not { IsFinished: false, HasMaterials: true }
-                || !GroundIsClearAt(candidate.Position)
-                || !TravelCost.CanReach(village, candidate.Position))
+                || !GroundIsClearAt(candidate.Tile)
+                || !TravelCost.CanReach(village, candidate.Tile))
             {
                 continue;
             }
@@ -5997,7 +6050,7 @@ public sealed class SimWorld
         {
             Workplace candidate = Workplaces[i];
             if (candidate.Construction is not { IsFinished: false }
-                || !TravelCost.CanReach(village, candidate.Position))
+                || !TravelCost.CanReach(village, candidate.Tile))
             {
                 continue;
             }
@@ -6150,7 +6203,7 @@ public sealed class SimWorld
     /// </remarks>
     private void RaiseSiteFor(
         BuildingKind kind,
-        GridPos position,
+        Point position,
         string name,
         BuildingRecipe recipe,
         int forHouseholdId,
@@ -6256,7 +6309,7 @@ public sealed class SimWorld
         // ANYWHERE THAT TAKES IT, not a warehouse by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `warehouse` was simply null and the logs went nowhere.
-        string recovered = ReturnToStore(building.Position, back);
+        string recovered = ReturnToStore(building.Tile, back);
 
         Narrate(held > 0
             ? $"{building.Name} was pulled down — {recovered} recovered, and the {held} " +
@@ -6301,7 +6354,7 @@ public sealed class SimWorld
         // and leaving its store standing would be half a demolition — a granary-sized hole
         // in the village that still holds goods and still shows on the map. The store's own
         // demolition already takes the stall with it, so that is the one to run.
-        if (StoreAt(workplace.Position) is StoreBuilding sameBuilding)
+        if (StoreAt(workplace.Tile) is StoreBuilding sameBuilding)
         {
             Demolish(sameBuilding);
             return;
@@ -6316,7 +6369,7 @@ public sealed class SimWorld
         // ANYWHERE THAT TAKES IT, not a warehouse by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `warehouse` was simply null and the logs went nowhere.
-        string recovered = ReturnToStore(workplace.Position, back);
+        string recovered = ReturnToStore(workplace.Tile, back);
 
         Narrate(back.Count > 0
             ? $"{Capitalised(name)} was pulled down — {recovered} recovered. "
@@ -6404,7 +6457,7 @@ public sealed class SimWorld
         // ANYWHERE THAT TAKES IT, not a warehouse by name (D132). Asking for the kind
         // meant a refund vanished in a village that has only a storage pile — silently,
         // because `warehouse` was simply null and the logs went nowhere.
-        string recovered = ReturnToStore(site.Position, back);
+        string recovered = ReturnToStore(site.Tile, back);
 
         Narrate($"{site.Construction.Name} was abandoned before it was built — " +
             $"{recovered} went back to store. {Clock.SeasonAndYear()}.", LogCategory.Building);
@@ -6422,7 +6475,7 @@ public sealed class SimWorld
         if (plan.Demolishing)
         {
             RetireWorkplace(site);
-            PullDownWhatStandsAt(site.Position);
+            PullDownWhatStandsAt(site.Tile);
             return;
         }
 
@@ -6475,7 +6528,7 @@ public sealed class SimWorld
                 {
                     if (Villagers[i].Alive && Villagers[i].HouseholdId == family.Id)
                     {
-                        Villagers[i].Position = site.Position;
+                        Villagers[i].Position = site.Tile;
                     }
                 }
 
@@ -6520,7 +6573,7 @@ public sealed class SimWorld
     /// lesson five times (D76).
     /// </remarks>
     private StoreBuilding RaiseStore(
-        BuildingKind kind, GridPos position, string name, Angle facing = default)
+        BuildingKind kind, Point position, string name, Angle facing = default)
     {
         BuildingRow? row = BuildingsCatalog[kind];
         // ⭐ THE STORE KIND IS A COLUMN NOW. Both of these were switches that named the market
@@ -6585,7 +6638,7 @@ public sealed class SimWorld
     /// </para>
     /// </remarks>
     private void RaiseFinished(
-        BuildingKind kind, GridPos position, string name, Angle facing = default)
+        BuildingKind kind, Point position, string name, Angle facing = default)
     {
         BuildingRow row = BuildingsCatalog[kind]
             ?? throw new ArgumentOutOfRangeException(
@@ -6783,7 +6836,7 @@ public sealed class SimWorld
             int held = workplace.Store[goods];
             if (held > 0 && workplace.Store.TryTake(goods, held))
             {
-                SetDown(workplace.Position, goods, held);
+                SetDown(workplace.Tile, goods, held);
                 spilled += held;
             }
         }
@@ -6825,7 +6878,7 @@ public sealed class SimWorld
     /// <remarks>
     /// <para>
     /// <b>⭐ ONE COPY OF THE ARITHMETIC, TWO SENTENCES.</b> The placement warning
-    /// (<see cref="CanBuildAt"/>) and the commute note on a villager
+    /// (<see cref="CanBuildAt(BuildingKind, Point, bool, Angle)"/>) and the commute note on a villager
     /// (<c>LabourAllocator.DescribeTheCommute</c>) are the same fact told at two moments — before
     /// you build, and about the person who ended up walking it. *Two copies of one calculation is
     /// how they come to disagree*, which is D139's and D195's recorded shape.
@@ -7042,7 +7095,7 @@ public sealed class SimWorld
             // NO overlap would be 2r apart — twice as far as anybody may walk to work. **A hut
             // nobody can reach is not a second hut.** So the rule is separation, not disjointness:
             // far enough that most of each ring is its own, near enough to be worked.
-            if (centre.ManhattanDistanceTo(other.Position) <= radius)
+            if (centre.ManhattanDistanceTo(other.Tile) <= radius)
             {
                 return true;
             }
@@ -7079,7 +7132,7 @@ public sealed class SimWorld
                         continue;
                     }
 
-                    var tile = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                    var tile = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
                     if (Map.TerrainAt(tile) != Terrain.Forest
                         || Zones.WorkGroundOwner(tile) != 0)
                     {
@@ -7578,7 +7631,7 @@ public sealed class SimWorld
             Id = nextWorkplaceId++,
             Kind = JobKind.Builder,
             Name = NameFor(BuildingKind.BuilderHut),
-            Position = Offset(origin, config.BuilderHutX, config.BuilderHutY),
+            Position = Point.CentreOf(Offset(origin, config.BuilderHutX, config.BuilderHutY)),
             Capacity = SeatsIn(BuildingKind.BuilderHut),
         });
 
@@ -7628,7 +7681,7 @@ public sealed class SimWorld
                 Id = nextWorkplaceId++,
                 Kind = JobKind.Forager,
                 Name = NameFor(BuildingKind.GathererHut),
-                Position = spot.Value,
+                Position = Point.CentreOf(spot.Value),
                 Capacity = config.GathererHutCapacity,
                 GatheringRadius = config.GathererHutRingTiles,
             });
@@ -7654,7 +7707,7 @@ public sealed class SimWorld
 
             // ⚠️ Never null: only the clear-of-other-rings form can fail to find a spot, and a
             // forester does not compete for gathered food.
-            Position = WhereTheTreesAre(origin, config)!.Value,
+            Position = Point.CentreOf(WhereTheTreesAre(origin, config)!.Value),
             Capacity = VillageEconomy.RequiredForesterSeats(config),
         };
 
@@ -7670,7 +7723,7 @@ public sealed class SimWorld
             Id = nextWorkplaceId++,
             Kind = JobKind.Woodcutter,
             Name = NameFor(BuildingKind.WoodcutterHut),
-            Position = Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY),
+            Position = Point.CentreOf(Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY)),
             Capacity = config.WoodcutterHutCapacity,
         });
 
@@ -7692,7 +7745,7 @@ public sealed class SimWorld
             Id = 1,
             Kind = StoreKind.Granary,
             Name = NameFor(BuildingKind.Granary),
-            Position = Offset(origin, config.GranaryX, config.GranaryY),
+            Position = Point.CentreOf(Offset(origin, config.GranaryX, config.GranaryY)),
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.GranaryCapacity(config) },
         });
 
@@ -7702,7 +7755,7 @@ public sealed class SimWorld
             Id = 2,
             Kind = StoreKind.Warehouse,
             Name = NameFor(BuildingKind.Warehouse),
-            Position = Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY),
+            Position = Point.CentreOf(Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY)),
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.WarehouseCapacity(config) },
         });
 
@@ -7727,7 +7780,7 @@ public sealed class SimWorld
             Id = 3,
             Kind = StoreKind.Market,
             Name = marketName,
-            Position = market,
+            Position = Point.CentreOf(market),
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.MarketCapacity(config) },
         });
 
@@ -7743,7 +7796,7 @@ public sealed class SimWorld
                 Id = nextWorkplaceId++,
                 Kind = JobKind.Marketer,
                 Name = marketName,
-                Position = market,
+                Position = Point.CentreOf(market),
                 Capacity = config.MarketCapacity,
             });
         }
@@ -7809,7 +7862,7 @@ public sealed class SimWorld
                 Stockpile = NewStockpile(),
                 Id = h + 1,
                 Name = config.HouseholdNames[h % config.HouseholdNames.Count],
-                HomePosition = home,
+                HomePosition = home is GridPos tile ? Point.CentreOf(tile) : null,
             };
 
             // Added before its members are drawn, so the next founding household's
@@ -8505,7 +8558,7 @@ public sealed class SimWorld
     /// </para>
     /// </remarks>
     public GridPos RestingPlaceOf(Villager villager) =>
-        HouseholdOf(villager).HomePosition ?? TheCart?.Position ?? Map.FoundingSite;
+        HouseholdOf(villager).HomeTile ?? TheCart?.Tile ?? Map.FoundingSite;
 
     /// <summary>
     /// Where "the village" is, for anything that needs one point to measure from.
@@ -8519,7 +8572,7 @@ public sealed class SimWorld
     /// </para>
     /// <para>
     /// <b>One method because two callers wanted it</b> — reachability in
-    /// <see cref="CanBuildAt"/> and the placement ring the map draws. They had the same
+    /// <see cref="CanBuildAt(BuildingKind, Point, bool, Angle)"/> and the placement ring the map draws. They had the same
     /// three lines each, which is the shape D57 spent a session deleting: a rule written
     /// twice is a rule that gets corrected once.
     /// </para>
@@ -8528,7 +8581,7 @@ public sealed class SimWorld
     {
         for (int i = 0; i < Households.Count; i++)
         {
-            if (Households[i].HomePosition is GridPos standing)
+            if (Households[i].HomeTile is GridPos standing)
             {
                 return standing;
             }
@@ -8555,7 +8608,7 @@ public sealed class SimWorld
             Id = 1,
             Kind = StoreKind.Cart,
             Name = "the cart",
-            Position = origin,
+            Position = Point.CentreOf(origin),
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = config.CartCapacity },
         };
 

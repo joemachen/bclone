@@ -113,7 +113,7 @@ public sealed class FootprintTests
         {
             var turned = new Footprint
             {
-                Origin = at,
+                Origin = Point.CentreOf(at),
                 Width = 1,
                 Height = 1,
                 Facing = Angle.FromRaw((ushort)raw),
@@ -136,10 +136,10 @@ public sealed class FootprintTests
     {
         var at = new GridPos(0, 0);
 
-        var lying = new Footprint { Origin = at, Width = 3, Height = 1, Facing = Angle.Zero };
+        var lying = new Footprint { Origin = Point.CentreOf(at), Width = 3, Height = 1, Facing = Angle.Zero };
         var standing = new Footprint
         {
-            Origin = at,
+            Origin = Point.CentreOf(at),
             Width = 3,
             Height = 1,
             Facing = Angle.FromTurnFraction(1, 4),
@@ -161,7 +161,7 @@ public sealed class FootprintTests
     {
         var shape = new Footprint
         {
-            Origin = new GridPos(5, 5),
+            Origin = Point.CentreOf(new GridPos(5, 5)),
             Width = 3,
             Height = 1,
             Facing = Angle.Zero,
@@ -178,7 +178,7 @@ public sealed class FootprintTests
     {
         var shape = new Footprint
         {
-            Origin = new GridPos(0, 0),
+            Origin = Point.CentreOf(new GridPos(0, 0)),
             Width = 3,
             Height = 3,
             Facing = Angle.Zero,
@@ -211,7 +211,7 @@ public sealed class FootprintTests
             Id = 1,
             Kind = JobKind.Forager,
             Name = "a long shed",
-            Position = new GridPos(10, 10),
+            Position = Point.CentreOf(new GridPos(10, 10)),
             Store = new Stockpile(16),
             Capacity = 1,
             ExtentWidth = 3,
@@ -231,7 +231,7 @@ public sealed class FootprintTests
             Id = 2,
             Kind = JobKind.Forager,
             Name = "an ordinary hut",
-            Position = new GridPos(10, 10),
+            Position = Point.CentreOf(new GridPos(10, 10)),
             Store = new Stockpile(16),
             Capacity = 1,
         };
@@ -267,7 +267,7 @@ public sealed class FootprintTests
     {
         var shape = new Footprint
         {
-            Origin = new GridPos(1, 1),
+            Origin = Point.CentreOf(new GridPos(1, 1)),
             Width = 3,
             Height = 1,
             Facing = Angle.Zero,
@@ -325,7 +325,7 @@ public sealed class FootprintTests
         }
 
         world.Complete(site);
-        Assert.Contains(world.StoreBuildings, s => s.Position == anchor);
+        Assert.Contains(world.StoreBuildings, s => s.Tile == anchor);
 
         // ⭐ The anchor is refused because something stands there — that much always worked.
         Assert.False(world.CanBuildAt(BuildingKind.Granary, anchor).Allowed);
@@ -515,6 +515,49 @@ public sealed class FootprintTests
         _output.WriteLine($"the stockpile faces {pile.Facing}");
 
         Assert.Equal(turned, pile.Facing);
+    }
+
+    /// <summary>
+    /// ⛔ <c>Covers</c> and <c>CoveredTiles</c> are the same answer, asked two ways (D329).
+    /// </summary>
+    /// <remarks>
+    /// <c>Covers</c> stopped building the whole list to answer about one tile, because that was
+    /// costing the suite four minutes. **A faster path that disagrees with the slow one is worse
+    /// than the slow one**, and `Fixed` multiplication is not associative — so this compares them
+    /// directly, over a spread of extents and angles, rather than trusting that the arithmetic was
+    /// copied faithfully.
+    /// </remarks>
+    [Theory]
+    [InlineData(1, 1, 0)]
+    [InlineData(3, 1, 0)]
+    [InlineData(3, 1, 16384)]
+    [InlineData(3, 1, 8192)]
+    [InlineData(2, 5, 21845)]
+    [InlineData(4, 3, 40000)]
+    public void TheFastCoverTestAgreesWithTheWholeList(int width, int height, int rawFacing)
+    {
+        var anchor = new GridPos(12, 9);
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(anchor),
+            Width = width,
+            Height = height,
+            Facing = Angle.FromRaw((ushort)rawFacing),
+        };
+
+        List<GridPos> listed = shape.CoveredTiles();
+        _output.WriteLine($"{width}x{height} at {rawFacing} covers {listed.Count}: "
+            + string.Join(" ", listed));
+
+        int reach = width + height + 2;
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
+                Assert.Equal(listed.Contains(tile), shape.Covers(tile));
+            }
+        }
     }
 
     /// <summary>Somewhere a three-tile building genuinely fits, found rather than assumed.</summary>

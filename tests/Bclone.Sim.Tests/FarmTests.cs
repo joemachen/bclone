@@ -281,7 +281,7 @@ public sealed class FarmTests
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         farm.Store.Add(Goods.Produce, Config.FarmStoreCap);
 
-        GridPos stood = farm.Position;
+        GridPos stood = farm.Tile;
         int before = world.TotalFood() + world.GroundStackAt(stood, Goods.Produce);
 
         world.Demolish(farm);
@@ -549,7 +549,7 @@ public sealed class FarmTests
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
 
         GridPos best = FarmFixtures.ClearGroundNear(world);
-        walk = world.TravelCost.TicksBetween(best, granary.Position);
+        walk = world.TravelCost.TicksBetween(best, granary.Tile);
 
         for (int dy = -10; dy <= 10; dy++)
         {
@@ -562,7 +562,7 @@ public sealed class FarmTests
                     continue;
                 }
 
-                int cost = world.TravelCost.TicksBetween(at, granary.Position);
+                int cost = world.TravelCost.TicksBetween(at, granary.Tile);
                 if (cost != TravelCostField.Unreachable
                     && System.Math.Abs(cost - walkAway) < System.Math.Abs(walk - walkAway))
                 {
@@ -839,8 +839,8 @@ public sealed class FarmTests
         farm.Store.Add(Goods.Produce, 50);
         granary.Store.Add(Goods.Produce, 50);
 
-        Workplace? fromTheGranary = NearerFarm(world, granary.Position, granary);
-        Workplace? fromTheFarm = NearerFarm(world, farm.Position, granary);
+        Workplace? fromTheGranary = NearerFarm(world, granary.Tile, granary);
+        Workplace? fromTheFarm = NearerFarm(world, farm.Tile, granary);
 
         _output.WriteLine(
             $"granary at {granary.Position}, {farm.Name} at {farm.Position}; "
@@ -860,7 +860,7 @@ public sealed class FarmTests
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         granary.Store.Add(Goods.Produce, 50);
 
-        Assert.Null(NearerFarm(world, farm.Position, granary));
+        Assert.Null(NearerFarm(world, farm.Tile, granary));
     }
 
     // ---------------------------------------------------------------
@@ -893,7 +893,7 @@ public sealed class FarmTests
     /// </remarks>
     private static Workplace? NearerFarm(SimWorld world, GridPos from, StoreBuilding nearest)
     {
-        int beat = world.TravelCost.TicksBetween(from, nearest.Position);
+        int beat = world.TravelCost.TicksBetween(from, nearest.Tile);
         Workplace? best = null;
         int bestCost = int.MaxValue;
 
@@ -905,7 +905,7 @@ public sealed class FarmTests
                 continue;
             }
 
-            int cost = world.TravelCost.TicksBetween(from, workplace.Position);
+            int cost = world.TravelCost.TicksBetween(from, workplace.Tile);
             if (cost < beat && cost < bestCost)
             {
                 best = workplace;

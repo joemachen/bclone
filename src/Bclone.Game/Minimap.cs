@@ -177,7 +177,7 @@ public partial class Minimap : Control
 
         foreach (Household household in world.Households)
         {
-            if (household.HomePosition is not GridPos home)
+            if (household.HomeTile is not GridPos home)
             {
                 continue;
             }
@@ -193,12 +193,16 @@ public partial class Minimap : Control
 
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            Mark(store.Position, VillageMap.StoreColour, dot);
+            // ⚠️ THE TILE, NOT THE POINT, AND DELIBERATELY (D329). The minimap draws a few pixels
+            // per tile, so half a tile is well under one pixel — carrying the continuous position
+            // here would mean a second copy of `VillageMap`'s half-tile seam for a difference
+            // nobody can see. **One seam, in one place.**
+            Mark(store.Tile, VillageMap.StoreColour, dot);
         }
 
         foreach (Workplace workplace in world.Workplaces)
         {
-            Mark(workplace.Position, VillageMap.BuildingColour, dot);
+            Mark(workplace.Tile, VillageMap.BuildingColour, dot);
         }
     }
 

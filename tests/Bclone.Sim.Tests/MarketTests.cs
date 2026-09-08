@@ -485,7 +485,7 @@ public sealed class MarketTests
 
         // Put somebody at the market's door with an empty larder behind them.
         Villager villager = world.FindVillager(household.MemberIds[0])!;
-        villager.Position = market.Position;
+        villager.Position = market.Tile;
         villager.Carried.TakeAll(Goods.Produce);
         villager.Carried.TakeAll(Goods.Firewood);
 

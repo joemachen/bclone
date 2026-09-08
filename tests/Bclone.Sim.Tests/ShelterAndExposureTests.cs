@@ -106,7 +106,7 @@ public sealed class ShelterAndExposureTests
         Villager underARoof = world.Villagers[0];
         Villager inTheOpen = world.Villagers[1];
 
-        underARoof.Position = world.AnyStoreOf(StoreKind.Warehouse).Position;
+        underARoof.Position = world.AnyStoreOf(StoreKind.Warehouse).Tile;
         inTheOpen.Position = FarFromAnyBuilding(world);
         underARoof.Cold = 0;
         inTheOpen.Cold = 0;
@@ -192,7 +192,7 @@ public sealed class ShelterAndExposureTests
         villager.Cold = 0;
 
         GridPos open = FarFromAnyBuilding(world);
-        GridPos roof = world.AnyStoreOf(StoreKind.Warehouse).Position;
+        GridPos roof = world.AnyStoreOf(StoreKind.Warehouse).Tile;
 
         // Deliberately under each individual threshold in each individual state.
         int spell = config.ExposureTicksOutdoors - 1;

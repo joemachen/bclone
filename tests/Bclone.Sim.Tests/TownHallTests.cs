@@ -227,7 +227,7 @@ public sealed class TownHallTests
             BirthYear = 1,
             AgeYears = 20,
             HouseholdId = home.Id,
-            Position = home.HomePosition ?? anywhere,
+            Position = home.HomeTile ?? anywhere,
         };
 
         home.AddMember(bornHere.Id);
@@ -336,7 +336,7 @@ public sealed class TownHallTests
         FinishTheSiteAt(world, spot);
 
         Assert.NotNull(world.TownHall);
-        Assert.Equal(spot, world.TownHall!.Position);
+        Assert.Equal(spot, world.TownHall!.Tile);
         Assert.Equal(BuildingKind.TownHall, world.WhatStandsAt(spot));
     }
 
@@ -656,7 +656,7 @@ public sealed class TownHallTests
     {
         for (int i = world.Workplaces.Count - 1; i >= 0; i--)
         {
-            if (world.Workplaces[i].Position == site && world.Workplaces[i].IsSite)
+            if (world.Workplaces[i].Tile == site && world.Workplaces[i].IsSite)
             {
                 return world.Workplaces[i];
             }

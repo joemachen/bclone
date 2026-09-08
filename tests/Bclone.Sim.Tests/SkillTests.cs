@@ -275,8 +275,8 @@ public sealed class SkillTests
     // free from here**, which matters because Joe has asked for several kinds of game meat.
     // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
     // Were 18060915153750279005 (fixture) and 16268336284570708028 (shipped).
-    [InlineData(false, 16372151027884281488UL)]
-    [InlineData(true, 4358305643559986011UL)]
+    [InlineData(false, 1038389562000932165UL)]
+    [InlineData(true, 16548810733772176765UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

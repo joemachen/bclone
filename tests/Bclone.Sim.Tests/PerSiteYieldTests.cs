@@ -460,7 +460,7 @@ public sealed class PerSiteYieldTests
             total += world.SoilShareAt(world.Zones.PositionOf(owned[i]));
         }
 
-        int doorstep = world.SoilShareAt(farm.Position);
+        int doorstep = world.SoilShareAt(farm.Tile);
         int reported = world.FarmGroundShare(farm);
 
         _output.WriteLine(

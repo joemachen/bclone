@@ -45,8 +45,15 @@ namespace Bclone.Sim.World;
 /// </remarks>
 public readonly record struct Footprint
 {
-    /// <summary>The tile the building stands on — its centre is the centre of the rectangle.</summary>
-    public required GridPos Origin { get; init; }
+    /// <summary>Where the building's centre actually is (gridless 2c, D329).</summary>
+    /// <remarks>
+    /// ⭐⭐ <b>THIS WAS A <see cref="GridPos"/>, AND THAT WAS THE LAST PIECE OF THE GRID IN
+    /// PLACEMENT.</b> <c>Point.cs</c> said so in as many words — *"A building's `Position` is still
+    /// a `GridPos`, and its geometric centre is that tile's centre"* — which is the constraint this
+    /// slice removes. A building's centre is now wherever it was put, and the tile it is indexed by
+    /// is derived from that rather than the other way round.
+    /// </remarks>
+    public required Point Origin { get; init; }
 
     /// <summary>How many tiles across, before turning. One for every building that exists today.</summary>
     public required int Width { get; init; }
@@ -57,9 +64,9 @@ public readonly record struct Footprint
     /// <summary>Which way it is turned.</summary>
     public Angle Facing { get; init; }
 
-    /// <summary>A single tile, facing north — what every building in the game is today.</summary>
+    /// <summary>A single tile, facing north — centred on the tile it names.</summary>
     public static Footprint OneTile(GridPos at) =>
-        new() { Origin = at, Width = 1, Height = 1, Facing = Angle.Zero };
+        new() { Origin = Point.CentreOf(at), Width = 1, Height = 1, Facing = Angle.Zero };
 
     /// <summary>
     /// The tiles this building covers, in a stated order.
@@ -80,18 +87,23 @@ public readonly record struct Footprint
     {
         var covered = new List<GridPos>();
 
-        Point centre = Point.CentreOf(Origin);
+        Point centre = Origin;
         Fixed halfWidth = Fixed.FromRatio(Width, 2);
         Fixed halfHeight = Fixed.FromRatio(Height, 2);
 
         // Generous, because the true half-diagonal wants a square root Fixed does not have.
-        int reach = (Width + Height + 1) / 2;
+        // ⚠️ ONE TILE WIDER THAN IT USED TO BE (D329). The old scan was centred on a tile and could
+        // stop at the half-diagonal; a centre that sits anywhere inside its tile can push coverage
+        // up to a further tile out in either direction. **It tests more tiles and covers exactly the
+        // same ones** for a building on a tile centre, which is why nothing moved when the type did.
+        int reach = ((Width + Height + 1) / 2) + 1;
+        GridPos anchor = Origin.ToTile();
 
         for (int dy = -reach; dy <= reach; dy++)
         {
             for (int dx = -reach; dx <= reach; dx++)
             {
-                var tile = new GridPos(Origin.X + dx, Origin.Y + dy);
+                var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
 
                 // Turn the tile's centre back into the building's own frame, where the rectangle
                 // is axis-aligned and the test is two comparisons.
@@ -108,7 +120,35 @@ public readonly record struct Footprint
     }
 
     /// <summary>Does this building stand on that tile?</summary>
-    public bool Covers(GridPos tile) => CoveredTiles().Contains(tile);
+    /// <remarks>
+    /// <para>
+    /// ⭐⭐ <b>ASKED DIRECTLY, NOT BY BUILDING THE WHOLE LIST AND SEARCHING IT (D329).</b> This was
+    /// <c>CoveredTiles().Contains(tile)</c> — a list allocation and up to a few dozen rotations to
+    /// answer a question about <em>one</em> tile. It is the hottest call in the sim:
+    /// <c>SomethingStandsAt</c> asks it of five collections, and <c>CanBuildAt</c> asks
+    /// <c>SomethingStandsAt</c> once per covered tile.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Measured, because that is the rule (METHODOLOGY §3, D179).</b> Making
+    /// <see cref="Origin"/> continuous widened the scan in <see cref="CoveredTiles"/> by a tile in
+    /// each direction — 25 candidates for a 1×1 building where there were 9 — and **the suite went
+    /// from 4m55s to 9m**. *The horizon nobody suspected was the one that moved.* This is the same
+    /// arithmetic as the loop body, run once.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>It must stay the same arithmetic, in the same order.</b> <see cref="Fixed"/>
+    /// multiplication is not associative, so a "tidier" rearrangement of
+    /// <see cref="Point.RotatedBy"/>'s four products is a behaviour change that no determinism
+    /// guard would object to. <c>FootprintTests</c> compares the two answers directly.
+    /// </para>
+    /// </remarks>
+    public bool Covers(GridPos tile)
+    {
+        Point local = (Point.CentreOf(tile) - Origin).RotatedBy(-Facing);
+
+        return Abs(local.X) <= Fixed.FromRatio(Width, 2)
+            && Abs(local.Y) <= Fixed.FromRatio(Height, 2);
+    }
 
     private static Fixed Abs(Fixed value) => value < Fixed.Zero ? -value : value;
 }

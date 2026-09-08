@@ -120,7 +120,7 @@ public sealed class BuildersHutTests
         Workplace hut = Assert.Single(
             world.Workplaces, place => place.Kind == JobKind.Builder && !place.IsSite);
 
-        Assert.Equal(at, hut.Position);
+        Assert.Equal(at, hut.Tile);
 
         // No site, no waiting list, and nothing owed. A construction site for a building
         // that costs nothing is a builder walking to a footprint to do nothing — which is
@@ -156,7 +156,7 @@ public sealed class BuildersHutTests
 
         Workplace? hut = HutIn(world);
         Assert.NotNull(hut);
-        Assert.Equal(at, hut!.Position);
+        Assert.Equal(at, hut!.Tile);
     }
 
     /// <summary>
@@ -315,7 +315,7 @@ public sealed class BuildersHutTests
         // the point: this is the state only `MarkHome` can produce.
         world.MarkHome(world.Households[0].Id, marooned!.Value);
         Workplace stranded = Assert.Single(
-            world.Workplaces, place => place.Position == marooned.Value && place.IsSite);
+            world.Workplaces, place => place.Tile == marooned.Value && place.IsSite);
 
         Assert.True(world.MoveInBuildQueue(stranded, -1) || world.QueuePositionOf(stranded) == 1);
         Assert.Equal(1, world.QueuePositionOf(stranded));

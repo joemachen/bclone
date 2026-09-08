@@ -67,12 +67,12 @@ internal static class FarmFixtures
             site.Construction.Work();
         }
 
-        GridPos stood = site.Position;
+        GridPos stood = site.Tile;
         world.Complete(site);
 
         return Assert.Single(
             world.Workplaces,
-            place => place.Kind == JobKind.Farmer && place.Position == stood && !place.IsSite);
+            place => place.Kind == JobKind.Farmer && place.Tile == stood && !place.IsSite);
     }
 
     /// <summary>A buildable, bare tile near the village.</summary>
@@ -113,7 +113,7 @@ internal static class FarmFixtures
         {
             for (int dx = -reach; dx <= reach; dx++)
             {
-                var at = new GridPos(farm.Position.X + dx, farm.Position.Y + dy);
+                var at = new GridPos(farm.Tile.X + dx, farm.Tile.Y + dy);
                 if (!world.Map.Contains(at) || world.Map.TerrainAt(at) != Terrain.Grass)
                 {
                     continue;

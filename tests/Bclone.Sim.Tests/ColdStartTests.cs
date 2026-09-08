@@ -1138,7 +1138,7 @@ public sealed class ColdStartTests
             bool gathers = other.GatheringRadius > 0
                 || other.Construction?.Kind == BuildingKind.GathererHut;
 
-            if (gathers && centre.ManhattanDistanceTo(other.Position) <= radius)
+            if (gathers && centre.ManhattanDistanceTo(other.Tile) <= radius)
             {
                 return true;
             }

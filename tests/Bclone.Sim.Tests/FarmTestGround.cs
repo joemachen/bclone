@@ -27,7 +27,7 @@ internal static class FarmTestGround
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
 
         GridPos best = FarmFixtures.ClearGroundNear(world);
-        walk = world.TravelCost.TicksBetween(best, granary.Position);
+        walk = world.TravelCost.TicksBetween(best, granary.Tile);
 
         for (int dy = -14; dy <= 14; dy++)
         {
@@ -40,7 +40,7 @@ internal static class FarmTestGround
                     continue;
                 }
 
-                int cost = world.TravelCost.TicksBetween(at, granary.Position);
+                int cost = world.TravelCost.TicksBetween(at, granary.Tile);
                 if (cost != TravelCostField.Unreachable
                     && Math.Abs(cost - walkAway) < Math.Abs(walk - walkAway))
                 {
@@ -66,7 +66,7 @@ internal static class FarmTestGround
             {
                 for (int dx = -radius; dx <= radius; dx++)
                 {
-                    var at = new GridPos(farm.Position.X + dx, farm.Position.Y + dy);
+                    var at = new GridPos(farm.Tile.X + dx, farm.Tile.Y + dy);
                     if (!world.CanBuildAt(BuildingKind.Granary, at).Allowed
                         || !world.Mark(BuildingKind.Granary, at).Allowed)
                     {
@@ -84,7 +84,7 @@ internal static class FarmTestGround
 
                     world.Complete(site);
                     return Assert.Single(
-                        world.StoreBuildings, store => store.Position == at);
+                        world.StoreBuildings, store => store.Tile == at);
                 }
             }
         }

@@ -110,7 +110,7 @@ public sealed class InstantPileTests
         Assert.Equal(stores + 1, world.StoreBuildings.Count);
         Assert.Equal(workplaces, world.Workplaces.Count);
         Assert.Contains(
-            world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Position == at);
+            world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Tile == at);
 
         // And nothing anywhere is still waiting to be built.
         Assert.DoesNotContain(world.Workplaces, place => place.Construction is not null);
@@ -202,7 +202,7 @@ public sealed class InstantPileTests
         Assert.True(amount > 0);
         Assert.Empty(world.BuildingsWaitingOnTheGround);
         Assert.Contains(
-            world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Position == at);
+            world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Tile == at);
     }
 
     /// <summary>⭐ And the laborers actually do it, unprompted, in a played village.</summary>
@@ -230,7 +230,7 @@ public sealed class InstantPileTests
 
         Assert.Empty(world.BuildingsWaitingOnTheGround);
         Assert.Contains(
-            world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Position == at);
+            world.StoreBuildings, store => store.Kind == StoreKind.Pile && store.Tile == at);
     }
 
     /// <summary>Every building asks for its ground to be cleared, not only the pile.</summary>

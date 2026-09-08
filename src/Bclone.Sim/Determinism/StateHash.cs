@@ -215,6 +215,26 @@ public static class StateHash
                 }
             }
 
+            // ⛔⛔ WHERE THE FAMILY LIVES, WHICH THIS DID NOT MIX AT ALL UNTIL D329. A house could
+            // be raised, moved or pulled down and **the fingerprint did not change** — the same
+            // hole workplaces and stores had, and it is why "no golden moved" was a weaker claim
+            // through the whole gridless stretch than it read as.
+            // ⚠️ DENSE, WITH A FLAG, RATHER THAN SPARSE. Every village has households and every
+            // household eventually has a home, so the sparseness rule this file states five times
+            // — *a village that never uses a feature must hash byte-identically* — does not apply;
+            // and the flag is what stops a homeless family aliasing with one whose coordinates
+            // happen to match the numbers that follow.
+            if (household.HomePosition is Point home)
+            {
+                hash = MixByte(hash, 1);
+                hash = MixFixed(hash, home.X);
+                hash = MixFixed(hash, home.Y);
+            }
+            else
+            {
+                hash = MixByte(hash, 0);
+            }
+
             hash = MixUInt32(hash, (uint)household.MemberIds.Count);
             for (int m = 0; m < household.MemberIds.Count; m++)
             {
@@ -227,6 +247,27 @@ public static class StateHash
         {
             Workplace workplace = world.Workplaces[i];
             hash = MixUInt32(hash, (uint)workplace.Id);
+
+            // ⛔⛔ WHERE IT STANDS AND WHICH WAY IT IS TURNED — AND NEITHER WAS HASHED UNTIL D329.
+            // **A building could be raised, moved or pulled down and the fingerprint would not
+            // change.** That is the hole free placement had to close before a continuous position
+            // could mean anything: sim state the hash cannot see is sim state the determinism
+            // suite cannot guard, and `StateHash`'s own standing rule at the top of this file says
+            // every field that is genuinely part of the simulation is mixed here, in a fixed order.
+            // ⚠️ IT CANNOT BE MADE SPARSE, unlike almost everything else in this file: every
+            // village has a position for every building, so there is no "never used this feature"
+            // state to preserve. **This is the golden move (D152), and it is stated rather than
+            // discovered** — the village did not change, the fingerprint's shape did, and the
+            // byte-identical proof is in the commit that took it.
+            // ⚠️ The EXTENT is deliberately not mixed: it is read from the building's row, so it
+            // is a function of the catalogue rather than per-building state, and the catalogue is
+            // already part of what a seed means.
+            // ⭐ RAW BITS, NEVER QUANTISED — see `MixFixed` below. `StateHash` is a fingerprint,
+            // where a collision is the failure; the map generator's hash is a bucketing hash,
+            // where a collision is the feature. Two jobs, two functions, never one.
+            hash = MixFixed(hash, workplace.Position.X);
+            hash = MixFixed(hash, workplace.Position.Y);
+            hash = MixAngle(hash, workplace.Facing);
 
             // Player intent is sim state (D42's rule, D51's case): an override changes
             // who works where, so two runs of one seed that differ in it are different
@@ -300,6 +341,13 @@ public static class StateHash
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             hash = MixUInt32(hash, (uint)world.StoreBuildings[i].Id);
+
+            // Where it stands and how it is turned (D329) — see the workplace block above for why
+            // this was missing, why it cannot be sparse, and why the extent is not here.
+            hash = MixFixed(hash, world.StoreBuildings[i].Position.X);
+            hash = MixFixed(hash, world.StoreBuildings[i].Position.Y);
+            hash = MixAngle(hash, world.StoreBuildings[i].Facing);
+
             hash = MixStore(hash, world.StoreBuildings[i].Store);
 
             // And which goods the player has told this store to take (D141). SILENT UNTIL
@@ -395,8 +443,9 @@ public static class StateHash
         for (int i = 0; i < world.Libraries.Count; i++)
         {
             Library library = world.Libraries[i];
-            hash = MixUInt32(hash, (uint)library.Position.X);
-            hash = MixUInt32(hash, (uint)library.Position.Y);
+            hash = MixFixed(hash, library.Position.X);
+            hash = MixFixed(hash, library.Position.Y);
+            hash = MixAngle(hash, library.Facing);
             hash = MixUInt32(hash, (uint)library.Records.Count);
             for (int r = 0; r < library.Records.Count; r++)
             {
@@ -433,8 +482,9 @@ public static class StateHash
 
         if (world.TownHall is { } townHall)
         {
-            hash = MixUInt32(hash, (uint)townHall.Position.X);
-            hash = MixUInt32(hash, (uint)townHall.Position.Y);
+            hash = MixFixed(hash, townHall.Position.X);
+            hash = MixFixed(hash, townHall.Position.Y);
+            hash = MixAngle(hash, townHall.Facing);
         }
 
         // ---- Goods on the ground (D96) ----
@@ -460,10 +510,17 @@ public static class StateHash
         // Player intent, so it is sim state: a pile that is coming is a different world from
         // one that is not. Sparse and countless for the third time, so a village that has
         // marked none mixes nothing.
-        for (int i = 0; i < world.BuildingsWaitingOnTheGround.Count; i++)
+        // ⛔ THE KIND AND THE FACING WERE FLATTENED AWAY BEFORE THIS COULD SEE THEM (D329).
+        // `BuildingsWaitingOnTheGround` exposes a list of positions, while the field behind it
+        // holds a `PendingBuilding(Position, Kind, Facing)` — so **which building was waiting, and
+        // which way round, was sim state nothing hashed.** Two villages each waiting on one tile
+        // for two different buildings had the same fingerprint.
+        for (int i = 0; i < world.BuildingsWaiting.Count; i++)
         {
-            hash = MixUInt32(hash, (uint)world.BuildingsWaitingOnTheGround[i].X);
-            hash = MixUInt32(hash, (uint)world.BuildingsWaitingOnTheGround[i].Y);
+            hash = MixFixed(hash, world.BuildingsWaiting[i].Position.X);
+            hash = MixFixed(hash, world.BuildingsWaiting[i].Position.Y);
+            hash = MixUInt32(hash, (uint)world.BuildingsWaiting[i].Kind);
+            hash = MixAngle(hash, world.BuildingsWaiting[i].Facing);
         }
 
         return hash;

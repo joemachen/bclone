@@ -511,7 +511,7 @@ public sealed class TechniqueTests
         GridPos spot = SomewhereBuildable(world);
         Assert.True(world.Mark(BuildingKind.Library, spot).Allowed);
 
-        Workplace raising = world.Workplaces.Last(w => w.Position == spot && w.IsSite);
+        Workplace raising = world.Workplaces.Last(w => w.Tile == spot && w.IsSite);
         _output.WriteLine($"the gifted library costs {raising.Construction!.Recipe.TotalMaterials} "
             + $"materials and {raising.Construction.Recipe.WorkTicks} ticks of work");
 
@@ -536,7 +536,7 @@ public sealed class TechniqueTests
         SimWorld world = loop.World;
 
         world.Mark(BuildingKind.Granary, SomewhereBuildable(world));
-        FinishTheSiteAt(world, world.Workplaces[^1].Position);
+        FinishTheSiteAt(world, world.Workplaces[^1].Tile);
         loop.Step(config.TicksPerYear * (config.LiteracyYears + 2));
 
         Assert.True(world.AFreeLibraryIsOwed);
@@ -550,7 +550,7 @@ public sealed class TechniqueTests
         GridPos second = SomewhereBuildable(world);
         Assert.True(world.Mark(BuildingKind.Library, second).Allowed);
 
-        Workplace site = world.Workplaces.Last(w => w.Position == second && w.IsSite);
+        Workplace site = world.Workplaces.Last(w => w.Tile == second && w.IsSite);
         Assert.True(
             site.Construction!.Recipe.TotalMaterials > 0,
             "The second library was free too — the gift is meant to be spent once.");
@@ -587,7 +587,7 @@ public sealed class TechniqueTests
         int aboard = cart.Store.Held;
         Assert.True(aboard > 0, "The founders' cart should arrive with their supplies in it.");
 
-        PlacementVerdict refused = world.MarkDemolition(cart.Position);
+        PlacementVerdict refused = world.MarkDemolition(cart.Tile);
 
         _output.WriteLine(refused.Reason);
         Assert.False(refused.Allowed);
@@ -604,7 +604,7 @@ public sealed class TechniqueTests
         {
             cart.Store.TakeAll((Goods)g);
         }
-        Assert.True(world.MarkDemolition(cart.Position).Allowed);
+        Assert.True(world.MarkDemolition(cart.Tile).Allowed);
         Assert.DoesNotContain(world.StoreBuildings, s => s.Kind == StoreKind.Cart);
     }
 
@@ -625,7 +625,7 @@ public sealed class TechniqueTests
         // failed for a reason that had nothing to do with literacy. *Its own anti-vacuity check is
         // what said so, instead of leaving a confusing red.*
         world.Mark(BuildingKind.Granary, SomewhereBuildable(world));
-        FinishTheSiteAt(world, world.Workplaces[^1].Position);
+        FinishTheSiteAt(world, world.Workplaces[^1].Tile);
 
         loop.Step(config.TicksPerYear * (config.LiteracyYears + 2));
 
@@ -666,7 +666,7 @@ public sealed class TechniqueTests
         Workplace? found = null;
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
-            if (world.Workplaces[i].Position == site && world.Workplaces[i].IsSite)
+            if (world.Workplaces[i].Tile == site && world.Workplaces[i].IsSite)
             {
                 found = world.Workplaces[i];
             }
@@ -1069,7 +1069,7 @@ public sealed class TechniqueTests
     {
         var library = new Library
         {
-            Position = at ?? new GridPos(2, 2),
+            Position = Point.CentreOf(at ?? new GridPos(2, 2)),
             Name = $"library {world.Libraries.Count + 1}",
             Shelves = world.Config.LibraryShelves,
         };

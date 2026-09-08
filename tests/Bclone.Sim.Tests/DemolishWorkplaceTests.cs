@@ -92,7 +92,7 @@ public sealed class DemolishWorkplaceTests
             world.Workplaces, place => place.Kind == JobKind.Builder && !place.IsSite);
 
         int logsBefore = world.LogsInWarehouses();
-        GridPos where = hut.Position;
+        GridPos where = hut.Tile;
 
         world.Demolish(hut);
 
@@ -145,11 +145,11 @@ public sealed class DemolishWorkplaceTests
         }
 
         Assert.True(stall is not null, "The fixture has no market, so this guard is vacuous.");
-        GridPos where = stall!.Position;
+        GridPos where = stall!.Tile;
 
         world.Demolish(stall);
 
-        Assert.DoesNotContain(world.Workplaces, place => place.Position == where);
-        Assert.DoesNotContain(world.StoreBuildings, store => store.Position == where);
+        Assert.DoesNotContain(world.Workplaces, place => place.Tile == where);
+        Assert.DoesNotContain(world.StoreBuildings, store => store.Tile == where);
     }
 }

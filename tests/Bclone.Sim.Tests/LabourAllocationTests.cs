@@ -530,7 +530,7 @@ public sealed class LabourAllocationTests
             Id = 9001,
             Kind = JobKind.Forager,
             Name = "forager's hut 2",
-            Position = island,
+            Position = Point.CentreOf(island),
             Capacity = 1,
             GatheringRadius = config.GathererHutRingTiles,
         });
@@ -649,7 +649,7 @@ public sealed class LabourAllocationTests
             Id = 9002,
             Kind = JobKind.Forager,
             Name = "forager's hut 2",
-            Position = loop.World.RestingPlaceOf(forager),
+            Position = Point.CentreOf(loop.World.RestingPlaceOf(forager)),
             Capacity = 2,
             GatheringRadius = config.GathererHutRingTiles,
         });
@@ -841,7 +841,7 @@ public sealed class LabourAllocationTests
             foreach (Workplace workplace in loop.World.Workplaces)
             {
                 if (workplace.Kind == JobKind.Forager
-                    && loop.World.TravelCost.CanReach(household.Home(), workplace.Position))
+                    && loop.World.TravelCost.CanReach(household.Home(), workplace.Tile))
                 {
                     anywhere = true;
                     break;
@@ -877,7 +877,7 @@ public sealed class LabourAllocationTests
 
         foreach (Workplace workplace in loop.World.Workplaces)
         {
-            AssertInsideTheValley(config, workplace.Position, workplace.Name);
+            AssertInsideTheValley(config, workplace.Tile, workplace.Name);
         }
 
         int homes = 0;

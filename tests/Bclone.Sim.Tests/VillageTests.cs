@@ -542,7 +542,7 @@ public sealed class VillageTests
                 }
 
                 int cost = loop.World.TravelCost.TicksBetween(
-                    household.Home(), workplace.Position);
+                    household.Home(), workplace.Tile);
                 if (cost > worst)
                 {
                     worst = cost;

@@ -61,7 +61,7 @@ public sealed class MarketServiceAreaTests
         SimWorld world = AVillageWithHomes(out _);
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
 
-        int served = world.HomesAMarketHereWouldBeNearestFor(granary.Position);
+        int served = world.HomesAMarketHereWouldBeNearestFor(granary.Tile);
 
         _output.WriteLine($"a market on the granary's own tile would be nearest for {served} homes");
         Assert.Equal(0, served);
@@ -83,7 +83,7 @@ public sealed class MarketServiceAreaTests
         Household home = world.Households.First(h =>
             h.HomePosition is not null && world.LivingMembersOf(h) > 0);
 
-        int served = world.HomesAMarketHereWouldBeNearestFor(home.HomePosition!.Value);
+        int served = world.HomesAMarketHereWouldBeNearestFor(home.HomeTile!.Value);
 
         _output.WriteLine(
             $"a market on {home.Name}'s doorstep would be nearest for {served} homes");
@@ -112,7 +112,7 @@ public sealed class MarketServiceAreaTests
 
         foreach (Household household in world.Households)
         {
-            if (household.HomePosition is not GridPos home
+            if (household.HomeTile is not GridPos home
                 || world.LivingMembersOf(household) == 0)
             {
                 continue;
@@ -126,7 +126,7 @@ public sealed class MarketServiceAreaTests
 
             bool beatsEveryStore = world.StoreBuildings
                 .Where(s => s.CanEverHold(Goods.Produce))
-                .Select(s => world.TravelCost.Cost(home, s.Position))
+                .Select(s => world.TravelCost.Cost(home, s.Tile))
                 .Where(c => c != TravelCostField.Unreachable)
                 .All(c => here < c);
 
@@ -153,7 +153,7 @@ public sealed class MarketServiceAreaTests
         Household home = world.Households.First(h =>
             h.HomePosition is not null && world.LivingMembersOf(h) > 0);
 
-        GridPos doorstep = home.HomePosition!.Value;
+        GridPos doorstep = home.HomeTile!.Value;
         int before = world.HomesAMarketHereWouldBeNearestFor(doorstep);
 
         foreach (Villager villager in world.Villagers.Where(v => v.HouseholdId == home.Id))

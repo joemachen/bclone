@@ -263,7 +263,7 @@ public sealed class FarmMemoryTests
         // A granary right beside the fields — the lever that actually buys the tiles.
         StoreBuilding near = FarmTestGround.RaiseAGranaryBeside(world, farm);
         Assert.True(
-            world.TravelCost.TicksBetween(farm.Position, near.Position) < walk,
+            world.TravelCost.TicksBetween(farm.Tile, near.Tile) < walk,
             "The new granary is no nearer than the old one, so this measures nothing.");
 
         int committedNear = world.FieldTilesThisFarmCommitsPerHand(farm);
@@ -446,7 +446,7 @@ public sealed class FarmMemoryTests
     {
         List<GridPos> owned = world.Zones.WorkGroundOf(farm.Id)
             .Select(world.Zones.PositionOf)
-            .OrderBy(at => world.TravelCost.Cost(farm.Position, at))
+            .OrderBy(at => world.TravelCost.Cost(farm.Tile, at))
             .ThenBy(at => at.Y)
             .ThenBy(at => at.X)
             .ToList();

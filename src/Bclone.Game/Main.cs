@@ -252,6 +252,7 @@ public partial class Main : Control
         // poses the bar with every button showing at once — 1657px, wider than the 1280 window —
         // and the restore does not shrink `Size.X` back within the same call. Asked afterwards,
         // this measured every sentence against 377 pixels the player does not have.
+        GD.Print(_map.TheCentreOfATileDrawsWhereTheTileDoes());
         ProbeThePlacementSentences();
 
         ProbeTheControlBar();
@@ -2215,7 +2216,7 @@ public partial class Main : Control
             }
 
             // And the ground, which is the other thing that can stop it dead (D101).
-            if (!world.GroundIsClearAt(workplace.Position))
+            if (!world.GroundIsClearAt(workplace.Tile))
             {
                 lines.Add("Waiting: the ground it stands on is still being cleared.");
             }

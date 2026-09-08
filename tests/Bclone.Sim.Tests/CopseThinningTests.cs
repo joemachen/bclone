@@ -240,7 +240,7 @@ public sealed class CopseThinningTests
             int span = radius - System.Math.Abs(dy);
             for (int dx = -span; dx <= span; dx++)
             {
-                var at = new GridPos(hut.Position.X + dx, hut.Position.Y + dy);
+                var at = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
                 if (world.Map.Contains(at) && world.Map.TerrainAt(at) == terrain)
                 {
                     found++;

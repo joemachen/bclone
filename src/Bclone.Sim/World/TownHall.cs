@@ -27,7 +27,7 @@ namespace Bclone.Sim.World;
 /// </remarks>
 public sealed class TownHall
 {
-    private GridPos _position;
+    private Point _position;
 
     /// <summary>Where it stands.</summary>
     /// <remarks>
@@ -35,7 +35,17 @@ public sealed class TownHall
     /// the library carries. <b>Moving it is the answer to putting it in the wrong place</b>, and
     /// the reason demolishing it does not re-offer the gift: <em>the founders only die once.</em>
     /// </remarks>
-    public required GridPos Position { get => _position; init => _position = value; }
+    public required Point Position { get => _position; init => _position = value; }
+
+    /// <summary>Which tile this building is filed under — derived, never stored (D329).</summary>
+    /// <remarks>
+    /// ⛔ <b>Everything that asks the cost field or the map asks THIS.</b> Terrain, soil, zones and
+    /// travel cost stay tile-indexed for ever and deliberately (`specs/gridless.md §10.2`, Joe's
+    /// call), so the grid did not go away — it stopped being where things ARE and became what the
+    /// ground is like. <b>Derived rather than stored, or it is a second copy to keep in step</b>,
+    /// which is this project's recurring bug.
+    /// </remarks>
+    public GridPos Tile => _position.ToTile();
 
     /// <summary>Which way it is turned, and the ground it stands on (D325).</summary>
     /// <remarks>
@@ -58,7 +68,7 @@ public sealed class TownHall
     };
 
     /// <summary>Move it. Only a finished relocation may.</summary>
-    internal void MoveTo(GridPos to) => _position = to;
+    internal void MoveTo(Point to) => _position = to;
 
     /// <summary>What the village calls it.</summary>
     public required string Name { get; init; }

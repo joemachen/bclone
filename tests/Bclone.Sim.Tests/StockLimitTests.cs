@@ -332,7 +332,7 @@ public sealed class StockLimitTests
     // free from here**, which matters because Joe has asked for several kinds of game meat.
     // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
     // Were 5305272553712677516 (fixture) and 3152227146507966874 (shipped).
-    private const ulong FixtureFiftyYearHash = 16514536704114624503UL;
+    private const ulong FixtureFiftyYearHash = 15647636962966750915UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -381,7 +381,7 @@ public sealed class StockLimitTests
     //   before the fire got hungrier (2026-09-01): 7526008860437144418
     //   before job-holders rested in spells (2026-09-02): 13822301328619150389
     //   before fishing added a seventh good (2026-09-02): 801842139213225914
-    private const ulong ShippedFiftyYearHash = 9724963182474327659UL;
+    private const ulong ShippedFiftyYearHash = 5878878298258929955UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

@@ -52,7 +52,7 @@ public sealed class PluralStoresTests
             Id = 4,
             Kind = StoreKind.Granary,
             Name = "the second granary",
-            Position = FreeSpotNear(world, granary.Position),
+            Position = Point.CentreOf(FreeSpotNear(world, granary.Tile)),
             Store = new Stockpile(world.GoodsCatalog.Count) { Capacity = granary.Store.Capacity },
         });
 
@@ -62,7 +62,7 @@ public sealed class PluralStoresTests
             Id = 5,
             Kind = StoreKind.Warehouse,
             Name = "the second warehouse",
-            Position = FreeSpotNear(world, warehouse.Position),
+            Position = Point.CentreOf(FreeSpotNear(world, warehouse.Tile)),
             Store = new Stockpile(world.GoodsCatalog.Count) { Capacity = warehouse.Store.Capacity },
         });
 
@@ -100,12 +100,12 @@ public sealed class PluralStoresTests
     {
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            if (store.Position == position) return true;
+            if (store.Tile == position) return true;
         }
 
         foreach (Workplace workplace in world.Workplaces)
         {
-            if (workplace.Position == position) return true;
+            if (workplace.Tile == position) return true;
         }
 
         foreach (Household household in world.Households)
@@ -230,8 +230,8 @@ public sealed class PluralStoresTests
                 continue;
             }
 
-            int theirs = world.TravelCost.Cost(from, store.Position);
-            int ours = world.TravelCost.Cost(from, nearest!.Position);
+            int theirs = world.TravelCost.Cost(from, store.Tile);
+            int ours = world.TravelCost.Cost(from, nearest!.Tile);
 
             if (theirs != TravelCostField.Unreachable)
             {
@@ -258,7 +258,7 @@ public sealed class PluralStoresTests
             Id = 9,
             Kind = StoreKind.Granary,
             Name = "the marooned granary",
-            Position = marooned,
+            Position = Point.CentreOf(marooned),
             Store = new Stockpile(world.GoodsCatalog.Count) { Capacity = 1000 },
         });
 
@@ -269,7 +269,7 @@ public sealed class PluralStoresTests
             $"reachable: {world.TravelCost.CanReach(from, marooned)}; chose {chosen?.Name ?? "(none)"}");
 
         Assert.NotNull(chosen);
-        Assert.True(world.TravelCost.CanReach(from, chosen!.Position),
+        Assert.True(world.TravelCost.CanReach(from, chosen!.Tile),
             $"{chosen.Name} was chosen but cannot be reached.");
     }
 }

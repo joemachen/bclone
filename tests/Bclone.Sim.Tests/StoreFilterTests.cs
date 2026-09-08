@@ -270,7 +270,7 @@ public sealed class StoreFilterTests
                     Assert.True(world.Mark(BuildingKind.Pile, at).Allowed);
                     foreach (StoreBuilding store in world.StoreBuildings)
                     {
-                        if (store.Kind == StoreKind.Pile && store.Position == at)
+                        if (store.Kind == StoreKind.Pile && store.Tile == at)
                         {
                             return store;
                         }
@@ -312,7 +312,7 @@ public sealed class StoreFilterTests
         Assert.True(world.SetStoreAccepts(warehouse, Goods.Firewood, accepted: false).Allowed);
 
         Villager carrier = world.Villagers[0];
-        carrier.Position = warehouse.Position;
+        carrier.Position = warehouse.Tile;
         carrier.Carried.TakeAll(Goods.Produce);
         carrier.Carried.TakeAll(Goods.Logs);
         carrier.Carried.TakeAll(Goods.Firewood);

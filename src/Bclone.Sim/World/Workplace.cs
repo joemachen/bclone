@@ -192,18 +192,31 @@ public sealed class Workplace
     /// <summary>A place name, so the log reads "the north stand" not "Workplace 3".</summary>
     public required string Name { get; init; }
 
-    private GridPos _position;
+    private Point _position;
 
-    /// <summary>Where it stands.</summary>
+    /// <summary>Where it stands — its true centre, not the tile it is filed under (D329).</summary>
     /// <remarks>
     /// <b>⚠️ <c>init</c> for building it, <see cref="MoveTo"/> for moving it, and nothing else.</b>
     /// Relocation is a builder's job with a construction site behind it, and this is the one door
     /// it comes through.
+    /// ⭐⭐ <b>It is a <see cref="Point"/> since gridless 2c</b>, so a building stands where the
+    /// player put it rather than in the middle of the nearest square. <see cref="Tile"/> is the
+    /// derived index — *"which tile is this?"* rather than *"where is this?"* (`Point.cs`).
     /// </remarks>
-    public required GridPos Position { get => _position; init => _position = value; }
+    public required Point Position { get => _position; init => _position = value; }
+
+    /// <summary>Which tile this building is filed under — derived, never stored.</summary>
+    /// <remarks>
+    /// ⛔ <b>Everything that asks the cost field or the map asks THIS.</b> Terrain, soil, zones and
+    /// travel cost stay tile-indexed for ever and deliberately (`specs/gridless.md §10.2`, Joe's
+    /// call), so the grid did not go away — it stopped being where things ARE and became what the
+    /// ground is like. <b>Derived rather than stored, or it is a second copy to keep in step</b>,
+    /// which is this project's recurring bug.
+    /// </remarks>
+    public GridPos Tile => _position.ToTile();
 
     /// <summary>Move it. Only a finished relocation may.</summary>
-    internal void MoveTo(GridPos to) => _position = to;
+    internal void MoveTo(Point to) => _position = to;
 
     /// <summary>Which way this building is turned (gridless 2b, D319).</summary>
     /// <remarks>

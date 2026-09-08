@@ -112,8 +112,8 @@ public sealed class StorageTests
         foreach (StoreBuilding building in world.StoreBuildings)
         {
             Assert.True(
-                building.Position.X >= config.MapMinX && building.Position.X <= config.MapMaxX
-                && building.Position.Y >= config.MapMinY && building.Position.Y <= config.MapMaxY,
+                building.Tile.X >= config.MapMinX && building.Tile.X <= config.MapMaxX
+                && building.Tile.Y >= config.MapMinY && building.Tile.Y <= config.MapMaxY,
                 $"{building.Name} at {building.Position} is outside the valley.");
         }
     }
@@ -340,7 +340,7 @@ public sealed class StorageTests
 
             foreach (Household household in world.Households)
             {
-                Assert.NotEqual(household.Home(), building.Position);
+                Assert.NotEqual(household.Home(), building.Tile);
             }
         }
     }
@@ -388,7 +388,7 @@ public sealed class StorageTests
 
         villager.Carried.TakeAll(Goods.Produce);
         villager.Carried.TakeAll(Goods.Firewood);
-        villager.Position = market.Position;
+        villager.Position = market.Tile;
 
         BehaviorSystem.CollectForTest(world, villager);
 
@@ -433,7 +433,7 @@ public sealed class StorageTests
 
         villager.Carried.TakeAll(Goods.Produce);
         villager.Carried.TakeAll(Goods.Firewood);
-        villager.Position = market.Position;
+        villager.Position = market.Tile;
 
         BehaviorSystem.CollectForTest(world, villager);
 

@@ -368,7 +368,7 @@ public partial class VillageMap : Control
 
             // A family with no house yet (D70) has nothing to frame — they are standing at
             // the cart, which the founding site already accounts for.
-            if (household.HomePosition is not GridPos standing)
+            if (household.HomeTile is not GridPos standing)
             {
                 continue;
             }
@@ -1718,6 +1718,82 @@ public partial class VillageMap : Control
 
     private Vector2 ToScreen(GridPos tile) => ToScreen(new Vector2(tile.X, tile.Y));
 
+    /// <summary>
+    /// ⛔⛔ Where a building actually is, on screen — <b>and the half-tile seam lives here and
+    /// nowhere else</b> (gridless 2c, D329).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE VIEW AND THE SIM DISAGREE ABOUT WHAT AN INTEGER TILE COORDINATE MEANS, AND BOTH ARE
+    /// INTERNALLY CONSISTENT.</b> This view has always drawn tile <c>(x, y)</c> <em>centred</em> on
+    /// <c>ToScreen(x, y)</c> — which is why the valley border and the grid lines are drawn at
+    /// <c>−0.5</c>. The sim says tile <c>(x, y)</c> covers <c>[x, x+1)</c> and its centre is
+    /// <c>(x+½, y+½)</c> (`Point.cs`), which is what makes <c>ToTile</c> a floor.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>So a <see cref="Point"/> must lose half a tile on each axis to land where the tile
+    /// grid draws it.</b> Get this wrong and **every building on the map shifts by half a tile**,
+    /// which reads as a drawing bug rather than as a units bug. *One conversion, one place, one
+    /// comment — the alternative was moving the view's convention, which would have touched
+    /// terrain, soil, the grid lines and the minimap to save this subtraction.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The float appears HERE and never travels the other way.</b> Fixed-point to float is
+    /// safe — this is drawing — but float into sim state is D2's ban, so the input path builds its
+    /// <see cref="Point"/> from an exact rational instead (see <c>PointUnderTheCursor</c>).
+    /// </para>
+    /// </remarks>
+    private Vector2 ToScreen(Point at) =>
+        ToScreen(new Vector2(InTiles(at.X) - 0.5f, InTiles(at.Y) - 0.5f));
+
+    /// <summary>A fixed-point value as a float number of tiles. Drawing only.</summary>
+    private static float InTiles(Fixed value) =>
+        (float)(value.RawBits / 4294967296.0);
+
+    /// <summary>
+    /// ⛔⛔ Does a tile's CENTRE draw where the tile draws? — for the width probe (D329).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The half-tile seam is the one thing in this slice that no test can reach and that fails
+    /// silently.</b> If <see cref="ToScreen(Point)"/> loses its offset, every building on the map
+    /// moves half a tile down and right — a change that looks like a drawing bug, months after
+    /// anybody remembers there were two conventions. The view has no automated verification at all
+    /// (D11, D160), so the probe is the only instrument there is, and this is the question to ask
+    /// it: <c>ToScreen(Point.CentreOf(t))</c> must land exactly where <c>ToScreen(t)</c> lands.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Several tiles, spread out and including negatives</b>, because the valley straddles
+    /// its own founding site — an offset that is right at the origin and wrong elsewhere is a
+    /// scaling bug rather than a translation bug, and one sample cannot tell them apart.
+    /// </para>
+    /// </remarks>
+    public string TheCentreOfATileDrawsWhereTheTileDoes()
+    {
+        float worst = 0f;
+        GridPos where = default;
+
+        foreach (GridPos tile in new[]
+        {
+            new GridPos(0, 0), new GridPos(1, 0), new GridPos(0, 1),
+            new GridPos(-7, -3), new GridPos(40, 31), new GridPos(-40, 62),
+        })
+        {
+            float off = ToScreen(Point.CentreOf(tile)).DistanceTo(ToScreen(tile));
+            if (off > worst)
+            {
+                worst = off;
+                where = tile;
+            }
+        }
+
+        return worst <= 0.001f
+            ? $"[widths] tile centres: ✅ a point at a tile's centre draws on the tile, "
+                + $"worst {worst:F4}px"
+            : $"[widths] tile centres: ⛔ {worst:F2}px adrift at {where} — every building on the "
+                + $"map is off by {worst / Mathf.Max(1f, _pixelsPerTile):F2} of a tile";
+    }
+
     private Vector2 ToTile(Vector2 screen) => ((screen - (Size / 2f)) / _pixelsPerTile) + _centreTile;
 
     // ---------------------------------------------------------------
@@ -1976,7 +2052,7 @@ public partial class VillageMap : Control
 
         foreach (Household household in world.Households)
         {
-            if (household.HomePosition is not GridPos home
+            if (household.HomeTile is not GridPos home
                 || world.LivingMembersOf(household) == 0)
             {
                 continue;
@@ -2012,7 +2088,7 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            int theirs = world.TravelCost.Cost(home, store.Position);
+            int theirs = world.TravelCost.Cost(home, store.Tile);
             if (theirs != TravelCostField.Unreachable && theirs <= here)
             {
                 return false;
@@ -2800,7 +2876,11 @@ public partial class VillageMap : Control
             bool occupied = world.LivingMembersOf(household) > 0;
 
             // Nothing to draw for a family that has not built yet (D70).
-            if (household.HomePosition is not GridPos site)
+            // ⭐ THE TRUE POSITION, LIKE EVERY OTHER BUILDING (D329) — not the tile it is filed
+            // under. Homes always sit on a tile centre today and always will (the land brush
+            // places them, D42), so this draws identically; it is written this way so a home that
+            // ever does move off centre is drawn where it is rather than where it is indexed.
+            if (household.HomePosition is not Point site)
             {
                 continue;
             }

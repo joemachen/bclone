@@ -264,7 +264,17 @@ expensive inference in this project.*
    in SIX places — `SomethingStandsAt` walks five collections comparing `Position ==` exactly, and
    `WhatStandsAt`, `NameOfWhatStandsAt`, `StoreAt`, `HouseholdAt` and `PullDownWhatStandsAt` are
    five more with the same shape. Every one becomes extent-aware.
+2c. ▶️ **Buildings are placed at a `Point`.** ⛔⛔ **THIS SLICE WAS MISSING FROM THIS LIST AND THE
+   OMISSION MATTERED** (D329). §7.3 says option C is *"buildings gain an Extent and a Facing **and
+   are placed at a Point**"* — and 2b delivered the first two while leaving the anchor a `GridPos`.
+   `Point.cs` said so in as many words: *"A building's `Position` is still a `GridPos`."* **So the
+   list said the next slice was villagers when half of the previous one was unbuilt**, and the
+   handoff meanwhile called free placement "slice 3". *Renumbered rather than argued about: two
+   documents disagreeing about what comes next is how a session picks the wrong thing.*
+
 3. **Villagers hold a `Point`.** Movement interpolates in fixed-point; the cost field is untouched.
+   ⚠️ Still ahead. Joe's call on 2c was **buildings only** — villagers keep stepping tile to tile,
+   so a movement bug and a placement bug cannot arrive tangled together.
 4. **String-pulled paths**, and then desire paths (§2.6) become writable for the first time.
 
 ⚠️ **Each slice ships playable** (`DESIGN.md §4`). ⛔ **Slice 1 is not a spike** — if Q32.32 is not
@@ -273,6 +283,23 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 ---
 
 ## 9. Definition of Done
+
+### Slice 2c — ✅ MET (2026-09-07): the anchor became a `Point`, and the hash learned it
+
+| # | Item | State |
+|---|---|---|
+| 1 | Every building anchor is a `Point`; `GridPos` survives as the derived `Tile` | ✅ workplaces, stores, libraries, the hall, homes and `Footprint.Origin` |
+| 2 | The tile-indexed world is untouched | ✅ terrain, soil, zones and `TravelCostField` all still keyed by `GridPos`; **not one of the 19 tile-keyed economy config entries moved** |
+| 3 | Positions and facings enter the hash | ✅ `MixFixed` × 2 + `MixAngle` per building, raw bits, never quantised |
+| 4 | **The goldens move ONCE, with the reason stated** (D152) | ✅ six moved; `GoldenMapHash` and all three terrain fingerprints **held**, which is what says the map did not move |
+| 5 | ⛔ **The move is proved to be the fingerprint and not the village, the D211 way** | ✅ new mixes deleted → **all 80 golden and determinism guards byte-identical**; only then re-taken |
+| 6 | Sim-placed things stay on tile centres (Joe's call) | ✅ `Point.CentreOf` at every sim-side placement |
+| 7 | Determinism green throughout | ✅ |
+| 8 | Suite green | ✅ 1037 / 0 / 2 of 1039, **2m02s** (was 4m55s) |
+
+⚠️ **The view still snaps every placement to a tile centre**, so nothing a player can see has
+changed yet. That is deliberate: this slice moved the type and the fingerprint, and the freedom is
+the next commit.
 
 ### Slice 1 — ✅ MET (2026-09-06)
 

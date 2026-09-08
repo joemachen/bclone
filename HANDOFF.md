@@ -1,10 +1,15 @@
-# Handoff — bclone: **▶️ THE BRUSH IS A TOOL NOW — NEXT IS FREE PLACEMENT, WHERE THE FIRST GOLDEN MOVES**
+# Handoff — bclone: **▶️ BUILDINGS ARE PLACED AT A `Point` — THE VIEW STILL SNAPS, AND THAT IS NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-07.**
-> **1023 passing, 0 failing, 2 skipped of 1025** — run locally on `main`. `main` = `origin/main`.
-> ⚠️ **NO GOLDEN HAS MOVED IN THE WHOLE GRIDLESS DIRECTION SO FAR**, and that is a claim made from
-> a `git diff` over the five golden constants every commit, not from "the tests passed". **The
-> first golden move is still ahead**, in the free-placement slice.
+> **1037 passing, 0 failing, 2 skipped of 1039** — run locally on `main`, **2m02s** (was 4m55s).
+> ⭐⭐ **THE FIRST GOLDEN MOVE HAS HAPPENED (D329): six moved, once, with the reason stated.**
+> `GoldenMapHash` and all three terrain fingerprints **held** — the map did not move.
+> ⛔ **It was proved to be the fingerprint and not the village BEFORE a number was re-taken:** the
+> new mixes were deleted and all 80 golden and determinism guards came back **byte-identical**.
+> ⚠️ **And the reason it moved is a hole that was already open:** workplace, store and household
+> positions were hashed **nowhere**, so a building could be raised, moved or pulled down and the
+> fingerprint did not notice. *"No golden moved" was weaker than it read as, all the way through
+> D319 → D327.*
 >
 > ⭐ **Joe plays every build and files precise bugs.** Nine of the last ten decisions came from him
 > playing for ten minutes. **Two of them were features that existed only in the sim.**
@@ -113,6 +118,25 @@ down every tool; the bar holds its height across the tabs. ⚠️ **Approved as 
 sizing gesture, which he confirmed in play.** *The difference is worth keeping: a described gesture
 is not the view test, and this is the project with no automated view verification at all.*
 
+## ✅ GRIDLESS 2c IS BUILT — the anchor is continuous (D329)
+
+⚠️⚠️ **NOTHING A PLAYER CAN SEE HAS CHANGED YET, AND THAT IS DELIBERATE.** The view still snaps
+every placement to a tile centre, so the type and the fingerprint moved and the village did not.
+**The freedom is the next commit** — see ▶️ 1 below.
+
+- ⛔⛔ **THE HALF-TILE SEAM IS THE THING TO KNOW BEFORE TOUCHING THE VIEW.** The view draws tile
+  `(x, y)` **centred** on `ToScreen(x, y)` — which is why its grid lines are at −0.5 — while the sim
+  says that tile's centre is `(x+½, y+½)`. **Both are internally consistent and they are half a tile
+  apart.** One conversion carries it (`VillageMap.ToScreen(Point)`) and the probe now asks the
+  question outright: `tile centres: ✅`. **Red-checked at 33.94px, 0.71 of a tile.**
+- ⭐ `Position` is the `Point`; **`Tile` is derived** and is what every cost-field and terrain
+  lookup asks. The 19 tile-keyed economy entries are untouched, which is the whole of option C.
+- ⭐ **Everything the SIM places stays on a tile centre** (Joe's call) — homes, the founding layout,
+  the two free gifts. The `GridPos` overloads of `Mark`/`CanBuildAt`/`FootprintOf` say so out loud.
+- ⚠️ **`Covers` was rebuilt because the CLOCK caught it, not a test.** A continuous origin widened
+  `CoveredTiles`' scan and **the suite went 4m55s → 9m**; `Covers` was answering about one tile by
+  building the whole list. Asked directly it is **2m02s**. *Watch that number.*
+
 ## ▶️ NEXT, IN ORDER
 
 1. ~~**COMMIT B: THE BRUSH.**~~ ✅ **B1 DONE (D327).** ⏸️ **B2 — the smooth painted outline — is
@@ -135,7 +159,16 @@ is not the view test, and this is the project with no automated view verificatio
    ⚠️ `DrawTheBrushful`'s doc-comment is **stale**: it still says *"The diamond, not a square"* and
    contradicts the inline comment below it.
    </details>
-2. **⭐⭐ NOW GRIDLESS SLICE 3: FREE PLACEMENT**, and **this is where the first golden moves.**
+1. **▶️ THE VIEW LETS GO OF THE GRID** — the rest of 2c, and the first thing a player will see.
+   The ghost's position becomes a `Point`; a **snap toggle** (on by default) in Settings rounds it
+   before `Mark`; the ghost shows **the tiles it will claim** tinted under the rectangle, because
+   D319's coverage rule stops being obvious the moment placement is free (all three are Joe's
+   calls). ⛔ **The float must never cross into the sim** — the cursor becomes a `Point` through
+   `Fixed.FromRatio(round(tile × 4096), 4096)`, an exact rational. ⚠️ `_hovered`'s
+   `over != _hovered` gate is a recompute throttle keyed on tile change and becomes always-true;
+   **measure before deciding** whether it needs one. ⚠️ Nothing in this project persists settings,
+   so the toggle resets each launch — harmless, since snap-on is the default.
+2. ~~**GRIDLESS SLICE 3: FREE PLACEMENT**~~ ✅ **THE SIM HALF IS DONE (D329).**, and **this is where the first golden moves.**
    ⛔ *"Turn grid snap off"* is **not a view toggle** — the snap **is the type**: `GridPos` all the
    way down with four `Mathf.RoundToInt` calls at the edges. Continuous positions become sim state,
    so they enter the hash. **One commit, one stated reason (D152).** The Settings snap toggle Joe
@@ -682,6 +715,25 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 ---
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ TWO DOCUMENTS DISAGREED ABOUT WHICH SLICE CAME NEXT, AND ONE OF THEM WAS THE SPEC
+  (2026-09-07, D329).** `gridless.md §8` numbered slice 3 as *"villagers hold a `Point`"*; this file
+  called free placement "slice 3". **Neither was right**: §7.3 had always said option C means
+  buildings *"gain an Extent and a Facing **and are placed at a Point**"*, and 2b shipped the first
+  two — `Point.cs` said so in as many words. **So the list said the next slice was villagers while
+  half of the previous one was unbuilt.** *Renumbered as 2c. When §4 and §6 disagree it is a bug in
+  the docs (CLAUDE.md) — so is a spec disagreeing with a handoff.*
+- **⛔⛔ THE PERFORMANCE REGRESSION WAS CAUGHT BY THE CLOCK AND NOTHING ELSE (2026-09-07, D329).**
+  The suite went **4m55s → 9m** and every test was green. A continuous origin widened
+  `Footprint.CoveredTiles`' candidate scan by a tile in each direction, and `Covers` was answering a
+  question about **one** tile by building the whole list and searching it — in the hottest path the
+  sim has. Asked directly: **2m02s, faster than before the slice.** ⭐ *D179 from the other side:
+  the suite's own duration is an instrument, and it is the only one that reported this.*
+- **⚠️ A COMPILER-DRIVEN RENAME WILL PATCH THE LINE, NOT THE MEANING (2026-09-07, D329).** Driving
+  `.Position` → `.Tile` off the error list rewrote **every** `.Position` on an erroring line, so
+  `villager.Position` became `villager.Tile` wherever a villager and a building shared a line —
+  which then failed differently and had to be walked back. *Fine as a way to enumerate the sites;
+  never as a way to decide them.*
 
 - **⛔⛔⛔ A PROBE CAN MEASURE THE RIGHT THING AT THE WRONG WIDTH, AND THEN IT PASSES EVERYTHING
   (2026-09-07, D327).** A new probe posed each placement sentence in `_placementLabel` and read
