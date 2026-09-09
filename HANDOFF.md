@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ THE BRUSH PAINTS QUARTER-TILES NOW — TERRAIN IS THE LAST BLOCKY THING**
+# Handoff — bclone: **▶️ THE VALLEY HAS TREES AND A RIVERBANK — JOE HAS NOT SEEN THEM YET**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
 > **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
@@ -793,6 +793,10 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ A GUARD THAT SAMPLES ONE FRAME CANNOT SEE A BUG THAT NEEDS TWO (2026-09-09, D337).** The tree scatter's determinism guard computed the wood twice and compared — **both passes in one call, at one tick**, so a seed drifting frame to frame would have matched itself every time. ⭐ *The fix was not a better test: `CanopyOn` became a `static` taking only a tile and an index, so it CANNOT read the tick.* **When a guard scores zero, ask whether the property can be made impossible instead of asserted.**
+- **⚠️ MEASURE THE THING THAT IS ACTUALLY OVER THE LINE (2026-09-09, D337).** The overhang guard reported *"nothing overhangs"* while measuring canopy **centres**. A canopy centred at 0.45 with a radius of 0.20 has already crossed the tile edge at 0.5. *The guard was right that something was wrong and wrong about what — which is the most expensive kind of red, because the obvious fix is to the wrong thing.*
+- **⚠️ THE SUITE'S WALL-CLOCK MOVED 1m46s → 3m0s ON A VIEW-ONLY COMMIT, AND IT IS THE MACHINE (2026-09-09).** Reproducible across two runs — but **the only modified files were `Main.cs` and `VillageMap.cs`, and `Bclone.Game` is deliberately not in `bclone.sln` (D11), so the suite never compiles them.** ⭐ *Proving it was NOT the code took one `git status` and one fact about the solution.* ⚠️ **If a later session sees ~1m50s again, this was thermal or background load after a long session; if it stays at 3m, something real happened between D336 and then.**
 
 - **⛔⛔⛔ `git checkout <file>` TO UNDO A RED CHECK DESTROYS THE UNCOMMITTED WORK IN THAT FILE (2026-09-09, D336).** I used it to revert a deliberate break and it took a guard I had written twenty minutes earlier with it — in the same file, uncommitted. ⭐ *The habit that works is the one used everywhere else in this session:* `cp file /tmp/x.bak` before the break, `cp /tmp/x.bak file` after. **Never reach for git to undo an edit in a file that has work in it.**
 - **⚠️ AN INSTRUMENT THAT KEEPS A CONSTANT AFTER THE CONSTANT CHANGES MEANING MEASURES THE PAST (2026-09-09, D336).** The width probe posed the brush at `MaxRadius` — correct when radii were tiles, and a quarter of the real ceiling once they became quarter-tiles. **It was measuring a brush four times narrower than a spun wheel produces**, and nothing said so. *Fourth instance of the pose-the-wrong-state family: D242, D326, D332, now this.*

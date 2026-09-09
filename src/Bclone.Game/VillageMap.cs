@@ -101,6 +101,18 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color SaplingColour = new("#3d5433");
 
+    /// <summary>A canopy, a shade above the ground it stands on so the wood has texture (D337).</summary>
+    private static readonly Color TreeCanopy = new("#3c5a3e");
+
+    /// <summary>A young tree — smaller, lighter, and obviously not yet timber.</summary>
+    private static readonly Color SaplingCanopy = new("#4f6b41");
+
+    /// <summary>The river's own edge, drawn as one line rather than a staircase of squares.</summary>
+    private static readonly Color ShoreColour = new("#3f7b96", 0.75f);
+
+    /// <summary>Keeps the trees' scatter out of step with the animals' (D337).</summary>
+    private const int TreeSalt = 5701;
+
     /// <summary>A stone seam — pale and dry against the grass, so it reads as bare ground.</summary>
     private static readonly Color RockColour = new("#6b6459");
 
@@ -2597,6 +2609,8 @@ public partial class VillageMap : Control
         // generated valley is invisible, which makes "is this seed worth playing?"
         // a question nobody can answer by looking.
         DrawTerrain(minX, maxX, minY, maxY);
+        DrawTheShoreline();
+        DrawTheTrees(minX, maxX, minY, maxY);
 
         // Under the zone washes, because soil is a property of the ground while the zones
         // are instructions about it (D178).
@@ -2932,6 +2946,269 @@ public partial class VillageMap : Control
     /// a river with gaps in it reads as a bug rather than as a river.
     /// </para>
     /// </remarks>
+    /// <summary>The traced bank of every body of water, in tile units. Cached (D337).</summary>
+    private readonly List<Vector2[]> _shoreline = new();
+
+    private int _shoreTracedAt = -1;
+
+    /// <summary>
+    /// ⭐ The river's bank, as one smooth line rather than a staircase of squares (D337).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Water is drawn by the generic terrain loop</b> — one flat square per tile, no bank, no
+    /// edge. The contour tracer D332 built for painted zones does exactly what is wanted here, so
+    /// the shoreline is that tracer run over the water tiles. *The comment on the terrain overdraw
+    /// was written for the river in the first place — "a river with gaps in it reads as a bug
+    /// rather than as a river" — so it is the right thing to have smoothed first.*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Cached on <c>SimWorld.TerrainGeneration</c></b>, the counter `Minimap` already uses to
+    /// decide when to re-bake. Terrain changes only when somebody clears ground, so the trace is
+    /// paid then rather than on every frame — and **a full-map walk per frame is the thing this
+    /// project has been bitten by twice** (D87, D112).
+    /// </para>
+    /// </remarks>
+    private void DrawTheShoreline()
+    {
+        SimWorld world = _world!;
+
+        if (_shoreTracedAt != world.TerrainGeneration)
+        {
+            _shoreTracedAt = world.TerrainGeneration;
+            _shoreline.Clear();
+
+            SimConfig config = world.Config;
+            var water = new HashSet<Vector2I>();
+
+            for (int y = config.MapMinY; y <= config.MapMaxY; y++)
+            {
+                for (int x = config.MapMinX; x <= config.MapMaxX; x++)
+                {
+                    if (world.Map.TerrainAt(new GridPos(x, y)) == Terrain.Water)
+                    {
+                        water.Add(new Vector2I(x, y));
+                    }
+                }
+            }
+
+            _shoreline.AddRange(ZoneOutline.Trace(water));
+        }
+
+        float thickness = Mathf.Max(1.5f, _pixelsPerTile * 0.09f);
+
+        for (int i = 0; i < _shoreline.Count; i++)
+        {
+            Vector2[] loop = _shoreline[i];
+            var onScreen = new Vector2[loop.Length];
+
+            for (int p = 0; p < loop.Length; p++)
+            {
+                // ⚠️ Traced in TILE units here, not sub-tiles — the tracer does not know which grid
+                // it was handed, so the conversion belongs at each call site rather than in it.
+                onScreen[p] = ToScreen(loop[p] - new Vector2(0.5f, 0.5f));
+            }
+
+            DrawPolyline(onScreen, ShoreColour, thickness, antialiased: true);
+        }
+    }
+
+    /// <summary>How many pixels a tile must have before a canopy is worth drawing.</summary>
+    /// <remarks>
+    /// ⚠️ Below this a tree is sub-pixel and thousands of them would be the per-frame full-map walk
+    /// `Minimap`'s own comment records this project being bitten by twice. *The flat fill carries
+    /// the wood at that distance, which is all it has to do.*
+    /// </remarks>
+    private const float TreeZoomFloor = 10f;
+
+    /// <summary>How far a canopy may sit from its tile's centre, in tiles.</summary>
+    /// <remarks>
+    /// ⭐⭐ <b>MORE THAN HALF A TILE, DELIBERATELY — THE OVERHANG IS THE WHOLE TRICK (D337).</b>
+    /// Joe: *"why are forests grid-shaped?"* A canopy near the edge of a woodland tile spills onto
+    /// the grass beside it, so **the treeline becomes ragged for the reason real treelines are
+    /// ragged.** *A smoothed outline would have made the forest edge a different wrong shape; this
+    /// makes it not a shape at all.*
+    /// </remarks>
+    private const float CanopySpread = 0.55f;
+
+    /// <summary>How close to its tile's centre the nearest canopy sits.</summary>
+    /// <remarks>
+    /// ⚠️ <b>Not zero, and the probe is why.</b> Spread drawn uniformly from nothing to the full
+    /// reach put most canopies well inside the tile, and across three sampled tiles not one crossed
+    /// the boundary — *"nothing overhangs, so every treeline is still square"*. **A wood needs its
+    /// trees pushed outward to have an edge at all.**
+    /// </remarks>
+    private const float CanopyHuddle = 0.16f;
+
+    /// <summary>A canopy's own radius in tiles — <b>it is what actually crosses the line</b>.</summary>
+    /// <remarks>
+    /// ⭐ The guard first measured the CENTRE of each canopy and reported failure while the wood
+    /// was in fact spilling over. *A tree overhangs by its branches, not by its trunk* — so the
+    /// reach that matters is the centre plus this.
+    /// </remarks>
+    private const float CanopyRadius = 0.20f;
+
+    /// <summary>
+    /// ⭐⭐ The trees — <b>and until D337 there were none at all</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A wood was a flat rectangle of <see cref="ForestColour"/>.</b> `DrawTheWoods` draws
+    /// animals and berry patches and has never drawn a tree, which the audit answering Joe's
+    /// question turned up and which is most of why a forest read as a block.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Nothing is stored.</b> Every canopy is derived from <see cref="Scramble"/> over the
+    /// tile's own coordinates, so it cannot drift out of step with the terrain the way a cached
+    /// scatter would — and a tile that is felled simply stops having trees, with no invalidation
+    /// to remember. *The same statelessness the animals and the berries already rely on.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Its own salt.</b> Sharing <c>Scramble(x, y)</c> with the animals would put a beast in
+    /// the same place as a particular tree pattern for ever, which is the kind of correlation that
+    /// reads as a pattern once somebody stares at it.
+    /// </para>
+    /// </remarks>
+    private void DrawTheTrees(int minX, int maxX, int minY, int maxY)
+    {
+        if (_pixelsPerTile < TreeZoomFloor)
+        {
+            return;
+        }
+
+        GeneratedMap map = _world!.Map;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (!map.Contains(tile))
+                {
+                    continue;
+                }
+
+                Terrain terrain = map.TerrainAt(tile);
+                bool grown = terrain == Terrain.Forest;
+
+                if (!grown && terrain != Terrain.Sapling)
+                {
+                    continue;
+                }
+
+                // ⭐ A young wood is fewer and smaller marks, so replanting is finally something
+                // the player can SEE. D221 gave saplings a colour and a sentence; they still had
+                // no texture, so a replanted acre read as flat ground in a slightly different green.
+                Canopies(tile, grown);
+            }
+        }
+    }
+
+    /// <summary>How many trees stand on one tile.</summary>
+    private static int TreesOn(GridPos tile, bool grown) =>
+        grown ? 3 + (int)(Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) % 2) : 2;
+
+    /// <summary>
+    /// ⭐⭐ Where one canopy sits and how dark it is — <b>a `static` that knows only
+    /// the tile</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THE `static` IS THE GUARD, AND IT REPLACED ONE THAT SCORED ZERO (D337).</b>
+    /// The probe asserted the scatter was deterministic by computing it twice and comparing —
+    /// and **that check could never have failed**, because both passes ran in one call with one
+    /// tick. A seed that drifted frame to frame, making a wood shimmer as the camera moved, would
+    /// have sailed straight through it.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>So determinism stopped being asserted and became impossible.</b> A static method
+    /// taking a tile and an index cannot reach <c>_world.Tick</c>, <c>_alpha</c> or anything else
+    /// that moves — *the compiler refuses the bug instead of a test looking for it.* The
+    /// probe's job is now the half it can actually check: that the canopies reach past their tile.
+    /// </para>
+    /// </remarks>
+    private static (Vector2 Where, float Shade) CanopyOn(GridPos tile, int which)
+    {
+        uint spin = Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) >> (which * 7);
+
+        double angle = ((spin % 628) / 100.0) + (which * 2.4);
+        float spread = CanopyHuddle
+            + ((CanopySpread - CanopyHuddle) * (((spin >> 9) % 100) / 100f));
+
+        var where = new Vector2(
+            tile.X + ((float)Math.Cos(angle) * spread),
+            tile.Y + ((float)Math.Sin(angle) * spread));
+
+        // A hair of variation per tree, so a wood is not a field of identical dots.
+        return (where, 0.88f + (((spin >> 17) % 24) / 100f));
+    }
+
+    /// <summary>The trees standing on one tile, and the ones leaning off it.</summary>
+    private void Canopies(GridPos tile, bool grown)
+    {
+        float radius = _pixelsPerTile * (grown ? CanopyRadius : 0.13f);
+        Color trunk = grown ? TreeCanopy : SaplingCanopy;
+
+        for (int i = 0; i < TreesOn(tile, grown); i++)
+        {
+            (Vector2 where, float shade) = CanopyOn(tile, i);
+
+            DrawCircle(
+                ToScreen(where),
+                radius * shade,
+                trunk with { R = trunk.R * shade, G = trunk.G * shade, B = trunk.B * shade });
+        }
+    }
+
+    /// <summary>
+    /// ⭐⭐ Are the trees where they should be? — <b>for the probe</b> (D337).
+    /// </summary>
+    /// <remarks>
+    /// The view has no test project (D11, D160), so the two properties that make the scatter work
+    /// are asserted here: it is **deterministic** (the same tile gives the same wood twice, or a
+    /// forest would shimmer as the camera moved), and it **overhangs** (a canopy reaches past its
+    /// own tile, which is the entire reason a treeline stops looking square).
+    /// </remarks>
+    public string TheTreesAreScatteredAndOverhang()
+    {
+        float furthest = 0f;
+        int counted = 0;
+        int overhanging = 0;
+
+        // A spread of tiles, including negatives, because the valley straddles its own origin.
+        foreach (GridPos tile in new[]
+        {
+            new GridPos(0, 0), new GridPos(7, -4), new GridPos(-9, 12),
+            new GridPos(31, 24), new GridPos(-3, -17),
+        })
+        {
+            for (int i = 0; i < TreesOn(tile, grown: true); i++)
+            {
+                (Vector2 where, float _) = CanopyOn(tile, i);
+
+                // ⭐ THE BRANCHES, NOT THE TRUNK. A canopy centred at 0.45 with a radius of
+                // 0.20 has already crossed its tile's edge at 0.5. **The first version of this
+                // measured the centre and reported failure while the wood was in fact spilling
+                // over.** *Measure the thing that is actually over the line.*
+                float reach =
+                    new Vector2(where.X - tile.X, where.Y - tile.Y).Length() + CanopyRadius;
+
+                furthest = Mathf.Max(furthest, reach);
+                counted++;
+                if (reach > 0.5f)
+                {
+                    overhanging++;
+                }
+            }
+        }
+
+        return overhanging > 0
+            ? $"[widths] trees: ✅ {counted} canopies, {overhanging} overhanging, furthest "
+                + $"{furthest:F2} tiles from centre"
+            : $"[widths] trees: ⛔ nothing overhangs — furthest canopy is "
+                + $"{furthest:F2} tiles, so every treeline is still square";
+    }
+
     private void DrawTerrain(int minX, int maxX, int minY, int maxY)
     {
         GeneratedMap map = _world!.Map;

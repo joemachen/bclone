@@ -254,6 +254,7 @@ public partial class Main : Control
         // this measured every sentence against 377 pixels the player does not have.
         GD.Print(_map.TheCentreOfATileDrawsWhereTheTileDoes());
         GD.Print(ZoneOutline.SelfCheck());
+        GD.Print(_map.TheTreesAreScatteredAndOverhang());
         ProbeThePlacementSentences();
 
         ProbeTheControlBar();
