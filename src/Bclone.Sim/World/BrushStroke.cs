@@ -90,6 +90,72 @@ public static class BrushStroke
     /// one thing the view and the sim share depend on the world it is being asked about.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// ⭐⭐ The sub-tiles under the brush — <b>the resolution the player actually paints at</b>
+    /// (D336).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The same shape predicate, one grid finer.</b> Joe: *"haha this is a circle????"* — at
+    /// five TILES across a disc has no choice but to look like a bitten square, because a square
+    /// grid that size holds nothing rounder. **At five tiles across in QUARTER-tiles it is twenty
+    /// wide**, and twenty is plenty.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The radius is in sub-tiles here and the sentence the player reads is in tiles.</b> Two
+    /// units for one number is the trap D322 records, so they are kept in two places on purpose:
+    /// this takes what it measures in, and <c>Across</c> converts once, where the words are made.
+    /// </para>
+    /// </remarks>
+    public static List<SubTile> SubTilesUnder(SubTile centre, int radius, BrushShape shape)
+    {
+        int reach = ClampSub(radius);
+        var under = new List<SubTile>();
+
+        long limit = (long)reach * (reach + 1);
+
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                if (shape == BrushShape.Round && (((long)dx * dx) + ((long)dy * dy)) > limit)
+                {
+                    continue;
+                }
+
+                under.Add(new SubTile(centre.X + dx, centre.Y + dy));
+            }
+        }
+
+        return under;
+    }
+
+    /// <summary>The smallest brush: one quarter-tile, for work that has to be exact.</summary>
+    public const int MinSubRadius = 0;
+
+    /// <summary>About thirteen tiles across, which is where the tile-measured ceiling was.</summary>
+    public const int MaxSubRadius = 26;
+
+    /// <summary>Five and a quarter tiles across — what has shipped, to the nearest quarter.</summary>
+    public const int DefaultSubRadius = 10;
+
+    /// <summary>Hold a sub-tile radius inside what the brush can be.</summary>
+    public static int ClampSub(int radius) => radius < MinSubRadius
+        ? MinSubRadius
+        : radius > MaxSubRadius ? MaxSubRadius : radius;
+
+    /// <summary>How wide the brush is, <b>in sub-tiles</b>.</summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THIS USED TO RETURN THE WIDTH IN TILES AS A `float`, AND `FloatBanTests` REDDENED —
+    /// CORRECTLY (D336).</b> D2 bans floating point from the sim's public API, and the guard does
+    /// not care that the number was only ever going into a sentence. ⭐ **It was right on the
+    /// substance too, not only the letter:** converting quarter-tiles into a decimal number of
+    /// tiles is *making words*, and words are the view's job. The sim says how many sub-tiles;
+    /// `VillageMap` says *"5.25 tiles"*. *A guard that looks like bureaucracy is worth reading
+    /// twice before you route around it* (D247).
+    /// </remarks>
+    public static int AcrossInSubTiles(int subRadius) => (ClampSub(subRadius) * 2) + 1;
+
     public static List<GridPos> TilesUnder(GridPos centre, int radius, BrushShape shape)
     {
         int reach = Clamp(radius);

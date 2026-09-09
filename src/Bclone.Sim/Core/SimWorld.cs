@@ -3501,7 +3501,7 @@ public sealed class SimWorld
     /// hope."*
     /// <para>
     /// <b>One condition, two callers</b> (D142's three call sites, D148's two meanings):
-    /// <see cref="PaintResidential"/> asks this and then acts, so the preview and the paint can
+    /// <see cref="PaintResidential(GridPos)"/> asks this and then acts, so the preview and the paint can
     /// never disagree about which tiles are in.
     /// </para>
     /// </remarks>
@@ -3538,6 +3538,28 @@ public sealed class SimWorld
         }
 
         Zones.SetResidential(tile, true);
+        CancelDemolition(tile);
+        return verdict;
+    }
+
+    /// <summary>
+    /// ⭐⭐ The same act, at the resolution the brush now works in (D336).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>The VERDICT is asked of the tile and the PAINT is laid on the sub-tile</b>, and that
+    /// split is the whole design. Whether ground may be painted is a question about terrain, and
+    /// terrain is tiled — *a quarter of a tile is not under water on its own.* Where the player
+    /// chose to paint is finer than that, and it is the only thing that got finer.
+    /// </remarks>
+    public PlacementVerdict PaintResidential(SubTile at)
+    {
+        PlacementVerdict verdict = CanPaintResidential(at.Tile);
+        if (!verdict.Allowed)
+        {
+            return verdict;
+        }
+
+        Zones.SetResidential(at, true);
 
         // REPAINTING IS A REAL UNDO, RIGHT UP UNTIL SOMEBODY SWINGS A HAMMER (Joe, 2026-08-26):
         // "if the user repaints the residential area before the house is demolished, then the
@@ -3548,7 +3570,7 @@ public sealed class SimWorld
         // of that rule and neither is special-cased here. A half-demolished house is no longer a
         // house, and the family rebuilds on the ground now painted for them -- which costs them
         // half the timber and a few cold seasons for the dithering.
-        CancelDemolition(tile);
+        CancelDemolition(at.Tile);
         return verdict;
     }
 
@@ -3722,7 +3744,7 @@ public sealed class SimWorld
     /// settled that a brush speaks <em>once per stroke</em>.
     /// </para>
     /// <para>
-    /// <b>Water is never painted</b>, matching <see cref="PaintResidential"/> — the shape
+    /// <b>Water is never painted</b>, matching <see cref="PaintResidential(GridPos)"/> — the shape
     /// the player gets is the shape they can actually use.
     /// </para>
     /// </remarks>
@@ -3771,7 +3793,47 @@ public sealed class SimWorld
         }
 
         Zones.SetWorkGround(tile, workplace.Id);
+        AfterGivingGround(workplace, tile);
 
+        return OverstretchedNote(workplace) is string whole
+            ? PlacementVerdict.Yes(whole)
+            : PlacementVerdict.Fine;
+    }
+
+    /// <summary>
+    /// ⭐⭐ The same act, at the resolution the brush now works in (D336).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>The VERDICT is asked of the tile and the PAINT is laid on the sub-tile</b>, and that
+    /// split is the whole design. Whether ground may be painted is a question about terrain, and
+    /// terrain is tiled — *a quarter of a tile is not under water on its own.* Where the player
+    /// chose to paint is finer than that, and it is the only thing that got finer.
+    /// </remarks>
+    public PlacementVerdict PaintWorkGround(Workplace workplace, SubTile at)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        PlacementVerdict verdict = CanPaintWorkGround(workplace, at.Tile);
+        if (!verdict.Allowed)
+        {
+            return verdict;
+        }
+
+        if (!Zones.SetWorkGround(at, workplace.Id))
+        {
+            return verdict;
+        }
+
+        AfterGivingGround(workplace, at.Tile);
+
+        return OverstretchedNote(workplace) is string note
+            ? PlacementVerdict.Yes(note)
+            : PlacementVerdict.Fine;
+    }
+
+    /// <summary>What giving a farm ground does to the ground itself.</summary>
+    private void AfterGivingGround(Workplace workplace, GridPos tile)
+    {
         // ⭐ A FARM BREAKS THE GROUND IT IS GIVEN, AND THE PLAYER SEES THE FIELD APPEAR.
         //
         // The one thing a farm's brush does that a forester's does not, and it is here rather
@@ -3787,12 +3849,16 @@ public sealed class SimWorld
         {
             Plough(tile);
         }
+    }
 
-        // The sentence is `OverstretchedNote`'s, not this method's, so the brush and the
-        // building's own panel can never describe the same state two different ways.
-        return OverstretchedNote(workplace) is string note
-            ? PlacementVerdict.Yes(note)
-            : PlacementVerdict.Fine;
+
+    /// <summary>Take one sub-tile of ground back from a workplace (D336).</summary>
+    public bool EraseWorkGround(Workplace workplace, SubTile at)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        return Zones.WorkGroundOwner(at.Tile) == workplace.Id
+            && Zones.SetWorkGround(at, 0);
     }
 
     /// <summary>Take one tile of ground back from a workplace.</summary>
@@ -3819,7 +3885,7 @@ public sealed class SimWorld
     /// </para>
     /// <para>
     /// <b>Permissive about where and firm about what</b>, like
-    /// <see cref="PaintResidential"/>: a tile with nothing on it to take is simply never
+    /// <see cref="PaintResidential(GridPos)"/>: a tile with nothing on it to take is simply never
     /// painted, so the shape the player gets is work that actually exists rather than a
     /// promise the village cannot keep.
     /// </para>
@@ -3875,6 +3941,27 @@ public sealed class SimWorld
         return verdict;
     }
 
+    /// <summary>
+    /// ⭐⭐ The same act, at the resolution the brush now works in (D336).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>The VERDICT is asked of the tile and the PAINT is laid on the sub-tile</b>, and that
+    /// split is the whole design. Whether ground may be painted is a question about terrain, and
+    /// terrain is tiled — *a quarter of a tile is not under water on its own.* Where the player
+    /// chose to paint is finer than that, and it is the only thing that got finer.
+    /// </remarks>
+    public PlacementVerdict PaintHarvest(SubTile at, HarvestBrush brush = HarvestBrush.Everything)
+    {
+        PlacementVerdict verdict = CanPaintHarvest(at.Tile, brush);
+        if (!verdict.Allowed)
+        {
+            return verdict;
+        }
+
+        Zones.SetHarvest(at, true);
+        return verdict;
+    }
+
     /// <summary>The good a brush setting will accept, or null for "anything".</summary>
     private static Goods? WhatTheBrushTakes(HarvestBrush brush) => brush switch
     {
@@ -3899,6 +3986,9 @@ public sealed class SimWorld
 
     /// <summary>Un-paint a tile the village had meant to clear.</summary>
     public bool EraseHarvest(GridPos tile) => Zones.SetHarvest(tile, false);
+
+    /// <summary>Rub out one sub-tile of the marking (D336).</summary>
+    public bool EraseHarvest(SubTile at) => Zones.SetHarvest(at, false);
 
     /// <summary>
     /// Whether a tile has been cleared of everything standing on it — so a site here may be

@@ -100,9 +100,43 @@ internal static class ZoneOutline
         // which is the thing rounding exists for.
         Area("a radius-3 round", RoundBrush(3), 37f, within: 0.1f);
 
+        // ⭐⭐ AND THE THING THE WHOLE SLICE WAS FOR: a small round brush is now ACTUALLY ROUND
+        // (D336). At five tiles across in whole tiles a disc has no choice but to be a bitten
+        // square — 21 of 25, **84% of its box**. In quarter-tiles the same brush is twenty cells
+        // wide and fills **79%**, which is π/4. *That five points is the difference between "a
+        // circle" and "haha this is a circle????"*
+        Roundness("a 5-tile round brush, in quarter-tiles", 10, 0.79f);
+
         return complaints.Count == 0
             ? $"[widths] zone outlines: ✅ every shape closed and kept its area{sizes}"
             : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints);
+
+        void Roundness(string what, int radius, float wanted)
+        {
+            int cells = 0;
+            long limit = (long)radius * (radius + 1);
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    if (((long)dx * dx) + ((long)dy * dy) <= limit)
+                    {
+                        cells++;
+                    }
+                }
+            }
+
+            int box = ((radius * 2) + 1) * ((radius * 2) + 1);
+            float fill = cells / (float)box;
+            sizes += $" · {what} fills {fill * 100f:F0}% of its box";
+
+            // ⚠️ A disc fills π/4 of its bounding square. Much above that is a square with its
+            // corners nibbled — which is exactly what five WHOLE tiles gave, at 84%.
+            if (fill > wanted + 0.04f)
+            {
+                complaints.Add($"{what}: fills {fill * 100f:F0}%, a disc fills {wanted * 100f:F0}%");
+            }
+        }
 
         void Area(string what, IEnumerable<(int X, int Y)> tiles, float wanted, float within)
         {

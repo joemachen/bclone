@@ -482,7 +482,15 @@ public partial class VillageMap : Control
     /// two say *how*, and they are outside that set on purpose.
     /// </para>
     /// </remarks>
-    private int _brushRadius = BrushStroke.DefaultRadius;
+    /// <remarks>
+    /// ⛔⛔ <b>IN SUB-TILES SINCE D336, AND THE SENTENCE STILL SAYS TILES.</b> The brush lays down
+    /// quarter-tiles because that is the only way a small round brush can be round (D335); it is
+    /// *described* in tiles because that is what the valley is measured in and what every other
+    /// number the player has learned is in. **Two units for one quantity is D322's trap**, so the
+    /// conversion lives in exactly one place — <c>BrushStroke.AcrossInTiles</c>, where the words
+    /// are made.
+    /// </remarks>
+    private int _brushRadius = BrushStroke.DefaultSubRadius;
 
     /// <summary>Whether the brush is a square or a round (D327). Square is what has always shipped.</summary>
     private BrushShape _brushShape = BrushShape.Square;
@@ -510,8 +518,12 @@ public partial class VillageMap : Control
     /// <summary>How the brush reads in a sentence — <em>"5×5 square"</em>.</summary>
     private string TheBrushInWords()
     {
-        int across = BrushStroke.Across(_brushRadius);
-        return $"{across}×{across} {(_brushShape == BrushShape.Round ? "round" : "square")}";
+        // ⭐ THE CONVERSION LIVES HERE, WHERE THE WORDS ARE MADE (D336). The sim counts sub-tiles;
+        // turning that into "5.25 tiles" is presentation, and `FloatBanTests` said so by reddening
+        // when the arithmetic sat in `Bclone.Sim` instead.
+        float across = BrushStroke.AcrossInSubTiles(_brushRadius) / (float)SubTile.PerTile;
+
+        return $"{across:0.##} tiles {(_brushShape == BrushShape.Round ? "round" : "square")}";
     }
 
     /// <summary>
@@ -697,6 +709,9 @@ public partial class VillageMap : Control
     /// </remarks>
     private Point _hoveredPoint;
 
+    /// <summary>Which quarter-tile the cursor is over — the brush's centre (D336).</summary>
+    private SubTile _hoveredSub;
+
     /// <summary>Whether placement rounds to a tile centre. On by default (Joe's call, D330).</summary>
     /// <remarks>
     /// ⛔ <b>AN INPUT-LAYER SETTING, NOT A SIM ONE, AND THAT IS WHAT KEEPS IT HONEST.</b> It rounds
@@ -738,6 +753,21 @@ public partial class VillageMap : Control
     /// </para>
     /// </remarks>
     private const int CursorSteps = 4096;
+
+    /// <summary>Which quarter-tile the cursor is over — <b>where the brush lands</b> (D336).</summary>
+    /// <remarks>
+    /// ⚠️ <b>A floor, not a round.</b> The sub-tile grid is an index like the tile grid is, and
+    /// `SubTile`'s own doc records why: truncation would fold the quarter at zero to twice the
+    /// width of every other, in a valley that straddles its own origin.
+    /// </remarks>
+    private SubTile SubTileUnderTheCursor(Vector2 screen)
+    {
+        Vector2 tile = ToTile(screen) + new Vector2(0.5f, 0.5f);
+
+        return new SubTile(
+            Mathf.FloorToInt(tile.X * SubTile.PerTile),
+            Mathf.FloorToInt(tile.Y * SubTile.PerTile));
+    }
 
     private Point PointUnderTheCursor(Vector2 screen)
     {
@@ -917,10 +947,17 @@ public partial class VillageMap : Control
             // motion event. With snapping off the ghost moves *within* a tile, so it has to follow
             // the cursor — but only then, and only while a building is in hand. **The throttle is
             // kept where it still works rather than deleted because one case outgrew it.**
+            SubTile overSub = SubTileUnderTheCursor(motion.Position);
+            bool brushMoved = _brush != 0 && overSub != _hoveredSub;
+            _hoveredSub = overSub;
+
             Point wouldStand = WhereItWouldStand(motion.Position);
             bool freelyMoved = !_snapToGrid && _building is not null && wouldStand != _hoveredPoint;
 
-            if (over != _hovered || freelyMoved)
+            // ⚠️ AND THE BRUSH MOVES A QUARTER-TILE AT A TIME NOW (D336), so the tile gate alone
+            // would leave the preview four steps behind the cursor. *A throttle keyed on a coarser
+            // grid than the thing it is throttling stops being a throttle and becomes a lag.*
+            if (over != _hovered || freelyMoved || brushMoved)
             {
                 _hovered = over;
                 _hoveredPoint = wouldStand;
@@ -941,11 +978,11 @@ public partial class VillageMap : Control
                 // a field set on the press would never be cleared. *The event already knows.*
                 if (_brush != 0 && motion.ButtonMask.HasFlag(MouseButtonMask.Right))
                 {
-                    PaintAround(_hovered, -1);
+                    PaintAround(_hoveredSub, -1);
                 }
                 else if (_brush != 0 && motion.ButtonMask.HasFlag(MouseButtonMask.Left))
                 {
-                    PaintAround(_hovered, _brush);
+                    PaintAround(_hoveredSub, _brush);
                 }
 
                 Announce();
@@ -971,8 +1008,7 @@ public partial class VillageMap : Control
         // in the same breath is a tool the player cannot put down.**
         if (_brush != 0 && click.ButtonIndex == MouseButton.Right)
         {
-            Vector2 taken = ToTile(click.Position);
-            PaintAround(new GridPos(Mathf.RoundToInt(taken.X), Mathf.RoundToInt(taken.Y)), -1);
+            PaintAround(SubTileUnderTheCursor(click.Position), -1);
             QueueRedraw();
             AcceptEvent();
             return;
@@ -1031,7 +1067,7 @@ public partial class VillageMap : Control
         if (_brush != 0 && click.AltPressed)
         {
             int wanted = _brushRadius + (click.ButtonIndex == MouseButton.WheelUp ? 1 : -1);
-            _brushRadius = BrushStroke.Clamp(wanted);
+            _brushRadius = BrushStroke.ClampSub(wanted);
 
             Announce();
             QueueRedraw();
@@ -1073,14 +1109,19 @@ public partial class VillageMap : Control
     /// than no preview"* while nothing but discipline held them together.
     /// </para>
     /// </remarks>
-    private void PaintAround(GridPos centre, int direction)
+    private void PaintAround(SubTile centre, int direction)
     {
         string? warning = null;
         int homesUnderTheBrush = 0;
         string? refused = null;
 
-        foreach (GridPos tile in BrushStroke.TilesUnder(centre, _brushRadius, _brushShape))
+        // ⭐ THE STROKE IS SUB-TILES; THE VERDICTS ARE STILL TILES (D336). Whether ground may be
+        // painted is a question about terrain, and terrain is tiled — *a quarter of a tile is not
+        // under water on its own.* Only where the player chose to paint got finer.
+        foreach (SubTile at in BrushStroke.SubTilesUnder(centre, _brushRadius, _brushShape))
         {
+            GridPos tile = at.Tile;
+
             // Ground given to one building (D86). Same stroke shape as the others — one
             // sentence for the drag, never one per tile — and it stops rather than
             // half-painting if the hut went away mid-stroke.
@@ -1102,11 +1143,11 @@ public partial class VillageMap : Control
 
                 if (direction < 0)
                 {
-                    _world.EraseWorkGround(owner, tile);
+                    _world.EraseWorkGround(owner, at);
                     continue;
                 }
 
-                PlacementVerdict given = _world.PaintWorkGround(owner, tile);
+                PlacementVerdict given = _world.PaintWorkGround(owner, at);
                 if (!given.Allowed)
                 {
                     refused = given.Reason;
@@ -1123,14 +1164,14 @@ public partial class VillageMap : Control
             {
                 if (direction < 0)
                 {
-                    _world!.EraseHarvest(tile);
+                    _world!.EraseHarvest(at);
                     continue;
                 }
 
                 // Refusals are silent per tile and counted for the stroke: a drag
                 // across mixed ground is MEANT to skip what the mode does not take,
                 // and forty sentences would bury the one that matters (D42, D92).
-                PlacementVerdict marked = _world!.PaintHarvest(tile, _harvestMode.Value);
+                PlacementVerdict marked = _world!.PaintHarvest(at, _harvestMode.Value);
                 if (!marked.Allowed)
                 {
                     refused = marked.Reason;
@@ -1163,7 +1204,7 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            PlacementVerdict verdict = _world!.PaintResidential(tile);
+            PlacementVerdict verdict = _world!.PaintResidential(at);
             if (verdict.HasWarning)
             {
                 warning = verdict.Warning;
@@ -1223,7 +1264,7 @@ public partial class VillageMap : Control
 
         if (_brush != 0)
         {
-            PaintAround(where, _brush);
+            PaintAround(SubTileUnderTheCursor(at), _brush);
             QueueRedraw();
             return;
         }
@@ -1528,7 +1569,11 @@ public partial class VillageMap : Control
         // ⛔ THE BIGGEST BRUSH AND THE LONGEST SHAPE WORD, because a sentence that fits at 5×5
         // square and wraps at 13×13 round is the "correct at startup, wrong later" fault every
         // other pose in this probe exists to refuse. **Measure the widest the player can reach.**
-        _brushRadius = BrushStroke.MaxRadius;
+        // ⛔ THE BIGGEST BRUSH THE PLAYER CAN ACTUALLY REACH (D336). This posed `MaxRadius`, which
+        // is the TILE-era ceiling and is now a smaller number in a different unit — so the probe
+        // was measuring a brush four times narrower than the one a spun wheel produces. *An
+        // instrument that keeps a constant after the constant changes meaning measures the past.*
+        _brushRadius = BrushStroke.MaxSubRadius;
         _brushShape = BrushShape.Round;
 
         void Say(string tool)
@@ -1890,6 +1935,30 @@ public partial class VillageMap : Control
     /// one-pixel gap *"reads as a bug rather than as a river"*.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// A point the tracer produced, in sub-tile units, brought back to tile units (D336).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>The tracer works in whatever grid it is handed and does not know which one it was.</b>
+    /// It is fed sub-tiles here and nothing else, so the conversion lives at the one place its
+    /// output is drawn — *and the half-tile the view owes the sim is applied here too, once.*
+    /// </remarks>
+    private static Vector2 InTileSpace(Vector2 subTilePoint) =>
+        (subTilePoint / SubTile.PerTile) - new Vector2(0.5f, 0.5f);
+
+    /// <summary>One sub-tile's rectangle, snapped to whole pixels for the same reason (D336).</summary>
+    private Rect2 SubTileRect(SubTile at)
+    {
+        float size = 1f / SubTile.PerTile;
+        float left = (at.X * size) - 0.5f;
+        float top = (at.Y * size) - 0.5f;
+
+        Vector2 topLeft = ToScreen(new Vector2(left, top)).Round();
+        Vector2 bottomRight = ToScreen(new Vector2(left + size, top + size)).Round();
+
+        return new Rect2(topLeft, bottomRight - topLeft);
+    }
+
     private Rect2 TileRect(GridPos tile)
     {
         Vector2 topLeft = ToScreen(new Vector2(tile.X - 0.5f, tile.Y - 0.5f)).Round();
@@ -2050,17 +2119,19 @@ public partial class VillageMap : Control
         // THAT tile (D198) — the harvest brush's filter means a drag across mixed ground is green
         // on the trees and red on the stone, and one colour for the whole brushful would be a
         // preview that tells the player less than the click will.
-        foreach (GridPos tile in BrushStroke.TilesUnder(_hovered, _brushRadius, _brushShape))
+        foreach (SubTile at in BrushStroke.SubTilesUnder(_hoveredSub, _brushRadius, _brushShape))
         {
-            if (!_world.Map.Contains(tile))
+            if (!_world.Map.Contains(at.Tile))
             {
                 continue;
             }
 
             // ⛔ Snapped, not oversized (D333). A translucent rect drawn 2% wide blends twice
             // where it laps its neighbour, which draws a grid inside the brushful.
-            DrawRect(TileRect(tile), ColourForTheBrushOn(tile, direction) with { A = 0.26f });
-            under.Add(new Vector2I(tile.X, tile.Y));
+            // ⭐ The COLOUR is still asked of the tile (D336): the sim's refusals are about terrain
+            // and terrain is tiled. Only where the paint lands got finer.
+            DrawRect(SubTileRect(at), ColourForTheBrushOn(at.Tile, direction) with { A = 0.26f });
+            under.Add(new Vector2I(at.X, at.Y));
         }
 
         // ⭐⭐ AND ONE OUTLINE ROUND THE LOT (D332, Joe: *"why isnt the paint brush a smooth
@@ -2077,7 +2148,7 @@ public partial class VillageMap : Control
             var onScreen = new Vector2[loop.Length];
             for (int p = 0; p < loop.Length; p++)
             {
-                onScreen[p] = ToScreen(loop[p]);
+                onScreen[p] = ToScreen(InTileSpace(loop[p]));
             }
 
             DrawPolyline(onScreen, BrushEdgeFor(direction), thickness, antialiased: true);
@@ -2679,24 +2750,36 @@ public partial class VillageMap : Control
 
         SimConfig config = _world!.Config;
 
-        for (int y = config.MapMinY; y <= config.MapMaxY; y++)
+        // ⭐⭐ TRACED FROM THE SUB-TILES (D336), so the border is the shape the player drew rather
+        // than the shape the tile summary rounded it to. **The outline and the wash come from one
+        // set of quarter-tiles**, which is what stops them disagreeing at the edge.
+        // ⚠️ Sixteen times the cells, and it is affordable for exactly one reason: it runs on a
+        // brush stroke, never on a frame. *`ZoneMap.Edits` is what buys that.*
+        for (int y = config.MapMinY * SubTile.PerTile;
+            y < (config.MapMaxY + 1) * SubTile.PerTile; y++)
         {
-            for (int x = config.MapMinX; x <= config.MapMaxX; x++)
+            for (int x = config.MapMinX * SubTile.PerTile;
+                x < (config.MapMaxX + 1) * SubTile.PerTile; x++)
             {
-                var tile = new GridPos(x, y);
+                int index = IndexOfSub(zones, new SubTile(x, y));
+                if (index < 0)
+                {
+                    continue;
+                }
+
                 var at = new Vector2I(x, y);
 
-                if (zones.IsResidential(tile))
+                if (zones.ResidentialSub[index])
                 {
                     residential.Add(at);
                 }
 
-                if (zones.IsHarvest(tile))
+                if (zones.HarvestSub[index])
                 {
                     harvest.Add(at);
                 }
 
-                int owner = zones.WorkGroundOwner(tile);
+                int owner = zones.WorkGroundSub[index];
                 if (owner == 0)
                 {
                     continue;
@@ -2745,7 +2828,7 @@ public partial class VillageMap : Control
             var onScreen = new Vector2[loop.Length];
             for (int p = 0; p < loop.Length; p++)
             {
-                onScreen[p] = ToScreen(loop[p]);
+                onScreen[p] = ToScreen(InTileSpace(loop[p]));
             }
 
             DrawPolyline(onScreen, edge, Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
@@ -2758,73 +2841,59 @@ public partial class VillageMap : Control
 
         TraceTheZonesIfTheyMoved(zones);
 
-        for (int y = minY; y <= maxY; y++)
+        // ⭐⭐ THE WASH IS DRAWN FROM THE SUB-TILES NOW (D336), which is the whole visible half of
+        // the slice: the paint is quarter-tiles, so a picture drawn from the tile summary would
+        // show a blockier shape than the player laid down. **The outline and the fill are the same
+        // set of quarter-tiles, so they cannot disagree.**
+        // ⚠️ Clipped to the visible window like every other pass, and stepped in sub-tiles.
+        for (int y = minY * SubTile.PerTile; y < (maxY + 1) * SubTile.PerTile; y++)
         {
-            for (int x = minX; x <= maxX; x++)
+            for (int x = minX * SubTile.PerTile; x < (maxX + 1) * SubTile.PerTile; x++)
             {
-                var tile = new GridPos(x, y);
-                if (!zones.IsResidential(tile))
+                var at = new SubTile(x, y);
+                int index = IndexOfSub(zones, at);
+                if (index < 0)
                 {
                     continue;
                 }
 
-                DrawRect(TileRect(tile), ResidentialColour);
-            }
-        }
-
-        // ⭐ GROUND THAT BELONGS TO A BUILDING (D86, D112) — and this is the layer that was
-        // simply never drawn. Joe: *"'give ground' and 'take back' seem to do nothing."*
-        // They did exactly what they say: the sim recorded the tiles and the hut's panel
-        // counted them. **Nothing on the map changed, so from the chair the brush was dead.**
-        //
-        // A zone the player paints and cannot see is worse than one they cannot paint —
-        // §1.1 is about the game explaining itself, and a brush whose only feedback is a
-        // number in a row somewhere else is a brush that explains nothing.
-        //
-        // The selected building's ground is drawn stronger than everybody else's, which is
-        // how one colour answers *"whose is this?"* without inventing a palette per hut.
-        int selected = SelectedGroundOwner();
-        for (int y = minY; y <= maxY; y++)
-        {
-            for (int x = minX; x <= maxX; x++)
-            {
-                var tile = new GridPos(x, y);
-                int owner = zones.WorkGroundOwner(tile);
-                if (owner == 0)
+                if (zones.ResidentialSub[index])
                 {
-                    continue;
+                    DrawRect(SubTileRect(at), ResidentialColour);
                 }
 
-                DrawRect(TileRect(tile), owner == selected ? WorkGroundMine : WorkGroundColour);
-            }
-        }
-
-        // What the village has been told to take (D87). Drawn over the terrain rather
-        // than replacing it, so a marked wood still reads as a wood — the paint is an
-        // instruction about the ground, not a new kind of ground.
-        //
-        // Last of the three, because harvest is the one that says something is about to
-        // change and the other two say who may use ground that is staying as it is.
-        for (int y = minY; y <= maxY; y++)
-        {
-            for (int x = minX; x <= maxX; x++)
-            {
-                var tile = new GridPos(x, y);
-                if (!zones.IsHarvest(tile))
+                int owner = zones.WorkGroundSub[index];
+                if (owner != 0)
                 {
-                    continue;
+                    DrawRect(
+                        SubTileRect(at),
+                        owner == SelectedGroundOwner() ? WorkGroundMine : WorkGroundColour);
                 }
 
-                DrawRect(TileRect(tile), HarvestColour);
+                if (zones.HarvestSub[index])
+                {
+                    DrawRect(SubTileRect(at), HarvestColour);
+                }
             }
         }
 
-        // ⭐⭐ AND THE BORDERS OVER ALL THREE (D332, Joe: *"why isnt the paint brush a smooth
-        // circle?"*). The washes stay per-tile — they are a tint on ground that IS tiled — and what
-        // stops the region looking like graph paper is its EDGE. *The paint is unchanged; only the
-        // picture of it is.*
         DrawTheZoneOutlines();
     }
+
+    /// <summary>Where a sub-tile lives in the zone arrays, or −1 if it is off the map.</summary>
+    private int IndexOfSub(ZoneMap zones, SubTile at)
+    {
+        SimConfig config = _world!.Config;
+
+        int x = at.X - (config.MapMinX * SubTile.PerTile);
+        int y = at.Y - (config.MapMinY * SubTile.PerTile);
+        int width = zones.SubWidth;
+
+        return x < 0 || x >= width || y < 0 || y >= (zones.ResidentialSub.Count / width)
+            ? -1
+            : (y * width) + x;
+    }
+
 
     /// <summary>
     /// Which building's ground the player is looking at, or zero if none is selected.

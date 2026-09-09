@@ -1,12 +1,7 @@
 # Spec: Sub-tile zones — the player paints finer than the ground is stored
 
 **Decisions:** D42, D86, D87, D332, D333, D335. Follows `gridless.md` and `brush.md`.
-**Status:** ✅ **SLICE 1 BUILT (2026-09-09, D335)** — `SubTile` exists, `ZoneMap` stores sixteen
-sub-tiles to a tile with incremental summaries, every tile-level API keeps its signature *and its
-numbers*, and the hash mixes the sub-tiles. **1063 passing, 0 failing, 2 skipped of 1065; six
-goldens moved once, with the proof below.** ⏸️ **SLICE 2 — the brush and the view painting at
-quarter-tiles — IS NOT STARTED**, so nothing a player can do has changed yet. *This line is edited
-whole, in the commit that changes it (D159, and the trap D332 added).*
+**Status:** ✅ **BOTH SLICES BUILT.** **Slice 1** (2026-09-09, D335) — `SubTile`, `ZoneMap` storing sixteen sub-tiles to a tile with incremental summaries, and the hash. **Slice 2** (2026-09-09, D336) — the brush paints quarter-tiles, the wash and the outline are drawn from them, and a five-tile round brush now fills **79% of its box** where whole tiles gave **84%**. ⭐ *That five points is the difference between a circle and "haha this is a circle????"* **1063 passing, 0 failing, 2 skipped of 1065; six goldens moved in slice 1 and none in slice 2.** ⚠️ **Unplayed by Joe as of this line** — the view has no automated verification of any kind (D11, D160).
 
 ---
 
@@ -135,7 +130,18 @@ question it was not asked:
   a hut whose ground was all quarter-painted **walked away leaving its paint behind**, still drawn,
   still hashed, owned by a building that no longer existed.
 
-### Slice 2 — the brush and the view
-6. The brush paints in quarter-tiles; a small round brush is genuinely round.
-7. The outline tracer runs on sub-tiles; **no golden moves** (view and input only).
-8. Joe plays it.
+### Slice 2 — ✅ MET (2026-09-09)
+
+| # | Item | State |
+|---|---|---|
+| 6 | The brush paints in quarter-tiles; a small round brush is genuinely round | ✅ **79% of its box against a disc's π/4**; whole tiles gave 84% |
+| 7 | The wash and the outline are drawn from the sub-tiles | ✅ one set of quarter-tiles, so they cannot disagree at the edge |
+| 8 | **No golden moves** — view and input only | ✅ |
+| 9 | The size is still stated in **tiles** | ✅ *"5.25 tiles round"*, and the wheel steps by a quarter |
+| 10 | Joe plays it | ⏸️ owed |
+
+⛔ **`FloatBanTests` reddened and was right.** `AcrossInTiles` returned a `float` from the sim's
+public API to make a sentence — D2 bans that, and the guard did not care that the number was only
+going into words. ⭐ *It was right on the substance too: turning quarter-tiles into "5.25 tiles" is
+presentation, and presentation is the view's job.* The sim counts sub-tiles now; `VillageMap` says
+the sentence.

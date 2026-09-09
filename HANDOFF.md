@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ ZONES ARE STORED AT QUARTER-TILES — THE BRUSH DOES NOT PAINT THAT WAY YET**
+# Handoff — bclone: **▶️ THE BRUSH PAINTS QUARTER-TILES NOW — TERRAIN IS THE LAST BLOCKY THING**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
 > **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
@@ -793,6 +793,10 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ `git checkout <file>` TO UNDO A RED CHECK DESTROYS THE UNCOMMITTED WORK IN THAT FILE (2026-09-09, D336).** I used it to revert a deliberate break and it took a guard I had written twenty minutes earlier with it — in the same file, uncommitted. ⭐ *The habit that works is the one used everywhere else in this session:* `cp file /tmp/x.bak` before the break, `cp /tmp/x.bak file` after. **Never reach for git to undo an edit in a file that has work in it.**
+- **⚠️ AN INSTRUMENT THAT KEEPS A CONSTANT AFTER THE CONSTANT CHANGES MEANING MEASURES THE PAST (2026-09-09, D336).** The width probe posed the brush at `MaxRadius` — correct when radii were tiles, and a quarter of the real ceiling once they became quarter-tiles. **It was measuring a brush four times narrower than a spun wheel produces**, and nothing said so. *Fourth instance of the pose-the-wrong-state family: D242, D326, D332, now this.*
+- **⚠️ A THROTTLE KEYED ON A COARSER GRID THAN THE THING IT THROTTLES BECOMES A LAG (2026-09-09, D336).** The hover recompute was gated on the cursor changing TILE. Once the brush moved in quarter-tiles that left the preview up to four steps behind the cursor — *a throttle is only a throttle while it is finer than what it is guarding.*
 
 - **⭐⭐ A GOLDEN MOVE PROVES ITSELF FOR FREE IF YOU LAND THE SUBSTRATE FIRST (2026-09-09, D335).** D211's method is to move the goldens and then *reconstruct* the old mix to show the village did not change. **Better: land the storage change with the hash untouched and run the suite.** Green means the village provably did not change; only then move the mix. *There is nothing to reconstruct, because the "before" was a real run.* ⚠️ It only works when the two halves can be separated — but they usually can, and it is worth arranging that they are.
 - **⚠️ "IT IS THE RENDERING, NOT THE RESOLUTION" WAS HALF RIGHT AND I SAID IT AS IF IT WERE WHOLE (2026-09-09, D333 → D335).** The square being drawn as a circle was smoothing. The round brush not looking round at five tiles across is **genuinely resolution** — a 5×5 grid holds a diamond, a bitten square or a square, and none is a circle. ⭐ *When a complaint has two causes, answering the one you can fix reads as answering both.*
