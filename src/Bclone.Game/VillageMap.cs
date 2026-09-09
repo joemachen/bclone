@@ -1864,6 +1864,40 @@ public partial class VillageMap : Control
     private Vector2 ToScreen(Point at) =>
         ToScreen(new Vector2(InTiles(at.X) - 0.5f, InTiles(at.Y) - 0.5f));
 
+    /// <summary>
+    /// ⛔⛔ One tile's rectangle, snapped to whole pixels — <b>and this is what stopped the painted
+    /// ground drawing its own grid</b> (D333).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, with the grid lines switched OFF:</b> *"even with the grid settings toggled off, the
+    /// painted home area shows a grid."* **It was not the grid lines.** Every per-tile wash drew its
+    /// rect **2% oversized** — a trick that exists to hide sub-pixel seams between *opaque* terrain
+    /// squares at fractional zoom, and which is exactly wrong for a translucent one: **the 2% band
+    /// where two rects overlap gets the colour blended TWICE.** Residential land is alpha 0.14, so
+    /// every tile boundary came out at 0.26 — nearly double — in a thin line. *The overdraw that
+    /// hides a grid in opaque paint draws one in translucent paint.*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Snapping to whole pixels is the fix for both failures at once.</b> A tile's right edge
+    /// and its neighbour's left edge are the same coordinate, so rounding them lands them on the
+    /// same pixel: **no overlap to blend twice, and no gap to show through.** *Exact tiling beats
+    /// a fudge in either direction.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Terrain keeps its overdraw and should.</b> It is opaque, so drawing a band of it twice
+    /// is invisible — and the comment there records that it was written for the river, where a
+    /// one-pixel gap *"reads as a bug rather than as a river"*.
+    /// </para>
+    /// </remarks>
+    private Rect2 TileRect(GridPos tile)
+    {
+        Vector2 topLeft = ToScreen(new Vector2(tile.X - 0.5f, tile.Y - 0.5f)).Round();
+        Vector2 bottomRight = ToScreen(new Vector2(tile.X + 0.5f, tile.Y + 0.5f)).Round();
+
+        return new Rect2(topLeft, bottomRight - topLeft);
+    }
+
     /// <summary>A fixed-point value as a float number of tiles. Drawing only.</summary>
     private static float InTiles(Fixed value) =>
         (float)(value.RawBits / 4294967296.0);
@@ -2023,11 +2057,9 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            Vector2 centre = ToScreen(tile);
-            float size = _pixelsPerTile * 1.02f;
-            var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-
-            DrawRect(rect, ColourForTheBrushOn(tile, direction) with { A = 0.26f });
+            // ⛔ Snapped, not oversized (D333). A translucent rect drawn 2% wide blends twice
+            // where it laps its neighbour, which draws a grid inside the brushful.
+            DrawRect(TileRect(tile), ColourForTheBrushOn(tile, direction) with { A = 0.26f });
             under.Add(new Vector2I(tile.X, tile.Y));
         }
 
@@ -2575,7 +2607,6 @@ public partial class VillageMap : Control
             return;
         }
 
-        float size = _pixelsPerTile * 1.02f;
 
         for (int y = minY; y <= maxY; y++)
         {
@@ -2596,9 +2627,7 @@ public partial class VillageMap : Control
                     ? RichGround with { A = RichGround.A * away }
                     : ThinGround with { A = ThinGround.A * -away };
 
-                Vector2 centre = ToScreen(tile);
-                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-                DrawRect(rect, wash);
+                DrawRect(TileRect(tile), wash);
             }
         }
     }
@@ -2726,7 +2755,6 @@ public partial class VillageMap : Control
     private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
     {
         ZoneMap zones = _world!.Zones;
-        float size = _pixelsPerTile * 1.02f;
 
         TraceTheZonesIfTheyMoved(zones);
 
@@ -2740,9 +2768,7 @@ public partial class VillageMap : Control
                     continue;
                 }
 
-                Vector2 centre = ToScreen(tile);
-                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-                DrawRect(rect, ResidentialColour);
+                DrawRect(TileRect(tile), ResidentialColour);
             }
         }
 
@@ -2769,9 +2795,7 @@ public partial class VillageMap : Control
                     continue;
                 }
 
-                Vector2 centre = ToScreen(tile);
-                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-                DrawRect(rect, owner == selected ? WorkGroundMine : WorkGroundColour);
+                DrawRect(TileRect(tile), owner == selected ? WorkGroundMine : WorkGroundColour);
             }
         }
 
@@ -2791,9 +2815,7 @@ public partial class VillageMap : Control
                     continue;
                 }
 
-                Vector2 centre = ToScreen(tile);
-                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-                DrawRect(rect, HarvestColour);
+                DrawRect(TileRect(tile), HarvestColour);
             }
         }
 
@@ -2857,9 +2879,7 @@ public partial class VillageMap : Control
                     continue;
                 }
 
-                Vector2 centre = ToScreen(tile);
-                var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
-                DrawRect(rect, ColourOf(terrain));
+                DrawRect(TileRect(tile), ColourOf(terrain));
             }
         }
     }

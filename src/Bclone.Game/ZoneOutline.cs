@@ -57,6 +57,7 @@ internal static class ZoneOutline
     internal static string SelfCheck()
     {
         var complaints = new List<string>();
+        string sizes = string.Empty;
 
         CheckTiles("one tile", new[] { (0, 0) }, 1);
         CheckTiles("a 3x3 block", Block(3, 3), 1);
@@ -80,9 +81,59 @@ internal static class ZoneOutline
         // valid picture; what must not happen is a walk that never terminates.
         CheckTiles("a diagonal pinch", new[] { (0, 0), (1, 1) }, 2);
 
+        // ⛔⛔ AND THE SHAPE SURVIVES THE SMOOTHING, WHICH IS THE CHECK THAT WAS MISSING (D333).
+        // Closure said the tracer worked; nothing said the ROUNDING left a square square. It did
+        // not: proportional corner-cutting turned a 5×5 block into a sixteen-sided figure of about
+        // 20 square tiles, and Joe read it off the screen as *"that 'square' brush is the round
+        // brush"*. **Area is what tells them apart** — a circle inscribed in a 5×5 square is 19.6
+        // against 25, a fifth of the shape gone.
+        Area("a 5x5 square", Block(5, 5), 25f);
+        Area("a radius-3 round", RoundBrush(3), 37f);
+
         return complaints.Count == 0
-            ? "[widths] zone outlines: ✅ every traced shape closed"
+            ? $"[widths] zone outlines: ✅ every shape closed and kept its area{sizes}"
             : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints);
+
+        void Area(string what, IEnumerable<(int X, int Y)> tiles, float wanted)
+        {
+            var set = new HashSet<Vector2I>();
+            foreach ((int x, int y) in tiles)
+            {
+                set.Add(new Vector2I(x, y));
+            }
+
+            List<Vector2[]> loops = Trace(set);
+            if (loops.Count != 1)
+            {
+                complaints.Add($"{what}: {loops.Count} loops, wanted 1");
+                return;
+            }
+
+            float area = Mathf.Abs(SignedArea(loops[0]));
+            sizes += $" · {what} {area:F1} of {wanted:F0}";
+
+            // ⚠️ A tenth, not an exact match: rounding the corners is SUPPOSED to remove a little.
+            // What it must not do is remove a fifth, which is what a circle costs a square.
+            if (Mathf.Abs(area - wanted) > wanted * 0.1f)
+            {
+                complaints.Add($"{what}: area {area:F1}, wanted about {wanted:F0}");
+            }
+        }
+
+        static IEnumerable<(int, int)> RoundBrush(int radius)
+        {
+            long limit = (long)radius * (radius + 1);
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    if (((long)dx * dx) + ((long)dy * dy) <= limit)
+                    {
+                        yield return (dx, dy);
+                    }
+                }
+            }
+        }
 
         static IEnumerable<(int, int)> Block(int wide, int tall)
         {
@@ -127,8 +178,47 @@ internal static class ZoneOutline
         }
     }
 
-    /// <summary>How many times to cut the corners. Two is round without being a blob.</summary>
+    /// <summary>Twice the area of a closed loop, signed — the shoelace sum.</summary>
+    private static float SignedArea(Vector2[] loop)
+    {
+        float twice = 0f;
+        for (int i = 0; i < loop.Length - 1; i++)
+        {
+            twice += (loop[i].X * loop[i + 1].Y) - (loop[i + 1].X * loop[i].Y);
+        }
+
+        return twice / 2f;
+    }
+
+    /// <summary>How many times to cut the corners.</summary>
     private const int Roundings = 2;
+
+    /// <summary>
+    /// ⛔⛔ How much of a corner to cut, <b>in tiles</b> — and this number is why a square looked
+    /// like a circle (D333).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe:</b> *"that 'square' brush is the round brush and the round brush looks like weird
+    /// diamond."* **He was reading the shapes correctly and they were both wrong.** Plain Chaikin
+    /// cuts each corner at a QUARTER OF THE SIDE — so a 5×5 square, which straightens to exactly
+    /// **four** vertices, becomes an octagon after one pass and a sixteen-sided figure after two.
+    /// **A square with four corners, rounded proportionally, IS a circle.** And a stepped disc,
+    /// whose sides are one tile each, had its every step cut a quarter of a tile from both ends
+    /// until the whole thing pulled inward into a blobby cross.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The cut is capped by an absolute distance instead.</b> A long fence loses a third of a
+    /// tile at each corner and stays a fence; a one-tile step is softened and stays a step. *The
+    /// shape survives the smoothing, which is the whole point of smoothing it.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A proportional rule cannot tell a big shape from a small one</b>, and that is the
+    /// general form of this bug: the same fraction is a rounded corner on a hundred-tile zone and a
+    /// total rewrite of a five-tile one.
+    /// </para>
+    /// </remarks>
+    private const float CornerCutTiles = 0.35f;
 
     /// <summary>
     /// The smoothed closed loops around a set of tiles, in tile coordinates.
@@ -325,8 +415,17 @@ internal static class ZoneOutline
                 Vector2 here = points[i];
                 Vector2 next = points[(i + 1) % points.Count];
 
-                cut.Add(here.Lerp(next, 0.25f));
-                cut.Add(here.Lerp(next, 0.75f));
+                // ⛔ A quarter of the side, or the cap — whichever is SMALLER. Plain Chaikin takes
+                // the quarter unconditionally, which is what turned a four-cornered square into a
+                // circle. The quarter is still the ceiling, so a side shorter than twice the cap
+                // never has its two cuts cross.
+                float side = here.DistanceTo(next);
+                float share = side <= 0.0001f
+                    ? 0.25f
+                    : Mathf.Min(0.25f, CornerCutTiles / side);
+
+                cut.Add(here.Lerp(next, share));
+                cut.Add(here.Lerp(next, 1f - share));
             }
 
             points = cut;

@@ -765,7 +765,54 @@ Written in three places on purpose: here, `TerrainCostField` itself, and
 
 ---
 
+## ⏸️ ANSWERED, AND IT IS JOE'S TO OVERRULE: **DOES THE GRID NEED TO BE FINER?**
+
+He asked it while looking at a clumsy painted circle: *"do we need a much finer underlying grid? is
+the current one too coarse? that will change building scale, well, everything scale."*
+
+**My answer is no, and the evidence is that the shapes were being destroyed by the SMOOTHING rather
+than by the resolution** (D333) — he was looking at a 5×5 square rendered as a sixteen-sided figure.
+With the corner-cut capped, a square reads as a square and a round brush reads as round.
+
+⛔ **What a finer grid would actually cost, with the numbers rather than a shrug:**
+- **The map is 120×80 = 9,600 tiles.** Halving the tile size makes it **38,400** — four times the
+  draw loop (already walked six times a frame), four times every `TerrainCostField` Dijkstra, and
+  D179 records that field being the entire suite's bottleneck at the *current* size.
+- **Nineteen config entries are stated in tiles**, all anchored on `gatherer_hut_ring_tiles = 8`
+  through `VillageEconomy.MaxHomeToWorkTiles`. ⛔ **D122 froze nineteen people when that chain moved
+  by ONE tile.** `gridless.md §6` calls re-deriving it *"the single biggest risk"* in the whole
+  direction — *"not arithmetic, it is a re-balance."*
+- **Every golden moves**, and the D211 byte-identical proof is unavailable, because the village
+  genuinely would be different.
+
+⭐ **AND THERE IS A CHEAP ANSWER TO THE REAL COMPLAINT UNDERNEATH IT, WHICH IS THAT EVERY BUILDING IS
+ONE SQUARE.** `ExtentWidth`/`ExtentHeight` are **already per-row in the catalogue and already work** —
+the longhouse is 3×1 and has been since D321. **Making a granary 2×2 is a data edit**, costs no
+economy change, moves no derived number, and is the thing that would actually make buildings look
+like buildings rather than tokens. *If "everything is the same size and that size is a square" is the
+complaint, that is where to spend the effort.*
+
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ AN OVERDRAW THAT HIDES A SEAM IN OPAQUE PAINT DRAWS A GRID IN TRANSLUCENT PAINT
+  (2026-09-09, D333).** Every per-tile wash drew its rect **2% oversized** — correct for terrain,
+  where it stops sub-pixel gaps at fractional zoom — and **the 2% band where two translucent rects
+  lap gets blended twice**: alpha 0.14 came out at 0.26 in a line at every tile boundary. **Joe saw
+  a grid with the grid lines switched off.** ⭐ *Snap the rect to whole pixels instead: a tile's right
+  edge and its neighbour's left edge are the same coordinate, so rounding them lands them on the
+  same pixel — no overlap AND no gap.* ⚠️ Four passes had inherited the trick from the one that
+  needed it.
+- **⛔⛔ A PROPORTIONAL RULE CANNOT TELL A BIG SHAPE FROM A SMALL ONE (2026-09-09, D333).** Chaikin
+  cuts a corner at **a quarter of the side**, and a 5×5 square straightens to exactly **four**
+  vertices — so two passes make it a sixteen-sided figure. **A square, rounded proportionally, is a
+  circle**, and Joe read it straight off the screen: *"that 'square' brush is the round brush."*
+  Cap the cut by an absolute distance. *The same fraction is a rounded corner on a hundred-tile zone
+  and a total rewrite of a five-tile one.*
+- **⛔ A GUARD THAT CHECKS THE SHAPE CLOSED SAYS NOTHING ABOUT WHETHER IT IS STILL THE SHAPE
+  (2026-09-09, D333).** D332's probe asserted every traced loop closed. **It did, throughout, while a
+  square was being rendered as a circle.** ⭐ *Area is what tells them apart* — a circle inscribed in
+  a 5×5 square is 19.6 against 25 — and the broken code measured **21.1**. **When you smooth
+  something, guard the property smoothing can destroy, not the one it cannot.**
 
 - **⛔⛔ A STATUS LINE EDITED AT ONE END CONTRADICTS ITSELF AT THE OTHER (2026-09-08, D332).**
   `specs/brush.md`'s header was updated to say both slices were built and its *tail still said B2 was
