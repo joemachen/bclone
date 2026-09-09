@@ -87,14 +87,24 @@ internal static class ZoneOutline
         // 20 square tiles, and Joe read it off the screen as *"that 'square' brush is the round
         // brush"*. **Area is what tells them apart** — a circle inscribed in a 5×5 square is 19.6
         // against 25, a fifth of the shape gone.
-        Area("a 5x5 square", Block(5, 5), 25f);
-        Area("a radius-3 round", RoundBrush(3), 37f);
+        // ⛔⛔ THE SQUARE IS EXACT, NOT APPROXIMATE, AND THAT IS THE WHOLE OF D334. Its four corners
+        // are each between two five-tile runs, so all four are left alone and **not one square tile
+        // of it is lost.** A tolerance here would let the corners creep back.
+        // ⚠️ HALF A PERCENT, AND THE FIRST TRY AT 2% SCORED ZERO ON ITS RED CHECK. Disabling the
+        // sharp-corner rule costs the square exactly 0.5 of its 25 — which is 2% on the nose, so a
+        // 2% band let the bug through with nothing to say. **The square is exactly 25 by
+        // construction when its corners are kept**, so the only tolerance it needs is float noise.
+        Area("a 5x5 square", Block(5, 5), 25f, within: 0.005f);
+
+        // ⚠️ The disc is allowed to lose a little: every one of its corners IS a staircase step,
+        // which is the thing rounding exists for.
+        Area("a radius-3 round", RoundBrush(3), 37f, within: 0.1f);
 
         return complaints.Count == 0
             ? $"[widths] zone outlines: ✅ every shape closed and kept its area{sizes}"
             : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints);
 
-        void Area(string what, IEnumerable<(int X, int Y)> tiles, float wanted)
+        void Area(string what, IEnumerable<(int X, int Y)> tiles, float wanted, float within)
         {
             var set = new HashSet<Vector2I>();
             foreach ((int x, int y) in tiles)
@@ -112,11 +122,10 @@ internal static class ZoneOutline
             float area = Mathf.Abs(SignedArea(loops[0]));
             sizes += $" · {what} {area:F1} of {wanted:F0}";
 
-            // ⚠️ A tenth, not an exact match: rounding the corners is SUPPOSED to remove a little.
-            // What it must not do is remove a fifth, which is what a circle costs a square.
-            if (Mathf.Abs(area - wanted) > wanted * 0.1f)
+            if (Mathf.Abs(area - wanted) > wanted * within)
             {
-                complaints.Add($"{what}: area {area:F1}, wanted about {wanted:F0}");
+                complaints.Add(
+                    $"{what}: area {area:F1}, wanted {wanted:F0} within {within * 100f:F1}%");
             }
         }
 
@@ -219,6 +228,33 @@ internal static class ZoneOutline
     /// </para>
     /// </remarks>
     private const float CornerCutTiles = 0.35f;
+
+    /// <summary>
+    /// ⛔⛔ How long both sides of a corner must be for it to count as a <b>real corner</b> and be
+    /// left sharp (D334).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe:</b> *"the square brush looks okay — but why are the corners rounded? id prefer them
+    /// square."* **He is right, and the distinction is one the smoothing was not making at all.**
+    /// A border has two completely different kinds of corner in it, and rounding both is what made
+    /// a square look apologetic:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>A real corner</b> — two long straight runs meeting at a right angle. **The player
+    /// painted that**, and it should stay exactly as painted.</item>
+    /// <item><b>A staircase step</b> — a one-tile jog where a straight line has been approximated by
+    /// squares. **Nobody chose that**; it is an artefact of the ground being tiled, and it is the
+    /// only thing worth softening.</item>
+    /// </list>
+    /// <para>
+    /// ⭐ <b>The length of the two adjacent runs tells them apart</b>, and nothing else has to. A
+    /// corner between two runs of at least this many tiles is deliberate and is left alone; anything
+    /// shorter is a step and is rounded. *So a square stays square and a disc stops looking like a
+    /// pile of bricks, from one rule.*
+    /// </para>
+    /// </remarks>
+    private const float SharpCornerTiles = 2f;
 
     /// <summary>
     /// The smoothed closed loops around a set of tiles, in tile coordinates.
@@ -410,22 +446,32 @@ internal static class ZoneOutline
         {
             var cut = new List<Vector2>(points.Count * 2);
 
+            // ⛔⛔ WALKS THE CORNERS, NOT THE SIDES, BECAUSE THE DECISION IS PER CORNER (D334).
+            // Chaikin cuts every side and therefore every corner; what is wanted is to cut the
+            // corners that are STAIRCASE STEPS and leave the ones the player actually painted.
             for (int i = 0; i < points.Count; i++)
             {
+                Vector2 before = points[(i - 1 + points.Count) % points.Count];
                 Vector2 here = points[i];
                 Vector2 next = points[(i + 1) % points.Count];
 
-                // ⛔ A quarter of the side, or the cap — whichever is SMALLER. Plain Chaikin takes
-                // the quarter unconditionally, which is what turned a four-cornered square into a
-                // circle. The quarter is still the ceiling, so a side shorter than twice the cap
-                // never has its two cuts cross.
-                float side = here.DistanceTo(next);
-                float share = side <= 0.0001f
-                    ? 0.25f
-                    : Mathf.Min(0.25f, CornerCutTiles / side);
+                float back = before.DistanceTo(here);
+                float forward = here.DistanceTo(next);
 
-                cut.Add(here.Lerp(next, share));
-                cut.Add(here.Lerp(next, 1f - share));
+                // Two long runs meeting: a corner somebody chose. Kept exactly.
+                if (back >= SharpCornerTiles && forward >= SharpCornerTiles)
+                {
+                    cut.Add(here);
+                    continue;
+                }
+
+                // ⚠️ Never more than HALF a run, or the cuts from the two ends of a short side
+                // cross each other and the outline turns inside out.
+                float cutBack = Mathf.Min(CornerCutTiles, back / 2f);
+                float cutOn = Mathf.Min(CornerCutTiles, forward / 2f);
+
+                cut.Add(here + ((before - here).Normalized() * cutBack));
+                cut.Add(here + ((next - here).Normalized() * cutOn));
             }
 
             points = cut;

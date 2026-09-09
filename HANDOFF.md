@@ -794,6 +794,17 @@ complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
 
+- **⛔⛔⛔ A TOLERANCE CHOSEN BY EYE CAN BE EXACTLY THE SIZE OF THE BUG (2026-09-09, D334).** The
+  guard on the smoothed square's area was set to 2%, and disabling the rule it guards costs the
+  square **exactly 2%** — so the red check came back **green** with nothing to say. ⭐ *The quantity
+  was right and the band was wrong.* The square is **exactly** 25 by construction when its corners
+  are kept, so the band only ever needed to cover float noise. **Ask what the break actually costs
+  before choosing the tolerance, not after.**
+- **⚠️ TWO KINDS OF CORNER LIVE IN ONE OUTLINE AND THEY WANT OPPOSITE TREATMENT (2026-09-09, D334).**
+  A **real corner** is two long runs meeting — the player painted it. A **staircase step** is a
+  one-tile jog where a line was approximated by squares — nobody chose it. *Rounding both is what
+  makes a deliberate square look apologetic;* the length of the adjacent runs is the whole test.
+
 - **⛔⛔⛔ AN OVERDRAW THAT HIDES A SEAM IN OPAQUE PAINT DRAWS A GRID IN TRANSLUCENT PAINT
   (2026-09-09, D333).** Every per-tile wash drew its rect **2% oversized** — correct for terrain,
   where it stops sub-pixel gaps at fractional zoom — and **the 2% band where two translucent rects
