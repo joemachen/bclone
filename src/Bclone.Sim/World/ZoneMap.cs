@@ -79,10 +79,35 @@ public sealed class ZoneMap
     /// </remarks>
     private readonly bool[] _harvest;
 
+    // ⭐⭐ THE SUB-TILE ARRAYS ARE THE STATE; THE TILE ARRAYS ABOVE ARE A SUMMARY OF THEM (D335).
+    // `specs/sub-tile-zones.md`. Joe, looking at a 5×5 round brush: *"haha this is a circle????"* —
+    // and he was right, because at five tiles across a square grid holds a diamond, a
+    // square-with-bitten-corners, or a square, and **none of them is a circle**. The paint got a
+    // finer grid; the ground did not.
+    //
+    // ⛔ **The summaries are maintained incrementally and never recomputed on read.** `IsHarvest`
+    // is called inside scans that D179 already had to rescue once; folding sixteen sub-tiles per
+    // call would be a sixteen-fold cost in exactly that path. *Every `Set` pays a little so every
+    // read pays nothing.*
+    private readonly bool[] _residentialSub;
+
+    private readonly int[] _workGroundSub;
+
+    private readonly bool[] _harvestSub;
+
+    /// <summary>How many of each tile's sixteen sub-tiles are painted. Derived, never hashed.</summary>
+    private readonly byte[] _residentialCount;
+
+    private readonly byte[] _workGroundCount;
+
+    private readonly byte[] _harvestCount;
+
     private readonly int _width;
     private readonly int _height;
     private readonly int _minX;
     private readonly int _minY;
+    private readonly int _subWidth;
+    private readonly int _subHeight;
 
     public ZoneMap(GeneratedMap map)
     {
@@ -95,6 +120,65 @@ public sealed class ZoneMap
         _residential = new bool[_width * _height];
         _workGround = new int[_width * _height];
         _harvest = new bool[_width * _height];
+
+        _subWidth = _width * SubTile.PerTile;
+        _subHeight = _height * SubTile.PerTile;
+        _residentialSub = new bool[_subWidth * _subHeight];
+        _workGroundSub = new int[_subWidth * _subHeight];
+        _harvestSub = new bool[_subWidth * _subHeight];
+        _residentialCount = new byte[_width * _height];
+        _workGroundCount = new byte[_width * _height];
+        _harvestCount = new byte[_width * _height];
+    }
+
+    /// <summary>How wide the sub-tile grid is — for the hash and the renderer.</summary>
+    public int SubWidth => _subWidth;
+
+    /// <summary>Every painted sub-tile, in a fixed order — the state, hashed and drawn.</summary>
+    public IReadOnlyList<bool> ResidentialSub => _residentialSub;
+
+    /// <summary>Every sub-tile's owner, in a fixed order — the state, hashed and drawn.</summary>
+    public IReadOnlyList<int> WorkGroundSub => _workGroundSub;
+
+    /// <summary>Every marked sub-tile, in a fixed order — the state, hashed and drawn.</summary>
+    public IReadOnlyList<bool> HarvestSub => _harvestSub;
+
+    /// <summary>Where in the sub-tile arrays a sub-tile lives, or −1 if it is off the map.</summary>
+    private int SubIndexOf(SubTile at)
+    {
+        int x = at.X - (_minX * SubTile.PerTile);
+        int y = at.Y - (_minY * SubTile.PerTile);
+
+        return x < 0 || x >= _subWidth || y < 0 || y >= _subHeight ? -1 : (y * _subWidth) + x;
+    }
+
+    /// <summary><see cref="SubIndexOf"/> run backwards, beside its inverse as the pair below is.</summary>
+    public SubTile SubPositionOf(int index) =>
+        new((index % _subWidth) + (_minX * SubTile.PerTile),
+            (index / _subWidth) + (_minY * SubTile.PerTile));
+
+    /// <summary>
+    /// ⭐ Paint every one of a tile's sixteen sub-tiles — <b>what "paint this tile" now means</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Kept as an overload rather than removed</b>, because the founding layout, the starting
+    /// residential disc and a great many guards genuinely do mean *the whole tile* — and saying so
+    /// by calling it is clearer than sixteen calls at each site. **Only the brush needs the finer
+    /// door.**
+    /// </remarks>
+    private bool SetWholeTile(GridPos tile, System.Func<SubTile, bool> paint)
+    {
+        bool changed = false;
+
+        for (int y = 0; y < SubTile.PerTile; y++)
+        {
+            for (int x = 0; x < SubTile.PerTile; x++)
+            {
+                changed |= paint(SubTile.Of(tile, x, y));
+            }
+        }
+
+        return changed;
     }
 
     /// <summary>How many tiles are painted for housing.</summary>
@@ -128,17 +212,39 @@ public sealed class ZoneMap
     /// </remarks>
     public int Edits { get; private set; }
 
-    public bool SetResidential(GridPos position, bool painted)
+    public bool SetResidential(GridPos position, bool painted) =>
+        SetWholeTile(position, at => SetResidential(at, painted));
+
+    /// <summary>Paint or erase one SUB-tile. Returns true if it changed anything (D335).</summary>
+    public bool SetResidential(SubTile at, bool painted)
     {
-        int index = IndexOf(position);
-        if (index < 0 || _residential[index] == painted)
+        int index = SubIndexOf(at);
+        if (index < 0 || _residentialSub[index] == painted)
         {
             return false;
         }
 
-        _residential[index] = painted;
+        _residentialSub[index] = painted;
         Edits++;
-        ResidentialTiles += painted ? 1 : -1;
+
+        // ⭐ The tile-level answer is re-derived from a COUNT, not from a sweep of sixteen — see the
+        // note on the arrays. `ResidentialTiles` and `_residential` keep meaning exactly what they
+        // meant, so nothing downstream of them has to know this happened.
+        int tile = IndexOf(at.Tile);
+        if (tile < 0)
+        {
+            return true;
+        }
+
+        _residentialCount[tile] = (byte)(_residentialCount[tile] + (painted ? 1 : -1));
+
+        bool nowPainted = _residentialCount[tile] >= SubTile.HalfATile;
+        if (nowPainted != _residential[tile])
+        {
+            _residential[tile] = nowPainted;
+            ResidentialTiles += nowPainted ? 1 : -1;
+        }
+
         return true;
     }
 
@@ -199,29 +305,79 @@ public sealed class ZoneMap
     /// speaks <em>once per stroke</em>, and the caller is what counts the refusals up.
     /// </para>
     /// </remarks>
-    public bool SetWorkGround(GridPos position, int ownerId)
+    public bool SetWorkGround(GridPos position, int ownerId) =>
+        SetWholeTile(position, at => SetWorkGround(at, ownerId));
+
+    /// <summary>
+    /// Give one SUB-tile to a building, or take it back with <paramref name="ownerId"/> 0 (D335).
+    /// </summary>
+    /// <remarks>
+    /// ⭐⭐ <b>ONE OWNER PER TILE IS STILL THE RULE — IT JUST MOVED DOWN A LEVEL.</b> A sub-tile may
+    /// only be given to the owner its tile already has, or to nobody. **Letting two huts share the
+    /// quarters of one tile would be exactly the thing the rule exists to stop**, with the added
+    /// cruelty that the player could not see the boundary: the argument on <c>_workGround</c> above
+    /// is about two crews felling the same trees and a village that cannot say whose a stump is.
+    /// </remarks>
+    public bool SetWorkGround(SubTile at, int ownerId)
     {
-        int index = IndexOf(position);
-        if (index < 0)
+        int sub = SubIndexOf(at);
+        int index = IndexOf(at.Tile);
+        if (sub < 0 || index < 0)
         {
             return false;
         }
 
-        int current = _workGround[index];
-        if (current == ownerId)
+        if (_workGroundSub[sub] == ownerId)
         {
             return false;
         }
 
-        // Somebody else's ground. Theirs to give up, not ours to take.
-        if (current != 0 && ownerId != 0)
+        // Somebody else's ground. Theirs to give up, not ours to take — asked of the TILE, so a
+        // hut cannot creep into a quarter of a neighbour's field.
+        int owner = _workGround[index];
+        if (owner != 0 && ownerId != 0 && owner != ownerId)
         {
             return false;
         }
 
-        _workGround[index] = ownerId;
+        bool wasOwned = _workGroundSub[sub] != 0;
+        _workGroundSub[sub] = ownerId;
         Edits++;
 
+        _workGroundCount[index] = (byte)(_workGroundCount[index]
+            + ((ownerId != 0 ? 1 : 0) - (wasOwned ? 1 : 0)));
+
+        // ⭐⭐ TWO THRESHOLDS, AND THEY ANSWER TWO DIFFERENT QUESTIONS (D335).
+        //
+        // **"Whose ground is this tile?"** is ANY sub-tile — because that is what stops a second hut
+        // creeping into the quarters a first one has already taken, and because a player who has
+        // painted a corner of a tile can see that they have. `_workGround` holds that.
+        //
+        // **"How much ground does this hut HAVE?"** is at least half, because that is the question
+        // the economy asks and it is asked in whole tiles: a farm ploughs a tile or it does not.
+        // `_tilesByOwner` and `_groundByOwner` hold that, and `WorkGroundTiles` is unchanged.
+        //
+        // ⚠️ *They can disagree about one tile and that is the design rather than a seam:* a tile a
+        // quarter painted is spoken for and is not yet ground anybody works.
+        int nowSpokenFor = _workGroundCount[index] > 0 ? (ownerId != 0 ? ownerId : owner) : 0;
+        _workGround[index] = nowSpokenFor;
+
+        bool holdsIt = _workGroundCount[index] >= SubTile.HalfATile;
+        bool held = _groundByOwner.TryGetValue(nowSpokenFor == 0 ? owner : nowSpokenFor,
+            out List<int>? already) && already.BinarySearch(index) >= 0;
+
+        if (holdsIt == held)
+        {
+            return true;
+        }
+
+        return GiveWholeTile(index, held ? (nowSpokenFor == 0 ? owner : nowSpokenFor) : 0,
+            holdsIt ? nowSpokenFor : 0);
+    }
+
+    /// <summary>The tile-level bookkeeping, unchanged — it just has a new reason to run.</summary>
+    private bool GiveWholeTile(int index, int current, int ownerId)
+    {
         if (current != 0)
         {
             _tilesByOwner[current] = _tilesByOwner[current] - 1;
@@ -274,23 +430,44 @@ public sealed class ZoneMap
     /// </remarks>
     public int ReleaseWorkGround(int ownerId)
     {
-        if (ownerId == 0 || !_tilesByOwner.ContainsKey(ownerId))
+        // ⚠️ NOT `_tilesByOwner.ContainsKey`, WHICH ONLY KNOWS ABOUT TILES THE HUT HELD (D335).
+        // A hut whose ground was all quarter-painted holds no tiles at all, and an early-out on
+        // that key would walk away leaving its paint behind — **still drawn, still hashed, and
+        // owned by a building that no longer exists.**
+        if (ownerId == 0)
         {
             return 0;
         }
 
-        int freed = 0;
+        // ⛔ THE SUB-TILES ARE THE STATE, SO THEY ARE WHAT HAS TO BE CLEARED (D335). Wiping only
+        // the tile summary would leave a demolished hut's ground still painted underneath, drawn
+        // and hashed — *the "right stuff in the wrong place" shape this class's own comments record
+        // costing four investigations.*
+        for (int i = 0; i < _workGroundSub.Length; i++)
+        {
+            if (_workGroundSub[i] == ownerId)
+            {
+                _workGroundSub[i] = 0;
+            }
+        }
+
+        // ⭐ THE NUMBER IS TILES THE HUT *KEPT*, BECAUSE THAT IS WHAT THE SENTENCE SAYS — *"the N
+        // tiles it kept are free again."* Counting every tile it had a quarter of would over-report
+        // to the player by however many corners they had clipped. *One number, one question* (D322).
+        int freed = WorkGroundTiles(ownerId);
+
         for (int i = 0; i < _workGround.Length; i++)
         {
             if (_workGround[i] == ownerId)
             {
                 _workGround[i] = 0;
-                freed++;
+                _workGroundCount[i] = 0;
             }
         }
 
         _tilesByOwner.Remove(ownerId);
         _groundByOwner.Remove(ownerId);
+        Edits++;
         return freed;
     }
 
@@ -312,16 +489,42 @@ public sealed class ZoneMap
     }
 
     /// <summary>Paint or erase one tile. Returns true if it changed anything.</summary>
-    public bool SetHarvest(GridPos position, bool painted)
+    public bool SetHarvest(GridPos position, bool painted) =>
+        SetWholeTile(position, at => SetHarvest(at, painted));
+
+    /// <summary>Mark or unmark one SUB-tile. Returns true if it changed anything (D335).</summary>
+    public bool SetHarvest(SubTile at, bool painted)
     {
-        int index = IndexOf(position);
-        if (index < 0 || _harvest[index] == painted)
+        int sub = SubIndexOf(at);
+        if (sub < 0 || _harvestSub[sub] == painted)
         {
             return false;
         }
 
-        _harvest[index] = painted;
+        _harvestSub[sub] = painted;
         Edits++;
+
+        int tile = IndexOf(at.Tile);
+        if (tile < 0)
+        {
+            return true;
+        }
+
+        _harvestCount[tile] = (byte)(_harvestCount[tile] + (painted ? 1 : -1));
+
+        bool nowMarked = _harvestCount[tile] >= SubTile.HalfATile;
+        if (nowMarked == _harvest[tile])
+        {
+            return true;
+        }
+
+        return MarkWholeTile(tile, nowMarked);
+    }
+
+    /// <summary>The tile-level bookkeeping, unchanged — it just has a new reason to run.</summary>
+    private bool MarkWholeTile(int index, bool painted)
+    {
+        _harvest[index] = painted;
         HarvestTiles += painted ? 1 : -1;
 
         if (painted)

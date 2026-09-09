@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ THE PAINTED GROUND IS SMOOTH NOW — THE TERRAIN IS NOT, AND THAT IS NEXT**
+# Handoff — bclone: **▶️ ZONES ARE STORED AT QUARTER-TILES — THE BRUSH DOES NOT PAINT THAT WAY YET**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
 > **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
@@ -793,6 +793,9 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⭐⭐ A GOLDEN MOVE PROVES ITSELF FOR FREE IF YOU LAND THE SUBSTRATE FIRST (2026-09-09, D335).** D211's method is to move the goldens and then *reconstruct* the old mix to show the village did not change. **Better: land the storage change with the hash untouched and run the suite.** Green means the village provably did not change; only then move the mix. *There is nothing to reconstruct, because the "before" was a real run.* ⚠️ It only works when the two halves can be separated — but they usually can, and it is worth arranging that they are.
+- **⚠️ "IT IS THE RENDERING, NOT THE RESOLUTION" WAS HALF RIGHT AND I SAID IT AS IF IT WERE WHOLE (2026-09-09, D333 → D335).** The square being drawn as a circle was smoothing. The round brush not looking round at five tiles across is **genuinely resolution** — a 5×5 grid holds a diamond, a bitten square or a square, and none is a circle. ⭐ *When a complaint has two causes, answering the one you can fix reads as answering both.*
 
 - **⛔⛔⛔ A TOLERANCE CHOSEN BY EYE CAN BE EXACTLY THE SIZE OF THE BUG (2026-09-09, D334).** The
   guard on the smoothed square's area was set to 2%, and disabling the rule it guards costs the

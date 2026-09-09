@@ -90,9 +90,17 @@ public static class StateHash
         // Zones are a decision somebody made, so they are sim state (D42): two runs
         // given the same decisions must produce the same village. Left out, a village
         // painted differently would agree on the hash right up until it built a house.
-        for (int i = 0; i < world.Zones.Residential.Count; i++)
+        // ⛔⛔ THE SUB-TILES ARE THE STATE NOW, SO THE SUB-TILES ARE WHAT IS MIXED (D335).
+        // The tile-level arrays beside them are a SUMMARY — a count folded into a bool — and
+        // hashing a summary would leave the finer paint outside the fingerprint entirely: **two
+        // villages whose players drew different shapes would hash identically**, which is the same
+        // determinism hole D329 closed for building positions, arriving one commit later in a
+        // different layer. *If it is state the player chose, it is in the hash.*
+        // ⚠️ This is the golden move (D152), and it is stated rather than discovered: sixteen times
+        // as many indices, so the numbers change while the village does not.
+        for (int i = 0; i < world.Zones.ResidentialSub.Count; i++)
         {
-            if (world.Zones.Residential[i])
+            if (world.Zones.ResidentialSub[i])
             {
                 hash = MixUInt32(hash, (uint)i);
             }
@@ -108,9 +116,9 @@ public static class StateHash
         // The OWNER is mixed as well as the tile, because two huts given the same forty
         // tiles the other way round is a genuinely different village and must not read as
         // the same one (D51).
-        for (int i = 0; i < world.Zones.WorkGround.Count; i++)
+        for (int i = 0; i < world.Zones.WorkGroundSub.Count; i++)
         {
-            int owner = world.Zones.WorkGround[i];
+            int owner = world.Zones.WorkGroundSub[i];
             if (owner != 0)
             {
                 hash = MixUInt32(hash, (uint)i);
@@ -127,9 +135,9 @@ public static class StateHash
         // the hashes already; adding a second such line would mix a fresh zero into
         // every village that has never painted a tree. The indices determine the set
         // by themselves, so the count was only ever belt and braces.
-        for (int i = 0; i < world.Zones.Harvest.Count; i++)
+        for (int i = 0; i < world.Zones.HarvestSub.Count; i++)
         {
-            if (world.Zones.Harvest[i])
+            if (world.Zones.HarvestSub[i])
             {
                 hash = MixUInt32(hash, (uint)i);
             }

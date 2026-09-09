@@ -222,7 +222,7 @@ public sealed class FarmGoldenTests
     // free from here**, which matters because Joe has asked for several kinds of game meat.
     // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
     // Was 6423725063573751493.
-    private const ulong SeamGoldenHash = 9604165309769110768UL;
+    private const ulong SeamGoldenHash = 12897515085336644382UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -260,7 +260,7 @@ public sealed class FarmGoldenTests
     //   before job-holders rested in spells (2026-09-02): 12765428660570679341
     //   before fishing added a seventh good (2026-09-02): 3898924203131512042
     // Was 9165233745633703210; moved with the rest for the sparse-hash reason above.
-    private const ulong SeamBeforeAnybodyGotBetter = 10122412416455608781UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 13292034129766078431UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
