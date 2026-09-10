@@ -8344,6 +8344,83 @@ public sealed class SimWorld
         return false;
     }
 
+    /// <summary>
+    /// ⭐⭐ Which building is DRAWN under this exact point, if any — <b>answered as the
+    /// tile every other finder is keyed on</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, from play: *"i should be able to click anywhere on the building to select it, but
+    /// there are areas of a building in which clicking selects a non-building tile even though part
+    /// of the building looks like it is in that spot."*</b> The click was quantised to a tile before
+    /// anything was asked about buildings, so a rotated building's overhang — ground it is
+    /// drawn over but whose centre it does not stand on (D319) — was unclickable.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It returns the ANCHOR TILE, which is what makes this a two-line change at the call
+    /// site.</b> <see cref="Footprint.Covers(GridPos)"/> is guaranteed true of a building's own
+    /// anchor (D331), so every one of the dozen tile-keyed finders resolves the answer without
+    /// knowing this method exists. **<c>BuildingClicked</c> stays an <c>Action&lt;GridPos&gt;</c>
+    /// and the shell is untouched.**
+    /// </para>
+    /// <para>
+    /// ⛔ <b>THE VIEW FALLS BACK TO THE ROUNDED TILE WHEN THIS ANSWERS NOTHING, AND THAT IS THE
+    /// WHOLE SAFETY OF IT.</b> A true-rectangle test on its own would **lose D331's anchor
+    /// forgiveness** — a small building turned 45° between tile centres is drawn away from
+    /// the middle of its own anchor tile, and clicking that middle would stop selecting it. With the
+    /// fallback the change can only ever *add* a hit.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The same five collections <see cref="SomethingOverlaps"/> walks, in the same
+    /// order</b> — the third list of the five in this file, and the comment on
+    /// <see cref="SomethingStandsAt"/> is a warning about exactly that: *"a new kind of building is
+    /// a new line here or it can be built on top of."* **<c>EveryKindOfBuildingCanBeClickedOn</c>
+    /// poses one of each and is what stops the three lists drifting apart.**
+    /// </para>
+    /// </remarks>
+    public GridPos? WhatStandsUnder(Point at)
+    {
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (Households[i].HomePosition is Point home
+                && FootprintOf(BuildingKind.Home, home).Covers(at))
+            {
+                return home.ToTile();
+            }
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Footprint.Covers(at))
+            {
+                return Workplaces[i].Footprint.Origin.ToTile();
+            }
+        }
+
+        for (int i = 0; i < Libraries.Count; i++)
+        {
+            if (Libraries[i].Footprint.Covers(at))
+            {
+                return Libraries[i].Footprint.Origin.ToTile();
+            }
+        }
+
+        if (TownHall?.Footprint.Covers(at) == true)
+        {
+            return TownHall.Footprint.Origin.ToTile();
+        }
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Footprint.Covers(at))
+            {
+                return StoreBuildings[i].Footprint.Origin.ToTile();
+            }
+        }
+
+        return null;
+    }
+
     internal bool SomethingStandsAt(GridPos position)
     {
         // HOMES COUNT, and leaving them out was a real bug rather than an omission:

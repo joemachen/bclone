@@ -131,8 +131,8 @@ public readonly record struct Footprint
     /// </para>
     /// <para>
     /// ⛔ <b>What an empty footprint cost:</b> the building could not be selected, named or
-    /// demolished (all twelve finders go through <see cref="Covers"/>), <b>and no builder could ever
-    /// raise it</b> — <c>SiteAt</c> uses this too, and D108 means the builder reads the site from
+    /// demolished (all twelve finders go through <see cref="Covers(GridPos)"/>), <b>and no builder
+    /// could ever raise it</b> — <c>SiteAt</c> uses this too, and D108 means the builder reads the site from
     /// the tile they are standing on, so they arrived and there was nothing there. <c>CanBuildAt</c>
     /// raised no objection because its refusal loop iterates the covered tiles: *a check that
     /// iterates a set says nothing about the empty set.*
@@ -167,20 +167,48 @@ public readonly record struct Footprint
     /// </remarks>
     public bool Covers(GridPos tile) => tile == Origin.ToTile() || StandsOn(tile);
 
-    /// <summary>The centre test on its own — <b>the arithmetic both callers share</b>.</summary>
+    /// <summary>
+    /// ⭐⭐ Is this exact point inside the building's rectangle? — <b>what the player
+    /// means when they click on it</b> (D338).
+    /// </summary>
     /// <remarks>
-    /// ⛔ <b>ONE COPY, BECAUSE THERE USED TO BE TWO.</b> <see cref="Covers"/> is a fast path for the
-    /// question <see cref="CoveredTiles"/> answers in bulk, and D329 wrote the rotation out twice.
-    /// <see cref="Fixed"/> multiplication is not associative, so two copies is two chances to
-    /// reassociate one of them into a different answer that no determinism guard would object to.
+    /// <para>
+    /// <b>Joe, from play: *"there are areas of a building in which clicking selects a non-building
+    /// tile even though part of the building looks like it is in that spot."*</b> He is describing
+    /// exactly what the centre rule does at the edges: a rotated building **draws** over ground
+    /// whose tile centres it does not stand on, and the click was being rounded to a tile before
+    /// anything was asked about buildings.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>THIS IS NOT A SECOND COVERAGE RULE AND MUST NOT BECOME ONE.</b> D319's centre
+    /// rule is what the sim believes about ground — *which tiles does this building claim* —
+    /// and it stays exactly as it was. **This answers a different question: where is the building
+    /// drawn.** Ownership is still legible by the centre rule; only the mouse reads the rectangle.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It is <see cref="StandsOn"/>'s body, factored, not rewritten.</b>
+    /// <see cref="Fixed"/> multiplication is not associative, so retyping
+    /// <see cref="Point.RotatedBy"/>'s four products in a different order is a behaviour change no
+    /// determinism guard would object to. There is one copy of the arithmetic and there always
+    /// has to be.
+    /// </para>
     /// </remarks>
-    private bool StandsOn(GridPos tile)
+    public bool Covers(Point at)
     {
-        Point local = (Point.CentreOf(tile) - Origin).RotatedBy(-Facing);
+        Point local = (at - Origin).RotatedBy(-Facing);
 
         return Abs(local.X) <= Fixed.FromRatio(Width, 2)
             && Abs(local.Y) <= Fixed.FromRatio(Height, 2);
     }
+
+    /// <summary>The centre test on its own — <b>the arithmetic both callers share</b>.</summary>
+    /// <remarks>
+    /// ⛔ <b>ONE COPY, BECAUSE THERE USED TO BE TWO.</b> <see cref="Covers(GridPos)"/> is a fast
+    /// path for the question <see cref="CoveredTiles"/> answers in bulk, and D329 wrote the rotation
+    /// out twice. <see cref="Fixed"/> multiplication is not associative, so two copies is two chances
+    /// to reassociate one of them into a different answer that no determinism guard would object to.
+    /// </remarks>
+    private bool StandsOn(GridPos tile) => Covers(Point.CentreOf(tile));
 
     /// <summary>
     /// ⭐⭐ Do these two buildings occupy the same ground? — <b>the real geometry</b> (D331).

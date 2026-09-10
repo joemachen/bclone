@@ -1053,8 +1053,26 @@ public partial class VillageMap : Control
                 return;
             }
 
+            // ⭐⭐ THE BUILDING UNDER THE POINT FIRST, THE TILE UNDER THE POINT SECOND
+            // (D338, Joe: *"i should be able to click anywhere on the building to select it, but
+            // there are areas of a building in which clicking selects a non-building tile even
+            // though part of the building looks like it is in that spot."*).
+            //
+            // **He was describing the centre rule seen from the mouse.** D319 says a building
+            // covers the tiles whose CENTRES it stands on — which is the right thing for
+            // ownership and legibility — but a turned building is DRAWN over ground it does
+            // not claim, and this line rounded the click to a tile before anything was asked
+            // about buildings. *You could see the wall and click straight through it.*
+            //
+            // ⛔ **The fallback is load-bearing and this must not become an if/else on the
+            // rectangle alone.** A 1×1 turned 45° between tile centres is drawn away from
+            // the middle of its own anchor tile, and D331 deliberately lets that anchor be clicked
+            // anyway. Asking the rectangle first and the tile second can only ADD a hit.
             Vector2 hit = ToTile(click.Position);
-            BuildingClicked?.Invoke(new GridPos(Mathf.RoundToInt(hit.X), Mathf.RoundToInt(hit.Y)));
+            GridPos tile = _world!.WhatStandsUnder(PointUnderTheCursor(click.Position))
+                ?? new GridPos(Mathf.RoundToInt(hit.X), Mathf.RoundToInt(hit.Y));
+
+            BuildingClicked?.Invoke(tile);
             AcceptEvent();
             return;
         }

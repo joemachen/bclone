@@ -560,6 +560,171 @@ public sealed class FootprintTests
         }
     }
 
+    /// <summary>
+    /// ⭐⭐ The point test and the tile test agree wherever they are asked the same
+    /// question — <b>and they are the same arithmetic, so this is a guard on the factoring</b>
+    /// (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>Covers(Point)</c> was factored out of <c>StandsOn</c> so the mouse can ask where a
+    /// building is DRAWN while the sim keeps asking which tiles it CLAIMS. <see cref="Fixed"/>
+    /// multiplication is not associative, so *"it is the same expression"* is a claim worth
+    /// checking rather than an argument.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Asked at tile CENTRES, where the two are defined to agree</b> — and
+    /// away from centres they are supposed to differ, which is the whole reason the point test
+    /// exists. The one exception is the anchor tile, which
+    /// <see cref="Footprint.Covers(GridPos)"/> forgives unconditionally (D331) and the rectangle
+    /// does not.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(1, 1, 0)]
+    [InlineData(3, 1, 0)]
+    [InlineData(3, 1, 16384)]
+    [InlineData(3, 1, 8192)]
+    [InlineData(2, 5, 21845)]
+    [InlineData(4, 3, 40000)]
+    public void ThePointTestAgreesWithTheTileTestAtEveryTileCentre(
+        int width, int height, int rawFacing)
+    {
+        var anchor = new GridPos(12, 9);
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(anchor),
+            Width = width,
+            Height = height,
+            Facing = Angle.FromRaw((ushort)rawFacing),
+        };
+
+        int reach = width + height + 2;
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
+                if (tile == anchor)
+                {
+                    continue;
+                }
+
+                Assert.Equal(shape.Covers(tile), shape.Covers(Point.CentreOf(tile)));
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⛔⛔ A building turned between tile centres is clickable across its whole
+    /// rectangle — <b>Joe's complaint, pinned</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe: *"there are areas of a building in which clicking selects a non-building tile even
+    /// though part of the building looks like it is in that spot."*</b> The rectangle reaches into
+    /// tiles whose centres it does not stand on — that is D319 working correctly — so
+    /// the point test must find the building somewhere the tile test does not. **If this ever
+    /// stops being true the fix has quietly become a no-op.**
+    /// </remarks>
+    [Fact]
+    public void ATurnedBuildingIsFoundWhereItIsDrawnAndNotOnlyWhereItStands()
+    {
+        // Half a tile north-east of a centre, turned 45°: the case D331 was found on.
+        Point origin = Point.CentreOf(new GridPos(4, 4))
+            + new Point(Fixed.FromRatio(1, 2), Fixed.FromRatio(1, 2));
+
+        var shape = new Footprint
+        {
+            Origin = origin,
+            Width = 3,
+            Height = 1,
+            Facing = Angle.FromTurnFraction(1, 8),
+        };
+
+        int drawnOver = 0;
+        int claimed = 0;
+
+        for (int dy = -3; dy <= 3; dy++)
+        {
+            for (int dx = -3; dx <= 3; dx++)
+            {
+                var tile = new GridPos(4 + dx, 4 + dy);
+
+                // A grid of sample points across the tile, because "is the building drawn here?"
+                // is a question about the tile's AREA and its centre is one point of it.
+                bool anywhereInside = false;
+                for (int sy = 0; sy < 4 && !anywhereInside; sy++)
+                {
+                    for (int sx = 0; sx < 4 && !anywhereInside; sx++)
+                    {
+                        var at = new Point(
+                            Fixed.FromRatio((tile.X * 8) + 1 + (sx * 2), 8),
+                            Fixed.FromRatio((tile.Y * 8) + 1 + (sy * 2), 8));
+
+                        anywhereInside = shape.Covers(at);
+                    }
+                }
+
+                if (anywhereInside)
+                {
+                    drawnOver++;
+                }
+
+                if (shape.Covers(tile))
+                {
+                    claimed++;
+                }
+            }
+        }
+
+        _output.WriteLine($"drawn over {drawnOver} tiles, claims {claimed}");
+        Assert.True(claimed > 0, "D331: a building always stands on at least its own tile.");
+        Assert.True(
+            drawnOver > claimed,
+            $"The rectangle should reach into tiles it does not claim, but it is drawn over "
+            + $"{drawnOver} and claims {claimed} — so clicking the overhang cannot be the "
+            + "thing that was fixed.");
+    }
+
+    /// <summary>
+    /// ⛔ What an EVEN-width building covers when its edge lands exactly on a tile centre
+    /// — <b>pinned, because nothing in the suite posed it</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠️ <b>Found by a red check that scored zero.</b> Flipping <c>&lt;=</c> to
+    /// <c>&lt;</c> in the coverage test left **the entire footprint suite green** — because
+    /// every posed case is odd-width or turned off-axis, and the boundary is only reachable when
+    /// a building has an even extent and is square to the grid. *The only multi-tile building in
+    /// the game is the 3×1 longhouse, so no content can reach it either.*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>This pins the behaviour rather than arguing with it.</b> Touching counts as
+    /// covered, so a 2-wide building claims THREE tiles — the half-tile at each end lands on
+    /// a neighbour centre and takes it. *That is a real design question about even extents and it
+    /// is nobody urgent's, because nothing even-sided exists.* **What matters is that a future
+    /// tidy-up cannot change it in silence.**
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AnEvenWidthBuildingsEdgeLandsOnATileCentreAndTouchingCounts()
+    {
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(new GridPos(10, 10)),
+            Width = 2,
+            Height = 1,
+            Facing = default,
+        };
+
+        System.Collections.Generic.List<GridPos> covered = shape.CoveredTiles();
+        _output.WriteLine("a 2x1 square to the grid covers " + string.Join(" ", covered));
+
+        Assert.Equal(3, covered.Count);
+        Assert.Contains(new GridPos(9, 10), covered);
+        Assert.Contains(new GridPos(11, 10), covered);
+    }
+
     /// <summary>Somewhere a three-tile building genuinely fits, found rather than assumed.</summary>
     private static GridPos SomewhereBuildable(SimWorld world)
     {

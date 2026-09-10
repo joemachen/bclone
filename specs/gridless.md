@@ -356,16 +356,31 @@ buildings gaining an extent and a facing is the change that moves them, with one
    with radii summing to exactly one, so a strict test would refuse every neighbouring pair in every
    village.
 
-4. ⛔ **The locale guard scored ZERO on its red check and is kept anyway — knowingly.**
+4. ⭐⭐ **THE CENTRE RULE ANSWERS "WHOSE GROUND?" AND THE RECTANGLE ANSWERS "WHAT DID I
+   CLICK?" — TWO QUESTIONS, AND THEY NEEDED TWO ANSWERS** (D339, found by Joe playing):
+   *"there are areas of a building in which clicking selects a non-building tile even though part
+   of the building looks like it is in that spot."* ⛔ **This does NOT reopen §7.3.** The
+   centre rule is untouched and is still what the sim believes about ground; it is what makes
+   ownership predictable by eye. **A turned building is simply DRAWN over tiles it does not claim**,
+   and the click was rounded to a tile before anything was asked about buildings. ⭐
+   `Footprint.Covers(Point)` is `StandsOn`'s body factored out — one copy of the
+   arithmetic, because `Fixed` multiplication is not associative — and
+   `SimWorld.WhatStandsUnder(Point)` answers with an **anchor tile**, so every tile-keyed
+   finder resolves it unchanged. ⚠️
+   **The view falls back to the rounded tile when nothing is under the point, and that is
+   load-bearing:** a true-rect test alone would lose D331's anchor forgiveness for a small turned
+   building. *Asking the rectangle first and the tile second can only add a hit.*
+
+5. ⛔ **The locale guard scored ZERO on its red check and is kept anyway — knowingly.**
    `FixedTests.TheLocaleCannotChangeWhatAFixedLooksLike` stays green when every
    `InvariantCulture` in `Fixed.ToString` is swapped for `CurrentCulture`, because the
    implementation is culture-proof *by construction*: it formats two integers with no specifier and
    joins them with a literal `'.'`. **It guards nothing today.** It is kept as a ratchet — it fires
    the day somebody reformats the fraction through a `decimal` or an `"F6"` — and the zero is
    written down so nobody reads it as evidence the risk was faced.
-5. **`Fixed` has no `Sqrt`, deliberately.** Nothing calls it until real distances arrive; it lands
+6. **`Fixed` has no `Sqrt`, deliberately.** Nothing calls it until real distances arrive; it lands
    in the slice that needs it, with the guard that needs it.
-6. **What the game should DO when a tick throws** — `Fixed` overflow joins
+7. **What the game should DO when a tick throws** — `Fixed` overflow joins
    `TravelCostField.TicksForCost`, `DeterministicRandom.NextUInt(0)` and `SimConfig` validation as
    an in-tick throw. **There is no error boundary in `SimLoop`.** Not slice 1's question, and it
    applies to all four.

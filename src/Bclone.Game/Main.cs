@@ -1405,6 +1405,8 @@ public partial class Main : Control
 
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
 
+        ShowTheFrameCost();
+
         // WHO IS HERE, BROKEN DOWN BY LIFE STAGE (Joe's area 1). "17 villagers" is the
         // number; "11 adults and 4 children" is the one that tells you whether the village
         // is growing or ageing out, which is the question a generational game is about.
@@ -3096,6 +3098,8 @@ public partial class Main : Control
         _map.BuildingClicked += OnBuildingClicked;
         _map.VillagerClicked += OnVillagerClicked;
         AddChild(_map);
+
+        AddTheFrameCounter();
 
         // ⭐ TWO COLUMNS, AND PANELS LIVE IN THEM RATHER THAN BESIDE THEM. Joe: *"when the
         // 'what the village is told' window is open, you can see 'the village' window
@@ -6342,6 +6346,61 @@ public partial class Main : Control
     /// immediately watching it scroll past is the same complaint one level down.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// ⭐ The frame rate, and the one number that explains it — <b>debug builds only</b>
+    /// (D338, Joe: *"can we put an FPS counter in the UI for development purposes?"*).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Gated on <see cref="OS.IsDebugBuild"/>, the same way <see cref="AddTheSkipControls"/>
+    /// is</b> — <c>run.bat</c> builds debug, so Joe has it and an export never will.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>NOT IN THE CONTROL BAR AND NOT A PANEL.</b> The bar's height is a probe invariant
+    /// (161 everywhere) and every panel in <c>_docked</c> joins the stacking order — *a
+    /// development readout must not be able to move furniture the player uses.* It is a bare label
+    /// pinned over the top-left of the valley.
+    /// </para>
+    /// <para>
+    /// ⭐⭐ <b>It reports the zone pass's rectangle count beside the frame rate, and that
+    /// is the point of it.</b> *"The framerate feels A LOT more sluggish"* is a feeling; the thing
+    /// that made it true was the painted-ground pass drawing sixteen rectangles per tile over
+    /// ground with nothing on it (D338). **A frame rate says something is wrong; the rect count
+    /// says what.**
+    /// </para>
+    /// </remarks>
+    private void AddTheFrameCounter()
+    {
+        if (!OS.IsDebugBuild())
+        {
+            return;
+        }
+
+        _frameCounter = new Label
+        {
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Position = new Vector2(Edge, Edge),
+        };
+
+        _frameCounter.AddThemeFontSizeOverride("font_size", 11);
+        _frameCounter.AddThemeColorOverride("font_color", new Color(1f, 1f, 1f, 0.45f));
+        AddChild(_frameCounter);
+    }
+
+    private Label? _frameCounter;
+
+    /// <summary>Refresh the debug readout. Costs nothing in an export, where it does not exist.</summary>
+    private void ShowTheFrameCost()
+    {
+        if (_frameCounter is null)
+        {
+            return;
+        }
+
+        _frameCounter.Text =
+            $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneRectsLastFrame} zone rects";
+    }
+
     private void AddTheSkipControls(Container controls)
     {
         if (!OS.IsDebugBuild())

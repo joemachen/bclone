@@ -256,6 +256,137 @@ public sealed class TileFindersAgreeTests
     }
 
     /// <summary>The longhouse that now stands — found by its extent, which is what makes it one.</summary>
+    /// <summary>
+    /// ⛔⛔ Every kind of building can be clicked on — <b>the guard on the THIRD list
+    /// of the same five collections</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>SomethingStandsAt</c>, <c>SomethingOverlaps</c> and now <c>WhatStandsUnder</c> each walk
+    /// the five kinds of thing that can stand on ground, and <c>SomethingStandsAt</c>'s own comment
+    /// is a warning about exactly this: *"a new kind of building is a new line here or it can be
+    /// built on top of."* **This class exists because that went wrong three times already.**
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It asks each building about its OWN origin</b>, which is the one point every
+    /// rectangle contains at every facing — so a kind that is missing from
+    /// <c>WhatStandsUnder</c> cannot hide behind geometry.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>AND IT REPORTS WHICH KINDS IT COULD ACTUALLY POSE, BECAUSE ONE OF THE FIVE
+    /// CANNOT BE FIXTURED CHEAPLY.</b> A library needs literacy, which needs a granary keeping
+    /// counts for years (D32) — so it is **not covered here**, and saying so beats a green
+    /// that quietly means four. *D326's rule: a guard that scores zero is kept and the zero is
+    /// written down.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryKindOfBuildingCanBeClickedOn()
+    {
+        SimWorld world = World();
+
+        // A store that is genuinely more than one tile, so the arm cannot pass by accident.
+        GridPos anchor = SomewhereALonghouseFits(world);
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor).Allowed);
+        world.Complete(world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Longhouse));
+
+        // The hall is the singleton, and it is the cheapest of the five to raise: no materials.
+        GridPos hall = SomewhereAHallFits(world);
+        Assert.True(world.Mark(BuildingKind.TownHall, hall).Allowed);
+        FinishTheSiteAt(world, hall);
+        Assert.NotNull(world.TownHall);
+
+        var posed = new System.Collections.Generic.List<string>();
+
+        Found("a home", world.Households.Count(h => h.HomePosition is not null));
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            if (world.Households[i].HomePosition is Point home)
+            {
+                Assert.Equal(home.ToTile(), world.WhatStandsUnder(home));
+            }
+        }
+
+        Found("a workplace", world.Workplaces.Count);
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Footprint shape = world.Workplaces[i].Footprint;
+            Assert.Equal(shape.Origin.ToTile(), world.WhatStandsUnder(shape.Origin));
+        }
+
+        Found("a library", world.Libraries.Count);
+        for (int i = 0; i < world.Libraries.Count; i++)
+        {
+            Footprint shape = world.Libraries[i].Footprint;
+            Assert.Equal(shape.Origin.ToTile(), world.WhatStandsUnder(shape.Origin));
+        }
+
+        Found("the town hall", world.TownHall is null ? 0 : 1);
+        Assert.Equal(
+            world.TownHall!.Footprint.Origin.ToTile(),
+            world.WhatStandsUnder(world.TownHall.Footprint.Origin));
+
+        Found("a store", world.StoreBuildings.Count);
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            Footprint shape = world.StoreBuildings[i].Footprint;
+            Assert.Equal(shape.Origin.ToTile(), world.WhatStandsUnder(shape.Origin));
+        }
+
+        _output.WriteLine("posed: " + string.Join(", ", posed));
+
+        // ⛔ Four of five. The library is the one the fixture cannot reach, and it is named
+        // rather than counted — if a later session makes literacy cheap to fixture, raise
+        // this to five and delete the sentence in the remarks.
+        Assert.Equal(4, posed.Count);
+        Assert.DoesNotContain("a library", posed);
+
+        void Found(string kind, int how_many)
+        {
+            if (how_many > 0)
+            {
+                posed.Add(kind);
+            }
+        }
+    }
+
+    /// <summary>Somewhere the hall fits that the longhouse has not already taken.</summary>
+    private static GridPos SomewhereAHallFits(SimWorld world)
+    {
+        for (int y = 0; y < world.Map.Height; y++)
+        {
+            for (int x = 0; x < world.Map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                if (world.CanBuildAt(BuildingKind.TownHall, at).Allowed)
+                {
+                    return at;
+                }
+            }
+        }
+
+        throw new System.InvalidOperationException("Nowhere in the valley will take a town hall.");
+    }
+
+    /// <summary>Deliver a site's materials and work it out, as a builder's crew would.</summary>
+    private static void FinishTheSiteAt(SimWorld world, GridPos site)
+    {
+        Workplace found = world.Workplaces.Last(w => w.Tile == site && w.IsSite);
+        ConstructionSite plan = found.Construction!;
+
+        foreach (MaterialCost owed in plan.Recipe.Materials)
+        {
+            plan.Deliver(owed.Goods, owed.Amount);
+        }
+
+        while (!plan.IsFinished)
+        {
+            plan.Work();
+        }
+
+        world.Complete(found);
+    }
+
     private static StoreBuilding TheLonghouse(SimWorld world)
     {
         foreach (StoreBuilding store in world.StoreBuildings)
