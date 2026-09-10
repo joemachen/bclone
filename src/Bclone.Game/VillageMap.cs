@@ -2757,8 +2757,11 @@ public partial class VillageMap : Control
         // in a grid?"* **Two of the three things he was looking at are drawing, not simulation** —
         // the sim being tile-indexed is his own settled call (`gridless.md §10.2`), and nothing had
         // ever revisited whether the tiles should be *visible*.
-        // ⚠️ ON BY DEFAULT, because they are genuinely useful while you are aiming at ground — and
-        // placement is no longer bound to them, so this is now a preference rather than a readout.
+        // ⛔ OFF BY DEFAULT NOW (D340, Joe: *"the default setting for showing the grid should
+        // be off. it is presently on."*). D332 shipped them on, arguing they are useful while
+        // aiming — **and that argument was already stale when it was written**, because D330
+        // had made placement continuous a commit earlier. *A grid is a readout of a constraint
+        // that no longer exists; it is a ruler you can pick up, not the shape of the world.*
         // Only worth drawing at all while tiles are big enough to read.
         if (!_showGrid || _pixelsPerTile < 6f)
         {
@@ -2946,19 +2949,22 @@ public partial class VillageMap : Control
             }
         }
 
-        Keep(residential, ResidentialEdge);
-        Keep(harvest, HarvestEdge);
+        Keep(residential, Layer.Residential, ResidentialEdge);
+        Keep(harvest, Layer.Harvest, HarvestEdge);
 
         for (int i = 0; i < owners.Count; i++)
         {
-            Keep(byOwner[owners[i]], WorkGroundEdge);
+            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge);
         }
 
-        void Keep(HashSet<Vector2I> tiles, Color edge)
+        // ⚠️ The LAYER is stored, not inferred from the colour (D340). The three
+        // toggles have to hide a border and its wash together, and *"whichever loops came out
+        // `HarvestEdge`"* is a coincidence of palette rather than a fact about the layer.
+        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge)
         {
             foreach (Vector2[] loop in ZoneOutline.Trace(tiles))
             {
-                _zoneOutlines.Add((edge, loop));
+                _zoneOutlines.Add((layer, edge, loop));
             }
         }
     }
@@ -2970,7 +2976,11 @@ public partial class VillageMap : Control
     {
         for (int i = 0; i < _zoneOutlines.Count; i++)
         {
-            (Color edge, Vector2[] loop) = _zoneOutlines[i];
+            (Layer layer, Color edge, Vector2[] loop) = _zoneOutlines[i];
+            if (!Showing(layer))
+            {
+                continue;
+            }
 
             var onScreen = new Vector2[loop.Length];
             for (int p = 0; p < loop.Length; p++)
@@ -3037,9 +3047,9 @@ public partial class VillageMap : Control
             {
                 var tile = new GridPos(x, y);
 
-                int homes = zones.ResidentialSubTilesOn(tile);
-                int work = zones.WorkGroundSubTilesOn(tile);
-                int harvest = zones.HarvestSubTilesOn(tile);
+                int homes = Showing(Layer.Residential) ? zones.ResidentialSubTilesOn(tile) : 0;
+                int work = Showing(Layer.WorkGround) ? zones.WorkGroundSubTilesOn(tile) : 0;
+                int harvest = Showing(Layer.Harvest) ? zones.HarvestSubTilesOn(tile) : 0;
 
                 // The whole point: an unpainted tile is three byte reads and nothing else.
                 if ((homes | work | harvest) == 0)
@@ -3745,22 +3755,89 @@ public partial class VillageMap : Control
     /// D86's brighter wash exists for.
     /// </para>
     /// </remarks>
-    private readonly List<(Color Edge, Vector2[] Loop)> _zoneOutlines = new();
+    private readonly List<(Layer Layer, Color Edge, Vector2[] Loop)> _zoneOutlines = new();
 
     private int _outlinesTracedAt = -1;
 
-    /// <summary>Whether the tile grid is drawn (D332). On by default.</summary>
+    /// <summary>Whether the tile grid is drawn (D332). ⛔ <b>OFF by default (D340).</b></summary>
     /// <remarks>
     /// ⚠️ <b>View-only, like the other map toggles</b> — nothing about the village changes, so the
     /// hash cannot diverge on it. It is here rather than in the sim for the same reason the marker
     /// toggles are.
     /// </remarks>
-    private bool _showGrid = true;
+    private bool _showGrid;
 
     /// <summary>Draw the tile grid, or stop.</summary>
     public void ShowGrid(bool on)
     {
         _showGrid = on;
+        QueueRedraw();
+    }
+
+    /// <summary>
+    /// ⭐ Whether each painted layer is drawn at all — <b>one switch each, and each hides
+    /// the wash AND the border</b> (D340, Joe's call).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"i would like to be able to toggle these overlays of the painted areas for trees,
+    /// houses, and farms off in the settings."*</b> He chose one toggle per layer over a single
+    /// *"painted ground"* switch, and it is the right call: the three answer different questions
+    /// and a player tidying the map may well want to keep one.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The wash and the border go together.</b> Half a layer showing would read as a
+    /// bug rather than as a setting — and the border is the louder half, so hiding only the
+    /// fill would barely quieten the map at all.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>View-only, like every other map toggle</b>, so nothing about the village
+    /// changes and the hash cannot diverge on it.
+    /// </para>
+    /// </remarks>
+    private bool Showing(Layer layer) => layer switch
+    {
+        Layer.Residential => _showResidential,
+        Layer.WorkGround => _showWorkGround,
+        _ => _showHarvest,
+    };
+
+    /// <summary>What the map believes, so the probe can check the ticks against it (D340).</summary>
+    public bool GridShown => _showGrid;
+
+    /// <inheritdoc cref="GridShown"/>
+    public bool ResidentialLandShown => _showResidential;
+
+    /// <inheritdoc cref="GridShown"/>
+    public bool WorkGroundShown => _showWorkGround;
+
+    /// <inheritdoc cref="GridShown"/>
+    public bool HarvestLandShown => _showHarvest;
+
+    private bool _showResidential = true;
+
+    private bool _showWorkGround = true;
+
+    private bool _showHarvest = true;
+
+    /// <summary>Show or hide the ground painted for housing.</summary>
+    public void ShowResidentialLand(bool on)
+    {
+        _showResidential = on;
+        QueueRedraw();
+    }
+
+    /// <summary>Show or hide the ground a workplace has claimed.</summary>
+    public void ShowWorkGround(bool on)
+    {
+        _showWorkGround = on;
+        QueueRedraw();
+    }
+
+    /// <summary>Show or hide the ground marked for harvest.</summary>
+    public void ShowHarvestLand(bool on)
+    {
+        _showHarvest = on;
         QueueRedraw();
     }
 

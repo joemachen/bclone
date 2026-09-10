@@ -259,6 +259,9 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⭐⭐ **NEXT SLICE, ALREADY CHOSEN BY HIM (2026-09-10):** *"we should give the stone and iron deposits the same treatment we just gave forests and trees. including showing depletion over time. same with farming (and this default crop we're using now 'produce' — which we should change to wheat when we work on this)."* He deferred it explicitly in favour of the fixes and UI that became D338–D340. **Three parts: deposits get marks and visible depletion, farming gets the same, and `produce` → `wheat`.** ⚠️ *The rename touches `data/`, the specs and every sentence the village says — it is not a string swap.*
+- ⏸ **`gridless.md §8` slice 3 — villagers hold a `Point`** — is still unscheduled. Buildings are continuous; people still step tile to tile.
+- ⚠️ **`PaintForest` drops Manhattan DIAMONDS of tiles**, so a wood's outline is chunky *and* faintly diagonal, and **no amount of smoothing the render hides it** (D337). That is a generator question and it is his.
 - **The food limit gates the HARVEST, not the sowing** (D300, his call). ⚠️ It reverses a recorded
   decision: `crops-and-orchards.md §5.1` wanted use-it-or-lose-it to *"punish inattention rather
   than obedience"*, and unreaped crop now rots at winter. **He accepted the rot** and floated a
@@ -793,6 +796,10 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ `VillageMap._Draw` NEVER RUNS UNDER `--headless`, SO THE PROBE CANNOT CHECK ANYTHING THAT IS DRAWN (2026-09-10, D340, measured).** The zone pass reports **zero rectangles** in a probe run. **Every view guard this project has is about layout, geometry or state** — widths, fold heights, tile centres, the outline seam, whether two defaults agree. *Whether a colour appears on screen is Joe's eyes and nothing else.* ⚠️ **Do not propose a rendering assertion without checking this first**; a red check that scores zero for this reason is not a weak guard, it is an impossible one.
+- **⚠️ A VIEW TOGGLE IS WRITTEN DOWN TWICE AND NOTHING CONNECTED THE HALVES (2026-09-10, D340).** A field on `VillageMap` and a `ButtonPressed` on a `CheckBox`, wired one way only — so changing one default leaves the other **lying**, and the player has to click the box twice before it means anything. ⭐ `[widths] map toggles` compares all four now. *Whenever a fact has to be stated in two places, the cheapest guard in the world is the one that reads both and asks whether they match.*
+- **⚠️ A FLAG THAT MEANS "THE PLAYER MOVED IT" MUST NOT BE SET BY THE CODE THAT MOVES IT (2026-09-10, D340).** Settings centres itself on open *unless dragged*, and both go through `MovePanel` — so setting the flag there would have marked the panel dragged the first time it opened and **the feature would have worked exactly once.** *Set intent at the gesture, not at the mechanism.*
 
 - **⛔⛔ THE VIEW'S WIRING IS UNGUARDED AND A RED CHECK PROVED IT (2026-09-10, D339).** Deleting the building-under-the-point lookup from the click handler outright leaves **the suite green, the game building and the probe green.** The sim half has a real test; *the line that calls it has nothing.* ⭐ **This is D11/D160 with a number on it** — when a fix lives in `VillageMap._GuiInput`, the honest statement is "Joe playing it is the verification", not "tests pass".
 - **⚠️ A RED CHECK THAT SCORES ZERO IS SOMETIMES TELLING YOU THE PROPERTY IS STRUCTURAL — AND SOMETIMES THAT NOBODY EVER POSED THE CASE (2026-09-10, D339).** Flipping `<=` to `<` in `Footprint` reddened **nothing**, for two reasons at once: `Covers(Point)` and `StandsOn` are one function so they cannot disagree (good), **and no test or building in the game is even-width and square to the grid**, which is the only shape that reaches the boundary (a hole). ⭐ *Ask which of the two it is before congratulating yourself.* A 2-wide building claims **three** tiles — pinned now.

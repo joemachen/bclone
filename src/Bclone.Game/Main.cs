@@ -255,6 +255,7 @@ public partial class Main : Control
         GD.Print(_map.TheCentreOfATileDrawsWhereTheTileDoes());
         GD.Print(ZoneOutline.SelfCheck());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
+        GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
         ProbeThePlacementSentences();
 
@@ -1406,6 +1407,7 @@ public partial class Main : Control
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
 
         ShowTheFrameCost();
+        CentreSettingsIfItJustOpened();
 
         // WHO IS HERE, BROKEN DOWN BY LIFE STAGE (Joe's area 1). "17 villagers" is the
         // number; "11 adults and 4 children" is the one that tells you whether the village
@@ -4277,7 +4279,7 @@ public partial class Main : Control
         // Professions and Limits alike, so a Settings button hidden inside Settings would lock
         // every one of them away at once.
         var settings = new Button { Text = "Settings" };
-        settings.Pressed += () => _settingsPanel.Visible = !_settingsPanel.Visible;
+        settings.Pressed += ToggleSettings;
         controls.AddChild(settings);
 
         // ⭐ THE TABS SIT WITH THE SPEED CONTROLS, NOT ABOVE THEM (Joe's mockup). One strip is
@@ -4805,6 +4807,11 @@ public partial class Main : Control
             Vector2 by = now - last;
             last = now;
 
+            // ⚠️ Set HERE rather than in `MovePanel`, because the centring goes through
+            // `MovePanel` too and would otherwise mark the panel as dragged the first time it
+            // opened — which would make the setting work exactly once.
+            _settingsWasDragged |= panel == _settingsPanel;
+
             MovePanel(panel, by);
             grip.AcceptEvent();
         };
@@ -5074,6 +5081,76 @@ public partial class Main : Control
     private PanelContainer _settingsPanel = null!;
 
     /// <summary>
+    /// ⭐ Open Settings in the middle of the screen — <b>where the player is looking</b>
+    /// (D340).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"when the settings button is clicked in the control menu (bottom) — it should
+    /// spawn the settings menu in the middle of the screen. presently it spawns on the right-side
+    /// behind the other panels there and is annoying to get to."*</b> It is built through
+    /// <see cref="InColumn"/> with <c>right: true</c>, so its starting position is the bottom of
+    /// the right-hand stack — *underneath every panel already open there.*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It stays in <c>_docked</c></b>, so *"Reset window positions"* still reaches it,
+    /// which is what Joe asked for when that button was built (*"all panels"*).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>And it is centred only until he moves it.</b> Re-centring a window the
+    /// player has parked somewhere is the complaint <see cref="ArrangeDefaults"/> exists to
+    /// prevent — *"the panels do that thing where they move when I haven't asked them to"* —
+    /// so one flag remembers that it was dragged and this stops touching it.
+    /// </para>
+    /// <para>
+    /// ⛔ <b><c>LayoutPreset.Center</c> is NOT available here</b>, though
+    /// <c>BuildTheMomentPanel</c> uses it: an anchored panel cannot then be dragged by offsets.
+    /// The size comes from <c>GetCombinedMinimumSize</c> the way <see cref="ArrangeDefaults"/>
+    /// takes it.
+    /// </para>
+    /// </remarks>
+    private void ToggleSettings()
+    {
+        bool opening = !_settingsPanel.Visible;
+
+        _settingsPanel.Visible = opening;
+        _centreSettingsWhenItHasASize = opening && !_settingsWasDragged;
+    }
+
+    /// <summary>
+    /// ⚠️ Centre it on the frame after it opens, <b>because a hidden panel has no
+    /// settled size</b>.
+    /// </summary>
+    /// <remarks>
+    /// <c>KeepWindowsOnScreen</c> carries the same warning ten lines down and measured **1,676px
+    /// for a professions window that lays out at a fraction of that**. Centring on the click would
+    /// use that number and put the panel somewhere arbitrary, so this waits for a real one —
+    /// which costs one comparison a frame and never has to guess.
+    /// </remarks>
+    private void CentreSettingsIfItJustOpened()
+    {
+        if (!_centreSettingsWhenItHasASize || !_settingsPanel.Visible || _settingsPanel.Size.Y <= 0f)
+        {
+            return;
+        }
+
+        _centreSettingsWhenItHasASize = false;
+
+        // ⭐ Through `MovePanel`, not by writing offsets: a right-anchored panel's OffsetLeft
+        // is a negative distance back from the right edge rather than a position on screen, and
+        // treating it as one is the exact bug D242's drag clamp was written to fix.
+        Vector2 drawn = _settingsPanel.Size * _uiScale;
+        var wanted = new Vector2((Size.X - drawn.X) / 2f, (Size.Y - drawn.Y) / 2f);
+
+        MovePanel(_settingsPanel, wanted - DrawnTopLeft(_settingsPanel));
+    }
+
+    private bool _centreSettingsWhenItHasASize;
+
+    /// <summary>Whether the player has moved Settings themselves, in which case leave it alone.</summary>
+    private bool _settingsWasDragged;
+
+    /// <summary>
     /// Which information windows are on screen — Joe's answer to *"they are HUGE"*.
     /// </summary>
     /// <remarks>
@@ -5218,16 +5295,50 @@ public partial class Main : Control
 
         // ⭐⭐ THE GRID LINES (D332, Joe: *"if the game is gridless, then why is everything still in
         // a grid?"*). **They were always on above 6px/tile with no way to turn them off**, and they
-        // are the most literal answer to his question. On by default: they are useful while aiming,
-        // and placement is no longer bound to them.
-        var grid = new CheckBox
-        {
-            Text = "draw the tile grid",
-            ButtonPressed = true,
-        };
+        // are the most literal answer to his question.
+        // ⛔ **OFF BY DEFAULT SINCE D340** (Joe: *"the default setting for showing the grid
+        // should be off. it is presently on."*). ⚠️ **TWO DEFAULTS, AND THEY HAVE TO
+        // MOVE TOGETHER**: this tick and `VillageMap._showGrid`. Changing one leaves the checkbox
+        // lying about the map, which is worse than either state.
+        var grid = new CheckBox { Text = "draw the tile grid" };
         grid.AddThemeFontSizeOverride("font_size", 12);
         grid.Toggled += on => _map.ShowGrid(on);
         body.AddChild(grid);
+        _mapToggles.Add(("the tile grid", grid, () => _map.GridShown));
+
+        // ⭐⭐ THE THREE PAINTED LAYERS, ONE SWITCH EACH (D340, Joe: *"i would like to be
+        // able to toggle these overlays of the painted areas for trees, houses, and farms off in
+        // the settings."*). **One each rather than a single "painted ground" tick was his call**,
+        // and it is the right one: the three answer different questions and somebody quietening
+        // the map may well want to keep one of them.
+        // ⛔ **Each hides the wash AND the border.** Half a layer showing reads as a bug
+        // rather than as a setting — and the border is the louder half, so hiding only the
+        // fill would barely quieten anything.
+        var homes = new CheckBox { Text = "shade ground marked for housing", ButtonPressed = true };
+        homes.AddThemeFontSizeOverride("font_size", 12);
+        homes.Toggled += on => _map.ShowResidentialLand(on);
+        body.AddChild(homes);
+        _mapToggles.Add(("ground marked for housing", homes, () => _map.ResidentialLandShown));
+
+        var fields = new CheckBox
+        {
+            Text = "shade ground a workplace has claimed",
+            ButtonPressed = true,
+        };
+        fields.AddThemeFontSizeOverride("font_size", 12);
+        fields.Toggled += on => _map.ShowWorkGround(on);
+        body.AddChild(fields);
+        _mapToggles.Add(("ground a workplace claimed", fields, () => _map.WorkGroundShown));
+
+        var marked = new CheckBox
+        {
+            Text = "shade ground marked for harvest",
+            ButtonPressed = true,
+        };
+        marked.AddThemeFontSizeOverride("font_size", 12);
+        marked.Toggled += on => _map.ShowHarvestLand(on);
+        body.AddChild(marked);
+        _mapToggles.Add(("ground marked for harvest", marked, () => _map.HarvestLandShown));
 
         var wildlife = new CheckBox { Text = "animals in the woods", ButtonPressed = true };
         wildlife.AddThemeFontSizeOverride("font_size", 12);
@@ -6369,6 +6480,60 @@ public partial class Main : Control
     /// says what.**
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// ⛔⛔ Every map tick in Settings agrees with the map — <b>the guard on two
+    /// independent defaults</b> (D340).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A view toggle is written down twice</b>: a field on <c>VillageMap</c> and a
+    /// <c>ButtonPressed</c> on a <c>CheckBox</c>. **Nothing has ever connected them** — they
+    /// are wired one way, from the tick to the map, so a default changed on one side leaves the
+    /// other lying and the player has to click a box twice to make it mean anything.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It was a live risk the moment the grid default moved</b> (Joe: *"the
+    /// default setting for showing the grid should be off"*) and it is a bigger one now there are
+    /// four of them. ⭐ *This is the cheapest kind of guard — the one that reads both
+    /// halves of a fact that is stated twice and asks whether they match.*
+    /// </para>
+    /// <para>
+    /// ⚠️ It only covers the toggles registered in <c>_mapToggles</c>, and a fifth
+    /// toggle that forgets to register is invisible to it. *The list is one line beside the
+    /// control; there is no way to make it automatic without reflection, which this project does
+    /// not use.*
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND IT CHECKS THE DEFAULTS, NOT THE DRAWING — BECAUSE THE PROBE
+    /// CANNOT SEE DRAWING AT ALL.</b> Measured (D340): <c>VillageMap._Draw</c> never runs under
+    /// <c>--headless</c>, so the zone pass reports **zero rectangles** in the probe. *Every guard
+    /// this project has for the view is about layout, geometry or state; whether a hidden layer
+    /// actually stops being painted is verified by Joe looking at it and by nothing else.*
+    /// </para>
+    /// </remarks>
+    private string EveryTickSaysWhatTheMapIsActuallyDoing()
+    {
+        var wrong = new System.Collections.Generic.List<string>();
+
+        for (int i = 0; i < _mapToggles.Count; i++)
+        {
+            (string name, CheckBox box, System.Func<bool> mapSays) = _mapToggles[i];
+
+            if (box.ButtonPressed != mapSays())
+            {
+                wrong.Add($"{name}: the tick says {box.ButtonPressed}, the map says {mapSays()}");
+            }
+        }
+
+        return wrong.Count == 0
+            ? $"[widths] map toggles: ✅ all {_mapToggles.Count} ticks match the map"
+            : "[widths] map toggles: ⛔ " + string.Join("; ", wrong);
+    }
+
+    /// <summary>Each map toggle, its tick, and what the map itself believes — for the probe.</summary>
+    private readonly System.Collections.Generic.List<(
+        string Name, CheckBox Box, System.Func<bool> MapSays)> _mapToggles = new();
+
     private void AddTheFrameCounter()
     {
         if (!OS.IsDebugBuild())
