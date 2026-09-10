@@ -370,6 +370,7 @@ buildings gaining an extent and a facing is the change that moves them, with one
    **The view falls back to the rounded tile when nothing is under the point, and that is
    load-bearing:** a true-rect test alone would lose D331's anchor forgiveness for a small turned
    building. *Asking the rectangle first and the tile second can only add a hit.*
+   - ⛔ **AND THE HIGHLIGHT HAD TO LEARN THE SAME THING, ONE COMMIT LATER** (D341, Joe again): *"it looks off visually, because the building's square is outlined, which doesn't align with the building itself."* **Teaching the click and not the outline left the mismatch on screen**, which is worse than not fixing either. *When a rule about geometry changes, every reader of that geometry changes with it — the click, the highlight, and whatever asks next.*
 
 5. ⛔ **The locale guard scored ZERO on its red check and is kept anyway — knowingly.**
    `FixedTests.TheLocaleCannotChangeWhatAFixedLooksLike` stays green when every

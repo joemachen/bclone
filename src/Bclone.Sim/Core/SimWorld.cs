@@ -8380,45 +8380,100 @@ public sealed class SimWorld
     /// </remarks>
     public GridPos? WhatStandsUnder(Point at)
     {
+        foreach ((Footprint shape, GridPos anchor) in StandingShapes())
+        {
+            if (shape.Covers(at))
+            {
+                return anchor;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// ⭐ The shape of whatever stands on a tile — <b>so the view can outline the building
+    /// rather than the tile</b> (D341).
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe, from play: *"clicking a rotated building selects it as expected, but it looks off
+    /// visually, because the building's square is outlined, which doesn't align with the building
+    /// itself."*</b> The selection highlight drew a one-tile square at the tile's centre, which is
+    /// right for bare ground and wrong for anything turned or bigger than a tile or standing
+    /// between four of them. ⚠️ Asked with <see cref="Footprint.Covers(GridPos)"/>, so it
+    /// agrees with the finder that produced the selection — <b>including D331's anchor
+    /// forgiveness</b>, which a rectangle test alone would not.
+    /// </remarks>
+    public Footprint? FootprintOn(GridPos tile)
+    {
+        foreach ((Footprint shape, GridPos _) in StandingShapes())
+        {
+            if (shape.Covers(tile))
+            {
+                return shape;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// ⛔⛔ Every standing building's rectangle and the tile it is filed under —
+    /// <b>ONE list, because this file had grown three</b> (D341).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b><see cref="SomethingStandsAt"/>'s comment has been a standing warning about exactly this
+    /// for two slices:</b> *"a new kind of building is a new line here or it can be built on top
+    /// of."* By D339 the five collections were being walked by <see cref="SomethingStandsAt"/>,
+    /// <see cref="SomethingOverlaps"/>, <see cref="WhatStandsUnder"/> and
+    /// <see cref="WhatStandsAt"/> — **four chances to forget a kind, and D326 has already paid
+    /// for that mistake once.** Adding a fifth for the selection outline was not on.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It does NOT absorb <see cref="SomethingOverlaps"/>, deliberately.</b> That
+    /// one runs inside <c>CanBuildAt</c>, which the ghost calls on every motion event and the suite
+    /// calls in loops — *the path whose horizon D329 watched go from 4m55s to 9m.* An iterator
+    /// there is a change with a measurement attached, and this slice is not the place for it.
+    /// **<c>EveryKindOfBuildingCanBeClickedOn</c> guards them against each other in the meantime.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The order is <see cref="SomethingOverlaps"/>'s order</b>, so the two cannot
+    /// disagree about which building they mean when two overlap.
+    /// </para>
+    /// </remarks>
+    private IEnumerable<(Footprint Shape, GridPos Anchor)> StandingShapes()
+    {
         for (int i = 0; i < Households.Count; i++)
         {
-            if (Households[i].HomePosition is Point home
-                && FootprintOf(BuildingKind.Home, home).Covers(at))
+            if (Households[i].HomePosition is Point home)
             {
-                return home.ToTile();
+                yield return (FootprintOf(BuildingKind.Home, home), home.ToTile());
             }
         }
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Footprint.Covers(at))
-            {
-                return Workplaces[i].Footprint.Origin.ToTile();
-            }
+            Footprint shape = Workplaces[i].Footprint;
+            yield return (shape, shape.Origin.ToTile());
         }
 
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].Footprint.Covers(at))
-            {
-                return Libraries[i].Footprint.Origin.ToTile();
-            }
+            Footprint shape = Libraries[i].Footprint;
+            yield return (shape, shape.Origin.ToTile());
         }
 
-        if (TownHall?.Footprint.Covers(at) == true)
+        if (TownHall is not null)
         {
-            return TownHall.Footprint.Origin.ToTile();
+            yield return (TownHall.Footprint, TownHall.Footprint.Origin.ToTile());
         }
 
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (StoreBuildings[i].Footprint.Covers(at))
-            {
-                return StoreBuildings[i].Footprint.Origin.ToTile();
-            }
+            Footprint shape = StoreBuildings[i].Footprint;
+            yield return (shape, shape.Origin.ToTile());
         }
-
-        return null;
     }
 
     internal bool SomethingStandsAt(GridPos position)

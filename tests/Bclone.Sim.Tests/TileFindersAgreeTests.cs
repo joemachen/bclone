@@ -257,15 +257,18 @@ public sealed class TileFindersAgreeTests
 
     /// <summary>The longhouse that now stands — found by its extent, which is what makes it one.</summary>
     /// <summary>
-    /// ⛔⛔ Every kind of building can be clicked on — <b>the guard on the THIRD list
-    /// of the same five collections</b> (D338).
+    /// ⛔⛔ Every kind of building can be clicked on AND outlined — <b>the guard on
+    /// the shared list of the five collections</b> (D339, widened D341).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <c>SomethingStandsAt</c>, <c>SomethingOverlaps</c> and now <c>WhatStandsUnder</c> each walk
-    /// the five kinds of thing that can stand on ground, and <c>SomethingStandsAt</c>'s own comment
-    /// is a warning about exactly this: *"a new kind of building is a new line here or it can be
-    /// built on top of."* **This class exists because that went wrong three times already.**
+    /// <c>SomethingStandsAt</c>, <c>SomethingOverlaps</c> and <c>StandingShapes</c> walk the five
+    /// kinds of thing that can stand on ground, and <c>SomethingStandsAt</c>'s own comment is a
+    /// warning about exactly this: *"a new kind of building is a new line here or it can be built
+    /// on top of."* **This class exists because that went wrong three times already.** ⭐ D341
+    /// folded two of the four lists into one — <c>WhatStandsUnder</c> and <c>FootprintOn</c>
+    /// now read <c>StandingShapes</c> — and **this asks both of them about every kind**, so
+    /// the consolidation cannot quietly lose an arm.
     /// </para>
     /// <para>
     /// ⭐ <b>It asks each building about its OWN origin</b>, which is the one point every
@@ -304,6 +307,7 @@ public sealed class TileFindersAgreeTests
             if (world.Households[i].HomePosition is Point home)
             {
                 Assert.Equal(home.ToTile(), world.WhatStandsUnder(home));
+                Assert.Equal(home, world.FootprintOn(home.ToTile())?.Origin);
             }
         }
 
@@ -312,6 +316,7 @@ public sealed class TileFindersAgreeTests
         {
             Footprint shape = world.Workplaces[i].Footprint;
             Assert.Equal(shape.Origin.ToTile(), world.WhatStandsUnder(shape.Origin));
+            Assert.Equal(shape.Origin, world.FootprintOn(shape.Origin.ToTile())?.Origin);
         }
 
         Found("a library", world.Libraries.Count);
@@ -319,18 +324,23 @@ public sealed class TileFindersAgreeTests
         {
             Footprint shape = world.Libraries[i].Footprint;
             Assert.Equal(shape.Origin.ToTile(), world.WhatStandsUnder(shape.Origin));
+            Assert.Equal(shape.Origin, world.FootprintOn(shape.Origin.ToTile())?.Origin);
         }
 
         Found("the town hall", world.TownHall is null ? 0 : 1);
         Assert.Equal(
             world.TownHall!.Footprint.Origin.ToTile(),
             world.WhatStandsUnder(world.TownHall.Footprint.Origin));
+        Assert.Equal(
+            world.TownHall.Footprint.Origin,
+            world.FootprintOn(world.TownHall.Footprint.Origin.ToTile())?.Origin);
 
         Found("a store", world.StoreBuildings.Count);
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             Footprint shape = world.StoreBuildings[i].Footprint;
             Assert.Equal(shape.Origin.ToTile(), world.WhatStandsUnder(shape.Origin));
+            Assert.Equal(shape.Origin, world.FootprintOn(shape.Origin.ToTile())?.Origin);
         }
 
         _output.WriteLine("posed: " + string.Join(", ", posed));
@@ -348,6 +358,93 @@ public sealed class TileFindersAgreeTests
                 posed.Add(kind);
             }
         }
+    }
+
+    /// <summary>
+    /// ⛔⛔ The shape a selection outline would draw is the building's OWN shape —
+    /// <b>posed on a building that is not on a tile centre, which is the case Joe hit</b> (D341).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"clicking a rotated building selects it as expected, but it looks off visually,
+    /// because the building's square is outlined, which doesn't align with the building
+    /// itself."*</b>
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>THE SIBLING TEST CANNOT CATCH THIS AND A RED CHECK PROVED IT.</b>
+    /// <c>EveryKindOfBuildingCanBeClickedOn</c> raises everything through
+    /// <c>Mark(kind, GridPos)</c>, so every building in it sits exactly on a tile centre at facing
+    /// zero — and there <c>Origin == Point.CentreOf(anchor)</c> and <c>Facing == 0</c>, so
+    /// **drawing the tile instead of the building would have passed it.** *A fixture that only
+    /// builds the easy case tests the easy case.* This one uses <c>Mark(kind, Point, Angle)</c>.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheShapeUnderATileIsTheBuildingsOwnAndNotItsTiles()
+    {
+        SimWorld world = World();
+
+        // Half a tile off centre in both axes, and turned an eighth: nothing about this
+        // building's rectangle can be recovered from its anchor tile.
+        Angle turned = Angle.FromTurnFraction(1, 8);
+        Point where = SomewhereATurnedLonghouseFits(world, turned);
+
+        PlacementVerdict verdict = world.Mark(BuildingKind.Longhouse, where, turned);
+        Assert.True(verdict.Allowed, verdict.Reason);
+
+        world.Complete(world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Longhouse));
+
+        StoreBuilding raised = TheLonghouse(world);
+        System.Collections.Generic.List<GridPos> covered = raised.Footprint.CoveredTiles();
+        _output.WriteLine($"a longhouse at {where} turned {turned} covers "
+            + string.Join(", ", covered));
+
+        // Every tile the selection can land on must give back the SAME rectangle — the
+        // building's, not that tile's.
+        foreach (GridPos tile in covered)
+        {
+            Footprint? found = world.FootprintOn(tile);
+
+            Assert.NotNull(found);
+            Assert.Equal(where, found!.Value.Origin);
+            Assert.Equal(turned, found.Value.Facing);
+            Assert.Equal(3, found.Value.Width);
+
+            // ⭐ The claim that matters, stated as itself: the answer is not derivable from
+            // the tile. If it ever becomes so, this building stopped being freely placed.
+            Assert.NotEqual(Point.CentreOf(tile), found.Value.Origin);
+        }
+    }
+
+    /// <summary>
+    /// Somewhere a TURNED longhouse fits, half a tile off centre — <b>found, not assumed</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ The first draft took <c>SomewhereALonghouseFits</c> and shifted it by half a
+    /// tile, and the sim said *"Something already stands there"* — correctly. **A spot that
+    /// fits an axis-aligned building at a tile centre is not a spot that fits the same building
+    /// turned and offset**, which is the whole reason free placement needed real geometry (D331).
+    /// </remarks>
+    private static Point SomewhereATurnedLonghouseFits(SimWorld world, Angle facing)
+    {
+        var half = new Point(Fixed.FromRatio(1, 2), Fixed.FromRatio(1, 2));
+
+        for (int y = 0; y < world.Map.Height; y++)
+        {
+            for (int x = 0; x < world.Map.Width; x++)
+            {
+                Point where = Point.CentreOf(
+                    new GridPos(world.Map.MinX + x, world.Map.MinY + y)) + half;
+
+                if (world.CanBuildAt(BuildingKind.Longhouse, where, facing: facing).Allowed)
+                {
+                    return where;
+                }
+            }
+        }
+
+        throw new System.InvalidOperationException(
+            "Nowhere in the valley will take a turned longhouse off a tile centre.");
     }
 
     /// <summary>Somewhere the hall fits that the longhouse has not already taken.</summary>

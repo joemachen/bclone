@@ -2528,16 +2528,57 @@ public partial class VillageMap : Control
     /// there. Distinguished by colour, and outlined so a store never reads as just
     /// another house: "why is nobody fetching food?" has to be answerable by looking.
     /// </remarks>
-    /// <summary>A square around whatever the player last clicked.</summary>
+    /// <summary>
+    /// ⭐⭐ An outline around whatever the player last clicked — <b>the BUILDING's
+    /// shape when there is one, the tile's when there is not</b> (D341).
+    /// </summary>
     /// <remarks>
-    /// A square rather than the ring villagers get, so the two selections never read as
-    /// the same thing: people are round on this map and buildings are square, and the
-    /// highlight should agree with that rather than argue with it.
+    /// <para>
+    /// <b>Joe, from play: *"clicking a rotated building selects it as expected, but it looks off
+    /// visually, because the building's square is outlined, which doesn't align with the building
+    /// itself."*</b> D339 taught the CLICK about rectangles and left the HIGHLIGHT drawing a
+    /// one-tile axis-aligned square at the tile's centre — so selecting a turned building
+    /// drew a box at the wrong angle, the wrong size, and the wrong place, all three at once.
+    /// *Half a fix reads worse than none, because it puts the mismatch on screen.*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The same <see cref="FootprintQuad"/> the building itself is drawn from</b>, so
+    /// the outline cannot disagree with the thing it is outlining — it is not a second
+    /// opinion about where the building is, it is the same answer.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Bare ground keeps the square, and that is not a leftover.</b> Clicking
+    /// grass selects a TILE and still has to say which one; a tile is square and one tile across.
+    /// *The square was only ever wrong because it was being used for both questions.*
+    /// </para>
+    /// <para>
+    /// A square rather than the ring villagers get, so the two selections never read as the same
+    /// thing: people are round on this map and buildings are not.
+    /// </para>
     /// </remarks>
     private void DrawSelectedTile()
     {
         if (_selectedTile is not GridPos tile)
         {
+            return;
+        }
+
+        if (_world!.FootprintOn(tile) is Footprint standing)
+        {
+            // A hair proud of the building, so the outline reads as around it rather than as part
+            // of it — the same 0.92-of-a-tile inset the plain square has always had, applied
+            // the other way because a building is drawn at 0.8 of its extent.
+            Vector2[] quad = FootprintQuad(
+                ToScreen(standing.Origin),
+                standing.Width * 0.92f,
+                standing.Height * 0.92f,
+                standing.Facing.Raw);
+
+            for (int i = 0; i < 4; i++)
+            {
+                DrawLine(quad[i], quad[(i + 1) % 4], SelectedRing, 2f);
+            }
+
             return;
         }
 
