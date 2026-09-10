@@ -1,14 +1,7 @@
 # Spec: The valley in view — terrain that reads as a place, not as storage
 
 **Decisions:** D332, D333, D334, D337. Rendering only; follows `gridless.md §10.2`.
-**Status:** ✅ **TREES AND THE SHORELINE BUILT (2026-09-09, D337).** A wood has trees for the first
-time, they overhang their tiles so the treeline is ragged, saplings read as a young wood, and the
-river has a bank. **1063 passing, 0 failing, 2 skipped of 1065 — no golden moved.** ⏸ **Not in
-this slice, and named in §4 rather than forgotten: filling the smoothed contour, the soil overlay,
-and the generator's Manhattan forest clumps.** ✅ **Joe has played it: *"the trees look pretty cool"*.**
-⛔ **And the riverbank was drawn half a tile off the river** — *"the riverbank looks pretty
-questionable"* — fixed in D338, along with the same bug an eighth of a tile wide in the zone
-borders. See §5. *Rewritten whole, in the commit that changes it (D159, and the trap D332 added).*
+**Status:** ✅ **REBUILT AS A FIELD (2026-09-10, D342).** D337's trees and traced shoreline are **superseded**: the valley is now baked into one texture as the level set of a continuous field, so the river is an organic meander with a shallow bank, the deposits are irregular bodies, and a wood's foliage is texture rather than ~5,740 `DrawCircle` a frame. **`DrawTheShoreline` is deleted.** ⚠️ **The forest CLUMPS are still Manhattan diamonds** — §4 always said the renderer could not hide that, and it cannot; it is `PaintForest` and it is Joe's. **1073 passing, 0 failing, 2 skipped of 1075 — no golden moved.** ⚠️ **Unplayed by Joe as of this line.**
 
 ---
 
@@ -70,9 +63,12 @@ per frame.
 - **Soil.** It re-quantises an already-smooth bilinear field (`MakeSoilRegional`) back into per-tile
   alpha squares and could be resampled at pixel resolution with zero sim change — but it is **off by
   default**, so it is the least visible thing on the list.
-- ⚠️ **The forest clumps themselves.** `PaintForest` drops Manhattan **diamonds** of tiles, so their
-  edges are chunky *and* faintly diagonal. **Smoothing the render cannot hide that** — it is a
-  generator question and a separate decision, and it is Joe's.
+- ⛔⛔ **The forest clumps themselves — AND §4 CALLED THIS RIGHT A SLICE EARLY.** `PaintForest`
+  drops Manhattan **diamonds** of tiles. This spec said *"smoothing the render cannot hide that"*, and
+  **D342 proved it by trying**: the field's edge jitter can move a boundary about a tile, which on a
+  nine-tile diamond is a nibble. ⭐ *The river, which is two tiles wide, is transformed by the same
+  machinery — the difference is entirely the ratio of the jitter to the feature.* **It is a generator
+  question, it moves every golden, and it is Joe's.**
 
 ## 5. How it is tested
 

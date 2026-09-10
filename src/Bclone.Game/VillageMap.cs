@@ -78,6 +78,18 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color WaterColour = new("#2f5f7a");
 
+    /// <summary>
+    /// ⭐ The water where it meets the land — <b>this is the shoreline now</b> (D342).
+    /// </summary>
+    /// <remarks>
+    /// <b>The bank used to be a traced polyline over the water tiles (D337), and it was drawn half
+    /// a tile off them (D338) and came out as a chain of scallops.</b> A river is shallow at its
+    /// edge; the bake lerps between this and <see cref="WaterColour"/> by how decisively the water
+    /// field won at each pixel, which is the same contour as the fill **by construction**. *There
+    /// is no second shape to get wrong any more.*
+    /// </remarks>
+    internal static readonly Color ShallowsColour = new("#4c86a0");
+
     /// <summary>A fishing hut — the river's colour, lifted so the hut reads against it.</summary>
     private static readonly Color FisheryColour = new(0.42f, 0.68f, 0.78f);
 
@@ -106,9 +118,6 @@ public partial class VillageMap : Control
 
     /// <summary>A young tree — smaller, lighter, and obviously not yet timber.</summary>
     private static readonly Color SaplingCanopy = new("#4f6b41");
-
-    /// <summary>The river's own edge, drawn as one line rather than a staircase of squares.</summary>
-    private static readonly Color ShoreColour = new("#3f7b96", 0.75f);
 
     /// <summary>Keeps the trees' scatter out of step with the animals' (D337).</summary>
     private const int TreeSalt = 5701;
@@ -2782,8 +2791,8 @@ public partial class VillageMap : Control
         // ground the rest of the village stands on — and because without it a
         // generated valley is invisible, which makes "is this seed worth playing?"
         // a question nobody can answer by looking.
-        DrawTerrain(minX, maxX, minY, maxY);
-        DrawTheShoreline();
+        DrawTheBakedValley(valley);
+        DrawWorkedGround(minX, maxX, minY, maxY);
         DrawTheTrees(minX, maxX, minY, maxY);
 
         // Under the zone washes, because soil is a property of the ground while the zones
@@ -3197,97 +3206,34 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
-    /// The river and the woods, as generated from the run's seed (D18).
+    /// ⛔⛔ How big a tile must be before individual canopies are drawn — <b>and the
+    /// old value could never once have fired</b> (D342).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// One filled rect per non-grass tile, clipped to the visible window. Grass is
-    /// skipped rather than drawn, because it is already the valley's base colour and
-    /// filling ninety per cent of the screen with rectangles of the colour underneath
-    /// them is a lot of work to change nothing.
+    /// <b>It was 10, and its comment claimed that was what stopped *"the per-frame full-map walk
+    /// `Minimap`'s comment records this project being bitten by twice."* It stopped nothing.</b>
+    /// Minimum zoom is <em>derived from the window</em> — <c>Size.X / (MapWidth * 0.8)</c>
+    /// — which is **13.3 px/tile at 1280 wide and more on any larger screen**, so the floor
+    /// was unreachable at every playable window size. *The tree pass ran at every zoom the game
+    /// has, including the one where 1,640 woodland tiles are on screen at once.*
     /// </para>
     /// <para>
-    /// A tile is drawn a hair over one tile wide. At fractional zoom, exactly-one-tile
-    /// rects leave seams between neighbours where the rounding falls differently, and
-    /// a river with gaps in it reads as a bug rather than as a river.
-    /// </para>
-    /// </remarks>
-    /// <summary>The traced bank of every body of water, in tile units. Cached (D337).</summary>
-    private readonly List<Vector2[]> _shoreline = new();
-
-    private int _shoreTracedAt = -1;
-
-    /// <summary>
-    /// ⭐ The river's bank, as one smooth line rather than a staircase of squares (D337).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Water is drawn by the generic terrain loop</b> — one flat square per tile, no bank, no
-    /// edge. The contour tracer D332 built for painted zones does exactly what is wanted here, so
-    /// the shoreline is that tracer run over the water tiles. *The comment on the terrain overdraw
-    /// was written for the river in the first place — "a river with gaps in it reads as a bug
-    /// rather than as a river" — so it is the right thing to have smoothed first.*
+    /// ⛔ <b>Measured cost: ~5,740 <c>DrawCircle</c> a frame — and a circle becomes a
+    /// `CommandPolygon`, which BREAKS Godot's 2D batching</b> where a rect batches. That is why
+    /// 1,830 terrain rects were nearly free and the trees were ~85 ms. Joe: *"11 fps zoomed
+    /// out."*
     /// </para>
     /// <para>
-    /// ⭐ <b>Cached on <c>SimWorld.TerrainGeneration</c></b>, the counter `Minimap` already uses to
-    /// decide when to re-bake. Terrain changes only when somebody clears ground, so the trace is
-    /// paid then rather than on every frame — and **a full-map walk per frame is the thing this
-    /// project has been bitten by twice** (D87, D112).
+    /// ⭐ <b>The gate now admits the near view instead of pretending to exclude the far
+    /// one</b>, and the far view gets its foliage from <see cref="ValleyTexture"/> — baked
+    /// once, one draw call, and *ragged at the treeline for the same reason the riverbank is*.
+    /// Set above <c>ValleyTexture.PixelsPerTile</c> so live canopies take over at the zoom where
+    /// the bake would start to soften. **A gate stated in units the system cannot produce is not
+    /// a gate** — D242, D326, D332, D336, D338, and now this.
     /// </para>
     /// </remarks>
-    private void DrawTheShoreline()
-    {
-        SimWorld world = _world!;
-
-        if (_shoreTracedAt != world.TerrainGeneration)
-        {
-            _shoreTracedAt = world.TerrainGeneration;
-            _shoreline.Clear();
-
-            SimConfig config = world.Config;
-            var water = new HashSet<Vector2I>();
-
-            for (int y = config.MapMinY; y <= config.MapMaxY; y++)
-            {
-                for (int x = config.MapMinX; x <= config.MapMaxX; x++)
-                {
-                    if (world.Map.TerrainAt(new GridPos(x, y)) == Terrain.Water)
-                    {
-                        water.Add(new Vector2I(x, y));
-                    }
-                }
-            }
-
-            _shoreline.AddRange(ZoneOutline.Trace(water));
-        }
-
-        float thickness = Mathf.Max(1.5f, _pixelsPerTile * 0.09f);
-
-        for (int i = 0; i < _shoreline.Count; i++)
-        {
-            Vector2[] loop = _shoreline[i];
-            var onScreen = new Vector2[loop.Length];
-
-            for (int p = 0; p < loop.Length; p++)
-            {
-                // ⛔ ONE CELL PER TILE, AND THAT IS ALL THIS CALL SITE HAS TO SAY (D338).
-                // It used to subtract half a tile by hand and **the shore came out half a tile up
-                // and to the left of the water it was tracing** — the half is already in what
-                // the tracer emits. *`InTileSpace` is the identity at one cell per tile.*
-                onScreen[p] = ToScreen(InTileSpace(loop[p], 1));
-            }
-
-            DrawPolyline(onScreen, ShoreColour, thickness, antialiased: true);
-        }
-    }
-
-    /// <summary>How many pixels a tile must have before a canopy is worth drawing.</summary>
-    /// <remarks>
-    /// ⚠️ Below this a tree is sub-pixel and thousands of them would be the per-frame full-map walk
-    /// `Minimap`'s own comment records this project being bitten by twice. *The flat fill carries
-    /// the wood at that distance, which is all it has to do.*
-    /// </remarks>
-    private const float TreeZoomFloor = 10f;
+    private const float TreeZoomFloor = ValleyTexture.PixelsPerTile * 1.5f;
 
     /// <summary>How far a canopy may sit from its tile's centre, in tiles.</summary>
     /// <remarks>
@@ -3477,10 +3423,52 @@ public partial class VillageMap : Control
                 + $"{furthest:F2} tiles, so every treeline is still square";
     }
 
-    private void DrawTerrain(int minX, int maxX, int minY, int maxY)
+    /// <summary>
+    /// ⭐⭐ The whole valley in ONE draw call — <b>and the end of the grid showing
+    /// through</b> (D342).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This replaced a loop that issued <b>one <c>DrawRect</c> per non-grass tile</b> — about
+    /// 1,830 a frame at full zoom-out — and, far more importantly, it replaced what those
+    /// rects <em>looked like</em>: hard axis-aligned squares, which is the *"underlying grid
+    /// structure"* Joe could see under the smoothed riverbank.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Drawn over the valley's own rect</b>, which spans half a tile beyond the
+    /// outermost tile centres on every side — exactly the extent
+    /// <see cref="ValleyTexture"/> bakes, so the texture lands on the ground it describes and no
+    /// half-tile is owed in either direction. *That seam has now been got wrong once (D338); it
+    /// is stated in one place here.*
+    /// </para>
+    /// </remarks>
+    private void DrawTheBakedValley(Rect2 valley)
+    {
+        _valley.Refresh(_world!);
+
+        if (_valley.Texture is ImageTexture baked)
+        {
+            DrawTextureRect(baked, valley, tile: false);
+        }
+    }
+
+    private readonly ValleyTexture _valley = new();
+
+    /// <summary>
+    /// ⛔ Ground the village has WORKED, drawn as squares — <b>because it is square</b>
+    /// (D342).
+    /// </summary>
+    /// <remarks>
+    /// <b>The valley is a field; the fields are not.</b> Everything natural now comes out of
+    /// <see cref="ValleyTexture"/> as the level set of a continuous field, which is what makes a
+    /// river look like a river. **A ploughed field is man-made and reads as man-made precisely
+    /// because its edges are straight**, so smoothing it would be taking the smoothing rule and
+    /// applying it where its whole justification is absent. *Foundation's fields have hard edges
+    /// too, and for the same reason.*
+    /// </remarks>
+    private void DrawWorkedGround(int minX, int maxX, int minY, int maxY)
     {
         GeneratedMap map = _world!.Map;
-        float size = _pixelsPerTile * 1.02f;
 
         for (int y = minY; y <= maxY; y++)
         {
@@ -3488,7 +3476,8 @@ public partial class VillageMap : Control
             {
                 var tile = new GridPos(x, y);
                 Terrain terrain = map.TerrainAt(tile);
-                if (terrain == Terrain.Grass)
+
+                if (terrain is not (Terrain.Field or Terrain.Sown or Terrain.Ripe))
                 {
                     continue;
                 }
@@ -3500,11 +3489,12 @@ public partial class VillageMap : Control
 
     /// <summary>What a kind of ground is drawn as.</summary>
     /// <remarks>
-    /// <b>Grass never reaches here from the valley itself</b> — it is the background, skipped
-    /// by <see cref="DrawTerrain"/> so the common case draws nothing at all. It has an arm
-    /// anyway because the minimap bakes every tile into a texture and has no background to
-    /// skip against, and a <c>_ =></c> falling through to woodland would have painted the
-    /// whole valley as forest.
+    /// <b>Every arm is reached now, and the one that used to be dead is the busiest</b> (D342).
+    /// <c>DrawTerrain</c> skipped grass because grass was the background it drew over;
+    /// <see cref="ValleyTexture"/> paints every pixel of the valley, so <c>Terrain.Grass</c> is
+    /// asked for more often than anything else. *The arm existed anyway — for the minimap,
+    /// which bakes every tile for the same reason — and a <c>_ =></c> falling through to
+    /// woodland would have painted the whole valley as forest.*
     /// </remarks>
     internal static Color ColourOf(Terrain terrain) => terrain switch
     {

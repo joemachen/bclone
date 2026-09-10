@@ -255,6 +255,8 @@ public partial class Main : Control
         GD.Print(_map.TheCentreOfATileDrawsWhereTheTileDoes());
         GD.Print(ZoneOutline.SelfCheck());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
+        GD.Print(ValleyTexture.SelfCheck(_loop.World));
+        SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
         ProbeThePlacementSentences();
@@ -6533,6 +6535,33 @@ public partial class Main : Control
     /// <summary>Each map toggle, its tick, and what the map itself believes — for the probe.</summary>
     private readonly System.Collections.Generic.List<(
         string Name, CheckBox Box, System.Func<bool> MapSays)> _mapToggles = new();
+
+    /// <summary>
+    /// ⭐ Write the baked valley out as a PNG — <b>the only way anything but Joe has ever
+    /// looked at it</b> (D342).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <c>VillageMap._Draw</c> never runs under <c>--headless</c> (measured, D340), so the
+    /// probe cannot check a single thing that is drawn. **It can write a file**, and a session
+    /// can open that file — which is how the field's warp and kernel were tuned rather than
+    /// guessed. Off unless <c>BCLONE_PROBE_WIDTHS</c> is set, like the rest of the probe.
+    /// </remarks>
+    private void SaveTheValleyBake()
+    {
+        var bake = new ValleyTexture();
+        bake.Refresh(_loop.World);
+
+        // ⚠️ Into `logs/`, which `.gitignore` already covers — a dev
+        // artefact that lands beside the source is one that gets committed by accident.
+        string folder = System.IO.Path.Combine(
+            System.IO.Directory.GetCurrentDirectory(), "logs");
+
+        System.IO.Directory.CreateDirectory(folder);
+        string path = System.IO.Path.Combine(folder, "valley-bake.png");
+
+        bake.SaveTo(path);
+        GD.Print($"[widths] valley bake written to {path}");
+    }
 
     private void AddTheFrameCounter()
     {
