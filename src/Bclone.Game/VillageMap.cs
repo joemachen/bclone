@@ -215,6 +215,28 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color HarvestColour = new("#d8892f", 0.26f);
 
+    /// <summary>
+    /// ⭐ Marked ground with nothing left on it — <b>a standing order that is waiting,
+    /// not shouting</b> (D343).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, at a felled-out circle under his forager's hut: *"lets solve for this thing that
+    /// shouldn't even show up."*</b> ⛔ **It should show up — that is his own D127.**
+    /// Un-painting cleared ground was tried and rejected: *"with regrowth, a bare painted tile is
+    /// not finished work — it is work that is waiting."* The wood comes back and the village
+    /// fells it again, because he asked it to.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>So it cannot be hidden either.</b> An invisible standing instruction that fells
+    /// a wood years later is exactly the unexplainable behaviour §1.1 forbids, and it is
+    /// what D42 and D123 deleted in another medium. **The outline stays at full strength** —
+    /// *this ground is spoken for* — and only the fill drops away, because the fill is what
+    /// says *there is work here now*.
+    /// </para>
+    /// </remarks>
+    private static readonly Color HarvestWaitingColour = new("#d8892f", 0.07f);
+
     /// <summary>Ground a building has been given to work (D86).</summary>
     /// <remarks>
     /// <b>Cool, where the other two zone washes are warm</b>, because it means a different
@@ -2297,7 +2319,7 @@ public partial class VillageMap : Control
         // decides what lands (D327) and this draws a picture of that answer rather than a second
         // opinion about it. *A round brush now looks round.*
         float thickness = Mathf.Max(1.5f, _pixelsPerTile * 0.06f);
-        foreach (Vector2[] loop in ZoneOutline.Trace(under))
+        foreach (Vector2[] loop in ZoneOutline.Trace(under, SubTile.PerTile))
         {
             var onScreen = new Vector2[loop.Length];
             for (int p = 0; p < loop.Length; p++)
@@ -3012,7 +3034,7 @@ public partial class VillageMap : Control
         // `HarvestEdge`"* is a coincidence of palette rather than a fact about the layer.
         void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge)
         {
-            foreach (Vector2[] loop in ZoneOutline.Trace(tiles))
+            foreach (Vector2[] loop in ZoneOutline.Trace(tiles, SubTile.PerTile))
             {
                 _zoneOutlines.Add((layer, edge, loop));
             }
@@ -3082,11 +3104,42 @@ public partial class VillageMap : Control
     /// a question whose answer cannot change during the pass.
     /// </para>
     /// </remarks>
+    /// <summary>Re-find the spent marks, but only when the paint or the ground has moved.</summary>
+    private void FindTheSpentMarksIfTheyMoved(ZoneMap zones)
+    {
+        SimWorld world = _world!;
+
+        if (_spentAtEdits == zones.Edits && _spentAtTerrain == world.TerrainGeneration)
+        {
+            return;
+        }
+
+        _spentAtEdits = zones.Edits;
+        _spentAtTerrain = world.TerrainGeneration;
+        _spentMarks.Clear();
+
+        SimConfig config = world.Config;
+
+        for (int y = config.MapMinY; y <= config.MapMaxY; y++)
+        {
+            for (int x = config.MapMinX; x <= config.MapMaxX; x++)
+            {
+                var tile = new GridPos(x, y);
+
+                if (zones.HarvestSubTilesOn(tile) > 0 && !world.HasSomethingToHarvest(tile))
+                {
+                    _spentMarks.Add(tile);
+                }
+            }
+        }
+    }
+
     private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
     {
         ZoneMap zones = _world!.Zones;
 
         TraceTheZonesIfTheyMoved(zones);
+        FindTheSpentMarksIfTheyMoved(zones);
 
         int mine = SelectedGroundOwner();
         _zoneRectsLastFrame = 0;
@@ -3113,7 +3166,11 @@ public partial class VillageMap : Control
                     Layer.WorkGround,
                     work,
                     zones.WorkGroundOwner(tile) == mine ? WorkGroundMine : WorkGroundColour);
-                DrawLayer(tile, Layer.Harvest, harvest, HarvestColour);
+                DrawLayer(
+                    tile,
+                    Layer.Harvest,
+                    harvest,
+                    _spentMarks.Contains(tile) ? HarvestWaitingColour : HarvestColour);
             }
         }
 
@@ -3789,6 +3846,22 @@ public partial class VillageMap : Control
     private readonly List<(Layer Layer, Color Edge, Vector2[] Loop)> _zoneOutlines = new();
 
     private int _outlinesTracedAt = -1;
+
+    /// <summary>
+    /// Marked tiles with nothing left to take — <b>kept, not asked per frame</b> (D343).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Two counters, because it depends on two things.</b> A tile stops being
+    /// worth harvesting when the ground changes (<c>TerrainGeneration</c>) *or* when the paint
+    /// moves (<c>ZoneMap.Edits</c>), and keying on one would leave the map lying after the other.
+    /// ⭐ Kept rather than recomputed, per <c>CLAUDE.md</c>: *nothing derivable incrementally
+    /// may be rebuilt per tick or per frame.*
+    /// </remarks>
+    private readonly HashSet<GridPos> _spentMarks = new();
+
+    private int _spentAtEdits = -1;
+
+    private int _spentAtTerrain = -1;
 
     /// <summary>Whether the tile grid is drawn (D332). ⛔ <b>OFF by default (D340).</b></summary>
     /// <remarks>

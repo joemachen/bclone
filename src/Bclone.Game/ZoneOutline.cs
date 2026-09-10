@@ -56,6 +56,10 @@ internal static class ZoneOutline
     /// </remarks>
     internal static string SelfCheck()
     {
+        // ⚠️ Stated here rather than reaching into `SubTile`, so the tracer keeps
+        // knowing nothing about what it is tracing.
+        const int SubTilesPerTile = 4;
+
         var complaints = new List<string>();
         string sizes = string.Empty;
 
@@ -107,6 +111,31 @@ internal static class ZoneOutline
         // circle" and "haha this is a circle????"*
         Roundness("a 5-tile round brush, in quarter-tiles", 10, 0.79f);
 
+        // ⛔⛔ AND WHETHER THE OUTLINE IS ACTUALLY SMOOTH, WHICH NOTHING HERE ASKED
+        // (D343). Every check above is about **area**, and area was green for the whole time the
+        // smoothing was being applied at a quarter of its stated strength — a staircase
+        // encloses the same area as the curve through it. Joe read the difference straight off
+        // the screen: *"the selected area for harvest still looks jagged/square."*
+        // ⭐ **Perimeter is what tells them apart**, scale-free: a shape's perimeter over
+        // that of the circle with its area. A disc drawn in cells and left stepped comes to about
+        // 1.27 — the bounding square's perimeter over the circle's — and a properly
+        // smoothed one approaches 1.
+        // ⚠️ MEASURED IN BOTH STATES BEFORE THE BAND WAS CHOSEN, because the
+        // first threshold was picked by eye at 1.10 and **the bug measures 1.07, so it scored
+        // zero.** *That is D334's trap exactly — a tolerance chosen by eye can be wider than
+        // the defect it is watching for.* Smoothed: 1.00. Applied in cells, as Joe photographed
+        // it: 1.06–1.07. The band sits between them.
+        Smoothness("a 10-tile round", RoundBrush(20), SubTilesPerTile, 1.03f);
+        Smoothness("a 5-tile round", RoundBrush(10), SubTilesPerTile, 1.03f);
+
+        // ⭐⭐ THE SQUARE IS THE CONTROL, AND IT IS WHY THIS METRIC CAN BE TRUSTED. A
+        // square's perimeter is 4/√π ≈ 1.13 of its circle's, and D334 says its
+        // four corners are the player's and must be **left exactly alone** — so it measures
+        // 1.13 whether the smoothing is right or wrong. **A guard that only ever said "smoother
+        // is better" would happily pass a rounding rule that dissolved every square in the
+        // game.** Two-sided, so it catches that too.
+        Smoothness("a 6-tile square", Block(24, 24), SubTilesPerTile, 1.16f, least: 1.10f);
+
         return complaints.Count == 0
             ? $"[widths] zone outlines: ✅ every shape closed and kept its area{sizes}"
             : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints);
@@ -135,6 +164,59 @@ internal static class ZoneOutline
             if (fill > wanted + 0.04f)
             {
                 complaints.Add($"{what}: fills {fill * 100f:F0}%, a disc fills {wanted * 100f:F0}%");
+            }
+        }
+
+        void Smoothness(
+            string what,
+            IEnumerable<(int X, int Y)> cells,
+            int cellsPerTile,
+            float worst,
+            float least = 0f)
+        {
+            var set = new HashSet<Vector2I>();
+            foreach ((int x, int y) in cells)
+            {
+                set.Add(new Vector2I(x, y));
+            }
+
+            List<Vector2[]> loops = Trace(set, cellsPerTile);
+            if (loops.Count != 1)
+            {
+                complaints.Add($"{what}: {loops.Count} loops, wanted 1");
+                return;
+            }
+
+            Vector2[] loop = loops[0];
+            float perimeter = 0f;
+            for (int i = 0; i + 1 < loop.Length; i++)
+            {
+                perimeter += loop[i].DistanceTo(loop[i + 1]);
+            }
+
+            float area = Mathf.Abs(SignedArea(loop));
+            if (area <= 0f)
+            {
+                complaints.Add($"{what}: no area to measure");
+                return;
+            }
+
+            // 1 for a circle; a stepped disc is about 1.27, which is 4/π ÷ (4/π).
+            float ragged = perimeter / (2f * Mathf.Sqrt(Mathf.Pi * area));
+            sizes += $" · {what} is {ragged:F2} of a circle's perimeter";
+
+            if (ragged > worst)
+            {
+                complaints.Add(
+                    $"{what}: perimeter is {ragged:F2}× a circle's, wanted under "
+                    + $"{worst:F2} — the outline is still a staircase");
+            }
+            else if (ragged < least)
+            {
+                complaints.Add(
+                    $"{what}: perimeter is only {ragged:F2}× a circle's, wanted at "
+                    + $"least {least:F2} — the smoothing has rounded off corners the "
+                    + "player painted (D334)");
             }
         }
 
@@ -294,12 +376,24 @@ internal static class ZoneOutline
     /// The smoothed closed loops around a set of tiles, in tile coordinates.
     /// </summary>
     /// <remarks>
-    /// ⚠️ <b>Deterministic in its output order</b> even though it uses a dictionary: the walk is
-    /// driven by a <em>list</em> of segments in insertion order and the dictionary is only ever
-    /// asked "which segments start here?". *Iteration order of a hash table is not a thing to draw
-    /// from, for the same reason the sim bans it outright.*
+    /// <para>
+    /// ⚠️ <b>Deterministic in its output order</b> even though it uses a dictionary: the
+    /// walk is driven by a <em>list</em> of segments in insertion order and the dictionary is only
+    /// ever asked "which segments start here?". *Iteration order of a hash table is not a thing to
+    /// draw from, for the same reason the sim bans it outright.*
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b><paramref name="cellsPerTile"/> IS NOT OPTIONAL DECORATION — THE
+    /// SMOOTHING IS STATED IN TILES AND THIS IS THE ONLY THING THAT KNOWS WHAT A TILE IS</b>
+    /// (D343). The tracer works in whatever grid it is handed; <see cref="CornerCutTiles"/> and
+    /// <see cref="SharpCornerTiles"/> are stated in tiles because that is what the design
+    /// arguments for them are about. **Without this they were applied in CELLS**, and since D336
+    /// a zone cell is a quarter-tile — so the corner cut was a quarter of its stated size and
+    /// *every run longer than half a tile was being preserved as a corner the player had
+    /// deliberately painted.* Joe: *"the selected area for harvest still looks jagged/square."*
+    /// </para>
     /// </remarks>
-    internal static List<Vector2[]> Trace(HashSet<Vector2I> tiles)
+    internal static List<Vector2[]> Trace(HashSet<Vector2I> tiles, int cellsPerTile = 1)
     {
         var loops = new List<Vector2[]>();
         if (tiles.Count == 0)
@@ -316,7 +410,7 @@ internal static class ZoneOutline
                 continue;
             }
 
-            loops.Add(Round(straightened));
+            loops.Add(Round(straightened, cellsPerTile));
         }
 
         return loops;
@@ -472,8 +566,12 @@ internal static class ZoneOutline
     /// Chaikin corner-cutting on a closed loop — each pass replaces a corner with two points a
     /// quarter of the way along each of its sides.
     /// </summary>
-    private static Vector2[] Round(List<Vector2> loop)
+    private static Vector2[] Round(List<Vector2> loop, int cellsPerTile)
     {
+        // ⛔ The two rules below are stated in TILES and the loop is in CELLS (D343).
+        float cornerCut = CornerCutTiles * cellsPerTile;
+        float sharpCorner = SharpCornerTiles * cellsPerTile;
+
         List<Vector2> points = loop;
 
         for (int pass = 0; pass < Roundings; pass++)
@@ -493,7 +591,7 @@ internal static class ZoneOutline
                 float forward = here.DistanceTo(next);
 
                 // Two long runs meeting: a corner somebody chose. Kept exactly.
-                if (back >= SharpCornerTiles && forward >= SharpCornerTiles)
+                if (back >= sharpCorner && forward >= sharpCorner)
                 {
                     cut.Add(here);
                     continue;
@@ -501,8 +599,8 @@ internal static class ZoneOutline
 
                 // ⚠️ Never more than HALF a run, or the cuts from the two ends of a short side
                 // cross each other and the outline turns inside out.
-                float cutBack = Mathf.Min(CornerCutTiles, back / 2f);
-                float cutOn = Mathf.Min(CornerCutTiles, forward / 2f);
+                float cutBack = Mathf.Min(cornerCut, back / 2f);
+                float cutOn = Mathf.Min(cornerCut, forward / 2f);
 
                 cut.Add(here + ((before - here).Normalized() * cutBack));
                 cut.Add(here + ((next - here).Normalized() * cutOn));
