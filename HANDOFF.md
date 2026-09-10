@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ THE VALLEY HAS TREES AND A RIVERBANK — JOE HAS NOT SEEN THEM YET**
+# Handoff — bclone: **▶️ THE RIVERBANK IS ON THE RIVER AGAIN — THE HIT TEST AND THE UI LIST ARE NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
 > **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
@@ -793,6 +793,11 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ A SELF-CHECK TESTS ITS OWN SIDE OF A SEAM AND SAYS NOTHING ABOUT THE SEAM (2026-09-10, D338).** `ZoneOutline.SelfCheck` was green while the riverbank was drawn **half a tile off the river** and the zone borders an eighth of a tile inside their own wash. It was right: the tracer closed its loops and kept their area throughout. **The bug was in what three call sites believed the tracer's UNITS were** — and the spec had argued explicitly that a shoreline check would be *"a second copy of the same assertion"*. ⭐ *When two pieces of code have to agree about a coordinate space, the guard goes ON the agreement:* the outline's bounding box must equal the rectangle the FILL draws for the same cell.
+- **⚠️ MEASURE THE THING THAT IS ACTUALLY INVARIANT — SECOND TIME IN TWO COMMITS (2026-09-10, D338).** The new seam guard scored **24px on correct code** because it required every traced point to be a rectangle corner, and the tracer **cuts corners**: a lone cell comes back as a rounded octagon whose points sit *along* the edges. *D337's overhang guard failed the same way, measuring canopy centres instead of branches.* **A guard that is right that something is wrong and wrong about what is the most expensive kind of red**, because the obvious fix is to the wrong thing.
+- **⛔⛔ A DERIVED SUMMARY IS NOT A SKIP TEST IF IT HAS A THRESHOLD IN IT (2026-09-10, D338).** `ZoneMap.IsResidential` / `IsHarvest` mean **"at least half the sixteen sub-tiles"** — the threshold the economy asks in. Using them to decide whether a tile is worth drawing would have **silently erased every tile under a quarter painted**, which is precisely the ragged edge sub-tiles were built for. ⭐ *The raw COUNT is the honest question; the threshold is a different question wearing the same words.*
+- **⚠️ THE 3m0s SUITE READING FROM 2026-09-09 WAS THE MACHINE — RESOLVED, AND THE TRAP ABOVE IT CAN STAY AS WRITTEN.** It read **1m52s** the next day with the sim changed. *Recorded because the previous entry left the question open on purpose.*
 
 - **⛔⛔⛔ A GUARD THAT SAMPLES ONE FRAME CANNOT SEE A BUG THAT NEEDS TWO (2026-09-09, D337).** The tree scatter's determinism guard computed the wood twice and compared — **both passes in one call, at one tick**, so a seed drifting frame to frame would have matched itself every time. ⭐ *The fix was not a better test: `CanopyOn` became a `static` taking only a tile and an index, so it CANNOT read the tick.* **When a guard scores zero, ask whether the property can be made impossible instead of asserted.**
 - **⚠️ MEASURE THE THING THAT IS ACTUALLY OVER THE LINE (2026-09-09, D337).** The overhang guard reported *"nothing overhangs"* while measuring canopy **centres**. A canopy centred at 0.45 with a radius of 0.20 has already crossed the tile edge at 0.5. *The guard was right that something was wrong and wrong about what — which is the most expensive kind of red, because the obvious fix is to the wrong thing.*

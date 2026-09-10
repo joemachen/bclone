@@ -1922,6 +1922,56 @@ public partial class VillageMap : Control
         ToScreen(new Vector2(InTiles(at.X) - 0.5f, InTiles(at.Y) - 0.5f));
 
     /// <summary>
+    /// ⛔⛔ A corner the tracer produced, brought back to tile space — <b>and every one
+    /// of the three call sites had it wrong, which is why the riverbank wandered</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, from play: *"the riverbank looks pretty questionable."*</b> It was, and so were the
+    /// zone borders and the brush outline beside it, for one reason spelled three times.
+    /// </para>
+    /// <para>
+    /// ⭐⭐ <b>WHAT THE TRACER ACTUALLY EMITS.</b> <see cref="ZoneOutline"/> works in
+    /// doubled coordinates — a cell's left edge is <c>(x * 2) - 1</c> — and halves them on
+    /// the way out, so <b>a corner comes back in CELL units, where cell <c>c</c> spans
+    /// <c>[c - 0.5, c + 0.5]</c></b>. **The half-tile is already in it.** All three call sites
+    /// subtracted another one: the shore came out half a tile up and to the left of its own water,
+    /// and the zone and brush borders an eighth of a tile inside their own wash.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>One formula for all three, and it is the identity when a cell IS a tile.</b> Cell
+    /// <c>c</c>'s left edge must land where the rectangle drawn for it starts —
+    /// <c>c / cellsPerTile - 0.5</c>, which is what <see cref="SubTileRect"/> and
+    /// <see cref="TileRect"/> use — so the traced value is shifted by half a cell before
+    /// scaling and the view's half-tile comes off after. *At <paramref name="cellsPerTile"/> 1 the
+    /// two halves cancel exactly, which is why the shoreline's extra subtraction was a whole half
+    /// tile and visible from across the valley while the zones' was an eighth and merely wrong.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The tracer does not know which grid it was handed and should not.</b> It is
+    /// fed tiles by the shoreline and sub-tiles by the zones and the brush; the caller says which,
+    /// here, once. **The probe checks this against the rectangles rather than trusting the
+    /// arithmetic** — <c>ZoneOutline.SelfCheck</c> passed throughout all three bugs, because
+    /// it only ever tested the tracer.
+    /// </para>
+    /// </remarks>
+    private static Vector2 InTileSpace(Vector2 traced, int cellsPerTile) =>
+        ((traced + new Vector2(0.5f, 0.5f)) / cellsPerTile) - new Vector2(0.5f, 0.5f);
+
+    /// <summary>One sub-tile's rectangle, snapped to whole pixels for the same reason (D336).</summary>
+    private Rect2 SubTileRect(SubTile at)
+    {
+        float size = 1f / SubTile.PerTile;
+        float left = (at.X * size) - 0.5f;
+        float top = (at.Y * size) - 0.5f;
+
+        Vector2 topLeft = ToScreen(new Vector2(left, top)).Round();
+        Vector2 bottomRight = ToScreen(new Vector2(left + size, top + size)).Round();
+
+        return new Rect2(topLeft, bottomRight - topLeft);
+    }
+
+    /// <summary>
     /// ⛔⛔ One tile's rectangle, snapped to whole pixels — <b>and this is what stopped the painted
     /// ground drawing its own grid</b> (D333).
     /// </summary>
@@ -1947,30 +1997,6 @@ public partial class VillageMap : Control
     /// one-pixel gap *"reads as a bug rather than as a river"*.
     /// </para>
     /// </remarks>
-    /// <summary>
-    /// A point the tracer produced, in sub-tile units, brought back to tile units (D336).
-    /// </summary>
-    /// <remarks>
-    /// ⚠️ <b>The tracer works in whatever grid it is handed and does not know which one it was.</b>
-    /// It is fed sub-tiles here and nothing else, so the conversion lives at the one place its
-    /// output is drawn — *and the half-tile the view owes the sim is applied here too, once.*
-    /// </remarks>
-    private static Vector2 InTileSpace(Vector2 subTilePoint) =>
-        (subTilePoint / SubTile.PerTile) - new Vector2(0.5f, 0.5f);
-
-    /// <summary>One sub-tile's rectangle, snapped to whole pixels for the same reason (D336).</summary>
-    private Rect2 SubTileRect(SubTile at)
-    {
-        float size = 1f / SubTile.PerTile;
-        float left = (at.X * size) - 0.5f;
-        float top = (at.Y * size) - 0.5f;
-
-        Vector2 topLeft = ToScreen(new Vector2(left, top)).Round();
-        Vector2 bottomRight = ToScreen(new Vector2(left + size, top + size)).Round();
-
-        return new Rect2(topLeft, bottomRight - topLeft);
-    }
-
     private Rect2 TileRect(GridPos tile)
     {
         Vector2 topLeft = ToScreen(new Vector2(tile.X - 0.5f, tile.Y - 0.5f)).Round();
@@ -2025,6 +2051,95 @@ public partial class VillageMap : Control
                 + $"worst {worst:F4}px"
             : $"[widths] tile centres: ⛔ {worst:F2}px adrift at {where} — every building on the "
                 + $"map is off by {worst / Mathf.Max(1f, _pixelsPerTile):F2} of a tile";
+    }
+
+    /// <summary>
+    /// ⛔⛔ A traced outline lands on the rectangle it was traced from — <b>the guard
+    /// that was missing while the riverbank was half a tile out</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"the riverbank looks pretty questionable."*</b> It was drawn half a tile up and to
+    /// the left of its own water, the zone borders an eighth of a tile inside their own wash, and
+    /// **<c>ZoneOutline.SelfCheck</c> was green through all of it** — because it checks that
+    /// the tracer closes its loops and keeps their area, which it always did. *The bug was not in
+    /// the tracer. It was in what three call sites believed the tracer's units were.*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>So this checks the seam rather than either side of it.</b> Trace one lone cell,
+    /// convert its corners the way the drawing code does, and require them to land on the corners
+    /// of the rectangle the fill draws for that same cell — <see cref="TileRect"/> at one cell
+    /// per tile, <see cref="SubTileRect"/> at four. **If the outline and the fill disagree about
+    /// where a cell is, one of them is lying and the player can see it.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Both grids, because the two bugs were different sizes.</b> At one cell per
+    /// tile the error was a whole half tile and obvious; at four it was an eighth and merely wrong.
+    /// A guard posed at only one of them would have found only one of them — *the
+    /// pose-the-wrong-state family again (D242, D326, D332, D336).*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>IT IS THE BOUNDING BOX, NOT THE CORNERS, AND THE FIRST VERSION GOT THAT WRONG.</b>
+    /// It required every traced point to be a corner of the rectangle and **scored 24px on correct
+    /// code** — because <see cref="ZoneOutline"/> cuts corners, so a lone cell comes back as a
+    /// rounded octagon whose points sit along the edges rather than at their ends. *Measure the
+    /// thing that is actually invariant.* **The extremes survive the smoothing** — the midpoint
+    /// of each side is never moved off it — so the box the outline occupies is exactly the box
+    /// the fill draws, and a translation error of any size breaks that.
+    /// </para>
+    /// </remarks>
+    public string ATracedOutlineLandsOnItsOwnRectangle()
+    {
+        float worst = 0f;
+        string where = "nowhere";
+
+        // Away from the origin on purpose: an error that is right at (0,0) and wrong elsewhere is
+        // a scaling bug rather than a translation bug, and the origin cannot tell them apart.
+        Check("tiles", 1, TileRect(new GridPos(6, -4)), new Vector2I(6, -4));
+        Check("sub-tiles", SubTile.PerTile, SubTileRect(new SubTile(25, -15)), new Vector2I(25, -15));
+
+        return worst <= 1f
+            ? $"[widths] outline seam: ✅ outline meets fill, worst {worst:F2}px at {where}"
+            : $"[widths] outline seam: ⛔ {worst:F2}px adrift at {where} — that is "
+                + $"{worst / Mathf.Max(1f, _pixelsPerTile):F2} of a tile between a border and the "
+                + "ground it is supposed to be the border of";
+
+        void Check(string grid, int cellsPerTile, Rect2 fill, Vector2I cell)
+        {
+            var one = new HashSet<Vector2I> { cell };
+            var box = new Rect2();
+            bool started = false;
+
+            foreach (Vector2[] loop in ZoneOutline.Trace(one))
+            {
+                for (int p = 0; p < loop.Length; p++)
+                {
+                    Vector2 drawn = ToScreen(InTileSpace(loop[p], cellsPerTile));
+
+                    box = started ? box.Expand(drawn) : new Rect2(drawn, Vector2.Zero);
+                    started = true;
+                }
+            }
+
+            if (!started)
+            {
+                worst = float.PositiveInfinity;
+                where = grid + " (traced nothing at all)";
+                return;
+            }
+
+            Vector2 topLeft = (box.Position - fill.Position).Abs();
+            Vector2 bottomRight = (box.End - fill.End).Abs();
+
+            float off = Mathf.Max(
+                Mathf.Max(topLeft.X, topLeft.Y), Mathf.Max(bottomRight.X, bottomRight.Y));
+
+            if (off > worst)
+            {
+                worst = off;
+                where = grid;
+            }
+        }
     }
 
     private Vector2 ToTile(Vector2 screen) => ((screen - (Size / 2f)) / _pixelsPerTile) + _centreTile;
@@ -2160,7 +2275,7 @@ public partial class VillageMap : Control
             var onScreen = new Vector2[loop.Length];
             for (int p = 0; p < loop.Length; p++)
             {
-                onScreen[p] = ToScreen(InTileSpace(loop[p]));
+                onScreen[p] = ToScreen(InTileSpace(loop[p], SubTile.PerTile));
             }
 
             DrawPolyline(onScreen, BrushEdgeFor(direction), thickness, antialiased: true);
@@ -2842,57 +2957,139 @@ public partial class VillageMap : Control
             var onScreen = new Vector2[loop.Length];
             for (int p = 0; p < loop.Length; p++)
             {
-                onScreen[p] = ToScreen(InTileSpace(loop[p]));
+                onScreen[p] = ToScreen(InTileSpace(loop[p], SubTile.PerTile));
             }
 
             DrawPolyline(onScreen, edge, Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
         }
     }
 
+    /// <summary>
+    /// ⛔⛔ The painted ground — <b>and the pass that was eighty per cent of the
+    /// frame</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, from play: *"the framerate feels A LOT more sluggish."*</b> D336 was right to draw
+    /// the wash from the sub-tiles — the paint is quarter-tiles, and a picture drawn from the
+    /// tile summary would show a blockier shape than the player laid down — but it stepped
+    /// **every** visible quarter-tile: sixteen cells per tile, ~88,000 iterations a frame, for a
+    /// valley that is almost entirely unpainted. *The cost was paid on the empty ground.*
+    /// </para>
+    /// <para>
+    /// ⭐⭐ <b>THE ANSWER WAS ALREADY IN <c>ZoneMap</c>, PRIVATE.</b> It has kept a byte per
+    /// tile per layer since D335 — how many of the sixteen are painted. Asked first, the pass
+    /// becomes three cases: <b>an empty tile costs one comparison, a full tile costs one
+    /// rectangle, and only the ragged edge pays sixteen.</b> A ragged edge is a thin ring round a
+    /// region, so the sixteens are a rounding error on a real village.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>NOT <c>IsResidential</c> / <c>IsHarvest</c>, and that is the trap this had to
+    /// avoid.</b> Those mean *"at least half"* — the threshold the economy asks in — so a
+    /// tile with one quarter painted answers <c>false</c> **and still has paint to draw.** Skipping
+    /// on them would have erased exactly the ragged edge the sub-tiles were built for, and it would
+    /// have looked like the feature rather than like a bug.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A full work-ground tile is one owner</b>, so it collapses like the other two: a
+    /// sub-tile may only be given to the owner its tile already has
+    /// (<c>ZoneMap.SetWorkGround</c>), so sixteen owned quarters are sixteen quarters owned by
+    /// <c>WorkGroundOwner</c>.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>And the selected owner is asked ONCE.</b> It used to be asked inside the
+    /// inner loop, and <c>SelectedGroundOwner</c> walks every workplace doing
+    /// <c>Footprint.Covers</c> — *the sim's hottest call, in fixed-point, with a rotation in
+    /// it* — which came to roughly nineteen thousand rotated-rectangle tests a frame to answer
+    /// a question whose answer cannot change during the pass.
+    /// </para>
+    /// </remarks>
     private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
     {
         ZoneMap zones = _world!.Zones;
 
         TraceTheZonesIfTheyMoved(zones);
 
-        // ⭐⭐ THE WASH IS DRAWN FROM THE SUB-TILES NOW (D336), which is the whole visible half of
-        // the slice: the paint is quarter-tiles, so a picture drawn from the tile summary would
-        // show a blockier shape than the player laid down. **The outline and the fill are the same
-        // set of quarter-tiles, so they cannot disagree.**
-        // ⚠️ Clipped to the visible window like every other pass, and stepped in sub-tiles.
-        for (int y = minY * SubTile.PerTile; y < (maxY + 1) * SubTile.PerTile; y++)
+        int mine = SelectedGroundOwner();
+        _zoneRectsLastFrame = 0;
+
+        for (int y = minY; y <= maxY; y++)
         {
-            for (int x = minX * SubTile.PerTile; x < (maxX + 1) * SubTile.PerTile; x++)
+            for (int x = minX; x <= maxX; x++)
             {
-                var at = new SubTile(x, y);
-                int index = IndexOfSub(zones, at);
-                if (index < 0)
+                var tile = new GridPos(x, y);
+
+                int homes = zones.ResidentialSubTilesOn(tile);
+                int work = zones.WorkGroundSubTilesOn(tile);
+                int harvest = zones.HarvestSubTilesOn(tile);
+
+                // The whole point: an unpainted tile is three byte reads and nothing else.
+                if ((homes | work | harvest) == 0)
                 {
                     continue;
                 }
 
-                if (zones.ResidentialSub[index])
-                {
-                    DrawRect(SubTileRect(at), ResidentialColour);
-                }
-
-                int owner = zones.WorkGroundSub[index];
-                if (owner != 0)
-                {
-                    DrawRect(
-                        SubTileRect(at),
-                        owner == SelectedGroundOwner() ? WorkGroundMine : WorkGroundColour);
-                }
-
-                if (zones.HarvestSub[index])
-                {
-                    DrawRect(SubTileRect(at), HarvestColour);
-                }
+                DrawLayer(tile, Layer.Residential, homes, ResidentialColour);
+                DrawLayer(
+                    tile,
+                    Layer.WorkGround,
+                    work,
+                    zones.WorkGroundOwner(tile) == mine ? WorkGroundMine : WorkGroundColour);
+                DrawLayer(tile, Layer.Harvest, harvest, HarvestColour);
             }
         }
 
         DrawTheZoneOutlines();
+
+        void DrawLayer(GridPos tile, Layer layer, int painted, Color colour)
+        {
+            if (painted == 0)
+            {
+                return;
+            }
+
+            if (painted == SubTile.PerWholeTile)
+            {
+                DrawRect(TileRect(tile), colour);
+                _zoneRectsLastFrame++;
+                return;
+            }
+
+            for (int sy = 0; sy < SubTile.PerTile; sy++)
+            {
+                for (int sx = 0; sx < SubTile.PerTile; sx++)
+                {
+                    SubTile at = SubTile.Of(tile, sx, sy);
+                    int index = IndexOfSub(zones, at);
+                    if (index < 0)
+                    {
+                        continue;
+                    }
+
+                    bool here = layer switch
+                    {
+                        Layer.Residential => zones.ResidentialSub[index],
+                        Layer.WorkGround => zones.WorkGroundSub[index] != 0,
+                        _ => zones.HarvestSub[index],
+                    };
+
+                    if (here)
+                    {
+                        DrawRect(SubTileRect(at), colour);
+                        _zoneRectsLastFrame++;
+                    }
+                }
+            }
+        }
     }
+
+    /// <summary>
+    /// How many rectangles the painted-ground pass drew last frame — <b>for the debug readout,
+    /// because *"it feels sluggish"* needs a number</b> (D338).
+    /// </summary>
+    public int ZoneRectsLastFrame => _zoneRectsLastFrame;
+
+    private int _zoneRectsLastFrame;
 
     /// <summary>Where a sub-tile lives in the zone arrays, or −1 if it is off the map.</summary>
     private int IndexOfSub(ZoneMap zones, SubTile at)
@@ -3004,9 +3201,11 @@ public partial class VillageMap : Control
 
             for (int p = 0; p < loop.Length; p++)
             {
-                // ⚠️ Traced in TILE units here, not sub-tiles — the tracer does not know which grid
-                // it was handed, so the conversion belongs at each call site rather than in it.
-                onScreen[p] = ToScreen(loop[p] - new Vector2(0.5f, 0.5f));
+                // ⛔ ONE CELL PER TILE, AND THAT IS ALL THIS CALL SITE HAS TO SAY (D338).
+                // It used to subtract half a tile by hand and **the shore came out half a tile up
+                // and to the left of the water it was tracing** — the half is already in what
+                // the tracer emits. *`InTileSpace` is the identity at one cell per tile.*
+                onScreen[p] = ToScreen(InTileSpace(loop[p], 1));
             }
 
             DrawPolyline(onScreen, ShoreColour, thickness, antialiased: true);
@@ -3502,6 +3701,16 @@ public partial class VillageMap : Control
 
     /// <summary>Whether one workplace's marker is switched on, ignoring the global switch.</summary>
     public bool IdleMarkerShownFor(int workplaceId) => !_idleMarkerMuted.Contains(workplaceId);
+
+    /// <summary>
+    /// The three things the player can paint on the ground — <b>named, because two passes now
+    /// have to agree about which is which</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ The wash and the outline are drawn by different code from the same sub-tiles, so
+    /// the layer had to stop being *"whichever colour it came out"*.
+    /// </remarks>
+    private enum Layer { Residential, WorkGround, Harvest }
 
     /// <summary>The smoothed borders of every painted region, and what they were traced from.</summary>
     /// <remarks>

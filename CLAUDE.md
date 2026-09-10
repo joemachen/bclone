@@ -34,6 +34,20 @@ If a request — from Joe or your own inference — would violate a Non-Negotiab
 - **Test sim logic** (METHODOLOGY §3). Sim code is pure and deterministic — prefer TDD: failing test from the spec, then implement. The determinism test stays green forever; a regression there is a P0 bug. No phase merges without its Definition of Done met.
 - **Log richly** (METHODOLOGY §4). Structured, leveled, tick-stamped. Never swallow exceptions — catch, log with context, then handle or fail loudly.
 - **Keep it legible in code, too.** Favor clear, inspectable systems over clever ones, matching the game's own philosophy. Small reviewable changes over giant diffs.
+- **⛔ NOTHING DERIVABLE INCREMENTALLY MAY BE REBUILT PER TICK OR PER FRAME. Keep the index and
+  maintain it where the state changes.** *Joe's rule, 2026-09-10.* This is the one that would have
+  caught **every** performance regression this project has had, and each was found by accident:
+  `Footprint.Covers` building the whole tile list to answer about one tile (**suite 4m55s → 9m**,
+  D329); `IsHarvest` scanning 9,600 tiles inside a per-trip loop (**six minutes to eleven**, D179);
+  the zone wash stepping every visible quarter-tile when a byte per tile already said whether there
+  was anything there (**80% of the frame**, D338). ⭐ The shape to copy is already here three
+  times: `ZoneMap._groundByOwner` / `_tilesByOwner`, `ZoneMap.Edits`, and `SimWorld.TerrainGeneration`
+  — *a monotonic counter is the cheapest honest answer to "has this changed since I last
+  looked?"* ⚠️ **A derived index is never hashed** (D335): it restates the state, it is not
+  a second fact about the village. ⚠️ **This is not a zero-allocation rule and must not be
+  read as one.** The sim ticks at `target_ticks_per_second: 0.75`; GC pressure has never been the
+  problem here and pooled buffers shared across ticks are a determinism hazard, which is a far worse
+  bug than the one they would prevent.
 
 ## Verification — before saying anything is done
 

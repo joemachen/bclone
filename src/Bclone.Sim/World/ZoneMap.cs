@@ -143,6 +143,57 @@ public sealed class ZoneMap
     /// <summary>Every marked sub-tile, in a fixed order — the state, hashed and drawn.</summary>
     public IReadOnlyList<bool> HarvestSub => _harvestSub;
 
+    /// <summary>
+    /// ⭐⭐ How many of a tile's sixteen sub-tiles each layer has painted — <b>so the
+    /// renderer can skip a tile without asking sixteen questions about it</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THIS EXISTS BECAUSE THE COUNTS WERE ALREADY HERE AND THE VIEW COULD NOT SEE
+    /// THEM.</b> D336 turned the wash into a sub-tile pass and it became <b>eighty per cent of every
+    /// loop iteration the map runs</b> — ~88,000 a frame — for a valley that is mostly
+    /// unpainted. **The arrays that answer "is there anything on this tile at all?" in one byte were
+    /// three lines up, private.** *Joe: "the framerate feels A LOT more sluggish."*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>These are NOT <see cref="IsResidential"/> and <see cref="IsHarvest"/>, and
+    /// the difference is the whole point.</b> Those mean *"at least half"* — the threshold the
+    /// economy asks in — so a tile with one quarter painted answers <c>false</c> to them **and
+    /// still has paint to draw.** A renderer that skipped on those would erase the ragged edge the
+    /// sub-tiles exist for.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Derived, never hashed</b>, like the arrays behind them and like <see cref="Edits"/>
+    /// — a count of painted quarters is a restatement of the sub-tile arrays, not a second fact
+    /// about the village.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A full count means one owner, for work ground too.</b> A sub-tile may only be given
+    /// to the owner its tile already has (see <see cref="SetWorkGround(SubTile, int)"/>), so sixteen
+    /// owned quarters are sixteen quarters owned by <see cref="WorkGroundOwner"/> — which is
+    /// what lets the renderer collapse a whole tile into one rectangle.
+    /// </para>
+    /// </remarks>
+    public int ResidentialSubTilesOn(GridPos tile)
+    {
+        int index = IndexOf(tile);
+        return index < 0 ? 0 : _residentialCount[index];
+    }
+
+    /// <inheritdoc cref="ResidentialSubTilesOn"/>
+    public int WorkGroundSubTilesOn(GridPos tile)
+    {
+        int index = IndexOf(tile);
+        return index < 0 ? 0 : _workGroundCount[index];
+    }
+
+    /// <inheritdoc cref="ResidentialSubTilesOn"/>
+    public int HarvestSubTilesOn(GridPos tile)
+    {
+        int index = IndexOf(tile);
+        return index < 0 ? 0 : _harvestCount[index];
+    }
+
     /// <summary>Where in the sub-tile arrays a sub-tile lives, or −1 if it is off the map.</summary>
     private int SubIndexOf(SubTile at)
     {

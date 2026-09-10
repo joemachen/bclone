@@ -5,8 +5,10 @@
 time, they overhang their tiles so the treeline is ragged, saplings read as a young wood, and the
 river has a bank. **1063 passing, 0 failing, 2 skipped of 1065 — no golden moved.** ⏸ **Not in
 this slice, and named in §4 rather than forgotten: filling the smoothed contour, the soil overlay,
-and the generator's Manhattan forest clumps.** ⚠️ **Unplayed by Joe as of this line.** *Rewritten
-whole, in the commit that changes it (D159, and the trap D332 added).*
+and the generator's Manhattan forest clumps.** ✅ **Joe has played it: *"the trees look pretty cool"*.**
+⛔ **And the riverbank was drawn half a tile off the river** — *"the riverbank looks pretty
+questionable"* — fixed in D338, along with the same bug an eighth of a tile wide in the zone
+borders. See §5. *Rewritten whole, in the commit that changes it (D159, and the trap D332 added).*
 
 ---
 
@@ -82,10 +84,13 @@ self-check does:
 - The tree scatter is **deterministic — and that is enforced by a type rather than a check.**
   `CanopyOn` is a `static` taking a tile and an index, so it cannot reach the tick or the frame
   alpha at all. ⚠️ *The runtime guard that preceded it scored zero and is recorded in §6.*
-- **The shoreline has no check of its own, and that is deliberate rather than an omission.** It is
-  the same `ZoneOutline.Trace` the zone borders use, and that tracer's self-check already poses
-  closure and **a ring round a hole** — the case a shoreline would care about, since a lake with an
-  island is exactly that shape. *A second copy of the same assertion would only test the copy.*
+- ⛔⛔ **THE SHORELINE HAD NO CHECK OF ITS OWN AND THAT REASONING WAS WRONG (D338).** This spec
+  argued that the tracer's self-check already covered it — *"a second copy of the same assertion
+  would only test the copy"* — and the argument was sound about **the tracer** and silent about
+  **the seam.** The tracer was correct throughout; the call site misread its units and **drew the
+  bank half a tile off the water.** ⭐ `ATracedOutlineLandsOnItsOwnRectangle` checks the thing that
+  was actually untested: *a traced outline's bounding box must equal the rectangle the fill draws for
+  the same cell*, posed at one cell per tile and at four. **Red-checked twice, two reds.**
 - ⚠️ **Watch the frame cost.** The visible window is already walked six times a frame; trees are a
   seventh pass and the shoreline must not become one.
 
@@ -98,7 +103,7 @@ self-check does:
 | 3 | The river has a bank | ✅ the D332 tracer over the water tiles |
 | 4 | Zoom-gated, cached, no new per-frame full-map walk | ✅ trees above 10px/tile; the shore cached on `TerrainGeneration` |
 | 5 | **No golden moves.** Probe green, bar height 161 | ✅ |
-| 6 | Joe plays it | ⏸️ owed |
+| 6 | Joe plays it | ✅ *"the trees look pretty cool"* — and the riverbank was half a tile off (D338) |
 
 ⛔⛔ **THE DETERMINISM GUARD SCORED ZERO AND WAS REPLACED BY A TYPE, NOT A BETTER TEST.** The probe
 asserted the scatter was deterministic by computing it twice and comparing — and **that could never
