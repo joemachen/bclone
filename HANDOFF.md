@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ A ROUND FIELD IS ROUND, THE FACETS ARE GONE — ONE BUILD UNPLAYED**
+# Handoff — bclone: **▶️ A ROUND FIELD IS ROUND, THE FACETS ARE GONE — JOE: "THE BRUSH IS GREAT NOW"**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (late).**
 > **1081 passing, 0 failing, 2 skipped of 1083** — run locally on `main`, **~3m** (⚠️ `HEAD` without
@@ -11,7 +11,7 @@
 > to end, the take-back erasing the field, the orange site with no ring beside it, the market's
 > `Holding:` line, and a thin housing stroke siting no house.
 >
-> **⚠️ WHAT JOE HAS NOT PLAYED YET (D352) — three fixes from his three reports on D351:**
+> **✅ JOE PLAYED D352 (2026-09-11, late): *"yes, the brush is great now. push!"* — pushed.** What he confirmed, for the record:
 > 1. **The facets** (*"triangle artifacting"*): the zone fill is ear-clipped, not Delaunay. Paint a
 >    big round housing or forester zone — no lighter/darker triangles inside it.
 > 2. **The bare corner** (*"why is part of this painted farm not farmland?"*): a farm works every
