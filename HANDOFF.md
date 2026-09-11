@@ -1,11 +1,11 @@
-# Handoff — bclone: **▶️ A ROUND FIELD IS ROUND, THE FACETS ARE GONE — JOE: "THE BRUSH IS GREAT NOW"**
+# Handoff — bclone: **▶️ PHASE 4.5 IS CURRENT (D353) — NEXT IS GRIDLESS SLICE 3, VILLAGERS HOLD A `Point`**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (late).**
 > **1081 passing, 0 failing, 2 skipped of 1083** — run locally on `main`, **~3m** (⚠️ `HEAD` without
 > this session's change measured 3m00s the same hour; the 2m35s of the morning was the machine, not
 > the code — *measured before it was believed*).
-> **The decision log runs to D352**; read D338–D352 in `DESIGN.md §7` for the last two days —
-> fifteen decisions, every one of them from Joe playing a build.
+> **The decision log runs to D353**; read D338–D353 in `DESIGN.md §7` for the last two days —
+> sixteen decisions — fifteen from Joe playing a build, and D353 the roadmap review that came after (`DESIGN.md §4`, *Master Roadmap*: **Phase 4.5 is current, slice 3 is next**).
 >
 > **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D351):** everything up to and including wheat end
 > to end, the take-back erasing the field, the orange site with no ring beside it, the market's
@@ -305,6 +305,8 @@ not need it.*
 four founders froze in Winter Year 1 and every line saying so rendered into nothing.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT AND SLICE 3 IS NEXT.** Slice 3 = villagers hold a `Point` (`gridless.md §8`); then slice 4 (string-pulled paths), then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 3 is where a movement bug can first arrive; Joe's call on 2c was *buildings only* precisely so it could not arrive tangled with placement. Read `gridless.md §8` and §10 before starting it.
 
 - ~~⭐ **NEXT: A FIELD LOOKS LIKE A FIELD (Commit L of the wheat plan).**~~ ✅ D349. Bare/furrowed `Field`, sparse green `Sown`, dense gold `Ripe` — marks from a hash like the trees, **not** overhanging (a field's edge is a fence line). Ripe stalks in the wheat chip's colour so map and Overview agree. View only.
 - ~~⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").**~~ ✅ D348, **confirmed in play by Joe the same day** (D350). `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.
