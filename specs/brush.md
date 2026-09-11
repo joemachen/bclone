@@ -122,9 +122,10 @@ play the same day:** *"this is what the 'round' brush for the farm looks like no
 farm round brush SHOULD be exactly as round as the tree painting brush."*
 
 So there is **one stroke, for every layer**: `SubTilesUnder`, quarter-tiles, the curve. What answers
-the field-outside-the-paint defect instead is the **renderer clipping the field to the paint**
-(`sub-tile-zones.md §3.1`, `VillageMap.DrawWorkedGround`) and the sim ploughing only a **held** tile.
-⛔ *Do not re-propose a per-layer stroke shape; the player holds one brush.*
+the field-outside-the-paint defect instead is **the field drawn AS the paint**, filled along the same
+curve as the wash, with any painted quarter worked and the harvest in proportion (D352,
+`sub-tile-zones.md §3.1`, `VillageMap.DrawWorkedGround`). ⛔ *Do not re-propose a per-layer stroke
+shape; the player holds one brush.*
 
 
 ## 5. Edge cases & failure modes

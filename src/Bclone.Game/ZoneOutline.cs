@@ -160,6 +160,18 @@ internal static class ZoneOutline
         Filled("a 5x5 square", Block(5, 5), 25f, within: 0.02f);
         Filled("a ring round a hole", RingOfTiles(), 8f, within: 0.06f);
 
+        // ⛔⛔ AND THE TRIANGLES DO NOT OVERLAP (D352). Joe: *"sometimes the paintbrush (all
+        // types) has weird… triangle artifacting"* — a translucent fill drawn twice where two
+        // triangles overlap is a darker facet, and once where a gap is left is a lighter one.
+        // `Filled` above cannot see it: a double-covered patch beside a gap sums to the right area.
+        // **The triangles' area against the loops' own area is what tells them apart** — a fill
+        // with no overlap and no gap is the polygon, exactly.
+        Tiled("a 5-tile round brush", RoundBrush(10), SubTilesPerTile);
+        Tiled("a 7-tile round brush", RoundBrush(14), SubTilesPerTile);
+        Tiled("a 10-tile round brush", RoundBrush(20), SubTilesPerTile);
+        Tiled("a 6-tile square", Block(24, 24), SubTilesPerTile);
+        Tiled("a 13-tile round brush", RoundBrush(26), SubTilesPerTile);
+
         return complaints.Count == 0
             ? $"[widths] zone outlines: ✅ every shape closed and kept its area{sizes}"
             : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints);
@@ -188,6 +200,37 @@ internal static class ZoneOutline
             if (fill > wanted + 0.04f)
             {
                 complaints.Add($"{what}: fills {fill * 100f:F0}%, a disc fills {wanted * 100f:F0}%");
+            }
+        }
+
+        void Tiled(string what, IEnumerable<(int X, int Y)> cells, int cellsPerTile)
+        {
+            var set = new HashSet<Vector2I>();
+            foreach ((int x, int y) in cells)
+            {
+                set.Add(new Vector2I(x, y));
+            }
+
+            List<Vector2[]> loops = Trace(set, cellsPerTile);
+            float polygon = 0f;
+            foreach (Vector2[] loop in loops)
+            {
+                // Outer loops and holes wind opposite ways, so the signed sum is the region.
+                polygon += SignedArea(loop);
+            }
+
+            polygon = Mathf.Abs(polygon);
+            float triangles = TriangleArea(Fill(loops, set));
+            float ratio = polygon > 0f ? triangles / polygon : 0f;
+            sizes += $" · {what} is tiled to {ratio:F3} of its own area";
+
+            // Half a percent: the centroid filter can drop a sliver at a concavity and that is
+            // a gap of a triangle's width, not a facet.
+            if (Mathf.Abs(ratio - 1f) > 0.005f)
+            {
+                complaints.Add(
+                    $"{what}: the triangles cover {ratio:F3} of the polygon — "
+                    + (ratio > 1f ? "overlapping, which draws darker facets" : "with gaps, which draw lighter ones"));
             }
         }
 
@@ -620,48 +663,229 @@ internal static class ZoneOutline
     /// </remarks>
     internal static Vector2[] Fill(List<Vector2[]> loops, HashSet<Vector2I> cells)
     {
-        var points = new List<Vector2>();
+        // ⛔⛔ EAR CLIPPING, NOT DELAUNAY (D352). D345 triangulated the loop points with
+        // `Geometry2D.TriangulateDelaunay` and kept the triangles whose centroid sat on paint. Joe:
+        // *"sometimes the paintbrush (all types) has weird… triangle artifacting."* Measured with
+        // `Tiled` in the self-check: the Delaunay triangles cover **1.62× a 7-tile round's area
+        // and 2.30× a 13-tile round's** — they overlap, and a translucent fill drawn twice is a
+        // darker facet. A smoothed round is hundreds of points lying almost on one circle, the
+        // one input Delaunay is not unique for, and nudging the points off it only moved which
+        // brush sizes broke. **A polygon's own ear clipping cannot overlap and cannot gap**: it
+        // is the polygon, exactly. Holes are bridged into their outer loop first — the classic
+        // cut from the hole's rightmost point to a visible outer vertex — so a ring round a hut
+        // is one weakly simple polygon and fills as a ring.
+        var outers = new List<List<Vector2>>();
+        var holes = new List<List<Vector2>>();
+        float outerSign = 0f;
+        float largest = 0f;
+
         foreach (Vector2[] loop in loops)
         {
-            // The closing repeat is dropped, and so is anything coincident with its predecessor.
-            for (int i = 0; i + 1 < loop.Length; i++)
+            float signed = Mathf.Abs(SignedArea(loop));
+            if (signed > largest)
             {
-                if (points.Count == 0 || points[^1].DistanceSquaredTo(loop[i]) > 1e-8f)
-                {
-                    points.Add(loop[i]);
-                }
+                largest = signed;
+                outerSign = Mathf.Sign(SignedArea(loop));
             }
         }
 
-        if (points.Count < 3)
+        foreach (Vector2[] loop in loops)
         {
-            return System.Array.Empty<Vector2>();
-        }
-
-        Vector2[] corners = points.ToArray();
-        int[] indices = Geometry2D.TriangulateDelaunay(corners);
-        var kept = new List<Vector2>(indices.Length);
-
-        for (int t = 0; t + 2 < indices.Length; t += 3)
-        {
-            Vector2 a = corners[indices[t]];
-            Vector2 b = corners[indices[t + 1]];
-            Vector2 c = corners[indices[t + 2]];
-            Vector2 centroid = (a + b + c) / 3f;
-
-            // Cell c spans [c - 0.5, c + 0.5], so the cell under a point is the nearest integer.
-            var cell = new Vector2I(Mathf.RoundToInt(centroid.X), Mathf.RoundToInt(centroid.Y));
-            if (!cells.Contains(cell))
+            List<Vector2> open = WithoutTheClosingRepeat(loop);
+            if (open.Count < 3)
             {
                 continue;
             }
 
-            kept.Add(a);
-            kept.Add(b);
-            kept.Add(c);
+            (Mathf.Sign(SignedArea(loop)) == outerSign ? outers : holes).Add(open);
+        }
+
+        var kept = new List<Vector2>();
+        foreach (List<Vector2> outer in outers)
+        {
+            List<Vector2> polygon = outer;
+
+            // Every hole inside this outer loop, rightmost first, bridged in one at a time.
+            var inside = new List<List<Vector2>>();
+            Vector2[] fence = outer.ToArray();
+            foreach (List<Vector2> hole in holes)
+            {
+                if (Geometry2D.IsPointInPolygon(hole[0], fence))
+                {
+                    inside.Add(hole);
+                }
+            }
+
+            inside.Sort((a, b) => Rightmost(b).X.CompareTo(Rightmost(a).X));
+            foreach (List<Vector2> hole in inside)
+            {
+                polygon = Bridge(polygon, hole);
+            }
+
+            Vector2[] corners = polygon.ToArray();
+            int[] indices = Geometry2D.TriangulatePolygon(corners);
+
+            if (indices.Length == 0)
+            {
+                // ⚠️ The clipper refused it — a self-touching bridge it could not see past. The
+                // old path is kept as the fallback so the region still fills, facets and all,
+                // rather than vanishing; the self-check's `Tiled` line is what says how often.
+                indices = Geometry2D.TriangulateDelaunay(corners);
+                for (int t = 0; t + 2 < indices.Length; t += 3)
+                {
+                    Vector2 centroid = (corners[indices[t]] + corners[indices[t + 1]] + corners[indices[t + 2]]) / 3f;
+                    var cell = new Vector2I(Mathf.RoundToInt(centroid.X), Mathf.RoundToInt(centroid.Y));
+                    if (cells.Contains(cell))
+                    {
+                        kept.Add(corners[indices[t]]);
+                        kept.Add(corners[indices[t + 1]]);
+                        kept.Add(corners[indices[t + 2]]);
+                    }
+                }
+
+                continue;
+            }
+
+            for (int t = 0; t + 2 < indices.Length; t += 3)
+            {
+                kept.Add(corners[indices[t]]);
+                kept.Add(corners[indices[t + 1]]);
+                kept.Add(corners[indices[t + 2]]);
+            }
         }
 
         return kept.ToArray();
+    }
+
+    /// <summary>A loop's points without the repeated first point, and without coincident neighbours.</summary>
+    private static List<Vector2> WithoutTheClosingRepeat(Vector2[] loop)
+    {
+        var points = new List<Vector2>(loop.Length);
+        for (int i = 0; i + 1 < loop.Length; i++)
+        {
+            if (points.Count == 0 || points[^1].DistanceSquaredTo(loop[i]) > 1e-8f)
+            {
+                points.Add(loop[i]);
+            }
+        }
+
+        if (points.Count > 1 && points[^1].DistanceSquaredTo(points[0]) <= 1e-8f)
+        {
+            points.RemoveAt(points.Count - 1);
+        }
+
+        return points;
+    }
+
+    private static Vector2 Rightmost(List<Vector2> loop)
+    {
+        Vector2 best = loop[0];
+        foreach (Vector2 point in loop)
+        {
+            if (point.X > best.X)
+            {
+                best = point;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Splice a hole into its outer polygon along a zero-width cut, so one ear-clipping pass
+    /// fills the ring.
+    /// </summary>
+    /// <remarks>
+    /// From the hole's rightmost vertex to the nearest outer vertex the cut can reach without
+    /// crossing an edge of either — checked against every edge, because an outer loop can be as
+    /// concave as the player paints it. ⚠️ If no vertex is visible (it should always be — the
+    /// rightmost point of a hole can always see the outer boundary somewhere) the nearest one is
+    /// taken anyway and the clipper's fallback in <see cref="Fill"/> catches the result.
+    /// </remarks>
+    private static List<Vector2> Bridge(List<Vector2> outer, List<Vector2> hole)
+    {
+        int start = 0;
+        for (int i = 1; i < hole.Count; i++)
+        {
+            if (hole[i].X > hole[start].X)
+            {
+                start = i;
+            }
+        }
+
+        Vector2 from = hole[start];
+
+        int best = -1;
+        float bestDistance = float.MaxValue;
+        for (int i = 0; i < outer.Count; i++)
+        {
+            float distance = from.DistanceSquaredTo(outer[i]);
+            if (distance >= bestDistance
+                || Crosses(from, outer[i], outer, i)
+                || Crosses(from, outer[i], hole, start))
+            {
+                continue;
+            }
+
+            best = i;
+            bestDistance = distance;
+        }
+
+        if (best < 0)
+        {
+            for (int i = 0; i < outer.Count; i++)
+            {
+                float distance = from.DistanceSquaredTo(outer[i]);
+                if (distance < bestDistance)
+                {
+                    best = i;
+                    bestDistance = distance;
+                }
+            }
+        }
+
+        // outer[0..best], then the hole once round from its rightmost point and back to it,
+        // then outer[best] again and the rest of the outer loop.
+        var spliced = new List<Vector2>(outer.Count + hole.Count + 2);
+        for (int i = 0; i <= best; i++)
+        {
+            spliced.Add(outer[i]);
+        }
+
+        for (int k = 0; k <= hole.Count; k++)
+        {
+            spliced.Add(hole[(start + k) % hole.Count]);
+        }
+
+        for (int i = best; i < outer.Count; i++)
+        {
+            spliced.Add(outer[i]);
+        }
+
+        return spliced;
+    }
+
+    /// <summary>
+    /// Whether the cut from <paramref name="a"/> to <paramref name="b"/> crosses an edge of the
+    /// loop, ignoring the two edges that meet at vertex <paramref name="at"/>.
+    /// </summary>
+    private static bool Crosses(Vector2 a, Vector2 b, List<Vector2> loop, int at)
+    {
+        for (int i = 0; i < loop.Count; i++)
+        {
+            int next = (i + 1) % loop.Count;
+            if (i == at || next == at)
+            {
+                continue;
+            }
+
+            if (Geometry2D.SegmentIntersectsSegment(a, b, loop[i], loop[next]).VariantType != Variant.Type.Nil)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>The area the triangles cover, for the self-check.</summary>

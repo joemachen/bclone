@@ -1,7 +1,7 @@
 # Spec: Sub-tile zones — the player paints finer than the ground is stored
 
 **Decisions:** D42, D86, D87, D332, D333, D335. Follows `gridless.md` and `brush.md`.
-**Status:** ✅ **BOTH SLICES BUILT.** **Slice 1** (2026-09-09, D335) — `SubTile`, `ZoneMap` storing sixteen sub-tiles to a tile with incremental summaries, and the hash. **Slice 2** (2026-09-09, D336) — the brush paints quarter-tiles, the wash and the outline are drawn from them, and a five-tile round brush now fills **79% of its box** where whole tiles gave **84%**. ⭐ *That five points is the difference between a circle and "haha this is a circle????"* **1063 passing, 0 failing, 2 skipped of 1065; six goldens moved in slice 1 and none in slice 2.** ✅ **Played by Joe (2026-09-10/11)** — and what he found at the EDGE is §3.1 (D350, 2026-09-11): homes and fields hung half a tile out of the paint, and a taken-back field stayed ploughed for ever. **1082 passing, 0 failing, 2 skipped of 1084 — no golden moved.** ⚠️ **D351 (same day): whole-tile farm paint rejected by Joe in play; the field is drawn clipped to quarter-tile paint instead — 1080 / 0 / 2 of 1082.**
+**Status:** ✅ **BOTH SLICES BUILT.** **Slice 1** (2026-09-09, D335) — `SubTile`, `ZoneMap` storing sixteen sub-tiles to a tile with incremental summaries, and the hash. **Slice 2** (2026-09-09, D336) — the brush paints quarter-tiles, the wash and the outline are drawn from them, and a five-tile round brush now fills **79% of its box** where whole tiles gave **84%**. ⭐ *That five points is the difference between a circle and "haha this is a circle????"* **1063 passing, 0 failing, 2 skipped of 1065; six goldens moved in slice 1 and none in slice 2.** ✅ **Played by Joe (2026-09-10/11)** — and what he found at the EDGE is §3.1 (D350, 2026-09-11): homes and fields hung half a tile out of the paint, and a taken-back field stayed ploughed for ever. **1082 passing, 0 failing, 2 skipped of 1084 — no golden moved.** ⚠️ **D351 and D352 (same day): whole-tile farm paint rejected by Joe in play, then the half rule for work ground too — a farm works any painted quarter, the harvest is in proportion, and the field is drawn as the paint along its own curve. 1081 / 0 / 2 of 1083, no golden moved. Unplayed as of this line.**
 
 ---
 
@@ -47,7 +47,7 @@ number stay exactly where they are.
 
 > **A tile counts as painted when at least half of its sixteen sub-tiles are.**
 
-⭐ **One sentence, all three layers, and every existing tile-level question keeps its meaning.**
+⭐ **One sentence — for housing and for harvest marks since D352, when work ground left it (§3.1) — and every existing tile-level question keeps its meaning.**
 *"Is this tile residential?"*, *"how many tiles has this farm?"*, *"which ground is marked for
 clearing?"* — all still answered in tiles, all still the same numbers for any village that paints
 whole tiles, which is every village that exists today.
@@ -65,7 +65,7 @@ held; nothing then said what the **edge** should look like. It is stated per lay
 | Layer | The whole-tile act | The edge rule |
 |---|---|---|
 | **Housing** | a home is sited | **`ChooseSite` takes only a tile painted in FULL (16 of 16).** The half rule still decides `IsResidential` and `ResidentialTiles` for everyone else. The brush's ragged rim is a margin nobody builds on, and a house never overhangs the border. |
-| **A farm's ground** | the plough, the sowing, the reaping | **The paint stays quarter-tiles and the curve, and the FIELD IS DRAWN CLIPPED TO IT** (D351). A fully painted tile draws whole; an edge tile draws only its painted quarters, and a furrow or a stalk lands only on a painted quarter (`VillageMap.DrawWorkedGround`). The sim ploughs a tile once the farm **holds** it (`ZoneMap.Holds`, ≥ 8 of 16 — never on the first quarter, D350) and still sows and reaps whole tiles under the curve. ⛔ **D350 tried the other answer for one build — whole-tile farm paint with a straight border — and Joe rejected it the same day:** *"farm round brush SHOULD be exactly as round as the tree painting brush."* Do not re-propose it. |
+| **A farm's ground** | the plough, the sowing, the reaping | ⭐⭐ **ANY QUARTER IS WORKED, AND THE HARVEST IS IN PROPORTION** (D352). A farm holds every tile it has any paint on (`ZoneMap.Holds`, `WorkGroundOf` — the hold moved from eight of sixteen to one); the plough runs on the first quarter and backwards on the last; a reaped tile yields `CropYieldAt × painted ⁄ 16`, so a quarter-painted edge tile is a quarter of a field. **The field is drawn as the paint** — the farm's cells split by stage (bare, sown, ripe), each traced and filled along the same curve as the wash (`VillageMap.DrawWorkedGround`, `TraceTheZonesIfTheyMoved`) — so a round brush gives a round field the radius of the brush, and the furrows and stalks land only on painted quarters. Joe, from a round field with a bare notch: *"why is part of this painted farm not farmland?"*, *"I want a fully round plot the same radius as the paintbrush."* ⛔ **Two answers were tried and rejected the same day**: whole-tile farm paint with a straight border (D350 — *"farm round brush SHOULD be exactly as round as the tree painting brush"*), and the half rule with the drawn field clipped to it (D351 — the bare notch). Do not re-propose either. A whole-tile village is exactly what it was. |
 | **A forester's ground** | felling, planting | unchanged — the half rule, drawn as the curve. A treeline is ragged and a tree's canopy overhangs its tile anyway (D337). |
 | **Harvest marks** | felling, quarrying | unchanged — the half rule, drawn as the curve. ⚠️ **Except the mark D100 paints under a newly marked building**, which is not drawn as a zone at all: the site is drawn in the clearing's orange while its ground is busy, and the mark is retired when the building stands (D344). |
 
@@ -81,7 +81,7 @@ so the brush left furrows on ground nobody owned, for ever.
 |---|---|---|
 | `_residential`, `_harvest`, `_workGround` | **sub-tile** (16 per tile) | ✅ **yes — this is the state** |
 | per-tile painted **count** (0–16) per layer | tile | ❌ derived, incremental |
-| per-tile **summary** (`count >= 8`) per layer | tile | ❌ derived |
+| per-tile **summary** (`count >= 8`; **work ground `count > 0` since D352**) per layer | tile | ❌ derived |
 | per-tile work-ground **owner** | tile | ❌ derived |
 
 - **`SubTile`** — its own type, not a `GridPos` in different units. ⛔ *One number answering two
@@ -127,10 +127,10 @@ is tile-shaped; only the *decision about where* got finer.
 - **The economy numbers are unchanged for a whole-tile village** — `WorkGroundTiles`, `HarvestTiles`
   and `ResidentialTiles` all still count tiles.
 - One owner per tile, refused at the sub-tile door.
-- **The edge (D350):** a quarter of farm paint does not plough, eight quarters do (`FarmTests`); taking
+- **The edge (D350, D352):** a single quarter of farm paint ploughs the tile and a quarter of a tile yields a quarter of its crop (`FarmTests`); taking
   the paint back or demolishing the farm turns the field to grass and clears the crop; a home is sited
-  only on a tile painted in full (`SubTileZoneTests`). ⚠️ The clipped field (D351) is view-only and
-  has no test — the probe's `fields:` line still asserts the stalks stay inside their tile; Joe's eyes are
+  only on a tile painted in full (`SubTileZoneTests`). ⚠️ The field drawn as the paint (D352) is view-only and
+  has no test — the probe's `fields:` line asserts the stalks stay inside their tile and `zone outlines:` that the fill tiles its polygon to 1.000 with no overlap (the Delaunay facets, D352); Joe's eyes are
   the check on the edge.
 - ⛔ **Red-check every guard and count the reds** (D326), and **watch the suite's wall-clock** —
   sixteen times the zone array is the kind of change that shows up there first (D329, D331).

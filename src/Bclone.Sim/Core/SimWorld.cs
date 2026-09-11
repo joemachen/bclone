@@ -3848,11 +3848,12 @@ public sealed class SimWorld
             return verdict;
         }
 
-        // ⛔⛔ ONLY ONCE THE TILE IS HELD (D350). This ploughed on the FIRST quarter, so every
-        // tile a farm's brush so much as grazed became a field while the farm held none of it —
-        // Joe, with a screenshot of furrows a full tile past his paint: *"the farm field is built
-        // outside of its painted area."* The plough is the visible half of giving ground, and the
-        // ground is given at eight of sixteen; that is when the earth turns.
+        // ⛔⛔ ONLY ONCE THE TILE IS HELD (D350). This ploughed on the FIRST quarter while the farm
+        // held nothing until the eighth, so every tile a brush grazed became a field the farm did
+        // not work — Joe, with a screenshot of furrows a full tile past his paint: *"the farm field
+        // is built outside of its painted area."* ⭐ Since D352 the hold IS the first quarter (a
+        // farm works every tile it has any paint on, and the harvest is in proportion), so the gate
+        // is the same question asked once rather than two thresholds that can drift apart.
         if (Zones.Holds(workplace.Id, at.Tile))
         {
             AfterGivingGround(workplace, at.Tile);
@@ -3932,8 +3933,8 @@ public sealed class SimWorld
             return false;
         }
 
-        // ⭐ The mirror of the plough gate above: the field goes when the HOLD goes, not on the
-        // first quarter rubbed out — a nibbled edge is still a field.
+        // ⭐ The mirror of the plough gate above: the field goes when the HOLD goes — the last
+        // quarter rubbed out (D352); a nibbled edge is still a field.
         if (!Zones.Holds(workplace.Id, at.Tile))
         {
             AfterTakingGround(workplace, at.Tile);

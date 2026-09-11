@@ -1,37 +1,40 @@
-# Handoff — bclone: **▶️ THE PAINT'S EDGE HAS A RULE, AND THE FARM'S ROUND BRUSH IS ROUND AGAIN — ONE THING UNPLAYED**
+# Handoff — bclone: **▶️ A ROUND FIELD IS ROUND, THE FACETS ARE GONE — ONE BUILD UNPLAYED**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
-> **1080 passing, 0 failing, 2 skipped of 1082** — run locally on `main`, **2m35s**.
-> **The decision log runs to D351**; read D338–D351 in `DESIGN.md §7` for the last two days —
-> fourteen decisions, every one of them from Joe playing a build.
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (late).**
+> **1081 passing, 0 failing, 2 skipped of 1083** — run locally on `main`, **~3m** (⚠️ `HEAD` without
+> this session's change measured 3m00s the same hour; the 2m35s of the morning was the machine, not
+> the code — *measured before it was believed*).
+> **The decision log runs to D352**; read D338–D352 in `DESIGN.md §7` for the last two days —
+> fifteen decisions, every one of them from Joe playing a build.
 >
-> **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D350):** the riverbank on the river, the frame
-> readout, clicking a building anywhere it is drawn, the three overlay toggles, grid and snap off by
-> default, Settings opening centred, the field renderer, round forest clumps, the wider river, smooth
-> painted borders AND fills, the brush's refused ground as a curve inside the ring, boulders on the
-> seams, **wheat end to end** (*"villagers consume the wheat"*), and four of D350's five: take-back
-> erases the field, the orange site with no ring beside it, the market's `Holding:` line, a thin
-> housing stroke sites no house.
+> **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D351):** everything up to and including wheat end
+> to end, the take-back erasing the field, the orange site with no ring beside it, the market's
+> `Holding:` line, and a thin housing stroke siting no house.
 >
-> **⚠️ WHAT JOE HAS NOT PLAYED YET (D351): the field drawn clipped to the paint.** He rejected
-> D350's whole-tile farm paint on one screenshot — *"farm round brush SHOULD be exactly as round as
-> the tree painting brush"* — so the farm's brush is the same quarter-tile round as everyone's again,
-> and the **renderer** clips the field to it instead. **His check, one thing:** paint a farm with the
-> round brush — the border is the same curve the forester's is, and the furrows (and later the gold)
-> fill exactly that curve, with no square corner poking out and no green rim of unploughed paint inside.
+> **⚠️ WHAT JOE HAS NOT PLAYED YET (D352) — three fixes from his three reports on D351:**
+> 1. **The facets** (*"triangle artifacting"*): the zone fill is ear-clipped, not Delaunay. Paint a
+>    big round housing or forester zone — no lighter/darker triangles inside it.
+> 2. **The bare corner** (*"why is part of this painted farm not farmland?"*): a farm works every
+>    quarter it is painted. No notch of bare paint anywhere in a field.
+> 3. **The staircase** (*"I want a fully round plot the same radius as the paintbrush"*): the field is
+>    drawn as the paint. A round brush gives a round field, the same curve as the wash, and the gold
+>    fills it at harvest. **And the honest half: a quarter-painted edge tile yields a quarter** — the
+>    Overview's wheat should read a little under what a square field of the same tile count gives.
 >
-> **⛔⛔ THE TWO THINGS THIS SESSION LEARNED:**
-> 1. **D335's half rule said what a painted TILE is and said nothing about what the EDGE should
->    look like.** Every whole-tile consumer of quarter-tile paint — a home, a plough, a felling —
->    sticks out of the paint by up to half a tile unless its edge rule is stated, and the plough was
->    worse than the rule: it fired on the first quarter. The rules are in `sub-tile-zones.md §3.1`;
->    **the next whole-tile consumer needs its own row, on the day it is built.**
-> 2. **The brush in the player's hand does not change shape per layer.** D342's *"a field's edge is
->    straight"* is about the field, not the tool; making the farm's stroke whole tiles was a tool
->    changing under the player, and Joe read it off the screen in one look. **Clip the picture to
->    the paint; never bend the paint to the picture.**
+> **⛔⛔ THE THREE THINGS THIS SESSION LEARNED:**
+> 1. **D335's half rule said what a painted TILE is and nothing about what the EDGE looks like.**
+>    Homes and fields hung out of the paint; the plough fired on a grazed quarter. The rules are in
+>    `sub-tile-zones.md §3.1`, and **the farm's row was rewritten three times in one day** — whole
+>    tiles (D350), the half rule clipped (D351), any quarter in proportion (D352) — each on one of
+>    Joe's screenshots. *State the rule, then let him look; the picture is the spec.*
+> 2. **The brush in the player's hand does not change shape per layer** (D351). D342's *"a field's
+>    edge is straight"* is about the field, not the tool.
+> 3. **Measure the picture, not the area.** `Filled` said the wash covered the right area while
+>    Delaunay was drawing it twice in places and not at all in others; `Tiled` (triangles ÷ polygon)
+>    read 1.62× and 2.30× where the eye saw facets. *A metric that sums can hide two errors that
+>    cancel.*
 >
-> ⭐ **Joe plays every build and files precise bugs.** Fourteen of the last fourteen decisions came
+> ⭐ **Joe plays every build and files precise bugs.** Fifteen of the last fifteen decisions came
 > from him playing for ten minutes. **Ask him one question at a time, with the measurement in it.**
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
@@ -196,7 +199,7 @@ stood idle with 130 logs.
 did not build, in the order they are likely to matter:
 
 1. ~~**⚠️ JOE PLAYS WHEAT (D348–D349)**~~ ✅ **Confirmed in play, 2026-09-11.** What he found
-   instead was the paint's edge (D350) — played, four of five confirmed, the fifth reversed (D351). **The clipped field is the one thing he has not played.**
+   instead was the paint's edge (D350 → D351 → D352, one row rewritten three times on his screenshots). **The D352 build is the one thing he has not played.**
    The check is in the box above; wait for it before touching the brush or the field renderer.
 2. **The food chain, when he asks:** wheat → flour → bread, wheat → beer
    (`food-catalog.md §6`). ⛔ **This is where raw wheat stops being edible** — today it is
@@ -266,6 +269,21 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
    tiles as their painted quarters, stalks only on paint. *When a picture disagrees with the paint,
    fix the picture.* ⚠️ View-only; the probe's `fields:` line still holds, but nothing but his eyes
    checks the clipped edge.
+9. **⛔⛔ GODOT'S DELAUNAY DRAWS OVERLAPPING TRIANGLES ON A SMOOTH ROUND, AND `Filled` COULD NOT
+   SEE IT (D352).** Hundreds of near-cocircular points; `Geometry2D.TriangulateDelaunay` returned
+   triangles covering 1.62× a 7-tile round and 2.30× a 13-tile round. The area check summed to the
+   right number anyway. **`Tiled` (triangle area ÷ polygon area) is the guard, and `Fill` ear-clips
+   now** with holes bridged. *Do not go back to Delaunay for a fill; nudging the points off the
+   circle was tried and only moved which sizes broke.*
+10. **⛔ THE HALF RULE WAS THE BARE CORNER AND THE STAIRCASE AT ONCE (D352).** A quarter-painted
+    tile was spoken for, never held, never ploughed — the notch; and the field was squares under a
+    curve — the staircase. Work ground is any quarter now, harvest in proportion, field drawn as the
+    paint. **Housing and harvest marks still use the half rule**; if either grows a whole-tile
+    consequence Joe can see, it will need the same treatment.
+11. **⚠️ A "QUARTER" IN THIS CODE IS A SIXTEENTH.** A `SubTile` is a quarter of a tile's *side*, so
+    sixteen of them make a tile, and the comments call them quarter-tiles. The first draft of the
+    proportional-yield guard painted one sub-tile and measured 3.0 of 50.5 — a sixteenth — while its
+    name said a quarter. *Say "sub-tile" or "one of sixteen" when the fraction matters.*
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

@@ -2912,6 +2912,8 @@ public partial class VillageMap : Control
         // generated valley is invisible, which makes "is this seed worth playing?"
         // a question nobody can answer by looking.
         DrawTheBakedValley(valley);
+        // ⚠️ The field is cached by the zone trace, so the trace runs before the field draws (D352).
+        TraceTheZonesIfTheyMoved(_world!.Zones);
         DrawWorkedGround(minX, maxX, minY, maxY);
         DrawTheTrees(minX, maxX, minY, maxY);
         DrawTheDeposits(minX, maxX, minY, maxY);
@@ -3077,6 +3079,7 @@ public partial class VillageMap : Control
         _outlinesTracedAtBuildings = _world.BuildingGeneration;
         _zoneOutlines.Clear();
         _zoneFills.Clear();
+        _fieldFills.Clear();
 
         var residential = new HashSet<Vector2I>();
         var harvest = new HashSet<Vector2I>();
@@ -3181,6 +3184,58 @@ public partial class VillageMap : Control
         for (int i = 0; i < owners.Count; i++)
         {
             Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge, owners[i], waiting: false);
+
+            // ⭐⭐ A FARM'S FIELD IS ITS PAINT, FILLED ALONG THE SAME CURVE (D352). Joe: *"when the
+            // farm land is painted with the round brush, the brush itself is round, but it still
+            // paints in 'staircase' — I want a fully round plot the same radius as the paintbrush."*
+            // The field used to be one rectangle per ploughed tile under the curved wash, so a
+            // round field was a staircase with a curve drawn round it. Now the farm's cells are
+            // split by the tile's stage — bare, sown, ripe — and each set is traced and filled
+            // exactly the way the wash is, so the field IS the painted shape, in three colours
+            // that meet along tile edges inside it. The split is D345's harvest working/waiting
+            // split, one set further. Cached on the terrain counter too: a sown tile moves a cell
+            // from one set to another.
+            if (_world.FindWorkplace(owners[i])?.Kind == JobKind.Farmer)
+            {
+                // ⚠️ The whole field in bare earth FIRST, and the sown and ripe parts over it.
+                // Each set is smoothed on its own, so where two stages meet inside a field the
+                // rounded corners leave slivers between them — and a sliver over bare earth is
+                // a furrow's edge, where a sliver over grass would be a hole in the field.
+                var field = new HashSet<Vector2I>();
+                var sown = new HashSet<Vector2I>();
+                var ripe = new HashSet<Vector2I>();
+                foreach (Vector2I cell in byOwner[owners[i]])
+                {
+                    GridPos tile = new SubTile(cell.X, cell.Y).Tile;
+                    switch (_world.Map.TerrainAt(tile))
+                    {
+                        case Terrain.Field: field.Add(cell); break;
+                        case Terrain.Sown: field.Add(cell); sown.Add(cell); break;
+                        case Terrain.Ripe: field.Add(cell); ripe.Add(cell); break;
+                        default: break;
+                    }
+                }
+
+                KeepField(field, Terrain.Field);
+                KeepField(sown, Terrain.Sown);
+                KeepField(ripe, Terrain.Ripe);
+            }
+        }
+
+        void KeepField(HashSet<Vector2I> cells, Terrain stage)
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            Vector2[] triangles = ZoneOutline.Fill(ZoneOutline.Trace(cells, SubTile.PerTile), cells);
+            for (int i = 0; i < triangles.Length; i++)
+            {
+                triangles[i] = InTileSpace(triangles[i], SubTile.PerTile);
+            }
+
+            _fieldFills.Add((stage, triangles));
         }
 
         void FillFrom(HashSet<Vector2I> cells, Layer layer, int owner, bool waiting)
@@ -3838,35 +3893,46 @@ public partial class VillageMap : Control
     private readonly ValleyTexture _valley = new();
 
     /// <summary>
-    /// ⛔ Ground the village has WORKED, drawn as squares — <b>because it is square</b>
-    /// (D342).
+    /// ⭐⭐ Ground the village has WORKED — <b>a farm's field is its paint, filled along the
+    /// paint's own curve</b> (D342, D352).
     /// </summary>
     /// <remarks>
-    /// <b>The valley is a field; the fields are not.</b> Everything natural now comes out of
-    /// <see cref="ValleyTexture"/> as the level set of a continuous field, which is what makes a
-    /// river look like a river. **A ploughed field is man-made and reads as man-made precisely
-    /// because its edges are straight**, so smoothing it would be taking the smoothing rule and
-    /// applying it where its whole justification is absent. *Foundation's fields have hard edges
-    /// too, and for the same reason.*
     /// <para>
-    /// ⭐⭐ <b>AND THE FIELD IS DRAWN ONLY WHERE THE PAINT IS</b> (D351). The sim ploughs a tile
-    /// once the farm holds it — at least half its quarters painted (D335) — and a whole-tile field
-    /// under quarter-tile paint stuck out of the border by up to half a tile on every ragged edge.
-    /// D350 answered that by laying a farm's paint in whole tiles with a straight border, and Joe
-    /// rejected it the same day: <em>"farm round brush SHOULD be exactly as round as the tree
-    /// painting brush."</em> So the paint stays quarter-tiles and the curve, and <b>the field is
-    /// clipped to it</b>: a fully painted tile draws whole, a tile on the edge draws only its
-    /// painted quarters, and a furrow or a stalk lands only on a painted quarter. The field the
-    /// player sees is exactly the shape they painted; the sim still sows and reaps the whole tile.
+    /// <b>The valley is a field; the fields are not.</b> Everything natural comes out of
+    /// <see cref="ValleyTexture"/> as the level set of a continuous field; a farm's field is
+    /// man-made and is drawn as what the player painted. D342 drew it as one square per ploughed
+    /// tile and argued a field's edges are straight; then the paint went to quarter-tiles and a
+    /// smooth curve (D336, D345) and a round field became a staircase with a curve drawn round
+    /// it. Joe: *"the brush itself is round, but it still paints in 'staircase' — I want a fully
+    /// round plot the same radius as the paintbrush."*
     /// </para>
     /// <para>
-    /// ⚠️ A field tile with <em>no</em> paint on it — none should exist since D350's un-plough, but
-    /// a save from before it might — draws whole rather than vanishing, so a ploughed tile can
-    /// never be invisible.
+    /// ⭐ So the field is the cached fill of the farm's cells, split by stage
+    /// (<c>TraceTheZonesIfTheyMoved</c>): bare earth, sown, ripe, each traced and filled exactly the
+    /// way the wash is, so the field and the paint cannot disagree at the edge. The furrows and
+    /// the stalks are still per tile, and land only on a painted quarter, so nothing sticks out.
+    /// A whole-tile field is exactly the squares it was.
     /// </para>
     /// </remarks>
     private void DrawWorkedGround(int minX, int maxX, int minY, int maxY)
     {
+        for (int i = 0; i < _fieldFills.Count; i++)
+        {
+            (Terrain stage, Vector2[] triangles) = _fieldFills[i];
+            var onScreen = new Vector2[triangles.Length];
+            for (int p = 0; p < triangles.Length; p++)
+            {
+                onScreen[p] = ToScreen(triangles[p]);
+            }
+
+            DrawTriangles(onScreen, ColourOf(stage));
+        }
+
+        if (_pixelsPerTile < TreeZoomFloor)
+        {
+            return;
+        }
+
         GeneratedMap map = _world!.Map;
         ZoneMap zones = _world.Zones;
 
@@ -3889,25 +3955,7 @@ public partial class VillageMap : Control
                     ? AllQuarters
                     : PaintedQuartersOf(zones, tile);
 
-                if (quarters == AllQuarters)
-                {
-                    DrawRect(TileRect(tile), ColourOf(terrain));
-                }
-                else
-                {
-                    for (int q = 0; q < SubTile.PerWholeTile; q++)
-                    {
-                        if ((quarters & (1 << q)) != 0)
-                        {
-                            DrawRect(QuarterRect(tile, q % SubTile.PerTile, q / SubTile.PerTile), ColourOf(terrain));
-                        }
-                    }
-                }
-
-                if (_pixelsPerTile >= TreeZoomFloor)
-                {
-                    Stalks(tile, terrain, quarters);
-                }
+                Stalks(tile, terrain, quarters);
             }
         }
     }
@@ -3932,15 +3980,6 @@ public partial class VillageMap : Control
         }
 
         return mask;
-    }
-
-    /// <summary>One quarter of a tile on screen — the same corners <see cref="TileRect"/> uses, a quarter apart.</summary>
-    private Rect2 QuarterRect(GridPos tile, int qx, int qy)
-    {
-        const float Quarter = 1f / SubTile.PerTile;
-        Vector2 topLeft = ToScreen(new Vector2(tile.X - 0.5f + (qx * Quarter), tile.Y - 0.5f + (qy * Quarter))).Round();
-        Vector2 bottomRight = ToScreen(new Vector2(tile.X - 0.5f + ((qx + 1) * Quarter), tile.Y - 0.5f + ((qy + 1) * Quarter))).Round();
-        return new Rect2(topLeft, bottomRight - topLeft);
     }
 
     /// <summary>Which quarter of its tile a point at offset (<paramref name="dx"/>, <paramref name="dy"/>) from the centre falls in — bit index into the mask.</summary>
@@ -4423,6 +4462,12 @@ public partial class VillageMap : Control
     /// brighter colour can still be chosen per frame; <c>Waiting</c> is the harvest split.
     /// </remarks>
     private readonly List<(Layer Layer, int Owner, bool Waiting, Vector2[] Triangles)> _zoneFills = new();
+
+    /// <summary>
+    /// A farm's field as triangles in tile space, one list per stage — <b>the paint's own
+    /// shape, cached beside the wash</b> (D352).
+    /// </summary>
+    private readonly List<(Terrain Stage, Vector2[] Triangles)> _fieldFills = new();
 
     /// <summary>
     /// Marked tiles with nothing left to take — <b>kept, not asked per frame</b> (D343).

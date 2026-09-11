@@ -4542,6 +4542,19 @@ public sealed class BehaviorSystem : ISimSystem
                 // that was reaped, not of the farm**, because a field can span better and worse
                 // ground and the player should be able to see that on the map.
                 int crop = world.CropYieldAt(reaped) * villager.Vigour / 100;
+
+                // ⭐ AND THE PAINT SCALES IT (D352). A farm works every tile it has any paint on
+                // — Joe: *"I want a fully round plot the same radius as the paintbrush"* — so a
+                // tile at the edge of a round field may be a quarter of a field, and it yields a
+                // quarter of a tile's crop. A whole-tile village multiplies by sixteen sixteenths
+                // and is exactly what it was. Zero paint cannot happen on a ripe tile (the un-plough
+                // takes the crop with the paint, D350) and is read as a whole tile if it does.
+                int quarters = world.Zones.WorkGroundSubTilesOn(reaped);
+                if (quarters > 0)
+                {
+                    crop = crop * quarters / SubTile.PerWholeTile;
+                }
+
                 villager.Carried.Receive(grain, crop < 1 ? 1 : crop);
 
                 if (WorkplaceOf(world, villager) is Workplace theirFarm)

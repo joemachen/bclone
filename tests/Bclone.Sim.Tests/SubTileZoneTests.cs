@@ -19,10 +19,12 @@ namespace Bclone.Sim.Tests;
 /// </para>
 /// <para>
 /// ⛔⛔ <b>THE RULE THESE EXIST TO HOLD: a tile counts as painted when at least half of its sixteen
-/// sub-tiles are.</b> One sentence, all three layers. It is what lets *"is this tile
-/// residential?"*, *"how much ground has this farm?"* and *"which ground is marked for clearing?"*
-/// keep their meaning **and their numbers** for any village that paints whole tiles — which is
-/// every village that exists today, and every golden.
+/// sub-tiles are.</b> One sentence, for housing and for harvest marks. It is what lets *"is this
+/// tile residential?"* and *"which ground is marked for clearing?"* keep their meaning **and their
+/// numbers** for any village that paints whole tiles — which is every village that exists today,
+/// and every golden. ⚠️ <b>Work ground left the sentence in D352</b>: a farm works every tile it
+/// has any paint on, with the harvest in proportion — Joe's call from a round field with a bare
+/// corner. Whole tiles are still exactly what they were.
 /// </para>
 /// </remarks>
 public sealed class SubTileZoneTests
@@ -113,17 +115,25 @@ public sealed class SubTileZoneTests
     }
 
     /// <summary>
-    /// ⭐⭐ Work ground has TWO thresholds and they answer two different questions.
+    /// ⭐⭐ Work ground is spoken for AND held by a single quarter — <b>one threshold, Joe's</b>
+    /// (D352, overturning D335's two).
     /// </summary>
     /// <remarks>
-    /// **Whose ground is this tile?** is *any* sub-tile — that is what stops a second hut creeping
-    /// into the quarters a first one has taken, and it is visible to a player who painted a corner.
-    /// **How much ground does this hut have?** is *at least half*, because the economy asks it in
-    /// whole tiles: a farm ploughs a tile or it does not. ⚠️ *They can disagree about one tile, and
-    /// that is the design rather than a seam.*
+    /// <para>
+    /// D335 gave work ground two thresholds: *whose ground is this tile?* at any sub-tile, and
+    /// *how much ground does this hut have?* at half, because the economy asks in whole tiles.
+    /// Then Joe painted a round field: *"why is part of this painted farm not farmland?"* — a
+    /// tile a quarter painted was spoken for and never worked, and showed as bare paint at the
+    /// edge of every field. **A farm works every tile it has any paint on now, and the harvest is
+    /// in proportion** (`FarmTests.AQuarterOfATileYieldsAQuarterOfItsCrop`).
+    /// </para>
+    /// <para>
+    /// ⚠️ Residential and harvest keep the half rule — see the guards above. This is a rule about
+    /// work ground, and a whole-tile village is exactly what it was.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void GroundIsSpokenForByAQuarterAndHeldByAHalf()
+    public void GroundIsSpokenForAndHeldByAQuarter()
     {
         ZoneMap zones = Zones();
 
@@ -133,45 +143,48 @@ public sealed class SubTileZoneTests
             + $"tiles {zones.WorkGroundTiles(7)}");
 
         Assert.Equal(7, zones.WorkGroundOwner(Somewhere));
-        Assert.Equal(0, zones.WorkGroundTiles(7));
-        Assert.Empty(zones.WorkGroundOf(7));
+        Assert.Equal(1, zones.WorkGroundTiles(7));
+        Assert.Single(zones.WorkGroundOf(7));
 
         // ⛔ And nobody else may take the rest of it.
         Assert.False(zones.SetWorkGround(SubTile.Of(Somewhere, 3, 3), 9));
         Assert.Equal(7, zones.WorkGroundOwner(Somewhere));
 
-        for (int i = 1; i < SubTile.HalfATile; i++)
+        // Fifteen more quarters change nothing the count can see.
+        for (int i = 1; i < SubTile.PerWholeTile; i++)
         {
             zones.SetWorkGround(SubTile.Of(Somewhere, i % 4, i / 4), 7);
         }
 
         Assert.Equal(1, zones.WorkGroundTiles(7));
-        Assert.Single(zones.WorkGroundOf(7));
+
+        // And the tile is held until the LAST quarter goes.
+        for (int i = 0; i < SubTile.PerWholeTile - 1; i++)
+        {
+            zones.SetWorkGround(SubTile.Of(Somewhere, i % 4, i / 4), 0);
+        }
+
+        Assert.Equal(1, zones.WorkGroundTiles(7));
+        zones.SetWorkGround(SubTile.Of(Somewhere, 3, 3), 0);
+        Assert.Equal(0, zones.WorkGroundTiles(7));
+        Assert.Equal(0, zones.WorkGroundOwner(Somewhere));
     }
 
     /// <summary>
-    /// ⭐ <c>Holds</c> is the hold threshold asked of one tile — <b>and it agrees with the
-    /// index</b> (D350).
+    /// ⭐ <c>Holds</c> is the hold asked of one tile — <b>and it agrees with the index</b>
+    /// (D350, D352).
     /// </summary>
     /// <remarks>
     /// The plough and the un-plough hang off this question, so it has to be the same answer
-    /// <see cref="ZoneMap.WorkGroundOf"/> gives: a quarter is spoken for and not held, eight is held,
-    /// somebody else's ground is never held by us however much of it is painted.
+    /// <see cref="ZoneMap.WorkGroundOf"/> gives: a quarter is held, somebody else's ground is never
+    /// held by us however much of it is painted, and nothing is held at zero.
     /// </remarks>
     [Fact]
-    public void HoldsIsTheHalfRuleAskedOfOneTile()
+    public void HoldsIsAnyQuarterPaintedForUs()
     {
         ZoneMap zones = Zones();
 
         Assert.False(zones.Holds(7, Somewhere));
-
-        for (int i = 0; i < SubTile.HalfATile - 1; i++)
-        {
-            zones.SetWorkGround(SubTile.Of(Somewhere, i % 4, i / 4), 7);
-        }
-
-        Assert.False(zones.Holds(7, Somewhere));
-        Assert.Empty(zones.WorkGroundOf(7));
 
         zones.SetWorkGround(SubTile.Of(Somewhere, 3, 1), 7);
 
@@ -183,6 +196,7 @@ public sealed class SubTileZoneTests
 
         zones.SetWorkGround(SubTile.Of(Somewhere, 3, 1), 0);
         Assert.False(zones.Holds(7, Somewhere));
+        Assert.Empty(zones.WorkGroundOf(7));
     }
 
     /// <summary>
@@ -276,7 +290,8 @@ public sealed class SubTileZoneTests
         zones.SetWorkGround(Somewhere, 7);
         zones.SetWorkGround(SubTile.Of(new GridPos(Somewhere.X + 1, Somewhere.Y), 0, 0), 7);
 
-        Assert.Equal(1, zones.ReleaseWorkGround(7));
+        // Two, since D352: the quarter-painted neighbour is a tile the hut holds too.
+        Assert.Equal(2, zones.ReleaseWorkGround(7));
 
         Assert.Equal(0, zones.WorkGroundOwner(Somewhere));
         Assert.Equal(0, zones.WorkGroundTiles(7));

@@ -226,10 +226,10 @@ regrowth sweep.
   (D350, `SimWorld.AfterGivingGround` / `AfterTakingGround`). Joe, playing: *"the farm field is
   built outside of its painted area"* — a single quarter of paint ploughed the whole tile — and
   *"'removing' farm land leaves a field that can't be removed"* — nothing had ever turned a
-  `Field` back. The hold is `ZoneMap.Holds` (at least eight of sixteen quarters, D335); below it
+  `Field` back. The hold is `ZoneMap.Holds` — **any painted quarter since D352** (D350 gated it at half); below it
   the ground is grass again, standing crop included, and the stroke says how many tiles of crop
-  it gave up. D84's *no scar* rule for a dug seam, applied to a field. ⚠️ **And the drawn field is CLIPPED
-  to the quarter-tile paint** (D351, `sub-tile-zones.md §3.1`), so the field the player sees is the shape they painted.
+  it gave up. D84's *no scar* rule for a dug seam, applied to a field. ⭐ **A reaped tile yields in proportion to
+  its painted quarters** (D352, `BehaviorSystem`'s reap: `CropYieldAt × painted ⁄ 16`), and **the field is drawn as the paint** along its own curve (`sub-tile-zones.md §3.1`) — a round brush gives a round field.
 - **Passable and buildable-refusing.** Unlike `Water` they are walked over; unlike `Grass` a
   building marked on one should warn, because it destroys a year's work.
 - **`TerrainRules.Yields(Ripe) => Goods.Food`**, which makes a ripe field harvestable by the

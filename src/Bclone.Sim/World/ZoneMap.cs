@@ -318,19 +318,21 @@ public sealed class ZoneMap
         _tilesByOwner.TryGetValue(ownerId, out int tiles) ? tiles : 0;
 
     /// <summary>
-    /// ⭐ Whether this building HOLDS this tile — at least half of it painted, and painted for
-    /// them (D350).
+    /// ⭐ Whether this building HOLDS this tile — any of it painted, and painted for them
+    /// (D350, threshold moved to a quarter in D352).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The hold threshold asked of one tile, so the plough and the un-plough can hang off the
-    /// same answer <see cref="WorkGroundOf"/> gives — <b>two array reads, never a scan</b>. It is
-    /// the question <c>SetWorkGround(SubTile, int)</c> already computes to keep the index; this
-    /// is that question made available to the caller who has just painted.
+    /// The hold asked of one tile, so the plough and the un-plough can hang off the same answer
+    /// <see cref="WorkGroundOf"/> gives — <b>two array reads, never a scan</b>. It is the question
+    /// <c>SetWorkGround(SubTile, int)</c> already computes to keep the index; this is that
+    /// question made available to the caller who has just painted.
     /// </para>
     /// <para>
-    /// ⚠️ <b>Not <see cref="WorkGroundOwner"/></b>, which answers at a single quarter. A farm's
-    /// brush grazing a tile speaks for it; it does not hold it, and the earth does not turn.
+    /// ⚠️ Since D352 it agrees with <see cref="WorkGroundOwner"/> on every tile — a quarter of a
+    /// farm's brush is a quarter of a field, and the harvest is in proportion. It is kept as its
+    /// own question because the plough and the un-plough ask *"do WE hold it?"*, owner included,
+    /// and because the threshold has moved once already and may again.
     /// </para>
     /// </remarks>
     public bool Holds(int ownerId, GridPos tile)
@@ -339,7 +341,7 @@ public sealed class ZoneMap
         return ownerId != 0
             && index >= 0
             && _workGround[index] == ownerId
-            && _workGroundCount[index] >= SubTile.HalfATile;
+            && _workGroundCount[index] > 0;
     }
 
     /// <summary>
@@ -423,22 +425,24 @@ public sealed class ZoneMap
         _workGroundCount[index] = (byte)(_workGroundCount[index]
             + ((ownerId != 0 ? 1 : 0) - (wasOwned ? 1 : 0)));
 
-        // ⭐⭐ TWO THRESHOLDS, AND THEY ANSWER TWO DIFFERENT QUESTIONS (D335).
+        // ⭐⭐ ONE THRESHOLD FOR WORK GROUND NOW — ANY QUARTER — AND IT IS JOE'S (D352).
         //
-        // **"Whose ground is this tile?"** is ANY sub-tile — because that is what stops a second hut
-        // creeping into the quarters a first one has already taken, and because a player who has
-        // painted a corner of a tile can see that they have. `_workGround` holds that.
+        // D335 gave work ground two: *"whose ground is this tile?"* at any sub-tile, and *"how
+        // much ground does this hut HAVE?"* at half, because the economy asks in whole tiles.
+        // Then he painted a round field and read the difference off the screen — *"why is part of
+        // this painted farm not farmland?"*, *"I want a fully round plot the same radius as the
+        // paintbrush."* A tile a quarter painted was spoken for and not worked, and the quarter
+        // showed as bare paint at the edge of every field.
         //
-        // **"How much ground does this hut HAVE?"** is at least half, because that is the question
-        // the economy asks and it is asked in whole tiles: a farm ploughs a tile or it does not.
-        // `_tilesByOwner` and `_groundByOwner` hold that, and `WorkGroundTiles` is unchanged.
-        //
-        // ⚠️ *They can disagree about one tile and that is the design rather than a seam:* a tile a
-        // quarter painted is spoken for and is not yet ground anybody works.
+        // **So a farm works every tile it has any paint on, and a tile's harvest is in proportion
+        // to how much of it is painted** (`BehaviorSystem`, the reap). The picture and the paint
+        // are then the same shape, and a whole-tile village is exactly what it was. Residential
+        // and harvest keep the half rule — a home needs a whole tile, a laborer clears a tile or
+        // does not — so this is a rule about WORK GROUND, stated as one.
         int nowSpokenFor = _workGroundCount[index] > 0 ? (ownerId != 0 ? ownerId : owner) : 0;
         _workGround[index] = nowSpokenFor;
 
-        bool holdsIt = _workGroundCount[index] >= SubTile.HalfATile;
+        bool holdsIt = _workGroundCount[index] > 0;
         bool held = _groundByOwner.TryGetValue(nowSpokenFor == 0 ? owner : nowSpokenFor,
             out List<int>? already) && already.BinarySearch(index) >= 0;
 

@@ -62,41 +62,147 @@ public sealed class FarmTests
         _output.WriteLine($"{given} tiles painted, {ploughed} of them ploughed");
         Assert.Equal(given, ploughed);
     }
-
     /// <summary>
-    /// ⛔⛔ A quarter of paint does not plough a whole tile — <b>the plough waits for the tile to
-    /// be HELD</b> (D350).
+    /// ⛔⛔ A quarter of paint is a quarter of a field — <b>the plough runs when the farm HOLDS the
+    /// tile, and a farm holds every tile it has any paint on</b> (D350, D352).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Joe, with a screenshot of furrows running a full tile past his painted field: *"the farm
-    /// field is built outside of its painted area."*</b> <c>PaintWorkGround(SubTile)</c> ploughed on
-    /// the first quarter, so every tile the brush grazed became a field while the farm held none of
-    /// it. The plough is the visible half of *giving ground*, and the ground is given at eight of
-    /// sixteen (<c>ZoneMap.Holds</c>) — so that is when the earth turns.
+    /// <b>Two of Joe's screenshots, a day apart.</b> First, furrows a full tile past his paint:
+    /// *"the farm field is built outside of its painted area"* — the plough fired on a quarter the
+    /// farm did not hold (D350 gated it on the hold). Then a bare notch at the corner of a field:
+    /// *"why is part of this painted farm not farmland?"* — a tile a quarter painted was spoken for
+    /// and not held, so it was never ploughed. **D352 moved the hold to the first quarter**, so the
+    /// gate and the paint are one question; what a quarter yields is the guard below.
     /// </para>
     /// </remarks>
     [Fact]
-    public void AQuarterOfPaintDoesNotPloughTheTile()
+    public void AQuarterOfPaintPloughsTheTile()
     {
         SimWorld world = Loop(Config).World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         GridPos tile = BareTileBeside(world, farm);
 
-        for (int i = 0; i < SubTile.HalfATile - 1; i++)
-        {
-            Assert.True(world.PaintWorkGround(farm, SubTile.Of(tile, i % 4, i / 4)).Allowed);
-        }
-
-        _output.WriteLine($"{SubTile.HalfATile - 1} quarters painted: {world.Map.TerrainAt(tile)}, "
-            + $"held {world.Zones.Holds(farm.Id, tile)}");
         Assert.Equal(Terrain.Grass, world.Map.TerrainAt(tile));
+        Assert.True(world.PaintWorkGround(farm, SubTile.Of(tile, 2, 1)).Allowed);
 
-        Assert.True(world.PaintWorkGround(farm, SubTile.Of(tile, 3, 1)).Allowed);
-
-        _output.WriteLine($"{SubTile.HalfATile} quarters painted: {world.Map.TerrainAt(tile)}");
+        _output.WriteLine($"one quarter painted: {world.Map.TerrainAt(tile)}, "
+            + $"held {world.Zones.Holds(farm.Id, tile)}, tiles {world.Zones.WorkGroundTiles(farm.Id)}");
         Assert.True(world.Zones.Holds(farm.Id, tile));
         Assert.Equal(Terrain.Field, world.Map.TerrainAt(tile));
+        Assert.Equal(1, world.Zones.WorkGroundTiles(farm.Id));
+    }
+
+    /// <summary>
+    /// ⭐⭐ A tile a quarter painted yields a quarter of a tile's crop — <b>the harvest is in
+    /// proportion to the paint</b> (D352).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The honest half of *"a farm works every tile it has any paint on."* Without it a
+    /// quarter-tile sliver of paint would bring in a whole tile's wheat, and a player who painted a
+    /// round field would be fed as if they had painted its bounding square. Measured at the reap —
+    /// what a farmer is carrying the tick they finish — against the same field painted whole, in
+    /// two worlds from one seed.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A whole tile is sixteen sixteenths</b>, so the multiplier is the identity for every
+    /// village that paints whole tiles — which is every golden. The whole-tile arm here is that
+    /// claim as a number.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AQuarterOfATileYieldsAQuarterOfItsCrop()
+    {
+        (int reaps, long carried) whole = HarvestOf(paintWhole: true);
+        (int reaps, long carried) quarter = HarvestOf(paintWhole: false);
+
+        Assert.True(whole.reaps > 0 && quarter.reaps > 0, "Nothing was reaped in one of the two worlds.");
+
+        double perTileWhole = whole.carried / (double)whole.reaps;
+        double perTileQuarter = quarter.carried / (double)quarter.reaps;
+        _output.WriteLine(
+            $"whole tiles: {whole.reaps} reaps, {perTileWhole:F1} a tile · "
+            + $"one quarter each: {quarter.reaps} reaps, {perTileQuarter:F1} a tile");
+
+        // A quarter, to within the floor of an integer division and a farmer's vigour.
+        Assert.InRange(perTileQuarter, (perTileWhole / 4) - 1.5, (perTileWhole / 4) + 1.5);
+
+        // And the whole-tile arm is the crop the config promises, scaled by soil and vigour only
+        // — not a sixteenth less.
+        Assert.True(perTileWhole > Config.CropYieldPerTile * 0.5,
+            $"A whole tile brought in {perTileWhole:F1} against a yield of {Config.CropYieldPerTile}.");
+
+        (int, long) HarvestOf(bool paintWhole)
+        {
+            SimLoop loop = Loop(Config);
+            SimWorld world = loop.World;
+            Workplace farm = FarmFixtures.RaiseAFarm(world);
+            world.SetStaffing(farm, 1);
+
+            var tiles = new List<GridPos>();
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    var at = new GridPos(farm.Tile.X + dx, farm.Tile.Y + dy);
+                    if (world.Map.Contains(at) && world.Map.TerrainAt(at) == Terrain.Grass
+                        && !world.SomethingStandsAt(at))
+                    {
+                        tiles.Add(at);
+                    }
+                }
+            }
+
+            foreach (GridPos at in tiles)
+            {
+                if (paintWhole)
+                {
+                    Assert.True(world.PaintWorkGround(farm, at).Allowed);
+                    continue;
+                }
+
+                // ⚠️ A QUARTER OF THE TILE IS FOUR OF ITS SIXTEEN SUB-TILES — a 2×2 block — not
+                // one. The code calls a sub-tile a "quarter-tile" because it is a quarter of a
+                // side; the first draft of this guard painted one and measured a sixteenth.
+                foreach ((int qx, int qy) in new[] { (1, 1), (2, 1), (1, 2), (2, 2) })
+                {
+                    Assert.True(world.PaintWorkGround(farm, SubTile.Of(at, qx, qy)).Allowed);
+                }
+            }
+
+            Assert.True(FarmFixtures.SowEveryTileOf(world, farm) > 0);
+            FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+
+            int reaps = 0;
+            long carried = 0;
+            var before = new Dictionary<int, int>();
+            for (int i = 0; i < Config.TicksPerSeason; i++)
+            {
+                before.Clear();
+                foreach (Villager villager in world.Villagers)
+                {
+                    if (villager.State == VillagerState.Reaping && villager.ActionTicksRemaining == 1)
+                    {
+                        before[villager.Id] = villager.Carried[Goods.Wheat];
+                    }
+                }
+
+                loop.StepOnce();
+
+                foreach ((int id, int had) in before)
+                {
+                    Villager? villager = world.FindVillager(id);
+                    if (villager is not null && villager.Carried[Goods.Wheat] > had)
+                    {
+                        reaps++;
+                        carried += villager.Carried[Goods.Wheat] - had;
+                    }
+                }
+            }
+
+            return (reaps, carried);
+        }
     }
 
     /// <summary>
@@ -117,8 +223,8 @@ public sealed class FarmTests
     /// grows"* (<c>CropSystem.Rot</c>) is not remembering a field that is not there.
     /// </para>
     /// <para>
-    /// ⚠️ And the hold threshold is the whole story: erasing a quarter of a held tile leaves it
-    /// held and ploughed; erasing enough to drop it below half is what un-ploughs it.
+    /// ⚠️ The hold is the last quarter now (D352): rubbing out fifteen of sixteen leaves a field a
+    /// sixteenth wide, and the sixteenth is what un-ploughs it.
     /// </para>
     /// </remarks>
     [Fact]
@@ -127,13 +233,12 @@ public sealed class FarmTests
         SimWorld world = Loop(Config).World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         int given = FarmFixtures.GiveItGround(world, farm, reach: 2);
-        Assert.True(given >= 4, $"Need at least four tiles of field to pose this; got {given}.");
+        Assert.True(given >= 3, $"Need at least three tiles of field to pose this; got {given}.");
 
         IReadOnlyList<int> owned = world.Zones.WorkGroundOf(farm.Id);
         GridPos bare = world.Zones.PositionOf(owned[0]);
         GridPos standing = world.Zones.PositionOf(owned[1]);
         GridPos byQuarters = world.Zones.PositionOf(owned[2]);
-        GridPos nibbled = world.Zones.PositionOf(owned[3]);
 
         // A bare field, taken back whole.
         Assert.Equal(Terrain.Field, world.Map.TerrainAt(bare));
@@ -147,8 +252,8 @@ public sealed class FarmTests
         Assert.Equal(Terrain.Grass, world.Map.TerrainAt(standing));
         Assert.Equal(0, world.Map.CropAt(standing));
 
-        // Quarter by quarter: still a field with exactly eight left, grass at seven.
-        for (int i = 0; i < SubTile.HalfATile; i++)
+        // Quarter by quarter: still a field with one quarter left, grass at none.
+        for (int i = 0; i < SubTile.PerWholeTile - 1; i++)
         {
             Assert.True(world.EraseWorkGround(farm, SubTile.Of(byQuarters, i % 4, i / 4)));
         }
@@ -156,16 +261,12 @@ public sealed class FarmTests
         Assert.True(world.Zones.Holds(farm.Id, byQuarters));
         Assert.Equal(Terrain.Field, world.Map.TerrainAt(byQuarters));
 
-        Assert.True(world.EraseWorkGround(farm, SubTile.Of(byQuarters, 0, 2)));
+        Assert.True(world.EraseWorkGround(farm, SubTile.Of(byQuarters, 3, 3)));
         Assert.False(world.Zones.Holds(farm.Id, byQuarters));
         Assert.Equal(Terrain.Grass, world.Map.TerrainAt(byQuarters));
 
-        // A single quarter off a held tile changes nothing the player can see.
-        Assert.True(world.EraseWorkGround(farm, SubTile.Of(nibbled, 0, 0)));
-        Assert.Equal(Terrain.Field, world.Map.TerrainAt(nibbled));
-
         _output.WriteLine($"bare {world.Map.TerrainAt(bare)}, ripe {world.Map.TerrainAt(standing)}, "
-            + $"by quarters {world.Map.TerrainAt(byQuarters)}, nibbled {world.Map.TerrainAt(nibbled)}");
+            + $"by quarters {world.Map.TerrainAt(byQuarters)}");
     }
 
     /// <summary>⛔ A demolished farm leaves grass, not a field nobody can remove (D350).</summary>
