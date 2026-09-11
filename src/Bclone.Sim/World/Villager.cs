@@ -1,3 +1,4 @@
+using Bclone.Sim.Core;
 
 namespace Bclone.Sim.World;
 
@@ -293,7 +294,28 @@ public sealed class Villager
 
     public VillagerState State { get; set; } = VillagerState.Idle;
 
-    public GridPos Position { get; set; }
+    /// <summary>
+    /// ⭐ Where they are — a <see cref="Point"/>, since gridless slice 3 (D354).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// D329's shape, for people: the position is continuous and <see cref="Tile"/> is the derived
+    /// question every tile-indexed system asks — the cost field, the zones, the ground, *"is
+    /// anybody at this site?"*. At the shipped pace a villager is on a tile centre at every tick
+    /// boundary and the walk is exactly the tile stepping it replaced; what changed is that a
+    /// villager who arrives at a free-placed building stands <em>on</em> it (D330 put the
+    /// building at a `Point`; until this slice its worker stood at the anchor tile's centre, half
+    /// a tile from the door), and that a slower pace is a fraction of a tile a tick rather than
+    /// a jump and a wait.
+    /// </para>
+    /// <para>
+    /// Hashed as raw fixed-point bits, never quantised (`gridless.md §5`).
+    /// </para>
+    /// </remarks>
+    public Point Position { get; set; }
+
+    /// <summary>The tile they are on — derived, and what every tile-keyed question asks.</summary>
+    public GridPos Tile => Position.ToTile();
 
     /// <summary>What is in their arms right now, between where they took it and where it goes.</summary>
     /// <remarks>

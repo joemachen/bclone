@@ -388,7 +388,7 @@ public sealed class StorageTests
 
         villager.Carried.TakeAll(Goods.Produce);
         villager.Carried.TakeAll(Goods.Firewood);
-        villager.Position = market.Tile;
+        villager.Position = market.Position;
 
         BehaviorSystem.CollectForTest(world, villager);
 
@@ -433,7 +433,7 @@ public sealed class StorageTests
 
         villager.Carried.TakeAll(Goods.Produce);
         villager.Carried.TakeAll(Goods.Firewood);
-        villager.Position = market.Tile;
+        villager.Position = market.Position;
 
         BehaviorSystem.CollectForTest(world, villager);
 

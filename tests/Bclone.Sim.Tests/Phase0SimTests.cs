@@ -326,7 +326,7 @@ public sealed class Phase0SimTests
 
         ulong hashAtDeath = StateHash.Compute(loop.World);
         int foodAtDeath = loop.World.Stockpile[Goods.Produce];
-        GridPos posAtDeath = loop.World.Villager.Position;
+        Point posAtDeath = loop.World.Villager.Position;
 
         int ageAtDeath = loop.World.Villager.AgeYears;
         int logAtDeath = Phase0Fixtures.LifeLog(sink).Count;
@@ -400,7 +400,7 @@ public sealed class Phase0SimTests
         for (int i = 0; i < 3_000; i++)
         {
             loop.StepOnce();
-            GridPos where = loop.World.Villager.Position;
+            GridPos where = loop.World.Villager.Tile;
 
             Assert.InRange(where.X, config.MapMinX, config.MapMaxX);
             Assert.InRange(where.Y, config.MapMinY, config.MapMaxY);

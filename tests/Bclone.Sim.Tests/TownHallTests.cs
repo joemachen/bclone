@@ -209,7 +209,7 @@ public sealed class TownHallTests
         // was not: a villager with `HouseholdId = 0` threw out of `LabourAllocator` on tick 0,
         // because `RestingPlaceOf` asks the household where they sleep. *A fixture that cannot
         // survive a tick proves nothing about a trigger that fires on one.*
-        GridPos anywhere = world.Villagers[0].Position;
+        Point anywhere = world.Villagers[0].Position;
         Household home = world.Households[0];
         for (int i = 0; i < world.Villagers.Count; i++)
         {
@@ -227,7 +227,7 @@ public sealed class TownHallTests
             BirthYear = 1,
             AgeYears = 20,
             HouseholdId = home.Id,
-            Position = home.HomeTile ?? anywhere,
+            Position = home.HomePosition ?? anywhere,
         };
 
         home.AddMember(bornHere.Id);

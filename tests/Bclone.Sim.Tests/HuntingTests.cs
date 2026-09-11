@@ -201,7 +201,7 @@ public sealed class HuntingTests
         loop.Step(config.TicksPerYear + 1);
 
         Villager hunter = world.Villagers.First(v => v.Alive && v.WorkplaceId == lodge.Id);
-        hunter.Position = lodge.Tile;
+        hunter.Position = lodge.Position;
 
         int taken = 0;
         for (int tick = 0; tick < config.TicksPerYear * 2 && taken == 0; tick++)

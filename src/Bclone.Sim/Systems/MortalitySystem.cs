@@ -166,7 +166,7 @@ public sealed class MortalitySystem : ISimSystem
     /// rather than swallowed (METHODOLOGY §4).
     /// </remarks>
     private static string WhereTheyWere(SimWorld world, Villager villager) =>
-        world.ShelterAt(villager.Position) switch
+        world.ShelterAt(villager.Tile) switch
         {
             Shelter.Fire => "beside a burning fire, which should not be possible",
             Shelter.Roof => "under a roof with no fire under it",

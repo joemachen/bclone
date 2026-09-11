@@ -396,7 +396,7 @@ public sealed class GoodsOnTheGroundTests
 
         // One villager, one armful, standing at the warehouse door with it.
         Villager carrier = world.Villagers[0];
-        carrier.Position = warehouse.Tile;
+        carrier.Position = warehouse.Position;
         carrier.Carried.TakeAll(Goods.Logs);
         carrier.Carried.Receive(Goods.Logs, 60);
         carrier.State = VillagerState.HaulingToStore;

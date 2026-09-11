@@ -254,6 +254,7 @@ public partial class Main : Control
         // and the restore does not shrink `Size.X` back within the same call. Asked afterwards,
         // this measured every sentence against 377 pixels the player does not have.
         GD.Print(_map.TheCentreOfATileDrawsWhereTheTileDoes());
+        GD.Print(_map.AVillagerDrawsWhereTheyStand());
         GD.Print(ZoneOutline.SelfCheck());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
         GD.Print(ValleyTexture.SelfCheck(_loop.World));

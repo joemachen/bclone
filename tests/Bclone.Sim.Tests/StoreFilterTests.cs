@@ -312,7 +312,7 @@ public sealed class StoreFilterTests
         Assert.True(world.SetStoreAccepts(warehouse, Goods.Firewood, accepted: false).Allowed);
 
         Villager carrier = world.Villagers[0];
-        carrier.Position = warehouse.Tile;
+        carrier.Position = warehouse.Position;
         carrier.Carried.TakeAll(Goods.Produce);
         carrier.Carried.TakeAll(Goods.Logs);
         carrier.Carried.TakeAll(Goods.Firewood);

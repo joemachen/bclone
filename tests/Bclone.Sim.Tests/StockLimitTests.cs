@@ -335,7 +335,11 @@ public sealed class StockLimitTests
     // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
     // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed keeps
     // its founding site, soil and seams. See `MapGenerationTests.GoldenMapHash`.
-    private const ulong FixtureFiftyYearHash = 111552278507413873UL;
+    // RE-TAKEN (D354): a villager's position is a `Point` and hashes as raw fixed-point bits
+    // where it hashed as two tile ints. Proved first with the tile still mixed: every guard
+    // byte-identical, so the village did not move — the fingerprint's shape did.
+    // Was 111552278507413873.
+    private const ulong FixtureFiftyYearHash = 12530049132124308337UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -384,7 +388,8 @@ public sealed class StockLimitTests
     //   before the fire got hungrier (2026-09-01): 7526008860437144418
     //   before job-holders rested in spells (2026-09-02): 13822301328619150389
     //   before fishing added a seventh good (2026-09-02): 801842139213225914
-    private const ulong ShippedFiftyYearHash = 5668752618904500719UL;
+    //   before a villager held a Point (D354): 5668752618904500719
+    private const ulong ShippedFiftyYearHash = 7968212936318456319UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

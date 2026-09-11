@@ -1,9 +1,9 @@
 # Spec: Gridless — free placement, real facings, and paths that bend
 
-> Status: ▶️ **OPTION C CHOSEN BY JOE (2026-09-06). SLICES 1 AND 2a ARE BUILT AND GREEN** —
+> Status: ▶️ **OPTION C CHOSEN BY JOE (2026-09-06). SLICES 1, 2a, 2b, 2c AND 3 ARE BUILT AND GREEN** (D317–D331, D354) —
 > `Fixed` (Q32.32) and `Angle` (16-bit BAM) with deterministic trigonometry. **No behaviour in
-> either, and no golden moved by either.** Slice 2b (buildings gain extent and facing) is next;
-> 3 and 4 are not started.
+> either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point` and stand on what they walk to (D354).**
+> **Slice 4 — string-pulled paths, with the waypoint that makes a fractional walk possible — is next.**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -272,9 +272,24 @@ expensive inference in this project.*
    handoff meanwhile called free placement "slice 3". *Renumbered rather than argued about: two
    documents disagreeing about what comes next is how a session picks the wrong thing.*
 
-3. **Villagers hold a `Point`.** Movement interpolates in fixed-point; the cost field is untouched.
-   ⚠️ Still ahead. Joe's call on 2c was **buildings only** — villagers keep stepping tile to tile,
-   so a movement bug and a placement bug cannot arrive tangled together.
+3. ✅ **Villagers hold a `Point` — BUILT (D354, 2026-09-11).** `Villager.Position` is a `Point`,
+   `Villager.Tile` is derived (a floor), and every tile-keyed question in the sim — the cost field,
+   the zones, the ground, *"is anybody at this site?"* — asks `Tile`. **Arrival stands where the
+   thing IS**: a worker at a free-placed hut stands on the hut, not on its anchor tile's centre half
+   a tile away (`Travel(…, Point)` for buildings walked to by reference;
+   `SimWorld.StandingPlaceAt` for errand tiles — a site, a door, a store — asked once at arrival).
+   The hash mixes the raw bits (`MixFixed × 2`); **six goldens moved once, proved the D211 way
+   first** (tile still mixed → 1,091 guards byte-identical).
+   ⛔ **What this slice deliberately did NOT do: a fraction of a tile a tick.** The line above used
+   to promise *"movement interpolates in fixed-point"*, and building it showed why it belongs to
+   slice 4: a fractional walk must know which way it is going mid-leg, and **the tile a villager is
+   on cannot say whether they are leaving it or arriving at it** — that is a waypoint, and a
+   waypoint is slice 4's state. Adding it here would have been two movement systems in one slice,
+   the thing Joe kept 2c to buildings to avoid. So at every tick boundary a villager is on a tile
+   centre, the walk is the tile stepping it always was (`travel_ticks_per_unit > 1` still steps
+   and waits, and `VillagerPointTests` pins the arrival ticks — 20 and 41 — measured before the
+   change), and the view lerps within the tick as before. The only off-centre position is standing
+   on a free-placed building.
 4. **String-pulled paths**, and then desire paths (§2.6) become writable for the first time.
 
 ⚠️ **Each slice ships playable** (`DESIGN.md §4`). ⛔ **Slice 1 is not a spike** — if Q32.32 is not
@@ -283,6 +298,21 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 ---
 
 ## 9. Definition of Done
+
+### Slice 3 — ✅ MET (2026-09-11, D354): villagers hold a `Point`, and stand on what they walk to
+
+| # | Item | State |
+|---|---|---|
+| 1 | `Villager.Position` is a `Point`; `GridPos` survives as the derived `Tile` | ✅ 57 sim readers and 7 view readers ask `Tile`; the compiler enumerated every one |
+| 2 | The tile-indexed world and the cost field are untouched | ✅ the route is still `TravelCost.StepToward`, tile to tile, 4-connected; no config key moved |
+| 3 | The walk's timing is unchanged | ✅ first-gather ticks pinned at 20 (shipped pace) and 41 (`travel_ticks_per_unit = 3`), measured on the old code, green on the new |
+| 4 | Arrival stands where the thing is | ✅ `AVillagerStandsOnTheBuildingTheyArriveAt`, `AVillagerAtHomeStandsOnTheDoorstep`; never across a tile boundary |
+| 5 | Positions enter the hash as raw bits | ✅ `MixFixed × 2`, never quantised |
+| 6 | **Goldens move ONCE, proved the D211 way first** | ✅ tile mixed as before → **1,091 guards byte-identical**; then six numbers re-taken in one commit |
+| 7 | The view draws a villager where they stand | ✅ probe line `villagers:` — red-checked at 33.94px, the half-tile seam |
+| 8 | Red checks | ✅ four run, four red (arrival ignoring the place; arrival a tick early at pace 3; `ToTile` truncating; the view's half-tile) |
+| 9 | Determinism and suite green | ✅ 1091 / 0 / 2 of 1093, ~3m (machine, measured against `HEAD`) |
+| ⏸ | A fraction of a tile a tick | **Deferred to slice 4 with the waypoint**, stated in §8 rather than half-built here |
 
 ### Slice 2c — ✅ MET (2026-09-07): the anchor became a `Point`, and the hash learned it
 

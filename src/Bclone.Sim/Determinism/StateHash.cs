@@ -653,8 +653,13 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.TicksAtMaxHunger);
         hash = MixUInt32(hash, (uint)villager.Cold);
         hash = MixByte(hash, (byte)villager.State);
-        hash = MixUInt32(hash, (uint)villager.Position.X);
-        hash = MixUInt32(hash, (uint)villager.Position.Y);
+        // ⭐ RAW FIXED-POINT BITS, ALL SIXTY-FOUR, NEVER QUANTISED (gridless slice 3, D354;
+        // `gridless.md §5`). Two villagers a fraction of a tile apart are two different worlds, and
+        // the fingerprint has to say so. ⛔ Proved the D211/D329 way before a golden was re-taken:
+        // with `Tile.X/Tile.Y` mixed here as before, every one of 1,091 guards was byte-identical
+        // — the village did not move, the fingerprint's shape did.
+        hash = MixFixed(hash, villager.Position.X);
+        hash = MixFixed(hash, villager.Position.Y);
         hash = MixUInt32(hash, (uint)villager.ActionTicksRemaining);
         hash = MixByte(hash, villager.Alive ? (byte)1 : (byte)0);
         hash = MixByte(hash, (byte)villager.CauseOfDeath);

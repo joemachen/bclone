@@ -229,7 +229,11 @@ public sealed class FarmGoldenTests
     // run mixes slot 9 where it mixed slot 0. The village is the same village; what it holds
     // is called something else. The only golden that moves, because this is the only golden
     // run that farms.
-    private const ulong SeamGoldenHash = 14564253939142116109UL;
+    // RE-TAKEN (D354): a villager's position is a `Point` and hashes as raw fixed-point bits
+    // where it hashed as two tile ints. Proved first with the tile still mixed: every guard
+    // byte-identical, so the village did not move — the fingerprint's shape did.
+    // Was 14564253939142116109.
+    private const ulong SeamGoldenHash = 7833527539066423309UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -267,7 +271,8 @@ public sealed class FarmGoldenTests
     //   before job-holders rested in spells (2026-09-02): 12765428660570679341
     //   before fishing added a seventh good (2026-09-02): 3898924203131512042
     // Was 9165233745633703210; moved with the rest for the sparse-hash reason above.
-    private const ulong SeamBeforeAnybodyGotBetter = 5599416537105166058UL;
+    // RE-TAKEN (D354) with `SeamGoldenHash` above, for the same reason. Was 5599416537105166058.
+    private const ulong SeamBeforeAnybodyGotBetter = 11856395796552874154UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

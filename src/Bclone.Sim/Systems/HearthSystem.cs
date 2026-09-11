@@ -141,7 +141,7 @@ public sealed class HearthSystem : ISimSystem
 
             int before = villager.Cold;
 
-            villager.Cold += world.ShelterAt(villager.Position) switch
+            villager.Cold += world.ShelterAt(villager.Tile) switch
             {
                 Shelter.Fire => -config.ThawPerTickAtAFire,
                 Shelter.Roof => config.ExposurePerTickSheltered,

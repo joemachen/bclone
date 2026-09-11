@@ -54,7 +54,7 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             VillagerState before = villager.State;
-            GridPos wasAt = villager.Position;
+            GridPos wasAt = villager.Tile;
 
             // ⭐ EVERY GOOD, NOT THE THREE THAT USED TO HAVE A FIELD (D211). A villager can
             // carry stone now, and an audit trail that names three goods would be silent about
@@ -71,12 +71,12 @@ public sealed class BehaviorSystem : ISimSystem
             if (villager.State != before)
             {
                 world.LogVillager(LogLevel.Debug, villager, "behavior",
-                    $"{Describe(before)} -> {Describe(villager.State)} at {villager.Position}");
+                    $"{Describe(before)} -> {Describe(villager.State)} at {villager.Tile}");
             }
-            else if (villager.Position != wasAt)
+            else if (villager.Tile != wasAt)
             {
                 world.LogVillager(LogLevel.Trace, villager, "behavior",
-                    $"{Describe(villager.State)}, {wasAt} -> {villager.Position}");
+                    $"{Describe(villager.State)}, {wasAt} -> {villager.Tile}");
             }
 
             // Goods changing hands is the other half of an audit: "why is the granary
@@ -320,7 +320,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // — and **silently redirected a fisher into a berry patch** the day fishing
                 // shipped: posted, walking, arriving, and gathering nothing because a fishery has
                 // no ring. *Two trades share this leg now; the arrival state has to ask which.*
-                Travel(world, villager, WorkplaceOf(world, villager)!.Tile, VillagerState.Gathering);
+                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Gathering);
                 return;
 
             case VillagerState.TravelingToGame:
@@ -330,7 +330,7 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.TravelingToWater:
-                Travel(world, villager, WorkplaceOf(world, villager)!.Tile, VillagerState.Fishing);
+                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Fishing);
                 return;
 
             case VillagerState.TravelingToTrees:
@@ -349,7 +349,7 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.TravelingToHut:
-                Travel(world, villager, WorkplaceOf(world, villager)!.Tile, VillagerState.MakingFirewood);
+                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.MakingFirewood);
                 return;
 
             case VillagerState.HaulingToStore:
@@ -362,11 +362,11 @@ public sealed class BehaviorSystem : ISimSystem
                     return;
                 }
 
-                Travel(world, villager, bound.Tile, VillagerState.HaulingToStore);
+                Travel(world, villager, bound.Position, VillagerState.HaulingToStore);
                 return;
 
             case VillagerState.FetchingFromStore:
-                Travel(world, villager, PlanFetch(world, villager)?.Tile ?? world.RestingPlaceOf(villager),
+                Travel(world, villager, PlanFetch(world, villager)?.Position ?? world.RestingPoint(villager),
                     VillagerState.FetchingFromStore);
                 return;
 
@@ -460,7 +460,7 @@ public sealed class BehaviorSystem : ISimSystem
                     return;
                 }
 
-                Travel(world, villager, barn.Tile, VillagerState.HaulingToFarm);
+                Travel(world, villager, barn.Position, VillagerState.HaulingToFarm);
                 return;
 
             case VillagerState.StockingTheMarket:
@@ -479,11 +479,11 @@ public sealed class BehaviorSystem : ISimSystem
                     return;
                 }
 
-                Travel(world, villager, stall.Tile, VillagerState.StockingTheMarket);
+                Travel(world, villager, stall.Position, VillagerState.StockingTheMarket);
                 return;
 
             case VillagerState.TravelingHome:
-                Travel(world, villager, world.RestingPlaceOf(villager), VillagerState.Idle);
+                Travel(world, villager, world.RestingPoint(villager), VillagerState.Idle);
                 return;
         }
 
@@ -646,7 +646,7 @@ public sealed class BehaviorSystem : ISimSystem
         if (WorkplaceOf(world, villager)?.Kind == JobKind.Marketer)
         {
             Goods carrying = TheLoad(villager);
-            StoreBuilding? nearest = NearestStoreAccepting(world, villager.Position, carrying);
+            StoreBuilding? nearest = NearestStoreAccepting(world, villager.Tile, carrying);
             if (nearest is not null)
             {
                 return nearest;
@@ -734,9 +734,9 @@ public sealed class BehaviorSystem : ISimSystem
         // belongs in a granary. This only stops the preference outranking possibility.
         StoreBuilding? proper =
             world.NearestStore(
-                villager.Position, wanted, store => store.Accepts(load) && !store.Store.IsFull)
+                villager.Tile, wanted, store => store.Accepts(load) && !store.Store.IsFull)
             ?? world.NearestStoreAccepting(
-                villager.Position, load, static store => store.IsStorage && !store.Store.IsFull)
+                villager.Tile, load, static store => store.IsStorage && !store.Store.IsFull)
             ?? FirstOfKind(world, wanted, load);
 
         if (proper is not null)
@@ -756,7 +756,7 @@ public sealed class BehaviorSystem : ISimSystem
         // nearest place that would take this good if it could, and the load stays in their
         // arms until there is room, which is the same thing a person would do.
         StoreBuilding? anywhere =
-            world.NearestStoreAccepting(villager.Position, load, static store => store.IsStorage);
+            world.NearestStoreAccepting(villager.Tile, load, static store => store.IsStorage);
 
         // The cart even where no route reaches it, as before — but only if it would take
         // this good. It stopped taking logs (D90 step 4), and a fallback that ignores
@@ -784,7 +784,7 @@ public sealed class BehaviorSystem : ISimSystem
         // loud rather than swallowed (METHODOLOGY §4); the heap is on the map either way.
         world.Log(LogLevel.Debug, "goods",
             $"{villager.Name} has {load} and nowhere in the village will take it — "
-            + $"setting it down at {villager.Position}. {world.Clock}.");
+            + $"setting it down at {villager.Tile}. {world.Clock}.");
 
         return null;
     }
@@ -819,7 +819,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         if (StoreForTheLoad(world, villager) is StoreBuilding destination)
         {
-            Travel(world, villager, destination.Tile, VillagerState.HaulingToStore);
+            Travel(world, villager, destination.Position, VillagerState.HaulingToStore);
             return;
         }
 
@@ -838,7 +838,7 @@ public sealed class BehaviorSystem : ISimSystem
             int held = villager.Carried.TakeAll(goods);
             if (held > 0)
             {
-                world.SetDown(villager.Position, goods, held);
+                world.SetDown(villager.Tile, goods, held);
             }
         }
     }
@@ -986,7 +986,7 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        StoreBuilding? source = NearestStoreHolding(world, villager.Position, wanted.Value);
+        StoreBuilding? source = NearestStoreHolding(world, villager.Tile, wanted.Value);
         if (source is null)
         {
             return false;
@@ -994,7 +994,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         villager.ActionTicksRemaining = 0;
         villager.State = VillagerState.FetchingFromStore;
-        Travel(world, villager, source.Tile, VillagerState.FetchingFromStore);
+        Travel(world, villager, source.Position, VillagerState.FetchingFromStore);
         return true;
     }
 
@@ -1119,7 +1119,7 @@ public sealed class BehaviorSystem : ISimSystem
                 continue;
             }
 
-            int cost = world.TravelCost.Cost(villager.Position, store.Tile);
+            int cost = world.TravelCost.Cost(villager.Tile, store.Tile);
             if (cost != TravelCostField.Unreachable && cost < best)
             {
                 best = cost;
@@ -1178,7 +1178,7 @@ public sealed class BehaviorSystem : ISimSystem
         int atHome = world.FoodIn(household.Stockpile);
         if (atHome < foodFloor && WorthTheTrip(config, foodWanted - atHome, foodWanted))
         {
-            StoreBuilding? source = NearestStoreHoldingFood(world, villager.Position);
+            StoreBuilding? source = NearestStoreHoldingFood(world, villager.Tile);
             if (source is not null)
             {
                 return source;
@@ -1197,7 +1197,7 @@ public sealed class BehaviorSystem : ISimSystem
         int firewoodShort = firewoodFloor - household.Stockpile.Firewood;
 
         return firewoodShort > 0 && WorthTheTrip(config, firewoodShort, firewoodFloor)
-            ? NearestStoreHolding(world, villager.Position, Goods.Firewood)
+            ? NearestStoreHolding(world, villager.Tile, Goods.Firewood)
             : null;
     }
 
@@ -1333,7 +1333,7 @@ public sealed class BehaviorSystem : ISimSystem
         // — two runs of one seed send the builder to the same store for the same thing.
         Goods wantedGood = site.NextMaterialWanted() ?? Goods.Logs;
         StoreBuilding? warehouse = world.NearestStoreAccepting(
-            villager.Position, wantedGood, store => store.Store[wantedGood] > 0);
+            villager.Tile, wantedGood, store => store.Store[wantedGood] > 0);
 
         if (warehouse is null)
         {
@@ -1451,7 +1451,7 @@ public sealed class BehaviorSystem : ISimSystem
             // one, and a builder who arrives at the materials and cannot pick them up is worse
             // than one who never set off (D75).
             if (!store.Accepts(wanted)
-                || store.Tile != villager.Position)
+                || store.Tile != villager.Tile)
             {
                 continue;
             }
@@ -1478,7 +1478,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void RaiseTheBuilding(SimWorld world, Villager villager)
     {
-        Workplace? job = world.SiteAt(villager.Position);
+        Workplace? job = world.SiteAt(villager.Tile);
         ConstructionSite? site = job?.Construction;
 
         if (site is null)
@@ -1721,14 +1721,14 @@ public sealed class BehaviorSystem : ISimSystem
                 }
 
                 StoreBuilding? source = NearestStoreHoldingExcept(
-                    world, villager.Position, goods, market);
+                    world, villager.Tile, goods, market);
 
                 if (source is null)
                 {
                     continue;
                 }
 
-                int cost = world.TravelCost.TicksBetween(villager.Position, source.Tile);
+                int cost = world.TravelCost.TicksBetween(villager.Tile, source.Tile);
                 if (cost >= bestCost)
                 {
                     continue;
@@ -1778,7 +1778,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void LoadForTheMarket(SimWorld world, Villager villager, StoreBuilding source)
     {
-        StoreBuilding? market = TheMarketNearest(world, villager.Position);
+        StoreBuilding? market = TheMarketNearest(world, villager.Tile);
         if (market is null || ReferenceEquals(market, source))
         {
             GoHome(world, villager);
@@ -1831,7 +1831,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void PutItInTheMarket(SimWorld world, Villager villager)
     {
-        StoreBuilding? market = TheMarketNearest(world, villager.Position);
+        StoreBuilding? market = TheMarketNearest(world, villager.Tile);
 
         if (market is not null)
         {
@@ -2043,7 +2043,7 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 // OUT: somebody has to bring them some. Pick up wherever it is
                 // cheapest to reach from here.
-                StoreBuilding? source = NearestStoreHolding(world, villager.Position, goods);
+                StoreBuilding? source = NearestStoreHolding(world, villager.Tile, goods);
 
                 // ⭐ AND A FARM COUNTS, BUT ONLY IF IT HAPPENS TO BE NEARER (Joe, D161):
                 // *"focus on granary first and only grab from a farm if it happens to be near
@@ -2056,7 +2056,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // a trader passing the farm using it and a trader across the village not
                 // detouring. A tuned radius here would be a number nobody could derive (D16),
                 // and D112 has already traded a fence for a consequence once.
-                Workplace? farm = NearerWorkplaceStore(world, villager.Position, goods, source);
+                Workplace? farm = NearerWorkplaceStore(world, villager.Tile, goods, source);
                 if (farm is not null)
                 {
                     Offer(farm.Tile, household.Id, goods, delivering: true);
@@ -2093,7 +2093,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         void Offer(GridPos source, int householdId, Goods goods, bool delivering)
         {
-            int cost = world.TravelCost.TicksBetween(villager.Position, source);
+            int cost = world.TravelCost.TicksBetween(villager.Tile, source);
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -2211,7 +2211,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         villager.ActionTicksRemaining = 0;
         villager.State = VillagerState.TravelingHome;
-        Travel(world, villager, world.RestingPlaceOf(villager), VillagerState.Idle);
+        Travel(world, villager, world.RestingPoint(villager), VillagerState.Idle);
     }
 
     // Cutting is deliberately NOT included here. Berries stop in winter; trees do
@@ -2259,7 +2259,7 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        GridPos? fire = NearestFire(world, villager.Position);
+        GridPos? fire = NearestFire(world, villager.Tile);
         if (fire is null)
         {
             return false;
@@ -2475,7 +2475,7 @@ public sealed class BehaviorSystem : ISimSystem
         if (errand is not null)
         {
             villager.State = VillagerState.FetchingFromStore;
-            Travel(world, villager, errand.Tile, VillagerState.FetchingFromStore);
+            Travel(world, villager, errand.Position, VillagerState.FetchingFromStore);
             return;
         }
 
@@ -2491,7 +2491,7 @@ public sealed class BehaviorSystem : ISimSystem
         // *Two rules and no shuttling, rather than a second hauling system.*
         if (villager.CanWork && PlanEmptying(world, villager) is StoreBuilding clearing)
         {
-            Travel(world, villager, clearing.Tile, VillagerState.ClearingAStore);
+            Travel(world, villager, clearing.Position, VillagerState.ClearingAStore);
             return;
         }
 
@@ -2520,7 +2520,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (needsFood && canHunt)
         {
-            if (villager.Position == job!.Tile)
+            if (villager.Tile == job!.Tile)
             {
                 villager.State = VillagerState.Hunting;
                 villager.ActionTicksRemaining =
@@ -2529,7 +2529,7 @@ public sealed class BehaviorSystem : ISimSystem
             else
             {
                 villager.State = VillagerState.TravelingToGame;
-                Travel(world, villager, job.Tile, VillagerState.Hunting);
+                Travel(world, villager, job.Position, VillagerState.Hunting);
             }
 
             return;
@@ -2547,7 +2547,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (needsFood && canFish)
         {
-            if (villager.Position == job!.Tile)
+            if (villager.Tile == job!.Tile)
             {
                 villager.State = VillagerState.Fishing;
                 villager.ActionTicksRemaining =
@@ -2556,7 +2556,7 @@ public sealed class BehaviorSystem : ISimSystem
             else
             {
                 villager.State = VillagerState.TravelingToWater;
-                Travel(world, villager, job.Tile, VillagerState.Fishing);
+                Travel(world, villager, job.Position, VillagerState.Fishing);
             }
 
             return;
@@ -2579,14 +2579,14 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (needsFood && canForage)
         {
-            if (villager.Position == job!.Tile)
+            if (villager.Tile == job!.Tile)
             {
                 BeginGathering(world, villager, config);
             }
             else
             {
                 villager.State = VillagerState.TravelingToFood;
-                Travel(world, villager, job.Tile, VillagerState.Gathering);
+                Travel(world, villager, job.Position, VillagerState.Gathering);
             }
 
             return;
@@ -2687,7 +2687,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             villager.WorkNote = string.Empty;
 
-            if (villager.Position == job.Tile)
+            if (villager.Tile == job.Tile)
             {
                 villager.State = VillagerState.MakingFirewood;
                 villager.ActionTicksRemaining =
@@ -2696,7 +2696,7 @@ public sealed class BehaviorSystem : ISimSystem
             else
             {
                 villager.State = VillagerState.TravelingToHut;
-                Travel(world, villager, job.Tile, VillagerState.MakingFirewood);
+                Travel(world, villager, job.Position, VillagerState.MakingFirewood);
             }
 
             return;
@@ -2730,7 +2730,7 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 villager.WorkNote = $"{job.Name} has no ground to work — paint some for it.";
             }
-            else if (world.NextFieldToWork(job, villager.Position) is GridPos field)
+            else if (world.NextFieldToWork(job, villager.Tile) is GridPos field)
             {
                 villager.WorkNote = string.Empty;
                 villager.ErrandX = field.X;
@@ -2798,7 +2798,7 @@ public sealed class BehaviorSystem : ISimSystem
             // stand behaviour below, which is what keeps this a no-op until somebody paints.
             if (world.Zones.WorkGroundTiles(job.Id) > 0)
             {
-                if (world.NextGroundToWork(job, villager.Position) is GridPos ground)
+                if (world.NextGroundToWork(job, villager.Tile) is GridPos ground)
                 {
                     villager.WorkNote = string.Empty;
                     villager.ErrandX = ground.X;
@@ -2849,7 +2849,7 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
             }
 
-            if (villager.Position == job.Tile)
+            if (villager.Tile == job.Tile)
             {
                 villager.State = VillagerState.Cutting;
                 villager.ActionTicksRemaining =
@@ -2858,7 +2858,7 @@ public sealed class BehaviorSystem : ISimSystem
             else
             {
                 villager.State = VillagerState.TravelingToTrees;
-                Travel(world, villager, job.Tile, VillagerState.Cutting);
+                Travel(world, villager, job.Position, VillagerState.Cutting);
             }
 
             return;
@@ -2914,10 +2914,10 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         // Rest — at home if not already there.
-        if (villager.Position != world.RestingPlaceOf(villager))
+        if (villager.Tile != world.RestingPlaceOf(villager))
         {
             villager.State = VillagerState.TravelingHome;
-            Travel(world, villager, world.RestingPlaceOf(villager), VillagerState.Idle);
+            Travel(world, villager, world.RestingPoint(villager), VillagerState.Idle);
             return;
         }
 
@@ -3019,7 +3019,7 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        GroundStack? stack = world.NearestGroundStack(villager.Position);
+        GroundStack? stack = world.NearestGroundStack(villager.Tile);
         if (stack is null)
         {
             return false;
@@ -3075,7 +3075,7 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        GridPos? tile = world.NearestHarvest(villager.Position, out Goods? heldBackBy);
+        GridPos? tile = world.NearestHarvest(villager.Tile, out Goods? heldBackBy);
         if (tile is null)
         {
             // ⭐ AND A LIMIT SAYS SO RATHER THAN LOOKING LIKE NOTHING TO DO (D212). This is
@@ -3102,13 +3102,41 @@ public sealed class BehaviorSystem : ISimSystem
         return true;
     }
 
+    /// <summary>
+    /// Walk to a thing that stands at a <see cref="Point"/> — a building, a door — and stand ON
+    /// it when you get there (gridless slice 3, D354).
+    /// </summary>
+    private static void Travel(SimWorld world, Villager villager, Point destination, VillagerState onArrival) =>
+        Travel(world, villager, destination.ToTile(), onArrival, destination);
+
     /// <summary>Take one step, and switch to <paramref name="onArrival"/> if that
     /// step completes the journey.</summary>
-    private static void Travel(SimWorld world, Villager villager, GridPos target, VillagerState onArrival)
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>The walk is tile centre to tile centre, and arrival stands where the thing IS</b>
+    /// (gridless slice 3, D354). A villager's <see cref="Villager.Position"/> is a <see cref="Point"/>
+    /// now, but the route is still the tile cost field's — one tile a step, 4-connected — so at
+    /// every tick boundary they are on a tile centre, exactly as before. What is new is
+    /// <paramref name="standAt"/>: a free-placed hut stands at (3.3, 7.6) and its worker used to
+    /// stand at (3.5, 7.5), the anchor tile's centre, half a tile from the door. The last thing
+    /// arrival does is step to where the building actually is — zero extra ticks, because the tile
+    /// was already paid for.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Deliberately NOT a fraction of a tile a tick at a slower pace.</b> A fractional walk
+    /// needs to know which way it is going mid-leg — the tile a villager is on cannot say whether
+    /// they are leaving it or arriving — and that is a waypoint, which is <em>slice 4's</em> state
+    /// (string-pulled paths). Adding it here would be two movement systems in one slice, which is
+    /// the thing Joe kept 2c to buildings to avoid. `travel_ticks_per_unit &gt; 1` still steps and
+    /// waits; the view interpolates within the tick as it always has.
+    /// </para>
+    /// </remarks>
+    private static void Travel(
+        SimWorld world, Villager villager, GridPos target, VillagerState onArrival, Point? standAt = null)
     {
-        if (villager.Position == target)
+        if (villager.Tile == target)
         {
-            ArriveAt(world, villager, onArrival);
+            Arrive(world, villager, target, onArrival, standAt);
             return;
         }
 
@@ -3117,8 +3145,8 @@ public sealed class BehaviorSystem : ISimSystem
         // would walk them over the river while every other system believed they went
         // round it — the worst of both, and invisible until somebody starved on a
         // journey the sim had priced differently from the one they made.
-        GridPos next = world.TravelCost.StepToward(villager.Position, target);
-        if (next == villager.Position)
+        GridPos next = world.TravelCost.StepToward(villager.Tile, target);
+        if (next == villager.Tile)
         {
             // Nowhere to go: the target is across water with no way round. Not an
             // error — a real state a village can be in before it can build bridges —
@@ -3127,7 +3155,7 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        villager.Position = next;
+        villager.Position = Point.CentreOf(next);
 
         // travel_ticks_per_unit > 1 means each step costs extra ticks; the step is
         // already applied, so the remainder is the extra waiting.
@@ -3138,10 +3166,35 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (villager.Position == target)
+        if (villager.Tile == target)
         {
-            ArriveAt(world, villager, onArrival);
+            Arrive(world, villager, target, onArrival, standAt);
         }
+    }
+
+    /// <summary>The last step of a journey: onto the thing itself, then the arrival state.</summary>
+    /// <remarks>
+    /// <para>
+    /// A caller who walked to a building by reference says where to stand; a caller who walked to
+    /// an errand TILE (a site to build, a home to deliver to, a store to collect from — `ErrandX/Y`
+    /// are tile ints) is answered by <see cref="SimWorld.StandingPlaceAt"/>: whatever stands on
+    /// the tile, or its centre if nothing does. Asked once per journey, at arrival — never per tick.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Only ever within the target tile.</b> A place on another tile would let arrival move
+    /// somebody across ground the cost field never charged for, so it is checked rather than
+    /// trusted; the guard `AVillagerStandsOnTheBuildingTheyArriveAt` is what says so.
+    /// </para>
+    /// </remarks>
+    private static void Arrive(
+        SimWorld world, Villager villager, GridPos target, VillagerState onArrival, Point? standAt)
+    {
+        Point? place = standAt ?? world.StandingPlaceAt(target);
+        villager.Position = place is Point exactly && exactly.ToTile() == target
+            ? exactly
+            : Point.CentreOf(target);
+
+        ArriveAt(world, villager, onArrival);
     }
 
     /// <summary>
@@ -3249,7 +3302,7 @@ public sealed class BehaviorSystem : ISimSystem
         StoreBuilding? target = null;
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
-            if (world.StoreBuildings[i].Tile == villager.Position)
+            if (world.StoreBuildings[i].Tile == villager.Tile)
             {
                 target = world.StoreBuildings[i];
             }
@@ -3530,7 +3583,7 @@ public sealed class BehaviorSystem : ISimSystem
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
-            if (store.Tile != villager.Position)
+            if (store.Tile != villager.Tile)
             {
                 continue;
             }
@@ -3582,7 +3635,7 @@ public sealed class BehaviorSystem : ISimSystem
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
-            if (workplace.IsSite || workplace.Tile != villager.Position)
+            if (workplace.IsSite || workplace.Tile != villager.Tile)
             {
                 continue;
             }
@@ -3642,7 +3695,7 @@ public sealed class BehaviorSystem : ISimSystem
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
-            if (household.HomeTile != villager.Position)
+            if (household.HomeTile != villager.Tile)
             {
                 continue;
             }
@@ -3799,7 +3852,7 @@ public sealed class BehaviorSystem : ISimSystem
             // who stops for the walk home after every armful is not a reaper.
             if (SeasonRules.IsReaping(world.Clock.Season)
                 && WorkplaceOf(world, villager) is { Kind: JobKind.Farmer } farm
-                && world.NextFieldToWork(farm, villager.Position) is not null)
+                && world.NextFieldToWork(farm, villager.Tile) is not null)
             {
                 Decide(world, villager);
                 return;
@@ -3823,7 +3876,7 @@ public sealed class BehaviorSystem : ISimSystem
         // answer. **The whole errand is the walk out and one armful.**
         if (onArrival == VillagerState.ClearingAStore)
         {
-            if (world.StoreAt(villager.Position) is StoreBuilding clearing && clearing.Emptying)
+            if (world.StoreAt(villager.Tile) is StoreBuilding clearing && clearing.Emptying)
             {
                 TakeALoadOutOf(world, villager, clearing);
             }
@@ -4111,14 +4164,14 @@ public sealed class BehaviorSystem : ISimSystem
         // it can, and when it cannot the walk is long ONCE rather than one-and-a-half times.
         int toTheFarm = farm.Store.FreeSpace < carried
             ? int.MaxValue
-            : world.TravelCost.Cost(villager.Position, farm.Tile);
+            : world.TravelCost.Cost(villager.Tile, farm.Tile);
 
         StoreBuilding? store = world.NearestStoreAccepting(
-            villager.Position, grain, static place => !place.Store.IsFull);
+            villager.Tile, grain, static place => !place.Store.IsFull);
 
         int toAStore = store is null
             ? int.MaxValue
-            : world.TravelCost.Cost(villager.Position, store.Tile);
+            : world.TravelCost.Cost(villager.Tile, store.Tile);
 
         // ⭐ AND IT SAYS WHY, BECAUSE THIS CHOICE IS INVISIBLE AND IT DECIDES THE HARVEST
         // (Joe, 2026-08-22: *"the farmer cant harvest as much as it sows"*). His run made
@@ -4147,7 +4200,7 @@ public sealed class BehaviorSystem : ISimSystem
         if (toTheFarm != int.MaxValue && toTheFarm <= toAStore)
         {
             villager.State = VillagerState.HaulingToFarm;
-            Travel(world, villager, farm.Tile, VillagerState.HaulingToFarm);
+            Travel(world, villager, farm.Position, VillagerState.HaulingToFarm);
             return;
         }
 
@@ -4644,7 +4697,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // It replaces a sweep across every household's private pile, which was
                 // a warehouse in all but name and could not be seen, sited or reasoned about.
                 StoreBuilding? woodyard = NearestStoreWithLogs(
-                    world, villager.Position, world.Config.LogsPerSplit);
+                    world, villager.Tile, world.Config.LogsPerSplit);
 
                 if (woodyard is null || !woodyard.Store.TryTake(Goods.Logs, world.Config.LogsPerSplit))
                 {
@@ -4689,7 +4742,7 @@ public sealed class BehaviorSystem : ISimSystem
                     woodyard.Accepts(Goods.Firewood) && !woodyard.Store.IsFull
                         ? woodyard
                         : world.NearestStoreAccepting(
-                            villager.Position, Goods.Firewood, static store => !store.Store.IsFull);
+                            villager.Tile, Goods.Firewood, static store => !store.Store.IsFull);
 
                 // ⚠️ AND WHAT WILL NOT FIT GOES ON THE GROUND RATHER THAN NOWHERE (D96). The
                 // return value of `Add` was discarded, so a batch that overflowed the last
@@ -4700,7 +4753,7 @@ public sealed class BehaviorSystem : ISimSystem
                 int stored = wall?.Store.Add(Goods.Firewood, firewood) ?? 0;
                 if (stored < firewood)
                 {
-                    world.SetDown(villager.Position, Goods.Firewood, firewood - stored);
+                    world.SetDown(villager.Tile, Goods.Firewood, firewood - stored);
                 }
 
                 if (world.Logs(LogLevel.Debug))

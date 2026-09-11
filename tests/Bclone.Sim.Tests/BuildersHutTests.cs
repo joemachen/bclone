@@ -434,7 +434,7 @@ public sealed class BuildersHutTests
         // must not be left in `Building` — that state re-arrives on the same tile every tick
         // and never reaches `Decide`, so they never look for a store.
         Villager builder = world.Villagers[0];
-        builder.Position = at;
+        builder.Position = Point.CentreOf(at);
         builder.Carried.TakeAll(Goods.Logs);
         yard.Store.Add(Goods.Logs, 200);
 

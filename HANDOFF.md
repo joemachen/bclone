@@ -1,15 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 4.5 IS CURRENT (D353) — NEXT IS GRIDLESS SLICE 3, VILLAGERS HOLD A `Point`**
+# Handoff — bclone: **▶️ PHASE 4.5 — SLICE 3 IS BUILT (VILLAGERS HOLD A `Point`), UNPLAYED; SLICE 4 IS NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (late).**
-> **1081 passing, 0 failing, 2 skipped of 1083** — run locally on `main`, **~3m** (⚠️ `HEAD` without
+> **1091 passing, 0 failing, 2 skipped of 1093** — run locally on `main`, **~3m** (⚠️ `HEAD` without
 > this session's change measured 3m00s the same hour; the 2m35s of the morning was the machine, not
 > the code — *measured before it was believed*).
-> **The decision log runs to D353**; read D338–D353 in `DESIGN.md §7` for the last two days —
+> **The decision log runs to D354**; read D338–D354 in `DESIGN.md §7` for the last two days —
 > sixteen decisions — fifteen from Joe playing a build, and D353 the roadmap review that came after (`DESIGN.md §4`, *Master Roadmap*: **Phase 4.5 is current, slice 3 is next**).
 >
 > **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D351):** everything up to and including wheat end
 > to end, the take-back erasing the field, the orange site with no ring beside it, the market's
 > `Holding:` line, and a thin housing stroke siting no house.
+>
+> **⚠️ WHAT JOE HAS NOT PLAYED YET (D354) — gridless slice 3.** Villagers hold a `Point` and
+> **stand on the building they walk to**: place a forager's hut with snap off, a third of a tile
+> off-grid, and watch the worker stand *on* it rather than half a tile beside it; a family stands on
+> its doorstep. **Nothing else should look different** — same pace, same routes, people still hop
+> tile to tile between ticks (the fraction is slice 4's). If anyone walks through water, stands
+> beside a building, or the pace feels changed, that is the bug this slice was kept small to catch.
 >
 > **✅ JOE PLAYED D352 (2026-09-11, late): *"yes, the brush is great now. push!"* — pushed.** What he confirmed, for the record:
 > 1. **The facets** (*"triangle artifacting"*): the zone fill is ear-clipped, not Delaunay. Paint a
@@ -284,6 +291,20 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     sixteen of them make a tile, and the comments call them quarter-tiles. The first draft of the
     proportional-yield guard painted one sub-tile and measured 3.0 of 50.5 — a sixteenth — while its
     name said a quarter. *Say "sub-tile" or "one of sixteen" when the fraction matters.*
+12. **⛔ A SPEC LINE CAN DESCRIBE TWO SLICES IN ONE SENTENCE (D354).** `gridless.md §8` slice 3
+    said *"villagers hold a `Point`; movement interpolates in fixed-point."* The first half is a
+    type change; the second needs a **waypoint** — mid-leg, the tile you are on cannot say whether
+    you are leaving or arriving — and a waypoint is slice 4's state. **Correct the line; do not
+    build half of the next slice quietly.** The `Toward` primitive was written, found unused, and
+    deleted rather than left for later.
+13. **⚠️ THE WALK'S TIMING IS THE ECONOMY'S, AND IT IS PINNED.** `VillagerPointTests` pins the first
+    gather at tick **20** (shipped pace) and **41** (`travel_ticks_per_unit = 3`), measured on the
+    tile-stepping code *before* slice 3. A fractional walk that arrives a tile early re-derives the
+    food economy silently (D122's shape). Slice 4 keeps those numbers or moves them with a reason.
+14. **⚠️ A GOLDEN RE-TAKE CAN HIDE A SIXTH NUMBER BEHIND FIVE FAILING GUARDS.** `FarmGoldenTests`
+    has two constants checked by one test; the first re-take fixed the one in the failure message
+    and the suite went red again on the second. **Read every constant the failing test compares,
+    not the first `Expected:`.**
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
@@ -306,7 +327,7 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT AND SLICE 3 IS NEXT.** Slice 3 = villagers hold a `Point` (`gridless.md §8`); then slice 4 (string-pulled paths), then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 3 is where a movement bug can first arrive; Joe's call on 2c was *buildings only* precisely so it could not arrive tangled with placement. Read `gridless.md §8` and §10 before starting it.
+- ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT; SLICE 3 IS BUILT (D354), SLICE 4 IS NEXT.** Slice 4 = string-pulled paths **with the waypoint** — the state a fractional walk needs, which slice 3 deliberately did not add (`gridless.md §8` says why: the tile a villager is on cannot say whether they are leaving it or arriving at it); then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 4 is where movement genuinely changes for the first time; read `gridless.md §8` and §10 and the `VillagerPointTests` timing pins (20 and 41) before starting it — those pins are the economy's, and slice 4 must either keep them or move them deliberately with a stated reason.
 
 - ~~⭐ **NEXT: A FIELD LOOKS LIKE A FIELD (Commit L of the wheat plan).**~~ ✅ D349. Bare/furrowed `Field`, sparse green `Sown`, dense gold `Ripe` — marks from a hash like the trees, **not** overhanging (a field's edge is a fence line). Ripe stalks in the wheat chip's colour so map and Overview agree. View only.
 - ~~⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").**~~ ✅ D348, **confirmed in play by Joe the same day** (D350). `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.

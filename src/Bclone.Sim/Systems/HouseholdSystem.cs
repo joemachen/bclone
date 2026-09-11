@@ -356,7 +356,7 @@ public sealed class HouseholdSystem : ISimSystem
 
         // A house if there is one — a couple taking over one standing empty — and null if
         // theirs is still being built (D102). Homeless is a real state, not an error.
-        GridPos? home = household.HomeTile;
+        Point? home = household.HomePosition;
 
         // Each family sends their child off with a share of the larder. Without it a
         // new household starts on empty and can be wiped out by its first winter
@@ -407,14 +407,14 @@ public sealed class HouseholdSystem : ISimSystem
     }
 
     private static void MoveIn(
-        SimWorld world, Villager villager, Household household, GridPos? home)
+        SimWorld world, Villager villager, Household household, Point? home)
     {
         world.HouseholdOf(villager).RemoveMember(villager.Id);
         villager.HouseholdId = household.Id;
 
         // Only if there is a door to stand at. A couple whose house is still being built
         // stays where they are and rests wherever RestingPlaceOf sends them (D102).
-        if (home is GridPos doorstep)
+        if (home is Point doorstep)
         {
             villager.Position = doorstep;
         }
@@ -477,7 +477,7 @@ public sealed class HouseholdSystem : ISimSystem
 
             // Born at home, and there is always one: IsReadyForAChild refuses a household
             // with no roof (D71), so a child cannot be born into the open.
-            Position = household.HomeTile
+            Position = household.HomePosition
                 ?? throw new InvalidOperationException(
                     $"A child was born to the {household.Name} household, which has no house."),
         };

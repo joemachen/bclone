@@ -708,7 +708,7 @@ public sealed class MapGenerationTests
                     continue;
                 }
 
-                Assert.NotEqual(Terrain.Water, loop.World.Map.TerrainAt(villager.Position));
+                Assert.NotEqual(Terrain.Water, loop.World.Map.TerrainAt(villager.Tile));
             }
         }
     }

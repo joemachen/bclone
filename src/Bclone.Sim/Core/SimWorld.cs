@@ -5229,6 +5229,51 @@ public sealed class SimWorld
     }
 
     /// <summary>What the building on a tile is called, or "it".</summary>
+    /// <summary>
+    /// ⭐ Where a villager arriving on this tile should STAND — the <see cref="Point"/> of whatever
+    /// stands there, or nothing if the tile is bare ground (gridless slice 3, D354).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A free-placed hut stands at (3.3, 7.6); its anchor tile's centre is (3.5, 7.5). Before this
+    /// slice every arrival stood at the centre, half a tile from the door of the thing they had
+    /// walked to. The walk is still tile to tile through the cost field; this is only the last
+    /// step, asked once per journey at arrival, never per tick.
+    /// </para>
+    /// <para>
+    /// Asked in the order <see cref="WhatStandsAt"/> asks, so a market — a store and a stall at one
+    /// position (D36's seam) — answers with one point rather than two. A home is asked last because
+    /// a house never shares a tile with anything else (<c>CanBuildAt</c> refuses the ground).
+    /// </para>
+    /// </remarks>
+    public Point? StandingPlaceAt(GridPos tile)
+    {
+        if (StoreAt(tile) is StoreBuilding store)
+        {
+            return store.Position;
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Footprint.Covers(tile))
+            {
+                return Workplaces[i].Position;
+            }
+        }
+
+        if (LibraryCovering(tile) is Library library)
+        {
+            return library.Position;
+        }
+
+        if (TownHall is { } hall && TownHallCovers(tile))
+        {
+            return hall.Position;
+        }
+
+        return HouseholdAt(tile)?.HomePosition;
+    }
+
     public string NameOnTheTile(GridPos tile) => NameOfWhatStandsAt(tile);
 
     private string NameOfWhatStandsAt(GridPos tile)
@@ -6754,7 +6799,7 @@ public sealed class SimWorld
                 {
                     if (Villagers[i].Alive && Villagers[i].HouseholdId == family.Id)
                     {
-                        Villagers[i].Position = site.Tile;
+                        Villagers[i].Position = site.Position;
                     }
                 }
 
@@ -8174,7 +8219,7 @@ public sealed class SimWorld
                     // Standing at their house, or at the cart they arrived in (D70). Not
                     // RestingPlaceOf — that reads the household, and this villager is not
                     // in it yet.
-                    Position = home ?? origin,
+                    Position = Point.CentreOf(home ?? origin),
                     HouseholdId = household.Id,
 
                     // Year 1 is the first year, so someone aged N at founding was
@@ -8997,6 +9042,13 @@ public sealed class SimWorld
     /// </remarks>
     public GridPos RestingPlaceOf(Villager villager) =>
         HouseholdOf(villager).HomeTile ?? TheCart?.Tile ?? Map.FoundingSite;
+
+    /// <summary>
+    /// The same place as a <see cref="Point"/> — the doorstep itself, the cart itself — so a
+    /// villager going home stands ON it (gridless slice 3, D354).
+    /// </summary>
+    public Point RestingPoint(Villager villager) =>
+        HouseholdOf(villager).HomePosition ?? TheCart?.Position ?? Point.CentreOf(Map.FoundingSite);
 
     /// <summary>
     /// Where "the village" is, for anything that needs one point to measure from.

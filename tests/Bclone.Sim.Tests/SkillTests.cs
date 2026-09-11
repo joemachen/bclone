@@ -278,8 +278,12 @@ public sealed class SkillTests
     // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
     // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed
     // keeps its founding site, soil and seams. See `MapGenerationTests.GoldenMapHash`.
-    [InlineData(false, 14169332401122492243UL)]
-    [InlineData(true, 9044360297461632177UL)]
+    // RE-TAKEN (D354): a villager's position is a `Point` and hashes as raw fixed-point bits
+    // where it hashed as two tile ints. Proved first with the tile still mixed: every guard
+    // byte-identical, so the village did not move — the fingerprint's shape did.
+    // Were 14169332401122492243 (fixture) and 9044360297461632177 (shipped).
+    [InlineData(false, 4436310576949656979UL)]
+    [InlineData(true, 9219403902803322913UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

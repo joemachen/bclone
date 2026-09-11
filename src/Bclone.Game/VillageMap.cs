@@ -2010,8 +2010,16 @@ public partial class VillageMap : Control
     /// <see cref="Point"/> from an exact rational instead (see <c>PointUnderTheCursor</c>).
     /// </para>
     /// </remarks>
-    private Vector2 ToScreen(Point at) =>
-        ToScreen(new Vector2(InTiles(at.X) - 0.5f, InTiles(at.Y) - 0.5f));
+    private Vector2 ToScreen(Point at) => ToScreen(InViewTiles(at));
+
+    /// <summary>
+    /// A <see cref="Point"/> in the VIEW's tile space — where tile <c>(x, y)</c> is centred on
+    /// <c>(x, y)</c> — so a villager's <see cref="Point"/> can be lerped and fanned in the same
+    /// space the tile grid is drawn in (gridless slice 3, D354). The half-tile is carried here,
+    /// once; see <see cref="ToScreen(Point)"/> for why it exists at all.
+    /// </summary>
+    private static Vector2 InViewTiles(Point at) =>
+        new(InTiles(at.X) - 0.5f, InTiles(at.Y) - 0.5f);
 
     /// <summary>
     /// ⛔⛔ A corner the tracer produced, brought back to tile space — <b>and every one
@@ -2143,6 +2151,52 @@ public partial class VillageMap : Control
                 + $"worst {worst:F4}px"
             : $"[widths] tile centres: ⛔ {worst:F2}px adrift at {where} — every building on the "
                 + $"map is off by {worst / Mathf.Max(1f, _pixelsPerTile):F2} of a tile";
+    }
+
+    /// <summary>
+    /// ⭐ A villager standing at a free-placed building's <see cref="Point"/> is drawn ON the
+    /// building, not beside it — <b>the picture gridless slice 3 buys</b> (D354). For the probe.
+    /// </summary>
+    /// <remarks>
+    /// Asks <see cref="DrawnCentre"/> — the real path, lerp and fan included — of a posed villager
+    /// nobody else knows about (no interpolation history, alone on their tile), against
+    /// <see cref="ToScreen(Point)"/> of the same point. A half-tile error here would be D338's seam
+    /// arriving for people; a whole-tile one would be the interpolation lerping in sim tile space.
+    /// </remarks>
+    public string AVillagerDrawsWhereTheyStand()
+    {
+        float worst = 0f;
+        Point where = Point.Origin;
+        int posedId = int.MaxValue - 7;
+
+        foreach (Point at in new[]
+        {
+            Point.CentreOf(new GridPos(3, 7)) + new Point(Fixed.FromRatio(-1, 3), Fixed.FromRatio(1, 4)),
+            Point.CentreOf(new GridPos(-6, 2)) + new Point(Fixed.FromRatio(2, 5), Fixed.FromRatio(-3, 8)),
+            Point.CentreOf(new GridPos(0, 0)),
+        })
+        {
+            var posed = new Villager
+            {
+                Id = posedId--,
+                Name = "posed",
+                LifespanYears = 1,
+                Carried = new Stockpile(_world!.GoodsCatalog.Count),
+                Position = at,
+            };
+
+            float off = DrawnCentre(posed).DistanceTo(ToScreen(at));
+            if (off > worst)
+            {
+                worst = off;
+                where = at;
+            }
+        }
+
+        return worst <= 0.001f
+            ? $"[widths] villagers: ✅ a villager at a free point is drawn on it, worst {worst:F4}px"
+            : $"[widths] villagers: ⛔ {worst:F2}px adrift at {where} — people stand beside the "
+                + "buildings they walked to";
     }
 
     /// <summary>
@@ -5026,7 +5080,7 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            var current = new Vector2(villager.Position.X, villager.Position.Y);
+            Vector2 current = InViewTiles(villager.Position);
 
             // First sight of somebody — born, or the first frame of the run. They start
             // standing still rather than gliding in from nowhere.
@@ -5063,10 +5117,10 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            if (!_byTile.TryGetValue(villager.Position, out List<int>? here))
+            if (!_byTile.TryGetValue(villager.Tile, out List<int>? here))
             {
                 here = new List<int>();
-                _byTile[villager.Position] = here;
+                _byTile[villager.Tile] = here;
             }
 
             // Villagers are walked in id order, so each bucket comes out sorted by id
@@ -5091,7 +5145,7 @@ public partial class VillageMap : Control
     /// </remarks>
     private Vector2 FanOffset(Villager villager)
     {
-        if (!_byTile.TryGetValue(villager.Position, out List<int>? here) || here.Count <= 1)
+        if (!_byTile.TryGetValue(villager.Tile, out List<int>? here) || here.Count <= 1)
         {
             return Vector2.Zero;
         }
@@ -5128,7 +5182,7 @@ public partial class VillageMap : Control
     /// </remarks>
     private Vector2 DrawnCentre(Villager villager)
     {
-        var current = new Vector2(villager.Position.X, villager.Position.Y);
+        Vector2 current = InViewTiles(villager.Position);
         Vector2 previous =
             _tiles.TryGetValue(villager.Id, out (Vector2 Previous, Vector2 Current) known)
                 ? known.Previous

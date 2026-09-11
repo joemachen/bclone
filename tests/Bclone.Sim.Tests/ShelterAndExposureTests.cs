@@ -81,8 +81,8 @@ public sealed class ShelterAndExposureTests
         Villager inside = world.FindVillager(home.MemberIds[0])!;
         Villager outside = world.FindVillager(home.MemberIds[1])!;
 
-        inside.Position = home.Home();
-        outside.Position = FarFromAnyBuilding(world);
+        inside.Position = Point.CentreOf(home.Home());
+        outside.Position = Point.CentreOf(FarFromAnyBuilding(world));
         inside.Cold = 0;
         outside.Cold = 0;
 
@@ -106,8 +106,8 @@ public sealed class ShelterAndExposureTests
         Villager underARoof = world.Villagers[0];
         Villager inTheOpen = world.Villagers[1];
 
-        underARoof.Position = world.AnyStoreOf(StoreKind.Warehouse).Tile;
-        inTheOpen.Position = FarFromAnyBuilding(world);
+        underARoof.Position = world.AnyStoreOf(StoreKind.Warehouse).Position;
+        inTheOpen.Position = Point.CentreOf(FarFromAnyBuilding(world));
         underARoof.Cold = 0;
         inTheOpen.Cold = 0;
 
@@ -131,7 +131,7 @@ public sealed class ShelterAndExposureTests
         SimWorld world = InWinter(config);
 
         Villager villager = world.Villagers[0];
-        villager.Position = world.Households[0].Home();
+        villager.Position = Point.CentreOf(world.Households[0].Home());
         villager.Cold = config.ExposureThreshold;
 
         Chill(world, 1);
@@ -163,7 +163,7 @@ public sealed class ShelterAndExposureTests
         Assert.NotEqual(mine.Id, theirs.Id);
 
         Villager villager = world.FindVillager(mine.MemberIds[0])!;
-        villager.Position = theirs.Home();
+        villager.Position = Point.CentreOf(theirs.Home());
         villager.Cold = config.ExposureThreshold / 2;
 
         int before = villager.Cold;
@@ -199,11 +199,11 @@ public sealed class ShelterAndExposureTests
         Assert.True(spell < config.ExposureTicksOutdoors);
         Assert.True(spell < config.ExposureTicksSheltered);
 
-        villager.Position = open;
+        villager.Position = Point.CentreOf(open);
         Chill(world, spell / 2);
-        villager.Position = roof;
+        villager.Position = Point.CentreOf(roof);
         Chill(world, spell);
-        villager.Position = open;
+        villager.Position = Point.CentreOf(open);
         Chill(world, spell / 2);
 
         _output.WriteLine(
@@ -326,7 +326,7 @@ public sealed class ShelterAndExposureTests
                     continue;
                 }
 
-                Assert.NotEqual(Shelter.Fire, loop.World.ShelterAt(villager.Position));
+                Assert.NotEqual(Shelter.Fire, loop.World.ShelterAt(villager.Tile));
             }
         }
     }
@@ -483,7 +483,7 @@ public sealed class ShelterAndExposureTests
         villager.Cold = 0;
         villager.Carried.TakeAll(Goods.Logs);
         villager.Carried.Receive(Goods.Logs, 5);
-        villager.Position = world.RestingPlaceOf(villager);
+        villager.Position = Point.CentreOf(world.RestingPlaceOf(villager));
 
         BehaviorSystem.ArriveHomeForTest(world, villager);
 
