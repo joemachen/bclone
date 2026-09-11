@@ -1,6 +1,9 @@
 # Content: Food & Production Catalog
 
-> Status: **reference / partly implemented — Tier 0 `Fish` shipped 2026-09-03.**
+> Status: **reference / partly implemented — Tier 0 `Fish` shipped 2026-09-03; Tier 1 `Wheat`
+> shipped 2026-09-11 (D348) as a real good the farm grows, edible raw at the shared nutrition.**
+> The crain → flour → bread chain is what changes that; `Goods.Produce` remains the umbrella
+> foragers fill.
 > ⭐ **The first entry in `§3` is real**: a fishing hut on the bank, four seats, a 300-catch buffer a
 > marketer runs dry, and `Fish` as a `GoodRow` with `Nutrition` (D277, D282–D284). ⚠️ **Every edible
 > good must share one nutrition value and the config refuses to load otherwise** — the survival
@@ -23,7 +26,7 @@
 > rhythms depending on what food they eat to sate their hunger."*
 
 **This document lists *what foods exist* and says nothing about what any of them is worth**, which
-is the gap that idea fills. Today there is one `Goods.Food` and one `food_per_meal`, so every
+is the gap that idea fills. Today there is one `food_per_meal` across `Produce`, `Fish`, `Meat` and `Wheat`, so every
 mouthful in the game is interchangeable.
 
 **⭐ Why it is worth more than flavour: it is a third source of the thing D28 needed.** Phase 3

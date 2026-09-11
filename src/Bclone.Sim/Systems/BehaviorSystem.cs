@@ -128,18 +128,6 @@ public sealed class BehaviorSystem : ISimSystem
         _ => state.ToString(),
     };
 
-    /// <summary>
-    /// The one crop that is defined — <b>one crop, in a model shaped for many</b> (Joe, D161).
-    /// </summary>
-    /// <remarks>
-    /// A tile carries a crop id beside its terrain, and the crops themselves belong in data
-    /// (CLAUDE.md's rule, and the assumption that a modder will want to touch them). Exactly
-    /// one is defined, and the cost of deferring the <em>id</em> is what is being avoided:
-    /// retrofitting one onto a shipped terrain triple means touching the hash, both goldens
-    /// and every call site at once, where adding a row to a data file later costs nothing.
-    /// </remarks>
-    private const byte TheOneCrop = 1;
-
     private static string Change(int delta, string what) =>
         delta == 0 ? string.Empty : $"{(delta > 0 ? "+" : string.Empty)}{delta} {what} ";
 
@@ -1847,10 +1835,18 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (market is not null)
         {
-            villager.Carried.TryTake(
-                Goods.Produce, market.Store.Add(Goods.Produce, villager.CarriedProduce));
-            villager.Carried.TryTake(
-                Goods.Firewood, market.Store.Add(Goods.Firewood, villager.CarriedFirewood));
+            // ⛔ EVERY GOOD THE MARKET STORES, NOT TWO BY NAME (D348). This deposited produce
+            // and firewood and nothing else, while `LoadForTheMarket` loads whatever the market's
+            // row says it holds — so an armful of wheat bound for market would have been
+            // carried in, not put down, and walked back out again.
+            for (int g = 0; g < world.GoodsCatalog.Count; g++)
+            {
+                var goods = (Goods)g;
+                if (villager.Carried[goods] > 0 && world.GoodsCatalog.StoredBy(goods, StoreKind.Market))
+                {
+                    villager.Carried.TryTake(goods, market.Store.Add(goods, villager.Carried[goods]));
+                }
+            }
         }
 
         if (villager.IsCarrying)
@@ -4060,10 +4056,17 @@ public sealed class BehaviorSystem : ISimSystem
     {
         if (WorkplaceOf(world, villager) is Workplace farm)
         {
-            villager.Carried.TryTake(Goods.Produce, farm.Store.Add(Goods.Produce, villager.CarriedProduce));
+            // Whatever grain the fields gave — every crop's good, so a second crop needs no
+            // second arm here (D348).
+            IReadOnlyList<Goods> grains = world.Crops.Goods;
+            for (int i = 0; i < grains.Count; i++)
+            {
+                villager.Carried.TryTake(
+                    grains[i], farm.Store.Add(grains[i], villager.Carried[grains[i]]));
+            }
         }
 
-        if (villager.CarriedProduce > 0 || villager.IsCarrying)
+        if (villager.IsCarrying)
         {
             HaulOrSetDown(world, villager);
             return;
@@ -4091,8 +4094,11 @@ public sealed class BehaviorSystem : ISimSystem
     /// way to find a store, which D145 names as the moment a control stops being safe.
     /// </para>
     /// </remarks>
-    private static void HaulTheHarvest(SimWorld world, Villager villager, Workplace farm)
+    private static void HaulTheHarvest(
+        SimWorld world, Villager villager, Workplace farm, Goods grain)
     {
+        int carried = villager.Carried[grain];
+
         // ⛔ "WITH ROOM" MEANS ROOM FOR THE WHOLE LOAD, AND ASKING `IsFull` INSTEAD COST A
         // MEASUREMENT TO FIND. A tile of crop yields more than the buffer's entire capacity, so
         // a farm with one unit of space left counted as "not full", took that one unit, and the
@@ -4103,12 +4109,12 @@ public sealed class BehaviorSystem : ISimSystem
         // room for a fraction of an armful is not room. Asking the honest question makes the
         // buffer do what `farm_store_cap` was described as doing: it absorbs whole loads while
         // it can, and when it cannot the walk is long ONCE rather than one-and-a-half times.
-        int toTheFarm = farm.Store.FreeSpace < villager.CarriedProduce
+        int toTheFarm = farm.Store.FreeSpace < carried
             ? int.MaxValue
             : world.TravelCost.Cost(villager.Position, farm.Tile);
 
         StoreBuilding? store = world.NearestStoreAccepting(
-            villager.Position, Goods.Produce, static place => !place.Store.IsFull);
+            villager.Position, grain, static place => !place.Store.IsFull);
 
         int toAStore = store is null
             ? int.MaxValue
@@ -4128,7 +4134,8 @@ public sealed class BehaviorSystem : ISimSystem
             world.Log(
                 LogLevel.Debug,
                 "goods",
-                $"{villager.Name} #{villager.Id}: {villager.CarriedProduce} food from the field — "
+                $"{villager.Name} #{villager.Id}: {carried} {world.GoodsCatalog.NameOf(grain)} "
+                + "from the field — "
                 + $"{farm.Name} has {farm.Store.FreeSpace} free of {farm.Store.Capacity} "
                 + $"(cost {(toTheFarm == int.MaxValue ? "no room" : toTheFarm.ToString())}), "
                 + $"nearest store {(store is null ? "none" : store.Name)} "
@@ -4486,7 +4493,10 @@ public sealed class BehaviorSystem : ISimSystem
                 if (SimWorld.IsSowable(world.Map.TerrainAt(sown)))
                 {
                     world.SetTerrain(sown, Terrain.Sown);
-                    world.Map.SetCrop(sown, TheOneCrop);
+                    // ⭐ The crop is a ROW now (D348). D161 put the id on the tile and
+                    // deferred what it meant; `Crops.TheOne` is what it means until the farm can
+                    // choose.
+                    world.Map.SetCrop(sown, (byte)world.Crops.TheOne.Id);
                 }
 
                 villager.ErrandX = 0;
@@ -4516,6 +4526,10 @@ public sealed class BehaviorSystem : ISimSystem
                     return;
                 }
 
+                // ⛔ Asked BEFORE the terrain is set back, and asked of the row: this is the
+                // only place the reaped good is decided (D348). It was `Goods.Produce` by name.
+                Goods grain = world.Crops.GoodOf(world.Map.CropAt(reaped));
+
                 world.SetTerrain(reaped, Terrain.Field);
 
                 // Vigour scales what a day's work brings home, the same way it scales a gather
@@ -4528,11 +4542,11 @@ public sealed class BehaviorSystem : ISimSystem
                 // that was reaped, not of the farm**, because a field can span better and worse
                 // ground and the player should be able to see that on the map.
                 int crop = world.CropYieldAt(reaped) * villager.Vigour / 100;
-                villager.Carried.Receive(Goods.Produce, crop < 1 ? 1 : crop);
+                villager.Carried.Receive(grain, crop < 1 ? 1 : crop);
 
                 if (WorkplaceOf(world, villager) is Workplace theirFarm)
                 {
-                    HaulTheHarvest(world, villager, theirFarm);
+                    HaulTheHarvest(world, villager, theirFarm, grain);
                     return;
                 }
 

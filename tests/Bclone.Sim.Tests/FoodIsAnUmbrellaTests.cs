@@ -118,7 +118,7 @@ public sealed class FoodIsAnUmbrellaTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void OneFoodMakesTheUmbrellaInvisible()
+    public void TheUmbrellaIsTheSumOfItsMembersAndNothingMore()
     {
         SimConfig config = Config;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
@@ -126,15 +126,20 @@ public sealed class FoodIsAnUmbrellaTests
 
         loop.Step(config.TicksPerYear * 8);
 
+        // ⭐ PRODUCE AND WHEAT, SUMMED BY HAND (D348). This was `OneFoodMakesTheUmbrellaInvisible`
+        // and summed produce alone — true while a farm reaped produce, and quietly false the
+        // day it reaped wheat, though an unattended village never farms so the test would have
+        // stayed green. **It states the property honestly now: the umbrella is exactly its
+        // members, with fish and meat at zero to prove nothing else is hiding in it.**
         int single = 0;
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            single += store.Store[Goods.Produce];
+            single += store.Store[Goods.Produce] + store.Store[Goods.Wheat];
         }
 
         foreach (Household household in world.Households)
         {
-            single += household.Stockpile[Goods.Produce];
+            single += household.Stockpile[Goods.Produce] + household.Stockpile[Goods.Wheat];
         }
 
         _output.WriteLine(

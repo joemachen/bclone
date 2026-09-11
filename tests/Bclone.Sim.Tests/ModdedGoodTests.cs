@@ -47,7 +47,10 @@ public sealed class ModdedGoodTests
     /// well. **It passed the entire time.** Found when <c>Meat</c> and <c>Leather</c> took 7 and
     /// 8 and the loader finally said something.
     /// </remarks>
-    private const int PitchId = 9;
+    // ⚠️ AND 9 STOPPED BEING FREE THE DAY WHEAT SHIPPED (D348). The loader said so —
+    // *"crop 'wheat' yields pitch, which nobody can eat"* — which is the crop validator
+    // reading the modded catalogue and finding tar where the grain should be.
+    private const int PitchId = 10;
 
     private static Goods Pitch => (Goods)PitchId;
 
@@ -72,14 +75,48 @@ public sealed class ModdedGoodTests
         { "id": 6, "name": "fish",     "source_name": "the river",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
         { "id": 7, "name": "meat",     "source_name": "the woods",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
         { "id": 8, "name": "leather",  "source_name": "the woods",    "stored_by": ["Warehouse", "Cart"] },
+        { "id": 9, "name": "wheat",    "source_name": "the fields",   "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
 
         // The modder's own good, above every built-in. Nothing in the sim has heard of it.
-        { "id": 9, "name": "pitch",    "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
+        { "id": 10, "name": "pitch",   "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
       ]
     }
     """;
 
     private static SimConfig ConfigWithPitch() => SimConfigLoader.Parse(JsonWithPitch, "<modded>");
+
+    /// <summary>
+    /// ⛔ A crop must name an edible good — <b>a farm that grows tar is a different
+    /// building</b> (D348).
+    /// </summary>
+    /// <remarks>
+    /// This is the guard that caught the pitch collision while D348 was being written: pitch sat
+    /// at id 9, wheat took 9, and the loader said *"crop 'wheat' yields pitch, which nobody can
+    /// eat"*. Posed deliberately here so the sentence stays that plain.
+    /// </remarks>
+    [Fact]
+    public void EveryCropNamesAnEdibleGoodWithAHome()
+    {
+        SimConfig config = ConfigWithPitch();
+
+        SimConfig tarFarm = config with
+        {
+            Crops = new[] { new CropRow { Id = 1, Name = "tar", Yields = Pitch } },
+        };
+
+        SimConfigException refused = Assert.Throws<SimConfigException>(
+            () => tarFarm.Validate());
+
+        _output.WriteLine(refused.Message);
+        Assert.Contains("nobody can eat", refused.Message, StringComparison.Ordinal);
+
+        SimConfig bareGround = config with
+        {
+            Crops = new[] { new CropRow { Id = 0, Name = "nothing", Yields = Goods.Wheat } },
+        };
+
+        Assert.Throws<SimConfigException>(() => bareGround.Validate());
+    }
 
     // -----------------------------------------------------------------
     //  It loads, and the sim knows what it is
@@ -91,7 +128,7 @@ public sealed class ModdedGoodTests
         SimConfig config = ConfigWithPitch();
         var catalog = new GoodsCatalog(config.GoodsCatalog);
 
-        Assert.Equal(10, catalog.Count);
+        Assert.Equal(11, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a good no switch
         // has ever named.
@@ -128,10 +165,10 @@ public sealed class ModdedGoodTests
 
         // Every stockpile in the run is sized from the catalogue, so the seventh has a slot —
         // this is the six-good ceiling, gone.
-        Assert.Equal(10, world.Households[0].Stockpile.Slots);
+        Assert.Equal(11, world.Households[0].Stockpile.Slots);
 
         StoreBuilding warehouse = FindWarehouse(world);
-        Assert.Equal(10, warehouse.Store.Slots);
+        Assert.Equal(11, warehouse.Store.Slots);
 
         // ⭐ The warehouse takes it because the ROW says so — `stored_by: ["Warehouse"]` — not because
         // anything in the sim was taught about pitch.
@@ -274,7 +311,7 @@ public sealed class ModdedGoodTests
         // returned -1 and `Set` answered **false** — *the player sets a limit, the control reports
         // no change, and nothing anywhere says why.* Silent refusal is the worst of the three
         // possible failures, because there is nothing to read.
-        Assert.Equal(10, world.StockLimits.Slots);
+        Assert.Equal(11, world.StockLimits.Slots);
 
         Assert.True(world.StockLimits.Set(Pitch, 120), "a modded good can be limited");
         Assert.Equal(120, world.StockLimits.For(Pitch));
@@ -344,7 +381,7 @@ public sealed class ModdedGoodTests
     public void TwoGoodsSharingAnIdAreRefusedAtLoad()
     {
         string duplicated = JsonWithPitch.Replace(
-            """{ "id": 9, "name": "pitch",""",
+            """{ "id": 10, "name": "pitch",""",
             """{ "id": 5, "name": "pitch",""");
 
         SimConfigException error = Assert.Throws<SimConfigException>(

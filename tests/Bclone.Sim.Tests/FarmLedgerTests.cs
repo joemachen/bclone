@@ -230,7 +230,9 @@ public sealed class FarmLedgerTests
         foreach (LogEntry entry in sink.Entries)
         {
             string line = entry.Message;
-            if (!line.Contains("food from the field", StringComparison.Ordinal))
+            // "N wheat from the field" since D348 — matched on the tail, so a second crop's
+            // sentence counts too.
+            if (!line.Contains(" from the field", StringComparison.Ordinal))
             {
                 continue;
             }

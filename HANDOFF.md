@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ SEAMS HAVE BOULDERS — WHEAT AS THE FIRST REAL FOOD IS NEXT (JOE: OPTION 2)**
+# Handoff — bclone: **▶️ WHEAT IS A REAL GOOD — THE FIELDS DO NOT LOOK LIKE FIELDS YET**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
 > **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
@@ -259,6 +259,7 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⭐ **NEXT: A FIELD LOOKS LIKE A FIELD (Commit L of the wheat plan).** Bare/furrowed `Field`, sparse green `Sown`, dense gold `Ripe` — marks from a hash like the trees, **not** overhanging (a field's edge is a fence line). Ripe stalks in the wheat chip's colour so map and Overview agree. View only.
 - ⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").** `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.
 - ⭐⭐ **PER-STAGE RNG STREAMS, DEFERRED TO THE NEW-GAME SCREEN (D344, Joe's call).** Worldgen threads **one** generator through river → founding → soil → seams → woodland, so **draw order is the seed contract** and *every future map option that generates something — a lake, an island, a cliff — reshuffles every seed and re-takes every golden, once per option.* ⭐ One stream per stage fixes that for good. ⛔ **Build it with splitmix64 per-stage SEEDS, not `DeterministicRandom`'s `stream` parameter** — small adjacent ids correlate badly (measured: 6 dead valleys of 24 against 1). ⚠️ **And expect to re-pick the shipped seed**: the reshuffle put 12345 on a valley that starves.
 - ⚠️ **The stone and iron seams are still Manhattan diamonds, and D347 left them so on purpose** — the boulders hide the shape, and changing it changes ore. *Revisit only with the economy in view.* (Originally: left because they were the subject of the next slice (*"give the stone and iron deposits the same treatment we just gave forests and trees"*) and changing their shape changes how much ore a valley holds. *`InsideTheClump` is sitting there ready for them.*
@@ -800,6 +801,10 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⚠️ A DELTA ON A VILLAGE-WIDE TOTAL CANNOT TELL ONE TRADE FROM ANOTHER (2026-09-11, D348).** A guard compared village produce before and after a farm's autumn and called any rise "the reap writing produce" — the fixture village has foragers, who raised it by two. *Read the instrument that only the thing under test can move* (the farm's own store's produced counter).
+- **⛔ A NEW ENUM VALUE TAKES THE NEXT ID, AND A TEST FIXTURE MAY ALREADY BE SITTING ON IT (2026-09-11, D348, and D2xx before it for Fish).** `ModdedGoodTests` keeps its modded good one above the last built-in; every new good bumps it. The loader says so plainly — read the message before assuming the new code is wrong.
+- **⚠️ A RESTATED GUARD CAN BE UNCHECKABLE IN THE FIXTURE IT RUNS IN (2026-09-11, D348).** The umbrella test sums produce + wheat, but the unattended fixture never farms, so wheat is 0 and dropping it from the sum is invisible. Recorded as a zero rather than dressed up.
 
 - **⛔⛔⛔ TWO GUARDS CAN BE BLIND TO THE SAME DEFECT FOR DIFFERENT REASONS, AND AGREEING WITH EACH OTHER PROVES NOTHING (2026-09-10, D345).** The perimeter guard read 1.00 on a twenty-sided polygon (a chord polygon has a circle's perimeter); the turning-angle guard read 7° on it (it skipped every corner beside a duplicate point). **Both green, Joe counting the sides on screen.** ⭐ *When the player can see something two guards cannot, dump the actual data and look at it* — the 209 raw points showed the chords and the duplicates in thirty seconds.
 - **⛔⛔ CUTTING A STAIRCASE AT EXACTLY HALF A STEP STRAIGHTENS IT INTO CHORDS (2026-09-10, D345).** The midpoints of a regular staircase are collinear. D333's *"never more than half a run"* cap is the right rule for not turning inside out and the wrong rule for smoothing; the rounding is a second stage with a quarter cut. *Measured, not reasoned: quarter-cut alone reads 1.10, half-cut alone reads 18°.*

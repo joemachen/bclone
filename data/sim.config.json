@@ -1014,6 +1014,12 @@
   // and `town_names` do, so there is ONE source of truth rather than two that can
   // drift (METHODOLOGY §3, and D48/D49/D50 are what drift costs). To change them,
   // add a "goods" array here and it replaces the list wholesale.
+  //
+  // ⭐ The CROPS are the same shape (D348): `SimConfig.Crops` holds the rows, one
+  // today -- { "id": 1, "name": "wheat", "yields": "Wheat" } -- and a "crops" array
+  // here replaces them wholesale. A crop's id is what a sown tile carries (0 is bare
+  // ground) and `yields` names the good a reaped tile gives; it must be edible and
+  // some store must hold it, or the config refuses to load.
 
   // Visible seams of stone and iron (D67, D84, D90). RULES, NOT
   // COORDINATES: a modder controls how much ore a valley has and roughly

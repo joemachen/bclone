@@ -42,6 +42,9 @@ public sealed class SimWorld
     /// </remarks>
     public GoodsCatalog GoodsCatalog { get; }
 
+    /// <summary>What the fields can grow — the one place the sim asks (`Crop.cs`, D348).</summary>
+    public CropsCatalog Crops { get; }
+
     /// <summary>What the trades are — the one place the sim asks (`jobs-catalog.md`, D218).</summary>
     public JobsCatalog JobsCatalog { get; }
 
@@ -7680,6 +7683,7 @@ public sealed class SimWorld
     {
         Config = config;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
+        Crops = new CropsCatalog(config.Crops);
         JobsCatalog = new JobsCatalog(config.JobsCatalog);
 
         // ⚠️ AFTER THE JOBS, AND IT MUST BE: the buildings catalogue indexes `JobRow.WorksAt`

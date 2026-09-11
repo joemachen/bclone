@@ -5665,6 +5665,11 @@ public partial class Main : Control
         int startsAt = goods switch
         {
             Goods.Produce => 2000,
+
+            // ⭐ The same as food's, deliberately (D348): the wheat limit is what a limit on
+            // this row ALONE does to the farmers, and the default must change nothing until a
+            // player sets it.
+            Goods.Wheat => 2000,
             Goods.Firewood => 400,
             _ => 200,
         };

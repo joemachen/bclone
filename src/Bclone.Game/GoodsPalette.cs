@@ -45,6 +45,10 @@ internal static class GoodsPalette
         Goods.Meat => new Color(0.66f, 0.26f, 0.28f),
         Goods.Leather => new Color(0.60f, 0.45f, 0.30f),
 
+        // ⭐ Straw gold (D348) — and it is the colour a ripe field draws in, so the map and
+        // the Overview agree about what wheat looks like.
+        Goods.Wheat => new Color(0.86f, 0.72f, 0.32f),
+
         // ⚠️ A MOD-ADDED GOOD GETS A COLOUR RATHER THAN A CRASH, and it is deliberately drab.
         // `goods-catalog.md §9.4` asks whether a mod-added good needs a display colour and calls
         // it *"the first thing a modder will ask for"*. Until that is answered, a neutral grey is

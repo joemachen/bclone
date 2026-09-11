@@ -208,6 +208,21 @@ public sealed class Stockpile
     /// <summary>Total food ever gathered here, for the epitaph.</summary>
     public int LifetimeGathered => _produced[(int)Goods.Produce];
 
+    /// <summary>
+    /// Everything edible this stockpile ever took in — <b>the obituary's number, once there
+    /// was more than one food</b> (D348).
+    /// </summary>
+    public int LifetimeFood(IReadOnlyList<Goods> edible)
+    {
+        int total = 0;
+        for (int i = 0; i < edible.Count; i++)
+        {
+            total += _produced[(int)edible[i]];
+        }
+
+        return total;
+    }
+
     /// <summary>Total logs ever felled here.</summary>
     public int LifetimeLogsFelled => _produced[(int)Goods.Logs];
 

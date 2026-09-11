@@ -1885,6 +1885,31 @@ public sealed record SimConfig
             // lives would have hides eating granary space the birth gate is measured against.
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
         },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Wheat,
+            Name = "wheat",
+            SourceName = "the fields",
+
+            // Stored where food is stored, for Fish's reason: the birth gate reads granaries.
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+
+            // Worth what food is worth, until a diet is derived (D277). See `Goods.Wheat`.
+            Nutrition = 1,
+        },
+    };
+
+    /// <summary>
+    /// The crops a farm can grow — <b>rows that name their good</b> (D348).
+    /// </summary>
+    /// <remarks>
+    /// Not listed in `sim.config.json`, like the goods: a <c>crops</c> array there replaces this
+    /// list wholesale. One row today; barley and corn are rows the day they are wanted.
+    /// </remarks>
+    [JsonPropertyName("crops")]
+    public IReadOnlyList<CropRow> Crops { get; init; } = new[]
+    {
+        new CropRow { Id = 1, Name = "wheat", Yields = World.Goods.Wheat },
     };
 
     /// <summary>
@@ -1957,7 +1982,11 @@ public sealed record SimConfig
             Plural = "farmers",
             Doing = "farming",
             WorksAt = BuildingKind.Farmhouse,
-            LimitedBy = World.Goods.Produce,
+
+            // ⭐ LIMITED BY WHEAT, NOT BY FOOD (D348) — Fisher's rule: this column is the
+            // good a limit on THIS TRADE reads, and the trade makes wheat. The food umbrella still
+            // gates the reap itself (D300); this is what a limit on the wheat row alone does.
+            LimitedBy = World.Goods.Wheat,
         },
         new JobRow
         {
@@ -3369,6 +3398,7 @@ public sealed record SimConfig
         }
 
         ValidateGoods();
+        ValidateCrops();
         ValidateJobs();
         ValidateBuildings();
         ValidateSkills();
@@ -3462,6 +3492,65 @@ public sealed record SimConfig
     /// <summary>
     /// Check the goods catalogue — <b>every failure here is silent and expensive if it ships</b>.
     /// </summary>
+    /// <summary>
+    /// Every crop names an edible good that some store can hold, and no id is used twice (D348).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ A crop yielding logs would be a farm that grows timber — the goods-catalog rule
+    /// *"a good with no home"* (validate at load) applied one row up. Id 0 is bare ground and may
+    /// not be a crop.
+    /// </remarks>
+    private void ValidateCrops()
+    {
+        if (Crops is null)
+        {
+            throw new SimConfigException("crops must be a list, not null.");
+        }
+
+        if (Crops.Count == 0)
+        {
+            throw new SimConfigException("crops is empty, so no farm could ever sow anything.");
+        }
+
+        var goods = new World.GoodsCatalog(GoodsCatalog);
+        var seen = new HashSet<int>();
+
+        for (int i = 0; i < Crops.Count; i++)
+        {
+            CropRow row = Crops[i];
+
+            if (row.Id <= 0)
+            {
+                throw new SimConfigException(
+                    $"crop '{row.Name}' has id {row.Id}; crop ids start at 1, because 0 is bare ground.");
+            }
+
+            if (!seen.Add(row.Id))
+            {
+                throw new SimConfigException($"crops uses id {row.Id} twice.");
+            }
+
+            if (string.IsNullOrWhiteSpace(row.Name))
+            {
+                throw new SimConfigException($"crop id {row.Id} has no name.");
+            }
+
+            if ((int)row.Yields < 0 || (int)row.Yields >= goods.Count || goods[row.Yields] is null)
+            {
+                throw new SimConfigException(
+                    $"crop '{row.Name}' yields good {(int)row.Yields}, which the goods catalogue "
+                    + "does not define.");
+            }
+
+            if (!goods.Edible(row.Yields))
+            {
+                throw new SimConfigException(
+                    $"crop '{row.Name}' yields {goods.NameOf(row.Yields)}, which nobody can eat. "
+                    + "A farm grows food; a crop that yields a material is a different building.");
+            }
+        }
+    }
+
     private void ValidateGoods()
     {
         if (GoodsCatalog is null)

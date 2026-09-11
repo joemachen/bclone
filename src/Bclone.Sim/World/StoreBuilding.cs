@@ -465,4 +465,24 @@ public enum Goods
     /// and the tailor is what spends it.
     /// </remarks>
     Leather = 8,
+
+    /// <summary>
+    /// ⭐⭐ Grain off a farm — <b>the first food that is not the umbrella</b> (D348, Joe's
+    /// ruling: *"option 2"*, a real good rather than a rename).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="Produce"/> was renamed from <c>Food</c> in D299 precisely because it was one
+    /// third of the village's food and not the whole; this is the first thing that makes the
+    /// distinction matter on the farm side. **A forager still fills <see cref="Produce"/>; a
+    /// farm grows this**, and `food-catalog.md`'s chain — wheat → flour → bread,
+    /// wheat → beer — hangs off it later.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Edible raw, at the same worth as every other food</b>, because the survival
+    /// floor is derived on farms feeding the village and the config refuses two nutrition values
+    /// until a diet is derived (D277). *The chain is what changes that, not this row.*
+    /// </para>
+    /// </remarks>
+    Wheat = 9,
 }

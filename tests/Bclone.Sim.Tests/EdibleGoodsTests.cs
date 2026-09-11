@@ -61,8 +61,8 @@ public sealed class EdibleGoodsTests
         SimConfig edibleLogs = config with { GoodsCatalog = rows };
         SimWorld world = SimFactory.CreatePhase0(edibleLogs, new InMemoryLogSink()).World;
 
-        // Food, fish and meat ship edible; the posed logs make four.
-        Assert.Equal(4, world.GoodsCatalog.EdibleGoods.Count);
+        // Produce, fish, meat and wheat ship edible (D348); the posed logs make five.
+        Assert.Equal(5, world.GoodsCatalog.EdibleGoods.Count);
 
         int before = world.FoodTheVillageHolds();
         StoreBuilding granary = world.StoreBuildings.First(s => s.Kind == StoreKind.Granary);
@@ -118,6 +118,6 @@ public sealed class EdibleGoodsTests
         _output.WriteLine(string.Join(", ", world.GoodsCatalog.EdibleGoods));
 
         Assert.Equal(
-            new[] { Goods.Produce, Goods.Fish, Goods.Meat }, world.GoodsCatalog.EdibleGoods);
+            new[] { Goods.Produce, Goods.Fish, Goods.Meat, Goods.Wheat }, world.GoodsCatalog.EdibleGoods);
     }
 }

@@ -52,9 +52,13 @@ for the first six ids, not a second source of truth.*
 > untouched. *Foods being worth different amounts is still ahead of us, and
 > `food-catalog.md`'s warning still stands: it lands on a derivation, not a blank page.*
 
-Fish, meat, wheat, cheese and apples remain **one good**, per `professions.md` (Joe) and
+~~Fish, meat, wheat, cheese and apples remain **one good**, per `professions.md` (Joe) and
 `crops-and-orchards.md §4` — *varieties are flavour and unlock, not new goods.* **This is what
-takes the target from ~70 to ~35.**
+takes the target from ~70 to ~35.**~~ ⛔ **Superseded in stages, each by Joe:** fish and meat
+became goods (D277–D284), and **wheat became one on 2026-09-11 (D348)** as the farm's crop, with
+`Produce` staying the umbrella foragers fill. A crop is a `CropRow { id, name, yields }`; the
+`~35` target was a bound on *distinct goods*, and the food catalogue's raw tier is now spending it
+deliberately, one row at a time.
 
 ⚠️ **The condition on that ruling is written down because it will expire.** `professions.md` says
 *"nothing yet distinguishes them mechanically"* — and `DESIGN.md §5`'s **foods with different

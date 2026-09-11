@@ -225,7 +225,11 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
     // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed keeps
     // its founding site, soil and seams. See `MapGenerationTests.GoldenMapHash`.
-    private const ulong SeamGoldenHash = 3407877978817623107UL;
+    // RE-TAKEN (D348): the farm grows WHEAT now, a real good at slot 9, so every reap in this
+    // run mixes slot 9 where it mixed slot 0. The village is the same village; what it holds
+    // is called something else. The only golden that moves, because this is the only golden
+    // run that farms.
+    private const ulong SeamGoldenHash = 14564253939142116109UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -263,7 +267,7 @@ public sealed class FarmGoldenTests
     //   before job-holders rested in spells (2026-09-02): 12765428660570679341
     //   before fishing added a seventh good (2026-09-02): 3898924203131512042
     // Was 9165233745633703210; moved with the rest for the sparse-hash reason above.
-    private const ulong SeamBeforeAnybodyGotBetter = 9415784199154731769UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 5599416537105166058UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
@@ -404,9 +408,9 @@ public sealed class FarmGoldenTests
                 coverage.SownAtMost = sown;
             }
 
-            if (farm.Store[Goods.Produce] > coverage.FoodBuffered)
+            if (farm.Store[Goods.Wheat] > coverage.FoodBuffered)
             {
-                coverage.FoodBuffered = farm.Store[Goods.Produce];
+                coverage.FoodBuffered = farm.Store[Goods.Wheat];
             }
 
             // A laborer taking a painted tile is what step C is for, and D157 records that

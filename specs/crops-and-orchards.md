@@ -225,9 +225,14 @@ regrowth sweep.
   building marked on one should warn, because it destroys a year's work.
 - **`TerrainRules.Yields(Ripe) => Goods.Food`**, which makes a ripe field harvestable by the
   machinery that already harvests a wood — and **that is the seam to be careful about** (§6).
-- **No new `Goods`.** Crops are `Goods.Food`, consistent with `professions.md`'s ruling on fish
+- ~~**No new `Goods`.** Crops are `Goods.Food`, consistent with `professions.md`'s ruling on fish
   and meat, and `food-catalog.md §7`'s warning against a recipe tree. Varieties of crop are
-  flavour and unlock, not new goods.
+  flavour and unlock, not new goods.~~ ⛔ **REVERSED BY JOE, 2026-09-11 (D348): *"option 2"* —
+  wheat is a real good, not a rename.** A crop is a **row** (`CropRow { id, name, yields }`) and
+  the reap asks the row for its good; `Goods.Produce` stays the umbrella a forager fills. The
+  first row is wheat, yielding `Goods.Wheat`, edible raw at the shared nutrition until
+  `food-catalog.md`'s chain (→ flour → bread; → beer) derives a diet. Barley and corn are
+  rows the day they are wanted.
 - **⭐ ONE CROP, IN A MODEL SHAPED FOR MANY** (Joe). The terrain triple says *what stage this
   tile is at*; a **`CropId` per tile** says *what is growing on it*, and the crops themselves
   live in **data** (`data/`), not in the enum — CLAUDE.md's rule, and the assumption that a
