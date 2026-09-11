@@ -1171,59 +1171,6 @@ public partial class VillageMap : Control
         AcceptEvent();
     }
 
-    /// <summary>
-    /// ⭐⭐ Whether the brush in hand lays WHOLE tiles — <b>true for a farm's ground and nothing
-    /// else</b> (D350).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Joe, with a screenshot of furrows a tile past his paint: *"the painted area needs to be
-    /// accurate for the user across all use cases."*</b> Paint is quarter-tiles and a plough is a
-    /// tile, so a field hanging off quarter-tile paint always stuck out of it somewhere. For a
-    /// farm the paint is laid in tiles instead — *a ploughed field is man-made and reads as
-    /// man-made precisely because its edges are straight* (D342) — and the border is drawn
-    /// unrounded, so paint, border and furrows are one shape. <b>Joe chose this (2026-09-11)
-    /// over clipping the drawn field to the quarters.</b>
-    /// </para>
-    /// <para>
-    /// Housing and the forester's ground keep the curve: a neighbourhood's edge is soft and a
-    /// home needs a whole painted tile (<c>Household.ChooseSite</c>), and a treeline is ragged.
-    /// </para>
-    /// </remarks>
-    private bool BrushLaysWholeTiles() =>
-        _groundFor != 0 && _world?.FindWorkplace(_groundFor)?.Kind == JobKind.Farmer;
-
-    /// <summary>
-    /// The quarter-tiles a stroke at <paramref name="centre"/> lands on — <b>the one shape both
-    /// the paint and its preview read</b> (D327, D350).
-    /// </summary>
-    /// <remarks>
-    /// For a farm, every quarter of every tile the brush mostly covers
-    /// (<see cref="BrushStroke.TilesMostlyUnder"/>), so the sub-tile paint path below lays
-    /// whole tiles without a second door; for everything else, the quarters under the brush.
-    /// </remarks>
-    private List<SubTile> CellsUnderTheBrush(SubTile centre)
-    {
-        if (!BrushLaysWholeTiles())
-        {
-            return BrushStroke.SubTilesUnder(centre, _brushRadius, _brushShape);
-        }
-
-        var cells = new List<SubTile>();
-        foreach (GridPos tile in BrushStroke.TilesMostlyUnder(centre, _brushRadius, _brushShape))
-        {
-            for (int y = 0; y < SubTile.PerTile; y++)
-            {
-                for (int x = 0; x < SubTile.PerTile; x++)
-                {
-                    cells.Add(SubTile.Of(tile, x, y));
-                }
-            }
-        }
-
-        return cells;
-    }
-
     /// <summary>Act on a click while in build or demolish mode.</summary>
     /// <remarks>
     /// <b>The game does not pause for this</b> (D43, Joe's call). The village carries on
@@ -1256,7 +1203,7 @@ public partial class VillageMap : Control
         // ⭐ THE STROKE IS SUB-TILES; THE VERDICTS ARE STILL TILES (D336). Whether ground may be
         // painted is a question about terrain, and terrain is tiled — *a quarter of a tile is not
         // under water on its own.* Only where the player chose to paint got finer.
-        foreach (SubTile at in CellsUnderTheBrush(centre))
+        foreach (SubTile at in BrushStroke.SubTilesUnder(centre, _brushRadius, _brushShape))
         {
             GridPos tile = at.Tile;
 
@@ -2409,11 +2356,7 @@ public partial class VillageMap : Control
         // only the cells the brush actually covers are painted with it.
         var refusedCells = new HashSet<Vector2I>();
 
-        // ⭐ A FARM'S PREVIEW IS SQUARE-EDGED, BECAUSE ITS PAINT IS (D350). Same cells, same
-        // tracer, no rounding — so what the ring shows is the tiles the stroke will take.
-        bool wholeTiles = BrushLaysWholeTiles();
-
-        foreach (SubTile at in CellsUnderTheBrush(_hoveredSub))
+        foreach (SubTile at in BrushStroke.SubTilesUnder(_hoveredSub, _brushRadius, _brushShape))
         {
             if (!_world.Map.Contains(at.Tile))
             {
@@ -2435,7 +2378,7 @@ public partial class VillageMap : Control
             }
         }
 
-        List<Vector2[]> outline = ZoneOutline.Trace(under, SubTile.PerTile, round: !wholeTiles);
+        List<Vector2[]> outline = ZoneOutline.Trace(under, SubTile.PerTile);
         Vector2[] fill = ZoneOutline.Fill(outline, under);
         for (int p = 0; p < fill.Length; p++)
         {
@@ -2447,7 +2390,7 @@ public partial class VillageMap : Control
         if (refusedCells.Count > 0)
         {
             Vector2[] no = ZoneOutline.Fill(
-                ZoneOutline.Trace(refusedCells, SubTile.PerTile, round: !wholeTiles), refusedCells);
+                ZoneOutline.Trace(refusedCells, SubTile.PerTile), refusedCells);
             for (int p = 0; p < no.Length; p++)
             {
                 no[p] = ToScreen(InTileSpace(no[p], SubTile.PerTile));
@@ -3237,12 +3180,7 @@ public partial class VillageMap : Control
 
         for (int i = 0; i < owners.Count; i++)
         {
-            // ⭐ A FIELD'S BORDER IS STRAIGHT (D350): a farm's ground is laid in whole tiles and its
-            // edge is a fence line, so its loop is the straightened staircase and nothing rounder.
-            // A forester's ground keeps the curve — a treeline is ragged.
-            bool field = _world.FindWorkplace(owners[i])?.Kind == JobKind.Farmer;
-            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge, owners[i], waiting: false,
-                round: !field);
+            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge, owners[i], waiting: false);
         }
 
         void FillFrom(HashSet<Vector2I> cells, Layer layer, int owner, bool waiting)
@@ -3264,10 +3202,9 @@ public partial class VillageMap : Control
         // ⚠️ The LAYER is stored, not inferred from the colour (D340). The three
         // toggles have to hide a border and its wash together, and *"whichever loops came out
         // `HarvestEdge`"* is a coincidence of palette rather than a fact about the layer.
-        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge, int owner, bool waiting,
-            bool round = true)
+        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge, int owner, bool waiting)
         {
-            List<Vector2[]> loops = ZoneOutline.Trace(tiles, SubTile.PerTile, round);
+            List<Vector2[]> loops = ZoneOutline.Trace(tiles, SubTile.PerTile);
             foreach (Vector2[] loop in loops)
             {
                 _zoneOutlines.Add((layer, edge, loop));
@@ -3911,10 +3848,27 @@ public partial class VillageMap : Control
     /// because its edges are straight**, so smoothing it would be taking the smoothing rule and
     /// applying it where its whole justification is absent. *Foundation's fields have hard edges
     /// too, and for the same reason.*
+    /// <para>
+    /// ⭐⭐ <b>AND THE FIELD IS DRAWN ONLY WHERE THE PAINT IS</b> (D351). The sim ploughs a tile
+    /// once the farm holds it — at least half its quarters painted (D335) — and a whole-tile field
+    /// under quarter-tile paint stuck out of the border by up to half a tile on every ragged edge.
+    /// D350 answered that by laying a farm's paint in whole tiles with a straight border, and Joe
+    /// rejected it the same day: <em>"farm round brush SHOULD be exactly as round as the tree
+    /// painting brush."</em> So the paint stays quarter-tiles and the curve, and <b>the field is
+    /// clipped to it</b>: a fully painted tile draws whole, a tile on the edge draws only its
+    /// painted quarters, and a furrow or a stalk lands only on a painted quarter. The field the
+    /// player sees is exactly the shape they painted; the sim still sows and reaps the whole tile.
+    /// </para>
+    /// <para>
+    /// ⚠️ A field tile with <em>no</em> paint on it — none should exist since D350's un-plough, but
+    /// a save from before it might — draws whole rather than vanishing, so a ploughed tile can
+    /// never be invisible.
+    /// </para>
     /// </remarks>
     private void DrawWorkedGround(int minX, int maxX, int minY, int maxY)
     {
         GeneratedMap map = _world!.Map;
+        ZoneMap zones = _world.Zones;
 
         for (int y = minY; y <= maxY; y++)
         {
@@ -3928,14 +3882,73 @@ public partial class VillageMap : Control
                     continue;
                 }
 
-                DrawRect(TileRect(tile), ColourOf(terrain));
+                // One byte answers "whole, edge, or unpainted" before any quarter is asked about
+                // (D338's lesson: the counts were already there).
+                int painted = zones.WorkGroundSubTilesOn(tile);
+                ushort quarters = painted == 0 || painted == SubTile.PerWholeTile
+                    ? AllQuarters
+                    : PaintedQuartersOf(zones, tile);
+
+                if (quarters == AllQuarters)
+                {
+                    DrawRect(TileRect(tile), ColourOf(terrain));
+                }
+                else
+                {
+                    for (int q = 0; q < SubTile.PerWholeTile; q++)
+                    {
+                        if ((quarters & (1 << q)) != 0)
+                        {
+                            DrawRect(QuarterRect(tile, q % SubTile.PerTile, q / SubTile.PerTile), ColourOf(terrain));
+                        }
+                    }
+                }
 
                 if (_pixelsPerTile >= TreeZoomFloor)
                 {
-                    Stalks(tile, terrain);
+                    Stalks(tile, terrain, quarters);
                 }
             }
         }
+    }
+
+    /// <summary>Every one of a tile's sixteen quarters, as the mask <see cref="PaintedQuartersOf"/> returns.</summary>
+    private const ushort AllQuarters = 0xFFFF;
+
+    /// <summary>Which of a tile's sixteen quarters carry work-ground paint — bit <c>qy * 4 + qx</c>.</summary>
+    private ushort PaintedQuartersOf(ZoneMap zones, GridPos tile)
+    {
+        ushort mask = 0;
+        for (int qy = 0; qy < SubTile.PerTile; qy++)
+        {
+            for (int qx = 0; qx < SubTile.PerTile; qx++)
+            {
+                int index = IndexOfSub(zones, SubTile.Of(tile, qx, qy));
+                if (index >= 0 && zones.WorkGroundSub[index] != 0)
+                {
+                    mask |= (ushort)(1 << ((qy * SubTile.PerTile) + qx));
+                }
+            }
+        }
+
+        return mask;
+    }
+
+    /// <summary>One quarter of a tile on screen — the same corners <see cref="TileRect"/> uses, a quarter apart.</summary>
+    private Rect2 QuarterRect(GridPos tile, int qx, int qy)
+    {
+        const float Quarter = 1f / SubTile.PerTile;
+        Vector2 topLeft = ToScreen(new Vector2(tile.X - 0.5f + (qx * Quarter), tile.Y - 0.5f + (qy * Quarter))).Round();
+        Vector2 bottomRight = ToScreen(new Vector2(tile.X - 0.5f + ((qx + 1) * Quarter), tile.Y - 0.5f + ((qy + 1) * Quarter))).Round();
+        return new Rect2(topLeft, bottomRight - topLeft);
+    }
+
+    /// <summary>Which quarter of its tile a point at offset (<paramref name="dx"/>, <paramref name="dy"/>) from the centre falls in — bit index into the mask.</summary>
+    private static int QuarterOf(float dx, float dy)
+    {
+        int qx = Mathf.Clamp(Mathf.FloorToInt((dx + 0.5f) * SubTile.PerTile), 0, SubTile.PerTile - 1);
+        int qy = Mathf.Clamp(Mathf.FloorToInt((dy + 0.5f) * SubTile.PerTile), 0, SubTile.PerTile - 1);
+        return (qy * SubTile.PerTile) + qx;
     }
 
     /// <summary>Salt for the field scatter, so a field and a wood on one tile never share a layout.</summary>
@@ -3963,20 +3976,47 @@ public partial class VillageMap : Control
     /// as the canopies and the boulders. `StalkOn` is a `static` for D337's reason.
     /// </para>
     /// </remarks>
-    private void Stalks(GridPos tile, Terrain terrain)
+    private void Stalks(GridPos tile, Terrain terrain, ushort quarters)
     {
         if (terrain == Terrain.Field)
         {
-            // Three furrows across the tile, a shade darker than the earth.
+            // Three furrows across the tile, a shade darker than the earth — ⭐ and on an edge tile
+            // only across the painted quarters (D351), each run of them as one line.
             Color furrow = FieldColour with { R = FieldColour.R * 0.8f, G = FieldColour.G * 0.8f, B = FieldColour.B * 0.8f };
+            float width = Mathf.Max(1f, _pixelsPerTile * 0.04f);
+            const float Quarter = 1f / SubTile.PerTile;
+
             for (int row = 0; row < 3; row++)
             {
-                float y = tile.Y - 0.3f + (row * 0.3f);
-                DrawLine(
-                    ToScreen(new Vector2(tile.X - 0.42f, y)),
-                    ToScreen(new Vector2(tile.X + 0.42f, y)),
-                    furrow,
-                    Mathf.Max(1f, _pixelsPerTile * 0.04f));
+                float dy = -0.3f + (row * 0.3f);
+                float y = tile.Y + dy;
+                int qy = QuarterOf(0f, dy) / SubTile.PerTile;
+
+                int qx = 0;
+                while (qx < SubTile.PerTile)
+                {
+                    if ((quarters & (1 << ((qy * SubTile.PerTile) + qx))) == 0)
+                    {
+                        qx++;
+                        continue;
+                    }
+
+                    int from = qx;
+                    while (qx < SubTile.PerTile && (quarters & (1 << ((qy * SubTile.PerTile) + qx))) != 0)
+                    {
+                        qx++;
+                    }
+
+                    // Inset 0.08 from the tile's own edge, as before; a cut at a painted quarter's
+                    // edge runs right to it, because the paint does.
+                    float left = from == 0 ? -0.42f : -0.5f + (from * Quarter);
+                    float right = qx == SubTile.PerTile ? 0.42f : -0.5f + (qx * Quarter);
+                    DrawLine(
+                        ToScreen(new Vector2(tile.X + left, y)),
+                        ToScreen(new Vector2(tile.X + right, y)),
+                        furrow,
+                        width);
+                }
             }
 
             return;
@@ -3989,6 +4029,11 @@ public partial class VillageMap : Control
         for (int i = 0; i < StalksOn(tile, ripe); i++)
         {
             Vector2 foot = StalkOn(tile, i);
+            if ((quarters & (1 << QuarterOf(foot.X - tile.X, foot.Y - tile.Y))) == 0)
+            {
+                continue;
+            }
+
             DrawLine(
                 ToScreen(foot),
                 ToScreen(new Vector2(foot.X, foot.Y - tall)),

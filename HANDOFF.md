@@ -1,38 +1,37 @@
-# Handoff — bclone: **▶️ WHEAT IS CONFIRMED; THE PAINT'S EDGE HAS A RULE — JOE HAS NOT PLAYED THE FIX YET**
+# Handoff — bclone: **▶️ THE PAINT'S EDGE HAS A RULE, AND THE FARM'S ROUND BRUSH IS ROUND AGAIN — ONE THING UNPLAYED**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (evening).**
-> **1082 passing, 0 failing, 2 skipped of 1084** — run locally on `main`, **2m41s**.
-> **The decision log runs to D350**; read D338–D350 in `DESIGN.md §7` for the last two days —
-> thirteen decisions, every one of them from Joe playing a build.
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
+> **1080 passing, 0 failing, 2 skipped of 1082** — run locally on `main`, **2m35s**.
+> **The decision log runs to D351**; read D338–D351 in `DESIGN.md §7` for the last two days —
+> fourteen decisions, every one of them from Joe playing a build.
 >
-> **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D349):** the riverbank on the river, the frame
+> **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D350):** the riverbank on the river, the frame
 > readout, clicking a building anywhere it is drawn, the three overlay toggles, grid and snap off by
 > default, Settings opening centred, the field renderer, round forest clumps, the wider river, smooth
 > painted borders AND fills, the brush's refused ground as a curve inside the ring, boulders on the
-> seams — **and wheat, end to end**: *"confirmed: wheat is farmed, harvested by farmer, makes it to
-> granary and home larders. and villagers consume the wheat."*
+> seams, **wheat end to end** (*"villagers consume the wheat"*), and four of D350's five: take-back
+> erases the field, the orange site with no ring beside it, the market's `Holding:` line, a thin
+> housing stroke sites no house.
 >
-> **⚠️ WHAT JOE HAS NOT PLAYED YET (D350):** the five fixes from his own five bug reports.
-> **His walk, one thing at a time:**
-> 1. Paint a farm with the **round** brush — the border is square-edged, the furrows stop at it,
->    and the preview ring already shows the tiles the stroke will take.
-> 2. **Right-drag a strip off a field** — it is grass again, with no furrows left behind. Do it over
->    a sown or ripe strip and the bar says how many tiles of crop were given up.
-> 3. Place a **forager's hut in a wood, snap off** — the site is drawn **orange** at its true point
->    and angle, and there is no ring beside it. It turns grey once the laborers have cleared it.
-> 4. Paint a **thin housing stroke** (one tile wide, off-grid) — no house appears on it; widen it to
->    cover whole tiles and one does, fully inside the line.
-> 5. Click the **market** — *"Holding: 312 produce, 40 firewood…"* is the second line, with no
->    scrolling. The panel is as tall as its text now.
+> **⚠️ WHAT JOE HAS NOT PLAYED YET (D351): the field drawn clipped to the paint.** He rejected
+> D350's whole-tile farm paint on one screenshot — *"farm round brush SHOULD be exactly as round as
+> the tree painting brush"* — so the farm's brush is the same quarter-tile round as everyone's again,
+> and the **renderer** clips the field to it instead. **His check, one thing:** paint a farm with the
+> round brush — the border is the same curve the forester's is, and the furrows (and later the gold)
+> fill exactly that curve, with no square corner poking out and no green rim of unploughed paint inside.
 >
-> **⛔⛔ THE THING THIS SESSION LEARNED:** **D335's half rule said what a painted TILE is and said
-> nothing about what the EDGE should look like.** Every whole-tile consumer of quarter-tile paint —
-> a home, a plough, a felling — sticks out of the paint by up to half a tile unless its edge rule is
-> stated, and one of them (the plough) was worse than the rule: it fired on the first quarter. Three
-> edge rules are written down in `sub-tile-zones.md §3.1`; **the next whole-tile consumer needs a
-> fourth, on the day it is built.**
+> **⛔⛔ THE TWO THINGS THIS SESSION LEARNED:**
+> 1. **D335's half rule said what a painted TILE is and said nothing about what the EDGE should
+>    look like.** Every whole-tile consumer of quarter-tile paint — a home, a plough, a felling —
+>    sticks out of the paint by up to half a tile unless its edge rule is stated, and the plough was
+>    worse than the rule: it fired on the first quarter. The rules are in `sub-tile-zones.md §3.1`;
+>    **the next whole-tile consumer needs its own row, on the day it is built.**
+> 2. **The brush in the player's hand does not change shape per layer.** D342's *"a field's edge is
+>    straight"* is about the field, not the tool; making the farm's stroke whole tiles was a tool
+>    changing under the player, and Joe read it off the screen in one look. **Clip the picture to
+>    the paint; never bend the paint to the picture.**
 >
-> ⭐ **Joe plays every build and files precise bugs.** Thirteen of the last thirteen decisions came
+> ⭐ **Joe plays every build and files precise bugs.** Fourteen of the last fourteen decisions came
 > from him playing for ten minutes. **Ask him one question at a time, with the measurement in it.**
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
@@ -197,8 +196,8 @@ stood idle with 130 logs.
 did not build, in the order they are likely to matter:
 
 1. ~~**⚠️ JOE PLAYS WHEAT (D348–D349)**~~ ✅ **Confirmed in play, 2026-09-11.** What he found
-   instead was the paint's edge (D350) — **and the D350 fixes are the thing he has not played.**
-   The walk is in the box above; wait for it before touching the brush, the field or the inspector.
+   instead was the paint's edge (D350) — played, four of five confirmed, the fifth reversed (D351). **The clipped field is the one thing he has not played.**
+   The check is in the box above; wait for it before touching the brush or the field renderer.
 2. **The food chain, when he asks:** wheat → flour → bread, wheat → beer
    (`food-catalog.md §6`). ⛔ **This is where raw wheat stops being edible** — today it is
    edible at the shared nutrition because the config refuses two values and the survival floor is
@@ -255,9 +254,18 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
    start (a cart, no granary) — the exception went to the log, `done.` never printed, and a headless
    Godot sat for five minutes until killed. **Read the log for `Exception` before assuming a hang is
    a loop**, and pose against `StoreBuildings[0]`, not a kind that may not exist.
-7. **⚠️ ONE RED CHECK SCORED ZERO AND IS WRITTEN DOWN** — `TheFarmsTilesComeBackInAStatedOrder`
-   stays green with the sort deleted, because a `Dictionary` with no removals enumerates in insertion
-   order. The sort is contract, the guard is a ratchet, the test's remarks say so (D326).
+7. **⚠️ ONE RED CHECK SCORED ZERO AND WAS WRITTEN DOWN** — `TheFarmsTilesComeBackInAStatedOrder`
+   stayed green with the sort deleted, because a `Dictionary` with no removals enumerates in
+   insertion order. *The whole function and its guards were deleted in D351 an hour later; the
+   lesson stands: a `Dictionary` order that happens to be right is not a contract.*
+8. **⛔⛔ THE FARM'S BRUSH WAS WHOLE TILES FOR ONE BUILD AND JOE REJECTED IT IN ONE LOOK (D351).**
+   D350 laid a farm's paint in whole tiles with a straight border, on D342's "a field's edge is
+   straight". His screenshot: a blocky farm beside a round wood — *"farm round brush SHOULD be exactly
+   as round as the tree painting brush."* **The brush does not change shape per layer.** The field is
+   drawn clipped to the quarter-tile paint instead (`DrawWorkedGround`): whole tiles whole, edge
+   tiles as their painted quarters, stalks only on paint. *When a picture disagrees with the paint,
+   fix the picture.* ⚠️ View-only; the probe's `fields:` line still holds, but nothing but his eyes
+   checks the clipped edge.
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

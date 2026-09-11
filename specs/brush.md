@@ -3,7 +3,7 @@
 **Decisions:** D42, D86, D87, D92, D198, D221, D327, D332. **Commit B** of the gridless stretch.
 **Status:** ✅ **BOTH SLICES BUILT.** **B1** (2026-09-07, D327) — size, shape, right-drag, Escape, one
 shape function, and the harvest brush's missing sentence. **B2** (2026-09-08, D332) — the smooth
-painted outline, one outline round the brushful, and a switch for the grid lines. **§4.3** (2026-09-11, D350) — a farm's stroke lays whole tiles with a straight border, Joe's call from play.
+painted outline, one outline round the brushful, and a switch for the grid lines. **§4.3** (2026-09-11, D350→D351) — a whole-tile farm stroke was tried and Joe rejected it in play; one stroke for every layer.
 **1047 passing, 0 failing, 2 skipped of 1049; no golden moved** by either. Bar height still 161 on
 every tab × filter, and `zone outlines: ✅` in the probe. ⭐ **Joe confirmed the sizing gesture in
 play — *"alt +scroll is perfect"*** — and approved the rest of B1's walk as described. ⚠️ **B2 is
@@ -113,27 +113,19 @@ tool in hand — picking up a different brush must not silently resize it. `SetT
 writer of `_building`, `_harvestMode`, `_groundFor`, `_brush` and the rest (`build-bar.md §5.1`,
 three historical bugs); the two new fields are deliberately outside that set.
 
-### 4.3 ⭐ The farm's stroke is WHOLE tiles (D350, 2026-09-11)
+### 4.3 ⛔ Tried and rejected: a whole-tile stroke for the farm (D350 → D351, 2026-09-11)
 
-`BrushStroke.TilesMostlyUnder(centre, subRadius, shape)` — the tiles with **at least half** their
-sixteen quarters under the brush, row-major. Both loops read it through one door
-(`VillageMap.CellsUnderTheBrush`), so the paint and its preview stay one shape.
+For one build the farm's brush laid **whole tiles** — a tile taken when at least half of it was under
+the stroke — with its border traced unrounded, so paint, border and furrows were one straight-edged
+shape (D342's *"a field reads as man-made because its edges are straight"*). **Joe rejected it in
+play the same day:** *"this is what the 'round' brush for the farm looks like now — no longer round.
+farm round brush SHOULD be exactly as round as the tree painting brush."*
 
-**Why a third function rather than the same quarters for everyone.** Paint is quarter-tiles
-(`sub-tile-zones.md`); a plough is a tile. A field hanging off quarter-tile paint stuck out of it by up
-to half a tile on every ragged edge, and Joe's screenshot showed it a full tile out (a quarter of paint
-was ploughing the whole tile — the sim half of the same bug). For a farm the **paint itself is laid in
-tiles**, the border is traced **unrounded**, and the furrows fill what the line encloses: *a ploughed
-field is man-made and reads as man-made precisely because its edges are straight* (D342). ⭐ **Joe
-chose this over keeping quarter-tile farm paint and clipping the drawn field to it.**
+So there is **one stroke, for every layer**: `SubTilesUnder`, quarter-tiles, the curve. What answers
+the field-outside-the-paint defect instead is the **renderer clipping the field to the paint**
+(`sub-tile-zones.md §3.1`, `VillageMap.DrawWorkedGround`) and the sim ploughing only a **held** tile.
+⛔ *Do not re-propose a per-layer stroke shape; the player holds one brush.*
 
-- The threshold is D335's own — at least half — applied at the brush instead of after it, so the tiles
-  a stroke lays down and the tiles the farm holds are the same set.
-- Housing and the forester's ground keep the quarter-tile stroke and the curve. A home needs a whole
-  painted tile (`Household.ChooseSite`); a treeline is ragged.
-- ⚠️ A round brush on a farm gives a blocky disc. That is what a round field looks like.
-
----
 
 ## 5. Edge cases & failure modes
 

@@ -156,54 +156,6 @@ public static class BrushStroke
     /// </remarks>
     public static int AcrossInSubTiles(int subRadius) => (ClampSub(subRadius) * 2) + 1;
 
-    /// <summary>
-    /// ⭐⭐ The WHOLE tiles under the brush — those with at least half their quarters covered
-    /// (D350). <b>The farm's stroke.</b>
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Joe, with a screenshot of furrows a tile past his paint: *"the painted area needs to be
-    /// accurate for the user across all use cases."*</b> Paint is quarter-tiles (D335); a plough is
-    /// a tile. Anything tile-shaped that hangs off quarter-tile paint sticks out by up to half a
-    /// tile — so for a farm the paint itself is laid in tiles, and *a ploughed field is man-made
-    /// and reads as man-made precisely because its edges are straight* (D342). **Joe chose this
-    /// (2026-09-11) over clipping the drawn field to the quarters.**
-    /// </para>
-    /// <para>
-    /// ⭐ The threshold is D335's own — a tile counts when at least half of it is painted — applied
-    /// at the brush rather than after it, so a stroke and the ground it holds are the same set.
-    /// Row-major, lowest tile first, the contract <see cref="TilesUnder"/> states and for its
-    /// reason: the stroke says one sentence, and which tile is visited last decides it.
-    /// </para>
-    /// <para>
-    /// ⚠️ In the sim rather than the view, like <see cref="SubTilesUnder"/>, because the paint and
-    /// its preview must be one shape function (D327) and nothing under <c>tests/</c> can see the view.
-    /// </para>
-    /// </remarks>
-    public static List<GridPos> TilesMostlyUnder(SubTile centre, int subRadius, BrushShape shape)
-    {
-        var quarters = new Dictionary<GridPos, int>();
-        foreach (SubTile at in SubTilesUnder(centre, subRadius, shape))
-        {
-            GridPos tile = at.Tile;
-            quarters[tile] = quarters.TryGetValue(tile, out int had) ? had + 1 : 1;
-        }
-
-        var tiles = new List<GridPos>();
-        foreach ((GridPos tile, int covered) in quarters)
-        {
-            if (covered >= SubTile.HalfATile)
-            {
-                tiles.Add(tile);
-            }
-        }
-
-        // ⚠️ A dictionary's order is not a thing to paint from (D51's trap): sorted into the
-        // stated order before anybody walks it.
-        tiles.Sort((a, b) => a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X));
-        return tiles;
-    }
-
     public static List<GridPos> TilesUnder(GridPos centre, int radius, BrushShape shape)
     {
         int reach = Clamp(radius);

@@ -564,15 +564,8 @@ internal static class ZoneOutline
     /// *every run longer than half a tile was being preserved as a corner the player had
     /// deliberately painted.* Joe: *"the selected area for harvest still looks jagged/square."*
     /// </para>
-    /// <para>
-    /// ⭐ <b><paramref name="round"/> is off for a FIELD</b> (D350). A farm's ground is laid in
-    /// whole tiles because *a ploughed field reads as man-made precisely because its edges are
-    /// straight* (D342) — so its border is the straightened staircase and nothing more, and the
-    /// furrows fill exactly what the line encloses. Everything else keeps the curve.
-    /// </para>
     /// </remarks>
-    internal static List<Vector2[]> Trace(
-        HashSet<Vector2I> tiles, int cellsPerTile = 1, bool round = true)
+    internal static List<Vector2[]> Trace(HashSet<Vector2I> tiles, int cellsPerTile = 1)
     {
         var loops = new List<Vector2[]>();
         if (tiles.Count == 0)
@@ -589,19 +582,10 @@ internal static class ZoneOutline
                 continue;
             }
 
-            loops.Add(round ? Round(straightened, cellsPerTile) : Closed(straightened));
+            loops.Add(Round(straightened, cellsPerTile));
         }
 
         return loops;
-    }
-
-    /// <summary>The loop as a polyline draws it — the first point repeated, so the last side is drawn.</summary>
-    private static Vector2[] Closed(List<Vector2> points)
-    {
-        var closed = new Vector2[points.Count + 1];
-        points.CopyTo(closed);
-        closed[^1] = points[0];
-        return closed;
     }
 
     /// <summary>
@@ -869,7 +853,11 @@ internal static class ZoneOutline
             points = Cut(points, sharpCorner, float.PositiveInfinity, 4f);
         }
 
-        return Closed(points);
+        // Closed: the first point repeated, so a polyline draws the last side too.
+        var closed = new Vector2[points.Count + 1];
+        points.CopyTo(closed);
+        closed[^1] = points[0];
+        return closed;
     }
 
     /// <summary>Consecutive duplicates dropped; the loop's shape is unchanged.</summary>

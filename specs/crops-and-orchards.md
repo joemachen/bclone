@@ -228,8 +228,8 @@ regrowth sweep.
   *"'removing' farm land leaves a field that can't be removed"* — nothing had ever turned a
   `Field` back. The hold is `ZoneMap.Holds` (at least eight of sixteen quarters, D335); below it
   the ground is grass again, standing crop included, and the stroke says how many tiles of crop
-  it gave up. D84's *no scar* rule for a dug seam, applied to a field. ⚠️ **And the farm's paint
-  is laid in whole tiles** (`brush.md §4.3`), so in play the hold and the stroke are the same set.
+  it gave up. D84's *no scar* rule for a dug seam, applied to a field. ⚠️ **And the drawn field is CLIPPED
+  to the quarter-tile paint** (D351, `sub-tile-zones.md §3.1`), so the field the player sees is the shape they painted.
 - **Passable and buildable-refusing.** Unlike `Water` they are walked over; unlike `Grass` a
   building marked on one should warn, because it destroys a year's work.
 - **`TerrainRules.Yields(Ripe) => Goods.Food`**, which makes a ripe field harvestable by the
