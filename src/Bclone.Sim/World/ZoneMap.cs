@@ -318,6 +318,31 @@ public sealed class ZoneMap
         _tilesByOwner.TryGetValue(ownerId, out int tiles) ? tiles : 0;
 
     /// <summary>
+    /// ⭐ Whether this building HOLDS this tile — at least half of it painted, and painted for
+    /// them (D350).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The hold threshold asked of one tile, so the plough and the un-plough can hang off the
+    /// same answer <see cref="WorkGroundOf"/> gives — <b>two array reads, never a scan</b>. It is
+    /// the question <c>SetWorkGround(SubTile, int)</c> already computes to keep the index; this
+    /// is that question made available to the caller who has just painted.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Not <see cref="WorkGroundOwner"/></b>, which answers at a single quarter. A farm's
+    /// brush grazing a tile speaks for it; it does not hold it, and the earth does not turn.
+    /// </para>
+    /// </remarks>
+    public bool Holds(int ownerId, GridPos tile)
+    {
+        int index = IndexOf(tile);
+        return ownerId != 0
+            && index >= 0
+            && _workGround[index] == ownerId
+            && _workGroundCount[index] >= SubTile.HalfATile;
+    }
+
+    /// <summary>
     /// The tiles a building holds, as indices in map order — so nobody walks the valley to
     /// find them.
     /// </summary>

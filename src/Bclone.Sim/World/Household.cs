@@ -141,7 +141,16 @@ public sealed class Household
                 // INSIDE WHAT THE PLAYER PAINTED (D42). The sim still picks the tile —
                 // it knows the walk to work and the walk to the store, and a cursor
                 // does not — but it only looks where it has been told it may.
-                if (!world.Zones.IsResidential(candidate)
+                //
+                // ⛔⛔ AND "INSIDE" MEANS THE WHOLE TILE, NOT HALF OF IT (D350). A tile is
+                // residential at eight of sixteen quarters (D335) — the economy's threshold — and
+                // a house is drawn on the whole tile, so a house on a half-painted edge tile
+                // stood 0.4 of a tile past the line the player drew. Joe, with a screenshot of
+                // two sites straddling his border: *"the houses are building outside of the
+                // painted area. that shouldn't happen."* The brush's ragged rim is a margin
+                // nobody builds on. `IsResidential` and its count keep their meaning for
+                // everyone else; only the siting asks the stricter question.
+                if (world.Zones.ResidentialSubTilesOn(candidate) < SubTile.PerWholeTile
                     || !world.Map.Contains(candidate)
                     || world.Map.TerrainAt(candidate) == Terrain.Water
                     || world.SomethingStandsAt(candidate))
@@ -218,7 +227,8 @@ public sealed class Household
         // distance would send them to fix the wrong thing.
         throw new NoRoomToBuildException(
             $"no room left in the residential land — {world.Zones.ResidentialTiles} tiles painted, "
-            + "and every one of them is already built on or cut off from the village");
+            + "and every one of them is already built on, cut off from the village, or painted "
+            + "only in part (a home needs a whole tile)");
     }
 
     /// <summary>Distance to the nearest store of a kind, or <c>int.MaxValue</c>.</summary>

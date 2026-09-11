@@ -1,7 +1,7 @@
 # Spec: Sub-tile zones — the player paints finer than the ground is stored
 
 **Decisions:** D42, D86, D87, D332, D333, D335. Follows `gridless.md` and `brush.md`.
-**Status:** ✅ **BOTH SLICES BUILT.** **Slice 1** (2026-09-09, D335) — `SubTile`, `ZoneMap` storing sixteen sub-tiles to a tile with incremental summaries, and the hash. **Slice 2** (2026-09-09, D336) — the brush paints quarter-tiles, the wash and the outline are drawn from them, and a five-tile round brush now fills **79% of its box** where whole tiles gave **84%**. ⭐ *That five points is the difference between a circle and "haha this is a circle????"* **1063 passing, 0 failing, 2 skipped of 1065; six goldens moved in slice 1 and none in slice 2.** ⚠️ **Unplayed by Joe as of this line** — the view has no automated verification of any kind (D11, D160).
+**Status:** ✅ **BOTH SLICES BUILT.** **Slice 1** (2026-09-09, D335) — `SubTile`, `ZoneMap` storing sixteen sub-tiles to a tile with incremental summaries, and the hash. **Slice 2** (2026-09-09, D336) — the brush paints quarter-tiles, the wash and the outline are drawn from them, and a five-tile round brush now fills **79% of its box** where whole tiles gave **84%**. ⭐ *That five points is the difference between a circle and "haha this is a circle????"* **1063 passing, 0 failing, 2 skipped of 1065; six goldens moved in slice 1 and none in slice 2.** ✅ **Played by Joe (2026-09-10/11)** — and what he found at the EDGE is §3.1 (D350, 2026-09-11): homes and fields hung half a tile out of the paint, and a taken-back field stayed ploughed for ever. **1082 passing, 0 failing, 2 skipped of 1084 — no golden moved.**
 
 ---
 
@@ -52,6 +52,29 @@ number stay exactly where they are.
 clearing?"* — all still answered in tiles, all still the same numbers for any village that paints
 whole tiles, which is every village that exists today.
 
+### 3.1 What the rule does NOT say — the edge (D350, 2026-09-11)
+
+⛔⛔ **Paint is quarter-tiles; a home, a plough and a felling are whole-tile acts. Anything tile-shaped
+that hangs off quarter-tile paint sticks out of it by up to half a tile unless a second rule says
+otherwise** — and until D350 none did. Joe, with four screenshots from one sitting: *"the houses are
+building outside of the painted area"*, *"the farm field is built outside of its painted area"*,
+*"'removing' farm land leaves a field that can't be removed"*, *"the painted area needs to be
+accurate for the user across all use cases."* The rule above was chosen so the economy's tile counts
+held; nothing then said what the **edge** should look like. It is stated per layer now:
+
+| Layer | The whole-tile act | The edge rule |
+|---|---|---|
+| **Housing** | a home is sited | **`ChooseSite` takes only a tile painted in FULL (16 of 16).** The half rule still decides `IsResidential` and `ResidentialTiles` for everyone else. The brush's ragged rim is a margin nobody builds on, and a house never overhangs the border. |
+| **A farm's ground** | the plough, the sowing, the reaping | **The farm's paint is laid in WHOLE tiles** — the brush takes a tile when at least half of it is under the stroke (`BrushStroke.TilesMostlyUnder`, D335's rule applied at paint time), the border is traced **unrounded**, and the furrows fill exactly what the line encloses. *A ploughed field is man-made and reads as man-made precisely because its edges are straight* (D342). ⭐ **Joe chose this over clipping the drawn field to the quarters** (2026-09-11). Belt and braces in the sim: `Plough` runs only once the tile is **held** (`ZoneMap.Holds`, ≥ 8 of 16), never on the first quarter. |
+| **A forester's ground** | felling, planting | unchanged — the half rule, drawn as the curve. A treeline is ragged and a tree's canopy overhangs its tile anyway (D337). |
+| **Harvest marks** | felling, quarrying | unchanged — the half rule, drawn as the curve. ⚠️ **Except the mark D100 paints under a newly marked building**, which is not drawn as a zone at all: the site is drawn in the clearing's orange while its ground is busy, and the mark is retired when the building stands (D344). |
+
+⭐ **And taking a farm's ground back UN-PLOUGHS it.** When a tile stops being held — the brush's
+take-back or the farmhouse's demolition — `Field`/`Sown`/`Ripe` → `Grass` and the crop id is cleared
+(`SimWorld.AfterTakingGround`): D84's *no scar* rule for a dug seam, applied to a field. A standing
+crop given up is counted per stroke and said once. Before D350 nothing had ever turned a field back,
+so the brush left furrows on ground nobody owned, for ever.
+
 ## 4. Data model
 
 | Held | Resolution | Hashed? |
@@ -78,7 +101,9 @@ whole tiles, which is every village that exists today.
 | Asked by | Resolution |
 |---|---|
 | The **brush** (`Set*`) and the **renderer** and the **hash** | sub-tile |
-| **Everything else** — `IsResidential`, `IsHarvest`, `WorkGroundOwner`, `WorkGroundTiles`, `HarvestTiles`, the painted-ground iterators, `ChooseSite`, the farm, the clearing scan | **tiles, unchanged** |
+| **Everything else** — `IsResidential`, `IsHarvest`, `WorkGroundOwner`, `WorkGroundTiles`, `HarvestTiles`, the painted-ground iterators, the farm, the clearing scan | **tiles, unchanged** |
+| **`ChooseSite`** (D350) | tiles — but a **whole** painted tile (16 of 16), see §3.1 |
+| **The farm's brush** (D350) | lays whole tiles: `BrushStroke.TilesMostlyUnder`, see §3.1 |
 
 ⛔ **A villager is never sent to clear a quarter of a tile.** Work is tile-shaped because the ground
 is tile-shaped; only the *decision about where* got finer.
@@ -102,6 +127,11 @@ is tile-shaped; only the *decision about where* got finer.
 - **The economy numbers are unchanged for a whole-tile village** — `WorkGroundTiles`, `HarvestTiles`
   and `ResidentialTiles` all still count tiles.
 - One owner per tile, refused at the sub-tile door.
+- **The edge (D350):** a quarter of farm paint does not plough, eight quarters do (`FarmTests`); taking
+  the paint back or demolishing the farm turns the field to grass and clears the crop; a home is sited
+  only on a tile painted in full (`SubTileZoneTests`); the farm's stroke is whole tiles at half
+  coverage, in a stated order (`BrushShapeTests`). ⚠️ *The order guard scored zero on its red check
+  and says so — a `Dictionary` with no removals happens to enumerate in insertion order.*
 - ⛔ **Red-check every guard and count the reds** (D326), and **watch the suite's wall-clock** —
   sixteen times the zone array is the kind of change that shows up there first (D329, D331).
 

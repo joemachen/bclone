@@ -1171,6 +1171,59 @@ public partial class VillageMap : Control
         AcceptEvent();
     }
 
+    /// <summary>
+    /// ⭐⭐ Whether the brush in hand lays WHOLE tiles — <b>true for a farm's ground and nothing
+    /// else</b> (D350).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, with a screenshot of furrows a tile past his paint: *"the painted area needs to be
+    /// accurate for the user across all use cases."*</b> Paint is quarter-tiles and a plough is a
+    /// tile, so a field hanging off quarter-tile paint always stuck out of it somewhere. For a
+    /// farm the paint is laid in tiles instead — *a ploughed field is man-made and reads as
+    /// man-made precisely because its edges are straight* (D342) — and the border is drawn
+    /// unrounded, so paint, border and furrows are one shape. <b>Joe chose this (2026-09-11)
+    /// over clipping the drawn field to the quarters.</b>
+    /// </para>
+    /// <para>
+    /// Housing and the forester's ground keep the curve: a neighbourhood's edge is soft and a
+    /// home needs a whole painted tile (<c>Household.ChooseSite</c>), and a treeline is ragged.
+    /// </para>
+    /// </remarks>
+    private bool BrushLaysWholeTiles() =>
+        _groundFor != 0 && _world?.FindWorkplace(_groundFor)?.Kind == JobKind.Farmer;
+
+    /// <summary>
+    /// The quarter-tiles a stroke at <paramref name="centre"/> lands on — <b>the one shape both
+    /// the paint and its preview read</b> (D327, D350).
+    /// </summary>
+    /// <remarks>
+    /// For a farm, every quarter of every tile the brush mostly covers
+    /// (<see cref="BrushStroke.TilesMostlyUnder"/>), so the sub-tile paint path below lays
+    /// whole tiles without a second door; for everything else, the quarters under the brush.
+    /// </remarks>
+    private List<SubTile> CellsUnderTheBrush(SubTile centre)
+    {
+        if (!BrushLaysWholeTiles())
+        {
+            return BrushStroke.SubTilesUnder(centre, _brushRadius, _brushShape);
+        }
+
+        var cells = new List<SubTile>();
+        foreach (GridPos tile in BrushStroke.TilesMostlyUnder(centre, _brushRadius, _brushShape))
+        {
+            for (int y = 0; y < SubTile.PerTile; y++)
+            {
+                for (int x = 0; x < SubTile.PerTile; x++)
+                {
+                    cells.Add(SubTile.Of(tile, x, y));
+                }
+            }
+        }
+
+        return cells;
+    }
+
     /// <summary>Act on a click while in build or demolish mode.</summary>
     /// <remarks>
     /// <b>The game does not pause for this</b> (D43, Joe's call). The village carries on
@@ -1197,12 +1250,13 @@ public partial class VillageMap : Control
     {
         string? warning = null;
         int homesUnderTheBrush = 0;
+        int cropGivenUp = 0;
         string? refused = null;
 
         // ⭐ THE STROKE IS SUB-TILES; THE VERDICTS ARE STILL TILES (D336). Whether ground may be
         // painted is a question about terrain, and terrain is tiled — *a quarter of a tile is not
         // under water on its own.* Only where the player chose to paint got finer.
-        foreach (SubTile at in BrushStroke.SubTilesUnder(centre, _brushRadius, _brushShape))
+        foreach (SubTile at in CellsUnderTheBrush(centre))
         {
             GridPos tile = at.Tile;
 
@@ -1227,7 +1281,18 @@ public partial class VillageMap : Control
 
                 if (direction < 0)
                 {
+                    // ⭐ A STANDING CROP GIVEN UP IS COUNTED AND SAID ONCE (D350). Taking a farm's
+                    // ground back un-ploughs it, sown or ripe included — food leaving the world by
+                    // the player's own hand, which is still food leaving the world (D96, D144: the
+                    // silent cases). Counted on the tile turning, so a stroke over bare field says
+                    // nothing.
+                    bool stood = SimWorld.IsStandingCrop(_world.Map.TerrainAt(tile));
                     _world.EraseWorkGround(owner, at);
+                    if (stood && _world.Map.TerrainAt(tile) == Terrain.Grass)
+                    {
+                        cropGivenUp++;
+                    }
+
                     continue;
                 }
 
@@ -1324,6 +1389,14 @@ public partial class VillageMap : Control
                     + "move to — paint somewhere else, or paint this back."
                 : $"{homes} marked to come down; they will rebuild on ground you have painted "
                     + "elsewhere. Paint it back to call it off.");
+        }
+
+        if (cropGivenUp > 0)
+        {
+            PlacementMessageChanged?.Invoke(cropGivenUp == 1
+                ? "1 tile of standing crop was given up with the ground — it is grass again."
+                : $"{cropGivenUp} tiles of standing crop were given up with the ground — they are "
+                    + "grass again.");
         }
 
         // One warning for the stroke, not one per tile — which is the entire reason
@@ -2336,7 +2409,11 @@ public partial class VillageMap : Control
         // only the cells the brush actually covers are painted with it.
         var refusedCells = new HashSet<Vector2I>();
 
-        foreach (SubTile at in BrushStroke.SubTilesUnder(_hoveredSub, _brushRadius, _brushShape))
+        // ⭐ A FARM'S PREVIEW IS SQUARE-EDGED, BECAUSE ITS PAINT IS (D350). Same cells, same
+        // tracer, no rounding — so what the ring shows is the tiles the stroke will take.
+        bool wholeTiles = BrushLaysWholeTiles();
+
+        foreach (SubTile at in CellsUnderTheBrush(_hoveredSub))
         {
             if (!_world.Map.Contains(at.Tile))
             {
@@ -2358,7 +2435,7 @@ public partial class VillageMap : Control
             }
         }
 
-        List<Vector2[]> outline = ZoneOutline.Trace(under, SubTile.PerTile);
+        List<Vector2[]> outline = ZoneOutline.Trace(under, SubTile.PerTile, round: !wholeTiles);
         Vector2[] fill = ZoneOutline.Fill(outline, under);
         for (int p = 0; p < fill.Length; p++)
         {
@@ -2370,7 +2447,7 @@ public partial class VillageMap : Control
         if (refusedCells.Count > 0)
         {
             Vector2[] no = ZoneOutline.Fill(
-                ZoneOutline.Trace(refusedCells, SubTile.PerTile), refusedCells);
+                ZoneOutline.Trace(refusedCells, SubTile.PerTile, round: !wholeTiles), refusedCells);
             for (int p = 0; p < no.Length; p++)
             {
                 no[p] = ToScreen(InTileSpace(no[p], SubTile.PerTile));
@@ -3040,7 +3117,12 @@ public partial class VillageMap : Control
         // is split into "work here now" and "waiting" at trace time — and that split moves
         // when a tree is felled. A felling re-traces everything; felling is rare and the trace is
         // milliseconds.
-        if (_outlinesTracedAt == zones.Edits && _outlinesTracedAtTerrain == _world!.TerrainGeneration)
+        // ⚠️ And on the buildings since D350, because a site's own clearing mark is left undrawn
+        // (see `underASite` below) and a site can arrive on, or leave, ground the paint counter
+        // never saw change.
+        if (_outlinesTracedAt == zones.Edits
+            && _outlinesTracedAtTerrain == _world!.TerrainGeneration
+            && _outlinesTracedAtBuildings == _world.BuildingGeneration)
         {
             return;
         }
@@ -3049,6 +3131,7 @@ public partial class VillageMap : Control
 
         _outlinesTracedAt = zones.Edits;
         _outlinesTracedAtTerrain = _world!.TerrainGeneration;
+        _outlinesTracedAtBuildings = _world.BuildingGeneration;
         _zoneOutlines.Clear();
         _zoneFills.Clear();
 
@@ -3058,6 +3141,26 @@ public partial class VillageMap : Control
         var owners = new List<int>();
 
         SimConfig config = _world!.Config;
+
+        // ⛔⛔ A SITE'S OWN CLEARING MARK IS NOT DRAWN AS A MARK (D350). D100 paints the tile
+        // under a newly marked building for harvest so the laborers clear it, and the tracer turned
+        // that lone tile into a circle (D334 rounds one-tile runs) drawn at the TILE — while the
+        // building stands at its free-placed POINT (D330). Joe: *"the 'clearing' circle for the
+        // gatherers hut is not aligned with the building location and looks like an error or
+        // mistake."* The mark is real and the laborers still read it; the picture of it is the
+        // site itself, drawn orange while its ground is busy (`DrawWorkplaces`). Collected once
+        // here rather than asked per cell: `SiteAt` walks every workplace doing `Footprint.Covers`.
+        var underASite = new HashSet<GridPos>();
+        for (int i = 0; i < _world.Workplaces.Count; i++)
+        {
+            if (_world.Workplaces[i].Construction is { IsFinished: false })
+            {
+                foreach (GridPos covered in _world.Workplaces[i].Footprint.CoveredTiles())
+                {
+                    underASite.Add(covered);
+                }
+            }
+        }
 
         // ⭐⭐ TRACED FROM THE SUB-TILES (D336), so the border is the shape the player drew rather
         // than the shape the tile summary rounded it to. **The outline and the wash come from one
@@ -3083,7 +3186,7 @@ public partial class VillageMap : Control
                     residential.Add(at);
                 }
 
-                if (zones.HarvestSub[index])
+                if (zones.HarvestSub[index] && !underASite.Contains(new SubTile(x, y).Tile))
                 {
                     harvest.Add(at);
                 }
@@ -3134,7 +3237,12 @@ public partial class VillageMap : Control
 
         for (int i = 0; i < owners.Count; i++)
         {
-            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge, owners[i], waiting: false);
+            // ⭐ A FIELD'S BORDER IS STRAIGHT (D350): a farm's ground is laid in whole tiles and its
+            // edge is a fence line, so its loop is the straightened staircase and nothing rounder.
+            // A forester's ground keeps the curve — a treeline is ragged.
+            bool field = _world.FindWorkplace(owners[i])?.Kind == JobKind.Farmer;
+            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge, owners[i], waiting: false,
+                round: !field);
         }
 
         void FillFrom(HashSet<Vector2I> cells, Layer layer, int owner, bool waiting)
@@ -3156,9 +3264,10 @@ public partial class VillageMap : Control
         // ⚠️ The LAYER is stored, not inferred from the colour (D340). The three
         // toggles have to hide a border and its wash together, and *"whichever loops came out
         // `HarvestEdge`"* is a coincidence of palette rather than a fact about the layer.
-        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge, int owner, bool waiting)
+        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge, int owner, bool waiting,
+            bool round = true)
         {
-            List<Vector2[]> loops = ZoneOutline.Trace(tiles, SubTile.PerTile);
+            List<Vector2[]> loops = ZoneOutline.Trace(tiles, SubTile.PerTile, round);
             foreach (Vector2[] loop in loops)
             {
                 _zoneOutlines.Add((layer, edge, loop));
@@ -4118,7 +4227,16 @@ public partial class VillageMap : Control
                 // work — so **"how far along is it?" reads the same way in both directions**, and a
                 // marked house is obvious the moment you unpaint the ground under it.
                 bool pullingDown = site.Demolishing;
-                Color colourOfWork = pullingDown ? DemolishColour : SiteColour;
+
+                // ⭐ A SITE WAITING FOR ITS GROUND TO BE CLEARED IS DRAWN IN THE CLEARING'S COLOUR
+                // (D350). Its own harvest mark (D100) is deliberately not traced as a zone — a lone
+                // marked tile rounded into a circle beside a free-placed hut read as a mistake (Joe)
+                // — so the building carries the message instead: orange until the trees are gone,
+                // then the site's own grey. Asked of the anchor tile, which is the tile D100 marks.
+                bool groundIsBusy = !pullingDown && !world.GroundIsClearAt(workplace.Tile);
+                Color colourOfWork = pullingDown
+                    ? DemolishColour
+                    : groundIsBusy ? HarvestEdge with { A = 1f } : SiteColour;
                 float shown = pullingDown ? 1f - done : done;
 
                 DrawColoredPolygon(
@@ -4247,6 +4365,8 @@ public partial class VillageMap : Control
     private int _outlinesTracedAt = -1;
 
     private int _outlinesTracedAtTerrain = -1;
+
+    private int _outlinesTracedAtBuildings = -1;
 
     /// <summary>
     /// The fill of every painted region as triangles in tile space — <b>cached beside the

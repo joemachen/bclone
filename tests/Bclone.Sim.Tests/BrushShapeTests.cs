@@ -234,4 +234,81 @@ public sealed class BrushShapeTests
             Assert.True(ordered, $"{once[i - 1]} then {once[i]} is not row-major");
         }
     }
+
+    // ---------------------------------------------------------------
+    //  The farm's stroke — whole tiles (D350)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ A farm's brush lays WHOLE tiles: a tile is in the stroke when at least half of it is
+    /// under the brush — <b>D335's rule, applied at paint time</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe chose it (2026-09-11) over clipping the drawn field to quarter-tile paint:</b> *a
+    /// ploughed field is man-made and reads as man-made precisely because its edges are straight*
+    /// (D342). So the paint, the border and the furrows are one tile-shaped thing, and nothing can
+    /// stick out of anything.
+    /// </para>
+    /// <para>
+    /// A quarter-tile brush of radius 0 sits inside one tile and takes it; a brush whose sub-tile
+    /// centre is on a tile corner splits four ways at four quarters each and takes none, because no
+    /// tile has half of it. **Half is the threshold, and the boundary is where it is posed.**
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFarmStrokeIsWholeTilesAtHalfCoverage()
+    {
+        // Radius 0 in quarter-tiles: one sub-tile, inside one tile, which has 1 of 16 — not taken.
+        Assert.Empty(BrushStroke.TilesMostlyUnder(SubTile.Of(Somewhere, 1, 1), 0, BrushShape.Square));
+
+        // A 4×4 block of sub-tiles centred on a tile's inner corner: 16 cells, all in one tile.
+        // Radius 1 gives a 3×3 = 9 cells in that tile — more than half — so the tile is taken.
+        List<GridPos> one = BrushStroke.TilesMostlyUnder(SubTile.Of(Somewhere, 1, 1), 1, BrushShape.Square);
+        Assert.Equal(new[] { Somewhere }, one);
+
+        // Radius 1 centred on the tile's top-left sub-tile: the 3×3 puts 4 cells in this tile, 2 in
+        // each side neighbour and 1 in the diagonal — nobody has eight, so nobody is taken.
+        Assert.Empty(BrushStroke.TilesMostlyUnder(SubTile.Of(Somewhere, 0, 0), 1, BrushShape.Square));
+
+        // The shipped brush, square, centred on sub-tile (2,2): 21 sub-tiles across is 5¼ tiles.
+        // Offsets −8..12 from the tile's origin — two whole tiles left, the centre tile, two whole
+        // tiles right, and one lone column (4 of 16) on the far right that no tile has half of.
+        // A 5×5 block: what the player sees is what the plough takes.
+        List<GridPos> square = BrushStroke.TilesMostlyUnder(
+            SubTile.Of(Somewhere, 2, 2), BrushStroke.DefaultSubRadius, BrushShape.Square);
+        _output.WriteLine($"square, default radius: {square.Count} tiles");
+        Assert.Equal(25, square.Count);
+
+        // Round is a bitten block of the same reach — fewer tiles, and never more than the square.
+        List<GridPos> round = BrushStroke.TilesMostlyUnder(
+            SubTile.Of(Somewhere, 2, 2), BrushStroke.DefaultSubRadius, BrushShape.Round);
+        _output.WriteLine($"round, default radius: {round.Count} tiles");
+        Assert.True(round.Count < square.Count && round.Count > 0);
+        Assert.All(round, tile => Assert.Contains(tile, square));
+    }
+
+    /// <summary>The farm's tiles come back row-major too — the same contract as <c>TilesUnder</c>.</summary>
+    /// <remarks>
+    /// ⚠️ <b>This guard scored ZERO on its red check, and the zero is written down</b> (D326).
+    /// With the sort deleted it stays green, because a <c>Dictionary</c> that has never had a
+    /// removal happens to enumerate in insertion order and <c>SubTilesUnder</c> inserts row-major.
+    /// *Happens to* is not a contract — the framework documents enumeration order as unspecified —
+    /// so the sort stays and this is a ratchet against the day that changes, not evidence.
+    /// </remarks>
+    [Fact]
+    public void TheFarmsTilesComeBackInAStatedOrder()
+    {
+        List<GridPos> tiles = BrushStroke.TilesMostlyUnder(
+            SubTile.Of(Somewhere, 2, 2), BrushStroke.DefaultSubRadius, BrushShape.Round);
+
+        Assert.Equal(tiles.Distinct().Count(), tiles.Count);
+        for (int i = 1; i < tiles.Count; i++)
+        {
+            bool ordered = tiles[i].Y > tiles[i - 1].Y
+                || (tiles[i].Y == tiles[i - 1].Y && tiles[i].X > tiles[i - 1].X);
+
+            Assert.True(ordered, $"{tiles[i - 1]} then {tiles[i]} is not row-major");
+        }
+    }
 }

@@ -1,33 +1,39 @@
-# Handoff — bclone: **▶️ WHEAT GROWS AND LOOKS LIKE WHEAT — JOE HAS NOT PLAYED IT YET**
+# Handoff — bclone: **▶️ WHEAT IS CONFIRMED; THE PAINT'S EDGE HAS A RULE — JOE HAS NOT PLAYED THE FIX YET**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11.**
-> **1075 passing, 0 failing, 2 skipped of 1077** — run locally on `main`, ~2m50s.
-> **Last commit: `2554814` (D349).** The decision log runs to **D349**; read D338–D349 in `DESIGN.md
-> §7` for the last two days — twelve decisions, every one of them from Joe playing a build.
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (evening).**
+> **1082 passing, 0 failing, 2 skipped of 1084** — run locally on `main`, **2m41s**.
+> **The decision log runs to D350**; read D338–D350 in `DESIGN.md §7` for the last two days —
+> thirteen decisions, every one of them from Joe playing a build.
 >
-> **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D347):** the riverbank on the river, the frame
+> **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D349):** the riverbank on the river, the frame
 > readout, clicking a building anywhere it is drawn, the three overlay toggles, grid and snap off by
-> default, Settings opening centred, the field renderer (*"river looks great"*), round forest clumps,
-> the wider river, smooth painted borders AND fills (*"huge improvement"*), the brush's refused ground
-> as a curve inside the ring, boulders on the seams and a laborer digging one.
+> default, Settings opening centred, the field renderer, round forest clumps, the wider river, smooth
+> painted borders AND fills, the brush's refused ground as a curve inside the ring, boulders on the
+> seams — **and wheat, end to end**: *"confirmed: wheat is farmed, harvested by farmer, makes it to
+> granary and home larders. and villagers consume the wheat."*
 >
-> **⚠️ WHAT JOE HAS NOT PLAYED YET (D348–D349):** **wheat.** `Goods.Wheat` is a real good
-> the farm grows; `Produce` stays the umbrella foragers fill; a crop is a `CropRow` that names its
-> good; fields draw furrows, shoots and gold stalks. **His checklist:** a farm's reaped stock reads
-> *Wheat* indented under Food in the Overview, the granary takes it, a ripe field is gold, and a
-> **wheat** stock limit idles the farmers the way a fish limit idles fishers.
+> **⚠️ WHAT JOE HAS NOT PLAYED YET (D350):** the five fixes from his own five bug reports.
+> **His walk, one thing at a time:**
+> 1. Paint a farm with the **round** brush — the border is square-edged, the furrows stop at it,
+>    and the preview ring already shows the tiles the stroke will take.
+> 2. **Right-drag a strip off a field** — it is grass again, with no furrows left behind. Do it over
+>    a sown or ripe strip and the bar says how many tiles of crop were given up.
+> 3. Place a **forager's hut in a wood, snap off** — the site is drawn **orange** at its true point
+>    and angle, and there is no ring beside it. It turns grey once the laborers have cleared it.
+> 4. Paint a **thin housing stroke** (one tile wide, off-grid) — no house appears on it; widen it to
+>    cover whole tiles and one does, fully inside the line.
+> 5. Click the **market** — *"Holding: 312 produce, 40 firewood…"* is the second line, with no
+>    scrolling. The panel is as tall as its text now.
 >
-> **⛔⛔ THE TWO THINGS THIS STRETCH LEARNED THE HARD WAY:**
-> 1. **Small samples lie about rare events.** Two twelve-seed runs put a one-in-four dead-valley
->    rate at "one in thirteen, pre-existing" and I told Joe so. It took 48 seeds and a **median-peak**
->    comparison to see the truth (D344). *When the thing you measure is rare, measure something
->    common that moves with it.*
-> 2. **Two guards can be blind to the same defect for different reasons.** The perimeter guard read
->    1.00 on a twenty-sided polygon; the angle guard skipped every corner beside a duplicate point.
->    Both green, Joe counting the sides on screen (D345). *Dump the raw data and look at it.*
+> **⛔⛔ THE THING THIS SESSION LEARNED:** **D335's half rule said what a painted TILE is and said
+> nothing about what the EDGE should look like.** Every whole-tile consumer of quarter-tile paint —
+> a home, a plough, a felling — sticks out of the paint by up to half a tile unless its edge rule is
+> stated, and one of them (the plough) was worse than the rule: it fired on the first quarter. Three
+> edge rules are written down in `sub-tile-zones.md §3.1`; **the next whole-tile consumer needs a
+> fourth, on the day it is built.**
 >
-> ⭐ **Joe plays every build and files precise bugs.** Twelve of the last twelve decisions came from
-> him playing for ten minutes. **Ask him one question at a time, with the measurement in it.**
+> ⭐ **Joe plays every build and files precise bugs.** Thirteen of the last thirteen decisions came
+> from him playing for ten minutes. **Ask him one question at a time, with the measurement in it.**
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
 
@@ -190,9 +196,9 @@ stood idle with 130 logs.
 **Nothing is queued by Joe beyond his own open items below.** The things this stretch named and
 did not build, in the order they are likely to matter:
 
-1. **⚠️ JOE PLAYS WHEAT (D348–D349) — wait for it before touching farming.** The
-   checklist is in the box above. Two goldens moved for it (both `FarmGoldenTests`); if he finds a
-   defect in the reap, `CropsCatalog.GoodOf` is the only place the reaped good is decided.
+1. ~~**⚠️ JOE PLAYS WHEAT (D348–D349)**~~ ✅ **Confirmed in play, 2026-09-11.** What he found
+   instead was the paint's edge (D350) — **and the D350 fixes are the thing he has not played.**
+   The walk is in the box above; wait for it before touching the brush, the field or the inspector.
 2. **The food chain, when he asks:** wheat → flour → bread, wheat → beer
    (`food-catalog.md §6`). ⛔ **This is where raw wheat stops being edible** — today it is
    edible at the shared nutrition because the config refuses two values and the survival floor is
@@ -216,6 +222,43 @@ did not build, in the order they are likely to matter:
 (*"fine for now"*); harvest marks staying on felled ground (D127, reaffirmed D343: *keep it
 standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 
+## ⛔⛔ THE TRAPS THIS SESSION PAID FOR (D350) — THE EDGE OF THE PAINT, AND A FOLD WITH NO BAR
+
+**Joe played wheat, confirmed it, and filed five bugs. Four were one fact and the fifth was a fold.**
+
+1. **⛔⛔ A QUARTER OF PAINT PLOUGHED A WHOLE TILE.** `PaintWorkGround(SubTile)` called
+   `AfterGivingGround` → `Plough` on the *first* quarter painted, so every tile a farm's brush grazed
+   became a `Field` while the farm held none of it — furrows a full tile past the paint on every
+   edge. ⭐ **The shape to look for: a whole-tile side effect wired to a sub-tile write.** The hold
+   threshold (`ZoneMap.Holds`, ≥ 8 of 16) is the gate now, both ways.
+2. **⛔⛔ NOTHING HAD EVER UN-PLOUGHED.** `EraseWorkGround` and `ReleaseWorkGround` freed the paint
+   and left `Field/Sown/Ripe` standing for ever — the brush's take-back and a farmhouse's demolition
+   both. *A state machine with a way in and no way out is a state machine that leaks onto the map.*
+   `AfterTakingGround` is the way out; `RetireWorkplace` snapshots the held tiles BEFORE the release,
+   because the release is what forgets them.
+3. **⚠️ D335'S HALF RULE SAID NOTHING ABOUT THE EDGE.** A home on a tile residential at 8 of 16 is
+   drawn on the whole tile and stands 0.4 past the border. Three edge rules are stated in
+   `sub-tile-zones.md §3.1` (home: whole tile; farm: whole-tile paint, straight border; forester and
+   harvest: half rule, curve). **The next whole-tile consumer of paint needs its own row.**
+4. **⚠️ A LONE PAINTED TILE IS A CIRCLE, AND IT IS DRAWN AT THE TILE.** D334 rounds one-tile runs as
+   staircase steps, so D100's self-painted clearing mark under a site became a ring — beside a hut
+   that stands at its free-placed point (D330). The mark is real; the picture of it is now the site,
+   orange while its ground is busy. ⭐ **The trace cache keys on `BuildingGeneration`** (the
+   `TerrainGeneration` shape) because a site can arrive on already-marked ground with no paint edit.
+5. **⛔⛔ A SCROLL WITH NO VISIBLE BAR IS A CUT, AND THE PANEL SAID NOTHING.** The market is a
+   workplace AND a store, so its description was the longest in the game and `Holding:` was line
+   eleven of a 140px `RichTextLabel`. Joe: *"the market doesn't tell how many units…"* — **it did.**
+   `FitContent` now; the probe poses a market-sized text and prints content vs minimum
+   (`inspector:` line — must stay ✅). *D311's lesson from the other direction: a panel can hold its
+   content, draw some of it, and give no sign there is more.*
+6. **⚠️ A THROW INSIDE THE PROBE LEAVES GODOT RUNNING.** `AnyStoreOf(Granary)` throws on the cold
+   start (a cart, no granary) — the exception went to the log, `done.` never printed, and a headless
+   Godot sat for five minutes until killed. **Read the log for `Exception` before assuming a hang is
+   a loop**, and pose against `StoreBuildings[0]`, not a kind that may not exist.
+7. **⚠️ ONE RED CHECK SCORED ZERO AND IS WRITTEN DOWN** — `TheFarmsTilesComeBackInAStatedOrder`
+   stays green with the sort deleted, because a `Dictionary` with no removals enumerates in insertion
+   order. The sort is contract, the guard is a ratchet, the test's remarks say so (D326).
+
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
 **The roster and the village log were both `288x0` for two commits** (D311). Joe sent a screenshot
@@ -238,7 +281,7 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ~~⭐ **NEXT: A FIELD LOOKS LIKE A FIELD (Commit L of the wheat plan).**~~ ✅ D349. Bare/furrowed `Field`, sparse green `Sown`, dense gold `Ripe` — marks from a hash like the trees, **not** overhanging (a field's edge is a fence line). Ripe stalks in the wheat chip's colour so map and Overview agree. View only.
-- ⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").** `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.
+- ~~⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").**~~ ✅ D348, **confirmed in play by Joe the same day** (D350). `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.
 - ⭐⭐ **PER-STAGE RNG STREAMS, DEFERRED TO THE NEW-GAME SCREEN (D344, Joe's call).** Worldgen threads **one** generator through river → founding → soil → seams → woodland, so **draw order is the seed contract** and *every future map option that generates something — a lake, an island, a cliff — reshuffles every seed and re-takes every golden, once per option.* ⭐ One stream per stage fixes that for good. ⛔ **Build it with splitmix64 per-stage SEEDS, not `DeterministicRandom`'s `stream` parameter** — small adjacent ids correlate badly (measured: 6 dead valleys of 24 against 1). ⚠️ **And expect to re-pick the shipped seed**: the reshuffle put 12345 on a valley that starves.
 - ⚠️ **The stone and iron seams are still Manhattan diamonds, and D347 left them so on purpose** — the boulders hide the shape, and changing it changes ore. *Revisit only with the economy in view.* (Originally: left because they were the subject of the next slice (*"give the stone and iron deposits the same treatment we just gave forests and trees"*) and changing their shape changes how much ore a valley holds. *`InsideTheClump` is sitting there ready for them.*
 - ⛔⛔ **THE FOREST CLUMPS ARE MANHATTAN DIAMONDS AND ONLY THE GENERATOR CAN FIX IT (D342, measured by trying).** `PaintForest` drops diamonds of tiles; the new field renderer nibbles their edges by about a tile, which on a nine-tile diamond leaves a soft diamond. *The river is transformed by the same machinery because it is two tiles wide — the difference is the ratio of the jitter to the feature.* ⭐ **The fix is a few lines in `MapGenerator.PaintForest`** — a noisy disc instead of a Manhattan ball — **and it moves every golden** (D152: one commit, one stated reason). **Joe's call, and his since D337.**

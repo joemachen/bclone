@@ -247,6 +247,7 @@ public partial class Main : Control
 
         ProbeFolding();
         ProbeTheInspectorRows();
+        ProbeTheInspectorHeight();
 
         // ⛔ BEFORE `ProbeTheControlBar`, NOT AFTER, AND THE ORDER IS THE MEASUREMENT. That method
         // poses the bar with every button showing at once — 1657px, wider than the 1280 window —
@@ -716,6 +717,67 @@ public partial class Main : Control
             stuck == 0
                 ? "[widths] fold: ✅ every panel shrinks when folded"
                 : $"[widths] fold: ⛔ {stuck} panels keep their full height when folded");
+    }
+
+    /// <summary>
+    /// ⭐ The inspector holds ALL of a market's description — <b>the `Holding:` line included,
+    /// above any fold</b> (D350).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"the market doesn't tell how many units of each item are within."*</b> It did.
+    /// The market is a workplace and a store, its description was the longest in the game, and the
+    /// line sat one below a 140px scroll with no visible bar. Posed rather than waited for: the
+    /// cold start has no market, so the text is the two descriptions a market produces, and the
+    /// label's minimum height has to hold every line of it.
+    /// </para>
+    /// <para>
+    /// ⚠️ One thing measured — the label's minimum against its content. The store-first ORDER is
+    /// a fact about `DescribeWhatIsAt` and is read there, not here: the cold start has no market to
+    /// ask, and a probe that checks its own posed string would be measuring itself.
+    /// </para>
+    /// </remarks>
+    private void ProbeTheInspectorHeight()
+    {
+        string was = _inspector.Text;
+
+        // ⚠️ The cold start has a CART and no granary (D70) — `AnyStoreOf(Granary)` throws, and a
+        // throw inside the probe leaves Godot running with nothing left to quit it. The first
+        // store there is, whatever it is; the shape of the block is what is being posed.
+        SimWorld world = _loop.World;
+        string storeBlock = world.StoreBuildings.Count > 0
+            ? DescribeWhatIsAt(world, world.StoreBuildings[0].Tile)
+            : DescribeWhatIsAt(world, world.Map.FoundingSite);
+
+        // A market's panel is a store block over a workplace block; pose the longer of the two
+        // shapes by stacking a real store description on a posed stall.
+        string posed = storeBlock
+            + "\n\nmarket 1 — a workplace (goods are handed out from here)"
+            + "\nWorked by Wendell — 1 of 2 places filled"
+            + "\nStaffing: left to the village. The building holds 2."
+            + "\n\nmarket 1 — a market, which holds produce, firewood, fish, meat and wheat"
+            + "\nHolding: 312 produce, 40 firewood, 18 fish, 60 meat, 210 wheat"
+            + "\nSpace: 640 of 2,500 used, 1,860 free";
+        _inspector.Text = posed;
+        ForceUpdateTransform();
+
+        float content = _inspector.GetContentHeight();
+        float min = _inspector.GetCombinedMinimumSize().Y;
+        int lines = posed.Split('\n').Length;
+
+        // ⚠️ `content - 1` rather than `content`: the two are the same integer in practice, and a
+        // fractional line-height rounding must not read as a hidden line.
+        bool holdsItAll = min >= content - 1f;
+
+        GD.Print(
+            $"[widths] inspector: {lines} lines posed, content {content:F0}px, min {min:F0}px"
+            + (holdsItAll ? string.Empty : "  ⛔ SHORTER THAN ITS TEXT — a line is below the fold"));
+        GD.Print(holdsItAll
+            ? "[widths] inspector: ✅ every line of a market-sized description has room"
+            : "[widths] inspector: ⛔ a market's panel hides what is in it");
+
+        _inspector.Text = was;
+        ForceUpdateTransform();
     }
 
     /// <summary>
@@ -2111,19 +2173,23 @@ public partial class Main : Control
     {
         var lines = new List<string>();
 
-        foreach (Workplace workplace in world.Workplaces)
-        {
-            if (workplace.Footprint.Covers(tile))
-            {
-                DescribeWorkplace(world, workplace, lines);
-            }
-        }
-
+        // ⭐ THE STORE FIRST, THEN WHO WORKS IT (D350). A market is both, and described stall-first
+        // its `Holding:` line — the one sentence a store exists to say — came eleventh, below the
+        // fold of a panel that gave no sign there was more. Joe: *"the market doesn't tell how many
+        // units of each item are within."* It did; nobody could see it.
         foreach (StoreBuilding store in world.StoreBuildings)
         {
             if (store.Footprint.Covers(tile))
             {
                 DescribeStore(world, store, lines);
+            }
+        }
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Footprint.Covers(tile))
+            {
+                DescribeWorkplace(world, workplace, lines);
             }
         }
 
@@ -3687,10 +3753,21 @@ public partial class Main : Control
         //
         // A minimum rather than a fixed size, so the panel still grows for the staffing, queue
         // and ground rows beneath it.
+        //
+        // ⛔⛔ AND IT GROWS TO ITS CONTENT NOW, BECAUSE A SCROLL WITH NO VISIBLE BAR IS A CUT
+        // (D350). The market is a workplace AND a store, so its description was the longest in the
+        // game — and its `Holding:` line, the one a store exists to say, sat one line below the
+        // 140px fold. Joe: *"the market doesn't tell how many units of each item are within."* It
+        // did; the panel hid it and gave no sign. `FitContent` makes the label as tall as its text,
+        // so the window (a free-floating one since D306, folding to its title bar since D314) is
+        // exactly as tall as what it has to say. The comment two paragraphs up said *"the one
+        // panel whose job is explaining a decision must never truncate the explanation"* — this
+        // is that sentence kept.
         _inspector = new RichTextLabel
         {
             BbcodeEnabled = false,
-            ScrollActive = true,
+            ScrollActive = false,
+            FitContent = true,
 
             // Smaller type, so the minimum comes down with it — 170 was eight lines at 16
             // and is eleven at 13, which is more of a description in less of the screen.

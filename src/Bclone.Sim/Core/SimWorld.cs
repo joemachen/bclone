@@ -1000,6 +1000,7 @@ public sealed class SimWorld
             BuildingKind kind = _waitingOnTheGround[i].Kind;
             Angle facing = _waitingOnTheGround[i].Facing;
             _waitingOnTheGround.RemoveAt(i);
+            BuildingGeneration++;
             string name = NameFor(kind);
 
             // Something may have gone up here while the trees were coming down. Said out
@@ -1076,6 +1077,26 @@ public sealed class SimWorld
     /// truth about anything — see the field's own note for why it is not hashed.
     /// </remarks>
     public int TerrainGeneration => _terrainGeneration;
+
+    /// <summary>
+    /// ⭐ How many times a site has been marked out, raised or pulled down, or a free building
+    /// has joined or left the queue waiting on its ground. <b>For cache invalidation only</b>
+    /// (D350).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The <see cref="TerrainGeneration"/> shape, for the buildings: the view's zone tracer
+    /// leaves a site's own clearing mark (D100) undrawn and draws the site orange instead, and a
+    /// trace cached on the paint alone would not notice a site arriving on ground the player had
+    /// already marked, or leaving it. <em>A monotonic counter is the cheapest honest answer to
+    /// "has this changed since I last looked?"</em> (<c>CLAUDE.md</c>).
+    /// </para>
+    /// <para>
+    /// <b>Not hashed, and it must not be</b> — bookkeeping about a cache, not a fact about the
+    /// village, for exactly the reason <c>_terrainGeneration</c>'s own note gives.
+    /// </para>
+    /// </remarks>
+    public int BuildingGeneration { get; private set; }
 
     /// <summary>
     /// Wooded tiles inside a workplace's ring — what its trips are worth
@@ -3827,7 +3848,15 @@ public sealed class SimWorld
             return verdict;
         }
 
-        AfterGivingGround(workplace, at.Tile);
+        // ⛔⛔ ONLY ONCE THE TILE IS HELD (D350). This ploughed on the FIRST quarter, so every
+        // tile a farm's brush so much as grazed became a field while the farm held none of it —
+        // Joe, with a screenshot of furrows a full tile past his paint: *"the farm field is built
+        // outside of its painted area."* The plough is the visible half of giving ground, and the
+        // ground is given at eight of sixteen; that is when the earth turns.
+        if (Zones.Holds(workplace.Id, at.Tile))
+        {
+            AfterGivingGround(workplace, at.Tile);
+        }
 
         return OverstretchedNote(workplace) is string note
             ? PlacementVerdict.Yes(note)
@@ -3854,21 +3883,77 @@ public sealed class SimWorld
         }
     }
 
+    /// <summary>
+    /// ⭐⭐ What taking a farm's ground back does to the ground itself — <b>the plough, run
+    /// backwards</b> (D350).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"'removing' farm land leaves a field (right click while painting) that can't be
+    /// removed."*</b> Nothing had ever turned a <see cref="Terrain.Field"/> back to grass, so the
+    /// brush's take-back and a farmhouse's demolition each left furrows standing on ground nobody
+    /// owned, for ever. D84's rule for a dug seam — <em>no scar</em> — applied to a field: ground
+    /// the village stops working is ground again.
+    /// </para>
+    /// <para>
+    /// <b>A standing crop goes with it, and the tile forgets what it grew.</b> A sown or ripe tile
+    /// the farm no longer holds would never be reaped and would rot to a bare field at winter — a
+    /// field that then stands for ever. <c>CropSystem.Rot</c> keeps the crop id so *"a field
+    /// remembers what it grows"*; a field that is not there any more has nothing to remember.
+    /// The stroke counts what it gave up and says so once (<c>VillageMap.PaintAround</c>).
+    /// </para>
+    /// <para>
+    /// Through <see cref="SetTerrain"/> like every change of ground (D85), so the routes, the hut
+    /// rings and the view's bake all hear about it by the one door.
+    /// </para>
+    /// </remarks>
+    private void AfterTakingGround(Workplace workplace, GridPos tile)
+    {
+        if (workplace.Kind != JobKind.Farmer)
+        {
+            return;
+        }
+
+        Terrain was = Map.TerrainAt(tile);
+        if (was == Terrain.Field || IsStandingCrop(was))
+        {
+            SetTerrain(tile, Terrain.Grass);
+            Map.SetCrop(tile, 0);
+        }
+    }
 
     /// <summary>Take one sub-tile of ground back from a workplace (D336).</summary>
     public bool EraseWorkGround(Workplace workplace, SubTile at)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        return Zones.WorkGroundOwner(at.Tile) == workplace.Id
-            && Zones.SetWorkGround(at, 0);
+        if (Zones.WorkGroundOwner(at.Tile) != workplace.Id || !Zones.SetWorkGround(at, 0))
+        {
+            return false;
+        }
+
+        // ⭐ The mirror of the plough gate above: the field goes when the HOLD goes, not on the
+        // first quarter rubbed out — a nibbled edge is still a field.
+        if (!Zones.Holds(workplace.Id, at.Tile))
+        {
+            AfterTakingGround(workplace, at.Tile);
+        }
+
+        return true;
     }
 
     /// <summary>Take one tile of ground back from a workplace.</summary>
     public bool EraseWorkGround(Workplace workplace, GridPos tile)
     {
         ArgumentNullException.ThrowIfNull(workplace);
-        return Zones.WorkGroundOwner(tile) == workplace.Id && Zones.SetWorkGround(tile, 0);
+
+        if (Zones.WorkGroundOwner(tile) != workplace.Id || !Zones.SetWorkGround(tile, 0))
+        {
+            return false;
+        }
+
+        AfterTakingGround(workplace, tile);
+        return true;
     }
 
     // ---------------------------------------------------------------
@@ -5880,6 +5965,7 @@ public sealed class SimWorld
             if (!_waitingOnTheGround.Contains(pending))
             {
                 _waitingOnTheGround.Add(pending);
+                BuildingGeneration++;
             }
 
             Narrate($"{Capitalised(name)} is marked out, and the ground is being cleared for "
@@ -6345,6 +6431,7 @@ public sealed class SimWorld
         GridPos? movingFrom = null,
         Angle facing = default)
     {
+        BuildingGeneration++;
         Workplaces.Add(new Workplace
         {
             Store = NewStockpile(),
@@ -6987,7 +7074,22 @@ public sealed class SimWorld
                 + $"it is on the ground where it stood. {Clock.SeasonAndYear()}.", LogCategory.Building);
         }
 
+        // ⭐ THE FIELD GOES WITH THE FARM (D350). Snapshotted before the release, because the
+        // release is what forgets which tiles they were — and un-ploughed through the same door
+        // the brush uses, so a demolished farmhouse cannot leave a field nobody can take back.
+        var kept = new List<GridPos>();
+        IReadOnlyList<int> groundHeld = Zones.WorkGroundOf(workplace.Id);
+        for (int i = 0; i < groundHeld.Count; i++)
+        {
+            kept.Add(Zones.PositionOf(groundHeld[i]));
+        }
+
         int freed = Zones.ReleaseWorkGround(workplace.Id);
+        for (int i = 0; i < kept.Count; i++)
+        {
+            AfterTakingGround(workplace, kept[i]);
+        }
+
         if (freed > 0)
         {
             Log(
@@ -6997,6 +7099,7 @@ public sealed class SimWorld
                 + $"{Clock.SeasonAndYear()}.");
         }
 
+        BuildingGeneration++;
         Workplaces.Remove(workplace);
     }
 

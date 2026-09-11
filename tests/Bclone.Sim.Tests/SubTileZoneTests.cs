@@ -149,6 +149,119 @@ public sealed class SubTileZoneTests
         Assert.Single(zones.WorkGroundOf(7));
     }
 
+    /// <summary>
+    /// ⭐ <c>Holds</c> is the hold threshold asked of one tile — <b>and it agrees with the
+    /// index</b> (D350).
+    /// </summary>
+    /// <remarks>
+    /// The plough and the un-plough hang off this question, so it has to be the same answer
+    /// <see cref="ZoneMap.WorkGroundOf"/> gives: a quarter is spoken for and not held, eight is held,
+    /// somebody else's ground is never held by us however much of it is painted.
+    /// </remarks>
+    [Fact]
+    public void HoldsIsTheHalfRuleAskedOfOneTile()
+    {
+        ZoneMap zones = Zones();
+
+        Assert.False(zones.Holds(7, Somewhere));
+
+        for (int i = 0; i < SubTile.HalfATile - 1; i++)
+        {
+            zones.SetWorkGround(SubTile.Of(Somewhere, i % 4, i / 4), 7);
+        }
+
+        Assert.False(zones.Holds(7, Somewhere));
+        Assert.Empty(zones.WorkGroundOf(7));
+
+        zones.SetWorkGround(SubTile.Of(Somewhere, 3, 1), 7);
+
+        Assert.True(zones.Holds(7, Somewhere));
+        Assert.Single(zones.WorkGroundOf(7));
+
+        // Held by 7 is not held by 9, whatever the count says.
+        Assert.False(zones.Holds(9, Somewhere));
+
+        zones.SetWorkGround(SubTile.Of(Somewhere, 3, 1), 0);
+        Assert.False(zones.Holds(7, Somewhere));
+    }
+
+    /// <summary>
+    /// ⛔⛔ A home needs a tile painted IN FULL — <b>the half rule is the economy's, not the
+    /// builder's</b> (D350).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, with a screenshot of two house sites straddling the border of his painted
+    /// ground: *"the houses are building outside of the painted area. that shouldn't
+    /// happen."*</b> A tile is residential at eight quarters, and a house is drawn on the whole
+    /// tile — so a house on a half-painted edge tile stood 0.4 of a tile past the line the player
+    /// drew. **The brush's ragged rim is a margin nobody builds on.**
+    /// </para>
+    /// <para>
+    /// ⚠️ Every other reader of <c>IsResidential</c> is untouched, and so is the count the
+    /// economy and the goldens rest on. Only the siting asks the stricter question.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AHomeIsOnlySitedOnATilePaintedInFull()
+    {
+        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        ZoneMap zones = world.Zones;
+
+        // Nothing painted anywhere, so the one tile below is the only candidate.
+        for (int i = 0; i < zones.Residential.Count; i++)
+        {
+            if (zones.Residential[i])
+            {
+                zones.SetResidential(zones.PositionOf(i), false);
+            }
+        }
+
+        GridPos tile = ABareReachableTileNear(world, world.Map.FoundingSite);
+
+        for (int i = 0; i < SubTile.HalfATile; i++)
+        {
+            zones.SetResidential(SubTile.Of(tile, i % 4, i / 4), true);
+        }
+
+        Assert.True(zones.IsResidential(tile), "Half a tile counts as painted — that rule stands.");
+
+        var refused = Assert.Throws<Household.NoRoomToBuildException>(
+            () => Household.ChooseSite(world, world.Map.FoundingSite));
+        _output.WriteLine($"half painted: {refused.Message}");
+
+        for (int i = SubTile.HalfATile; i < SubTile.PerWholeTile; i++)
+        {
+            zones.SetResidential(SubTile.Of(tile, i % 4, i / 4), true);
+        }
+
+        Assert.Equal(tile, Household.ChooseSite(world, world.Map.FoundingSite));
+    }
+
+    /// <summary>Open, standing-free ground the village can walk to, close by.</summary>
+    private static GridPos ABareReachableTileNear(SimWorld world, GridPos site)
+    {
+        for (int radius = 1; radius < 12; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (world.Map.Contains(at)
+                        && world.Map.TerrainAt(at) == Terrain.Grass
+                        && !world.SomethingStandsAt(at)
+                        && world.TravelCost.CanReach(site, at))
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("No bare reachable ground near the founding site.");
+    }
+
     /// <summary>⛔ A demolished building's ground goes, sub-tiles and all.</summary>
     /// <remarks>
     /// Wiping only the tile summary would leave the paint underneath — still drawn, still hashed.

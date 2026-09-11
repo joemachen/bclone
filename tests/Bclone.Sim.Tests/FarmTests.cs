@@ -63,6 +63,172 @@ public sealed class FarmTests
         Assert.Equal(given, ploughed);
     }
 
+    /// <summary>
+    /// ⛔⛔ A quarter of paint does not plough a whole tile — <b>the plough waits for the tile to
+    /// be HELD</b> (D350).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, with a screenshot of furrows running a full tile past his painted field: *"the farm
+    /// field is built outside of its painted area."*</b> <c>PaintWorkGround(SubTile)</c> ploughed on
+    /// the first quarter, so every tile the brush grazed became a field while the farm held none of
+    /// it. The plough is the visible half of *giving ground*, and the ground is given at eight of
+    /// sixteen (<c>ZoneMap.Holds</c>) — so that is when the earth turns.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AQuarterOfPaintDoesNotPloughTheTile()
+    {
+        SimWorld world = Loop(Config).World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        GridPos tile = BareTileBeside(world, farm);
+
+        for (int i = 0; i < SubTile.HalfATile - 1; i++)
+        {
+            Assert.True(world.PaintWorkGround(farm, SubTile.Of(tile, i % 4, i / 4)).Allowed);
+        }
+
+        _output.WriteLine($"{SubTile.HalfATile - 1} quarters painted: {world.Map.TerrainAt(tile)}, "
+            + $"held {world.Zones.Holds(farm.Id, tile)}");
+        Assert.Equal(Terrain.Grass, world.Map.TerrainAt(tile));
+
+        Assert.True(world.PaintWorkGround(farm, SubTile.Of(tile, 3, 1)).Allowed);
+
+        _output.WriteLine($"{SubTile.HalfATile} quarters painted: {world.Map.TerrainAt(tile)}");
+        Assert.True(world.Zones.Holds(farm.Id, tile));
+        Assert.Equal(Terrain.Field, world.Map.TerrainAt(tile));
+    }
+
+    /// <summary>
+    /// ⛔⛔ Taking the ground back UN-PLOUGHS it — <b>a field the farm no longer holds is grass
+    /// again, crop and all</b> (D350).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"'removing' farm land leaves a field (right click while painting) that can't be
+    /// removed."*</b> Nothing had ever turned a <see cref="Terrain.Field"/> back, so the brush's
+    /// take-back left furrows standing on ground nobody owned, for ever. D84's rule for a dug seam
+    /// — *no scar* — applied to a field: the ground the village stops working is ground again.
+    /// </para>
+    /// <para>
+    /// <b>A standing crop goes with it.</b> A sown or ripe tile the farm no longer holds would
+    /// never be reaped and would rot to a bare field at winter — a field that then stands for ever.
+    /// It is taken at the stroke, and the crop id cleared with it so *"a field remembers what it
+    /// grows"* (<c>CropSystem.Rot</c>) is not remembering a field that is not there.
+    /// </para>
+    /// <para>
+    /// ⚠️ And the hold threshold is the whole story: erasing a quarter of a held tile leaves it
+    /// held and ploughed; erasing enough to drop it below half is what un-ploughs it.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TakingTheGroundBackUnploughsIt()
+    {
+        SimWorld world = Loop(Config).World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        int given = FarmFixtures.GiveItGround(world, farm, reach: 2);
+        Assert.True(given >= 4, $"Need at least four tiles of field to pose this; got {given}.");
+
+        IReadOnlyList<int> owned = world.Zones.WorkGroundOf(farm.Id);
+        GridPos bare = world.Zones.PositionOf(owned[0]);
+        GridPos standing = world.Zones.PositionOf(owned[1]);
+        GridPos byQuarters = world.Zones.PositionOf(owned[2]);
+        GridPos nibbled = world.Zones.PositionOf(owned[3]);
+
+        // A bare field, taken back whole.
+        Assert.Equal(Terrain.Field, world.Map.TerrainAt(bare));
+        Assert.True(world.EraseWorkGround(farm, bare));
+        Assert.Equal(Terrain.Grass, world.Map.TerrainAt(bare));
+
+        // A ripe crop, taken back whole: gone, and the tile has forgotten what it grew.
+        world.SetTerrain(standing, Terrain.Ripe);
+        world.Map.SetCrop(standing, 1);
+        Assert.True(world.EraseWorkGround(farm, standing));
+        Assert.Equal(Terrain.Grass, world.Map.TerrainAt(standing));
+        Assert.Equal(0, world.Map.CropAt(standing));
+
+        // Quarter by quarter: still a field with exactly eight left, grass at seven.
+        for (int i = 0; i < SubTile.HalfATile; i++)
+        {
+            Assert.True(world.EraseWorkGround(farm, SubTile.Of(byQuarters, i % 4, i / 4)));
+        }
+
+        Assert.True(world.Zones.Holds(farm.Id, byQuarters));
+        Assert.Equal(Terrain.Field, world.Map.TerrainAt(byQuarters));
+
+        Assert.True(world.EraseWorkGround(farm, SubTile.Of(byQuarters, 0, 2)));
+        Assert.False(world.Zones.Holds(farm.Id, byQuarters));
+        Assert.Equal(Terrain.Grass, world.Map.TerrainAt(byQuarters));
+
+        // A single quarter off a held tile changes nothing the player can see.
+        Assert.True(world.EraseWorkGround(farm, SubTile.Of(nibbled, 0, 0)));
+        Assert.Equal(Terrain.Field, world.Map.TerrainAt(nibbled));
+
+        _output.WriteLine($"bare {world.Map.TerrainAt(bare)}, ripe {world.Map.TerrainAt(standing)}, "
+            + $"by quarters {world.Map.TerrainAt(byQuarters)}, nibbled {world.Map.TerrainAt(nibbled)}");
+    }
+
+    /// <summary>⛔ A demolished farm leaves grass, not a field nobody can remove (D350).</summary>
+    /// <remarks>
+    /// The same door as the brush — <c>ReleaseWorkGround</c> frees the paint, and the tiles it
+    /// freed go back to ground. Without this a pulled-down farmhouse left its whole field ploughed
+    /// with no building to take the paint back from.
+    /// </remarks>
+    [Fact]
+    public void ADemolishedFarmLeavesGrassBehind()
+    {
+        SimWorld world = Loop(Config).World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        int given = FarmFixtures.GiveItGround(world, farm, reach: 2);
+        Assert.True(given > 0);
+
+        var field = new List<GridPos>();
+        IReadOnlyList<int> owned = world.Zones.WorkGroundOf(farm.Id);
+        for (int i = 0; i < owned.Count; i++)
+        {
+            field.Add(world.Zones.PositionOf(owned[i]));
+        }
+
+        // One of them mid-crop, so the demolition is asked about a standing field too.
+        world.SetTerrain(field[0], Terrain.Sown);
+        world.Map.SetCrop(field[0], 1);
+
+        world.Demolish(farm);
+
+        int stillField = 0;
+        foreach (GridPos tile in field)
+        {
+            if (world.Map.TerrainAt(tile) != Terrain.Grass || world.Map.CropAt(tile) != 0)
+            {
+                stillField++;
+            }
+        }
+
+        _output.WriteLine($"{field.Count} tiles of field before demolition, {stillField} still field after");
+        Assert.Equal(0, stillField);
+    }
+
+    /// <summary>A bare, unpainted tile next to the farmhouse, for posing one tile's paint.</summary>
+    private static GridPos BareTileBeside(SimWorld world, Workplace farm)
+    {
+        for (int dy = -2; dy <= 2; dy++)
+        {
+            for (int dx = -2; dx <= 2; dx++)
+            {
+                var at = new GridPos(farm.Tile.X + dx, farm.Tile.Y + dy);
+                if (world.Map.Contains(at)
+                    && world.Map.TerrainAt(at) == Terrain.Grass
+                    && world.Zones.WorkGroundOwner(at) == 0
+                    && !world.SomethingStandsAt(at))
+                {
+                    return at;
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("No bare tile beside the farmhouse.");
+    }
+
     /// <summary>A farm keeps less ground than a forester, because it works each tile twice.</summary>
     /// <remarks>
     /// <b>The overstretched warning has to be telling the truth for a farm too</b> (D86, D148):
