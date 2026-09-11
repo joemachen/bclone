@@ -1,22 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — SLICE 3 IS BUILT (VILLAGERS HOLD A `Point`), UNPLAYED; SLICE 4 IS NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — SLICE 3 PLAYED AND PUSHED; SLICE 4 (STRING-PULLED PATHS, THE WAYPOINT) IS NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (late).**
 > **1091 passing, 0 failing, 2 skipped of 1093** — run locally on `main`, **~3m** (⚠️ `HEAD` without
 > this session's change measured 3m00s the same hour; the 2m35s of the morning was the machine, not
 > the code — *measured before it was believed*).
-> **The decision log runs to D354**; read D338–D354 in `DESIGN.md §7` for the last two days —
+> **The decision log runs to D355**; read D338–D355 in `DESIGN.md §7` for the last two days —
 > sixteen decisions — fifteen from Joe playing a build, and D353 the roadmap review that came after (`DESIGN.md §4`, *Master Roadmap*: **Phase 4.5 is current, slice 3 is next**).
 >
 > **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D351):** everything up to and including wheat end
 > to end, the take-back erasing the field, the orange site with no ring beside it, the market's
 > `Holding:` line, and a thin housing stroke siting no house.
 >
-> **⚠️ WHAT JOE HAS NOT PLAYED YET (D354) — gridless slice 3.** Villagers hold a `Point` and
-> **stand on the building they walk to**: place a forager's hut with snap off, a third of a tile
-> off-grid, and watch the worker stand *on* it rather than half a tile beside it; a family stands on
-> its doorstep. **Nothing else should look different** — same pace, same routes, people still hop
-> tile to tile between ticks (the fraction is slice 4's). If anyone walks through water, stands
-> beside a building, or the pace feels changed, that is the bug this slice was kept small to catch.
+> **✅ JOE PLAYED SLICE 3 (D354): *"villager movement looks pretty good. proceed."* Pushed (D355).**
+> Nothing is unplayed. **Next is slice 4 — string-pulled paths**, which is the first slice that
+> changes how people move, and it carries the waypoint that a fractional walk needs (slice 3 said
+> why it did not add one). Read `gridless.md §8` and the timing pins in `VillagerPointTests` first.
+> ⭐ **And a placed item Joe asked about:** *work from the steading* is in Phase 5 as a look (D355)
+> — the 2026-08-22 branch is a record; the feature is a rebuild on `RestingPoint`.
 >
 > **✅ JOE PLAYED D352 (2026-09-11, late): *"yes, the brush is great now. push!"* — pushed.** What he confirmed, for the record:
 > 1. **The facets** (*"triangle artifacting"*): the zone fill is ear-clipped, not Delaunay. Paint a
@@ -555,7 +555,7 @@ and every document in the repo said #3 for a day before anyone checked.
 `028f4fc`, `phase/2-wood-fuel-and-tools` `9b9f410`, `slice/per-site-yield` `b2cb718`,
 `slice/faster-cost-field` `daec8fd`, `slice/the-market-that-never-gets-staffed` `48ab7e5`.
 
-⛔ **ONE BRANCH IS GENUINELY UNMERGED: `slice/work-from-the-steading` (`e12b20f`, 1 commit).**
+⛔ **ONE BRANCH IS GENUINELY UNMERGED: `slice/work-from-the-steading` (`e12b20f`, 1 commit).** ✅ **DECIDED 2026-09-11 (D355): Joe chose the look; it is a Phase 5 REBUILD on `RestingPoint`, and the branch stays as the record of the measurement — do not merge it.**
 Farmhands staying at the farm through the working seasons — **an economic no-op that costs ~13%
 of the harvest**, kept for the look, and its cost is still unexplained. ⚠️ **It predates D194's
 rewrite of the sowing cap, so it will not merge cleanly and its measurements are stale.**
