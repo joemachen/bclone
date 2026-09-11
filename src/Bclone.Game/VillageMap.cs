@@ -3820,8 +3820,127 @@ public partial class VillageMap : Control
                 }
 
                 DrawRect(TileRect(tile), ColourOf(terrain));
+
+                if (_pixelsPerTile >= TreeZoomFloor)
+                {
+                    Stalks(tile, terrain);
+                }
             }
         }
+    }
+
+    /// <summary>Salt for the field scatter, so a field and a wood on one tile never share a layout.</summary>
+    private const int FieldSalt = 3271;
+
+    /// <summary>
+    /// ⭐⭐ What a field is doing, drawn on it — <b>the tree treatment for the farm</b>
+    /// (D349, Joe: *"same with farming"*).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A field was a flat rectangle in one of three colours. Now a bare field carries furrows, a
+    /// sown one sparse green shoots, and a ripe one dense stalks **in the wheat chip's colour**, so
+    /// the map and the Overview agree about what wheat looks like and a player reads the season off
+    /// the ground.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>NOTHING OVERHANGS, AND THAT IS THE OPPOSITE OF THE TREES ON PURPOSE.</b> A
+    /// canopy spills over its tile because a treeline is ragged; a field's edge is a fence line and
+    /// the bake already keeps worked ground square by intent. Every mark stays inside its tile, and
+    /// the probe asserts that rather than its opposite.
+    /// </para>
+    /// <para>
+    /// ⭐ Stateless, from the tile's coordinates and its terrain — the same statelessness
+    /// as the canopies and the boulders. `StalkOn` is a `static` for D337's reason.
+    /// </para>
+    /// </remarks>
+    private void Stalks(GridPos tile, Terrain terrain)
+    {
+        if (terrain == Terrain.Field)
+        {
+            // Three furrows across the tile, a shade darker than the earth.
+            Color furrow = FieldColour with { R = FieldColour.R * 0.8f, G = FieldColour.G * 0.8f, B = FieldColour.B * 0.8f };
+            for (int row = 0; row < 3; row++)
+            {
+                float y = tile.Y - 0.3f + (row * 0.3f);
+                DrawLine(
+                    ToScreen(new Vector2(tile.X - 0.42f, y)),
+                    ToScreen(new Vector2(tile.X + 0.42f, y)),
+                    furrow,
+                    Mathf.Max(1f, _pixelsPerTile * 0.04f));
+            }
+
+            return;
+        }
+
+        bool ripe = terrain == Terrain.Ripe;
+        Color stalk = ripe ? GoodsPalette.ColourOf(Goods.Wheat) : SownColour with { G = SownColour.G * 1.35f };
+        float tall = ripe ? 0.16f : 0.08f;
+
+        for (int i = 0; i < StalksOn(tile, ripe); i++)
+        {
+            Vector2 foot = StalkOn(tile, i);
+            DrawLine(
+                ToScreen(foot),
+                ToScreen(new Vector2(foot.X, foot.Y - tall)),
+                stalk,
+                Mathf.Max(1f, _pixelsPerTile * (ripe ? 0.05f : 0.035f)));
+        }
+    }
+
+    /// <summary>How many stalks stand on one tile: sparse shoots, dense grain.</summary>
+    private static int StalksOn(GridPos tile, bool ripe) =>
+        (ripe ? 10 : 5) + (int)(Scramble(tile.X + FieldSalt, tile.Y - FieldSalt) % 3);
+
+    /// <summary>
+    /// Where one stalk's foot is — <b>inside the tile, always</b>. A `static` of the tile alone.
+    /// </summary>
+    private static Vector2 StalkOn(GridPos tile, int which)
+    {
+        uint spin = Scramble(tile.X + FieldSalt + (which * 131), tile.Y - FieldSalt - (which * 173));
+
+        // Within ±0.38 of the centre on both axes, so a stalk 0.16 tall stays under the top
+        // edge and the widest foot stays inside the side.
+        float dx = (((spin % 1000) / 1000f) - 0.5f) * 0.76f;
+        float dy = ((((spin >> 10) % 1000) / 1000f) - 0.5f) * 0.6f + 0.08f;
+
+        return new Vector2(tile.X + dx, tile.Y + dy);
+    }
+
+    /// <summary>
+    /// The fields' marks stay inside their tiles — <b>the guard the trees have, inverted</b>
+    /// (D349). A stalk measured at its tip, not its foot (D337's lesson).
+    /// </summary>
+    public string TheFieldsStayInsideTheirFences()
+    {
+        float furthest = 0f;
+        int counted = 0;
+
+        foreach (GridPos tile in new[]
+        {
+            new GridPos(0, 0), new GridPos(7, -4), new GridPos(-9, 12),
+            new GridPos(31, 24), new GridPos(-3, -17),
+        })
+        {
+            for (int i = 0; i < StalksOn(tile, ripe: true); i++)
+            {
+                Vector2 foot = StalkOn(tile, i);
+                Vector2 tip = new(foot.X, foot.Y - 0.16f);
+
+                float reach = Mathf.Max(
+                    Mathf.Max(Mathf.Abs(foot.X - tile.X), Mathf.Abs(foot.Y - tile.Y)),
+                    Mathf.Max(Mathf.Abs(tip.X - tile.X), Mathf.Abs(tip.Y - tile.Y)));
+
+                furthest = Mathf.Max(furthest, reach);
+                counted++;
+            }
+        }
+
+        return furthest < 0.5f
+            ? $"[widths] fields: ✅ {counted} stalks, all inside their tile, furthest "
+                + $"{furthest:F2} from centre"
+            : $"[widths] fields: ⛔ a stalk reaches {furthest:F2} from its tile's centre — "
+                + "past the fence, and a field's edge is a fence";
     }
 
     /// <summary>What a kind of ground is drawn as.</summary>

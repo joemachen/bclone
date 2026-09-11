@@ -64,6 +64,12 @@ tile by tile** — a dug tile is grass and stops having lumps — with the digge
 the trace until it is hauled (D84: no scar). The generated diamond is left as it is; the lumps hide
 it, and changing it changes how much ore a valley holds.
 
+### 3.4 Furrows, shoots and stalks (D349)
+
+The fields: furrows on bare ground, sparse shoots when sown, dense stalks in the wheat colour when
+ripe. **Not overhanging** — a field's edge is a fence line and the bake keeps worked ground square
+by intent; the probe asserts every mark stays inside its tile.
+
 ## 4. What is deliberately NOT in this slice
 
 - ~~**Filling the smoothed contour.** A concave polygon with holes is a real problem and the *edge*

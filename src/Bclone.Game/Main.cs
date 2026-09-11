@@ -260,6 +260,7 @@ public partial class Main : Control
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
         GD.Print(_map.TheDepositsAreScatteredAndOverhang());
+        GD.Print(_map.TheFieldsStayInsideTheirFences());
         ProbeThePlacementSentences();
 
         ProbeTheControlBar();
