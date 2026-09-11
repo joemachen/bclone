@@ -1620,7 +1620,31 @@ public sealed record SimConfig
     /// the village's walks.
     /// </remarks>
     [JsonPropertyName("river_width_tiles")]
-    public int RiverWidthTiles { get; init; } = 2;
+    public int RiverWidthTiles { get; init; } = 3;
+
+    /// <summary>
+    /// ⭐ How much wider than <see cref="RiverWidthTiles"/> the river may swell (D344).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"river looks great! Let's widen it by ~50% with some variation."*</b> The base
+    /// went 2 → 3 and this is the *variation*: the width takes a slow walk between the base
+    /// and base-plus-this, holding its value most columns, so a reach reads as a **pool or a
+    /// narrows** rather than as a frayed edge.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Zero is a supported valley</b> — a river of exactly one width —
+    /// and so is a <c>river_width_tiles</c> of zero, which generates no river at all and is a
+    /// useful control in tests.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Both of these are ready to be sliders.</b> A new-game screen sets config values
+    /// before the run starts; it does not add generation stages, so it costs no golden movement
+    /// (see <c>MapGenerator.Stage</c>).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("river_width_wander_tiles")]
+    public int RiverWidthWanderTiles { get; init; } = 1;
 
     /// <summary>Poorest ground the generator will produce, 0–255.</summary>
     /// <remarks>

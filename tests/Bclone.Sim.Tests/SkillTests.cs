@@ -275,8 +275,11 @@ public sealed class SkillTests
     // free from here**, which matters because Joe has asked for several kinds of game meat.
     // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
     // Were 18060915153750279005 (fixture) and 16268336284570708028 (shipped).
-    [InlineData(false, 9978221035198450878UL)]
-    [InlineData(true, 14107361354821263906UL)]
+    // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
+    // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed
+    // keeps its founding site, soil and seams. See `MapGenerationTests.GoldenMapHash`.
+    [InlineData(false, 14169332401122492243UL)]
+    [InlineData(true, 9044360297461632177UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

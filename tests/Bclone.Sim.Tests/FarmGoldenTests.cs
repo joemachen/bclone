@@ -222,7 +222,10 @@ public sealed class FarmGoldenTests
     // free from here**, which matters because Joe has asked for several kinds of game meat.
     // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
     // Was 6423725063573751493.
-    private const ulong SeamGoldenHash = 12897515085336644382UL;
+    // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
+    // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed keeps
+    // its founding site, soil and seams. See `MapGenerationTests.GoldenMapHash`.
+    private const ulong SeamGoldenHash = 3407877978817623107UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -260,7 +263,7 @@ public sealed class FarmGoldenTests
     //   before job-holders rested in spells (2026-09-02): 12765428660570679341
     //   before fishing added a seventh good (2026-09-02): 3898924203131512042
     // Was 9165233745633703210; moved with the rest for the sparse-hash reason above.
-    private const ulong SeamBeforeAnybodyGotBetter = 13292034129766078431UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 9415784199154731769UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

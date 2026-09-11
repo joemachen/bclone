@@ -300,7 +300,12 @@
   //
   // Crossing water will need a bridge, which is a technology first and
   // a building second, and waits on the tech tree.
-  "river_width_tiles": 2,
+  // ⭐ Widened from 2 with Joe from play (D344): "river looks great! Let's widen it
+  // by ~50% with some variation." The wander is the variation — the width takes a
+  // slow walk between these two, so a reach reads as a pool or a narrows rather than as
+  // a frayed edge. Both are ready to be sliders on a new-game screen.
+  "river_width_tiles": 3,
+  "river_width_wander_tiles": 1,
 
   // Reserved for soil depletion (DESIGN.md §2.3). Generated and hashed,
   // read by nothing - it is here so that when depletion lands it does

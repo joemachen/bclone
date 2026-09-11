@@ -383,9 +383,32 @@ public static class MapGenerator
         int band = height / 4;
         int y = rng.NextInt(band, height - band);
 
+        // ⭐⭐ THE WIDTH WANDERS AS WELL AS THE COURSE (D344, Joe: *"let's widen it by
+        // ~50% with some variation"*).
+        // ⛔ **HASHED FROM THE COLUMN, NOT DRAWN — AND THAT IS THE WHOLE CARE IN IT.**
+        // Draw order is the seed contract (§1): one extra `rng` call per column would shift
+        // every value after it, so the founding site, the soil, the seams and the woodland would
+        // all move for every seed ever written down — and a first attempt at this slice did
+        // exactly that, which put the SHIPPED valley (seed 12345) on ground where the village
+        // stores no food in ten years. *A stateless hash costs the stream nothing, so the river
+        // changes shape and nothing else in the valley moves at all.*
+        // ⚠️ **A width drawn fresh each column would be noise, not variation** —
+        // the banks would fray a tile in and out every step and read as a ragged hose. Hashing
+        // the column in BLOCKS holds a width for several columns, so a reach reads as a pool or
+        // a narrows.
+        int widest = config.RiverWidthTiles + config.RiverWidthWanderTiles;
+        int start = y;
+
         for (int x = 0; x < width; x++)
         {
-            for (int w = 0; w < config.RiverWidthTiles; w++)
+            int wide = config.RiverWidthTiles;
+            if (config.RiverWidthWanderTiles > 0)
+            {
+                uint spin = Scramble(x / 5, start);
+                wide += (int)(spin % (uint)(config.RiverWidthWanderTiles + 1));
+            }
+
+            for (int w = 0; w < wide; w++)
             {
                 int row = y + w;
                 if (row >= 0 && row < height)
@@ -396,7 +419,10 @@ public static class MapGenerator
 
             // Wander: -1, 0 or +1 each column.
             y += rng.NextInt(-1, 2);
-            y = Math.Clamp(y, 1, height - config.RiverWidthTiles - 1);
+
+            // ⚠️ Clamped against the WIDEST it may become, not against its width today
+            // — or a river that swells while hugging the edge would run off the map.
+            y = Math.Clamp(y, 1, height - widest - 1);
         }
     }
 
@@ -492,9 +518,71 @@ public static class MapGenerator
         return perClump <= 0 ? 0 : VillageEconomy.CeilingDivide(wanted, perClump);
     }
 
-    /// <summary>Tiles in a diamond of this radius — the shape <c>PaintForest</c> paints.</summary>
+    /// <summary>
+    /// ⭐ Whether an offset falls inside a clump — <b>a circle with a wobbling edge</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The radius is modulated by a hash of the clump's centre and the direction, so each wood
+    /// has its own lopsided outline and the same wood is the same shape for ever. **Nothing is
+    /// drawn from the generator's randomness**, which is what lets the shape change without
+    /// moving a single other thing in the valley.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Compared on squared distance</b>, because a square root here would be a
+    /// float in a sim-critical path and D2 bans that outright. The wobble is applied to the
+    /// squared radius instead.
+    /// </para>
+    /// </remarks>
+    private static bool InsideTheClump(GridPos centre, int dx, int dy, int radius)
+    {
+        int away = (dx * dx) + (dy * dy);
+
+        // Eight sectors round the clump, each with its own reach. The joins are left unblended
+        // on purpose — the renderer's field smooths them far better than arithmetic would.
+        int sector = ((dx >= 0 ? 1 : 0) * 4)
+            + ((dy >= 0 ? 1 : 0) * 2)
+            + (Math.Abs(dx) > Math.Abs(dy) ? 1 : 0);
+
+        uint spin = Scramble(centre.X + (sector * 7919), centre.Y - (sector * 104729));
+
+        int reach = radius * radius;
+        int wobble = (int)(spin % 41) - 20;
+
+        return away <= reach + (reach * wobble / 50);
+    }
+
+    /// <summary>A stateless hash of two coordinates — shape, and never a draw.</summary>
+    private static uint Scramble(int x, int y)
+    {
+        unchecked
+        {
+            uint h = (uint)((x * 73856093) ^ (y * 19349663));
+            h ^= h >> 13;
+            h *= 0x85EBCA6Bu;
+            h ^= h >> 16;
+            return h;
+        }
+    }
+
+    /// <summary>Tiles in a clump of this radius — the shape <c>PaintForest</c> paints.</summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THIS HAD TO MOVE WITH THE SHAPE, AND FORGETTING IT WOULD HAVE BEEN A
+    /// BALANCE CHANGE HIDING INSIDE A WORLDGEN CHANGE</b> (D344) — which is the exact thing
+    /// <see cref="PaintSeams"/>'s own remarks warn about. It returned the area of a Manhattan
+    /// diamond, <c>2r² + 2r + 1</c> = **41 tiles at radius 4**;
+    /// <see cref="InsideTheClump"/> now paints a wobbling circle, which averages
+    /// <c>πr²</c> ≈ **50**. Left alone, the generator would have dropped the same
+    /// number of clumps and quietly put **a fifth more woodland** in every valley — more
+    /// timber, more forage, and the whole food economy derived against the wrong valley.
+    /// <para>
+    /// ⚠️ <c>π</c> as <c>314/100</c>, because a float here is D2's ban. The
+    /// truth is measured rather than asserted by <c>MapGenerationTests</c>, so this only has to
+    /// be close.
+    /// </para>
+    /// </remarks>
     private static int ClumpArea(int radius) =>
-        radius < 0 ? 0 : (2 * radius * radius) + (2 * radius) + 1;
+        radius < 0 ? 0 : (314 * radius * radius / 100) + 1;
 
     /// <summary>Scatter woodland clumps over the whole valley.</summary>
     /// <remarks>
@@ -575,11 +663,19 @@ public static class MapGenerator
         GridPos? keepClear = null,
         int keepClearRadius = 0)
     {
+        // ⭐⭐ A WOOD IS A BLOB, NOT A DIAMOND (D344). `Math.Abs(dx) + Math.Abs(dy)`
+        // is a Manhattan ball and it looked like one: every clump in the valley was a lozenge
+        // with its points on the compass. **D342 proved the renderer cannot hide it** — the
+        // field's edge jitter moves a boundary about a tile, which on a nine-tile diamond is a
+        // nibble, *while the same machinery transforms a two-tile river.* The difference is
+        // entirely the ratio of the jitter to the feature, so the shape is the generator's.
+        // ⭐ **Hashed from the clump's own centre and consuming no draws**, for the same
+        // reason the river's width is.
         for (int dy = -radius; dy <= radius; dy++)
         {
             for (int dx = -radius; dx <= radius; dx++)
             {
-                if (Math.Abs(dx) + Math.Abs(dy) > radius)
+                if (!InsideTheClump(centre, dx, dy, radius))
                 {
                     continue;
                 }

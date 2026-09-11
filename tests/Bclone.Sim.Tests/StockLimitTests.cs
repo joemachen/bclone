@@ -332,7 +332,10 @@ public sealed class StockLimitTests
     // free from here**, which matters because Joe has asked for several kinds of game meat.
     // `AGoodNobodyHoldsDoesNotChangeTheHash` is the guard that says so.
     // Were 5305272553712677516 (fixture) and 3152227146507966874 (shipped).
-    private const ulong FixtureFiftyYearHash = 4502621890986254472UL;
+    // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
+    // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed keeps
+    // its founding site, soil and seams. See `MapGenerationTests.GoldenMapHash`.
+    private const ulong FixtureFiftyYearHash = 111552278507413873UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -381,7 +384,7 @@ public sealed class StockLimitTests
     //   before the fire got hungrier (2026-09-01): 7526008860437144418
     //   before job-holders rested in spells (2026-09-02): 13822301328619150389
     //   before fishing added a seventh good (2026-09-02): 801842139213225914
-    private const ulong ShippedFiftyYearHash = 4111741536428498504UL;
+    private const ulong ShippedFiftyYearHash = 5668752618904500719UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

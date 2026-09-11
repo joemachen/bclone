@@ -60,9 +60,12 @@ public sealed class PerSiteYieldTests
     /// </para>
     /// </remarks>
     [Theory]
-    [InlineData(12345UL, 1281079863175304094UL, 240, 2662, 49, 10)]
-    [InlineData(2UL, 14483866833134380888UL, 240, 2691, 51, 10)]
-    [InlineData(42UL, 15249256015855895832UL, 240, 2696, 45, 9)]
+    // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
+    // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed
+    // keeps its founding site, soil and seams. See `MapGenerationTests.GoldenMapHash`.
+    [InlineData(12345UL, 15952633197866446646UL, 420, 2667, 49, 10)]
+    [InlineData(2UL, 2161594585396026524UL, 410, 2731, 49, 10)]
+    [InlineData(42UL, 17795302869166625743UL, 425, 2691, 39, 4)]
     public void MakingSoilRegionalMovedNoOtherTileInTheValley(
         ulong seed, ulong terrainPrint, int water, int forest, int stone, int iron)
     {

@@ -3984,6 +3984,41 @@ public sealed class SimWorld
     // unchanged.
     private string Describe(Goods goods) => GoodsCatalog.SourceNameOf(goods);
 
+    /// <summary>
+    /// ⛔⛔ Take the harvest mark off ground a building now stands on — <b>and this
+    /// is NOT a reversal of D127</b> (D344).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, at an orange smudge he had not painted: *"is that the area the laborers cleared to
+    /// be able to build the gatherers hut? i didnt mark it for harvest… lets solve for this
+    /// thing that shouldn't even show up."*</b> D100 paints a tile for harvest when a building is
+    /// marked on ground that yields something, so the laborers clear the site — *the village
+    /// asked for that, not the player* — and until now **nothing ever took it off again.**
+    /// </para>
+    /// <para>
+    /// ⛔ <b>D127 is the reason this needs an argument at all.</b> That decision — Joe's
+    /// — is that cleared painted ground keeps its mark, because *"with regrowth, a bare
+    /// painted tile is not finished work, it is work that is waiting."* **That reasoning is about
+    /// ground that will grow back.** Nothing grows back under a building: the tile is occupied
+    /// for as long as the building stands, so a harvest mark on it can never again mean work
+    /// waiting. ⭐ *It is inert, and that is why removing it needs no provenance and cannot
+    /// erase a standing order the player meant.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Every covered tile, not just the anchor</b>, though D100 only ever paints
+    /// the anchor. The superset is free and it is correct: none of a building's ground can be
+    /// harvested while it stands there.
+    /// </para>
+    /// </remarks>
+    private void RetireTheClearingMark(Footprint shape)
+    {
+        foreach (GridPos tile in shape.CoveredTiles())
+        {
+            Zones.SetHarvest(tile, false);
+        }
+    }
+
     /// <summary>Un-paint a tile the village had meant to clear.</summary>
     public bool EraseHarvest(GridPos tile) => Zones.SetHarvest(tile, false);
 
@@ -6619,6 +6654,9 @@ public sealed class SimWorld
                 family.HomePosition = site.Position;
                 NeedsMoreResidentialLand = false;
 
+                // A house is the one building that does not go through `RaiseFinished`.
+                RetireTheClearingMark(FootprintOf(BuildingKind.Home, site.Position, plan.Facing));
+
                 // Standing outside their new door, rather than wherever the errand that
                 // filled the last tick left them.
                 for (int i = 0; i < Villagers.Count; i++)
@@ -6740,6 +6778,8 @@ public sealed class SimWorld
         BuildingRow row = BuildingsCatalog[kind]
             ?? throw new ArgumentOutOfRangeException(
                 nameof(kind), kind, "That kind of building has no row, so it cannot be raised.");
+
+        RetireTheClearingMark(FootprintOf(kind, position, facing));
 
         if (row.Stores is not null)
         {

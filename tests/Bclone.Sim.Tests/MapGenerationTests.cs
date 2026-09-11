@@ -121,7 +121,25 @@ public sealed class MapGenerationTests
     // what licenses this hash to move alone.**
     //
     //   before ground was worth going to: 3589830841205379371
-    private const ulong GoldenMapHash = 11099415282837858114UL;
+    // RE-TAKEN, DELIBERATELY (D344) — **the valley's shapes changed and nothing else did.**
+    // Joe, from play: *"river looks great! Let's widen it by ~50% with some variation"*, and the
+    // forest clumps were still `PaintForest`'s Manhattan diamonds. River 2 → 3 tiles with a
+    // wandering width, and a clump is a wobbling circle instead of a lozenge.
+    //
+    // ⭐⭐ **BOTH CHANGES TAKE NO RANDOM DRAWS, AND THAT IS WHY THIS IS THE ONLY KIND OF
+    // RE-TAKE IT IS.** Draw order is the seed contract (§1 of `MapGenerator`): the river's
+    // width and the clumps' outlines are hashed from the column and the clump's own centre, so
+    // **every seed keeps its founding site, its soil and its seams** and only the shapes move.
+    // *A first attempt drew for both and shifted the whole stream — which put the SHIPPED
+    // valley on ground where the village stores no food in ten years and dies when asked to
+    // build. Twenty-seven tests went red; this way it is nine goldens and no behaviour.*
+    //
+    // ⚠️ **And the clump COUNT had to follow the clump SHAPE.** A disc of radius 4 is
+    // ~50 tiles where the diamond was 41, so `ClumpArea` was corrected in the same commit —
+    // without it the same number of clumps would have laid a fifth more woodland in every valley,
+    // which is a balance change hiding inside a worldgen change. **Measured: forest 2662 →
+    // 2667 on the shipped seed.** Water is the honest mover: 240 → 420.
+    private const ulong GoldenMapHash = 10984246327142560906UL;
 
     // ---------------------------------------------------------------
     //  Woodland — `specs/forests-and-gathering.md`
@@ -558,16 +576,46 @@ public sealed class MapGenerationTests
     /// </remarks>
     private const int SeedWatchYears = 120;
 
+    /// <summary>
+    /// ⛔⛔ Most valleys support a village — <b>and "every" was never true</b> (D344).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This was <c>EverySeedProducesAValleyAVillageSurvivesIn</c>, and it asserted that all
+    /// twelve of seeds 1–12 both survive 120 years and grow past twelve people. It passed
+    /// because those twelve seeds are clean, not because the generator guarantees it.</b>
+    /// Measured on the committed generator over **48 seeds: 4 villages die out and 7 never reach
+    /// twelve.** The claim in the name was false and had been for as long as the test existed.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Joe's ruling, asked when the reshuffle exposed it: a hard roll is legitimate.</b>
+    /// The new-game screen he wants brings a preview and a re-roll — *you will be able to
+    /// throw a valley back before you live in it* — so a poor one is a roll rather than a
+    /// defect. **What a map-generation guard can honestly assert is a RATE**, and that the rate
+    /// has not got worse.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Two things stay absolute, per seed, and must not become rates.</b> A house
+    /// nobody can walk to is a broken promise rather than a hard valley (D110, D111), and it is
+    /// asserted for every seed below. So is the sample size: **a rate measured over twelve seeds
+    /// is worth nothing**, which this slice learned the expensive way — two twelve-seed
+    /// samples said "1 in 13" for a defect that was really 1 in 4.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The floor is set below the MEASURED rate with stated headroom, not at
+    /// it.</b> A floor set at the measurement fires on noise; one set far below catches nothing.
+    /// *The number this exists to catch is a generator that collapses — D103 and D110 both
+    /// produced valleys where peaks sat barely above the founding four.*
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void EverySeedProducesAValleyAVillageSurvivesIn()
+    public void MostSeedsProduceAValleyAVillageCanLiveIn()
     {
-        // THE property test, and the thing a generated world needs that a hand-placed
-        // one never did: hand-placement was checked once by a human, and generation has
-        // to be right for valleys nobody has ever looked at.
         SimConfig config = Config;
         var results = new List<string>();
+        int liveable = 0;
 
-        for (ulong seed = 1; seed <= 12; seed++)
+        for (ulong seed = 1; seed <= SeedsSampled; seed++)
         {
             var sink = new InMemoryLogSink();
             SimLoop loop = SimFactory.CreatePhase0(config, sink, seed);
@@ -586,14 +634,11 @@ public sealed class MapGenerationTests
 
             results.Add($"seed {seed,2}: peak {peak,3}, low {lowest,3}, final {loop.World.Population,3}");
 
-            // ⭐ D111's PROMISE, GUARDED AT LAST. `MarkHome` skips `CanBuildAt` on the
-            // written grounds that `ChooseSite` has already found reachable ground — and in
-            // seed 11 it demonstrably had not, siting a house on the far bank that no builder
-            // could ever walk to and freezing that village's whole future (D110). `MarkHome`
-            // logs a warning when the promise breaks; **nothing was reading it.**
-            //
-            // Free to check here, since these are the twelve valleys the promise has to hold
-            // in and they are already being run.
+            // ⭐ D111's PROMISE, AND IT IS STILL ABSOLUTE. `MarkHome` skips `CanBuildAt` on
+            // the written grounds that `ChooseSite` has already found reachable ground — and
+            // in seed 11 it demonstrably had not, siting a house on the far bank that no builder
+            // could ever walk to and freezing that village's whole future (D110). **A valley may
+            // be poor; it may not lie about where a house can go.**
             foreach (LogEntry entry in sink.Entries)
             {
                 Assert.False(
@@ -602,53 +647,43 @@ public sealed class MapGenerationTests
                     $"Seed {seed} sited a house nobody can walk to: {entry.Message}");
             }
 
-            // ⭐ THE VALLEY MUST NOT KILL THE VILLAGE. Every one of the twelve is still
-            // standing at 120 years — finals run 6 to 49 — and a generated valley that wiped
-            // one out would be the generator's fault rather than the player's, which is the
-            // whole reason this property test exists.
-            Assert.True(loop.World.Population >= config.StartingPopulation,
-                $"Seed {seed} died out — finished at {loop.World.Population}. " +
-                $"({string.Join("; ", results)})");
-
-            // ⭐ AND IT MUST BE ABLE TO GROW ONE. Peak rather than final, and D143 is why.
-            //
-            // ⛔ THIS USED TO ASSERT THE SLOPE — `Population * 2 >= peak`, *"it must not be
-            // halfway out the door"* — on the reasoning that a village which peaks and then
-            // dwindles with nobody starved is a village that is finished. **Joe's ruling
-            // retires that claim outright:** *"an unattended village should die out. The user
-            // needs to play the game at some point."* Nobody sites a building or paints a tile
-            // in any of these twelve runs, so dwindling is the game working, and the guard was
-            // measuring how long a valley coasts rather than how good a valley it is.
-            //
-            // **It was also not one bad seed.** Measured across the twelve, SIX fail the slope
-            // — 49→15, 49→13, 37→8, 40→6, 37→6, 49→17 — which is what settles it as the wrong
-            // claim rather than a seed to investigate.
-            //
-            // What survives is the question a MAP-generation guard should be asking: *can a
-            // village live here at all?* Peaks run 30 to 49, so twenty has real headroom and
-            // still fires on a valley too poor, too wooded or too cut-up to support a
-            // settlement — which is the defect this arm has actually caught twice (D103, D110).
-            // ⛔⛔ TWENTY → TWELVE (D262, Joe): *"the user must build more forests and huts to grow."*
-            // **A gathering hut seats two now, and an UNATTENDED village never builds a second
-            // one** — so this guard no longer asks "can a village thrive here by itself", which is
-            // a promise the game has deliberately withdrawn. It asks the question a
-            // map-generation guard should: **can a village live here at all?**
-            //
-            // ⭐ Measured after the cap: peaks of 26, 32 and 18 where they used to run 30 to 49.
-            // **Twelve keeps real headroom under the poorest valley measured** and still fires on
-            // ground too thin, too wooded or too cut-up to settle — the defect this arm has
-            // actually caught twice (D103, D110), where peaks sit barely above the founding four.
-            Assert.True(peak >= 12,
-                $"Seed {seed} never grew a village — it peaked at {peak} from "
-                + $"{config.StartingPopulation} founders, so this valley cannot support one. "
-                + $"({string.Join("; ", results)})");
+            if (loop.World.Population >= config.StartingPopulation && peak >= 12)
+            {
+                liveable++;
+            }
         }
 
         foreach (string line in results)
         {
             _output.WriteLine(line);
         }
+
+        _output.WriteLine(
+            $"liveable valleys: {liveable} of {SeedsSampled}");
+
+        Assert.True(
+            liveable >= LiveableValleysWanted,
+            $"Only {liveable} of {SeedsSampled} valleys let a village live and grow, and the "
+            + $"generator is held to {LiveableValleysWanted}. ({string.Join("; ", results)})");
     }
+
+    /// <summary>
+    /// How many valleys are sampled. ⚠️ <b>Twelve was not enough to measure anything</b>
+    /// — two twelve-seed samples put a one-in-four failure rate at "one in thirteen" (D344).
+    /// </summary>
+    private const int SeedsSampled = 24;
+
+    /// <summary>
+    /// ⛔ How many of those must let a village live and grow past twelve people.
+    /// </summary>
+    /// <remarks>
+    /// <b>Measured, with headroom stated.</b> Over 48 seeds the committed generator leaves
+    /// **~8% dead and ~15% short of twelve**; this generator measures the same within noise
+    /// (mean peak 17.8 against 17.5). Set at three quarters, which sits well under the measured
+    /// rate and still fires on the failure this arm has caught twice — D103 and D110, where
+    /// peaks sat barely above the founding four across the whole sample.
+    /// </remarks>
+    private const int LiveableValleysWanted = 18;
 
     // ---------------------------------------------------------------
     //  Water you have to go round — specs/pathfinding-and-water.md (D40)
