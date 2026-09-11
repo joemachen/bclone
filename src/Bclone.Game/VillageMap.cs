@@ -2312,15 +2312,21 @@ public partial class VillageMap : Control
 
         int direction = TheStrokeInProgress();
         var under = new HashSet<Vector2I>();
-        var refused = new HashSet<GridPos>();
+        var refused = new Dictionary<GridPos, bool>();
 
-        // ⭐ THE FILL IS THE STROKE'S SHAPE, AND THE EXCEPTIONS ARE TILES (D345). It used to be
-        // one rectangle per quarter-tile, each coloured by what the sim said about its tile (D198)
-        // — and a staircase showed through the smooth border. **The stroke fills as one curve
-        // in the colour of what the stroke as a whole would do; the tiles the sim REFUSES are then
-        // overdrawn as tiles.** That is honest twice over: a refusal is a fact about a tile
-        // (water, a building, the wrong kind of ground), so it is right that it reads as one, and
-        // the player still sees every red tile the click would skip.
+        // ⭐ THE FILL IS THE STROKE'S SHAPE, AND SO IS THE REFUSED PART OF IT (D345, D346). It
+        // used to be one rectangle per quarter-tile, each coloured by what the sim said about its
+        // tile (D198) — and a staircase showed through the smooth border. **The stroke fills
+        // as one curve in the colour of what the stroke as a whole would do, and the ground the
+        // sim refuses fills as a second curve over it, in red.**
+        // ⛔ **THE REFUSED REGION IS BUILT FROM THE QUARTER-TILES UNDER THE BRUSH, NOT FROM
+        // WHOLE TILES.** D345 overdrew each refused TILE as a rectangle, on the argument that a
+        // refusal is a fact about a tile — true, but a tile half under the brush then drew its
+        // other half OUTSIDE the ring, as a staircase, in red. Joe: *"it should not show areas
+        // outside of the ring."* The verdict is still asked of the tile (D336: terrain is tiled);
+        // only the cells the brush actually covers are painted with it.
+        var refusedCells = new HashSet<Vector2I>();
+
         foreach (SubTile at in BrushStroke.SubTilesUnder(_hoveredSub, _brushRadius, _brushShape))
         {
             if (!_world.Map.Contains(at.Tile))
@@ -2328,17 +2334,18 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            under.Add(new Vector2I(at.X, at.Y));
+            var cell = new Vector2I(at.X, at.Y);
+            under.Add(cell);
 
-            if (refused.Contains(at.Tile))
+            if (!refused.TryGetValue(at.Tile, out bool no))
             {
-                continue;
+                no = ColourForTheBrushOn(at.Tile, direction) == GhostRefused;
+                refused[at.Tile] = no;
             }
 
-            Color said = ColourForTheBrushOn(at.Tile, direction);
-            if (said == GhostRefused)
+            if (no)
             {
-                refused.Add(at.Tile);
+                refusedCells.Add(cell);
             }
         }
 
@@ -2351,9 +2358,16 @@ public partial class VillageMap : Control
 
         DrawTriangles(fill, BrushEdgeFor(direction) with { A = 0.26f });
 
-        foreach (GridPos tile in refused)
+        if (refusedCells.Count > 0)
         {
-            DrawRect(TileRect(tile), GhostRefused with { A = 0.35f });
+            Vector2[] no = ZoneOutline.Fill(
+                ZoneOutline.Trace(refusedCells, SubTile.PerTile), refusedCells);
+            for (int p = 0; p < no.Length; p++)
+            {
+                no[p] = ToScreen(InTileSpace(no[p], SubTile.PerTile));
+            }
+
+            DrawTriangles(no, GhostRefused with { A = 0.35f });
         }
 
         // ⭐⭐ AND ONE OUTLINE ROUND THE LOT (D332, Joe: *"why isnt the paint brush a smooth
