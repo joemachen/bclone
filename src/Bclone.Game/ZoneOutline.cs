@@ -136,6 +136,30 @@ internal static class ZoneOutline
         // game.** Two-sided, so it catches that too.
         Smoothness("a 6-tile square", Block(24, 24), SubTilesPerTile, 1.16f, least: 1.10f);
 
+        // ⛔⛔ AND WHETHER THE CURVE HAS CORNERS, WHICH PERIMETER CANNOT SEE EITHER
+        // (D345). A twenty-sided polygon is 1.004 of a circle's perimeter and looks like a
+        // twenty-sided polygon — Joe: *"look at how jagged/square the brush is."* **The
+        // sharpest turn between consecutive segments is what a facet IS**, so that is what this
+        // measures. The square stays as the control the other way: its corners must remain
+        // corners.
+        // ⚠️ MEASURED BEFORE THE BAND WAS SET, on both sides of the fix: the single-stage
+        // smoothing read 18° (Joe's twenty-sided brush); chords then three quarter passes
+        // read 4°. A whole-tile stroke is posed too, because its steps are four cells and the
+        // chord stage behaves differently on it.
+        Facets("a 10-tile round", RoundBrush(20), SubTilesPerTile, 8f);
+        Facets("a 5-tile round", RoundBrush(10), SubTilesPerTile, 8f);
+        // ⭐ The founding zone is the one whole-tile shape a player meets without painting
+        // it: a Manhattan diamond of tiles, whose 45° edges are four-cell steps.
+        Facets("the founding diamond, in whole tiles", WholeTiles(Diamond(6)), SubTilesPerTile, 10f);
+        Facets("a 6-tile square", Block(24, 24), SubTilesPerTile, 999f, least: 80f);
+
+        // ⛔⛔ AND THE FILL COVERS THE REGION AND NOTHING ELSE (D345). A square fills to
+        // its own area; **a ring round a hole fills to the ring and not the hole** — which is
+        // the case that made "fill the smoothed contour" a deferred problem in the first place.
+        // The red check is the centroid filter switched off: the ring then fills its hole too.
+        Filled("a 5x5 square", Block(5, 5), 25f, within: 0.02f);
+        Filled("a ring round a hole", RingOfTiles(), 8f, within: 0.06f);
+
         return complaints.Count == 0
             ? $"[widths] zone outlines: ✅ every shape closed and kept its area{sizes}"
             : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints);
@@ -164,6 +188,98 @@ internal static class ZoneOutline
             if (fill > wanted + 0.04f)
             {
                 complaints.Add($"{what}: fills {fill * 100f:F0}%, a disc fills {wanted * 100f:F0}%");
+            }
+        }
+
+        void Filled(string what, IEnumerable<(int X, int Y)> tiles, float wanted, float within)
+        {
+            var set = new HashSet<Vector2I>();
+            foreach ((int x, int y) in tiles)
+            {
+                set.Add(new Vector2I(x, y));
+            }
+
+            float area = TriangleArea(Fill(Trace(set), set));
+            sizes += $" · {what} fills {area:F1} of {wanted:F0}";
+
+            if (Mathf.Abs(area - wanted) > wanted * within)
+            {
+                complaints.Add(
+                    $"{what}: the fill covers {area:F1}, wanted {wanted:F0} within "
+                    + $"{within * 100f:F0}% — the triangles do not follow the paint");
+            }
+        }
+
+        static IEnumerable<(int, int)> RingOfTiles()
+        {
+            foreach ((int x, int y) in Block(3, 3))
+            {
+                if (x != 1 || y != 1)
+                {
+                    yield return (x, y);
+                }
+            }
+        }
+
+        void Facets(
+            string what,
+            IEnumerable<(int X, int Y)> cells,
+            int cellsPerTile,
+            float worstDegrees,
+            float least = 0f)
+        {
+            var set = new HashSet<Vector2I>();
+            foreach ((int x, int y) in cells)
+            {
+                set.Add(new Vector2I(x, y));
+            }
+
+            List<Vector2[]> loops = Trace(set, cellsPerTile);
+            if (loops.Count != 1)
+            {
+                complaints.Add($"{what}: {loops.Count} loops, wanted 1");
+                return;
+            }
+
+            // ⛔⛔ DUPLICATES REMOVED BEFORE MEASURING, BECAUSE THE FIRST VERSION SKIPPED
+            // EVERY CORNER THAT MATTERED. Two cuts meeting at a side's midpoint produce the same
+            // point twice; skipping the zero-length segment ALSO skipped the turn on either side
+            // of it — which is exactly where the chords met. **It reported 7° on a
+            // polygon Joe could count the sides of.**
+            var loop = new List<Vector2>();
+            for (int i = 0; i + 1 < loops[0].Length; i++)
+            {
+                if (loop.Count == 0 || loop[^1].DistanceSquaredTo(loops[0][i]) > 1e-8f)
+                {
+                    loop.Add(loops[0][i]);
+                }
+            }
+
+            int count = loop.Count;
+            float sharpest = 0f;
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector2 incoming = loop[i] - loop[(i - 1 + count) % count];
+                Vector2 outgoing = loop[(i + 1) % count] - loop[i];
+
+                float turn = Mathf.RadToDeg(Mathf.Abs(incoming.AngleTo(outgoing)));
+                sharpest = Mathf.Max(sharpest, turn);
+            }
+
+            sizes += $" · {what} turns at most {sharpest:F0}° over {count} points";
+
+            if (sharpest > worstDegrees)
+            {
+                complaints.Add(
+                    $"{what}: sharpest turn {sharpest:F0}°, wanted under {worstDegrees:F0}° "
+                    + "— the border is a polygon with visible corners");
+            }
+            else if (sharpest < least)
+            {
+                complaints.Add(
+                    $"{what}: sharpest turn only {sharpest:F0}°, wanted at least {least:F0}° "
+                    + "— the corners the player painted have been rounded off (D334)");
             }
         }
 
@@ -245,6 +361,34 @@ internal static class ZoneOutline
             }
         }
 
+        static IEnumerable<(int, int)> WholeTiles(IEnumerable<(int X, int Y)> tiles)
+        {
+            foreach ((int x, int y) in tiles)
+            {
+                for (int sy = 0; sy < SubTilesPerTile; sy++)
+                {
+                    for (int sx = 0; sx < SubTilesPerTile; sx++)
+                    {
+                        yield return ((x * SubTilesPerTile) + sx, (y * SubTilesPerTile) + sy);
+                    }
+                }
+            }
+        }
+
+        static IEnumerable<(int, int)> Diamond(int radius)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    if (Math.Abs(dx) + Math.Abs(dy) <= radius)
+                    {
+                        yield return (dx, dy);
+                    }
+                }
+            }
+        }
+
         static IEnumerable<(int, int)> RoundBrush(int radius)
         {
             long limit = (long)radius * (radius + 1);
@@ -315,8 +459,36 @@ internal static class ZoneOutline
         return twice / 2f;
     }
 
-    /// <summary>How many times to cut the corners.</summary>
-    private const int Roundings = 2;
+    /// <summary>
+    /// How many times the staircase is cut at HALF a step — <b>the stage that turns steps
+    /// into chords</b> (D345).
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THIS STAGE MAKES CHORDS, NOT CURVES, AND FOR A WHOLE SLICE NOBODY NOTICED
+    /// BECAUSE THE GUARD COULD NOT SEE IT.</b> Cutting a one-cell step at exactly its midpoint
+    /// puts the cut on the midpoint of the step, and **the midpoints of a regular staircase are
+    /// collinear** — so a digital circle, whose steps run 2:1 then 1:1 then 1:2 round each
+    /// octant, comes out as about twenty straight chords meeting at corners of 18°. Joe:
+    /// *"look at how jagged/square the brush is."* The perimeter guard read 1.00, because a
+    /// chord polygon has a circle's perimeter; the turning-angle guard read 7°, because it
+    /// skipped every corner that sat beside one of the duplicate midpoints. *Two instruments,
+    /// both blind to the same thing, for different reasons.*
+    /// </remarks>
+    private const int Straightenings = 2;
+
+    /// <summary>
+    /// How many times the chords are then rounded at a QUARTER — <b>the stage that makes the
+    /// curve</b> (D345).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ Classic Chaikin, which converges to a smooth spline of the chord polygon. It cannot
+    /// be run on the staircase directly — measured: a quarter cut on one-cell steps only
+    /// softens the wiggle, and the perimeter comes out 1.10 of a circle's however many passes
+    /// are run — which is why the chord stage comes first. ⛔ **The sharp-corner rule
+    /// still applies here**, so a square the player painted keeps its four corners through both
+    /// stages.
+    /// </remarks>
+    private const int Roundings = 3;
 
     /// <summary>
     /// ⛔⛔ How much of a corner to cut, <b>in tiles</b> — and this number is why a square looked
@@ -414,6 +586,97 @@ internal static class ZoneOutline
         }
 
         return loops;
+    }
+
+    /// <summary>
+    /// ⭐⭐ The inside of the traced loops as triangles — <b>so the fill follows the curve
+    /// instead of the cells</b> (D345).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"why am i seeing that instead of smooth contoured lines?"*</b> The border was a
+    /// curve and the fill under it was still one rectangle per quarter-tile, so every painted area
+    /// had a staircase showing through its own smooth edge. *`the-valley-in-view.md §4` deferred
+    /// "filling the smoothed contour" as a real problem — a concave polygon with holes.*
+    /// </para>
+    /// <para>
+    /// ⭐⭐ <b>HOLES AND CONCAVITY COME FOR FREE, BY NOT TRIANGULATING THE POLYGON AT
+    /// ALL.</b> Delaunay over every loop point covers the convex hull; **keeping only the triangles
+    /// whose centroid lands on a painted cell** carves the hull back to the region — a ring
+    /// round a hut loses the triangles inside the hole, a bay loses the ones across its mouth. No
+    /// key-holing, no winding logic, and the same one rule for every shape. *The centroid test
+    /// is one array read, and it asks the same cells the loops were traced from.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A gap narrower than a triangle can keep a sliver of fill across it</b> —
+    /// a Delaunay triangle spanning the gap has its centroid on painted ground either side. Named
+    /// rather than fixed: the border still draws correctly there, and the cases are rare.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Computed when the paint moves, never per frame.</b> The caller caches the
+    /// triangles beside the loops and transforms them to the screen each frame —
+    /// `CLAUDE.md`'s standing rule.
+    /// </para>
+    /// </remarks>
+    internal static Vector2[] Fill(List<Vector2[]> loops, HashSet<Vector2I> cells)
+    {
+        var points = new List<Vector2>();
+        foreach (Vector2[] loop in loops)
+        {
+            // The closing repeat is dropped, and so is anything coincident with its predecessor.
+            for (int i = 0; i + 1 < loop.Length; i++)
+            {
+                if (points.Count == 0 || points[^1].DistanceSquaredTo(loop[i]) > 1e-8f)
+                {
+                    points.Add(loop[i]);
+                }
+            }
+        }
+
+        if (points.Count < 3)
+        {
+            return System.Array.Empty<Vector2>();
+        }
+
+        Vector2[] corners = points.ToArray();
+        int[] indices = Geometry2D.TriangulateDelaunay(corners);
+        var kept = new List<Vector2>(indices.Length);
+
+        for (int t = 0; t + 2 < indices.Length; t += 3)
+        {
+            Vector2 a = corners[indices[t]];
+            Vector2 b = corners[indices[t + 1]];
+            Vector2 c = corners[indices[t + 2]];
+            Vector2 centroid = (a + b + c) / 3f;
+
+            // Cell c spans [c - 0.5, c + 0.5], so the cell under a point is the nearest integer.
+            var cell = new Vector2I(Mathf.RoundToInt(centroid.X), Mathf.RoundToInt(centroid.Y));
+            if (!cells.Contains(cell))
+            {
+                continue;
+            }
+
+            kept.Add(a);
+            kept.Add(b);
+            kept.Add(c);
+        }
+
+        return kept.ToArray();
+    }
+
+    /// <summary>The area the triangles cover, for the self-check.</summary>
+    private static float TriangleArea(Vector2[] triangles)
+    {
+        float twice = 0f;
+        for (int t = 0; t + 2 < triangles.Length; t += 3)
+        {
+            Vector2 a = triangles[t];
+            Vector2 b = triangles[t + 1];
+            Vector2 c = triangles[t + 2];
+            twice += Mathf.Abs(((b.X - a.X) * (c.Y - a.Y)) - ((c.X - a.X) * (b.Y - a.Y)));
+        }
+
+        return twice / 2f;
     }
 
     /// <summary>
@@ -574,7 +837,57 @@ internal static class ZoneOutline
 
         List<Vector2> points = loop;
 
+        // ---- Stage 1: steps into chords ----
+        for (int pass = 0; pass < Straightenings; pass++)
+        {
+            points = Cut(points, sharpCorner, cornerCut, 2f);
+        }
+
+        // ⚠️ Two cuts meeting at a step's midpoint leave the same point twice; drawn,
+        // that is a zero-length segment the polyline pays for, and measured, it hid every corner.
+        points = WithoutRepeats(points);
+
+        // ---- Stage 2: chords into a curve ----
         for (int pass = 0; pass < Roundings; pass++)
+        {
+            points = Cut(points, sharpCorner, float.PositiveInfinity, 4f);
+        }
+
+        // Closed: the first point repeated, so a polyline draws the last side too.
+        var closed = new Vector2[points.Count + 1];
+        points.CopyTo(closed);
+        closed[^1] = points[0];
+        return closed;
+    }
+
+    /// <summary>Consecutive duplicates dropped; the loop's shape is unchanged.</summary>
+    private static List<Vector2> WithoutRepeats(List<Vector2> points)
+    {
+        var kept = new List<Vector2>(points.Count);
+        for (int i = 0; i < points.Count; i++)
+        {
+            if (kept.Count == 0 || kept[^1].DistanceSquaredTo(points[i]) > 1e-8f)
+            {
+                kept.Add(points[i]);
+            }
+        }
+
+        if (kept.Count > 1 && kept[0].DistanceSquaredTo(kept[^1]) <= 1e-8f)
+        {
+            kept.RemoveAt(kept.Count - 1);
+        }
+
+        return kept;
+    }
+
+    /// <summary>
+    /// One corner-cutting pass: every corner between two runs shorter than
+    /// <paramref name="sharpCorner"/> is replaced by two points, each at most
+    /// <paramref name="cap"/> and at most a <paramref name="fraction"/> of its run from the corner.
+    /// </summary>
+    private static List<Vector2> Cut(
+        List<Vector2> points, float sharpCorner, float cap, float fraction)
+    {
         {
             var cut = new List<Vector2>(points.Count * 2);
 
@@ -599,20 +912,14 @@ internal static class ZoneOutline
 
                 // ⚠️ Never more than HALF a run, or the cuts from the two ends of a short side
                 // cross each other and the outline turns inside out.
-                float cutBack = Mathf.Min(cornerCut, back / 2f);
-                float cutOn = Mathf.Min(cornerCut, forward / 2f);
+                float cutBack = Mathf.Min(cap, back / fraction);
+                float cutOn = Mathf.Min(cap, forward / fraction);
 
                 cut.Add(here + ((before - here).Normalized() * cutBack));
                 cut.Add(here + ((next - here).Normalized() * cutOn));
             }
 
-            points = cut;
+            return cut;
         }
-
-        // Closed: the first point repeated, so a polyline draws the last side too.
-        var closed = new Vector2[points.Count + 1];
-        points.CopyTo(closed);
-        closed[^1] = points[0];
-        return closed;
     }
 }

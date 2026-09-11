@@ -5266,6 +5266,7 @@ public partial class Main : Control
         markers.AddThemeFontSizeOverride("font_size", 12);
         markers.Toggled += on => _map.ShowFullMarkers(on);
         body.AddChild(markers);
+        _mapToggles.Add(("stores with no room", markers, () => _map.FullMarkersShown));
 
         // The global half of D147's idle ring, beside the global half of D140's, because they
         // are the same kind of preference and a player looking for one will look for the other.
@@ -5273,6 +5274,7 @@ public partial class Main : Control
         idle.AddThemeFontSizeOverride("font_size", 12);
         idle.Toggled += on => _map.ShowIdleMarkers(on);
         body.AddChild(idle);
+        _mapToggles.Add(("buildings that cannot work", idle, () => _map.IdleMarkersShown));
 
         // ⭐ The wildlife is scenery rather than a marker, but it belongs with the other two:
         // all three answer *"what is drawn on the valley"*, and a player who wants a plainer
@@ -5282,18 +5284,22 @@ public partial class Main : Control
         // other four view toggles even though it changes what placement DOES — because it acts on
         // the input before the sim sees it, so nothing about the village changes when it is off,
         // only what the player is allowed to aim at.
-        var snap = new CheckBox
-        {
-            Text = "snap buildings to the grid",
-            ButtonPressed = true,
-        };
+        // ⛔ OFF BY DEFAULT SINCE D345 (Joe: *"snap buildings to the grid should be off by
+        // default"*). ⚠️ Two defaults, this tick and `VillageMap._snapToGrid`, and the
+        // probe below checks they agree — it did not check this one until D345, and its own
+        // doc said an unregistered toggle was invisible to it.
+        var snap = new CheckBox { Text = "snap buildings to the grid" };
         snap.AddThemeFontSizeOverride("font_size", 12);
         snap.Toggled += on => _map.SnapToGrid(on);
         body.AddChild(snap);
+        _mapToggles.Add(("snap to the grid", snap, () => _map.SnapsToGrid));
 
+        // ⚠️ This caption used to promise that the ghost shows the tiles a building will
+        // claim when snap is off. **The code never did that** — it showed them always, and
+        // since D345 it shows them only while the grid is drawn.
         body.AddChild(Caption(
-            "Off, a building stands exactly where you put it, and the ghost shows the tiles it "
-            + "will claim."));
+            "On, a building lands on the nearest tile centre. With the grid drawn, the ghost "
+            + "also shows the tiles it will claim."));
 
         // ⭐⭐ THE GRID LINES (D332, Joe: *"if the game is gridless, then why is everything still in
         // a grid?"*). **They were always on above 6px/tile with no way to turn them off**, and they
@@ -5346,6 +5352,7 @@ public partial class Main : Control
         wildlife.AddThemeFontSizeOverride("font_size", 12);
         wildlife.Toggled += on => _map.ShowGame(on);
         body.AddChild(wildlife);
+        _mapToggles.Add(("animals in the woods", wildlife, () => _map.GameShown));
 
         // Its own switch rather than one "scenery" tick, because the two answer different
         // questions: what the woods FEED and what they HOLD. A player hunting for a quieter
@@ -5354,6 +5361,7 @@ public partial class Main : Control
         forage.AddThemeFontSizeOverride("font_size", 12);
         forage.Toggled += on => _map.ShowForage(on);
         body.AddChild(forage);
+        _mapToggles.Add(("berry patches in the woods", forage, () => _map.ForageShown));
 
         // ⭐ THE SHARE-OUT SWITCH (Joe, 2026-09-03): *"give the user the option to toggle the
         // 'work share' function on/off."* Every three years the village tears every allocation
@@ -6592,7 +6600,7 @@ public partial class Main : Control
         }
 
         _frameCounter.Text =
-            $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneRectsLastFrame} zone rects";
+            $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneTrianglesLastFrame} zone tris";
     }
 
     private void AddTheSkipControls(Container controls)

@@ -58,8 +58,10 @@ per frame.
 
 ## 4. What is deliberately NOT in this slice
 
-- **Filling the smoothed contour.** A concave polygon with holes is a real problem and the *edge*
-  carries most of the benefit. Named so it is not mistaken for an oversight.
+- ~~**Filling the smoothed contour.** A concave polygon with holes is a real problem and the *edge*
+  carries most of the benefit.~~ ✅ **DONE (D345), and it was not a polygon problem after all:** Delaunay
+  over the loop points, keeping the triangles whose centroid sits on painted ground. Holes and
+  concavity fall out of the same rule.
 - **Soil.** It re-quantises an already-smooth bilinear field (`MakeSoilRegional`) back into per-tile
   alpha squares and could be resampled at pixel resolution with zero sim change — but it is **off by
   default**, so it is the least visible thing on the list.

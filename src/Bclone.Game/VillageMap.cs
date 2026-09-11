@@ -755,17 +755,31 @@ public partial class VillageMap : Control
     /// <summary>Which quarter-tile the cursor is over — the brush's centre (D336).</summary>
     private SubTile _hoveredSub;
 
-    /// <summary>Whether placement rounds to a tile centre. On by default (Joe's call, D330).</summary>
+    /// <summary>
+    /// Whether placement rounds to a tile centre. ⛔ <b>OFF by default (D345, Joe)</b> — it
+    /// was on since D330.
+    /// </summary>
     /// <remarks>
-    /// ⛔ <b>AN INPUT-LAYER SETTING, NOT A SIM ONE, AND THAT IS WHAT KEEPS IT HONEST.</b> It rounds
-    /// the point <em>before</em> <c>Mark</c> ever sees it, so the sim believes exactly what it is
-    /// told and there is no facade — which is the failure `gridless.md §7.2` refuses in as many
-    /// words: *a view that draws a building at 30° while the sim believes an axis-aligned tile is
-    /// D80 at architectural scale.*
-    /// ⚠️ Nothing in this project persists settings, so it comes back on at every launch. Harmless
-    /// while on is the default; worth knowing before anybody reports it as a bug.
+    /// <para>
+    /// <b>Joe: *"i dont want to ever see the grid or even know it exists (unless the user chooses
+    /// to turn on the grid and snap to it). By default the game should look and feel and seem to
+    /// be gridless."*</b> D330 shipped snapping on as the safe default while free placement was
+    /// new; the grid it snaps to has been off by default since D340, and a building that jumps to
+    /// centres nobody can see is the grid making itself known through the mouse.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>AN INPUT-LAYER SETTING, NOT A SIM ONE, AND THAT IS WHAT KEEPS IT HONEST.</b> It
+    /// rounds the point <em>before</em> <c>Mark</c> ever sees it, so the sim believes exactly what
+    /// it is told and there is no facade — the failure `gridless.md §7.2` refuses in as
+    /// many words.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Two defaults, and the probe checks they agree</b> — this and the
+    /// Settings tick (D340's `[widths] map toggles`). Nothing persists settings, so both come
+    /// back to this at every launch.
+    /// </para>
     /// </remarks>
-    private bool _snapToGrid = true;
+    private bool _snapToGrid;
 
     /// <summary>Whether placement is snapping to tile centres, so the bar can say so.</summary>
     public bool SnapsToGrid => _snapToGrid;
@@ -2177,11 +2191,19 @@ public partial class VillageMap : Control
                 return;
             }
 
-            Vector2 topLeft = (box.Position - fill.Position).Abs();
-            Vector2 bottomRight = (box.End - fill.End).Abs();
+            // ⚠️ THE CENTRES, NOT THE CORNERS, SINCE D345. Rounding a lone cell to a curve
+            // pulls its extremes a few per cent inward on every side at once — which moved
+            // the box's edges 2px and reddened this on correct code. **What this guard exists to
+            // catch is a TRANSLATION** (D338's half-tile, D343's eighth), and a translation moves
+            // the centre; a symmetric shrink does not. The size is checked separately and loosely.
+            Vector2 centreOff = (box.GetCenter() - fill.GetCenter()).Abs();
+            Vector2 shrink = (fill.Size - box.Size).Abs();
 
-            float off = Mathf.Max(
-                Mathf.Max(topLeft.X, topLeft.Y), Mathf.Max(bottomRight.X, bottomRight.Y));
+            float off = Mathf.Max(centreOff.X, centreOff.Y);
+            if (shrink.X > fill.Size.X * 0.15f || shrink.Y > fill.Size.Y * 0.15f)
+            {
+                off = Mathf.Max(off, Mathf.Max(shrink.X, shrink.Y));
+            }
 
             if (off > worst)
             {
@@ -2290,11 +2312,15 @@ public partial class VillageMap : Control
 
         int direction = TheStrokeInProgress();
         var under = new HashSet<Vector2I>();
+        var refused = new HashSet<GridPos>();
 
-        // ⛔ THE FILL STAYS PER TILE AND MUST. Each tile is coloured by what the sim says about
-        // THAT tile (D198) — the harvest brush's filter means a drag across mixed ground is green
-        // on the trees and red on the stone, and one colour for the whole brushful would be a
-        // preview that tells the player less than the click will.
+        // ⭐ THE FILL IS THE STROKE'S SHAPE, AND THE EXCEPTIONS ARE TILES (D345). It used to be
+        // one rectangle per quarter-tile, each coloured by what the sim said about its tile (D198)
+        // — and a staircase showed through the smooth border. **The stroke fills as one curve
+        // in the colour of what the stroke as a whole would do; the tiles the sim REFUSES are then
+        // overdrawn as tiles.** That is honest twice over: a refusal is a fact about a tile
+        // (water, a building, the wrong kind of ground), so it is right that it reads as one, and
+        // the player still sees every red tile the click would skip.
         foreach (SubTile at in BrushStroke.SubTilesUnder(_hoveredSub, _brushRadius, _brushShape))
         {
             if (!_world.Map.Contains(at.Tile))
@@ -2302,12 +2328,32 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            // ⛔ Snapped, not oversized (D333). A translucent rect drawn 2% wide blends twice
-            // where it laps its neighbour, which draws a grid inside the brushful.
-            // ⭐ The COLOUR is still asked of the tile (D336): the sim's refusals are about terrain
-            // and terrain is tiled. Only where the paint lands got finer.
-            DrawRect(SubTileRect(at), ColourForTheBrushOn(at.Tile, direction) with { A = 0.26f });
             under.Add(new Vector2I(at.X, at.Y));
+
+            if (refused.Contains(at.Tile))
+            {
+                continue;
+            }
+
+            Color said = ColourForTheBrushOn(at.Tile, direction);
+            if (said == GhostRefused)
+            {
+                refused.Add(at.Tile);
+            }
+        }
+
+        List<Vector2[]> outline = ZoneOutline.Trace(under, SubTile.PerTile);
+        Vector2[] fill = ZoneOutline.Fill(outline, under);
+        for (int p = 0; p < fill.Length; p++)
+        {
+            fill[p] = ToScreen(InTileSpace(fill[p], SubTile.PerTile));
+        }
+
+        DrawTriangles(fill, BrushEdgeFor(direction) with { A = 0.26f });
+
+        foreach (GridPos tile in refused)
+        {
+            DrawRect(TileRect(tile), GhostRefused with { A = 0.35f });
         }
 
         // ⭐⭐ AND ONE OUTLINE ROUND THE LOT (D332, Joe: *"why isnt the paint brush a smooth
@@ -2319,7 +2365,7 @@ public partial class VillageMap : Control
         // decides what lands (D327) and this draws a picture of that answer rather than a second
         // opinion about it. *A round brush now looks round.*
         float thickness = Mathf.Max(1.5f, _pixelsPerTile * 0.06f);
-        foreach (Vector2[] loop in ZoneOutline.Trace(under, SubTile.PerTile))
+        foreach (Vector2[] loop in outline)
         {
             var onScreen = new Vector2[loop.Length];
             for (int p = 0; p < loop.Length; p++)
@@ -2464,18 +2510,27 @@ public partial class VillageMap : Control
         // way to see why. *§1.1 is the game explaining itself, and this is the moment it has to.*
         // ⚠️ Drawn UNDER the rectangle and fainter, so the building is still the thing you are
         // aiming and the coverage is the consequence you are being shown.
-        foreach (GridPos claimed in shape.CoveredTiles())
+        // ⛔ **ONLY WHILE THE GRID IS ON (D345, Joe: *"please remove the 'shadow' of the square
+        // underneath a building that is being placed — i dont want to ever see the grid or even
+        // know it exists"*).** The argument above is still true — coverage is a real
+        // consequence — but it is a consequence stated in TILES, and the player who has not
+        // asked to see tiles is being shown a grid through the back door. *The one who turns the
+        // grid on is the one asking the question this answers.*
+        if (_showGrid)
         {
-            if (!world.Map.Contains(claimed))
+            foreach (GridPos claimed in shape.CoveredTiles())
             {
-                continue;
-            }
+                if (!world.Map.Contains(claimed))
+                {
+                    continue;
+                }
 
-            float size = _pixelsPerTile * 0.94f;
-            Vector2 at = ToScreen(claimed);
-            DrawRect(
-                new Rect2(at - (Vector2.One * size / 2f), Vector2.One * size),
-                colour with { A = 0.16f });
+                float size = _pixelsPerTile * 0.94f;
+                Vector2 at = ToScreen(claimed);
+                DrawRect(
+                    new Rect2(at - (Vector2.One * size / 2f), Vector2.One * size),
+                    colour with { A = 0.16f });
+            }
         }
 
         DrawFootprint(centre, wide, deep, _ghostFacing.Raw, colour with { A = 0.35f }, colour);
@@ -2820,7 +2875,7 @@ public partial class VillageMap : Control
         // Under the zone washes, because soil is a property of the ground while the zones
         // are instructions about it (D178).
         DrawSoil(minX, maxX, minY, maxY);
-        DrawResidentialLand(minX, maxX, minY, maxY);
+        DrawResidentialLand();
 
         DrawRect(valley, ValleyEdge, filled: false, width: 2f);
 
@@ -2957,13 +3012,21 @@ public partial class VillageMap : Control
     /// </remarks>
     private void TraceTheZonesIfTheyMoved(ZoneMap zones)
     {
-        if (_outlinesTracedAt == zones.Edits)
+        // ⚠️ Keyed on the ground as well as the paint since D345, because the harvest fill
+        // is split into "work here now" and "waiting" at trace time — and that split moves
+        // when a tree is felled. A felling re-traces everything; felling is rare and the trace is
+        // milliseconds.
+        if (_outlinesTracedAt == zones.Edits && _outlinesTracedAtTerrain == _world!.TerrainGeneration)
         {
             return;
         }
 
+        FindTheSpentMarksIfTheyMoved(zones);
+
         _outlinesTracedAt = zones.Edits;
+        _outlinesTracedAtTerrain = _world!.TerrainGeneration;
         _zoneOutlines.Clear();
+        _zoneFills.Clear();
 
         var residential = new HashSet<Vector2I>();
         var harvest = new HashSet<Vector2I>();
@@ -3021,23 +3084,69 @@ public partial class VillageMap : Control
             }
         }
 
-        Keep(residential, Layer.Residential, ResidentialEdge);
-        Keep(harvest, Layer.Harvest, HarvestEdge);
+        Keep(residential, Layer.Residential, ResidentialEdge, owner: 0, waiting: false);
+
+        // ⭐ THE HARVEST FILL IS TWO FILLS UNDER ONE BORDER (D345). A marked tile with nothing
+        // left to take draws fainter (D343) — and a fill that follows the curve cannot change
+        // colour per tile, so the split is made HERE, where the sets are, into a "work" region
+        // and a "waiting" region. The border is traced from the union, so it does not draw a
+        // line down the middle of a half-felled wood.
+        var working = new HashSet<Vector2I>();
+        var waiting = new HashSet<Vector2I>();
+        foreach (Vector2I cell in harvest)
+        {
+            GridPos tile = new SubTile(cell.X, cell.Y).Tile;
+            (_spentMarks.Contains(tile) ? waiting : working).Add(cell);
+        }
+
+        List<Vector2[]> harvestLoops = ZoneOutline.Trace(harvest, SubTile.PerTile);
+        foreach (Vector2[] loop in harvestLoops)
+        {
+            _zoneOutlines.Add((Layer.Harvest, HarvestEdge, loop));
+        }
+
+        FillFrom(working, Layer.Harvest, owner: 0, waiting: false);
+        FillFrom(waiting, Layer.Harvest, owner: 0, waiting: true);
 
         for (int i = 0; i < owners.Count; i++)
         {
-            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge);
+            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge, owners[i], waiting: false);
+        }
+
+        void FillFrom(HashSet<Vector2I> cells, Layer layer, int owner, bool waiting)
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            Vector2[] triangles = ZoneOutline.Fill(ZoneOutline.Trace(cells, SubTile.PerTile), cells);
+            for (int i = 0; i < triangles.Length; i++)
+            {
+                triangles[i] = InTileSpace(triangles[i], SubTile.PerTile);
+            }
+
+            _zoneFills.Add((layer, owner, waiting, triangles));
         }
 
         // ⚠️ The LAYER is stored, not inferred from the colour (D340). The three
         // toggles have to hide a border and its wash together, and *"whichever loops came out
         // `HarvestEdge`"* is a coincidence of palette rather than a fact about the layer.
-        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge)
+        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge, int owner, bool waiting)
         {
-            foreach (Vector2[] loop in ZoneOutline.Trace(tiles, SubTile.PerTile))
+            List<Vector2[]> loops = ZoneOutline.Trace(tiles, SubTile.PerTile);
+            foreach (Vector2[] loop in loops)
             {
                 _zoneOutlines.Add((layer, edge, loop));
             }
+
+            Vector2[] triangles = ZoneOutline.Fill(loops, tiles);
+            for (int i = 0; i < triangles.Length; i++)
+            {
+                triangles[i] = InTileSpace(triangles[i], SubTile.PerTile);
+            }
+
+            _zoneFills.Add((layer, owner, waiting, triangles));
         }
     }
 
@@ -3134,97 +3243,100 @@ public partial class VillageMap : Control
         }
     }
 
-    private void DrawResidentialLand(int minX, int maxX, int minY, int maxY)
+    /// <summary>
+    /// ⭐⭐ The painted ground — <b>filled along its own smoothed border</b> (D345).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"look at how jagged/square the brush is and the painted housing area is…
+    /// why am i seeing that instead of smooth contoured lines?"*</b> The border was a curve since
+    /// D332; the fill under it was still one rectangle per quarter-tile, and a staircase showed
+    /// through its own smooth edge. **The fill is now the triangles of the traced region**, cached
+    /// beside the loops on <c>ZoneMap.Edits</c>, so per frame this is a transform and one draw
+    /// per region rather than sixteen rectangles per tile.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The visible-window arguments are gone with the rects.</b> A region is drawn
+    /// whole or not at all; Godot clips what is off screen, and a region's triangle list is a few
+    /// hundred vertices where the rects were tens of thousands.
+    /// </para>
+    /// </remarks>
+    private void DrawResidentialLand()
     {
         ZoneMap zones = _world!.Zones;
 
         TraceTheZonesIfTheyMoved(zones);
-        FindTheSpentMarksIfTheyMoved(zones);
 
         int mine = SelectedGroundOwner();
-        _zoneRectsLastFrame = 0;
+        _zoneTrianglesLastFrame = 0;
 
-        for (int y = minY; y <= maxY; y++)
+        for (int i = 0; i < _zoneFills.Count; i++)
         {
-            for (int x = minX; x <= maxX; x++)
+            (Layer layer, int owner, bool waiting, Vector2[] triangles) = _zoneFills[i];
+            if (!Showing(layer) || triangles.Length == 0)
             {
-                var tile = new GridPos(x, y);
-
-                int homes = Showing(Layer.Residential) ? zones.ResidentialSubTilesOn(tile) : 0;
-                int work = Showing(Layer.WorkGround) ? zones.WorkGroundSubTilesOn(tile) : 0;
-                int harvest = Showing(Layer.Harvest) ? zones.HarvestSubTilesOn(tile) : 0;
-
-                // The whole point: an unpainted tile is three byte reads and nothing else.
-                if ((homes | work | harvest) == 0)
-                {
-                    continue;
-                }
-
-                DrawLayer(tile, Layer.Residential, homes, ResidentialColour);
-                DrawLayer(
-                    tile,
-                    Layer.WorkGround,
-                    work,
-                    zones.WorkGroundOwner(tile) == mine ? WorkGroundMine : WorkGroundColour);
-                DrawLayer(
-                    tile,
-                    Layer.Harvest,
-                    harvest,
-                    _spentMarks.Contains(tile) ? HarvestWaitingColour : HarvestColour);
+                continue;
             }
+
+            Color colour = layer switch
+            {
+                Layer.Residential => ResidentialColour,
+                Layer.WorkGround => owner == mine ? WorkGroundMine : WorkGroundColour,
+                _ => waiting ? HarvestWaitingColour : HarvestColour,
+            };
+
+            var onScreen = new Vector2[triangles.Length];
+            for (int p = 0; p < triangles.Length; p++)
+            {
+                onScreen[p] = ToScreen(triangles[p]);
+            }
+
+            DrawTriangles(onScreen, colour);
+            _zoneTrianglesLastFrame += triangles.Length / 3;
         }
 
         DrawTheZoneOutlines();
-
-        void DrawLayer(GridPos tile, Layer layer, int painted, Color colour)
-        {
-            if (painted == 0)
-            {
-                return;
-            }
-
-            if (painted == SubTile.PerWholeTile)
-            {
-                DrawRect(TileRect(tile), colour);
-                _zoneRectsLastFrame++;
-                return;
-            }
-
-            for (int sy = 0; sy < SubTile.PerTile; sy++)
-            {
-                for (int sx = 0; sx < SubTile.PerTile; sx++)
-                {
-                    SubTile at = SubTile.Of(tile, sx, sy);
-                    int index = IndexOfSub(zones, at);
-                    if (index < 0)
-                    {
-                        continue;
-                    }
-
-                    bool here = layer switch
-                    {
-                        Layer.Residential => zones.ResidentialSub[index],
-                        Layer.WorkGround => zones.WorkGroundSub[index] != 0,
-                        _ => zones.HarvestSub[index],
-                    };
-
-                    if (here)
-                    {
-                        DrawRect(SubTileRect(at), colour);
-                        _zoneRectsLastFrame++;
-                    }
-                }
-            }
-        }
     }
 
     /// <summary>
-    /// How many rectangles the painted-ground pass drew last frame — <b>for the debug readout,
-    /// because *"it feels sluggish"* needs a number</b> (D338).
+    /// Draw triangles that are ALREADY triangles — three points each, no triangulation.
     /// </summary>
-    public int ZoneRectsLastFrame => _zoneRectsLastFrame;
+    /// <remarks>
+    /// ⚠️ <c>DrawPolygon</c> and <c>DrawColoredPolygon</c> triangulate what they are
+    /// given, every frame, by ear clipping — O(n²) on a region of a thousand points,
+    /// and they would refuse a concave region with a hole anyway. The rendering server takes an
+    /// index list, and the indices of a flat triangle list are just <c>0, 1, 2, 3, …</c>.
+    /// </remarks>
+    private void DrawTriangles(Vector2[] triangles, Color colour)
+    {
+        if (_triangleIndices.Length < triangles.Length)
+        {
+            _triangleIndices = new int[triangles.Length];
+            for (int i = 0; i < _triangleIndices.Length; i++)
+            {
+                _triangleIndices[i] = i;
+            }
+        }
 
-    private int _zoneRectsLastFrame;
+        var colours = new Color[triangles.Length];
+        System.Array.Fill(colours, colour);
+
+        RenderingServer.CanvasItemAddTriangleArray(
+            GetCanvasItem(),
+            _triangleIndices.AsSpan(0, triangles.Length).ToArray(),
+            triangles,
+            colours);
+    }
+
+    private int[] _triangleIndices = System.Array.Empty<int>();
+
+    /// <summary>
+    /// How many triangles the painted-ground pass drew last frame — <b>for the debug readout,
+    /// because *"it feels sluggish"* needs a number</b> (D338; rectangles until D345).
+    /// </summary>
+    public int ZoneTrianglesLastFrame => _zoneTrianglesLastFrame;
+
+    private int _zoneTrianglesLastFrame;
 
     /// <summary>Where a sub-tile lives in the zone arrays, or −1 if it is off the map.</summary>
     private int IndexOfSub(ZoneMap zones, SubTile at)
@@ -3847,6 +3959,19 @@ public partial class VillageMap : Control
 
     private int _outlinesTracedAt = -1;
 
+    private int _outlinesTracedAtTerrain = -1;
+
+    /// <summary>
+    /// The fill of every painted region as triangles in tile space — <b>cached beside the
+    /// loops, on the same counters</b> (D345).
+    /// </summary>
+    /// <remarks>
+    /// One entry per region rather than per loop, because a ring is one region with two loops and
+    /// its fill is one triangle list. The owner is kept for work ground so the selected owner's
+    /// brighter colour can still be chosen per frame; <c>Waiting</c> is the harvest split.
+    /// </remarks>
+    private readonly List<(Layer Layer, int Owner, bool Waiting, Vector2[] Triangles)> _zoneFills = new();
+
     /// <summary>
     /// Marked tiles with nothing left to take — <b>kept, not asked per frame</b> (D343).
     /// </summary>
@@ -4046,6 +4171,18 @@ public partial class VillageMap : Control
     private const float RoamTiles = 1.4f;
 
     private static readonly Color GameColour = new("#8a6a3f");
+
+    /// <summary>What the map believes, so the probe can check the ticks against it (D345).</summary>
+    public bool GameShown => _showGame;
+
+    /// <inheritdoc cref="GameShown"/>
+    public bool ForageShown => _showForage;
+
+    /// <inheritdoc cref="GameShown"/>
+    public bool IdleMarkersShown => _showIdleMarkers;
+
+    /// <inheritdoc cref="GameShown"/>
+    public bool FullMarkersShown => _showFullMarkers;
 
     /// <summary>Whether the woods are drawn with anything living in them.</summary>
     private bool _showGame = true;

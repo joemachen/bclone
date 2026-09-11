@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ THE VALLEY IS ROUND NOW — DEPOSITS AND FARMING ARE NEXT**
+# Handoff — bclone: **▶️ THE PAINT IS A CURVE NOW — DEPOSITS AND FARMING ARE NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
 > **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
@@ -799,6 +799,12 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⛔⛔⛔ TWO GUARDS CAN BE BLIND TO THE SAME DEFECT FOR DIFFERENT REASONS, AND AGREEING WITH EACH OTHER PROVES NOTHING (2026-09-10, D345).** The perimeter guard read 1.00 on a twenty-sided polygon (a chord polygon has a circle's perimeter); the turning-angle guard read 7° on it (it skipped every corner beside a duplicate point). **Both green, Joe counting the sides on screen.** ⭐ *When the player can see something two guards cannot, dump the actual data and look at it* — the 209 raw points showed the chords and the duplicates in thirty seconds.
+- **⛔⛔ CUTTING A STAIRCASE AT EXACTLY HALF A STEP STRAIGHTENS IT INTO CHORDS (2026-09-10, D345).** The midpoints of a regular staircase are collinear. D333's *"never more than half a run"* cap is the right rule for not turning inside out and the wrong rule for smoothing; the rounding is a second stage with a quarter cut. *Measured, not reasoned: quarter-cut alone reads 1.10, half-cut alone reads 18°.*
+- **⚠️ A ZERO-LENGTH SEGMENT YOU SKIP TAKES ITS NEIGHBOURS' TURNS WITH IT (2026-09-10, D345).** Skipping the degenerate segment at index i also skipped the angle at i-1 and i+1, which is where the real corner was. **Dedupe first, then measure.**
+- **⚠️ A GUARD THAT COMPARES BOX CORNERS FIRES ON A SYMMETRIC SHRINK, WHICH IS NOT WHAT IT WAS FOR (2026-09-10, D345).** The seam guard exists to catch a translation; rounding a cell into a curve moved every edge 2px inward and reddened it. *Compare centres for translation, sizes for scale, and know which one you are guarding.*
+- **⭐ HOLES IN A FILL DO NOT NEED KEY-HOLING (2026-09-10, D345).** Delaunay over all loop points, then keep triangles whose centroid is on painted ground. Concavity and rings fall out of the one rule. `DrawPolygon` would re-triangulate every frame and refuse a hole; `RenderingServer.CanvasItemAddTriangleArray` takes the cached triangles as they are.
 
 - **⛔⛔⛔ DO NOT COMPARE RARE EVENTS ON SMALL SAMPLES (2026-09-10, D344).** Two twelve-seed runs each showed one dead village, so I told Joe the rate was *"about one in thirteen, and pre-existing"*. **It was one in four, and it was mine.** It took 48 seeds to see it, and a **median-peak** comparison — 17.8 against 17.5 — to establish the fix was neutral, because *a rare-event count has enormous variance and a distribution statistic has almost none.* ⭐ **When the thing you are measuring is rare, measure something common that moves with it.**
 - **⛔⛔ `DeterministicRandom`'s `stream` PARAMETER IS NOT A SAFE WAY TO GET INDEPENDENT SEQUENCES (2026-09-10, D344).** Streams 1–5 give PCG increments 3, 5, 7, 9, 11, and the resulting valleys were **six times deadlier** (6 dead of 24 against 1). Re-seeding each consumer through splitmix64's finaliser fixed it. *The sequences are independent only if the ids are well spread, and nothing in the type says so.*
