@@ -259,6 +259,7 @@ public partial class Main : Control
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
+        GD.Print(_map.TheDepositsAreScatteredAndOverhang());
         ProbeThePlacementSentences();
 
         ProbeTheControlBar();
@@ -2584,6 +2585,14 @@ public partial class Main : Control
 
             // The field says which part of its year it is in, because that is the mechanic
             // (`specs/crops-and-orchards.md`) rather than a label on one.
+            // ⚠️ Both seams fell through to "Open ground." until D347 — the same hole
+            // the sapling line above records being fixed once already.
+            Terrain.Rock =>
+                $"A stone seam. Each tile gives {world.GoodsCatalog.YieldPerTileOf(Goods.Stone)} "
+                + "stone when dug, by whoever is spare, and then it is ground.",
+            Terrain.IronDeposit =>
+                $"An iron seam. Each tile gives {world.GoodsCatalog.YieldPerTileOf(Goods.Iron)} "
+                + "iron when dug, by whoever is spare, and then it is ground.",
             Terrain.Field => "Ploughed field, bare. It will be sown in spring.",
             Terrain.Sown => "A sown field. It will stand ripe in autumn.",
             Terrain.Ripe => "A ripe field, ready to reap. Winter will take what is left standing.",

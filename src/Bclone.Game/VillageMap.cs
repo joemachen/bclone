@@ -122,6 +122,15 @@ public partial class VillageMap : Control
     /// <summary>Keeps the trees' scatter out of step with the animals' (D337).</summary>
     private const int TreeSalt = 5701;
 
+    /// <summary>A boulder on a stone seam — paler than the seam it sits on, so it reads as a lump.</summary>
+    private static readonly Color Boulder = new("#8d857a");
+
+    /// <summary>A lump of ore on an iron seam — darker and redder than the ground round it.</summary>
+    private static readonly Color OreLump = new("#5c3424");
+
+    /// <summary>Salt for the deposit scatter, so a seam and a wood on the same tile never share a layout.</summary>
+    private const int DepositSalt = 8329;
+
     /// <summary>A stone seam — pale and dry against the grass, so it reads as bare ground.</summary>
     private static readonly Color RockColour = new("#6b6459");
 
@@ -2885,6 +2894,7 @@ public partial class VillageMap : Control
         DrawTheBakedValley(valley);
         DrawWorkedGround(minX, maxX, minY, maxY);
         DrawTheTrees(minX, maxX, minY, maxY);
+        DrawTheDeposits(minX, maxX, minY, maxY);
 
         // Under the zone washes, because soil is a property of the ground while the zones
         // are instructions about it (D178).
@@ -3502,6 +3512,150 @@ public partial class VillageMap : Control
     }
 
     /// <summary>How many trees stand on one tile.</summary>
+    /// <summary>
+    /// ⭐⭐ The boulders and ore on a seam — <b>the tree treatment for deposits</b> (D347,
+    /// Joe: *"give the stone and iron deposits the same treatment we just gave forests and trees,
+    /// including showing depletion over time"*).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Nothing drew a deposit</b> — the same hole D337 found for woods. A seam was the
+    /// field texture's flat colour with a little grain, so it read as a stain on the ground rather
+    /// than as rock standing on it. **Now each seam tile carries a few lumps scattered from a
+    /// hash, overhanging the tile the way canopies do**, so an outcrop has a ragged edge and a seam
+    /// of five tiles reads as one lumpy body rather than a plus sign.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Depletion is the seam eroding tile by tile, and it is stateless</b> (Joe's call,
+    /// keeping D84: *a spent deposit leaves no scar*). A dug tile is grass, so it simply stops having
+    /// lumps, and the heap the digger could not carry sits on it until it is hauled. The player
+    /// watches a seam get smaller by watching laborers work it. **Nothing is stored** — the
+    /// marks are a function of the tile's coordinates and its terrain, exactly as the trees are.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The seam's generated SHAPE is left alone, deliberately.</b> `PaintSeams`
+    /// still paints Manhattan diamonds of radius 1 and 2. `InsideTheClump` would not change a
+    /// radius-1 seam at all (its integer wobble truncates to zero) and would change a radius-2
+    /// seam's tile count by up to a third — which is ore, which is the economy. *The lumps
+    /// overhanging by half a tile are what make a five-tile diamond read as a body; the diamond
+    /// itself is invisible under them.*
+    /// </para>
+    /// <para>
+    /// ⚠️ Zoom-gated on the same floor as the trees, for the same reason.
+    /// </para>
+    /// </remarks>
+    private void DrawTheDeposits(int minX, int maxX, int minY, int maxY)
+    {
+        if (_pixelsPerTile < TreeZoomFloor)
+        {
+            return;
+        }
+
+        GeneratedMap map = _world!.Map;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (!map.Contains(tile))
+                {
+                    continue;
+                }
+
+                Terrain terrain = map.TerrainAt(tile);
+                if (terrain is not (Terrain.Rock or Terrain.IronDeposit))
+                {
+                    continue;
+                }
+
+                Lumps(tile, terrain == Terrain.Rock);
+            }
+        }
+    }
+
+    /// <summary>How many lumps sit on one seam tile. Stone is lumpier than ore.</summary>
+    private static int LumpsOn(GridPos tile, bool stone) =>
+        (stone ? 3 : 2) + (int)(Scramble(tile.X + DepositSalt, tile.Y - DepositSalt) % 2);
+
+    /// <summary>
+    /// ⭐⭐ Where one lump sits, how big, and how dark — <b>a `static` that knows only
+    /// the tile</b>, for D337's reason: determinism is impossible to break rather than asserted.
+    /// </summary>
+    private static (Vector2 Where, float Size, float Shade) LumpOn(GridPos tile, int which)
+    {
+        uint spin = Scramble(tile.X + DepositSalt, tile.Y - DepositSalt) >> (which * 6);
+
+        double angle = ((spin % 628) / 100.0) + (which * 2.1);
+
+        // Pushed a little further out than a canopy, because rock does not grow toward the middle
+        // of its tile the way a tree does — an outcrop is lumpiest at its edge.
+        float spread = CanopyHuddle + ((CanopySpread - CanopyHuddle) * (((spin >> 9) % 100) / 100f));
+
+        var where = new Vector2(
+            tile.X + ((float)Math.Cos(angle) * spread),
+            tile.Y + ((float)Math.Sin(angle) * spread));
+
+        // Boulders vary more in size than canopies do: a big one and two small ones is a seam.
+        float size = 0.12f + (((spin >> 15) % 100) / 100f * 0.14f);
+
+        return (where, size, 0.85f + (((spin >> 21) % 30) / 100f));
+    }
+
+    /// <summary>The lumps on one tile, and the ones spilling off it.</summary>
+    private void Lumps(GridPos tile, bool stone)
+    {
+        Color base_ = stone ? Boulder : OreLump;
+
+        for (int i = 0; i < LumpsOn(tile, stone); i++)
+        {
+            (Vector2 where, float size, float shade) = LumpOn(tile, i);
+
+            DrawCircle(
+                ToScreen(where),
+                _pixelsPerTile * size,
+                base_ with { R = base_.R * shade, G = base_.G * shade, B = base_.B * shade });
+        }
+    }
+
+    /// <summary>
+    /// The deposits overhang their tiles — <b>the same guard the trees have, for the same
+    /// property</b> (D347). Measured at the lump's edge, not its centre (D337's lesson).
+    /// </summary>
+    public string TheDepositsAreScatteredAndOverhang()
+    {
+        float furthest = 0f;
+        int counted = 0;
+        int overhanging = 0;
+
+        foreach (GridPos tile in new[]
+        {
+            new GridPos(0, 0), new GridPos(7, -4), new GridPos(-9, 12),
+            new GridPos(31, 24), new GridPos(-3, -17),
+        })
+        {
+            for (int i = 0; i < LumpsOn(tile, stone: true); i++)
+            {
+                (Vector2 where, float size, float _) = LumpOn(tile, i);
+
+                float reach = new Vector2(where.X - tile.X, where.Y - tile.Y).Length() + size;
+
+                furthest = Mathf.Max(furthest, reach);
+                counted++;
+                if (reach > 0.5f)
+                {
+                    overhanging++;
+                }
+            }
+        }
+
+        return overhanging > 0
+            ? $"[widths] deposits: ✅ {counted} lumps, {overhanging} overhanging, furthest "
+                + $"{furthest:F2} tiles from centre"
+            : $"[widths] deposits: ⛔ nothing overhangs — furthest lump is "
+                + $"{furthest:F2} tiles, so every seam is still a diamond";
+    }
+
     private static int TreesOn(GridPos tile, bool grown) =>
         grown ? 3 + (int)(Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) % 2) : 2;
 

@@ -56,6 +56,14 @@ run over the water tiles and drawn as one smooth line.
 re-bake — terrain changes only when somebody clears ground, so the trace is paid then rather than
 per frame.
 
+### 3.3 Boulders on the seams (D347)
+
+The same trick as §3.1, for stone and iron: lumps scattered from `Scramble` over the tile's
+coordinates, overhanging the tile so an outcrop has a ragged edge. **Depletion is the seam eroding
+tile by tile** — a dug tile is grass and stops having lumps — with the digger's leftover heap as
+the trace until it is hauled (D84: no scar). The generated diamond is left as it is; the lumps hide
+it, and changing it changes how much ore a valley holds.
+
 ## 4. What is deliberately NOT in this slice
 
 - ~~**Filling the smoothed contour.** A concave polygon with holes is a real problem and the *edge*
