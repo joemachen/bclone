@@ -1,22 +1,33 @@
 # Handoff — bclone: **▶️ WHEAT GROWS AND LOOKS LIKE WHEAT — JOE HAS NOT PLAYED IT YET**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-08.**
-> **1047 passing, 0 failing, 2 skipped of 1049** — run locally on `main`, **1m39s** (was 2m02s).
-> ⛔⛔ **JOE PLAYED IT AND FREE PLACEMENT HAD A P0 IN IT (D331), NOW FIXED.** A hut placed between
-> four tiles and turned **claimed no ground at all** — unselectable, and no builder could ever raise
-> it. *A unit square contains a lattice point only while it is axis-aligned.* **His play found it in
-> an afternoon; the audit trail sized it in one grep.**
-> ⭐⭐ **THE FIRST GOLDEN MOVE HAS HAPPENED (D329): six moved, once, with the reason stated.**
-> `GoldenMapHash` and all three terrain fingerprints **held** — the map did not move.
-> ⛔ **It was proved to be the fingerprint and not the village BEFORE a number was re-taken:** the
-> new mixes were deleted and all 80 golden and determinism guards came back **byte-identical**.
-> ⚠️ **And the reason it moved is a hole that was already open:** workplace, store and household
-> positions were hashed **nowhere**, so a building could be raised, moved or pulled down and the
-> fingerprint did not notice. *"No golden moved" was weaker than it read as, all the way through
-> D319 → D327.*
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11.**
+> **1075 passing, 0 failing, 2 skipped of 1077** — run locally on `main`, ~2m50s.
+> **Last commit: `2554814` (D349).** The decision log runs to **D349**; read D338–D349 in `DESIGN.md
+> §7` for the last two days — twelve decisions, every one of them from Joe playing a build.
 >
-> ⭐ **Joe plays every build and files precise bugs.** Nine of the last ten decisions came from him
-> playing for ten minutes. **Two of them were features that existed only in the sim.**
+> **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D347):** the riverbank on the river, the frame
+> readout, clicking a building anywhere it is drawn, the three overlay toggles, grid and snap off by
+> default, Settings opening centred, the field renderer (*"river looks great"*), round forest clumps,
+> the wider river, smooth painted borders AND fills (*"huge improvement"*), the brush's refused ground
+> as a curve inside the ring, boulders on the seams and a laborer digging one.
+>
+> **⚠️ WHAT JOE HAS NOT PLAYED YET (D348–D349):** **wheat.** `Goods.Wheat` is a real good
+> the farm grows; `Produce` stays the umbrella foragers fill; a crop is a `CropRow` that names its
+> good; fields draw furrows, shoots and gold stalks. **His checklist:** a farm's reaped stock reads
+> *Wheat* indented under Food in the Overview, the granary takes it, a ripe field is gold, and a
+> **wheat** stock limit idles the farmers the way a fish limit idles fishers.
+>
+> **⛔⛔ THE TWO THINGS THIS STRETCH LEARNED THE HARD WAY:**
+> 1. **Small samples lie about rare events.** Two twelve-seed runs put a one-in-four dead-valley
+>    rate at "one in thirteen, pre-existing" and I told Joe so. It took 48 seeds and a **median-peak**
+>    comparison to see the truth (D344). *When the thing you measure is rare, measure something
+>    common that moves with it.*
+> 2. **Two guards can be blind to the same defect for different reasons.** The perimeter guard read
+>    1.00 on a twenty-sided polygon; the angle guard skipped every corner beside a duplicate point.
+>    Both green, Joe counting the sides on screen (D345). *Dump the raw data and look at it.*
+>
+> ⭐ **Joe plays every build and files precise bugs.** Twelve of the last twelve decisions came from
+> him playing for ten minutes. **Ask him one question at a time, with the measurement in it.**
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
 
@@ -176,67 +187,34 @@ stood idle with 130 logs.
 
 ## ▶️ NEXT, IN ORDER
 
-1. ~~**COMMIT B: THE BRUSH.**~~ ✅ **B1 DONE (D327).** ⏸️ **B2 — the smooth painted outline — is
-   NOT started**, and it is net-new: nothing in the repo traces a contour, `DrawFootprint` is the
-   only polygon code, and the zone wash **overdraws each tile by 2% on purpose**, which destroys the
-   boundary an outline needs. ⛔ Its invalidation counter **must not enter `StateHash`**, or every
-   golden moves for a number that is not state. **"Foundation" appears nowhere in `src/`** — it is
-   the game Joe named, not a class to copy. *The original scoping is kept below.*
-   <details><summary>What B was scoped as, before Joe split it</summary>
+**Nothing is queued by Joe beyond his own open items below.** The things this stretch named and
+did not build, in the order they are likely to matter:
 
-   **▶️ COMMIT B: THE BRUSH.** Approved, not started. **Left click paints, right click takes back**
-   — right-click is the *universal cancel* today (`PutTheToolDown`) and **five announce strings end
-   "Right-click to stop."**, so ⛔ **add `Escape` as the cancel** or the brush has none. **Scroll
-   resizes the brush** while one is held (the wheel branch is already unguarded by `IsPlacing`, so
-   it is one early branch); zoom otherwise. ⚠️ `BrushRadius` is a `private const int = 2` with no
-   field, setter or binding — it becomes state, and the code's own warning applies: *"Both loops
-   changed together — a preview that disagrees with the paint is worse than no preview."*
-   **Square and circle shapes**, chosen beside the brush rather than in Settings. **A smooth
-   painted outline** — Foundation's green border is a smooth polygon over a tiled zone.
-   ⚠️ `DrawTheBrushful`'s doc-comment is **stale**: it still says *"The diamond, not a square"* and
-   contradicts the inline comment below it.
-   </details>
-1. **▶️ THE TERRAIN STOPS LOOKING LIKE GRAPH PAPER — the second half of Joe's question.** ✅ **Zones
-   and the brush are DONE (D332)**, and the grid lines now have a switch. ⛔ **The sim being
-   tile-indexed is his own closed decision** (`gridless.md §10.2`, *"not to be re-litigated"*) —
-   this is a **rendering** slice, and no golden can move for it. What is left, ranked by the audit:
-   1. Terrain: one flat axis-aligned square per non-grass tile, no blending (`VillageMap.cs:2681`).
-   2. ⭐⭐ **Forests have no trees at all** — a wood is a flat coloured rectangle; `DrawTheWoods`
-      draws animals and berries only, and **its scatter is already sub-tile and deterministic from
-      `Scramble(x, y)`**, so trees are the same mechanism it already has.
-   3. The river is drawn by the generic terrain loop, though `CarveRiver` computes a **per-column
-      centreline** a smooth shoreline could reconstruct — the cheapest terrain win, not the dearest.
-   4. Soil re-quantises an **already-smooth bilinear field** (`MakeSoilRegional`, integer bilinear
-      at lattice 8) back into per-tile alpha squares. Resampling it needs **zero sim change**.
-   ⚠️ **Forest clumps are Manhattan DIAMONDS of tiles** (`PaintForest`), so their edges are chunky
-   *and* faintly diagonal — smoothing the render will not hide that, and it is a generator question.
-   ⚠️ **The window is walked SIX times a frame** — ~45,000 tile iterations and up to ~30,000
-   `DrawRect` calls at full zoom-out, with no caching. **`Minimap` is the precedent**: it bakes
-   terrain to a texture, invalidated by `SimWorld.TerrainGeneration`.
-   ⭐ **`ZoneOutline` is the tracer now and it is reusable** — boundary edges, chained loops,
-   collinear runs merged, Chaikin twice. **Its self-check runs in the width probe**, because it
-   lives in the view where there are no tests.
-2. ⏸️ **Then `gridless.md §8` slice 3: villagers hold a `Point`** — movement interpolates in
-   fixed-point, the cost field is untouched, and after that string-pulled paths make §2.6's desire
-   paths writable for the first time.
-2. ~~**GRIDLESS SLICE 3: FREE PLACEMENT**~~ ✅ **THE SIM HALF IS DONE (D329).**, and **this is where the first golden moves.**
-   ⛔ *"Turn grid snap off"* is **not a view toggle** — the snap **is the type**: `GridPos` all the
-   way down with four `Mathf.RoundToInt` calls at the edges. Continuous positions become sim state,
-   so they enter the hash. **One commit, one stated reason (D152).** The Settings snap toggle Joe
-   asked for rides along with it.
-3. **Then housing packing** — Joe's call: **pack nicely AS HOUSEHOLDS FORM**, not speculative
-   filling, so no empty houses stand before there are families. ⛔ **Two things found while scoping
-   it:** `MarkHome` calls `RaiseSiteFor` **without a facing**, so every home is `Angle.Zero` by
-   construction; and `HouseholdSystem.FindAnEmptyHome` **reassigns `HomePosition` between
-   households**, so any per-house geometry must move with it — *`specs/housing-and-density.md §5`
-   predicts exactly this.* ⭐ **Where the packing term goes is already clear:** `ChooseSite` is a
-   scored scan, `score = toWork + toStore` tie-broken on distance from the centre, with **no
-   neighbour term** — packing is a third term in that sum, not a new algorithm.
-4. **Then** materials/ingredients categories, and meat/fish subtypes (venison, trout, wheat).
+1. **⚠️ JOE PLAYS WHEAT (D348–D349) — wait for it before touching farming.** The
+   checklist is in the box above. Two goldens moved for it (both `FarmGoldenTests`); if he finds a
+   defect in the reap, `CropsCatalog.GoodOf` is the only place the reaped good is decided.
+2. **The food chain, when he asks:** wheat → flour → bread, wheat → beer
+   (`food-catalog.md §6`). ⛔ **This is where raw wheat stops being edible** — today it is
+   edible at the shared nutrition because the config refuses two values and the survival floor is
+   derived on farms feeding people (D277, D348). *Deriving a diet is the precondition, not the
+   milling.* A second crop (barley, corn) is a `CropRow` and nothing else — but the farm cannot
+   choose which yet (`CropsCatalog.TheOne` is the lowest id); a *"grow…"* control on the
+   farmhouse is where that goes.
+3. **The new-game screen (Joe's stated ambition, D344):** archetype, sliders, a seed string, a live
+   preview. ⛔ **Read the OPEN item on RNG streams first** — every generation stage a new
+   option adds reshuffles every seed unless worldgen gets per-stage seeds, and the naive way to do
+   that (`DeterministicRandom`'s `stream` parameter with small ids) measurably breaks valleys.
+   ⭐ The preview is nearly free: `MapGenerator.Generate` is pure and `ValleyTexture` bakes a map
+   to an image.
+4. ⏸ **`gridless.md §8` slice 3 — villagers hold a `Point`.** Buildings are continuous;
+   people still step tile to tile. Unscheduled since D330.
+5. ⏸ **Housing packing** (Joe's call: *pack nicely as households form*) — the scoping from the
+   previous stretch still holds: `ChooseSite` is `score = toWork + toStore`, and packing is a third
+   term in that sum. ⚠️ `MarkHome` raises every home at `Angle.Zero`.
 
-✅ **BOTH JUDGED AND CLOSED BY JOE (2026-09-07): *"the drawn glyphs are fine. build + all is fine
-for now."*** ⛔ **Do not re-open either.** The strip still wraps to two rows on BUILD + ALL and that
-is accepted — ⚠️ *which is why the brush's shape button went on the filter row and not the strip.*
+✅ **Closed by Joe and not to be re-opened:** the build strip wrapping to two rows on BUILD + ALL
+(*"fine for now"*); harvest marks staying on felled ground (D127, reaffirmed D343: *keep it
+standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
@@ -803,7 +781,7 @@ complaint, that is where to spend the effort.*
 ## Traps, in the order they will cost you
 
 - **⚠️ A DELTA ON A VILLAGE-WIDE TOTAL CANNOT TELL ONE TRADE FROM ANOTHER (2026-09-11, D348).** A guard compared village produce before and after a farm's autumn and called any rise "the reap writing produce" — the fixture village has foragers, who raised it by two. *Read the instrument that only the thing under test can move* (the farm's own store's produced counter).
-- **⛔ A NEW ENUM VALUE TAKES THE NEXT ID, AND A TEST FIXTURE MAY ALREADY BE SITTING ON IT (2026-09-11, D348, and D2xx before it for Fish).** `ModdedGoodTests` keeps its modded good one above the last built-in; every new good bumps it. The loader says so plainly — read the message before assuming the new code is wrong.
+- **⛔ A NEW ENUM VALUE TAKES THE NEXT ID, AND A TEST FIXTURE MAY ALREADY BE SITTING ON IT (2026-09-11, D348 — and the same fixture said "6 stopped being free the day Fish shipped").** `ModdedGoodTests` keeps its modded good one above the last built-in; every new good bumps it. The loader says so plainly — read the message before assuming the new code is wrong.
 - **⚠️ A RESTATED GUARD CAN BE UNCHECKABLE IN THE FIXTURE IT RUNS IN (2026-09-11, D348).** The umbrella test sums produce + wheat, but the unattended fixture never farms, so wheat is 0 and dropping it from the sum is invisible. Recorded as a zero rather than dressed up.
 
 - **⛔⛔⛔ TWO GUARDS CAN BE BLIND TO THE SAME DEFECT FOR DIFFERENT REASONS, AND AGREEING WITH EACH OTHER PROVES NOTHING (2026-09-10, D345).** The perimeter guard read 1.00 on a twenty-sided polygon (a chord polygon has a circle's perimeter); the turning-angle guard read 7° on it (it skipped every corner beside a duplicate point). **Both green, Joe counting the sides on screen.** ⭐ *When the player can see something two guards cannot, dump the actual data and look at it* — the 209 raw points showed the chords and the duplicates in thirty seconds.
