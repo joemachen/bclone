@@ -742,9 +742,9 @@ public sealed class BehaviorSystem : ISimSystem
         // belongs in a granary. This only stops the preference outranking possibility.
         StoreBuilding? proper =
             world.NearestStore(
-                villager.Tile, wanted, store => store.Accepts(load) && !store.Store.IsFull)
+                villager.Tile, wanted, store => store.HasRoomFor(load))
             ?? world.NearestStoreAccepting(
-                villager.Tile, load, static store => store.IsStorage && !store.Store.IsFull)
+                villager.Tile, load, store => store.IsStorage && store.HasRoomFor(load))
             ?? FirstOfKind(world, wanted, load);
 
         if (proper is not null)
@@ -916,7 +916,7 @@ public sealed class BehaviorSystem : ISimSystem
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
-            if (!store.Accepts(goods) || store.Store.IsFull)
+            if (!store.HasRoomFor(goods))
             {
                 continue;
             }
@@ -1164,8 +1164,7 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 StoreBuilding other = world.StoreBuildings[i];
                 if (!ReferenceEquals(other, emptying)
-                    && other.Accepts(goods)
-                    && !other.Store.IsFull)
+                    && other.HasRoomFor(goods))
                 {
                     return true;
                 }
@@ -1863,7 +1862,7 @@ public sealed class BehaviorSystem : ISimSystem
                 var goods = (Goods)g;
                 if (villager.Carried[goods] > 0 && world.GoodsCatalog.StoredBy(goods, StoreKind.Market))
                 {
-                    villager.Carried.TryTake(goods, market.Store.Add(goods, villager.Carried[goods]));
+                    villager.Carried.TryTake(goods, market.Put(goods, villager.Carried[goods]));
                 }
             }
         }
@@ -3165,16 +3164,13 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (villager.LegSteps == 0 || villager.LegTarget != target)
         {
-            // ⛔⛔ A CHANGE OF MIND RE-PLANS FROM THE STAIRCASE'S TILE, NOT THE LINE'S. Mid-leg a
-            // villager's geometric tile can be a step AHEAD of where the staircase would have put
-            // them after the same ticks (a diagonal's first tick lands on the corner tile the
-            // stairs reach in two) — and a new route charged from that tile is a tick saved for
-            // free, which is clock B leaking in through re-targeting. Measured before this was
-            // written: a forager's yield per hour worked rose 721 → 768 in a village hungry enough
-            // to re-target constantly. So the clock tile is the old route's tile at `LegStep`,
-            // reconstructed from the cached field; the LINE still starts where they actually are.
-            GridPos from = villager.LegSteps == 0 ? villager.Tile : ClockTile(world, villager);
-            if (!PlanLeg(world, villager, from, target))
+            // ⭐ A CHANGE OF MIND RE-PLANS FROM WHERE THEY ACTUALLY STAND (clock B, D361). Under
+            // clock A this had to be the STAIRCASE's tile (`ClockTile`), because the geometric tile
+            // can be a step ahead of the stairs and charging route steps from it leaked clock B
+            // through re-targeting (measured: 721 → 768 per hour worked). Clock B charges the
+            // distance itself, so the honest start is the tile under their feet — every tile under
+            // a leg is passable by construction (`LineOfSight`).
+            if (!PlanLeg(world, villager, villager.Tile, target))
             {
                 // Nowhere to go: the target is across water with no way round. Not an
                 // error — a real state a village can be in before it can build bridges —
@@ -3216,28 +3212,6 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// Where the STAIRCASE would have a mid-leg villager after <c>LegStep</c> ticks — the tile a
-    /// re-plan is charged from, so a change of mind costs what it always cost.
-    /// </summary>
-    /// <remarks>
-    /// The old leg's route is re-read from the cached flow field (deterministic: same field, same
-    /// answer), and its <c>LegStep</c>th tile is the clock tile. If the field has since been
-    /// forgotten and the route differs, the answer is still a tile on a real route from where the
-    /// leg began, charged honestly from there.
-    /// </remarks>
-    private static GridPos ClockTile(SimWorld world, Villager villager)
-    {
-        GridPos began = villager.LegFrom.ToTile();
-        if (villager.LegStep == 0)
-        {
-            return began;
-        }
-
-        List<GridPos> old = world.TravelCost.RouteFrom(began, villager.LegTarget);
-        return old.Count == 0 ? villager.Tile : old[Math.Min(villager.LegStep, old.Count) - 1];
-    }
-
-    /// <summary>
     /// Plan the next leg toward <paramref name="target"/>, charged from <paramref name="from"/>: the furthest route tile the villager
     /// can see in a straight line from where they stand. False if there is no route at all.
     /// </summary>
@@ -3275,20 +3249,26 @@ public sealed class BehaviorSystem : ISimSystem
         villager.LegFrom = villager.Position;
         villager.LegTo = Point.CentreOf(route[furthest]);
         villager.LegTarget = target;
-        // ⭐ A LEG'S TICKS FOLLOW THE COST OF THE GROUND IT CROSSES (§2.6, D358): the cost field's
-        // own answer from here to the waypoint — `cost[from] − cost[waypoint]` along the route the
-        // field chose — in whole steps of `BaseTileCost`, rounded to the nearest, never below one
-        // (a slower `travel_ticks_per_unit` still waits per step, as before). On grass every tile
-        // costs `BaseTileCost`, so this is exactly the route's step count and clock A (D356) is untouched;
-        // on a worn path it is fewer, which is the only way a road can make a walk faster and the
-        // reason Joe wanted roads at all.
+
+        // ⭐⭐ CLOCK B — A LEG COSTS THE DISTANCE IT ACTUALLY IS (D361, Joe: "clock b"; `gridless.md
+        // §8` slice 5): ticks = straight length × (the route's average entry cost ⁄ BaseTileCost),
+        // rounded to nearest, never below one. The second factor is desire paths' (D358): the cost
+        // field's own answer from here to the waypoint — `cost[from] − cost[waypoint]` — over the
+        // route's tiles, so a worn lane is still quicker than grass under B. On grass it is exactly
+        // 1, so a row leg costs its tiles (the Phase 0 pins, 20 and 41, hold by geometry) and a
+        // k-tile diagonal costs k√2 in place of the staircase's 2k. ⛔ Clock A — charging the route's
+        // steps — was the accident this replaces on purpose, and `TheValleyWalksOnThePinnedClock`
+        // is where it shows.
+        int routeSteps = furthest + 1;
         int costHere = world.TravelCost.Cost(from, target);
         int costThere = world.TravelCost.Cost(route[furthest], target);
         int walked = costHere == TravelCostField.Unreachable || costThere == TravelCostField.Unreachable
-            ? (furthest + 1) * TravelCostField.BaseTileCost
+            ? routeSteps * TravelCostField.BaseTileCost
             : costHere - costThere;
-        int steps = (walked + (TravelCostField.BaseTileCost / 2))
-            / TravelCostField.BaseTileCost;
+
+        Fixed length = villager.Position.DistanceTo(villager.LegTo);
+        Fixed ticks = length * Fixed.FromRatio(walked, routeSteps * TravelCostField.BaseTileCost);
+        int steps = (ticks + Fixed.FromRatio(1, 2)).ToInt();
         villager.LegSteps = steps < 1 ? 1 : steps;
         villager.LegStep = 0;
         return true;
@@ -3976,7 +3956,9 @@ public sealed class BehaviorSystem : ISimSystem
                     var goods = (Goods)g;
                     if (villager.Carried[goods] > 0 && destination.Accepts(goods))
                     {
-                        villager.Carried.TryTake(goods, store.Add(goods, villager.Carried[goods]));
+                        // Through the building, not the stockpile: a mixed store keeps half its
+                        // room for food (D361), and the planner that chose it asked the same door.
+                        villager.Carried.TryTake(goods, destination.Put(goods, villager.Carried[goods]));
                     }
                 }
             }
@@ -4320,7 +4302,7 @@ public sealed class BehaviorSystem : ISimSystem
             : world.TravelCost.Cost(villager.Tile, farm.Tile);
 
         StoreBuilding? store = world.NearestStoreAccepting(
-            villager.Tile, grain, static place => !place.Store.IsFull);
+            villager.Tile, grain, place => place.HasRoomFor(grain));
 
         int toAStore = store is null
             ? int.MaxValue
@@ -4765,6 +4747,13 @@ public sealed class BehaviorSystem : ISimSystem
 
                 if (WorkplaceOf(world, villager) is Workplace theirFarm)
                 {
+                    // ⭐ The last tile of the year: how much autumn is left is what the farm learns
+                    // from (D361, `LearnFromTheAutumn`). Asked once per reap, of the farm's own tiles.
+                    if (theirFarm.FieldClearedAtTick == 0 && world.StandingCropTiles(theirFarm) == 0)
+                    {
+                        theirFarm.FieldClearedAtTick = world.Tick;
+                    }
+
                     HaulTheHarvest(world, villager, theirFarm, grain);
                     return;
                 }
@@ -4892,10 +4881,10 @@ public sealed class BehaviorSystem : ISimSystem
                 // The fallback is the same one the full case always used, and it is now the
                 // fallback for both reasons a yard can refuse — no room, and not allowed.
                 StoreBuilding? wall =
-                    woodyard.Accepts(Goods.Firewood) && !woodyard.Store.IsFull
+                    woodyard.HasRoomFor(Goods.Firewood)
                         ? woodyard
                         : world.NearestStoreAccepting(
-                            villager.Tile, Goods.Firewood, static store => !store.Store.IsFull);
+                            villager.Tile, Goods.Firewood, static store => store.HasRoomFor(Goods.Firewood));
 
                 // ⚠️ AND WHAT WILL NOT FIT GOES ON THE GROUND RATHER THAN NOWHERE (D96). The
                 // return value of `Add` was discarded, so a batch that overflowed the last
@@ -4903,7 +4892,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // every other producer and never for this one. A village whose stores are all
                 // full or all filtered now has a visible heap of firewood beside the hut,
                 // which is the signal to build somewhere to put it (D134).
-                int stored = wall?.Store.Add(Goods.Firewood, firewood) ?? 0;
+                int stored = wall?.Put(Goods.Firewood, firewood) ?? 0;
                 if (stored < firewood)
                 {
                     world.SetDown(villager.Tile, Goods.Firewood, firewood - stored);

@@ -22,14 +22,24 @@ namespace Bclone.Sim.Core;
 /// centre is that tile's centre.
 /// </para>
 /// <para>
-/// ⚠️ <b>No <c>Length</c>, and no distance.</b> That would want a square root, which
-/// <see cref="Fixed"/> deliberately does not have yet, and every distance in this sim is Manhattan
-/// (`TravelCostField`). It arrives in the slice that needs it, with the guard that needs it.
+/// ⚠️ <b>One distance, and it arrived with its slice.</b> <see cref="DistanceTo"/> is the
+/// hypotenuse, through <see cref="Fixed.Sqrt"/> (floored), and it exists for exactly one reason:
+/// clock B charges a leg the distance it actually is (D361, `specs/gridless.md §8` slice 5). Every
+/// other distance in this sim is still the cost field's (`TravelCostField`) — catchment, routes,
+/// "how far is that?" — and this must not become a second answer to those questions.
 /// </para>
 /// </remarks>
 public readonly record struct Point(Fixed X, Fixed Y)
 {
     public static Point Origin => new(Fixed.Zero, Fixed.Zero);
+
+    /// <summary>The straight-line distance to another point, floored to 2⁻³² (D361).</summary>
+    public Fixed DistanceTo(Point other)
+    {
+        Fixed dx = other.X - X;
+        Fixed dy = other.Y - Y;
+        return ((dx * dx) + (dy * dy)).Sqrt();
+    }
 
     /// <summary>The centre of a tile — half a tile in from its corner on both axes.</summary>
     public static Point CentreOf(GridPos tile) =>

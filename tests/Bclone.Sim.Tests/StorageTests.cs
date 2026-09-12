@@ -531,5 +531,57 @@ public sealed class StorageTests
         Assert.NotNull(BehaviorSystem.PlanFetchForTest(world, villager));
     }
 
+    /// <summary>
+    /// ⛔⛔ A store that holds food AND other goods keeps half its room for food — <b>a cart full
+    /// of firewood starved thirteen people</b> (D361).
+    /// </summary>
+    /// <remarks>
+    /// Found by clock B on a played opening that raised five houses and never a granary: laborers
+    /// tidying the painted wood hauled firewood into the founding cart until it held 1,591 of
+    /// 1,650, the foragers read *"every store that takes food is full"*, and food went 915 → 0
+    /// with nobody idle and nothing wrong. So <see cref="StoreBuilding.RoomFor"/> lets non-food
+    /// see only the room above what food is still owed, <see cref="StoreBuilding.Put"/> clamps to
+    /// it, and a granary or warehouse — which do not share a roof — are exactly as they were.
+    /// </remarks>
+    [Fact]
+    public void AMixedStoreKeepsHalfItsRoomForFood()
+    {
+        // The cart is the cold start's; the fixture village has a granary and a warehouse instead.
+        SimWorld world = SimFactory.CreatePhase0(ShippedConfig.Load(), new InMemoryLogSink()).World;
+        SimWorld village = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        StoreBuilding cart = world.AnyStoreOf(StoreKind.Cart);
+        StoreBuilding granary = village.AnyStoreOf(StoreKind.Granary);
+        StoreBuilding warehouse = village.AnyStoreOf(StoreKind.Warehouse);
+        Assert.True(cart.Accepts(Goods.Firewood) && cart.Accepts(Goods.Produce), "the cart is the mixed store this guards");
 
+        // The cold start's cart arrives with more than half its room in food already; the failure
+        // this guards is a cart whose food has been EATEN down while fuel piled in, so eat most of it.
+        Assert.True(cart.Store.TryTake(Goods.Produce, cart.Store[Goods.Produce] - 200));
+
+        int capacity = cart.Store.Capacity;
+        int food = cart.Store[Goods.Produce];
+        int free = cart.Store.FreeSpace;
+        int owed = (capacity / 2) - food;
+        _output.WriteLine($"cart holds {food} food of {capacity}; {free} free, {owed} still owed to food");
+
+        // Firewood sees the room above what food is owed; food sees all of it.
+        Assert.Equal(owed > 0 ? free - owed : free, cart.RoomFor(Goods.Firewood));
+        Assert.Equal(free, cart.RoomFor(Goods.Produce));
+
+        // Fill it with firewood, and the food's half is still there.
+        int put = cart.Put(Goods.Firewood, capacity);
+        Assert.Equal(cart.RoomFor(Goods.Produce), cart.Store.FreeSpace);
+        Assert.True(cart.Store.FreeSpace + food >= capacity / 2, $"only {cart.Store.FreeSpace} left for food after {put} firewood went in");
+        Assert.False(cart.HasRoomFor(Goods.Firewood));
+        Assert.True(cart.HasRoomFor(Goods.Produce));
+
+        // Food can still arrive, and takes the room that was kept for it.
+        int fed = cart.Put(Goods.Produce, capacity);
+        Assert.True(fed > 0);
+        Assert.True(cart.Store.IsFull);
+
+        // The single-purpose stores are untouched by the rule.
+        Assert.Equal(granary.Store.FreeSpace, granary.RoomFor(Goods.Produce));
+        Assert.Equal(warehouse.Store.FreeSpace, warehouse.RoomFor(Goods.Logs));
+    }
 }

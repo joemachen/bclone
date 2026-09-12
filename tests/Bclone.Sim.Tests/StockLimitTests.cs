@@ -345,7 +345,8 @@ public sealed class StockLimitTests
     // Was 12530049132124308337; before D354, 111552278507413873.
     // RE-TAKEN (D358) — desire paths. Was 3707818765402790126.
     // RE-TAKEN (D360) — the wear's units and thresholds. Was 8696606774546397412.
-    private const ulong FixtureFiftyYearHash = 2446761918259013976UL;
+    // RE-TAKEN (D361) — clock B. Was 2446761918259013976.
+    private const ulong FixtureFiftyYearHash = 6620710744463477554UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -405,7 +406,12 @@ public sealed class StockLimitTests
     //     — Joe, playing: "paths fade too quickly … 50% longer to fade and 25% longer to draw". A
     //     step is 3 wear now, decay 11 a season, worn at 48, packed at 150; the wear is hashed. The
     //     valley clock pin did not move.
-    private const ulong ShippedFiftyYearHash = 4233992956325905852UL;
+    //   before clock B (D361): 4233992956325905852
+    //     — Joe: "clock b". A leg costs the distance it actually is (straight length × the route's
+    //     average cost), so a diagonal is shorter than its staircase; the Phase 0 pins hold by
+    //     geometry and the valley pin moved (the first gathering trip at 15, not 17). Proof is
+    //     outcomes: twelve shipped seeds over fifty years, 281 people against 274, food +2%.
+    private const ulong ShippedFiftyYearHash = 14154869473835624746UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

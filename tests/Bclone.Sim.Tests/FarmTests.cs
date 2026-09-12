@@ -174,35 +174,37 @@ public sealed class FarmTests
             Assert.True(FarmFixtures.SowEveryTileOf(world, farm) > 0);
             FarmFixtures.StepToTheStartOf(loop, Season.Fall);
 
+            // ⚠️ Measured as WHEAT IN THE WORLD, not wheat in the farmer's arms (D361). A tile
+            // reaped beside the farmhouse is hauled in the same tick the reap finishes — under
+            // clock B a diagonal neighbour is one step, so the arms are empty again before the
+            // harness looks — and the first draft, watching the arms, counted nothing reaped.
             int reaps = 0;
             long carried = 0;
-            var before = new Dictionary<int, int>();
             for (int i = 0; i < Config.TicksPerSeason; i++)
             {
-                before.Clear();
-                foreach (Villager villager in world.Villagers)
-                {
-                    if (villager.State == VillagerState.Reaping && villager.ActionTicksRemaining == 1)
-                    {
-                        before[villager.Id] = villager.Carried[Goods.Wheat];
-                    }
-                }
+                bool finishing = world.Villagers.Any(
+                    v => v.State == VillagerState.Reaping && v.ActionTicksRemaining == 1);
+                long had = WheatInTheWorld(world);
 
                 loop.StepOnce();
 
-                foreach ((int id, int had) in before)
+                long now = WheatInTheWorld(world);
+                if (finishing && now > had)
                 {
-                    Villager? villager = world.FindVillager(id);
-                    if (villager is not null && villager.Carried[Goods.Wheat] > had)
-                    {
-                        reaps++;
-                        carried += villager.Carried[Goods.Wheat] - had;
-                    }
+                    reaps++;
+                    carried += now - had;
                 }
             }
 
             return (reaps, carried);
         }
+
+        static long WheatInTheWorld(SimWorld world) =>
+            world.StoreBuildings.Sum(s => (long)s.Store[Goods.Wheat])
+            + world.Workplaces.Where(w => !w.IsSite).Sum(w => (long)w.Store[Goods.Wheat])
+            + world.Households.Sum(h => (long)h.Stockpile[Goods.Wheat])
+            + world.Villagers.Sum(v => (long)v.Carried[Goods.Wheat])
+            + world.OnTheGround(Goods.Wheat);
     }
 
     /// <summary>

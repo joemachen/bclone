@@ -149,6 +149,68 @@ public sealed class FarmMemoryTests
     }
 
     /// <summary>
+    /// ⭐⭐ A farm with autumn to spare tries one more field a hand — <b>and steps back once, for
+    /// good at this walk, if it cannot bring it in</b> (D361, clock B).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The high-water mark can only rise when a year brings in more per hand than the farm has
+    /// ever sown per hand, and it sows what it learned — so on its own it never rises. Under clock
+    /// A the hands changing between spring and autumn probed it by accident; under clock B a farm
+    /// ten ticks out sat at five a hand with 18% of its autumn idle, the self-fulfilling cap D194
+    /// deleted, back by the side door. Now a farm that brought everything in with a reap and a
+    /// haul's worth of autumn left tries one more; if that tile rots, the probe is undone and not
+    /// repeated at this walk — a tile rotting every other year is the weather D167 refused.
+    /// </para>
+    /// <para>
+    /// The failure is posed by taking the hands away for one autumn: nothing is brought in, the
+    /// probe is undone, and three more full years never climb past where it stood.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFarmWithAutumnToSpareTriesOneMoreFieldAndStepsBackIfItRots()
+    {
+        SimLoop loop = Loop(Config);
+        SimWorld world = loop.World;
+        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 10, out int walk);
+        Assert.True(FarmFixtures.GiveItGround(world, farm, reach: 3) > 13);
+
+        // Run until a winter's lesson is a probe.
+        int probedAt = 0;
+        for (int year = 1; year <= 12 && probedAt == 0; year++)
+        {
+            FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+            if (farm.FieldProbedThisYear)
+            {
+                probedAt = year;
+            }
+        }
+
+        int tried = farm.FieldTilesLearned;
+        _output.WriteLine($"{walk} ticks out: the farm probed in year {probedAt}, trying {tried} a hand");
+        Assert.True(probedAt > 0, "twelve years and the farm never had autumn enough to spare to try one more field");
+
+        // The probe year: sow, then take the hands away for the autumn so nothing comes in.
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+        Assert.True(world.StandingCropTiles(farm) > 0, "the probe year sowed nothing, so there is nothing to fail to reap");
+        int places = farm.Places;
+        world.SetStaffing(farm, 0);
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+
+        _output.WriteLine($"after the failed autumn: {farm.FieldTilesLearned} a hand, probe failed = {farm.FieldProbeFailed}");
+        Assert.Equal(tried - 1, farm.FieldTilesLearned);
+        Assert.True(farm.FieldProbeFailed);
+
+        // Hands back; three full years never climb past what was proven.
+        world.SetStaffing(farm, places);
+        for (int year = 0; year < 3; year++)
+        {
+            FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+            Assert.True(farm.FieldTilesLearned <= tried - 1, $"the farm probed again at the same walk: {farm.FieldTilesLearned}");
+        }
+    }
+
+    /// <summary>
     /// ⚠️ A year the farm never sowed teaches it nothing — the met-limit trap, named in §4.2a.
     /// </summary>
     /// <remarks>

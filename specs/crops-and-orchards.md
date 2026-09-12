@@ -294,6 +294,18 @@ farmer's six tiles a year into six quarter-slivers along the fence (a tile and a
 and Joe's *"sowing on the edge of the boundary"* screenshot). Guard:
 `FarmTests.AFarmerSowsTheWholeTilesBeforeTheSlivers`.
 
+**⭐ The farm probes its own cap, and steps back once if it rots (D361):** the high-water mark
+(`FieldTilesLearned`, D194) can only rise when a year brings in more per hand than the farm has
+ever sown per hand — and it sows what it learned, so alone it never rises. Under clock A the hands
+changing between spring and autumn probed it by accident; under clock B a farm ten ticks out sat at
+five a hand with 18% of its autumn idle. So a farm that sowed its whole allowance, brought it all in,
+and had autumn enough left to reap one more tile a hand (a reap plus a haul there and back) tries one
+more next spring (`FieldClearedAtTick`, `FieldProbedThisYear`); if that tile rots it steps back and
+does not try again at this walk (`FieldProbeFailed`, cleared when the walk changes). Measured at ten
+ticks out: 6 → 7 a hand, autumn idle 4%; at sixteen 3 → 5, 15% → 6%; at twenty-two 2 → 4, 13% → 6%.
+Guards: `FarmMemoryTests.AFarmWithAutumnToSpareTriesOneMoreFieldAndStepsBackIfItRots`, the D194
+idle guards.
+
 **⚠️ Sowing missed is a year missed.** A village that fails to sow in spring does not get a
 second chance in summer — that is what makes spring a decision. It must be **said, early**
 (the village log, and the farm's `IdleNote`), because §1.1 forbids a village dying of something

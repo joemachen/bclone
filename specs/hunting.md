@@ -138,6 +138,11 @@ for this slice too**, and the target is stated as a ranking rather than a number
 reads **892**; a fisher at `fish_yield` **400** reads **1,048**; a hunter at `meat_yield` **800**
 reads **1,266** (1.21×, D293's step). `hunter_lodge_store_cap` **2,400** — three hunts.
 
+**Re-measured under clock B (D361, 2026-09-12):** forager **892** (a row walk; unchanged), fisher at
+`fish_yield` **280** reads **1,088** (1.22×), hunter at `meat_yield` **900** reads **1,319** (1.26×).
+`hunter_lodge_store_cap` **2,700**, `fishing_hut_store_cap` **840** — three loads each. ⚠️ *Every
+change to the walk's clock re-levels this ladder; the ratios are the target, the numbers are not.*
+
 ⚠️ **Set `meat_yield` from the rig, and only from the rig.** Do not reason from per-hunt numbers;
 they have now been wrong twice.
 

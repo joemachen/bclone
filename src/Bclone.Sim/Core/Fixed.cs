@@ -171,6 +171,62 @@ public readonly record struct Fixed : IComparable<Fixed>
     /// <summary>This value rounded down to a whole number, still as a <see cref="Fixed"/>.</summary>
     public Fixed Floor() => new((_raw >> FractionBits) << FractionBits);
 
+    /// <summary>
+    /// The largest representable value whose square does not exceed this one — <b>the square
+    /// root, floored</b> (D361, clock B).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>Floor, like everything else here</b>, so the direction of the error is a stated fact and
+    /// there is one rounding convention in the type: <c>r = Sqrt(v)</c> satisfies
+    /// <c>r² ≤ v &lt; (r + 2⁻³²)²</c>. Exact on perfect squares (<c>Sqrt(4) == 2</c>,
+    /// <c>Sqrt(2.25) == 1.5</c>), monotonic, and pure integer arithmetic — the digit-by-digit
+    /// method over the 96-bit value <c>raw · 2³²</c>, which is deterministic on every machine
+    /// because it never asks the hardware for anything but shifts, adds and compares (D2).
+    /// </para>
+    /// <para>
+    /// This is the root `Point.cs` said would *"arrive in the slice that needs it, with the guard
+    /// that needs it"*: clock B charges a leg the distance it actually is (`specs/gridless.md §8`
+    /// slice 5), and a distance is a hypotenuse.
+    /// </para>
+    /// </remarks>
+    public Fixed Sqrt()
+    {
+        if (_raw < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(_raw), $"Cannot take the square root of {this}.");
+        }
+
+        // sqrt(raw / 2³²) in Q32.32 is sqrt(raw · 2³²) in raw bits: a 96-bit radicand.
+        UInt128 radicand = (UInt128)(ulong)_raw << FractionBits;
+        UInt128 result = 0;
+
+        // Digit by digit, from the highest even bit down: try setting each result bit and keep it
+        // if the square still fits.
+        UInt128 bit = (UInt128)1 << 94;
+        while (bit > radicand)
+        {
+            bit >>= 2;
+        }
+
+        while (bit != 0)
+        {
+            if (radicand >= result + bit)
+            {
+                radicand -= result + bit;
+                result = (result >> 1) + bit;
+            }
+            else
+            {
+                result >>= 1;
+            }
+
+            bit >>= 2;
+        }
+
+        return new Fixed((long)result);
+    }
+
     public static Fixed operator +(Fixed left, Fixed right) =>
         new(Checked(left, right, "+", static (a, b) => (Int128)a + b));
 

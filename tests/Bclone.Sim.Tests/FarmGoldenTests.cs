@@ -244,7 +244,11 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D360) — the wear's units and thresholds moved on Joe's play (a step is 3, decay 11,
     // worn 48, packed 150: "50% longer to fade, 25% longer to draw"). The sow order (whole tiles
     // before slivers, D360) alone leaves this byte-identical — checked. Was 6850653998199097325.
-    private const ulong SeamGoldenHash = 16810765702227238679UL;
+    // RE-TAKEN (D361) — clock B: a leg costs the distance it is; the farm probes one more field when
+    // its autumn had room to spare (and steps back if it rots); a mixed store keeps half its room
+    // for food. Proof is outcomes: twelve shipped seeds × fifty years, 281 people against 274.
+    // Was 16810765702227238679.
+    private const ulong SeamGoldenHash = 14905149421740555056UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -286,7 +290,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D356) with it again — straight-line walks. Was 11856395796552874154.
     // RE-TAKEN (D358) with it again — desire paths. Was 11205762516947333005.
     // RE-TAKEN (D360) with it again — the wear's units. Was 12842231052626848622.
-    private const ulong SeamBeforeAnybodyGotBetter = 11891405305821433080UL;
+    // RE-TAKEN (D361) with it again — clock B. Was 11891405305821433080.
+    private const ulong SeamBeforeAnybodyGotBetter = 3581667183433317301UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

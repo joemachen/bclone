@@ -103,36 +103,37 @@ public sealed class VillagerPointTests
     private const int FirstGatherAtPace3 = 41;
 
     /// <summary>
-    /// ⛔⛔ The VALLEY walks on the same clock as before — <b>the pin that can actually see
-    /// clock B</b> (D356).
+    /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
+    /// (D356), now pinned to clock B (D361).
     /// </summary>
     /// <remarks>
     /// <para>
     /// The Phase 0 pins above cannot: that fixture's home, hut and store stand on one row, so a
     /// straight line and a staircase are the same length there, and a leg charged its straight
     /// length instead of its route steps passed both pins green. **Found by red check.** The
-    /// village fixture has a river and buildings off the row, so its walks have diagonals — and
-    /// under clock B its foragers would start gathering earlier.
+    /// village fixture has a river and buildings off the row, so its walks have diagonals.
     /// </para>
     /// <para>
-    /// Measured on slice 3's code before this slice: in the first 2,000 ticks somebody enters
+    /// Measured on slice 3's code before slice 4: in the first 2,000 ticks somebody enters
     /// <c>Gathering</c> **50** times, the first at tick **17**, the tenth at **247**, the fiftieth
-    /// at **1,963**. Identical after — which is the clock-A promise as four numbers.
+    /// at **1,963**. Identical after slice 4 — which was the clock-A promise as four numbers.
     /// </para>
     /// <para>
-    /// ⭐ <b>RE-PINNED ONCE, DELIBERATELY — desire paths (D358), the first change to the walk's
-    /// clock since Phase 2, and Joe's</b> (*"paths should be cheaper / should increase speed"*).
-    /// Worn ground is cheaper and a leg's ticks follow the cost of the ground it crosses
-    /// (`PlanLeg`), so the village's walks shorten where it has worn lanes — measured over twenty
-    /// years of this fixture, villagers spend **8,977** ticks moving against **9,629** before, 6.8%
-    /// less, for the same 12 people and within 4% of the food. The first two numbers here are
-    /// unchanged (nothing is worn yet); **51** trips begin, the fiftieth at **1,974** — one more
-    /// trip in the same window. ⛔ The pin still guards clock B: a leg charged its straight length
-    /// reddens it (red-checked), and clock B remains its own measured slice.
+    /// **Re-pinned once for desire paths (D358):** worn ground is cheaper and a leg's ticks follow
+    /// it — **51** trips, the fiftieth at **1,974**, the first two unchanged (nothing worn yet).
+    /// </para>
+    /// <para>
+    /// ⭐⭐ **Re-pinned a second time for CLOCK B (D361), Joe's — *"clock b"* — and this is the
+    /// first time the FIRST number moved:** a leg costs the distance it actually is, so the
+    /// forager's diagonal to the hut is shorter and the first gathering trip begins at **15**, not
+    /// 17; the tenth at **259**, the fiftieth at **1,973**, 51 trips. (This was
+    /// <c>TheValleyWalksOnTheSameClockAsBefore</c>; the name stopped being true and was changed
+    /// rather than left to lie.) ⛔ It still guards the clock: a leg charged its route steps
+    /// (clock A) reddens it, and so does a leg charged from the clock tile instead of the position.
     /// </para>
     /// </remarks>
     [Fact]
-    public void TheValleyWalksOnTheSameClockAsBefore()
+    public void TheValleyWalksOnThePinnedClock()
     {
         SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
         SimWorld world = loop.World;
@@ -161,7 +162,73 @@ public sealed class VillagerPointTests
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
         Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 17, 247, 1974 }, at);
+        Assert.Equal(new ulong[] { 15, 259, 1973 }, at);
+    }
+
+    /// <summary>
+    /// ⭐⭐ CLOCK B: a leg costs the distance it actually is — <b>a diagonal is shorter than its
+    /// staircase</b> (D361, Joe: *"clock b"*).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every leg planned in the village's first year — before any ground is worn, so every tile
+    /// costs the base — must cost <c>round(|LegTo − LegFrom|)</c> ticks: on a row that is the
+    /// tile count (clock A and B agree, which is why the Phase 0 pins hold), and on a diagonal it
+    /// is strictly less than the staircase's Manhattan steps. Anti-vacuity: the fixture must plan
+    /// legs with a diagonal in them, or the second half is never tested.
+    /// </para>
+    /// <para>
+    /// ⛔ First year only, on purpose: from the second spring desire paths (D358) price worn tiles
+    /// under the base and the identity gains a factor this guard does not model —
+    /// <c>AWornPathCostsFewerTicksInTheField</c> guards that half.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ADiagonalLegCostsItsLengthNotItsStaircase()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        var seen = new Dictionary<int, (Point From, Point To)>();
+        int legs = 0;
+        int diagonals = 0;
+        int shorterThanTheStairs = 0;
+
+        for (int i = 0; i < config.TicksPerYear; i++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.LegSteps == 0 || seen.GetValueOrDefault(villager.Id) == (villager.LegFrom, villager.LegTo))
+                {
+                    continue;
+                }
+
+                seen[villager.Id] = (villager.LegFrom, villager.LegTo);
+                legs++;
+
+                Fixed length = villager.LegFrom.DistanceTo(villager.LegTo);
+                int expected = (length + Fixed.FromRatio(1, 2)).ToInt();
+                Assert.Equal(expected < 1 ? 1 : expected, villager.LegSteps);
+
+                GridPos a = villager.LegFrom.ToTile();
+                GridPos b = villager.LegTo.ToTile();
+                int manhattan = Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
+                if (a.X != b.X && a.Y != b.Y)
+                {
+                    diagonals++;
+                    if (villager.LegSteps < manhattan)
+                    {
+                        shorterThanTheStairs++;
+                    }
+                }
+            }
+        }
+
+        _output.WriteLine($"{legs} legs planned in the first year, {diagonals} with a diagonal in them, {shorterThanTheStairs} of those shorter than their staircase");
+        Assert.True(diagonals > 0, "the fixture planned no diagonal leg, so clock B was never exercised");
+        Assert.Equal(diagonals, shorterThanTheStairs);
     }
 
     /// <summary>

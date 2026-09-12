@@ -591,9 +591,16 @@ public sealed record SimConfig
     /// number clear of it. `fishing_hut_store_cap` went 900 → 1,200 with it — three casts, the
     /// D290 coupling — and the hunter's `meat_yield` 600 → 800 above it, so the ladder stayed even.
     /// </para>
+    /// <para>
+    /// ⚠️ <b>Re-tuned again for clock B (D361): 400 → 280.</b> A leg costs the distance it is, and
+    /// the fisher's walk to the bank is one long diagonal: at 400 the fisher read 1,547 against the
+    /// forager's unchanged 892 — 1.73×, and the hunter had fallen under. **280 reads 1,088 against
+    /// 892, 1.22×**; the hut 840, three casts. *Each change to the walk's clock re-levels this
+    /// ladder; the rigs are the instrument and the ratios are the target, not the numbers.*
+    /// </para>
     /// </remarks>
     [JsonPropertyName("fish_yield")]
-    public int FishYield { get; init; } = 400;
+    public int FishYield { get; init; } = 280;
 
     /// <summary>
     /// Ticks one cast takes — <b>the longest action in the game, on purpose</b>.
@@ -649,7 +656,7 @@ public sealed record SimConfig
     /// </para>
     /// </remarks>
     [JsonPropertyName("fishing_hut_store_cap")]
-    public int FishingHutStoreCap { get; init; } = 1200;
+    public int FishingHutStoreCap { get; init; } = 840;
 
     /// <summary>What a hunter's lodge costs to raise — dearer than a fishing hut.</summary>
     /// <remarks>
@@ -686,7 +693,7 @@ public sealed record SimConfig
     /// ones asked for. `TheLodgeHoldsMoreThanOneHunt` guards the ratio here for the same reason.
     /// </remarks>
     [JsonPropertyName("hunter_lodge_store_cap")]
-    public int HunterLodgeStoreCap { get; init; } = 2400;
+    public int HunterLodgeStoreCap { get; init; } = 2700;
 
     /// <summary>
     /// How far a lodge hunts, in tiles — <b>wider than a gathering ring</b>.
@@ -721,9 +728,13 @@ public sealed record SimConfig
     /// (hunting above fishing above foraging) had inverted. **800 reads 1,266 against 1,048 —
     /// 1.21×**, the same step D293 set. `hunter_lodge_store_cap` 1,800 → 2,400 with it: three hunts.
     /// </para>
+    /// <para>
+    /// ⚠️ <b>Re-tuned again for clock B (D361): 800 → 900.</b> With the fisher at 280 (1,044 in his
+    /// own village), **900 reads 1,319 — 1.26×**; the lodge 2,700, three hunts.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("meat_yield")]
-    public int MeatYield { get; init; } = 800;
+    public int MeatYield { get; init; } = 900;
 
     /// <summary>Hide off the same animal, before vigour.</summary>
     /// <remarks>

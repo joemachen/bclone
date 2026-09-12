@@ -339,6 +339,8 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.FieldHandsAtAutumn);
                 hash = MixUInt32(hash, (uint)workplace.FieldTilesLearned);
                 hash = MixUInt32(hash, (uint)(workplace.FieldWalkWhenLearned + 1));
+                hash = MixUInt64(hash, workplace.FieldClearedAtTick);
+                hash = MixByte(hash, (byte)((workplace.FieldProbedThisYear ? 1 : 0) | (workplace.FieldProbeFailed ? 2 : 0)));
             }
 
             hash = MixStore(hash, workplace.Store);

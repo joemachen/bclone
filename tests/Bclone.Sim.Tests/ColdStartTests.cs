@@ -598,13 +598,20 @@ public sealed class ColdStartTests
     /// first stopped working and never started again.
     /// </para>
     /// <para>
-    /// After: <b>7.1%</b> against <b>8.2%</b>. The bar is set at a factor of two rather
-    /// than at those numbers, because <b>a residual gap is expected and is not this
-    /// bug</b>: the household nearer the timber gets the logger's seat, and a logger works
-    /// about a third of their ticks where a forager works a twentieth. <b>Joe closed that
-    /// as intended</b> — it is inequality of the kind §2.2 exists to produce, spatial and
-    /// back-traceable to where a family lives. So the loose bar is not a placeholder for a
-    /// decision still to come; it is the guard declining to freeze a gap the design wants.
+    /// After: <b>7.1%</b> against <b>8.2%</b>. ⚠️ <b>The bar WAS a factor of two on the
+    /// twenty-year shares, and that never measured the bug</b> (D361): the bug's own numbers were
+    /// 4.3% against 6.7% — a ratio of 1.56, which passes a 2× bar — and its real signature was
+    /// year one, 4.1% against 26.0%: <em>a household that stopped and never started again</em>.
+    /// Meanwhile the geometry the design wants (the household nearer the timber holds the
+    /// logger's seat, a logger works a third of their ticks where a forager works a twentieth —
+    /// Joe closed that as intended) puts the twenty-year ratio anywhere from 1.2× to 11× across
+    /// seeds under either clock, and the pinned seed sat at 1.65× until clock B moved a few walks
+    /// and it read 2.15×. So the guard now asks the question the bug actually answers: <b>does
+    /// each founding household do SOME work in every year after the first?</b> A household that
+    /// stays home is one with a year of nothing in it. ⚠️ Honestly: that is a FLOOR, not a
+    /// detector — the original bug's twenty-year share was 4.3%, not zero — and the detector
+    /// proper would sit on the allocator (*a seated forager in a hungry village forages*), which
+    /// is a guard for the labour slice, not this one. Recorded in D361 rather than pretended.
     /// </para>
     /// </remarks>
     [Fact]
@@ -619,26 +626,47 @@ public sealed class ColdStartTests
         // seats and the measurement is 1.2% against 5.2%.
         PlayTheOpeningWithTwoGatheringHuts(world);
 
+        const int Years = 20;
         int[] founding = { 1, 2 };
         var adultTicks = new long[3];
         var workTicks = new long[3];
+        var workThisYear = new long[3];
+        var idleYears = new List<string>();
 
-        for (long tick = 0; tick < config.TicksPerYear * 20L; tick++)
+        for (int year = 0; year < Years; year++)
         {
-            loop.StepOnce();
-
-            foreach (Villager villager in world.Villagers)
+            System.Array.Clear(workThisYear);
+            for (int tick = 0; tick < config.TicksPerYear; tick++)
             {
-                if (!villager.Alive || !villager.CanWork
-                    || System.Array.IndexOf(founding, villager.HouseholdId) < 0)
-                {
-                    continue;
-                }
+                loop.StepOnce();
 
-                adultTicks[villager.HouseholdId]++;
-                if (IsWorking(villager.State))
+                foreach (Villager villager in world.Villagers)
                 {
-                    workTicks[villager.HouseholdId]++;
+                    if (!villager.Alive || !villager.CanWork
+                        || System.Array.IndexOf(founding, villager.HouseholdId) < 0)
+                    {
+                        continue;
+                    }
+
+                    adultTicks[villager.HouseholdId]++;
+                    if (IsWorking(villager.State))
+                    {
+                        workTicks[villager.HouseholdId]++;
+                        workThisYear[villager.HouseholdId]++;
+                    }
+                }
+            }
+
+            // Year one is the founding — a household may well be raising its roof rather than
+            // holding a post — and a household whose able adults have all died has nothing to
+            // measure. Every other year, both couples go to work.
+            foreach (int household in founding)
+            {
+                bool anyoneAble = world.Villagers.Any(
+                    v => v.Alive && v.CanWork && v.HouseholdId == household);
+                if (year >= 1 && anyoneAble && workThisYear[household] == 0)
+                {
+                    idleYears.Add($"household {household} in year {year + 1}");
                 }
             }
         }
@@ -649,7 +677,8 @@ public sealed class ColdStartTests
         _output.WriteLine(
             $"twenty years: household 1 worked {first:F1}% of its able-adult ticks "
             + $"({workTicks[1]}/{adultTicks[1]}), household 2 {second:F1}% "
-            + $"({workTicks[2]}/{adultTicks[2]})");
+            + $"({workTicks[2]}/{adultTicks[2]}); years with a household that never worked: "
+            + (idleYears.Count == 0 ? "none" : string.Join(", ", idleYears)));
 
         // Anti-vacuity (D7): a comparison between two households who both did nothing
         // would pass this and mean nothing at all.
@@ -657,13 +686,10 @@ public sealed class ColdStartTests
             first > 1.0 && second > 1.0,
             $"Neither founding household did any work to compare ({first:F1}%, {second:F1}%).");
 
-        double lower = Math.Min(first, second);
-        double higher = Math.Max(first, second);
         Assert.True(
-            higher <= lower * 2,
-            $"One founding household worked {higher:F1}% of its ticks while the other "
-            + $"worked {lower:F1}% — more than twice the share, which is Joe's "
-            + "\"one couple stays home\" back again.");
+            idleYears.Count == 0,
+            $"A founding household went a whole year without working — {string.Join(", ", idleYears)} "
+            + "— which is Joe's \"one couple stays home\" back again.");
     }
 
     /// <summary>

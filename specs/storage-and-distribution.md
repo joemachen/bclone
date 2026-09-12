@@ -118,6 +118,7 @@ Four workarounds, all of which exist because there was nowhere to put things. **
 - **The unmanned-market cliff.** Why fetch is recommended over deliver.
 - **Hauling eating the labour budget.** Fetching is unpaid work that competes with foraging for the same hours. The food economy is derived from trips per year (`VillageEconomy`), and adding a fetch leg to the round trip changes that derivation. **This must be re-derived, not patched** — it is exactly the D16 mistake otherwise.
 - **A full warehouse silently stopping production.** A logger who cannot deposit must say so, like the woodcutter with no logs (D29).
+- **⛔⛔ Fuel crowding food out of a shared roof (D361).** A cart full of firewood starved thirteen people with nobody idle and nothing wrong: laborers tidying the painted wood hauled firewood into the founding cart until it held 1,591 of 1,650, the foragers read *"every store that takes food is full"*, and food went 915 → 0. **A store that holds both food and other goods keeps half its room for food** — `StoreBuilding.RoomFor` shows a non-food load only the space above what food is still owed, `HasRoomFor` is what a hauler asks when choosing where to put a load down, and `Put` clamps to the same number (one door, D142). `Accepts` is deliberately NOT room-aware — it also answers *"does this store hold this kind?"* for fetching. Granaries and warehouses share no roof and are untouched. Guard: `StorageTests.AMixedStoreKeepsHalfItsRoomForFood`.
 
 ---
 

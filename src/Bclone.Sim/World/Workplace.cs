@@ -506,6 +506,30 @@ public sealed class Workplace
     /// </remarks>
     public int FieldWalkWhenLearned { get; set; } = -1;
 
+    /// <summary>
+    /// The tick the last standing tile of this autumn's crop was reaped — <b>how much autumn the
+    /// farm had to spare</b> (D361). Zero until the field is cleared; reset when the crop ripens.
+    /// </summary>
+    /// <remarks>
+    /// The measurement behind the probe: a farm that finished its autumn with time to reap one more
+    /// tile per hand learns one more (<see cref="Core.SimWorld.LearnFromTheAutumn"/>). Under clock
+    /// A the hands changing between spring and autumn probed the cap by accident often enough that
+    /// a deliberate probe measured zero (D194's note); under clock B, with shorter walks and no
+    /// such accident, a farm ten ticks out sat at five a hand with 18% of its autumn idle — the
+    /// self-fulfilling cap D194 deleted, back by the side door.
+    /// </remarks>
+    public ulong FieldClearedAtTick { get; set; }
+
+    /// <summary>Whether this year's field is one tile a hand bigger than the farm had proven (D361) — the probe, so a rot can undo it.</summary>
+    public bool FieldProbedThisYear { get; set; }
+
+    /// <summary>
+    /// The probe failed once at this walk — the extra tile rotted — so the farm does not try again
+    /// until the walk changes (D361). Without this a farm at its true limit would rot a tile every
+    /// other year, which is the weather D167 spent a decision deleting.
+    /// </summary>
+    public bool FieldProbeFailed { get; set; }
+
     /// <summary>True when there is no room for anyone else.</summary>
     /// <summary>
     /// How many hands the player has insisted on here, or null to let the village

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
+using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -491,5 +492,57 @@ public sealed class FixedTests
         Assert.NotEqual(
             StateHash.MixFixed(0UL, whole),
             StateHash.MixFixed(0UL, aHairMore));
+    }
+
+    /// <summary>
+    /// ⭐ The square root — <b>floored, exact on squares, monotonic, and the hypotenuse it exists
+    /// for</b> (D361, clock B).
+    /// </summary>
+    /// <remarks>
+    /// Every literal is hand-checkable: <c>√2</c> in Q32.32 is <c>floor(√2 · 2³²)</c> =
+    /// 6,074,000,999 (√2 = 1.41421356237…; × 4,294,967,296 = 6,074,000,999.95…). The floor
+    /// contract is asserted as an inequality on both sides, not as a closeness.
+    /// </remarks>
+    [Fact]
+    public void TheSquareRootIsFlooredExactOnSquaresAndMonotonic()
+    {
+        Assert.Equal(Fixed.Zero, Fixed.Zero.Sqrt());
+        Assert.Equal(Fixed.One, Fixed.One.Sqrt());
+        Assert.Equal(Fixed.FromInt(2), Fixed.FromInt(4).Sqrt());
+        Assert.Equal(Fixed.FromInt(12), Fixed.FromInt(144).Sqrt());
+        Assert.Equal(Fixed.FromRatio(3, 2), Fixed.FromRatio(9, 4).Sqrt());
+
+        Fixed root2 = Fixed.FromInt(2).Sqrt();
+        _output.WriteLine($"√2 = {root2} ({root2.RawBits} raw)");
+        Assert.Equal(6_074_000_999L, root2.RawBits);
+
+        // The floor contract, on both sides: r² ≤ v < (r + ε)² — in EXACT raw arithmetic, because
+        // `Fixed * Fixed` floors too and would hide the second half at the bottom of the range.
+        foreach (long raw in new[] { 1L, 3L, 12_345L, Fixed.One.RawBits + 1, Fixed.FromInt(2).RawBits, Fixed.FromInt(9_999).RawBits + 7, Fixed.FromInt(1_000_000).RawBits })
+        {
+            Fixed v = Fixed.FromRawBits(raw);
+            Fixed r = v.Sqrt();
+            Int128 exactV = (Int128)raw << Fixed.FractionBits;
+            Int128 square = (Int128)r.RawBits * r.RawBits;
+            Int128 nextSquare = (Int128)(r.RawBits + 1) * (r.RawBits + 1);
+            Assert.True(square <= exactV, $"√{v} = {r} but its square exceeds it");
+            Assert.True(nextSquare > exactV, $"√{v} = {r} is not the largest root: one bit more still fits");
+        }
+
+        // Monotonic over a sweep, including across the integer squares.
+        Fixed previous = Fixed.Zero;
+        for (long raw = 0; raw < Fixed.FromInt(20).RawBits; raw += Fixed.One.RawBits / 7)
+        {
+            Fixed r = Fixed.FromRawBits(raw).Sqrt();
+            Assert.True(r >= previous, $"√ went down at raw {raw}");
+            previous = r;
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Fixed.FromInt(-1).Sqrt());
+
+        // And the reason it exists: a 3-4-5 triangle is exactly five tiles, and a diagonal is √2.
+        Assert.Equal(Fixed.FromInt(5), new Point(Fixed.Zero, Fixed.Zero).DistanceTo(new Point(Fixed.FromInt(3), Fixed.FromInt(4))));
+        Assert.Equal(root2, Point.CentreOf(new GridPos(0, 0)).DistanceTo(Point.CentreOf(new GridPos(1, 1))));
+        Assert.Equal(Fixed.FromInt(7), Point.CentreOf(new GridPos(0, 0)).DistanceTo(Point.CentreOf(new GridPos(-7, 0))));
     }
 }

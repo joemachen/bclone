@@ -90,6 +90,7 @@ public sealed class CropSystem : ISimSystem
             {
                 farm.FieldTilesSown = world.StandingCropTiles(farm);
                 farm.FieldHandsAtAutumn = farm.WorkerIds.Count < 1 ? 1 : farm.WorkerIds.Count;
+                farm.FieldClearedAtTick = 0;
             }
         }
     }

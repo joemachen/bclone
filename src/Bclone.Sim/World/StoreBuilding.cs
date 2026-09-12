@@ -258,6 +258,91 @@ public sealed class StoreBuilding
     /// </remarks>
     public bool Accepts(Goods goods) => !Emptying && PlayerAllows(goods) && KindAccepts(goods);
 
+    /// <summary>Whether this store will take a load of <paramref name="goods"/> — accepts it, and has room by <see cref="RoomFor"/>.</summary>
+    public bool HasRoomFor(Goods goods) => Accepts(goods) && RoomFor(goods) > 0;
+
+    /// <summary>
+    /// Room this store has for <paramref name="goods"/> right now — <b>with half of a mixed
+    /// store kept for food</b> (D361).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>A CART FULL OF FIREWOOD STARVED THIRTEEN PEOPLE WITH NOBODY IDLE AND NOTHING
+    /// WRONG.</b> Found by clock B on a played opening that had built five houses and never a
+    /// granary (`AVillageGivenOnlyAPileOutlivesItsFounders`): laborers tidying the painted wood
+    /// hauled firewood into the founding cart until it held 1,591 of its 1,650; the foragers'
+    /// note read *"every store that takes food is full — nowhere to put more"*; food went 915 →
+    /// 0 over four years and thirteen starved in the spring of year 30, beside a cart of fuel.
+    /// Nothing had failed — every rule did what it said — which is exactly the failure §1.1
+    /// forbids: a village dying of something it could not have seen coming.
+    /// </para>
+    /// <para>
+    /// So a store that holds BOTH food and other goods keeps half its room for food: a non-food
+    /// load sees only the space above what food is still owed. A granary (food only) and a
+    /// warehouse (no food) are untouched — the rule is about sharing a roof, and they do not.
+    /// One door (D142): <see cref="HasRoomFor"/> is what a hauler asks when choosing where to put a
+    /// load down and <see cref="Put"/> clamps to the same number, so a planner and a hauler cannot
+    /// disagree. ⚠️ <see cref="Accepts"/> is deliberately NOT room-aware — it also answers "does
+    /// this store HOLD this kind of thing?" for fetching, and a full pile still holds its firewood.
+    /// </para>
+    /// </remarks>
+    public int RoomFor(Goods goods)
+    {
+        int free = Store.FreeSpace;
+        if (Catalog.Edible(goods) || !SharesItsRoofWithFood)
+        {
+            return free;
+        }
+
+        int foodHeld = 0;
+        for (int id = 0; id < Catalog.Count; id++)
+        {
+            if (Catalog.Edible(id))
+            {
+                foodHeld += Store[(Goods)id];
+            }
+        }
+
+        int owedToFood = (Store.Capacity / 2) - foodHeld;
+        int room = owedToFood <= 0 ? free : free - owedToFood;
+        return room < 0 ? 0 : room;
+    }
+
+    /// <summary>Put goods in, up to the room <see cref="RoomFor"/> allows; how many went in.</summary>
+    public int Put(Goods goods, int amount)
+    {
+        int room = RoomFor(goods);
+        return Store.Add(goods, amount < room ? amount : room);
+    }
+
+    /// <summary>Whether this kind of store can hold food AND something that is not food.</summary>
+    private bool SharesItsRoofWithFood
+    {
+        get
+        {
+            bool food = false;
+            bool other = false;
+            for (int id = 0; id < Catalog.Count; id++)
+            {
+                if (!Catalog.StoredBy((Goods)id, Kind))
+                {
+                    continue;
+                }
+
+                if (Catalog.Edible(id))
+                {
+                    food = true;
+                }
+                else
+                {
+                    other = true;
+                }
+            }
+
+            return food && other;
+        }
+    }
+
     /// <summary>
     /// Whether the village is clearing this store out so it can be moved or pulled down.
     /// </summary>

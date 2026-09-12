@@ -1946,6 +1946,9 @@ public sealed class SimWorld
             farm.FieldTilesLearned =
                 Math.Max(farm.FieldTilesLearned, OpeningGuessFor(farm, derived));
             farm.FieldWalkWhenLearned = walk;
+
+            // A new walk is a new question; a probe that failed at the old one may succeed here.
+            farm.FieldProbeFailed = false;
         }
 
         if (farm.FieldTilesLearned <= 0)
@@ -2100,6 +2103,7 @@ public sealed class SimWorld
         int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
         int broughtIn = sown - StandingCropTiles(farm);
         int record = broughtIn / hands;
+        int knew = farm.FieldTilesLearned;
 
         // ⛔⛔ A HIGH-WATER MARK, AND NOTHING ELSE — no probe, no latch, no settling back.
         // Two drafts of this method had a `+1` that made the farm try one more tile a year and
@@ -2118,6 +2122,50 @@ public sealed class SimWorld
         if (record > farm.FieldTilesLearned)
         {
             farm.FieldTilesLearned = record > derived ? derived : record;
+        }
+
+        // ⭐⭐ THE PROBE, AND ITS RETREAT (D361, clock B). The high-water mark above can only rise
+        // when a year brings in more per hand than the farm has ever sown per hand — and it sows
+        // what it learned, so on its own it never rises. Under clock A the hands changing between
+        // spring and autumn probed it by accident often enough that a deliberate `+1` measured
+        // zero and was deleted (the note above). Under clock B a farm ten ticks out sat at five a
+        // hand with **18% of its autumn idle** — the cap proving itself right, which is exactly
+        // what D194 deleted. So: a farm that brought in everything it sowed AND had autumn enough
+        // left to reap one more tile a hand (a reap and a haul there and back) tries one more next
+        // spring. If that tile rots, it steps back and does not try again at this walk — a tile
+        // rotting every other year would be the weather D167 refused.
+        bool allIn = broughtIn >= sown;
+        if (farm.FieldProbedThisYear)
+        {
+            farm.FieldProbedThisYear = false;
+            if (!allIn)
+            {
+                farm.FieldTilesLearned--;
+                farm.FieldProbeFailed = true;
+                Narrate(
+                    $"{farm.Name} tried one more field a hand this year and could not bring it in "
+                    + $"— back to {farm.FieldTilesLearned}. {Clock.SeasonAndYear()}.",
+                    LogCategory.Season);
+            }
+        }
+
+        // ⚠️ Only a year the farm sowed its whole allowance can say the allowance was too small: a
+        // one-tile year under a met stock limit, or with the hands gone, brings everything in with
+        // the whole autumn to spare and proves nothing (`AThinYearNeverLowersWhatTheFarmHasAlreadyProved`
+        // found the probe climbing three tiles on three miserable years).
+        bool atTheCap = sown >= hands * knew;
+        int haul = HaulWalkFor(farm);
+        long oneMoreTile = Config.ReapTicks + (2L * (haul < 0 ? 0 : haul));
+        if (allIn && atTheCap && !farm.FieldProbeFailed && farm.FieldTilesLearned < derived
+            && farm.FieldClearedAtTick > 0 && Tick - farm.FieldClearedAtTick >= (ulong)oneMoreTile)
+        {
+            farm.FieldTilesLearned++;
+            farm.FieldProbedThisYear = true;
+            Narrate(
+                $"{farm.Name} brought the harvest in with {Tick - farm.FieldClearedAtTick} ticks of autumn "
+                + $"to spare — next spring it will sow one more field a hand, {farm.FieldTilesLearned}. "
+                + $"{Clock.SeasonAndYear()}.",
+                LogCategory.Season);
         }
 
         // What a farm brought in once it can bring in again; a thin year is about the hands
@@ -3491,7 +3539,7 @@ public sealed class SimWorld
         {
             GroundStack stack = GroundStacks[i];
             if (NearestStoreAccepting(
-                    stack.Position, stack.Goods, static store => !store.Store.IsFull) is null)
+                    stack.Position, stack.Goods, store => store.HasRoomFor(stack.Goods)) is null)
             {
                 continue;
             }
@@ -6703,10 +6751,11 @@ public sealed class SimWorld
         var landed = new List<MaterialCost>();
         for (int i = 0; i < back.Count; i++)
         {
+            Goods returning = back[i].Goods;
             StoreBuilding? store = NearestStoreAccepting(
-                where, back[i].Goods, static place => !place.Store.IsFull);
+                where, returning, place => place.HasRoomFor(returning));
 
-            int took = store?.Store.Receive(back[i].Goods, back[i].Amount) ?? 0;
+            int took = store?.Put(returning, back[i].Amount) ?? 0;
             if (took > 0)
             {
                 landed.Add(new MaterialCost(back[i].Goods, took));

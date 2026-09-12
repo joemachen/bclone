@@ -305,9 +305,20 @@ expensive inference in this project.*
    **Setting `Position` from outside the walk drops the leg** (`WalkTo` is the walk's own door): a
    stale leg marched a teleported fisher back to where the line began. **Desire paths (§2.6) are
    writable for the first time — next.**
-   ⏸ **Clock B — the real-clock rebalance** — is Joe's eventual want and its own slice after
-   desire paths (`DESIGN.md §4`): diagonals genuinely shorter, the economy re-derived against the
-   distance people actually walk, goldens re-taken, the twelve-seed arm measured first.
+5. ✅ **Clock B — the real clock (D361, 2026-09-12; Joe: *"clock b"*). BUILT; unplayed by Joe.** A leg costs the
+   distance it actually is: **ticks = straight length × (the route's average entry cost ⁄
+   `BaseTileCost`)**, rounded to nearest, never below one. The straight length is
+   `Point.DistanceTo` — `Fixed.Sqrt`, the square root this spec said *"arrives in the slice that
+   needs it, with the guard that needs it"* — measured from where the villager stands to the
+   waypoint. The second factor is desire paths' (D358): on grass it is 1 and a row leg costs
+   exactly its tiles, so **the Phase 0 pins (20, 41) hold by geometry** — that world is one row —
+   and a diagonal of *k* tiles costs *k√2* ticks in place of the staircase's *2k*. The route is
+   still the one cost field's; only the clock changed. ⛔ **The economy's budgets are NOT re-derived
+   here, and that is a finding, not an omission:** `RoundTripTicks` budgets the worst walk the
+   village will ASK for (`MaxHomeToWorkTiles × TravelTicksPerUnit`, a Manhattan promise), and a
+   straight walk is never longer than its staircase, so every budget stays a true upper bound.
+   What clock B changes is how much slack sits under those budgets — measured, and Joe's to spend
+   (§9 slice 5). D122's rule holds: a price is not changed quietly.
 
 ⚠️ **Each slice ships playable** (`DESIGN.md §4`). ⛔ **Slice 1 is not a spike** — if Q32.32 is not
 provably deterministic the whole direction is wrong and it is worth learning in week one.
@@ -315,6 +326,21 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 ---
 
 ## 9. Definition of Done
+
+### Slice 5 — ✅ MET (2026-09-12, D361): clock B, a leg costs the distance it is
+
+| # | Item | State |
+|---|---|---|
+| 1 | `Fixed.Sqrt` — floor, exact on squares, monotonic, deterministic | ✅ `TheSquareRootIsFlooredExactOnSquaresAndMonotonic` — the floor contract asserted in exact 128-bit arithmetic on both sides; √2 = 6,074,000,999 raw |
+| 2 | `Point.DistanceTo` | ✅ 3-4-5 is exactly 5; a diagonal is √2 |
+| 3 | A leg's ticks = straight length × route's average cost ⁄ base, rounded, ≥ 1 | ✅ `PlanLeg`; `ADiagonalLegCostsItsLengthNotItsStaircase` — 95 legs in the fixture's first year, 77 with a diagonal, all 77 shorter than their staircase; `ClockTile` deleted (a re-plan charges the distance from where they stand) |
+| 4 | Phase 0 pins 20 / 41 hold — by geometry, the row | ✅ unchanged |
+| 5 | The valley pin re-pinned **deliberately**, second time | ✅ `TheValleyWalksOnThePinnedClock` — 51 trips, the 1st/10th/50th at **15**/259/1973 (was 17/247/1974): the first number moved for the first time |
+| 6 | Desire paths still shorten a walk under B | ✅ the route's average cost is the second factor; fixture villagers spend 7,693 ticks moving against 8,977 (D360) and 9,629 (no paths) |
+| 7 | **The twelve-seed arm, measured before anything was re-derived** | ✅ twelve shipped seeds × fifty years: **281 people against 274, food +2%**; six played openings 92 against 96. ⛔ **Three things the arm shook loose, none of them the clock's fault and all of them fixed:** *(a)* the farm's high-water mark could not rise on its own — the probe (`crops-and-orchards.md §5`); *(b)* a cart full of firewood starved thirteen — the food room (`storage-and-distribution.md §7`); *(c)* the food ladder re-levelled (fish 280, meat 900). **No economy key was re-derived**: every budget is a Manhattan promise and a straight walk is never longer than its staircase |
+| 8 | Goldens move once, proved by outcomes | ✅ six numbers; the two 50-year hashes are identical before and after the farm probe, the food room and the yields — those villages have no farm, no crowded roof, no fishery |
+| 9 | The view needed nothing | ✅ probe `villagers:` ✅ |
+| 10 | Red checks | ✅ clock A left in (red ×2); truncation instead of rounding (red ×2); length from the tile centre instead of the point — **zero** (legs plan from centres in the first year; the rounding hides a half-tile); no probe (red ×3); no retreat / no latch (red); no food room (red ×2) |
 
 ### Slice 4 — ✅ MET (2026-09-11, D356): string-pulled paths, on the tile route's clock
 

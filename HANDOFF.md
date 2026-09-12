@@ -1,14 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — DESIRE PATHS ARE PLAYED, SIGNED OFF AND PUSHED (D358–D360, `4e0f6a8`); CLOCK B AND THE SHELL ARE NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — CLOCK B IS BUILT (D361) AND UNPLAYED; THE SHELL IS NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
 >
-> **The state:** `main` at `4e0f6a8`, **pushed** (Joe, 2026-09-12: *"its looking really good! push"*). **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
+> **The state:** `main` at D361's commit, **committed, NOT pushed** — push when Joe says so. Before
+> it, `710d5d5` is pushed (desire paths, signed off: *"its looking really good! push"*). **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
 > `AFoundingThatPaintsNoSeamStillLives` now summing three seeds. ⚠️ `HEAD` before desire paths
 > measured **3m00**; the rest is the yearly re-price of ~90 flow fields, measured by ablation and
 > accepted in D358 — *the first draft was 10m20, and only the clock caught it*). Probe green:
 > `bar height 161`, `tile centres ✅`, `villagers ✅`, `trails ✅`, `done.`. **The decision log runs
 > to D358.** Read `DESIGN.md §0–§5`, then §6, then D338–D358 in §7 for the last two days — twenty
 > decisions, most of them from Joe playing a build for ten minutes.
+>
+> **▶️ CLOCK B IS BUILT (D361) — Joe said *"clock b"* and has not played it.** A leg costs the
+> distance it actually is (straight length × the route's average cost; `Fixed.Sqrt` exists now), so
+> diagonals are shorter, the Phase 0 pins hold by geometry and the valley pin moved (first trip at
+> 15, not 17). ⛔ **The economy was measured and NOT re-derived** — every budget is a Manhattan
+> promise a shorter walk cannot break; twelve seeds × fifty years read 281 against 274. **What the
+> measurement shook loose, all fixed, none the clock's fault:** the farm's cap now probes upward
+> when its autumn had room (and steps back once if it rots); a mixed store keeps half its room for
+> food (a cart of firewood had starved thirteen); the food ladder is fish 280 / meat 900. Read D361,
+> `gridless.md §8` slice 5, `crops-and-orchards.md §5`, `storage-and-distribution.md §7`.
 >
 > **✅ JOE PLAYED DESIRE PATHS AND SIGNED OFF (2026-09-12): *"its looking really good! push."*** Two
 > passes of bugs first (D359, D360 — below). Still his to call, unprompted: the balance (139 vs 118
@@ -236,13 +247,11 @@ stood idle with 130 logs.
 **The order is `DESIGN.md §4`'s Phase 4.5 list, and it is Joe's.** What is queued, and what is
 merely named:
 
-0. **▶️ JOE'S VERDICT ON DESIRE PATHS (D358) — he is playing it.** Look, balance, paving (the box
-   above). Bugs he files come first; *"push"* pushes `b8739a4`.
-1. **Clock B — the real-clock rebalance (§4 2b).** Diagonal walks genuinely shorter; the economy
-   re-derived against the distance people actually walk (`RoundTripTicks` and the nineteen
-   tile-keyed keys above it); every golden re-taken; **the twelve-seed arm measured first** (D122),
-   and now against D358's outcomes (139 vs 118 over fifty years). `TheValleyWalksOnTheSameClockAsBefore`
-   is the pin that reddens on it. Its own slice, never by accident.
+0. **▶️ JOE PLAYS CLOCK B (D361).** Do the diagonals read right; does the farm's probe show (the
+   log says *"brought the harvest in with N ticks of autumn to spare — next spring it will sow one
+   more field a hand"*); does anything feel off with the food ladder. *"push"* pushes D361.
+1. ~~**Clock B**~~ ✅ D361. ⚠️ The instruction was *"re-derive the economy"*; measuring first showed
+   the budgets are promises a shorter walk cannot break, so nothing was re-derived — see D361.
 2. **The shell (§4 item 4), in this order:** an error boundary for a throwing tick → per-stage RNG
    seeds (splitmix64 per stage, ⛔ not `DeterministicRandom`'s `stream` parameter) → the new-game
    screen (D344) → settings persistence → save/load (`save → load → hash == live`) → title and pause.
@@ -395,6 +404,27 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     half of wheat and nobody noticed until the picture looked odd. **Grep for every place that
     counts `owned.Count` or tiles of a farm** (`HarvestOneFarmCanBringIn`, `StandingCropTiles`,
     `FieldTilesOneFarmerKeeps`) before trusting a farm number; only the ORDER was fixed here.
+28. **⛔⛔ A CAP THAT CAN ONLY RISE ON WHAT IT ALLOWED CAN NEVER RISE (D361).** D194's farm memory
+    was a high-water mark of tiles brought in per hand, and the farm sows what it learned — so the
+    mark could only move when staffing accidents made a year bring in more than it sowed per hand.
+    Under clock A that accident happened often enough that a deliberate probe measured zero and was
+    deleted; under clock B it stopped happening and a farm sat at five a hand with 18% of its
+    autumn idle. **Any self-limiting memory needs a probe, and the probe needs a retreat and a
+    latch** — or it is a prediction with extra steps.
+29. **⛔⛔ A SHARED ROOF LETS ONE GOOD STARVE ANOTHER, AND EVERY RULE WILL SAY IT DID ITS JOB
+    (D361).** Firewood filled the founding cart; foragers read "full"; thirteen starved; nothing
+    threw. **Any store that holds two kinds of thing needs a reservation for the one people die
+    without.** And the first draft put the room check into `Accepts`, which is also how fetchers
+    ask "does this store HOLD that?" — a full pile of firewood became unfetchable and everyone froze
+    in year one. *A predicate that answers two questions must not learn a third.*
+30. **⚠️ EVERY CHANGE TO THE WALK'S CLOCK RE-LEVELS THE FOOD LADDER (D361).** Paths moved the
+    forager (→ fish 400, meat 800); clock B moved the fisher most (a long diagonal to the bank →
+    fish 280, meat 900). The D288/D293 rigs are the instrument; the ratios (~1.2× per rung) are the
+    target; the numbers are whatever the rigs say that day. Do not carry a yield number in your
+    head between clock changes.
+31. **⚠️ A HARNESS THAT WATCHES A VILLAGER'S ARMS MISSES A ONE-TICK ERRAND (D361).** A tile beside
+    the farmhouse is reaped and hauled in the same tick under clock B (a diagonal neighbour is one
+    step). Measure goods in the world, not goods in hands.
 27. **⚠️ A SINGLE SEED BRUSHING A RATIO BAR IS NOT A MEASUREMENT (D360).** The no-seam founding
     read 11 vs 16, then 7 vs 15, as the walk's clock moved — noise on a marginal fifty-year valley.
     Across four seeds and five wear settings it sat at 0.6–0.9 of its control every time. Sum
