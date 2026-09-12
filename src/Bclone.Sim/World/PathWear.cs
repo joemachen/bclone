@@ -58,6 +58,9 @@ public sealed class PathWear
     /// <summary>How many tiles carry any wear at all. Derived, never hashed.</summary>
     public int TroddenTiles { get; private set; }
 
+    /// <summary>How many tiles are a path — worn or packed by class — as of the last sweep. Derived, never hashed.</summary>
+    public int PathTiles { get; private set; }
+
     /// <summary>How trodden one tile is; 0 off the map.</summary>
     public int At(GridPos tile)
     {
@@ -107,16 +110,17 @@ public sealed class PathWear
     /// </para>
     /// </remarks>
     /// <param name="amount">How much every tile fades.</param>
-    /// <param name="reprice">Whether to hand the new wear to the routes. ⭐ The season's sweep passes
-    /// false three times a year and true once (spring): every re-price refills ~a hundred flow fields,
-    /// and pricing four times a year cost the suite half again on top of hysteresis. The picture — the
-    /// trails — follows every season; the ROUTES take to a path once a year, which is when a footpath
-    /// firms into a way people rely on.</param>
+    /// <param name="reprice">Whether to hand the new classes to the routes. ⭐ The season's sweep
+    /// passes false three times a year and true once (spring): every re-price refills ~a hundred
+    /// flow fields, and pricing four times a year cost the suite half again on top of hysteresis.
+    /// ⭐ Since D362 the CLASSES move every sweep — a path appears on the map the season it wears
+    /// through and holds for its grace — and only the hand-over to the routes waits for spring,
+    /// which is when a footpath firms into a way people rely on.</param>
     /// <returns>How many tiles still carry wear.</returns>
     public int Decay(int amount, bool reprice = true)
     {
         int trodden = 0;
-        bool priceMoved = false;
+        int paths = 0;
         for (int i = 0; i < _wear.Length; i++)
         {
             int next = _wear[i] - amount;
@@ -126,27 +130,39 @@ public sealed class PathWear
                 trodden++;
             }
 
-            if (!reprice)
-            {
-                continue;
-            }
-
-            byte price = PriceClassOf(_wear[i], _priceClass[i], amount);
+            byte price = PriceClassOf(_wear[i], _priceClass[i], _holdsFor);
             if (price != _priceClass[i])
             {
                 _priceClass[i] = price;
-                priceMoved = true;
+                _routesDirty = true;
+            }
+
+            if (price > 0)
+            {
+                paths++;
             }
         }
 
         TroddenTiles = trodden;
+        PathTiles = paths;
         Generation++;
-        if (priceMoved)
+        if (reprice && _routesDirty)
         {
             RoutesGeneration++;
+            _routesDirty = false;
         }
 
         return trodden;
+    }
+
+    /// <summary>A tile's class as of the last sweep — 0 grass, 1 worn, 2 packed — by map-order index. The ONE answer the routes price and the view draws (D362).</summary>
+    public byte PriceClassAt(int index) => _priceClass[index];
+
+    /// <summary>A tile's class as of the last sweep; 0 off the map.</summary>
+    public byte ClassAt(GridPos tile)
+    {
+        int index = IndexOf(tile);
+        return index < 0 ? (byte)0 : _priceClass[index];
     }
 
     /// <summary>
@@ -158,24 +174,32 @@ public sealed class PathWear
     private readonly byte[] _priceClass;
     private int _wornAt = int.MaxValue;
     private int _packedAt = int.MaxValue;
+    private int _holdsFor;
+    private bool _routesDirty;
 
-    /// <summary>Tell the wear where the price steps are, so the sweep can see a class change.</summary>
-    public void PriceAt(int wornAt, int packedAt)
+    /// <summary>
+    /// Tell the wear where the price steps are and how far under its line a path may fall before it
+    /// stops being one (<paramref name="holdsFor"/>, D362), so the sweep can see a class change.
+    /// </summary>
+    public void PriceAt(int wornAt, int packedAt, int holdsFor = 0)
     {
         _wornAt = wornAt;
         _packedAt = packedAt;
+        _holdsFor = holdsFor;
     }
 
     /// <summary>
-    /// A tile's price class for the routes, with HYSTERESIS: a tile that has become a path stays
-    /// one until its wear falls a decay's worth below the threshold, so a lane hovering at the
-    /// line does not re-price every season.
+    /// A tile's price class, with HYSTERESIS: a tile that has become a path stays one until its
+    /// wear falls <paramref name="band"/> below the threshold — `path_holds_for` (D362) — so a lane
+    /// hovering at the line does not flap, and an abandoned lane goes back to grass together, after
+    /// its grace, rather than tile by tile.
     /// </summary>
     /// <remarks>
     /// ⛔ Measured before it existed (D358): the shipped valley re-priced its routes in 26 of the
     /// first decade's 40 seasons — every re-price is ~a hundred flow fields refilled — because
-    /// well-used tiles sat within one season's decay of a threshold and flapped across it. The
-    /// band is the decay itself: a path has to actually fade to stop being one.
+    /// well-used tiles sat within one season's decay of a threshold and flapped across it. The band
+    /// was the decay itself then; Joe's play (D362) made it a dial: *"once it exists, it should
+    /// exist for longer before growing back."*
     /// </remarks>
     private byte PriceClassOf(int wear, byte previous, int band)
     {

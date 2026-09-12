@@ -55,8 +55,6 @@ public sealed class TravelCostField
     // ---------------------------------------------------------------
 
     private PathWear? _wear;
-    private int _wornAt;
-    private int _packedAt;
     private int _wornCost;
     private int _packedCost;
     private int _builtAtWearGeneration = -1;
@@ -87,7 +85,7 @@ public sealed class TravelCostField
     /// field. Uniform ground (nothing worn yet) still takes D179's breadth-first sweep.
     /// </para>
     /// </remarks>
-    public void ReadWearFrom(PathWear wear, int wornAt, int packedAt, int wornCost, int packedCost)
+    public void ReadWearFrom(PathWear wear, int wornAt, int packedAt, int wornCost, int packedCost, int holdsFor = 0)
     {
         ArgumentNullException.ThrowIfNull(wear);
         if (wornCost < 1 || packedCost < 1 || packedCost > wornCost || wornCost > BaseTileCost)
@@ -104,11 +102,9 @@ public sealed class TravelCostField
         }
 
         _wear = wear;
-        _wornAt = wornAt;
-        _packedAt = packedAt;
         _wornCost = wornCost;
         _packedCost = packedCost;
-        wear.PriceAt(wornAt, packedAt);
+        wear.PriceAt(wornAt, packedAt, holdsFor);
         Forget();
     }
 
@@ -120,8 +116,14 @@ public sealed class TravelCostField
             return BaseTileCost;
         }
 
-        int wear = _wear.At(tile);
-        return wear >= _packedAt ? _packedCost : wear >= _wornAt ? _wornCost : BaseTileCost;
+        // ⭐ The CLASS, not the raw wear (D362): the class carries the hysteresis, so a path that is
+        // still a path on the map is still a path to walk on — one answer for both.
+        return _wear.ClassAt(tile) switch
+        {
+            2 => _packedCost,
+            1 => _wornCost,
+            _ => BaseTileCost,
+        };
     }
 
 
@@ -242,7 +244,7 @@ public sealed class TravelCostField
         if (_wear is not null && _wear.RoutesGeneration != _builtAtWearGeneration)
         {
             _builtAtWearGeneration = _wear.RoutesGeneration;
-            _anythingWorn = _wear.TilesAtLeast(_wornAt) > 0;
+            _anythingWorn = _wear.PathTiles > 0;
             if (_anythingWorn)
             {
                 _entryCost ??= new byte[_map!.Width * _map.Height];

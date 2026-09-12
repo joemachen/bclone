@@ -292,8 +292,10 @@ public sealed class SkillTests
     // Were 1747940195267928072 (fixture) and 4022553321899754853 (shipped).
     // RE-TAKEN (D361) — clock B (see `StockLimitTests.ShippedFiftyYearHash`). Were
     // 13892698442290645699 (fixture) and 14775968124996282703 (shipped).
-    [InlineData(false, 3020495708646845468UL)]
-    [InlineData(true, 17992714739736787030UL)]
+    // RE-TAKEN (D362) — paths and buffers (see `StockLimitTests.ShippedFiftyYearHash`). Were
+    // 3020495708646845468 (fixture) and 17992714739736787030 (shipped).
+    [InlineData(false, 13050083585263826165UL)]
+    [InlineData(true, 2181839681135938194UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

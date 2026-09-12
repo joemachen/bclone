@@ -199,6 +199,17 @@ public enum VillagerState
     Hunting,
 
     ClearingAStore,
+
+    /// <summary>
+    /// Walking to a workplace whose buffer holds an armful of food nobody can eat, to carry it to a
+    /// store (D362) — the spare hands' answer to a lodge full of meat beside empty granaries.
+    /// </summary>
+    /// <remarks>
+    /// Like <see cref="TidyingGround"/>: nobody's trade, what somebody does when their own work has
+    /// nothing for them. Joe's village starved with 1,780 meat in the lodge because only the
+    /// marketer ever carried from a buffer, forty an armful.
+    /// </remarks>
+    ClearingABuffer,
 }
 
 /// <summary>

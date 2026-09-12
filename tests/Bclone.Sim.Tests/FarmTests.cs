@@ -621,7 +621,10 @@ public sealed class FarmTests
             $"village food {held} → {now}; {farm.Name} holds {farm.Store[Goods.Wheat]} of "
             + $"{farm.Store.Capacity}");
 
-        Assert.Equal(Config.FarmStoreCap, farm.Store[Goods.Wheat]);
+        // ⚠️ The buffer is no longer asserted full at the end: since D362 the spare hands carry an
+        // armful of food out of any buffer a store has room for, so a full farm store is emptied
+        // through the season by the village and not only by the farmer walking past it. What this
+        // guard is for — the harvest not leaving the world — is the second line.
         Assert.True(
             now > held,
             "A season's harvest went into a full buffer and out of the world — D96 and D144, "

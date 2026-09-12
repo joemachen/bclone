@@ -296,11 +296,21 @@ public sealed class FishingTests
         int walk = world.TravelCost.Cost(fisher.Tile, hut.Tile)
             / TravelCostField.BaseTileCost;
 
-        // Somewhere to put a catch, so the village genuinely wants the trip made.
+        // Somewhere to put a catch, so the village genuinely wants the trip made. ⚠️ EVERY food,
+        // and the hut's own buffer too: a year's catch sitting in the hut is the village's food
+        // (D161), and with 560 fish there against a derived target of 231 the fisher had nothing to
+        // fish for — they went to the hut anyway, to carry an armful of it home (D362), and hauled
+        // it away in the tick they arrived, which is not the walk this guards.
         foreach (StoreBuilding store in world.StoreBuildings)
         {
-            store.Store.TakeAll(Goods.Produce);
+            foreach (Goods food in world.GoodsCatalog.EdibleGoods)
+            {
+                store.Store.TakeAll(food);
+            }
         }
+
+        hut.Store.TakeAll(Goods.Fish);
+        Assert.True(world.TheVillageWantsMoreFood(), "the village does not want food, so nobody has a reason to walk");
 
         bool arrived = false;
         for (int tick = 0; tick < config.TicksPerYear && !arrived; tick++)

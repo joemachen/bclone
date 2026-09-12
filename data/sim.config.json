@@ -231,21 +231,25 @@
   //
   // MEASURED before the numbers were picked (D358): in the shipped valley a
   // busy tile is trodden 10-18 times a season, the median trodden tile ~5,
-  // and a lone forager's route 1. RE-TUNED D360 on Joe's play: "paths fade
-  // too quickly ... 50% longer to fade and 25% longer to draw". A step is 3
-  // now so the ratios fit in integers: decay 11 a season (was 12 in these
-  // units) means a path at the worn line fades in 48/11 = 4.4 seasons, not 3;
-  // worn at 48 means a 10-a-season lane (30 - 11 = +19) wears through in 2.5
-  // seasons, not 2, and a 15-a-season doorstep (+34) packs at 150 in 4.4
-  // seasons, not 3.6. The median 5-a-season lane (+4) still takes 12 seasons
-  // and the lone walker's 3 a season still never outlasts the decay -- both
-  // unchanged on purpose. Cost 10 is grass.
-  // The cap 2.6 asks for: packed at 8 means a worn detour a quarter longer
-  // than the straight walk is still slower, so paths cannot lock a bad route.
+  // and a lone forager's route 1. A step is 3 wear (D360) so the ratios fit
+  // in integers. RE-TUNED D362 on Joe's play: "they should appear sooner ...
+  // it should take longer before a pathway even starts to disappear ... once
+  // it exists, it should exist for longer". Worn at 30: a busy 10-a-season
+  // lane (30 - 6 = +24 a season) is a path in 1.3 seasons (was 2.5); the
+  // median lane (+9) in 3.3 (was 12); the lone walker's 3 a season still
+  // never outlasts a decay of 6. path_holds_for 24 is the grace a path has
+  // once it exists: its wear may fall that far under the line before it stops
+  // being one, which with decay 6 is four seasons of nobody walking it -- and
+  // the whole lane goes together, not tile by tile. The view draws the same
+  // class the routes price, so the picture and the walking agree. Cost 10 is
+  // grass. The cap 2.6 asks for: packed at 8 means a worn detour a quarter
+  // longer than the straight walk is still slower, so paths cannot lock a
+  // bad route.
   "path_wear_per_step": 3,
-  "path_wear_decay_per_season": 11,
-  "path_worn_at": 48,
-  "path_packed_at": 150,
+  "path_wear_decay_per_season": 6,
+  "path_worn_at": 30,
+  "path_packed_at": 100,
+  "path_holds_for": 24,
   "path_worn_tile_cost": 9,
   "path_packed_tile_cost": 8,
 

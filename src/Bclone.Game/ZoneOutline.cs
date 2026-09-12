@@ -172,9 +172,17 @@ internal static class ZoneOutline
         Tiled("a 6-tile square", Block(24, 24), SubTilesPerTile);
         Tiled("a 13-tile round brush", RoundBrush(26), SubTilesPerTile);
 
+        // ⛔⛔ AND A STAGE CLIPPED TO ITS CELLS IS THE FIELD WHERE IT TOUCHES THE FENCE (D362).
+        // Clipped to every cell, the fill is ITSELF — the first draft lost 1% to the curve's bulge
+        // past its own cells, which would have been a sliver of bare earth along every fence;
+        // clipped to the lower half of the cells it is about half, and nothing of it lies inside a
+        // cell it was not kept for. The red check is the clip switched off: the "half" comes back whole.
+        Clipped("a 7-tile round, clipped to all of it", RoundBrush(14), all: true);
+        Clipped("a 7-tile round, clipped to its lower half", RoundBrush(14), all: false);
+
         return complaints.Count == 0
             ? $"[widths] zone outlines: ✅ every shape closed and kept its area{sizes}"
-            : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints);
+            : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints) + sizes;
 
         void Roundness(string what, int radius, float wanted)
         {
@@ -231,6 +239,73 @@ internal static class ZoneOutline
                 complaints.Add(
                     $"{what}: the triangles cover {ratio:F3} of the polygon — "
                     + (ratio > 1f ? "overlapping, which draws darker facets" : "with gaps, which draw lighter ones"));
+            }
+        }
+
+        void Clipped(string what, IEnumerable<(int X, int Y)> cells, bool all)
+        {
+            var set = new HashSet<Vector2I>();
+            foreach ((int x, int y) in cells)
+            {
+                set.Add(new Vector2I(x, y));
+            }
+
+            Vector2[] whole = Fill(Trace(set, SubTilesPerTile), set);
+            float wholeArea = TriangleArea(whole);
+
+            var keep = new HashSet<Vector2I>();
+            int midY = 0;
+            foreach (Vector2I cell in set)
+            {
+                midY += cell.Y;
+            }
+
+            midY /= set.Count;
+            foreach (Vector2I cell in set)
+            {
+                if (all || cell.Y < midY)
+                {
+                    keep.Add(cell);
+                }
+            }
+
+            Vector2[] clipped = ClipToCells(whole, keep, set);
+            float area = TriangleArea(clipped);
+            sizes += $" · {what} clips to {area:F1} of {wholeArea:F1}";
+
+            if (all)
+            {
+                // Itself, to float noise: every cut would be on an edge between two kept cells.
+                if (Mathf.Abs(area - wholeArea) > 0.05f)
+                {
+                    complaints.Add($"{what}: the clip covers {area:F1} of its own {wholeArea:F1} — the fill bulges past the cells it is clipped to");
+                }
+            }
+            else
+            {
+                // About half: the cut runs through the curve's own triangles.
+                float wanted = wholeArea * keep.Count / set.Count;
+                if (Mathf.Abs(area - wanted) > Mathf.Max(0.5f, wanted * 0.1f))
+                {
+                    complaints.Add($"{what}: the clip covers {area:F1}, wanted about {wanted:F1}");
+                }
+            }
+
+            // Nothing of it lies INSIDE a field cell it was not kept for.
+            int trespassing = 0;
+            for (int i = 0; i + 2 < clipped.Length; i += 3)
+            {
+                Vector2 centroid = (clipped[i] + clipped[i + 1] + clipped[i + 2]) / 3f;
+                var cell = new Vector2I(Mathf.RoundToInt(centroid.X), Mathf.RoundToInt(centroid.Y));
+                if (set.Contains(cell) && !keep.Contains(cell))
+                {
+                    trespassing++;
+                }
+            }
+
+            if (trespassing > 0)
+            {
+                complaints.Add($"{what}: {trespassing} clipped triangles sit on field cells that were not kept");
             }
         }
 
@@ -661,6 +736,197 @@ internal static class ZoneOutline
     /// `CLAUDE.md`'s standing rule.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// ⭐⭐ A fill cut down to some of its own cells — <b>how a half-sown field follows the paint's
+    /// curve at the fence and the tile's edge inside it</b> (D362).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, on a round field with a stage tint that stair-stepped where it met the circle: *"conform
+    /// to the edge of the paintbrush, no matter how small … a perfect circle."* D360 drew a partial
+    /// stage as its painted quarters, square, which is right where sown meets bare inside the field
+    /// and wrong where sown meets the paint's edge. So the stage is the FIELD's own smooth fill
+    /// <b>with the cells that are not the stage taken away</b>: every triangle of the fill has the
+    /// non-stage cells' squares (as horizontal runs) subtracted from it, and each subtraction leaves
+    /// up to four disjoint convex pieces — left of the run, right of it, below, above. Nothing is
+    /// ever cut along the fence, because the fence is not a field cell's edge; inside the field the
+    /// cuts are the tile edges. Disjoint by construction, so no facet and no gap (D352's argument).
+    /// </para>
+    /// <para>
+    /// ⛔ The first draft clipped TO the kept cells instead, and lost 1% of a round to the curve's
+    /// own bulge past its cells — the smoothing cuts a staircase's concave corners outward — which
+    /// would have been a sliver of bare earth along every fence. The self-check's first line is
+    /// that a fill with nothing taken away is itself. Cached with the trace, never per frame.
+    /// </para>
+    /// </remarks>
+    internal static Vector2[] ClipToCells(Vector2[] triangles, HashSet<Vector2I> keep, HashSet<Vector2I> field)
+    {
+        var away = new HashSet<Vector2I>();
+        foreach (Vector2I cell in field)
+        {
+            if (!keep.Contains(cell))
+            {
+                away.Add(cell);
+            }
+        }
+
+        List<(Vector2I From, int Length)> runs = RunsOf(away);
+        var outcome = new List<Vector2>();
+        var pieces = new List<List<Vector2>>();
+        var next = new List<List<Vector2>>();
+        var scratch = new List<Vector2>(8);
+
+        for (int t = 0; t + 2 < triangles.Length; t += 3)
+        {
+            pieces.Clear();
+            pieces.Add(new List<Vector2> { triangles[t], triangles[t + 1], triangles[t + 2] });
+
+            foreach ((Vector2I from, int length) in runs)
+            {
+                float left = from.X - 0.5f;
+                float right = from.X + length - 0.5f;
+                float bottom = from.Y - 0.5f;
+                float top = from.Y + 0.5f;
+
+                next.Clear();
+                foreach (List<Vector2> piece in pieces)
+                {
+                    if (!Meets(piece, left, right, bottom, top))
+                    {
+                        next.Add(piece);
+                        continue;
+                    }
+
+                    // The complement of a rectangle, as four disjoint convex regions.
+                    Keep(Cut(piece, scratch, p => left - p.X, (p, q) => Lerp(p, q, (left - p.X) / (q.X - p.X))));
+                    Keep(Cut(piece, scratch, p => p.X - right, (p, q) => Lerp(p, q, (right - p.X) / (q.X - p.X))));
+
+                    List<Vector2> middle = Cut(piece, scratch, p => p.X - left, (p, q) => Lerp(p, q, (left - p.X) / (q.X - p.X)));
+                    middle = Cut(middle, scratch, p => right - p.X, (p, q) => Lerp(p, q, (right - p.X) / (q.X - p.X)));
+                    Keep(Cut(middle, scratch, p => bottom - p.Y, (p, q) => Lerp(p, q, (bottom - p.Y) / (q.Y - p.Y))));
+                    Keep(Cut(middle, scratch, p => p.Y - top, (p, q) => Lerp(p, q, (top - p.Y) / (q.Y - p.Y))));
+
+                    // ⚠️ A cut that only grazes a piece leaves a zero-area sliver of collinear
+                    // points; kept, the first draft drew three thousand of them for a half field.
+                    void Keep(List<Vector2> part)
+                    {
+                        if (part.Count >= 3 && Mathf.Abs(AreaOf(part)) > 1e-6f)
+                        {
+                            next.Add(part);
+                        }
+                    }
+                }
+
+                (pieces, next) = (next, pieces);
+            }
+
+            foreach (List<Vector2> piece in pieces)
+            {
+                for (int i = 1; i + 1 < piece.Count; i++)
+                {
+                    outcome.Add(piece[0]);
+                    outcome.Add(piece[i]);
+                    outcome.Add(piece[i + 1]);
+                }
+            }
+        }
+
+        return outcome.ToArray();
+
+        static Vector2 Lerp(Vector2 p, Vector2 q, float t) => p + ((q - p) * t);
+
+        static float AreaOf(List<Vector2> polygon)
+        {
+            float twice = 0f;
+            for (int i = 0; i < polygon.Count; i++)
+            {
+                Vector2 p = polygon[i];
+                Vector2 q = polygon[(i + 1) % polygon.Count];
+                twice += (p.X * q.Y) - (q.X * p.Y);
+            }
+
+            return twice / 2f;
+        }
+
+        static bool Meets(List<Vector2> piece, float left, float right, float bottom, float top)
+        {
+            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+            foreach (Vector2 p in piece)
+            {
+                minX = Mathf.Min(minX, p.X);
+                maxX = Mathf.Max(maxX, p.X);
+                minY = Mathf.Min(minY, p.Y);
+                maxY = Mathf.Max(maxY, p.Y);
+            }
+
+            return !(maxX <= left || minX >= right || maxY <= bottom || minY >= top);
+        }
+
+        static List<Vector2> Cut(
+            List<Vector2> piece, List<Vector2> scratch, Func<Vector2, float> inside, Func<Vector2, Vector2, Vector2> crossing)
+        {
+            var copy = new List<Vector2>(piece);
+            ClipAgainst(copy, scratch, inside, crossing);
+            return copy;
+        }
+    }
+
+    /// <summary>Cells as horizontal runs — (leftmost cell, length) — in a stated order.</summary>
+    private static List<(Vector2I From, int Length)> RunsOf(HashSet<Vector2I> cells)
+    {
+        var runs = new List<(Vector2I, int)>();
+        var sorted = new List<Vector2I>(cells);
+        sorted.Sort((p, q) => p.Y != q.Y ? p.Y.CompareTo(q.Y) : p.X.CompareTo(q.X));
+
+        int i = 0;
+        while (i < sorted.Count)
+        {
+            Vector2I start = sorted[i];
+            int length = 1;
+            while (i + length < sorted.Count && sorted[i + length].Y == start.Y && sorted[i + length].X == start.X + length)
+            {
+                length++;
+            }
+
+            runs.Add((start, length));
+            i += length;
+        }
+
+        return runs;
+    }
+
+    /// <summary>One Sutherland–Hodgman pass: keep the side where <paramref name="inside"/> is not negative.</summary>
+    private static void ClipAgainst(
+        List<Vector2> polygon, List<Vector2> scratch, Func<Vector2, float> inside, Func<Vector2, Vector2, Vector2> crossing)
+    {
+        scratch.Clear();
+        int count = polygon.Count;
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 current = polygon[i];
+            Vector2 previous = polygon[(i + count - 1) % count];
+            bool currentIn = inside(current) >= 0f;
+            bool previousIn = inside(previous) >= 0f;
+
+            if (currentIn)
+            {
+                if (!previousIn)
+                {
+                    scratch.Add(crossing(previous, current));
+                }
+
+                scratch.Add(current);
+            }
+            else if (previousIn)
+            {
+                scratch.Add(crossing(previous, current));
+            }
+        }
+
+        polygon.Clear();
+        polygon.AddRange(scratch);
+    }
+
     internal static Vector2[] Fill(List<Vector2[]> loops, HashSet<Vector2I> cells)
     {
         // ⛔⛔ EAR CLIPPING, NOT DELAUNAY (D352). D345 triangulated the loop points with

@@ -254,15 +254,23 @@ public sealed record SimConfig
 
     /// <summary>How much every tile fades when the season turns — the sweep that also hands wear to the cost field.</summary>
     [JsonPropertyName("path_wear_decay_per_season")]
-    public int PathWearDecayPerSeason { get; init; } = 11;
+    public int PathWearDecayPerSeason { get; init; } = 6;
 
     /// <summary>Wear at which grass reads as a worn path and crosses at <see cref="PathWornTileCost"/>.</summary>
     [JsonPropertyName("path_worn_at")]
-    public int PathWornAt { get; init; } = 48;
+    public int PathWornAt { get; init; } = 30;
 
     /// <summary>Wear at which a worn path is packed hard and crosses at <see cref="PathPackedTileCost"/>.</summary>
     [JsonPropertyName("path_packed_at")]
-    public int PathPackedAt { get; init; } = 150;
+    public int PathPackedAt { get; init; } = 100;
+
+    /// <summary>
+    /// How far under its line a path's wear may fall before it stops being one — <b>the grace a
+    /// path has once it exists</b> (D362; Joe: *"once it exists, it should exist for longer before
+    /// growing back"*). In wear, so with decay 6 a value of 24 is four seasons of nobody walking it.
+    /// </summary>
+    [JsonPropertyName("path_holds_for")]
+    public int PathHoldsFor { get; init; } = 24;
 
     /// <summary>Cost of crossing a worn tile, against <c>TravelCostField.BaseTileCost</c> (10) for grass.</summary>
     [JsonPropertyName("path_worn_tile_cost")]
@@ -3164,6 +3172,12 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"path_worn_at must be at least 1 and path_packed_at at least path_worn_at (got {PathWornAt}, {PathPackedAt}).");
+        }
+
+        if (PathHoldsFor < 0 || PathHoldsFor >= PathWornAt)
+        {
+            throw new SimConfigException(
+                $"path_holds_for must be at least 0 and less than path_worn_at (got {PathHoldsFor} against {PathWornAt}).");
         }
 
         if (PathPackedTileCost < 1 || PathWornTileCost < PathPackedTileCost || PathWornTileCost > World.TravelCostField.BaseTileCost)

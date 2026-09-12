@@ -2618,6 +2618,17 @@ public sealed class SimWorld
     /// <b>what this workplace puts down in one go</b>, so the farm's own answer is unchanged and a
     /// fishery gets the same rule honestly rather than by coincidence.
     /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND FOOD IN A BUFFER IS FOOD NOBODY CAN EAT UNTIL SOMEBODY CARRIES IT — SO AN ARMFUL
+    /// OF IT IS WORTH THE WALK WHENEVER A STORE HAS ROOM</b> (D362). "Nearly full" was written when
+    /// the only buffer was a farm's hundred; D290, D293 and D361 made the fishing hut and the
+    /// lodge three loads deep, and Joe's village starved beside 1,780 meat: seven hunts filled the
+    /// lodge, `FoodTheVillageHolds` counted it (D161, correctly — it IS the village's food), every
+    /// food producer's Wants went to 0, one marketer moved 40 an armful, and the moment the lodge
+    /// was a load short of full it was *"not worth clearing"* — so fifteen people rested for two
+    /// years while the granaries drained to nothing. Thirteen starved in Fall of Year 31. A
+    /// buffer is a pass-through, and D161's count is honest only while it behaves like one.
+    /// </para>
     /// </remarks>
     public bool BufferWorthClearing(Workplace workplace)
     {
@@ -2628,14 +2639,33 @@ public sealed class SimWorld
             return false;
         }
 
-        bool holdsFood = false;
+        Goods? food = null;
         IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
-        for (int i = 0; i < edible.Count && !holdsFood; i++)
+        for (int i = 0; i < edible.Count && food is null; i++)
         {
-            holdsFood = workplace.Store[edible[i]] > 0;
+            if (workplace.Store[edible[i]] > 0)
+            {
+                food = edible[i];
+            }
         }
 
-        return holdsFood && workplace.Store.FreeSpace < OneLoadFrom(workplace);
+        if (food is null)
+        {
+            return false;
+        }
+
+        if (workplace.Store[food.Value] >= Config.CarryCapacity)
+        {
+            for (int i = 0; i < StoreBuildings.Count; i++)
+            {
+                if (StoreBuildings[i].HasRoomFor(food.Value))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return workplace.Store.FreeSpace < OneLoadFrom(workplace);
     }
 
     /// <summary>
@@ -7939,7 +7969,8 @@ public sealed class SimWorld
         Zones = new ZoneMap(Map);
         Paths = new PathWear(Map);
         TravelCost.ReadWearFrom(
-            Paths, config.PathWornAt, config.PathPackedAt, config.PathWornTileCost, config.PathPackedTileCost);
+            Paths, config.PathWornAt, config.PathPackedAt, config.PathWornTileCost, config.PathPackedTileCost,
+            config.PathHoldsFor);
 
         // Everything the village builds hangs off the founding site the generator
         // chose. The config keys that used to hold absolute coordinates are now
@@ -9069,7 +9100,7 @@ public sealed class SimWorld
     public string? WhyTheVillageWantsNoMoreFood()
     {
         int holds = FoodTheVillageHolds();
-        if (holds < FoodTheVillageHasRoomFor())
+        if (TheVillageWantsMoreFood())
         {
             return null;
         }
@@ -9079,7 +9110,39 @@ public sealed class SimWorld
             return $"you asked the village to keep {limit} food and it has {holds}";
         }
 
-        return $"every store that takes food is full — {holds} held, and nowhere to put more";
+        if (holds >= TargetFoodForTheGranary() && RoomLeftForFood() > 0)
+        {
+            return $"the village has the {TargetFoodForTheGranary()} food it needs — {holds} held";
+        }
+
+        return $"every store that takes food is full — {FoodInGranaries()} in the stores, and nowhere to put more";
+    }
+
+    /// <summary>
+    /// Whether anybody should go out for food — <b>two questions, each asked of the right
+    /// number</b> (D362).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>ONE COMPARISON WAS ASKING BOTH, AND IT STARVED A FISHER BESIDE AN EMPTY GRANARY.</b>
+    /// *"Is there enough?"* is asked of everything the village holds, buffers included (D161 — a
+    /// farm's buffer is the village's food). *"Is there ROOM?"* is a question about the stores'
+    /// shelves, and only what is ON the shelves can fill them — but it was asked of the same
+    /// number, so a fishing hut holding 560 fish beside a granary emptied to nothing read as
+    /// *"every store that takes food is full — 632 held, and nowhere to put more"*, and the fisher
+    /// stood down. Joe's village did the same one building over: a lodge of meat counted against
+    /// the food limit, every producer stood down, and the granaries drained to zero.
+    /// </para>
+    /// <para>
+    /// So: the village wants more food while it holds less than it wants (the player's number, or
+    /// the derived target) AND its stores have room to put any. Buffers count toward the first and
+    /// never toward the second.
+    /// </para>
+    /// </remarks>
+    public bool TheVillageWantsMoreFood()
+    {
+        int wanted = StockLimits.For(Goods.Produce) ?? TargetFoodForTheGranary();
+        return FoodTheVillageHolds() < wanted && RoomLeftForFood() > 0;
     }
 
     /// <summary>Free space across every store that would take food.</summary>

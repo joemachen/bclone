@@ -1,9 +1,10 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — CLOCK B IS BUILT (D361) AND UNPLAYED; THE SHELL IS NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — CLOCK B PLAYED; D362 (PATHS, THE FIELD'S CIRCLE, THE LODGE THAT STARVED A VILLAGE) BUILT AND UNPLAYED; THE SHELL IS NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
 >
-> **The state:** `main` at D361's commit, **committed, NOT pushed** — push when Joe says so. Before
-> it, `710d5d5` is pushed (desire paths, signed off: *"its looking really good! push"*). **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
+> **The state:** `main` at D362's commit, **committed, NOT pushed** — push when Joe says so. Before
+> it, `710d5d5` is pushed (desire paths, signed off: *"its looking really good! push"*); D361 (clock
+> B) and D362 are unpushed. **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
 > `AFoundingThatPaintsNoSeamStillLives` now summing three seeds. ⚠️ `HEAD` before desire paths
 > measured **3m00**; the rest is the yearly re-price of ~90 flow fields, measured by ablation and
 > accepted in D358 — *the first draft was 10m20, and only the clock caught it*). Probe green:
@@ -11,7 +12,15 @@
 > to D358.** Read `DESIGN.md §0–§5`, then §6, then D338–D358 in §7 for the last two days — twenty
 > decisions, most of them from Joe playing a build for ten minutes.
 >
-> **▶️ CLOCK B IS BUILT (D361) — Joe said *"clock b"* and has not played it.** A leg costs the
+> **▶️ D362 — JOE'S PLAY OF CLOCK B, ALL FOUR NOTES BUILT, UNPLAYED.** Paths: worn 30 / packed 100
+> / decay 6 and a `path_holds_for` dial (24); the class is the one answer the routes price and the
+> view draws, reclassed every season. The round field: a partial stage is the field's smooth fill
+> minus the non-stage cells (`ZoneOutline.ClipToCells`). **The starvation game:** a lodge full of
+> meat stood every producer down and only the marketer carried it — a food buffer is worth
+> clearing at an armful, the spare hands carry it (`ClearingABuffer`), and "enough?" and "room?"
+> are two questions of two numbers (`TheVillageWantsMoreFood`). The Shining Rock is in §5.
+>
+> **✅ CLOCK B IS BUILT (D361) — Joe played it; his notes are D362.** A leg costs the
 > distance it actually is (straight length × the route's average cost; `Fixed.Sqrt` exists now), so
 > diagonals are shorter, the Phase 0 pins hold by geometry and the valley pin moved (first trip at
 > 15, not 17). ⛔ **The economy was measured and NOT re-derived** — every budget is a Manhattan
@@ -247,9 +256,10 @@ stood idle with 130 logs.
 **The order is `DESIGN.md §4`'s Phase 4.5 list, and it is Joe's.** What is queued, and what is
 merely named:
 
-0. **▶️ JOE PLAYS CLOCK B (D361).** Do the diagonals read right; does the farm's probe show (the
-   log says *"brought the harvest in with N ticks of autumn to spare — next spring it will sow one
-   more field a hand"*); does anything feel off with the food ladder. *"push"* pushes D361.
+0. **▶️ JOE PLAYS D362.** Do paths now come soon enough and stay long enough (`path_holds_for`
+   is the dial if not); does the ripe tint fill the circle; does a lodge full of meat get carried
+   to the granaries by the spare hands (watch for *"carrying food out of a hut"* in the roster).
+   *"push"* pushes D361 + D362.
 1. ~~**Clock B**~~ ✅ D361. ⚠️ The instruction was *"re-derive the economy"*; measuring first showed
    the budgets are promises a shorter walk cannot break, so nothing was re-derived — see D361.
 2. **The shell (§4 item 4), in this order:** an error boundary for a throwing tick → per-stage RNG
@@ -404,6 +414,19 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     half of wheat and nobody noticed until the picture looked odd. **Grep for every place that
     counts `owned.Count` or tiles of a farm** (`HarvestOneFarmCanBringIn`, `StandingCropTiles`,
     `FieldTilesOneFarmerKeeps`) before trusting a farm number; only the ORDER was fixed here.
+32. **⛔⛔ A COUNT THAT IS RIGHT ABOUT WHAT THE VILLAGE HAS IS WRONG ABOUT WHAT IT CAN EAT (D362).**
+    D161 counted workplace buffers as the village's food — correct, and it starved a village the
+    day a buffer grew past what one marketer's armfuls could drain. **Any "we have enough" that
+    stands producers down must be paired with a carrier that can actually move the stock**, and
+    "is there room?" must be asked of the shelves, never of the things not yet on them.
+33. **⚠️ THE VIEW MUST DRAW THE CLASS THE ROUTES PRICE (D362).** The trails drew raw wear against
+    the thresholds while the routes priced the hysteresis class; the picture flickered dot by dot
+    while the walking did not. One answer, one door: `PathWear.ClassAt` / `PriceClassAt`.
+34. **⚠️ CLIP THE FILL BY SUBTRACTING WHAT IS NOT WANTED, NOT BY KEEPING WHAT IS (D362).** A
+    smoothed shape bulges past its own cells (concave corners are cut outward); clipping TO the
+    cells lost 1% of a round and would have drawn a sliver of bare earth along every fence.
+    Subtracting the other cells cuts only on edges between two cells, and a fill with nothing
+    subtracted is itself — which is the self-check.
 28. **⛔⛔ A CAP THAT CAN ONLY RISE ON WHAT IT ALLOWED CAN NEVER RISE (D361).** D194's farm memory
     was a high-water mark of tiles brought in per hand, and the farm sows what it learned — so the
     mark could only move when staffing accidents made a year bring in more than it sowed per hand.

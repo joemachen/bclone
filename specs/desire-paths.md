@@ -57,7 +57,8 @@ overflow argument).
 
 ### 3.2 Decay
 At every season boundary (`PathWearSystem`, after `CropSystem`), every tile fades by
-`path_wear_decay_per_season` (**11**; D358 shipped 4 in old units = 12 in these), floored at 0.
+`path_wear_decay_per_season` (**6** since D362; D361 had 11, D358 shipped 4 in old units = 12 in
+these), floored at 0.
 **Measured before the number was picked (D358):** in the shipped valley a busy tile is trodden
 10–18 times a season, the median trodden tile ~5, and the lone Phase 0 walker's route 1 a season.
 **Re-tuned on Joe's play (D360):** *"paths fade too quickly … 50% longer to fade and 25% longer to
@@ -66,33 +67,46 @@ draw."* A path at the worn line now fades in 48 ⁄ 11 ≈ 4.4 seasons (was 3); 
 in 4.4 seasons (was 3.6). The median 5-a-season lane (+4) still takes 12 seasons and the lone
 forager's 3 a season still never outlasts the decay — both unchanged on purpose, so §2.6's *no
 paths* rule still holds by arithmetic.
+**Re-tuned again on Joe's play (D362):** *"they should appear sooner … it should take longer before
+a pathway even starts to disappear … once it exists, it should exist for longer."* Worn at **30**,
+packed at **100**, decay **6**, and a new dial **`path_holds_for` = 24** — how far under its line a
+path's wear may fall before it stops being one (the hysteresis band, which had been the decay
+itself). A busy 10-a-season lane (30 − 6 = +24) is a path in **1.3 seasons** (was 2.5); the median
+5-a-season lane (+9) in 3.3 (was 12); an abandoned path holds for **four seasons** and then goes as
+one lane; the lone forager's 3 a season still never outlasts a decay of 6.
 
 ### 3.3 Price
 A tile's **entry cost** — what it costs to step onto it — is one of three classes:
 
 | class | condition | cost | key |
 |---|---|---|---|
-| grass | wear < `path_worn_at` (48) | 10 = `BaseTileCost` | — |
-| worn | 48 ≤ wear < `path_packed_at` (150) | 9 | `path_worn_tile_cost` |
-| packed | wear ≥ 150 | 8 | `path_packed_tile_cost` |
+| grass | class 0 (wear < `path_worn_at` = 30 to enter; holds until 30 − `path_holds_for`) | 10 = `BaseTileCost` | — |
+| worn | class 1 (wear ≥ 30; holds until 6) | 9 | `path_worn_tile_cost` |
+| packed | class 2 (wear ≥ `path_packed_at` = 100; holds until 76) | 8 | `path_packed_tile_cost` |
 
-(D358 shipped 12 / 40 with a step of 1; D360 is a step of 3 with the thresholds raised a quarter.)
+(D358 shipped 12 / 40 with a step of 1; D360 a step of 3 at 48 / 150; D362 30 / 100 with the grace.)
+⭐ **The class is the one answer (D362):** `TravelCostField.CostToEnter` prices `PathWear.ClassAt`,
+and the view draws `PriceClassAt` — the first draft priced and drew the raw wear against the
+thresholds while the class only gated *when* the routes were told, so a lane hovering at the line
+flickered tile by tile on the map (Joe's dots) while the routes still walked it.
 
 Validation: `1 ≤ packed ≤ worn ≤ BaseTileCost` and `worn_at < packed_at`. **The discount is the
 lock-in cap §2.6 asks for:** at 8 a packed detour a quarter longer than the straight walk is still
 slower (`AWornLaneIsCheaperAndTheRouteTakesIt` — down one, along five packed, up one = 60 against
 50 on grass: the detour does not pay). Built paths later take lower numbers in the same table.
 
-**Hysteresis.** A tile that has become a path keeps its class until its wear falls a *decay's
-worth* below the threshold (`PriceClassOf(wear, previous, band = decay)`). Measured before it
-existed: the shipped valley re-priced in 26 of its first 40 seasons because well-used tiles sat
-within one decay of a threshold and flapped across it; every re-price is ~a hundred flow fields.
+**Hysteresis.** A tile that has become a path keeps its class until its wear falls
+`path_holds_for` below the threshold (`PriceClassOf(wear, previous, band)`). Measured before it
+existed (D358): the shipped valley re-priced in 26 of its first 40 seasons because well-used tiles
+sat within one decay of a threshold and flapped across it; every re-price is ~a hundred flow
+fields. The band was the decay itself until Joe's play made it a dial (D362).
 
 ### 3.4 When the routes learn
-Wear is handed to the routes **only at a season turn, and only once a year** — spring
+**The classes move every sweep** (D362) — a path appears on the map the season it wears through
+and holds for its grace — and are handed to the routes **only once a year**, spring
 (`Decay(amount, reprice: spring)`). `PathWear.Generation` moves every sweep (the view's trails
-redraw on it); `PathWear.RoutesGeneration` moves only when a re-pricing sweep finds a tile whose
-class changed. `TravelCostField.FieldTo` compares `RoutesGeneration` to the generation its fields
+redraw on it); `PathWear.RoutesGeneration` moves on a re-pricing sweep only, and only if some class
+changed since the last one (`_routesDirty`). `TravelCostField.FieldTo` compares `RoutesGeneration` to the generation its fields
 were built at, and on a difference computes the entry-cost table once and **refills each cached
 field in place on its next ask** (`TerrainCostField.Refill`) — same arrays, new numbers. Nothing
 is allocated; nothing is rebuilt that nobody asks for.
@@ -137,7 +151,8 @@ worlds** — the suite runs worlds in parallel and a shared buffer is a determin
 (`CLAUDE.md`). `Forget()` drops it with the fields.
 
 ### 4.4 Config (`data/sim.config.json`)
-`path_wear_per_step` 3 · `path_wear_decay_per_season` 11 · `path_worn_at` 48 · `path_packed_at` 150 ·
+`path_wear_per_step` 3 · `path_wear_decay_per_season` 6 · `path_worn_at` 30 · `path_packed_at` 100 ·
+`path_holds_for` 24 ·
 `path_worn_tile_cost` 9 · `path_packed_tile_cost` 8. The comment in the file carries the
 measurement the numbers came from. Paving will add classes to the same table, not a second one.
 
@@ -198,3 +213,7 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   lane he watched for years and never saw drawn was wear that decay 4 kept under the line. Six
   shipped seeds over fifty years still carry **139** people (D358: 139; before paths: 118). Colour
   and the packed/worn contrast not yet remarked on.
+- [x] **Third pass (D362):** *"appear sooner … take longer before a pathway even starts to
+  disappear … exist for longer before growing back"* → worn 30 / packed 100 / decay 6 and the
+  `path_holds_for` dial (24); classes move every season; the view draws the class the routes
+  price, so a lane appears and goes as one lane, not dot by dot.

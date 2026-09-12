@@ -120,6 +120,7 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.ClearingAStore => "clearing out a store",
         VillagerState.Clearing => "clearing painted ground",
         VillagerState.TidyingGround => "fetching a load off the ground",
+        VillagerState.ClearingABuffer => "carrying food out of a hut",
         VillagerState.TravelingToField => "walking out to the field",
         VillagerState.Sowing => "sowing",
         VillagerState.Reaping => "reaping",
@@ -393,6 +394,12 @@ public sealed class BehaviorSystem : ISimSystem
                 // To the heap they set off for, same rule again (D96).
                 Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
                     VillagerState.TidyingGround);
+                return;
+
+            case VillagerState.ClearingABuffer:
+                // To the hut whose buffer they set off to clear (D362).
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    VillagerState.ClearingABuffer);
                 return;
 
             case VillagerState.FetchingMaterials:
@@ -2477,7 +2484,7 @@ public sealed class BehaviorSystem : ISimSystem
         // whole of Phase 3.
         bool needsFood = !world.FoodLimitIsMet()
             && (world.FoodIn(household.Stockpile) < world.TargetFoodFor(household)
-                || world.FoodTheVillageHolds() < world.FoodTheVillageHasRoomFor());
+                || world.TheVillageWantsMoreFood());
 
         // FETCH — before work, because a household with an empty larder has a more
         // pressing errand than its job.
@@ -2695,7 +2702,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // most idle person in a winter village, which is exactly who both errands
                 // are for. Same order as the bottom of Decide, deliberately: two copies of
                 // one ranking is how they come to disagree.
-                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
                     GoHome(world, villager);
                 }
@@ -2722,7 +2729,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             // Held by the limit: idle from their trade, so they take spare work — the same
             // ranking a woodcutter with an empty yard takes, for the same reason.
-            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
             {
                 GoHome(world, villager);
             }
@@ -2783,7 +2790,7 @@ public sealed class BehaviorSystem : ISimSystem
             // Idle from their trade, so they tidy or help clear — the same ranking the
             // bottom of this method uses, and the same one a woodcutter with an empty yard
             // takes. Two copies of it is how they come to disagree, so it is the same order.
-            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
             {
                 GoHome(world, villager);
             }
@@ -2843,7 +2850,7 @@ public sealed class BehaviorSystem : ISimSystem
                           + $"{world.LogsInWarehouses()}. Its ground is wooded again."
                     : $"Nothing bare left to plant at {job.Name} — its ground is wooded again.";
 
-                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
                     GoHome(world, villager);
                 }
@@ -2859,7 +2866,7 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.WorkNote =
                     $"{job.Name} is not felling, and has no ground to tend.";
 
-                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
                     GoHome(world, villager);
                 }
@@ -2927,6 +2934,13 @@ public sealed class BehaviorSystem : ISimSystem
         // take it to a store" reaches them, and needs no construction site to exist, which is
         // the second of D66's two missing errands arriving at last.
         if (TryTidyGround(world, villager))
+        {
+            return;
+        }
+
+        // ⭐ And a hut whose buffer holds food nobody can reach (D362) — the errand Joe's village
+        // needed fifteen resting people to run, and none of them had.
+        if (TryClearABuffer(world, villager))
         {
             return;
         }
@@ -3056,6 +3070,104 @@ public sealed class BehaviorSystem : ISimSystem
     /// tidying being a teleport with extra steps — the same rule that makes a household's
     /// fetch a real journey (D32), applied to the mess.
     /// </remarks>
+    /// <summary>
+    /// ⭐⭐ Spare hands carry food out of a full buffer — <b>the lodge does not get to starve the
+    /// village</b> (D362).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe's game, 2026-09-12: seven hunts filled the lodge, `FoodTheVillageHolds` counted it
+    /// (D161, rightly), every food producer stood down, and the only carrier was one marketer at
+    /// forty an armful — fifteen people rested for two years while the granaries drained, and
+    /// thirteen starved beside 1,780 meat. A buffer is a pass-through; when the marketer cannot keep
+    /// it one, the spare hands do, the way they carry a load left on the ground.
+    /// </para>
+    /// <para>
+    /// Nearest buffer worth clearing (`BufferWorthClearing` — an armful of food and a store with
+    /// room), off the one cost field. Offered after the ground and before the harvest, because a
+    /// load already carried and put down is nearer to being eaten than a tree.
+    /// </para>
+    /// </remarks>
+    private static bool TryClearABuffer(SimWorld world, Villager villager)
+    {
+        if (!villager.CanWork || villager.IsCarrying)
+        {
+            return false;
+        }
+
+        Workplace? nearest = null;
+        int bestCost = int.MaxValue;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (!world.BufferWorthClearing(workplace))
+            {
+                continue;
+            }
+
+            int cost = world.TravelCost.Cost(villager.Tile, workplace.Tile);
+            if (cost != TravelCostField.Unreachable && cost < bestCost)
+            {
+                bestCost = cost;
+                nearest = workplace;
+            }
+        }
+
+        if (nearest is null)
+        {
+            return false;
+        }
+
+        villager.ErrandX = nearest.Tile.X;
+        villager.ErrandY = nearest.Tile.Y;
+        villager.State = VillagerState.ClearingABuffer;
+        Travel(world, villager, nearest.Position, VillagerState.ClearingABuffer);
+        return true;
+    }
+
+    /// <summary>An armful of food out of the buffer, then to a store by the ordinary path.</summary>
+    private static void TakeFromTheBuffer(SimWorld world, Villager villager)
+    {
+        var at = new GridPos(villager.ErrandX, villager.ErrandY);
+        villager.ErrandX = 0;
+        villager.ErrandY = 0;
+
+        Workplace? workplace = null;
+        for (int i = 0; i < world.Workplaces.Count && workplace is null; i++)
+        {
+            if (world.Workplaces[i].Tile == at && !world.Workplaces[i].IsSite)
+            {
+                workplace = world.Workplaces[i];
+            }
+        }
+
+        if (workplace is not null)
+        {
+            int room = world.Config.CarryCapacity;
+            IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+            for (int g = 0; g < edible.Count && room > 0; g++)
+            {
+                int held = workplace.Store[edible[g]];
+                int take = held < room ? held : room;
+                if (take > 0 && workplace.Store.TryTake(edible[g], take))
+                {
+                    villager.Carried.Receive(edible[g], take);
+                    room -= take;
+                }
+            }
+        }
+
+        if (!villager.IsCarrying)
+        {
+            // Somebody else got there first, or the hut is gone. Not an error.
+            GoHome(world, villager);
+            return;
+        }
+
+        villager.State = VillagerState.HaulingToStore;
+        HaulOrSetDown(world, villager);
+    }
+
     private static void PickUpFromTheGround(SimWorld world, Villager villager)
     {
         var at = new GridPos(villager.ErrandX, villager.ErrandY);
@@ -4047,6 +4159,12 @@ public sealed class BehaviorSystem : ISimSystem
         if (onArrival == VillagerState.TidyingGround)
         {
             PickUpFromTheGround(world, villager);
+            return;
+        }
+
+        if (onArrival == VillagerState.ClearingABuffer)
+        {
+            TakeFromTheBuffer(world, villager);
             return;
         }
 

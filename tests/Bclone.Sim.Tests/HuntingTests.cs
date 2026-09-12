@@ -585,4 +585,71 @@ public sealed class HuntingTests
 
         return total;
     }
+
+    /// <summary>
+    /// ⛔⛔ A village does not starve beside a lodge full of meat — <b>an armful of food in a buffer is
+    /// worth the walk whenever a store has room</b> (D362).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe's game, 2026-09-12: seven hunts filled the lodge, `FoodTheVillageHolds` counted it
+    /// (D161), every food producer's Wants went to 0, and the only thing that moved meat was one
+    /// marketer at forty an armful — because `BufferWorthClearing` cleared a buffer only when it was
+    /// NEARLY FULL, and after the first eight hundred it was not. Fifteen people rested for two
+    /// years while the granaries drained; thirteen starved beside 1,780 meat.
+    /// </para>
+    /// <para>
+    /// Posed directly: a lodge with a season's meat in it and empty granaries with room. Within a
+    /// season the meat is out of the lodge and into the stores, and the village's count of food
+    /// it holds never claimed more than it could reach.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AVillageDoesNotStarveBesideAFullLodge()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace lodge = RaiseALodge(world);
+        loop.Step(10);
+
+        // Joe's state: the lodge a load short of full, the granaries thin — so the village's count
+        // of the food it HOLDS says plenty (the lodge counts, D161) and every producer stands down,
+        // while the food people can actually fetch runs out. The nearly-full rule read this lodge
+        // as "not worth clearing".
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            foreach (Goods goods in world.GoodsCatalog.EdibleGoods)
+            {
+                store.Store.TakeAll(goods);
+            }
+        }
+
+        int meat = lodge.Store.Capacity - config.MeatYield - 1;
+        lodge.Store.Add(Goods.Meat, meat);
+        Assert.True(world.BufferWorthClearing(lodge), "a lodge a load short of full beside thin granaries was not worth clearing");
+
+        // Joe had set a food limit; the lodge alone meets it.
+        Assert.True(world.SetStockLimit(Goods.Produce, meat / 2).Allowed);
+        Assert.True(
+            world.StockLimits.IsMet(Goods.Produce, world.FoodTheVillageHolds()),
+            $"the village does not think it has enough food ({world.FoodTheVillageHolds()} held), so this is not Joe's state");
+
+        int inStoresBefore = world.FoodInGranaries();
+        loop.Step(config.TicksPerSeason);
+
+        int left = lodge.Store[Goods.Meat];
+        int inStores = world.FoodInGranaries();
+        _output.WriteLine($"a season on: {meat} meat in the lodge became {left}; the stores went {inStoresBefore} → {inStores}; {world.Villagers.Count(v => v.Alive)} alive");
+
+        // The hunters keep hunting into it (the granaries ARE thin), so the bar is what left the
+        // lodge for a store: at least eight armfuls in a season, from four people who also eat.
+        int carried = inStores - inStoresBefore;
+        Assert.True(
+            carried >= 8 * config.CarryCapacity,
+            $"a season passed and only {carried} meat reached a store from a lodge holding {meat} — "
+            + "nobody is carrying it where it can be eaten");
+        Assert.DoesNotContain(world.Villagers, v => v.CauseOfDeath == CauseOfDeath.Starvation);
+    }
 }

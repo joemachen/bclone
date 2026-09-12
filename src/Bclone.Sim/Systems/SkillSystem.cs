@@ -245,6 +245,7 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.Building => true,
         VillagerState.Clearing => true,
         VillagerState.TidyingGround => true,
+        VillagerState.ClearingABuffer => true,
 
         // Clearing a store out is work, and it is nobody's TRADE -- like tidying a load off the
         // ground, it is what somebody does when the village has asked for something doing. It

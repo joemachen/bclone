@@ -346,7 +346,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D358) — desire paths. Was 3707818765402790126.
     // RE-TAKEN (D360) — the wear's units and thresholds. Was 8696606774546397412.
     // RE-TAKEN (D361) — clock B. Was 2446761918259013976.
-    private const ulong FixtureFiftyYearHash = 6620710744463477554UL;
+    // RE-TAKEN (D362) — paths and buffers. Was 6620710744463477554.
+    private const ulong FixtureFiftyYearHash = 6175824268791431883UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -411,7 +412,12 @@ public sealed class StockLimitTests
     //     average cost), so a diagonal is shorter than its staircase; the Phase 0 pins hold by
     //     geometry and the valley pin moved (the first gathering trip at 15, not 17). Proof is
     //     outcomes: twelve shipped seeds over fifty years, 281 people against 274, food +2%.
-    private const ulong ShippedFiftyYearHash = 14154869473835624746UL;
+    //   before paths came sooner and the spare hands emptied the huts (D362): 14154869473835624746
+    //     — Joe's play of clock B: worn at 30, packed at 100, decay 6, a grace of 24 under the line
+    //     (path_holds_for), the class priced and drawn; a buffer holding an armful of food is worth
+    //     clearing whenever a store has room and the spare hands carry it (ClearingABuffer, a new
+    //     state — the enum grew, so every villager's state hashes one further along).
+    private const ulong ShippedFiftyYearHash = 14453852414769362964UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

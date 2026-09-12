@@ -248,7 +248,10 @@ public sealed class FarmGoldenTests
     // its autumn had room to spare (and steps back if it rots); a mixed store keeps half its room
     // for food. Proof is outcomes: twelve shipped seeds × fifty years, 281 people against 274.
     // Was 16810765702227238679.
-    private const ulong SeamGoldenHash = 14905149421740555056UL;
+    // RE-TAKEN (D362) — paths come sooner and hold longer (worn 30, packed 100, decay 6, a grace of
+    // 24; the class is priced and drawn), and a food buffer is cleared at an armful by the spare
+    // hands. Was 14905149421740555056.
+    private const ulong SeamGoldenHash = 12974345592176735875UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -291,7 +294,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D358) with it again — desire paths. Was 11205762516947333005.
     // RE-TAKEN (D360) with it again — the wear's units. Was 12842231052626848622.
     // RE-TAKEN (D361) with it again — clock B. Was 11891405305821433080.
-    private const ulong SeamBeforeAnybodyGotBetter = 3581667183433317301UL;
+    // RE-TAKEN (D362) with it again — paths and buffers. Was 3581667183433317301.
+    private const ulong SeamBeforeAnybodyGotBetter = 16745167020588601942UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

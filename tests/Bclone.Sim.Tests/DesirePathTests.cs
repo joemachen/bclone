@@ -205,35 +205,101 @@ public sealed class DesirePathTests
 
     /// <summary>
     /// ⛔ A lane hovering at the threshold does NOT re-price every season — hysteresis, which is
-    /// what keeps a settled village from refilling a hundred flow fields four times a year.
+    /// what keeps a settled village from refilling a hundred flow fields four times a year — and
+    /// the band is <c>path_holds_for</c>, a dial (D362).
     /// </summary>
     /// <remarks>
     /// Measured before it existed (D358): the shipped valley re-priced in 26 of its first 40
-    /// seasons. A tile trodden to 15 fades to 11 — under the line of 12, within a decay's worth of
-    /// it — and stays a path; it stops being one at 7, a full decay below.
+    /// seasons. A tile trodden to 15 fades to 11 — under the line of 12, within the grace of 4 —
+    /// and stays a path; it stops being one at 7, past the grace. Classes move every sweep; the
+    /// ROUTES are told on a re-pricing sweep only, and only if something changed.
     /// </remarks>
     [Fact]
     public void APathHoveringAtTheLineDoesNotRePriceEverySeason()
     {
-        var wear = new PathWear(Map("....", "...."));
-        wear.PriceAt(wornAt: 12, packedAt: 40);
+        GeneratedMap map = Map("....", "....");
+        var wear = new PathWear(map);
+        var field = new TravelCostField(1, map);
+        field.ReadWearFrom(wear, wornAt: 12, packedAt: 40, wornCost: 9, packedCost: 8, holdsFor: 4);
         var tile = new GridPos(1, 1);
 
         wear.Tread(tile, 15);
         wear.Decay(0);
         int priced = wear.RoutesGeneration;
+        Assert.Equal(1, wear.ClassAt(tile));
+        Assert.Equal(9, field.CostToEnter(tile));
 
-        // 15 → 11: under the line, but not a decay's worth under it. Still a path.
+        // 15 → 11: under the line, but within the grace. Still a path — on the map AND to walk
+        // on, since the routes price the class (D362) — and the routes untouched.
         wear.Decay(4);
+        Assert.Equal(1, wear.ClassAt(tile));
+        Assert.Equal(9, field.CostToEnter(tile));
         Assert.Equal(priced, wear.RoutesGeneration);
 
         // 11 → 7: now it has genuinely faded, and the routes are told once.
         wear.Decay(4);
+        Assert.Equal(0, wear.ClassAt(tile));
+        Assert.Equal(TravelCostField.BaseTileCost, field.CostToEnter(tile));
         Assert.Equal(priced + 1, wear.RoutesGeneration);
 
         // And a season on bare ground tells them nothing.
         wear.Decay(4);
         Assert.Equal(priced + 1, wear.RoutesGeneration);
+    }
+
+    /// <summary>
+    /// ⭐ An abandoned path holds for its grace and then goes back to grass <b>as one lane</b>, and
+    /// a new lane appears on the map the season it wears through — not the spring after (D362).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"it should take longer before a pathway even starts to disappear … once it exists, it
+    /// should exist for longer before growing back … they should appear sooner."* With decay 6 and
+    /// a grace of 24, a lane nobody walks stays a path for four sweeps and is gone on the fifth —
+    /// every tile of it together, because they share the grace, not the dots of a lane going tile
+    /// by tile. And the class moves on a non-repricing sweep, so the picture sees it at once
+    /// while the routes wait for spring.
+    /// </remarks>
+    [Fact]
+    public void AnAbandonedPathHoldsForItsGraceAndThenGoesTogether()
+    {
+        GeneratedMap map = Map("........", "........");
+        var wear = new PathWear(map);
+        wear.PriceAt(wornAt: 30, packedAt: 100, holdsFor: 24);
+
+        // A lane worn unevenly — 36 to 50 — as a real one is. The sweep fades before it classes,
+        // so a tile has to be six over the line at the turn to be a path that season.
+        for (int x = 0; x < 8; x++)
+        {
+            wear.Tread(new GridPos(x, 0), 36 + (x * 2));
+        }
+
+        // A summer sweep (no re-price): the lane is a path on the map at once …
+        int routes = wear.RoutesGeneration;
+        wear.Decay(6, reprice: false);
+        Assert.Equal(8, wear.PathTiles);
+        Assert.Equal(routes, wear.RoutesGeneration);
+
+        // … and the routes learn in spring.
+        wear.Decay(6, reprice: true);
+        Assert.Equal(routes + 1, wear.RoutesGeneration);
+        Assert.Equal(8, wear.PathTiles);
+
+        // Nobody walks it. Three more sweeps — the lowest tile falls to 6, twenty-four under the
+        // line, the edge of its grace — and every tile is still a path: four seasons abandoned.
+        wear.Decay(6);
+        wear.Decay(6);
+        wear.Decay(6);
+        Assert.Equal(8, wear.PathTiles);
+
+        // Then it goes — the whole lane within the three sweeps its unevenness spans, not a dot
+        // at a time over a year — and by the eighth sweep nothing is left.
+        wear.Decay(6);
+        int going = wear.PathTiles;
+        wear.Decay(6);
+        wear.Decay(6);
+        _output.WriteLine($"a season after its grace ran out the lane had {going} of 8 tiles left; three seasons after, {wear.PathTiles}");
+        Assert.True(going < 8, "the grace ran out and nothing changed");
+        Assert.Equal(0, wear.PathTiles);
     }
 
     // ---------------------------------------------------------------

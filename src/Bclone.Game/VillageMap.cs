@@ -3289,60 +3289,37 @@ public partial class VillageMap : Control
                     }
                 }
 
-                KeepField(field, Terrain.Field);
-                KeepStage(sown, Terrain.Sown, field.Count);
-                KeepStage(ripe, Terrain.Ripe, field.Count);
+                Vector2[] traced = ZoneOutline.Fill(ZoneOutline.Trace(field, SubTile.PerTile), field);
+                KeepTraced(traced, Terrain.Field);
+                KeepStage(traced, field, sown, Terrain.Sown, field.Count);
+                KeepStage(traced, field, ripe, Terrain.Ripe, field.Count);
             }
         }
 
-        void KeepStage(HashSet<Vector2I> cells, Terrain stage, int wholeField)
+        void KeepTraced(Vector2[] traced, Terrain stage)
+        {
+            var triangles = new Vector2[traced.Length];
+            for (int i = 0; i < traced.Length; i++)
+            {
+                triangles[i] = InTileSpace(traced[i], SubTile.PerTile);
+            }
+
+            _fieldFills.Add((stage, triangles));
+        }
+
+        void KeepStage(Vector2[] fieldTraced, HashSet<Vector2I> field, HashSet<Vector2I> cells, Terrain stage, int wholeField)
         {
             if (cells.Count == 0)
             {
                 return;
             }
 
-            if (cells.Count == wholeField)
-            {
-                KeepField(cells, stage);
-                return;
-            }
-
-            // Part of the field: the painted quarters themselves, two triangles each, in the cell's
-            // own square — exactly the ground that is sown or ripe, and nothing rounded.
-            var triangles = new Vector2[cells.Count * 6];
-            int t = 0;
-            foreach (Vector2I cell in cells)
-            {
-                Vector2 a = InTileSpace(new Vector2(cell.X - 0.5f, cell.Y - 0.5f), SubTile.PerTile);
-                Vector2 b = InTileSpace(new Vector2(cell.X + 0.5f, cell.Y - 0.5f), SubTile.PerTile);
-                Vector2 c = InTileSpace(new Vector2(cell.X + 0.5f, cell.Y + 0.5f), SubTile.PerTile);
-                Vector2 d = InTileSpace(new Vector2(cell.X - 0.5f, cell.Y + 0.5f), SubTile.PerTile);
-                triangles[t++] = a;
-                triangles[t++] = b;
-                triangles[t++] = c;
-                triangles[t++] = a;
-                triangles[t++] = c;
-                triangles[t++] = d;
-            }
-
-            _fieldFills.Add((stage, triangles));
-        }
-
-        void KeepField(HashSet<Vector2I> cells, Terrain stage)
-        {
-            if (cells.Count == 0)
-            {
-                return;
-            }
-
-            Vector2[] triangles = ZoneOutline.Fill(ZoneOutline.Trace(cells, SubTile.PerTile), cells);
-            for (int i = 0; i < triangles.Length; i++)
-            {
-                triangles[i] = InTileSpace(triangles[i], SubTile.PerTile);
-            }
-
-            _fieldFills.Add((stage, triangles));
+            // ⭐ The stage is the FIELD's own smooth fill, cut down to the stage's cells (D362): along
+            // the fence it is the field's curve, exactly; inside, the cell squares. D360 drew a partial
+            // stage as its squares alone, and Joe saw them stair-step where sown met the circle.
+            KeepTraced(
+                cells.Count == wholeField ? fieldTraced : ZoneOutline.ClipToCells(fieldTraced, cells, field),
+                stage);
         }
 
         void FillFrom(HashSet<Vector2I> cells, Layer layer, int owner, bool waiting)
@@ -4279,11 +4256,13 @@ public partial class VillageMap : Control
             _trailGrade = new byte[wear.Count];
         }
 
-        int wornAt = world.Config.PathWornAt;
-        int packedAt = world.Config.PathPackedAt;
+        // ⭐ THE CLASS THE ROUTES PRICE, NOT THE RAW WEAR (D362). The first draft compared wear to
+        // the thresholds, so a lane hovering at the line flickered tile by tile and vanished a
+        // season after it was abandoned while the routes still priced it as a path — Joe's dots.
+        // The class carries `path_holds_for`: the picture and the walking are the same paths.
         for (int i = 0; i < wear.Count; i++)
         {
-            byte grade = wear[i] >= packedAt ? (byte)2 : wear[i] >= wornAt ? (byte)1 : (byte)0;
+            byte grade = paths.PriceClassAt(i);
             _trailGrade[i] = grade;
             if (grade > 0)
             {

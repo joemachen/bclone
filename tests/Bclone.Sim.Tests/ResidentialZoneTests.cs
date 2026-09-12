@@ -441,8 +441,18 @@ public sealed class ResidentialZoneTests
         // the block spanned the tile that had just been erased and RE-PAINTED IT. The family
         // dutifully rebuilt in the very spot the test had turned them out of, and the guard failed
         // for the feature working. A fixture can fight the mechanism it is testing (D194).
-        loop.Step(Config.TicksPerYear * 15);
+        //
+        // ⚠️ Asked YEAR BY YEAR, not once after fifteen (D362): a founding household turned out
+        // at year twenty rebuilds within a year and then ages out of existence around year
+        // twenty-eight, so a single look at year thirty-five found a family that had rebuilt,
+        // lived in the new house and died — and read it as "never rebuilt".
+        int year = 0;
+        for (; year < 15 && !turnedOut.HasHome; year++)
+        {
+            loop.Step(Config.TicksPerYear);
+        }
 
+        _output.WriteLine($"the {turnedOut.Name} household rebuilt after {year} year(s)");
         Assert.True(
             turnedOut.HasHome,
             $"The {turnedOut.Name} household never rebuilt on the ground still painted for them.");

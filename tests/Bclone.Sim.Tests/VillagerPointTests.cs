@@ -131,6 +131,10 @@ public sealed class VillagerPointTests
     /// rather than left to lie.) ⛔ It still guards the clock: a leg charged its route steps
     /// (clock A) reddens it, and so does a leg charged from the clock tile instead of the position.
     /// </para>
+    /// <para>
+    /// **Re-pinned a third time (D362)** — paths come sooner (worn at 30, a grace of 24), so the
+    /// village is quicker sooner: **59** trips, the fiftieth at **1,666**; the first two unchanged.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -161,8 +165,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 15, 259, 1973 }, at);
+        Assert.Equal(59, entries);
+        Assert.Equal(new ulong[] { 15, 259, 1666 }, at);
     }
 
     /// <summary>
