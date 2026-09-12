@@ -183,6 +183,10 @@ public sealed class SimWorld
     /// </remarks>
     public bool AFreeLibraryIsOwed { get; internal set; }
 
+    /// <summary>Whether the village log has already said the first path wore through (D358). Once, ever.</summary>
+    /// <remarks>Hashed sparsely: a village whose grass is still whole mixes nothing.</remarks>
+    public bool AFirstPathHasWorn { get; internal set; }
+
     /// <summary>
     /// Whether the village has been given a town hall it has not yet put anywhere.
     /// </summary>
@@ -409,6 +413,9 @@ public sealed class SimWorld
 
     /// <summary>Where the player has said the village may build (D42).</summary>
     public ZoneMap Zones { get; private set; } = null!;
+
+    /// <summary>How trodden every tile is — the desire paths (§2.6, D358). Sim state, hashed.</summary>
+    public PathWear Paths { get; private set; } = null!;
 
     /// <summary>How much of each good the player wants kept (D62).</summary>
     /// <remarks>
@@ -7865,6 +7872,9 @@ public sealed class SimWorld
         // always shared this one field (§2.6).
         TravelCost = new TravelCostField(config.TravelTicksPerUnit, Map);
         Zones = new ZoneMap(Map);
+        Paths = new PathWear(Map);
+        TravelCost.ReadWearFrom(
+            Paths, config.PathWornAt, config.PathPackedAt, config.PathWornTileCost, config.PathPackedTileCost);
 
         // Everything the village builds hangs off the founding site the generator
         // chose. The config keys that used to hold absolute coordinates are now

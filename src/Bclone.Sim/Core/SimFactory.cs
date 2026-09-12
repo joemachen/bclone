@@ -23,6 +23,7 @@ public static class SimFactory
     {
         new ClockSystem(),      // 1. advance the calendar, narrate season/year turns
         new CropSystem(),       // 2. and the ground answers it: autumn ripens, winter rots (D161)
+        new PathWearSystem(),   // 2b. and the grass recovers a little where people walked (§2.6, D358)
         new AgeingSystem(),     // 3. age becomes declining vigour and life stage
         new HouseholdSystem(),  // 4. households grow
         new NeedsSystem(),      // 5. hunger rises

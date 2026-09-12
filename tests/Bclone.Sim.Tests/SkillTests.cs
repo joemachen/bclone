@@ -286,8 +286,10 @@ public sealed class SkillTests
     // reader asking `Tile` mid-walk can see a different tile than the staircase gave — so the proof
     // is outcomes: population and food over sixty shipped years within noise, and the clock pins.
     // Were 4436310576949656979 (fixture) and 9219403902803322913 (shipped); before D354, 14169332401122492243 and 9044360297461632177.
-    [InlineData(false, 16532821140770288466UL)]
-    [InlineData(true, 14313473417015616038UL)]
+    // RE-TAKEN (D358) — desire paths (see `StockLimitTests.ShippedFiftyYearHash`). Were
+    // 16532821140770288466 (fixture) and 14313473417015616038 (shipped).
+    [InlineData(false, 1747940195267928072UL)]
+    [InlineData(true, 4022553321899754853UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

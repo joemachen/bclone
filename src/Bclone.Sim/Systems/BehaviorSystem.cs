@@ -643,10 +643,18 @@ public sealed class BehaviorSystem : ISimSystem
         // the granary by name, because the birth gate reads the granary specifically —
         // let the day's gathering land wherever happens to be closest and the village's
         // population ceiling starts depending on where people were standing.
+        //
+        // ⛔ AND THE COUNTER ONLY TAKES WHAT THE VILLAGE NEEDS (D358). A forager mid-haul with a
+        // day's gathering was re-seated as marketer by the allocator and, now a trader, put the
+        // whole 91 into the market — the D199 dumping ground by the side door, and it opened the
+        // first time desire paths moved the walk's clock so the two ticks lined up. The market's
+        // stock is derived from the homes it serves (`MarketStockWanted`); a load that would take it
+        // past that goes where a producer's would, whoever is carrying it.
         if (WorkplaceOf(world, villager)?.Kind == JobKind.Marketer)
         {
             Goods carrying = TheLoad(villager);
-            StoreBuilding? nearest = NearestStoreAccepting(world, villager.Tile, carrying);
+            StoreBuilding? nearest = NearestCounterWithRoomFor(
+                world, villager.Tile, carrying, villager.Carried[carrying]);
             if (nearest is not null)
             {
                 return nearest;
@@ -894,15 +902,26 @@ public sealed class BehaviorSystem : ISimSystem
         world.NearestStoreAccepting(hut, Goods.Logs, store => store.Store.Logs >= batch);
 
     /// <summary>The nearest store that will take this good and has room, or null.</summary>
-    private static StoreBuilding? NearestStoreAccepting(SimWorld world, GridPos from, Goods goods)
+    /// <summary>
+    /// A trader's counter: the nearest store that takes the load — but a MARKET only if the load
+    /// leaves it at or under what the village needs of that good (D199, D358).
+    /// </summary>
+    private static StoreBuilding? NearestCounterWithRoomFor(
+        SimWorld world, GridPos from, Goods goods, int amount)
     {
         StoreBuilding? best = null;
         int bestCost = int.MaxValue;
+        int wanted = VillageEconomy.MarketStockWanted(world.Config, OccupiedHomes(world));
 
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
             if (!store.Accepts(goods) || store.Store.IsFull)
+            {
+                continue;
+            }
+
+            if (store.Kind == StoreKind.Market && HeldOf(store.Store, goods) + amount > wanted)
             {
                 continue;
             }
@@ -3171,6 +3190,10 @@ public sealed class BehaviorSystem : ISimSystem
         bool legDone = villager.LegStep >= villager.LegSteps;
         villager.WalkTo(AlongTheLeg(villager.LegFrom, villager.LegTo, villager.LegStep, villager.LegSteps));
 
+        // ⭐ EVERY STEP TREADS THE TILE UNDER IT (§2.6, D358) — the tile under the straight line,
+        // so a trail is worn where people actually walk, not along the staircase they no longer take.
+        world.Paths.Tread(villager.Tile, world.Config.PathWearPerStep);
+
         if (legDone)
         {
             villager.LegSteps = 0;
@@ -3252,7 +3275,21 @@ public sealed class BehaviorSystem : ISimSystem
         villager.LegFrom = villager.Position;
         villager.LegTo = Point.CentreOf(route[furthest]);
         villager.LegTarget = target;
-        villager.LegSteps = furthest + 1;
+        // ⭐ A LEG'S TICKS FOLLOW THE COST OF THE GROUND IT CROSSES (§2.6, D358): the cost field's
+        // own answer from here to the waypoint — `cost[from] − cost[waypoint]` along the route the
+        // field chose — in whole steps of `BaseTileCost`, rounded to the nearest, never below one
+        // (a slower `travel_ticks_per_unit` still waits per step, as before). On grass every tile
+        // costs `BaseTileCost`, so this is exactly the route's step count and clock A (D356) is untouched;
+        // on a worn path it is fewer, which is the only way a road can make a walk faster and the
+        // reason Joe wanted roads at all.
+        int costHere = world.TravelCost.Cost(from, target);
+        int costThere = world.TravelCost.Cost(route[furthest], target);
+        int walked = costHere == TravelCostField.Unreachable || costThere == TravelCostField.Unreachable
+            ? (furthest + 1) * TravelCostField.BaseTileCost
+            : costHere - costThere;
+        int steps = (walked + (TravelCostField.BaseTileCost / 2))
+            / TravelCostField.BaseTileCost;
+        villager.LegSteps = steps < 1 ? 1 : steps;
         villager.LegStep = 0;
         return true;
     }

@@ -50,6 +50,82 @@ public sealed class TravelCostField
     /// </remarks>
     private readonly Dictionary<GridPos, TerrainCostField> _fields = new();
 
+    // ---------------------------------------------------------------
+    //  Worn ground (§2.6, D358)
+    // ---------------------------------------------------------------
+
+    private PathWear? _wear;
+    private int _wornAt;
+    private int _packedAt;
+    private int _wornCost;
+    private int _packedCost;
+    private int _builtAtWearGeneration = -1;
+
+    /// <summary>Whether any tile was worn enough to cost less than grass when the fields were last rebuilt — if not, the sweep is exact. Derived once per generation, never per field.</summary>
+    private bool _anythingWorn;
+
+    /// <summary>The price of stepping onto each tile, by map-order index, as of the last hand-over.</summary>
+    private byte[]? _entryCost;
+
+    /// <summary>Reused rebuild buffers — one per world, never shared (determinism).</summary>
+    private TerrainCostField.Scratch? _scratch;
+
+    /// <summary>
+    /// ⭐ Let the field read the desire paths: a trodden tile is cheaper to cross, and every cached
+    /// route is forgotten when the season hands new wear over.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is §2.6's "critical integration" in one method</b>: movement and labour catchment
+    /// read the SAME field, so a warehouse beside a worn lane has a bigger reach — a feature,
+    /// because both systems agree it does. Nothing else in the sim learns about paths.
+    /// </para>
+    /// <para>
+    /// ⛔ Costs are read from the wear <em>as of the last season turn</em>: <see cref="FieldTo"/>
+    /// drops every cached field when <see cref="PathWear.Generation"/> has moved, and
+    /// <c>Generation</c> moves only in <see cref="PathWear.Decay"/>. A footstep never rebuilds a
+    /// field. Uniform ground (nothing worn yet) still takes D179's breadth-first sweep.
+    /// </para>
+    /// </remarks>
+    public void ReadWearFrom(PathWear wear, int wornAt, int packedAt, int wornCost, int packedCost)
+    {
+        ArgumentNullException.ThrowIfNull(wear);
+        if (wornCost < 1 || packedCost < 1 || packedCost > wornCost || wornCost > BaseTileCost)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(wornCost),
+                $"Path costs must run packed ≤ worn ≤ {BaseTileCost} and stay positive (got worn {wornCost}, packed {packedCost}).");
+        }
+
+        if (wornAt < 1 || packedAt < wornAt)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(wornAt), $"Path thresholds must run 1 ≤ worn ≤ packed (got {wornAt}, {packedAt}).");
+        }
+
+        _wear = wear;
+        _wornAt = wornAt;
+        _packedAt = packedAt;
+        _wornCost = wornCost;
+        _packedCost = packedCost;
+        wear.PriceAt(wornAt, packedAt);
+        Forget();
+    }
+
+    /// <summary>What it costs to step onto this tile — grass, a worn path, or a packed one.</summary>
+    public int CostToEnter(GridPos tile)
+    {
+        if (_wear is null)
+        {
+            return BaseTileCost;
+        }
+
+        int wear = _wear.At(tile);
+        return wear >= _packedAt ? _packedCost : wear >= _wornAt ? _wornCost : BaseTileCost;
+    }
+
+
+
     public TravelCostField(int ticksPerBaseTile = 1, GeneratedMap? map = null)
     {
         if (ticksPerBaseTile < 1)
@@ -147,17 +223,50 @@ public sealed class TravelCostField
     /// getting it subtly wrong would leave exactly the stale route this exists to prevent. It
     /// is cheap because it is rare: only a change of <em>passability</em> gets here.
     /// </remarks>
-    public void Forget() => _fields.Clear();
+    public void Forget()
+    {
+        _fields.Clear();
+        _scratch = null;
+    }
 
     /// <summary>How many routes are currently cached. For tests and diagnostics.</summary>
     internal int CachedFields => _fields.Count;
 
     private TerrainCostField FieldTo(GridPos destination)
     {
+        // ⭐ Wear reaches the routes at a season turn, here, and nowhere else (D358) — and only when
+        // some tile's PRICE changed (`RoutesGeneration`): a rebuild every season took the suite past
+        // ten minutes. The fields are KEPT and refilled in place on the next ask, with a price table
+        // computed once for the generation — the first draft threw them away and re-allocated, and a
+        // fifty-year run went 1.6 s → 3.4 s.
+        if (_wear is not null && _wear.RoutesGeneration != _builtAtWearGeneration)
+        {
+            _builtAtWearGeneration = _wear.RoutesGeneration;
+            _anythingWorn = _wear.TilesAtLeast(_wornAt) > 0;
+            if (_anythingWorn)
+            {
+                _entryCost ??= new byte[_map!.Width * _map.Height];
+                for (int i = 0; i < _entryCost.Length; i++)
+                {
+                    _entryCost[i] = (byte)CostToEnter(_wear.PositionOf(i));
+                }
+            }
+        }
+
         if (!_fields.TryGetValue(destination, out TerrainCostField? field))
         {
+            // A fresh field is the sweep, which is already right when nothing is worn — only a
+            // priced valley needs it refilled straight away.
             field = TerrainCostField.Build(_map!, destination, BaseTileCost);
+            field.BuiltAtGeneration = _anythingWorn ? -1 : _builtAtWearGeneration;
             _fields[destination] = field;
+        }
+
+        if (field.BuiltAtGeneration != _builtAtWearGeneration)
+        {
+            _scratch ??= new TerrainCostField.Scratch(_map!, BaseTileCost);
+            field.Refill(_map!, BaseTileCost, _anythingWorn ? _entryCost : null, _scratch);
+            field.BuiltAtGeneration = _builtAtWearGeneration;
         }
 
         return field;

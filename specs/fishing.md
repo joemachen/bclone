@@ -56,9 +56,9 @@ All keys live in `data/sim.config.json`; defaults are in `SimConfig`.
 | Key | Value | Set by |
 |---|---|---|
 | `fishing_hut_seats` | **4** | Joe, 2026-09-02 — the largest seat count of any food building |
-| `fish_yield` | **300** | D288 (from 100; Joe asked for ~2.5×, **overshot to 300 on purpose**) |
+| `fish_yield` | **400** | D358 (from 300, by D288's method — a forager walks worn paths and got quicker, a fisher did not); D288 (from 100; Joe asked for ~2.5×, **overshot to 300 on purpose**) |
 | `fish_ticks` | **10** | D282 (from 3 — the longest action in the game) |
-| `fishing_hut_store_cap` | **900** | D290 (from 300 — **three casts**) |
+| `fishing_hut_store_cap` | **1200** | D358 (from 900, with the yield — still **three casts**); D290 (from 300) |
 | `fishing_hut_logs` | 25 | with the hut |
 | `fishing_hut_stone` | 3 | with the hut |
 | `fishing_hut_work_ticks` | 40 | with the hut |
@@ -92,7 +92,7 @@ do.* **If you move either number, read that guard first.**
 
 ## 5. The work
 
-A cast is **10 ticks** and brings back **300 fish** into the hut's local store (cap **900**).
+A cast is **10 ticks** and brings back **400 fish** (D358; 300 before desire paths) into the hut's local store (cap **1200**, three casts).
 The fisher hauls to a granary when the hut fills; a **marketer runs the buffer dry** in between
 (`AMarketerRunsTheFisheryBufferDry`).
 

@@ -431,6 +431,24 @@ public static class StateHash
             hash = MixByte(hash, 1);
         }
 
+        // ⭐ THE DESIRE PATHS (§2.6, D358): every trodden tile, index and wear, in map order —
+        // sparse, so a valley nobody has walked mixes nothing. It is state because it decides
+        // where people go and how long they take; a fingerprint that skipped it would stay green
+        // while two villages wore different streets.
+        for (int i = 0; i < world.Paths.Tiles.Count; i++)
+        {
+            if (world.Paths.Tiles[i] != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, world.Paths.Tiles[i]);
+            }
+        }
+
+        if (world.AFirstPathHasWorn)
+        {
+            hash = MixByte(hash, 1);
+        }
+
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----
         //
         // ⚠️ THE RECORDS ARE MIXED IN SHELF ORDER, NOT AS A SET, and that is deliberate. Two runs

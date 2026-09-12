@@ -119,6 +119,17 @@ public sealed class VillagerPointTests
     /// <c>Gathering</c> **50** times, the first at tick **17**, the tenth at **247**, the fiftieth
     /// at **1,963**. Identical after — which is the clock-A promise as four numbers.
     /// </para>
+    /// <para>
+    /// ⭐ <b>RE-PINNED ONCE, DELIBERATELY — desire paths (D358), the first change to the walk's
+    /// clock since Phase 2, and Joe's</b> (*"paths should be cheaper / should increase speed"*).
+    /// Worn ground is cheaper and a leg's ticks follow the cost of the ground it crosses
+    /// (`PlanLeg`), so the village's walks shorten where it has worn lanes — measured over twenty
+    /// years of this fixture, villagers spend **8,977** ticks moving against **9,629** before, 6.8%
+    /// less, for the same 12 people and within 4% of the food. The first two numbers here are
+    /// unchanged (nothing is worn yet); **51** trips begin, the fiftieth at **1,974** — one more
+    /// trip in the same window. ⛔ The pin still guards clock B: a leg charged its straight length
+    /// reddens it (red-checked), and clock B remains its own measured slice.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnTheSameClockAsBefore()
@@ -149,8 +160,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(50, entries);
-        Assert.Equal(new ulong[] { 17, 247, 1963 }, at);
+        Assert.Equal(51, entries);
+        Assert.Equal(new ulong[] { 17, 247, 1974 }, at);
     }
 
     /// <summary>

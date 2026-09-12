@@ -244,6 +244,34 @@ public sealed record SimConfig
     [JsonPropertyName("travel_ticks_per_unit")]
     public int TravelTicksPerUnit { get; init; } = 1;
 
+    // ---------------------------------------------------------------
+    //  Desire paths (§2.6, D358) — `specs/desire-paths.md`
+    // ---------------------------------------------------------------
+
+    /// <summary>Wear one footstep lays on the tile under it.</summary>
+    [JsonPropertyName("path_wear_per_step")]
+    public int PathWearPerStep { get; init; } = 1;
+
+    /// <summary>How much every tile fades when the season turns — the sweep that also hands wear to the cost field.</summary>
+    [JsonPropertyName("path_wear_decay_per_season")]
+    public int PathWearDecayPerSeason { get; init; } = 4;
+
+    /// <summary>Wear at which grass reads as a worn path and crosses at <see cref="PathWornTileCost"/>.</summary>
+    [JsonPropertyName("path_worn_at")]
+    public int PathWornAt { get; init; } = 12;
+
+    /// <summary>Wear at which a worn path is packed hard and crosses at <see cref="PathPackedTileCost"/>.</summary>
+    [JsonPropertyName("path_packed_at")]
+    public int PathPackedAt { get; init; } = 40;
+
+    /// <summary>Cost of crossing a worn tile, against <c>TravelCostField.BaseTileCost</c> (10) for grass.</summary>
+    [JsonPropertyName("path_worn_tile_cost")]
+    public int PathWornTileCost { get; init; } = 9;
+
+    /// <summary>Cost of crossing a packed tile. ⛔ The cap §2.6 asks for: a worn detour a quarter longer than the straight walk is still slower.</summary>
+    [JsonPropertyName("path_packed_tile_cost")]
+    public int PathPackedTileCost { get; init; } = 8;
+
     /// <summary>
     /// Food a household stores <b>per member</b> before it stops foraging and rests.
     /// </summary>
@@ -555,9 +583,17 @@ public sealed record SimConfig
     /// **80**. This is set above that on purpose, and `FishingIsAStepUpFromForaging` guards the
     /// comparison so the two cannot drift back together.
     /// </para>
+    /// <para>
+    /// ⚠️ <b>Re-tuned 300 → 400 with desire paths (D358), by D288's method.</b> A forager walks the
+    /// village's worn lanes and got quicker (849 → 892 food per hundred ticks worked); a fisher's
+    /// walk to the river's edge is theirs alone and did not (832 → 826). At 300 the fisher was
+    /// behind; 350 read 1.05× — noise; **400 reads 1,068 against 892, 1.2×**, the first round
+    /// number clear of it. `fishing_hut_store_cap` went 900 → 1,200 with it — three casts, the
+    /// D290 coupling — and the hunter's `meat_yield` 600 → 800 above it, so the ladder stayed even.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("fish_yield")]
-    public int FishYield { get; init; } = 300;
+    public int FishYield { get; init; } = 400;
 
     /// <summary>
     /// Ticks one cast takes — <b>the longest action in the game, on purpose</b>.
@@ -613,7 +649,7 @@ public sealed record SimConfig
     /// </para>
     /// </remarks>
     [JsonPropertyName("fishing_hut_store_cap")]
-    public int FishingHutStoreCap { get; init; } = 900;
+    public int FishingHutStoreCap { get; init; } = 1200;
 
     /// <summary>What a hunter's lodge costs to raise — dearer than a fishing hut.</summary>
     /// <remarks>
@@ -650,7 +686,7 @@ public sealed record SimConfig
     /// ones asked for. `TheLodgeHoldsMoreThanOneHunt` guards the ratio here for the same reason.
     /// </remarks>
     [JsonPropertyName("hunter_lodge_store_cap")]
-    public int HunterLodgeStoreCap { get; init; } = 1800;
+    public int HunterLodgeStoreCap { get; init; } = 2400;
 
     /// <summary>
     /// How far a lodge hunts, in tiles — <b>wider than a gathering ring</b>.
@@ -679,9 +715,15 @@ public sealed record SimConfig
     /// MAY SET IT.</b> `specs/hunting.md §7`: food per hour worked, with demand held open — never
     /// per load. **The per-load comparison has now been wrong twice** (D286, D288), most recently
     /// telling us fishing beat foraging while it was making 311 against 721.
+    /// <para>
+    /// ⚠️ <b>Re-tuned 600 → 800 with desire paths (D358), by D293's rig.</b> The fisher went to 400
+    /// (above) and read 1,048 per hundred ticks worked; at 600 the hunter read 906 and Joe's ladder
+    /// (hunting above fishing above foraging) had inverted. **800 reads 1,266 against 1,048 —
+    /// 1.21×**, the same step D293 set. `hunter_lodge_store_cap` 1,800 → 2,400 with it: three hunts.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("meat_yield")]
-    public int MeatYield { get; init; } = 600;
+    public int MeatYield { get; init; } = 800;
 
     /// <summary>Hide off the same animal, before vigour.</summary>
     /// <remarks>
@@ -3097,6 +3139,26 @@ public sealed record SimConfig
         if (TravelTicksPerUnit <= 0)
         {
             throw new SimConfigException($"travel_ticks_per_unit must be greater than zero (got {TravelTicksPerUnit}).");
+        }
+
+        // Desire paths (D358). The cost field also refuses these, but a config error should
+        // name the key the modder typed, not the class that choked on it.
+        if (PathWearPerStep < 0 || PathWearDecayPerSeason < 0)
+        {
+            throw new SimConfigException(
+                $"path_wear_per_step and path_wear_decay_per_season cannot be negative (got {PathWearPerStep}, {PathWearDecayPerSeason}).");
+        }
+
+        if (PathWornAt < 1 || PathPackedAt < PathWornAt)
+        {
+            throw new SimConfigException(
+                $"path_worn_at must be at least 1 and path_packed_at at least path_worn_at (got {PathWornAt}, {PathPackedAt}).");
+        }
+
+        if (PathPackedTileCost < 1 || PathWornTileCost < PathPackedTileCost || PathWornTileCost > World.TravelCostField.BaseTileCost)
+        {
+            throw new SimConfigException(
+                $"path costs must run 1 <= path_packed_tile_cost <= path_worn_tile_cost <= {World.TravelCostField.BaseTileCost} (got worn {PathWornTileCost}, packed {PathPackedTileCost}).");
         }
 
         if (StockpileTarget <= 0)

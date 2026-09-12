@@ -343,7 +343,8 @@ public sealed class StockLimitTests
     // reader asking `Tile` mid-walk can see a different tile than the staircase gave — so the proof
     // is outcomes: population and food over sixty shipped years within noise, and the clock pins.
     // Was 12530049132124308337; before D354, 111552278507413873.
-    private const ulong FixtureFiftyYearHash = 3707818765402790126UL;
+    // RE-TAKEN (D358) — desire paths. Was 3707818765402790126.
+    private const ulong FixtureFiftyYearHash = 8696606774546397412UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -394,7 +395,12 @@ public sealed class StockLimitTests
     //   before fishing added a seventh good (2026-09-02): 801842139213225914
     //   before a villager held a Point (D354): 5668752618904500719
     //   before villagers walked straight lines (D356): 7968212936318456319
-    private const ulong ShippedFiftyYearHash = 16668249421764494515UL;
+    //   before the ground remembered where people walk (D358): 16668249421764494515
+    //     — worn tiles are cheaper and a leg's ticks follow them (Joe: "paths should be cheaper /
+    //     should increase speed"), the wear is hashed, `fish_yield` 300 → 400 by D288's method, and
+    //     a trader's load stops at what the village needs of the market. Proof is outcomes: twenty
+    //     fixture years, the same 12 people, 6.8% less time walking, food within 4%.
+    private const ulong ShippedFiftyYearHash = 7055419018953299020UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

@@ -145,10 +145,12 @@ public sealed class TerrainCostField
         // wrong answers** — it will keep the first route it finds rather than the cheapest,
         // and nothing here will throw.
         //
-        // **What to do then:** go back to a priority queue — `PriorityQueue<int, long>` keyed
-        // on `((long)cost << 20) | index`, which keeps the tie-break this file used to
-        // describe and stays O(E log V) rather than the O(n²) scan that cost four seconds a
-        // world. **Do not go back to the scan.**
+        // ✅ **THAT DAY CAME (D358), AND THE PARAGRAPH WAS READ.** The overload below takes a per-tile
+        // entry cost and settles by cost — Dial's bucket queue rather than the priority queue this
+        // paragraph suggested, because every edge is a small integer and the buckets are O(n + cost)
+        // where a heap is O(E log V); a heap was measured first and cost the suite a minute. **The
+        // sweep is still used whenever nothing is worn**, and `DesirePathTests` proves the two agree
+        // byte for byte on uniform ground. **Do not go back to the scan.**
         //
         // ⚠️ It will not announce itself. Every guard in the suite would still pass on the day
         // roads land, because they all describe a valley where the rule still holds — and the
@@ -201,6 +203,228 @@ public sealed class TerrainCostField
         }
 
         return field;
+    }
+
+    /// <summary>
+    /// ⭐⭐ The same field over ground that is NOT uniform — <b>worn paths are cheaper</b>
+    /// (§2.6, D358).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// D179's breadth-first sweep is correct only because every edge costs the same; the moment a
+    /// trodden tile costs 9 and grass 10, the FIFO no longer settles the cheapest tile first and
+    /// the field would be wrong on exactly the tiles this feature is about. So this is Dijkstra as
+    /// a BUCKET queue (Dial's algorithm) — <b>O(n + total cost)</b>, a whisker slower than the
+    /// sweep — and it is used <em>only when something is worn</em>: the caller passes a
+    /// <c>null</c> price table for a valley nobody has walked and gets the sweep.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Deterministic in its answer, not in its order.</b> Shortest-path cost is a property of
+    /// the graph; ties settle in either order and <c>cost[]</c> comes out the same (D179's own
+    /// argument). Buckets are walked in insertion order, so two machines do the same work in the
+    /// same order — belt and braces, and it costs nothing.
+    /// </para>
+    /// <para>
+    /// <paramref name="entryCost"/> is the cost of stepping ONTO each tile by map-order index —
+    /// a table, not a delegate, because it is asked four times a tile and the first draft's delegate
+    /// (position → wear → threshold) was a measurable share of a rebuild. Never less than one,
+    /// never more than <paramref name="baseTileCost"/>; passability is still the terrain's.
+    /// </para>
+    /// </remarks>
+    public static TerrainCostField Build(
+        GeneratedMap map, GridPos destination, int baseTileCost, byte[]? entryCost)
+    {
+        if (entryCost is null)
+        {
+            return Build(map, destination, baseTileCost);
+        }
+
+        TerrainCostField field = Build(map, destination, baseTileCost);
+        field.Refill(map, baseTileCost, entryCost, new Scratch(map, baseTileCost));
+        return field;
+    }
+
+    /// <summary>The buffers a rebuild reuses, so a season's rebuilds allocate nothing but the answer.</summary>
+    /// <remarks>
+    /// ⛔ <b>One per <c>TravelCostField</c>, never shared across worlds</b> — a buffer shared
+    /// between two simulations is a determinism hazard far worse than the allocation it saves
+    /// (`CLAUDE.md`), and the test suite runs worlds in parallel.
+    /// </remarks>
+    internal sealed class Scratch
+    {
+        public readonly int[] Queue;
+        public readonly List<int>[] Ring;
+
+        /// <summary>Whether each tile can be walked, by map-order index — asked four times a tile in every refill, so it is a table, not a call.</summary>
+        public readonly bool[] Passable;
+
+        public Scratch(GeneratedMap map, int baseTileCost)
+        {
+            int tiles = map.Width * map.Height;
+            Queue = new int[tiles];
+            Ring = new List<int>[baseTileCost + 1];
+            for (int i = 0; i < Ring.Length; i++)
+            {
+                Ring[i] = new List<int>();
+            }
+
+            Passable = new bool[tiles];
+            for (int i = 0; i < tiles; i++)
+            {
+                var at = new GridPos((i % map.Width) + map.MinX, (i / map.Width) + map.MinY);
+                Passable[i] = TerrainRules.IsPassable(map.TerrainAt(at));
+            }
+        }
+    }
+
+    /// <summary>Which hand-over of the paths this field was last computed against — the cache's key.</summary>
+    internal int BuiltAtGeneration { get; set; } = -1;
+
+    /// <summary>
+    /// Recompute this field IN PLACE for the current prices — the whole reason a season's turn
+    /// does not allocate ninety fresh arrays.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THE FIRST DRAFT REBUILT BY ALLOCATING, AND A FIFTY-YEAR RUN WENT 1.6 s → 3.4 s</b>
+    /// (D358): every price change threw away ~90 fields and built ~90 more, 38 KB each, and under
+    /// the suite's parallel load the collector turned that into a suite three times slower. The
+    /// fields are kept and refilled: same arrays, same answer.
+    /// </remarks>
+    internal void Refill(GeneratedMap map, int baseTileCost, byte[]? entryCost, Scratch scratch)
+    {
+        int[] cost = _cost;
+        for (int i = 0; i < cost.Length; i++)
+        {
+            cost[i] = Unreachable;
+        }
+
+        int start = IndexOf(Destination);
+        bool[] passable = scratch.Passable;
+        if (start < 0 || !TerrainRules.IsPassable(map.TerrainAt(Destination)))
+        {
+            return;
+        }
+
+        cost[start] = 0;
+        int width = _width;
+        int height = _height;
+
+        if (entryCost is null)
+        {
+            // Uniform ground: D179's sweep, over the reused queue.
+            int[] queue = scratch.Queue;
+            int head = 0;
+            int tail = 0;
+            queue[tail++] = start;
+            while (head < tail)
+            {
+                int current = queue[head++];
+                int currentCost = cost[current];
+                int x = current % width;
+                int y = current / width;
+                Sweep(x + 1, y, currentCost);
+                Sweep(x - 1, y, currentCost);
+                Sweep(x, y + 1, currentCost);
+                Sweep(x, y - 1, currentCost);
+            }
+
+            return;
+
+            void Sweep(int nx, int ny, int currentCost)
+            {
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                {
+                    return;
+                }
+
+                int index = (ny * width) + nx;
+                if (cost[index] != Unreachable)
+                {
+                    return;
+                }
+
+                if (!passable[index])
+                {
+                    return;
+                }
+
+                cost[index] = currentCost + baseTileCost;
+                queue[tail++] = index;
+            }
+        }
+
+        // ⭐⭐ DIAL'S ALGORITHM, NOT A HEAP — because every edge costs a small integer no larger
+        // than `baseTileCost`, the frontier fits in `baseTileCost + 1` buckets indexed by cost,
+        // and settling in cost order is a walk round that ring: O(n + total cost), which is
+        // within a whisker of D179's sweep and provably the same answer as Dijkstra. A heap
+        // version was measured first and cost the suite a minute.
+        // ⚠️ A tile pulled from a bucket whose recorded cost has since improved is stale and skipped
+        // — the improved entry sits in an earlier bucket and was, or will be, settled first.
+        // Red-checked (D358): removing the skip changes NO answer — a stale settle cannot improve a
+        // neighbour — so this is a work-saver, kept, and the zero is written down.
+        List<int>[] ring = scratch.Ring;
+        int ringSize = ring.Length;
+        for (int i = 0; i < ringSize; i++)
+        {
+            ring[i].Clear();
+        }
+
+        ring[0].Add(start);
+        int pending = 1;
+        int settling = 0;
+
+        while (pending > 0)
+        {
+            List<int> bucket = ring[settling % ringSize];
+            for (int b = 0; b < bucket.Count; b++)
+            {
+                int current = bucket[b];
+                pending--;
+                if (cost[current] != settling)
+                {
+                    continue;
+                }
+
+                int x = current % width;
+                int y = current / width;
+                Relax(x + 1, y);
+                Relax(x - 1, y);
+                Relax(x, y + 1);
+                Relax(x, y - 1);
+            }
+
+            bucket.Clear();
+            settling++;
+
+            void Relax(int nx, int ny)
+            {
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                {
+                    return;
+                }
+
+                int index = (ny * width) + nx;
+                if (!passable[index])
+                {
+                    return;
+                }
+
+                int step = entryCost[index];
+                if (step < 1 || step > baseTileCost)
+                {
+                    throw new InvalidOperationException(
+                        $"A tile's entry cost must be between 1 and {baseTileCost} for the bucket queue (got {step}).");
+                }
+
+                int candidate = settling + step;
+                if (candidate < cost[index])
+                {
+                    cost[index] = candidate;
+                    ring[candidate % ringSize].Add(index);
+                    pending++;
+                }
+            }
+        }
     }
 
     /// <summary>Cost of walking from here to the destination, or <see cref="Unreachable"/>.</summary>

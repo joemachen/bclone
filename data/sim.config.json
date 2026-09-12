@@ -222,6 +222,27 @@
   "gather_ticks": 3,
   "travel_ticks_per_unit": 1,
 
+  // DESIRE PATHS (DESIGN.md 2.6, D358, specs/desire-paths.md). Every step a
+  // villager takes treads the tile under them; the season fades every tile;
+  // past a threshold the grass reads as a worn path and is CHEAPER to cross,
+  // so routes converge onto it and labour reaches further along it -- both
+  // read the one cost field. A packed path is cheaper still. Built paths
+  // (stone, brick) come later and will be cheaper again.
+  //
+  // MEASURED before the numbers were picked (D358): in the shipped valley a
+  // busy tile is trodden 10-18 times a season, the median trodden tile ~5,
+  // and a lone forager's route 1. So decay 4 a season lets a 5-a-season lane
+  // wear through in about six seasons and the lone walker's ground never; a
+  // 15-a-season doorstep packs in a couple of years. Cost 10 is grass.
+  // The cap 2.6 asks for: packed at 8 means a worn detour a quarter longer
+  // than the straight walk is still slower, so paths cannot lock a bad route.
+  "path_wear_per_step": 1,
+  "path_wear_decay_per_season": 4,
+  "path_worn_at": 12,
+  "path_packed_at": 40,
+  "path_worn_tile_cost": 9,
+  "path_packed_tile_cost": 8,
+
   // Also DERIVED: enough to carry one member through a foraging-less
   // winter, plus the margin that absorbs a worker dying part-way
   // through one. Per member, not per household.

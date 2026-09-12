@@ -3,7 +3,7 @@
 > Status: ▶️ **OPTION C CHOSEN BY JOE (2026-09-06). SLICES 1–4 ARE ALL BUILT AND GREEN** (D317–D331, D354, D356) —
 > `Fixed` (Q32.32) and `Angle` (16-bit BAM) with deterministic trigonometry. **No behaviour in
 > either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point`, stand on what they walk to (D354), and walk straight lines across the tile route on the route's own clock (D356).**
-> **Desire paths (§2.6) are next — writable for the first time — and clock B, the real-clock rebalance, is a later slice of its own.**
+> **Desire paths (§2.6) are built (D358, `specs/desire-paths.md`) — worn ground is cheaper and a leg's ticks follow it — and clock B, the real-clock rebalance, is a later slice of its own, to be measured against D358's outcomes.**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*

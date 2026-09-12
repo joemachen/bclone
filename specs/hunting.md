@@ -134,6 +134,10 @@ for this slice too**, and the target is stated as a ranking rather than a number
 | Fisher | **830** | 2026-09-03, at `fish_yield` 300 |
 | **Hunter** | **must exceed 830** | to be set by the same rig |
 
+**Re-measured with desire paths (D358, 2026-09-11):** a forager walks the village's worn lanes and
+reads **892**; a fisher at `fish_yield` **400** reads **1,048**; a hunter at `meat_yield` **800**
+reads **1,266** (1.21×, D293's step). `hunter_lodge_store_cap` **2,400** — three hunts.
+
 ⚠️ **Set `meat_yield` from the rig, and only from the rig.** Do not reason from per-hunt numbers;
 they have now been wrong twice.
 

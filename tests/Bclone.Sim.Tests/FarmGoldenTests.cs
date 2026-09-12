@@ -237,7 +237,11 @@ public sealed class FarmGoldenTests
     // reader asking `Tile` mid-walk can see a different tile than the staircase gave — so the proof
     // is outcomes: population and food over sixty shipped years within noise, and the clock pins.
     // Was 7833527539066423309; before that 14564253939142116109.
-    private const ulong SeamGoldenHash = 8730429600872646413UL;
+    // RE-TAKEN (D358) — desire paths: worn ground is cheaper, a leg's ticks follow the ground, the
+    // paths are hashed, and a trader's load stops at what the village needs of the market. Proof
+    // is outcomes again: twenty fixture years, same 12 people, 6.8% less time walking, food within
+    // 4%. Was 8730429600872646413.
+    private const ulong SeamGoldenHash = 6850653998199097325UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -277,7 +281,8 @@ public sealed class FarmGoldenTests
     // Was 9165233745633703210; moved with the rest for the sparse-hash reason above.
     // RE-TAKEN (D354) with `SeamGoldenHash` above, for the same reason. Was 5599416537105166058.
     // RE-TAKEN (D356) with it again — straight-line walks. Was 11856395796552874154.
-    private const ulong SeamBeforeAnybodyGotBetter = 11205762516947333005UL;
+    // RE-TAKEN (D358) with it again — desire paths. Was 11205762516947333005.
+    private const ulong SeamBeforeAnybodyGotBetter = 12842231052626848622UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
@@ -500,6 +505,13 @@ public sealed class FarmGoldenTests
     }
 
     /// <summary>Whether anybody at this farm is mid-reap or carrying a harvest home.</summary>
+    /// <remarks>
+    /// ⚠️ <b>Or carrying the grain in ANY state.</b> A farmer who finishes a reap and is pre-empted
+    /// the same tick — the household nearly out of something, so `TryEmergencyRestock` sends them
+    /// <c>FetchingFromStore</c> with the harvest still in their arms — is still the one who reaped
+    /// it. Twenty years of the fixture never produced that tick until desire paths moved the
+    /// walk's clock (D358), and the guard read a farmer's reap as the brush eating a crop.
+    /// </remarks>
     private static bool SomebodyIsReaping(SimWorld world, Workplace farm)
     {
         for (int i = 0; i < world.Villagers.Count; i++)
@@ -513,6 +525,11 @@ public sealed class FarmGoldenTests
             if (villager.State is VillagerState.Reaping or VillagerState.HaulingToFarm
                 or VillagerState.HaulingToStore or VillagerState.TravelingToField
                 or VillagerState.TravelingHome)
+            {
+                return true;
+            }
+
+            if (villager.Carried[Goods.Wheat] > 0)
             {
                 return true;
             }

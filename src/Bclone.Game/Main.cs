@@ -92,6 +92,7 @@ public partial class Main : Control
 
     private Button _detailButton = null!;
     private Button _soilButton = null!;
+    private Button _wearButton = null!;
 
     private int _renderedLogEntries;
     private int _selectedVillagerId;
@@ -269,6 +270,10 @@ public partial class Main : Control
         ProbeTheProfessionsPanel();
 
         ProbeTheLogLines();
+
+        // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
+        // line reads "0 worn tiles" and proves nothing (D358).
+        GD.Print(_map.TheTrailsLieOnTheGround());
         GD.Print("[widths] done.");
         GetTree().Quit();
         return;
@@ -923,6 +928,7 @@ public partial class Main : Control
             case Key.Key4: SetSpeed(10.0); break;
             case Key.Tab: CycleDetail(); break;
             case Key.G: ToggleSoil(); break;
+            case Key.P: ToggleWear(); break;
 
             // ⭐ R TURNS WHAT IS IN YOUR HAND (gridless 2b, D320). Without a key, facing would be
             // a sim capability the player cannot reach — this project's fifth such feature if it
@@ -993,6 +999,17 @@ public partial class Main : Control
     /// <summary>The one place the ground button's text is written.</summary>
     private void RefreshSoilButton() =>
         _soilButton.Text = _map.SoilShown ? "Ground: ON" : "Ground: off";
+
+    /// <summary>Switch the wear overlay (D358), the same shape as <see cref="ToggleSoil"/> for the same reason.</summary>
+    private void ToggleWear()
+    {
+        _map.ShowWear(!_map.WearShown);
+        RefreshWearButton();
+    }
+
+    /// <summary>The one place the paths button's text is written.</summary>
+    private void RefreshWearButton() =>
+        _wearButton.Text = _map.WearShown ? "Paths: ON" : "Paths: off";
 
     /// <summary>
     /// Change playback speed — ticks per real second, never the size of a tick
@@ -2680,6 +2697,23 @@ public partial class Main : Control
         if (world.Map.TerrainAt(tile) != Terrain.Water)
         {
             lines.Add(DescribeSoil(world.SoilShareAt(tile)));
+        }
+
+        // ⭐ AND WHETHER PEOPLE WALK HERE (D358). The trail on the map is a thing you compare; this
+        // is a thing you read — the same reason the soil got its sentence. Only where it is true:
+        // "nobody walks here" on nine thousand tiles would be noise.
+        int wear = world.Paths.At(tile);
+        if (wear >= world.Config.PathPackedAt)
+        {
+            lines.Add("A packed trail — walked so often the earth is hard, and quick underfoot.");
+        }
+        else if (wear >= world.Config.PathWornAt)
+        {
+            lines.Add("A worn path — the grass has gone where people walk, and the going is easier.");
+        }
+        else if (wear > 0)
+        {
+            lines.Add("Trodden a little. Left alone, the grass will have it back by next season.");
         }
 
         if (world.Zones.IsResidential(tile))
@@ -5349,6 +5383,16 @@ public partial class Main : Control
         _soilButton.Pressed += ToggleSoil;
         body.AddChild(_soilButton);
         RefreshSoilButton();
+
+        // ⭐ WHERE EVERYBODY WALKS (D358). The trails on the map show what has become a path; this
+        // shows every trodden tile on its way to becoming one — the diagnostic §2.6 needs for its
+        // own tuning (*lock-in* or *no paths*) and the only heatmap the game allows, because a
+        // tile's wear is sim state and hashed (D357). Off by default, like Ground, for the same reason.
+        _wearButton = new Button { CustomMinimumSize = new Vector2(110, 0) };
+        _wearButton.AddThemeFontSizeOverride("font_size", 12);
+        _wearButton.Pressed += ToggleWear;
+        body.AddChild(_wearButton);
+        RefreshWearButton();
 
         var markers = new CheckBox { Text = "mark stores with no room", ButtonPressed = true };
         markers.AddThemeFontSizeOverride("font_size", 12);

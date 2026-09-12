@@ -1,11 +1,21 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — SLICES 3 AND 4 PLAYED AND PUSHED; DESIRE PATHS ARE NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — DESIRE PATHS ARE BUILT (D358) AND UNPLAYED; CLOCK B AND THE SHELL ARE NEXT**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (late).**
-> **1103 passing, 0 failing, 2 skipped of 1105** — run locally on `main`, **2m50s** (⚠️ `HEAD` without
-> this session's change measured 3m00s the same hour; the 2m35s of the morning was the machine, not
-> the code — *measured before it was believed*).
-> **The decision log runs to D357**; read D338–D357 in `DESIGN.md §7` for the last two days —
-> sixteen decisions — fifteen from Joe playing a build, and D353 the roadmap review that came after (`DESIGN.md §4`, *Master Roadmap*: **Phase 4.5 is current, slice 3 is next**).
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
+> **1112 passing, 0 failing, 2 skipped of 1114** — run locally, **3m24s** (⚠️ `HEAD` before desire paths measured
+> **3m00** the same hour; the difference is the yearly re-price of ~90 flow fields and it is
+> accepted and written down in D358 — *the first draft was 10m20, and the clock is what caught it*).
+> **The decision log runs to D358**; read D338–D358 in `DESIGN.md §7` for the last two days.
+>
+> **✅ DESIRE PATHS (§2.6) ARE BUILT — SIM AND VIEW — AND JOE HAS NOT PLAYED THEM.** Every step
+> treads the tile under the line; the season fades it; worn ground costs 9, packed 8, grass 10,
+> priced once a year through the ONE cost field; a leg's ticks follow the ground. Trails draw on the
+> map; **P** (or the *Paths* button beside *Ground*) shows every trodden tile. Read
+> `specs/desire-paths.md` first, then D358. ⚠️ **Two numbers for him to look at before anything
+> else is built on top:** villagers walk **6.8% less**, and six shipped seeds over fifty years carry
+> **139 people against 118**. That is his rule working (D357), and it is the balance clock B (§4 2b)
+> has to be measured against. ⛔ **Do not touch `path_*` in `data/sim.config.json` without
+> re-measuring** — the comment there says what each number came from.
+> **The decision log before this:** sixteen decisions from Joe playing a build (D338–D357), and D353 the roadmap review that came after (`DESIGN.md §4`, *Master Roadmap*: **Phase 4.5 is current**).
 >
 > **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D351):** everything up to and including wheat end
 > to end, the take-back erasing the field, the orange site with no ring beside it, the market's
@@ -330,6 +340,34 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     back along it, and a fishing rate read 687 against 830. The `Position` setter drops the leg
     now; only `WalkTo` keeps it. **Any new state that describes "what I am in the middle of" needs
     the same rule: an outside hand clears it.**
+18. **⛔⛔ REBUILDING EVERY FLOW FIELD EVERY SEASON TOOK THE SUITE 3m → 10m20 (D358).** Nothing
+    failed; only the clock said so. Each re-price refills ~90 fields of 9,600 tiles. The fixes, in
+    the order they were measured: re-price only when a tile's PRICE CLASS changes (not its wear);
+    Dial's bucket queue, not a `PriorityQueue` (the heap cost a minute); refill the SAME arrays
+    (allocation under the suite's parallel load tripled the cost); hysteresis one decay wide (the
+    valley flapped across a threshold 26 seasons in 40); price once a year. **Every "apply on the
+    seasonal sweep" design is a rebuild-every-season design until you count the fields.**
+19. **⛔ THE BREADTH-FIRST SWEEP IS EXACT ONLY ON UNIFORM COSTS, AND THE PRESCRIBED REMEDY WAS THE
+    SLOW ONE.** The trap below (*"read this before building roads"*) came true on schedule; its
+    `PriorityQueue` was built and measured first. When every edge is a small integer, Dial's ring of
+    `base + 1` buckets is O(n + total cost) and within a whisker of the sweep. *Measure the remedy.*
+20. **⚠️ MEASURE TREADS BEFORE PICKING THRESHOLDS.** `path_worn_at` and the decay were set from a
+    count of how often the shipped valley's tiles are actually trodden (10–18 busy, ~5 median, 1 for
+    a lone forager). A guess would have given either §2.6 failure mode and no way to tell which.
+21. **⛔⛔ `git checkout <file>` DURING AN ABLATION REVERTED AN HOUR OF UNCOMMITTED WORK.** The
+    file was tracked; the new files beside it were untracked, so the same command errored on those
+    and quietly succeeded on `BehaviorSystem.cs`. Recovered from the transcript. **Ablate with a
+    copy (`cp f f.bak … cp f.bak f`), never with git, while anything is uncommitted.**
+22. **⚠️ A GUARD'S STATE LIST IS A SNAPSHOT OF THE STATES THAT EXISTED WHEN IT WAS WRITTEN.**
+    `NoLaborerEverClearedAStandingCrop` attributed a reap by the farmer's STATE; a farmer pre-empted
+    the tick after reaping (`FetchingFromStore`, harvest in hand) read as the brush eating a crop.
+    Twenty years of the fixture never produced that tick until the clock moved. Attribute by the
+    thing carried, not the state.
+23. **⛔ THE ALLOCATOR CAN RE-SEAT SOMEBODY MID-HAUL, AND THE LOAD FOLLOWS THE NEW JOB'S RULES.** A
+    forager carrying 91 produce became a marketer between two ticks and, as a trader, put the lot
+    into the market (D199's dumping ground by the side door). `StoreForTheLoad` now caps a trader's
+    market drop at `MarketStockWanted`. **Any rule keyed on "what job are you" is a rule keyed on
+    "what job are you THIS tick."**
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
@@ -352,7 +390,8 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT; SLICES 3 AND 4 ARE BUILT (D354, D356); DESIRE PATHS ARE NEXT.** Slice 4 = string-pulled paths **with the waypoint** — the state a fractional walk needs, which slice 3 deliberately did not add (`gridless.md §8` says why: the tile a villager is on cannot say whether they are leaving it or arriving at it); then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 4 is where movement genuinely changes for the first time; read `gridless.md §8` and §10 and the `VillagerPointTests` timing pins (20 and 41) before starting it — those pins are the economy's, and slice 4 must either keep them or move them deliberately with a stated reason.
+- ⭐⭐ **JOE PLAYS DESIRE PATHS (D358).** Three things only he can call: *(1)* **the look** — are the trails the right width and colour, should packed read darker or lighter, do they still read at the zoomed-out view; *(2)* **the balance** — six shipped seeds over fifty years carry 139 people against 118 and walk 6.8% less; is a quicker village what he wants, or should the discount (9/8 against 10) be gentler; *(3)* **paving** — §2.6's player half (dirt → gravel → cobble) is unspecified and is the natural next slice on top of this table, or it waits for the shell.
+- ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT; SLICES 3 AND 4 AND DESIRE PATHS ARE BUILT (D354, D356, D358); CLOCK B AND THE SHELL ARE NEXT.** Slice 4 = string-pulled paths **with the waypoint** — the state a fractional walk needs, which slice 3 deliberately did not add (`gridless.md §8` says why: the tile a villager is on cannot say whether they are leaving it or arriving at it); then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 4 is where movement genuinely changes for the first time; read `gridless.md §8` and §10 and the `VillagerPointTests` timing pins (20 and 41) before starting it — those pins are the economy's, and slice 4 must either keep them or move them deliberately with a stated reason.
 
 - ~~⭐ **NEXT: A FIELD LOOKS LIKE A FIELD (Commit L of the wheat plan).**~~ ✅ D349. Bare/furrowed `Field`, sparse green `Sown`, dense gold `Ripe` — marks from a hash like the trees, **not** overhanging (a field's edge is a fence line). Ripe stalks in the wheat chip's colour so map and Overview agree. View only.
 - ~~⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").**~~ ✅ D348, **confirmed in play by Joe the same day** (D350). `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.
@@ -814,6 +853,11 @@ data row.**
 ---
 
 ## ⛔⭐⭐ THE TRAP THAT WILL NOT ANNOUNCE ITSELF — read this before building roads
+
+> ✅ **THAT DAY CAME — D358, 2026-09-11.** Roads are built (desire paths, `specs/desire-paths.md`);
+> the priced field is **Dial's algorithm**, not the `PriorityQueue` prescribed below — the heap was
+> built and measured first and cost the suite a minute. Kept as written because the *condition* is
+> still the lesson: the sweep is still used, over reused buffers, for a valley nobody has worn.
 
 **The travel-cost field is a breadth-first sweep since D179**, and that is correct **only while
 every passable tile costs the same to cross.** It replaced an O(n²) Dijkstra that was costing

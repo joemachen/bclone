@@ -276,6 +276,15 @@ public partial class VillageMap : Control
     /// Both are keyed off <see cref="VillageEconomy.ReferenceSoil"/>, so the eye reads
     /// *distance from ordinary* rather than an absolute nobody could calibrate.
     /// </remarks>
+    /// <summary>Grass worn through to earth where people walk — a footpath (D358).</summary>
+    private static readonly Color WornPath = new("#5b4b38", 0.60f);
+
+    /// <summary>A packed trail: the earth trodden hard and dark (D358).</summary>
+    private static readonly Color PackedPath = new("#6e5843", 0.90f);
+
+    /// <summary>The wear overlay's wash — how trodden a tile is, whether or not it reads as a path yet (D358).</summary>
+    private static readonly Color WearWash = new("#e0a868", 0.70f);
+
     private static readonly Color RichGround = new("#6fbf5f", 0.55f);
 
     /// <summary>Ground worse than ordinary, on the soil overlay (D178).</summary>
@@ -2966,6 +2975,10 @@ public partial class VillageMap : Control
         // generated valley is invisible, which makes "is this seed worth playing?"
         // a question nobody can answer by looking.
         DrawTheBakedValley(valley);
+
+        // ⭐ The trails go straight onto the ground, under every field, tree and wash — they ARE
+        // ground, worn through (D358).
+        DrawTrails(minX, maxX, minY, maxY);
         // ⚠️ The field is cached by the zone trace, so the trace runs before the field draws (D352).
         TraceTheZonesIfTheyMoved(_world!.Zones);
         DrawWorkedGround(minX, maxX, minY, maxY);
@@ -2975,6 +2988,7 @@ public partial class VillageMap : Control
         // Under the zone washes, because soil is a property of the ground while the zones
         // are instructions about it (D178).
         DrawSoil(minX, maxX, minY, maxY);
+        DrawWear(minX, maxX, minY, maxY);
         DrawResidentialLand();
 
         DrawRect(valley, ValleyEdge, filled: false, width: 2f);
@@ -3945,6 +3959,258 @@ public partial class VillageMap : Control
     }
 
     private readonly ValleyTexture _valley = new();
+
+    // ---------------------------------------------------------------
+    //  Desire paths (§2.6, D358, `specs/desire-paths.md §8` slice 2)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ The trails — <b>where the village walks, drawn on the ground it has worn</b>
+    /// (`DESIGN.md §2.6`, D358).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Without this the whole mechanic is an invisible multiplier</b> — routes bend onto ground
+    /// the player cannot see is worn, and walks quicken for a reason nobody can point at. §1.1's
+    /// rule is that a mechanic the player cannot see does not exist, and this is the seeing half;
+    /// the sim half shipped first only because the suite measures it and a screenshot does not.
+    /// </para>
+    /// <para>
+    /// <b>Gridless in look, on purpose.</b> A path is a disc on every worn tile joined to its worn
+    /// neighbours by a band the same width, so a lane reads as one continuous trail with soft ends
+    /// rather than a row of squares — the same argument the trees (D337) and the fields (D349) made
+    /// against drawing the index. Worn first, packed over it, so a packed core sits inside a worn
+    /// edge the way a real footpath does.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Cached on <see cref="PathWear.Generation"/>, which moves once a season</b>, never
+    /// scanned per frame: 9,600 tiles a frame for a handful of paths is exactly the D338 mistake.
+    /// The trails therefore update when the season turns — which is also when the ROUTES learn
+    /// about them (`specs/desire-paths.md §3.4`), so what the player sees and what the villagers
+    /// walk agree.
+    /// </para>
+    /// </remarks>
+    private void DrawTrails(int minX, int maxX, int minY, int maxY)
+    {
+        SimWorld world = _world!;
+        CollectTheTrailsIfTheyMoved(world);
+        if (_trail.Count == 0)
+        {
+            return;
+        }
+
+        float radius = _pixelsPerTile * 0.34f;
+        float band = radius * 2f;
+
+        for (byte pass = 1; pass <= 2; pass++)
+        {
+            Color colour = pass == 2 ? PackedPath : WornPath;
+            for (int i = 0; i < _trail.Count; i++)
+            {
+                (GridPos tile, byte grade) = _trail[i];
+                if (grade != pass || tile.X < minX || tile.X > maxX || tile.Y < minY || tile.Y > maxY)
+                {
+                    continue;
+                }
+
+                Vector2 centre = ToScreen(tile);
+                DrawCircle(centre, radius, colour);
+
+                // Joined to the worn tile to the right and the one above, at the lesser of the two
+                // grades, so every adjacent pair is bridged exactly once and a packed core never
+                // paints over a worn neighbour's edge.
+                JoinTheTrail(neighbour: new GridPos(tile.X + 1, tile.Y), grade, centre, band);
+                JoinTheTrail(neighbour: new GridPos(tile.X, tile.Y + 1), grade, centre, band);
+            }
+        }
+    }
+
+    private void JoinTheTrail(GridPos neighbour, byte grade, Vector2 centre, float band)
+    {
+        byte other = TrailGradeAt(neighbour);
+        if (other == 0)
+        {
+            return;
+        }
+
+        // The lesser grade is drawn on the lesser pass, so a worn–packed pair is bridged in worn
+        // and the packed pass leaves it alone; a packed–packed pair is bridged in packed.
+        byte lesser = other < grade ? other : grade;
+        if (lesser != grade)
+        {
+            return;
+        }
+
+        DrawLine(centre, ToScreen(neighbour), grade == 2 ? PackedPath : WornPath, band);
+    }
+
+    /// <summary>The trail grade the last collection gave a tile: 0 grass, 1 worn, 2 packed.</summary>
+    private byte TrailGradeAt(GridPos tile)
+    {
+        SimWorld world = _world!;
+        int x = tile.X - world.Map.MinX;
+        int y = tile.Y - world.Map.MinY;
+        if (x < 0 || x >= world.Map.Width || y < 0 || y >= world.Map.Height)
+        {
+            return 0;
+        }
+
+        return _trailGrade[(y * world.Map.Width) + x];
+    }
+
+    /// <summary>
+    /// Re-read the paths when the season has turned — and only then (D358; the D338 rule).
+    /// </summary>
+    private void CollectTheTrailsIfTheyMoved(SimWorld world)
+    {
+        PathWear paths = world.Paths;
+        if (ReferenceEquals(paths, _trailsOf) && paths.Generation == _trailsCollectedAt)
+        {
+            return;
+        }
+
+        _trailsOf = paths;
+        _trailsCollectedAt = paths.Generation;
+        _trail.Clear();
+
+        IReadOnlyList<ushort> wear = paths.Tiles;
+        if (_trailGrade.Length != wear.Count)
+        {
+            _trailGrade = new byte[wear.Count];
+        }
+
+        int wornAt = world.Config.PathWornAt;
+        int packedAt = world.Config.PathPackedAt;
+        for (int i = 0; i < wear.Count; i++)
+        {
+            byte grade = wear[i] >= packedAt ? (byte)2 : wear[i] >= wornAt ? (byte)1 : (byte)0;
+            _trailGrade[i] = grade;
+            if (grade > 0)
+            {
+                _trail.Add((paths.PositionOf(i), grade));
+            }
+        }
+    }
+
+    private readonly List<(GridPos Tile, byte Grade)> _trail = new();
+    private byte[] _trailGrade = System.Array.Empty<byte>();
+    private PathWear? _trailsOf;
+    private int _trailsCollectedAt = -1;
+
+    /// <summary>
+    /// How trodden every tile is — <b>the wear overlay</b> (D358), the diagnostic beside the soil
+    /// overlay.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The trails show what has become a path; this shows what is on the way to becoming one — a
+    /// wash on every trodden tile, brighter the more it is walked, live rather than cached because
+    /// it is off by default and answers an occasional question (*where does everybody go?*), the
+    /// same shape as <see cref="DrawSoil"/>. It draws sim state and only sim state: a tile's wear
+    /// count is hashed, so a wash here is a fact about the village, never a heatmap of a number
+    /// the sim does not hold (D357's rule for overlays).
+    /// </para>
+    /// <para>
+    /// Alpha scales to `path_packed_at`, so a tile at the packed threshold is the full wash and a
+    /// lone forager's once-a-season footprint is a whisper. Over the trails and under the zone
+    /// washes, like the soil.
+    /// </para>
+    /// </remarks>
+    private void DrawWear(int minX, int maxX, int minY, int maxY)
+    {
+        if (!_showWear)
+        {
+            return;
+        }
+
+        SimWorld world = _world!;
+        int packedAt = world.Config.PathPackedAt;
+        if (packedAt <= 0)
+        {
+            return;
+        }
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var tile = new GridPos(x, y);
+                int wear = world.Paths.At(tile);
+                if (wear <= 0)
+                {
+                    continue;
+                }
+
+                float share = Mathf.Clamp(wear / (float)packedAt, 0.08f, 1f);
+                DrawRect(TileRect(tile), WearWash with { A = WearWash.A * share });
+            }
+        }
+    }
+
+    /// <summary>Whether the wear overlay is being drawn (D358).</summary>
+    public bool WearShown => _showWear;
+
+    /// <summary>Show or hide the wear overlay — off by default, like the soil's.</summary>
+    public void ShowWear(bool shown)
+    {
+        _showWear = shown;
+        QueueRedraw();
+    }
+
+    private bool _showWear;
+
+    /// <summary>
+    /// The trails draw where the paths are — <b>a probe line for the headless run</b> (D358).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ The probe's valley is the unattended cold start and dies out in its first year (D143), so
+    /// nobody walks it and nothing is worn — asked bare, this read *"0 worn tiles"* twelve years in
+    /// and proved nothing. So it POSES a lane the way the villager probe poses a villager: nine
+    /// tiles trodden along the founding row, three of them packed, handed over as a season would.
+    /// The line then says that every collected trail tile is worn in the sim and the grades agree,
+    /// so the picture and the ground cannot disagree (the trees' and fields' probes, D337, D349,
+    /// are the same shape).
+    /// </remarks>
+    public string TheTrailsLieOnTheGround()
+    {
+        SimWorld world = _world!;
+        if (world.Paths.TroddenTiles == 0)
+        {
+            GridPos from = world.Map.FoundingSite;
+            for (int i = 0; i < 9; i++)
+            {
+                world.Paths.Tread(new GridPos(from.X + i, from.Y), i < 3 ? world.Config.PathPackedAt : world.Config.PathWornAt);
+            }
+
+            world.Paths.Decay(0);
+        }
+
+        CollectTheTrailsIfTheyMoved(world);
+
+        int packed = 0;
+        int adrift = 0;
+        for (int i = 0; i < _trail.Count; i++)
+        {
+            (GridPos tile, byte grade) = _trail[i];
+            if (grade == 2)
+            {
+                packed++;
+            }
+
+            int wear = world.Paths.At(tile);
+            byte truth = wear >= world.Config.PathPackedAt ? (byte)2 : wear >= world.Config.PathWornAt ? (byte)1 : (byte)0;
+            if (truth != grade)
+            {
+                adrift++;
+            }
+        }
+
+        return adrift == 0
+            ? $"[widths] trails: ✅ {_trail.Count} worn tiles drawn as paths, {packed} of them packed, "
+                + $"{world.Paths.TroddenTiles} tiles trodden at all"
+            : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
+                + "trails are drawing something the ground does not hold";
+    }
 
     /// <summary>
     /// ⭐⭐ Ground the village has WORKED — <b>a farm's field is its paint, filled along the
