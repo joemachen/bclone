@@ -1,5 +1,6 @@
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
+using Bclone.Sim.Determinism;
 using Bclone.Sim.Logging;
 using Bclone.Sim.World;
 using Xunit;
@@ -54,74 +55,29 @@ public sealed class VillagerPointTests
     }
 
     /// <summary>
-    /// ⛔ At the shipped pace every tick's position is a TILE CENTRE, and consecutive positions
-    /// are the same tile or an axis-aligned neighbour — <b>exactly the walk the tile stepping
-    /// made</b>.
-    /// </summary>
-    /// <remarks>
-    /// The cost field is 4-connected (<c>TerrainCostField</c> tries east, west, south, north), so
-    /// a diagonal position or a fraction of a tile at a tick boundary would mean the walk had
-    /// stopped following the field — the two-cost-systems regression `gridless.md §6` forbids.
-    /// </remarks>
-    [Fact]
-    public void AtTheShippedPaceEveryTickIsATileCentreOnTheRoute()
-    {
-        var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Plenty);
-        Villager villager = loop.World.Villager;
-
-        int moves = 0;
-        Point previous = villager.Position;
-        for (int i = 0; i < 3_000; i++)
-        {
-            loop.StepOnce();
-            Point now = villager.Position;
-
-            Assert.Equal(Point.CentreOf(now.ToTile()), now);
-
-            GridPos a = previous.ToTile();
-            GridPos b = now.ToTile();
-            int manhattan = System.Math.Abs(a.X - b.X) + System.Math.Abs(a.Y - b.Y);
-            if (manhattan > 0)
-            {
-                moves++;
-            }
-
-            // A step is one tile along one axis, or a snap home / to a site (D102) — never a
-            // diagonal, never a fraction.
-            Assert.True(
-                manhattan <= 1 || (a.X == b.X || a.Y == b.Y) || manhattan > 2,
-                $"tick {loop.World.Tick}: {a} → {b} is a diagonal step");
-
-            previous = now;
-        }
-
-        _output.WriteLine($"{moves} moves in 3,000 ticks, every one a whole tile");
-        Assert.True(moves > 100, "the villager never walked anywhere");
-    }
-
-    /// <summary>
-    /// ⛔ The walk is tile by tile at EVERY pace, and <b>arrives on the tick it always did</b>.
+    /// ⛔⛔ A walk takes EXACTLY the ticks the tile route took — <b>clock A, Joe's call</b>
+    /// (gridless slice 4, D356).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⛔ **The tick the villager first gathers is pinned to the value measured on the tile-stepping
-    /// code before this slice** (20 at the shipped pace, 41 at `travel_ticks_per_unit = 3`). The
-    /// economy is derived from ticks per tile, and a walk that arrived a tick early at every tile
-    /// would re-derive it silently — the D122 shape.
+    /// People walk straight lines now, and a straight line is shorter than a staircase — so the
+    /// one thing this slice must not do is make them arrive earlier. The economy is derived from
+    /// ticks per tile (`VillageEconomy.RoundTripTicks` and everything above it), and D122 is what
+    /// one tile of drift costs. **The tick the villager first gathers is pinned to the value
+    /// measured on the tile-stepping code before slice 3** — 20 at the shipped pace, 41 at
+    /// `travel_ticks_per_unit = 3`. A leg of <c>k</c> route tiles costs <c>k</c> ticks whatever
+    /// its straight length; this is the guard that says so.
     /// </para>
     /// <para>
-    /// ⚠️ **And no fraction of a tile at any tick boundary, at any pace — deliberately.** A
-    /// fractional walk needs to know which way it is going mid-leg, and the tile a villager is on
-    /// cannot say whether they are leaving it or arriving; that is a waypoint, which is slice 4's
-    /// state. This slice changes the type and where arrival stands, nothing about the walk. The
-    /// only off-centre position a villager can have is standing on a free-placed building, which
-    /// the Phase 0 fixture has none of.
+    /// ⚠️ **Clock B — the real-clock rebalance — is Joe's eventual want and its own slice**
+    /// (`DESIGN.md §4`, Phase 4.5). When it lands, these pins move deliberately, with the
+    /// re-derivation, not by accident here.
     /// </para>
     /// </remarks>
     [Theory]
     [InlineData(1, FirstGatherAtPace1)]
     [InlineData(3, FirstGatherAtPace3)]
-    public void TheWalkIsTileByTileAtEveryPaceAndArrivesWhenItAlwaysDid(int pace, int firstGatherTick)
+    public void AWalkTakesExactlyAsLongAsTheTileRouteDid(int pace, int firstGatherTick)
     {
         SimConfig config = Phase0Fixtures.Plenty with { TravelTicksPerUnit = pace };
         var (loop, _) = Phase0Fixtures.Build(config);
@@ -131,9 +87,6 @@ public sealed class VillagerPointTests
         for (int i = 0; i < 600 && firstGather < 0; i++)
         {
             loop.StepOnce();
-            Point now = villager.Position;
-            Assert.Equal(Point.CentreOf(now.ToTile()), now);
-
             if (villager.State == VillagerState.Gathering)
             {
                 firstGather = (int)loop.World.Tick;
@@ -144,10 +97,208 @@ public sealed class VillagerPointTests
         Assert.Equal(firstGatherTick, firstGather);
     }
 
-    // ⚠️ MEASURED ON THE TILE-STEPPING CODE BEFORE THIS SLICE, then pinned. If either moves, the
+    // ⚠️ MEASURED ON THE TILE-STEPPING CODE BEFORE SLICE 3, then pinned. If either moves, the
     // walk's timing moved, and that is the economy moving under a slice that promised not to.
     private const int FirstGatherAtPace1 = 20;
     private const int FirstGatherAtPace3 = 41;
+
+    /// <summary>
+    /// ⛔⛔ The VALLEY walks on the same clock as before — <b>the pin that can actually see
+    /// clock B</b> (D356).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The Phase 0 pins above cannot: that fixture's home, hut and store stand on one row, so a
+    /// straight line and a staircase are the same length there, and a leg charged its straight
+    /// length instead of its route steps passed both pins green. **Found by red check.** The
+    /// village fixture has a river and buildings off the row, so its walks have diagonals — and
+    /// under clock B its foragers would start gathering earlier.
+    /// </para>
+    /// <para>
+    /// Measured on slice 3's code before this slice: in the first 2,000 ticks somebody enters
+    /// <c>Gathering</c> **50** times, the first at tick **17**, the tenth at **247**, the fiftieth
+    /// at **1,963**. Identical after — which is the clock-A promise as four numbers.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheValleyWalksOnTheSameClockAsBefore()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        var was = new Dictionary<int, VillagerState>();
+        int entries = 0;
+        var at = new List<ulong>();
+        for (int i = 0; i < 2_000; i++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                VillagerState before = was.GetValueOrDefault(villager.Id, VillagerState.Idle);
+                if (villager.State == VillagerState.Gathering && before != VillagerState.Gathering)
+                {
+                    entries++;
+                    if (entries is 1 or 10 or 50)
+                    {
+                        at.Add(world.Tick);
+                    }
+                }
+
+                was[villager.Id] = villager.State;
+            }
+        }
+
+        _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
+        Assert.Equal(50, entries);
+        Assert.Equal(new ulong[] { 17, 247, 1963 }, at);
+    }
+
+    /// <summary>
+    /// ⭐⭐ The staircase is pulled taut — <b>a walk with a diagonal in it is a straight line, and
+    /// the feature is not vacuous</b> (D356).
+    /// </summary>
+    /// <remarks>
+    /// Two things that could not be true under tile stepping: a position at a tick boundary that
+    /// is on no tile centre, and a position off the centre on BOTH axes at once — a row leg is off on
+    /// one axis only, so both means a diagonal. Over three thousand ticks both happen many times. ⚠️ And a leg lands exactly
+    /// on its waypoint — a rounding crumb short would leave a villager one tick from arriving for
+    /// ever — so every tick where the leg has just ended is asserted to be a tile centre.
+    /// </remarks>
+    [Fact]
+    public void AStaircaseIsPulledTaut()
+    {
+        // ⚠️ The village fixture, not Phase 0's: Phase 0's home, hut and store all stand on one row,
+        // so every walk there is a straight row and nothing can be pulled. Found by measuring.
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        int offCentre = 0;
+        int diagonal = 0;
+        int atRest = 0;
+
+        for (int i = 0; i < 3_000; i++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive)
+                {
+                    continue;
+                }
+
+                Point now = villager.Position;
+                Point centre = Point.CentreOf(now.ToTile());
+
+                if (now != centre)
+                {
+                    offCentre++;
+                }
+
+                if (now.X != centre.X && now.Y != centre.Y)
+                {
+                    diagonal++;
+                }
+
+                // ⛔ With no leg in progress and nothing to stand on, a villager is on a tile
+                // centre EXACTLY — a leg lands on its waypoint, not a crumb short of it, or arrival
+                // (`Position == centre`) would never be recognised.
+                if (villager.LegSteps == 0 && world.StandingPlaceAt(villager.Tile) is null)
+                {
+                    Assert.Equal(centre, now);
+                    atRest++;
+                }
+            }
+        }
+
+        _output.WriteLine($"{offCentre} villager-ticks off a tile centre, {diagonal} off on both axes, {atRest} at rest on exact centres");
+        Assert.True(offCentre > 50, "nobody was ever off a tile centre — the string is not pulled");
+        Assert.True(diagonal > 20, "nobody was ever off-centre on both axes — no leg was diagonal");
+        Assert.True(atRest > 10, "nobody was ever at rest on bare ground");
+    }
+
+    /// <summary>⛔ Nobody ever stands on water, walking a straight line or otherwise.</summary>
+    /// <remarks>
+    /// The line-of-sight test is conservative at corners so a string cannot squeeze between two
+    /// ponds; this is that promise measured on the valley with the river in it, every villager,
+    /// every tick, for three thousand ticks. The red check is a raycast that ignores water.
+    /// </remarks>
+    [Fact]
+    public void NobodyEverStandsOnWater()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        int checked_ = 0;
+        for (int i = 0; i < 3_000; i++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive)
+                {
+                    continue;
+                }
+
+                checked_++;
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(villager.Tile));
+            }
+        }
+
+        _output.WriteLine($"{checked_} villager-ticks, none on water");
+        Assert.True(checked_ > 3_000);
+    }
+
+    /// <summary>
+    /// ⭐ Changing your mind mid-leg re-plans from where you ARE, not from where the leg was going.
+    /// </summary>
+    /// <remarks>
+    /// Tile stepping re-aimed every tick for free; a leg is committed state, so a villager who is
+    /// sent home mid-walk must drop it and plan a fresh one from their off-centre point — or they
+    /// would finish walking the wrong way first. Posed: walk toward food, then force the state
+    /// home, and the next leg's target is home.
+    /// </remarks>
+    [Fact]
+    public void ALegIsDroppedWhenTheTargetChanges()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Plenty);
+        Villager villager = loop.World.Villager;
+
+        // Walk until a leg is in progress toward food.
+        int guard = 0;
+        while ((villager.State != VillagerState.TravelingToFood || villager.LegSteps == 0) && guard++ < 400)
+        {
+            loop.StepOnce();
+        }
+
+        Assert.True(villager.LegSteps > 0, "never caught the villager mid-leg toward food");
+        GridPos foodLegTarget = villager.LegTarget;
+
+        // Send them home from wherever they are.
+        villager.State = VillagerState.TravelingHome;
+        loop.StepOnce();
+
+        _output.WriteLine($"food leg toward {foodLegTarget}; after re-aim the leg is toward {villager.LegTarget}, home is {loop.World.RestingPlaceOf(villager)}");
+        Assert.Equal(loop.World.RestingPlaceOf(villager), villager.LegTarget);
+    }
+
+    /// <summary>The leg is sim state, so it is in the hash — two worlds a step apart along one leg differ.</summary>
+    [Fact]
+    public void TheLegIsHashed()
+    {
+        var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Plenty);
+        Villager villager = loop.World.Villager;
+        int guard = 0;
+        while (villager.LegSteps < 2 && guard++ < 600)
+        {
+            loop.StepOnce();
+        }
+
+        Assert.True(villager.LegSteps >= 2, "never caught a leg two steps long");
+        ulong before = StateHash.Compute(loop.World);
+        villager.LegStep = villager.LegStep == 0 ? 1 : 0;
+        ulong after = StateHash.Compute(loop.World);
+        Assert.NotEqual(before, after);
+    }
 
     /// <summary>
     /// ⭐⭐ A villager who arrives at a free-placed building stands ON it — <b>the thing the

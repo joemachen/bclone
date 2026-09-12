@@ -6799,7 +6799,7 @@ public sealed class SimWorld
                 {
                     if (Villagers[i].Alive && Villagers[i].HouseholdId == family.Id)
                     {
-                        Villagers[i].Position = site.Position;
+                        Villagers[i].StandAt(site.Position);
                     }
                 }
 

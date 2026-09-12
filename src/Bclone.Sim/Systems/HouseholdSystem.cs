@@ -416,7 +416,7 @@ public sealed class HouseholdSystem : ISimSystem
         // stays where they are and rests wherever RestingPlaceOf sends them (D102).
         if (home is Point doorstep)
         {
-            villager.Position = doorstep;
+            villager.StandAt(doorstep);
         }
 
         household.AddMember(villager.Id);

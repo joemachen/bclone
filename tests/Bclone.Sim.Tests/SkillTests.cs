@@ -281,9 +281,13 @@ public sealed class SkillTests
     // RE-TAKEN (D354): a villager's position is a `Point` and hashes as raw fixed-point bits
     // where it hashed as two tile ints. Proved first with the tile still mixed: every guard
     // byte-identical, so the village did not move — the fingerprint's shape did.
-    // Were 14169332401122492243 (fixture) and 9044360297461632177 (shipped).
-    [InlineData(false, 4436310576949656979UL)]
-    [InlineData(true, 9219403902803322913UL)]
+    // RE-TAKEN (D356): villagers walk straight lines across the tile route now, so mid-walk positions
+    // are off tile centres and the leg is hashed. The D211 proof is not available for this one — a
+    // reader asking `Tile` mid-walk can see a different tile than the staircase gave — so the proof
+    // is outcomes: population and food over sixty shipped years within noise, and the clock pins.
+    // Were 4436310576949656979 (fixture) and 9219403902803322913 (shipped); before D354, 14169332401122492243 and 9044360297461632177.
+    [InlineData(false, 16532821140770288466UL)]
+    [InlineData(true, 14313473417015616038UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

@@ -232,8 +232,12 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D354): a villager's position is a `Point` and hashes as raw fixed-point bits
     // where it hashed as two tile ints. Proved first with the tile still mixed: every guard
     // byte-identical, so the village did not move — the fingerprint's shape did.
-    // Was 14564253939142116109.
-    private const ulong SeamGoldenHash = 7833527539066423309UL;
+    // RE-TAKEN (D356): villagers walk straight lines across the tile route now, so mid-walk positions
+    // are off tile centres and the leg is hashed. The D211 proof is not available for this one — a
+    // reader asking `Tile` mid-walk can see a different tile than the staircase gave — so the proof
+    // is outcomes: population and food over sixty shipped years within noise, and the clock pins.
+    // Was 7833527539066423309; before that 14564253939142116109.
+    private const ulong SeamGoldenHash = 8730429600872646413UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -272,7 +276,8 @@ public sealed class FarmGoldenTests
     //   before fishing added a seventh good (2026-09-02): 3898924203131512042
     // Was 9165233745633703210; moved with the rest for the sparse-hash reason above.
     // RE-TAKEN (D354) with `SeamGoldenHash` above, for the same reason. Was 5599416537105166058.
-    private const ulong SeamBeforeAnybodyGotBetter = 11856395796552874154UL;
+    // RE-TAKEN (D356) with it again — straight-line walks. Was 11856395796552874154.
+    private const ulong SeamBeforeAnybodyGotBetter = 11205762516947333005UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

@@ -312,10 +312,63 @@ public sealed class Villager
     /// Hashed as raw fixed-point bits, never quantised (`gridless.md §5`).
     /// </para>
     /// </remarks>
-    public Point Position { get; set; }
+    public Point Position
+    {
+        get => _position;
+
+        // ⛔ Setting it from OUTSIDE the walk drops any leg in progress (gridless slice 4, D356).
+        // A leg is committed state — where a straight line began and ends — and a villager put
+        // somewhere by hand (a new door, a finished house, a test posing them) is no longer on it.
+        // Left standing, a stale leg would march them back to where the line began. The walk
+        // itself advances through <see cref="WalkTo"/>, which keeps the leg.
+        set
+        {
+            _position = value;
+            LegSteps = 0;
+            LegStep = 0;
+        }
+    }
+
+    private Point _position;
+
+    /// <summary>Advance along the leg in progress — the one setter that keeps it.</summary>
+    internal void WalkTo(Point along) => _position = along;
 
     /// <summary>The tile they are on — derived, and what every tile-keyed question asks.</summary>
     public GridPos Tile => Position.ToTile();
+
+    // ---------------------------------------------------------------
+    //  The leg — a straight line across the tile route (gridless slice 4, D356)
+    // ---------------------------------------------------------------
+    //
+    // ⭐⭐ THIS IS THE STATE SLICE 3 REFUSED TO INVENT IMPLICITLY. A villager walking a straight
+    // line across the cost field's staircase must know where the line ENDS — mid-leg, the tile
+    // they are on cannot say whether they are leaving it or arriving. So the leg is written down:
+    // where it started, where it ends (a route tile's centre), how many tile steps the staircase
+    // would have taken to get there, and how many of those have been walked.
+    //
+    // ⛔ CLOCK A (Joe, 2026-09-11): a leg of `LegSteps` route tiles takes `LegSteps` ticks,
+    // whatever its straight length. That is what keeps every economy number where it was.
+    //
+    // All four are hashed. `LegSteps == 0` means no leg in progress.
+
+    /// <summary>Where the current leg began — the point the line is drawn from.</summary>
+    public Point LegFrom { get; set; }
+
+    /// <summary>Where the current leg ends — a route tile's centre, or the target tile's.</summary>
+    public Point LegTo { get; set; }
+
+    /// <summary>The tile the whole journey is toward, so a change of mind can be seen.</summary>
+    public GridPos LegTarget { get; set; }
+
+    /// <summary>How many tile steps of the route this leg covers — and therefore how many ticks it takes.</summary>
+    public int LegSteps { get; set; }
+
+    /// <summary>How many of those ticks have been walked.</summary>
+    public int LegStep { get; set; }
+
+    /// <summary>Put them somewhere outright — a new door, a finished house — and forget any walk in progress.</summary>
+    public void StandAt(Point where) => Position = where;
 
     /// <summary>What is in their arms right now, between where they took it and where it goes.</summary>
     /// <remarks>

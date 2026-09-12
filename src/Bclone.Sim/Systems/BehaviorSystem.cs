@@ -3113,49 +3113,69 @@ public sealed class BehaviorSystem : ISimSystem
     /// step completes the journey.</summary>
     /// <remarks>
     /// <para>
-    /// ⭐ <b>The walk is tile centre to tile centre, and arrival stands where the thing IS</b>
-    /// (gridless slice 3, D354). A villager's <see cref="Villager.Position"/> is a <see cref="Point"/>
-    /// now, but the route is still the tile cost field's — one tile a step, 4-connected — so at
-    /// every tick boundary they are on a tile centre, exactly as before. What is new is
-    /// <paramref name="standAt"/>: a free-placed hut stands at (3.3, 7.6) and its worker used to
-    /// stand at (3.5, 7.5), the anchor tile's centre, half a tile from the door. The last thing
-    /// arrival does is step to where the building actually is — zero extra ticks, because the tile
-    /// was already paid for.
+    /// ⭐⭐ <b>THE WALK IS A STRAIGHT LINE ACROSS THE TILE ROUTE, ON THE TILE ROUTE'S CLOCK</b>
+    /// (gridless slice 4, D356). The route is still the cost field's staircase — one shared cost
+    /// field, never two (`CLAUDE.md`) — and the string is pulled taut over it: a <em>leg</em> runs
+    /// from where the villager is to the furthest route tile visible in a straight line
+    /// (<see cref="LineOfSight"/>, conservative at corners), and is walked in exactly as many
+    /// ticks as the staircase would have taken to reach that tile. **Clock A, Joe's call:** a
+    /// diagonal ambles, a row walks, and nothing the economy derived from ticks per tile moves.
+    /// <c>VillagerPointTests.AWalkTakesExactlyAsLongAsTheTileRouteDid</c> pins it.
     /// </para>
     /// <para>
-    /// ⛔ <b>Deliberately NOT a fraction of a tile a tick at a slower pace.</b> A fractional walk
-    /// needs to know which way it is going mid-leg — the tile a villager is on cannot say whether
-    /// they are leaving it or arriving — and that is a waypoint, which is <em>slice 4's</em> state
-    /// (string-pulled paths). Adding it here would be two movement systems in one slice, which is
-    /// the thing Joe kept 2c to buildings to avoid. `travel_ticks_per_unit &gt; 1` still steps and
-    /// waits; the view interpolates within the tick as it always has.
+    /// ⭐ Slice 3 said why it stopped short of this: mid-leg, the tile you are on cannot say
+    /// whether you are leaving it or arriving. The leg (<see cref="Villager.LegTo"/> and its three
+    /// companions) is that knowledge, written down and hashed. A leg is planned when none is in
+    /// progress or when the journey's target changes — tile stepping re-aimed every tick for
+    /// free, and a villager sent home mid-walk must not finish walking the wrong way first.
+    /// </para>
+    /// <para>
+    /// ⚠️ <c>travel_ticks_per_unit &gt; 1</c> keeps its old shape — one step, then the wait — so a
+    /// slower pace arrives on the tick it always did. What arrival stands on is D354's
+    /// <paramref name="standAt"/>, unchanged.
     /// </para>
     /// </remarks>
     private static void Travel(
         SimWorld world, Villager villager, GridPos target, VillagerState onArrival, Point? standAt = null)
     {
-        if (villager.Tile == target)
+        if (villager.LegSteps == 0 && villager.Tile == target)
         {
             Arrive(world, villager, target, onArrival, standAt);
             return;
         }
 
-        // Through the shared cost field, so the step a villager takes and the distance
-        // the economy budgeted for come from the same place. Straight-line stepping
-        // would walk them over the river while every other system believed they went
-        // round it — the worst of both, and invisible until somebody starved on a
-        // journey the sim had priced differently from the one they made.
-        GridPos next = world.TravelCost.StepToward(villager.Tile, target);
-        if (next == villager.Tile)
+        if (villager.LegSteps == 0 || villager.LegTarget != target)
         {
-            // Nowhere to go: the target is across water with no way round. Not an
-            // error — a real state a village can be in before it can build bridges —
-            // so they go home rather than pressing against the bank forever.
-            GoHome(world, villager);
-            return;
+            // ⛔⛔ A CHANGE OF MIND RE-PLANS FROM THE STAIRCASE'S TILE, NOT THE LINE'S. Mid-leg a
+            // villager's geometric tile can be a step AHEAD of where the staircase would have put
+            // them after the same ticks (a diagonal's first tick lands on the corner tile the
+            // stairs reach in two) — and a new route charged from that tile is a tick saved for
+            // free, which is clock B leaking in through re-targeting. Measured before this was
+            // written: a forager's yield per hour worked rose 721 → 768 in a village hungry enough
+            // to re-target constantly. So the clock tile is the old route's tile at `LegStep`,
+            // reconstructed from the cached field; the LINE still starts where they actually are.
+            GridPos from = villager.LegSteps == 0 ? villager.Tile : ClockTile(world, villager);
+            if (!PlanLeg(world, villager, from, target))
+            {
+                // Nowhere to go: the target is across water with no way round. Not an
+                // error — a real state a village can be in before it can build bridges —
+                // so they go home rather than pressing against the bank forever.
+                villager.LegSteps = 0;
+                villager.LegStep = 0;
+                GoHome(world, villager);
+                return;
+            }
         }
 
-        villager.Position = Point.CentreOf(next);
+        villager.LegStep++;
+        bool legDone = villager.LegStep >= villager.LegSteps;
+        villager.WalkTo(AlongTheLeg(villager.LegFrom, villager.LegTo, villager.LegStep, villager.LegSteps));
+
+        if (legDone)
+        {
+            villager.LegSteps = 0;
+            villager.LegStep = 0;
+        }
 
         // travel_ticks_per_unit > 1 means each step costs extra ticks; the step is
         // already applied, so the remainder is the extra waiting.
@@ -3166,9 +3186,105 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (villager.Tile == target)
+        if (legDone && villager.Tile == target)
         {
             Arrive(world, villager, target, onArrival, standAt);
+        }
+    }
+
+    /// <summary>
+    /// Where the STAIRCASE would have a mid-leg villager after <c>LegStep</c> ticks — the tile a
+    /// re-plan is charged from, so a change of mind costs what it always cost.
+    /// </summary>
+    /// <remarks>
+    /// The old leg's route is re-read from the cached flow field (deterministic: same field, same
+    /// answer), and its <c>LegStep</c>th tile is the clock tile. If the field has since been
+    /// forgotten and the route differs, the answer is still a tile on a real route from where the
+    /// leg began, charged honestly from there.
+    /// </remarks>
+    private static GridPos ClockTile(SimWorld world, Villager villager)
+    {
+        GridPos began = villager.LegFrom.ToTile();
+        if (villager.LegStep == 0)
+        {
+            return began;
+        }
+
+        List<GridPos> old = world.TravelCost.RouteFrom(began, villager.LegTarget);
+        return old.Count == 0 ? villager.Tile : old[Math.Min(villager.LegStep, old.Count) - 1];
+    }
+
+    /// <summary>
+    /// Plan the next leg toward <paramref name="target"/>, charged from <paramref name="from"/>: the furthest route tile the villager
+    /// can see in a straight line from where they stand. False if there is no route at all.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Greedy along the route: extend while the line stays clear, stop at the first tile it does
+    /// not. Once per leg, never per tick — O(route × segment) at worst, and a route is a few dozen
+    /// tiles. The adjacent tile is always visible (both passable, sharing an edge), so a planned
+    /// leg is never shorter than one step and the walk cannot stall.
+    /// </para>
+    /// <para>
+    /// ⚠️ Planned from the villager's <em>point</em>, not their tile's centre — a re-plan after a
+    /// change of mind starts off-centre, and the line-of-sight test takes any point.
+    /// </para>
+    /// </remarks>
+    private static bool PlanLeg(SimWorld world, Villager villager, GridPos from, GridPos target)
+    {
+        List<GridPos> route = world.TravelCost.RouteFrom(from, target);
+        if (route.Count == 0)
+        {
+            return false;
+        }
+
+        int furthest = 0;
+        for (int i = 1; i < route.Count; i++)
+        {
+            if (!LineOfSight.Clear(world.Map, villager.Position, Point.CentreOf(route[i])))
+            {
+                break;
+            }
+
+            furthest = i;
+        }
+
+        villager.LegFrom = villager.Position;
+        villager.LegTo = Point.CentreOf(route[furthest]);
+        villager.LegTarget = target;
+        villager.LegSteps = furthest + 1;
+        villager.LegStep = 0;
+        return true;
+    }
+
+    /// <summary>
+    /// Where along a leg its <paramref name="step"/>th of <paramref name="steps"/> ticks lands.
+    /// </summary>
+    /// <remarks>
+    /// <c>from + (to − from) × step ⁄ steps</c>, with the ratio taken ONCE over the raw
+    /// difference, so a leg along a row lands on exact tile centres — <c>7 tiles × 1⁄7</c> is a
+    /// whole tile, not a whole tile less a crumb (the first draft multiplied by
+    /// <c>FromRatio(1, 7)</c> and put every villager 2⁻³² off centre, which read as 185 "pulled"
+    /// ticks in a world with no diagonals). A diagonal floors once per tick, and **the last step
+    /// is exact by arithmetic** — <c>delta × steps ⁄ steps</c> is <c>delta</c> — so arrival
+    /// (<c>Position == centre</c>) needs no special case. ⚠️ The first draft assigned <c>LegTo</c>
+    /// outright on the last step as belt and braces; its red check scored zero because the
+    /// arithmetic already lands, and the dead branch was deleted rather than kept (D326).
+    /// </remarks>
+    private static Point AlongTheLeg(Point from, Point to, int step, int steps)
+    {
+        return new Point(
+            Fixed.FromRawBits(from.X.RawBits + Share(to.X.RawBits - from.X.RawBits, step, steps)),
+            Fixed.FromRawBits(from.Y.RawBits + Share(to.Y.RawBits - from.Y.RawBits, step, steps)));
+
+        // Floor, not truncation, so a negative delta rounds the same way a positive one does
+        // (D317's rule for `Fixed`). `delta × step` is at most a valley's width in raw bits times a
+        // route length — far inside a long.
+        static long Share(long delta, int step, int steps)
+        {
+            long scaled = delta * step;
+            long quotient = scaled / steps;
+            return scaled % steps != 0 && scaled < 0 ? quotient - 1 : quotient;
         }
     }
 

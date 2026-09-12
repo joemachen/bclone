@@ -102,6 +102,41 @@ public sealed class TravelCostField
         _map is null ? from.StepToward(to) : FieldTo(to).StepFrom(from);
 
     /// <summary>
+    /// ⭐ The whole route from <paramref name="from"/> to <paramref name="to"/> — the tiles
+    /// <see cref="StepToward"/> would visit, in order, ending on <paramref name="to"/>; empty if
+    /// there is no way, or nowhere to go (gridless slice 4, D356).
+    /// </summary>
+    /// <remarks>
+    /// <b>Nothing new is computed.</b> It is <see cref="StepToward"/> repeated over the cached flow
+    /// field, so a pulled string is pulled over exactly the staircase a villager would have walked,
+    /// and the two cost systems `CLAUDE.md` forbids never come into being. O(route length), each
+    /// step one array read once the field is cached.
+    /// </remarks>
+    public List<GridPos> RouteFrom(GridPos from, GridPos to)
+    {
+        var route = new List<GridPos>();
+        GridPos here = from;
+
+        // Bounded by the field's own answer: a step that does not move is "no way through", and
+        // a route longer than the valley is a field that has gone wrong, not a walk.
+        int budget = (_map?.Width ?? 512) * (_map?.Height ?? 512);
+        while (here != to && budget-- > 0)
+        {
+            GridPos next = StepToward(here, to);
+            if (next == here)
+            {
+                route.Clear();
+                return route;
+            }
+
+            route.Add(next);
+            here = next;
+        }
+
+        return route;
+    }
+
+    /// <summary>
     /// Throw away every cached route, because the ground they were computed over has
     /// changed shape.
     /// </summary>

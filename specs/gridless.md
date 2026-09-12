@@ -1,9 +1,9 @@
 # Spec: Gridless — free placement, real facings, and paths that bend
 
-> Status: ▶️ **OPTION C CHOSEN BY JOE (2026-09-06). SLICES 1, 2a, 2b, 2c AND 3 ARE BUILT AND GREEN** (D317–D331, D354) —
+> Status: ▶️ **OPTION C CHOSEN BY JOE (2026-09-06). SLICES 1–4 ARE ALL BUILT AND GREEN** (D317–D331, D354, D356) —
 > `Fixed` (Q32.32) and `Angle` (16-bit BAM) with deterministic trigonometry. **No behaviour in
-> either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point` and stand on what they walk to (D354).**
-> **Slice 4 — string-pulled paths, with the waypoint that makes a fractional walk possible — is next.**
+> either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point`, stand on what they walk to (D354), and walk straight lines across the tile route on the route's own clock (D356).**
+> **Desire paths (§2.6) are next — writable for the first time — and clock B, the real-clock rebalance, is a later slice of its own.**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -290,7 +290,24 @@ expensive inference in this project.*
    and waits, and `VillagerPointTests` pins the arrival ticks — 20 and 41 — measured before the
    change), and the view lerps within the tick as before. The only off-centre position is standing
    on a free-placed building.
-4. **String-pulled paths**, and then desire paths (§2.6) become writable for the first time.
+4. ✅ **String-pulled paths — BUILT (D356, 2026-09-11), on the tile route's clock (Joe: "A for
+   now").** The route is still the cost field's staircase (`TravelCostField.RouteFrom` is
+   `StepToward` repeated — one cost system, never two); a **leg** runs from where the villager is
+   to the furthest route tile visible in a straight line (`LineOfSight`: an exact grid raycast in
+   fixed-point rationals compared in `Int128`, conservative at corners so nobody squeezes between
+   two ponds) and is walked in **exactly as many ticks as the staircase would have taken to reach
+   that tile**. A diagonal ambles, a row walks, and nothing derived from ticks per tile moves.
+   The leg — `LegFrom`, `LegTo`, `LegTarget`, `LegSteps`, `LegStep` — is the waypoint slice 3
+   refused to fake, and it is hashed. ⛔ **A change of mind mid-leg re-plans from the staircase's
+   tile, not the line's** (`ClockTile`): the geometric tile can be a step ahead, and charging from
+   it leaked clock B through re-targeting — measured before it was written (a hungry village's
+   forager rose 721 → 768 per hour worked; with the clock tile, byte-identical to slice 3). ⛔
+   **Setting `Position` from outside the walk drops the leg** (`WalkTo` is the walk's own door): a
+   stale leg marched a teleported fisher back to where the line began. **Desire paths (§2.6) are
+   writable for the first time — next.**
+   ⏸ **Clock B — the real-clock rebalance** — is Joe's eventual want and its own slice after
+   desire paths (`DESIGN.md §4`): diagonals genuinely shorter, the economy re-derived against the
+   distance people actually walk, goldens re-taken, the twelve-seed arm measured first.
 
 ⚠️ **Each slice ships playable** (`DESIGN.md §4`). ⛔ **Slice 1 is not a spike** — if Q32.32 is not
 provably deterministic the whole direction is wrong and it is worth learning in week one.
@@ -298,6 +315,22 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 ---
 
 ## 9. Definition of Done
+
+### Slice 4 — ✅ MET (2026-09-11, D356): string-pulled paths, on the tile route's clock
+
+| # | Item | State |
+|---|---|---|
+| 1 | The route is the cost field's, and only the cost field's | ✅ `RouteFrom` is `StepToward` repeated over the cached flow field; no second cost system |
+| 2 | A leg is a straight line to the furthest visible route tile | ✅ `LineOfSight` — exact rationals in `Int128`, conservative at corners (`LineOfSightTests`, 6 guards) |
+| 3 | **Clock A: a leg costs its route steps, not its straight length** | ✅ Phase 0 pins 20/41 held; **the valley pin** — 50 gathering trips in 2,000 ticks, the 1st/10th/50th at 17/247/1963 — held, and reddens on a leg charged its straight length. ⚠️ *The Phase 0 pins could not see clock B (that world is one row); the valley pin was added because a red check said so* |
+| 4 | A change of mind re-plans from the staircase's tile | ✅ `ClockTile`; the fishing measurement is byte-identical to slice 3 (830 vs 768 per hour worked) |
+| 5 | The leg is sim state and is hashed | ✅ `MixFixed × 4`, `MixUInt32 × 4`; `TheLegIsHashed` |
+| 6 | A leg lands exactly on its waypoint | ✅ by arithmetic (`delta × steps ⁄ steps`); the belt-and-braces assignment scored zero on its red check and was deleted |
+| 7 | Nobody stands on water | ✅ `NobodyEverStandsOnWater`, 3,000 ticks of the river valley. ⚠️ Scored zero on the "raycast ignores water" red check — the unit guards caught it; this one is a ratchet |
+| 8 | Goldens move once, and the move is explained | ✅ six numbers; **outcomes, not bytes, are the proof this time**: sixty shipped years, population within ±1 at every decade, mean food 2164 → 2116 (−2%); fixture 1606 → 1612 |
+| 9 | The view needed nothing | ✅ `DrawnCentre` lerps `Point` to `Point`; probe `villagers:` ✅ |
+| 10 | Red checks | ✅ five run: straight-length clock (red), no pulling (red), LOS ignores water (red at the unit guards), target change ignored (red), last-step assignment (zero, deleted) |
+| 11 | Suite green | ✅ 1103 / 0 / 2 of 1105, 2m50s |
 
 ### Slice 3 — ✅ MET (2026-09-11, D354): villagers hold a `Point`, and stand on what they walk to
 

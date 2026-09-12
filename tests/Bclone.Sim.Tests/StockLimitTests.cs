@@ -338,8 +338,12 @@ public sealed class StockLimitTests
     // RE-TAKEN (D354): a villager's position is a `Point` and hashes as raw fixed-point bits
     // where it hashed as two tile ints. Proved first with the tile still mixed: every guard
     // byte-identical, so the village did not move — the fingerprint's shape did.
-    // Was 111552278507413873.
-    private const ulong FixtureFiftyYearHash = 12530049132124308337UL;
+    // RE-TAKEN (D356): villagers walk straight lines across the tile route now, so mid-walk positions
+    // are off tile centres and the leg is hashed. The D211 proof is not available for this one — a
+    // reader asking `Tile` mid-walk can see a different tile than the staircase gave — so the proof
+    // is outcomes: population and food over sixty shipped years within noise, and the clock pins.
+    // Was 12530049132124308337; before D354, 111552278507413873.
+    private const ulong FixtureFiftyYearHash = 3707818765402790126UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -389,7 +393,8 @@ public sealed class StockLimitTests
     //   before job-holders rested in spells (2026-09-02): 13822301328619150389
     //   before fishing added a seventh good (2026-09-02): 801842139213225914
     //   before a villager held a Point (D354): 5668752618904500719
-    private const ulong ShippedFiftyYearHash = 7968212936318456319UL;
+    //   before villagers walked straight lines (D356): 7968212936318456319
+    private const ulong ShippedFiftyYearHash = 16668249421764494515UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

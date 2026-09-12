@@ -660,6 +660,16 @@ public static class StateHash
         // — the village did not move, the fingerprint's shape did.
         hash = MixFixed(hash, villager.Position.X);
         hash = MixFixed(hash, villager.Position.Y);
+        // ⭐ The leg (D356): where the straight line began and ends, the journey's target, and how
+        // far along it is — sim state a fresh machine could not re-derive from the position alone.
+        hash = MixFixed(hash, villager.LegFrom.X);
+        hash = MixFixed(hash, villager.LegFrom.Y);
+        hash = MixFixed(hash, villager.LegTo.X);
+        hash = MixFixed(hash, villager.LegTo.Y);
+        hash = MixUInt32(hash, (uint)villager.LegTarget.X);
+        hash = MixUInt32(hash, (uint)villager.LegTarget.Y);
+        hash = MixUInt32(hash, (uint)villager.LegSteps);
+        hash = MixUInt32(hash, (uint)villager.LegStep);
         hash = MixUInt32(hash, (uint)villager.ActionTicksRemaining);
         hash = MixByte(hash, villager.Alive ? (byte)1 : (byte)0);
         hash = MixByte(hash, (byte)villager.CauseOfDeath);

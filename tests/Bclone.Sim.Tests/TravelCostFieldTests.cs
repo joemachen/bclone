@@ -83,4 +83,71 @@ public sealed class TravelCostFieldTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => Field.TicksForCost(-1));
     }
+
+    /// <summary>
+    /// ⭐ The whole route, as the tiles <c>StepToward</c> would visit — <b>what a pulled string
+    /// is pulled over</b> (gridless slice 4, D356).
+    /// </summary>
+    /// <remarks>
+    /// Nothing new is computed: it is <c>StepToward</c> repeated over the cached flow field, so
+    /// it cannot disagree with the step a villager would have taken. Each step is 4-connected,
+    /// the route ends on the destination, and its length is the cost in base tiles — which on
+    /// open ground is the Manhattan distance. Across water it goes round, and to an island it is
+    /// empty rather than a lie.
+    /// </remarks>
+    [Fact]
+    public void RouteFromWalksTheFieldToTheDestination()
+    {
+        var open = new TravelCostField();
+        var from = new GridPos(1, 2);
+        var to = new GridPos(6, 9);
+
+        List<GridPos> route = open.RouteFrom(from, to);
+
+        Assert.Equal(from.ManhattanDistanceTo(to), route.Count);
+        Assert.Equal(to, route[^1]);
+        GridPos previous = from;
+        foreach (GridPos step in route)
+        {
+            Assert.Equal(1, previous.ManhattanDistanceTo(step));
+            previous = step;
+        }
+
+        Assert.Empty(open.RouteFrom(to, to));
+    }
+
+    [Fact]
+    public void RouteFromGoesRoundWaterAndIsEmptyToAnIsland()
+    {
+        // Rows top-down; row 0 of the array is the lowest y.
+        string[] rows =
+        {
+            ".....",
+            ".~~~.",
+            ".~.~.",
+            ".~~~.",
+            ".....",
+        };
+        int height = rows.Length;
+        int width = rows[0].Length;
+        var terrain = new Terrain[width * height];
+        for (int row = 0; row < height; row++)
+        {
+            string line = rows[height - 1 - row];
+            for (int x = 0; x < width; x++)
+            {
+                terrain[(row * width) + x] = line[x] == '~' ? Terrain.Water : Terrain.Grass;
+            }
+        }
+
+        var map = new GeneratedMap(width, height, 0, 0, terrain, new byte[width * height], new GridPos(0, 0));
+        var field = new TravelCostField(1, map);
+
+        List<GridPos> round = field.RouteFrom(new GridPos(0, 2), new GridPos(4, 2));
+        Assert.Equal(new GridPos(4, 2), round[^1]);
+        Assert.True(round.Count > 4, "the route across the pond must be longer than the straight line");
+        Assert.All(round, tile => Assert.NotEqual(Terrain.Water, map.TerrainAt(tile)));
+
+        Assert.Empty(field.RouteFrom(new GridPos(0, 2), new GridPos(2, 2)));
+    }
 }

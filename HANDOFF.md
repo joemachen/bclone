@@ -1,15 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — SLICE 3 PLAYED AND PUSHED; SLICE 4 (STRING-PULLED PATHS, THE WAYPOINT) IS NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — SLICE 4 BUILT (STRAIGHT-LINE WALKS, CLOCK A), UNPLAYED; DESIRE PATHS ARE NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (late).**
-> **1091 passing, 0 failing, 2 skipped of 1093** — run locally on `main`, **~3m** (⚠️ `HEAD` without
+> **1103 passing, 0 failing, 2 skipped of 1105** — run locally on `main`, **2m50s** (⚠️ `HEAD` without
 > this session's change measured 3m00s the same hour; the 2m35s of the morning was the machine, not
 > the code — *measured before it was believed*).
-> **The decision log runs to D355**; read D338–D355 in `DESIGN.md §7` for the last two days —
+> **The decision log runs to D356**; read D338–D356 in `DESIGN.md §7` for the last two days —
 > sixteen decisions — fifteen from Joe playing a build, and D353 the roadmap review that came after (`DESIGN.md §4`, *Master Roadmap*: **Phase 4.5 is current, slice 3 is next**).
 >
 > **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D351):** everything up to and including wheat end
 > to end, the take-back erasing the field, the orange site with no ring beside it, the market's
 > `Holding:` line, and a thin housing stroke siting no house.
+>
+> **⚠️ WHAT JOE HAS NOT PLAYED YET (D356) — gridless slice 4: villagers walk straight lines.** The
+> route is still the cost field's staircase; the walk is the string pulled taut over it, and it
+> **takes exactly the ticks it always took** (clock A, his call; clock B — genuinely shorter
+> diagonals with the economy re-derived — is a later slice of its own). **His check:** watch someone
+> walk from a home to a hut that is off the row — a straight line, no staircase, no wading; count a
+> walk against the tick readout and it is the same length as before; people still stand on their
+> hut on arrival. If anyone walks through water, jitters, doubles back, or the pace feels different,
+> that is the bug this slice's five red checks were aimed at.
 >
 > **✅ JOE PLAYED SLICE 3 (D354): *"villager movement looks pretty good. proceed."* Pushed (D355).**
 > Nothing is unplayed. **Next is slice 4 — string-pulled paths**, which is the first slice that
@@ -305,6 +314,22 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     has two constants checked by one test; the first re-take fixed the one in the failure message
     and the suite went red again on the second. **Read every constant the failing test compares,
     not the first `Expected:`.**
+15. **⛔⛔ A FIXTURE CAN BE GEOMETRICALLY BLIND TO THE DEFECT A PIN EXISTS FOR (D356).** The Phase 0
+    pins (first gather at 20 and 41) guard "the walk's clock did not move" — and in that world the
+    home, hut and store stand on ONE ROW, so a straight line is the staircase and a leg charged its
+    straight length (clock B by accident) passed both pins green. **When a red check comes back
+    green, ask what shape of world would have shown it** — the valley pin (50 trips at 17/247/1963)
+    was added for exactly that and reddens.
+16. **⛔ A RE-PLAN MID-LEG MUST BE CHARGED FROM THE STAIRCASE'S TILE, NOT THE LINE'S (D356).** A
+    diagonal's first tick lands on the corner tile the stairs reach in two; re-planning a new
+    target from there saved a tick for free — a hungry village's forager rose 721 → 768 per hour
+    worked. `ClockTile` re-reads the old route from the cached field. *Any future thing that asks
+    "where is this villager on the route?" must ask the clock, not the geometry.*
+17. **⚠️ A STALE LEG MARCHES A TELEPORTED VILLAGER BACK TO WHERE THE LINE BEGAN.** A test posed a
+    fisher at the hut with `Position = …` while a leg was in progress; the next tick walked them
+    back along it, and a fishing rate read 687 against 830. The `Position` setter drops the leg
+    now; only `WalkTo` keeps it. **Any new state that describes "what I am in the middle of" needs
+    the same rule: an outside hand clears it.**
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
@@ -327,7 +352,7 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT; SLICE 3 IS BUILT (D354), SLICE 4 IS NEXT.** Slice 4 = string-pulled paths **with the waypoint** — the state a fractional walk needs, which slice 3 deliberately did not add (`gridless.md §8` says why: the tile a villager is on cannot say whether they are leaving it or arriving at it); then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 4 is where movement genuinely changes for the first time; read `gridless.md §8` and §10 and the `VillagerPointTests` timing pins (20 and 41) before starting it — those pins are the economy's, and slice 4 must either keep them or move them deliberately with a stated reason.
+- ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT; SLICES 3 AND 4 ARE BUILT (D354, D356); DESIRE PATHS ARE NEXT.** Slice 4 = string-pulled paths **with the waypoint** — the state a fractional walk needs, which slice 3 deliberately did not add (`gridless.md §8` says why: the tile a villager is on cannot say whether they are leaving it or arriving at it); then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 4 is where movement genuinely changes for the first time; read `gridless.md §8` and §10 and the `VillagerPointTests` timing pins (20 and 41) before starting it — those pins are the economy's, and slice 4 must either keep them or move them deliberately with a stated reason.
 
 - ~~⭐ **NEXT: A FIELD LOOKS LIKE A FIELD (Commit L of the wheat plan).**~~ ✅ D349. Bare/furrowed `Field`, sparse green `Sown`, dense gold `Ripe` — marks from a hash like the trees, **not** overhanging (a field's edge is a fence line). Ripe stalks in the wheat chip's colour so map and Overview agree. View only.
 - ~~⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").**~~ ✅ D348, **confirmed in play by Joe the same day** (D350). `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.
