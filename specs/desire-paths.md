@@ -182,5 +182,7 @@ with the reason that worn ground is now faster — **the first deliberate clock 
 - [x] An inspector sentence for trodden, worn and packed ground (`DescribeBareGround`).
 - [x] Outcomes before/after: six shipped seeds × fifty years, twenty fixture years (§6).
 - [x] Probe line `trails:` — every drawn trail tile is worn in the sim.
-- [ ] ⚠️ **Joe plays it.** The look of the trails is his call — width, colour, whether packed should
-  read darker or lighter — and none of it is measured by anything above.
+- [x] ⚠️ **Joe plays it (D359, 2026-09-12, first pass):** *"draws staircase style"* → a clipped
+  L-corner tile draws at the square's shared corner and the trail runs through it diagonally;
+  *"-50% line thickness"* → `TrailHalfWidth` 0.17. Colour and the packed/worn contrast not yet
+  remarked on; the balance (139 vs 118) still his to call.

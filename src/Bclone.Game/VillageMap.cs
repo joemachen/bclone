@@ -3266,9 +3266,14 @@ public partial class VillageMap : Control
             if (_world.FindWorkplace(owners[i])?.Kind == JobKind.Farmer)
             {
                 // ⚠️ The whole field in bare earth FIRST, and the sown and ripe parts over it.
-                // Each set is smoothed on its own, so where two stages meet inside a field the
-                // rounded corners leave slivers between them — and a sliver over bare earth is
-                // a furrow's edge, where a sliver over grass would be a hole in the field.
+                // ⛔ A stage that covers the WHOLE field is smoothed like the field; a stage that
+                // covers PART of it is drawn as its painted quarters, square (D359). The first draft
+                // smoothed every subset on its own, and a farmer three tiles into the spring sowing
+                // showed as a green worm with tapered ends along the fence — Joe: *"farming is
+                // looking really weird … these are the planted crops of wheat along the border?"*
+                // Chaikin rounds every corner of a one-tile-wide strip, and a strip of sown tiles is
+                // not a painted shape; it is progress. D352's sentence stands as written: three
+                // colours that meet along tile edges INSIDE the field.
                 var field = new HashSet<Vector2I>();
                 var sown = new HashSet<Vector2I>();
                 var ripe = new HashSet<Vector2I>();
@@ -3285,9 +3290,43 @@ public partial class VillageMap : Control
                 }
 
                 KeepField(field, Terrain.Field);
-                KeepField(sown, Terrain.Sown);
-                KeepField(ripe, Terrain.Ripe);
+                KeepStage(sown, Terrain.Sown, field.Count);
+                KeepStage(ripe, Terrain.Ripe, field.Count);
             }
+        }
+
+        void KeepStage(HashSet<Vector2I> cells, Terrain stage, int wholeField)
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            if (cells.Count == wholeField)
+            {
+                KeepField(cells, stage);
+                return;
+            }
+
+            // Part of the field: the painted quarters themselves, two triangles each, in the cell's
+            // own square — exactly the ground that is sown or ripe, and nothing rounded.
+            var triangles = new Vector2[cells.Count * 6];
+            int t = 0;
+            foreach (Vector2I cell in cells)
+            {
+                Vector2 a = InTileSpace(new Vector2(cell.X - 0.5f, cell.Y - 0.5f), SubTile.PerTile);
+                Vector2 b = InTileSpace(new Vector2(cell.X + 0.5f, cell.Y - 0.5f), SubTile.PerTile);
+                Vector2 c = InTileSpace(new Vector2(cell.X + 0.5f, cell.Y + 0.5f), SubTile.PerTile);
+                Vector2 d = InTileSpace(new Vector2(cell.X - 0.5f, cell.Y + 0.5f), SubTile.PerTile);
+                triangles[t++] = a;
+                triangles[t++] = b;
+                triangles[t++] = c;
+                triangles[t++] = a;
+                triangles[t++] = c;
+                triangles[t++] = d;
+            }
+
+            _fieldFills.Add((stage, triangles));
         }
 
         void KeepField(HashSet<Vector2I> cells, Terrain stage)
@@ -3976,11 +4015,17 @@ public partial class VillageMap : Control
     /// the sim half shipped first only because the suite measures it and a screenshot does not.
     /// </para>
     /// <para>
-    /// <b>Gridless in look, on purpose.</b> A path is a disc on every worn tile joined to its worn
-    /// neighbours by a band the same width, so a lane reads as one continuous trail with soft ends
-    /// rather than a row of squares — the same argument the trees (D337) and the fields (D349) made
-    /// against drawing the index. Worn first, packed over it, so a packed core sits inside a worn
-    /// edge the way a real footpath does.
+    /// <b>Gridless in look, on purpose — and the ground is per tile, so the look has to be earned.</b>
+    /// A straight diagonal walk treads a STAIRCASE of tiles (the tiles the line crosses), and the
+    /// first draft joined each worn tile to its four neighbours and drew that staircase faithfully
+    /// — Joe: *"the pathing seems to draw staircase style."* So (D359): a worn tile that is the
+    /// corner of an L — two worn arms at right angles and the fourth tile of the square unworn — is
+    /// a tile the line only <em>clipped</em>, and it is drawn where the line clipped it: at the
+    /// square's shared corner, with the trail running straight through it diagonally. A run of
+    /// worn tiles along a row is a straight band; a block of them is a block; a pure diagonal step
+    /// with neither off-corner worn is joined diagonally. Half a tile wide at the widest, since a
+    /// path is a thing you walk along rather than a thing that covers the ground (Joe: *"-50% line
+    /// thickness"*).
     /// </para>
     /// <para>
     /// ⛔ <b>Cached on <see cref="PathWear.Generation"/>, which moves once a season</b>, never
@@ -3999,7 +4044,7 @@ public partial class VillageMap : Control
             return;
         }
 
-        float radius = _pixelsPerTile * 0.34f;
+        float radius = _pixelsPerTile * TrailHalfWidth;
         float band = radius * 2f;
 
         for (byte pass = 1; pass <= 2; pass++)
@@ -4008,24 +4053,82 @@ public partial class VillageMap : Control
             for (int i = 0; i < _trail.Count; i++)
             {
                 (GridPos tile, byte grade) = _trail[i];
-                if (grade != pass || tile.X < minX || tile.X > maxX || tile.Y < minY || tile.Y > maxY)
+                if (grade != pass || tile.X < minX - 1 || tile.X > maxX + 1 || tile.Y < minY - 1 || tile.Y > maxY + 1)
                 {
                     continue;
                 }
 
-                Vector2 centre = ToScreen(tile);
-                DrawCircle(centre, radius, colour);
+                DrawCircle(ToScreen(TrailPointOf(tile)), radius, colour);
 
-                // Joined to the worn tile to the right and the one above, at the lesser of the two
-                // grades, so every adjacent pair is bridged exactly once and a packed core never
-                // paints over a worn neighbour's edge.
-                JoinTheTrail(neighbour: new GridPos(tile.X + 1, tile.Y), grade, centre, band);
-                JoinTheTrail(neighbour: new GridPos(tile.X, tile.Y + 1), grade, centre, band);
+                // Every adjacent pair once: the tile to the right, the one above, and the two
+                // diagonals above — each drawn on the pass of the LESSER grade, so a packed core
+                // never paints over a worn neighbour's edge.
+                JoinTheTrail(tile, new GridPos(tile.X + 1, tile.Y), grade, band);
+                JoinTheTrail(tile, new GridPos(tile.X, tile.Y + 1), grade, band);
+                JoinTheTrail(tile, new GridPos(tile.X + 1, tile.Y + 1), grade, band);
+                JoinTheTrail(tile, new GridPos(tile.X - 1, tile.Y + 1), grade, band);
             }
         }
     }
 
-    private void JoinTheTrail(GridPos neighbour, byte grade, Vector2 centre, float band)
+    /// <summary>Half a trail's width, in tiles. A quarter of a tile: a path, not a road.</summary>
+    private const float TrailHalfWidth = 0.17f;
+
+    /// <summary>
+    /// Where a worn tile's mark is drawn: its centre — or, for the corner of an L, the square's
+    /// shared corner the line actually passed through.
+    /// </summary>
+    private Vector2 TrailPointOf(GridPos tile)
+    {
+        if (LCornerOf(tile) is (GridPos armA, GridPos armC))
+        {
+            return new Vector2((armA.X + armC.X) / 2f, (armA.Y + armC.Y) / 2f);
+        }
+
+        return new Vector2(tile.X, tile.Y);
+    }
+
+    /// <summary>
+    /// The two arms if <paramref name="tile"/> is the corner of exactly one L of worn tiles — two
+    /// worn orthogonal neighbours at right angles whose diagonal fourth tile is NOT worn. A tile
+    /// that is the corner of two Ls, or part of a block, is drawn at its centre like any other.
+    /// </summary>
+    private (GridPos, GridPos)? LCornerOf(GridPos tile)
+    {
+        (GridPos, GridPos)? found = null;
+        int count = 0;
+        for (int k = 0; k < 4; k++)
+        {
+            // Arms: (+x,+y), (+y,−x), (−x,−y), (−y,+x) — the four right angles round the tile.
+            (int ax, int ay) = Arm(k);
+            (int cx, int cy) = Arm(k + 1);
+            var a = new GridPos(tile.X + ax, tile.Y + ay);
+            var c = new GridPos(tile.X + cx, tile.Y + cy);
+            var d = new GridPos(tile.X + ax + cx, tile.Y + ay + cy);
+            if (TrailGradeAt(a) > 0 && TrailGradeAt(c) > 0 && TrailGradeAt(d) == 0)
+            {
+                count++;
+                found = (a, c);
+            }
+        }
+
+        return count == 1 ? found : null;
+
+        static (int, int) Arm(int k) => (k & 3) switch
+        {
+            0 => (1, 0),
+            1 => (0, 1),
+            2 => (-1, 0),
+            _ => (0, -1),
+        };
+    }
+
+    /// <summary>Whether the orthogonal pair <paramref name="a"/>–<paramref name="b"/> is an arm of an L whose corner is drawn diagonally instead.</summary>
+    private bool IsAnArm(GridPos a, GridPos b) =>
+        (LCornerOf(a) is (GridPos p, GridPos q) && (p == b || q == b))
+        || (LCornerOf(b) is (GridPos r, GridPos t) && (r == a || t == a));
+
+    private void JoinTheTrail(GridPos tile, GridPos neighbour, byte grade, float band)
     {
         byte other = TrailGradeAt(neighbour);
         if (other == 0)
@@ -4033,16 +4136,53 @@ public partial class VillageMap : Control
             return;
         }
 
-        // The lesser grade is drawn on the lesser pass, so a worn–packed pair is bridged in worn
-        // and the packed pass leaves it alone; a packed–packed pair is bridged in packed.
+        // Drawn on the lesser grade's pass, once.
         byte lesser = other < grade ? other : grade;
         if (lesser != grade)
         {
             return;
         }
 
-        DrawLine(centre, ToScreen(neighbour), grade == 2 ? PackedPath : WornPath, band);
+        bool diagonal = neighbour.X != tile.X && neighbour.Y != tile.Y;
+        if (!diagonal)
+        {
+            // A straight step — unless it is the arm of an L, whose corner the diagonal replaces.
+            if (IsAnArm(tile, neighbour))
+            {
+                return;
+            }
+        }
+        else
+        {
+            // A diagonal is drawn through the corner of an L (one off-corner worn and it is that
+            // L's corner), or across a pure diagonal step (neither off-corner worn). Two worn
+            // off-corners are a block, and a block is joined by its straight steps.
+            var offA = new GridPos(tile.X, neighbour.Y);
+            var offB = new GridPos(neighbour.X, tile.Y);
+            bool wornA = TrailGradeAt(offA) > 0;
+            bool wornB = TrailGradeAt(offB) > 0;
+            if (wornA && wornB)
+            {
+                return;
+            }
+
+            if (wornA && !IsCornerBetween(offA, tile, neighbour))
+            {
+                return;
+            }
+
+            if (wornB && !IsCornerBetween(offB, tile, neighbour))
+            {
+                return;
+            }
+        }
+
+        DrawLine(ToScreen(TrailPointOf(tile)), ToScreen(TrailPointOf(neighbour)), grade == 2 ? PackedPath : WornPath, band);
     }
+
+    /// <summary>Whether <paramref name="corner"/> is the L-corner whose arms are exactly the two given tiles.</summary>
+    private bool IsCornerBetween(GridPos corner, GridPos a, GridPos c) =>
+        LCornerOf(corner) is (GridPos p, GridPos q) && ((p == a && q == c) || (p == c && q == a));
 
     /// <summary>The trail grade the last collection gave a tile: 0 grass, 1 worn, 2 packed.</summary>
     private byte TrailGradeAt(GridPos tile)
@@ -4182,10 +4322,24 @@ public partial class VillageMap : Control
                 world.Paths.Tread(new GridPos(from.X + i, from.Y), i < 3 ? world.Config.PathPackedAt : world.Config.PathWornAt);
             }
 
+            // And a staircase two rows up — what a diagonal walk actually treads — so the L-corner
+            // rule (D359) is exercised: (0,0) (1,1) (2,1) (2,2), where (2,1) is the clipped corner.
+            foreach ((int dx, int dy) in new[] { (0, 0), (1, 1), (2, 1), (2, 2) })
+            {
+                world.Paths.Tread(new GridPos(from.X + dx, from.Y + 3 + dy), world.Config.PathWornAt);
+            }
+
             world.Paths.Decay(0);
         }
 
         CollectTheTrailsIfTheyMoved(world);
+
+        // The clipped corner draws at the square's shared corner, on the line; the row draws at centres.
+        GridPos corner = new(world.Map.FoundingSite.X + 2, world.Map.FoundingSite.Y + 4);
+        Vector2 cornerAt = TrailPointOf(corner);
+        Vector2 onTheLine = new(world.Map.FoundingSite.X + 1.5f, world.Map.FoundingSite.Y + 4.5f);
+        bool cornerOnTheLine = cornerAt.DistanceTo(onTheLine) < 0.01f
+            && TrailPointOf(world.Map.FoundingSite) == new Vector2(world.Map.FoundingSite.X, world.Map.FoundingSite.Y);
 
         int packed = 0;
         int adrift = 0;
@@ -4205,9 +4359,15 @@ public partial class VillageMap : Control
             }
         }
 
+        if (!cornerOnTheLine)
+        {
+            return $"[widths] trails: ⛔ the clipped corner of a staircase draws at {cornerAt}, not on the "
+                + $"line at {onTheLine} — the trail is drawing the index, not the walk";
+        }
+
         return adrift == 0
             ? $"[widths] trails: ✅ {_trail.Count} worn tiles drawn as paths, {packed} of them packed, "
-                + $"{world.Paths.TroddenTiles} tiles trodden at all"
+                + $"{world.Paths.TroddenTiles} tiles trodden at all; a staircase's clipped corner draws on the line"
             : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
                 + "trails are drawing something the ground does not hold";
     }

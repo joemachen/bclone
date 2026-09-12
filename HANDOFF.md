@@ -11,7 +11,10 @@
 > decisions, most of them from Joe playing a build for ten minutes.
 >
 > **▶️ WHAT IS HAPPENING RIGHT NOW: Joe is playing the desire-paths build** (his words: *"playing it
-> now"*). **His verdict is the next input, and nothing should be built on top of paths until it
+> now"*). **His first pass landed as D359 (2026-09-12):** the trail drew the tile staircase, not the
+> walk — fixed by drawing a clipped L-corner tile at the square's shared corner; width halved; and a
+> half-sown field's stage tint had been smoothed into a green worm — a partial stage is now square
+> quarters, a whole-field stage still smooth. All view, no golden moved. **His verdict is the next input, and nothing should be built on top of paths until it
 > lands.** Three things only he can call, and a fresh session should ask about them one at a time
 > if he has not already said: *(1)* **the look** — trail width, colour, whether packed reads darker
 > enough inside the worn edge, whether they still read zoomed out; *(2)* **the balance** — six
@@ -373,6 +376,12 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     the tick after reaping (`FetchingFromStore`, harvest in hand) read as the brush eating a crop.
     Twenty years of the fixture never produced that tick until the clock moved. Attribute by the
     thing carried, not the state.
+24. **⚠️ A SMOOTHING RULE WRITTEN FOR A BRUSH STROKE WILL SMOOTH ANYTHING YOU HAND IT (D359).**
+    D352 traced each field STAGE as its own shape; three sown tiles along a fence became a worm.
+    Only the painted shape is a shape — a subset of it is progress, and progress is squares.
+25. **⚠️ THE GROUND IS PER TILE, SO A STRAIGHT WALK TREADS A STAIRCASE — draw the walk, not the
+    index (D359).** Any per-tile picture of something continuous (wear, later soil moisture, later
+    paving) needs the L-corner rule or its equivalent, or Joe will see graph paper again.
 23. **⛔ THE ALLOCATOR CAN RE-SEAT SOMEBODY MID-HAUL, AND THE LOAD FOLLOWS THE NEW JOB'S RULES.** A
     forager carrying 91 produce became a marketer between two ticks and, as a trader, put the lot
     into the market (D199's dumping ground by the side door). `StoreForTheLoad` now caps a trader's
