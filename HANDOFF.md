@@ -1,66 +1,68 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — DESIRE PATHS ARE BUILT (D358) AND UNPLAYED; CLOCK B AND THE SHELL ARE NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — DESIRE PATHS ARE BUILT AND COMMITTED (D358, `b8739a4`); JOE IS PLAYING THEM; CLOCK B AND THE SHELL ARE NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
-> **1112 passing, 0 failing, 2 skipped of 1114** — run locally, **3m24s** (⚠️ `HEAD` before desire paths measured
-> **3m00** the same hour; the difference is the yearly re-price of ~90 flow fields and it is
-> accepted and written down in D358 — *the first draft was 10m20, and the clock is what caught it*).
-> **The decision log runs to D358**; read D338–D358 in `DESIGN.md §7` for the last two days.
 >
-> **✅ DESIRE PATHS (§2.6) ARE BUILT — SIM AND VIEW — AND JOE HAS NOT PLAYED THEM.** Every step
-> treads the tile under the line; the season fades it; worn ground costs 9, packed 8, grass 10,
-> priced once a year through the ONE cost field; a leg's ticks follow the ground. Trails draw on the
-> map; **P** (or the *Paths* button beside *Ground*) shows every trodden tile. Read
-> `specs/desire-paths.md` first, then D358. ⚠️ **Two numbers for him to look at before anything
-> else is built on top:** villagers walk **6.8% less**, and six shipped seeds over fifty years carry
-> **139 people against 118**. That is his rule working (D357), and it is the balance clock B (§4 2b)
-> has to be measured against. ⛔ **Do not touch `path_*` in `data/sim.config.json` without
-> re-measuring** — the comment there says what each number came from.
-> **The decision log before this:** sixteen decisions from Joe playing a build (D338–D357), and D353 the roadmap review that came after (`DESIGN.md §4`, *Master Roadmap*: **Phase 4.5 is current**).
+> **The state:** `main` at `b8739a4`, **committed, NOT pushed** — push when Joe says so, and not
+> before. **1112 passing, 0 failing, 2 skipped of 1114**, **3m24s** (⚠️ `HEAD~1` measured **3m00**
+> the same hour; the difference is the yearly re-price of ~90 flow fields, measured by ablation and
+> accepted in D358 — *the first draft was 10m20, and only the clock caught it*). Probe green:
+> `bar height 161`, `tile centres ✅`, `villagers ✅`, `trails ✅`, `done.`. **The decision log runs
+> to D358.** Read `DESIGN.md §0–§5`, then §6, then D338–D358 in §7 for the last two days — twenty
+> decisions, most of them from Joe playing a build for ten minutes.
 >
-> **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D351):** everything up to and including wheat end
-> to end, the take-back erasing the field, the orange site with no ring beside it, the market's
-> `Holding:` line, and a thin housing stroke siting no house.
+> **▶️ WHAT IS HAPPENING RIGHT NOW: Joe is playing the desire-paths build** (his words: *"playing it
+> now"*). **His verdict is the next input, and nothing should be built on top of paths until it
+> lands.** Three things only he can call, and a fresh session should ask about them one at a time
+> if he has not already said: *(1)* **the look** — trail width, colour, whether packed reads darker
+> enough inside the worn edge, whether they still read zoomed out; *(2)* **the balance** — six
+> shipped seeds over fifty years carry **139 people against 118** and villagers walk **6.8% less**;
+> is a quicker village what he wants, or should the discount (9 / 8 against grass's 10) be gentler;
+> *(3)* **paving** — §2.6's player half (dirt → gravel → cobble) is unspecified; it is the natural
+> next slice on top of this cost table, or it waits behind the shell.
 >
-> **✅ JOE PLAYED SLICE 4 (D356): *"Pathing looks good! I saw diagonals, gentle curves, it looks
-> cool!"* Pushed.** Nothing is unplayed. **Next is desire paths (§2.6)** — a per-tile wear counter
-> in the one shared cost field, decaying and applying on the seasonal sweep, never per tick. ⭐
-> **Joe's rule (D357): a worn path is CHEAPER, a built path (stone, brick) cheaper still** — so a
-> leg's ticks become **cost-based** (`TicksForCost` over the leg's route tiles), which is identical
-> today and is what lets a road speed a walk. A wear overlay ships with it. ⛔ **Read D357 before
-> proposing anything from the Gemini list** — three items were refused with reasons in `§5`, three
-> are already built, four are placed.
+> **✅ DESIRE PATHS (§2.6), IN ONE PARAGRAPH — read `specs/desire-paths.md`, then D358.** Every
+> step treads the tile under the straight line (`BehaviorSystem.Travel` → `PathWear.Tread`); the
+> season fades every tile by 4 (`PathWearSystem`); worn (≥ 12) costs 9, packed (≥ 40) costs 8, grass
+> 10, and the classes reach the routes **once a year, in spring**, through the ONE cost field —
+> `TerrainCostField.Refill`, Dial's bucket queue, refilled in the same arrays. **A leg's ticks follow
+> the ground** (`PlanLeg`: `cost[from] − cost[waypoint]` in whole steps), so walks quicken on worn
+> lanes and nowhere else — the Phase 0 clock pins (20, 41) hold, the valley pin was re-pinned once,
+> deliberately. **The view:** trails as discs joined by bands on worn ground (`VillageMap.DrawTrails`,
+> collected on `Paths.Generation` — once a season, never per frame), the **Paths** button beside
+> *Ground* (key **P**) washing every trodden tile, an inspector sentence on trodden ground, the
+> `trails:` probe line. ⛔ **Do not touch `path_*` in `data/sim.config.json` without re-measuring**
+> — the comment there says what each number came from (10–18 treads a busy tile a season, ~5 the
+> median, 1 for a lone forager).
 >
-> **✅ JOE PLAYED SLICE 3 (D354): *"villager movement looks pretty good. proceed."* Pushed (D355).**
-> Nothing is unplayed. **Next is slice 4 — string-pulled paths**, which is the first slice that
-> changes how people move, and it carries the waypoint that a fractional walk needs (slice 3 said
-> why it did not add one). Read `gridless.md §8` and the timing pins in `VillagerPointTests` first.
-> ⭐ **And a placed item Joe asked about:** *work from the steading* is in Phase 5 as a look (D355)
-> — the 2026-08-22 branch is a record; the feature is a rebuild on `RestingPoint`.
+> **⚠️ THREE THINGS D358 CHANGED THAT ARE NOT PATHS, so nobody re-derives them:** *(a)* a trader's
+> market drop stops at `MarketStockWanted` (`NearestCounterWithRoomFor`) — a forager re-seated as
+> marketer mid-haul had dumped 91 produce into the market; *(b)* `fish_yield` 300 → **400** and
+> `meat_yield` 600 → **800**, buffers 1,200 / 2,400, by the D288/D293 rigs — foragers got quicker on
+> worn lanes and the food ladder (hunting > fishing > foraging) had to be re-levelled; *(c)*
+> `NoLaborerEverClearedAStandingCrop` attributes a reap by the grain a farm worker carries, not by
+> their state.
 >
-> **✅ JOE PLAYED D352 (2026-09-11, late): *"yes, the brush is great now. push!"* — pushed.** What he confirmed, for the record:
-> 1. **The facets** (*"triangle artifacting"*): the zone fill is ear-clipped, not Delaunay. Paint a
->    big round housing or forester zone — no lighter/darker triangles inside it.
-> 2. **The bare corner** (*"why is part of this painted farm not farmland?"*): a farm works every
->    quarter it is painted. No notch of bare paint anywhere in a field.
-> 3. **The staircase** (*"I want a fully round plot the same radius as the paintbrush"*): the field is
->    drawn as the paint. A round brush gives a round field, the same curve as the wash, and the gold
->    fills it at harvest. **And the honest half: a quarter-painted edge tile yields a quarter** — the
->    Overview's wheat should read a little under what a square field of the same tile count gives.
+> **✅ EVERYTHING BEFORE IT IS PLAYED AND SIGNED OFF.** Slice 3 (D354, *"villager movement looks
+> pretty good. proceed."*), slice 4 (D356, *"Pathing looks good! I saw diagonals, gentle curves, it
+> looks cool!"*), the brush and the field (D352, *"yes, the brush is great now. push!"*), wheat end
+> to end, the take-back erasing the field, the market's `Holding:` line — all pushed. ⭐ Two placed
+> items he asked about: *work from the steading* is Phase 5 as a look (D355; the 2026-08-22 branch
+> is a record, the feature is a rebuild on `RestingPoint`); *clock B*, the real-clock rebalance, is
+> §4 2b — *"A for now, but eventually I'll want B"* — its own measured slice, now against D358's
+> outcomes. ⛔ **Read D357 before proposing anything from the Gemini list** — three items refused
+> with reasons in §5, three already built, four placed.
 >
-> **⛔⛔ THE THREE THINGS THIS SESSION LEARNED:**
-> 1. **D335's half rule said what a painted TILE is and nothing about what the EDGE looks like.**
->    Homes and fields hung out of the paint; the plough fired on a grazed quarter. The rules are in
->    `sub-tile-zones.md §3.1`, and **the farm's row was rewritten three times in one day** — whole
->    tiles (D350), the half rule clipped (D351), any quarter in proportion (D352) — each on one of
->    Joe's screenshots. *State the rule, then let him look; the picture is the spec.*
-> 2. **The brush in the player's hand does not change shape per layer** (D351). D342's *"a field's
->    edge is straight"* is about the field, not the tool.
-> 3. **Measure the picture, not the area.** `Filled` said the wash covered the right area while
->    Delaunay was drawing it twice in places and not at all in others; `Tiled` (triangles ÷ polygon)
->    read 1.62× and 2.30× where the eye saw facets. *A metric that sums can hide two errors that
->    cancel.*
+> **⛔⛔ THE THREE THINGS THIS SESSION LEARNED (traps 18–23 below have the detail):**
+> 1. **"Apply on the seasonal sweep" is "rebuild every flow field every season" until you count the
+>    fields.** Nothing failed; the suite went 3m → 10m20 and only the clock said so. Gate on the
+>    PRICE CLASS changing, not the wear; refill in place; hysteresis; once a year.
+> 2. **The D179 prophecy came true on schedule and its prescribed remedy was the slow one.** The
+>    `PriorityQueue` handoff.md told us to use cost the suite a minute; Dial's ring of buckets is
+>    within a whisker of the sweep. *Measure the remedy too.*
+> 3. **`git checkout <file>` during an ablation reverted an hour of uncommitted work.** Ablate with
+>    `cp`, never with git, while anything is uncommitted.
 >
-> ⭐ **Joe plays every build and files precise bugs.** Fifteen of the last fifteen decisions came
+> ⭐ **Joe plays every build and files precise bugs.** Nineteen of the last twenty decisions came
 > from him playing for ten minutes. **Ask him one question at a time, with the measurement in it.**
 
 ## ⛔ FIRST: THE ONE BUILD COMMAND THAT MATTERS
@@ -221,28 +223,36 @@ stood idle with 130 logs.
 
 ## ▶️ NEXT, IN ORDER
 
-**Nothing is queued by Joe beyond his own open items below.** The things this stretch named and
-did not build, in the order they are likely to matter:
+**The order is `DESIGN.md §4`'s Phase 4.5 list, and it is Joe's.** What is queued, and what is
+merely named:
 
-1. ~~**⚠️ JOE PLAYS WHEAT (D348–D349)**~~ ✅ **Confirmed in play, 2026-09-11.** What he found
-   instead was the paint's edge (D350 → D351 → D352, one row rewritten three times on his screenshots). **The D352 build is the one thing he has not played.**
-   The check is in the box above; wait for it before touching the brush or the field renderer.
-2. **The food chain, when he asks:** wheat → flour → bread, wheat → beer
+0. **▶️ JOE'S VERDICT ON DESIRE PATHS (D358) — he is playing it.** Look, balance, paving (the box
+   above). Bugs he files come first; *"push"* pushes `b8739a4`.
+1. **Clock B — the real-clock rebalance (§4 2b).** Diagonal walks genuinely shorter; the economy
+   re-derived against the distance people actually walk (`RoundTripTicks` and the nineteen
+   tile-keyed keys above it); every golden re-taken; **the twelve-seed arm measured first** (D122),
+   and now against D358's outcomes (139 vs 118 over fifty years). `TheValleyWalksOnTheSameClockAsBefore`
+   is the pin that reddens on it. Its own slice, never by accident.
+2. **The shell (§4 item 4), in this order:** an error boundary for a throwing tick → per-stage RNG
+   seeds (splitmix64 per stage, ⛔ not `DeterministicRandom`'s `stream` parameter) → the new-game
+   screen (D344) → settings persistence → save/load (`save → load → hash == live`) → title and pause.
+3. **Paving** — §2.6's player half, if Joe wants it before the shell. It is more rows in the price
+   table (`CostToEnter`) plus a brush and a cost in stone; the trails already draw by grade.
+4. **The food chain, when he asks:** wheat → flour → bread, wheat → beer
    (`food-catalog.md §6`). ⛔ **This is where raw wheat stops being edible** — today it is
    edible at the shared nutrition because the config refuses two values and the survival floor is
    derived on farms feeding people (D277, D348). *Deriving a diet is the precondition, not the
    milling.* A second crop (barley, corn) is a `CropRow` and nothing else — but the farm cannot
    choose which yet (`CropsCatalog.TheOne` is the lowest id); a *"grow…"* control on the
    farmhouse is where that goes.
-3. **The new-game screen (Joe's stated ambition, D344):** archetype, sliders, a seed string, a live
-   preview. ⛔ **Read the OPEN item on RNG streams first** — every generation stage a new
-   option adds reshuffles every seed unless worldgen gets per-stage seeds, and the naive way to do
-   that (`DeterministicRandom`'s `stream` parameter with small ids) measurably breaks valleys.
-   ⭐ The preview is nearly free: `MapGenerator.Generate` is pure and `ValleyTexture` bakes a map
-   to an image.
-4. ⏸ **`gridless.md §8` slice 3 — villagers hold a `Point`.** Buildings are continuous;
-   people still step tile to tile. Unscheduled since D330.
-5. ⏸ **Housing packing** (Joe's call: *pack nicely as households form*) — the scoping from the
+5. **The new-game screen (Joe's stated ambition, D344)** is item 2's third step: archetype, sliders,
+   a seed string, a live preview. ⛔ **Read the OPEN item on RNG streams first** — every generation
+   stage a new option adds reshuffles every seed unless worldgen gets per-stage seeds, and the naive
+   way to do that (`DeterministicRandom`'s `stream` parameter with small ids) measurably breaks
+   valleys. ⭐ The preview is nearly free: `MapGenerator.Generate` is pure and `ValleyTexture` bakes
+   a map to an image.
+6. ~~⏸ **`gridless.md §8` slice 3 — villagers hold a `Point`.**~~ ✅ D354, played.
+7. ⏸ **Housing packing** (Joe's call: *pack nicely as households form*) — the scoping from the
    previous stretch still holds: `ChooseSite` is `score = toWork + toStore`, and packing is a third
    term in that sum. ⚠️ `MarkHome` raises every home at `Angle.Zero`.
 
@@ -250,7 +260,7 @@ did not build, in the order they are likely to matter:
 (*"fine for now"*); harvest marks staying on felled ground (D127, reaffirmed D343: *keep it
 standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 
-## ⛔⛔ THE TRAPS THIS SESSION PAID FOR (D350) — THE EDGE OF THE PAINT, AND A FOLD WITH NO BAR
+## ⛔⛔ THE TRAPS THE LAST THREE DAYS PAID FOR (D350–D358) — THE EDGE OF THE PAINT, THE CLOCK, AND THE SUITE'S CLOCK
 
 **Joe played wheat, confirmed it, and filed five bugs. Four were one fact and the fifth was a fold.**
 
