@@ -1,10 +1,9 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — CLOCK B PLAYED; D362 (PATHS, THE FIELD'S CIRCLE, THE LODGE THAT STARVED A VILLAGE) BUILT AND UNPLAYED; THE SHELL IS NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — CLOCK B AND D362 PUSHED (`61365f6`); THE SHELL IS NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
 >
-> **The state:** `main` at D362's commit, **committed, NOT pushed** — push when Joe says so. Before
-> it, `710d5d5` is pushed (desire paths, signed off: *"its looking really good! push"*); D361 (clock
-> B) and D362 are unpushed. **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
+> **The state:** `main` at `61365f6`, **pushed** (Joe, 2026-09-12: *"push"* — D361 clock B and D362
+> together). ⚠️ D362 itself is unplayed at the moment of pushing; his next play is its check. **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
 > `AFoundingThatPaintsNoSeamStillLives` now summing three seeds. ⚠️ `HEAD` before desire paths
 > measured **3m00**; the rest is the yearly re-price of ~90 flow fields, measured by ablation and
 > accepted in D358 — *the first draft was 10m20, and only the clock caught it*). Probe green:
