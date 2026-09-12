@@ -1,9 +1,8 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — DESIRE PATHS ARE BUILT AND COMMITTED (D358, `b8739a4`); JOE IS PLAYING THEM; CLOCK B AND THE SHELL ARE NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — DESIRE PATHS ARE PLAYED, SIGNED OFF AND PUSHED (D358–D360, `4e0f6a8`); CLOCK B AND THE SHELL ARE NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
 >
-> **The state:** `main` at D360's commit, **committed, NOT pushed** — push when Joe says so, and
-> not before. **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
+> **The state:** `main` at `4e0f6a8`, **pushed** (Joe, 2026-09-12: *"its looking really good! push"*). **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
 > `AFoundingThatPaintsNoSeamStillLives` now summing three seeds. ⚠️ `HEAD` before desire paths
 > measured **3m00**; the rest is the yearly re-price of ~90 flow fields, measured by ablation and
 > accepted in D358 — *the first draft was 10m20, and only the clock caught it*). Probe green:
@@ -11,8 +10,9 @@
 > to D358.** Read `DESIGN.md §0–§5`, then §6, then D338–D358 in §7 for the last two days — twenty
 > decisions, most of them from Joe playing a build for ten minutes.
 >
-> **▶️ WHAT IS HAPPENING RIGHT NOW: Joe is playing the desire-paths build** (his words: *"playing it
-> now"*). **His first pass landed as D359 (2026-09-12):** the trail drew the tile staircase, not the
+> **✅ JOE PLAYED DESIRE PATHS AND SIGNED OFF (2026-09-12): *"its looking really good! push."*** Two
+> passes of bugs first (D359, D360 — below). Still his to call, unprompted: the balance (139 vs 118
+> over fifty years) and paving. **His first pass landed as D359 (2026-09-12):** the trail drew the tile staircase, not the
 > walk — fixed by drawing a clipped L-corner tile at the square's shared corner; width halved; and a
 > half-sown field's stage tint had been smoothed into a green worm — a partial stage is now square
 > quarters, a whole-field stage still smooth. All view, no golden moved. **His second landed as
