@@ -2,9 +2,10 @@
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
 >
-> **The state:** `main` at `b8739a4`, **committed, NOT pushed** — push when Joe says so, and not
-> before. **1112 passing, 0 failing, 2 skipped of 1114**, **3m24s** (⚠️ `HEAD~1` measured **3m00**
-> the same hour; the difference is the yearly re-price of ~90 flow fields, measured by ablation and
+> **The state:** `main` at D360's commit, **committed, NOT pushed** — push when Joe says so, and
+> not before. **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
+> `AFoundingThatPaintsNoSeamStillLives` now summing three seeds. ⚠️ `HEAD` before desire paths
+> measured **3m00**; the rest is the yearly re-price of ~90 flow fields, measured by ablation and
 > accepted in D358 — *the first draft was 10m20, and only the clock caught it*). Probe green:
 > `bar height 161`, `tile centres ✅`, `villagers ✅`, `trails ✅`, `done.`. **The decision log runs
 > to D358.** Read `DESIGN.md §0–§5`, then §6, then D338–D358 in §7 for the last two days — twenty
@@ -14,7 +15,13 @@
 > now"*). **His first pass landed as D359 (2026-09-12):** the trail drew the tile staircase, not the
 > walk — fixed by drawing a clipped L-corner tile at the square's shared corner; width halved; and a
 > half-sown field's stage tint had been smoothed into a green worm — a partial stage is now square
-> quarters, a whole-field stage still smooth. All view, no golden moved. **His verdict is the next input, and nothing should be built on top of paths until it
+> quarters, a whole-field stage still smooth. All view, no golden moved. **His second landed as
+> D360:** trails are curves now (`DrawBend`); the wear's units changed (step 3, decay 11, worn 48,
+> packed 150 — *"50% longer to fade, 25% longer to draw"*); the farmer sows whole tiles before the
+> quarter-slivers at the fence (the "sowing on the edge" was one farmer's whole year going into six
+> slivers); stalks stand only where foot AND tip are painted. Five goldens moved once for the units.
+> **Colour and the worn/packed contrast he has not remarked on; the balance (139 vs 118) he has not
+> called.** **His verdict is the next input, and nothing should be built on top of paths until it
 > lands.** Three things only he can call, and a fresh session should ask about them one at a time
 > if he has not already said: *(1)* **the look** — trail width, colour, whether packed reads darker
 > enough inside the worn edge, whether they still read zoomed out; *(2)* **the balance** — six
@@ -382,6 +389,17 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 25. **⚠️ THE GROUND IS PER TILE, SO A STRAIGHT WALK TREADS A STAIRCASE — draw the walk, not the
     index (D359).** Any per-tile picture of something continuous (wear, later soil moisture, later
     paving) needs the L-corner rule or its equivalent, or Joe will see graph paper again.
+26. **⛔⛔ A CAP THAT COUNTS TILES OVER GROUND WHERE TILES ARE NO LONGER EQUAL IS A CAP ON THE
+    WRONG THING (D360).** D352 made a quarter-painted tile a quarter of a field; the sowing cap
+    still counted tiles and nearest-first picked the slivers — one farmer's year was a tile and a
+    half of wheat and nobody noticed until the picture looked odd. **Grep for every place that
+    counts `owned.Count` or tiles of a farm** (`HarvestOneFarmCanBringIn`, `StandingCropTiles`,
+    `FieldTilesOneFarmerKeeps`) before trusting a farm number; only the ORDER was fixed here.
+27. **⚠️ A SINGLE SEED BRUSHING A RATIO BAR IS NOT A MEASUREMENT (D360).** The no-seam founding
+    read 11 vs 16, then 7 vs 15, as the walk's clock moved — noise on a marginal fifty-year valley.
+    Across four seeds and five wear settings it sat at 0.6–0.9 of its control every time. Sum
+    seeds before pinning a ratio; and when a behaviour guard moves with a timing change, measure the
+    spread before touching either the guard or the sim.
 23. **⛔ THE ALLOCATOR CAN RE-SEAT SOMEBODY MID-HAUL, AND THE LOAD FOLLOWS THE NEW JOB'S RULES.** A
     forager carrying 91 produce became a marketer between two ticks and, as a trader, put the lot
     into the market (D199's dumping ground by the side door). `StoreForTheLoad` now caps a trader's

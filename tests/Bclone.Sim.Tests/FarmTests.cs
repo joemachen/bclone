@@ -359,6 +359,72 @@ public sealed class FarmTests
     //  ⭐ The work
     // ---------------------------------------------------------------
 
+    /// <summary>
+    /// ⭐ A farmer sows the WHOLE tiles before the quarter-painted margins (D360).
+    /// </summary>
+    /// <remarks>
+    /// D352 made any painted quarter of a tile workable, in proportion — and the sowing cap counts
+    /// tiles. So when a square stroke's edge fell a quarter into a row, the one farmer's six tiles
+    /// were the six slivers nearest the farmhouse, each worth a quarter, and the year's harvest
+    /// was a tile and a half. Joe: *"the farm field is still doing some weird
+    /// sowing-on-the-edge-of-the-boundary thing."* Here the slivers are NEARER the farmhouse than
+    /// the whole tiles, and the farmer still walks past them.
+    /// </remarks>
+    [Fact]
+    public void AFarmerSowsTheWholeTilesBeforeTheSlivers()
+    {
+        SimLoop loop = Loop(Config);
+        SimWorld world = loop.World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+
+        // Three slivers in the row just above the farmhouse — one quarter-row each — and six
+        // whole tiles in the two rows beyond them.
+        var slivers = new List<GridPos>();
+        var whole = new List<GridPos>();
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            var sliver = new GridPos(farm.Tile.X + dx, farm.Tile.Y - 1);
+            for (int qx = 0; qx < SubTile.PerTile; qx++)
+            {
+                Assert.True(world.PaintWorkGround(farm, SubTile.Of(sliver, qx, SubTile.PerTile - 1)).Allowed);
+            }
+
+            slivers.Add(sliver);
+
+            for (int dy = -3; dy <= -2; dy++)
+            {
+                var tile = new GridPos(farm.Tile.X + dx, farm.Tile.Y + dy);
+                Assert.True(world.PaintWorkGround(farm, tile).Allowed);
+                whole.Add(tile);
+            }
+        }
+
+        Assert.All(slivers, at => Assert.Equal(SubTile.PerTile, world.Zones.WorkGroundSubTilesOn(at)));
+        Assert.All(whole, at => Assert.Equal(SubTile.PerWholeTile, world.Zones.WorkGroundSubTilesOn(at)));
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Spring);
+
+        // A farm ploughs open ground and leaves a tree standing, so a wooded tile is never sowable;
+        // only the ploughed whole tiles count.
+        whole.RemoveAll(at => world.Map.TerrainAt(at) != Terrain.Field);
+        Assert.True(whole.Count >= 3, $"only {whole.Count} whole tiles were ploughed — the fixture is in a wood");
+
+        GridPos? first = world.NextFieldToWork(farm, farm.Tile);
+        Assert.NotNull(first);
+        _output.WriteLine($"first tile to sow: {first}, painted {world.Zones.WorkGroundSubTilesOn(first.Value)} of 16");
+        Assert.Contains(first.Value, whole);
+
+        loop.Step(Config.TicksPerSeason);
+
+        int wholeSown = whole.Count(at => world.Map.TerrainAt(at) == Terrain.Sown);
+        int sliversSown = slivers.Count(at => world.Map.TerrainAt(at) == Terrain.Sown);
+        _output.WriteLine($"after spring: {wholeSown} of {whole.Count} whole tiles sown, {sliversSown} of {slivers.Count} slivers");
+        Assert.True(wholeSown > 0, "a whole spring and no whole tile was sown");
+        Assert.True(
+            sliversSown == 0 || wholeSown == whole.Count,
+            "a sliver was sown while a whole tile still waited — the farmer is working the margin before the field");
+    }
+
     /// <summary>⭐⭐ A farmer sows in spring, and by autumn the field is standing ripe.</summary>
     /// <remarks>
     /// <b>The whole slice in one assertion.</b> Every crop step before this was provably

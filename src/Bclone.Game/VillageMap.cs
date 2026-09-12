@@ -4023,9 +4023,11 @@ public partial class VillageMap : Control
     /// a tile the line only <em>clipped</em>, and it is drawn where the line clipped it: at the
     /// square's shared corner, with the trail running straight through it diagonally. A run of
     /// worn tiles along a row is a straight band; a block of them is a block; a pure diagonal step
-    /// with neither off-corner worn is joined diagonally. Half a tile wide at the widest, since a
-    /// path is a thing you walk along rather than a thing that covers the ground (Joe: *"-50% line
-    /// thickness"*).
+    /// with neither off-corner worn is joined diagonally. A third of a tile wide, since a path is a
+    /// thing you walk along rather than a thing that covers the ground (Joe: *"-50% line
+    /// thickness"*), and **bent round every tile it turns at** (D360, *"more rounded"*): the trail
+    /// through a tile is a curve from the midpoint to each joined neighbour with the tile's point as
+    /// its control, so a turn is a bend and a run is a line.
     /// </para>
     /// <para>
     /// ⛔ <b>Cached on <see cref="PathWear.Generation"/>, which moves once a season</b>, never
@@ -4046,6 +4048,7 @@ public partial class VillageMap : Control
 
         float radius = _pixelsPerTile * TrailHalfWidth;
         float band = radius * 2f;
+        Span<GridPos> joined = stackalloc GridPos[8];
 
         for (byte pass = 1; pass <= 2; pass++)
         {
@@ -4053,22 +4056,93 @@ public partial class VillageMap : Control
             for (int i = 0; i < _trail.Count; i++)
             {
                 (GridPos tile, byte grade) = _trail[i];
-                if (grade != pass || tile.X < minX - 1 || tile.X > maxX + 1 || tile.Y < minY - 1 || tile.Y > maxY + 1)
+                if (tile.X < minX - 1 || tile.X > maxX + 1 || tile.Y < minY - 1 || tile.Y > maxY + 1)
                 {
                     continue;
                 }
 
-                DrawCircle(ToScreen(TrailPointOf(tile)), radius, colour);
+                Vector2 here = ToScreen(TrailPointOf(tile));
+                if (grade == pass)
+                {
+                    DrawCircle(here, radius, colour);
+                }
 
-                // Every adjacent pair once: the tile to the right, the one above, and the two
-                // diagonals above — each drawn on the pass of the LESSER grade, so a packed core
-                // never paints over a worn neighbour's edge.
-                JoinTheTrail(tile, new GridPos(tile.X + 1, tile.Y), grade, band);
-                JoinTheTrail(tile, new GridPos(tile.X, tile.Y + 1), grade, band);
-                JoinTheTrail(tile, new GridPos(tile.X + 1, tile.Y + 1), grade, band);
-                JoinTheTrail(tile, new GridPos(tile.X - 1, tile.Y + 1), grade, band);
+                // ⭐ ROUNDED (D360, Joe: *"still look angular, I want more rounded"*): the trail
+                // through a tile is a curve from the midpoint to each joined neighbour, bent round
+                // the tile's own point — a quadratic Bézier with the tile as its control point — so
+                // every turn is a bend and a straight run is still straight. Each curve is drawn on
+                // the pass of the LEAST worn of its three tiles, worn under packed.
+                int count = JoinedNeighbours(tile, joined);
+                if (count == 1)
+                {
+                    byte least = Lesser(grade, TrailGradeAt(joined[0]));
+                    if (least == pass)
+                    {
+                        DrawLine(Midway(tile, joined[0]), here, colour, band);
+                    }
+
+                    continue;
+                }
+
+                for (int p = 0; p < count; p++)
+                {
+                    for (int q = p + 1; q < count; q++)
+                    {
+                        byte least = Lesser(grade, Lesser(TrailGradeAt(joined[p]), TrailGradeAt(joined[q])));
+                        if (least != pass)
+                        {
+                            continue;
+                        }
+
+                        DrawBend(Midway(tile, joined[p]), here, Midway(tile, joined[q]), colour, band);
+                    }
+                }
             }
         }
+    }
+
+    private static byte Lesser(byte a, byte b) => a < b ? a : b;
+
+    /// <summary>The screen point halfway between two tiles' trail points — where one tile's curve hands over to the next.</summary>
+    private Vector2 Midway(GridPos a, GridPos b) => ToScreen((TrailPointOf(a) + TrailPointOf(b)) / 2f);
+
+    /// <summary>A quadratic Bézier from <paramref name="from"/> to <paramref name="to"/> bent round <paramref name="control"/>, as a short polyline.</summary>
+    private void DrawBend(Vector2 from, Vector2 control, Vector2 to, Color colour, float width)
+    {
+        const int Segments = 8;
+        var points = new Vector2[Segments + 1];
+        for (int i = 0; i <= Segments; i++)
+        {
+            float t = i / (float)Segments;
+            float u = 1f - t;
+            points[i] = (u * u * from) + (2f * u * t * control) + (t * t * to);
+        }
+
+        DrawPolyline(points, colour, width);
+    }
+
+    /// <summary>The worn neighbours this tile's trail runs to, by the D359 rules; how many were written.</summary>
+    private int JoinedNeighbours(GridPos tile, Span<GridPos> into)
+    {
+        int count = 0;
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                if (dx == 0 && dy == 0)
+                {
+                    continue;
+                }
+
+                var neighbour = new GridPos(tile.X + dx, tile.Y + dy);
+                if (TrailGradeAt(neighbour) > 0 && ShouldJoin(tile, neighbour))
+                {
+                    into[count++] = neighbour;
+                }
+            }
+        }
+
+        return count;
     }
 
     /// <summary>Half a trail's width, in tiles. A quarter of a tile: a path, not a road.</summary>
@@ -4128,56 +4202,42 @@ public partial class VillageMap : Control
         (LCornerOf(a) is (GridPos p, GridPos q) && (p == b || q == b))
         || (LCornerOf(b) is (GridPos r, GridPos t) && (r == a || t == a));
 
-    private void JoinTheTrail(GridPos tile, GridPos neighbour, byte grade, float band)
+    /// <summary>
+    /// Whether the trail runs directly between two adjacent worn tiles (D359) — symmetric, and it
+    /// draws nothing.
+    /// </summary>
+    private bool ShouldJoin(GridPos tile, GridPos neighbour)
     {
-        byte other = TrailGradeAt(neighbour);
-        if (other == 0)
-        {
-            return;
-        }
-
-        // Drawn on the lesser grade's pass, once.
-        byte lesser = other < grade ? other : grade;
-        if (lesser != grade)
-        {
-            return;
-        }
-
         bool diagonal = neighbour.X != tile.X && neighbour.Y != tile.Y;
         if (!diagonal)
         {
             // A straight step — unless it is the arm of an L, whose corner the diagonal replaces.
-            if (IsAnArm(tile, neighbour))
-            {
-                return;
-            }
+            return !IsAnArm(tile, neighbour);
         }
-        else
+
+        // A diagonal runs through the corner of an L (one off-corner worn and it is that L's
+        // corner), or across a pure diagonal step (neither off-corner worn). Two worn off-corners
+        // are a block, and a block is joined by its straight steps.
+        var offA = new GridPos(tile.X, neighbour.Y);
+        var offB = new GridPos(neighbour.X, tile.Y);
+        bool wornA = TrailGradeAt(offA) > 0;
+        bool wornB = TrailGradeAt(offB) > 0;
+        if (wornA && wornB)
         {
-            // A diagonal is drawn through the corner of an L (one off-corner worn and it is that
-            // L's corner), or across a pure diagonal step (neither off-corner worn). Two worn
-            // off-corners are a block, and a block is joined by its straight steps.
-            var offA = new GridPos(tile.X, neighbour.Y);
-            var offB = new GridPos(neighbour.X, tile.Y);
-            bool wornA = TrailGradeAt(offA) > 0;
-            bool wornB = TrailGradeAt(offB) > 0;
-            if (wornA && wornB)
-            {
-                return;
-            }
-
-            if (wornA && !IsCornerBetween(offA, tile, neighbour))
-            {
-                return;
-            }
-
-            if (wornB && !IsCornerBetween(offB, tile, neighbour))
-            {
-                return;
-            }
+            return false;
         }
 
-        DrawLine(ToScreen(TrailPointOf(tile)), ToScreen(TrailPointOf(neighbour)), grade == 2 ? PackedPath : WornPath, band);
+        if (wornA && !IsCornerBetween(offA, tile, neighbour))
+        {
+            return false;
+        }
+
+        if (wornB && !IsCornerBetween(offB, tile, neighbour))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>Whether <paramref name="corner"/> is the L-corner whose arms are exactly the two given tiles.</summary>
@@ -4341,6 +4401,26 @@ public partial class VillageMap : Control
         bool cornerOnTheLine = cornerAt.DistanceTo(onTheLine) < 0.01f
             && TrailPointOf(world.Map.FoundingSite) == new Vector2(world.Map.FoundingSite.X, world.Map.FoundingSite.Y);
 
+        // And the row is one chain: every tile of it joins its neighbour on the row (D360).
+        int broken = 0;
+        Span<GridPos> joined = stackalloc GridPos[8];
+        for (int i = 0; i < 8; i++)
+        {
+            var here = new GridPos(world.Map.FoundingSite.X + i, world.Map.FoundingSite.Y);
+            var next = new GridPos(here.X + 1, here.Y);
+            int count = JoinedNeighbours(here, joined);
+            bool joinsNext = false;
+            for (int k = 0; k < count; k++)
+            {
+                joinsNext |= joined[k] == next;
+            }
+
+            if (!joinsNext)
+            {
+                broken++;
+            }
+        }
+
         int packed = 0;
         int adrift = 0;
         for (int i = 0; i < _trail.Count; i++)
@@ -4359,6 +4439,11 @@ public partial class VillageMap : Control
             }
         }
 
+        if (broken > 0)
+        {
+            return $"[widths] trails: ⛔ the posed row breaks {broken} times — a lane people walk is drawn in pieces";
+        }
+
         if (!cornerOnTheLine)
         {
             return $"[widths] trails: ⛔ the clipped corner of a staircase draws at {cornerAt}, not on the "
@@ -4367,7 +4452,7 @@ public partial class VillageMap : Control
 
         return adrift == 0
             ? $"[widths] trails: ✅ {_trail.Count} worn tiles drawn as paths, {packed} of them packed, "
-                + $"{world.Paths.TroddenTiles} tiles trodden at all; a staircase's clipped corner draws on the line"
+                + $"{world.Paths.TroddenTiles} tiles trodden at all; the row is one chain and a staircase's clipped corner draws on the line"
             : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
                 + "trails are drawing something the ground does not hold";
     }
@@ -4548,7 +4633,11 @@ public partial class VillageMap : Control
         for (int i = 0; i < StalksOn(tile, ripe); i++)
         {
             Vector2 foot = StalkOn(tile, i);
-            if ((quarters & (1 << QuarterOf(foot.X - tile.X, foot.Y - tile.Y))) == 0)
+
+            // ⛔ The TIP as well as the foot (D360). A tile painted only in its bottom quarter-row has
+            // the fence a quarter above the foot, and a stalk 0.16 tall with only its foot checked
+            // stood up through it — Joe's *"sowing on the edge of the boundary"* screenshot.
+            if (!StalkStands(tile, foot, tall, quarters))
             {
                 continue;
             }
@@ -4560,6 +4649,11 @@ public partial class VillageMap : Control
                 Mathf.Max(1f, _pixelsPerTile * (ripe ? 0.05f : 0.035f)));
         }
     }
+
+    /// <summary>Whether a stalk's foot AND tip both land on painted quarters of its tile (D360).</summary>
+    private static bool StalkStands(GridPos tile, Vector2 foot, float tall, ushort quarters) =>
+        (quarters & (1 << QuarterOf(foot.X - tile.X, foot.Y - tile.Y))) != 0
+        && (quarters & (1 << QuarterOf(foot.X - tile.X, foot.Y - tall - tile.Y))) != 0;
 
     /// <summary>How many stalks stand on one tile: sparse shoots, dense grain.</summary>
     private static int StalksOn(GridPos tile, bool ripe) =>
@@ -4609,9 +4703,42 @@ public partial class VillageMap : Control
             }
         }
 
+        // ⭐ And on a tile painted only in its bottom quarter-row, no stalk that stands has a tip
+        // above that row (D360) — the fence runs a quarter above the foot there.
+        const ushort bottomRow = 0xF000;
+        int standing = 0;
+        int through = 0;
+        foreach (GridPos tile in new[] { new GridPos(0, 0), new GridPos(7, -4), new GridPos(-9, 12) })
+        {
+            // Ripe grain (0.16) and sown shoots (0.08): a quarter-row tile carries no grain tall
+            // enough to stand inside it, and a few shoots — both are the honest picture.
+            foreach (float tall in new[] { 0.16f, 0.08f })
+            {
+                for (int i = 0; i < StalksOn(tile, ripe: tall > 0.1f); i++)
+                {
+                    Vector2 foot = StalkOn(tile, i);
+                    if (!StalkStands(tile, foot, tall, bottomRow))
+                    {
+                        continue;
+                    }
+
+                    standing++;
+                    if (foot.Y - tall - tile.Y < 0.25f)
+                    {
+                        through++;
+                    }
+                }
+            }
+        }
+
+        if (through > 0)
+        {
+            return $"[widths] fields: ⛔ {through} of {standing} stalks on a quarter-row tile stand up through the fence";
+        }
+
         return furthest < 0.5f
             ? $"[widths] fields: ✅ {counted} stalks, all inside their tile, furthest "
-                + $"{furthest:F2} from centre"
+                + $"{furthest:F2} from centre; on a quarter-row tile {standing} stand and none through the fence"
             : $"[widths] fields: ⛔ a stalk reaches {furthest:F2} from its tile's centre — "
                 + "past the fence, and a field's edge is a fence";
     }

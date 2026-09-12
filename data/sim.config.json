@@ -231,15 +231,21 @@
   //
   // MEASURED before the numbers were picked (D358): in the shipped valley a
   // busy tile is trodden 10-18 times a season, the median trodden tile ~5,
-  // and a lone forager's route 1. So decay 4 a season lets a 5-a-season lane
-  // wear through in about six seasons and the lone walker's ground never; a
-  // 15-a-season doorstep packs in a couple of years. Cost 10 is grass.
+  // and a lone forager's route 1. RE-TUNED D360 on Joe's play: "paths fade
+  // too quickly ... 50% longer to fade and 25% longer to draw". A step is 3
+  // now so the ratios fit in integers: decay 11 a season (was 12 in these
+  // units) means a path at the worn line fades in 48/11 = 4.4 seasons, not 3;
+  // worn at 48 means a 10-a-season lane (30 - 11 = +19) wears through in 2.5
+  // seasons, not 2, and a 15-a-season doorstep (+34) packs at 150 in 4.4
+  // seasons, not 3.6. The median 5-a-season lane (+4) still takes 12 seasons
+  // and the lone walker's 3 a season still never outlasts the decay -- both
+  // unchanged on purpose. Cost 10 is grass.
   // The cap 2.6 asks for: packed at 8 means a worn detour a quarter longer
   // than the straight walk is still slower, so paths cannot lock a bad route.
-  "path_wear_per_step": 1,
-  "path_wear_decay_per_season": 4,
-  "path_worn_at": 12,
-  "path_packed_at": 40,
+  "path_wear_per_step": 3,
+  "path_wear_decay_per_season": 11,
+  "path_worn_at": 48,
+  "path_packed_at": 150,
   "path_worn_tile_cost": 9,
   "path_packed_tile_cost": 8,
 

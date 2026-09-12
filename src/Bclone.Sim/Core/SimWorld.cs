@@ -3017,8 +3017,9 @@ public sealed class SimWorld
     /// about the harvest brush and is worth keeping one level up as well.
     /// </para>
     /// <para>
-    /// <b>Nearest first, off the one shared cost field</b> (§2.6), so a farmer works outward
-    /// from where they are standing rather than in the order the tiles were painted.
+    /// <b>Whole tiles first, then nearest, off the one shared cost field</b> (§2.6, D360), so a
+    /// farmer works the field outward from where they are standing and reaches the quarter-painted
+    /// margins last — never in the order the tiles were painted.
     /// </para>
     /// <para>
     /// <b>⚠️ Sowing is spring and only spring</b> (<see cref="SeasonRules.IsSowing"/>): a
@@ -3069,7 +3070,15 @@ public sealed class SimWorld
             return null;
         }
 
+        // ⭐ THE WHOLE TILES FIRST, THEN THE MARGINS (D360). D352 lets a farm work any tile it has
+        // any paint on, in proportion — and the cap above counts TILES. So when a square stroke's
+        // edge fell a quarter into a row of tiles, the one farmer's six tiles a year were the six
+        // quarter-slivers nearest the farmhouse, each yielding a quarter: the farm's whole year was
+        // a tile and a half of wheat and a gold stripe under the fence. Joe: *"the farm field is
+        // still doing some weird sowing-on-the-edge-of-the-boundary thing."* A farmer sows the
+        // field before its edges; the slivers are still worked when the whole tiles run out.
         GridPos? best = null;
+        int bestPainted = -1;
         int bestCost = int.MaxValue;
 
         for (int i = 0; i < owned.Count; i++)
@@ -3083,10 +3092,17 @@ public sealed class SimWorld
                 continue;
             }
 
+            int painted = Zones.WorkGroundSubTilesOn(at);
+            if (painted < bestPainted)
+            {
+                continue;
+            }
+
             int cost = TravelCost.Cost(from, at);
-            if (cost < bestCost)
+            if (painted > bestPainted || cost < bestCost)
             {
                 best = at;
+                bestPainted = painted;
                 bestCost = cost;
             }
         }

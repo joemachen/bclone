@@ -48,7 +48,8 @@ scar the map; daily housing↔granary churn should.**
 
 ### 3.1 Tread
 Every tick a travelling villager moves (`BehaviorSystem.Travel`, after `WalkTo`), the tile under
-their new position gains `path_wear_per_step` (1). It is the tile **under the straight line**
+their new position gains `path_wear_per_step` (**3** since D360 — a finer unit so the ratios Joe
+asked for fit in integers; it was 1). It is the tile **under the straight line**
 (`Villager.Tile`, the floor of the `Point`), not the route tile the staircase would have used —
 so a trail is worn where people actually walk. Wear saturates at `ushort.MaxValue`; it never wraps
 (a wrap would turn the main street into fresh grass identically on both machines — the D317
@@ -56,20 +57,26 @@ overflow argument).
 
 ### 3.2 Decay
 At every season boundary (`PathWearSystem`, after `CropSystem`), every tile fades by
-`path_wear_decay_per_season` (4), floored at 0. **Measured before the number was picked:** in the
-shipped valley a busy tile is trodden 10–18 times a season, the median trodden tile ~5, and the
-lone Phase 0 walker's route 1 a season. So a 5-a-season lane wears through (§3.3) in about six
-seasons, a 15-a-season doorstep packs in a couple of years, and the lone forager's ground never
-holds wear across a season — which is §2.6's *no paths* rule, satisfied by arithmetic.
+`path_wear_decay_per_season` (**11**; D358 shipped 4 in old units = 12 in these), floored at 0.
+**Measured before the number was picked (D358):** in the shipped valley a busy tile is trodden
+10–18 times a season, the median trodden tile ~5, and the lone Phase 0 walker's route 1 a season.
+**Re-tuned on Joe's play (D360):** *"paths fade too quickly … 50% longer to fade and 25% longer to
+draw."* A path at the worn line now fades in 48 ⁄ 11 ≈ 4.4 seasons (was 3); a 10-a-season lane
+(30 − 11 = +19 a season) wears through in 2.5 seasons (was 2); a 15-a-season doorstep (+34) packs
+in 4.4 seasons (was 3.6). The median 5-a-season lane (+4) still takes 12 seasons and the lone
+forager's 3 a season still never outlasts the decay — both unchanged on purpose, so §2.6's *no
+paths* rule still holds by arithmetic.
 
 ### 3.3 Price
 A tile's **entry cost** — what it costs to step onto it — is one of three classes:
 
 | class | condition | cost | key |
 |---|---|---|---|
-| grass | wear < `path_worn_at` (12) | 10 = `BaseTileCost` | — |
-| worn | 12 ≤ wear < `path_packed_at` (40) | 9 | `path_worn_tile_cost` |
-| packed | wear ≥ 40 | 8 | `path_packed_tile_cost` |
+| grass | wear < `path_worn_at` (48) | 10 = `BaseTileCost` | — |
+| worn | 48 ≤ wear < `path_packed_at` (150) | 9 | `path_worn_tile_cost` |
+| packed | wear ≥ 150 | 8 | `path_packed_tile_cost` |
+
+(D358 shipped 12 / 40 with a step of 1; D360 is a step of 3 with the thresholds raised a quarter.)
 
 Validation: `1 ≤ packed ≤ worn ≤ BaseTileCost` and `worn_at < packed_at`. **The discount is the
 lock-in cap §2.6 asks for:** at 8 a packed detour a quarter longer than the straight walk is still
@@ -130,7 +137,7 @@ worlds** — the suite runs worlds in parallel and a shared buffer is a determin
 (`CLAUDE.md`). `Forget()` drops it with the fields.
 
 ### 4.4 Config (`data/sim.config.json`)
-`path_wear_per_step` 1 · `path_wear_decay_per_season` 4 · `path_worn_at` 12 · `path_packed_at` 40 ·
+`path_wear_per_step` 3 · `path_wear_decay_per_season` 11 · `path_worn_at` 48 · `path_packed_at` 150 ·
 `path_worn_tile_cost` 9 · `path_packed_tile_cost` 8. The comment in the file carries the
 measurement the numbers came from. Paving will add classes to the same table, not a second one.
 
@@ -184,5 +191,10 @@ with the reason that worn ground is now faster — **the first deliberate clock 
 - [x] Probe line `trails:` — every drawn trail tile is worn in the sim.
 - [x] ⚠️ **Joe plays it (D359, 2026-09-12, first pass):** *"draws staircase style"* → a clipped
   L-corner tile draws at the square's shared corner and the trail runs through it diagonally;
-  *"-50% line thickness"* → `TrailHalfWidth` 0.17. Colour and the packed/worn contrast not yet
-  remarked on; the balance (139 vs 118) still his to call.
+  *"-50% line thickness"* → `TrailHalfWidth` 0.17.
+- [x] **Second pass (D360):** *"still angular, more rounded"* → the trail through a tile is a
+  quadratic curve from the midpoint to each joined neighbour with the tile's point as control
+  (`DrawBend`); *"fade too quickly … 50% longer to fade, 25% longer to draw"* → §3.2's numbers; a
+  lane he watched for years and never saw drawn was wear that decay 4 kept under the line. Six
+  shipped seeds over fifty years still carry **139** people (D358: 139; before paths: 118). Colour
+  and the packed/worn contrast not yet remarked on.

@@ -344,7 +344,8 @@ public sealed class StockLimitTests
     // is outcomes: population and food over sixty shipped years within noise, and the clock pins.
     // Was 12530049132124308337; before D354, 111552278507413873.
     // RE-TAKEN (D358) — desire paths. Was 3707818765402790126.
-    private const ulong FixtureFiftyYearHash = 8696606774546397412UL;
+    // RE-TAKEN (D360) — the wear's units and thresholds. Was 8696606774546397412.
+    private const ulong FixtureFiftyYearHash = 2446761918259013976UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -400,7 +401,11 @@ public sealed class StockLimitTests
     //     should increase speed"), the wear is hashed, `fish_yield` 300 → 400 by D288's method, and
     //     a trader's load stops at what the village needs of the market. Proof is outcomes: twenty
     //     fixture years, the same 12 people, 6.8% less time walking, food within 4%.
-    private const ulong ShippedFiftyYearHash = 7055419018953299020UL;
+    //   before the paths faded slower and drew slower (D360): 7055419018953299020
+    //     — Joe, playing: "paths fade too quickly … 50% longer to fade and 25% longer to draw". A
+    //     step is 3 wear now, decay 11 a season, worn at 48, packed at 150; the wear is hashed. The
+    //     valley clock pin did not move.
+    private const ulong ShippedFiftyYearHash = 4233992956325905852UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

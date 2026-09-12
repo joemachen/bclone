@@ -287,6 +287,13 @@ created in D159 for exactly this kind of question, and it currently answers one.
 nothing to farm, the marginal hand is worth more at the wood. That is §2.2's stated advantage
 arriving as a *consequence* rather than as a rule.
 
+**⭐ The order a farmer works the field (D360):** the whole tiles first, then the quarter-painted
+margins, nearest first within each — `SimWorld.NextFieldToWork`. D352 made any painted quarter of
+a tile workable in proportion, and the sowing cap counts tiles; nearest-first alone sent one
+farmer's six tiles a year into six quarter-slivers along the fence (a tile and a half of wheat,
+and Joe's *"sowing on the edge of the boundary"* screenshot). Guard:
+`FarmTests.AFarmerSowsTheWholeTilesBeforeTheSlivers`.
+
 **⚠️ Sowing missed is a year missed.** A village that fails to sow in spring does not get a
 second chance in summer — that is what makes spring a decision. It must be **said, early**
 (the village log, and the farm's `IdleNote`), because §1.1 forbids a village dying of something

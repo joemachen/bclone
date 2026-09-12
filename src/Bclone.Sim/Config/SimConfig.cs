@@ -250,19 +250,19 @@ public sealed record SimConfig
 
     /// <summary>Wear one footstep lays on the tile under it.</summary>
     [JsonPropertyName("path_wear_per_step")]
-    public int PathWearPerStep { get; init; } = 1;
+    public int PathWearPerStep { get; init; } = 3;
 
     /// <summary>How much every tile fades when the season turns — the sweep that also hands wear to the cost field.</summary>
     [JsonPropertyName("path_wear_decay_per_season")]
-    public int PathWearDecayPerSeason { get; init; } = 4;
+    public int PathWearDecayPerSeason { get; init; } = 11;
 
     /// <summary>Wear at which grass reads as a worn path and crosses at <see cref="PathWornTileCost"/>.</summary>
     [JsonPropertyName("path_worn_at")]
-    public int PathWornAt { get; init; } = 12;
+    public int PathWornAt { get; init; } = 48;
 
     /// <summary>Wear at which a worn path is packed hard and crosses at <see cref="PathPackedTileCost"/>.</summary>
     [JsonPropertyName("path_packed_at")]
-    public int PathPackedAt { get; init; } = 40;
+    public int PathPackedAt { get; init; } = 150;
 
     /// <summary>Cost of crossing a worn tile, against <c>TravelCostField.BaseTileCost</c> (10) for grass.</summary>
     [JsonPropertyName("path_worn_tile_cost")]

@@ -241,7 +241,10 @@ public sealed class FarmGoldenTests
     // paths are hashed, and a trader's load stops at what the village needs of the market. Proof
     // is outcomes again: twenty fixture years, same 12 people, 6.8% less time walking, food within
     // 4%. Was 8730429600872646413.
-    private const ulong SeamGoldenHash = 6850653998199097325UL;
+    // RE-TAKEN (D360) — the wear's units and thresholds moved on Joe's play (a step is 3, decay 11,
+    // worn 48, packed 150: "50% longer to fade, 25% longer to draw"). The sow order (whole tiles
+    // before slivers, D360) alone leaves this byte-identical — checked. Was 6850653998199097325.
+    private const ulong SeamGoldenHash = 16810765702227238679UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -282,7 +285,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D354) with `SeamGoldenHash` above, for the same reason. Was 5599416537105166058.
     // RE-TAKEN (D356) with it again — straight-line walks. Was 11856395796552874154.
     // RE-TAKEN (D358) with it again — desire paths. Was 11205762516947333005.
-    private const ulong SeamBeforeAnybodyGotBetter = 12842231052626848622UL;
+    // RE-TAKEN (D360) with it again — the wear's units. Was 12842231052626848622.
+    private const ulong SeamBeforeAnybodyGotBetter = 11891405305821433080UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
