@@ -4,7 +4,7 @@
 > **1103 passing, 0 failing, 2 skipped of 1105** — run locally on `main`, **2m50s** (⚠️ `HEAD` without
 > this session's change measured 3m00s the same hour; the 2m35s of the morning was the machine, not
 > the code — *measured before it was believed*).
-> **The decision log runs to D356**; read D338–D356 in `DESIGN.md §7` for the last two days —
+> **The decision log runs to D357**; read D338–D357 in `DESIGN.md §7` for the last two days —
 > sixteen decisions — fifteen from Joe playing a build, and D353 the roadmap review that came after (`DESIGN.md §4`, *Master Roadmap*: **Phase 4.5 is current, slice 3 is next**).
 >
 > **✅ WHAT JOE HAS PLAYED AND SIGNED OFF (D338–D351):** everything up to and including wheat end
@@ -13,8 +13,12 @@
 >
 > **✅ JOE PLAYED SLICE 4 (D356): *"Pathing looks good! I saw diagonals, gentle curves, it looks
 > cool!"* Pushed.** Nothing is unplayed. **Next is desire paths (§2.6)** — a per-tile wear counter
-> in the one shared cost field, decaying and applying on the seasonal sweep, never per tick
-> (`DESIGN.md §4`, Phase 4.5 item 3). Then the shell, in §4's order.
+> in the one shared cost field, decaying and applying on the seasonal sweep, never per tick. ⭐
+> **Joe's rule (D357): a worn path is CHEAPER, a built path (stone, brick) cheaper still** — so a
+> leg's ticks become **cost-based** (`TicksForCost` over the leg's route tiles), which is identical
+> today and is what lets a road speed a walk. A wear overlay ships with it. ⛔ **Read D357 before
+> proposing anything from the Gemini list** — three items were refused with reasons in `§5`, three
+> are already built, four are placed.
 >
 > **✅ JOE PLAYED SLICE 3 (D354): *"villager movement looks pretty good. proceed."* Pushed (D355).**
 > Nothing is unplayed. **Next is slice 4 — string-pulled paths**, which is the first slice that
