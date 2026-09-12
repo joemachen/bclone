@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — SLICE 4 BUILT (STRAIGHT-LINE WALKS, CLOCK A), UNPLAYED; DESIRE PATHS ARE NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — SLICES 3 AND 4 PLAYED AND PUSHED; DESIRE PATHS ARE NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (late).**
 > **1103 passing, 0 failing, 2 skipped of 1105** — run locally on `main`, **2m50s** (⚠️ `HEAD` without
@@ -11,14 +11,10 @@
 > to end, the take-back erasing the field, the orange site with no ring beside it, the market's
 > `Holding:` line, and a thin housing stroke siting no house.
 >
-> **⚠️ WHAT JOE HAS NOT PLAYED YET (D356) — gridless slice 4: villagers walk straight lines.** The
-> route is still the cost field's staircase; the walk is the string pulled taut over it, and it
-> **takes exactly the ticks it always took** (clock A, his call; clock B — genuinely shorter
-> diagonals with the economy re-derived — is a later slice of its own). **His check:** watch someone
-> walk from a home to a hut that is off the row — a straight line, no staircase, no wading; count a
-> walk against the tick readout and it is the same length as before; people still stand on their
-> hut on arrival. If anyone walks through water, jitters, doubles back, or the pace feels different,
-> that is the bug this slice's five red checks were aimed at.
+> **✅ JOE PLAYED SLICE 4 (D356): *"Pathing looks good! I saw diagonals, gentle curves, it looks
+> cool!"* Pushed.** Nothing is unplayed. **Next is desire paths (§2.6)** — a per-tile wear counter
+> in the one shared cost field, decaying and applying on the seasonal sweep, never per tick
+> (`DESIGN.md §4`, Phase 4.5 item 3). Then the shell, in §4's order.
 >
 > **✅ JOE PLAYED SLICE 3 (D354): *"villager movement looks pretty good. proceed."* Pushed (D355).**
 > Nothing is unplayed. **Next is slice 4 — string-pulled paths**, which is the first slice that
