@@ -94,5 +94,12 @@ public sealed class TickObservingSystem : ISimSystem
 
     public ulong? FirstObservedTick { get; private set; }
 
-    public void Execute(SimWorld world) => FirstObservedTick ??= world.Tick;
+    /// <summary>How many ticks this system has run — so a guard can say "nothing ran" (D364).</summary>
+    public int Executions { get; private set; }
+
+    public void Execute(SimWorld world)
+    {
+        FirstObservedTick ??= world.Tick;
+        Executions++;
+    }
 }

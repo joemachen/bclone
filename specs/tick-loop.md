@@ -113,6 +113,35 @@ while (acc >= secondsPerTick) { acc -= secondsPerTick; ticks++; }   // WRONG
 
 `Alpha` is the fractional progress toward the next tick, handed to the renderer so it can interpolate positions between two sim states. The renderer reads it; the sim never sees it.
 
+### 5d. ⭐ The error boundary — what the game DOES when a tick throws (D364, the shell's first piece)
+
+`gridless.md §10` carried the question for a week: `Fixed` overflow, `TravelCostField.TicksForCost`,
+`DeterministicRandom.NextUInt(0)` and config validation all throw from inside a tick, and nothing
+caught any of them — a throw killed the process and took the village with it, unlogged on screen.
+
+**Inside the sim, nothing is swallowed and nothing is retried** (METHODOLOGY §4). `SimLoop.StepOnce`
+still wraps the throw in `SimSystemException` (system, tick, inner) and re-throws. What is new:
+
+- **The loop remembers it.** `SimLoop.Fault` is that exception after the first throw, and every
+  later `StepOnce` re-throws it **without running a system** — the world is left exactly as the
+  throw left it (the tick not advanced, the failing system's partial writes standing), because a
+  half-run tick is not a state anyone can resume from and pretending otherwise is the silent
+  corruption D96 and D144 were about. A faulted loop is dead, and deterministic about it.
+- **Outside the sim, the driver halts the village and says so.** `Main._Process` catches the
+  `SimSystemException`, sets the speed to pause and refuses every speed key from then on, and
+  writes one line into the village log in the death colour — *"The village stopped: system
+  `paths` failed at tick 14,653, Fall of Year 31 — IndexOutOfRangeException: … Nothing more will
+  happen. This is a bug; the log at `<path>` has the details and the seed is 12345."* — plus the
+  full exception to Godot's error stream. The view keeps drawing the last state, every panel still
+  reads, and the player can look at what they had. It does not crash, and it does not quietly
+  carry on.
+- **Not a save, not a recovery.** Save/load is its own shell piece and will want this same door
+  for a corrupt file; a resume-from-fault is not offered because there is nothing sound to resume.
+
+Guards: `SimLoopTests.AFaultedLoopStaysFaultedAndRunsNothingMore` (the tick does not advance, the
+systems do not run again, the same exception comes back); the probe's `[fault]` line poses the
+exception through `Main.HaltTheVillage` and prints the sentence.
+
 ### 5c. Speed controls — the rule that's easy to get wrong
 
 Pause / 1× / 2× / 4× must be implemented as **"how many ticks per real second"**, never as "make each tick bigger."

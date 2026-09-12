@@ -46,6 +46,13 @@ public sealed class SimLoop
     /// <summary>The world this loop advances.</summary>
     public SimWorld World { get; }
 
+    /// <summary>
+    /// The throw that stopped this loop, if one has — <b>the error boundary's memory</b> (D364).
+    /// Null while the village lives. Once set, every <see cref="StepOnce"/> re-throws it and runs
+    /// nothing; the driver reads it to halt the game and tell the player.
+    /// </summary>
+    public SimSystemException? Fault { get; private set; }
+
     /// <summary>Systems in execution order.</summary>
     public IReadOnlyList<ISimSystem> Systems => _systems;
 
@@ -61,6 +68,14 @@ public sealed class SimLoop
     /// </remarks>
     public void StepOnce()
     {
+        // ⛔ A faulted loop is dead, and says so the same way every time (D364, `tick-loop.md
+        // §5d`). The world is exactly as the throw left it — a half-run tick is not a state anyone
+        // can resume from — so nothing runs and the tick does not move.
+        if (Fault is not null)
+        {
+            throw Fault;
+        }
+
         for (int i = 0; i < _systems.Length; i++)
         {
             ISimSystem system = _systems[i];
@@ -75,7 +90,8 @@ public sealed class SimLoop
                 // this seed to this tick and look — then fail loudly.
                 World.Log(LogLevel.Error, "sim",
                     $"System '{system.Name}' threw at tick {World.Tick}: {ex.GetType().Name}: {ex.Message}");
-                throw new SimSystemException(system.Name, World.Tick, ex);
+                Fault = new SimSystemException(system.Name, World.Tick, ex);
+                throw Fault;
             }
         }
 

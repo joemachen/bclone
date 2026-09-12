@@ -470,7 +470,8 @@ buildings gaining an extent and a facing is the change that moves them, with one
    written down so nobody reads it as evidence the risk was faced.
 6. **`Fixed` has no `Sqrt`, deliberately.** Nothing calls it until real distances arrive; it lands
    in the slice that needs it, with the guard that needs it.
-7. **What the game should DO when a tick throws** — `Fixed` overflow joins
-   `TravelCostField.TicksForCost`, `DeterministicRandom.NextUInt(0)` and `SimConfig` validation as
-   an in-tick throw. **There is no error boundary in `SimLoop`.** Not slice 1's question, and it
-   applies to all four.
+7. ~~**What the game should DO when a tick throws**~~ ✅ **Answered, D364 (`tick-loop.md §5d`):**
+   `SimLoop.Fault` remembers the throw and re-throws it on every later step, running nothing; the
+   game pauses, refuses the speed keys, writes one sentence in the death colour with the system,
+   the calendar, the cause, the log path and the seed, and keeps drawing the last state. Not a
+   recovery — save/load will want the same door for a corrupt file.

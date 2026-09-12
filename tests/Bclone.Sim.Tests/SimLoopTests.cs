@@ -122,6 +122,33 @@ public sealed class SimLoopTests
         Assert.Contains("throwing", error.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// ⛔⛔ A faulted loop stays faulted and runs nothing more — <b>the error boundary's sim half</b>
+    /// (D364, `tick-loop.md §5d`).
+    /// </summary>
+    /// <remarks>
+    /// The world is exactly as the throw left it: the tick has not advanced, no system runs again
+    /// (the observer counts), and the same exception comes back on every later step, so the
+    /// driver can halt once and be sure nothing moved behind its back.
+    /// </remarks>
+    [Fact]
+    public void AFaultedLoopStaysFaultedAndRunsNothingMore()
+    {
+        var observer = new TickObservingSystem();
+        var loop = Build(observer, new ThrowingSystem(throwOnTick: 3UL));
+
+        Assert.Null(loop.Fault);
+        SimSystemException first = Assert.Throws<SimSystemException>(() => loop.Step(10));
+        Assert.Same(first, loop.Fault);
+        Assert.Equal(3UL, loop.World.Tick);
+        int ran = observer.Executions;
+
+        SimSystemException again = Assert.Throws<SimSystemException>(() => loop.StepOnce());
+        Assert.Same(first, again);
+        Assert.Equal(3UL, loop.World.Tick);
+        Assert.Equal(ran, observer.Executions);
+    }
+
     [Fact]
     public void NullSystem_IsRejectedAtConstruction()
     {

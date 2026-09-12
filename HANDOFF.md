@@ -1,9 +1,15 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — FORAGING CUT 40% AND THE FLOOR RE-BASED (D363, unpushed); THE SHELL IS NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE SHELL HAS BEGUN: THE ERROR BOUNDARY (D364); D363's HUNGER IS UNPLAYED**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
 >
-> **The state:** `main` at D363's commit, **committed, NOT pushed**; `7d4e0ad` (D362) is pushed.
-> ⚠️ D362 and D363 are unplayed.
+> **The state:** `main` at D364's commit, **committed, NOT pushed**; `7d4e0ad` (D362) is pushed.
+> ⚠️ D362, D363 and D364 are unplayed. Joe's last words: *"first: foraging gives too much food
+> now. drop it 40%. then: shell"* — the first is D363, the shell has begun with D364.
+>
+> **▶️ THE SHELL, IN §4's ORDER:** ✅ error boundary (D364) → **per-stage RNG seeds** (next; splitmix64
+> per stage, ⛔ not `DeterministicRandom`'s `stream` parameter — measured 6 dead valleys of 24; the
+> shipped seed is re-picked once) → the new-game screen (D344) → settings persistence → save/load
+> (`save → load → hash == live`) → title and pause.
 >
 > **⛔⛔ D363 CHANGED THE ECONOMY'S PREMISE, BY JOE'S CALL.** *"foraging gives too much food now.
 > drop it 40%."* `gather_yield` 145 → 87 sat under the derived floor (132), so
@@ -264,15 +270,14 @@ stood idle with 130 logs.
 **The order is `DESIGN.md §4`'s Phase 4.5 list, and it is Joe's.** What is queued, and what is
 merely named:
 
-0. **▶️ JOE PLAYS D362 + D363.** Paths (`path_holds_for` is the dial), the field's circle, the
-   lodge's meat carried out by spare hands — and now the hunger: does a village that only forages
-   shrink the way he wants, and are fishing (2.7×) and hunting (3.7×) the next "too much"?
-   *"push"* pushes D363.
-1. ~~**Clock B**~~ ✅ D361. ⚠️ The instruction was *"re-derive the economy"*; measuring first showed
-   the budgets are promises a shorter walk cannot break, so nothing was re-derived — see D361.
-2. **The shell (§4 item 4), in this order:** an error boundary for a throwing tick → per-stage RNG
-   seeds (splitmix64 per stage, ⛔ not `DeterministicRandom`'s `stream` parameter) → the new-game
-   screen (D344) → settings persistence → save/load (`save → load → hash == live`) → title and pause.
+0. **▶️ JOE PLAYS D362 + D363 + D364.** Paths (`path_holds_for` is the dial), the field's circle,
+   the lodge's meat carried out by spare hands, the hunger (does a village that only forages shrink
+   the way he wants; are fishing 2.7× and hunting 3.7× the next "too much"?). *"push"* pushes all
+   three.
+1. ~~**Clock B**~~ ✅ D361. ~~**The error boundary**~~ ✅ D364.
+2. **The rest of the shell (§4 item 4), in this order:** per-stage RNG seeds (splitmix64 per stage,
+   ⛔ not `DeterministicRandom`'s `stream` parameter) → the new-game screen (D344) → settings
+   persistence → save/load (`save → load → hash == live`) → title and pause.
 3. **Paving** — §2.6's player half, if Joe wants it before the shell. It is more rows in the price
    table (`CostToEnter`) plus a brush and a cost in stone; the trails already draw by grade.
 4. **The food chain, when he asks:** wheat → flour → bread, wheat → beer

@@ -174,14 +174,65 @@ public partial class Main : Control
     {
         // The single wall-clock read in the entire program.
         int ticks = _driver.Advance(delta, _loop.World.Tick);
-        if (ticks > 0)
+        if (ticks > 0 && !_halted)
         {
-            _loop.Step(ticks);
+            try
+            {
+                _loop.Step(ticks);
+            }
+            catch (SimSystemException fault)
+            {
+                HaltTheVillage(fault);
+            }
         }
 
         Refresh();
         ProbeColumnWidths();
     }
+
+    /// <summary>
+    /// ⭐⭐ The error boundary — <b>what the game does when a tick throws</b> (D364,
+    /// `tick-loop.md §5d`, the shell's first piece).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a week `gridless.md §10` carried the question: four things throw from inside a tick and
+    /// nothing caught any of them — a throw took the process down and the village with it, with
+    /// nothing on screen to say why. Now: the driver pauses and refuses every speed key from here
+    /// on; the village log gets one line in the death colour that says which system failed, when
+    /// in the village's own calendar, and where the log file and the seed are; the full exception
+    /// goes to Godot's error stream; and the view keeps drawing the last state so every panel still
+    /// reads. It does not crash, and it does not quietly carry on — a half-run tick is not a state
+    /// anyone can resume from (`SimLoop.Fault`).
+    /// </para>
+    /// <para>
+    /// ⚠️ Not a recovery. Save/load is its own shell piece and will want this same door for a
+    /// corrupt file.
+    /// </para>
+    /// </remarks>
+    private void HaltTheVillage(SimSystemException fault)
+    {
+        _halted = true;
+        _driver.SpeedMultiplier = 0.0;
+        _speedLabel.Text = "STOPPED";
+
+        string sentence = TheVillageStoppedBecause(fault);
+        _villageLog.AppendText(
+            $"[color=#{ColourOf(LogCategory.Death).ToRgba32():x8}][b]⛔ {sentence.Replace("[", "[lb]", StringComparison.Ordinal)}[/b][/color]\n");
+        GD.PushError($"{sentence}\n{fault}");
+    }
+
+    /// <summary>The one sentence the player reads when the village stops — the calendar, the system, the cause, and where to look.</summary>
+    private string TheVillageStoppedBecause(SimSystemException fault)
+    {
+        SimClock when = SimClock.FromTick(fault.Tick, _loop.World.Config);
+        Exception cause = fault.InnerException ?? fault;
+        return $"The village stopped: system '{fault.SystemName}' failed at tick {fault.Tick:N0}, "
+            + $"{when.SeasonAndYear()} — {cause.GetType().Name}: {cause.Message.TrimEnd('.')}. Nothing more will "
+            + $"happen. This is a bug; the log at {_logPath} has the details, and the seed is {_loop.World.Seed}.";
+    }
+
+    private bool _halted;
 
     /// <summary>
     /// Print what every control in the two panel columns is claiming as a minimum width,
@@ -274,6 +325,7 @@ public partial class Main : Control
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
         GD.Print(_map.TheTrailsLieOnTheGround());
+        ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();
         return;
@@ -334,6 +386,23 @@ public partial class Main : Control
     /// stripping and the season lines that deliberately have no stamp.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The error boundary, posed — <b>a throw the sim never made, handed to the handler, and the
+    /// sentence it produces</b> (D364). Last, because it stops the village.
+    /// </summary>
+    private void ProbeTheErrorBoundary()
+    {
+        var posed = new SimSystemException(
+            "paths", _loop.World.Tick, new InvalidOperationException("posed by the probe"));
+        HaltTheVillage(posed);
+        SetSpeed(4.0);
+
+        bool stopped = _halted && _driver.IsPaused && _speedLabel.Text == "STOPPED";
+        GD.Print(stopped
+            ? $"[widths] fault: ✅ the village stops and stays stopped — \"{TheVillageStoppedBecause(posed)}\""
+            : "[widths] fault: ⛔ a speed key restarted a stopped village");
+    }
+
     private void ProbeTheLogLines()
     {
         GD.Print("[log] --- what the village log renders, twelve years in ---");
@@ -1472,6 +1541,12 @@ public partial class Main : Control
 
     private void SetSpeed(double multiplier)
     {
+        // A stopped village stays stopped (D364): nothing sound is left to run.
+        if (_halted)
+        {
+            return;
+        }
+
         _driver.SpeedMultiplier = multiplier;
         _speedLabel.Text = _driver.IsPaused ? "PAUSED" : $"{_driver.SpeedMultiplier:0.#}x";
     }
