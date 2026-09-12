@@ -34,24 +34,29 @@ namespace Bclone.Sim.World;
 public static class VillageEconomy
 {
     /// <summary>
-    /// Children one weakest-case adult must be able to support on top of themselves.
+    /// Mouths one weakest-case adult must be able to feed on top of themselves <b>by foraging
+    /// alone</b>.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Three, not two.</b> Two was the bare widowed-parent case — a survivor
-    /// carrying a household of three — and solving for exactly that produced a
-    /// village sitting at break-even by construction. It survived only while nothing
-    /// pushed on it: switching on a real catchment or a thinner winter store killed
-    /// it, each independently.
+    /// ⭐⭐ <b>ONE, SINCE D363 — FORAGING FEEDS A COUPLE, NOT A FAMILY.</b> Joe, having played the
+    /// valley with paths and clock B: *"foraging gives too much food now. drop it 40%."* A 40% cut
+    /// (`gather_yield` 145 → 87) sits under the floor this number derived (132), so the floor's
+    /// PREMISE moved with it, by his call: a lone forager keeps themselves and one other alive;
+    /// fishing, hunting and farming feed the rest, and a village that will not diversify shrinks.
+    /// Measured over six shipped seeds × fifty years: 145 people → 95, with seventeen starvations;
+    /// six played openings 92 → 55. That is the scarcity he asked for, stated as a number.
     /// </para>
     /// <para>
-    /// So the target is deliberately set <em>above</em> the bare case. The third
-    /// dependant is not a mouth anyone has to feed — it is the slack that pressure
-    /// eats into. A village with no margin cannot have systems that push on it, and
-    /// systems that push are the entire point of §2.3.
+    /// <b>What three meant, kept for the record.</b> Two was the bare widowed-parent case — a
+    /// survivor carrying a household of three — and solving for exactly that produced a village
+    /// sitting at break-even by construction; three was the slack that pressure eats into, so
+    /// that a village with a margin could have systems that push on it (§2.3). Foraging carried
+    /// that whole margin alone for a year of the project; from D363 the margin is the other three
+    /// trades' to provide, which is what Phase 5's food chain is for.
     /// </para>
     /// </remarks>
-    public const int RequiredDependants = 3;
+    public const int RequiredDependants = 1;
 
     /// <summary>Ticks between meals: hunger climbs to the eat threshold, then resets.</summary>
     public static int MealIntervalTicks(SimConfig config)

@@ -135,6 +135,12 @@ public sealed class VillagerPointTests
     /// **Re-pinned a third time (D362)** — paths come sooner (worn at 30, a grace of 24), so the
     /// village is quicker sooner: **59** trips, the fiftieth at **1,666**; the first two unchanged.
     /// </para>
+    /// <para>
+    /// **Re-pinned a fourth time (D363), and NOT for the clock:** foraging was cut 40% and the
+    /// fixture's yield with it (132 → 79), so every trip brings less and the village makes more of
+    /// them — **87** in 2,000 ticks, the 1st/10th/50th at **14/107/1,021**. The walk itself is what
+    /// D361 made it; the pin now guards that clock on a hungrier valley.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -165,8 +171,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(59, entries);
-        Assert.Equal(new ulong[] { 15, 259, 1666 }, at);
+        Assert.Equal(87, entries);
+        Assert.Equal(new ulong[] { 14, 107, 1021 }, at);
     }
 
     /// <summary>

@@ -347,7 +347,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D360) — the wear's units and thresholds. Was 8696606774546397412.
     // RE-TAKEN (D361) — clock B. Was 2446761918259013976.
     // RE-TAKEN (D362) — paths and buffers. Was 6620710744463477554.
-    private const ulong FixtureFiftyYearHash = 6175824268791431883UL;
+    // RE-TAKEN (D363) — foraging cut 40%; the fixture's derived yield 132 → 79. Was 6175824268791431883.
+    private const ulong FixtureFiftyYearHash = 11758015511369690769UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -417,7 +418,11 @@ public sealed class StockLimitTests
     //     (path_holds_for), the class priced and drawn; a buffer holding an armful of food is worth
     //     clearing whenever a store has room and the spare hands carry it (ClearingABuffer, a new
     //     state — the enum grew, so every villager's state hashes one further along).
-    private const ulong ShippedFiftyYearHash = 14453852414769362964UL;
+    //   before foraging fed a couple instead of a family (D363): 14453852414769362964
+    //     — Joe: "foraging gives too much food now. drop it 40%." gather_yield 145 → 87; the
+    //     economy's floor re-based from three dependants to one, by his call. Six shipped seeds
+    //     over fifty years: 145 people → 95.
+    private const ulong ShippedFiftyYearHash = 10566152339382430818UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

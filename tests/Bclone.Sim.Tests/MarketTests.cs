@@ -341,7 +341,13 @@ public sealed class MarketTests
         // What is left here is the promise a village should be able to rely on absolutely:
         // WITH a market, no family sits on nothing while the stores are full. No control
         // needed, and a stronger statement than the comparison it replaces.
-        Assert.Equal(0, withMarket.DryPerTenThousand);
+        // ⚠️ ONE PER TEN THOUSAND SINCE D363, NOT ZERO. Foraging feeds a couple now, not a family
+        // (`RequiredDependants` 1), and the fixture village lives at that floor: with the stores
+        // holding food only just, a larder can be empty for the tick or two a marketer's walk takes.
+        // Zero was measured in a village with three dependants' slack; one is the walk.
+        Assert.True(
+            withMarket.DryPerTenThousand <= 1,
+            $"{withMarket.DryPerTenThousand} per 10,000 of household-time on an empty larder while the stores held food — a bank run the market exists to stop.");
     }
 
     /// <summary>Fetching done by households over a run, and the village that did it.</summary>
@@ -648,20 +654,21 @@ public sealed class MarketTests
         // So: filled to exactly the point where one more armful still fits, then one unit past
         // it. The condition is *"can it still take a whole load?"* and this is where that turns
         // over.
-        int roomForOneMore = farm.Store.Capacity - config.CropYieldPerTile;
-        Assert.True(
-            roomForOneMore > 0,
-            $"The farm's buffer ({farm.Store.Capacity}) cannot hold even one armful of "
-            + $"{config.CropYieldPerTile}, so there is no boundary to test.");
-
-        farm.Store.Add(Goods.Produce, roomForOneMore);
+        // ⚠️ THE BOUNDARY MOVED (D362): a buffer is a pass-through now, worth clearing whenever it
+        // holds an armful (`carry_capacity`) of food and a store has room — Joe's village starved
+        // beside a lodge that was "not worth clearing" because it was not nearly full. So the
+        // farm that asks for nobody is one holding LESS than an armful, and one more unit turns it.
+        int justUnderAnArmful = config.CarryCapacity - 1;
+        farm.Store.Add(Goods.Produce, justUnderAnArmful);
 
         _output.WriteLine(
-            $"farm holds {farm.Store[Goods.Produce]} of {farm.Store.Capacity}, "
-            + $"{farm.Store.FreeSpace} free against an armful of {config.CropYieldPerTile}");
+            $"farm holds {farm.Store[Goods.Produce]} of {farm.Store.Capacity} against an armful of {config.CarryCapacity}");
 
         Assert.False(world.BufferWorthClearing(farm));
         Assert.Equal(0, LabourQuota.MarketersWanted(world));
+
+        farm.Store.Add(Goods.Produce, 1);
+        Assert.True(world.BufferWorthClearing(farm), "an armful of food in a buffer, with room in the stores, is worth a walk");
 
         // ⭐ And one unit past the boundary it turns over — without this the guard would pass
         // against a condition that is simply never true.

@@ -251,7 +251,10 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D362) — paths come sooner and hold longer (worn 30, packed 100, decay 6, a grace of
     // 24; the class is priced and drawn), and a food buffer is cleared at an armful by the spare
     // hands. Was 14905149421740555056.
-    private const ulong SeamGoldenHash = 12974345592176735875UL;
+    // RE-TAKEN (D363) — Joe: "foraging gives too much food now. drop it 40%." gather_yield 145 → 87,
+    // the floor re-based to one dependant (the fixture derives its yield from it: 132 → 79).
+    // Was 12974345592176735875.
+    private const ulong SeamGoldenHash = 2122405801003300364UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -295,7 +298,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D360) with it again — the wear's units. Was 12842231052626848622.
     // RE-TAKEN (D361) with it again — clock B. Was 11891405305821433080.
     // RE-TAKEN (D362) with it again — paths and buffers. Was 3581667183433317301.
-    private const ulong SeamBeforeAnybodyGotBetter = 16745167020588601942UL;
+    // RE-TAKEN (D363) with it again — foraging cut 40%. Was 16745167020588601942.
+    private const ulong SeamBeforeAnybodyGotBetter = 2989669966483791210UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
@@ -428,6 +432,7 @@ public sealed class FarmGoldenTests
 
         for (int tick = 0; tick < config.TicksPerYear * Years; tick++)
         {
+            int inTheFarmBefore = farm.Store[Goods.Wheat];
             loop.StepOnce();
 
             int sown = Sown(world, farm);
@@ -465,8 +470,11 @@ public sealed class FarmGoldenTests
                 {
                     coverage.RottedOrTaken += lost;
                 }
-                else if (SomebodyIsReaping(world, farm))
+                else if (SomebodyIsReaping(world, farm) || farm.Store[Goods.Wheat] > inTheFarmBefore)
                 {
+                    // ⚠️ Or the grain is already IN the farm: a tile beside the farmhouse is
+                    // reaped and hauled in within one tick under clock B, and a farmer pre-empted
+                    // the same tick (a hungry village fetches, D363) is fetching with empty arms.
                     coverage.ReapedTotal += lost;
                 }
                 else

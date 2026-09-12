@@ -116,6 +116,10 @@ Three things recommend it:
   a berry patch, and no player could ever learn it.
 - **The stated target barely changes:** *one gatherer at a **fully wooded** hut, at minimum
   vigour, feeds themselves and `RequiredDependants` children.* Only the two words in bold are new.
+  ⚠️ **`RequiredDependants` is ONE since D363 (2026-09-12), by Joe's call** — *"foraging gives too
+  much food now. drop it 40%"* — and `gather_yield` is 87 (was 145). Foraging feeds a couple, not a
+  family; fishing, hunting and farming feed the rest, and a village that will not diversify shrinks
+  (twelve shipped seeds × fifty years: 294 people → 171).
 - **It stops being a fence and becomes a budget.** `Household.ChooseSite` no longer *refuses*
   ground beyond it — it still **scores** `toWork + toStore` and picks the nearest, which is what
   actually shapes a village. Building beyond the budget is allowed, warned about, and genuinely

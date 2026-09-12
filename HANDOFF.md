@@ -1,9 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — CLOCK B AND D362 PUSHED (`61365f6`); THE SHELL IS NEXT**
+# Handoff — bclone: **▶️ PHASE 4.5 — FORAGING CUT 40% AND THE FLOOR RE-BASED (D363, unpushed); THE SHELL IS NEXT**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
 >
-> **The state:** `main` at `61365f6`, **pushed** (Joe, 2026-09-12: *"push"* — D361 clock B and D362
-> together). ⚠️ D362 itself is unplayed at the moment of pushing; his next play is its check. **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
+> **The state:** `main` at D363's commit, **committed, NOT pushed**; `7d4e0ad` (D362) is pushed.
+> ⚠️ D362 and D363 are unplayed.
+>
+> **⛔⛔ D363 CHANGED THE ECONOMY'S PREMISE, BY JOE'S CALL.** *"foraging gives too much food now.
+> drop it 40%."* `gather_yield` 145 → 87 sat under the derived floor (132), so
+> `VillageEconomy.RequiredDependants` went 3 → 1: **foraging feeds a couple, not a family**;
+> fishing, hunting and farming feed the rest. Twelve shipped seeds × fifty years went 294 → 171
+> people; a played opening dies on one seed of six. Every fixture derives its yield from the floor
+> and is hungrier now (132 → 79) — five guards were re-read for it with measurements (D363). The
+> rest of the food ladder was NOT cut: fisher 2.7×, hunter 3.7× a forager's hour — **his to look
+> at next; a fisher at 2.7× may be the next "too much".** **1113 passing, 0 failing, 2 skipped of 1115**, **3m44s** (D358's was 3m24; the extra is
 > `AFoundingThatPaintsNoSeamStillLives` now summing three seeds. ⚠️ `HEAD` before desire paths
 > measured **3m00**; the rest is the yearly re-price of ~90 flow fields, measured by ablation and
 > accepted in D358 — *the first draft was 10m20, and only the clock caught it*). Probe green:
@@ -255,10 +264,10 @@ stood idle with 130 logs.
 **The order is `DESIGN.md §4`'s Phase 4.5 list, and it is Joe's.** What is queued, and what is
 merely named:
 
-0. **▶️ JOE PLAYS D362.** Do paths now come soon enough and stay long enough (`path_holds_for`
-   is the dial if not); does the ripe tint fill the circle; does a lodge full of meat get carried
-   to the granaries by the spare hands (watch for *"carrying food out of a hut"* in the roster).
-   *"push"* pushes D361 + D362.
+0. **▶️ JOE PLAYS D362 + D363.** Paths (`path_holds_for` is the dial), the field's circle, the
+   lodge's meat carried out by spare hands — and now the hunger: does a village that only forages
+   shrink the way he wants, and are fishing (2.7×) and hunting (3.7×) the next "too much"?
+   *"push"* pushes D363.
 1. ~~**Clock B**~~ ✅ D361. ⚠️ The instruction was *"re-derive the economy"*; measuring first showed
    the budgets are promises a shorter walk cannot break, so nothing was re-derived — see D361.
 2. **The shell (§4 item 4), in this order:** an error boundary for a throwing tick → per-stage RNG
@@ -413,6 +422,13 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     half of wheat and nobody noticed until the picture looked odd. **Grep for every place that
     counts `owned.Count` or tiles of a farm** (`HarvestOneFarmCanBringIn`, `StandingCropTiles`,
     `FieldTilesOneFarmerKeeps`) before trusting a farm number; only the ORDER was fixed here.
+35. **⛔⛔ A DERIVED FLOOR IS A PROMISE ABOUT WHAT ONE TRADE CAN CARRY (D363).** `gather_yield`
+    cannot be cut below `RequiredGatherYield` without re-stating what the floor promises —
+    `RequiredDependants` is that promise, and moving it is a design decision Joe made, not a number
+    a session may nudge to make a guard green. And the fixtures DERIVE their yield from the floor,
+    so re-basing it makes every fixture village hungrier at once: expect guards calibrated to slack
+    (dry-larder bars, generator rates, farm-memory comparisons) to move, and re-read each with a
+    measurement rather than a pin.
 32. **⛔⛔ A COUNT THAT IS RIGHT ABOUT WHAT THE VILLAGE HAS IS WRONG ABOUT WHAT IT CAN EAT (D362).**
     D161 counted workplace buffers as the village's food — correct, and it starved a village the
     day a buffer grew past what one marketer's armfuls could drain. **Any "we have enough" that

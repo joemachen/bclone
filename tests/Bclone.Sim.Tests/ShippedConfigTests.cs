@@ -241,7 +241,13 @@ public sealed class ShippedConfigTests
             $"{VillageEconomy.FoodFarmedPerYearAtWorst(shipped)} food at their weakest, against " +
             $"a gatherer's {VillageEconomy.FoodGatheredPerYearAtWorst(shipped)}.");
 
-        Assert.Equal(required, shipped.CropYieldPerTile);
+        // ⚠️ A RUNG, NOT PARITY, SINCE D363. Joe cut foraging 40% and only foraging; the crop's
+        // derivation follows the gatherer's year, so equality would have cut the farm with it.
+        // Foraging is the ladder's bottom now — the rigs read a fisher at 2.7× and a hunter at
+        // 3.7× a forager's hour, untouched by Joe's cut, and the farm about 1.7× a gatherer's year
+        // per hand — and the guard is that a farm is worth at least a gatherer's year and not more
+        // than twice one: below, nobody builds it; above, gathering is deleted.
+        Assert.InRange(shipped.CropYieldPerTile, required, required * 2);
 
         Assert.True(
             tiles > 0,

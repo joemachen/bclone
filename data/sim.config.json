@@ -200,7 +200,15 @@
   //
   // NOTE WHAT DID NOT CHANGE: a bald ring still yields nothing. This is
   // what the village budgets for, not what a trip is worth.
-  "gather_yield": 145,
+  //
+  // 145 -> 87 (Joe, 2026-09-12, D363): "foraging gives too much food now.
+  // drop it 40%." Under the floor the old number derived (132), so the
+  // floor's premise moved with it, by his call: foraging feeds a COUPLE,
+  // not a family (VillageEconomy.RequiredDependants 3 -> 1; required 79).
+  // Fishing, hunting and farming feed the rest, and a village that will
+  // not diversify shrinks -- six shipped seeds over fifty years went from
+  // 145 people to 95. That is the scarcity he asked for, as a number.
+  "gather_yield": 87,
   // THE COPSE THINS UNDER USE (D257, Joe: "the copse of wood isnt infinite").
   // Every N completed gathers sets the nearest mature tree in the hut's ring
   // back to a sapling; regrowth grows it up again on its own sweep. So a hut

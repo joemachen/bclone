@@ -424,11 +424,14 @@ public sealed class FarmMemoryTests
 
         _output.WriteLine($"{walk} ticks out: {reaped} tiles reaped, {broughtIn}% brought in");
 
-        // The prediction produced 51 tiles over ten years at this distance, measured.
+        // The prediction produced 51 tiles over ten years at this distance, measured — in the
+        // village that fed a family of four by foraging. At D363's floor (foraging feeds a couple)
+        // the same farm on the prediction alone — memory and probe switched off, measured —
+        // brings in 38; with them, 46.
         Assert.True(
-            reaped > 51,
+            reaped > 38,
             $"A farm {walk} ticks out reaped {reaped} tiles in ten years. The prediction it "
-            + "replaced managed 51, and the ledger says the ground is there for more.");
+            + "replaced manages 38 at this floor, and the ledger says the ground is there for more.");
 
         // ⛔ AND THE ROT LINE STAYS HONEST (D167). Bringing in more by sowing far more and
         // losing the difference to winter is the bug this slice's ancestor fixed.

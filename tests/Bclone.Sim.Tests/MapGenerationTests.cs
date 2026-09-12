@@ -682,8 +682,13 @@ public sealed class MapGenerationTests
     /// (mean peak 17.8 against 17.5). Set at three quarters, which sits well under the measured
     /// rate and still fires on the failure this arm has caught twice — D103 and D110, where
     /// peaks sat barely above the founding four across the whole sample.
+    /// ⚠️ <b>Re-based at D363, and it is the economy that moved, not the generator:</b> foraging
+    /// feeds a couple now, not a family, and this village is UNATTENDED — nobody builds it a
+    /// fishery or a farm — so 5 of 24 seeds die out and 3 more never reach twelve (16 liveable,
+    /// mean peak 15.5). Half, with the same headroom under the measurement, still fires on a
+    /// collapsed generator: D103's and D110's peaks sat at four or five on every seed.
     /// </remarks>
-    private const int LiveableValleysWanted = 18;
+    private const int LiveableValleysWanted = 12;
 
     // ---------------------------------------------------------------
     //  Water you have to go round — specs/pathfinding-and-water.md (D40)
