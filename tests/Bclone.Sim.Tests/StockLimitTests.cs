@@ -348,7 +348,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D361) — clock B. Was 2446761918259013976.
     // RE-TAKEN (D362) — paths and buffers. Was 6620710744463477554.
     // RE-TAKEN (D363) — foraging cut 40%; the fixture's derived yield 132 → 79. Was 6175824268791431883.
-    private const ulong FixtureFiftyYearHash = 11758015511369690769UL;
+    // RE-TAKEN (D365) — a winter costs 24 a home, burned on the winter's beat. Was 11758015511369690769.
+    private const ulong FixtureFiftyYearHash = 13283593437676098010UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -422,7 +423,11 @@ public sealed class StockLimitTests
     //     — Joe: "foraging gives too much food now. drop it 40%." gather_yield 145 → 87; the
     //     economy's floor re-based from three dependants to one, by his call. Six shipped seeds
     //     over fifty years: 145 people → 95.
-    private const ulong ShippedFiftyYearHash = 10566152339382430818UL;
+    //   before a winter cost 24 firewood a home (D365): 10566152339382430818
+    //     — Joe: "increase the amount of firewood each home consumes per winter by 30%". Three
+    //     logs every four days (24, +20% — the grid's nearest under his number), and the hearth
+    //     now burns on the winter's first day and every interval after, as the economy counts.
+    private const ulong ShippedFiftyYearHash = 3633342692540801636UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

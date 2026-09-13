@@ -76,7 +76,8 @@ public static class VillageFixtures
 
                 // Fuel back ON for the village: households to heat, and a labour
                 // system for firewood to compete inside (D17, D29).
-                FirewoodPerWinterDay = 2,
+                // 2 → 3 with the interval 3 → 4 (D365): a winter costs 24, the game's number.
+                FirewoodPerWinterDay = 3,
 
                 // ⚠️ AND THE BURN INTERVAL THE GAME ACTUALLY SHIPS. Found by a probe asking
                 // why a village was not breeding: the fixture wanted **43 firewood in every
@@ -89,7 +90,7 @@ public static class VillageFixtures
                 // about closing the fixture/shipped gap and it closed only half of it: at an
                 // interval of 4 a fixture winter cost **15** where the game's cost 20, so every
                 // guard in the suite was still running a milder winter than the game ships.
-                FirewoodBurnIntervalDays = 3,
+                FirewoodBurnIntervalDays = 4,
 
                 // A real valley, generated (D18). The forage sites and the tree stands
                 // this used to ask for are retired — food comes from a hut the player

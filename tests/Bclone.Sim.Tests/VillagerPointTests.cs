@@ -141,6 +141,10 @@ public sealed class VillagerPointTests
     /// them — **87** in 2,000 ticks, the 1st/10th/50th at **14/107/1,021**. The walk itself is what
     /// D361 made it; the pin now guards that clock on a hungrier valley.
     /// </para>
+    /// <para>
+    /// **Re-pinned a fifth time (D365), again not for the clock:** a winter costs 24 firewood a
+    /// home (was 20) — **85** trips, the fiftieth at **1,046**; the first two unchanged.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -171,8 +175,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(87, entries);
-        Assert.Equal(new ulong[] { 14, 107, 1021 }, at);
+        Assert.Equal(85, entries);
+        Assert.Equal(new ulong[] { 14, 107, 1046 }, at);
     }
 
     /// <summary>

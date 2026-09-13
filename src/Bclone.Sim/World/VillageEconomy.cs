@@ -272,9 +272,13 @@ public static class VillageEconomy
         //
         // Rounded UP, deliberately: a winter that needs seven and a half burns needs eight
         // logs, and a village that budgets seven is cold on the last day of it.
-        return CeilingDivide(
-            config.FirewoodPerWinterDay * config.DaysPerSeason,
-            config.FirewoodBurnIntervalDays < 1 ? 1 : config.FirewoodBurnIntervalDays);
+        //
+        // ⭐ BURNS × LOGS-A-BURN, not logs ÷ interval (D365): the hearth burns on the winter's
+        // first day and every interval after it, so a thirty-day winter at four days a burn is
+        // eight burns of three — 24 — where `ceil(90 ⁄ 4)` said 23. Same number whenever the
+        // interval divides the season; one apart when it does not, and the hearth is the truth.
+        int interval = config.FirewoodBurnIntervalDays < 1 ? 1 : config.FirewoodBurnIntervalDays;
+        return CeilingDivide(config.DaysPerSeason, interval) * config.FirewoodPerWinterDay;
     }
 
     /// <summary>

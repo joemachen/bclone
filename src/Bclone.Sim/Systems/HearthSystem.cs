@@ -62,8 +62,17 @@ public sealed class HearthSystem : ISimSystem
         // Every few days rather than every day (Joe: *"make firewood consumption take
         // longer, like 4x longer"*). The interval carries the rate because sim state is
         // integer-only and a quarter of a log is not a number this game can hold (D2).
-        ulong burnEvery = (ulong)config.TicksPerDay * (ulong)config.FirewoodBurnIntervalDays;
-        if (world.Tick % burnEvery == 0UL)
+        // ⛔ COUNTED FROM THE FIRST DAY OF WINTER, NOT FROM TICK ZERO (D365). This was
+        // `Tick % burnEvery == 0`, which is the same thing only while a winter's first tick happens
+        // to fall on the beat: at three days a burn it always did (360 mod 12 = 0), and at four it
+        // never did (360 mod 16 = 8), so a winter budgeted at eight burns got seven — the economy
+        // said 24 and the hearth burned 21, and nothing would have said so but a colder village.
+        // The economy (`FirewoodPerHouseholdPerWinter`) counts burns from the season's first day;
+        // now the hearth does too, on the first day and every interval after it.
+        int dayOfWinter = world.Clock.DayOfSeason - 1;
+        bool onTheBeat = dayOfWinter % config.FirewoodBurnIntervalDays == 0
+            && world.Tick % (ulong)config.TicksPerDay == 0UL;
+        if (onTheBeat)
         {
             BurnADaysFirewood(world, config);
         }

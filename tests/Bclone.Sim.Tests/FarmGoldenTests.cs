@@ -254,7 +254,9 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D363) — Joe: "foraging gives too much food now. drop it 40%." gather_yield 145 → 87,
     // the floor re-based to one dependant (the fixture derives its yield from it: 132 → 79).
     // Was 12974345592176735875.
-    private const ulong SeamGoldenHash = 2122405801003300364UL;
+    // RE-TAKEN (D365) — a winter costs 24 firewood a home (3 logs every 4 days; Joe: "+30%", the
+    // grid's nearest under), and the hearth burns on the winter's own beat. Was 2122405801003300364.
+    private const ulong SeamGoldenHash = 9885818643046600781UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -299,7 +301,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D361) with it again — clock B. Was 11891405305821433080.
     // RE-TAKEN (D362) with it again — paths and buffers. Was 3581667183433317301.
     // RE-TAKEN (D363) with it again — foraging cut 40%. Was 16745167020588601942.
-    private const ulong SeamBeforeAnybodyGotBetter = 2989669966483791210UL;
+    // RE-TAKEN (D365) with it again — the winter's burn. Was 2989669966483791210.
+    private const ulong SeamBeforeAnybodyGotBetter = 16262613081575096836UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

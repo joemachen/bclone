@@ -790,7 +790,16 @@
   // so at a 30-day winter the interval can only give 8, 10, 15 or 30 -
   // there is no 20 on that dial. Two logs every three days is 20 and
   // keeps the three-day beat the interval comment above argued for.
-  "firewood_per_winter_day": 2,
+  //
+  // 2 -> 3, and the interval 3 -> 4 (Joe, 2026-09-12, D365): "increase
+  // the amount of firewood each home consumes per winter by 30%". A
+  // winter is ceil(30 / interval) x this, and 26 is not on that grid:
+  // the reachable numbers near it are 24 (3 every 4 days, +20%), 28 (a
+  // burn every 9 TICKS, a dial the sim does not have) and 30 (2 every
+  // 2 days, +50%). 24 is on the dial the game has and errs under his
+  // number rather than over; the beat is four days and a household
+  // needs three in hand at once, which is the burst D283 named.
+  "firewood_per_winter_day": 3,
 
   // How many days one burn lasts (Joe, 2026-08-11: "make firewood
   // consumption take longer. like 4x longer. it goes too fast").
@@ -818,7 +827,9 @@
   // hand at once instead of one, so a thin larder fails in bursts
   // rather than gradually. That is a different feel, not a finer dial,
   // so the closer-in-spirit option won. Say so if the burst is wanted.
-  "firewood_burn_interval_days": 3,
+  // ⭐ 3 -> 4 with the amount 2 -> 3 (D365): a winter costs 24, +20%
+  // against Joe's asked +30%, the nearest the grid allows under it.
+  "firewood_burn_interval_days": 4,
 
   // ---- Regrowth (D125) ---------------------------------------
   // The valley comes back. Measured before this existed: a village

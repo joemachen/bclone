@@ -1,10 +1,12 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE SHELL HAS BEGUN: THE ERROR BOUNDARY (D364); D363's HUNGER IS UNPLAYED**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE SHELL HAS BEGUN (D364); D363's HUNGER AND D365's WINTER ARE UNPLAYED**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
 >
-> **The state:** `main` at D364's commit, **committed, NOT pushed**; `7d4e0ad` (D362) is pushed.
-> ⚠️ D362, D363 and D364 are unplayed. Joe's last words: *"first: foraging gives too much food
-> now. drop it 40%. then: shell"* — the first is D363, the shell has begun with D364.
+> **The state:** `main` at D365's commit, **committed, NOT pushed**; `7d4e0ad` (D362) is pushed.
+> ⚠️ D362–D365 are unplayed; Joe said he is *"going to play test foraging changes and error
+> boundary"*. D365 is his *"+30% firewood per winter"*: **24 a home** (3 logs every 4 days — the grid
+> has no 26; 25 and 30 were the alternatives, both burstier) — and it found the hearth burning off
+> the economy's beat (a winter budgeted at eight burns got seven at a four-day interval), now fixed.
 >
 > **▶️ THE SHELL, IN §4's ORDER:** ✅ error boundary (D364) → **per-stage RNG seeds** (next; splitmix64
 > per stage, ⛔ not `DeterministicRandom`'s `stream` parameter — measured 6 dead valleys of 24; the
@@ -270,10 +272,11 @@ stood idle with 130 logs.
 **The order is `DESIGN.md §4`'s Phase 4.5 list, and it is Joe's.** What is queued, and what is
 merely named:
 
-0. **▶️ JOE PLAYS D362 + D363 + D364.** Paths (`path_holds_for` is the dial), the field's circle,
-   the lodge's meat carried out by spare hands, the hunger (does a village that only forages shrink
-   the way he wants; are fishing 2.7× and hunting 3.7× the next "too much"?). *"push"* pushes all
-   three.
+0. **▶️ JOE PLAYS D362–D365.** Paths (`path_holds_for` is the dial), the field's circle, the
+   lodge's meat carried out by spare hands, the hunger (does a village that only forages shrink the
+   way he wants; are fishing 2.7× and hunting 3.7× the next "too much"?), the winter at 24 a home
+   (or does he want 25 or 30?), and the error boundary — a stopped village reads *STOPPED* and one
+   red sentence. *"push"* pushes all four.
 1. ~~**Clock B**~~ ✅ D361. ~~**The error boundary**~~ ✅ D364.
 2. **The rest of the shell (§4 item 4), in this order:** per-stage RNG seeds (splitmix64 per stage,
    ⛔ not `DeterministicRandom`'s `stream` parameter) → the new-game screen (D344) → settings
@@ -427,6 +430,13 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     half of wheat and nobody noticed until the picture looked odd. **Grep for every place that
     counts `owned.Count` or tiles of a farm** (`HarvestOneFarmCanBringIn`, `StandingCropTiles`,
     `FieldTilesOneFarmerKeeps`) before trusting a farm number; only the ORDER was fixed here.
+36. **⚠️ A RATE ON A GRID IS THREE NUMBERS (D365).** The one asked for (+30%), the one the dial
+    gives (⌈30 ⁄ interval⌉ × logs: 24), and the one the clock delivers — the hearth burned on ticks
+    divisible by the interval, which met the winter's first day at three days and missed it at four,
+    so the game burned 21 where the economy said 24 and the derivation said 23. **Any "every N days"
+    in a season must count from the season's first day**, and any derivation of it must count burns
+    × amount, not amount ÷ interval. `AWinterBurnsExactlyWhatTheEconomyBudgets` is the one guard
+    that reads all three.
 35. **⛔⛔ A DERIVED FLOOR IS A PROMISE ABOUT WHAT ONE TRADE CAN CARRY (D363).** `gather_yield`
     cannot be cut below `RequiredGatherYield` without re-stating what the floor promises —
     `RequiredDependants` is that promise, and moving it is a design decision Joe made, not a number

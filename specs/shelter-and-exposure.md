@@ -66,7 +66,7 @@ village must be survivable without it. That is the acceptance bar, not a nice-to
 ## 3. What stays, and it is most of `HearthSystem`
 
 **The burning stays exactly as it is.** Every occupied household burns
-`firewood_per_winter_day` per day of winter, and the narration when the last log goes on
+`firewood_per_winter_day` per day of winter (⚠️ per BURN, every `firewood_burn_interval_days`, on the winter's first day and every interval after it — D365; a winter is 3 × 8 = **24** a home since Joe's *"+30%"* of 2026-09-12, the grid's nearest under his number), and the narration when the last log goes on
 the fire stays. That half is the fuel economy D17/D29 are derived from, and
 `LabourQuota.WoodcuttersWanted` reads it. **This slice must not move a single number in
 the derivation chain** — if `gather_yield`, `stockpile_target` or `firewood_per_split`

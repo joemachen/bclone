@@ -137,6 +137,53 @@ public sealed class FirewoodTests
         Assert.True(checkedSeasons > 0, "The village never wanted firewood at all.");
     }
 
+    /// <summary>
+    /// ⛔⛔ A winter burns EXACTLY what the economy budgets for it — the hearth and the derivation
+    /// are one number (D365).
+    /// </summary>
+    /// <remarks>
+    /// Found by Joe's +30%: at three logs every four days the derivation said 23 (`ceil(90 ⁄ 4)`),
+    /// the hearth's own beat — burning on ticks divisible by sixteen — fell on seven days of a
+    /// thirty-day winter (24 by count, 21 by burn), and nothing would have said so but a colder
+    /// village. The hearth counts from the winter's first day now, the derivation counts burns ×
+    /// logs, and this pins them together with a larder that cannot run out.
+    /// </remarks>
+    [Fact]
+    public void AWinterBurnsExactlyWhatTheEconomyBudgets()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+        SimWorld world = loop.World;
+
+        // From the start of autumn through the end of winter — the hearth is cold in autumn, so
+        // whatever the larder loses is the winter's burn, first day included.
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+        Household home = world.Households[0];
+        home.Stockpile.Receive(Goods.Firewood, 500);
+        int before = home.Stockpile.Firewood;
+
+        int burned = 0;
+        int last = before;
+        for (int tick = 0; tick < config.TicksPerSeason * 2; tick++)
+        {
+            loop.StepOnce();
+            int now = home.Stockpile.Firewood;
+            if (now < last)
+            {
+                burned += last - now;
+            }
+
+            last = now;
+        }
+
+        int budget = VillageEconomy.FirewoodPerHouseholdPerWinter(config);
+        _output.WriteLine(
+            $"a winter at {config.FirewoodPerWinterDay} logs every {config.FirewoodBurnIntervalDays} days: "
+            + $"the hearth burned {burned}, the economy budgets {budget}");
+        Assert.Equal(budget, burned);
+        Assert.Equal(24, burned);
+    }
+
     [Fact]
     public void HeatingTheVillageCostsFewerHandsThanFeedingItLeavesSpare()
     {

@@ -296,8 +296,10 @@ public sealed class SkillTests
     // 3020495708646845468 (fixture) and 17992714739736787030 (shipped).
     // RE-TAKEN (D363) — foraging cut 40% (see `StockLimitTests.ShippedFiftyYearHash`). Were
     // 13050083585263826165 (fixture) and 2181839681135938194 (shipped).
-    [InlineData(false, 14159269115130930384UL)]
-    [InlineData(true, 16834645931621797114UL)]
+    // RE-TAKEN (D365) — the winter's burn (see `StockLimitTests.ShippedFiftyYearHash`). Were
+    // 14159269115130930384 (fixture) and 16834645931621797114 (shipped).
+    [InlineData(false, 11030058396925749916UL)]
+    [InlineData(true, 3677322281643096807UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
