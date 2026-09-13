@@ -217,3 +217,12 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   disappear … exist for longer before growing back"* → worn 30 / packed 100 / decay 6 and the
   `path_holds_for` dial (24); classes move every season; the view draws the class the routes
   price, so a lane appears and goes as one lane, not dot by dot.
+- [x] ⛔⛔ **D366 — the trails are a mesh, built with the collection.** Slices D358–D360 collected
+  once a season and then drew a `DrawCircle` per worn tile and a `DrawPolyline` per joined pair
+  **every frame**, with the L-corner and joining rules recomputed per tile per frame — the D338
+  mistake by another door, and Joe's 22 fps over a dense network. `BuildTheTrailMesh` runs inside
+  `CollectTheTrailsIfTheyMoved` (still keyed on `Paths.Generation`) and lays the same discs and
+  bends down once, in tile space, a surface per grade (worn under packed); `DrawTrails` is one
+  `CanvasItemAddMesh` with the tile→screen transform. The `trails:` probe line keeps its geometry
+  checks and reports the mesh's vertex counts and build time (13 posed tiles: 714 + 162 vertices,
+  ~1.5 ms); red-checked with the build deleted — *"the mesh is empty — nothing would draw"*.

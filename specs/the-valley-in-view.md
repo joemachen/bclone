@@ -1,7 +1,7 @@
 # Spec: The valley in view — terrain that reads as a place, not as storage
 
 **Decisions:** D332, D333, D334, D337. Rendering only; follows `gridless.md §10.2`.
-**Status:** ✅ **REBUILT AS A FIELD (2026-09-10, D342).** D337's trees and traced shoreline are **superseded**: the valley is now baked into one texture as the level set of a continuous field, so the river is an organic meander with a shallow bank, the deposits are irregular bodies, and a wood's foliage is texture rather than ~5,740 `DrawCircle` a frame. **`DrawTheShoreline` is deleted.** ⚠️ **The forest CLUMPS are still Manhattan diamonds** — §4 always said the renderer could not hide that, and it cannot; it is `PaintForest` and it is Joe's. **1073 passing, 0 failing, 2 skipped of 1075 — no golden moved.** ⚠️ **Unplayed by Joe as of this line.**
+**Status:** ✅ **REBUILT AS A FIELD (2026-09-10, D342).** D337's trees and traced shoreline are **superseded**: the valley is now baked into one texture as the level set of a continuous field, so the river is an organic meander with a shallow bank, the deposits are irregular bodies, and a wood's foliage is texture rather than ~5,740 `DrawCircle` a frame. **`DrawTheShoreline` is deleted.** ⚠️ **The forest CLUMPS are still Manhattan diamonds** — §4 always said the renderer could not hide that, and it cannot; it is `PaintForest` and it is Joe's. **1073 passing, 0 failing, 2 skipped of 1075 — no golden moved.** ✅ Played by Joe through D343–D362. ⭐ **D366 (2026-09-12): THE NEAR VIEW IS MESHES TOO.** Joe: *"not sure whats happening with the FPS. its really dropping"* — 22 fps near in. D342 baked the FAR view and left every canopy, sapling, boulder, ore lump and berry patch above `TreeZoomFloor` as a live `DrawCircle` a frame (~5,740 — D338's own number, never fixed for the near view), and D358–D362 laid the trails on top the same way. Now they are `ArrayMesh` fans in tile space, a mesh per 8×8 chunk rebuilt only where the terrain changed (`VillageMap.Meshes.cs`, `MeshBuilder`), drawn with one tile→screen transform; `_Draw` is instrumented per pass on the debug line. Measured at the founding view, 48 px/tile: **the tree pass 5.7 ms → 0.0, the frame's draw 6.7 ms → 0.3**. `[widths] scenery:` reports the chunks, vertices, the first build (~26 ms) and one chunk's rebuild (~0.3 ms, what a fell costs), and that a felled tile takes its fans with it. **1121 passing, 0 failing, 2 skipped of 1123 — no golden moved. Unplayed by Joe as of this line.**
 
 ---
 
@@ -44,7 +44,19 @@ the forest edge a different wrong shape; this makes it not a shape at all.*
   texture**, so a replanted acre looked like flat ground of a slightly different green.
 - ⚠️ **Zoom-gated.** Below about ten pixels a tile a canopy is sub-pixel, and drawing thousands of
   them would be the per-frame full-map walk `Minimap`'s comment records this project being bitten by
-  twice.
+  twice. *(D338 restated the gate in units the zoom can reach — `TreeZoomFloor`, 24 px/tile — and
+  gave the far view its foliage from the bake.)*
+- ⛔⛔ **AND ABOVE THE GATE THEY ARE A MESH, NOT CIRCLES (D366).** A `DrawCircle` is a
+  `CommandPolygon` that breaks Godot's 2D batching, so the near view issued ~5,740 unbatchable
+  commands a frame and Joe read 22 fps. Every canopy, sapling, boulder, ore lump and berry patch is
+  a twelve-segment fan in **tile space** with a vertex colour, in one `ArrayMesh` per 8×8-tile chunk
+  (`VillageMap.Meshes.cs`, `MeshBuilder`), drawn with a tile→screen `Transform2D` — zoom and pan are
+  a matrix, never a rebuild. A chunk is rebuilt only when a tile in it changed: a shadow copy of the
+  terrain is diffed on `TerrainGeneration`, the `ValleyTexture` shape, so a fell costs one chunk
+  (~0.3 ms) and a season of saplings maturing costs the chunks it touched. Berries are their own
+  mesh per chunk because the player can switch them off; **the animals stay live** — they roam every
+  frame and there are a few dozen. *`CLAUDE.md`'s rule, applied to the drawing: nothing derivable
+  incrementally is rebuilt per frame.*
 
 ### 3.2 A shoreline the river can be seen to have
 
@@ -105,6 +117,17 @@ self-check does:
   the same cell*, posed at one cell per tile and at four. **Red-checked twice, two reds.**
 - ⚠️ **Watch the frame cost.** The visible window is already walked six times a frame; trees are a
   seventh pass and the shoreline must not become one.
+- ⭐ **And the frame cost is a number now (D366).** `VillageMap.LastFrame` times each pass of
+  `_Draw` — trees, trails, fields, zones, rest — smoothed, on the debug line beside the fps. The
+  instrument came first and measured the tree pass at **5.7 ms of a 6.7 ms frame** at the founding
+  view before the mesh, and **0.0 of 0.3** after; anything that puts a per-element command back into
+  a frame shows up there.
+- `[widths] scenery:` — the chunks, the vertex counts, the whole-valley build once, the busiest
+  chunk's rebuild alone, and **a felled tile rebuilds exactly one chunk and takes its fans with it**
+  (red-checked: with the diff's dirty mark deleted it reads *"rebuilt 0 chunks … 5940 → 5940 →
+  5940"*). ⚠️ What no probe checks is the picture: that the transform lands the mesh where
+  `ToScreen` lands a point. That was checked by eye once (two screenshots, before and after,
+  indistinguishable) and `tile centres:` guards `ToScreen` itself.
 
 ## 6. Definition of Done — ✅ MET (2026-09-09), except the last
 

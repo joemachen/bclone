@@ -1,17 +1,40 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — JOE REVIEWED THE FRAME RATE, THE FIELD'S RIM AND FOUNDATION; THE PLAN IS AGREED AND UNBUILT. "REVIEW HANDOFF.MD AND GO."**
+# Handoff — bclone: **▶️ PHASE 4.5 — D366 IS BUILT (THE FRAME RATE AND THE FIELD'S RIM), UNPLAYED AND NOT PUSHED; THE UI PASS IS NEXT AND WANTS A CARD MOCKUP FIRST.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-12 (night).**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-12 (late night).**
 >
-> **The state:** `main` at D365's commit plus this handoff, **committed, NOT pushed**; `7d4e0ad`
-> (D362) is the last push. D362–D365 are unplayed except that Joe played D362–D364 enough to file
-> what is below. Suite **1121 passing, 0 failing, 2 skipped of 1123, 4m08**; probe green (`bar height
-> 161`, `tile centres ✅`, `trails ✅`, `fields ✅`, `fault ✅`, `done.`). **The decision log runs to
-> D365.** Read `DESIGN.md §0–§5`, then §6, then D353–D365 in §7 — the last two days.
+> **The state:** `main` at D366's commit, **committed, NOT pushed**; `7d4e0ad` (D362) is the last
+> push. D363–D366 are unplayed. Suite **1121 passing, 0 failing, 2 skipped of 1123, 3m44 (2m50 baseline the same evening — view-only change, the suite is untouched)**; probe green (`bar height 161`, `tile centres ✅`,
+> `scenery ✅`, `trails ✅`, `fields ✅`, `fault ✅`, `done.`). **The decision log runs to D366.**
+> Read `DESIGN.md §0–§5`, then §6, then D353–D366 in §7 — the last two days.
 >
-> **▶️ WHAT TO DO, IN ORDER — Joe agreed this plan on 2026-09-12 and asked that the next session
-> start on it.** The reasoning for each is in *"the feedback he agreed with"* below.
+> **✅ D366 IS BUILT — items 1 and 2 of Joe's plan, one commit, view only, no golden moved.**
+> *(1)* **The frame rate:** `_Draw` is instrumented per pass on the debug line (`draw 0.3ms · trees
+> 0.0 · trails 0.0 · fields 0.0 · zones 0.0 · rest 0.3`), and the instrument measured BEFORE the fix:
+> at the founding view (48 px/tile) the tree pass was **5.7 ms of a 6.7 ms frame** — every canopy,
+> sapling, boulder, ore lump and berry patch a live `DrawCircle`, the D338 number never fixed for the
+> near view — and the trails a disc + polyline per tile per frame. Now: fans in tile space in one
+> `ArrayMesh` per 8×8-tile chunk, rebuilt only for chunks whose terrain changed (shadow diff on
+> `TerrainGeneration`), drawn with a tile→screen transform; the trails one mesh with a surface per
+> grade built inside `CollectTheTrailsIfTheyMoved`. **After: 0.0 and 0.3 ms.** `VillageMap.Meshes.cs`,
+> `MeshBuilder.cs`. Probe: `scenery:` (150 chunks, 344k vertices, ~26 ms once, a chunk ~0.3 ms, a
+> felled tile takes 108 vertices out of one chunk — red-checked) and `trails:` (mesh sizes; red-checked).
+> Two screenshots before/after were indistinguishable by eye; **nothing but eyes checks the picture**.
+> *(2)* **The yellow rim:** `ZoneOutline.ClipToCells` extends each subtracted cell's square outward by
+> `RimReach` (two cells) on every side facing no field cell, so the fill's bulge past an unsown rim
+> goes with the cell; the self-check now refuses any clipped triangle in the void whose nearest cell
+> is not kept — **791 wedges with the extension off, 0 with it on**; plotted before/after, Joe's
+> wedges exactly. ⚠️ A concave corner between a sown and an unsown rim cell shows a notch of bare
+> field — the field's own colour, never the wrong one — say so if he sees it.
 >
-> **1. The frame rate (view, D366 — first).** Joe: *"not sure whats happening with the FPS. its
+> **▶️ NEXT: item 3, the UI pass — its own spec, and a CARD MOCKUP FOR JOE BEFORE any panel is
+> built** (he said yes to that). Then 4 and 5 below. **Do not push; Joe pushes after he plays.**
+> ⚠️ Two things for him to look at in D366 when he plays: whether the trails and canopies look
+> identical to before at his zoom (they should — same discs, same bends, same colours), and what the
+> new debug line reads at the zoom that gave him 22 fps.
+>
+> **The plan as he agreed it, kept in full:**
+>
+> **1. ✅ The frame rate (view, D366 — first).** Joe: *"not sure whats happening with the FPS. its
 > really dropping"* — **22 fps** at a near zoom with a dense path network, 55 zoomed out. It is not
 > the sim (20× is fifteen ticks a *second*). It is the drawing: at ≥ `TreeZoomFloor` (24 px/tile)
 > `VillageMap.DrawTheTrees` → `Canopies` draws every tree as a **`DrawCircle` every frame** —
@@ -33,7 +56,7 @@
 > trees lines keep their geometry checks; add mesh sizes. Target: the tree pass under 2 ms and the
 > trails under 1 ms at his zoom, from tens. View only — no golden moves.
 >
-> **2. The yellow rim (view, D366 — with 1).** Joe: *"look at the yellow edges of the round farming
+> **2. ✅ The yellow rim (view, D366 — with 1).** Joe: *"look at the yellow edges of the round farming
 > area — that looks so cheap and gross haha."* Diagnosed: D362's stage clip (`ZoneOutline.ClipToCells`)
 > subtracts the non-stage cells' squares from the field's smooth fill, but the fill **bulges past
 > the rim cells** (the smoothing cuts concave corners outward) into the void beyond any cell, where
@@ -354,11 +377,9 @@ stood idle with 130 logs.
 
 **Joe's, agreed 2026-09-12 — the banner above has the detail for each.**
 
-0. **The frame rate** — instrument `_Draw`, then canopies/boulders/berries and the trails as
-   cached meshes (`DrawMesh`), rebuilt on `TerrainGeneration` / `Paths.Generation`. View only.
-1. **The yellow rim** — the bulge beyond an unsown rim cell is cut with the cell
-   (`ZoneOutline.ClipToCells`, extend the subtracted rect outward where it faces void).
-   Ship 0 and 1 as one commit (D366). Do not push; Joe pushes.
+0. ✅ **The frame rate** (D366) — `_Draw` instrumented, the scenery and the trails as chunked /
+   collected meshes. View only; the debug line now says where a frame goes.
+1. ✅ **The yellow rim** (D366, same commit) — `ZoneOutline.RimReach`. **Not pushed; Joe pushes.**
 2. **The UI pass** — its own spec, a card mockup for Joe first, then the cards (pinnable,
    draggable, several), the two-row resources top bar, the villagers top bar.
 3. **Footprints per building type** — numbers into the catalogue, placement rules, the paint's edge.
@@ -516,7 +537,26 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 38. **⚠️ A SUBTRACTIVE CLIP LEAVES THE VOID ALONE (D366).** The stage clip cut the field's fill by
     the non-stage CELLS; the smoothed fill bulges past its rim cells into the void, and the bulge
     kept the stage's colour — yellow wedges round an unsown rim. When the shape you subtract has a
-    rim, subtract its bulge too (extend the rect outward where it faces nothing).
+    rim, subtract its bulge too (extend the rect outward where it faces nothing). *Built: the
+    extension is `RimReach`, derived from `CornerCutTiles` — the straightening's cap is how far
+    the bulge can reach, and every later pass stays inside the hull of the last.*
+39. **⚠️ THE PROBE CANNOT SEE A MESH, AND A HEADLESS `GetImage()` HANGS GODOT (D366).** The
+    scenery and trail meshes are verified by counts (vertices, chunks rebuilt, a felled tile's
+    fans gone) — none of which says the picture landed where `ToScreen` would put it. The check
+    was a throwaway hook: `BCLONE_SHOT` in `Main._Process` saving `GetViewport().GetTexture()
+    .GetImage()` after ninety frames, run **windowed** (`--resolution 1600x1000`, no `--headless`
+    — headless has no image to give and sits there until killed; `done.` never prints and
+    `tasklist | grep -i godot` is the tell). Deleted before the commit; ten lines to put back.
+    ⭐ The same hook posed a farm and a half-ripe round field by `world.Mark` + `PaintWorkGround` +
+    `SetTerrain` — and found that **a farm's field fill draws only for a BUILT farmhouse**
+    (`FindWorkplace` does not know a site), so the rim was verified by dumping `ClipToCells`'s
+    triangles to a text file and plotting them (PIL), not on screen. *A view change with no probe
+    line is verified by a picture or it is not verified; write down which.*
+40. **⚠️ THE FIRST REBUILD OF A CHUNK THAT ALREADY HAS A SURFACE PAYS A ONE-OFF.** The probe read
+    a chunk rebuild at 1.9–3.5 ms and the design nearly went to bigger chunks on it; measured twice
+    in a row it is 0.25–0.4 ms — the first is a warm-up (JIT or the mesh's first `ClearSurfaces`),
+    not the cost. **Measure a rebuild twice before sizing anything on it.** The probe line prints
+    both now.
 36. **⚠️ A RATE ON A GRID IS THREE NUMBERS (D365).** The one asked for (+30%), the one the dial
     gives (⌈30 ⁄ interval⌉ × logs: 24), and the one the clock delivers — the hearth burned on ticks
     divisible by the interval, which met the winter's first day at three days and missed it at four,

@@ -2323,6 +2323,10 @@ public partial class VillageMap : Control
             CentreOnTheVillage();
         }
 
+        // ⭐ INSTRUMENTED (D366): each pass below is timed and the readout beside the fps says
+        // where a frame goes, so the next per-frame circle is a number and not a feeling.
+        long frameStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+
         // Everything outside the valley reads as off-the-map rather than as more of
         // the same ground, so an empty corner is legibly an edge and not a bug.
         DrawRect(new Rect2(Vector2.Zero, Size), Beyond);
@@ -2356,6 +2360,8 @@ public partial class VillageMap : Control
         // The ghost last, over everything, because it is the thing being decided.
         DrawTheGhost();
         DrawTheBrushful();
+
+        RecordTheFrame(frameStarted);
     }
 
     /// <summary>
@@ -2978,18 +2984,30 @@ public partial class VillageMap : Control
 
         // ⭐ The trails go straight onto the ground, under every field, tree and wash — they ARE
         // ground, worn through (D358).
-        DrawTrails(minX, maxX, minY, maxY);
+        long started = System.Diagnostics.Stopwatch.GetTimestamp();
+        DrawTrails();
+        _trailsNow = Since(started);
+
         // ⚠️ The field is cached by the zone trace, so the trace runs before the field draws (D352).
+        started = System.Diagnostics.Stopwatch.GetTimestamp();
         TraceTheZonesIfTheyMoved(_world!.Zones);
+        _zonesNow = Since(started);
+
+        started = System.Diagnostics.Stopwatch.GetTimestamp();
         DrawWorkedGround(minX, maxX, minY, maxY);
+        _fieldsNow = Since(started);
+
+        started = System.Diagnostics.Stopwatch.GetTimestamp();
         DrawTheTrees(minX, maxX, minY, maxY);
-        DrawTheDeposits(minX, maxX, minY, maxY);
+        _treesNow = Since(started);
 
         // Under the zone washes, because soil is a property of the ground while the zones
         // are instructions about it (D178).
+        started = System.Diagnostics.Stopwatch.GetTimestamp();
         DrawSoil(minX, maxX, minY, maxY);
         DrawWear(minX, maxX, minY, maxY);
         DrawResidentialLand();
+        _zonesNow += Since(started);
 
         DrawRect(valley, ValleyEdge, filled: false, width: 2f);
 
@@ -3318,7 +3336,7 @@ public partial class VillageMap : Control
             // the fence it is the field's curve, exactly; inside, the cell squares. D360 drew a partial
             // stage as its squares alone, and Joe saw them stair-step where sown met the circle.
             KeepTraced(
-                cells.Count == wholeField ? fieldTraced : ZoneOutline.ClipToCells(fieldTraced, cells, field),
+                cells.Count == wholeField ? fieldTraced : ZoneOutline.ClipToCells(fieldTraced, cells, field, SubTile.PerTile),
                 stage);
         }
 
@@ -3660,6 +3678,16 @@ public partial class VillageMap : Control
     /// the same place as a particular tree pattern for ever, which is the kind of correlation that
     /// reads as a pattern once somebody stares at it.
     /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND THE DEPOSITS WITH THEM, AS MESHES, NOT AS CIRCLES (D366).</b> This method walked
+    /// the visible tiles and issued a <c>DrawCircle</c> per canopy every frame — the ~5,740
+    /// unbatchable polygons D338 measured and fixed for the far view only. Joe: *"not sure whats
+    /// happening with the FPS. its really dropping"* — 22 fps near in. The canopies, saplings,
+    /// boulders and ore are now fans in tile space, a mesh per <c>ChunkTiles</c>-square chunk, rebuilt only for the
+    /// chunks whose terrain changed (`VillageMap.Meshes.cs`); this draws the chunks on screen with
+    /// one transform. A young wood is still fewer and smaller marks, so replanting is something the
+    /// player can SEE (D221 gave saplings a colour; D337 gave them texture).
+    /// </para>
     /// </remarks>
     private void DrawTheTrees(int minX, int maxX, int minY, int maxY)
     {
@@ -3668,35 +3696,10 @@ public partial class VillageMap : Control
             return;
         }
 
-        GeneratedMap map = _world!.Map;
-
-        for (int y = minY; y <= maxY; y++)
-        {
-            for (int x = minX; x <= maxX; x++)
-            {
-                var tile = new GridPos(x, y);
-                if (!map.Contains(tile))
-                {
-                    continue;
-                }
-
-                Terrain terrain = map.TerrainAt(tile);
-                bool grown = terrain == Terrain.Forest;
-
-                if (!grown && terrain != Terrain.Sapling)
-                {
-                    continue;
-                }
-
-                // ⭐ A young wood is fewer and smaller marks, so replanting is finally something
-                // the player can SEE. D221 gave saplings a colour and a sentence; they still had
-                // no texture, so a replanted acre read as flat ground in a slightly different green.
-                Canopies(tile, grown);
-            }
-        }
+        RefreshTheScenery(_world!);
+        DrawTheSceneryChunks(minX, maxX, minY, maxY, berries: false);
     }
 
-    /// <summary>How many trees stand on one tile.</summary>
     /// <summary>
     /// ⭐⭐ The boulders and ore on a seam — <b>the tree treatment for deposits</b> (D347,
     /// Joe: *"give the stone and iron deposits the same treatment we just gave forests and trees,
@@ -3726,40 +3729,11 @@ public partial class VillageMap : Control
     /// itself is invisible under them.*
     /// </para>
     /// <para>
-    /// ⚠️ Zoom-gated on the same floor as the trees, for the same reason.
+    /// ⚠️ Zoom-gated on the same floor as the trees, for the same reason — and since D366 drawn
+    /// WITH the trees, in the same chunked mesh (<see cref="DrawTheTrees"/>); this remark is the
+    /// design, and <c>LumpsOn</c>/<c>LumpOn</c> below are the scatter the mesh is built from.
     /// </para>
     /// </remarks>
-    private void DrawTheDeposits(int minX, int maxX, int minY, int maxY)
-    {
-        if (_pixelsPerTile < TreeZoomFloor)
-        {
-            return;
-        }
-
-        GeneratedMap map = _world!.Map;
-
-        for (int y = minY; y <= maxY; y++)
-        {
-            for (int x = minX; x <= maxX; x++)
-            {
-                var tile = new GridPos(x, y);
-                if (!map.Contains(tile))
-                {
-                    continue;
-                }
-
-                Terrain terrain = map.TerrainAt(tile);
-                if (terrain is not (Terrain.Rock or Terrain.IronDeposit))
-                {
-                    continue;
-                }
-
-                Lumps(tile, terrain == Terrain.Rock);
-            }
-        }
-    }
-
-    /// <summary>How many lumps sit on one seam tile. Stone is lumpier than ore.</summary>
     private static int LumpsOn(GridPos tile, bool stone) =>
         (stone ? 3 : 2) + (int)(Scramble(tile.X + DepositSalt, tile.Y - DepositSalt) % 2);
 
@@ -3785,22 +3759,6 @@ public partial class VillageMap : Control
         float size = 0.12f + (((spin >> 15) % 100) / 100f * 0.14f);
 
         return (where, size, 0.85f + (((spin >> 21) % 30) / 100f));
-    }
-
-    /// <summary>The lumps on one tile, and the ones spilling off it.</summary>
-    private void Lumps(GridPos tile, bool stone)
-    {
-        Color base_ = stone ? Boulder : OreLump;
-
-        for (int i = 0; i < LumpsOn(tile, stone); i++)
-        {
-            (Vector2 where, float size, float shade) = LumpOn(tile, i);
-
-            DrawCircle(
-                ToScreen(where),
-                _pixelsPerTile * size,
-                base_ with { R = base_.R * shade, G = base_.G * shade, B = base_.B * shade });
-        }
     }
 
     /// <summary>
@@ -3841,6 +3799,7 @@ public partial class VillageMap : Control
                 + $"{furthest:F2} tiles, so every seam is still a diamond";
     }
 
+    /// <summary>How many trees stand on one tile.</summary>
     private static int TreesOn(GridPos tile, bool grown) =>
         grown ? 3 + (int)(Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) % 2) : 2;
 
@@ -3877,23 +3836,6 @@ public partial class VillageMap : Control
 
         // A hair of variation per tree, so a wood is not a field of identical dots.
         return (where, 0.88f + (((spin >> 17) % 24) / 100f));
-    }
-
-    /// <summary>The trees standing on one tile, and the ones leaning off it.</summary>
-    private void Canopies(GridPos tile, bool grown)
-    {
-        float radius = _pixelsPerTile * (grown ? CanopyRadius : 0.13f);
-        Color trunk = grown ? TreeCanopy : SaplingCanopy;
-
-        for (int i = 0; i < TreesOn(tile, grown); i++)
-        {
-            (Vector2 where, float shade) = CanopyOn(tile, i);
-
-            DrawCircle(
-                ToScreen(where),
-                radius * shade,
-                trunk with { R = trunk.R * shade, G = trunk.G * shade, B = trunk.B * shade });
-        }
     }
 
     /// <summary>
@@ -4013,90 +3955,28 @@ public partial class VillageMap : Control
     /// about them (`specs/desire-paths.md §3.4`), so what the player sees and what the villagers
     /// walk agree.
     /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND THE PICTURE IS A MESH BUILT WITH THE COLLECTION, NOT COMMANDS ISSUED A FRAME
+    /// (D366).</b> The first three drafts (D358–D360) collected once a season and then drew a
+    /// <c>DrawCircle</c> per worn tile and a <c>DrawPolyline</c> per joined pair every frame, with
+    /// the L-corner and joining rules recomputed per tile per frame — the D338 mistake by another
+    /// door, and Joe's 22 fps over a dense network. <c>BuildTheTrailMesh</c>
+    /// (`VillageMap.Meshes.cs`) lays the same discs and bends down once in tile space, a surface
+    /// per grade; this method is one <c>CanvasItemAddMesh</c> with the tile→screen transform.
+    /// </para>
     /// </remarks>
-    private void DrawTrails(int minX, int maxX, int minY, int maxY)
+    private void DrawTrails()
     {
-        SimWorld world = _world!;
-        CollectTheTrailsIfTheyMoved(world);
-        if (_trail.Count == 0)
+        CollectTheTrailsIfTheyMoved(_world!);
+        if (_trailMesh.GetSurfaceCount() == 0)
         {
             return;
         }
 
-        float radius = _pixelsPerTile * TrailHalfWidth;
-        float band = radius * 2f;
-        Span<GridPos> joined = stackalloc GridPos[8];
-
-        for (byte pass = 1; pass <= 2; pass++)
-        {
-            Color colour = pass == 2 ? PackedPath : WornPath;
-            for (int i = 0; i < _trail.Count; i++)
-            {
-                (GridPos tile, byte grade) = _trail[i];
-                if (tile.X < minX - 1 || tile.X > maxX + 1 || tile.Y < minY - 1 || tile.Y > maxY + 1)
-                {
-                    continue;
-                }
-
-                Vector2 here = ToScreen(TrailPointOf(tile));
-                if (grade == pass)
-                {
-                    DrawCircle(here, radius, colour);
-                }
-
-                // ⭐ ROUNDED (D360, Joe: *"still look angular, I want more rounded"*): the trail
-                // through a tile is a curve from the midpoint to each joined neighbour, bent round
-                // the tile's own point — a quadratic Bézier with the tile as its control point — so
-                // every turn is a bend and a straight run is still straight. Each curve is drawn on
-                // the pass of the LEAST worn of its three tiles, worn under packed.
-                int count = JoinedNeighbours(tile, joined);
-                if (count == 1)
-                {
-                    byte least = Lesser(grade, TrailGradeAt(joined[0]));
-                    if (least == pass)
-                    {
-                        DrawLine(Midway(tile, joined[0]), here, colour, band);
-                    }
-
-                    continue;
-                }
-
-                for (int p = 0; p < count; p++)
-                {
-                    for (int q = p + 1; q < count; q++)
-                    {
-                        byte least = Lesser(grade, Lesser(TrailGradeAt(joined[p]), TrailGradeAt(joined[q])));
-                        if (least != pass)
-                        {
-                            continue;
-                        }
-
-                        DrawBend(Midway(tile, joined[p]), here, Midway(tile, joined[q]), colour, band);
-                    }
-                }
-            }
-        }
+        RenderingServer.CanvasItemAddMesh(GetCanvasItem(), _trailMesh.GetRid(), TileToScreen());
     }
 
     private static byte Lesser(byte a, byte b) => a < b ? a : b;
-
-    /// <summary>The screen point halfway between two tiles' trail points — where one tile's curve hands over to the next.</summary>
-    private Vector2 Midway(GridPos a, GridPos b) => ToScreen((TrailPointOf(a) + TrailPointOf(b)) / 2f);
-
-    /// <summary>A quadratic Bézier from <paramref name="from"/> to <paramref name="to"/> bent round <paramref name="control"/>, as a short polyline.</summary>
-    private void DrawBend(Vector2 from, Vector2 control, Vector2 to, Color colour, float width)
-    {
-        const int Segments = 8;
-        var points = new Vector2[Segments + 1];
-        for (int i = 0; i <= Segments; i++)
-        {
-            float t = i / (float)Segments;
-            float u = 1f - t;
-            points[i] = (u * u * from) + (2f * u * t * control) + (t * t * to);
-        }
-
-        DrawPolyline(points, colour, width);
-    }
 
     /// <summary>The worn neighbours this tile's trail runs to, by the D359 rules; how many were written.</summary>
     private int JoinedNeighbours(GridPos tile, Span<GridPos> into)
@@ -4269,6 +4149,9 @@ public partial class VillageMap : Control
                 _trail.Add((paths.PositionOf(i), grade));
             }
         }
+
+        // ⭐ And the picture is built here too, once a season, not once a tile a frame (D366).
+        BuildTheTrailMesh();
     }
 
     private readonly List<(GridPos Tile, byte Grade)> _trail = new();
@@ -4429,9 +4312,15 @@ public partial class VillageMap : Control
                 + $"line at {onTheLine} — the trail is drawing the index, not the walk";
         }
 
+        if (_trailMesh.GetSurfaceCount() == 0 || TrailVerticesWorn + TrailVerticesPacked == 0)
+        {
+            return "[widths] trails: ⛔ the paths are collected but the mesh is empty — nothing would draw";
+        }
+
         return adrift == 0
             ? $"[widths] trails: ✅ {_trail.Count} worn tiles drawn as paths, {packed} of them packed, "
-                + $"{world.Paths.TroddenTiles} tiles trodden at all; the row is one chain and a staircase's clipped corner draws on the line"
+                + $"{world.Paths.TroddenTiles} tiles trodden at all; the row is one chain and a staircase's clipped corner draws on the line; "
+                + $"meshed as {TrailVerticesWorn} worn and {TrailVerticesPacked} packed vertices in {LastTrailBuildMs:F2}ms"
             : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
                 + "trails are drawing something the ground does not hold";
     }
@@ -5348,9 +5237,21 @@ public partial class VillageMap : Control
         int minY = Mathf.FloorToInt(first.Y);
         int maxY = Mathf.CeilToInt(last.Y);
 
+        // ⭐ THE BERRIES ARE A MESH, THE ANIMALS ARE NOT (D366). A patch never moves, so it is
+        // built once a chunk on the terrain counter with the canopies; a beast roams every frame
+        // and there are a few dozen of them, which is a live circle each and no more.
+        if (_showForage)
+        {
+            RefreshTheScenery(_world);
+            DrawTheSceneryChunks(minX, maxX, minY, maxY, berries: true);
+        }
+
+        if (!_showGame)
+        {
+            return;
+        }
+
         float beastRadius = Mathf.Max(2f, _pixelsPerTile * 0.13f);
-        float berryRadius = Mathf.Max(1f, _pixelsPerTile * 0.07f);
-        Color berryColour = GoodsPalette.ColourOf(Goods.Produce);
         double season = _world.Tick + _alpha;
 
         for (int y = minY; y <= maxY; y++)
@@ -5366,17 +5267,10 @@ public partial class VillageMap : Control
                 uint seed = Scramble(x, y);
                 var home = new Vector2(x, y);
 
-                // ⚠️ BOTH TESTS RUN WHATEVER THE TOGGLES SAY. A display setting must never move
-                // what is where — switching the animals off is not allowed to relocate a berry.
-                bool beast = seed % TilesPerAnimal == 0;
-                bool patch = Scramble(x + ForageSalt, y - ForageSalt) % TilesPerBerryPatch == 0;
-
-                if (patch && _showForage)
-                {
-                    DrawBerryPatch(home, seed, berryRadius, berryColour);
-                }
-
-                if (beast && _showGame)
+                // ⚠️ A display setting must never move what is where — the berries' own test
+                // (`BuildChunk`) is salted apart from this one, so switching either off relocates
+                // nothing.
+                if (seed % TilesPerAnimal == 0)
                 {
                     DrawCircle(ToScreen(Roam(home, seed, season)), beastRadius, GameColour);
                 }
@@ -5424,29 +5318,6 @@ public partial class VillageMap : Control
         }
 
         return home;
-    }
-
-    /// <summary>
-    /// A handful of berries under the trees — <b>still, where the animals move</b>.
-    /// </summary>
-    /// <remarks>
-    /// Three dots rather than one, so a patch reads as growing rather than as a good somebody
-    /// dropped — <see cref="DrawHeaps"/> already owns the single-square shape. Their arrangement
-    /// comes off the tile's own seed, so no two patches are laid out alike and none of them move.
-    /// </remarks>
-    private void DrawBerryPatch(Vector2 home, uint seed, float radius, Color colour)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            double angle = (((seed >> (i * 5)) % 628) / 100.0) + (i * 2.1);
-            float spread = 0.16f + (((seed >> (i * 3)) % 10) / 100f);
-
-            var at = new Vector2(
-                home.X + ((float)Math.Cos(angle) * spread),
-                home.Y + ((float)Math.Sin(angle) * spread));
-
-            DrawCircle(ToScreen(at), radius, colour);
-        }
     }
 
     /// <summary>

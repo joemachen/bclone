@@ -314,6 +314,7 @@ public partial class Main : Control
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
         GD.Print(_map.TheDepositsAreScatteredAndOverhang());
+        GD.Print(_map.TheSceneryIsMeshed());
         GD.Print(_map.TheFieldsStayInsideTheirFences());
         ProbeThePlacementSentences();
 
@@ -6812,7 +6813,7 @@ public partial class Main : Control
         }
 
         _frameCounter.Text =
-            $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneTrianglesLastFrame} zone tris";
+            $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneTrianglesLastFrame} zone tris  ·  {_map.LastFrame}";
     }
 
     private void AddTheSkipControls(Container controls)

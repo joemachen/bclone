@@ -177,6 +177,8 @@ internal static class ZoneOutline
         // past its own cells, which would have been a sliver of bare earth along every fence;
         // clipped to the lower half of the cells it is about half, and nothing of it lies inside a
         // cell it was not kept for. The red check is the clip switched off: the "half" comes back whole.
+        // ⛔ And nothing of the half bulges into the void beside the OTHER half's rim (D366, Joe's
+        // yellow edges) — red-checked with the rim extension off.
         Clipped("a 7-tile round, clipped to all of it", RoundBrush(14), all: true);
         Clipped("a 7-tile round, clipped to its lower half", RoundBrush(14), all: false);
 
@@ -269,7 +271,7 @@ internal static class ZoneOutline
                 }
             }
 
-            Vector2[] clipped = ClipToCells(whole, keep, set);
+            Vector2[] clipped = ClipToCells(whole, keep, set, SubTilesPerTile);
             float area = TriangleArea(clipped);
             sizes += $" · {what} clips to {area:F1} of {wholeArea:F1}";
 
@@ -306,6 +308,46 @@ internal static class ZoneOutline
             if (trespassing > 0)
             {
                 complaints.Add($"{what}: {trespassing} clipped triangles sit on field cells that were not kept");
+            }
+
+            // ⛔ And nothing of it lies OUTSIDE the field beside a cell that was not kept (D366): the
+            // bulge past an unsown rim cell goes with the cell. A triangle in the void is fine only
+            // if the field cell nearest its centroid is a kept one — there the bulge is the curve.
+            int wedges = 0;
+            for (int i = 0; i + 2 < clipped.Length; i += 3)
+            {
+                Vector2 centroid = (clipped[i] + clipped[i + 1] + clipped[i + 2]) / 3f;
+                var on = new Vector2I(Mathf.RoundToInt(centroid.X), Mathf.RoundToInt(centroid.Y));
+                if (set.Contains(on))
+                {
+                    continue;
+                }
+
+                float nearest = float.MaxValue;
+                bool nearestKept = false;
+                foreach (Vector2I cell in set)
+                {
+                    float distance = centroid.DistanceSquaredTo(new Vector2(cell.X, cell.Y));
+                    if (distance < nearest - 1e-4f)
+                    {
+                        nearest = distance;
+                        nearestKept = keep.Contains(cell);
+                    }
+                    else if (Mathf.Abs(distance - nearest) <= 1e-4f)
+                    {
+                        nearestKept |= keep.Contains(cell);
+                    }
+                }
+
+                if (!nearestKept)
+                {
+                    wedges++;
+                }
+            }
+
+            if (wedges > 0)
+            {
+                complaints.Add($"{what}: {wedges} clipped triangles bulge into the void beside a cell that was not kept — the rim would show the wrong colour");
             }
         }
 
@@ -758,8 +800,19 @@ internal static class ZoneOutline
     /// would have been a sliver of bare earth along every fence. The self-check's first line is
     /// that a fill with nothing taken away is itself. Cached with the trace, never per frame.
     /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND THE BULGE BESIDE AN UNSOWN RIM CELL IS CUT WITH THE CELL (D366).</b> Joe: *"look
+    /// at the yellow edges of the round farming area — that looks so cheap and gross."* The
+    /// subtraction cuts the fill by the non-stage cells' SQUARES, and the fill bulges past its rim
+    /// cells into the void beyond any cell — where no square ever reached it — so a ripe tint kept
+    /// wedges outside an unsown rim. So each non-stage cell's square is extended outward, on every
+    /// side that faces no field cell, by <see cref="RimReach"/> cells: beside an unsown rim cell the
+    /// bulge goes with the cell; beside a sown one it stays, because there it IS the field's curve.
+    /// ⚠️ At a concave corner between a sown and an unsown rim cell the whole notch is cut, and the
+    /// bare field shows in it — a notch of the field's own colour, never a wedge of the wrong one.
+    /// </para>
     /// </remarks>
-    internal static Vector2[] ClipToCells(Vector2[] triangles, HashSet<Vector2I> keep, HashSet<Vector2I> field)
+    internal static Vector2[] ClipToCells(Vector2[] triangles, HashSet<Vector2I> keep, HashSet<Vector2I> field, int cellsPerTile)
     {
         var away = new HashSet<Vector2I>();
         foreach (Vector2I cell in field)
@@ -769,6 +822,28 @@ internal static class ZoneOutline
                 away.Add(cell);
             }
         }
+
+        // The void beside an unsown rim cell, out to where the smoothing can have reached.
+        int reach = RimReach(cellsPerTile);
+        var rim = new HashSet<Vector2I>();
+        foreach (Vector2I cell in away)
+        {
+            foreach (Vector2I step in new[] { new Vector2I(1, 0), new Vector2I(-1, 0), new Vector2I(0, 1), new Vector2I(0, -1) })
+            {
+                for (int k = 1; k <= reach; k++)
+                {
+                    Vector2I beyond = cell + (step * k);
+                    if (field.Contains(beyond))
+                    {
+                        break;
+                    }
+
+                    rim.Add(beyond);
+                }
+            }
+        }
+
+        away.UnionWith(rim);
 
         List<(Vector2I From, int Length)> runs = RunsOf(away);
         var outcome = new List<Vector2>();
@@ -870,6 +945,13 @@ internal static class ZoneOutline
             return copy;
         }
     }
+
+    /// <summary>
+    /// How far past its cells a smoothed fill can bulge, in cells — <b>the straightening's own
+    /// cap</b>. A chord across a concave step reaches at most <see cref="CornerCutTiles"/> from the
+    /// corner, and every later pass stays inside the hull of the last; two cells at four a tile.
+    /// </summary>
+    internal static int RimReach(int cellsPerTile) => Mathf.CeilToInt(CornerCutTiles * cellsPerTile);
 
     /// <summary>Cells as horizontal runs — (leftmost cell, length) — in a stated order.</summary>
     private static List<(Vector2I From, int Length)> RunsOf(HashSet<Vector2I> cells)
