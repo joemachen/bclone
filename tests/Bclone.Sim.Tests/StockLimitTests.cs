@@ -725,11 +725,21 @@ public sealed class StockLimitTests
             $"Firewood settled at {limited} against {unlimited} uncapped — the limit is not "
             + "biting at all.");
 
+        // ⛔⛔ THE OLD ASSERTION HERE READ ZERO FOR A REASON IT DID NOT KNOW (D370). It asked
+        // that the stock not move over twenty years and read 0 → 0 — the warehouse is full of
+        // logs, so every lot the woodcutter split when a fetch dipped the count under the line
+        // ended up as a heap at its door (and, until D370, bouncing between that door and a spare
+        // hand's arms for ever). A draft of D370 that set loads down where the carrier stood put
+        // those lots INTO the warehouse as log room appeared and read 44 → 99 — the limit plus
+        // what was in flight when it bit. What the limit promises is that production STOPS at
+        // the line, so the honest bound is limit + a lot per woodcutter seat, and 0 → 0 sits
+        // inside it as it always did.
+        int ceiling = 40 + (LabourQuota.TotalCapacityFor(world, JobKind.Woodcutter) * config.FirewoodPerSplit);
         Assert.True(
-            stillSettled <= settled + config.FirewoodPerSplit,
-            $"Firewood went {settled} → {stillSettled} over twenty years under a limit of 40. "
-            + "Production did not stop, it merely slowed — which is the bug D139 records one "
-            + "job over, where a forester the player posted keeps felling past the number in "
+            settled <= ceiling && stillSettled <= ceiling,
+            $"Firewood went {settled} → {stillSettled} over twenty years under a limit of 40 against a ceiling of "
+            + $"{ceiling} (the limit plus a lot per seat). Production did not stop, it merely slowed — which is the "
+            + "bug D139 records one job over, where a forester the player posted keeps felling past the number in "
             + "the box.");
 
         // ⭐⭐ AND NOBODY FROZE FOR IT, WHICH IS THE HALF WORTH ASSERTING MOST. A stock limit is

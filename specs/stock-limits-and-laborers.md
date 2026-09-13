@@ -173,6 +173,8 @@ reality to disagree. A `JobKind.Laborer` would need a phantom workplace to hang 
 `LabourAllocator` would then need teaching not to allocate to it — a rule invented purely to
 undo a type that should not have existed.
 
+**⛔ Laborers do not carry workplace buffers (D370, Joe — reversing D362's "the spare hands carry it").** A buffer is the producer's (when their hut cannot take another load) and the marketer's (when nothing is more pressing). What a laborer hauls: heaps off the ground (§4.3 of `goods-on-the-ground.md`, when storage has room), building materials, and the harvest help.
+
 ### 5.2 ⛔ And the hauling errands do not exist — measured
 
 > **⚠️ THIS MEASUREMENT PREDATES THE FARM AND IS STALE (D185).** *"Workplace buffers holding

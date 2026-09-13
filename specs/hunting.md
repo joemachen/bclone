@@ -114,7 +114,7 @@ the mechanism, then the content.*
   instantaneous"* by design.
 - **Year-round.** ⛔ Not season-gated. `IsForaging` must **not** include hunting, or winter will
   march the hunter home — *this is D281 exactly, and it will happen again if a state is reused.*
-- The lodge holds a local buffer a marketer runs dry, exactly as the farm and the fishery do
+- The lodge holds a local buffer a marketer runs dry, exactly as the farm and the fishery do — and the hunter drains it themselves when it cannot take another kill (D370; `fishing.md` has the rule)
   (`BuildingRow.LocalStoreCap`).
 
 ---

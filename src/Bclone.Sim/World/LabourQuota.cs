@@ -443,6 +443,15 @@ public readonly record struct LabourQuota
         // -round outdoor work for the 86%-idle winter."* **A lodge is what winter is for.**
         int lodgeSeats = TotalCapacityFor(world, JobKind.Hunter);
         int huntable = toFeedEveryone < lodgeSeats ? toFeedEveryone : lodgeSeats;
+
+        // ⚠️ A met limit stands the hunter down, and the lodge's buffer is then the MARKETER'S
+        // (D370). Keeping one seat per lodge worth clearing — D146's shape, *a met limit stops
+        // the felling and not the forester* — was built and measured twice: against D362's
+        // starvation guard (zero — the marketer's last-resort leg drains the lodge alone) and
+        // against six played openings over fifty years (43 people and 22 starved with it or
+        // without). Not kept. If a played village ever shows a lodge draining too slowly under a
+        // met limit, that seat is the lever, and `AVillageDoesNotStarveBesideAFullLodge` is the
+        // guard that would see it.
         int hunters = foodIsEnough ? 0 : Take(ref free, huntable);
 
         int afterHunting = toFeedEveryone - hunters;

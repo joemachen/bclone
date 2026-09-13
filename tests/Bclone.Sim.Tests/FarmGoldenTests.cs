@@ -256,7 +256,10 @@ public sealed class FarmGoldenTests
     // Was 12974345592176735875.
     // RE-TAKEN (D365) — a winter costs 24 firewood a home (3 logs every 4 days; Joe: "+30%", the
     // grid's nearest under), and the hearth burns on the winter's own beat. Was 2122405801003300364.
-    private const ulong SeamGoldenHash = 9885818643046600781UL;
+    // RE-TAKEN (D370) — buffers are the producer's and the marketer's (laborers out), and "is there
+    // room?" is asked of storage only, so a heap at a full store's door stays there until room
+    // appears. Who carries what changes the walk. Was 9885818643046600781.
+    private const ulong SeamGoldenHash = 13712761850512267723UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -302,7 +305,9 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D362) with it again — paths and buffers. Was 3581667183433317301.
     // RE-TAKEN (D363) with it again — foraging cut 40%. Was 16745167020588601942.
     // RE-TAKEN (D365) with it again — the winter's burn. Was 2989669966483791210.
-    private const ulong SeamBeforeAnybodyGotBetter = 16262613081575096836UL;
+    // RE-TAKEN (D370) with it again — who carries a buffer, and when a heap is fetched.
+    // Was 16262613081575096836.
+    private const ulong SeamBeforeAnybodyGotBetter = 2251906780837338661UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

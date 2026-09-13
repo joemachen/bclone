@@ -493,6 +493,10 @@ public sealed class FishingTests
         Workplace hut = RaiseAFishery(world);
         loop.Step(config.TicksPerYear + 1);
 
+        // ⚠️ NO FISHER, so only a marketer can (D370): the fisher drains their own hut when it
+        // cannot take a cast, and this guard is about the trader's leg.
+        world.SetJobLimit(JobKind.Fisher, 0);
+
         // ⚠️ A MARKETER IS PINNED, because the village will not spare one here and should not.
         // Marketers are asked LAST of every trade (D14: *"a marketer moves goods that already
         // exist, so a village that cannot spare anyone loses convenience rather than lives"*), and
@@ -549,6 +553,128 @@ public sealed class FishingTests
 
         _output.WriteLine($"the buffer went from {filled} down to {lowest}");
         Assert.True(lowest < filled, "Nobody ever came to empty the fishery.");
+    }
+
+    /// <summary>
+    /// ⭐⭐ Only the fisher and a marketer ever clear a fishing hut (D370, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, watching a new hut: *"so many villagers ran there to empty it. that is strange! it
+    /// should only be 1) the fisherman (when its full) and 2) the marketer (when they have nothing
+    /// more pressing). it is first and foremost the fisherman's job."* D362 had made a buffer
+    /// worth clearing at an armful and every idle hand a carrier — one cast is seven armfuls,
+    /// there was no claim, and a forester with nothing to tend ran with the rest.
+    /// </para>
+    /// <para>
+    /// Every villager seen walking to the hut for its fish over a season is the hut's own worker or
+    /// a marketer; and the fish still leave, because the fisher carries an armful out when the hut
+    /// cannot take another cast.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void OnlyTheFisherAndAMarketerEverClearAFishingHut()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAFishery(world);
+        loop.Step(config.TicksPerYear + 1);
+
+        // Nobody is short of food, so nobody is pulled off anything by hunger (as the trader's guard).
+        foreach (Household household in world.Households)
+        {
+            int wanted = world.TargetFoodFor(household);
+            if (world.FoodIn(household.Stockpile) < wanted)
+            {
+                household.Stockpile.Add(Goods.Produce, wanted);
+            }
+        }
+
+        // ⚠️ AND THERE MUST BE SPARE HANDS FOR THE GUARD TO SEE — the founding fills every seat,
+        // and a village with no idle hand cannot show who would run to the hut. One fisher, one
+        // marketer, and everybody else a laborer with nothing to do: Joe's crowd.
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, kind is JobKind.Fisher or JobKind.Marketer ? 1 : 0);
+        }
+
+        loop.Step(config.TicksPerSeason);
+        Assert.True(world.Laborers >= 1, "no laborer is spare, so the guard cannot see who would run to the hut");
+
+        hut.Store.Receive(Goods.Fish, hut.Store.Capacity);
+        int filled = hut.Store[Goods.Fish];
+
+        var strangers = new HashSet<string>();
+        int lowest = filled;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            lowest = System.Math.Min(lowest, hut.Store[Goods.Fish]);
+            foreach (Villager villager in world.Villagers)
+            {
+                bool walkingToTheHut =
+                    villager.State is VillagerState.ClearingABuffer or VillagerState.CollectingForMarket
+                    && villager.ErrandX == hut.Tile.X && villager.ErrandY == hut.Tile.Y;
+                if (!walkingToTheHut)
+                {
+                    continue;
+                }
+
+                bool theFisher = villager.WorkplaceId == hut.Id;
+                bool aMarketer = world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Marketer;
+                if (!theFisher && !aMarketer)
+                {
+                    strangers.Add($"{villager.Name} ({world.FindWorkplace(villager.WorkplaceId)?.Kind.ToString() ?? "laborer"})");
+                }
+            }
+        }
+
+        _output.WriteLine($"the hut went from {filled} down to {lowest}; strangers: {string.Join(", ", strangers)}");
+        Assert.True(strangers.Count == 0, $"{strangers.Count} villagers who are neither the fisher nor a marketer went to empty the hut: {string.Join(", ", strangers)}");
+        Assert.True(lowest < filled, "Nobody at all came to empty the fishery — the fisher should carry an armful out of a full hut.");
+    }
+
+    /// <summary>⭐ A fisher drains their own hut when it cannot take another cast (D370).</summary>
+    /// <remarks>
+    /// The fisher used to carry only the cast that would not fit and go on fishing into a full
+    /// hut; the buffer was somebody else's problem. It is the fisher's first: a full hut sends
+    /// them to the store with an armful before they cast again.
+    /// </remarks>
+    [Fact]
+    public void AFisherDrainsTheHutWhenItCannotTakeACast()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAFishery(world);
+        world.SetJobLimit(JobKind.Marketer, 0);
+        loop.Step(config.TicksPerYear + 1);
+        Assert.True(hut.WorkerIds.Count > 0, "nobody took the fishing seat, so the fixture cannot ask the question");
+
+        hut.Store.Receive(Goods.Fish, hut.Store.Capacity);
+        int filled = hut.Store[Goods.Fish];
+        int fishInStores = world.InStores(Goods.Fish);
+
+        int lowest = filled;
+        bool theFisherCleared = false;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            lowest = System.Math.Min(lowest, hut.Store[Goods.Fish]);
+            foreach (int id in hut.WorkerIds)
+            {
+                Villager fisher = world.FindVillager(id)!;
+                theFisherCleared |= fisher.State == VillagerState.ClearingABuffer
+                    && fisher.ErrandX == hut.Tile.X && fisher.ErrandY == hut.Tile.Y;
+            }
+        }
+
+        _output.WriteLine($"the hut went from {filled} to {lowest}; fish in stores {fishInStores} → {world.InStores(Goods.Fish)}");
+        Assert.True(theFisherCleared, "the fisher never set off to clear their own full hut");
+        Assert.True(lowest <= filled - config.CarryCapacity, "the hut never lost an armful");
     }
 
     /// <summary>

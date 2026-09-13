@@ -140,6 +140,9 @@ is D10's teleport-with-extra-steps in reverse.
      (D16), and D112 already traded a fence for a consequence once.
 3. **⛔ Laborers do not move farmed goods** — not to granaries, not to markets. Hauling stays
    what it is today: building materials. **Farm food moves by farmer or by trader, or it sits.**
+   *(D362 overrode this for a season — every spare hand cleared any food buffer — and D370 put it
+   back at Joe's call: the farmer runs their own buffer dry when the field does not want them, the
+   marketer when nothing is more pressing.)*
 
 ### 3.2a ⛔⭐⭐ RUNNING THE BUFFER DRY IS THE MARKET'S JOB, AND ONLY HALF OF IT WAS BUILT (D171)
 

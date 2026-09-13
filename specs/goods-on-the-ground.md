@@ -148,6 +148,7 @@ have a null branch, and the null branch is *put it down where you are standing*:
 | `ActOne` — `HaulingToStore` re-plan | Wherever they had got to. |
 | `ArriveAt` — `HaulingToStore` | At the store's door: **what fitted goes in, the remainder goes down.** This is §3's leak, closed. |
 
+**⭐ And when NO storage has room the load still walks to the nearest storage and goes down at its door (D370, measured).** A draft that set it down where the carrier stood cost six played openings 43 → 38 people and 22 → 31 starved: a day's gathering left at the far edge of a wood is food nobody walks out for until a laborer happens to, while a heap at the granary's door is on the shelf the tick a larder makes room. The bounce Joe watched was never this walk — see §4.3.
 **The throw stays for the case it was written for.** `StoreForTheLoad`'s
 `InvalidOperationException` said *"every village must have somewhere to put things"* — after
 this change that is no longer an invariant, so the throw goes and the sentence becomes a
@@ -170,10 +171,15 @@ store."*
 - **Above clearing on purpose:** a load already won is worth more than a load not yet taken,
   and tidying before felling is what stops a painted valley producing heaps faster than it
   produces order.
-- **⭐ Only fires when a store will actually take the load.** Without that condition a
-  villager picks up a heap beside a full warehouse and walks it back to the same full warehouse forever.
-  With it, a village whose stores are full simply leaves its heaps alone until there is room —
-  which is the self-correcting behaviour D96 predicted, and it needs no rule telling anybody to.
+- **⭐ Only fires when a STORAGE building will actually take the load** (`SomewhereToPut`, D370).
+  Without that condition a villager picks up a heap beside a full warehouse and walks it back to
+  the same full warehouse forever. ⛔ **And it did, for food, until D370:** the condition asked
+  *every* store, the market said it had room, and a laborer could not put anything in a market
+  (D199) — so the heap at a full granary's door was fetched, carried to the granary, set down and
+  fetched again, Joe's *"bounce back and forth between their home and the granary"*. Red-checked:
+  with the old predicate back, 237 empty-handed turns from the door in a season; 0 now. With it, a
+  village whose storage is full simply leaves its heaps alone until there is room — the
+  self-correcting behaviour D96 predicted.
 - **The tile is remembered on `ErrandX/ErrandY`**, like clearing and for the same reason: the
   nearest heap is judged from where somebody is standing, so re-deciding mid-walk lets them
   shuttle between two heaps forever.

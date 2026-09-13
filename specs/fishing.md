@@ -94,7 +94,12 @@ do.* **If you move either number, read that guard first.**
 
 A cast is **10 ticks** and brings back **280 fish** (D361; 400 under D358, 300 before desire paths) into the hut's local store (cap **840**, three casts).
 The fisher hauls to a granary when the hut fills; a **marketer runs the buffer dry** in between
-(`AMarketerRunsTheFisheryBufferDry`).
+(`AMarketerRunsTheFisheryBufferDry`). ⭐ **And the fisher drains it themselves (D370):** when the hut
+cannot take another cast the fisher carries an armful to storage before casting again — and every
+armful, once the village has the food it wants and a seated fisher has nothing better to do
+(`AFisherDrainsTheHutWhenItCannotTakeACast`). Nobody else does: Joe, *"it should only be 1) the
+fisherman (when its full) and 2) the marketer (when they have nothing more pressing)"*
+(`OnlyTheFisherAndAMarketerEverClearAFishingHut`).
 
 **⭐⭐ A LONGER CAST WAS A PURE PACING CHANGE, AND ONLY MEASUREMENT COULD SAY SO (D282).** Joe:
 *"he does reach the hut and fishes, but catches fish too quickly."* The plan called raising

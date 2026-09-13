@@ -302,6 +302,141 @@ public sealed class GoodsOnTheGroundTests
         Assert.Equal(0, tidyTicks);
     }
 
+    /// <summary>
+    /// ⭐⭐ A full granary beside a half-empty market never sends anyone back and forth (D370).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe: *"when the granary is full and there is no more food storage on the map, the villagers
+    /// will constantly bounce back and forth between their home and the granary."* Four predicates
+    /// asked *"does a store have room?"* and disagreed: the heap-fetch and the buffer rule asked
+    /// EVERY store, market included; the load's destination asked storage only (D199) and fell
+    /// back to a granary *full or not* (D48/D80). So a spare hand fetched the heap because the
+    /// market had room, walked it to the full granary because only storage may take it, set it
+    /// down at the door, went home, and fetched it again.
+    /// </para>
+    /// <para>
+    /// The logs guard above could not see it: the market never takes logs. This one poses food.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFullGranaryNeverSendsAnyoneBackAndForth()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        // Every STORAGE building that takes food is full; the market — a counter — has room.
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = world.StoreBuildings[i];
+            if (store.IsStorage && store.Accepts(Goods.Produce))
+            {
+                store.Store.Receive(Goods.Produce, store.Store.FreeSpace);
+            }
+        }
+
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+        Assert.True(market.HasRoomFor(Goods.Produce), "the fixture's market is full, so the trap cannot be posed");
+
+        // Joe's state: the larders are full and the village has the food it wants, so nobody is
+        // foraging and the spare hands are spare — the heap is not somebody's dinner.
+        foreach (Household household in world.Households)
+        {
+            int wanted = world.TargetFoodFor(household);
+            if (world.FoodIn(household.Stockpile) < wanted)
+            {
+                household.Stockpile.Add(Goods.Produce, wanted);
+            }
+        }
+
+        Assert.True(world.SetStockLimit(Goods.Produce, 1).Allowed);
+
+        // And every hand is a laborer — the spare hands are the ones that tidy heaps.
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, 0);
+        }
+
+        GridPos at = world.Map.FoundingSite;
+        world.SetDown(at, Goods.Produce, 120);
+        int onTheGround = world.OnTheGround(Goods.Produce);
+
+        // ⚠️ THE BOUNCE IS INVISIBLE TO A STATE COUNT. The heap and the full store are a tile
+        // apart, so pick-up, walk, refusal and set-down happen inside two ticks and the villager
+        // is sampled as `TravelingHome` at the store's door, then `Resting` at home, for ever.
+        // What CAN be seen is a villager turning for home EMPTY-HANDED from a full storage
+        // building's door: nothing was taken (the larders are held full, so nobody fetches) and
+        // nothing was put in (it is full), so they came with a load and left it there.
+        var fullDoors = new HashSet<GridPos>();
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (store.IsStorage && store.Accepts(Goods.Produce))
+            {
+                fullDoors.Add(store.Tile);
+            }
+        }
+
+        int setDownAtAFullDoor = 0;
+        int turnedBackEmptyHanded = 0;
+        int heapedAtDoors = HeapedAt(fullDoors);
+        for (int tick = 0; tick < config.TicksPerYear / 4; tick++)
+        {
+            // The larders stay full, so nobody eats the heap and the only thing that can move
+            // it is a carrier with nowhere to put it.
+            foreach (Household household in world.Households)
+            {
+                int wanted = world.TargetFoodFor(household);
+                if (world.FoodIn(household.Stockpile) < wanted)
+                {
+                    household.Stockpile.Add(Goods.Produce, wanted - world.FoodIn(household.Stockpile));
+                }
+            }
+
+            loop.StepOnce();
+            int now = HeapedAt(fullDoors);
+            if (now > heapedAtDoors)
+            {
+                setDownAtAFullDoor++;
+            }
+
+            heapedAtDoors = now;
+
+            for (int i = 0; i < world.Villagers.Count; i++)
+            {
+                Villager villager = world.Villagers[i];
+                if (fullDoors.Contains(villager.Tile) && villager.State == VillagerState.TravelingHome && !villager.IsCarrying)
+                {
+                    turnedBackEmptyHanded++;
+                }
+            }
+        }
+
+        _output.WriteLine(
+            $"storage full, market with room: {onTheGround} produce on the ground became {world.OnTheGround(Goods.Produce)}; "
+            + $"a load was set down at a full store's door {setDownAtAFullDoor} times, and somebody turned for home "
+            + $"empty-handed from one {turnedBackEmptyHanded} times, in a season");
+
+        // ⚠️ The heap and the door are a tile apart, so the pick-up, the refusal and the set-down
+        // happen inside one tick and the heap reads unchanged between ticks — the set-down count
+        // alone scored zero on the bounce. The empty-handed turn is what it leaves behind.
+        Assert.True(
+            setDownAtAFullDoor == 0 && turnedBackEmptyHanded == 0,
+            $"a load was set down at a full store's door {setDownAtAFullDoor} times and somebody turned for home empty-handed from one "
+            + $"{turnedBackEmptyHanded} times in a season — the heap is being carried to a store that cannot take it, set down, and carried again");
+
+        int HeapedAt(HashSet<GridPos> doors)
+        {
+            int total = 0;
+            foreach (GridPos door in doors)
+            {
+                total += world.GroundStackAt(door, Goods.Produce);
+            }
+
+            return total;
+        }
+    }
+
     // ---------------------------------------------------------------
     //  Last resort — Joe's second restraint
     // ---------------------------------------------------------------

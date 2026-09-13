@@ -706,9 +706,10 @@ public sealed class BehaviorSystem : ISimSystem
         // the food down at the granary door, pick it up again as a spare hand, walk nowhere,
         // put it down again, forever.
         //
-        // FirstOfKind survives as the arm BELOW, which is the case D48 wrote it for — the
-        // only granary is across the water, and somebody holding an armful must still be
-        // given somewhere to walk rather than standing still with goods nothing can spend.
+        // ⛔ D96 saw the loop and left `FirstOfKind` as the arm below anyway, for D48's case (the
+        // only granary across the water). D370 closed the loop at the other end — the fetch asks
+        // storage only — and kept the walk to the nearest storage's door (nearest, not first of
+        // kind), because a heap at the door is food a tile from the shelf; measured, below.
         // ⛔⛔ AND NEVER THE MARKET, WHICH IS A DISTRIBUTION BUILDING (D199, Joe: *"I want to
         // separate the actual storage buildings — storage pile, granary, warehouse, warehouse — from
         // the market"*). The two fallbacks here ask *"what will take this?"* rather than naming
@@ -750,40 +751,37 @@ public sealed class BehaviorSystem : ISimSystem
         StoreBuilding? proper =
             world.NearestStore(
                 villager.Tile, wanted, store => store.HasRoomFor(load))
-            ?? world.NearestStoreAccepting(
-                villager.Tile, load, store => store.IsStorage && store.HasRoomFor(load))
-            ?? FirstOfKind(world, wanted, load);
+            ?? world.NearestStorageWithRoomFor(villager.Tile, load);
 
         if (proper is not null)
         {
             return proper;
         }
 
-        // FULL IS NOT THE SAME AS ABSENT, and conflating them crashed Joe's village (D80).
-        //
-        // Every branch above rejects a store with no room, which is right while somewhere
-        // else has room and catastrophic when nowhere does: he demolished the cart, the
-        // storage pile filled, and the sim threw "the village has no Warehouse and no cart" —
-        // every tick, forever — while a perfectly good pile stood in the square.
-        //
-        // A village whose stores are full is a village with a PROBLEM, not a village with
-        // an invariant violation. Somewhere to walk beats a stack trace: they go to the
-        // nearest place that would take this good if it could, and the load stays in their
-        // arms until there is room, which is the same thing a person would do.
-        StoreBuilding? anywhere =
+        // ⭐⭐ NOWHERE HAS ROOM: THE LOAD STILL GOES TO THE NEAREST STORAGE, AND IS SET DOWN AT ITS
+        // DOOR (D370 — measured, and the first draft got this wrong). The bounce Joe watched —
+        // *"villagers constantly bounce back and forth between their home and the granary"* — was
+        // never this walk; it was the FETCH: `NearestGroundStack` asked whether any store had room,
+        // the market said yes, a spare hand picked the door-heap up, this method sent it back to
+        // the full granary, and round again. That fetch now asks `SomewhereToPut` (storage only),
+        // so a heap at a full door stays put until room appears — and then it is a tile from the
+        // shelf. The first draft dropped this arm too and set loads down where the carrier stood:
+        // six played openings fell **43 → 38 people and starved 22 → 31**, because a day's
+        // gathering set down at the far edge of a wood is food nobody walks out for until a
+        // laborer happens to, while a heap at the granary's door is in the granary the tick a
+        // larder takes from it. Joe: *"they should just drop it on the ground until there is more
+        // storage available"* — at the store, where it is seen and where it is next needed.
+        // (D48/D80's *"somewhere to walk beats a stack trace"* arm, kept for a better reason.)
+        StoreBuilding? nearestStorage =
             world.NearestStoreAccepting(villager.Tile, load, static store => store.IsStorage);
-
-        // The cart even where no route reaches it, as before — but only if it would take
-        // this good. It stopped taking logs (D90 step 4), and a fallback that ignores
-        // Accepts would walk a forester to a wagon that refuses the load.
-        if (anywhere is null && world.TheCart is StoreBuilding cart && cart.Accepts(load))
+        if (nearestStorage is null && world.TheCart is StoreBuilding cart && cart.Accepts(load))
         {
-            anywhere = cart;
+            nearestStorage = cart;
         }
 
-        if (anywhere is not null)
+        if (nearestStorage is not null)
         {
-            return anywhere;
+            return nearestStorage;
         }
 
         // GENUINELY NOWHERE, AND THAT IS NO LONGER AN INVARIANT VIOLATION (D96).
@@ -856,38 +854,6 @@ public sealed class BehaviorSystem : ISimSystem
                 world.SetDown(villager.Tile, goods, held);
             }
         }
-    }
-
-    /// <summary>Any store of this kind, reachable or not, or null if there are none.</summary>
-    /// <remarks>
-    /// <b>Reachable or not is the point, and it is not new behaviour.</b> This is what
-    /// <c>SimWorld.AnyStoreOf</c> did before the cold start needed a non-throwing version:
-    /// a villager holding an armful must be given somewhere to walk even when the only
-    /// granary is across the water, because the alternative is standing still forever with
-    /// goods that nothing can spend (D48). The difference is that this returns null instead
-    /// of throwing, so the caller can offer the cart before giving up.
-    /// </remarks>
-    /// <remarks>
-    /// <b>⛔ And it asks <c>Accepts</c> too, for the reason written at the call site.</b> This
-    /// was blind to <em>both</em> the filter and fullness, so it handed back a store that
-    /// refuses the load as the last word before the fallbacks — which put the goods on the
-    /// ground at that store's door and started the livelock again one arm lower. Returning null
-    /// here is correct and not a regression: the caller's next branch asks
-    /// <c>NearestStoreAccepting</c> without the fullness test, and then the cart, and only then
-    /// gives up. <b>Somewhere to walk still beats a stack trace (D80); it just has to be
-    /// somewhere that would have the load.</b>
-    /// </remarks>
-    private static StoreBuilding? FirstOfKind(SimWorld world, StoreKind kind, Goods load)
-    {
-        for (int i = 0; i < world.StoreBuildings.Count; i++)
-        {
-            if (world.StoreBuildings[i].Kind == kind && world.StoreBuildings[i].Accepts(load))
-            {
-                return world.StoreBuildings[i];
-            }
-        }
-
-        return null;
     }
 
     /// <summary>The nearest store holding a full batch of logs, or null.</summary>
@@ -1998,44 +1964,6 @@ public sealed class BehaviorSystem : ISimSystem
         // ⚠️ AND IT IS OFFERED, NOT PRIORITISED. It competes with every other leg on travel cost
         // through the same `Offer`, so a trader passing the farm clears it and a trader across
         // the village does not detour — the same shape ruling 2 chose, for the same reason.
-        for (int i = 0; i < world.Workplaces.Count; i++)
-        {
-            Workplace workplace = world.Workplaces[i];
-
-            // ⭐ ASKED OF THE WORLD RATHER THAN SPELLED OUT HERE (D185). It used to be two
-            // lines of comparison in this loop and nowhere else — and `MarketersWanted` did not
-            // have them, so **the village never staffed anybody to run this leg.** One
-            // condition, both callers; see `SimWorld.BufferWorthClearing`.
-            if (!world.BufferWorthClearing(workplace))
-            {
-                continue;
-            }
-
-            // ⛔ WHAT THE BUFFER ACTUALLY HOLDS, NOT `Goods.Produce` (2026-09-03). This named food
-            // outright — correct while a farmhouse was the only building with a buffer, and inert
-            // the day a fishery got one: the marketer walked to a hut brimming with **fish** and
-            // collected nothing, because the errand had asked for something that was not there.
-            // *`BufferWorthClearing` had already been taught to see fish; the errand it feeds
-            // had not, so the leg said yes and then did nothing.*
-            Goods? holding = null;
-            IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
-            for (int g = 0; g < edible.Count && holding is null; g++)
-            {
-                if (workplace.Store[edible[g]] > 0)
-                {
-                    holding = edible[g];
-                }
-            }
-
-            if (holding is null)
-            {
-                continue;
-            }
-
-            // Household 0 is the errand saying *nobody is waiting for this* — the same
-            // sentinel a stranded-larder collection already uses.
-            Offer(workplace.Tile, 0, holding.Value, delivering: false);
-        }
 
         // ⭐⭐ AND THE FOURTH LEG: STOCK THE MARKET ITSELF (§14.8, D197, Joe).
         //
@@ -2058,6 +1986,52 @@ public sealed class BehaviorSystem : ISimSystem
         if (best is null)
         {
             OfferMarketRestock(world, villager, ref best, ref bestCost);
+        }
+
+        // ⭐ THE BUFFERS LAST — when nothing is more pressing (D370, Joe: *"the marketer (when
+        // they have nothing more pressing)"*). D171 offered them against the household legs on
+        // cost; now a buffer is cleared only when no larder is short and the counter is stocked,
+        // and never one somebody is already walking to (the producer clears their own first).
+        if (best is null)
+        {
+            for (int i = 0; i < world.Workplaces.Count; i++)
+            {
+                Workplace workplace = world.Workplaces[i];
+
+                // ⭐ ASKED OF THE WORLD RATHER THAN SPELLED OUT HERE (D185). It used to be two
+                // lines of comparison in this loop and nowhere else — and `MarketersWanted` did not
+                // have them, so **the village never staffed anybody to run this leg.** One
+                // condition, both callers; see `SimWorld.BufferWorthClearing`.
+                if (!world.BufferWorthClearing(workplace) || world.SomebodyIsClearing(workplace.Tile))
+                {
+                    continue;
+                }
+
+                // ⛔ WHAT THE BUFFER ACTUALLY HOLDS, NOT `Goods.Produce` (2026-09-03). This named food
+                // outright — correct while a farmhouse was the only building with a buffer, and inert
+                // the day a fishery got one: the marketer walked to a hut brimming with **fish** and
+                // collected nothing, because the errand had asked for something that was not there.
+                // *`BufferWorthClearing` had already been taught to see fish; the errand it feeds
+                // had not, so the leg said yes and then did nothing.*
+                Goods? holding = null;
+                IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+                for (int g = 0; g < edible.Count && holding is null; g++)
+                {
+                    if (workplace.Store[edible[g]] > 0)
+                    {
+                        holding = edible[g];
+                    }
+                }
+
+                if (holding is null)
+                {
+                    continue;
+                }
+
+                // Household 0 is the errand saying *nobody is waiting for this* — the same
+                // sentinel a stranded-larder collection already uses.
+                Offer(workplace.Tile, 0, holding.Value, delivering: false);
+            }
         }
 
         return best;
@@ -2543,6 +2517,15 @@ public sealed class BehaviorSystem : ISimSystem
         // nothing can be picked in winter (D44), and game does not stop.
         bool canHunt = villager.CanWork && job?.Kind == JobKind.Hunter;
 
+        // ⭐⭐ THE BUFFER IS THE PRODUCER'S FIRST (D370, Joe: *"it is first and foremost the
+        // fisherman's job"*). A hut that cannot take another load sends its own worker to the
+        // store with an armful before they hunt, fish or idle again — whether or not the village
+        // wants more food, because meat in a lodge nobody can reach is D362's starvation game.
+        if (canHunt && TryClearOwnBuffer(world, villager, job!, onlyWhenFull: needsFood))
+        {
+            return;
+        }
+
         if (needsFood && canHunt)
         {
             if (villager.Tile == job!.Tile)
@@ -2569,6 +2552,11 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         bool canFish = villager.CanWork && job?.Kind == JobKind.Fisher;
+
+        if (canFish && TryClearOwnBuffer(world, villager, job!, onlyWhenFull: needsFood))
+        {
+            return;
+        }
 
         if (needsFood && canFish)
         {
@@ -2702,7 +2690,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // most idle person in a winter village, which is exactly who both errands
                 // are for. Same order as the bottom of Decide, deliberately: two copies of
                 // one ranking is how they come to disagree.
-                if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
                     GoHome(world, villager);
                 }
@@ -2729,7 +2717,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             // Held by the limit: idle from their trade, so they take spare work — the same
             // ranking a woodcutter with an empty yard takes, for the same reason.
-            if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
             {
                 GoHome(world, villager);
             }
@@ -2751,6 +2739,14 @@ public sealed class BehaviorSystem : ISimSystem
         // one ranking is how they come to disagree (D142's three call sites).
         if (villager.CanWork && job?.Kind == JobKind.Farmer)
         {
+            // A farm's buffer is one load deep, so "cannot take another" and "worth clearing"
+            // are the same question there (D171); the farmer runs it dry when the field does not
+            // want them — out of season, or with nothing left to sow or reap.
+            if (world.NextFieldToWork(job, villager.Tile) is null && TryClearOwnBuffer(world, villager, job, onlyWhenFull: false))
+            {
+                return;
+            }
+
             if (world.Zones.WorkGroundTiles(job.Id) == 0)
             {
                 villager.WorkNote = $"{job.Name} has no ground to work — paint some for it.";
@@ -2790,7 +2786,7 @@ public sealed class BehaviorSystem : ISimSystem
             // Idle from their trade, so they tidy or help clear — the same ranking the
             // bottom of this method uses, and the same one a woodcutter with an empty yard
             // takes. Two copies of it is how they come to disagree, so it is the same order.
-            if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
             {
                 GoHome(world, villager);
             }
@@ -2850,7 +2846,7 @@ public sealed class BehaviorSystem : ISimSystem
                           + $"{world.LogsInWarehouses()}. Its ground is wooded again."
                     : $"Nothing bare left to plant at {job.Name} — its ground is wooded again.";
 
-                if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
                     GoHome(world, villager);
                 }
@@ -2866,7 +2862,7 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.WorkNote =
                     $"{job.Name} is not felling, and has no ground to tend.";
 
-                if (!TryTidyGround(world, villager) && !TryClearABuffer(world, villager) && !TryHelpWithHarvest(world, villager))
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
                     GoHome(world, villager);
                 }
@@ -2938,12 +2934,11 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        // ⭐ And a hut whose buffer holds food nobody can reach (D362) — the errand Joe's village
-        // needed fifteen resting people to run, and none of them had.
-        if (TryClearABuffer(world, villager))
-        {
-            return;
-        }
+        // ⛔ NOT THE BUFFERS (D370). D362 sent every spare hand — laborers, and any job-holder
+        // who declined their trade this tick — to clear a buffer at an armful, with no claim; one
+        // cast of fish is seven armfuls, and Joe watched *"so many villagers run there to empty
+        // it."* A buffer is the producer's (when the hut cannot take another load) and the
+        // marketer's (when nothing is more pressing), and nobody else's.
 
         // Rest — at home if not already there.
         if (villager.Tile != world.RestingPlaceOf(villager))
@@ -3088,40 +3083,45 @@ public sealed class BehaviorSystem : ISimSystem
     /// load already carried and put down is nearer to being eaten than a tree.
     /// </para>
     /// </remarks>
-    private static bool TryClearABuffer(SimWorld world, Villager villager)
+    /// <summary>
+    /// ⭐⭐ A producer carries an armful out of their own hut when it cannot take another load
+    /// (D370) — <b>the buffer is theirs first, the marketer's second, and nobody else's</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, watching a new fishing hut: *"so many villagers ran there to empty it. that is strange!
+    /// it should only be 1) the fisherman (when its full) and 2) the marketer (when they have
+    /// nothing more pressing). it is first and foremost the fisherman's job."* This replaces
+    /// D362's `TryClearABuffer`, which any spare hand reached from six places in `Decide` with no
+    /// claim on the hut — a cast of 280 fish is seven armfuls, so seven people came.
+    /// </para>
+    /// <para>
+    /// The hut must be worth clearing (an armful, and storage with room — the one predicate) and
+    /// nobody else may already be walking to it. While the village still wants more food the
+    /// producer's trade comes first and the buffer is cleared only when the hut cannot take
+    /// another load (<paramref name="onlyWhenFull"/>); once the food is enough there is nothing
+    /// better to do and every armful goes out — a producer the player keeps seated past the food
+    /// limit (a pinned trade, a job limit) drains the hut. Arrival is <c>TakeFromTheBuffer</c>, an
+    /// armful to the nearest storage with room.
+    /// </para>
+    /// </remarks>
+    private static bool TryClearOwnBuffer(SimWorld world, Villager villager, Workplace hut, bool onlyWhenFull)
     {
-        if (!villager.CanWork || villager.IsCarrying)
+        if (!villager.CanWork || villager.IsCarrying || hut.IsSite)
         {
             return false;
         }
 
-        Workplace? nearest = null;
-        int bestCost = int.MaxValue;
-        for (int i = 0; i < world.Workplaces.Count; i++)
-        {
-            Workplace workplace = world.Workplaces[i];
-            if (!world.BufferWorthClearing(workplace))
-            {
-                continue;
-            }
-
-            int cost = world.TravelCost.Cost(villager.Tile, workplace.Tile);
-            if (cost != TravelCostField.Unreachable && cost < bestCost)
-            {
-                bestCost = cost;
-                nearest = workplace;
-            }
-        }
-
-        if (nearest is null)
+        if ((onlyWhenFull && !world.HutCannotTakeAnotherLoad(hut)) || !world.BufferWorthClearing(hut) || world.SomebodyIsClearing(hut.Tile))
         {
             return false;
         }
 
-        villager.ErrandX = nearest.Tile.X;
-        villager.ErrandY = nearest.Tile.Y;
+        villager.WorkNote = string.Empty;
+        villager.ErrandX = hut.Tile.X;
+        villager.ErrandY = hut.Tile.Y;
         villager.State = VillagerState.ClearingABuffer;
-        Travel(world, villager, nearest.Position, VillagerState.ClearingABuffer);
+        Travel(world, villager, hut.Position, VillagerState.ClearingABuffer);
         return true;
     }
 
@@ -4428,8 +4428,8 @@ public sealed class BehaviorSystem : ISimSystem
             ? int.MaxValue
             : world.TravelCost.Cost(villager.Tile, farm.Tile);
 
-        StoreBuilding? store = world.NearestStoreAccepting(
-            villager.Tile, grain, place => place.HasRoomFor(grain));
+        // Storage with room, through the one door (D370) — never the market.
+        StoreBuilding? store = world.NearestStorageWithRoomFor(villager.Tile, grain);
 
         int toAStore = store is null
             ? int.MaxValue

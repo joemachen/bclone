@@ -1121,6 +1121,10 @@ public sealed class FarmTests
         SimWorld world = loop.World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
 
+        // ⚠️ NO FARMER (D370): the farmer runs their own buffer dry out of season; this guard is
+        // about the trader's leg, so the seat is posed empty.
+        world.SetJobLimit(JobKind.Farmer, 0);
+
         // Full enough that it can no longer take a whole armful — the exact state that
         // lengthens the farmer's walk, and the reason this errand exists.
         farm.Store.Add(Goods.Wheat, Config.FarmStoreCap);
@@ -1168,42 +1172,38 @@ public sealed class FarmTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void AFarmsBufferIsOnlyWorthClearingWhenItCannotTakeAnArmful()
+    public void ABufferIsWorthClearingWhenItHoldsAnArmfulAndStorageHasRoom()
     {
         SimWorld world = Loop(Config).World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
 
-        Assert.False(WorthClearing(world, farm), "An empty buffer is nothing to clear.");
+        // ⛔ THE REAL PREDICATE, NOT A RESTATEMENT. This guard used to restate the rule locally
+        // ("cannot take an armful") and had been out of step with `BufferWorthClearing` since D362
+        // changed it to "holds an armful" — it guarded nothing.
+        Assert.False(world.BufferWorthClearing(farm), "An empty buffer is nothing to clear.");
 
-        int seed = Config.FarmStoreCap - Config.CropYieldPerTile;
-        Assert.True(seed > 0, "The cap cannot hold even one armful, so this proves nothing.");
-        farm.Store.Add(Goods.Wheat, seed);
+        farm.Store.Add(Goods.Wheat, Config.CarryCapacity - 1);
+        Assert.False(world.BufferWorthClearing(farm), "Less than an armful is not worth a walk.");
 
-        _output.WriteLine(
-            $"holding {farm.Store[Goods.Wheat]} of {farm.Store.Capacity}, {farm.Store.FreeSpace} free "
-            + $"against an armful of {Config.CropYieldPerTile}");
+        farm.Store.Add(Goods.Wheat, 1);
+        Assert.True(world.BufferWorthClearing(farm), "An armful with a granary that has room is worth the walk.");
 
+        // ⭐ ROOM IS ASKED OF STORAGE ONLY (D370): the market is a counter, and a full granary
+        // beside a half-empty market sent every carrier to the granary's door and back for ever.
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (store.IsStorage && store.Accepts(Goods.Wheat))
+            {
+                store.Store.Receive(Goods.Wheat, store.Store.FreeSpace);
+            }
+        }
+
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+        Assert.True(market.HasRoomFor(Goods.Wheat), "the fixture's market is full, so the question cannot be posed");
         Assert.False(
-            WorthClearing(world, farm),
-            "A buffer that can still take a whole armful is doing its job, and clearing it is "
-            + "the churn that killed the village in D34.");
-
-        farm.Store.Add(Goods.Wheat, Config.FarmStoreCap);
-
-        _output.WriteLine(
-            $"holding {farm.Store[Goods.Wheat]} of {farm.Store.Capacity}, {farm.Store.FreeSpace} free");
-
-        Assert.True(WorthClearing(world, farm));
+            world.BufferWorthClearing(farm),
+            "With every storage building full the buffer is still 'worth clearing' — room is being asked of the market");
     }
-
-    /// <summary>
-    /// The clearing rule, restated: a workplace holding food that can no longer take a whole
-    /// armful.
-    /// </summary>
-    private static bool WorthClearing(SimWorld world, Workplace workplace) =>
-        !workplace.IsSite
-        && workplace.Store[Goods.Wheat] > 0
-        && workplace.Store.FreeSpace < world.Config.CropYieldPerTile;
 
     /// <summary>
     /// ⭐ A trader sources from a farm only when the farm is nearer than the granary.

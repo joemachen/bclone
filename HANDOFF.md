@@ -33,12 +33,11 @@
 > ✅ **C** (D369) the cap in sixteenths, a sliver's ticks in proportion, nearest-first — measured
 > (−6% on a field twice the cap, identical within it) and taken; ⏸ **hauling an armful, not a tile**
 > (reap on until the arms are full) is the follow-up that removes the sliver penalty;
-> **D** one predicate for "does a store have room"
-> (storage only; the market is a counter) so a full granary never sends anyone back and forth, and
-> buffers cleared by the producer (hunter, fisher, farmer — when the hut cannot take a load) and
-> the marketer (when nothing is more pressing), laborers out — ⛔ **a stood-down hunter is a
-> laborer, so the quota must keep a producer's seat when the food limit is met or D362's
-> starvation guard goes red**; **E** the marketer redesign, spec-first: villagers shop at the
+> ✅ **D** (D370) one predicate for "room" (storage only), buffers cleared by the producer and the
+> marketer, laborers out — ⚠️ the plan's "drop the walk to a full store" was measured and
+> reversed (43 → 38 people on six played openings); the walk to the nearest storage's DOOR stays
+> and only the heap FETCH is gated; the "stood-down hunter keeps a seat" idea scored zero twice
+> and is not in; **E** the marketer redesign, spec-first: villagers shop at the
 > market, the marketer stocks it to per-market limits and clears buffers when idle, **no home
 > deliveries** (the dead-larder collection stays), and a household fetches at **≤ 50 % of a larder
 > target** (Joe's rule), not at the first dip. Then the UI pass (cards, a mockup first). **Do not
@@ -578,6 +577,19 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     (`FindWorkplace` does not know a site), so the rim was verified by dumping `ClipToCells`'s
     triangles to a text file and plotting them (PIL), not on screen. *A view change with no probe
     line is verified by a picture or it is not verified; write down which.*
+43. **⛔⛔ A FALLBACK THAT SOUNDS HONEST CAN STARVE A VILLAGE — MEASURE IT (D370).** "Nowhere has
+    room, so set the load down where you stand" cost six played openings 43 → 38 people and
+    22 → 31 starved, ablated to that one change: a heap at the far edge of a wood is food nobody
+    walks out for; a heap at the granary's door is on the shelf the tick a larder makes room.
+    **A loop is two rules disagreeing, and either half alone scores zero on the guard** — the
+    bounce needed the fetch (any store's room) AND the walk (to a full store); gate the fetch,
+    keep the walk. And a guard that counts a state can miss a bounce that completes inside one
+    tick (pick up, refuse, set down, a tile apart) — count what it leaves behind (an
+    empty-handed turn from the door), not what it is doing.
+44. **⚠️ A FOUNDING SEATS EVERYBODY, SO A GUARD ABOUT SPARE HANDS MUST POSE SOME (D370).** The
+    first red check of "only the fisher and a marketer clear a hut" scored zero because the four
+    founders all held seats and nobody ever reached the laborer fallthrough. `SetJobLimit(kind,
+    0)` for every other trade is how to pose a crowd.
 42. **⚠️ A PER-TILE RULE CANNOT DRAW AN AREA, AND A YARD MAKES EVERY LANE LOOK PARALLEL (D368).**
     The trail lattice was two bugs: a block of worn tiles drawn as rails and rungs (fixed by
     tracing the block as a patch), and two parallel diagonal lanes a tile apart drawn with a rung

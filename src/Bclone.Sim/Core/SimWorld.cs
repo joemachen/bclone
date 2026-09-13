@@ -2680,18 +2680,89 @@ public sealed class SimWorld
             return false;
         }
 
-        if (workplace.Store[food.Value] >= Config.CarryCapacity)
+        // ⭐ AN ARMFUL, AND SOMEWHERE TO PUT IT — asked of STORAGE (D370). The first draft of
+        // D362 asked every store, market included, and the code's own comment at
+        // `StoreForTheLoad` describes what two finders that disagree about "room" do: a carrier
+        // takes an armful because the market has space, is sent to a granary because only storage
+        // may take it, finds it full, sets the load down at the door and goes home — and comes
+        // back for it. The "nearly full" arm this used to end with is gone: a buffer below an
+        // armful is not worth anybody's walk, full or not.
+        return workplace.Store[food.Value] >= Config.CarryCapacity && SomewhereToPut(food.Value);
+    }
+
+    /// <summary>
+    /// ⭐⭐ Whether any STORAGE building would take this good right now — <b>the one answer to
+    /// "is there room?"</b> (D370).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe: *"when the granary is full and there is no more food storage on the map, the villagers
+    /// will constantly bounce back and forth between their home and the granary."* Four
+    /// predicates asked the question and disagreed — the heap fetch and the buffer rule asked
+    /// every store, the market included; the load's destination asked storage only (D199, the
+    /// market is a counter) and then fell back to a granary full or not (D48/D80). This is the
+    /// door they all go through now: storage only, room for the good, the market never.
+    /// </para>
+    /// <para>
+    /// A marketer stocking the counter asks <c>NearestCounterWithRoomFor</c> instead; that is
+    /// the trade's own leg and the market's own cap (D358).
+    /// </para>
+    /// </remarks>
+    public bool SomewhereToPut(Goods goods)
+    {
+        for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            for (int i = 0; i < StoreBuildings.Count; i++)
+            if (StoreBuildings[i].IsStorage && StoreBuildings[i].HasRoomFor(goods))
             {
-                if (StoreBuildings[i].HasRoomFor(food.Value))
-                {
-                    return true;
-                }
+                return true;
             }
         }
 
-        return workplace.Store.FreeSpace < OneLoadFrom(workplace);
+        return false;
+    }
+
+    /// <summary>The nearest storage building with room for the good, by travel cost — or null. See <see cref="SomewhereToPut"/>.</summary>
+    public StoreBuilding? NearestStorageWithRoomFor(GridPos from, Goods goods) =>
+        NearestStoreAccepting(from, goods, store => store.IsStorage && store.HasRoomFor(goods));
+
+    /// <summary>
+    /// Whether a producer's hut can no longer take what one more cast, kill or reap puts in it —
+    /// <b>the moment the buffer becomes the producer's own errand</b> (D370).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"it should only be 1) the fisherman (when its full) and 2) the marketer (when they have
+    /// nothing more pressing). it is first and foremost the fisherman's job."*
+    /// </remarks>
+    public bool HutCannotTakeAnotherLoad(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        return !workplace.IsSite && workplace.Store.FreeSpace < OneLoadFrom(workplace);
+    }
+
+    /// <summary>
+    /// Whether somebody is already on their way to clear this hut's buffer — <b>a positional
+    /// claim, no new state</b> (D370).
+    /// </summary>
+    /// <remarks>
+    /// A villager walking to a buffer carries its tile as their errand, whether they are the
+    /// producer (<c>ClearingABuffer</c>) or a marketer (<c>CollectingForMarket</c>); so "is
+    /// somebody clearing it?" is a read of what is already hashed. Without it two marketers would
+    /// pick the same nearest hut on the same tick and one would walk for nothing.
+    /// </remarks>
+    public bool SomebodyIsClearing(GridPos hut)
+    {
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager villager = Villagers[i];
+            if (villager.Alive
+                && villager.State is VillagerState.ClearingABuffer or VillagerState.CollectingForMarket
+                && villager.ErrandX == hut.X && villager.ErrandY == hut.Y)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -3597,8 +3668,10 @@ public sealed class SimWorld
         for (int i = 0; i < GroundStacks.Count; i++)
         {
             GroundStack stack = GroundStacks[i];
-            if (NearestStoreAccepting(
-                    stack.Position, stack.Goods, store => store.HasRoomFor(stack.Goods)) is null)
+
+            // ⛔ STORAGE ONLY (D370): the market has room and a laborer may not put anything in
+            // it, so asking every store here sent a heap to a full granary's door for ever.
+            if (!SomewhereToPut(stack.Goods))
             {
                 continue;
             }
@@ -9174,13 +9247,13 @@ public sealed class SimWorld
         return FoodTheVillageHolds() < wanted && RoomLeftForFood() > 0;
     }
 
-    /// <summary>Free space across every store that would take food.</summary>
+    /// <summary>Free space across every STORAGE building that would take food (D370: the market is a counter, and its room is not somewhere a producer can put a catch).</summary>
     private int RoomLeftForFood()
     {
         int room = 0;
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (AcceptsFood(StoreBuildings[i]))
+            if (StoreBuildings[i].IsStorage && AcceptsFood(StoreBuildings[i]))
             {
                 room += StoreBuildings[i].Store.FreeSpace;
             }
