@@ -278,15 +278,7 @@ public partial class Main : Control
         GD.Print(
             $"[widths] window {Size.X:F0} x {Size.Y:F0}, drawn at {_uiScale * 100f:F0}%");
 
-        for (int i = 0; i < _docked.Count; i++)
-        {
-            (PanelContainer panel, bool right) = _docked[i];
-            GD.Print(
-                $"[widths] panel {(right ? "right" : "left ")} at "
-                + $"({panel.Position.X:F0}, {panel.Position.Y:F0}) "
-                + $"size {panel.Size.X:F0}x{panel.Size.Y:F0}"
-                + (panel.Visible ? string.Empty : " (hidden)"));
-        }
+        ProbePanelWidths("at the founding");
 
         // ⭐⭐ THE TWO SELF-SCROLLING PANELS, MEASURED — because they are the two that can hold
         // their content correctly and draw NONE of it. Both were `size 288x0` for the life of
@@ -322,6 +314,16 @@ public partial class Main : Control
         ProbeTheProfessionsPanel();
 
         ProbeTheLogLines();
+
+        // ⛔ AND THE PANELS AGAIN, TWELVE YEARS IN (D367). At the founding there are no heaps and
+        // the larders are empty, so the first measurement cannot see the strings that used to
+        // widen the Overview; this one can. The rows are posed as well, in case the run happens
+        // to have nothing on the ground.
+        Refresh();
+        _onTheGround.Text = "+1,234";
+        _foodElsewhere.Text = "+12,345";
+        ForceUpdateTransform();
+        ProbePanelWidths("twelve years in, with heaps and larders posed");
 
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
@@ -387,6 +389,58 @@ public partial class Main : Control
     /// stripping and the season lines that deliberately have no stamp.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Every docked panel's position and size — <b>and whether it has widened past the width it
+    /// was given</b> (D367).
+    /// </summary>
+    /// <remarks>
+    /// A panel's rect is a starting width, not a limit: Godot grows a Control to its children's
+    /// minimum, so a Label with a long string in it is a wider panel. Joe: *"I hate how the size
+    /// of the panels change when information updates."* The width a panel was given is
+    /// <c>OffsetRight − OffsetLeft</c> (a drag moves all four offsets together); what it wants is
+    /// its combined minimum. Called twice — at the founding, and twelve years in with heaps and
+    /// larders posed — because the strings that widen a panel do not exist at tick zero.
+    /// </remarks>
+    private void ProbePanelWidths(string when)
+    {
+        // ⚠️ UNFOLDED, OR A FOLDED PANEL HIDES ITS WIDTH. A folded panel's contents are not
+        // visible and do not count toward its minimum — the Professions window is folded at the
+        // founding, and the first red check of this probe scored zero on it for exactly that.
+        var wereOpen = new List<bool>(_headers.Count);
+        foreach (Button header in _headers)
+        {
+            wereOpen.Add(header.ButtonPressed);
+            header.ButtonPressed = true;
+        }
+
+        ForceUpdateTransform();
+
+        int widened = 0;
+        for (int i = 0; i < _docked.Count; i++)
+        {
+            (PanelContainer panel, bool right) = _docked[i];
+            float given = panel.OffsetRight - panel.OffsetLeft;
+            float wants = panel.GetCombinedMinimumSize().X;
+            bool wide = wants > given + 1f;
+            widened += wide ? 1 : 0;
+            GD.Print(
+                $"[widths] panel {(right ? "right" : "left ")} at "
+                + $"({panel.Position.X:F0}, {panel.Position.Y:F0}) "
+                + $"size {panel.Size.X:F0}x{panel.Size.Y:F0}"
+                + (panel.Visible ? string.Empty : " (hidden)")
+                + (wide ? $"  ⛔ widened to {wants:F0} from {given:F0}" : string.Empty));
+        }
+
+        for (int i = 0; i < _headers.Count; i++)
+        {
+            _headers[i].ButtonPressed = wereOpen[i];
+        }
+
+        GD.Print(widened == 0
+            ? $"[widths] panels: ✅ none wider than it was given, {when}"
+            : $"[widths] panels: ⛔ {widened} widened past the width they were given, {when}");
+    }
+
     /// <summary>
     /// The error boundary, posed — <b>a throw the sim never made, handed to the handler, and the
     /// sentence it produces</b> (D364). Last, because it stops the village.
@@ -851,6 +905,29 @@ public partial class Main : Control
         GD.Print(holdsItAll
             ? "[widths] inspector: ✅ every line of a market-sized description has room"
             : "[widths] inspector: ⛔ a market's panel hides what is in it");
+
+        // ⛔ AND THE BOX AROUND IT IS A FIXED HEIGHT WITH A BAR (D367). The contents are always
+        // `InspectorHeight`; a description taller than that must scroll with a VISIBLE bar, or
+        // D350's cut is back by another door. Posed with the store rows showing, which is the
+        // tallest a market's panel gets.
+        var scroll = (ScrollContainer)_inspector.GetParent().GetParent();
+        var inner = (Control)_inspector.GetParent();
+        bool storeRowWas = _storeRow.Visible;
+        bool acceptRowWas = _acceptRow.Visible;
+        _storeRow.Visible = true;
+        _acceptRow.Visible = true;
+        ForceUpdateTransform();
+        float wants = inner.GetCombinedMinimumSize().Y;
+        float box = scroll.Size.Y;
+        bool fits = wants <= box + 1f;
+        bool reachable = fits || scroll.GetVScrollBar().Visible;
+        GD.Print(reachable
+            ? $"[widths] inspector: ✅ a market's panel wants {wants:F0}px in a {box:F0}px box "
+                + $"({InspectorHeight} logical) — {(fits ? "it fits" : "it scrolls, and the bar shows")}"
+            : $"[widths] inspector: ⛔ a market's panel wants {wants:F0}px in a {box:F0}px box and no "
+                + "scroll bar shows — the bottom of it is cut");
+        _storeRow.Visible = storeRowWas;
+        _acceptRow.Visible = acceptRowWas;
 
         _inspector.Text = was;
         ForceUpdateTransform();
@@ -1609,6 +1686,8 @@ public partial class Main : Control
         // line read as a total and its largest part when it was neither. "Homes and huts"
         // rather than "larders", because a workplace buffer is neither a store nor a larder
         // and calling it one would be the kind of near-enough label D76 keeps punishing.
+        int onTheGround = 0;
+        var whyOnTheGround = new List<string>();
         for (int i = 0; i < _goodsReadouts.Count; i++)
         {
             (Goods goods, Label held) = _goodsReadouts[i];
@@ -1629,20 +1708,30 @@ public partial class Main : Control
             // ⚠️ `Grouped()` on every good, not just food. Four figures of stone read as "1968"
             // in one row and "1,968" in another, which is the panel looking unfinished for no
             // reason anybody chose.
+            // ⛔⛔ THE NUMBER ALONE, IN A CELL THAT CANNOT WIDEN (D367). This cell used to carry
+            // the parenthetical — `132  (+4 on the ground — still to be carried in)` — and a
+            // Label's minimum width is its text, so the whole panel grew and shrank as heaps came
+            // and went. Joe: *"I hate how the size of the panels change when information
+            // updates."* The heaps go to the permanent row below; the sentence is its tooltip.
             int inHeaps = world.OnTheGround(goods);
-            held.Text = inHeaps > 0
-                ? $"{inStores.Grouped()}  (+{inHeaps.Grouped()} on the ground — "
-                    + $"{WhyItIsOnTheGround(world, goods)})"
-                : inStores.Grouped();
+            held.Text = inStores.Grouped();
+            if (inHeaps > 0)
+            {
+                onTheGround += inHeaps;
+                whyOnTheGround.Add($"{inHeaps.Grouped()} {GoodsName(world, goods)} — {WhyItIsOnTheGround(world, goods)}");
+            }
         }
 
         // The umbrella, split the way the old Food row was: what the stores hold, and what is out
-        // in the larders behind it.
+        // in the larders behind it — on its OWN row now, always present, so the panel's width and
+        // height are the same whether the larders are full or empty (D367).
         int foodInStores = world.FoodInGranaries();
         int foodElsewhere = world.TotalFood() - foodInStores;
-        _foodTotal.Text = foodElsewhere > 0
-            ? $"{foodInStores.Grouped()}  (+{foodElsewhere.Grouped()} in homes and huts)"
-            : foodInStores.Grouped();
+        _foodTotal.Text = foodInStores.Grouped();
+        _foodElsewhere.Text = foodElsewhere > 0 ? $"+{foodElsewhere.Grouped()}" : "—";
+        _onTheGround.Text = onTheGround > 0 ? $"+{onTheGround.Grouped()}" : "—";
+        _onTheGround.TooltipText = string.Join("\n", whyOnTheGround);
+        _onTheGroundLabel.TooltipText = _onTheGround.TooltipText;
 
         // What each limited good actually stands at, beside the number the player set —
         // so "nobody is splitting logs" and "you asked for 200 and there are 214" are the
@@ -1688,7 +1777,7 @@ public partial class Main : Control
         LabourQuota quota = LabourQuota.For(world);
         for (int i = 0; i < _professionReadouts.Count; i++)
         {
-            (JobKind kind, Label maximum, Label notes) = _professionReadouts[i];
+            (JobKind kind, Label maximum, Label name) = _professionReadouts[i];
 
             int working = WorkingAt(world, kind);
             int seats = SeatsFor(world, kind);
@@ -1744,12 +1833,20 @@ public partial class Main : Control
                     + $"{world.BuildingsCatalog[at]?.Name ?? "one"}";
             }
 
-            notes.Text = row;
+            // ⛔⛔ THE NOTES COLUMN IS GONE (D367, Joe: *"professions is too wide. i dont need the
+            // notes column"*). The sentence still exists — it is D147's *why* — but it lives on
+            // the trade's name as a tooltip, and the name carries a fixed-width cue while a
+            // warning stands, so the table's width and height never move with the wording.
+            string trade = ProfessionName(world, kind);
+            bool warning = row.Contains('⚠');
+            name.Text = warning ? $"{trade} ⚠" : trade;
+            name.Modulate = warning ? ColourOf(LogCategory.Warning) : Colors.White;
+            name.TooltipText = row;
         }
 
         // And what the 1 is one OF, which is the whole of Joe's question.
         _laborerReadout.Text =
-            $"Available adults: {world.AbleAdults}   |   Unassigned (laborers): {world.Laborers}";
+            $"Able adults: {world.AbleAdults}   ·   Laborers (unassigned): {world.Laborers}";
 
         // The two standing alerts used to be composed here every frame and shown in the
         // overview. They are narrated by the sim on their edges now and read in the village
@@ -3473,9 +3570,7 @@ public partial class Main : Control
         table.AddChild(Chip(ChipColour(Goods.Produce)));
         table.AddChild(Body("Food"));
 
-        _foodTotal = Body(string.Empty);
-        _foodTotal.HorizontalAlignment = HorizontalAlignment.Right;
-        _foodTotal.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        _foodTotal = Amount();
         table.AddChild(_foodTotal);
 
         // ⛔ THE FOODS COME FIRST, TOGETHER, AND THAT IS NOT COSMETIC. The first cut indented
@@ -3506,17 +3601,66 @@ public partial class Main : Control
                     ? $"    {GoodsName(_loop.World, goods)}"
                     : GoodsName(_loop.World, goods)));
 
-                Label held = Body(string.Empty);
-                held.HorizontalAlignment = HorizontalAlignment.Right;
-                held.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+                Label held = Amount();
                 table.AddChild(held);
 
                 _goodsReadouts.Add((goods, held));
             }
         }
 
+        // ⭐⭐ THE TWO THINGS THAT ARE NOT IN THE STORES, ON TWO ROWS THAT ARE ALWAYS THERE (D367).
+        // Food out in the larders and buffers, and goods lying in the yard, used to ride inside
+        // the amount cells as parentheticals — and appear and vanish, taking the panel's width
+        // with them. Two permanent rows: `—` when there is nothing, a `+N` when there is, so the
+        // panel never moves. The per-good reason a heap is on the ground (D134's three states)
+        // is the ground row's tooltip, not its text.
+        table.AddChild(new Control());
+        table.AddChild(Muted("in homes and huts"));
+        _foodElsewhere = Amount();
+        table.AddChild(_foodElsewhere);
+
+        table.AddChild(new Control());
+        _onTheGroundLabel = Muted("on the ground");
+        _onTheGroundLabel.MouseFilter = MouseFilterEnum.Pass;
+        table.AddChild(_onTheGroundLabel);
+        _onTheGround = Amount();
+        _onTheGround.MouseFilter = MouseFilterEnum.Pass;
+        table.AddChild(_onTheGround);
+
         return table;
     }
+
+    private Label _foodElsewhere = null!;
+    private Label _onTheGround = null!;
+    private Label _onTheGroundLabel = null!;
+
+    /// <summary>
+    /// A right-aligned number cell that <b>cannot widen its column</b> (D367).
+    /// </summary>
+    /// <remarks>
+    /// A Godot <see cref="Label"/> reports its text's width as its minimum, so a long string in
+    /// one cell is a wider panel — which is how the Overview breathed in and out as heaps and
+    /// larders came and went. <c>ClipText</c> is what stops the text from being the minimum; the
+    /// fixed minimum is what keeps the numbers aligned; the ellipsis is the honest failure if a
+    /// number ever outgrows it.
+    /// </remarks>
+    private static Label Amount()
+    {
+        Label label = Body(string.Empty);
+        label.HorizontalAlignment = HorizontalAlignment.Right;
+        label.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+
+        // ⚠️ THE OVERRUN BEHAVIOUR IS THE ONE THAT MATTERS, measured: a Label with any trimming
+        // set stops counting its text toward its minimum; `ClipText` alone does not (the red
+        // check with only it reverted scored zero). Both, so the intent is legible.
+        label.ClipText = true;
+        label.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        label.CustomMinimumSize = new Vector2(AmountWidth, 0f);
+        return label;
+    }
+
+    /// <summary>Room for "1,269,000" at <see cref="RowSize"/>.</summary>
+    private const float AmountWidth = 64f;
 
     /// <summary>The goods that do not exist yet, behind a fold of their own.</summary>
     private static VBoxContainer BuildGoodsRoadmap()
@@ -3849,7 +3993,14 @@ public partial class Main : Control
         // ⚠️ A busy selection can still reach the control bar. The z-order rule below stops
         // that being fatal; making panels small, movable and resizable is the real answer and
         // is its own piece of work.
-        VBoxContainer body = InColumn(right: true, 0, "Who they are, and why");
+        // ⛔⛔ A FIXED HEIGHT AGAIN, BUT ON THE INSIDE, AND WITH A BAR (D367). Joe: *"I hate how
+        // the size of the panels change when information updates"* — this panel was a different
+        // height for every thing he clicked. `InColumn` with a height puts a `ScrollContainer` of
+        // that height INSIDE the panel's contents: the frame is still zero-height-means-content
+        // (D314, so folding still shrinks it), the content is `InspectorHeight` tall whatever is
+        // selected, and a description longer than that scrolls with a VISIBLE bar — which is what
+        // D350's "a scroll with no visible bar is a cut" forbids, and the probe checks.
+        VBoxContainer body = InColumn(right: true, InspectorHeight, "Who they are, and why");
 
         // ScrollActive so a long reason scrolls rather than being cut off. The one panel
         // whose job is explaining a decision must never truncate the explanation.
@@ -3878,12 +4029,12 @@ public partial class Main : Control
         {
             BbcodeEnabled = false,
             ScrollActive = false,
-            FitContent = true,
 
-            // Smaller type, so the minimum comes down with it — 170 was eight lines at 16
-            // and is eleven at 13, which is more of a description in less of the screen.
-            CustomMinimumSize = new Vector2(0, 140),
-            SizeFlagsVertical = SizeFlags.ExpandFill,
+            // As tall as its text (D350), inside a box that is always `InspectorHeight` (D367):
+            // the label never scrolls itself, the box around it does, so the bar is the box's
+            // and it shows.
+            FitContent = true,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
         };
 
         _inspector.AddThemeFontSizeOverride("normal_font_size", RowSize);
@@ -4198,15 +4349,14 @@ public partial class Main : Control
         // valley. Open, it is tall enough to reach the roster and the control bar; closed, it
         // costs one line. Joe asked for less on screen, and a panel that is only there when it
         // is wanted is more of an answer than a smaller one that is always there.
-        // ⛔⛔ A FLOATING WINDOW, NOT A COLUMN PANEL, AND THE TABLE IS WHY. A side column clamps
+        // ⛔⛔ A FLOATING WINDOW, NOT A COLUMN PANEL, AND THE TABLE WAS WHY. A side column clamps
         // to 240–400 logical px, and a `GridContainer`'s minimum width is the SUM of its column
-        // minimums — so a three-column table with a notes column in it re-opens the exact bug
-        // recorded at `BuildInspectorPanel` (an idle row wanting 733px against a 267px column) and
-        // again at the old stock-limit rows (six of them holding the left column at 450).
-        //
-        // ⭐ Joe's mockup is a wide overlay anyway, so the constraint and the design agree.
+        // minimums — so a table with a notes column in it re-opened the exact bug recorded at
+        // `BuildInspectorPanel` (an idle row wanting 733px against a 267px column). ⭐ The notes
+        // column is gone (D367) and the table is glyph + name + stepper, so the window is the
+        // ordinary width now — Joe: *"professions is too wide."*
         VBoxContainer body = Floating(
-            Edge, Edge, 380f, 0f, Corner.TopLeft, "Professions", startOpen: false);
+            Edge, Edge, DefaultPanelWidth, 0f, Corner.TopLeft, "Professions", startOpen: false);
 
         // ⚠️ Taken off the end of `_panels` the way `BuildSettingsPanel` does, because
         // `Dress` owns the registration and handing the panel back would be a second way to
@@ -4226,7 +4376,11 @@ public partial class Main : Control
         // ⭐ What the village HAS, before what it is doing with it. The old panel opened with a
         // "Laborer" row among the trades, which read as an eighth profession rather than as the
         // pool the other seven are drawn from.
+        // ⚠️ Clipped, not wrapped: the one line whose numbers grow with the village, and a
+        // wrapped line is a taller panel every time it does (D367).
         _laborerReadout = Body(string.Empty);
+        _laborerReadout.ClipText = true;
+        _laborerReadout.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         body.AddChild(_laborerReadout);
         body.AddChild(Caption("Laborers are the spare hands: clearing ground, hauling and tidying."));
 
@@ -4252,7 +4406,7 @@ public partial class Main : Control
     private void BuildStockLimitsPanel()
     {
         VBoxContainer body = Floating(
-            Edge + 396f, Edge, 300f, 0f, Corner.TopLeft, "Stock limits", startOpen: true);
+            Edge + DefaultPanelWidth + 16f, Edge, StockLimitsWidth, 0f, Corner.TopLeft, "Stock limits", startOpen: true);
 
         _docked.Add((_panels[^1], false));
         _stockLimitsPanel = _panels[^1];
@@ -4273,21 +4427,21 @@ public partial class Main : Control
     /// Columns say the same things and line up while doing it.
     /// </para>
     /// <para>
-    /// ⚠️ <b>The notes column must WRAP rather than widen</b>, or this table walks straight back
-    /// into the width bug it was moved out of the column to escape. <see cref="Wrapped"/> is the
-    /// tool — autowrap plus a floor — and every long clause the sim can produce goes through it.
+    /// ⛔ <b>There is no notes column any more (D367).</b> It wrapped rather than widened, which
+    /// kept the width honest and let the HEIGHT move with every clause the sim produced — Joe:
+    /// *"I hate how the size of the panels change when information updates."* The sentence is the
+    /// trade name's tooltip now, with a ⚠ on the name while a warning stands.
     /// </para>
     /// </remarks>
     private GridContainer BuildProfessionsTable()
     {
-        var table = new GridContainer { Columns = 4 };
+        var table = new GridContainer { Columns = 3 };
         table.AddThemeConstantOverride("h_separation", 6);
         table.AddThemeConstantOverride("v_separation", 1);
 
         table.AddChild(new Control());
         table.AddChild(Muted("TYPE"));
         table.AddChild(Muted("ASSIGNED / MAX"));
-        table.AddChild(Muted("GOAL / NOTES"));
 
         foreach (JobKind kind in JobLimits.Kinds)
         {
@@ -4297,11 +4451,15 @@ public partial class Main : Control
         return table;
     }
 
-    /// <summary>Four cells for one trade.</summary>
+    /// <summary>Three cells for one trade.</summary>
     private void AddProfessionRow(GridContainer table, JobKind kind)
     {
         table.AddChild(new TradeGlyph(kind));
-        table.AddChild(Body(ProfessionName(_loop.World, kind)));
+
+        // ⚠️ A Label ignores the mouse unless told otherwise, and a tooltip needs the mouse.
+        Label name = Body(ProfessionName(_loop.World, kind));
+        name.MouseFilter = MouseFilterEnum.Pass;
+        table.AddChild(name);
 
         // ---- assigned / max ----
         var stepper = new HBoxContainer();
@@ -4363,11 +4521,7 @@ public partial class Main : Control
         stepper.AddChild(seats);
         table.AddChild(stepper);
 
-        // ---- goal / notes ----
-        Label notes = Wrapped(Muted(string.Empty));
-        table.AddChild(notes);
-
-        _professionReadouts.Add((kind, seats, notes));
+        _professionReadouts.Add((kind, seats, name));
         Apply();
     }
 
@@ -4790,6 +4944,20 @@ public partial class Main : Control
 
     /// <summary>How wide a panel starts. It is free to be dragged, not resized.</summary>
     private const float DefaultPanelWidth = 300f;
+
+    /// <summary>
+    /// How tall the inspector's contents are, whatever is selected (D367) — logical px, scaled
+    /// with the rest. ⚠️ Measured, not guessed: the probe poses a market-sized description (the
+    /// longest in the game) with its store rows and prints the content height beside this number.
+    /// </summary>
+    private const float InspectorHeight = 460f;
+
+    /// <summary>
+    /// The stock-limits window's width: five columns with a spin box and a wrapped readout want
+    /// 360, and a window given less than it wants is a window that grows (the probe's
+    /// <c>widened</c> check, D367). The readout wraps, so it wants no more than this.
+    /// </summary>
+    private const float StockLimitsWidth = 360f;
 
     /// <summary>Panels that have a default side, in the order they were built.</summary>
     private readonly List<(PanelContainer Panel, bool Right)> _docked = new();
@@ -5915,7 +6083,7 @@ public partial class Main : Control
     /// rather than inside the sentence: seats change as buildings go up and come down, so it
     /// cannot be written once at construction.
     /// </remarks>
-    private readonly List<(JobKind Kind, Label Seats, Label Notes)> _professionReadouts = new();
+    private readonly List<(JobKind Kind, Label Seats, Label Name)> _professionReadouts = new();
     private Label _laborerReadout = null!;
 
     /// <summary>How many people are actually on this kind of work right now.</summary>

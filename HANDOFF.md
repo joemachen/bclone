@@ -2,8 +2,10 @@
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-12 (late night).**
 >
-> **The state:** `main` at D366's commit, **committed, NOT pushed**; `7d4e0ad` (D362) is the last
-> push. D363–D366 are unplayed. Suite **1121 passing, 0 failing, 2 skipped of 1123, 3m44 (2m50 baseline the same evening — view-only change, the suite is untouched)**; probe green (`bar height 161`, `tile centres ✅`,
+> **The state (2026-09-13):** `main` at D367's commit, **committed, NOT pushed**; `7d4e0ad` (D362)
+> is the last push. Joe played D366 (165 fps — the frame rate is fixed) and filed six notes; the
+> plan for them is `C:\Users\joema\.claude\plans\yes-proceed-with-the-modular-sketch.md` and
+> D367 is the first of its five slices (A). D363–D365 and D367 are unplayed. Suite **1121 passing, 0 failing, 2 skipped of 1123, 3m44 (2m50 baseline the same evening — view-only change, the suite is untouched)**; probe green (`bar height 161`, `tile centres ✅`,
 > `scenery ✅`, `trails ✅`, `fields ✅`, `fault ✅`, `done.`). **The decision log runs to D366.**
 > Read `DESIGN.md §0–§5`, then §6, then D353–D366 in §7 — the last two days.
 >
@@ -26,8 +28,25 @@
 > wedges exactly. ⚠️ A concave corner between a sown and an unsown rim cell shows a notch of bare
 > field — the field's own colour, never the wrong one — say so if he sees it.
 >
-> **▶️ NEXT: item 3, the UI pass — its own spec, and a CARD MOCKUP FOR JOE BEFORE any panel is
-> built** (he said yes to that). Then 4 and 5 below. **Do not push; Joe pushes after he plays.**
+> **▶️ NEXT, from Joe's 2026-09-13 play notes (the plan file has the detail, approved by him):**
+> **B** trail blocks as a filled yard (view — the early lattice is rails + rungs of ribbons over a
+> block of worn tiles; `ZoneOutline.Trace/Fill` the block); **C** the sowing cap in sixteenths so a
+> square field is sown to its fence (sim — measure nearest-first vs whole-tiles-first on a round
+> field and keep the one that does not rot); **D** one predicate for "does a store have room"
+> (storage only; the market is a counter) so a full granary never sends anyone back and forth, and
+> buffers cleared by the producer (hunter, fisher, farmer — when the hut cannot take a load) and
+> the marketer (when nothing is more pressing), laborers out — ⛔ **a stood-down hunter is a
+> laborer, so the quota must keep a producer's seat when the food limit is met or D362's
+> starvation guard goes red**; **E** the marketer redesign, spec-first: villagers shop at the
+> market, the marketer stocks it to per-market limits and clears buffers when idle, **no home
+> deliveries** (the dead-larder collection stays), and a household fetches at **≤ 50 % of a larder
+> target** (Joe's rule), not at the first dip. Then the UI pass (cards, a mockup first). **Do not
+> push; Joe pushes after he plays.**
+>
+> **✅ D367 (slice A) is built:** the Overview is 300 wide whatever it holds (`Amount()` cells,
+> two permanent rows *in homes and huts* / *on the ground*), the inspector is a 460-logical box
+> with a visible bar, Professions lost its notes column (tooltip + ⚠ on the name), and the probe's
+> `panels:` line measures every docked panel unfolded and twice. ⚠️ *"Wants: N"* is hover-only now.
 > ⚠️ Two things for him to look at in D366 when he plays: whether the trails and canopies look
 > identical to before at his zoom (they should — same discs, same bends, same colours), and what the
 > new debug line reads at the zoom that gave him 22 fps.
@@ -552,6 +571,13 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     (`FindWorkplace` does not know a site), so the rim was verified by dumping `ClipToCells`'s
     triangles to a text file and plotting them (PIL), not on screen. *A view change with no probe
     line is verified by a picture or it is not verified; write down which.*
+41. **⚠️ A GODOT LABEL'S MINIMUM IS ITS TEXT UNLESS IT IS TOLD HOW TO OVERRUN, AND `ClipText`
+    ALONE DOES NOT CHANGE THAT (D367).** The red check that reverted only `ClipText` scored zero:
+    any `TextOverrunBehavior` other than `NoTrimming` is what stops the text counting. Also: a
+    Label ignores the mouse (`MouseFilter = Pass` or no tooltip), and **a folded panel's contents
+    do not count toward its width** — the Professions window is folded at the founding and a
+    500 px cell in it measured as nothing until the probe unfolded every header first. *Measure a
+    panel unfolded, and measure it again after the years have run.*
 40. **⚠️ THE FIRST REBUILD OF A CHUNK THAT ALREADY HAS A SURFACE PAYS A ONE-OFF.** The probe read
     a chunk rebuild at 1.9–3.5 ms and the design nearly went to bigger chunks on it; measured twice
     in a row it is 0.25–0.4 ms — the first is a warm-up (JIT or the mesh's first `ClearSurfaces`),
