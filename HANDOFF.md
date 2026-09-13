@@ -1,17 +1,100 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE SHELL HAS BEGUN (D364); D363's HUNGER AND D365's WINTER ARE UNPLAYED**
+# Handoff — bclone: **▶️ PHASE 4.5 — JOE REVIEWED THE FRAME RATE, THE FIELD'S RIM AND FOUNDATION; THE PLAN IS AGREED AND UNBUILT. "REVIEW HANDOFF.MD AND GO."**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-11 (night).**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-12 (night).**
 >
-> **The state:** `main` at D365's commit, **committed, NOT pushed**; `7d4e0ad` (D362) is pushed.
-> ⚠️ D362–D365 are unplayed; Joe said he is *"going to play test foraging changes and error
-> boundary"*. D365 is his *"+30% firewood per winter"*: **24 a home** (3 logs every 4 days — the grid
-> has no 26; 25 and 30 were the alternatives, both burstier) — and it found the hearth burning off
-> the economy's beat (a winter budgeted at eight burns got seven at a four-day interval), now fixed.
+> **The state:** `main` at D365's commit plus this handoff, **committed, NOT pushed**; `7d4e0ad`
+> (D362) is the last push. D362–D365 are unplayed except that Joe played D362–D364 enough to file
+> what is below. Suite **1121 passing, 0 failing, 2 skipped of 1123, 4m08**; probe green (`bar height
+> 161`, `tile centres ✅`, `trails ✅`, `fields ✅`, `fault ✅`, `done.`). **The decision log runs to
+> D365.** Read `DESIGN.md §0–§5`, then §6, then D353–D365 in §7 — the last two days.
 >
-> **▶️ THE SHELL, IN §4's ORDER:** ✅ error boundary (D364) → **per-stage RNG seeds** (next; splitmix64
-> per stage, ⛔ not `DeterministicRandom`'s `stream` parameter — measured 6 dead valleys of 24; the
-> shipped seed is re-picked once) → the new-game screen (D344) → settings persistence → save/load
-> (`save → load → hash == live`) → title and pause.
+> **▶️ WHAT TO DO, IN ORDER — Joe agreed this plan on 2026-09-12 and asked that the next session
+> start on it.** The reasoning for each is in *"the feedback he agreed with"* below.
+>
+> **1. The frame rate (view, D366 — first).** Joe: *"not sure whats happening with the FPS. its
+> really dropping"* — **22 fps** at a near zoom with a dense path network, 55 zoomed out. It is not
+> the sim (20× is fifteen ticks a *second*). It is the drawing: at ≥ `TreeZoomFloor` (24 px/tile)
+> `VillageMap.DrawTheTrees` → `Canopies` draws every tree as a **`DrawCircle` every frame** —
+> D338's own measurement (*"~5,740 DrawCircle a frame — a circle becomes a `CommandPolygon`, which
+> breaks Godot's 2D batching"*) fixed for the far view (`ValleyTexture`) and never for the near —
+> and D359–D362 added the trails on top as a `DrawCircle` per worn tile plus a `DrawPolyline` per
+> neighbour pair, with `LCornerOf`/`ShouldJoin`/`TrailPointOf` recomputed per tile **per frame**.
+> **The fix is D338's own rule:** *(a)* **instrument first** — a `Stopwatch` per pass in `_Draw`
+> (trees, trails, zones, fields, rest) printed on the debug line beside `fps · zone tris`, so the
+> fix is measured and the next regression is visible; *(b)* **canopies, saplings, boulders and
+> berry patches as one `ArrayMesh` in tile space** (a 12-segment fan each, vertex colours), drawn
+> with `DrawMesh(mesh, null, transform)` where the transform is tile → screen (`_pixelsPerTile`,
+> `_centreTile`, `Size/2`) so zoom is a matrix, not a rebuild; rebuilt when `world.TerrainGeneration`
+> moves — measure the rebuild, and if it is over ~5 ms, chunk by 16×16 tiles and rebuild the dirty
+> chunk; *(c)* **the trails as one mesh per grade**, built inside `CollectTheTrailsIfTheyMoved`
+> (already keyed on `Paths.Generation`): discs as fans, bends as quad strips along the same Bézier
+> samples `DrawBend` uses; the D359/D360 rules run once per collection. Two `DrawMesh` calls a
+> frame in place of hundreds of commands. Keep the `TreeZoomFloor` gate. Probe: the `trails:` and
+> trees lines keep their geometry checks; add mesh sizes. Target: the tree pass under 2 ms and the
+> trails under 1 ms at his zoom, from tens. View only — no golden moves.
+>
+> **2. The yellow rim (view, D366 — with 1).** Joe: *"look at the yellow edges of the round farming
+> area — that looks so cheap and gross haha."* Diagnosed: D362's stage clip (`ZoneOutline.ClipToCells`)
+> subtracts the non-stage cells' squares from the field's smooth fill, but the fill **bulges past
+> the rim cells** (the smoothing cuts concave corners outward) into the void beyond any cell, where
+> the subtraction never touches it — so the ripe tint keeps wedges outside an unsown rim. **The
+> fix:** when subtracting a non-stage cell's rect, **extend it outward by `Beyond` (2 cells) on every
+> side facing no field cell** — the bulge beside an unsown rim cell is cut with the cell; beside a
+> sown one it stays, because there it IS the field's curve. Self-check: the "lower half" case gains
+> *no clipped triangle sits outside the field's cells unless its nearest cell is kept*; the "all of
+> it" identity stays; red-check with the extension off. ⚠️ `sub-tile-zones.md` and D362 describe the
+> subtraction; say the rim rule beside them.
+>
+> **3. The UI pass (its own slice, its own spec — after 1 and 2).** Joe, with a Foundation
+> screenshot: *"presently our inspector windows/details windows are such a mess of stacked sentences
+> i dont even know what to read. Remove text where you can."* His answers, given: **inspector
+> CARDS** per building — title, one status line (*Working fine* / the one reason it is not), a
+> workers row with **−** and **+**, two or three numbers, a picture — and every extra line is a bug;
+> **several open at once, each pinnable and draggable** (click a building → its card; the pin keeps
+> it when you click elsewhere; an unpinned card is replaced by the next click); the resources panel
+> as a **top bar in two rows** — *food, produce, wheat, fish, meat* / *logs, firewood, stone, tools*
+> — with a dropdown for the rest, customizable later; **villagers as a top bar** beside it. ⛔
+> **Show him a card mockup before building eight panels around it** (he said yes to that). Spec it
+> in `specs/the-valley-in-view.md` or a new `specs/the-cards.md`; the panels live in `Main.cs`
+> (`InColumn`, `_momentPanel`, `_professionsPanel` … — six thousand lines; read `ProbeTheInspectorRows`
+> and `ProbeTheInspectorHeight` first, they are the only view tests). ⚠️ The insides stay ours:
+> Foundation's card is a good *shape* for showing the derived, legible causes this game runs on; it
+> is not a reason to change what is shown.
+>
+> **4. Footprints per building type (Phase 5, after 3).** *"see how the buildings take up more than
+> one square? … bakeries are different height, width, and depth than a blacksmith."* Cheaper than it
+> sounds: `Footprint` already carries width × height with rotation and SAT collision (D331); every
+> building is 1×1 because nobody typed the numbers. The cost is in placement rules and the paint's
+> edge (a 2×3 on a round plot — `sub-tile-zones.md §3.1`), not the geometry. ⚠️ Expect the cards
+> from 3 to need a small revisit (the ghost, not the card).
+>
+> **5. Phase 5, recorded with his words (`DESIGN.md §4`):** **fields are trampled and a fence is the
+> answer** — *"villagers were walking through the wheat fields forcing paths and limiting my wheat
+> yield, so i put up fencing and they walked around it. i want that level of detail"* — which is
+> §2.6's thesis turned into a player decision: desire paths already know which tiles are walked; a
+> sown tile under a path yields less; a fence is a wall the one cost field routes around. Legible,
+> answerable, traceable — near the top of Phase 5. **Mature trees** — a view slice, landing in the
+> canopy mesh from 1. **The steading** (D355) restated: *"raking and pruning … herdsmen feeding and
+> grooming"* — what a farmer DOES off-season, not a new economy; cheap once footprints exist. And
+> **scale and depth** — *"maybe that comes with the 3d transition?"* — his open question: footprints
+> and mature trees change the felt scale more than engine work would; try those before deciding 3D
+> is the answer. Then the rest of the shell: per-stage RNG seeds → new-game screen → settings →
+> save/load → title.
+>
+> **⭐ THE FEEDBACK HE AGREED WITH (2026-09-12), kept so the reasoning travels:** the two bugs are
+> the assistant's (D338's rule broken twice); the inspector grew a sentence per decision for six
+> weeks because each was legible alone and nobody looked at the pile — Foundation's card answers
+> three questions and stops; fields + fences is the best idea in his list; UI before footprints,
+> as he chose; four slices, not one — ship the bugs as one commit, spec the UI pass separately.
+>
+> **✅ D364 — the error boundary, the shell's first piece.** `SimLoop.Fault` remembers the first
+> throw and re-throws it without running a system; the game pauses (*STOPPED*), refuses the speed
+> keys, writes one red sentence with the system, calendar, cause, log path and seed, and keeps
+> drawing the last state. Probed (`[widths] fault:`). **✅ D365** — a winter costs **24** firewood a
+> home (Joe: *"+30%"* — the grid has no 26; 25 and 30 were the burstier alternatives), and it found
+> the hearth burning off the economy's beat (eight burns budgeted, seven burned at a four-day
+> interval) — the hearth counts from the winter's first day now, and `AWinterBurnsExactlyWhatTheEconomyBudgets`
+> pins the economy, the derivation and the hearth to one number.
 >
 > **⛔⛔ D363 CHANGED THE ECONOMY'S PREMISE, BY JOE'S CALL.** *"foraging gives too much food now.
 > drop it 40%."* `gather_yield` 145 → 87 sat under the derived floor (132), so
@@ -269,37 +352,30 @@ stood idle with 130 logs.
 
 ## ▶️ NEXT, IN ORDER
 
-**The order is `DESIGN.md §4`'s Phase 4.5 list, and it is Joe's.** What is queued, and what is
-merely named:
+**Joe's, agreed 2026-09-12 — the banner above has the detail for each.**
 
-0. **▶️ JOE PLAYS D362–D365.** Paths (`path_holds_for` is the dial), the field's circle, the
-   lodge's meat carried out by spare hands, the hunger (does a village that only forages shrink the
-   way he wants; are fishing 2.7× and hunting 3.7× the next "too much"?), the winter at 24 a home
-   (or does he want 25 or 30?), and the error boundary — a stopped village reads *STOPPED* and one
-   red sentence. *"push"* pushes all four.
-1. ~~**Clock B**~~ ✅ D361. ~~**The error boundary**~~ ✅ D364.
-2. **The rest of the shell (§4 item 4), in this order:** per-stage RNG seeds (splitmix64 per stage,
-   ⛔ not `DeterministicRandom`'s `stream` parameter) → the new-game screen (D344) → settings
-   persistence → save/load (`save → load → hash == live`) → title and pause.
-3. **Paving** — §2.6's player half, if Joe wants it before the shell. It is more rows in the price
-   table (`CostToEnter`) plus a brush and a cost in stone; the trails already draw by grade.
-4. **The food chain, when he asks:** wheat → flour → bread, wheat → beer
-   (`food-catalog.md §6`). ⛔ **This is where raw wheat stops being edible** — today it is
-   edible at the shared nutrition because the config refuses two values and the survival floor is
-   derived on farms feeding people (D277, D348). *Deriving a diet is the precondition, not the
-   milling.* A second crop (barley, corn) is a `CropRow` and nothing else — but the farm cannot
-   choose which yet (`CropsCatalog.TheOne` is the lowest id); a *"grow…"* control on the
-   farmhouse is where that goes.
-5. **The new-game screen (Joe's stated ambition, D344)** is item 2's third step: archetype, sliders,
-   a seed string, a live preview. ⛔ **Read the OPEN item on RNG streams first** — every generation
-   stage a new option adds reshuffles every seed unless worldgen gets per-stage seeds, and the naive
-   way to do that (`DeterministicRandom`'s `stream` parameter with small ids) measurably breaks
-   valleys. ⭐ The preview is nearly free: `MapGenerator.Generate` is pure and `ValleyTexture` bakes
-   a map to an image.
-6. ~~⏸ **`gridless.md §8` slice 3 — villagers hold a `Point`.**~~ ✅ D354, played.
-7. ⏸ **Housing packing** (Joe's call: *pack nicely as households form*) — the scoping from the
-   previous stretch still holds: `ChooseSite` is `score = toWork + toStore`, and packing is a third
-   term in that sum. ⚠️ `MarkHome` raises every home at `Angle.Zero`.
+0. **The frame rate** — instrument `_Draw`, then canopies/boulders/berries and the trails as
+   cached meshes (`DrawMesh`), rebuilt on `TerrainGeneration` / `Paths.Generation`. View only.
+1. **The yellow rim** — the bulge beyond an unsown rim cell is cut with the cell
+   (`ZoneOutline.ClipToCells`, extend the subtracted rect outward where it faces void).
+   Ship 0 and 1 as one commit (D366). Do not push; Joe pushes.
+2. **The UI pass** — its own spec, a card mockup for Joe first, then the cards (pinnable,
+   draggable, several), the two-row resources top bar, the villagers top bar.
+3. **Footprints per building type** — numbers into the catalogue, placement rules, the paint's edge.
+4. **Phase 5:** trampled fields + fences; mature trees; the steading as tending; then the shell's
+   remaining pieces (per-stage RNG seeds → new-game screen → settings → save/load → title).
+5. **Paving** — §2.6's player half, when Joe wants it: more rows in the price table
+   (`CostToEnter`) plus a brush and a cost in stone; the trails already draw by grade.
+6. **The food chain, when he asks:** wheat → flour → bread, wheat → beer (`food-catalog.md §6`).
+   ⛔ This is where raw wheat stops being edible — *deriving a diet is the precondition, not the
+   milling* (D277, D348). ⚠️ D363 already re-based the survival floor to *foraging feeds a couple*;
+   the diet derivation starts from there.
+7. ⏸ **Housing packing** (Joe: *pack nicely as households form*) — `ChooseSite` is
+   `score = toWork + toStore`, packing is a third term. ⚠️ `MarkHome` raises every home at `Angle.Zero`.
+
+**Still Joe's to look at, unprompted:** the food ladder after D363 (fisher 2.7×, hunter 3.7× a
+forager's hour — *"a fisher at 2.7× may be the next 'too much'"*); the winter at 24 (or 25 / 30);
+`path_holds_for` if paths still feel wrong.
 
 ✅ **Closed by Joe and not to be re-opened:** the build strip wrapping to two rows on BUILD + ALL
 (*"fine for now"*); harvest marks staying on felled ground (D127, reaffirmed D343: *keep it
@@ -430,6 +506,17 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     half of wheat and nobody noticed until the picture looked odd. **Grep for every place that
     counts `owned.Count` or tiles of a farm** (`HarvestOneFarmCanBringIn`, `StandingCropTiles`,
     `FieldTilesOneFarmerKeeps`) before trusting a farm number; only the ORDER was fixed here.
+37. **⛔⛔ CIRCLES PER FRAME, TWICE (D366, found by Joe's 22 fps).** D338 measured a `DrawCircle`
+    as a `CommandPolygon` that breaks Godot's 2D batching and baked the FAR view; the near view kept
+    drawing every canopy live, and D359–D362 added the trails the same way — hundreds of circles and
+    polylines a frame, with the trail's own geometry rules recomputed per tile per frame. **Anything
+    the map draws per element per frame is a mesh built once on a generation counter** — trees on
+    `TerrainGeneration`, trails on `Paths.Generation`. Instrument `_Draw` per pass before and after;
+    the fps line is the only frame-time instrument the game has.
+38. **⚠️ A SUBTRACTIVE CLIP LEAVES THE VOID ALONE (D366).** The stage clip cut the field's fill by
+    the non-stage CELLS; the smoothed fill bulges past its rim cells into the void, and the bulge
+    kept the stage's colour — yellow wedges round an unsown rim. When the shape you subtract has a
+    rim, subtract its bulge too (extend the rect outward where it faces nothing).
 36. **⚠️ A RATE ON A GRID IS THREE NUMBERS (D365).** The one asked for (+30%), the one the dial
     gives (⌈30 ⁄ interval⌉ × logs: 24), and the one the clock delivers — the hearth burned on ticks
     divisible by the interval, which met the winter's first day at three days and missed it at four,
