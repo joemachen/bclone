@@ -79,7 +79,7 @@ public sealed class CropSystem : ISimSystem
     /// <b>⚠️ It is the gate as much as the number.</b> A farm held by a met stock limit sows
     /// nothing and ends autumn with nothing standing, <b>which is indistinguishable from having
     /// cleared its field</b>. Recording zero here is what makes <i>a year with no crop teaches
-    /// nothing</i> expressible at all — see <see cref="World.Workplace.FieldTilesSown"/>.
+    /// nothing</i> expressible at all — see <see cref="World.Workplace.FieldSixteenthsSown"/>.
     /// </remarks>
     private static void RecordWhatEachFarmCommitted(SimWorld world)
     {
@@ -88,7 +88,7 @@ public sealed class CropSystem : ISimSystem
             Workplace farm = world.Workplaces[i];
             if (farm.Kind == JobKind.Farmer && !farm.IsSite)
             {
-                farm.FieldTilesSown = world.StandingCropTiles(farm);
+                farm.FieldSixteenthsSown = world.StandingCropSixteenths(farm);
                 farm.FieldHandsAtAutumn = farm.WorkerIds.Count < 1 ? 1 : farm.WorkerIds.Count;
                 farm.FieldClearedAtTick = 0;
             }

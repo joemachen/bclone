@@ -4329,11 +4329,20 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐ A QUARTER OF A TILE IS A QUARTER OF THE WORK (D369). D352 made a painted quarter a
+        // quarter of a field for the yield; the sowing and the reaping still took a whole tile's
+        // ticks, so a rim of slivers ate a spring for a quarter of the crop and the cap in
+        // sixteenths could not reach the fence. The walk to the tile is still the walk.
+        int ticks = work == VillagerState.Sowing ? world.Config.SowTicks : world.Config.ReapTicks;
+        int painted = world.Zones.WorkGroundSubTilesOn(tile);
+        if (painted > 0 && painted < SubTile.PerWholeTile)
+        {
+            int share = ticks * painted / SubTile.PerWholeTile;
+            ticks = share < 1 ? 1 : share;
+        }
+
         villager.State = work;
-        villager.ActionTicksRemaining = world.WorkTicksFor(
-            villager,
-            JobKind.Farmer,
-            work == VillagerState.Sowing ? world.Config.SowTicks : world.Config.ReapTicks);
+        villager.ActionTicksRemaining = world.WorkTicksFor(villager, JobKind.Farmer, ticks);
     }
 
     /// <summary>
@@ -4867,7 +4876,7 @@ public sealed class BehaviorSystem : ISimSystem
                 {
                     // ⭐ The last tile of the year: how much autumn is left is what the farm learns
                     // from (D361, `LearnFromTheAutumn`). Asked once per reap, of the farm's own tiles.
-                    if (theirFarm.FieldClearedAtTick == 0 && world.StandingCropTiles(theirFarm) == 0)
+                    if (theirFarm.FieldClearedAtTick == 0 && world.StandingCropSixteenths(theirFarm) == 0)
                     {
                         theirFarm.FieldClearedAtTick = world.Tick;
                     }

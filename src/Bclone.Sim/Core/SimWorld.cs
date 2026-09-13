@@ -1844,7 +1844,7 @@ public sealed class SimWorld
         // method that is about a loss rather than about idleness, and it is the reason the
         // method is worth having: winter takes what is left, and this is the last window in
         // which the player can do anything about it.
-        if (SeasonRules.IsReaping(Clock.Season) && StandingCropTiles(farm) > 0)
+        if (SeasonRules.IsReaping(Clock.Season) && StandingCropSixteenths(farm) > 0)
         {
             return $"{farm.Name} has a crop standing and nobody reaping it — winter will "
                 + "take what is left.";
@@ -2087,22 +2087,24 @@ public sealed class SimWorld
             return;
         }
 
-        int sown = farm.FieldTilesSown;
+        int sown = farm.FieldSixteenthsSown;
         int hands = farm.FieldHandsAtAutumn;
-        farm.FieldTilesSown = 0;
+        farm.FieldSixteenthsSown = 0;
         farm.FieldHandsAtAutumn = 0;
 
-        // A year with no crop teaches nothing — see `Workplace.FieldTilesSown`. An empty field
-        // at the turn of winter is what a met stock limit looks like, and it is identical to
-        // what success looks like.
+        // A year with no crop teaches nothing — see `Workplace.FieldSixteenthsSown`. An empty
+        // field at the turn of winter is what a met stock limit looks like, and it is identical
+        // to what success looks like.
         if (sown <= 0 || hands <= 0)
         {
             return;
         }
 
+        // ⚠️ Sown and brought in are SIXTEENTHS (D369); the lesson is still whole tiles a hand,
+        // rounded down — a hand that brought in five tiles and a sliver learned five.
         int derived = VillageEconomy.FieldTilesOneFarmerKeeps(Config);
-        int broughtIn = sown - StandingCropTiles(farm);
-        int record = broughtIn / hands;
+        int broughtIn = sown - StandingCropSixteenths(farm);
+        int record = broughtIn / hands / SubTile.PerWholeTile;
         int knew = farm.FieldTilesLearned;
 
         // ⛔⛔ A HIGH-WATER MARK, AND NOTHING ELSE — no probe, no latch, no settling back.
@@ -2153,7 +2155,7 @@ public sealed class SimWorld
         // one-tile year under a met stock limit, or with the hands gone, brings everything in with
         // the whole autumn to spare and proves nothing (`AThinYearNeverLowersWhatTheFarmHasAlreadyProved`
         // found the probe climbing three tiles on three miserable years).
-        bool atTheCap = sown >= hands * knew;
+        bool atTheCap = sown >= hands * knew * SubTile.PerWholeTile;
         int haul = HaulWalkFor(farm);
         long oneMoreTile = Config.ReapTicks + (2L * (haul < 0 ? 0 : haul));
         if (allIn && atTheCap && !farm.FieldProbeFailed && farm.FieldTilesLearned < derived
@@ -2254,8 +2256,30 @@ public sealed class SimWorld
         return share < 10 ? 10 : share;
     }
 
-    /// <summary>Tiles of this farm's ground with a crop standing on them.</summary>
-    public int StandingCropTiles(Workplace farm)
+    /// <summary>
+    /// How much of this farm's ground has a crop standing on it, <b>in sixteenths of a tile</b>
+    /// — the painted sub-tiles of every standing-crop tile (D369).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>IT COUNTED TILES, AND A TILE WAS NO LONGER A UNIT.</b> D352 made any painted quarter
+    /// of a tile a quarter of a field — a quarter-row sliver at the fence yields a quarter of a
+    /// tile's crop — and the sowing cap (<see cref="HarvestOneFarmCanBringIn"/>, in tiles) went on
+    /// charging that sliver as a whole tile. D360 sowed the whole tiles first so the year was not
+    /// spent on slivers, which left every rim sliver ploughed, bare and unsown until the cap grew
+    /// past the whole-tile count — one tile a year at most (D361), so years. Joe, on a square
+    /// field with a dark strip inside its fence: *"square farms should take up the full area.
+    /// there is a gap between the sown land and the field edge."* `handoff.md` trap 26 named the
+    /// shape: *a cap that counts tiles over ground where tiles are no longer equal is a cap on the
+    /// wrong thing.*
+    /// </para>
+    /// <para>
+    /// A whole-tile village sums sixteen sixteenths a tile and is exactly what it was. Zero paint
+    /// on a standing crop cannot happen (the un-plough takes the crop with the paint, D350) and is
+    /// read as a whole tile if it does — the same reading the reap uses.
+    /// </para>
+    /// </remarks>
+    public int StandingCropSixteenths(Workplace farm)
     {
         ArgumentNullException.ThrowIfNull(farm);
 
@@ -2264,9 +2288,11 @@ public sealed class SimWorld
 
         for (int i = 0; i < owned.Count; i++)
         {
-            if (IsStandingCrop(Map.TerrainAt(Zones.PositionOf(owned[i]))))
+            GridPos at = Zones.PositionOf(owned[i]);
+            if (IsStandingCrop(Map.TerrainAt(at)))
             {
-                standing++;
+                int painted = Zones.WorkGroundSubTilesOn(at);
+                standing += painted > 0 ? painted : SubTile.PerWholeTile;
             }
         }
 
@@ -3143,20 +3169,30 @@ public sealed class SimWorld
         // Counted in `WorkerIds` rather than `Places`, like `WorkGroundAllowanceFor`: the crop
         // a farm can bring in depends on who is actually standing in it, so losing a farmer in
         // summer correctly means next spring commits less ground (D86's live-allowance rule).
-        if (sowing && StandingCropTiles(farm) >= HarvestOneFarmCanBringIn(farm))
+        // ⚠️ In sixteenths (D369): the cap is tiles a year, the standing crop is painted area, and
+        // a quarter-row sliver at the fence costs a quarter of a tile — not a whole one.
+        if (sowing && StandingCropSixteenths(farm) >= HarvestOneFarmCanBringIn(farm) * SubTile.PerWholeTile)
         {
             return null;
         }
 
-        // ⭐ THE WHOLE TILES FIRST, THEN THE MARGINS (D360). D352 lets a farm work any tile it has
-        // any paint on, in proportion — and the cap above counts TILES. So when a square stroke's
-        // edge fell a quarter into a row of tiles, the one farmer's six tiles a year were the six
-        // quarter-slivers nearest the farmhouse, each yielding a quarter: the farm's whole year was
-        // a tile and a half of wheat and a gold stripe under the fence. Joe: *"the farm field is
-        // still doing some weird sowing-on-the-edge-of-the-boundary thing."* A farmer sows the
-        // field before its edges; the slivers are still worked when the whole tiles run out.
+        // ⭐ NEAREST FIRST, WHOLE TILE OR SLIVER ALIKE (D369). D360 sowed the whole tiles before
+        // the margins, and the reason was the cap: it counted TILES, so a square stroke's edge a
+        // quarter into a row made the one farmer's six tiles a year the six quarter-slivers nearest
+        // the farmhouse — a tile and a half of wheat and a gold stripe under the fence (Joe: *"some
+        // weird sowing-on-the-edge-of-the-boundary thing"*). The cap charges a sliver by its area
+        // now and a sliver's sowing and reaping take their share of the ticks, so that year cannot
+        // happen — and the whole-tiles-first order left every rim sliver ploughed, bare and unsown
+        // for as long as the cap sat below the whole-tile count: the dark strip inside the fence
+        // Joe called *"a gap between the sown land and the field edge."* Nearest first sows the
+        // field outward from the farmhouse to its fence.
+        // ⚠️ MEASURED, AND THE SLIVERS STILL COST VISITS: a reap ends in a haul whatever is in the
+        // arms, so a quarter sliver is a walk for a quarter load. On a field twice what its hands
+        // can keep (40 whole + 10 slivers, two hands) nearest-first brought in 6% less wheat over
+        // six years than whole-tiles-first and rotted two more times; on fields within the cap the
+        // two orders are identical. Hauling an armful rather than a tile is the fix for that, and
+        // its own slice.
         GridPos? best = null;
-        int bestPainted = -1;
         int bestCost = int.MaxValue;
 
         for (int i = 0; i < owned.Count; i++)
@@ -3170,17 +3206,10 @@ public sealed class SimWorld
                 continue;
             }
 
-            int painted = Zones.WorkGroundSubTilesOn(at);
-            if (painted < bestPainted)
-            {
-                continue;
-            }
-
             int cost = TravelCost.Cost(from, at);
-            if (painted > bestPainted || cost < bestCost)
+            if (cost < bestCost)
             {
                 best = at;
-                bestPainted = painted;
                 bestCost = cost;
             }
         }

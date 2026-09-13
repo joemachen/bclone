@@ -257,7 +257,7 @@ public sealed class FarmDemandTests
 
         _output.WriteLine(
             $"autumn: {beforeTheCap} wanted uncapped, {reaping} at a food limit of 0, "
-            + $"{world.StandingCropTiles(farm)} tiles standing");
+            + $"{world.StandingCropSixteenths(farm)} sixteenths standing");
 
         Assert.True(beforeTheCap > 0, "Nobody wanted to reap even before the limit was set.");
         Assert.Equal(0, reaping);

@@ -362,69 +362,85 @@ public sealed class FarmTests
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// ⭐ A farmer sows the WHOLE tiles before the quarter-painted margins (D360).
+    /// ⭐⭐ A quarter-painted sliver costs a quarter of the sowing cap, not a whole tile (D369).
     /// </summary>
     /// <remarks>
-    /// D352 made any painted quarter of a tile workable, in proportion — and the sowing cap counts
-    /// tiles. So when a square stroke's edge fell a quarter into a row, the one farmer's six tiles
-    /// were the six slivers nearest the farmhouse, each worth a quarter, and the year's harvest
-    /// was a tile and a half. Joe: *"the farm field is still doing some weird
-    /// sowing-on-the-edge-of-the-boundary thing."* Here the slivers are NEARER the farmhouse than
-    /// the whole tiles, and the farmer still walks past them.
+    /// <para>
+    /// D352 made any painted quarter of a tile workable, in proportion — and the cap that says how
+    /// much a farm may sow (<c>HarvestOneFarmCanBringIn</c> against <c>StandingCropTiles</c>)
+    /// counted TILES, so a quarter-row sliver at the fence cost a whole tile of cap for a quarter
+    /// of a tile's crop. D360 answered by sowing the whole tiles first, which left the rim slivers
+    /// ploughed, bare and unsown for as long as the cap sat below the whole-tile count — years.
+    /// Joe, on a square field with a dark strip inside its fence: *"square farms should take up the
+    /// full area. there is a gap between the sown land and the field edge."*
+    /// </para>
+    /// <para>
+    /// Here the field is nothing BUT slivers — more of them than the cap has tiles, but no more
+    /// area than the cap has room for. Charged as tiles the farmer sows a cap's worth of slivers
+    /// and stops with a quarter of the ground planted; charged as sixteenths they sow about a
+    /// cap's worth of AREA, which is all of it.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void AFarmerSowsTheWholeTilesBeforeTheSlivers()
+    public void AQuarterSliverCostsAQuarterOfTheCap()
     {
         SimLoop loop = Loop(Config);
         SimWorld world = loop.World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
 
-        // Three slivers in the row just above the farmhouse — one quarter-row each — and six
-        // whole tiles in the two rows beyond them.
+        // A quarter-row sliver on every tile of a block above the farmhouse: wide enough that the
+        // cap in tiles runs out long before the area does.
         var slivers = new List<GridPos>();
-        var whole = new List<GridPos>();
-        for (int dx = -1; dx <= 1; dx++)
+        for (int dy = -1; dy >= -6; dy--)
         {
-            var sliver = new GridPos(farm.Tile.X + dx, farm.Tile.Y - 1);
-            for (int qx = 0; qx < SubTile.PerTile; qx++)
+            for (int dx = -5; dx <= 5; dx++)
             {
-                Assert.True(world.PaintWorkGround(farm, SubTile.Of(sliver, qx, SubTile.PerTile - 1)).Allowed);
-            }
+                // A tile the paint refuses (water, a building, another farm's ground) is simply
+                // not part of this field; the block is wide so enough of it lands on open ground.
+                var sliver = new GridPos(farm.Tile.X + dx, farm.Tile.Y + dy);
+                if (!world.CanPaintWorkGround(farm, sliver).Allowed)
+                {
+                    continue;
+                }
 
-            slivers.Add(sliver);
+                for (int qx = 0; qx < SubTile.PerTile; qx++)
+                {
+                    Assert.True(world.PaintWorkGround(farm, SubTile.Of(sliver, qx, SubTile.PerTile - 1)).Allowed);
+                }
 
-            for (int dy = -3; dy <= -2; dy++)
-            {
-                var tile = new GridPos(farm.Tile.X + dx, farm.Tile.Y + dy);
-                Assert.True(world.PaintWorkGround(farm, tile).Allowed);
-                whole.Add(tile);
+                slivers.Add(sliver);
             }
         }
 
         Assert.All(slivers, at => Assert.Equal(SubTile.PerTile, world.Zones.WorkGroundSubTilesOn(at)));
-        Assert.All(whole, at => Assert.Equal(SubTile.PerWholeTile, world.Zones.WorkGroundSubTilesOn(at)));
 
         FarmFixtures.StepToTheStartOf(loop, Season.Spring);
 
-        // A farm ploughs open ground and leaves a tree standing, so a wooded tile is never sowable;
-        // only the ploughed whole tiles count.
-        whole.RemoveAll(at => world.Map.TerrainAt(at) != Terrain.Field);
-        Assert.True(whole.Count >= 3, $"only {whole.Count} whole tiles were ploughed — the fixture is in a wood");
-
-        GridPos? first = world.NextFieldToWork(farm, farm.Tile);
-        Assert.NotNull(first);
-        _output.WriteLine($"first tile to sow: {first}, painted {world.Zones.WorkGroundSubTilesOn(first.Value)} of 16");
-        Assert.Contains(first.Value, whole);
+        // A farm ploughs open ground and leaves a tree standing; only the ploughed slivers count.
+        slivers.RemoveAll(at => world.Map.TerrainAt(at) != Terrain.Field);
+        int cap = world.HarvestOneFarmCanBringIn(farm);
+        _output.WriteLine($"cap {cap} tiles a year; {slivers.Count} quarter-row slivers ploughed ({slivers.Count * SubTile.PerTile} sixteenths)");
+        Assert.True(cap >= 1, "the farm can bring in nothing, so the fixture cannot pose the question");
+        Assert.True(
+            slivers.Count > cap && slivers.Count * SubTile.PerTile <= cap * SubTile.PerWholeTile,
+            "the fixture must hold more slivers than the cap has tiles and no more area than the cap has room for");
 
         loop.Step(Config.TicksPerSeason);
 
-        int wholeSown = whole.Count(at => world.Map.TerrainAt(at) == Terrain.Sown);
-        int sliversSown = slivers.Count(at => world.Map.TerrainAt(at) == Terrain.Sown);
-        _output.WriteLine($"after spring: {wholeSown} of {whole.Count} whole tiles sown, {sliversSown} of {slivers.Count} slivers");
-        Assert.True(wholeSown > 0, "a whole spring and no whole tile was sown");
+        int sown = slivers.Count(at => world.Map.TerrainAt(at) == Terrain.Sown);
+        int sixteenths = sown * SubTile.PerTile;
+        _output.WriteLine($"after spring: {sown} of {slivers.Count} slivers sown — {sixteenths} sixteenths against a cap of {cap * SubTile.PerWholeTile}");
+
+        // Charged as tiles, `cap` slivers are sown — a quarter of the cap's area. Charged as
+        // sixteenths the farmer keeps sowing until the AREA is within a tile of the cap — which
+        // here is the whole field, since the field is smaller than the cap. ⚠️ And a sliver must
+        // take its share of the sowing TIME (D369): a spring is 120 ticks and a whole tile ~4.5,
+        // so at whole-tile cost two farmers reach 24 slivers of 40 before the season turns.
+        int wanted = System.Math.Min(slivers.Count * SubTile.PerTile, cap * SubTile.PerWholeTile) - SubTile.PerWholeTile;
         Assert.True(
-            sliversSown == 0 || wholeSown == whole.Count,
-            "a sliver was sown while a whole tile still waited — the farmer is working the margin before the field");
+            sixteenths >= wanted,
+            $"only {sixteenths} sixteenths were sown against a cap of {cap * SubTile.PerWholeTile} over a field of "
+            + $"{slivers.Count * SubTile.PerTile}: the slivers are being charged as whole tiles");
     }
 
     /// <summary>⭐⭐ A farmer sows in spring, and by autumn the field is standing ripe.</summary>

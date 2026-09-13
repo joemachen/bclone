@@ -192,7 +192,7 @@ public sealed class FarmMemoryTests
 
         // The probe year: sow, then take the hands away for the autumn so nothing comes in.
         FarmFixtures.StepToTheStartOf(loop, Season.Fall);
-        Assert.True(world.StandingCropTiles(farm) > 0, "the probe year sowed nothing, so there is nothing to fail to reap");
+        Assert.True(world.StandingCropSixteenths(farm) > 0, "the probe year sowed nothing, so there is nothing to fail to reap");
         int places = farm.Places;
         world.SetStaffing(farm, 0);
         FarmFixtures.StepToTheStartOf(loop, Season.Winter);

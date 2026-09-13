@@ -30,9 +30,10 @@
 >
 > **▶️ NEXT, from Joe's 2026-09-13 play notes (the plan file has the detail, approved by him):**
 > ✅ **B** (D368) trail blocks as a filled yard, and no rungs between parallel diagonal lanes;
-> **C** the sowing cap in sixteenths so a
-> square field is sown to its fence (sim — measure nearest-first vs whole-tiles-first on a round
-> field and keep the one that does not rot); **D** one predicate for "does a store have room"
+> ✅ **C** (D369) the cap in sixteenths, a sliver's ticks in proportion, nearest-first — measured
+> (−6% on a field twice the cap, identical within it) and taken; ⏸ **hauling an armful, not a tile**
+> (reap on until the arms are full) is the follow-up that removes the sliver penalty;
+> **D** one predicate for "does a store have room"
 > (storage only; the market is a counter) so a full granary never sends anyone back and forth, and
 > buffers cleared by the producer (hunter, fisher, farmer — when the hut cannot take a load) and
 > the marketer (when nothing is more pressing), laborers out — ⛔ **a stood-down hunter is a
@@ -540,6 +541,12 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 25. **⚠️ THE GROUND IS PER TILE, SO A STRAIGHT WALK TREADS A STAIRCASE — draw the walk, not the
     index (D359).** Any per-tile picture of something continuous (wear, later soil moisture, later
     paving) needs the L-corner rule or its equivalent, or Joe will see graph paper again.
+26a. **⚠️ …AND WHEN THE CAP MOVES AND NOTHING CHANGES, THE CAP WAS NEVER THE WALL (D369).** The
+    first fixture for the cap in sixteenths sowed 24 slivers of 40 whether the cap was 26 tiles
+    or 416 sixteenths — the spring is 120 ticks and a whole tile is ~4.5, so the SEASON was the
+    wall, and a sliver at whole-tile cost was a quarter of the crop for the same minute. Charge
+    the work in the same unit as the yield (`SowTicks × painted ⁄ 16`) or the unit is a lie. Trap
+    26 is resolved by `StandingCropSixteenths`; the one tile-counter left is `IsOverstretched`.
 26. **⛔⛔ A CAP THAT COUNTS TILES OVER GROUND WHERE TILES ARE NO LONGER EQUAL IS A CAP ON THE
     WRONG THING (D360).** D352 made a quarter-painted tile a quarter of a field; the sowing cap
     still counted tiles and nearest-first picked the slivers — one farmer's year was a tile and a

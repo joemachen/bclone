@@ -333,9 +333,9 @@ public static class StateHash
             // fifty-year villages never place a farmhouse (D162). ⚠️ If they move anyway, the
             // memory has leaked into a village with no farm in it, which is a bug and not a
             // re-base.
-            if (workplace.FieldTilesLearned != 0 || workplace.FieldTilesSown != 0)
+            if (workplace.FieldTilesLearned != 0 || workplace.FieldSixteenthsSown != 0)
             {
-                hash = MixUInt32(hash, (uint)workplace.FieldTilesSown);
+                hash = MixUInt32(hash, (uint)workplace.FieldSixteenthsSown);
                 hash = MixUInt32(hash, (uint)workplace.FieldHandsAtAutumn);
                 hash = MixUInt32(hash, (uint)workplace.FieldTilesLearned);
                 hash = MixUInt32(hash, (uint)(workplace.FieldWalkWhenLearned + 1));

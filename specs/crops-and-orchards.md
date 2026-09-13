@@ -287,12 +287,29 @@ created in D159 for exactly this kind of question, and it currently answers one.
 nothing to farm, the marginal hand is worth more at the wood. That is §2.2's stated advantage
 arriving as a *consequence* rather than as a rule.
 
-**⭐ The order a farmer works the field (D360):** the whole tiles first, then the quarter-painted
-margins, nearest first within each — `SimWorld.NextFieldToWork`. D352 made any painted quarter of
-a tile workable in proportion, and the sowing cap counts tiles; nearest-first alone sent one
-farmer's six tiles a year into six quarter-slivers along the fence (a tile and a half of wheat,
-and Joe's *"sowing on the edge of the boundary"* screenshot). Guard:
-`FarmTests.AFarmerSowsTheWholeTilesBeforeTheSlivers`.
+**⭐ The cap counts sixteenths, and the farmer sows nearest first (D369; supersedes D360's
+order).** D352 made any painted quarter of a tile workable in proportion, and the sowing cap
+(`HarvestOneFarmCanBringIn`, tiles a year, against `StandingCropSixteenths`) went on charging a
+quarter-row sliver as a whole tile; D360's answer — whole tiles first, then the margins — stopped a
+farmer's year going into six slivers, and left every rim sliver ploughed, bare and unsown for as
+long as the cap sat below the whole-tile count (years: the cap climbs a tile a year at most). Joe,
+on a square field: *"square farms should take up the full area. there is a gap between the sown
+land and the field edge."* Now the standing crop is counted in painted sixteenths, the cap is
+compared in sixteenths, the sowing and the reaping of a sliver take their share of a whole tile's
+ticks (`BehaviorSystem.ArriveInTheField`, `SowTicks × painted ⁄ 16`, never under one), and
+`SimWorld.NextFieldToWork` is nearest first — the field is sown outward from the farmhouse to its
+fence. `FieldSixteenthsSown` and the lesson (`LearnFromTheAutumn`: brought in ÷ hands ÷ 16, at the
+cap when sown ≥ hands × learned × 16) are in the same unit; the probe still steps one tile.
+⚠️ **Measured, and the slivers still cost visits:** a reap ends in a haul whatever is in the arms,
+so a quarter sliver is a walk for a quarter load. Six years on a fixture farm, two hands: a field
+within the cap (9 whole + 12 slivers; 21 + 7) is identical under either order; a field twice the
+cap (40 whole + 10 slivers) brought in **6% less wheat** nearest-first (2,428 against 2,580) and
+rotted two more times in six years (6 against 4 — the probe's own rot lines). Taken, because the
+gap is what he sees and the loss is on a field he was told is too big for its hands (D194's
+panel line). ⏸ **Hauling an armful rather than a tile** — reaping on until the arms are full —
+is what removes the sliver penalty, and is its own slice. Guard:
+`FarmTests.AQuarterSliverCostsAQuarterOfTheCap` (a field of forty slivers, two hands: 160 of 160
+sixteenths sown; 28 with the cap in tiles, 96 with whole-tile ticks — both red-checked).
 
 **⭐ The farm probes its own cap, and steps back once if it rots (D361):** the high-water mark
 (`FieldTilesLearned`, D194) can only rise when a year brings in more per hand than the farm has

@@ -2611,7 +2611,8 @@ public partial class Main : Control
         if (workplace.Kind == JobKind.Farmer)
         {
             int ground = world.Zones.WorkGroundTiles(workplace.Id);
-            int standing = world.StandingCropTiles(workplace);
+            // Sixteenths in the sim (D369), tiles on the panel — rounded to the nearest tile.
+            int standing = (world.StandingCropSixteenths(workplace) + (SubTile.PerWholeTile / 2)) / SubTile.PerWholeTile;
 
             // ⭐⭐ WHAT *THIS* FARM COMMITS, NOT WHAT THE DERIVATION GIVES A WELL-SITED ONE
             // (D194, `per-site-yield.md §4.2a`). This said *"every hand here can keep 13"* on

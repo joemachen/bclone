@@ -466,7 +466,7 @@ public sealed class Workplace
     /// idleness as years of success, climb to the derived cap, and over-commit the moment the
     /// player raised the limit. <i>A year with no crop teaches nothing.</i>
     /// </remarks>
-    public int FieldTilesSown { get; set; }
+    public int FieldSixteenthsSown { get; set; }
 
     /// <summary>Hands standing in this farm when autumn opened, for reading the lesson per hand.</summary>
     /// <remarks>
