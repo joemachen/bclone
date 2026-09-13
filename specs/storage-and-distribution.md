@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **✅ complete — all five slices built, D30 closed** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · ⏸️ **§14.9, the market as a shop (Joe, 2026-09-13), is specified and NOT STARTED** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the warehouse that holds manufacturing materials (§4).
@@ -383,6 +383,121 @@ that belongs there.
 **This adds a leg.** If household travel does not measurably fall, the market has become a
 detour and the slice is wrong — which is §8's standing test for the market and the one this must
 be held to. *Measure household walking, not marketer walking.*
+
+### 14.9 ⏸️ THE MARKET IS A SHOP — Joe's redesign (2026-09-13), specified, NOT STARTED
+
+> Joe, playing D366: *"the marketer. they seems to constantly be going back to and forth to homes.
+> lets change their behavior. the marketer should gather resources from storage buildings
+> (granaries, stockpiles, warehouses, etc) so villagers have a central place to pick up what they
+> need for their home larders. villagers go to the market to grab their food/fuel (fire wood,
+> coal)/etc. markets have their own individual item storage limit (i.e., the user sets the limit
+> for how much firewood is stored at a given market, how much wheat is stored, how many tools are
+> stored, how many clothes, etc.). marketers, when they have nothing more important to do, should
+> clear resource buildings like farms, hunting lodges, fishing huts, etc of their stored resource
+> and take it to their respective storage building (warehouse, granary, stockpile, etc)."*
+>
+> Asked whether to spec it with home deliveries removed: *"Yes, spec it, deliveries go — but also
+> adjust the time/trigger for villagers to fetch from the market. it should be when larder items
+> get to 50% of their total maximum, not as soon as it is below 99%."*
+
+**Status: specified 2026-09-13, not started.** Its own slice, after D370; the per-market limits'
+control lands with the inspector cards (`handoff.md` item 3). Read D14, D36, D161, D171, D199,
+D358(a), D362 and D370 before touching it — most of what Joe asked for already exists in pieces,
+and the slice is the two things that do not.
+
+#### 14.9.1 What already exists (do not build it twice)
+
+- **Households already shop.** `PlanFetch` (`BehaviorSystem`) sends an adult or elder to the
+  nearest store *holding* the good — the market included, because the market `Accepts` food and
+  firewood (§14.5's last bullet). Children go on the emergency restock (`TryEmergencyRestock`,
+  20 %). A household with no able adult is reached by that and by the marketer's dead-larder
+  collection (§14.3 *in*).
+- **The marketer already stocks the counter from storage** — `OfferMarketRestock` /
+  `LoadForTheMarket`, §14.8 — capped by `MarketStockWanted` (a derived `40 × occupied homes`,
+  D358(a) applies it at the counter too). It is offered LAST today.
+- **The marketer already clears producer buffers when nothing is more pressing** (D370): last in
+  `PlanMarketErrand`, storage only, never a hut somebody else is walking to.
+
+#### 14.9.2 What changes — two things
+
+1. **No home deliveries.** The *out* leg of §14.3 — `Consider(...)` offering a household below
+   target, `DeliveringToHome`, `HandOverAtHome` — is deleted. The marketer's day is: stock the
+   counter from storage up to each good's limit (§14.9.3); then, with nothing more pressing,
+   clear a producer's buffer to storage; then rest. **The dead-larder collection (§14.3 *in*)
+   stays**: a house with nobody living in it and a larder full of food is still the marketer's to
+   empty (D36's promise that no larder is stranded). ⛔ This reverses the half of D36 that reads
+   *"the market delivers"*; §14.4's *"switch the market off and the village survives"* is
+   unchanged and stays the acceptance test — a market is convenience, never lives.
+2. **A household fetches at half a larder, not at the first dip (Joe).** `PlanFetch` fires today
+   whenever `held < target` and the shortfall clears `WorthTheTrip` (25 % of an armful or of the
+   target, `fetch_worth_this_share_percent`, D166) — early and often. New rule: a household goes
+   for a good when `held ≤ target ⁄ 2`, and brings the larder back to `target` (an armful at a
+   time; the trip is planned again while `held < target`, so a target above an armful is two
+   trips back to back, not one trip a day). The emergency restock at 20 % stays as the floor
+   beneath it. **One dial:** `fetch_below_share_percent` (50) replaces the reading of
+   `fetch_worth_this_share_percent` as a trigger; the latter stays as the *"is the trip worth
+   it"* bar it was written as (D166's anti-jitter).
+
+#### 14.9.3 Per-market limits — the player's number, per good, per market
+
+The market's stock cap stops being derived (`MarketStockWanted`) and becomes **a limit the
+player sets on THAT market, per good** — the same shape as the village stock limits
+(`StockLimits`, D62) one building down: *"keep up to 200 firewood and 400 wheat at market 1."*
+
+- **State:** a `Stockpile`-shaped table of `int?` per good on the market's `StoreBuilding`
+  (`MarketLimits`), **hashed** in `StateHash` beside the store's contents — it is a player input
+  that changes behaviour, so it is a fact about the village (D335's rule cuts the other way for
+  derived indexes only). Absent (`null`) means *the derived number* (`MarketStockWanted` stays as
+  the default), so a fresh market behaves exactly as today until the player types.
+- **Read by:** `OfferMarketRestock` / `NearestCounterWithRoomFor` (the marketer stocks to the
+  limit, never past it — D358(a)'s cap generalised), and the market card.
+- **Control:** a per-good row on the market's inspector card (the cards slice, `handoff.md` item
+  3) — *not* a new panel. Until the card exists the limit is settable only in tests and through
+  `SimWorld.SetMarketLimit(market, goods, int?)` (the `SetStockLimit` shape: a `PlacementVerdict`
+  with a warning when the limit exceeds the market's capacity). ⚠️ Goods a market does not
+  `Accept` cannot be limited; the row does not appear.
+
+#### 14.9.4 What it must not become
+
+- **Not a second granary.** A market holds what its limits say and the marketer keeps it there;
+  producers never haul to it (D199, unchanged — `IsStorage` is still the gate in `StoreForTheLoad`
+  and in D370's `SomewhereToPut`).
+- **Not a delivery service by another name.** No leg carries goods to a house. If a household
+  cannot reach a store or the market (all across water, or empty), the household's own fetch
+  fails as it does today and the village log says so; the marketer does not step in.
+- **Not a reason to walk further.** §8's standing test: *measure household walking, not
+  marketer walking.* If household trips per year do not fall with a stocked market beside the
+  homes, the market is a detour and the slice is wrong.
+
+#### 14.9.5 How it is tested
+
+- **`MarketTests.TheVillageSurvivesWithTheMarketSwitchedOff`** (300 years) — unchanged, the
+  acceptance test.
+- **`TheMarketKeepsLardersFromRunningDry` re-aimed:** the market keeps larders from running dry
+  by being *near and stocked*, not by delivering — pose a stocked market beside the homes and a
+  granary far away; assert the dry-larder rate (D363's bar, ≤ 1 per 10,000) and that no villager
+  is ever in `DeliveringToHome`.
+- **`AHouseholdFetchesAtHalfALarder`:** a larder at 60 % of target sends nobody; at 50 % somebody
+  goes and comes back with the larder at target. Red today (a fetch fires at the first dip).
+- **`AMarketIsStockedToItsOwnLimit`:** a market limited to 200 firewood beside a warehouse of 1,000
+  holds 200 ± an armful for a year; raise the limit, it climbs; set it to 0, the marketer stops
+  stocking it and never empties it (a limit is a ceiling, not an order to clear — D62's shape).
+- **`ADeadFamilysLarderDoesNotStayStranded`** — unchanged.
+- **The marketer's day, in order:** `MarketRestockTests` re-aimed so the restock leg is FIRST
+  (it was last), the buffer leg second, and nothing else exists.
+- **Measured before it merges:** twelve shipped seeds × fifty years and six played openings
+  (D370's harness: 43 people, 22 starved on the played six), **household fetch trips per
+  household-year** before and after (expect roughly half — Joe's rule is fewer, fuller trips),
+  and marketer walking. The population must not fall; if it does, the fetch trigger is the first
+  suspect (a larder at 50 % with a long walk to a far granary is the founding's shape).
+
+#### 14.9.6 Definition of Done
+
+1. The two changes in §14.9.2 built, the limits in §14.9.3 as hashed state with the derived
+   default; the market card's rows follow with the cards slice.
+2. The tests in §14.9.5 green; the 300-year market-off guard untouched.
+3. The measurements in §14.9.5 quoted in the D-entry, with the trip count.
+4. D14, D36, D171 annotated in `DESIGN.md §7`; this section's status line true.
 
 ---
 

@@ -1,13 +1,30 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — D366 IS BUILT (THE FRAME RATE AND THE FIELD'S RIM), UNPLAYED AND NOT PUSHED; THE UI PASS IS NEXT AND WANTS A CARD MOCKUP FIRST.**
+# Handoff — bclone: **▶️ PHASE 4.5 — JOE'S SIX NOTES ON D366 ARE FOUR COMMITS (D367–D370) AND ONE SPEC (§14.9), ALL UNPLAYED AND NOT PUSHED; NEXT IS THE UI CARDS (MOCKUP FIRST) OR THE MARKET-AS-A-SHOP SLICE — JOE'S CALL.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-12 (late night).**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-13.**
 >
-> **The state (2026-09-13):** `main` at D367's commit, **committed, NOT pushed**; `7d4e0ad` (D362)
-> is the last push. Joe played D366 (165 fps — the frame rate is fixed) and filed six notes; the
-> plan for them is `C:\Users\joema\.claude\plans\yes-proceed-with-the-modular-sketch.md` and
-> D367 is the first of its five slices (A). D363–D365 and D367 are unplayed. Suite **1121 passing, 0 failing, 2 skipped of 1123, 3m44 (2m50 baseline the same evening — view-only change, the suite is untouched)**; probe green (`bar height 161`, `tile centres ✅`,
-> `scenery ✅`, `trails ✅`, `fields ✅`, `fault ✅`, `done.`). **The decision log runs to D366.**
-> Read `DESIGN.md §0–§5`, then §6, then D353–D366 in §7 — the last two days.
+> **The state:** `main` at D370's commit plus the §14.9 spec commit, **committed, NOT pushed**;
+> `7d4e0ad` (D362) is the last push. Joe played D366 (165 fps — the frame rate is fixed) and filed
+> six notes; the plan for them is
+> `C:\Users\joema\.claude\plans\yes-proceed-with-the-modular-sketch.md`, approved by him, and it
+> is built: **A** D367 panels hold still · **B** D368 trail yards · **C** D369 the cap in
+> sixteenths · **D** D370 one answer to "room", buffers to the producer and the marketer ·
+> **E** the market-as-a-shop spec (`storage-and-distribution.md §14.9`, not started). D363–D370
+> are unplayed. Suite **1124 passing, 0 failing, 2 skipped of 1126, ~2m45**; probe green (`panels
+> ✅` ×2, `scenery ✅`, `trails ✅` with the yard, `fields ✅`, `fault ✅`, `bar height 161`, `tile
+> centres ✅`, `done.`). Goldens: the two seam constants moved once in D370; nothing else. **The
+> decision log runs to D370.** Read `DESIGN.md §0–§5`, then §6, then D353–D370 in §7.
+>
+> **▶️ NEXT — Joe's call between two things, and ask him one question, not two:** *(a)* the UI
+> cards (item 3 of his 2026-09-12 list — inspector CARDS, pinnable, draggable, a two-row resources
+> bar, a villagers bar; **show him a card mockup before building eight panels around it**, he said
+> yes to that; the market card is where §14.9's per-market limits live, which is the argument for
+> cards first); *(b)* §14.9 itself (no home deliveries, per-market limits, fetch at half a larder —
+> tests and the measurement are named in the spec). ⚠️ **Three things for him to look at when he
+> plays D367–D370:** *"Wants: N"* on the Professions rows is hover-only now (a tooltip on the
+> name, ⚠ on the name while a warning stands); a square field now sows nearest-first and reaches
+> its fence, and on a field twice its hands' cap that costs ~6 % of the crop (the reap still hauls
+> per tile — an armful-sized haul is the follow-up, `crops-and-orchards.md §5`); and a full
+> granary now grows a heap at its DOOR that stays there until room appears — drawn, not bounced.
 >
 > **✅ D366 IS BUILT — items 1 and 2 of Joe's plan, one commit, view only, no golden moved.**
 > *(1)* **The frame rate:** `_Draw` is instrumented per pass on the debug line (`draw 0.3ms · trees
@@ -37,11 +54,12 @@
 > marketer, laborers out — ⚠️ the plan's "drop the walk to a full store" was measured and
 > reversed (43 → 38 people on six played openings); the walk to the nearest storage's DOOR stays
 > and only the heap FETCH is gated; the "stood-down hunter keeps a seat" idea scored zero twice
-> and is not in; **E** the marketer redesign, spec-first: villagers shop at the
-> market, the marketer stocks it to per-market limits and clears buffers when idle, **no home
-> deliveries** (the dead-larder collection stays), and a household fetches at **≤ 50 % of a larder
-> target** (Joe's rule), not at the first dip. Then the UI pass (cards, a mockup first). **Do not
-> push; Joe pushes after he plays.**
+> and is not in; ✅ **E** the marketer redesign is **specified, not built** —
+> `storage-and-distribution.md §14.9` (no home deliveries, per-market limits as hashed state with
+> the derived default, fetch at ≤ 50 % of a larder target with the 20 % emergency floor; tests and
+> the measurement named). **Next: build §14.9 as its own slice, or the UI cards (mockup first) —
+> Joe's call which comes first; the market card is where the limits' control lives, so the cards
+> are the natural first.** **Do not push; Joe pushes after he plays.**
 >
 > **✅ D367 (slice A) is built:** the Overview is 300 wide whatever it holds (`Amount()` cells,
 > two permanent rows *in homes and huts* / *on the ground*), the inspector is a 460-logical box
