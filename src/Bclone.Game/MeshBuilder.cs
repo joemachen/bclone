@@ -107,6 +107,17 @@ internal sealed class MeshBuilder
         }
     }
 
+    /// <summary>Triangles already cut — three vertices each — laid down as they are (a traced, filled patch).</summary>
+    public void Triangles(ReadOnlySpan<Vector2> triangles, Color colour)
+    {
+        for (int i = 0; i + 2 < triangles.Length; i += 3)
+        {
+            Add(triangles[i], colour);
+            Add(triangles[i + 1], colour);
+            Add(triangles[i + 2], colour);
+        }
+    }
+
     /// <summary>Add everything laid down so far as one triangle surface of <paramref name="mesh"/>, in 2D.</summary>
     /// <remarks>
     /// ⚠️ A <c>Vector2[]</c> vertex array is what makes the surface a 2D mesh — the canvas draws it

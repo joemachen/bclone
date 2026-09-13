@@ -217,6 +217,16 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   disappear … exist for longer before growing back"* → worn 30 / packed 100 / decay 6 and the
   `path_holds_for` dial (24); classes move every season; the view draws the class the routes
   price, so a lane appears and goes as one lane, not dot by dot.
+- [x] ⛔⛔ **D368 — a block of worn tiles is a yard.** Founding-site traffic wears a solid block
+  (many villagers, many distinct chords to the cart), and the per-tile rules drew it as rails and
+  rungs with a hole in every cell — Joe's *"grid/staircase patterns"* in years 1–3, gone by year 5
+  as decay thinned it to lanes. A tile in any fully worn 2×2 is a block tile (`IsBlockTile`, asked
+  before the L-corner); the blocks are traced and ear-clipped at a cell a tile into one smoothed
+  patch per grade (`ZoneOutline.Trace/Fill`, `MeshBuilder.Triangles`), draw no disc or bend of
+  their own, and bridge from their centre to the midway of each lane that meets them. And two
+  parallel diagonal lanes a tile apart (no 2×2 anywhere) no longer draw a ladder: the rung between
+  two row-mates that both step on diagonally in one direction is skipped (`ParallelDiagonals`,
+  never beside a yard). Probe: a posed 3×3 block reads as one yard of 9.0 tiles; red-checked.
 - [x] ⛔⛔ **D366 — the trails are a mesh, built with the collection.** Slices D358–D360 collected
   once a season and then drew a `DrawCircle` per worn tile and a `DrawPolyline` per joined pair
   **every frame**, with the L-corner and joining rules recomputed per tile per frame — the D338

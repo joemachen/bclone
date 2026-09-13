@@ -4011,6 +4011,14 @@ public partial class VillageMap : Control
     /// </summary>
     private Vector2 TrailPointOf(GridPos tile)
     {
+        // ⚠️ The block before the L (D368): a block tile with one lone arm on its far side is
+        // the corner of exactly one L by the rule below, and would be pulled to that corner —
+        // then every lane meeting the block would aim at the wrong point.
+        if (IsBlockTile(tile))
+        {
+            return new Vector2(tile.X, tile.Y);
+        }
+
         if (LCornerOf(tile) is (GridPos armA, GridPos armC))
         {
             return new Vector2((armA.X + armC.X) / 2f, (armA.Y + armC.Y) / 2f);
@@ -4044,14 +4052,59 @@ public partial class VillageMap : Control
         }
 
         return count == 1 ? found : null;
+    }
 
-        static (int, int) Arm(int k) => (k & 3) switch
+    /// <summary>The four right angles round a tile: (+x,+y), (+y,−x), (−x,−y), (−y,+x).</summary>
+    private static (int, int) Arm(int k) => (k & 3) switch
+    {
+        0 => (1, 0),
+        1 => (0, 1),
+        2 => (-1, 0),
+        _ => (0, -1),
+    };
+
+    /// <summary>
+    /// ⭐⭐ Whether a worn tile is part of a <b>block</b> — any fully worn 2×2 square: itself, a
+    /// right-angle pair of neighbours and their diagonal, all worn (D368).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"the paths are showing very visible grid/staircase patterns. why? the villagers
+    /// dont walk in staircase patterns."*</b> They do not; the drawing did. Founding-site traffic
+    /// — many villagers, many distinct straight lines converging on the cart — wears a solid
+    /// block of tiles, and the per-tile rules (a disc, a band to each joined neighbour) drew that
+    /// block as rails and rungs: a 0.34-tile ribbon along every orthogonal adjacency and a
+    /// 0.66-tile hole in every cell of the ladder. A lattice, exactly. Years later decay thins the
+    /// block to single lanes and the picture "fixes itself" — which is what he saw.
+    /// </para>
+    /// <para>
+    /// ⭐ A block is a YARD, not a set of lanes: the block tiles are traced and filled as one
+    /// smoothed patch (<see cref="ZoneOutline.Trace"/>, the paint's own tracer at one cell a
+    /// tile) and draw no disc and no strips of their own; a lane meeting the block still bends to
+    /// the midway on the block's edge, and the block tile bridges from its centre to that midway
+    /// so a smoothed corner leaves no gap. *A per-tile rule cannot draw an area.*
+    /// </para>
+    /// </remarks>
+    private bool IsBlockTile(GridPos tile)
+    {
+        if (TrailGradeAt(tile) == 0)
         {
-            0 => (1, 0),
-            1 => (0, 1),
-            2 => (-1, 0),
-            _ => (0, -1),
-        };
+            return false;
+        }
+
+        for (int k = 0; k < 4; k++)
+        {
+            (int ax, int ay) = Arm(k);
+            (int cx, int cy) = Arm(k + 1);
+            if (TrailGradeAt(new GridPos(tile.X + ax, tile.Y + ay)) > 0
+                && TrailGradeAt(new GridPos(tile.X + cx, tile.Y + cy)) > 0
+                && TrailGradeAt(new GridPos(tile.X + ax + cx, tile.Y + ay + cy)) > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Whether the orthogonal pair <paramref name="a"/>–<paramref name="b"/> is an arm of an L whose corner is drawn diagonally instead.</summary>
@@ -4068,8 +4121,20 @@ public partial class VillageMap : Control
         bool diagonal = neighbour.X != tile.X && neighbour.Y != tile.Y;
         if (!diagonal)
         {
-            // A straight step — unless it is the arm of an L, whose corner the diagonal replaces.
-            return !IsAnArm(tile, neighbour);
+            // A straight step — unless it is the arm of an L, whose corner the diagonal replaces,
+            // or a RUNG between two parallel diagonal lanes (D368): two villagers walking the same
+            // diagonal a tile apart tread two staircases side by side, and joining every row-mate
+            // pair drew a ladder up the hill. Neither tile is a block tile (no 2×2 is fully worn),
+            // so the yard rule cannot see it; this one can — both tiles step on diagonally in the
+            // same direction, so the straight step between them is not a walk anybody took.
+            // ⚠️ Not beside a yard: every tile of a block continues diagonally into it, so the
+            // rule would cut every lane off at the yard's edge.
+            if (IsAnArm(tile, neighbour))
+            {
+                return false;
+            }
+
+            return IsBlockTile(tile) || IsBlockTile(neighbour) || !ParallelDiagonals(tile, neighbour);
         }
 
         // A diagonal runs through the corner of an L (one off-corner worn and it is that L's
@@ -4095,6 +4160,21 @@ public partial class VillageMap : Control
         }
 
         return true;
+    }
+
+    /// <summary>Whether two orthogonal neighbours both continue diagonally in one common direction — row-mates on parallel lanes.</summary>
+    private bool ParallelDiagonals(GridPos a, GridPos b)
+    {
+        foreach ((int dx, int dy) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
+        {
+            if (TrailGradeAt(new GridPos(a.X + dx, a.Y + dy)) > 0
+                && TrailGradeAt(new GridPos(b.X + dx, b.Y + dy)) > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Whether <paramref name="corner"/> is the L-corner whose arms are exactly the two given tiles.</summary>
@@ -4150,11 +4230,30 @@ public partial class VillageMap : Control
             }
         }
 
+        // ⭐ The blocks — the yards — once a season with the grades (D368). Asked after every
+        // grade is in, because a block is a fact about four tiles.
+        _blockTiles.Clear();
+        _packedBlockTiles.Clear();
+        for (int i = 0; i < _trail.Count; i++)
+        {
+            (GridPos tile, byte grade) = _trail[i];
+            if (IsBlockTile(tile))
+            {
+                _blockTiles.Add(new Vector2I(tile.X, tile.Y));
+                if (grade == 2)
+                {
+                    _packedBlockTiles.Add(new Vector2I(tile.X, tile.Y));
+                }
+            }
+        }
+
         // ⭐ And the picture is built here too, once a season, not once a tile a frame (D366).
         BuildTheTrailMesh();
     }
 
     private readonly List<(GridPos Tile, byte Grade)> _trail = new();
+    private readonly HashSet<Vector2I> _blockTiles = new();
+    private readonly HashSet<Vector2I> _packedBlockTiles = new();
     private byte[] _trailGrade = System.Array.Empty<byte>();
     private PathWear? _trailsOf;
     private int _trailsCollectedAt = -1;
@@ -4251,6 +4350,16 @@ public partial class VillageMap : Control
                 world.Paths.Tread(new GridPos(from.X + dx, from.Y + 3 + dy), world.Config.PathWornAt);
             }
 
+            // And a 3×3 block further down — a yard, what founding-site traffic wears — so the
+            // block rule (D368) is exercised: it must draw as one patch, not as rails and rungs.
+            for (int dy = 0; dy < 3; dy++)
+            {
+                for (int dx = 0; dx < 3; dx++)
+                {
+                    world.Paths.Tread(new GridPos(from.X + 5 + dx, from.Y + 6 + dy), world.Config.PathWornAt);
+                }
+            }
+
             world.Paths.Decay(0);
         }
 
@@ -4306,6 +4415,17 @@ public partial class VillageMap : Control
             return $"[widths] trails: ⛔ the posed row breaks {broken} times — a lane people walk is drawn in pieces";
         }
 
+        // The block: nine tiles, filled as one patch of about nine minus its four cut corners, and
+        // its centre is a block tile with no disc and no L-corner of its own.
+        GridPos blockCentre = new(world.Map.FoundingSite.X + 6, world.Map.FoundingSite.Y + 7);
+        bool blockIsAYard = IsBlockTile(blockCentre) && LCornerOf(blockCentre) is null
+            && _blockTiles.Count >= 9 && TrailBlockAreaWorn > 7f;
+        if (!blockIsAYard)
+        {
+            return $"[widths] trails: ⛔ a 3×3 block of worn tiles draws as ribbons (patch area {TrailBlockAreaWorn:F1} of 9, "
+                + $"{_blockTiles.Count} block tiles) — the yard is a lattice";
+        }
+
         if (!cornerOnTheLine)
         {
             return $"[widths] trails: ⛔ the clipped corner of a staircase draws at {cornerAt}, not on the "
@@ -4319,7 +4439,8 @@ public partial class VillageMap : Control
 
         return adrift == 0
             ? $"[widths] trails: ✅ {_trail.Count} worn tiles drawn as paths, {packed} of them packed, "
-                + $"{world.Paths.TroddenTiles} tiles trodden at all; the row is one chain and a staircase's clipped corner draws on the line; "
+                + $"{world.Paths.TroddenTiles} tiles trodden at all; the row is one chain, a staircase's clipped corner draws on the line, "
+                + $"and a 3×3 block is one yard of {TrailBlockAreaWorn:F1} tiles; "
                 + $"meshed as {TrailVerticesWorn} worn and {TrailVerticesPacked} packed vertices in {LastTrailBuildMs:F2}ms"
             : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
                 + "trails are drawing something the ground does not hold";

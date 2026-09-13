@@ -29,8 +29,8 @@
 > field — the field's own colour, never the wrong one — say so if he sees it.
 >
 > **▶️ NEXT, from Joe's 2026-09-13 play notes (the plan file has the detail, approved by him):**
-> **B** trail blocks as a filled yard (view — the early lattice is rails + rungs of ribbons over a
-> block of worn tiles; `ZoneOutline.Trace/Fill` the block); **C** the sowing cap in sixteenths so a
+> ✅ **B** (D368) trail blocks as a filled yard, and no rungs between parallel diagonal lanes;
+> **C** the sowing cap in sixteenths so a
 > square field is sown to its fence (sim — measure nearest-first vs whole-tiles-first on a round
 > field and keep the one that does not rot); **D** one predicate for "does a store have room"
 > (storage only; the market is a counter) so a full granary never sends anyone back and forth, and
@@ -571,6 +571,13 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     (`FindWorkplace` does not know a site), so the rim was verified by dumping `ClipToCells`'s
     triangles to a text file and plotting them (PIL), not on screen. *A view change with no probe
     line is verified by a picture or it is not verified; write down which.*
+42. **⚠️ A PER-TILE RULE CANNOT DRAW AN AREA, AND A YARD MAKES EVERY LANE LOOK PARALLEL (D368).**
+    The trail lattice was two bugs: a block of worn tiles drawn as rails and rungs (fixed by
+    tracing the block as a patch), and two parallel diagonal lanes a tile apart drawn with a rung
+    between every pair of row-mates (fixed by `ParallelDiagonals`). The first draft of the second
+    fix cut every lane off at the yard's edge, because every block tile "continues diagonally" into
+    its own yard — the screenshot caught it, no probe could. **Pose the picture and look at it**;
+    trap 39 says how.
 41. **⚠️ A GODOT LABEL'S MINIMUM IS ITS TEXT UNLESS IT IS TOLD HOW TO OVERRUN, AND `ClipText`
     ALONE DOES NOT CHANGE THAT (D367).** The red check that reverted only `ClipText` scored zero:
     any `TextOverrunBehavior` other than `NoTrimming` is what stops the text counting. Also: a

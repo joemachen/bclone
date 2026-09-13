@@ -501,6 +501,11 @@ public partial class VillageMap
     /// <summary>Vertices the last trail build laid down, worn then packed — for the probe.</summary>
     public int TrailVerticesWorn { get; private set; }
 
+    /// <summary>The area, in tiles, the yards covered on each surface (D368) — for the probe.</summary>
+    public float TrailBlockAreaWorn { get; private set; }
+
+    public float TrailBlockAreaPacked { get; private set; }
+
     public int TrailVerticesPacked { get; private set; }
 
     public double LastTrailBuildMs { get; private set; }
@@ -530,16 +535,60 @@ public partial class VillageMap
             Color colour = pass == 2 ? PackedPath : WornPath;
             _trailBuilder.Clear();
 
+            // ⭐⭐ THE YARDS FIRST (D368): every block of worn tiles as one smoothed patch — the
+            // paint's tracer at a cell a tile, ear-clipped — on this pass's surface for the tiles
+            // of this grade (worn is the whole block; packed the packed part of it, over it).
+            HashSet<Vector2I> yard = pass == 2 ? _packedBlockTiles : _blockTiles;
+            float area = 0f;
+            if (yard.Count > 0)
+            {
+                Vector2[] patch = ZoneOutline.Fill(ZoneOutline.Trace(yard, 1), yard);
+                _trailBuilder.Triangles(patch, colour);
+                for (int i = 0; i + 2 < patch.Length; i += 3)
+                {
+                    Vector2 a = patch[i + 1] - patch[i];
+                    Vector2 b = patch[i + 2] - patch[i];
+                    area += Mathf.Abs((a.X * b.Y) - (a.Y * b.X)) / 2f;
+                }
+            }
+
+            if (pass == 1)
+            {
+                TrailBlockAreaWorn = area;
+            }
+            else
+            {
+                TrailBlockAreaPacked = area;
+            }
+
             for (int i = 0; i < _trail.Count; i++)
             {
                 (GridPos tile, byte grade) = _trail[i];
                 Vector2 here = TrailPointOf(tile);
+                int count = JoinedNeighbours(tile, joined);
+
+                // A block tile is drawn by its yard: no disc, no bends — only a bridge from its
+                // centre to the midway of each lane that meets it, so the lane's half-bend and
+                // the smoothed patch never leave a gap between them.
+                if (_blockTiles.Contains(new Vector2I(tile.X, tile.Y)))
+                {
+                    for (int k = 0; k < count; k++)
+                    {
+                        if (!_blockTiles.Contains(new Vector2I(joined[k].X, joined[k].Y))
+                            && Lesser(grade, TrailGradeAt(joined[k])) == pass)
+                        {
+                            _trailBuilder.Band(here, MidwayInTiles(tile, joined[k]), TrailHalfWidth, colour);
+                        }
+                    }
+
+                    continue;
+                }
+
                 if (grade == pass)
                 {
                     _trailBuilder.Disc(here, TrailHalfWidth, colour);
                 }
 
-                int count = JoinedNeighbours(tile, joined);
                 if (count == 1)
                 {
                     if (Lesser(grade, TrailGradeAt(joined[0])) == pass)
