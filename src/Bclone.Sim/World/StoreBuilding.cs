@@ -410,6 +410,27 @@ public sealed class StoreBuilding
     /// </remarks>
     public bool IsStorage => Kind != StoreKind.Market;
 
+    private StockLimits? _limits;
+
+    /// <summary>
+    /// How much of each good the player wants kept at <b>this</b> counter (D372, Joe:
+    /// *"markets have their own individual item storage limit"*) — <c>null</c> per good means
+    /// the derived number, <c>VillageEconomy.MarketStockWanted</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The village stock limits' shape (<see cref="StockLimits"/>, D62), one building down. Only a
+    /// market reads it — <see cref="Core.SimWorld.SetMarketLimit"/> refuses anything else — and a
+    /// market nobody has typed at holds nothing here, so it hashes as it did before the control
+    /// existed (the same silence as <see cref="AllowedGoods"/>).
+    /// </para>
+    /// <para>
+    /// ⚠️ A ceiling, not an order to clear: a limit below what the counter holds stops the
+    /// marketer stocking it and leaves what is there for the households to draw down.
+    /// </para>
+    /// </remarks>
+    public StockLimits Limits => _limits ??= new StockLimits(Catalog.Count);
+
     /// <summary>
     /// What this kind of building holds — <b>read off the good's row, not a switch</b>.
     /// </summary>

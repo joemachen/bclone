@@ -87,9 +87,6 @@ public enum VillagerState
     /// <summary>A marketer walking to pick up goods that are in the wrong place (D14).</summary>
     CollectingForMarket,
 
-    /// <summary>A marketer carrying goods to the household that needs them (D14).</summary>
-    DeliveringToHome,
-
     /// <summary>
     /// A marketer carrying a load to the <b>market's own store</b>
     /// (`storage-and-distribution.md §14.8`, D197).

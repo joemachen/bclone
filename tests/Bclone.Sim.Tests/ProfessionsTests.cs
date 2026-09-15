@@ -318,6 +318,18 @@ public sealed class ProfessionsTests
         int gathering = WorkingAt(world, JobKind.Forager);
         Assert.True(gathering > 1, $"Need gatherers to take hands off; {gathering} are at work.");
 
+        // ⚠️ AND THE COUNTER WANTS NOBODY (D372): a bare market with a stocked granary is an
+        // errand now, so a hand freed from the berry patch landed at the stall instead of
+        // becoming spare — laborers 2 → 2. Limits of zero say the counter is kept as it is.
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            if (market.CanEverHold((Goods)g))
+            {
+                Assert.True(world.SetMarketLimit(market, (Goods)g, 0).Allowed);
+            }
+        }
+
         world.SetJobLimit(JobKind.Forager, 1);
 
         // A season, not years: this is about hands moving, and waiting longer lets births and

@@ -206,6 +206,10 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)household.Id);
             hash = MixUInt32(hash, (uint)household.LastBirthYear);
 
+            // Whether the household is mid-way through topping its larder back up (D372) — a
+            // bit that decides whether somebody walks next tick, so it is state, not a reading.
+            hash = MixUInt32(hash, (household.ToppingUpFood ? 1u : 0u) | (household.ToppingUpFirewood ? 2u : 0u));
+
             // The larder and what it has ever produced — the same loop MixStore uses, and
             // ⭐ SPARSE FOR THE SAME REASON (2026-09-03). This was the SECOND dense goods loop and
             // the one that hid: making `MixStore` sparse did not stop a new catalogue row moving
@@ -379,6 +383,21 @@ public static class StateHash
             {
                 hash = MixUInt32(hash, (uint)allowed);
                 hash = MixUInt32(hash, (uint)(allowed >> 32));
+            }
+
+            // And the player's limits at this counter (D372) — the village stock limits' shape
+            // exactly: sparse, null and zero diverging, silent for every market nobody has typed
+            // at. A market's stock is what the marketer keeps there, so the number that says how
+            // much is a fact about the village.
+            StockLimits limits = world.StoreBuildings[i].Limits;
+            for (int g = 0; g < limits.Slots; g++)
+            {
+                int? limit = limits.For((Goods)g);
+                if (limit is not null)
+                {
+                    hash = MixUInt32(hash, (uint)g);
+                    hash = MixUInt32(hash, (uint)limit.Value);
+                }
             }
         }
 
@@ -716,7 +735,6 @@ public static class StateHash
         // a good that is not hashed is a good two runs can disagree about while reading
         // identical, and a villager can carry stone now.
         hash = MixStore(hash, villager.Carried);
-        hash = MixUInt32(hash, (uint)villager.ErrandHouseholdId);
         hash = MixUInt32(hash, (uint)villager.ErrandX);
         hash = MixUInt32(hash, (uint)villager.ErrandY);
 

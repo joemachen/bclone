@@ -747,7 +747,7 @@ public sealed class ColdStartTests
     private static bool IsWorking(VillagerState state) =>
         state is VillagerState.Gathering or VillagerState.Cutting
             or VillagerState.MakingFirewood or VillagerState.Building
-            or VillagerState.CollectingForMarket or VillagerState.DeliveringToHome;
+            or VillagerState.CollectingForMarket or VillagerState.StockingTheMarket;
 
     private static double Share(long part, long whole) => whole == 0 ? 0 : 100.0 * part / whole;
 

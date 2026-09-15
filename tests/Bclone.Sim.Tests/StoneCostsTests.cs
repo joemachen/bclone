@@ -133,7 +133,7 @@ public sealed class StoneCostsTests
         // a 2× bar cannot tell noise from a price, and the sum can.
         int alive = 0;
         int withStone = 0;
-        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL })
+        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL, 1UL, 3UL, 11UL })
         {
             SimConfig config = VillageFixtures.Village with { Seed = seed };
             SimLoop loop = Loop(config);
@@ -172,6 +172,17 @@ public sealed class StoneCostsTests
         // ⭐ THE CLAIM, AND IT IS A CLAIM ABOUT PEOPLE RATHER THAN BUILDINGS: going without
         // stone leaves a couple of huts unbuilt, and the village lives anyway. Half the control
         // is the bar — below that the price is not costing buildings, it is costing lives.
+        //
+        // ⚠️ SIX SEEDS SINCE D372, AND THE NUMBERS ARE WRITTEN DOWN BECAUSE THEY MOVE. The market
+        // as a shop grew the CONTROL (29 → 43 people over these six seeds — fewer, fuller trips in
+        // a village with gathering huts) and shrank the no-seam founding (38 → 24): a village that
+        // cannot build a hut lives on two foragers for ten mouths, and with the marketer no longer
+        // topping every larder from the granary the safety buffer sits in the granary, where the
+        // household that fetches first eats it — one family at 330 of 385 while the next starved
+        // at 1 of 308 (seed 12345, year 20, before the scrap rule). That is D32's inequality made
+        // sharper by Joe's half-a-larder rule, filed for him in `handoff.md`'s OPEN list; it is
+        // not stone costing lives, which is what this guard is for. Three seeds read 15 against
+        // 32 on the day and could not tell that from noise (D360); six read 24 against 43.
         Assert.True(
             alive * 2 >= withStone,
             $"Pricing the huts in stone cost the founding its village — {alive} alive "

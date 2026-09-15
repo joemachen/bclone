@@ -1230,15 +1230,18 @@ public readonly record struct LabourQuota
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Stated as a count of errands, not a share of the population:</b> one hand per
-    /// household whose goods are in the wrong place — either short of what it needs, or
-    /// holding what it does not. That is literally the work available, so a village
-    /// where everything is already where it should be staffs nobody, and one recovering
-    /// from a bad winter staffs as many as it can spare.
+    /// <b>Stated as a count of errands, not a share of the population:</b> a counter short of a
+    /// good it can be stocked with, a house with nobody in it and a larder still full, a
+    /// producer's buffer that can no longer take a load. That is literally the work available,
+    /// so a village where everything is already where it should be staffs nobody.
     /// </para>
     /// <para>
-    /// A house whose family has died counts, and is most of why this exists: its larder
-    /// is stranded, and the marketer is the only one who can reach it (D34, spec §14.3).
+    /// ⛔ <b>A household below its target is NOT an errand any more</b> (D372, Joe: *"deliveries
+    /// go"*). It was the first arm here from D14 to D371 and it is what a marketer used to walk
+    /// for; the household walks to the counter for itself now. Each arm asks the world the same
+    /// question the marketer's plan asks — <see cref="SimWorld.CounterWantsStocking"/>,
+    /// <see cref="SimWorld.BufferWorthClearing"/> — because a leg the quota did not count never
+    /// ran (D185).
     /// </para>
     /// </remarks>
     public static int MarketersWanted(SimWorld world)
@@ -1246,30 +1249,25 @@ public readonly record struct LabourQuota
         ArgumentNullException.ThrowIfNull(world);
 
         int errands = 0;
+
+        // ⭐ THE COUNTER FIRST (D372): a market short of a good, under its limit, with a
+        // storehouse holding some — the restock leg was never counted here, so a village with a
+        // bare counter and content households staffed nobody to fill it.
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            if (world.CounterWantsStocking(world.StoreBuildings[i]))
+            {
+                errands++;
+            }
+        }
+
+        // A house whose family has died: its larder is stranded, and the marketer is the only
+        // one who can reach it (D34, spec §14.3).
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
-            bool occupied = world.LivingMembersOf(household) > 0;
-
-            if (!occupied)
-            {
-                // A house with nobody in it and goods still on the shelf. Only a
-                // marketer can reach it (D34).
-                if (world.FoodIn(household.Stockpile) + household.Stockpile.Firewood > 0)
-                {
-                    errands++;
-                }
-
-                continue;
-            }
-
-            // Or a family short of something. Counted as SHORT rather than "not
-            // exactly at target", because a household is above target every time its
-            // forager walks in and treating that as work to do had marketers stripping
-            // families the moment they got ahead.
-            if (world.FoodIn(household.Stockpile) < world.TargetFoodFor(household)
-                || household.Stockpile.Firewood
-                    < VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config))
+            if (world.LivingMembersOf(household) == 0
+                && world.FoodIn(household.Stockpile) + household.Stockpile.Firewood > 0)
             {
                 errands++;
             }

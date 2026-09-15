@@ -4822,6 +4822,128 @@ public sealed class SimWorld
         return PlacementVerdict.Yes(string.Empty);
     }
 
+    /// <summary>
+    /// Set how much of a good the marketer keeps at <b>this</b> counter (D372, Joe) — the
+    /// <see cref="SetStockLimit"/> shape: a verdict, with a warning past what the counter can hold.
+    /// </summary>
+    /// <remarks>
+    /// Refused for anything but a market and for a good a market never holds — the row does not
+    /// appear on the card either (`storage-and-distribution.md §14.9.3`). <c>null</c> hands the
+    /// good back to the derived number.
+    /// </remarks>
+    public PlacementVerdict SetMarketLimit(StoreBuilding market, Goods goods, int? limit)
+    {
+        ArgumentNullException.ThrowIfNull(market);
+
+        if (market.Kind != StoreKind.Market)
+        {
+            return PlacementVerdict.No($"{market.Name} is not a market; its limits are the village's (the stock limits panel).");
+        }
+
+        if (!market.CanEverHold(goods))
+        {
+            return PlacementVerdict.No($"A market never holds {GoodsCatalog.NameOf(goods)}.");
+        }
+
+        if (!market.Limits.Set(goods, limit) || limit is null || limit.Value <= market.Store.Capacity)
+        {
+            return PlacementVerdict.Fine;
+        }
+
+        return PlacementVerdict.Yes(
+            $"{market.Name} can hold {market.Store.Capacity} in all, so it will never reach {limit.Value} "
+            + $"{GoodsCatalog.NameOf(goods)}. The marketer will keep it as full as it goes.");
+    }
+
+    /// <summary>
+    /// How much of a good the marketer keeps at this counter — the player's limit for this
+    /// market, or the derived <see cref="VillageEconomy.MarketStockWanted"/> when they have not said (D372).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ THE ONE ANSWER for the restock offer, the load, the counter's room and the labour
+    /// quota — four readers of *"is the counter short?"* that D148 and D370 both say must never
+    /// carry their own copy of the sum.
+    /// </remarks>
+    public int MarketStockLimit(StoreBuilding market, Goods goods)
+    {
+        ArgumentNullException.ThrowIfNull(market);
+        return market.Limits.For(goods) ?? VillageEconomy.MarketStockWanted(Config, OccupiedHouseholds());
+    }
+
+    /// <summary>Households with somebody living in them — what the derived market stock is sized to.</summary>
+    public int OccupiedHouseholds()
+    {
+        int occupied = 0;
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (LivingMembersOf(Households[i]) > 0)
+            {
+                occupied++;
+            }
+        }
+
+        return occupied;
+    }
+
+    /// <summary>
+    /// Whether this counter is short of a good by at least an armful, under its limit, with a
+    /// storehouse somewhere holding some — <b>a restock errand exists</b> (D372).
+    /// </summary>
+    /// <remarks>
+    /// Asked by the marketer's plan and by <see cref="World.LabourQuota.MarketersWanted"/> — one
+    /// predicate, both callers, the lesson of D185 (a leg the quota did not count never ran).
+    /// Reachability is the plan's to check from where the marketer stands; here the question is
+    /// whether the errand exists at all.
+    /// </remarks>
+    /// <summary>Whether any good a market holds is short at this counter — a restock errand exists (D372).</summary>
+    public bool CounterWantsStocking(StoreBuilding market)
+    {
+        ArgumentNullException.ThrowIfNull(market);
+
+        if (market.Kind != StoreKind.Market)
+        {
+            return false;
+        }
+
+        for (int id = 0; id < GoodsCatalog.Count; id++)
+        {
+            var goods = (Goods)id;
+            if (GoodsCatalog.StoredBy(goods, StoreKind.Market) && CounterShortOf(market, goods))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool CounterShortOf(StoreBuilding market, Goods goods)
+    {
+        ArgumentNullException.ThrowIfNull(market);
+
+        if (market.Kind != StoreKind.Market || !market.CanEverHold(goods) || !market.Accepts(goods))
+        {
+            return false;
+        }
+
+        int armful = Config.CarryCapacity;
+        if (market.Store[goods] + armful > MarketStockLimit(market, goods) || market.Store.FreeSpace < armful)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            StoreBuilding store = StoreBuildings[i];
+            if (store.IsStorage && store.Store[goods] > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public PlacementVerdict SetStockLimit(Goods goods, int? limit)
     {
         if (!StockLimits.Set(goods, limit))

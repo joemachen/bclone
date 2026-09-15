@@ -432,17 +432,6 @@ public sealed class Villager
     /// </remarks>
     public bool IsCarrying => Carried.Held > 0;
 
-    /// <summary>
-    /// The household a marketer's current errand concerns. Zero when none.
-    /// </summary>
-    /// <remarks>
-    /// Held on the villager rather than recomputed, because a marketer's leg has to
-    /// finish where it was aimed: re-deciding every tick would let them change their
-    /// mind halfway and wander between two equally needy homes forever. It is the same
-    /// reason <see cref="ActionTicksRemaining"/> exists.
-    /// </remarks>
-    public int ErrandHouseholdId { get; set; }
-
     /// <summary>Where a marketer is walking to pick their load up.</summary>
     /// <remarks>
     /// Remembered rather than recomputed each tick, and that is not an optimisation.
@@ -660,7 +649,6 @@ public sealed class Villager
             VillagerState.FetchingFromStore => "fetching supplies for home",
             VillagerState.SeekingShelter => "going indoors to get warm",
             VillagerState.CollectingForMarket => "collecting goods for the market",
-            VillagerState.DeliveringToHome => "delivering goods to a home",
             VillagerState.FetchingMaterials => "fetching materials for the building site",
             VillagerState.Building => "raising a building",
             VillagerState.Clearing => "clearing trees the village marked",

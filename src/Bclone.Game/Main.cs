@@ -83,6 +83,7 @@ public partial class Main : Control
     private Button _modeButton = null!;
     private VBoxContainer _storeRow = null!;
     private VBoxContainer _acceptRow = null!;
+    private VBoxContainer _limitRow = null!;
     private Button _fullMarkerButton = null!;
     private VBoxContainer _idleRow = null!;
     private Label _idleLabel = null!;
@@ -915,8 +916,10 @@ public partial class Main : Control
         var inner = (Control)_inspector.GetParent();
         bool storeRowWas = _storeRow.Visible;
         bool acceptRowWas = _acceptRow.Visible;
+        bool limitRowWas = _limitRow.Visible;
         _storeRow.Visible = true;
         _acceptRow.Visible = true;
+        _limitRow.Visible = true;
         ForceUpdateTransform();
         float wants = inner.GetCombinedMinimumSize().Y;
         float box = scroll.Size.Y;
@@ -929,6 +932,7 @@ public partial class Main : Control
                 + "scroll bar shows — the bottom of it is cut");
         _storeRow.Visible = storeRowWas;
         _acceptRow.Visible = acceptRowWas;
+        _limitRow.Visible = limitRowWas;
 
         _inspector.Text = was;
         ForceUpdateTransform();
@@ -2083,6 +2087,20 @@ public partial class Main : Control
                 // that would turn it back on.
                 button.Visible = store.CanEverHold(goods);
                 button.ButtonPressed = store.Accepts(goods);
+            }
+        }
+
+        // The counter's own limits (D372) — a market's row and nobody else's. The spin is set
+        // WITHOUT its signal, or every refresh would write the derived number back as a limit.
+        _limitRow.Visible = store is { Kind: StoreKind.Market };
+        if (store is { Kind: StoreKind.Market })
+        {
+            foreach ((Goods goods, Control cell, SpinBox amount, Button clear) in _limitControls)
+            {
+                cell.Visible = store.CanEverHold(goods);
+                int? limit = store.Limits.For(goods);
+                amount.SetValueNoSignal(world.MarketStockLimit(store, goods));
+                clear.Disabled = limit is null;
             }
         }
 
@@ -4186,6 +4204,59 @@ public partial class Main : Control
             acceptControls.AddChild(button);
             _acceptButtons.Add((goods, button));
         }
+
+        // ⭐ HOW MUCH THIS COUNTER KEEPS, PER GOOD (Joe, D372): *"markets have their own
+        // individual item storage limit (i.e., the user sets the limit for how much firewood is
+        // stored at a given market, how much wheat is stored…)"*. The stock-limits row's
+        // controls — a spin and a clear — per good the market can hold, on the market's own
+        // inspector for D104's reason (a control that belongs to ONE building sits next to it).
+        // The spin shows the derived number until the player types; `clear` hands it back.
+        // The cards (`handoff.md` item 3) will carry these rows when they land.
+        (_limitRow, HFlowContainer limitControls) = InspectorRow(body, Muted("Keeps up to:"));
+
+        for (int g = 0; g < _loop.World.GoodsCatalog.Count; g++)
+        {
+            var goods = (Goods)g;
+            if (!_loop.World.GoodsCatalog.StoredBy(goods, StoreKind.Market))
+            {
+                continue;
+            }
+
+            var cell = new HBoxContainer();
+            cell.AddChild(Body(GoodsName(_loop.World, goods)));
+
+            var amount = new SpinBox
+            {
+                MinValue = 0,
+                MaxValue = 100_000,
+                Step = 10,
+                Editable = true,
+                CustomMinimumSize = new Vector2(74, 0),
+            };
+            var clear = new Button { Text = "clear", Flat = true, Disabled = true };
+
+            amount.ValueChanged += value => SetSelectedMarketLimit(goods, (int)value);
+            clear.Pressed += () => SetSelectedMarketLimit(goods, null);
+
+            cell.AddChild(amount);
+            cell.AddChild(clear);
+            limitControls.AddChild(cell);
+            _limitControls.Add((goods, cell, amount, clear));
+        }
+    }
+
+    private readonly List<(Goods Goods, Control Cell, SpinBox Amount, Button Clear)> _limitControls = new();
+
+    /// <summary>Set, or hand back to the derived number, one good's limit at the selected market (D372).</summary>
+    private void SetSelectedMarketLimit(Goods goods, int? limit)
+    {
+        if (SelectedStore() is not { Kind: StoreKind.Market } market)
+        {
+            return;
+        }
+
+        Warn(_loop.World.SetMarketLimit(market, goods, limit));
+        RefreshInspector(_loop.World);
     }
 
     /// <summary>

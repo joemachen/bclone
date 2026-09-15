@@ -301,8 +301,10 @@ public sealed class SkillTests
     // RE-TAKEN (D371) — a heap is fetched only for a good that has a reachable shelf, and one
     // villager goes for it (see `StockLimitTests.ShippedFiftyYearHash`). Were
     // 11030058396925749916 (fixture) and 3677322281643096807 (shipped).
-    [InlineData(false, 9581975549518549333UL)]
-    [InlineData(true, 16825462083917521948UL)]
+    // RE-TAKEN (D372) — the market is a shop (see `StockLimitTests.ShippedFiftyYearHash`). Were
+    // 9581975549518549333 (fixture) and 16825462083917521948 (shipped).
+    [InlineData(false, 8507353748120440426UL)]
+    [InlineData(true, 10601455184816149374UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
@@ -1138,9 +1140,9 @@ public sealed class SkillTests
         Assert.NotEmpty(working);
 
         // ⛔ The one that looks like work and is not: `FetchingFromStore` is a household member
-        // fetching their own family's supper (D30). A marketer's delivery is `DeliveringToHome`.
+        // fetching their own family's supper (D30). A marketer's leg to the counter is work.
         Assert.Contains(VillagerState.FetchingFromStore, waiting);
-        Assert.Contains(VillagerState.DeliveringToHome, working);
+        Assert.Contains(VillagerState.StockingTheMarket, working);
 
         // ⭐ And the walk is part of the work — counting only the swing would charge a distant
         // hut twice for a commute D112 already makes it pay for.

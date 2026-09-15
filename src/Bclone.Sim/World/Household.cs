@@ -349,6 +349,20 @@ public sealed class Household
     /// <summary>In-game year of the household's most recent birth. Zero if never.</summary>
     public int LastBirthYear { get; set; }
 
+    /// <summary>
+    /// The household is fetching food back up to target — set when the larder reaches
+    /// <c>fetch_below_share_percent</c>, cleared when it is at target again (D372).
+    /// </summary>
+    /// <remarks>
+    /// <b>The one bit of state Joe's rule costs.</b> A trigger alone would leave every larder
+    /// hovering between a half and a half-plus-an-armful; this is what makes the trips come
+    /// back to back instead. Hashed, because a village that forgot it would fetch differently.
+    /// </remarks>
+    public bool ToppingUpFood { get; set; }
+
+    /// <summary>The same, for firewood.</summary>
+    public bool ToppingUpFirewood { get; set; }
+
     /// <summary>This household's food. Not the village's.</summary>
     public required Stockpile Stockpile { get; init; }
 

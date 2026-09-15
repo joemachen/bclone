@@ -56,12 +56,16 @@
 > and only the heap FETCH is gated; the "stood-down hunter keeps a seat" idea scored zero twice
 > and is not in; ✅ **F** (D371, 2026-09-15) a heap is fetched only for a good with a reachable
 > shelf, one walker a heap, the chip drawn beside the building — Joe's year-41 stampede at the
-> granary; ✅ **E** the marketer redesign is **specified, and being built next as G** —
-> `storage-and-distribution.md §14.9` (no home deliveries, per-market limits as hashed state with
-> the derived default, fetch at ≤ 50 % of a larder target with the 20 % emergency floor; tests and
-> the measurement named). **Next: build §14.9 as its own slice, or the UI cards (mockup first) —
-> Joe's call which comes first; the market card is where the limits' control lives, so the cards
-> are the natural first.** **Do not push; Joe pushes after he plays.**
+> granary; ✅ **G** (D372, 2026-09-15) **the market is a shop** — `storage-and-distribution.md
+> §14.9` built plus Joe's market-first rule: a household shops at the nearest market holding the
+> good (a storehouse only if none is reachable or holds it), goes at half a larder and tops up to
+> target, no marketer ever carries to a house, the counter is the marketer's first job (from
+> storage only) and a per-market per-good limit is a `Keeps up to:` row on the market's
+> inspector. ⚠️ **What Joe should look at:** the granary crowd should be gone where a market is
+> stocked; larders now sit between half and full instead of near-full; the `Keeps up to:` spins
+> on a market (the derived number until he types; `clear` hands it back). ⚠️ **Measured, and the
+> number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. **Next: H, I, J of his round-2 notes (the plan file), then the UI
+> cards (mockup first).** **Do not push; Joe pushes after he plays.**
 >
 > **✅ D367 (slice A) is built:** the Overview is 300 wide whatever it holds (`Amount()` cells,
 > two permanent rows *in homes and huts* / *on the ground*), the inspector is a 460-logical box
@@ -419,8 +423,13 @@ stood idle with 130 logs.
 0. ✅ **The frame rate** (D366) — `_Draw` instrumented, the scenery and the trails as chunked /
    collected meshes. View only; the debug line now says where a frame goes.
 1. ✅ **The yellow rim** (D366, same commit) — `ZoneOutline.RimReach`. **Not pushed; Joe pushes.**
+1b. ✅ **The market is a shop** (D372) — §14.9 plus market-first. **Then H, I, J** of Joe's
+   round-2 notes (`yes-proceed-with-the-modular-sketch.md`): Professions ⚠ only for a standing
+   building of the trade and a fixed-width name; yards always round; the milestone map, the
+   year-10 nomads note, *"trades visibly work"* in Phase 5, the rings legend.
 2. **The UI pass** — its own spec, a card mockup for Joe first, then the cards (pinnable,
-   draggable, several), the two-row resources top bar, the villagers top bar.
+   draggable, several; the market card carries the `Keeps up to:` rows), the two-row resources
+   top bar, the villagers top bar.
 3. **Footprints per building type** — numbers into the catalogue, placement rules, the paint's edge.
 4. **Phase 5:** trampled fields + fences; mature trees; the steading as tending; then the shell's
    remaining pieces (per-stage RNG seeds → new-game screen → settings → save/load → title).
@@ -603,6 +612,23 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     for ever with nobody picking anything up. Approve the load you will actually pick up, from the
     tile it lies on, for the shelf it will actually reach (`HasAShelf`) — and read the LOG when
     a screenshot shows a crowd: the log had no `carrying +` line, which was the whole diagnosis.
+47. **⛔⛔ A LEG THAT RAN FOR MONTHS CAN BE HIDING A LOOP SOMEWHERE ELSE (D372).** The marketer's
+    deliveries kept every larder above the emergency line year-round, so nobody ever saw that
+    `TryEmergencyRestock` re-fires every tick at a villager one tile from the door with the load in
+    her arms — 320 firewood carried, 630 in a larder wanting 43 — until the deliveries were deleted
+    and two BUILD-QUEUE guards went red (the hands went to the wood chain). When you remove a
+    behaviour, the guards that go red are telling you what it was propping up; read them before
+    "fixing" them. And a villager carrying the very thing home is not an emergency.
+48. **⚠️ A QUOTA THAT COUNTS ERRANDS FLICKERS WITHIN A TICK (D372).** `ReshufflingTwiceInARowChangesNothing`
+    compared the loop's reshuffle with a second one a behaviour pass later; the marketer staffed
+    for a bare counter picked the granary's last armful up in that pass and the errand went with it.
+    Idempotence is two runs at ONE state. And a hand freed by capping one trade goes to the next
+    errand that wants it (`CappingTheGatherersIsWhatMakesLaborers` needed the counter's limits at 0).
+49. **⚠️ A GUARD CAN BE VACUOUS BECAUSE THE VILLAGE GOT BETTER (D372).** `PeopleActuallyBreakOffWorkToGetWarm`
+    read zero for a hundred years after the deliveries went — the marketer's long leg was the
+    only villager ever out for thirty winter ticks. Pose the condition (a valley three days to
+    danger) rather than weaken the assertion. And `AHouseholdFetchesAtHalfALarder`'s top-up flag
+    scored ZERO until the foragers were held off — their own take carried the larder past target.
 46. **⚠️ A FREE-PLACED BUILDING STRADDLES ITS TILE (D371, D329's consequence for drawing).** A
     chip at "the tile's corner" can still be under the building: the cart at (−0.5, −0.5) covers
     the lower-right corner of tile (−1, −1). Anything drawn "beside" a building must be placed
@@ -719,6 +745,18 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⭐⭐ **THE HALF-A-LARDER RULE AND A VILLAGE ON THE EDGE (D372, 2026-09-15).** The market is a
+  shop as Joe asked, and a fed village likes it (the fixture's control grew 29 → 43 over six seeds;
+  80 % of loads taken at the counter). But a village that cannot build a hut — two foragers for ten
+  mouths — reads worse: the no-seam founding 38 → 24 over six seeds, eighteen played openings
+  161 → 145 people and 55 → 72 starved. **Why:** with the marketer no longer topping every larder
+  from the granary, the safety buffer sits in the granary and the household that fetches first
+  eats it — one family at 330 of 385 while the next starved at 1 of 308. Ablated one rule at a
+  time and nothing restores it (the trigger at 80 reads 145 too); the *starved* count follows the
+  trigger (56 at 80, 72 at 50). **Three ways to call it:** *(a)* it is D32's inequality and the
+  game — leave it; *(b)* a household topping up above the trigger yields the granary's last armful
+  to one at the emergency line (tried once, changed nothing on three seeds — the villages were
+  simply short); *(c)* the trigger sits higher than 50 in scarcity. His number; measured either way.
 - ⭐⭐ **JOE PLAYS DESIRE PATHS (D358).** Three things only he can call: *(1)* **the look** — are the trails the right width and colour, should packed read darker or lighter, do they still read at the zoomed-out view; *(2)* **the balance** — six shipped seeds over fifty years carry 139 people against 118 and walk 6.8% less; is a quicker village what he wants, or should the discount (9/8 against 10) be gentler; *(3)* **paving** — §2.6's player half (dirt → gravel → cobble) is unspecified and is the natural next slice on top of this table, or it waits for the shell.
 - ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT; SLICES 3 AND 4 AND DESIRE PATHS ARE BUILT (D354, D356, D358); CLOCK B AND THE SHELL ARE NEXT.** Slice 4 = string-pulled paths **with the waypoint** — the state a fractional walk needs, which slice 3 deliberately did not add (`gridless.md §8` says why: the tile a villager is on cannot say whether they are leaving it or arriving at it); then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 4 is where movement genuinely changes for the first time; read `gridless.md §8` and §10 and the `VillagerPointTests` timing pins (20 and 41) before starting it — those pins are the economy's, and slice 4 must either keep them or move them deliberately with a stated reason.
 

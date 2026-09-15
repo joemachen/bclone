@@ -195,8 +195,8 @@ public sealed class SkillSystem : ISimSystem
     /// <para>
     /// <b>⛔ <see cref="VillagerState.FetchingFromStore"/> IS NOT WORK, AND IT IS THE ONE THAT
     /// LOOKS LIKE IT.</b> It is a household member fetching their own family's supper (D30),
-    /// not a job of work. A marketer's delivery is
-    /// <see cref="VillagerState.DeliveringToHome"/>, and that one is.
+    /// not a job of work. A marketer's leg to the counter is
+    /// <see cref="VillagerState.StockingTheMarket"/>, and that one is.
     /// </para>
     /// <para>
     /// <b>⚠️ EVERY STATE IS LISTED, AND A TEST WALKS THE ENUM TO KEEP IT THAT WAY.</b>
@@ -240,7 +240,6 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.MakingFirewood => true,
         VillagerState.HaulingToStore => true,
         VillagerState.CollectingForMarket => true,
-        VillagerState.DeliveringToHome => true,
         VillagerState.FetchingMaterials => true,
         VillagerState.Building => true,
         VillagerState.Clearing => true,

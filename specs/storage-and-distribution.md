@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **✅ complete — all five slices built, D30 closed** · ⏸️ **§14.9, the market as a shop (Joe, 2026-09-13), is specified and NOT STARTED** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), is BUILT (D372, 2026-09-15) — unplayed** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the warehouse that holds manufacturing materials (§4).
@@ -245,8 +245,8 @@ So the loop is not *market → home → market*. It is:
 
 A marketer moves goods two ways, and the second is what solves stranded goods:
 
-- **Out:** from a store to a household below its target — the delivery.
-- **In:** from a household holding more than it needs, or with nobody left living in it, back to a store.
+- ~~**Out:** from a store to a household below its target — the delivery.~~ **⛔ Deleted in D372 (§14.9) — no leg carries anything to a house.** The household walks to the counter.
+- **In:** from a household with nobody left living in it, back to a store.
 
 The "in" direction is the whole of Joe's point 2. A house whose family has died is not a special case in the code; it is simply a household whose need is zero and whose store is not.
 
@@ -260,7 +260,7 @@ This is the acceptance test for the slice, and it is a stronger claim than "the 
 
 - `JobKind.Marketer`, `market_capacity` in config — more than one seat, per Joe.
 - The market is **both** a `StoreBuilding` (a third `StoreKind`, accepting food and firewood, near the homes) **and** a `Workplace` at the same position. Those are separate types today; merging them into the spec's §4 single `Building` is the right end state but not this slice's job. Recorded as a known seam.
-- Households fetch from the market as well as the granary and warehouse, nearest-first — which is what makes a stocked market shorten the trip rather than just move it.
+- Households fetch from the market as well as the granary and warehouse, ~~nearest-first~~ **market-first since D372 (§14.9)**: the nearest market holding the good, and a storehouse only if no market is reachable or none holds it.
 
 ### 14.7 What it measured (built 2026-07-27)
 
@@ -306,9 +306,10 @@ anything stocks it, households start fetching from it with no other change at al
 **A fourth errand, offered on cost like the other three (§14.2): *the market is short of a good a
 bigger store has.*** No threshold, no detour logic — one more useful thing to carry.
 
-- **Source: the nearest store holding it that is not the market**, so there is no self-loop.
-- **Target: the market's own capacity**, which is already derived and already sized as a short
-  trip rather than a second store. Nothing new is typed.
+- **Source: the nearest storehouse holding it** — never a counter (D372; it was *"any store that is
+  not this market"*, which let one market feed another).
+- **Target: the counter's limit** — the player's per-good number for that market (§14.9.3) or, until
+  they type, the derived `MarketStockWanted`, sized as a short trip rather than a second store.
 - **⚠️ Offered only when no household needs anything** — *"once houses are full"*, Joe's own
   trigger, and it is also the safe reading. **D79's rule is that need outranks convenience**: a
   village must never starve with a full granary and an empty larder, and routing a hungry
@@ -384,7 +385,7 @@ that belongs there.
 detour and the slice is wrong — which is §8's standing test for the market and the one this must
 be held to. *Measure household walking, not marketer walking.*
 
-### 14.9 ⏸️ THE MARKET IS A SHOP — Joe's redesign (2026-09-13), specified, NOT STARTED
+### 14.9 ✅ THE MARKET IS A SHOP — Joe's redesign (2026-09-13), built (D372, 2026-09-15)
 
 > Joe, playing D366: *"the marketer. they seems to constantly be going back to and forth to homes.
 > lets change their behavior. the marketer should gather resources from storage buildings
@@ -400,10 +401,16 @@ be held to. *Measure household walking, not marketer walking.*
 > adjust the time/trigger for villagers to fetch from the market. it should be when larder items
 > get to 50% of their total maximum, not as soon as it is below 99%."*
 
-**Status: specified 2026-09-13, not started.** Its own slice, after D370; the per-market limits'
-control lands with the inspector cards (`handoff.md` item 3). Read D14, D36, D161, D171, D199,
-D358(a), D362 and D370 before touching it — most of what Joe asked for already exists in pieces,
-and the slice is the two things that do not.
+**Status: built 2026-09-15 (D372), unplayed.** Everything below is in, plus one rule Joe added
+after the spec was written (§14.9.7); the per-market limits' control is a row on the market's
+inspector until the cards (`handoff.md` item 3) carry it. Read D14, D36, D161, D171, D199, D358(a),
+D362, D370 and D372 before touching it.
+
+**⚠️ What the spec below got wrong, kept for the record:** *"households already shop"* was true
+only in the sense that the market was *a* source — nearest-first, with the granary beside the
+homes, it never won a trip (§14.9.7). And *"the marketer already stocks the counter"* was true
+with the leg offered last and **never counted by the labour quota**, so a village with a bare
+counter and content households staffed nobody to fill it (D185's shape, a fourth time).
 
 #### 14.9.1 What already exists (do not build it twice)
 
@@ -493,11 +500,80 @@ player sets on THAT market, per good** — the same shape as the village stock l
 
 #### 14.9.6 Definition of Done
 
-1. The two changes in §14.9.2 built, the limits in §14.9.3 as hashed state with the derived
-   default; the market card's rows follow with the cards slice.
-2. The tests in §14.9.5 green; the 300-year market-off guard untouched.
-3. The measurements in §14.9.5 quoted in the D-entry, with the trip count.
-4. D14, D36, D171 annotated in `DESIGN.md §7`; this section's status line true.
+1. ✅ The two changes in §14.9.2 built, the limits in §14.9.3 as hashed state with the derived
+   default; the control is a `Keeps up to:` row on the market's inspector until the cards carry it.
+2. ✅ The tests in §14.9.5 green (`MarketShopTests`); the 300-year market-off guard untouched.
+3. ✅ The measurements in §14.9.5 quoted in D372, with the trip count.
+4. ✅ D14, D36, D171 annotated in `DESIGN.md §7`; this section's status line true.
+
+#### 14.9.7 ✅ Built — what is actually in (D372, 2026-09-15)
+
+- **The market comes first (Joe, 2026-09-15, after the spec):** *"villagers should be going to the
+  market and the marketer replenishes their market from the granary. the villagers should only go
+  to the granary if there is no market nearby or the market doesnt have any food."*
+  `BehaviorSystem.NearestShopHolding`: the nearest **market** holding the good; a storehouse only
+  if no market is reachable or none holds it. *"Nearby"* is *reachable* — there is no radius to
+  tune (D201's reasoning). The emergency restock at 20 % (`TryEmergencyRestock`) still goes to the
+  nearest store of any kind — an emergency is the walk that matters most. Guard:
+  `AHouseholdFetchesFromTheMarketBeforeTheGranary` (a granary 2 ticks away, a stocked market 11:
+  the market; emptied: the granary). Red-checked.
+- **Half a larder, then back to target:** `fetch_below_share_percent` (50) in `SimConfig`, validated
+  between `restock_emergency_percent` and 100. **One bit of state per good per household —
+  `Household.ToppingUpFood` / `ToppingUpFirewood`, hashed** — set when the trigger fires, cleared
+  at target, so the trips come back to back (a family of two wanting 190 with an armful of 40
+  makes three trips, not one and a hover at three-quarters). `WorthTheTrip` (D166) still bounds the
+  last small armful. Guard: `AHouseholdFetchesAtHalfALarder` — 60 % sends nobody, 50 % somebody,
+  and with nobody gathering the larder reaches 191 of 154 in a season against **117 without the
+  flag** (the flag scored ZERO until the foragers were held off: their own take carried the larder
+  past target and passed the guard for free). `TheTriggerIsTheDialAndNotAConstant` reads the dial.
+- **No home deliveries:** `VillagerState.DeliveringToHome`, `HandOverAtHome`, the *out* leg of
+  `PlanMarketErrand`, `NearerWorkplaceStore` (D161's *"a farm counts if it happens to be nearer"*
+  fed only the delivery), `Villager.ErrandHouseholdId` and `MarketErrand`'s household fields are
+  **deleted, not switched off**. `LoadForTheRound` derives what a load is for from where the
+  marketer stands: a storehouse is the counter's load, a workplace is a buffer, a house is a
+  stranded larder.
+- **The marketer's day, in order:** the counter (`OfferMarketRestock`, sourced from **storage only**
+  — `NearestStorageHolding`), then a dead family's larder, then a buffer (D370), then rest.
+  `LabourQuota.MarketersWanted` counts the same three (`SimWorld.CounterWantsStocking`,
+  the dead larders, `BufferWorthClearing`) and **no longer counts a household below target**.
+  Guards: `TheMarketerStocksTheCounterBeforeClearingABuffer`, `ABareCounterIsAnErrand` (the
+  quota's counter arm scored two reds — its own guard and `AMarketIsStockedToItsOwnLimit`, because
+  with the arm gone nobody is staffed to stock anything).
+- **Per-market limits:** `StoreBuilding.Limits` (a `StockLimits`, lazily built, hashed sparsely
+  beside `AllowedGoods` — null and zero diverge), `SimWorld.SetMarketLimit(market, goods, int?)`
+  (refuses a non-market and a good a market never holds; warns past capacity),
+  `SimWorld.MarketStockLimit(market, goods)` = the limit or the derived default — read by the
+  restock offer, the load, `NearestCounterWithRoomFor` and the quota through one predicate,
+  `SimWorld.CounterShortOf`. Guards: `AMarketIsStockedToItsOwnLimit` (200 → peaks 200; 400 → 400;
+  0 → holds 400, never emptied), `ALimitIsBoundedByWhatTheCounterCanHold`,
+  `TheHashCoversALimitAndAToppingUp`. Control: `Keeps up to:` on the market's inspector — a spin
+  per good the market holds, showing the derived number until typed, `clear` handing it back;
+  set without its signal on refresh or every frame would write the default back as a limit.
+- **⛔ A scrap at the counter is not a stocked counter.** *"Holds the good"* for a market means
+  holds a trip's worth (the shortfall, up to an armful); a storehouse counts with one unit. Written
+  as *any at all*, the three fish the last fetch left behind captured every trip, and a village on
+  the edge starved beside a granary (the no-seam founding read 11 against 28). A scrap is still the
+  **last** resort when nothing else holds any — the scrap rule alone read eight guards red for a
+  village whose only food was thirty fish at the counter. `NearestShopHolding`: a market stocked for
+  the trip, else a storehouse with any, else a market with a scrap. Guarded in
+  `AHouseholdFetchesFromTheMarketBeforeTheGranary`, red-checked.
+- **An idle marketer takes spare work** (`TryTidyGround`, `TryHelpWithHarvest`), as a stood-down
+  forager does: the counter is an errand as long as households draw from it, so a village with one
+  spare hand keeps a marketer for good — and that hand used to be the laborer who fetched a heap
+  of logs off the ground (`AGoodTheShedRefusesStillReachesAStoreThatWillHaveIt` read ten logs a
+  year beside a pile with room).
+- **Re-aimed:** `AMarketerNeverWalksAnEmptyLeg` watches `StockingTheMarket`; `SkillTests`'
+  work table and `ColdStartTests.IsWorking` name it in the delivery's place; the walk pins
+  (`VillagerPointTests`) lost the ten-tick fetch that used to open every run.
+- **Measured (D372):** eighteen played openings, fifty years: **161 → 145 people, 55 → 72
+  starved**, household fetch trips **2.23 → 1.55** per household-year (−30 %); the fixture village
+  a hundred years with a market: **80 % of loads taken at the counter** (was 5 %), 12 people at
+  year 100 against 11; the no-seam founding over six seeds **38 → 24, against a control that grew
+  29 → 43**. ⚠️ **No single rule ablated restores the 161** — the trigger at 80 reads 145 too
+  (56 starved), one-fetcher off 138, the top-up off 128, the carrying guard off 148 (the old
+  number stood partly on the emergency bounce); the starved count follows the trigger. **In a
+  village living on the edge the safety buffer now sits in the granary, where the household that
+  fetches first eats it** — filed for Joe (`handoff.md`, OPEN).
 
 ---
 

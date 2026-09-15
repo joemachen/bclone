@@ -934,6 +934,11 @@
   // live. Raise it far enough and storage becomes bookkeeping again.
   "carry_capacity": 40,
 
+  // WHEN A HOUSEHOLD GOES SHOPPING (D372, Joe): at half a larder, not at the
+  // first dip - and then back to back until the larder is at target again.
+  // The emergency restock (restock_emergency_percent, 20) is the floor beneath.
+  "fetch_below_share_percent": 50,
+
   // HOW BIG THE VILLAGE CAN GET, stated as a fact about a building (D33).
   //
   // A granary holds a winter's store for this many people; VillageEconomy

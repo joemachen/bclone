@@ -261,7 +261,9 @@ public sealed class FarmGoldenTests
     // appears. Who carries what changes the walk. Was 9885818643046600781.
     // RE-TAKEN (D371) — a heap is fetched only for a good with a reachable shelf, one walker a
     // heap. Was 13712761850512267723.
-    private const ulong SeamGoldenHash = 12678943017753365706UL;
+    // RE-TAKEN (D372) — the market is a shop: no deliveries, a household fetches at half a larder
+    // and tops up, one fetcher at a time, the counter first. Was 12678943017753365706.
+    private const ulong SeamGoldenHash = 9482899366174648224UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -310,7 +312,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D370) with it again — who carries a buffer, and when a heap is fetched.
     // Was 16262613081575096836.
     // RE-TAKEN (D371) with it again — heaps. Was 2251906780837338661.
-    private const ulong SeamBeforeAnybodyGotBetter = 16396613229820389487UL;
+    // RE-TAKEN (D372) with it again — the shop. Was 16396613229820389487.
+    private const ulong SeamBeforeAnybodyGotBetter = 4275989670500860885UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

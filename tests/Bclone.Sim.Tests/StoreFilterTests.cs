@@ -220,14 +220,27 @@ public sealed class StoreFilterTests
         Assert.True(world.SetStoreAccepts(warehouse, Goods.Logs, accepted: false).Allowed);
         Assert.False(warehouse.Store.IsFull, "A full warehouse would take a different branch entirely.");
 
+        // ⚠️ THE LEAST ON THE GROUND ACROSS THE LAST YEAR, NOT THE LAST TICK (D372). A load a
+        // forester has just set down beside a pile with room for two-thirds of it is in transit,
+        // not stranded; this read 32 on the ground against 22 free on the day the market became
+        // a shop and a different village happened to end its twentieth year mid-tidy. Logs that
+        // sit for a whole year with room in the pile are the bug this guards.
         int everMade = 0;
+        int onTheGround = int.MaxValue;
         for (int tick = 0; tick < config.TicksPerYear * 20; tick++)
         {
             loop.StepOnce();
             everMade = System.Math.Max(everMade, world.TotalLogs());
+            if (tick >= config.TicksPerYear * 19 && pile.Store.FreeSpace > 0)
+            {
+                onTheGround = System.Math.Min(onTheGround, world.OnTheGround(Goods.Logs));
+            }
         }
 
-        int onTheGround = world.OnTheGround(Goods.Logs);
+        if (onTheGround == int.MaxValue)
+        {
+            onTheGround = world.OnTheGround(Goods.Logs);
+        }
 
         _output.WriteLine(
             $"20 years: the village handled {everMade} logs in all. {warehouse.Name} refused them and "

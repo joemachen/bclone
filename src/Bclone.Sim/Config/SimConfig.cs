@@ -906,6 +906,27 @@ public sealed record SimConfig
     [JsonPropertyName("fetch_worth_this_share_percent")]
     public int FetchWorthThisSharePercent { get; init; } = 25;
 
+    /// <summary>
+    /// How low a larder gets, as a share of its target, before the household goes to a store
+    /// for more (D372, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe's dial:</b> *"it should be when larder items get to 50% of their total maximum,
+    /// not as soon as it is below 99%."* A household goes for a good when it holds this share of
+    /// the target or less, and then keeps going — an armful at a time, back to back — until the
+    /// larder is at target again (<c>Household.ToppingUpFood</c> / <c>ToppingUpFirewood</c>).
+    /// Fewer, fuller trips, instead of a walk for every dip.
+    /// </para>
+    /// <para>
+    /// The emergency restock at <see cref="RestockEmergencyPercent"/> is the floor beneath it and
+    /// must stay below it; <see cref="FetchWorthThisSharePercent"/> is still the *"is the trip
+    /// worth carrying"* bar on top (D166).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fetch_below_share_percent")]
+    public int FetchBelowSharePercent { get; init; } = 50;
+
     [JsonPropertyName("farmhouse_seats")]
     public int FarmhouseSeats { get; init; } = 2;
 
@@ -3422,6 +3443,13 @@ public sealed record SimConfig
         if (DowryPercent is < 0 or > 100)
         {
             throw new SimConfigException($"dowry_percent must be in 0..100 (got {DowryPercent}).");
+        }
+
+        if (FetchBelowSharePercent < RestockEmergencyPercent || FetchBelowSharePercent > 100)
+        {
+            throw new SimConfigException(
+                $"fetch_below_share_percent must be between restock_emergency_percent ({RestockEmergencyPercent}) and 100 " +
+                $"(got {FetchBelowSharePercent}) - the ordinary fetch has to fire before the emergency one.");
         }
 
         if (LeaveHomeAge < 0)

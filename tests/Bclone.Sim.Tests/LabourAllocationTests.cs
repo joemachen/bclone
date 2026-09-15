@@ -127,6 +127,12 @@ public sealed class LabourAllocationTests
             loop.Step(config.TicksPerYear);
             loop.StepOnce();
 
+            // ⚠️ THE QUOTA AND THE ASSIGNMENT AT ONE STATE (D372). The reshuffle ran at the top of
+            // the tick just stepped and the mortality pass ran after it in the same tick, so a
+            // death in that tick left one more forester cutting than the quota, read now, would
+            // spare — year 111, 1 cutting against 0 sparable, 4 hands for 10 mouths. Re-running
+            // the allocator on the world as it stands asks the question honestly.
+            LabourAllocator.Reshuffle(loop.World);
             LabourQuota quota = LabourQuota.For(loop.World);
             int cutting = CountWorking(loop.World, JobKind.Forester);
             int sparable = System.Math.Max(0, quota.Hands - quota.ForagersToFeedEveryone);
@@ -590,8 +596,16 @@ public sealed class LabourAllocationTests
         // D20 requires the allocator be re-runnable FROM SCRATCH rather than
         // incremental. If a from-scratch run did not reproduce itself, the annual
         // reshuffle would churn jobs for no reason at all.
+        //
+        // ⚠️ TWO RUNS AT ONE STATE (D372). This compared the loop's own reshuffle with a second
+        // run one behaviour pass later, and the pass moved the state: the marketer staffed for a
+        // bare counter picked the granary's last armful up in that same tick, the restock errand
+        // went with it (`CounterShortOf` needs a storehouse holding some), and the second run
+        // staffed nobody. The quota counts errands that exist NOW — that is its design (D185) —
+        // so idempotence has to be asked of two runs with nothing between them.
         SimLoop loop = RunToAReshuffle(Config, 40);
 
+        LabourAllocator.Reshuffle(loop.World);
         int[] first = Assignments(loop.World);
         LabourAllocator.Reshuffle(loop.World);
         int[] second = Assignments(loop.World);

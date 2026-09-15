@@ -99,8 +99,12 @@ public sealed class VillagerPointTests
 
     // ⚠️ MEASURED ON THE TILE-STEPPING CODE BEFORE SLICE 3, then pinned. If either moves, the
     // walk's timing moved, and that is the economy moving under a slice that promised not to.
-    private const int FirstGatherAtPace1 = 20;
-    private const int FirstGatherAtPace3 = 41;
+    // ⚠️ RE-PINNED (D372), not for the clock: the first ten ticks of both walks were a FETCH —
+    // the founder's larder started below the old 80 % floor, so the first errand was to the
+    // cart and back — and at half a larder that trip no longer fires. Both pins moved by exactly
+    // ten; the walk between them (21 ticks at pace 3 against pace 1) is unchanged. Were 20 / 41.
+    private const int FirstGatherAtPace1 = 10;
+    private const int FirstGatherAtPace3 = 31;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -145,6 +149,11 @@ public sealed class VillagerPointTests
     /// **Re-pinned a fifth time (D365), again not for the clock:** a winter costs 24 firewood a
     /// home (was 20) — **85** trips, the fiftieth at **1,046**; the first two unchanged.
     /// </para>
+    /// <para>
+    /// **Re-pinned a sixth time (D372), not for the clock:** the market is a shop — a household
+    /// fetches at half a larder, one member at a time, so who is free to gather changes —
+    /// **84** trips, the 1st/10th/50th at **15/106/1,024**.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -175,8 +184,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(85, entries);
-        Assert.Equal(new ulong[] { 14, 107, 1046 }, at);
+        Assert.Equal(84, entries);
+        Assert.Equal(new ulong[] { 15, 106, 1024 }, at);
     }
 
     /// <summary>

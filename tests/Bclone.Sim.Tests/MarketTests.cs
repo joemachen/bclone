@@ -174,22 +174,25 @@ public sealed class MarketTests
         // leg is chosen cost-first from wherever they stand, so "pick up food from the
         // granary on the way back" falls out instead of being a special case — but
         // only if a marketer heading AWAY from a pickup is always carrying something.
+        //
+        // ⚠️ THE LEG AWAY FROM A PICKUP IS TO THE COUNTER NOW (D372) — `StockingTheMarket`.
+        // This watched `DeliveringToHome`, which is deleted with the home deliveries.
         SimConfig config = Config;
         SimLoop loop = Build(config);
 
-        int deliveries = 0;
+        int stockingTicks = 0;
         for (int i = 0; i < config.TicksPerYear * 120; i++)
         {
             loop.StepOnce();
 
             foreach (Villager villager in loop.World.Villagers)
             {
-                if (!villager.Alive || villager.State != VillagerState.DeliveringToHome)
+                if (!villager.Alive || villager.State != VillagerState.StockingTheMarket)
                 {
                     continue;
                 }
 
-                deliveries++;
+                stockingTicks++;
 
                 // ...unless they have just eaten it. A hungry marketer takes their
                 // meal out of their own arms first, which is D10's rule — nobody
@@ -198,13 +201,13 @@ public sealed class MarketTests
                 // Found by this test: it originally asserted the flat invariant and
                 // caught Dorcas eating her delivery in the village's first year.
                 Assert.True(villager.IsCarrying || villager.JustAte,
-                    $"{villager.Name} is delivering to a home with empty arms at tick {loop.World.Tick}.");
+                    $"{villager.Name} is walking to the counter with empty arms at tick {loop.World.Tick}.");
             }
         }
 
-        _output.WriteLine($"{deliveries} delivering-ticks observed.");
-        Assert.True(deliveries > 0,
-            "No marketer ever delivered anything in 120 years, so this guard is vacuous (D7).");
+        _output.WriteLine($"{stockingTicks} stocking-ticks observed.");
+        Assert.True(stockingTicks > 0,
+            "No marketer ever stocked the counter in 120 years, so this guard is vacuous (D7).");
     }
 
     [Fact]
@@ -554,9 +557,6 @@ public sealed class MarketTests
         loop.World.Villagers[0].Carried.Receive(Goods.Produce, 1);
         Assert.NotEqual(before, StateHash.Compute(loop.World));
 
-        ulong carried = StateHash.Compute(loop.World);
-        loop.World.Villagers[0].ErrandHouseholdId += 1;
-        Assert.NotEqual(carried, StateHash.Compute(loop.World));
     }
 
     // ---------------------------------------------------------------
@@ -589,7 +589,8 @@ public sealed class MarketTests
         SimConfig config = Config;
         SimWorld world = Build(config).World;
 
-        // Every family content, so households contribute nothing to the quota.
+        // Every family content, so households contribute nothing to the quota — and the counter
+        // kept as it is, since a bare market beside a stocked granary is an errand now (D372).
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
@@ -597,6 +598,8 @@ public sealed class MarketTests
             household.Stockpile.Add(
                 Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
         }
+
+        KeepTheCounterAsItIs(world);
 
         int quiet = LabourQuota.MarketersWanted(world);
         _output.WriteLine($"every household at target: {quiet} marketers wanted");
@@ -644,6 +647,7 @@ public sealed class MarketTests
         }
 
         Workplace farm = FarmFixtures.RaiseAFarm(world);
+        KeepTheCounterAsItIs(world);
 
         // ⚠️ TESTED AT THE BOUNDARY, because the shipped buffer is smaller than this guard's
         // first draft assumed — `farm_store_cap` is 100 against an armful of 67, so **a farm
@@ -703,6 +707,7 @@ public sealed class MarketTests
         }
 
         Workplace farm = FarmFixtures.RaiseAFarm(world);
+        KeepTheCounterAsItIs(world);
         int capacity = farm.Store.Capacity;
         int agreed = 0;
 
@@ -720,5 +725,22 @@ public sealed class MarketTests
 
         _output.WriteLine($"{agreed} buffer levels, quota and errand agreed on every one");
         Assert.True(agreed > 5, "Too few levels sampled to have proved anything.");
+    }
+
+    /// <summary>
+    /// Limits of zero on every good the market holds — so the counter is no errand and the farm's
+    /// buffer is the only one in the village (D372: a bare counter with a stocked granary is an
+    /// errand now, and these two guards are about the buffer alone).
+    /// </summary>
+    private static void KeepTheCounterAsItIs(SimWorld world)
+    {
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            if (market.CanEverHold((Goods)g))
+            {
+                Assert.True(world.SetMarketLimit(market, (Goods)g, 0).Allowed);
+            }
+        }
     }
 }

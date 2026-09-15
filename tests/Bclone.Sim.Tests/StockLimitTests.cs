@@ -350,7 +350,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D363) — foraging cut 40%; the fixture's derived yield 132 → 79. Was 6175824268791431883.
     // RE-TAKEN (D365) — a winter costs 24 a home, burned on the winter's beat. Was 11758015511369690769.
     // RE-TAKEN (D371) — a heap is fetched only for a good with a reachable shelf, one walker a heap. Was 13283593437676098010.
-    private const ulong FixtureFiftyYearHash = 4452624815348043747UL;
+    // RE-TAKEN (D372) — the market is a shop: no deliveries, half a larder then back to target, one fetcher at a time, the counter first. Was 4452624815348043747.
+    private const ulong FixtureFiftyYearHash = 6063056430692497952UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -431,7 +432,10 @@ public sealed class StockLimitTests
     //   before a heap was fetched only for a good with a reachable shelf, one walker a heap
     //     (D371): 3633342692540801636 — Joe's year-41 log had eight villagers cycling at a full
     //     granary's door for a heap of fish beside a heap of leather, nobody picking anything up.
-    private const ulong ShippedFiftyYearHash = 16905550498648611272UL;
+    //   before the market was a shop (D372): 16905550498648611272 — no home deliveries, a
+    //     household fetches at half a larder and tops up to target, one fetcher at a time, and a
+    //     villager carrying the firewood home is not sent back for more.
+    private const ulong ShippedFiftyYearHash = 7258003421251289401UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

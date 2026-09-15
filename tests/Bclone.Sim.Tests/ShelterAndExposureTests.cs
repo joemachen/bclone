@@ -278,7 +278,15 @@ public sealed class ShelterAndExposureTests
         // yields one firewood, where it reads zero — not because nobody is cold but
         // because the whole settlement is dead by its first spring and there is no fire
         // left anywhere to walk to. A guard that only fires in a corpse is not a guard.
-        SimConfig config = Config;
+        //
+        // ⚠️ AND POSED IN A COLDER VALLEY SINCE D372. The *"marketer on a long leg"* above was the
+        // only villager ever out for thirty winter ticks at a stretch; with the deliveries gone
+        // (the market is a shop) nobody in the ordinary fixture reaches the line in sixty years
+        // — measured 0 at 50 %, 70 % and 90 %, and over a hundred years. Three days outdoors to
+        // danger instead of fifteen makes a woodcutter's stand far enough to feel, in a village
+        // that still lives (12 people at sixty years). The decision is what is under test, not
+        // the fixture's winters.
+        SimConfig config = Config with { ExposureDaysOutdoors = 3 };
         SimLoop loop = Build(config);
 
         int seekingTicks = 0;
