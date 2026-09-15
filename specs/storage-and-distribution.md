@@ -573,7 +573,7 @@ player sets on THAT market, per good** — the same shape as the village stock l
   (56 starved), one-fetcher off 138, the top-up off 128, the carrying guard off 148 (the old
   number stood partly on the emergency bounce); the starved count follows the trigger. **In a
   village living on the edge the safety buffer now sits in the granary, where the household that
-  fetches first eats it** — filed for Joe (`handoff.md`, OPEN).
+  fetches first eats it** — filed for Joe and closed by him the same day: *"leave it"* (D32's inequality is the game).
 
 ---
 

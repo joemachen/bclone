@@ -446,7 +446,7 @@ stood idle with 130 logs.
 forager's hour — *"a fisher at 2.7× may be the next 'too much'"*); the winter at 24 (or 25 / 30);
 `path_holds_for` if paths still feel wrong.
 
-✅ **Closed by Joe and not to be re-opened:** the build strip wrapping to two rows on BUILD + ALL
+✅ **Closed by Joe and not to be re-opened:** the half-a-larder rule's cost to a village on the edge (D372 — *"leave it"*, 2026-09-15); the build strip wrapping to two rows on BUILD + ALL
 (*"fine for now"*); harvest marks staying on felled ground (D127, reaffirmed D343: *keep it
 standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 
@@ -753,7 +753,7 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐⭐ **THE HALF-A-LARDER RULE AND A VILLAGE ON THE EDGE (D372, 2026-09-15).** The market is a
+- ~~⭐⭐ **THE HALF-A-LARDER RULE AND A VILLAGE ON THE EDGE (D372, 2026-09-15).**~~ ✅ **CLOSED BY JOE, 2026-09-15: *"leave it"* — option (a), it is D32's inequality and the game. Do not re-open.** The market is a
   shop as Joe asked, and a fed village likes it (the fixture's control grew 29 → 43 over six seeds;
   80 % of loads taken at the counter). But a village that cannot build a hut — two foragers for ten
   mouths — reads worse: the no-seam founding 38 → 24 over six seeds, eighteen played openings
