@@ -3178,10 +3178,19 @@ public sealed class BehaviorSystem : ISimSystem
         // was a heap nobody could ever tidy away — and since D211 the clearing path can make
         // one. The order is food, logs, firewood as before, and the armful is still one
         // `carry_capacity` between them: the rule that stops tidying being a teleport.
+        // ⛔ ONLY WHAT HAS A SHELF (D371). A good on this tile that no reachable storage will take
+        // stays on the ground — picking it up put it straight back down at the full door and
+        // sent everybody to fetch it again. `HasAShelf` is the question `NearestGroundStack`
+        // asked to send us here, asked of each stack in turn.
         int room = world.Config.CarryCapacity;
         for (int g = 0; g < villager.Carried.Slots && room > 0; g++)
         {
             var goods = (Goods)g;
+            if (world.GroundStackAt(at, goods) <= 0 || world.NearestStorageWithRoomFor(at, goods) is null)
+            {
+                continue;
+            }
+
             int took = world.TakeFromGround(at, goods, room);
             villager.Carried.Receive(goods, took);
             room -= took;

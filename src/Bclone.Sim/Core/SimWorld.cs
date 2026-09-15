@@ -3655,6 +3655,29 @@ public sealed class SimWorld
     /// village that has never dropped anything pays one integer compare.
     /// </para>
     /// </remarks>
+    /// <summary>Whether a reachable storage building has room for this stack's good — the one question a heap fetch asks (D371).</summary>
+    public bool HasAShelf(GroundStack stack)
+    {
+        ArgumentNullException.ThrowIfNull(stack);
+        return NearestStorageWithRoomFor(stack.Position, stack.Goods) is not null;
+    }
+
+    /// <summary>Whether somebody is already walking to the heap on this tile (D371) — a read of the errand tile, no new state.</summary>
+    public bool SomebodyIsFetching(GridPos heap)
+    {
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager villager = Villagers[i];
+            if (villager.Alive && villager.State == VillagerState.TidyingGround
+                && villager.ErrandX == heap.X && villager.ErrandY == heap.Y)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public GroundStack? NearestGroundStack(GridPos from)
     {
         if (GroundStacks.Count == 0)
@@ -3669,9 +3692,22 @@ public sealed class SimWorld
         {
             GroundStack stack = GroundStacks[i];
 
-            // ⛔ STORAGE ONLY (D370): the market has room and a laborer may not put anything in
-            // it, so asking every store here sent a heap to a full granary's door for ever.
-            if (!SomewhereToPut(stack.Goods))
+            // ⛔⛔ THIS STACK, TO A SHELF IT CAN REACH — the same question the haul will ask
+            // (D371). D370 asked `SomewhereToPut` (storage with room, anywhere) and it was still
+            // the wrong question twice over: it ignored reachability, and the pick-up takes every
+            // good on the TILE in id order, so a heap of fish beside a heap of leather at a full
+            // granary's door was approved for the leather, the fish was what came up, the full
+            // granary was one tile away, and eight villagers cycled *fetching → walking home* at
+            // its door every two ticks in Joe's year-41 log with nobody ever picking anything up.
+            // `HasAShelf` is what `StoreForTheLoad` will answer for this good from this tile.
+            if (!HasAShelf(stack))
+            {
+                continue;
+            }
+
+            // ⭐ AND ONE WALKER PER HEAP (D371) — the `SomebodyIsClearing` shape: a heap somebody
+            // is already on their way to is nobody else's errand this tick.
+            if (SomebodyIsFetching(stack.Position))
             {
                 continue;
             }

@@ -5491,13 +5491,13 @@ public partial class VillageMap : Control
     /// </remarks>
     private void DrawHeaps()
     {
-        if (_world is null || _pixelsPerTile < WoodsZoomFloor)
+        if (_world is null)
         {
             return;
         }
 
-        float size = Mathf.Max(3f, _pixelsPerTile * 0.28f);
-
+        // Two goods on one tile are two chips side by side, not one over the other.
+        _heapsOnTile.Clear();
         for (int i = 0; i < _world.GroundStacks.Count; i++)
         {
             GroundStack heap = _world.GroundStacks[i];
@@ -5506,12 +5506,130 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            Vector2 centre = ToScreen(heap.Position) + new Vector2(0f, _pixelsPerTile * 0.22f);
-            var box = new Rect2(centre - (Vector2.One * size / 2f), new Vector2(size, size));
+            int nth = _heapsOnTile.GetValueOrDefault(heap.Position);
+            _heapsOnTile[heap.Position] = nth + 1;
 
+            Rect2 box = HeapRectOf(heap.Position);
+            box.Position += new Vector2(box.Size.X * 1.15f * nth, 0f);
             DrawRect(box, GoodsPalette.ColourOf(heap.Goods));
-            DrawRect(box, HeapEdge, filled: false, width: 1f);
+            DrawRect(box, HeapEdge, filled: false, width: 2f);
         }
+    }
+
+    private readonly Dictionary<GridPos, int> _heapsOnTile = new();
+
+    /// <summary>Where a heap on a tile is drawn — <b>at the tile's lower-right corner, clear of any building on it</b> (D371).</summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, with a full granary and *"+420 on the ground"* on the panel: *"not seeing the visible
+    /// heap at the door of a full granary — unless im missing it?"* He was not missing it; it was
+    /// a 0.28-tile chip drawn 0.22 tile below the tile's centre — entirely INSIDE the building's
+    /// 0.8-tile square, in a colour a shade off the granary's — and not drawn at all below seven
+    /// pixels a tile. A heap at a door is the one heap the player most needs to see (D370 leaves
+    /// it there on purpose), so it sits at the corner of the tile, past the building's edge, with
+    /// a dark outline that reads on any fill, at every zoom.
+    /// </para>
+    /// </remarks>
+    private Rect2 HeapRectOf(GridPos tile)
+    {
+        float size = Mathf.Max(3f, _pixelsPerTile * HeapSize);
+        Vector2 tileCentre = ToScreen(tile);
+        Vector2 centre = tileCentre + (Vector2.One * (_pixelsPerTile * HeapOffset));
+
+        // ⚠️ A FREE-PLACED BUILDING STRADDLES ITS TILE (D329), so a fixed corner of the tile can
+        // still be under it — the cart at (−0.5, −0.5) covers the lower-right corner of (−1, −1).
+        // With a building on the tile the heap goes just past the building's square, on the
+        // side of the building the tile's centre is on (or to the lower right when they coincide).
+        if (BuildingBoxOn(tile) is (Vector2 buildingCentre, Rect2 box))
+        {
+            Vector2 away = tileCentre - buildingCentre;
+            if (away.LengthSquared() < 1e-6f)
+            {
+                away = Vector2.One;
+            }
+
+            away = away.Normalized();
+            float toEdgeX = Mathf.Abs(away.X) < 1e-6f ? float.MaxValue : (box.Size.X / 2f) / Mathf.Abs(away.X);
+            float toEdgeY = Mathf.Abs(away.Y) < 1e-6f ? float.MaxValue : (box.Size.Y / 2f) / Mathf.Abs(away.Y);
+            float toEdge = Mathf.Min(toEdgeX, toEdgeY);
+            centre = buildingCentre + (away * (toEdge + (size * 0.75f)));
+        }
+
+        return new Rect2(centre - (Vector2.One * size / 2f), new Vector2(size, size));
+    }
+
+    /// <summary>The screen centre and bounding box of the building drawn over a tile, if any — a store, a workplace, a home or a library.</summary>
+    private (Vector2, Rect2)? BuildingBoxOn(GridPos tile)
+    {
+        SimWorld world = _world!;
+        if (world.StoreAt(tile) is StoreBuilding store)
+        {
+            return BoxOf(ToScreen(store.Position), store.ExtentWidth * 0.8f, store.ExtentHeight * 0.8f, store.Facing.Raw);
+        }
+
+        if (world.WorkplaceCovering(tile) is Workplace workplace)
+        {
+            return BoxOf(ToScreen(workplace.Position), workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw);
+        }
+
+        if (world.HouseholdAt(tile) is Household household && household.HomePosition is Point home)
+        {
+            return BoxOf(ToScreen(home), 0.62f, 0.62f, 0);
+        }
+
+        if (world.LibraryCovering(tile) is Library library)
+        {
+            return BoxOf(ToScreen(library.Position), 0.8f, 0.8f, 0);
+        }
+
+        return null;
+
+        (Vector2, Rect2) BoxOf(Vector2 centre, float wide, float tall, ushort facing)
+        {
+            Vector2[] quad = FootprintQuad(centre, wide, tall, facing);
+            float left = float.MaxValue, right = float.MinValue, top = float.MaxValue, bottom = float.MinValue;
+            foreach (Vector2 corner in quad)
+            {
+                left = Mathf.Min(left, corner.X);
+                right = Mathf.Max(right, corner.X);
+                top = Mathf.Min(top, corner.Y);
+                bottom = Mathf.Max(bottom, corner.Y);
+            }
+
+            return (centre, new Rect2(left, top, right - left, bottom - top));
+        }
+    }
+
+    /// <summary>A heap's side, in tiles.</summary>
+    private const float HeapSize = 0.28f;
+
+    /// <summary>How far from the tile's centre a heap sits on a bare tile, on both axes.</summary>
+    private const float HeapOffset = 0.36f;
+
+    /// <summary>
+    /// A heap on a store's tile is drawn beside the store, not under it — <b>a probe line</b> (D371).
+    /// </summary>
+    public string AHeapAtADoorIsSeen()
+    {
+        SimWorld world = _world!;
+        if (world.StoreBuildings.Count == 0)
+        {
+            return "[widths] heaps: ⛔ no store to pose a heap beside";
+        }
+
+        StoreBuilding store = world.StoreBuildings[0];
+        Rect2 heap = HeapRectOf(store.Tile);
+        (Vector2 _, Rect2 building) = BuildingBoxOn(store.Tile)!.Value;
+
+        // The heap must lie wholly outside the building's square and within a tile of it — beside
+        // the door, not under the roof and not across the yard.
+        bool clear = !heap.Intersects(building);
+        bool beside = heap.GetCenter().DistanceTo(building.GetCenter()) < _pixelsPerTile * 1.2f;
+
+        return clear && beside
+            ? $"[widths] heaps: ✅ a heap on {store.Name}'s tile draws {heap.Size.X:F0}px wide beside the building, "
+                + $"{heap.GetCenter().DistanceTo(building.GetCenter()) / _pixelsPerTile:F2} tiles from its centre"
+            : $"[widths] heaps: ⛔ a heap on {store.Name}'s tile draws {(clear ? "too far from" : "under")} the building — the door-heap is invisible";
     }
 
     private static readonly Color HeapEdge = new(0f, 0f, 0f, 0.45f);

@@ -259,7 +259,9 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D370) — buffers are the producer's and the marketer's (laborers out), and "is there
     // room?" is asked of storage only, so a heap at a full store's door stays there until room
     // appears. Who carries what changes the walk. Was 9885818643046600781.
-    private const ulong SeamGoldenHash = 13712761850512267723UL;
+    // RE-TAKEN (D371) — a heap is fetched only for a good with a reachable shelf, one walker a
+    // heap. Was 13712761850512267723.
+    private const ulong SeamGoldenHash = 12678943017753365706UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -307,7 +309,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D365) with it again — the winter's burn. Was 2989669966483791210.
     // RE-TAKEN (D370) with it again — who carries a buffer, and when a heap is fetched.
     // Was 16262613081575096836.
-    private const ulong SeamBeforeAnybodyGotBetter = 2251906780837338661UL;
+    // RE-TAKEN (D371) with it again — heaps. Was 2251906780837338661.
+    private const ulong SeamBeforeAnybodyGotBetter = 16396613229820389487UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

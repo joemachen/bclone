@@ -298,8 +298,11 @@ public sealed class SkillTests
     // 13050083585263826165 (fixture) and 2181839681135938194 (shipped).
     // RE-TAKEN (D365) — the winter's burn (see `StockLimitTests.ShippedFiftyYearHash`). Were
     // 14159269115130930384 (fixture) and 16834645931621797114 (shipped).
-    [InlineData(false, 11030058396925749916UL)]
-    [InlineData(true, 3677322281643096807UL)]
+    // RE-TAKEN (D371) — a heap is fetched only for a good that has a reachable shelf, and one
+    // villager goes for it (see `StockLimitTests.ShippedFiftyYearHash`). Were
+    // 11030058396925749916 (fixture) and 3677322281643096807 (shipped).
+    [InlineData(false, 9581975549518549333UL)]
+    [InlineData(true, 16825462083917521948UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

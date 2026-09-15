@@ -180,6 +180,31 @@ store."*
   with the old predicate back, 237 empty-handed turns from the door in a season; 0 now. With it, a
   village whose storage is full simply leaves its heaps alone until there is room — the
   self-correcting behaviour D96 predicted.
+- **⛔⛔ A TILE IS NOT A STACK — approve the load you will actually pick up (D371).** D370's
+  gate asked whether *any* storage had room for a stack's good and approved the TILE; the
+  pick-up takes every good on the tile in id order; so a heap of fish beside a heap of leather
+  at a full granary's door was approved for the leather, the fish came up first, its only
+  destination was the full granary one tile away, and it went straight back down — Joe's year-41
+  log: eight villagers cycling *fetching → walking home* at the door every two ticks, nobody
+  ever picking anything up. Now `SimWorld.HasAShelf(stack)` asks `NearestStorageWithRoomFor`
+  from the stack's own tile for the stack's own good (reachable, storage, room — exactly what the
+  haul will ask), `NearestGroundStack` approves per stack, and `PickUpFromTheGround` takes only
+  the goods that pass it: the leather leaves, the fish stays until a shelf appears.
+- **⭐ One walker per heap (D371).** `SomebodyIsFetching(tile)` — a villager already in
+  `TidyingGround` with that errand tile — and the heap is nobody else's this tick (the
+  `SomebodyIsClearing` shape, no new state). Four laborers and one heap eight tiles out: one
+  sets off; without the claim all four did and three came home empty-handed.
+- **The heap is drawn beside the building, not under it (D371).** `VillageMap.HeapRectOf`: on a
+  bare tile the chip sits at the tile's lower-right corner; on a building's tile it sits just
+  past the building's square on the side the tile's centre is on (free-placed buildings
+  straddle their tile, D329), with a 2 px dark outline, at every zoom; two goods on one tile
+  are two chips side by side. Joe: *"not seeing the visible heap at the door of a full granary —
+  unless im missing it?"* He was not — it was a chip 0.22 tile below centre, inside the
+  granary's square, a shade off its colour, and not drawn at all below seven pixels a tile.
+  Probe: `heaps:` poses a heap on a store's tile and asserts the chip is outside the building's
+  box and within a tile of it.
+  Guards: `AMixedHeapAtAFullDoorMovesWhatHasAShelfAndLeavesTheRest` (237 empty-handed turns
+  with the tile-approval back; 0 now), `OneVillagerGoesForAHeap` (4 at once without the claim).
 - **The tile is remembered on `ErrandX/ErrandY`**, like clearing and for the same reason: the
   nearest heap is judged from where somebody is standing, so re-deciding mid-walk lets them
   shuttle between two heaps forever.

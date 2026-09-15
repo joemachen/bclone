@@ -437,6 +437,169 @@ public sealed class GoodsOnTheGroundTests
         }
     }
 
+    /// <summary>
+    /// ⭐⭐ A mixed heap at a full granary's door moves what has a shelf and leaves the rest —
+    /// and one villager goes for it, not eight (D371).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe's log, year 41: eight villagers cycling *resting → fetching a load off the ground →
+    /// walking home* at the full granary's tile every two ticks, and nobody ever picking anything
+    /// up. The heap at the door held fish beside something a warehouse takes; the heap fetch
+    /// approved the TILE because one stack on it had a shelf, the pick-up took the fish first (id
+    /// order), the fish's only destination was the full granary one tile away, and it went straight
+    /// back down. And nothing claimed a heap, so every spare hand went at once.
+    /// </para>
+    /// <para>
+    /// Now a stack is approved, and picked up, only if a reachable storage has room for THAT
+    /// good; and a heap somebody is already walking to is nobody else's errand.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AMixedHeapAtAFullDoorMovesWhatHasAShelfAndLeavesTheRest()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+        granary.Store.Receive(Goods.Meat, granary.Store.FreeSpace);
+        Assert.True(granary.Store.IsFull, "the fixture's granary did not fill");
+
+        StoreBuilding warehouse = world.AnyStoreOf(StoreKind.Warehouse);
+        Assert.True(warehouse.HasRoomFor(Goods.Leather), "the fixture's warehouse has no room for leather");
+        Assert.False(world.NearestStorageWithRoomFor(granary.Tile, Goods.Fish) is not null, "somewhere still takes fish, so the trap cannot be posed");
+
+        foreach (Household household in world.Households)
+        {
+            int wanted = world.TargetFoodFor(household);
+            if (world.FoodIn(household.Stockpile) < wanted)
+            {
+                household.Stockpile.Add(Goods.Produce, wanted);
+            }
+        }
+
+        Assert.True(world.SetStockLimit(Goods.Produce, 1).Allowed);
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, 0);
+        }
+
+        // The mixed heap at the granary's door: fish nobody can shelve, leather the warehouse takes.
+        world.SetDown(granary.Tile, Goods.Fish, 80);
+        world.SetDown(granary.Tile, Goods.Leather, 30);
+
+        int walkersAtOnceWorst = 0;
+        int emptyHandedTurns = 0;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            foreach (Household household in world.Households)
+            {
+                int wanted = world.TargetFoodFor(household);
+                if (world.FoodIn(household.Stockpile) < wanted)
+                {
+                    household.Stockpile.Add(Goods.Produce, wanted - world.FoodIn(household.Stockpile));
+                }
+            }
+
+            loop.StepOnce();
+
+            int walkers = 0;
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.State == VillagerState.TidyingGround
+                    && villager.ErrandX == granary.Tile.X && villager.ErrandY == granary.Tile.Y)
+                {
+                    walkers++;
+                }
+
+                if (villager.Tile == granary.Tile && villager.State == VillagerState.TravelingHome && !villager.IsCarrying)
+                {
+                    emptyHandedTurns++;
+                }
+            }
+
+            walkersAtOnceWorst = System.Math.Max(walkersAtOnceWorst, walkers);
+        }
+
+        _output.WriteLine(
+            $"a season on: {world.GroundStackAt(granary.Tile, Goods.Fish)} fish and {world.GroundStackAt(granary.Tile, Goods.Leather)} leather "
+            + $"at the door; warehouse holds {warehouse.Store[Goods.Leather]} leather; at most {walkersAtOnceWorst} walking to the heap at once; "
+            + $"{emptyHandedTurns} empty-handed turns from the door");
+
+        Assert.True(warehouse.Store[Goods.Leather] >= 30, $"the leather never reached the warehouse ({warehouse.Store[Goods.Leather]})");
+        Assert.Equal(80, world.GroundStackAt(granary.Tile, Goods.Fish));
+        Assert.True(walkersAtOnceWorst <= 1, $"{walkersAtOnceWorst} villagers were walking to the same heap at once");
+        Assert.True(emptyHandedTurns == 0, $"{emptyHandedTurns} empty-handed turns from the granary's door — the fish is being picked up and put straight back down");
+    }
+
+    /// <summary>⭐ One villager goes for a heap, not everybody who is idle (D371).</summary>
+    /// <remarks>
+    /// A heap eight tiles out, four laborers with nothing to do: over the walk out at most one of
+    /// them is on their way to it at any tick. Without the claim all four set off and three come
+    /// home empty-handed — Joe's crowd at the granary, one building over.
+    /// </remarks>
+    [Fact]
+    public void OneVillagerGoesForAHeap()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        foreach (Household household in world.Households)
+        {
+            int wanted = world.TargetFoodFor(household);
+            if (world.FoodIn(household.Stockpile) < wanted)
+            {
+                household.Stockpile.Add(Goods.Produce, wanted);
+            }
+        }
+
+        Assert.True(world.SetStockLimit(Goods.Produce, 1).Allowed);
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, 0);
+        }
+
+        // A heap of leather well away from the homes, with a warehouse that takes it.
+        GridPos far = default;
+        bool found = false;
+        for (int dx = 8; dx <= 12 && !found; dx++)
+        {
+            var at = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y);
+            if (world.Map.Contains(at) && world.NearestStorageWithRoomFor(at, Goods.Leather) is not null)
+            {
+                far = at;
+                found = true;
+            }
+        }
+
+        Assert.True(found, "no far tile with a shelf for leather — the fixture cannot pose the walk");
+        world.SetDown(far, Goods.Leather, 30);
+
+        int worst = 0;
+        int ticksWalked = 0;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            int walkers = 0;
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.State == VillagerState.TidyingGround && villager.ErrandX == far.X && villager.ErrandY == far.Y)
+                {
+                    walkers++;
+                }
+            }
+
+            ticksWalked += walkers;
+            worst = System.Math.Max(worst, walkers);
+        }
+
+        _output.WriteLine($"{ticksWalked} villager-ticks walking to the heap, at most {worst} at once; {world.GroundStackAt(far, Goods.Leather)} leather left");
+        Assert.True(ticksWalked > 0, "nobody ever set off for the heap");
+        Assert.True(worst <= 1, $"{worst} villagers were walking to the same heap at once");
+    }
+
     // ---------------------------------------------------------------
     //  Last resort — Joe's second restraint
     // ---------------------------------------------------------------

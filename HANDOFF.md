@@ -54,7 +54,9 @@
 > marketer, laborers out — ⚠️ the plan's "drop the walk to a full store" was measured and
 > reversed (43 → 38 people on six played openings); the walk to the nearest storage's DOOR stays
 > and only the heap FETCH is gated; the "stood-down hunter keeps a seat" idea scored zero twice
-> and is not in; ✅ **E** the marketer redesign is **specified, not built** —
+> and is not in; ✅ **F** (D371, 2026-09-15) a heap is fetched only for a good with a reachable
+> shelf, one walker a heap, the chip drawn beside the building — Joe's year-41 stampede at the
+> granary; ✅ **E** the marketer redesign is **specified, and being built next as G** —
 > `storage-and-distribution.md §14.9` (no home deliveries, per-market limits as hashed state with
 > the derived default, fetch at ≤ 50 % of a larder target with the 20 % emergency floor; tests and
 > the measurement named). **Next: build §14.9 as its own slice, or the UI cards (mockup first) —
@@ -595,6 +597,16 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     (`FindWorkplace` does not know a site), so the rim was verified by dumping `ClipToCells`'s
     triangles to a text file and plotting them (PIL), not on screen. *A view change with no probe
     line is verified by a picture or it is not verified; write down which.*
+45. **⛔⛔ A TILE IS NOT A STACK (D371).** The heap fetch approved a TILE because one stack on it
+    had a shelf; the pick-up took every good on the tile in id order; the haul routed by the
+    lowest id. Fish beside leather at a full granary's door = eight villagers cycling at the door
+    for ever with nobody picking anything up. Approve the load you will actually pick up, from the
+    tile it lies on, for the shelf it will actually reach (`HasAShelf`) — and read the LOG when
+    a screenshot shows a crowd: the log had no `carrying +` line, which was the whole diagnosis.
+46. **⚠️ A FREE-PLACED BUILDING STRADDLES ITS TILE (D371, D329's consequence for drawing).** A
+    chip at "the tile's corner" can still be under the building: the cart at (−0.5, −0.5) covers
+    the lower-right corner of tile (−1, −1). Anything drawn "beside" a building must be placed
+    relative to the building's box, not the tile.
 43. **⛔⛔ A FALLBACK THAT SOUNDS HONEST CAN STARVE A VILLAGE — MEASURE IT (D370).** "Nowhere has
     room, so set the load down where you stand" cost six played openings 43 → 38 people and
     22 → 31 starved, ablated to that one change: a heap at the far edge of a wood is food nobody
