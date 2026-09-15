@@ -280,6 +280,7 @@ public partial class Main : Control
             $"[widths] window {Size.X:F0} x {Size.Y:F0}, drawn at {_uiScale * 100f:F0}%");
 
         ProbePanelWidths("at the founding");
+        GD.Print(TheProfessionWarningsAreHonest());
 
         // ⭐⭐ THE TWO SELF-SCROLLING PANELS, MEASURED — because they are the two that can hold
         // their content correctly and draw NONE of it. Both were `size 288x0` for the life of
@@ -1831,7 +1832,17 @@ public partial class Main : Control
             //
             // ⚠️ This is the sentence that does for every trade what competing rings (D260) did
             // for the forager: **it is what stops a seat cap being a silent shortage.**
-            if (quota.Needed(kind) > seats && world.JobsCatalog.WorksAt(kind) is BuildingKind at)
+            //
+            // ⛔ ONLY WHEN A BUILDING OF THE TRADE IS STANDING (D374, Joe at tick 0: *"why is it
+            // calling for a fishing hut and not a hunters lodge? why does forager need 2 before ive
+            // built anything? those alerts should only show if there is an existing building that
+            // isn't staffed"*). `Needed` is what the village would want if seats were free, stamped
+            // on five trades regardless of what exists; a fresh founding read four warnings. A
+            // standing building with too few seats is the one case where "build another" is
+            // advice rather than a list of everything the village lacks.
+            if (quota.Needed(kind) > seats
+                && LabourQuota.TotalCapacityFor(world, kind) > 0
+                && world.JobsCatalog.WorksAt(kind) is BuildingKind at)
             {
                 row += (row.Length > 0 ? "  " : string.Empty)
                     + $"⚠ needs {quota.Needed(kind)}, build another "
@@ -4530,8 +4541,15 @@ public partial class Main : Control
         table.AddChild(new TradeGlyph(kind));
 
         // ⚠️ A Label ignores the mouse unless told otherwise, and a tooltip needs the mouse.
+        //
+        // ⛔ AND A FIXED WIDTH, OR THE ⚠ WIDENS THE COLUMN (D374, Joe: *"the alert symbol changes
+        // the width of the panel"*). `Amount()`'s trio — the overrun behaviour is the bound
+        // (D367): a Label with trimming set stops counting its text toward its minimum.
         Label name = Body(ProfessionName(_loop.World, kind));
         name.MouseFilter = MouseFilterEnum.Pass;
+        name.ClipText = true;
+        name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        name.CustomMinimumSize = new Vector2(ProfessionNameWidth, 0f);
         table.AddChild(name);
 
         // ---- assigned / max ----
@@ -6157,6 +6175,63 @@ public partial class Main : Control
     /// cannot be written once at construction.
     /// </remarks>
     private readonly List<(JobKind Kind, Label Seats, Label Name)> _professionReadouts = new();
+
+    /// <summary>The trade name's column, wide enough for "Woodcutter ⚠" and no wider for anything (D374).</summary>
+    private const float ProfessionNameWidth = 110f;
+
+    /// <summary>
+    /// The Professions warnings are honest and cannot widen the panel — <b>a probe line</b> (D374).
+    /// </summary>
+    /// <remarks>
+    /// Two claims. At the founding nothing of any trade stands, so no row may say *"build
+    /// another"*; and with a ⚠ posed on every row the panel's minimum width must not move.
+    /// </remarks>
+    private string TheProfessionWarningsAreHonest()
+    {
+        SimWorld world = _loop.World;
+        Refresh();
+
+        // Unfolded, or the contents count for nothing (D367's lesson).
+        var wereOpen = new List<bool>(_headers.Count);
+        foreach (Button header in _headers)
+        {
+            wereOpen.Add(header.ButtonPressed);
+            header.ButtonPressed = true;
+        }
+
+        int standing = 0;
+        int warned = 0;
+        for (int i = 0; i < _professionReadouts.Count; i++)
+        {
+            (JobKind kind, Label _, Label name) = _professionReadouts[i];
+            standing += LabourQuota.TotalCapacityFor(world, kind) > 0 ? 1 : 0;
+            warned += name.TooltipText.Contains("build another") ? 1 : 0;
+        }
+
+        ForceUpdateTransform();
+        float before = _professionsPanel!.GetCombinedMinimumSize().X;
+        foreach ((JobKind _, Label _, Label name) in _professionReadouts)
+        {
+            name.Text = $"{name.Text} ⚠";
+        }
+
+        ForceUpdateTransform();
+        float after = _professionsPanel.GetCombinedMinimumSize().X;
+        Refresh();
+        for (int i = 0; i < _headers.Count; i++)
+        {
+            _headers[i].ButtonPressed = wereOpen[i];
+        }
+
+        if (standing == 0 && warned > 0)
+        {
+            return $"[widths] professions: ⛔ {warned} rows say \"build another\" with no building of the trade standing";
+        }
+
+        return after <= before + 0.5f
+            ? $"[widths] professions: ✅ {warned} \"build another\" warnings with {standing} trades standing; a ⚠ on every row leaves the panel at {after:F0}px"
+            : $"[widths] professions: ⛔ a ⚠ on every row widens the panel {before:F0} → {after:F0}px";
+    }
     private Label _laborerReadout = null!;
 
     /// <summary>How many people are actually on this kind of work right now.</summary>

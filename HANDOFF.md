@@ -1,6 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — JOE'S SIX NOTES ON D366 ARE FOUR COMMITS (D367–D370) AND ONE SPEC (§14.9), ALL UNPLAYED AND NOT PUSHED; NEXT IS THE UI CARDS (MOCKUP FIRST) OR THE MARKET-AS-A-SHOP SLICE — JOE'S CALL.**
+# Handoff — bclone: **▶️ PHASE 4.5 — JOE'S TWO ROUNDS OF NOTES ARE BUILT AND PUSHED (D367–D374: PANELS, YARDS, THE SOWING CAP, ONE "ROOM" PREDICATE, HEAPS, THE MARKET AS A SHOP, THE STAND ON THE HUT, HONEST WARNINGS, THE MILESTONE MAP); NEXT IS THE UI CARDS, MOCKUP FIRST.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-13.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15.** `main` is pushed through D374
+> (`origin/main` = `main`). D372 the market as a shop is **played** (*"otherwise it plays well"*);
+> D373–D374 are his notes on it, built the same day, unplayed. Suite **1137 passing, 0 failing, 2
+> skipped of 1139, ~2m35**; probe green with two new lines (`professions:`, and `trails:` refusing a
+> square yard). The decision log runs to **D374**; the scarcity question on D372 is **closed by Joe:
+> "leave it"**. ▶️ **NEXT: the UI cards — show him a mockup first** (item 2 below; the market card
+> carries the `Keeps up to:` rows and the rings legend from `the-valley-in-view.md §7`).
+>
+> *(The banner below is the 2026-09-13 one, kept for its detail.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-13.**
 >
 > **The state:** `main` at D370's commit plus the §14.9 spec commit, **committed, NOT pushed**;
 > `7d4e0ad` (D362) is the last push. Joe played D366 (165 fps — the frame rate is fixed) and filed
@@ -64,8 +74,12 @@
 > inspector — **played: *"otherwise it plays well. push"* — pushed.** ✅ **D373** (same day): his two
 > notes on it — a villager stands on the hut they clear (and the marketer at the counter) for the
 > tick they load, so the visit is drawn; the *"Nobody will be put on splitting firewood"* line is
-> gone. ⚠️ **Measured on D372, and the number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. **Next: H, I, J of his round-2 notes (the plan file), then the UI
-> cards (mockup first).** **Do not push; Joe pushes after he plays.**
+> gone. ⚠️ **Measured on D372, and the number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. ✅ **D374** (same day): H, I, J — Professions warn *"build another"* only for a
+> standing building of the trade and the name column is a fixed 110 px (the ⚠ widened it by five
+> pixels); a yard keeps no corner (his *"big square"* was a 3×3 junction whose two-tile sides were
+> `SharpCornerTiles` exactly); §4's milestone map, §5's year-10 nomads note, Phase 5's *"trades
+> visibly work"*, and the rings legend (`the-valley-in-view.md §7`). **Next: the UI cards (mockup
+> first).** Pushed.
 >
 > **✅ D367 (slice A) is built:** the Overview is 300 wide whatever it holds (`Amount()` cells,
 > two permanent rows *in homes and huts* / *on the ground*), the inspector is a 460-logical box
@@ -423,10 +437,10 @@ stood idle with 130 logs.
 0. ✅ **The frame rate** (D366) — `_Draw` instrumented, the scenery and the trails as chunked /
    collected meshes. View only; the debug line now says where a frame goes.
 1. ✅ **The yellow rim** (D366, same commit) — `ZoneOutline.RimReach`. **Not pushed; Joe pushes.**
-1b. ✅ **The market is a shop** (D372) — §14.9 plus market-first. **Then H, I, J** of Joe's
-   round-2 notes (`yes-proceed-with-the-modular-sketch.md`): Professions ⚠ only for a standing
-   building of the trade and a fixed-width name; yards always round; the milestone map, the
-   year-10 nomads note, *"trades visibly work"* in Phase 5, the rings legend.
+1b. ✅ **The market is a shop** (D372, played) — §14.9 plus market-first. ✅ **D373** the stand on
+   the hut; ✅ **D374** H, I, J of his round-2 notes: honest Professions warnings on a fixed-width
+   name, yards always round, the milestone map (`DESIGN.md §4`), the year-10 nomads note (§5),
+   *"trades visibly work"* (Phase 5), the rings legend (`the-valley-in-view.md §7`).
 2. **The UI pass** — its own spec, a card mockup for Joe first, then the cards (pinnable,
    draggable, several; the market card carries the `Keeps up to:` rows), the two-row resources
    top bar, the villagers top bar.
@@ -612,6 +626,19 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     for ever with nobody picking anything up. Approve the load you will actually pick up, from the
     tile it lies on, for the shelf it will actually reach (`HasAShelf`) — and read the LOG when
     a screenshot shows a crowd: the log had no `carrying +` line, which was the whole diagnosis.
+52. **⚠️ A NUMBER THAT MEANS "IF SEATS WERE FREE" IS NOT A WARNING (D374).** `LabourQuota.Needed`
+    is stamped on five trades whether or not a building stands; shown as *"build another X"* at
+    tick 0 it listed everything the village lacked. Gate a warning on the thing that makes it
+    advice (`TotalCapacityFor > 0`). And a Label with no minimum width moves the column when its
+    text changes — `Amount()`'s trio, every time a cell can gain a glyph.
+53. **⚠️ A SMALL SHAPE'S SIDE CAN EQUAL THE "PLAYER DREW THIS" LENGTH (D374).** `SharpCornerTiles`
+    is 2; a 3×3 block traced at one cell a tile has two-tile sides, so every corner was kept and
+    the yard was a square. A derived shape passes `sharpCornerTiles = ∞`; only paint keeps the
+    default. The `trails:` probe refuses a 9.0 now.
+54. **⛔ BASH HEREDOC INTO PYTHON MANGLES `\r\n` — STILL (D374, third time).** `'\\r\\n'` inside a
+    quoted heredoc reached Python as a real newline and broke the script at *"unterminated string
+    literal"*. Write scripts with the Write tool into the scratchpad and run them; never inline a
+    Python script that mentions a line ending.
 50. **⚠️ AN ARRIVAL THAT DEPARTS IN THE SAME TICK IS INVISIBLE (D373).** The view draws ticks. A
     handler that loads and then calls `HaulOrSetDown`/`Decide` (which takes the next leg's first
     step) leaves no tick with the villager on the building — Joe saw hunters *"stop a few pixels

@@ -67,6 +67,15 @@ this profession' number."*
 
 There is **one** number per profession. The panel and the building show it from two ends.
 
+**⚠️ The panel's warnings (D367, D374).** A row shows ` ⚠` on its name, coloured, with the sentence
+as a tooltip — never a notes column, and the name is a fixed 110 px so the ⚠ cannot widen the
+table. Two sentences exist: *"you asked for N, the village wants none — why"* (needs the player to
+have typed a number) and *"needs N, build another X"* — **only when a building of the trade is
+standing and under-seated** (`LabourQuota.TotalCapacityFor(kind) > 0`, sites excluded). Joe, at
+tick 0 with nothing built: *"those alerts should only show if there is an existing building that
+isn't staffed."* `Needed` is what the village would want if seats were free; without a seat it is
+a wish, not a warning. Probe: `professions:`.
+
 | The player does | What happens |
 |---|---|
 | Sets **2 builders** globally, one hut exists | both go to that hut |

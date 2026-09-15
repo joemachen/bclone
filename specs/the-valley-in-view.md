@@ -152,3 +152,20 @@ impossible.*
 It reported *"nothing overhangs"* while measuring canopy **centres** — a canopy centred at 0.45 with
 a radius of 0.20 has already crossed the tile edge at 0.5. **It measures the branches now.** The
 spread also genuinely was too timid, so both halves were real.
+
+---
+
+## 7. The rings on the buildings — a legend (D374, Joe: *"what do the coloured squares that sometimes show up on buildings mean?"*)
+
+Every ring is a derived reading, never state; each has a control or a cause the inspector names.
+
+| Ring | Means | Where it is set |
+|---|---|---|
+| **Orange** on a store | the store is full | `When full: Marker` on the store's inspector turns it off per building (D140) |
+| **Light blue** on a workplace | idle — nobody working it, or nothing to do; the inspector's idle line says which | `Marker` on the workplace's inspector (D270/D271) |
+| **Blue** on the library | full — the shelves hold what they can | — |
+| **Yellow** outline | selected | the click |
+| **Green** rings on homes | the homes a market placed here would be nearest for — the ghost's reach while placing (D201) | the placement ghost |
+
+⏸️ **The cards (`handoff.md` item 3) carry this legend on the card itself when they land**; until
+then it lives here.

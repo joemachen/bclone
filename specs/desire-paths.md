@@ -227,6 +227,11 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   parallel diagonal lanes a tile apart (no 2×2 anywhere) no longer draw a ladder: the rung between
   two row-mates that both step on diagonally in one direction is skipped (`ParallelDiagonals`,
   never beside a yard). Probe: a posed 3×3 block reads as one yard of 9.0 tiles; red-checked.
+  **D374: a yard keeps no corner** — traced with `sharpCornerTiles = ∞` (`ZoneOutline.Trace`'s
+  new parameter; paint keeps the default), because a small yard's two-tile sides were exactly the
+  length that says *"the player drew this"* and a 3×3 junction drew as Joe's *"big square"*. The
+  probe now reads 8.4 of 9 and refuses a 9.0. And yes — the worn shapes ARE the worn-to-earth
+  yard the skinned game will show (Joe's question, answered).
 - [x] ⛔⛔ **D366 — the trails are a mesh, built with the collection.** Slices D358–D360 collected
   once a season and then drew a `DrawCircle` per worn tile and a `DrawPolyline` per joined pair
   **every frame**, with the L-corner and joining rules recomputed per tile per frame — the D338

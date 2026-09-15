@@ -4415,15 +4415,16 @@ public partial class VillageMap : Control
             return $"[widths] trails: ⛔ the posed row breaks {broken} times — a lane people walk is drawn in pieces";
         }
 
-        // The block: nine tiles, filled as one patch of about nine minus its four cut corners, and
-        // its centre is a block tile with no disc and no L-corner of its own.
+        // The block: nine tiles, filled as one patch of about nine MINUS its four cut corners (D374:
+        // a full nine is a square with its corners kept — Joe's *"big square"*), and its centre is a
+        // block tile with no disc and no L-corner of its own.
         GridPos blockCentre = new(world.Map.FoundingSite.X + 6, world.Map.FoundingSite.Y + 7);
         bool blockIsAYard = IsBlockTile(blockCentre) && LCornerOf(blockCentre) is null
-            && _blockTiles.Count >= 9 && TrailBlockAreaWorn > 7f;
+            && _blockTiles.Count >= 9 && TrailBlockAreaWorn > 7f && TrailBlockAreaWorn < 9f;
         if (!blockIsAYard)
         {
-            return $"[widths] trails: ⛔ a 3×3 block of worn tiles draws as ribbons (patch area {TrailBlockAreaWorn:F1} of 9, "
-                + $"{_blockTiles.Count} block tiles) — the yard is a lattice";
+            return $"[widths] trails: ⛔ a 3×3 block of worn tiles draws as {(TrailBlockAreaWorn >= 9f ? "a square with its corners kept" : "ribbons")} "
+                + $"(patch area {TrailBlockAreaWorn:F1} of 9, {_blockTiles.Count} block tiles)";
         }
 
         if (!cornerOnTheLine)

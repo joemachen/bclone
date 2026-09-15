@@ -725,7 +725,14 @@ internal static class ZoneOutline
     /// deliberately painted.* Joe: *"the selected area for harvest still looks jagged/square."*
     /// </para>
     /// </remarks>
-    internal static List<Vector2[]> Trace(HashSet<Vector2I> tiles, int cellsPerTile = 1)
+    /// <param name="sharpCornerTiles">
+    /// A side at least this long, in tiles, keeps its corner — the player drew it (D343). A
+    /// <b>yard</b> passes <see cref="float.PositiveInfinity"/>: nobody drew a yard, so no corner of
+    /// one is ever kept (D374, Joe: *"what is this big square that showed up in the middle?"* — a
+    /// 3×3 block of worn tiles whose every side was two tiles, the sharp-corner length exactly).
+    /// </param>
+    internal static List<Vector2[]> Trace(
+        HashSet<Vector2I> tiles, int cellsPerTile = 1, float sharpCornerTiles = SharpCornerTiles)
     {
         var loops = new List<Vector2[]>();
         if (tiles.Count == 0)
@@ -742,7 +749,7 @@ internal static class ZoneOutline
                 continue;
             }
 
-            loops.Add(Round(straightened, cellsPerTile));
+            loops.Add(Round(straightened, cellsPerTile, sharpCornerTiles));
         }
 
         return loops;
@@ -1401,11 +1408,11 @@ internal static class ZoneOutline
     /// Chaikin corner-cutting on a closed loop — each pass replaces a corner with two points a
     /// quarter of the way along each of its sides.
     /// </summary>
-    private static Vector2[] Round(List<Vector2> loop, int cellsPerTile)
+    private static Vector2[] Round(List<Vector2> loop, int cellsPerTile, float sharpCornerTiles)
     {
         // ⛔ The two rules below are stated in TILES and the loop is in CELLS (D343).
         float cornerCut = CornerCutTiles * cellsPerTile;
-        float sharpCorner = SharpCornerTiles * cellsPerTile;
+        float sharpCorner = sharpCornerTiles * cellsPerTile;
 
         List<Vector2> points = loop;
 

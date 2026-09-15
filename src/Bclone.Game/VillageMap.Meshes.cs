@@ -542,7 +542,10 @@ public partial class VillageMap
             float area = 0f;
             if (yard.Count > 0)
             {
-                Vector2[] patch = ZoneOutline.Fill(ZoneOutline.Trace(yard, 1), yard);
+                // ⭐ EVERY CORNER CUT (D374). Traced at one cell a tile, a small yard's sides are
+                // two tiles — `SharpCornerTiles` exactly — so its corners were kept as if a player
+                // had drawn them, and a 3×3 junction drew as the big square Joe asked about.
+                Vector2[] patch = ZoneOutline.Fill(ZoneOutline.Trace(yard, 1, float.PositiveInfinity), yard);
                 _trailBuilder.Triangles(patch, colour);
                 for (int i = 0; i + 2 < patch.Length; i += 3)
                 {
