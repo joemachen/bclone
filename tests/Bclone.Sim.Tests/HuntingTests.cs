@@ -52,6 +52,65 @@ public sealed class HuntingTests
         throw new Xunit.Sdk.XunitException("Nowhere near the woods was buildable.");
     }
 
+    /// <summary>
+    /// ⭐ A hunter who comes to clear the lodge is SEEN at the lodge — they stand on it for the
+    /// tick they load, and leave the next (D373, Joe: *"it looks like they stop a few pixels before
+    /// actually going to it and then turn around"*).
+    /// </summary>
+    /// <remarks>
+    /// `TakeFromTheBuffer` loaded the armful and took the first step of the haul in the same
+    /// tick, so the villager's position was never the lodge's at any tick the view could draw:
+    /// a hunter whose home stood beside the lodge went home → home-with-meat → cart → home, and
+    /// on screen walked towards the lodge and turned round short of it. Every other arrival
+    /// already stands its tick (`FetchingFromStore` → `TravelingHome`, the store → `TravelingHome`);
+    /// this one and the marketer's `PutItInTheMarket` did not.
+    /// </remarks>
+    [Fact]
+    public void AHunterClearingTheLodgeIsSeenStandingOnIt()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Workplace lodge = RaiseALodge(world);
+
+        // Everyone content, everyone a laborer but the hunter, and a lodge holding an armful to
+        // clear — so the only errand at the lodge is the hunter's own haul.
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.Add(Goods.Produce, world.TargetFoodFor(household));
+        }
+
+        Assert.True(world.SetStockLimit(Goods.Produce, 1).Allowed);
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, kind == JobKind.Hunter ? 1 : 0);
+        }
+
+        lodge.Store.Add(Goods.Meat, config.CarryCapacity * 2);
+
+        int standing = 0;
+        int loaded = 0;
+        for (int tick = 0; tick < config.TicksPerSeason && loaded == 0; tick++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Carried[Goods.Meat] > 0 && villager.State == VillagerState.HaulingToStore)
+                {
+                    loaded++;
+                    if (villager.Position == lodge.Position)
+                    {
+                        standing++;
+                    }
+                }
+            }
+        }
+
+        _output.WriteLine($"{loaded} villager-ticks carrying meat off the lodge; {standing} of them standing on the lodge");
+        Assert.True(loaded > 0, "nobody ever cleared the lodge, so this proves nothing (D7)");
+        Assert.True(standing > 0, "the meat left the lodge without anybody ever standing on it — the load and the first step of the haul happen in one tick");
+    }
+
     private static Workplace RaiseALodge(SimWorld world)
     {
         world.Mark(BuildingKind.HunterLodge, AWoodedTile(world));

@@ -61,10 +61,10 @@
 > good (a storehouse only if none is reachable or holds it), goes at half a larder and tops up to
 > target, no marketer ever carries to a house, the counter is the marketer's first job (from
 > storage only) and a per-market per-good limit is a `Keeps up to:` row on the market's
-> inspector. ⚠️ **What Joe should look at:** the granary crowd should be gone where a market is
-> stocked; larders now sit between half and full instead of near-full; the `Keeps up to:` spins
-> on a market (the derived number until he types; `clear` hands it back). ⚠️ **Measured, and the
-> number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. **Next: H, I, J of his round-2 notes (the plan file), then the UI
+> inspector — **played: *"otherwise it plays well. push"* — pushed.** ✅ **D373** (same day): his two
+> notes on it — a villager stands on the hut they clear (and the marketer at the counter) for the
+> tick they load, so the visit is drawn; the *"Nobody will be put on splitting firewood"* line is
+> gone. ⚠️ **Measured on D372, and the number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. **Next: H, I, J of his round-2 notes (the plan file), then the UI
 > cards (mockup first).** **Do not push; Joe pushes after he plays.**
 >
 > **✅ D367 (slice A) is built:** the Overview is 300 wide whatever it holds (`Amount()` cells,
@@ -612,6 +612,14 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     for ever with nobody picking anything up. Approve the load you will actually pick up, from the
     tile it lies on, for the shelf it will actually reach (`HasAShelf`) — and read the LOG when
     a screenshot shows a crowd: the log had no `carrying +` line, which was the whole diagnosis.
+50. **⚠️ AN ARRIVAL THAT DEPARTS IN THE SAME TICK IS INVISIBLE (D373).** The view draws ticks. A
+    handler that loads and then calls `HaulOrSetDown`/`Decide` (which takes the next leg's first
+    step) leaves no tick with the villager on the building — Joe saw hunters *"stop a few pixels
+    before"* the lodge and turn round. Set the state and return; `Decide` walks next tick. Check
+    every `ArriveAt` arm for this before adding one.
+51. **⚠️ THE STONE GUARD IS A CHAOS METER (D372, D373).** `AFoundingThatPaintsNoSeamStillLives`
+    moved 24/43 → 23/52 over six seeds on a change of ONE tick per hut visit. Its bar is a third;
+    if it goes red, look at the six seeds' numbers before touching stone.
 47. **⛔⛔ A LEG THAT RAN FOR MONTHS CAN BE HIDING A LOOP SOMEWHERE ELSE (D372).** The marketer's
     deliveries kept every larder above the emergency line year-round, so nobody ever saw that
     `TryEmergencyRestock` re-fires every tick at a villager one tile from the door with the load in

@@ -1818,13 +1818,9 @@ public sealed class BehaviorSystem : ISimSystem
             }
         }
 
-        if (villager.IsCarrying)
-        {
-            HaulOrSetDown(world, villager);
-            return;
-        }
-
-        Decide(world, villager);
+        // ⭐ AND THE MARKETER STANDS AT THE COUNTER FOR THE TICK THEY STOCK IT (D373) — this
+        // went straight to `Decide`, and the next errand's first step, in the arrival's tick.
+        villager.State = villager.IsCarrying ? VillagerState.HaulingToStore : VillagerState.Idle;
     }
 
     /// <summary>Households with somebody still living in them.</summary>
@@ -3007,8 +3003,14 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐ AND THEY STAND ON THE HUT FOR THE TICK THEY LOAD (D373, Joe: *"it looks like they
+        // stop a few pixels before actually going to it and then turn around"*). This called
+        // `HaulOrSetDown` here — the first step of the haul in the same tick as the arrival —
+        // so at no tick the view could draw was the villager's position the hut's; a hunter
+        // whose home stood beside the lodge read home → home-with-meat → cart → home, and on
+        // screen walked towards the lodge and turned round short of it. The `HaulingToStore`
+        // arm of `Decide` takes the haul up next tick, as it does for every other load.
         villager.State = VillagerState.HaulingToStore;
-        HaulOrSetDown(world, villager);
     }
 
     private static void PickUpFromTheGround(SimWorld world, Villager villager)

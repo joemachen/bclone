@@ -514,15 +514,10 @@ public sealed class SimWorld
                 + "put to work. Build somewhere for them first.");
         }
 
-        // The two that kill people if nobody does them (D45: hunger in six days, an unheated
-        // house in twenty-five). Said plainly rather than refused.
-        if (asked == 0 && kind is JobKind.Forager or JobKind.Woodcutter)
-        {
-            return PlacementVerdict.Yes(
-                $"Nobody will be put on {Describe(kind)} at all. The village will live on what "
-                + "it has already put away.");
-        }
-
+        // ⛔ NO WARNING FOR A ZERO (D373, Joe: *"remove the firewood warning from the control
+        // bar"*). This said *"Nobody will be put on splitting firewood at all"* the moment the
+        // row read 0 and sat on the placement line for the rest of the session — a sentence about
+        // a number the player had just typed and could see. The row is the warning.
         return PlacementVerdict.Fine;
     }
 

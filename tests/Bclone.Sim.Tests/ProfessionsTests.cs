@@ -262,16 +262,18 @@ public sealed class ProfessionsTests
         Assert.True(wanted > 0, "Nobody was put on it at all, so the bound is not the thing.");
     }
 
-    /// <summary>Taking everyone off the food or the fuel is allowed, and says what it means.</summary>
+    /// <summary>Taking everyone off the food or the fuel is allowed — and, since D373, not warned about.</summary>
     /// <remarks>
-    /// D62's shape: a game that refuses the player's number is arguing with them, and one that
-    /// obeys it silently has killed them without saying so. These are the two jobs whose
-    /// absence kills — hunger in six days, an unheated house in twenty-five (D45).
+    /// This asserted D62's shape — *a game that obeys the player's number silently has killed them
+    /// without saying so* — with a sentence on the placement line. Joe, 2026-09-15: *"remove the
+    /// firewood warning from the control bar"* — it sat there for the rest of the session about a
+    /// number he had just typed and could see on the row. The number is obeyed; the row is the
+    /// warning.
     /// </remarks>
     [Theory]
     [InlineData(JobKind.Forager)]
     [InlineData(JobKind.Woodcutter)]
-    public void TakingEverybodyOffTheJobsThatKeepPeopleAliveIsWarnedAbout(JobKind kind)
+    public void TakingEverybodyOffTheJobsThatKeepPeopleAliveIsObeyedWithoutASermon(JobKind kind)
     {
         SimWorld world = Loop(VillageFixtures.Village).World;
 
@@ -279,7 +281,7 @@ public sealed class ProfessionsTests
         _output.WriteLine($"{kind} set to 0: \"{verdict.Warning}\"");
 
         Assert.True(verdict.Allowed, "The village refused the player's number.");
-        Assert.True(verdict.HasWarning);
+        Assert.False(verdict.HasWarning, "a zero on the row is the warning; the placement line is not");
         Assert.Equal(0, world.JobLimits.For(kind));
     }
 

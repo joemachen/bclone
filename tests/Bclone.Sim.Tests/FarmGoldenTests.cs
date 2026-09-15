@@ -263,7 +263,9 @@ public sealed class FarmGoldenTests
     // heap. Was 13712761850512267723.
     // RE-TAKEN (D372) — the market is a shop: no deliveries, a household fetches at half a larder
     // and tops up, one fetcher at a time, the counter first. Was 12678943017753365706.
-    private const ulong SeamGoldenHash = 9482899366174648224UL;
+    // RE-TAKEN (D373) — a villager stands on the hut for the tick they clear it, and the marketer
+    // at the counter for the tick they stock it. Was 9482899366174648224.
+    private const ulong SeamGoldenHash = 2773552528297798384UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -313,7 +315,8 @@ public sealed class FarmGoldenTests
     // Was 16262613081575096836.
     // RE-TAKEN (D371) with it again — heaps. Was 2251906780837338661.
     // RE-TAKEN (D372) with it again — the shop. Was 16396613229820389487.
-    private const ulong SeamBeforeAnybodyGotBetter = 4275989670500860885UL;
+    // RE-TAKEN (D373) with it again — the stand. Was 4275989670500860885.
+    private const ulong SeamBeforeAnybodyGotBetter = 4498279106334281173UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
