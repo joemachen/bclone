@@ -1,7 +1,7 @@
 # Spec: Buildings are obstacles — villagers go round, not through
 
 **Decisions:** D383 (this document). Neighbours: D40/D41 (water is impassable, one cost field), D111 (unreachable is refused), D356 (string-pulled legs), D358 (wear reaches the routes through the one field), D363 (the food ladder's floor), D382 (footprints).
-**Status:** ✅ **built (2026-09-16, D383)** — suite 1167 passing, 0 failing, 2 skipped of 1169; **unplayed by Joe as of this line.** Owner: Joe + Claude Code.
+**Status:** ✅ **built (2026-09-16, D383)** — suite 1167 passing, 0 failing, 2 skipped of 1169; **played by Joe the same day — *"ive played, we are good"* — and pushed.** Owner: Joe + Claude Code.
 
 ---
 

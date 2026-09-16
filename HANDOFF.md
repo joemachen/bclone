@@ -1,9 +1,10 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — D382 (FOOTPRINTS) AND D383 (BUILDINGS ARE OBSTACLES) ARE BUILT AND COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS BOTH; THEN PHASE 5.**
+# Handoff — bclone: **▶️ PHASE 4.5 — D382 (FOOTPRINTS) AND D383 (BUILDINGS ARE OBSTACLES) ARE PLAYED AND PUSHED. NEXT: PHASE 5 — TRAMPLED FIELDS AND FENCES.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D383.**
 >
-> **The state:** `main` = D383's commit on D382's (`ccd10e5`) on `93ec4da` (= `origin/main`);
-> **D382 and D383 are committed, NOT pushed — Joe pushes after he plays.** Working tree clean.
+> **The state:** `main` = `origin/main` = D383 (`00ea445`) on D382 (`ccd10e5`) + this note;
+> **Joe played both, 2026-09-16 — *"ive played, we are good to commit, push, etc."* — and they
+> are pushed.** Working tree clean.
 > Suite **1167 passing, 0 failing, 2 skipped of 1169, 3m07** (was 2m41 — +2.5 % CPU; the seed
 > survey on the critical path grew 18 s because every building event now forgets every flow
 > field; measured, not a regression to chase); view 0 warnings on `--no-incremental`; probe
