@@ -107,7 +107,13 @@ economy has *no solution at all* (the finding already recorded in `DESIGN.md §5
 
 ```
 MaxHomeToWorkTiles(config)  =  gatherer_hut_ring_tiles
+WalkBudgetTiles(config)     =  MaxHomeToWorkTiles(config) + ObstacleDetourTiles   (= ring + 1, D383)
 ```
+
+⚠️ **The trip derivations price `WalkBudgetTiles`, not the ring** (D383): buildings are obstacles
+and the walk goes round them — measured a tile a leg on the fixture — so every leg the economy
+prices carries one tile for it (`buildings-as-obstacles.md §5`). The ring itself is unchanged:
+it is a radius, and the wooded fraction and the farm's radii read it as one.
 
 Three things recommend it:
 

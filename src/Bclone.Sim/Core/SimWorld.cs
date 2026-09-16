@@ -19,7 +19,7 @@ namespace Bclone.Sim.Core;
 /// The renderer may <em>read</em> this. It must never write to it (DESIGN.md §3).
 /// </para>
 /// </remarks>
-public sealed class SimWorld
+public sealed class SimWorld : IObstacles
 {
     /// <summary>
     /// Ticks elapsed. The sim's only notion of time — there is no wall clock in
@@ -271,6 +271,7 @@ public sealed class SimWorld
     {
         ArgumentNullException.ThrowIfNull(library);
 
+        StandingChanged();
         if (!Libraries.Remove(library))
         {
             throw new ArgumentException($"{library.Name} is not standing.", nameof(library));
@@ -5314,6 +5315,7 @@ public sealed class SimWorld
         if (StoreAt(from) is StoreBuilding store)
         {
             store.MoveTo(to);
+            StandingChanged();
             TravelCost.Forget();
             return true;
         }
@@ -5331,6 +5333,7 @@ public sealed class SimWorld
         if (LibraryCovering(from) is Library library)
         {
             library.MoveTo(to);
+            StandingChanged();
             TravelCost.Forget();
             return true;
         }
@@ -5340,6 +5343,7 @@ public sealed class SimWorld
         if (TownHall is { } hall && TownHallCovers(from))
         {
             hall.MoveTo(to);
+            StandingChanged();
             TravelCost.Forget();
             return true;
         }
@@ -5347,6 +5351,7 @@ public sealed class SimWorld
         if (StandingWorkplaceCovering(from) is Workplace workplace)
         {
             workplace.MoveTo(to);
+            StandingChanged();
             TravelCost.Forget();
             return true;
         }
@@ -5427,6 +5432,7 @@ public sealed class SimWorld
             return PlacementVerdict.Fine;
         }
 
+        StandingChanged();
         Workplaces.Add(new Workplace
         {
             Store = NewStockpile(),
@@ -5541,6 +5547,7 @@ public sealed class SimWorld
     {
         if (HouseholdAt(tile) is Household family)
         {
+            StandingChanged();
             family.HomePosition = null;
 
             string recovered = ReturnToStore(
@@ -5568,6 +5575,7 @@ public sealed class SimWorld
         // Moving it (D229) is the answer to having put it in the wrong place.
         if (TownHall is { } hall && TownHallCovers(tile))
         {
+            StandingChanged();
             TownHall = null;
             Narrate($"{Capitalised(hall.Name)} was pulled down. The founders' names went with it, "
                 + "and the village will have to raise another at its own cost to keep them. "
@@ -5709,6 +5717,17 @@ public sealed class SimWorld
         if (StandingWorkplaceCovering(tile) is Workplace workplace)
         {
             return workplace.Name;
+        }
+
+        // A house and a site have names too (D383's "that would wall off X" needs them).
+        if (HouseholdAt(tile) is Household home)
+        {
+            return $"the {home.Name} house";
+        }
+
+        if (WorkplaceCovering(tile) is Workplace site)
+        {
+            return site.Name;
         }
 
         return "it";
@@ -5888,9 +5907,11 @@ public sealed class SimWorld
     /// brush rather than never needing it.
     /// </para>
     /// </remarks>
-    private void PaintTheStarterZone(GridPos origin, SimConfig config)
+    private void PaintTheStarterZone(GridPos origin, SimConfig config) =>
+        PaintTheStarterZone(origin, config.StartingResidentialRadius);
+
+    private void PaintTheStarterZone(GridPos origin, int radius)
     {
-        int radius = config.StartingResidentialRadius;
 
         for (int dy = -radius; dy <= radius; dy++)
         {
@@ -6234,6 +6255,19 @@ public sealed class SimWorld
         // information, not a dismissal*. The ghost turns amber and says why; it does not say no.
         string? noBuilders = WarningForNothingToRaiseItWith(kind);
 
+        // ⛔ AND NOT IF IT WALLS SOMETHING IN (D383). Buildings are obstacles now, so a building
+        // can close the last free tile beside a home, a store or a site — or stand in a pocket
+        // nobody could reach. Two sweeps of the valley, cheap enough for the ghost to read every
+        // frame, so the reason shows before the click. ⚠️ LAST, after every cheaper refusal: a
+        // guard's scan of the bank for a fishing-hut site asks this of thousands of tiles, and
+        // paying twenty thousand steps for each before the water rule had its say made the
+        // fishery guards eight times slower. ⚠️ Not for a building being moved: the index still
+        // holds it at its old spot, and that is its own question.
+        if (!alreadyStanding && WhatThisWouldWallOff(FootprintOf(kind, where, facing)) is string walledOff)
+        {
+            return PlacementVerdict.No(walledOff);
+        }
+
         if (standingCrop is null && longHaul is null && noBuilders is null)
         {
             return PlacementVerdict.Fine;
@@ -6400,6 +6434,7 @@ public sealed class SimWorld
         {
             return verdict;
         }
+
 
         BuildingRecipe recipe = BuildingRecipe.For(kind, Config);
 
@@ -6936,6 +6971,7 @@ public sealed class SimWorld
         Angle facing = default)
     {
         BuildingGeneration++;
+        StandingChanged();
         Workplaces.Add(new Workplace
         {
             Store = NewStockpile(),
@@ -7020,6 +7056,7 @@ public sealed class SimWorld
         int held = building.Store.Held;
         IReadOnlyList<MaterialCost> back = RefundFor(BuildingRecipe.For(kind, Config));
 
+        StandingChanged();
         StoreBuildings.Remove(building);
 
         // Any market workplace standing on it goes too — the stall cannot outlive the
@@ -7246,6 +7283,7 @@ public sealed class SimWorld
                     break;
                 }
 
+                StandingChanged();
                 family.HomePosition = site.Position;
                 NeedsMoreResidentialLand = false;
 
@@ -7332,6 +7370,7 @@ public sealed class SimWorld
             ExtentHeight = row?.ExtentHeight ?? 1,
         };
 
+        StandingChanged();
         StoreBuildings.Add(building);
 
         // ⭐ THE CLOCK ON WRITING STARTS HERE (D32, §7a). The first granary is the first thing in
@@ -7386,6 +7425,7 @@ public sealed class SimWorld
         // outlives the person who made it.
         if (row.Shelves > 0)
         {
+            StandingChanged();
             Libraries.Add(new Library
             {
                 Position = position,
@@ -7405,6 +7445,7 @@ public sealed class SimWorld
         // refused a second, so this assignment cannot quietly overwrite a standing hall.
         if (row.Civic)
         {
+            StandingChanged();
             TownHall = new TownHall
             {
                 Position = position,
@@ -7433,6 +7474,7 @@ public sealed class SimWorld
             return;
         }
 
+        StandingChanged();
         Workplaces.Add(new Workplace
         {
             // ⭐ The farmhouse is the only building with a buffer of its own today
@@ -7605,6 +7647,7 @@ public sealed class SimWorld
         }
 
         BuildingGeneration++;
+        StandingChanged();
         Workplaces.Remove(workplace);
     }
 
@@ -7749,7 +7792,7 @@ public sealed class SimWorld
     /// by position, so two runs of one seed cannot disagree (D15).
     /// </para>
     /// </remarks>
-    private GridPos? WhereTheTreesAre(GridPos origin, SimConfig config, bool clearOfOtherRings = false)
+    private GridPos? WhereTheTreesAre(BuildingKind kind, GridPos origin, SimConfig config, bool clearOfOtherRings = false)
     {
         int reach = VillageEconomy.MaxHomeToWorkTiles(config);
         int ring = config.GathererHutRingTiles;
@@ -7797,8 +7840,20 @@ public sealed class SimWorld
                 }
 
                 int trees = WoodedTilesWithin(at, ring);
+                if (trees < bestTrees || (trees == bestTrees && distance >= bestDistance))
+                {
+                    continue;
+                }
 
-                if (trees > bestTrees || (trees == bestTrees && distance < bestDistance))
+                // ⛔ AND NOT WHERE IT WOULD WALL SOMETHING IN (D383) — asked only of a candidate
+                // that would win, so it is a handful of sweeps and not three hundred. Seed 42's
+                // forester's hut took the one land tile beside the forager's hut on its spit,
+                // and a village whose only food tap nobody could reach had nowhere to build.
+                if (WhatThisWouldWallOff(FootprintOf(kind, at)) is not null)
+                {
+                    continue;
+                }
+
                 {
                     best = at;
                     bestTrees = trees;
@@ -8343,6 +8398,7 @@ public sealed class SimWorld
         // errands and the economy's budget all get that for free because they have
         // always shared this one field (§2.6).
         TravelCost = new TravelCostField(config.TravelTicksPerUnit, Map);
+        TravelCost.Obstacles(this);
         Zones = new ZoneMap(Map);
         Paths = new PathWear(Map);
         TravelCost.ReadWearFrom(
@@ -8398,13 +8454,14 @@ public sealed class SimWorld
         // derived from the economy horizon until this morning — 21 hands in a village of ten.
         // Read through `SeatsIn` like every other founding building, so a warm start and a
         // player-raised hut cannot disagree about how many fit in one.
+        StandingChanged();
         Workplaces.Add(new Workplace
         {
             Store = NewStockpile(),
             Id = nextWorkplaceId++,
             Kind = JobKind.Builder,
             Name = NameFor(BuildingKind.BuilderHut),
-            Position = AnchorOn(BuildingKind.BuilderHut, Offset(origin, config.BuilderHutX, config.BuilderHutY)),
+            Position = AnchorOn(BuildingKind.BuilderHut, FoundingSpotFor(BuildingKind.BuilderHut, Offset(origin, config.BuilderHutX, config.BuilderHutY))),
             ExtentWidth = ExtentOf(BuildingKind.BuilderHut).Width,
             ExtentHeight = ExtentOf(BuildingKind.BuilderHut).Height,
             Capacity = SeatsIn(BuildingKind.BuilderHut),
@@ -8441,7 +8498,7 @@ public sealed class SimWorld
         int huts = config.FoundingGatheringHuts < 1 ? 1 : config.FoundingGatheringHuts;
         for (int h = 0; h < huts; h++)
         {
-            GridPos? spot = WhereTheTreesAre(origin, config, clearOfOtherRings: h > 0);
+            GridPos? spot = WhereTheTreesAre(BuildingKind.GathererHut, origin, config, clearOfOtherRings: h > 0);
             if (spot is null)
             {
                 // ⚠️ Nowhere left that is wooded, reachable AND clear of the rings already
@@ -8450,6 +8507,7 @@ public sealed class SimWorld
                 break;
             }
 
+            StandingChanged();
             Workplaces.Add(new Workplace
             {
                 Store = NewStockpile(),
@@ -8482,23 +8540,25 @@ public sealed class SimWorld
 
             // ⚠️ Never null: only the clear-of-other-rings form can fail to find a spot, and a
             // forester does not compete for gathered food.
-            Position = Point.CentreOf(WhereTheTreesAre(origin, config)!.Value),
+            Position = Point.CentreOf(WhereTheTreesAre(BuildingKind.ForesterHut, origin, config)!.Value),
             Capacity = VillageEconomy.RequiredForesterSeats(config),
         };
 
+        StandingChanged();
         Workplaces.Add(forester);
         GiveItTheWoodAroundIt(forester, config);
 
         // The first workplace that consumes an input rather than only producing one
         // (D29). Logs in, firewood out - and it can stand idle for want of logs,
         // which is a state no other workplace can be in.
+        StandingChanged();
         Workplaces.Add(new Workplace
         {
             Store = NewStockpile(),
             Id = nextWorkplaceId++,
             Kind = JobKind.Woodcutter,
             Name = NameFor(BuildingKind.WoodcutterHut),
-            Position = AnchorOn(BuildingKind.WoodcutterHut, Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY)),
+            Position = AnchorOn(BuildingKind.WoodcutterHut, FoundingSpotFor(BuildingKind.WoodcutterHut, Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY))),
             ExtentWidth = ExtentOf(BuildingKind.WoodcutterHut).Width,
             ExtentHeight = ExtentOf(BuildingKind.WoodcutterHut).Height,
             Capacity = config.WoodcutterHutCapacity,
@@ -8516,25 +8576,27 @@ public sealed class SimWorld
         // everyone alive would want, so capping it caps the village. See
         // VillageEconomy.PopulationCeiling, and the spec's §12 for why that is the
         // shape the population curve needed.
+        StandingChanged();
         StoreBuildings.Add(new StoreBuilding
         {
             Catalog = GoodsCatalog,
             Id = 1,
             Kind = StoreKind.Granary,
             Name = NameFor(BuildingKind.Granary),
-            Position = AnchorOn(BuildingKind.Granary, Offset(origin, config.GranaryX, config.GranaryY)),
+            Position = AnchorOn(BuildingKind.Granary, FoundingSpotFor(BuildingKind.Granary, Offset(origin, config.GranaryX, config.GranaryY))),
             ExtentWidth = ExtentOf(BuildingKind.Granary).Width,
             ExtentHeight = ExtentOf(BuildingKind.Granary).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.GranaryCapacity(config) },
         });
 
+        StandingChanged();
         StoreBuildings.Add(new StoreBuilding
         {
             Catalog = GoodsCatalog,
             Id = 2,
             Kind = StoreKind.Warehouse,
             Name = NameFor(BuildingKind.Warehouse),
-            Position = AnchorOn(BuildingKind.Warehouse, Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY)),
+            Position = AnchorOn(BuildingKind.Warehouse, FoundingSpotFor(BuildingKind.Warehouse, Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY))),
             ExtentWidth = ExtentOf(BuildingKind.Warehouse).Width,
             ExtentHeight = ExtentOf(BuildingKind.Warehouse).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.WarehouseCapacity(config) },
@@ -8547,7 +8609,7 @@ public sealed class SimWorld
         // They are separate types today. Merging them into the single Building the
         // spec's §4 describes is the right end state and is not this slice's job; the
         // seam is recorded there rather than left to be rediscovered.
-        var market = Offset(origin, config.MarketX, config.MarketY);
+        var market = FoundingSpotFor(BuildingKind.Market, Offset(origin, config.MarketX, config.MarketY));
 
         // ⚠️ NAMED ONCE AND USED TWICE, because a market IS one building that happens to
         // live in two lists (D36's seam). Calling `NameFor` again below would christen the
@@ -8555,6 +8617,7 @@ public sealed class SimWorld
         // a lie about how many markets the village has.
         string marketName = NameFor(BuildingKind.Market);
 
+        StandingChanged();
         StoreBuildings.Add(new StoreBuilding
         {
             Catalog = GoodsCatalog,
@@ -8573,6 +8636,7 @@ public sealed class SimWorld
         // building for the allocator to keep considering.
         if (config.MarketCapacity > 0)
         {
+            StandingChanged();
             Workplaces.Add(new Workplace
             {
                 Store = NewStockpile(),
@@ -8624,6 +8688,86 @@ public sealed class SimWorld
     /// every subsequent value in the stream, silently invalidating saved seeds and
     /// every golden test.
     /// </remarks>
+    /// <summary>
+    /// A founding household's site — and if the starter zone has no room, the founders paint
+    /// another ring of it and look again (D383).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ A warm-start founding lays out six buildings at fixed offsets in the middle of its
+    /// starter diamond. With D382's sizes they take a dozen of its tiles, and buildings being
+    /// obstacles (D383) closes the odd pocket; on a cramped seed (seed 1's riverbank: twelve
+    /// painted tiles) that left no site at all and the world threw at creation. The founders
+    /// widen the paint by a ring rather than the fixture dying on a layout question — bounded,
+    /// and only ever reached on a seed that would otherwise have no founding.
+    /// </remarks>
+    private GridPos SiteAFoundersHome(SimConfig config, GridPos origin)
+    {
+        var near = new GridPos(origin.X + config.HomeX, origin.Y + config.HomeY);
+        for (int ring = 1; ; ring++)
+        {
+            try
+            {
+                return Household.ChooseSite(this, near);
+            }
+            catch (Household.NoRoomToBuildException) when (ring <= 3)
+            {
+                PaintTheStarterZone(origin, config.StartingResidentialRadius + ring);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Where a founding building goes: its offset from the founding site if it may stand there,
+    /// else the nearest tile it may (D383).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The warm start laid six buildings out at fixed offsets and raised them blind — D110's
+    /// shape one layer down. It held while every building was one tile; with D382's sizes and
+    /// buildings as obstacles, seed 1's twelve-tile riverbank had the founders walled in by their
+    /// own stores and nothing to paint, and the world threw at creation. Each spot is asked of
+    /// <see cref="CanBuildAt(BuildingKind, GridPos, bool, Angle)"/> — overlap, water, reach and
+    /// the wall-off sweep — and a refused offset walks outward in rings, nearest first, in a fixed
+    /// order. ⭐ On every seed where the offsets already fit (the fixture's 12345 among them)
+    /// nothing moves, which is what keeps the goldens where D382 left them.
+    /// </para>
+    /// <para>
+    /// ⚠️ The woodcutter's hut offset feeds <c>FirewoodRoundTripTicks</c>; a seed whose hut has
+    /// to move is a seed whose fuel budget is a little off its derivation — a founding on a
+    /// cramped bank, said out loud rather than a crash.
+    /// </para>
+    /// </remarks>
+    private GridPos FoundingSpotFor(BuildingKind kind, GridPos wanted)
+    {
+        if (CanBuildAt(kind, wanted).Allowed)
+        {
+            return wanted;
+        }
+
+        for (int ring = 1; ring <= 8; ring++)
+        {
+            for (int dy = -ring; dy <= ring; dy++)
+            {
+                for (int dx = -ring; dx <= ring; dx++)
+                {
+                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != ring)
+                    {
+                        continue;
+                    }
+
+                    var at = new GridPos(wanted.X + dx, wanted.Y + dy);
+                    if (CanBuildAt(kind, at).Allowed)
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"No ground within eight tiles of {wanted} for the founding's {NameFor(kind)} — this valley cannot be founded here.");
+    }
+
     private void FoundVillage(SimConfig config, GridPos origin)
     {
         int nextVillagerId = 1;
@@ -8638,8 +8782,7 @@ public sealed class SimWorld
             // holding a name, a larder and its members. What it does not have is anywhere
             // to put them, which is the whole of the cold start.
             GridPos? home = config.FoundingBuildings
-                ? Household.ChooseSite(
-                    this, new GridPos(origin.X + config.HomeX, origin.Y + config.HomeY))
+                ? SiteAFoundersHome(config, origin)
                 : null;
 
             var household = new Household
@@ -8652,6 +8795,7 @@ public sealed class SimWorld
 
             // Added before its members are drawn, so the next founding household's
             // ChooseSite can see this one and does not build on top of it.
+            StandingChanged();
             Households.Add(household);
 
             for (int a = 0; a < config.AdultsPerHousehold; a++)
@@ -9105,6 +9249,95 @@ public sealed class SimWorld
         return null;
     }
 
+    // ---------------------------------------------------------------
+    //  The occupancy index — what stands where, kept on a counter (D383)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Bumped every time a footprint appears, moves or goes — the cost field forgets its flow
+    /// fields on it and the index below rebuilds on it (D383).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Call <see cref="StandingChanged"/> at every mutation, and the guard
+    /// <c>TheOccupancyIndexAgreesWithTheShapes</c> is what catches the one you forgot.</b> A
+    /// missed bump is a stale index: villagers walking through a new store, or round a ghost.
+    /// Not hashed — bookkeeping about a cache, the `TerrainGeneration` shape.
+    /// </remarks>
+    public int StandingGeneration { get; private set; }
+
+    int IObstacles.Generation => StandingGeneration;
+
+    internal void StandingChanged() => StandingGeneration++;
+
+    private bool[]? _standing;
+    private int[]? _standingOwner;
+    private readonly List<GridPos[]> _standingFootprints = new();
+    private int _standingBuiltAt = -1;
+
+    /// <summary>
+    /// Whether a building stands on this tile — read off the index, not off every building.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>This is the incrementally kept tile → building index CLAUDE.md said the occupancy
+    /// scans would want "the day the suite's clock says so."</b> Six scans did
+    /// `Footprint.Covers` over every building per ask; the cost field's sweep would ask ten
+    /// thousand times a field. Rebuilt from <see cref="StandingShapes"/> when
+    /// <see cref="StandingGeneration"/> moves — a few dozen footprints, a few hundred tiles.
+    /// </remarks>
+    public bool StandsOn(GridPos tile)
+    {
+        RebuildTheStandingIndexIfStale();
+        int index = IndexOfTile(tile);
+        return index >= 0 && _standing![index];
+    }
+
+    /// <summary>The tiles of the building standing on this one — empty when nothing does.</summary>
+    public IReadOnlyList<GridPos> FootprintCovering(GridPos tile)
+    {
+        RebuildTheStandingIndexIfStale();
+        int index = IndexOfTile(tile);
+        return index >= 0 && _standing![index] ? _standingFootprints[_standingOwner![index]] : System.Array.Empty<GridPos>();
+    }
+
+    private int IndexOfTile(GridPos tile)
+    {
+        int x = tile.X - Map.MinX;
+        int y = tile.Y - Map.MinY;
+        return x < 0 || x >= Map.Width || y < 0 || y >= Map.Height ? -1 : (y * Map.Width) + x;
+    }
+
+    private void RebuildTheStandingIndexIfStale()
+    {
+        if (_standingBuiltAt == StandingGeneration && _standing is not null)
+        {
+            return;
+        }
+
+        int tiles = Map.Width * Map.Height;
+        _standing ??= new bool[tiles];
+        _standingOwner ??= new int[tiles];
+        System.Array.Clear(_standing);
+        _standingFootprints.Clear();
+
+        foreach ((Footprint shape, GridPos _) in StandingShapes())
+        {
+            List<GridPos> covered = shape.CoveredTiles();
+            int owner = _standingFootprints.Count;
+            _standingFootprints.Add(covered.ToArray());
+            for (int i = 0; i < covered.Count; i++)
+            {
+                int index = IndexOfTile(covered[i]);
+                if (index >= 0)
+                {
+                    _standing[index] = true;
+                    _standingOwner[index] = owner;
+                }
+            }
+        }
+
+        _standingBuiltAt = StandingGeneration;
+    }
+
     /// <summary>
     /// ⛔⛔ Every standing building's rectangle and the tile it is filed under —
     /// <b>ONE list, because this file had grown three</b> (D341).
@@ -9162,63 +9395,302 @@ public sealed class SimWorld
             Footprint shape = StoreBuildings[i].Footprint;
             yield return (shape, shape.Origin.ToTile());
         }
+
+        if (_trialHome is GridPos trial)
+        {
+            yield return (FootprintOf(BuildingKind.Home, trial), trial);
+        }
+    }
+
+    /// <summary>
+    /// What a building here would cut off from the village — a name, or null if nothing (D383).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Two breadth-first sweeps of the free ground from the founding site — as it is (cached per
+    /// standing generation) and with this footprint closed as well. The founding site, every
+    /// standing shape, and the new one must keep a reached free tile beside them; what had none
+    /// before is not this proposal's doing. ~10,000 tiles a sweep, at a click, a site search or a
+    /// hut's founding — and last in <c>CanBuildAt</c>, after every cheaper refusal.
+    /// </para>
+    /// <para>
+    /// ⚠️ Reachability is asked of the FOUNDING SITE, as `EveryVillageCanReachItsOwnBuildings`
+    /// asks it (D111): the village is where it landed, and a building that only the far bank
+    /// can reach is walled off however much bank there is.
+    /// </para>
+    /// </remarks>
+    /// <summary>The free ground as it is, swept once per standing generation (a derived index, never hashed).</summary>
+    private bool[]? _freeGroundToday;
+    private int _freeGroundTodayGeneration = -1;
+
+    internal string? WhatThisWouldWallOff(Footprint proposed)
+    {
+        RebuildTheStandingIndexIfStale();
+        List<GridPos> proposedTiles = proposed.CoveredTiles();
+
+        // ⚠️ AGAINST TODAY, NOT AGAINST PERFECTION. A shape nothing reaches today — a hut the
+        // generator put across the water (seed 42's forager's hut) — is not something this
+        // proposal walls off, and refusing every building in the valley on its account is how
+        // the founding stopped founding. Two sweeps: the free ground as it is, and as it would be.
+        if (_freeGroundToday is null || _freeGroundTodayGeneration != StandingGeneration)
+        {
+            _freeGroundToday = SweepTheFreeGround(System.Array.Empty<GridPos>());
+            _freeGroundTodayGeneration = StandingGeneration;
+        }
+
+        bool[] before = _freeGroundToday;
+        bool[] after = SweepTheFreeGround(proposedTiles);
+
+        // First, the village can still leave where it landed: the founding site keeps a reached
+        // free tile beside it. Seed 11's founding is a one-tile spit with one land neighbour, and
+        // the builder's hut, walked off its watery offset, sealed it — nothing could be founded
+        // past that. Asked before the shapes, so a one-exit spit is told that, not the name of
+        // whichever house happens to be first in the list.
+        GridPos[] founding = { Map.FoundingSite };
+        if (HasAReachedNeighbour(before, founding) && !HasAReachedNeighbour(after, founding))
+        {
+            return "That would wall off the founding site — the village could not leave it.";
+        }
+
+        for (int i = 0; i < _standingFootprints.Count; i++)
+        {
+            if (HasAReachedNeighbour(before, _standingFootprints[i]) && !HasAReachedNeighbour(after, _standingFootprints[i]))
+            {
+                return $"That would wall off {NameOfWhatStandsAt(_standingFootprints[i][0])} — nobody could reach it.";
+            }
+        }
+
+        if (!HasAReachedNeighbour(after, proposedTiles))
+        {
+            return "Nobody could reach that spot — it is walled in.";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The free ground reachable from the founding site — passable terrain with nothing standing
+    /// on it and none of <paramref name="alsoClosed"/> — as a bitmap over the map (D383).
+    /// </summary>
+    private bool[] SweepTheFreeGround(IReadOnlyList<GridPos> alsoClosed)
+    {
+        int width = Map.Width;
+        int height = Map.Height;
+        int tiles = width * height;
+        var closed = new bool[tiles];
+        for (int i = 0; i < alsoClosed.Count; i++)
+        {
+            int index = IndexOfTile(alsoClosed[i]);
+            if (index >= 0)
+            {
+                closed[index] = true;
+            }
+        }
+
+        var reached = new bool[tiles];
+        var queue = new int[tiles];
+        int head = 0;
+        int tail = 0;
+
+        // Seeded with the founding site, the tiles beside it, and the tiles beside whatever
+        // stands on it (the cart, a home). ⚠️ The site's own neighbours are seeded even when
+        // the site is free: a proposal ON a free founding site closes the only seed otherwise,
+        // and an empty sweep says everything is walled off.
+        GridPos site = Map.FoundingSite;
+        Seed(site);
+        SeedBeside(site);
+        IReadOnlyList<GridPos> underTheFounding = FootprintCovering(site);
+        for (int i = 0; i < underTheFounding.Count; i++)
+        {
+            SeedBeside(underTheFounding[i]);
+        }
+
+        while (head < tail)
+        {
+            int at = queue[head++];
+            int x = at % width;
+            int y = at / width;
+            if (x + 1 < width) { Visit(at + 1); }
+            if (x > 0) { Visit(at - 1); }
+            if (y + 1 < height) { Visit(at + width); }
+            if (y > 0) { Visit(at - width); }
+        }
+
+        return reached;
+
+        void SeedBeside(GridPos tile)
+        {
+            Seed(new GridPos(tile.X + 1, tile.Y));
+            Seed(new GridPos(tile.X - 1, tile.Y));
+            Seed(new GridPos(tile.X, tile.Y + 1));
+            Seed(new GridPos(tile.X, tile.Y - 1));
+        }
+
+        void Seed(GridPos tile)
+        {
+            int index = IndexOfTile(tile);
+            if (index >= 0)
+            {
+                Visit(index);
+            }
+        }
+
+        void Visit(int index)
+        {
+            if (reached[index] || closed[index] || _standing![index]
+                || !TerrainRules.IsPassable(Map.TerrainAt(new GridPos((index % width) + Map.MinX, (index / width) + Map.MinY))))
+            {
+                return;
+            }
+
+            reached[index] = true;
+            queue[tail++] = index;
+        }
+    }
+
+    private bool HasAReachedNeighbour(bool[] reached, IReadOnlyList<GridPos> footprint)
+    {
+        for (int i = 0; i < footprint.Count; i++)
+        {
+            GridPos t = footprint[i];
+            if (Reached(new GridPos(t.X + 1, t.Y)) || Reached(new GridPos(t.X - 1, t.Y))
+                || Reached(new GridPos(t.X, t.Y + 1)) || Reached(new GridPos(t.X, t.Y - 1)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+
+        bool Reached(GridPos tile)
+        {
+            int index = IndexOfTile(tile);
+            return index >= 0 && reached[index];
+        }
+    }
+
+    /// <summary>A walk the village makes every day, what it costs today, and how many people walk it (D383).</summary>
+    internal readonly record struct DailyWalk(GridPos From, GridPos To, int Cost, int Walkers);
+
+    /// <summary>
+    /// The walks the village makes every day — each workplace to its nearest storage, and each
+    /// villager's home to their work — so a house is not sited on the road (D383).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Buildings are obstacles, and <c>ChooseSite</c> puts the founders' second house on the
+    /// straight line from the forager's hut to the cart at tick 4 — the old walk went through it,
+    /// the new one goes round (64 → 81), and a village that used to ride out its lean twentieth
+    /// year starved instead.
+    /// </para>
+    /// <para>
+    /// Priced as they are today, so <see cref="DetourOfAHouseAt"/> can say what a house would
+    /// add to them.
+    /// </para>
+    /// </remarks>
+    internal List<DailyWalk> TheDailyWalks()
+    {
+        var walks = new List<DailyWalk>();
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace place = Workplaces[i];
+            StoreBuilding? store = NearestStore(place.Tile, StoreKind.Granary, static _ => true)
+                ?? NearestStore(place.Tile, StoreKind.Warehouse, static _ => true)
+                ?? (StoreBuildings.Count > 0 ? StoreBuildings[0] : null);
+            if (store is null)
+            {
+                continue;
+            }
+
+            // Walked by everyone who holds a seat there — a haul two foragers make is two walks,
+            // and a house that bends it costs the village twice what one commute would.
+            Add(place.Tile, store.Tile, place.WorkerIds.Count < 1 ? 1 : place.WorkerIds.Count);
+        }
+
+        // And the commutes: each home to EVERY workplace, not only the ones its people hold
+        // today. A house on a neighbour's way to work costs that neighbour every day (home → hut
+        // 96 → 115 in the played opening, once the hauls alone were kept clear) — and the seats
+        // change hands every season, so a house that only spared the walks of the moment
+        // closed the founders' way to the hut the year their seats went to the new couple
+        // (73 → 118 on the fixture). Walked by one, as a stand-in for whoever holds the seat.
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (Households[i].HomePosition is not Point home || LivingMembersOf(Households[i]) == 0)
+            {
+                continue;
+            }
+
+            for (int j = 0; j < Workplaces.Count; j++)
+            {
+                Add(home.ToTile(), Workplaces[j].Tile, 1);
+            }
+        }
+
+        return walks;
+
+        void Add(GridPos from, GridPos to, int walkers)
+        {
+            int cost = TravelCost.Cost(from, to);
+            if (cost != TravelCostField.Unreachable)
+            {
+                walks.Add(new DailyWalk(from, to, cost, walkers));
+            }
+        }
+    }
+
+    /// <summary>A house stood for the length of one measurement (D383) — see <see cref="DetourOfAHouseAt"/>.</summary>
+    private GridPos? _trialHome;
+
+    /// <summary>
+    /// What the village's daily walks would lengthen by, in tiles walked, if a house stood here
+    /// — each walk by everyone who walks it — or <see cref="int.MaxValue"/> if one of them could
+    /// not be walked at all (D383).
+    /// </summary>
+    /// <remarks>
+    /// Measured, not guessed: the house is stood for the length of the question — a shape in the
+    /// standing index, the fields forgotten and rebuilt against it — and every walk is priced
+    /// again. A dozen fields per candidate, and <c>ChooseSite</c> asks it of its few best sites,
+    /// once per house the village ever builds. The two cheap guesses that came first — the tiles
+    /// of the one route the field returned, then the corridor of every route of that cost — both
+    /// mis-sited the fixture's houses: the first missed the tile beside the warehouse that
+    /// lengthened the haul 58 → 72, the second penalised every tile in the middle of the village
+    /// for seven converging hauls and sent the founders' second house into a pocket 147 tiles
+    /// from their work.
+    /// </remarks>
+    internal int DetourOfAHouseAt(List<DailyWalk> walks, GridPos tile)
+    {
+        _trialHome = tile;
+        StandingChanged();
+        int detour = 0;
+        try
+        {
+            for (int i = 0; i < walks.Count; i++)
+            {
+                int now = TravelCost.Cost(walks[i].From, walks[i].To);
+                if (now == TravelCostField.Unreachable)
+                {
+                    return int.MaxValue;
+                }
+
+                detour += (now - walks[i].Cost) * walks[i].Walkers;
+            }
+        }
+        finally
+        {
+            _trialHome = null;
+            StandingChanged();
+        }
+
+        return (detour + (TravelCostField.BaseTileCost / 2)) / TravelCostField.BaseTileCost;
     }
 
     internal bool SomethingStandsAt(GridPos position)
     {
-        // HOMES COUNT, and leaving them out was a real bug rather than an omission:
-        // CanBuildAt asked this question and got "no" for a tile with a house on it, so
-        // the player could mark a granary on top of somebody's home. Meanwhile
-        // Household.ChooseSite asked its OWN version of the same question, which did check
-        // homes — two rules, one of them wrong, and the wrong one was the one facing the
-        // player. There is one now, and ChooseSite calls it.
-        // ⚠️ THIS ARM USED TO READ `HomePosition ?? position`, WHICH MADE A HOMELESS HOUSEHOLD'S
-        // FOOTPRINT COVER WHATEVER IT WAS ASKED ABOUT and then relied on a null check two lines
-        // later to take it back. Correct, and only by arithmetic that had to be traced to believe.
-        // `HouseholdAt` asks the question once, plainly (D328).
-        if (HouseholdAt(position) is not null)
-        {
-            return true;
-        }
-
-        // ⭐⭐ THROUGH THE FOOTPRINT, NOT THE POSITION (gridless 2b, D319). A workplace is the one
-        // kind of building whose row may state an extent, so it is the one that can cover ground
-        // its `Position` does not name. **For the 1×1 buildings this village actually raises the
-        // two are identical at every facing** — `Footprint.Covers` on a one-tile building is
-        // `Position == position` with more arithmetic — which is exactly why this slice adds
-        // multi-tile support without changing a single placement or moving a golden.
-        // ⚠️ The other four kinds below are one tile each by construction and stay a plain
-        // comparison; giving them a footprint would be four types of ceremony for one shape.
-        if (WorkplaceCovering(position) is not null)
-        {
-            return true;
-        }
-
-        // ⚠️ AND THE LIBRARIES, WHICH ARE THE FOURTH KIND OF THING TO STAND ON A TILE. The comment
-        // above is about exactly this going wrong once already — two rules for *"is this tile
-        // free?"*, one of them missing a kind of building, and the wrong one facing the player.
-        // **A new kind of building is a new line here or it can be built on top of.**
-        if (LibraryCovering(position) is not null)
-        {
-            return true;
-        }
-
-        // ⭐ AND THE TOWN HALL, THE FIFTH — added because the line above ASKED FOR IT IN ADVANCE:
-        // *"a new kind of building is a new line here or it can be built on top of."* The warning
-        // was written by the session that added the fourth, and it is the cheapest one in this
-        // file to honour. (D252.)
-        if (TownHallCovers(position))
-        {
-            return true;
-        }
-
-        // ⛔⛔ THROUGH THE FOOTPRINT, AND LEAVING THIS ONE OUT WAS THE DEFECT (D321).
-        // `StoreBuilding.Footprint` was written and then read by NOTHING — so the longhouse, which
-        // IS a store, occupied one tile as far as every placement question was concerned and its
-        // other two were free ground. **A half-converted occupancy check is exactly the trap this
-        // method's own comment above was written about**: two rules for "is this tile free?", one
-        // of them wrong, and the wrong one facing the player.
-        return StoreAt(position) is not null;
+        // ⭐ THE INDEX, SINCE D383 — one answer for placement, the cost field and the leg planner.
+        // This walked households, workplaces, libraries, the hall and the stores doing
+        // `Footprint.Covers` per ask (D321's own comment warned about two rules for "is this tile
+        // free?"); the index is those same shapes, rebuilt when one of them changes.
+        return StandsOn(position);
     }
 
     // ⭐ D56's PLACE-NAMING IS DELETED HERE, AND IT IS THE RIGHT KIND OF DELETION.
@@ -9629,6 +10101,7 @@ public sealed class SimWorld
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = config.CartCapacity },
         };
 
+        StandingChanged();
         StoreBuildings.Add(cart);
         // Food first, then the tools they carried — the order capacity binds in, stated
         // rather than implied by an argument list (Stockpile.Receive). Received rather than

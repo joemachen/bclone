@@ -102,7 +102,7 @@ public static class VillageEconomy
         // layout gave it. Household.ChooseSite now refuses to build further out than
         // this, so the budget is something the village keeps rather than something it
         // discovers.
-        int travel = MaxHomeToWorkTiles(config) * config.TravelTicksPerUnit;
+        int travel = WalkBudgetTiles(config) * config.TravelTicksPerUnit;
         return (travel * 2) + config.GatherTicks;
     }
 
@@ -155,6 +155,29 @@ public static class VillageEconomy
 
         return config.GathererHutRingTiles;
     }
+
+    /// <summary>
+    /// The tile every budgeted leg carries for going <em>round</em> what stands in the way
+    /// (D383, `specs/buildings-as-obstacles.md §5`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Buildings are obstacles, and the budget's walk was a straight line through them. On the
+    /// fixture the haul to the granary went 80 → 88 and the commutes 64 → 72 with the lanes kept
+    /// clear — a tile a leg, round a store or a neighbour's house — and a village derived to feed
+    /// itself on the straight line made a tenth fewer trips and starved at the margin Joe set
+    /// (D363). <b>One tile, stated</b>: the measured detour, on every leg the economy prices,
+    /// so no kind of work is quietly cheaper than another.
+    /// </para>
+    /// <para>
+    /// ⚠️ NOT in <see cref="MaxHomeToWorkTiles"/>: that is the ring, and the ring's wooded
+    /// fraction and the farm's radii read it as a radius. This is a length added to a walk.
+    /// </para>
+    /// </remarks>
+    public const int ObstacleDetourTiles = 1;
+
+    /// <summary>The walk to work the trip derivations price: the ring, and a tile round what stands in the way.</summary>
+    public static int WalkBudgetTiles(SimConfig config) => MaxHomeToWorkTiles(config) + ObstacleDetourTiles;
 
     /// <summary>How far a home may sit from the middle of the village.</summary>
     /// <remarks>
@@ -220,8 +243,11 @@ public static class VillageEconomy
         int fromVillage = MaxHomeToVillageTiles(config);
         var worstHome = new GridPos(fromVillage, 0);
 
-        int worst = worstHome.ManhattanDistanceTo(stand) + stand.ManhattanDistanceTo(warehouse)
-            + warehouse.ManhattanDistanceTo(worstHome);
+        // The stand IS the worst home's budget point, so the first leg is nothing; the two
+        // real legs each go round what stands in the way (D383).
+        int worst = worstHome.ManhattanDistanceTo(stand)
+            + stand.ManhattanDistanceTo(warehouse) + ObstacleDetourTiles
+            + warehouse.ManhattanDistanceTo(worstHome) + ObstacleDetourTiles;
 
         return (worst * config.TravelTicksPerUnit) + config.CutTicks;
     }
@@ -315,9 +341,10 @@ public static class VillageEconomy
 
         var hut = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY);
 
-        // The furthest home the village will build, walking to the hut and back.
+        // The furthest home the village will build, walking to the hut and back — round what
+        // stands in the way (D383).
         var worstHome = new GridPos(MaxHomeToVillageTiles(config), 0);
-        int worst = worstHome.ManhattanDistanceTo(hut);
+        int worst = worstHome.ManhattanDistanceTo(hut) + ObstacleDetourTiles;
 
         return (worst * config.TravelTicksPerUnit * 2) + config.SplitTicks;
     }
@@ -617,7 +644,7 @@ public static class VillageEconomy
         ArgumentNullException.ThrowIfNull(config);
 
         // The same round trip felling gets, with planting's cost in place of cutting's.
-        int travel = MaxHomeToWorkTiles(config) * config.TravelTicksPerUnit;
+        int travel = WalkBudgetTiles(config) * config.TravelTicksPerUnit;
         int perTree = (travel * 2) + PlantTicks(config);
 
         int available = (config.TicksPerYear * 3 / 4) - (MealsPerYear(config) * 3 / 4);
@@ -658,7 +685,7 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int commute = MaxHomeToWorkTiles(config) * config.TravelTicksPerUnit * 2;
+        int commute = WalkBudgetTiles(config) * config.TravelTicksPerUnit * 2;
         int available = (config.TicksPerYear / 4) - (MealsPerYear(config) / 4) - commute;
 
         return available < 0 ? 0 : available;

@@ -106,8 +106,12 @@ public sealed class VillagerPointTests
     // ⚠️ RE-PINNED (D382), not for the clock: the founding's stores are 2×2 on a tile corner and
     // the first errand is one tick different at BOTH paces — the walk between them is still 21.
     // Were 10 / 31.
-    private const int FirstGatherAtPace1 = 11;
-    private const int FirstGatherAtPace3 = 32;
+    // ⚠️ RE-PINNED (D383), not for the clock: buildings are obstacles and the founding leaves
+    // lanes, so the founder's home stands in the lane north of the founding site and the walk
+    // to the hut goes ROUND the warehouse — nine route tiles where the straight line through it
+    // was seven — and the first errand to the granary is a tile and a half. Were 11 / 32.
+    private const int FirstGatherAtPace1 = 14;
+    private const int FirstGatherAtPace3 = 39;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -163,6 +167,13 @@ public sealed class VillagerPointTests
     /// tile north-west and every walk to a store is a hair different — **80** trips, the
     /// 1st/10th/50th at **17/139/1,117**.
     /// </para>
+    /// <para>
+    /// **Re-pinned an eighth time (D383), not for the clock:** buildings are obstacles, the
+    /// founding leaves lanes, and the founders' homes stand off the haul road — the walks to the
+    /// hut are a tile or three longer until the paths wear in — **63** trips, the 1st/10th/50th
+    /// at **20/146/1,538**. (The economy carries a tile a leg for it and the village peaks
+    /// higher for it; the first two years are leaner.)
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -193,8 +204,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(80, entries);
-        Assert.Equal(new ulong[] { 17, 139, 1117 }, at);
+        Assert.Equal(63, entries);
+        Assert.Equal(new ulong[] { 20, 146, 1538 }, at);
     }
 
     /// <summary>

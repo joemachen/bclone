@@ -68,7 +68,10 @@ public sealed class WorkplaceStoreTests
         SimWorld world = loop.World;
 
         // Let the village get on its feet, so there is a real granary with real food in it.
-        loop.Step(Config.TicksPerYear * 2);
+        // Three years, not two, since D383: with buildings as obstacles the founders' first
+        // walks are a tile or three longer and the stores read 104 at the end of year two
+        // (375 before), 312 at the end of year three.
+        loop.Step(Config.TicksPerYear * 3);
 
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
         Workplace workplace = world.Workplaces[0];
@@ -112,7 +115,8 @@ public sealed class WorkplaceStoreTests
         SimLoop loop = Build(Config);
         SimWorld world = loop.World;
 
-        loop.Step(Config.TicksPerYear * 2);
+        // Three years, as above: the stores must clear the bar before the case can be posed.
+        loop.Step(Config.TicksPerYear * 3);
 
         int bar = world.TargetFoodForTheGranary() * Config.BirthFoodPercent / 100;
         Workplace workplace = world.Workplaces[0];
@@ -174,7 +178,8 @@ public sealed class WorkplaceStoreTests
         SimLoop loop = Build(Config);
         SimWorld world = loop.World;
 
-        loop.Step(Config.TicksPerYear * 2);
+        // Three years, as above: the granary must hold the hundred this moves.
+        loop.Step(Config.TicksPerYear * 3);
 
         // A workplace has to be holding something, or the middle tier is zero and this
         // equation balances for the wrong reason.

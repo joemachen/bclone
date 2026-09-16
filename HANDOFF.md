@@ -1,6 +1,49 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS (D376–D380) AND THE HOUSING FIX (D381) ARE PLAYED AND PUSHED; D382 — FOOTPRINTS PER BUILDING TYPE — IS BUILT, COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT; THEN PHASE 5.**
+# Handoff — bclone: **▶️ PHASE 4.5 — D382 (FOOTPRINTS) AND D383 (BUILDINGS ARE OBSTACLES) ARE BUILT AND COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS BOTH; THEN PHASE 5.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D382.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D383.**
+>
+> **The state:** `main` = D383's commit on D382's (`ccd10e5`) on `93ec4da` (= `origin/main`);
+> **D382 and D383 are committed, NOT pushed — Joe pushes after he plays.** Working tree clean.
+> Suite **1167 passing, 0 failing, 2 skipped of 1169, 3m07** (was 2m41 — +2.5 % CPU; the seed
+> survey on the critical path grew 18 s because every building event now forgets every flow
+> field; measured, not a regression to chase); view 0 warnings on `--no-incremental`; probe
+> green (`bar height 161`, `tile centres ✅`, `done.`). The decision log runs to **D383**. Read
+> `DESIGN.md §0–§5`, §6, D381–D383 in §7, then `specs/buildings-as-obstacles.md` in full.
+>
+> **✅ D383 — BUILDINGS ARE OBSTACLES.** Joe: *"villagers should go around buildings, not through
+> them."* One rule in the one cost field (a standing tile is a wall to every field but the one
+> whose destination it is); stepping off; legs cross only the footprint they leave and arrive
+> at; `StandingGeneration` + occupancy index; ⛔ a building that would wall anything off is
+> refused in words (compared against TODAY — seed 42's hut on a spit taught that); the
+> site-chooser stands each candidate for a moment and prices the village's daily walks round
+> it; ⛔ **the founding layout leaves lanes** (D382's ring walled the founders in and the fixture
+> died out — warehouse (−1,−1), granary (2,−1), market (3,3), builder's (0,3), woodcutter's
+> unmoved); ⛔ **the economy carries one tile a leg for going round** (`ObstacleDetourTiles`),
+> which moved two shipped numbers to their derived values: **`gather_yield` 87 → 90,
+> `firewood_per_split` 50 → 53**. Twelve seeds × fifty years: alive 153 → 154, peak 204 → 202,
+> starved 40 → 36. Six goldens moved once; clock pins re-pinned, not for the clock.
+>
+> **⚠️ For Joe when he plays D383:** watch a haul go round the warehouse and a family step off
+> their doorstep; try to wall a house in with piles — the fourth is refused with *"That would
+> wall off …"*; site a house in a lane and see the road bend round it. **Two calls that are his:**
+> the two shipped numbers above are the derivation's answer to the longer walk, not a re-tuning
+> of D363's scarcity (the target is unchanged) — say if he wants the scarcity itself moved
+> instead; and the founding layout is now spread over a 8×6 with lanes, which is what the warm
+> start's first screen looks like now.
+>
+> **▶️ NEXT, after his play:** Phase 5 in `DESIGN.md §4`'s order — trampled fields and fences
+> first. The cards for the library and the town hall are still a later slice.
+>
+> **⚠️ One loose thread, not chased:** the twelve-year screenshot was taken on the shipped
+> config forced warm (`FoundingBuildings = true` in a throwaway hook) and its four founders
+> froze in Year 1 with 0 firewood, while the same config warm in a unit test lived to Year 12
+> with ten people. The lanes render as drawn in `buildings-as-obstacles.md §4`; the freeze is
+> either `ConfigLocator` finding a different file than `ShippedConfig.Load()` or the view's
+> driver — worth ten minutes before anyone trusts a forced-warm shot again.
+>
+> *(D382's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-16 — AFTER D382.**
 >
 > **The state:** `main` = D382's commit on `93ec4da` (= `origin/main`); **D382 is committed, NOT
 > pushed — Joe pushes after he plays.** Working tree clean. Suite **1161 passing, 0 failing, 2 skipped of 1163, 2m41**; view 0 warnings on
@@ -896,6 +939,47 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     that never finishes holds its ground; the shipped-build guard's four 2×2s on the starter
     diamond starved an unattended village. Pose "harmless" marks beside the neighbourhood — and
     the game does not yet warn a player who does this; it is a follow-up.
+77. **⛔⛔ A REACHABILITY RULE MUST COMPARE AGAINST TODAY (D383).** The wall-off sweep asked
+    "does every building keep a reached neighbour?" and seed 42 — whose forager's hut the
+    generator put on a spit — answered no for every proposal in the valley, so nothing could be
+    founded. Refuse what a proposal CHANGES from reached to unreached; what nothing reaches
+    today is not the proposal's doing. And seed the sweep from the founding site's neighbours
+    even when the site is free: a proposal ON the site closes the only seed otherwise.
+78. **⛔⛔ A GUESS ABOUT "THE ROAD" IS WRONG WHEREVER THE MAP IS UNIFORM (D383).** The tiles of
+    the one route the field returns are one of a dozen equal routes through woodland; the
+    corridor of every equal route is the whole middle of the village where seven hauls converge.
+    Both mis-sited the fixture's houses in opposite directions. Stand the house and price the
+    walks (`DetourOfAHouseAt`) — a dozen fields per trial, once per house ever built — and try
+    every site that could still win, not a shortlist: six of the best by own score were six road
+    tiles.
+79. **⛔ THE DAILY WALKS ARE NOT THE WALKS OF THE MOMENT (D383).** Priced by who holds a seat
+    today, a house spared the founders' walks and closed them the year the seats went to the new
+    couple (73 → 118). Each home to every workplace, because the seats rotate every season.
+80. **⛔⛔ A LAYOUT DESIGNED FOR WALK-THROUGH BUILDINGS IS A WALL THE DAY THEY ARE NOT (D383).**
+    D382's founding ring left the founders' homes in pockets with a twelve-tile walk to a hut
+    eight away; the fixture went 19 → 16 → 13 at peak across D381–D383 and died out by year 120.
+    No amount of chooser cleverness fixes a ring; the layout leaves lanes now, and two offsets
+    are economy inputs whose Manhattan sums must be kept (`FirewoodRoundTripTicks`,
+    `CutRoundTripTicks`).
+81. **⛔⛔ WHEN A REALISM RULE LENGTHENS THE WALK, THE BUDGET MOVES OR THE FIXTURE STARVES AT
+    JOE'S MARGIN (D383).** D363 set foraging so a village that will not diversify shrinks; the
+    fixture lives at that margin, and a tenth fewer trips tipped it from "holds" to "dies out"
+    with every guard about walking green. `ObstacleDetourTiles` on every priced leg, and the two
+    shipped numbers re-derived in the order the file says (food, then fuel). The growth guards'
+    threshold was NOT lowered.
+82. **⚠️ A SWEEP OF THE VALLEY BELONGS AFTER EVERY CHEAP REFUSAL, AND ITS "BEFORE" HALF IS ONE
+    PER GENERATION (D383).** Asked before the water rule, a bank scan of thousands of
+    `CanBuildAt` calls made the fishery guards eight times slower and one lodge guard 37 s →
+    1m47; and a guard that asks `CanBuildAt` of every tile in a 60-radius square should ask its
+    cheap predicate first (52 s → 2 s). The suite's clock is still the instrument: the CPU total
+    is +2.5 % and the wall clock +26 s because the longest test is the critical path.
+83. **⚠️ A FRESH FIELD AND "NO WEAR MAP" SHARE A GENERATION OF −1 (D383).** `TerrainCostField.
+    Empty` + `Refill` on the wear generation never filled on a bare map — the island guard routed
+    nowhere. A sentinel that means "never" must not equal one that means "nothing yet".
+84. **⚠️ `GoHome ↔ Travel` IS A LOOP THE MOMENT HOME IS UNREACHABLE (D383).** A villager with no
+    route home asked the way home again in the same tick, forever, and the suite died of a stack
+    overflow with no test named. Any "fall back to home" branch needs a "home is where I cannot
+    go" exit.
 71. **⛔⛔ A RULE THAT LOOKS LIKE LENIENCY MAY BE THE ONLY GARBAGE COLLECTOR (D381).** A new
     couple taking over *any* dead household — house or not — read as sloppy and was tightened
     to "a house, or a site being raised". Every guard stayed green; the fixture golden moved;

@@ -30,6 +30,49 @@ namespace Bclone.Sim.World;
 public static class LineOfSight
 {
     /// <summary>Whether every tile under the segment from <paramref name="from"/> to <paramref name="to"/> can be walked.</summary>
+    /// <summary>
+    /// Clear of water AND of buildings — save the two footprints a leg may cross: the one it
+    /// leaves and the one it arrives at (D383).
+    /// </summary>
+    public static bool Clear(
+        GeneratedMap map, IObstacles obstacles, Point from, Point to,
+        IReadOnlyList<GridPos> leaving, IReadOnlyList<GridPos> arriving)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(obstacles);
+        bool clear = true;
+        Walk(from, to, tile =>
+        {
+            if (!map.Contains(tile) || !TerrainRules.IsPassable(map.TerrainAt(tile)))
+            {
+                clear = false;
+                return false;
+            }
+
+            if (obstacles.StandsOn(tile) && !Among(leaving, tile) && !Among(arriving, tile))
+            {
+                clear = false;
+                return false;
+            }
+
+            return true;
+        });
+        return clear;
+    }
+
+    private static bool Among(IReadOnlyList<GridPos> tiles, GridPos tile)
+    {
+        for (int i = 0; i < tiles.Count; i++)
+        {
+            if (tiles[i] == tile)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static bool Clear(GeneratedMap map, Point from, Point to)
     {
         ArgumentNullException.ThrowIfNull(map);

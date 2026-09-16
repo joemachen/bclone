@@ -50,6 +50,25 @@ public sealed class TravelCostField
     /// </remarks>
     private readonly Dictionary<GridPos, TerrainCostField> _fields = new();
 
+    /// <summary>What stands on the ground, and the generation the fields were built against (D383).</summary>
+    private IObstacles? _obstacles;
+    private int _builtAtObstacleGeneration = -1;
+
+    /// <summary>
+    /// Tell the field what stands where. <b>A tile a building stands on cannot be walked
+    /// through, only to</b> (D383, `specs/buildings-as-obstacles.md`): every flow field treats
+    /// standing tiles as it treats water, except the field whose destination that building is,
+    /// which opens the building's whole footprint. Every field is forgotten when the standing
+    /// set changes.
+    /// </summary>
+    public void Obstacles(IObstacles obstacles)
+    {
+        ArgumentNullException.ThrowIfNull(obstacles);
+        _obstacles = obstacles;
+        _builtAtObstacleGeneration = -1;
+        Forget();
+    }
+
     // ---------------------------------------------------------------
     //  Worn ground (§2.6, D358)
     // ---------------------------------------------------------------
@@ -157,10 +176,73 @@ public sealed class TravelCostField
     /// and sends villagers on errands they can never finish.
     /// </para>
     /// </remarks>
-    public int Cost(GridPos from, GridPos to) =>
-        _map is null
-            ? from.ManhattanDistanceTo(to) * BaseTileCost
-            : FieldTo(to).CostFrom(from);
+    public int Cost(GridPos from, GridPos to)
+    {
+        if (_map is null)
+        {
+            return from.ManhattanDistanceTo(to) * BaseTileCost;
+        }
+
+        TerrainCostField field = FieldTo(to);
+        int direct = field.CostFrom(from);
+        return direct != Unreachable ? direct : CostLeaving(field, from);
+    }
+
+    /// <summary>
+    /// The cost from a tile a building stands on — <b>stepping off it</b> to the cheapest free
+    /// tile beside any tile of its footprint (D383).
+    /// </summary>
+    /// <remarks>
+    /// A villager at home, or on the hut they just cleared, starts on a tile no field reaches
+    /// (it is a wall to every destination but its own). The walk out is one step to the best
+    /// neighbour of the building, whichever of its tiles that neighbour touches: a family at a
+    /// 2×2's centre leaves by whichever side is open. Unreachable stays unreachable — a tile
+    /// that is not a building's, or a building walled in on every side.
+    /// </remarks>
+    private int CostLeaving(TerrainCostField field, GridPos from)
+    {
+        GridPos? step = StepOff(field, from, out int cost);
+        return step is null ? Unreachable : cost;
+    }
+
+    private GridPos? StepOff(TerrainCostField field, GridPos from, out int cost)
+    {
+        cost = Unreachable;
+        if (_obstacles is null)
+        {
+            return null;
+        }
+
+        IReadOnlyList<GridPos> footprint = _obstacles.FootprintCovering(from);
+        GridPos? best = null;
+        int cheapest = Unreachable;
+        for (int i = 0; i < footprint.Count; i++)
+        {
+            Consider(new GridPos(footprint[i].X + 1, footprint[i].Y));
+            Consider(new GridPos(footprint[i].X - 1, footprint[i].Y));
+            Consider(new GridPos(footprint[i].X, footprint[i].Y + 1));
+            Consider(new GridPos(footprint[i].X, footprint[i].Y - 1));
+        }
+
+        cost = cheapest;
+        return best;
+
+        void Consider(GridPos beside)
+        {
+            int there = field.CostFrom(beside);
+            if (there == Unreachable)
+            {
+                return;
+            }
+
+            int viaThere = there + CostToEnter(beside);
+            if (viaThere < cheapest)
+            {
+                cheapest = viaThere;
+                best = beside;
+            }
+        }
+    }
 
     /// <summary>No walk gets there — across the river, or off the map.</summary>
     public const int Unreachable = TerrainCostField.Unreachable;
@@ -176,8 +258,21 @@ public sealed class TravelCostField
     /// the cost or the two will disagree — a villager walking a straight line while
     /// the economy budgets for a path round the water is the worst of both.
     /// </remarks>
-    public GridPos StepToward(GridPos from, GridPos to) =>
-        _map is null ? from.StepToward(to) : FieldTo(to).StepFrom(from);
+    public GridPos StepToward(GridPos from, GridPos to)
+    {
+        if (_map is null)
+        {
+            return from.StepToward(to);
+        }
+
+        TerrainCostField field = FieldTo(to);
+        if (field.CostFrom(from) != Unreachable)
+        {
+            return field.StepFrom(from);
+        }
+
+        return StepOff(field, from, out _) ?? from;
+    }
 
     /// <summary>
     /// ⭐ The whole route from <paramref name="from"/> to <paramref name="to"/> — the tiles
@@ -255,19 +350,60 @@ public sealed class TravelCostField
             }
         }
 
+        // ⛔ THE STANDING SET CHANGED: EVERY FIELD IS WRONG (D383). A building placed, moved or
+        // pulled down changes routes everywhere, so the fields go and the scratch's passability is
+        // rebuilt with the buildings closed. A few times a year, on demand — D358's shape.
+        if (_obstacles is not null && _obstacles.Generation != _builtAtObstacleGeneration)
+        {
+            _builtAtObstacleGeneration = _obstacles.Generation;
+            _fields.Clear();
+            _scratch = null;
+        }
+
+        if (_scratch is null)
+        {
+            _scratch = new TerrainCostField.Scratch(_map!, BaseTileCost);
+            if (_obstacles is not null)
+            {
+                _scratch.Block(_map!, _obstacles);
+            }
+        }
+
         if (!_fields.TryGetValue(destination, out TerrainCostField? field))
         {
-            // A fresh field is the sweep, which is already right when nothing is worn — only a
-            // priced valley needs it refilled straight away.
-            field = TerrainCostField.Build(_map!, destination, BaseTileCost);
-            field.BuiltAtGeneration = _anythingWorn ? -1 : _builtAtWearGeneration;
+            // Empty, and marked as never filled: with no wear map the wear generation is −1,
+            // which is also a fresh field's, and an "up to date" empty field routes nowhere
+            // (the island guard caught it).
+            field = TerrainCostField.Empty(_map!, destination);
+            field.BuiltAtGeneration = int.MinValue;
             _fields[destination] = field;
         }
 
         if (field.BuiltAtGeneration != _builtAtWearGeneration)
         {
-            _scratch ??= new TerrainCostField.Scratch(_map!, BaseTileCost);
-            field.Refill(_map!, BaseTileCost, _anythingWorn ? _entryCost : null, _scratch);
+            // The destination's own footprint is open for this field only — a building can be
+            // walked TO. Opened, filled, closed again.
+            IReadOnlyList<GridPos> own = _obstacles?.FootprintCovering(destination) ?? System.Array.Empty<GridPos>();
+            for (int i = 0; i < own.Count; i++)
+            {
+                int index = _scratch.IndexOf(_map!, own[i]);
+                if (index >= 0)
+                {
+                    _scratch.Passable[index] = true;
+                }
+            }
+
+            field.Refill(BaseTileCost, _anythingWorn ? _entryCost : null, _scratch);
+
+            for (int i = 0; i < own.Count; i++)
+            {
+                int index = _scratch.IndexOf(_map!, own[i]);
+                if (index >= 0)
+                {
+                    _scratch.Passable[index] = false;
+                }
+            }
+
             field.BuiltAtGeneration = _builtAtWearGeneration;
         }
 

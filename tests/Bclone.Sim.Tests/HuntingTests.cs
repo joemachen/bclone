@@ -33,8 +33,11 @@ public sealed class HuntingTests
     /// <summary>A buildable tile with woods in reach of it.</summary>
     private static GridPos AWoodedTile(SimWorld world)
     {
+        // From four out, not one: the founding leaves lanes since D383, and the first buildable
+        // tile beside the founding site is the lane the hauls use — a lodge there halved what
+        // four people carried out of it in a season (624 → 300).
         GridPos site = world.Map.FoundingSite;
-        for (int radius = 1; radius < 60; radius++)
+        for (int radius = 4; radius < 60; radius++)
         {
             for (int dy = -radius; dy <= radius; dy++)
             {
@@ -158,8 +161,12 @@ public sealed class HuntingTests
                 {
                     var at = new GridPos(
                         world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + dy);
-                    if (world.CanBuildAt(BuildingKind.Granary, at).Allowed
-                        && world.ForestTilesWithin(at, world.Config.HuntingRadius) == 0)
+
+                    // The cheap question first (`building-placement.md`'s trap): `CanBuildAt`
+                    // builds a flow field and sweeps the valley for a tile that is mostly not
+                    // bare anyway — asked second, the scan is seconds rather than a minute.
+                    if (world.ForestTilesWithin(at, world.Config.HuntingRadius) == 0
+                        && world.CanBuildAt(BuildingKind.Granary, at).Allowed)
                     {
                         bare = at;
                         found = true;

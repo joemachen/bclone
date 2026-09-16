@@ -59,6 +59,10 @@ tile the anchor is in).
   fuel target). The founding raises blindly, so a guard now says no two founding buildings share
   a tile. ⛔ **Every fixture-based golden re-takes once, with this as the one reason** (D152, D344's
   shape); the shipped cold start has no founding buildings and its goldens are expected to hold.
+  ⚠️ **Superseded by D383's lanes** (`buildings-as-obstacles.md §4`): with buildings as obstacles
+  this ring walled the founders in, and every founding building now has free ground on all
+  four sides — warehouse (−1,−1), granary (2,−1), market (3,3), builder's hut (0,3), the
+  woodcutter's hut unmoved.
 - **The starter diamond holds fewer homes** — bigger stores sit on painted tiles — which is the
   fixture village growing differently, not a rule change; `ChooseSite` already skips what stands.
 - **`SiteAt`** reads the site from the tile the builder stands on (D108); a corner-anchored

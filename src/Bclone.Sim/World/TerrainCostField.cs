@@ -79,6 +79,22 @@ public sealed class TerrainCostField
     /// is founded rather than in the tick loop.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// A field with nothing reached yet — filled by <see cref="Refill"/>, under whatever
+    /// passability its scratch carries (terrain, and since D383 the standing buildings).
+    /// </summary>
+    internal static TerrainCostField Empty(GeneratedMap map, GridPos destination)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        var cost = new int[map.Width * map.Height];
+        for (int i = 0; i < cost.Length; i++)
+        {
+            cost[i] = Unreachable;
+        }
+
+        return new TerrainCostField(destination, cost, map.Width, map.Height, map.MinX, map.MinY);
+    }
+
     public static TerrainCostField Build(GeneratedMap map, GridPos destination, int baseTileCost)
     {
         ArgumentNullException.ThrowIfNull(map);
@@ -240,7 +256,7 @@ public sealed class TerrainCostField
         }
 
         TerrainCostField field = Build(map, destination, baseTileCost);
-        field.Refill(map, baseTileCost, entryCost, new Scratch(map, baseTileCost));
+        field.Refill(baseTileCost, entryCost, new Scratch(map, baseTileCost));
         return field;
     }
 
@@ -275,6 +291,28 @@ public sealed class TerrainCostField
                 Passable[i] = TerrainRules.IsPassable(map.TerrainAt(at));
             }
         }
+
+        /// <summary>
+        /// Close every tile a building stands on (D383) — water and walls are one answer to the
+        /// sweep. Called once per obstacle generation; a field opens its own destination's
+        /// footprint around its refill.
+        /// </summary>
+        public void Block(GeneratedMap map, IObstacles obstacles)
+        {
+            for (int i = 0; i < Passable.Length; i++)
+            {
+                var at = new GridPos((i % map.Width) + map.MinX, (i / map.Width) + map.MinY);
+                Passable[i] = TerrainRules.IsPassable(map.TerrainAt(at)) && !obstacles.StandsOn(at);
+            }
+        }
+
+        public int IndexOf(GeneratedMap map, GridPos at)
+        {
+            ArgumentNullException.ThrowIfNull(map);
+            int x = at.X - map.MinX;
+            int y = at.Y - map.MinY;
+            return x < 0 || x >= map.Width || y < 0 || y >= map.Height ? -1 : (y * map.Width) + x;
+        }
     }
 
     /// <summary>Which hand-over of the paths this field was last computed against — the cache's key.</summary>
@@ -290,7 +328,7 @@ public sealed class TerrainCostField
     /// the suite's parallel load the collector turned that into a suite three times slower. The
     /// fields are kept and refilled: same arrays, same answer.
     /// </remarks>
-    internal void Refill(GeneratedMap map, int baseTileCost, byte[]? entryCost, Scratch scratch)
+    internal void Refill(int baseTileCost, byte[]? entryCost, Scratch scratch)
     {
         int[] cost = _cost;
         for (int i = 0; i < cost.Length; i++)
@@ -300,7 +338,10 @@ public sealed class TerrainCostField
 
         int start = IndexOf(Destination);
         bool[] passable = scratch.Passable;
-        if (start < 0 || !TerrainRules.IsPassable(map.TerrainAt(Destination)))
+
+        // The scratch's answer, not the terrain's: a destination under a building is passable
+        // here because the caller opened its footprint (D383); one in the water is not.
+        if (start < 0 || !passable[start])
         {
             return;
         }

@@ -193,8 +193,9 @@ public sealed class CropCalendarTests
     {
         SimWorld world = Build().World;
 
-        // +3, +3: a granary is 2×2 and grows north-west of the tile it is put on (D382).
-        var tile = new GridPos(world.Map.FoundingSite.X + 3, world.Map.FoundingSite.Y + 3);
+        // +5, +5: a granary is 2×2 and grows north-west of the tile it is put on (D382), and
+        // +3, +3 is where the founding's market stands since D383's lanes.
+        var tile = new GridPos(world.Map.FoundingSite.X + 5, world.Map.FoundingSite.Y + 5);
 
         world.Map.SetTerrain(tile, standing);
         world.Map.SetCrop(tile, 1);
@@ -216,9 +217,10 @@ public sealed class CropCalendarTests
     {
         SimWorld world = Build().World;
 
-        // +3, +3: a granary is 2×2 and grows north-west of the tile it is put on (D382), and at
-        // +2, +2 it met the founding's market.
-        var tile = new GridPos(world.Map.FoundingSite.X + 3, world.Map.FoundingSite.Y + 3);
+        // +5, +5: a granary is 2×2 and grows north-west of the tile it is put on (D382); at
+        // +2, +2 it met the founding's market, and at +3, +3 it meets the market where D383's
+        // lanes put it.
+        var tile = new GridPos(world.Map.FoundingSite.X + 5, world.Map.FoundingSite.Y + 5);
 
         world.Map.SetTerrain(tile, Terrain.Field);
 

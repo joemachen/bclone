@@ -945,14 +945,19 @@ public sealed record SimConfig
     /// </para>
     /// </remarks>
     [JsonPropertyName("builder_hut_x")]
-    public int BuilderHutX { get; init; } = -1;
+    public int BuilderHutX { get; init; }
 
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     [JsonPropertyName("builder_hut_y")]
-    // ⚠️ −2, NOT −1, SINCE D382: the hut is 2×1 and the warehouse 2×2, and at (−1, −1) the two
-    // stood on one tile (−2, −1). Nothing derives from this offset; `TheFoundingLayoutOverlapsNothing`
-    // is the guard, and the founding raises blindly.
-    public int BuilderHutY { get; init; } = -2;
+    // ⚠️ (0, 3) SINCE D383 — THE FOUNDING LAYOUT LEAVES LANES. Buildings are obstacles, and the
+    // D382 layout was a ring of them round the founding site: the warehouse and the woodcutter's
+    // hut walled its west, the granary and this hut its north, the market its east, and the
+    // founders' homes went into the pockets — a 12-tile walk to a hut eight tiles away, and
+    // the fixture village that used to peak at 19 died out. Every founding building now has
+    // free ground on all four sides and the founding site has four free neighbours
+    // (`specs/buildings-as-obstacles.md §4`). Nothing derives from this offset;
+    // `TheFoundingLayoutOverlapsNothing` and `TheFoundingLayoutLeavesLanes` are the guards.
+    public int BuilderHutY { get; init; } = 3;
 
     /// <summary>
     /// Hands a builder's hut holds — <b>three, stated</b> (Joe, 2026-08-30).
@@ -1048,8 +1053,9 @@ public sealed record SimConfig
     /// only the <em>founding</em> granary; every one after it the player sites themselves
     /// (D43), which is the first decision storage makes interesting.
     /// </remarks>
+    // ⚠️ (2, −1) since D383 — a lane at x = 0 between it and the warehouse, see BuilderHutY.
     [JsonPropertyName("granary_x")]
-    public int GranaryX { get; init; } = 1;
+    public int GranaryX { get; init; } = 2;
 
     /// <summary>Where the village's food is kept.</summary>
     [JsonPropertyName("granary_y")]
@@ -1061,12 +1067,16 @@ public sealed record SimConfig
     /// and one undifferentiated pile would delete the per-household inequality D14
     /// exists to create.
     /// </remarks>
+    // ⚠️ (−1, −1) since D383 — north-west of the founding site with row 0 free, see BuilderHutY.
+    // ⛔ `VillageEconomy.CutRoundTripTicks` reads this offset: the felled log's walk to the
+    // warehouse is a leg of the timber economy. (−1, −1) is the same ten tiles from the
+    // budget's worst home as (−2, 0) was, so nothing re-derives.
     [JsonPropertyName("storage_warehouse_x")]
-    public int StorageWarehouseX { get; init; } = -2;
+    public int StorageWarehouseX { get; init; } = -1;
 
     /// <summary>Where materials are kept.</summary>
     [JsonPropertyName("storage_warehouse_y")]
-    public int StorageWarehouseY { get; init; }
+    public int StorageWarehouseY { get; init; } = -1;
 
     /// <summary>Firewood one household burns per day of winter.</summary>
     /// <remarks>
@@ -1157,12 +1167,13 @@ public sealed record SimConfig
     public int GranaryCapacity { get; init; } = 2500;
 
     /// <summary>Where the market stands — among the homes, which is its whole value.</summary>
+    // ⚠️ (3, 3) since D383 — south-east, a lane on every side, see BuilderHutY.
     [JsonPropertyName("market_x")]
-    public int MarketX { get; init; } = 2;
+    public int MarketX { get; init; } = 3;
 
     /// <summary>Where the market stands.</summary>
     [JsonPropertyName("market_y")]
-    public int MarketY { get; init; } = 1;
+    public int MarketY { get; init; } = 3;
 
     /// <summary>
     /// How many traders the market has room for. <b>Zero switches the market off.</b>

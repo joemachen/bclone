@@ -208,7 +208,11 @@
   // Fishing, hunting and farming feed the rest, and a village that will
   // not diversify shrinks -- six shipped seeds over fifty years went from
   // 145 people to 95. That is the scarcity he asked for, as a number.
-  "gather_yield": 87,
+  // 87 -> 90 (D383): buildings are obstacles and every budgeted leg now
+  // carries a tile for going round them (VillageEconomy.ObstacleDetourTiles),
+  // so the same target -- a gatherer feeds themselves and one dependant --
+  // needs 90. The scarcity is unchanged; the walk got longer.
+  "gather_yield": 90,
   // THE COPSE THINS UNDER USE (D257, Joe: "the copse of wood isnt infinite").
   // Every N completed gathers sets the nearest mature tree in the hut's ring
   // back to a sapling; regrowth grows it up again on its own sweep. So a hut
@@ -686,10 +690,13 @@
   // been funded from. A position is content; a capacity is a
   // consequence, and woodcutter_hut_capacity below is the recorded case
   // of what typing one costs.
-  // One row further north since D382: the hut is 2x1 and the warehouse 2x2,
-  // and at (-1, -1) they shared the tile (-2, -1). Nothing derives from this.
-  "builder_hut_x": -1,
-  "builder_hut_y": -2,
+  // (0, 3) since D383: buildings are obstacles, and the old layout was a ring
+  // of them round the founding site with the founders' homes in its pockets -
+  // a 12-tile walk to a hut eight tiles away. Every founding building now has
+  // free ground on all four sides (specs/buildings-as-obstacles.md section 4).
+  // Nothing derives from this offset.
+  "builder_hut_x": 0,
+  "builder_hut_y": 3,
 
   // How many hands one builder's hut holds. Joe, 2026-08-30: "One builder's hut should
   // have 3 employees only. If the user wants more builders, they can build a new builder's
@@ -775,7 +782,12 @@
   //
   // The header of this file already said "in the order the derivation
   // runs (food before fuel)". It says it because of exactly this.
-  "firewood_per_split": 50,
+  //
+  // 50 -> 53 (D383): every budgeted leg carries a tile for going round
+  // the buildings, the woodcutter's walk included, so the same target
+  // (half the spare hands) needs a slightly bigger batch. Food first: the
+  // 90 above was set before this was read.
+  "firewood_per_split": 53,
 
   // Per household, not per member: a house costs the same to heat
   // whether two live in it or five. That makes SPRAWL the thing that
@@ -925,10 +937,13 @@
   // village always has somewhere to put things. Every store after them
   // the player sites themselves (D43) - and WHERE the granary goes is
   // the first decision in the game that storage makes interesting.
-  "granary_x": 1,
+  // Granary north-east, warehouse north-west, a lane at x = 0 between them
+  // (D383). The warehouse offset is read by CutRoundTripTicks: (-1, -1) is
+  // the same ten tiles from the budget's worst home as (-2, 0) was.
+  "granary_x": 2,
   "granary_y": -1,
-  "storage_warehouse_x": -2,
-  "storage_warehouse_y": 0,
+  "storage_warehouse_x": -1,
+  "storage_warehouse_y": -1,
 
   // What one person can carry in one trip. This is the whole reason a
   // fetch is a journey rather than a teleport with extra steps: an
@@ -980,8 +995,9 @@
   // short walk. The one building that is both a store and a
   // workplace, because its contents arrive by somebody's work
   // rather than by producers dropping things off.
-  "market_x": 2,
-  "market_y": 1,
+  // South-east since D383, a lane on every side.
+  "market_x": 3,
+  "market_y": 3,
 
   // More than one trader - a market is a place several people work.
   // ZERO SWITCHES IT OFF, and that is a supported state with a test

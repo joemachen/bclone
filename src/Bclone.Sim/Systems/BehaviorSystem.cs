@@ -3143,6 +3143,19 @@ public sealed class BehaviorSystem : ISimSystem
                 // so they go home rather than pressing against the bank forever.
                 villager.LegSteps = 0;
                 villager.LegStep = 0;
+
+                // ⛔ AND IF HOME IS WHERE THEY CANNOT GET TO, THEY STAND WHERE THEY ARE (D383).
+                // Buildings are obstacles, so a villager can now be somewhere with no route
+                // home — and `GoHome` → `Travel` → no route → `GoHome` overflowed the stack the
+                // first time the suite met one. A stranded villager is a real state; they wait,
+                // and the next tick's `Decide` asks again with whatever has changed.
+                if (onArrival == VillagerState.Idle && target == world.RestingPoint(villager).ToTile())
+                {
+                    villager.State = VillagerState.Idle;
+                    villager.WorkNote = "cannot get home from here";
+                    return;
+                }
+
                 GoHome(world, villager);
                 return;
             }
@@ -3201,10 +3214,15 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
+        // ⛔ A LEG MAY CROSS THE BUILDING IT LEAVES AND THE ONE IT ARRIVES AT, AND NO OTHER
+        // (D383): the route already goes round; the straight line is only allowed to cut the
+        // corners the route cut.
+        IReadOnlyList<GridPos> leaving = world.FootprintCovering(from);
+        IReadOnlyList<GridPos> arriving = world.FootprintCovering(target);
         int furthest = 0;
         for (int i = 1; i < route.Count; i++)
         {
-            if (!LineOfSight.Clear(world.Map, villager.Position, Point.CentreOf(route[i])))
+            if (!LineOfSight.Clear(world.Map, world, villager.Position, Point.CentreOf(route[i]), leaving, arriving))
             {
                 break;
             }

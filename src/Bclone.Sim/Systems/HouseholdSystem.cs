@@ -144,6 +144,7 @@ public sealed class HouseholdSystem : ISimSystem
             {
                 household.HomePosition = standingEmpty.HomePosition;
                 standingEmpty.HomePosition = null;
+                world.StandingChanged();
                 world.Narrate(
                     $"The {household.Name} household moved into the empty house at "
                     + $"{household.HomePosition} — {world.Clock.SeasonAndYear()}.", LogCategory.Life);

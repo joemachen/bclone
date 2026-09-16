@@ -144,12 +144,15 @@ public sealed class Household
         // name. The zone map keeps the whole-painted tiles as an index now, so this walks the
         // paint wherever it is — a far home is scored, chosen if it is the best there is, and
         // costs the food it costs (D120, D43's warning at the brush).
-        GridPos best = default;
-        int bestScore = int.MaxValue;
-        int bestFromVillage = int.MaxValue;
         bool found = false;
         int builtOn = 0;
         int cutOff = 0;
+
+        // Every site that can take a house, scored by its own walks; sorted best first below.
+        var sites = new List<(GridPos Site, int Score, int FromVillage)>();
+
+        // The haul routes, once per search, so a house is not sited on the road (D383).
+        List<Core.SimWorld.DailyWalk> walks = world.TheDailyWalks();
 
         // Row order (Y then X — the zone map's set is sorted so), which is the order the old box
         // walked, so an exact tie still resolves the same way. An unordered tie between two
@@ -170,6 +173,14 @@ public sealed class Household
             if (world.SomethingStandsAt(candidate))
             {
                 builtOn++;
+                continue;
+            }
+
+            // A house that would close the last free tile beside a neighbour is not a site
+            // (D383) — one sweep of the valley per surviving candidate, once a day at most.
+            if (world.WhatThisWouldWallOff(world.FootprintOf(BuildingKind.Home, candidate)) is not null)
+            {
+                cutOff++;
                 continue;
             }
 
@@ -200,25 +211,67 @@ public sealed class Household
 
             int score = toWork + toStore;
 
+            // ⭐ NOT ON THE ROAD (D383): a tile the daily walks pass through scores as if it were
+            // four tiles further out per walk through it — a penalty, not a refusal, so a village
+            // with nowhere else still gets a house and the road bends. Legible: *"the house went
+            // there because the path to the granary runs here."*
             // TIES GO TO THE TILE NEAREST THE VILLAGE. The score is a sum of two distances, so
             // every tile on a shortest path between the work and the granary scores identically
             // — which is most of the plausible sites. Breaking toward the centre keeps the
             // settlement compact, which is what a village actually does, and it is what makes
             // the market and the granary worth standing where they stand.
             int fromVillage = candidate.ManhattanDistanceTo(villageCentre);
-
-            if (score < bestScore || (score == bestScore && fromVillage < bestFromVillage))
-            {
-                bestScore = score;
-                bestFromVillage = fromVillage;
-                best = candidate;
-                found = true;
-            }
+            sites.Add((candidate, score, fromVillage));
+            found = true;
         }
 
         if (found)
         {
-            return best;
+            // ⭐ NOT ON THE ROAD (D383): buildings are obstacles, and a house on the way to the
+            // granary costs every haul, every day. The sites are stood for a moment each, best
+            // by their own walks first, and the village's daily walks priced again
+            // (`SimWorld.DetourOfAHouseAt`); what they lengthen by is added to the site's score,
+            // tile for tile — a penalty, not a refusal, so a village with nowhere else still
+            // gets a house and the road bends. Legible: *"the house went there because the path
+            // to the granary runs here."*
+            //
+            // ⚠️ EVERY SITE THAT COULD STILL WIN, NOT THE BEST FEW. A detour is never negative,
+            // so once a site's own score is no better than the best total so far nothing after
+            // it can beat that total and the trials stop — but the fixture's whole road scored
+            // 8 and the first free tile off it 10, and a shortlist of six was six road tiles.
+            sites.Sort(static (a, b) =>
+                a.Score != b.Score ? a.Score.CompareTo(b.Score)
+                : a.FromVillage != b.FromVillage ? a.FromVillage.CompareTo(b.FromVillage)
+                : a.Site.Y != b.Site.Y ? a.Site.Y.CompareTo(b.Site.Y)
+                : a.Site.X.CompareTo(b.Site.X));
+            int bestScore = int.MaxValue;
+            int bestFromVillage = int.MaxValue;
+            GridPos best = default;
+            for (int i = 0; i < sites.Count && sites[i].Score < bestScore; i++)
+            {
+                int detour = world.DetourOfAHouseAt(walks, sites[i].Site);
+                if (detour == int.MaxValue)
+                {
+                    continue;
+                }
+
+                int score = sites[i].Score + detour;
+                if (score < bestScore || (score == bestScore && sites[i].FromVillage < bestFromVillage))
+                {
+                    bestScore = score;
+                    bestFromVillage = sites[i].FromVillage;
+                    best = sites[i].Site;
+                }
+            }
+
+            if (bestScore != int.MaxValue)
+            {
+                return best;
+            }
+
+            // Every site would cut a daily walk altogether; the best by its own walks is still
+            // a house.
+            return sites[0].Site;
         }
 
         // Nowhere in the painted land — and SAY WHICH WAY nowhere (D381). The old sentence
@@ -253,6 +306,7 @@ public sealed class Household
         throw new NoRoomToBuildException(
             $"{painted} tiles are painted for houses and none can take one: {string.Join(", ", reasons)}");
     }
+
 
     private static int NearestStoreDistance(Core.SimWorld world, GridPos from, StoreKind kind)
     {

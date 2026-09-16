@@ -117,7 +117,7 @@ This gets three things for free: a half-built granary is legible on the map, bui
 - **Silent economy breakage.** §3. The derived bounds stop being guarantees the moment the player can place; if the sim keeps assuming them, villages die for reasons the player cannot see.
 - **The singleton seam.** §4. A second granary that is silently ignored is worse than no second granary.
 - **Unreachable placement.** Water is impassable now (D40) — a building across the river is legal, looks fine, and is useless. It must be refused, or at minimum warned about, in the same words §7 uses.
-- **Blocking the village in.** Enough buildings in a ring could wall off a household's only route to work. A placement that would strand somebody has to be caught.
+- **Blocking the village in.** Enough buildings in a ring could wall off a household's only route to work. A placement that would strand somebody has to be caught. ✅ **Caught since D383** (`buildings-as-obstacles.md §2`): `CanBuildAt` sweeps the free ground as it is and as it would be, and refuses a building that takes the last reached tile from beside the founding site, any standing shape, or itself — *"That would wall off X — nobody could reach it."*
 
 ---
 
