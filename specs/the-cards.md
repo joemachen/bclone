@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
 **Decisions:** D376 (this document). Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376): the cards replace the inspector's description; the docked panel keeps the controls.** ⏸️ Slice 2 (the two top bars) not started. Owner: Joe + Claude Code.
+**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376) and the controls folded onto the card the same day (D377): one structure, one panel.** ⏸️ Slice 2 (the two top bars) not started. Owner: Joe + Claude Code.
 
 ---
 
@@ -42,11 +42,16 @@ the one unpinned card is retargeted; else a new card is made beside the left col
 per open card. The selected card has the yellow edge. A card whose subject is gone (a demolished
 building, a death) closes itself on refresh.
 
-**The docked panel is now *Settings for what you clicked*.** It keeps every per-building control
-the inspector had — the marker toggles, *Takes:*, *Keeps up to:*, the build queue, the ground
-brush, the forester's mode, the villager's *Kept on:* — for the **selected** card's subject, under
-one line naming it. The description text is gone from it; a villager's learned trades stay there,
-because the card has no room and D174's mastery must still be readable somewhere.
+**The controls are on the card, under `Settings ▸`** (D377 — Joe, at a stockpile with its card
+and the docked panel both open: *"shouldn't all of this be in the same panel? why 2 panels for one
+structure?"*). Folded by default so the five parts stay what you read; open, it holds every
+control the docked panel used to: a store's *When full: Marker*, *Takes:* and (a market's) *Keeps
+up to:*; a workplace's idle marker, ground brush and felling mode, a site's build queue; a
+villager's *Kept on:* and the trades they have learned. Every row wraps (`HFlowContainer`), so the
+card stays 268 wide with all of them open. Each control selects its card first and then calls the
+same "selected" handler the docked panel called — one rule, not two. **The docked panel is
+*What's here*, for what has no card yet** (bare ground, the library, the town hall) and hides the
+moment the selection has a card.
 
 ⛔ **Not in the card:** a fourth number, a second sentence, a control that belongs to the Settings
 panel. If a card wants more, the building is asking for a second card, not a longer one.
@@ -64,9 +69,12 @@ character; a village where nobody renamed anything hashes as it did before renam
 
 - **Probe `cards:`** — a card of each of the four kinds opens at the founding; all 268 wide; an
   unpinned card is replaced by the next click; a pinned one stays; a card stays where it is put; a
-  40-letter name or a three-line status does not widen a card's minimum. Red-checked: the
-  replace rule off (*"a second click left 2 cards open"*), the title clip off (*"widens a card's
-  minimum to 604"*).
+  40-letter name or a three-line status does not widen a card's minimum; **with every Settings
+  fold open and its rows at their longest the minimum is still 268; a store shows one panel, bare
+  ground reads in *What's here*** (D377). Red-checked: the replace rule off (*"a second click left
+  2 cards open"*), the title clip off (*"widens a card's minimum to 604"*), the rows as an `HBox`
+  (*"with its settings open a card's minimum is 609"*), the hide rule off (*"a store showed two
+  panels"*).
 - **`RenameTests`** — given, blank, too long; the hash sees a given name and not a born one.
 - A windowed `BCLONE_SHOT` of four cards (handoff trap 39) looked at once; the shot hook is not in the tree.
 

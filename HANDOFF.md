@@ -74,10 +74,13 @@
 > inspector — **played: *"otherwise it plays well. push"* — pushed.** ✅ **D373** (same day): his two
 > notes on it — a villager stands on the hut they clear (and the marketer at the counter) for the
 > tick they load, so the visit is drawn; the *"Nobody will be put on splitting firewood"* line is
-> gone. ⚠️ **Measured on D372, and the number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. ✅ **D376** (same day): **the cards, slice 1** — a building or a person is a card (title, one
+> gone. ⚠️ **Measured on D372, and the number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. ✅ **D377** (same day): **one structure, one panel** — Joe: *"why 2 panels for one structure?"*;
+> every control folds onto the card under `Settings ▸` (wrapping, 268 wide open), the docked
+> panel is *What's here* for bare ground / library / hall only and hides when a card is up. ✅
+> **D376** (same day): **the cards, slice 1** — a building or a person is a card (title, one
 > status line, workers − +, three numbers, its own map drawing scaled up), several at once, pinned
-> and dragged, ✎ renames a building (`SimWorld.Rename`, hashed sparsely); the docked panel is
-> *Settings for what you clicked*; `specs/the-cards.md`; unplayed. **Slice 2 — the two top bars,
+> and dragged, ✎ renames a building (`SimWorld.Rename`, hashed sparsely); `specs/the-cards.md`;
+> unplayed. **Slice 2 — the two top bars,
 > then the Overview panel goes — is next.** ✅ **D375** (same day): the food trades' *"needed"* is
 > the shortfall after the store and the rungs above, not mouths ÷ a gatherer — Joe's *"needs 3
 > foragers? wtf? i have tons of food"*; no golden moved. ✅ **D374** (same day): H, I, J — Professions warn *"build another"* only for a
@@ -632,6 +635,13 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     for ever with nobody picking anything up. Approve the load you will actually pick up, from the
     tile it lies on, for the shelf it will actually reach (`HasAShelf`) — and read the LOG when
     a screenshot shows a crowd: the log had no `carrying +` line, which was the whole diagnosis.
+59. **⛔ ONE THING, ONE SURFACE (D377).** A card and a docked panel about the same building is a
+    split design, however tidy each half is — Joe saw it in one click. Every control that belongs
+    to a thing lives on that thing's card (its `Settings ▸` fold); the docked *What's here* is only
+    for what has no card yet.
+60. **⛔ `dotnet build` INCREMENTAL HIDES DEAD-CODE WARNINGS (D377).** After deleting callers, the
+    incremental build of the view said *0 Warning(s)*; `dotnet build --no-incremental` said four
+    `IDE0051`. When you delete code, rebuild the view with `--no-incremental` and grep for `warning`.
 57. **⚠️ A TOP-LEVEL CONTROL NEVER SHRINKS ON ITS OWN (D376).** A `PanelContainer` added straight
     to the scene grows to its minimum and keeps that size when its contents shrink — the first
     cards carried the room a hidden people list had taken. Reset `Size` to the width after every

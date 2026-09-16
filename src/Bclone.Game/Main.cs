@@ -68,26 +68,7 @@ public partial class Main : Control
     private Label _speedLabel = null!;
     private ItemList _roster = null!;
     private RichTextLabel _inspector = null!;
-    private VBoxContainer _staffingRow = null!;
-
-    /// <summary>The per-villager trade pins — one toggle per trade.</summary>
-    private VBoxContainer _pinRow = null!;
-    private Label _pinLabel = null!;
-    private readonly List<(JobKind Trade, Button Button)> _pinButtons = new();
-    private Label _staffingLabel = null!;
-    private VBoxContainer _queueRow = null!;
-    private Label _queueLabel = null!;
-    private VBoxContainer _groundRow = null!;
-    private Label _groundLabel = null!;
-    private Label _groundNote = null!;
-    private Button _modeButton = null!;
-    private VBoxContainer _storeRow = null!;
-    private VBoxContainer _acceptRow = null!;
-    private VBoxContainer _limitRow = null!;
-    private Button _fullMarkerButton = null!;
-    private VBoxContainer _idleRow = null!;
-    private Label _idleLabel = null!;
-    private Button _idleMarkerButton = null!;
+    private PanelContainer _whatsHerePanel = null!;
     private RichTextLabel _villageLog = null!;
     private VillageMap _map = null!;
 
@@ -293,8 +274,6 @@ public partial class Main : Control
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
 
         ProbeFolding();
-        ProbeTheInspectorRows();
-        ProbeTheInspectorHeight();
 
         // ⛔ BEFORE `ProbeTheControlBar`, NOT AFTER, AND THE ORDER IS THE MEASUREMENT. That method
         // poses the bar with every button showing at once — 1657px, wider than the 1280 window —
@@ -871,133 +850,6 @@ public partial class Main : Control
     /// ask, and a probe that checks its own posed string would be measuring itself.
     /// </para>
     /// </remarks>
-    private void ProbeTheInspectorHeight()
-    {
-        string was = _inspector.Text;
-
-        // ⚠️ The cold start has a CART and no granary (D70) — `AnyStoreOf(Granary)` throws, and a
-        // throw inside the probe leaves Godot running with nothing left to quit it. The first
-        // store there is, whatever it is; the shape of the block is what is being posed.
-        SimWorld world = _loop.World;
-        string storeBlock = world.StoreBuildings.Count > 0
-            ? DescribeWhatIsAt(world, world.StoreBuildings[0].Tile)
-            : DescribeWhatIsAt(world, world.Map.FoundingSite);
-
-        // A market's panel is a store block over a workplace block; pose the longer of the two
-        // shapes by stacking a real store description on a posed stall.
-        string posed = storeBlock
-            + "\n\nmarket 1 — a workplace (goods are handed out from here)"
-            + "\nWorked by Wendell — 1 of 2 places filled"
-            + "\nStaffing: left to the village. The building holds 2."
-            + "\n\nmarket 1 — a market, which holds produce, firewood, fish, meat and wheat"
-            + "\nHolding: 312 produce, 40 firewood, 18 fish, 60 meat, 210 wheat"
-            + "\nSpace: 640 of 2,500 used, 1,860 free";
-        _inspector.Text = posed;
-        ForceUpdateTransform();
-
-        float content = _inspector.GetContentHeight();
-        float min = _inspector.GetCombinedMinimumSize().Y;
-        int lines = posed.Split('\n').Length;
-
-        // ⚠️ `content - 1` rather than `content`: the two are the same integer in practice, and a
-        // fractional line-height rounding must not read as a hidden line.
-        bool holdsItAll = min >= content - 1f;
-
-        GD.Print(
-            $"[widths] inspector: {lines} lines posed, content {content:F0}px, min {min:F0}px"
-            + (holdsItAll ? string.Empty : "  ⛔ SHORTER THAN ITS TEXT — a line is below the fold"));
-        GD.Print(holdsItAll
-            ? "[widths] inspector: ✅ every line of a market-sized description has room"
-            : "[widths] inspector: ⛔ a market's panel hides what is in it");
-
-        // ⛔ AND THE BOX AROUND IT IS A FIXED HEIGHT WITH A BAR (D367). The contents are always
-        // `InspectorHeight`; a description taller than that must scroll with a VISIBLE bar, or
-        // D350's cut is back by another door. Posed with the store rows showing, which is the
-        // tallest a market's panel gets.
-        var scroll = (ScrollContainer)_inspector.GetParent().GetParent();
-        var inner = (Control)_inspector.GetParent();
-        bool storeRowWas = _storeRow.Visible;
-        bool acceptRowWas = _acceptRow.Visible;
-        bool limitRowWas = _limitRow.Visible;
-        _storeRow.Visible = true;
-        _acceptRow.Visible = true;
-        _limitRow.Visible = true;
-        ForceUpdateTransform();
-        float wants = inner.GetCombinedMinimumSize().Y;
-        float box = scroll.Size.Y;
-        bool fits = wants <= box + 1f;
-        bool reachable = fits || scroll.GetVScrollBar().Visible;
-        GD.Print(reachable
-            ? $"[widths] inspector: ✅ a market's panel wants {wants:F0}px in a {box:F0}px box "
-                + $"({InspectorHeight} logical) — {(fits ? "it fits" : "it scrolls, and the bar shows")}"
-            : $"[widths] inspector: ⛔ a market's panel wants {wants:F0}px in a {box:F0}px box and no "
-                + "scroll bar shows — the bottom of it is cut");
-        _storeRow.Visible = storeRowWas;
-        _acceptRow.Visible = acceptRowWas;
-        _limitRow.Visible = limitRowWas;
-
-        _inspector.Text = was;
-        ForceUpdateTransform();
-    }
-
-    /// <summary>
-    /// What the inspector's rows will want once the player selects something — posed, because
-    /// they are empty until then.
-    /// </summary>
-    private void ProbeTheInspectorRows()
-    {
-        GD.Print("[widths] --- inspector rows, with the longest sentence each can hold ---");
-
-        Pose(_staffingRow, _staffingLabel, "Staffing the south-western forester's hut 2 — 2 of 3:");
-        Pose(_groundRow, _groundLabel, "Ground — 128 tiles, enough hands for 26:");
-        Pose(_queueRow, _queueLabel, "3rd in the queue, after a granary and a stockpile:");
-        Pose(
-            _idleRow,
-            _idleLabel,
-            "Nothing to sow at the south-western farmhouse 2 — you asked the village to keep "
-            + "2000 food and it has 1834.");
-        Pose(
-            null,
-            _groundNote,
-            "The south-western farmhouse 2 is 128 tiles of field and 2 pairs of hands can sow "
-            + "26 of them. The other 102 will lie fallow — put another farmer on, or paint a "
-            + "smaller field.");
-
-        void Pose(Container? row, Label label, string worst)
-        {
-            string was = label.Text;
-            label.Text = worst;
-
-            float wants = row is null
-                ? label.GetCombinedMinimumSize().X
-                : row.GetCombinedMinimumSize().X;
-
-            GD.Print($"[widths] right   {(row is null ? "note" : "row ")} wants {wants:F0} — \"{worst}\"");
-
-            // ⭐ AND WHAT IN THE ROW IS ASKING FOR IT. A row's minimum width is the sum of its
-            // children's, so the total says a column is being held open and says nothing about
-            // by what — which is the question the fix turns on.
-            if (row is not null)
-            {
-                foreach (Node child in row.GetChildren())
-                {
-                    if (child is Control part)
-                    {
-                        string what = part switch
-                        {
-                            Label inner => $"Label \"{Shorten(inner.Text)}\"",
-                            Button button => $"Button \"{button.Text}\"",
-                            _ => part.GetType().Name,
-                        };
-
-                        GD.Print($"[widths] right       {part.GetCombinedMinimumSize().X,4:F0}  {what}");
-                    }
-                }
-            }
-
-            label.Text = was;
-        }
-    }
 
     /// <summary>One line per control: how wide it insists on being, and what it is.</summary>
     private static void PrintWidths(Node node, string side, int depth)
@@ -1030,8 +882,6 @@ public partial class Main : Control
     }
 
     /// <summary>Enough of a sentence to recognise it in a probe line.</summary>
-    private static string Shorten(string text) =>
-        text.Length <= 40 ? text : text[..40] + "…";
 
     private bool _probed;
 
@@ -1948,184 +1798,11 @@ public partial class Main : Control
 
     private void RefreshInspector(SimWorld world)
     {
-        // The staffing buttons belong to whatever is selected, so they follow it.
-        //
-        // ⚠️ EXCEPT A CONSTRUCTION SITE, WHICH IS NO LONGER STAFFABLE (D108). D104 made
-        // sites staffable on the grounds that "how many builders on this?" is the question a
-        // player most often wants to answer — and it still is, but the place to answer it is
-        // the builder's hut now. A −1/+1 on a footprint would set a number nothing reads,
-        // which is worse than a control that is not there.
-        Workplace? selected = SelectedWorkplace();
-        // ⭐⭐ THE PIN ROW, AND IT SHIPS IN THE SAME COMMIT AS THE SIM FEATURE — the rule this
-        // project has paid for seven times (*"a sim feature is not done until something in the
-        // view calls it"*). It shows only when a villager is selected, because a control with no
-        // subject is worse than an absent one.
-        Villager? pinnable = world.FindVillager(_selectedVillagerId);
-        if (pinnable is not null && !pinnable.Alive)
-        {
-            pinnable = null;
-        }
-
-        _pinRow.Visible = pinnable is not null;
-        if (pinnable is not null)
-        {
-            _pinLabel.Text = pinnable.PinnedTrade is JobKind kept
-                ? $"Kept on {world.JobsCatalog.NameOf(kept)} — press it again to hand them back:"
-                : $"Kept on: (the village decides where {pinnable.Name} works)";
-
-            foreach ((JobKind trade, Button button) in _pinButtons)
-            {
-                button.Text = ProfessionName(_loop.World, trade);
-                button.SetPressedNoSignal(pinnable.PinnedTrade == trade);
-
-                // ⚠️ A trade nowhere in the village can still be pressed — the sim says why
-                // rather than the button refusing, because "you kept them on forestry and there
-                // is no forester's hut" is more use than a control that does nothing.
-                button.Disabled = !pinnable.CanWork;
-            }
-        }
-
-        Workplace? staffable = selected is { IsSite: false } ? selected : null;
-
-        _staffingRow.Visible = staffable is not null;
-        if (staffable is not null)
-        {
-            // ⭐ THE LABEL SAYS WHAT IS TRUE, WHICH IS NOT WHAT IT USED TO SAY. It read
-            // "village.s choice" for an untouched building — and the village never chose
-            // anything: `Places => StaffingOverride ?? Capacity` means an untouched building is
-            // worked by everyone who fits. One number either way now, because the difference
-            // the old wording drew is a difference the sim does not make.
-            //
-            // ⛔⭐ AND IT WAS STILL LYING, BECAUSE `Places` IS A CEILING AND NOT A COUNT — D148'S
-            // BUG, ONE PANEL OVER, AND JOE READ IT (2026-08-22). His farm said *"Staffing
-            // farmhouse 1 — 2 of 2"* directly above *"1 pair of hands can sow 13"*: two true
-            // sentences that cannot both be about the same thing. The farm has two seats and
-            // one person in it, because the village has four adults and three other jobs.
-            //
-            // The allowance is read off `WorkerIds` on purpose (D86 — a hut whose forester dies
-            // is overstretched that moment), so the fix is not to change what the ground line
-            // counts. **It is for the staffing line to say who turned up**, in the vocabulary
-            // the professions panel already learned in D148.
-            int working = staffable.WorkerIds.Count;
-            string turnout = working == 0
-                ? $"nobody working of {staffable.Capacity} seats"
-                : $"{working} working of {staffable.Capacity} seats";
-
-            _staffingLabel.Text = staffable.Places == working
-                ? $"Staffing {staffable.Name} — {turnout}:"
-                : $"Staffing {staffable.Name} — {turnout} · asked {staffable.Places}:";
-        }
-
-        // The ground controls belong to a building that keeps ground. ⭐ ASKED OF THE SIM NOW
-        // (`SimWorld.KeepsWorkGround`) RATHER THAN BY NAMING A KIND — this line used to read
-        // `Kind: JobKind.Forester` under a comment promising it did not, and the farmhouse
-        // shipped with no brush because of it. Joe placed a farm, read *"give it some with the
-        // work-ground brush"* on its own panel, and there was no brush.
-        bool keepsGround = staffable is not null && SimWorld.KeepsWorkGround(staffable.Kind);
-        _groundRow.Visible = keepsGround;
-        _groundNote.Visible = false;
-        if (keepsGround)
-        {
-            int tiles = world.Zones.WorkGroundTiles(staffable!.Id);
-            int allowance = world.WorkGroundAllowanceFor(staffable);
-
-            // ⚠️ "ENOUGH HANDS FOR 0" IS ARITHMETIC, NOT A SENTENCE. An unstaffed building
-            // reads as though the ground itself were worthless; what is true is that nobody
-            // is on it, and that is a different thing to go and fix.
-            _groundLabel.Text = staffable.WorkerIds.Count == 0
-                ? $"Ground — {tiles} tiles, nobody working it:"
-                : $"Ground — {tiles} tiles, enough hands for {allowance}:";
-
-            // The sentence is the sim's (`SimWorld.OverstretchedNote`), the same one the
-            // brush says on the stroke — so the panel and the brush cannot describe one
-            // state two ways (D147's rule for the idle marker, one control over).
-            if (world.OverstretchedNote(staffable) is string stretched)
-            {
-                _groundNote.Text = stretched;
-                _groundNote.Visible = true;
-            }
-
-            // ⭐ THE TOGGLE IS FELLING NOW, NOT PLANTING (Joe, D146). Painting ground for a hut
-            // is already the instruction to keep it wooded, so planting was never the
-            // interesting question — what the player decides is whether timber comes out.
-            //
-            // And it says when the village has stopped felling for a reason the player set
-            // somewhere else: a met Logs limit reads on this button rather than only on the
-            // stock panel, because this is the building that looks idle because of it.
-            //
-            // ⚠️ FORESTER ONLY. A farm keeps ground too, and there is nothing on it to fell —
-            // a "Felling: ON" button beside a field is a control that acts on nothing, which is
-            // worse than one that is missing.
-            _modeButton.Visible = staffable.Kind == JobKind.Forester;
-            if (_modeButton.Visible)
-            {
-                _modeButton.Text = staffable.Mode != WorkMode.FellAndPlant
-                    ? "Felling: off"
-                    : world.MayFell(staffable)
-                        ? "Felling: ON"
-                        : "Felling: ON — held by the log limit";
-            }
-        }
-
-        // ⭐ AND THE IDLE MARKER, which belongs to a workplace the same way the full marker
-        // belongs to a store (Joe, D147). The sentence is `SimWorld.IdleNote`'s, so the panel
-        // and the ring on the map can never say different things about the same building.
-        _idleRow.Visible = staffable is not null;
-        if (staffable is not null)
-        {
-            string? why = world.IdleNote(staffable);
-            _idleLabel.Text = why ?? $"{staffable.Name} is working.";
-            _idleMarkerButton.Text = _map.IdleMarkerShownFor(staffable.Id)
-                ? "Marker: ON"
-                : "Marker: off";
-        }
-
-        // The full-store marker belongs to a store, and every store can fill.
-        StoreBuilding? store = SelectedStore();
-        _storeRow.Visible = store is not null;
-        if (store is not null)
-        {
-            _fullMarkerButton.Text = _map.FullMarkerShownFor(store.Id)
-                ? "Marker: ON"
-                : "Marker: off";
-        }
-
-        _acceptRow.Visible = store is not null;
-        if (store is not null)
-        {
-            foreach ((Goods goods, Button button) in _acceptButtons)
-            {
-                // Shown only where the KIND could hold it — a granary is not offered "iron".
-                // Asked of a bare copy so the player's own filter does not hide the button
-                // that would turn it back on.
-                button.Visible = store.CanEverHold(goods);
-                button.ButtonPressed = store.Accepts(goods);
-            }
-        }
-
-        // The counter's own limits (D372) — a market's row and nobody else's. The spin is set
-        // WITHOUT its signal, or every refresh would write the derived number back as a limit.
-        _limitRow.Visible = store is { Kind: StoreKind.Market };
-        if (store is { Kind: StoreKind.Market })
-        {
-            foreach ((Goods goods, Control cell, SpinBox amount, Button clear) in _limitControls)
-            {
-                cell.Visible = store.CanEverHold(goods);
-                int? limit = store.Limits.For(goods);
-                amount.SetValueNoSignal(world.MarketStockLimit(store, goods));
-                clear.Disabled = limit is null;
-            }
-        }
-
-        // The queue controls only mean anything for something still being built — and they
-        // read `selected` rather than `staffable`, because a site is exactly what they are
-        // for and exactly what is no longer staffable.
-        _queueRow.Visible = selected is { IsSite: true };
-        if (selected is { IsSite: true })
-        {
-            _queueLabel.Text =
-                $"Build queue — {world.QueuePositionOf(selected)} of {world.BuildQueue().Count}:";
-        }
+        // The docked panel is for what has no card (D377): hidden the moment the selection has one.
+        bool carded = _selectedVillagerId != 0
+            || (_selectedTile is GridPos at
+                && (world.StoreAt(at) is not null || world.WorkplaceCovering(at) is not null || world.HouseholdAt(at) is not null));
+        _whatsHerePanel.Visible = !carded && (_selectedTile is not null);
 
         if (_selectedTile is GridPos tile)
         {
@@ -2133,22 +1810,7 @@ public partial class Main : Control
             return;
         }
 
-        Villager? villager = world.FindVillager(_selectedVillagerId);
-        if (villager is null)
-        {
-            _inspector.Text =
-                "Select a villager to see what they are doing, and why — " +
-                "or click anything on the map to see what it is.";
-            return;
-        }
-
-        // ⭐ THE PERSON IS THEIR CARD NOW (D376): what they are doing, their age, trade and
-        // household are on it. What stays here is what the card has no room for and the player
-        // must still be able to read — the trades they have learned (D174, Phase 3) — under one
-        // line naming whose settings these are.
-        var lines = new List<string> { $"Settings for {villager.Name} — the card says the rest." };
-        DescribeTheirTrades(world, villager, lines);
-        _inspector.Text = string.Join("\n", lines);
+        _inspector.Text = string.Empty;
     }
 
     private void OnVillagerSelected(long index)
@@ -2236,25 +1898,6 @@ public partial class Main : Control
         RefreshInspector(_loop.World);
     }
 
-    private void ChangeStaffing(int delta)
-    {
-        Workplace? workplace = SelectedWorkplace();
-        if (workplace is null || workplace.IsSite)
-        {
-            return;
-        }
-
-        int from = workplace.StaffingOverride ?? workplace.Places;
-        int wanted = from + delta;
-        if (wanted < 0)
-        {
-            wanted = 0;
-        }
-
-        _loop.World.SetStaffing(workplace, wanted);
-        RefreshInspector(_loop.World);
-    }
-
     private void OnBuildingClicked(GridPos tile)
     {
         _selectedTile = tile;
@@ -2319,7 +1962,7 @@ public partial class Main : Control
         {
             if (store.Footprint.Covers(tile))
             {
-                lines.Add($"Settings for {store.Name} — its card says the rest.");
+                return string.Empty;
             }
         }
 
@@ -2327,13 +1970,13 @@ public partial class Main : Control
         {
             if (workplace.Footprint.Covers(tile))
             {
-                lines.Add($"Settings for {workplace.Name} — its card says the rest.");
+                return string.Empty;
             }
         }
 
-        if (world.HouseholdAt(tile) is Household household)
+        if (world.HouseholdAt(tile) is not null)
         {
-            lines.Add($"Settings for the {household.Name} household — its card says the rest.");
+            return string.Empty;
         }
 
         // ⛔⛔ THE FOURTH LIST, AND LEAVING IT OUT MADE A FINISHED LIBRARY READ AS "OPEN GROUND"
@@ -2698,60 +2341,6 @@ public partial class Main : Control
         _ => "Ordinary ground — a field here reaps about what average ground gives.",
     };
 
-    private static string WorkerNames(SimWorld world, Workplace workplace)
-    {
-        var names = new List<string>();
-        for (int i = 0; i < workplace.WorkerIds.Count; i++)
-        {
-            Villager? worker = world.FindVillager(workplace.WorkerIds[i]);
-            if (worker is not null)
-            {
-                names.Add(worker.Name);
-            }
-        }
-
-        return names.Count == 0 ? "nobody" : string.Join(", ", names);
-    }
-
-    private static string HouseholdNames(SimWorld world, Household household)
-    {
-        var names = new List<string>();
-        for (int i = 0; i < world.Villagers.Count; i++)
-        {
-            Villager villager = world.Villagers[i];
-            if (villager.Alive && villager.HouseholdId == household.Id)
-            {
-                names.Add($"{villager.Name} ({villager.AgeYears})");
-            }
-        }
-
-        return names.Count == 0 ? "nobody" : string.Join(", ", names);
-    }
-
-    /// <summary>Only the goods actually present, so an empty shelf is not three zeroes.</summary>
-    /// <remarks>
-    /// ⛔ <b>BOUNDED BY THE STOCKPILE'S OWN SLOTS, NOT BY THE ENUM.</b> This read
-    /// `Stockpile.Kinds`, which is `Enum.GetValues&lt;Goods&gt;().Length` and can only ever return six —
-    /// against `Stockpile`'s own warning that *"iterating 0..Kinds over a village that has more
-    /// goods than the enum silently ignores every good above the sixth."* A panel whose whole job
-    /// is to say what is here would have quietly stopped saying it.
-    /// </remarks>
-    private static string DescribeGoods(SimWorld world, Stockpile store)
-    {
-        var parts = new List<string>();
-
-        for (int i = 0; i < store.Slots; i++)
-        {
-            var goods = (Goods)i;
-            if (store[goods] > 0)
-            {
-                parts.Add($"{store[goods].Grouped()} {world.GoodsCatalog.NameOf(goods)}");
-            }
-        }
-
-        return parts.Count == 0 ? "nothing" : string.Join(", ", parts);
-    }
-
     /// <summary>A good's name as a player would say it.</summary>
     private static string Describe(JobKind kind) => kind switch
     {
@@ -2764,65 +2353,6 @@ public partial class Main : Control
         JobKind.Farmer => "the fields around it are sown and reaped from here",
         _ => kind.ToString().ToLowerInvariant(),
     };
-
-    /// <summary>What a store is, and what it will actually take — asked, not remembered.</summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⛔ ALL THREE OF THESE SENTENCES WERE WRONG, AND ONE OF THEM CONTRADICTED THE OPENING
-    /// MECHANIC</b> (found 2026-08-28). The warehouse said *"holds logs and firewood"* and holds
-    /// **stone, tools and iron** as well; the pile said *"holds anything"* and **refuses food**;
-    /// the cart said *"holds anything"* and **refuses logs** since D90.
-    /// </para>
-    /// <para>
-    /// ⭐⭐ <b>The cart and pile refusals are not a detail — `StoreBuilding` calls them "the two
-    /// refusals that make the opening a sequence rather than a pile of options".</b> So the
-    /// inspector was telling the player the exact opposite of the rule the first ten minutes of
-    /// the game are built on.
-    /// </para>
-    /// <para>
-    /// <b>⭐ It asks the catalogue now, so it cannot drift again.</b> `Bclone.Sim` went
-    /// catalogue-driven in D210 precisely so adding a good would not mean editing a method — the
-    /// view did not follow, and this is what that cost. A modded seventh good appears here for
-    /// free.
-    /// </para>
-    /// </remarks>
-    private static string Describe(SimWorld world, StoreKind kind)
-    {
-        string what = kind switch
-        {
-            StoreKind.Granary => "granary",
-            StoreKind.Warehouse => "warehouse",
-            StoreKind.Market => "market",
-            StoreKind.Pile => "stockpile — cleared ground",
-            StoreKind.Cart => "cart the founders arrived in",
-            _ => kind.ToString().ToLowerInvariant(),
-        };
-
-        var takes = new List<string>();
-        for (int g = 0; g < world.GoodsCatalog.Count; g++)
-        {
-            var goods = (Goods)g;
-            if (world.GoodsCatalog.StoredBy(goods, kind))
-            {
-                takes.Add(world.GoodsCatalog.NameOf(goods).ToLowerInvariant());
-            }
-        }
-
-        if (takes.Count == 0)
-        {
-            return $"{what}, which holds nothing";
-        }
-
-        // ⭐ "everything" only when it is true of the whole catalogue, so the day a good is added
-        // that the pile refuses, this stops claiming otherwise on its own.
-        string held = takes.Count == world.GoodsCatalog.Count
-            ? "everything"
-            : takes.Count == 1
-                ? takes[0]
-                : $"{string.Join(", ", takes.GetRange(0, takes.Count - 1))} and {takes[^1]}";
-
-        return $"{what}, which holds {held}";
-    }
 
     /// <summary>A blank line between two things standing on the same tile.</summary>
     private static void Separate(List<string> lines)
@@ -3666,11 +3196,12 @@ public partial class Main : Control
         // (D314, so folding still shrinks it), the content is `InspectorHeight` tall whatever is
         // selected, and a description longer than that scrolls with a VISIBLE bar — which is what
         // D350's "a scroll with no visible bar is a cut" forbids, and the probe checks.
-        // ⛔ THE DESCRIPTION IS GONE FROM HERE (D376): the CARD says what a thing is and how it is
-        // doing; this panel keeps the per-building CONTROLS for whatever card is selected (the
-        // yellow edge), and one line naming it. Joe: *"such a mess of stacked sentences i dont even
-        // know what to read. Remove text where you can."*
-        VBoxContainer body = InColumn(right: true, InspectorHeight, "Settings for what you clicked");
+        // ⛔ A THING WITH A CARD IS NOT DESCRIBED HERE (D376, D377). Joe: *"such a mess of stacked
+        // sentences i dont even know what to read"* and then *"why 2 panels for one structure?"* —
+        // the card is the one surface for a building or a person, its controls under its Settings
+        // fold. This panel is left for what has no card yet: bare ground, the library, the hall.
+        // It hides whenever the selection has a card.
+        VBoxContainer body = InColumn(right: true, InspectorHeight, "What's here");
 
         // ScrollActive so a long reason scrolls rather than being cut off. The one panel
         // whose job is explaining a decision must never truncate the explanation.
@@ -3710,6 +3241,9 @@ public partial class Main : Control
         _inspector.AddThemeFontSizeOverride("normal_font_size", RowSize);
         body.AddChild(_inspector);
 
+        _whatsHerePanel = _docked[^1].Panel;
+    }
+
         // ⭐ STAFFING WHERE THE BUILDING IS (Joe). It lived on the toolbar and acted on
         // whatever happened to be selected, which D93 recorded as "in a weird place right
         // now" — and it becomes a lever the player reaches for often, so hunting for it
@@ -3730,172 +3264,7 @@ public partial class Main : Control
         //
         // ⚠️ It sits ABOVE staffing deliberately: staffing is about a building you have selected,
         // this is about a person, and the inspector shows one or the other.
-        _pinLabel = Muted("Kept on:");
-        (_pinRow, HFlowContainer pinControls) = InspectorRow(body, _pinLabel);
 
-        foreach (JobKind trade in System.Enum.GetValues<JobKind>())
-        {
-            JobKind captured = trade;
-            var button = new Button { ToggleMode = true };
-            button.Pressed += () => TogglePin(captured);
-            _pinButtons.Add((captured, button));
-            pinControls.AddChild(button);
-        }
-
-        _staffingLabel = Muted("Staffing:");
-        (_staffingRow, HFlowContainer staffingControls) = InspectorRow(body, _staffingLabel);
-
-        var fewer = new Button { Text = "−1" };
-        fewer.Pressed += () => ChangeStaffing(-1);
-        staffingControls.AddChild(fewer);
-
-        var more = new Button { Text = "+1" };
-        more.Pressed += () => ChangeStaffing(+1);
-        staffingControls.AddChild(more);
-
-        // ⛔⛔ "VILLAGE DECIDES" IS GONE FROM THE WHOLE GAME (Joe, 2026-08-16): *"i want
-        // village decides gone entirely from all aspects of the game for now."* D136 took the
-        // phrase off the stock-limit rows and off the professions panel; this row was the last
-        // place still offering it, first as a mode and then (briefly, D163) as a "Clear" button
-        // that put a building back to it. Both are gone.
-        //
-        // ⭐ AND THE DEFAULT WAS NEVER REALLY "THE VILLAGE DECIDES" — the label was lying.
-        // `Places => StaffingOverride ?? Capacity`, so an untouched building has always been
-        // staffed by **everyone who fits**. That is a fact about the building, not a decision
-        // anybody made, and saying so is what actually removes the idea rather than hiding it.
-        // There is no longer any way to reach the untouched state once you leave it, which is
-        // the same bargain the professions panel struck: the player always has an opinion.
-
-        // ⭐ AND THE BUILD QUEUE, WHICH IS JOE'S OWN ANSWER TO HIS VILLAGE FREEZING:
-        // "I think this is solved by letting the user increase/decrease the priority level of
-        // a building under construction." It is — and it is better than any rule about which
-        // KIND of building matters most, because the village cannot know whether this winter
-        // needs a granary or a roof and the player can.
-        _queueLabel = Muted("Build queue:");
-        (_queueRow, HFlowContainer queueControls) = InspectorRow(body, _queueLabel);
-
-        var sooner = new Button { Text = "▲ Sooner" };
-        sooner.Pressed += () => MoveSelectedInQueue(-1);
-        queueControls.AddChild(sooner);
-
-        var later = new Button { Text = "▼ Later" };
-        later.Pressed += () => MoveSelectedInQueue(+1);
-        queueControls.AddChild(later);
-
-        // ⭐ THE GROUND A BUILDING KEEPS (D86), reaching the player at last. The sim side has
-        // been built and unused since C3c — painted per workplace, priced in workers, with the
-        // overstretched warning already written — because there was no building that owned
-        // ground until the forester's hut. It sits in the panel rather than on the toolbar for
-        // the reason D104 settled: a brush that belongs to ONE building needs to be beside the
-        // name of that building, or the player has to remember which one it will paint for.
-        _groundLabel = Muted("Ground:");
-        (_groundRow, HFlowContainer groundControls) = InspectorRow(body, _groundLabel);
-
-        var give = new Button { Text = "Give ground" };
-        give.Pressed += () => PaintGroundForSelection(1);
-        groundControls.AddChild(give);
-
-        var takeBack = new Button { Text = "Take back" };
-        takeBack.Pressed += () => PaintGroundForSelection(-1);
-        groundControls.AddChild(takeBack);
-
-        // ⭐ AND THE MODE — the first control in this game that tells a building to PUT
-        // SOMETHING BACK (Joe, ungated). It ships enabled rather than greyed behind managed
-        // forestry, which is the change `professions.md §6.2` records.
-        _modeButton = new Button { Text = "Planting: off" };
-        _modeButton.Pressed += ToggleSelectedMode;
-        groundControls.AddChild(_modeButton);
-
-        // ⭐ AND THE OVERSTRETCHED SENTENCE, WHICH IS A STATE AND NOT JUST A MOMENT (D86).
-        // The brush says it once per stroke; this says it for as long as it is true, so
-        // losing a farmer in summer is readable in autumn.
-        _groundNote = Wrapped(Muted(string.Empty));
-        _groundNote.Visible = false;
-        _groundRow.AddChild(_groundNote);
-
-        // ⭐ WHY THIS BUILDING IS NOT WORKING, AND A SWITCH TO STOP ASKING (Joe, D147). The
-        // same shape as the full-store marker below, and D140's per-building/global pair.
-        //
-        // The label is the whole point rather than decoration: the ring on the map says *look
-        // here* and this says *why*, and a hut held by a log limit set on the stock panel is
-        // exactly the case where the second half cannot be guessed from the first.
-        _idleLabel = Muted(string.Empty);
-        (_idleRow, HFlowContainer idleControls) = InspectorRow(body, _idleLabel);
-
-        _idleMarkerButton = new Button { Text = "Marker: ON" };
-        _idleMarkerButton.Pressed += ToggleSelectedIdleMarker;
-        idleControls.AddChild(_idleMarkerButton);
-
-        // ⭐ THE PER-BUILDING HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which
-        // should be able to be disabled by building or globally."* Beside the store's own name
-        // for D104's reason — a control that belongs to ONE building has to sit next to that
-        // building, or the player has to remember which one it will act on.
-        (_storeRow, HFlowContainer storeControls) = InspectorRow(body, Muted("When full:"));
-
-        _fullMarkerButton = new Button { Text = "Marker: ON" };
-        _fullMarkerButton.Pressed += ToggleSelectedFullMarker;
-        storeControls.AddChild(_fullMarkerButton);
-
-        // ⭐ WHAT THIS BUILDING WILL TAKE (Joe, D141): *"a given storage pile will only accept
-        // logs, another only firewood, another only iron ore. Set at the building level."*
-        //
-        // One button per good, built once and shown or hidden by what the KIND can hold — so a
-        // granary offers "food" and nothing else, and the player is never presented with a
-        // choice the model would refuse. The refusal still exists in `SetStoreAccepts`, because
-        // a control that cannot be misused and a rule that cannot be broken are different
-        // things and only the second one survives somebody calling it from elsewhere.
-        (_acceptRow, HFlowContainer acceptControls) = InspectorRow(body, Muted("Takes:"));
-
-        for (int g = 0; g < _loop.World.GoodsCatalog.Count; g++)
-        {
-            var goods = (Goods)g;
-            var button = new Button { Text = GoodsName(_loop.World, goods), ToggleMode = true };
-            button.Pressed += () => ToggleSelectedAccepts(goods);
-            acceptControls.AddChild(button);
-            _acceptButtons.Add((goods, button));
-        }
-
-        // ⭐ HOW MUCH THIS COUNTER KEEPS, PER GOOD (Joe, D372): *"markets have their own
-        // individual item storage limit (i.e., the user sets the limit for how much firewood is
-        // stored at a given market, how much wheat is stored…)"*. The stock-limits row's
-        // controls — a spin and a clear — per good the market can hold, on the market's own
-        // inspector for D104's reason (a control that belongs to ONE building sits next to it).
-        // The spin shows the derived number until the player types; `clear` hands it back.
-        // The cards (`handoff.md` item 3) will carry these rows when they land.
-        (_limitRow, HFlowContainer limitControls) = InspectorRow(body, Muted("Keeps up to:"));
-
-        for (int g = 0; g < _loop.World.GoodsCatalog.Count; g++)
-        {
-            var goods = (Goods)g;
-            if (!_loop.World.GoodsCatalog.StoredBy(goods, StoreKind.Market))
-            {
-                continue;
-            }
-
-            var cell = new HBoxContainer();
-            cell.AddChild(Body(GoodsName(_loop.World, goods)));
-
-            var amount = new SpinBox
-            {
-                MinValue = 0,
-                MaxValue = 100_000,
-                Step = 10,
-                Editable = true,
-                CustomMinimumSize = new Vector2(74, 0),
-            };
-            var clear = new Button { Text = "clear", Flat = true, Disabled = true };
-
-            amount.ValueChanged += value => SetSelectedMarketLimit(goods, (int)value);
-            clear.Pressed += () => SetSelectedMarketLimit(goods, null);
-
-            cell.AddChild(amount);
-            cell.AddChild(clear);
-            limitControls.AddChild(cell);
-            _limitControls.Add((goods, cell, amount, clear));
-        }
-    }
-
-    private readonly List<(Goods Goods, Control Cell, SpinBox Amount, Button Clear)> _limitControls = new();
 
     /// <summary>Set, or hand back to the derived number, one good's limit at the selected market (D372).</summary>
     private void SetSelectedMarketLimit(Goods goods, int? limit)
@@ -3958,7 +3327,6 @@ public partial class Main : Control
     }
 
 
-    private readonly List<(Goods Goods, Button Button)> _acceptButtons = new();
 
     /// <summary>Turn one kind of goods on or off for the selected store.</summary>
     private void ToggleSelectedAccepts(Goods goods)

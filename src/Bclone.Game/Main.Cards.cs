@@ -57,6 +57,34 @@ public partial class Main
         public required VBoxContainer People { get; init; }
         public required BuildingPortrait Portrait { get; init; }
         public required Label Caption { get; init; }
+        public required Button SettingsToggle { get; init; }
+        public required VBoxContainer Settings { get; init; }
+        public CardKind? SettingsBuiltFor { get; set; }
+        public CardControls Controls { get; set; } = new();
+    }
+
+    /// <summary>The controls a card's Settings fold holds — which ones exist depends on the kind.</summary>
+    private sealed class CardControls
+    {
+        public VBoxContainer? FullRow { get; set; }
+        public Button? FullMarker { get; set; }
+        public VBoxContainer? TakesRow { get; set; }
+        public List<(Goods Goods, Button Button)> Takes { get; } = new();
+        public VBoxContainer? LimitRow { get; set; }
+        public List<(Goods Goods, Control Cell, SpinBox Amount, Button Clear)> Limits { get; } = new();
+        public VBoxContainer? IdleRow { get; set; }
+        public Label? IdleLabel { get; set; }
+        public Button? IdleMarker { get; set; }
+        public VBoxContainer? GroundRow { get; set; }
+        public Label? GroundLabel { get; set; }
+        public Label? GroundNote { get; set; }
+        public Button? Mode { get; set; }
+        public VBoxContainer? QueueRow { get; set; }
+        public Label? QueueLabel { get; set; }
+        public VBoxContainer? PinRow { get; set; }
+        public Label? PinLabel { get; set; }
+        public List<(JobKind Trade, Button Button)> Pins { get; } = new();
+        public Label? Knows { get; set; }
     }
 
     private readonly List<Card> _cards = new();
@@ -289,6 +317,16 @@ public partial class Main
         caption.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         column.AddChild(caption);
 
+        // ---- the Settings fold (D377, Joe: "why 2 panels for one structure?") ----
+        // Folded by default so the five parts stay what you read; open, it is every control the
+        // docked panel used to hold for this thing, and it acts on THIS card's subject.
+        var settingsToggle = new Button { Text = "Settings ▸", Flat = true, ToggleMode = true };
+        settingsToggle.Alignment = HorizontalAlignment.Left;
+        column.AddChild(settingsToggle);
+        var settings = new VBoxContainer { Visible = false };
+        settings.AddThemeConstantOverride("separation", 6);
+        column.AddChild(settings);
+
         var card = new Card
         {
             Panel = panel,
@@ -307,6 +345,8 @@ public partial class Main
             People = people,
             Portrait = portrait,
             Caption = caption,
+            SettingsToggle = settingsToggle,
+            Settings = settings,
         };
 
         // ---- wiring ----
@@ -331,6 +371,12 @@ public partial class Main
         rename.FocusExited += () => CommitRename(card);
         fewer.Pressed += () => ChangeStaffingOf(card, -1);
         more.Pressed += () => ChangeStaffingOf(card, +1);
+        settingsToggle.Toggled += open =>
+        {
+            settings.Visible = open;
+            settingsToggle.Text = open ? "Settings ▾" : "Settings ▸";
+            RefreshCards(_loop.World);
+        };
 
         AddChild(panel);
         return card;
@@ -407,18 +453,271 @@ public partial class Main
     /// <summary>Write the card; false if its subject no longer exists.</summary>
     private bool ShowCard(SimWorld world, Card card)
     {
+        if (card.SettingsBuiltFor != card.Subject.Kind)
+        {
+            BuildSettings(card, world);
+        }
+
+        bool shown = card.Subject.Kind switch
+        {
+            CardKind.Store => StoreOf(card) is StoreBuilding store && ShowStore(world, card, store),
+            CardKind.Workplace => world.FindWorkplace(card.Subject.Id) is Workplace place && ShowWorkplace(world, card, place),
+            CardKind.Household => world.FindHousehold(card.Subject.Id) is Household home && ShowHousehold(world, card, home),
+            CardKind.Villager => world.FindVillager(card.Subject.Id) is Villager villager && ShowVillager(world, card, villager),
+            _ => false,
+        };
+
+        if (shown)
+        {
+            ShowSettings(world, card);
+        }
+
+        return shown;
+    }
+
+    // ---------------------------------------------------------------
+    //  The Settings fold — every control the docked panel held, on the card (D377)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Build the rows this kind of card can set. Each handler selects the card first, so the
+    /// existing "selected" methods act on this card's subject — one rule, not two.
+    /// </summary>
+    private void BuildSettings(Card card, SimWorld world)
+    {
+        while (card.Settings.GetChildCount() > 0)
+        {
+            Node child = card.Settings.GetChild(0);
+            card.Settings.RemoveChild(child);
+            child.QueueFree();
+        }
+
+        var c = new CardControls();
+        card.Controls = c;
+        card.SettingsBuiltFor = card.Subject.Kind;
+        VBoxContainer body = card.Settings;
+
         switch (card.Subject.Kind)
         {
             case CardKind.Store:
-                return StoreOf(card) is StoreBuilding store && ShowStore(world, card, store);
+            {
+                // The full-store ring, per building (Joe, D140).
+                (c.FullRow, HFlowContainer fullControls) = InspectorRow(body, Muted("When full:"));
+                c.FullMarker = new Button { Text = "Marker: ON" };
+                c.FullMarker.Pressed += () => Act(card, ToggleSelectedFullMarker);
+                fullControls.AddChild(c.FullMarker);
+
+                // What this building will take (Joe, D141) — one toggle per good the KIND can hold.
+                (c.TakesRow, HFlowContainer takesControls) = InspectorRow(body, Muted("Takes:"));
+                for (int g = 0; g < world.GoodsCatalog.Count; g++)
+                {
+                    var goods = (Goods)g;
+                    var button = new Button { Text = GoodsName(world, goods), ToggleMode = true };
+                    button.Pressed += () => Act(card, () => ToggleSelectedAccepts(goods));
+                    takesControls.AddChild(button);
+                    c.Takes.Add((goods, button));
+                }
+
+                // How much this counter keeps, per good (Joe, D372) — markets only.
+                (c.LimitRow, HFlowContainer limitControls) = InspectorRow(body, Muted("Keeps up to:"));
+                for (int g = 0; g < world.GoodsCatalog.Count; g++)
+                {
+                    var goods = (Goods)g;
+                    if (!world.GoodsCatalog.StoredBy(goods, StoreKind.Market))
+                    {
+                        continue;
+                    }
+
+                    var cell = new HBoxContainer();
+                    cell.AddChild(Body(GoodsName(world, goods)));
+                    var amount = new SpinBox
+                    {
+                        MinValue = 0,
+                        MaxValue = 100_000,
+                        Step = 10,
+                        Editable = true,
+                        CustomMinimumSize = new Vector2(74, 0),
+                    };
+                    var clear = new Button { Text = "clear", Flat = true, Disabled = true };
+                    amount.ValueChanged += value => Act(card, () => SetSelectedMarketLimit(goods, (int)value));
+                    clear.Pressed += () => Act(card, () => SetSelectedMarketLimit(goods, null));
+                    cell.AddChild(amount);
+                    cell.AddChild(clear);
+                    limitControls.AddChild(cell);
+                    c.Limits.Add((goods, cell, amount, clear));
+                }
+
+                break;
+            }
+
             case CardKind.Workplace:
-                return world.FindWorkplace(card.Subject.Id) is Workplace place && ShowWorkplace(world, card, place);
-            case CardKind.Household:
-                return world.FindHousehold(card.Subject.Id) is Household home && ShowHousehold(world, card, home);
+            {
+                // The idle ring, per building (D270/D271).
+                c.IdleLabel = Muted(string.Empty);
+                (c.IdleRow, HFlowContainer idleControls) = InspectorRow(body, c.IdleLabel);
+                c.IdleMarker = new Button { Text = "Marker: ON" };
+                c.IdleMarker.Pressed += () => Act(card, ToggleSelectedIdleMarker);
+                idleControls.AddChild(c.IdleMarker);
+
+                // The ground brush (D86) and the forester's mode.
+                c.GroundLabel = Muted(string.Empty);
+                (c.GroundRow, HFlowContainer groundControls) = InspectorRow(body, c.GroundLabel);
+                var give = new Button { Text = "Give ground" };
+                give.Pressed += () => Act(card, () => PaintGroundForSelection(1));
+                groundControls.AddChild(give);
+                var takeBack = new Button { Text = "Take back" };
+                takeBack.Pressed += () => Act(card, () => PaintGroundForSelection(-1));
+                groundControls.AddChild(takeBack);
+                c.Mode = new Button { Text = "Planting: off" };
+                c.Mode.Pressed += () => Act(card, ToggleSelectedMode);
+                groundControls.AddChild(c.Mode);
+                c.GroundNote = Wrapped(Muted(string.Empty));
+                c.GroundNote.Visible = false;
+                c.GroundRow.AddChild(c.GroundNote);
+
+                // The build queue, for a site.
+                c.QueueLabel = Muted("Build queue:");
+                (c.QueueRow, HFlowContainer queueControls) = InspectorRow(body, c.QueueLabel);
+                var sooner = new Button { Text = "▲ Sooner" };
+                sooner.Pressed += () => Act(card, () => MoveSelectedInQueue(-1));
+                queueControls.AddChild(sooner);
+                var later = new Button { Text = "▼ Later" };
+                later.Pressed += () => Act(card, () => MoveSelectedInQueue(+1));
+                queueControls.AddChild(later);
+                break;
+            }
+
             case CardKind.Villager:
-                return world.FindVillager(card.Subject.Id) is Villager villager && ShowVillager(world, card, villager);
+            {
+                // Keeping a named villager on a trade (Joe, 2026-08-22) — a button per trade;
+                // pressing the pressed one hands them back.
+                c.PinLabel = Muted("Kept on:");
+                (c.PinRow, HFlowContainer pinControls) = InspectorRow(body, c.PinLabel);
+                foreach (JobKind trade in System.Enum.GetValues<JobKind>())
+                {
+                    JobKind captured = trade;
+                    var button = new Button { ToggleMode = true };
+                    button.Pressed += () => Act(card, () => TogglePin(captured));
+                    pinControls.AddChild(button);
+                    c.Pins.Add((captured, button));
+                }
+
+                // What they have learned (D174) — the one thing the card has no other room for.
+                c.Knows = Wrapped(Muted(string.Empty));
+                body.AddChild(c.Knows);
+                break;
+            }
+
             default:
-                return false;
+                break;
+        }
+
+        card.SettingsToggle.Visible = card.Settings.GetChildCount() > 0;
+    }
+
+    /// <summary>Select the card so the "selected" handlers act on its subject, then act.</summary>
+    private void Act(Card card, System.Action action)
+    {
+        SelectCard(card);
+        action();
+        RefreshCards(_loop.World);
+    }
+
+    /// <summary>Write the fold's rows for the subject as it stands — the docked panel's refresh, per card.</summary>
+    private void ShowSettings(SimWorld world, Card card)
+    {
+        CardControls c = card.Controls;
+        switch (card.Subject.Kind)
+        {
+            case CardKind.Store when StoreOf(card) is StoreBuilding store:
+                c.FullRow!.Visible = true;
+                c.FullMarker!.Text = _map.FullMarkerShownFor(store.Id) ? "Marker: ON" : "Marker: off";
+                c.TakesRow!.Visible = true;
+                foreach ((Goods goods, Button button) in c.Takes)
+                {
+                    button.Visible = store.CanEverHold(goods);
+                    button.ButtonPressed = store.Accepts(goods);
+                }
+
+                c.LimitRow!.Visible = store.Kind == StoreKind.Market;
+                if (store.Kind == StoreKind.Market)
+                {
+                    foreach ((Goods goods, Control cell, SpinBox amount, Button clear) in c.Limits)
+                    {
+                        cell.Visible = store.CanEverHold(goods);
+                        amount.SetValueNoSignal(world.MarketStockLimit(store, goods));
+                        clear.Disabled = store.Limits.For(goods) is null;
+                    }
+                }
+
+                break;
+
+            case CardKind.Workplace when world.FindWorkplace(card.Subject.Id) is Workplace place:
+            {
+                bool built = !place.IsSite;
+                c.IdleRow!.Visible = built;
+                if (built)
+                {
+                    c.IdleLabel!.Text = world.IdleNote(place) is string why ? why : $"{place.Name} is working.";
+                    c.IdleMarker!.Text = _map.IdleMarkerShownFor(place.Id) ? "Marker: ON" : "Marker: off";
+                }
+
+                bool keepsGround = built && SimWorld.KeepsWorkGround(place.Kind);
+                c.GroundRow!.Visible = keepsGround;
+                c.GroundNote!.Visible = false;
+                if (keepsGround)
+                {
+                    int tiles = world.Zones.WorkGroundTiles(place.Id);
+                    int allowance = world.WorkGroundAllowanceFor(place);
+                    c.GroundLabel!.Text = place.WorkerIds.Count == 0
+                        ? $"Ground — {tiles} tiles, nobody working it:"
+                        : $"Ground — {tiles} tiles, enough hands for {allowance}:";
+                    if (world.OverstretchedNote(place) is string stretched)
+                    {
+                        c.GroundNote.Text = stretched;
+                        c.GroundNote.Visible = true;
+                    }
+
+                    c.Mode!.Visible = place.Kind == JobKind.Forester;
+                    if (c.Mode.Visible)
+                    {
+                        c.Mode.Text = place.Mode != WorkMode.FellAndPlant
+                            ? "Felling: off"
+                            : world.MayFell(place) ? "Felling: ON" : "Felling: ON — held by the log limit";
+                    }
+                }
+
+                c.QueueRow!.Visible = place.IsSite;
+                if (place.IsSite)
+                {
+                    c.QueueLabel!.Text = $"Build queue — {world.QueuePositionOf(place)} of {world.BuildQueue().Count}:";
+                }
+
+                break;
+            }
+
+            case CardKind.Villager when world.FindVillager(card.Subject.Id) is { Alive: true } villager:
+            {
+                c.PinRow!.Visible = true;
+                c.PinLabel!.Text = villager.PinnedTrade is JobKind kept
+                    ? $"Kept on {world.JobsCatalog.NameOf(kept)} — press it again to hand them back:"
+                    : $"Kept on: (the village decides where {villager.Name} works)";
+                foreach ((JobKind trade, Button button) in c.Pins)
+                {
+                    button.Text = ProfessionName(world, trade);
+                    button.SetPressedNoSignal(villager.PinnedTrade == trade);
+                    button.Disabled = !villager.CanWork;
+                }
+
+                var lines = new List<string>();
+                DescribeTheirTrades(world, villager, lines);
+                c.Knows!.Text = string.Join("\n", lines);
+                c.Knows.Visible = lines.Count > 0;
+                break;
+            }
+
+            default:
+                break;
         }
     }
 
@@ -754,6 +1053,33 @@ public partial class Main
             faults.Add($"a card widened to {widest:F0}");
         }
 
+        // Every card's Settings fold open, its rows at their longest, and the width unmoved:
+        // the rows wrap (HFlowContainer), so a control belongs to its card at any width.
+        float widestOpen = 0f;
+        foreach (Card card in _cards)
+        {
+            card.SettingsToggle.ButtonPressed = true;
+            card.Settings.Visible = true;
+            CardControls c = card.Controls;
+            if (c.GroundLabel is not null) c.GroundLabel.Text = "Ground — 128 tiles, enough hands for 26:";
+            if (c.GroundNote is not null) { c.GroundNote.Text = "The south-western farmhouse 2 is 128 tiles of field and 2 pairs of hands can sow 26 of them. The other 102 will lie fallow — put another farmer on, or paint a smaller field."; c.GroundNote.Visible = true; c.GroundRow!.Visible = true; }
+            if (c.IdleLabel is not null) c.IdleLabel.Text = "Nothing to sow at the south-western farmhouse 2 — you asked the village to keep 2000 food and it has 1834.";
+            if (c.QueueLabel is not null) { c.QueueLabel.Text = "3rd in the queue, after a granary and a stockpile:"; c.QueueRow!.Visible = true; }
+            if (c.TakesRow is not null) foreach ((Goods _, Button b) in c.Takes) b.Visible = true;
+            if (c.LimitRow is not null) c.LimitRow.Visible = true;
+        }
+
+        ForceUpdateTransform();
+        foreach (Card card in _cards)
+        {
+            widestOpen = Mathf.Max(widestOpen, card.Panel.GetCombinedMinimumSize().X);
+        }
+
+        if (widestOpen > CardWidth + 1f)
+        {
+            faults.Add($"with its settings open a card's minimum is {widestOpen:F0}");
+        }
+
         // A name the player typed at the limit, and a status three lines long: neither may
         // widen the card — the bound is the panel's minimum, not what it happens to hold.
         Card posed = _cards[^1];
@@ -775,6 +1101,36 @@ public partial class Main
             faults.Add("a card did not stay where it was put");
         }
 
+        // One structure, one panel (D377): with a store's card open the docked "What's here" is
+        // hidden; on bare ground, with no card, it shows.
+        OnBuildingClicked(store.Tile);
+        RefreshInspector(world);
+        bool twoPanels = _whatsHerePanel.Visible;
+        GridPos bare = world.Map.FoundingSite;
+        for (int dx = 0; dx < 12; dx++)
+        {
+            var candidate = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + 5);
+            if (world.StoreAt(candidate) is null && world.WorkplaceCovering(candidate) is null && world.HouseholdAt(candidate) is null)
+            {
+                bare = candidate;
+                break;
+            }
+        }
+
+        _selectedTile = bare;
+        _selectedVillagerId = 0;
+        RefreshInspector(world);
+        bool groundReads = _whatsHerePanel.Visible;
+        if (twoPanels)
+        {
+            faults.Add("a store showed two panels — its card and the docked one");
+        }
+
+        if (!groundReads)
+        {
+            faults.Add("bare ground, with no card, read nowhere");
+        }
+
         int open = _cards.Count;
         while (_cards.Count > 0)
         {
@@ -782,7 +1138,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? $"[widths] cards: ✅ a card of each of the four kinds opened, all {CardWidth:F0} wide, the tallest {tallest:F0}px; an unpinned card is replaced, a pinned one stays ({open} open at the end)"
+            ? $"[widths] cards: ✅ a card of each of the four kinds opened, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
             : $"[widths] cards: ⛔ {string.Join("; ", faults)}";
     }
 }
