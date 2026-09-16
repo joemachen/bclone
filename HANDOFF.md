@@ -1,6 +1,40 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT (D376–D380, PUSHED); D381 FIXED THE HOUSING BUG THAT KILLED JOE'S VILLAGE (THE SITE-CHOOSER'S BOX) — PLAYED ("works!") AND PUSHED 2026-09-16. NEXT: FOOTPRINTS PER BUILDING TYPE.**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS (D376–D380) AND THE HOUSING FIX (D381) ARE PLAYED AND PUSHED; D382 — FOOTPRINTS PER BUILDING TYPE — IS BUILT, COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT; THEN PHASE 5.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D381.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D382.**
+>
+> **The state:** `main` = D382's commit on `93ec4da` (= `origin/main`); **D382 is committed, NOT
+> pushed — Joe pushes after he plays.** Working tree clean. Suite **1161 passing, 0 failing, 2 skipped of 1163, 2m41**; view 0 warnings on
+> `--no-incremental`; probe green (`panels: ✅` ×2, `bars: ✅`, `cards: ✅`, `windows: ✅`, `bar height
+> 161`, `tile centres ✅`, `done.`). The decision log runs to **D382**. Read `DESIGN.md §0–§5`, §6,
+> D376–D382 in §7, then `specs/footprints.md` in full.
+>
+> **✅ D382 — FOOTPRINTS PER BUILDING TYPE (Joe's "Modest" table):** granary, warehouse, market,
+> farmhouse, library 2×2 · town hall 3×2 · woodcutter's, builder's, hunter's 2×1 · longhouse 3×1 ·
+> the rest 1×1. ⛔ **An even extent anchors half a tile north-west of the pointed tile**
+> (`SimWorld.AnchorOn`) — the centre rule's inclusive edge makes a 2×2 on a centre a 3×3, and it
+> is *minus* because `Tile` is the anchor's floor and every finder keys on the tile you pointed
+> at. The founding layout never set an extent until now (`ExtentOf`); the builder's hut moved a
+> row north; ⛔ the woodcutter's hut offset feeds `FirewoodRoundTripTicks` and must not move.
+> Six goldens moved once (fixture + established-shipped fifty-year, skills pair, farm pair);
+> the cold-start shipped hashes held. The firewood conservation guard was counting store
+> transfers — `LogsEverFelled` / `LogsEverSplit` are real counters now.
+>
+> **⚠️ For Joe when he plays D382:** place a granary with snap on — the ghost is four tiles and
+> the one under the cursor is its bottom-right; turn a town hall with R and middle-drag; move a
+> 2×2 with the Move tool; put a warehouse beside a woodcutter's hut. Two things worth his eye:
+> **does the "pointed tile is the south-east corner" rule feel right, or should the ghost centre
+> on the cursor** (either is a one-line change in `AnchorOn` + the snap, and the sim's `Tile`
+> contract is the reason it is this way); and whether a 2×2 site's clearing mark and the heap
+> chip sit where he expects. ⚠️ Marking big buildings on the housing paint eats home sites
+> silently — an unattended village starved for it in a guard; a warning at the brush is a
+> follow-up, not built.
+>
+> **▶️ NEXT, after his play:** Phase 5 in `DESIGN.md §4`'s order — trampled fields and fences
+> first. The cards for the library and the town hall are still a later slice.
+>
+> *(D381's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-15, AFTER D381.**
 >
 > **The state:** `main` = `origin/main` = D381 (`0496e73`) + this note; **Joe played D381 — *"works!
 > proceed."* — and it is pushed** (2026-09-16). Working tree clean. **Joe played D380 and his village
@@ -372,7 +406,7 @@
 > D360:** trails are curves now (`DrawBend`); the wear's units changed (step 3, decay 11, worn 48,
 > packed 150 — *"50% longer to fade, 25% longer to draw"*); the farmer sows whole tiles before the
 > quarter-slivers at the fence (the "sowing on the edge" was one farmer's whole year going into six
-> slivers); stalks stand only where foot AND tip are painted. Five goldens moved once for the units.
+> slivers); stalks stand only where foot AND tip are painted. Six goldens moved once for the units.
 > **Colour and the worn/packed contrast he has not remarked on; the balance (139 vs 118) he has not
 > called.** **His verdict is the next input, and nothing should be built on top of paths until it
 > lands.** Three things only he can call, and a fresh session should ask about them one at a time
@@ -839,6 +873,29 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 70. **⚠️ "MOVED INTO THE EMPTY HOUSE AT  —" IS A NULL IN A SENTENCE (D381).** A blank where a
     position should be is a bug announcing itself; `FindAnEmptyHome` returned dead households
     with no house. When a narrated line has a hole in it, the hole is the finding.
+72. **⛔⛔ AN ANCHOR IS A CONTRACT WITH EVERY FINDER, NOT A NUMBER IN A ROW (D382).** The first
+    cut anchored an even extent half a tile EAST of the pointed tile; `Tile` is the anchor's
+    floor, so a 2×2 marked at (20,20) had `Tile` (21,21) and thirteen guards lost their building
+    to `Single(s => s.Tile == at)`. Decide which corner the pointed tile is before typing an
+    extent; and an even extent on a tile CENTRE covers a 3×3 under the inclusive centre rule.
+73. **⛔ A POSITION SET BY HAND HAS NO EXTENT UNLESS SOMETHING GIVES IT ONE (D382).** The founding
+    layout wrote `Position = …` for six buildings and never `ExtentWidth`; the day the catalogue
+    said 2×2, the fixture's granary was a 1×1 at a corner while a marked granary was 2×2 — and the
+    fixture goldens held, which is how it hid. `ExtentOf(kind)` is the one reader now; grep every
+    `new StoreBuilding` / `new Workplace` for the next one.
+74. **⚠️ A FOUNDING OFFSET CAN BE AN ECONOMY INPUT (D382).** `woodcutter_hut_y` is read by
+    `VillageEconomy.FirewoodRoundTripTicks`; moving the hut one row to dodge a 2×2 warehouse
+    re-derived the fuel budget and `data/sim.config.json` failed its own target. Grep
+    `VillageEconomy` for an offset before moving a founding building.
+75. **⛔ A "CONSERVATION" GUARD THAT COUNTS DEPOSITS COUNTS TRANSFERS (D382).** `LifetimeLogsFelled`
+    summed every store's produced-counter, which rises on every Add: a log moved to the woodyard
+    counted twice, one set on the ground never, and firewood "made" counted the trips home. It
+    passed on slack for a year and read 228 < 252 the day the fixture grew differently. Count
+    at the source (`Harvest`, the split) or do not call it conservation.
+76. **⚠️ FOUR GHOSTS ON THE HOUSING PAINT ARE FOURTEEN TILES OF NOBODY'S HOME (D382).** A site
+    that never finishes holds its ground; the shipped-build guard's four 2×2s on the starter
+    diamond starved an unattended village. Pose "harmless" marks beside the neighbourhood — and
+    the game does not yet warn a player who does this; it is a follow-up.
 71. **⛔⛔ A RULE THAT LOOKS LIKE LENIENCY MAY BE THE ONLY GARBAGE COLLECTOR (D381).** A new
     couple taking over *any* dead household — house or not — read as sloppy and was tightened
     to "a house, or a site being raised". Every guard stayed green; the fixture golden moved;

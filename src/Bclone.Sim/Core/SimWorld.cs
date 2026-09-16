@@ -1001,6 +1001,7 @@ public sealed class SimWorld
 
             BuildingKind kind = _waitingOnTheGround[i].Kind;
             Angle facing = _waitingOnTheGround[i].Facing;
+            Point position = _waitingOnTheGround[i].Position;
             _waitingOnTheGround.RemoveAt(i);
             BuildingGeneration++;
             string name = NameFor(kind);
@@ -1015,7 +1016,9 @@ public sealed class SimWorld
                 return;
             }
 
-            RaiseFreeBuilding(kind, Point.CentreOf(tile), name, facing);
+            // ⚠️ At the POINT it was marked at (D382): this raised at the tile's centre, which
+            // snapped a free-placed mark and would anchor an even extent on a centre — the 3×3.
+            RaiseFreeBuilding(kind, position, name, facing);
             Narrate($"{Capitalised(name)} was laid out on the ground the village just "
                 + $"cleared. {Clock.SeasonAndYear()}.", LogCategory.Building);
             return;
@@ -4717,6 +4720,10 @@ public sealed class SimWorld
         if (yields.Value == Goods.Logs)
         {
             amount = YieldWithTechnique(JobKind.Forester, amount);
+
+            // Counted at the stump — the whole tile's timber, whether it is carried off or set
+            // down beside it (D382; see `LogsEverFelled`).
+            LogsEverFelled += amount;
         }
 
         return (yields.Value, amount);
@@ -5218,7 +5225,7 @@ public sealed class SimWorld
     /// </para>
     /// </remarks>
     public PlacementVerdict MarkRelocation(GridPos from, GridPos to) =>
-        MarkRelocation(from, Point.CentreOf(to));
+        MarkRelocation(from, WhatStandsAt(from) is BuildingKind kind ? AnchorOn(kind, to) : Point.CentreOf(to));
 
     /// <summary>Pick a building up and put it down where the player pointed (D229, D329).</summary>
     public PlacementVerdict MarkRelocation(GridPos from, Point to)
@@ -5942,7 +5949,52 @@ public sealed class SimWorld
     /// **Only what the player places by hand is free.**
     /// </remarks>
     public Footprint FootprintOf(BuildingKind kind, GridPos position, Angle facing = default) =>
-        FootprintOf(kind, Point.CentreOf(position), facing);
+        FootprintOf(kind, AnchorOn(kind, position), facing);
+
+    /// <summary>
+    /// Where a building of this kind stands when it is put <em>on a tile</em> — <b>the tile you
+    /// point at is its south-east tile, and it grows west and north</b> (D382, `specs/footprints.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The centre of the tile, less half a tile westward if the width is even and half a tile
+    /// northward if the depth is even. ⛔ <b>Without the half-tile an even extent claims a tile
+    /// too many on every side:</b> <see cref="Footprint.Covers(Point)"/> is the centre rule with
+    /// an inclusive edge (D319), so a 2×2 anchored on a tile centre has its edges exactly on the
+    /// four neighbours' centres and covers a 3×3. The longhouse never met this — 3 is odd — and
+    /// every other building was 1×1 until D382 typed the table.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Minus, not plus, and the reason is <c>Tile</c>.</b> A building's <c>Tile</c> is its
+    /// anchor's floor (D329), and every finder, site lookup and test keys on <em>the tile you
+    /// pointed at</em>. An anchor half a tile east floors to the next tile over; half a tile west
+    /// floors to the tile itself. So the pointed tile is the building's south-east corner — the
+    /// ghost shows the rest.
+    /// </para>
+    /// <para>
+    /// ⭐ One rule for every place the sim puts a building on a tile — the <c>GridPos</c>
+    /// overloads of <c>Mark</c> / <c>CanBuildAt</c> / <c>FootprintOf</c>, the Move tool, the founding
+    /// layout — and for the view's snap, so the ghost shows the tiles it will claim. Free
+    /// placement (snap off) is the point the player chose and does not come through here.
+    /// </para>
+    /// </remarks>
+    /// <summary>A building's extent from the catalogue, 1×1 for a kind the catalogue does not know.</summary>
+    /// <remarks>
+    /// ⚠️ The founding layout sets each building's <c>Position</c> by hand and, until D382, never
+    /// its extent — so the fixture's granary read 1×1 at a tile corner the day the table was
+    /// typed, while a granary the player marks read 2×2. One reader for both.
+    /// </remarks>
+    public (int Width, int Height) ExtentOf(BuildingKind kind) =>
+        (BuildingsCatalog[kind]?.ExtentWidth ?? 1, BuildingsCatalog[kind]?.ExtentHeight ?? 1);
+
+    public Point AnchorOn(BuildingKind kind, GridPos tile)
+    {
+        (int width, int height) = ExtentOf(kind);
+        Point centre = Point.CentreOf(tile);
+        return new Point(
+            width % 2 == 0 ? centre.X - Fixed.FromRatio(1, 2) : centre.X,
+            height % 2 == 0 ? centre.Y - Fixed.FromRatio(1, 2) : centre.Y);
+    }
 
     public Footprint FootprintOf(BuildingKind kind, Point position, Angle facing = default) =>
         new()
@@ -5955,7 +6007,7 @@ public sealed class SimWorld
 
     public PlacementVerdict CanBuildAt(
         BuildingKind kind, GridPos position, bool alreadyStanding = false, Angle facing = default) =>
-        CanBuildAt(kind, Point.CentreOf(position), alreadyStanding, facing);
+        CanBuildAt(kind, AnchorOn(kind, position), alreadyStanding, facing);
 
     /// <summary>
     /// Whether this building may stand here — asked of a real position, not a square (D329).
@@ -6317,7 +6369,7 @@ public sealed class SimWorld
     /// <see cref="WarningForBuildingOverACrop"/>.
     /// </remarks>
     public PlacementVerdict Mark(BuildingKind kind, GridPos position) =>
-        Mark(kind, Point.CentreOf(position), Angle.Zero);
+        Mark(kind, AnchorOn(kind, position), Angle.Zero);
 
     public PlacementVerdict Mark(BuildingKind kind, Point position) =>
         Mark(kind, position, Angle.Zero);
@@ -6329,7 +6381,7 @@ public sealed class SimWorld
     /// construction site and reaches the finished building years later.
     /// </remarks>
     public PlacementVerdict Mark(BuildingKind kind, GridPos position, Angle facing) =>
-        Mark(kind, Point.CentreOf(position), facing);
+        Mark(kind, AnchorOn(kind, position), facing);
 
     /// <summary>
     /// ⭐⭐ Mark a building out <b>where the player actually put it</b> (gridless 2c, D329).
@@ -8079,6 +8131,26 @@ public sealed class SimWorld
         return total;
     }
 
+    /// <summary>Logs ever felled — counted at the stump, the tick they leave the tree (D382).</summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠️ <b>Not <see cref="LifetimeLogsFelled"/>, which is not a felling count at all.</b> That sums
+    /// every store's <c>Produced(Logs)</c>, and a store's produced counter rises on every
+    /// <c>Add</c> — a log carried warehouse → woodyard counts twice, a log set down on the ground
+    /// (D134) never counts, and a demolished store takes its count with it. The firewood
+    /// conservation guard was written against it and passed on the fixture's slack for a year;
+    /// D382's bigger stores changed the fixture's growth and the slack went. These two are the
+    /// real numbers, and the guard reads them.
+    /// </para>
+    /// <para>
+    /// Statistics, not state: nothing in the sim reads them, so they are not hashed.
+    /// </para>
+    /// </remarks>
+    public int LogsEverFelled { get; internal set; }
+
+    /// <summary>Logs ever taken from a yard to be split — counted at the block (D382).</summary>
+    public int LogsEverSplit { get; internal set; }
+
     /// <summary>Logs ever felled, wherever they ended up.</summary>
     public int LifetimeLogsFelled()
     {
@@ -8332,7 +8404,9 @@ public sealed class SimWorld
             Id = nextWorkplaceId++,
             Kind = JobKind.Builder,
             Name = NameFor(BuildingKind.BuilderHut),
-            Position = Point.CentreOf(Offset(origin, config.BuilderHutX, config.BuilderHutY)),
+            Position = AnchorOn(BuildingKind.BuilderHut, Offset(origin, config.BuilderHutX, config.BuilderHutY)),
+            ExtentWidth = ExtentOf(BuildingKind.BuilderHut).Width,
+            ExtentHeight = ExtentOf(BuildingKind.BuilderHut).Height,
             Capacity = SeatsIn(BuildingKind.BuilderHut),
         });
 
@@ -8424,7 +8498,9 @@ public sealed class SimWorld
             Id = nextWorkplaceId++,
             Kind = JobKind.Woodcutter,
             Name = NameFor(BuildingKind.WoodcutterHut),
-            Position = Point.CentreOf(Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY)),
+            Position = AnchorOn(BuildingKind.WoodcutterHut, Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY)),
+            ExtentWidth = ExtentOf(BuildingKind.WoodcutterHut).Width,
+            ExtentHeight = ExtentOf(BuildingKind.WoodcutterHut).Height,
             Capacity = config.WoodcutterHutCapacity,
         });
 
@@ -8446,7 +8522,9 @@ public sealed class SimWorld
             Id = 1,
             Kind = StoreKind.Granary,
             Name = NameFor(BuildingKind.Granary),
-            Position = Point.CentreOf(Offset(origin, config.GranaryX, config.GranaryY)),
+            Position = AnchorOn(BuildingKind.Granary, Offset(origin, config.GranaryX, config.GranaryY)),
+            ExtentWidth = ExtentOf(BuildingKind.Granary).Width,
+            ExtentHeight = ExtentOf(BuildingKind.Granary).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.GranaryCapacity(config) },
         });
 
@@ -8456,7 +8534,9 @@ public sealed class SimWorld
             Id = 2,
             Kind = StoreKind.Warehouse,
             Name = NameFor(BuildingKind.Warehouse),
-            Position = Point.CentreOf(Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY)),
+            Position = AnchorOn(BuildingKind.Warehouse, Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY)),
+            ExtentWidth = ExtentOf(BuildingKind.Warehouse).Width,
+            ExtentHeight = ExtentOf(BuildingKind.Warehouse).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.WarehouseCapacity(config) },
         });
 
@@ -8481,7 +8561,9 @@ public sealed class SimWorld
             Id = 3,
             Kind = StoreKind.Market,
             Name = marketName,
-            Position = Point.CentreOf(market),
+            Position = AnchorOn(BuildingKind.Market, market),
+            ExtentWidth = ExtentOf(BuildingKind.Market).Width,
+            ExtentHeight = ExtentOf(BuildingKind.Market).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.MarketCapacity(config) },
         });
 
@@ -8497,7 +8579,9 @@ public sealed class SimWorld
                 Id = nextWorkplaceId++,
                 Kind = JobKind.Marketer,
                 Name = marketName,
-                Position = Point.CentreOf(market),
+                Position = AnchorOn(BuildingKind.Market, market),
+                ExtentWidth = ExtentOf(BuildingKind.Market).Width,
+                ExtentHeight = ExtentOf(BuildingKind.Market).Height,
                 Capacity = config.MarketCapacity,
             });
         }

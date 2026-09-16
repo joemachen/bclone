@@ -4591,6 +4591,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // Picked up, not banked. The logs go to the warehouse on the way home,
                 // which is what makes them the village's rather than this family's.
                 villager.Carried.Receive(Goods.Logs, wood);
+                world.LogsEverFelled += wood;
                 villager.State = VillagerState.HaulingToStore;
                 HaulOrSetDown(world, villager);
                 return;
@@ -4774,6 +4775,8 @@ public sealed class BehaviorSystem : ISimSystem
                     villager.State = VillagerState.TravelingHome;
                     return;
                 }
+
+                world.LogsEverSplit += world.Config.LogsPerSplit;
 
                 // D196's own example, and the first technique in the game: *"a master woodcutter
                 // works out splitting lumber in a way that gives more cords."* The same log gives

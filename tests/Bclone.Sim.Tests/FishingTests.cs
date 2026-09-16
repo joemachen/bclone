@@ -607,6 +607,12 @@ public sealed class FishingTests
         int filled = hut.Store[Goods.Fish];
 
         var strangers = new HashSet<string>();
+
+        // Errands already under way are not this window's to judge — Agnes set off as the fisher
+        // before it opened and the season's share-out gave her seat to Dorcas on its first tick.
+        var wasWalking = new HashSet<int>(world.Villagers
+            .Where(v => v.State is VillagerState.ClearingABuffer or VillagerState.CollectingForMarket)
+            .Select(v => v.Id));
         int lowest = filled;
         for (int tick = 0; tick < config.TicksPerSeason; tick++)
         {
@@ -619,6 +625,17 @@ public sealed class FishingTests
                     && villager.ErrandX == hut.Tile.X && villager.ErrandY == hut.Tile.Y;
                 if (!walkingToTheHut)
                 {
+                    wasWalking.Remove(villager.Id);
+                    continue;
+                }
+
+                // ⚠️ Judged the tick they SET OFF, not every tick after (handoff traps 22, 23): the
+                // share-out re-seats people mid-errand, and a fisher who left her hut as the fisher
+                // read as "Agnes (laborer)" once D382 moved the founding's buildings a hair and the
+                // season turned inside this window. Who took the errand is the question; who holds
+                // the seat now is not.
+                if (!wasWalking.Add(villager.Id))
+                {
                     continue;
                 }
 
@@ -626,7 +643,7 @@ public sealed class FishingTests
                 bool aMarketer = world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Marketer;
                 if (!theFisher && !aMarketer)
                 {
-                    strangers.Add($"{villager.Name} ({world.FindWorkplace(villager.WorkplaceId)?.Kind.ToString() ?? "laborer"})");
+                    strangers.Add($"{villager.Name} ({world.FindWorkplace(villager.WorkplaceId)?.Kind.ToString() ?? "laborer"}, {villager.State})");
                 }
             }
         }

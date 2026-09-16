@@ -686,8 +686,10 @@
   // been funded from. A position is content; a capacity is a
   // consequence, and woodcutter_hut_capacity below is the recorded case
   // of what typing one costs.
+  // One row further north since D382: the hut is 2x1 and the warehouse 2x2,
+  // and at (-1, -1) they shared the tile (-2, -1). Nothing derives from this.
   "builder_hut_x": -1,
-  "builder_hut_y": -1,
+  "builder_hut_y": -2,
 
   // How many hands one builder's hut holds. Joe, 2026-08-30: "One builder's hut should
   // have 3 employees only. If the user wants more builders, they can build a new builder's
@@ -705,7 +707,8 @@
   //
   // Near the homes rather than near the stand: logs are drawn
   // village-wide, so the only distance that costs anything is the
-  // woodcutter's daily walk from home.
+  // woodcutter's daily walk from home. Read by FirewoodRoundTripTicks, so
+  // moving it re-derives the fuel economy (D382 learned that the hard way).
   "woodcutter_hut_x": -2,
   "woodcutter_hut_y": 1,
   // DERIVED (VillageEconomy.RequiredWoodcutterSeats), not picked. 3 -> 8.

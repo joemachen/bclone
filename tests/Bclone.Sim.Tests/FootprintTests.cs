@@ -299,6 +299,7 @@ public sealed class FootprintTests
     [Fact]
     public void AThreeTileBuildingRefusesANeighbourOnItsSecondTile()
     {
+        // A stockpile is the one-tile neighbour posed here (D382): the granary this used to pose is 2×2.
         SimConfig config = VillageFixtures.Village;
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
@@ -328,26 +329,26 @@ public sealed class FootprintTests
         Assert.Contains(world.StoreBuildings, s => s.Tile == anchor);
 
         // ⭐ The anchor is refused because something stands there — that much always worked.
-        Assert.False(world.CanBuildAt(BuildingKind.Granary, anchor).Allowed);
+        Assert.False(world.CanBuildAt(BuildingKind.Pile, anchor).Allowed);
 
         // ⛔ AND SO ARE THE OTHER TWO, which is the half that did not.
         var left = new GridPos(anchor.X - 1, anchor.Y);
         var right = new GridPos(anchor.X + 1, anchor.Y);
 
         _output.WriteLine(
-            $"anchor {anchor}: left {world.CanBuildAt(BuildingKind.Granary, left).Reason}; "
-            + $"right {world.CanBuildAt(BuildingKind.Granary, right).Reason}");
+            $"anchor {anchor}: left {world.CanBuildAt(BuildingKind.Pile, left).Reason}; "
+            + $"right {world.CanBuildAt(BuildingKind.Pile, right).Reason}");
 
         Assert.False(
-            world.CanBuildAt(BuildingKind.Granary, left).Allowed,
+            world.CanBuildAt(BuildingKind.Pile, left).Allowed,
             "A granary was allowed on ground the longhouse already stands on.");
         Assert.False(
-            world.CanBuildAt(BuildingKind.Granary, right).Allowed,
+            world.CanBuildAt(BuildingKind.Pile, right).Allowed,
             "A granary was allowed on ground the longhouse already stands on.");
 
         // ⭐ ANTI-VACUITY (D7): one tile further out is still free, or this is just refusing
         // everything and proving nothing.
-        Assert.True(world.CanBuildAt(BuildingKind.Granary, new GridPos(anchor.X + 2, anchor.Y)).Allowed);
+        Assert.True(world.CanBuildAt(BuildingKind.Pile, new GridPos(anchor.X + 2, anchor.Y)).Allowed);
     }
 
     /// <summary>
@@ -737,8 +738,12 @@ public sealed class FootprintTests
                 for (int dx = -radius; dx <= radius; dx++)
                 {
                     var at = new GridPos(site.X + dx, site.Y + dy);
+                    // Both ways round — the guard above marks it turned a quarter (D382: with 2×2
+                    // stores in the founding, a spot that fits it across may not fit it down).
                     if (world.CanBuildAt(BuildingKind.Longhouse, at).Allowed
-                        && world.CanBuildAt(BuildingKind.Granary, new GridPos(at.X + 2, at.Y)).Allowed)
+                        && world.CanBuildAt(BuildingKind.Longhouse, at, facing: Angle.FromTurnFraction(1, 4)).Allowed
+                        && world.CanBuildAt(BuildingKind.Pile, new GridPos(at.X + 2, at.Y)).Allowed
+                        && OpenGround(world, at))
                     {
                         return at;
                     }
@@ -747,5 +752,133 @@ public sealed class FootprintTests
         }
 
         throw new Xunit.Sdk.XunitException("Nowhere in the valley fits a three-tile building.");
+    }
+
+    /// <summary>
+    /// Bare grass under the spot and its neighbours — a mark on woodland waits for the felling
+    /// and is not a building yet (D100), which the guards above do not want to be measuring.
+    /// </summary>
+    private static bool OpenGround(SimWorld world, GridPos at)
+    {
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 3; dx++)
+            {
+                var tile = new GridPos(at.X + dx, at.Y + dy);
+                if (!world.Map.Contains(tile) || world.Map.TerrainAt(tile) != Terrain.Grass)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // ---------------------------------------------------------------
+    //  Footprints per building type (D382, specs/footprints.md)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⛔⛔ An even extent anchored on a tile covers exactly its tiles — <b>the centre rule's edge
+    /// is inclusive, and a 2×2 on a tile CENTRE is a 3×3</b> (D382).
+    /// </summary>
+    /// <remarks>
+    /// Every building was 1×1 (or the odd 3×1) until the table was typed, so this was never met.
+    /// <c>AnchorOn</c> puts the even axis half a tile east/south of the centre; the red check is the
+    /// centre itself, which reads nine.
+    /// </remarks>
+    [Fact]
+    public void AnEvenExtentAnchoredOnATileCoversExactlyItsTiles()
+    {
+        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        var at = new GridPos(20, 20);
+
+        Footprint granary = world.FootprintOf(BuildingKind.Granary, at);
+        List<GridPos> covered = granary.CoveredTiles();
+        _output.WriteLine($"a granary on {at}: anchor {granary.Origin}, covers {string.Join(" ", covered)}");
+
+        // The pointed tile is the south-east one; it grows west and north, and `Tile` stays (20, 20).
+        Assert.Equal(new[] { new GridPos(19, 19), new GridPos(20, 19), new GridPos(19, 20), at }, covered);
+        Assert.Equal(at, granary.Origin.ToTile());
+
+        Footprint onTheCentre = granary with { Origin = Point.CentreOf(at) };
+        _output.WriteLine($"on the centre instead: {onTheCentre.CoveredTiles().Count} tiles");
+        Assert.Equal(9, onTheCentre.CoveredTiles().Count);
+
+        // And the town hall, 3×2: odd across, even deep — three by two, growing south.
+        List<GridPos> hall = world.FootprintOf(BuildingKind.TownHall, at).CoveredTiles();
+        Assert.Equal(6, hall.Count);
+        Assert.Contains(new GridPos(19, 20), hall);
+        Assert.Contains(new GridPos(21, 19), hall);
+        Assert.DoesNotContain(new GridPos(20, 21), hall);
+    }
+
+    /// <summary>The table in `specs/footprints.md §2`, row by row (D382).</summary>
+    [Theory]
+    [InlineData(BuildingKind.Home, 1, 1)]
+    [InlineData(BuildingKind.Pile, 1, 1)]
+    [InlineData(BuildingKind.GathererHut, 1, 1)]
+    [InlineData(BuildingKind.ForesterHut, 1, 1)]
+    [InlineData(BuildingKind.FishingHut, 1, 1)]
+    [InlineData(BuildingKind.WoodcutterHut, 2, 1)]
+    [InlineData(BuildingKind.BuilderHut, 2, 1)]
+    [InlineData(BuildingKind.HunterLodge, 2, 1)]
+    [InlineData(BuildingKind.Granary, 2, 2)]
+    [InlineData(BuildingKind.Warehouse, 2, 2)]
+    [InlineData(BuildingKind.Market, 2, 2)]
+    [InlineData(BuildingKind.Farmhouse, 2, 2)]
+    [InlineData(BuildingKind.Library, 2, 2)]
+    [InlineData(BuildingKind.TownHall, 3, 2)]
+    [InlineData(BuildingKind.Longhouse, 3, 1)]
+    public void TheCatalogueCarriesTheTable(BuildingKind kind, int width, int height)
+    {
+        BuildingRow row = ShippedConfig.Load().BuildingRows.Single(r => r.Id == (int)kind);
+        Assert.Equal((width, height), (row.ExtentWidth, row.ExtentHeight));
+    }
+
+    /// <summary>
+    /// The founding layout raises blindly, so no two of its buildings may share a tile (D382).
+    /// </summary>
+    /// <remarks>
+    /// Red with the builder's hut at its pre-D382 offset (−1, −1): it is 2×1 and the 2×2 warehouse
+    /// at (−2, 0) stands on (−3..−2, −1..0), so they shared (−2, −1).
+    /// </remarks>
+    [Fact]
+    public void TheFoundingLayoutOverlapsNothing()
+    {
+        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        var seen = new Dictionary<GridPos, string>();
+        var twice = new List<string>();
+
+        void Claim(string name, Footprint footprint)
+        {
+            foreach (GridPos tile in footprint.CoveredTiles())
+            {
+                if (seen.TryGetValue(tile, out string? other))
+                {
+                    twice.Add($"{tile}: {other} and {name}");
+                }
+                else
+                {
+                    seen[tile] = name;
+                }
+            }
+        }
+
+        // The market is a store AND a workplace at one position (D36's seam): claimed once.
+        foreach (Workplace place in world.Workplaces)
+        {
+            if (place.Kind != JobKind.Marketer) { Claim(place.Name, place.Footprint); }
+        }
+
+        foreach (StoreBuilding store in world.StoreBuildings) { Claim(store.Name, store.Footprint); }
+        foreach (Household home in world.Households)
+        {
+            if (home.HomePosition is Point at) { Claim($"the {home.Name} house", Footprint.OneTile(at.ToTile())); }
+        }
+
+        _output.WriteLine($"{seen.Count} tiles under {world.Workplaces.Count + world.StoreBuildings.Count} buildings and the homes");
+        Assert.True(twice.Count == 0, "Two founding buildings on one tile: " + string.Join("; ", twice));
     }
 }

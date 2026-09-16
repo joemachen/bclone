@@ -70,6 +70,8 @@ Whoever takes this builds Q32.32 from nothing, with its own guards. *Budget it.*
 
 ### 2.3 ⛔⛔ A BUILDING IS ONE TILE, WITH NO EXTENT AND NO ROTATION — SO "FACING" IS NEW STATE
 
+> **⚠️ Historical since D319/D322 and finished by D382 (2026-09-16):** every building has an extent and a facing, and the extents are typed per kind in `specs/footprints.md §2` — a granary is 2×2, the town hall 3×2. An even extent anchors on a tile *corner* (`SimWorld.AnchorOn`), because the centre rule's inclusive edge would otherwise claim a 3×3 for a 2×2. The audit below is kept as the record of where this started.
+
 `Rotation`, `Facing` and `Orientation` return **zero hits** across the entire sim. A building is a
 single `Position` (`GridPos`), and there is no footprint, no width, no height, no angle.
 

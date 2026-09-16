@@ -476,6 +476,19 @@ public sealed class ShippedConfigTests
                     for (int dx = -radius; dx <= radius && !placed; dx++)
                     {
                         var spot = new GridPos(home.X + dx, home.Y + dy);
+
+                        // ⚠️ OFF THE HOUSING LAND (D382). These sites never finish — the fixture
+                        // has no stone — so they hold their ground for a century. Four 1×1 ghosts
+                        // cost four tiles of the starter diamond and the village lived; four at
+                        // the D382 sizes cost fourteen of its forty-one and it starved for want of
+                        // homes. That is a player's decision with a legible cause, not the
+                        // placement bug this guard exists for, so the guard marks beside the
+                        // neighbourhood rather than on it.
+                        if (world.FootprintOf(kind, spot).CoveredTiles().Exists(world.Zones.IsResidential))
+                        {
+                            continue;
+                        }
+
                         if (world.CanBuildAt(kind, spot).Allowed && world.Mark(kind, spot).Allowed)
                         {
                             marked++;

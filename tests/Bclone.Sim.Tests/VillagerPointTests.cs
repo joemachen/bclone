@@ -103,8 +103,11 @@ public sealed class VillagerPointTests
     // the founder's larder started below the old 80 % floor, so the first errand was to the
     // cart and back — and at half a larder that trip no longer fires. Both pins moved by exactly
     // ten; the walk between them (21 ticks at pace 3 against pace 1) is unchanged. Were 20 / 41.
-    private const int FirstGatherAtPace1 = 10;
-    private const int FirstGatherAtPace3 = 31;
+    // ⚠️ RE-PINNED (D382), not for the clock: the founding's stores are 2×2 on a tile corner and
+    // the first errand is one tick different at BOTH paces — the walk between them is still 21.
+    // Were 10 / 31.
+    private const int FirstGatherAtPace1 = 11;
+    private const int FirstGatherAtPace3 = 32;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -154,6 +157,12 @@ public sealed class VillagerPointTests
     /// fetches at half a larder, one member at a time, so who is free to gather changes —
     /// **84** trips, the 1st/10th/50th at **15/106/1,024**.
     /// </para>
+    /// <para>
+    /// **Re-pinned a seventh time (D382), not for the clock:** the founding's granary and
+    /// warehouse are 2×2 and stand on a tile corner (`AnchorOn`), so their doors moved half a
+    /// tile north-west and every walk to a store is a hair different — **80** trips, the
+    /// 1st/10th/50th at **17/139/1,117**.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -184,8 +193,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(84, entries);
-        Assert.Equal(new ulong[] { 15, 106, 1024 }, at);
+        Assert.Equal(80, entries);
+        Assert.Equal(new ulong[] { 17, 139, 1117 }, at);
     }
 
     /// <summary>
@@ -235,13 +244,19 @@ public sealed class VillagerPointTests
                 int expected = (length + Fixed.FromRatio(1, 2)).ToInt();
                 Assert.Equal(expected < 1 ? 1 : expected, villager.LegSteps);
 
-                GridPos a = villager.LegFrom.ToTile();
-                GridPos b = villager.LegTo.ToTile();
-                int manhattan = Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
-                if (a.X != b.X && a.Y != b.Y)
+                // ⚠️ The staircase is measured between the POINTS, not their tiles (D382). A 2×2
+                // store's position is a tile corner, so a leg to it can end half a tile from a
+                // centre — a tile-Manhattan understates that walk and read 23 diagonals as "not
+                // shorter than the stairs" when they were. A diagonal is a leg that moves at least
+                // a whole tile on both axes; its length is then under its Manhattan by at least
+                // (2 − √2), which survives the rounding to steps.
+                Fixed dx = Abs(villager.LegTo.X - villager.LegFrom.X);
+                Fixed dy = Abs(villager.LegTo.Y - villager.LegFrom.Y);
+                Fixed manhattan = dx + dy;
+                if (dx >= Fixed.FromInt(1) && dy >= Fixed.FromInt(1))
                 {
                     diagonals++;
-                    if (villager.LegSteps < manhattan)
+                    if (Fixed.FromInt(villager.LegSteps) < manhattan)
                     {
                         shorterThanTheStairs++;
                     }
@@ -514,4 +529,6 @@ public sealed class VillagerPointTests
 
         throw new Xunit.Sdk.XunitException("Nowhere near the founding site takes an off-centre hut.");
     }
+
+    private static Fixed Abs(Fixed value) => value < Fixed.Zero ? Fixed.Zero - value : value;
 }

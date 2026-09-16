@@ -949,7 +949,10 @@ public sealed record SimConfig
 
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     [JsonPropertyName("builder_hut_y")]
-    public int BuilderHutY { get; init; } = -1;
+    // ⚠️ −2, NOT −1, SINCE D382: the hut is 2×1 and the warehouse 2×2, and at (−1, −1) the two
+    // stood on one tile (−2, −1). Nothing derives from this offset; `TheFoundingLayoutOverlapsNothing`
+    // is the guard, and the founding raises blindly.
+    public int BuilderHutY { get; init; } = -2;
 
     /// <summary>
     /// Hands a builder's hut holds — <b>three, stated</b> (Joe, 2026-08-30).
@@ -1008,6 +1011,8 @@ public sealed record SimConfig
 
     /// <summary>Where logs are split into firewood.</summary>
     [JsonPropertyName("woodcutter_hut_y")]
+    // ⛔ READ BY `VillageEconomy.FirewoodRoundTripTicks` — moving this hut re-derives the fuel
+    // economy (D382 tried (−2, 2) and the shipped file stopped meeting its fuel target).
     public int WoodcutterHutY { get; init; } = 1;
 
     /// <summary>How many people can work one woodcutter's hut at once.</summary>
@@ -2148,6 +2153,10 @@ public sealed record SimConfig
             // people. The user should build more granaries — and will need to!"* A granary is a box
             // of a stated size; how many people it feeds falls out of how much they eat.
             StoreCapacity = GranaryCapacity,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
         },
         new BuildingRow
         {
@@ -2165,6 +2174,10 @@ public sealed record SimConfig
             // want, the logs to split it out of, a house's timber, floored at a granary. Typing that
             // number in is the move `buildings-catalog.md §2.2` refuses.
             StoreCapacity = null,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
         },
         new BuildingRow
         {
@@ -2182,6 +2195,10 @@ public sealed record SimConfig
             Stores = StoreKind.Market,
             StoreCapacity = null,
             Seats = MarketCapacity,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
         },
         new BuildingRow
         {
@@ -2194,6 +2211,10 @@ public sealed record SimConfig
             },
             WorkTicks = HutWorkTicks,
             Seats = WoodcutterHutCapacity,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 1 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 1,
         },
         new BuildingRow
         {
@@ -2239,6 +2260,10 @@ public sealed record SimConfig
             //
             // ⛔ SEATS ARE STATED NOW, NOT DERIVED (Joe, 2026-08-30) — see `BuilderHutSeats`.
             Seats = BuilderHutSeats < 1 ? 1 : BuilderHutSeats,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 1 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 1,
         },
         new BuildingRow
         {
@@ -2300,6 +2325,10 @@ public sealed record SimConfig
             // is bursty and the granary is across the village, so the store underfoot fills first
             // and the walk lengthens once it is full.
             LocalStoreCap = FarmStoreCap,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
         },
         new BuildingRow
         {
@@ -2318,6 +2347,10 @@ public sealed record SimConfig
             // what is left**, so the number is small on purpose and *"build another library"* is
             // the answer to wanting more.
             Shelves = LibraryShelves,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
         },
         new BuildingRow
         {
@@ -2345,6 +2378,10 @@ public sealed record SimConfig
             // ⛔ THE FIRST SINGLETON IN THE GAME (D38). `building-placement.md` has listed the
             // town hall as *the* example of a build-once building since long before one existed.
             Singleton = true,
+
+            // The footprint (D382, `specs/footprints.md §2`): 3 across, 2 deep before turning.
+            ExtentWidth = 3,
+            ExtentHeight = 2,
         },
         new BuildingRow
         {
@@ -2386,6 +2423,10 @@ public sealed record SimConfig
             // enrol the lodge in D260's competition and it would start halving FORAGERS' yields
             // by standing near them — over TREES, which is not what it takes. Game is not wood.
             HuntingRadius = HuntingRadius,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 1 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 1,
         },
 
         // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).

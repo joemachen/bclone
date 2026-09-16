@@ -192,7 +192,9 @@ public sealed class CropCalendarTests
     public void BuildingOverAStandingCropIsAllowedAndWarned(Terrain standing, string expected)
     {
         SimWorld world = Build().World;
-        var tile = new GridPos(world.Map.FoundingSite.X + 2, world.Map.FoundingSite.Y + 2);
+
+        // +3, +3: a granary is 2×2 and grows north-west of the tile it is put on (D382).
+        var tile = new GridPos(world.Map.FoundingSite.X + 3, world.Map.FoundingSite.Y + 3);
 
         world.Map.SetTerrain(tile, standing);
         world.Map.SetCrop(tile, 1);
@@ -213,7 +215,10 @@ public sealed class CropCalendarTests
     public void ABareFieldIsNotWorthAWarning()
     {
         SimWorld world = Build().World;
-        var tile = new GridPos(world.Map.FoundingSite.X + 2, world.Map.FoundingSite.Y + 2);
+
+        // +3, +3: a granary is 2×2 and grows north-west of the tile it is put on (D382), and at
+        // +2, +2 it met the founding's market.
+        var tile = new GridPos(world.Map.FoundingSite.X + 3, world.Map.FoundingSite.Y + 3);
 
         world.Map.SetTerrain(tile, Terrain.Field);
 

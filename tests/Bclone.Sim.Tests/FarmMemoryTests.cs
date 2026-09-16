@@ -427,11 +427,14 @@ public sealed class FarmMemoryTests
         // The prediction produced 51 tiles over ten years at this distance, measured — in the
         // village that fed a family of four by foraging. At D363's floor (foraging feeds a couple)
         // the same farm on the prediction alone — memory and probe switched off, measured —
-        // brings in 38; with them, 46.
+        // brings in 38; with them, 46. ⚠️ Re-measured for D382: the farmhouse is 2×2 and takes
+        // four of the 7×7 tiles painted round it, so the field is 45 tiles, not 48 — the
+        // prediction alone (`LearnFromTheAutumn` stubbed) brings in 27 now; with memory and
+        // probe, 35.
         Assert.True(
-            reaped > 38,
+            reaped > 27,
             $"A farm {walk} ticks out reaped {reaped} tiles in ten years. The prediction it "
-            + "replaced manages 38 at this floor, and the ledger says the ground is there for more.");
+            + "replaced manages 27 at this floor, and the ledger says the ground is there for more.");
 
         // ⛔ AND THE ROT LINE STAYS HONEST (D167). Bringing in more by sowing far more and
         // losing the difference to winter is the bug this slice's ancestor fixed.

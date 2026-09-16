@@ -881,11 +881,25 @@ public partial class VillageMap : Control
     }
 
     /// <summary>Where a building put down right now would stand — snapped, or exactly here.</summary>
-    private Point WhereItWouldStand(Vector2 screen) =>
-        _snapToGrid
-            ? Point.CentreOf(new GridPos(
-                Mathf.RoundToInt(ToTile(screen).X), Mathf.RoundToInt(ToTile(screen).Y)))
-            : PointUnderTheCursor(screen);
+    /// <remarks>
+    /// ⭐ Snapped means <see cref="SimWorld.AnchorOn"/> (D382): the tile under the cursor, and for
+    /// an even extent half a tile east or south of its centre — so a 2×2 granary lands on four
+    /// tiles, not a 3×3 (the centre rule's inclusive edge). The kind is the one in hand, or the one
+    /// being moved; with nothing in hand the snap is the tile's centre as it always was.
+    /// </remarks>
+    private Point WhereItWouldStand(Vector2 screen)
+    {
+        if (!_snapToGrid)
+        {
+            return PointUnderTheCursor(screen);
+        }
+
+        var tile = new GridPos(Mathf.RoundToInt(ToTile(screen).X), Mathf.RoundToInt(ToTile(screen).Y));
+        BuildingKind? kind = _building ?? (_moveFrom is GridPos from ? _world?.WhatStandsAt(from) : null);
+        return kind is BuildingKind inHand && _world is not null
+            ? _world.AnchorOn(inHand, tile)
+            : Point.CentreOf(tile);
+    }
     private PlacementVerdict _verdict = PlacementVerdict.Fine;
 
     /// <summary>Raised whenever the ghost's verdict changes, so the shell can say it.</summary>

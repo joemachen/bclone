@@ -46,19 +46,27 @@ public sealed class FirewoodTests
         // The whole point of a processing chain: the output costs the input. A hut
         // that produced firewood from thin air would pass the test above.
         SimLoop loop = Build(Config);
+
+        // ⛔ COUNTED AT THE STUMP AND THE BLOCK (D382). This read `LifetimeLogsFelled` — every
+        // store's `Produced(Logs)`, which rises on every Add (a log carried to the woodyard counts
+        // twice, one set on the ground never) — against firewood made ÷ the split ratio, and
+        // passed on the fixture's slack for a year. D382's bigger stores changed the fixture's
+        // growth and the "conservation" it claimed read 228 felled against 252 consumed, with
+        // nothing wrong. `LogsEverFelled` and `LogsEverSplit` are the real numbers, plus whatever
+        // timber the founding arrived with.
+        int logsAtTheFounding = loop.World.TotalLogs();
         loop.Step(Config.TicksPerYear * 20);
 
-        int logsFelled = loop.World.LifetimeLogsFelled();
+        int logsFelled = loop.World.LogsEverFelled;
+        int logsSplit = loop.World.LogsEverSplit;
         int firewoodMade = loop.World.LifetimeFirewoodCut();
-
-        int logsSpentOnFirewood = firewoodMade / Config.FirewoodPerSplit * Config.LogsPerSplit;
         _output.WriteLine(
-            $"{logsFelled} logs felled, {firewoodMade} firewood made " +
-            $"(≈{logsSpentOnFirewood} logs consumed)");
+            $"{logsFelled} logs felled and {logsAtTheFounding} at the founding; {logsSplit} logs split into "
+            + $"firewood (stores took in {firewoodMade} firewood over their lives, transfers counted)");
 
         Assert.True(firewoodMade > 0);
-        Assert.True(logsFelled >= logsSpentOnFirewood,
-            "More firewood was made than there were logs to make it from.");
+        Assert.True(logsFelled + logsAtTheFounding >= logsSplit,
+            "More logs were split than were ever felled or arrived with the founding.");
     }
 
     [Fact]

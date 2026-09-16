@@ -32,6 +32,8 @@ namespace Bclone.Sim.Tests;
 /// means the loop body never runs. *A check that iterates a set says nothing about the empty set.*
 /// </para>
 /// </remarks>
+// ⚠️ These guards pose a ONE-TILE building (D382): the woodcutter's hut they used to pose is 2×1
+// now, and "neighbouring tiles do not collide" is a claim about a 1×1. The forester's hut is 1×1.
 public sealed class FootprintClaimsGroundTests
 {
     private readonly ITestOutputHelper _output;
@@ -151,12 +153,12 @@ public sealed class FootprintClaimsGroundTests
         Point between = Point.CentreOf(tile) + new Point(HalfTile, HalfTile);
         Angle turned = Angle.FromTurnFraction(1, 8);
 
-        PlacementVerdict marked = world.Mark(BuildingKind.WoodcutterHut, between, turned);
+        PlacementVerdict marked = world.Mark(BuildingKind.ForesterHut, between, turned);
         _output.WriteLine($"marked at {between} turned {turned}: {marked.Allowed} {marked.Reason}");
         Assert.True(marked.Allowed, marked.Reason);
 
         Workplace site = world.Workplaces.Single(
-            w => w.Construction?.Kind == BuildingKind.WoodcutterHut);
+            w => w.Construction?.Kind == BuildingKind.ForesterHut);
 
         System.Collections.Generic.List<GridPos> claimed = site.Footprint.CoveredTiles();
         _output.WriteLine($"it claims {claimed.Count}: {string.Join(" ", claimed)}");
@@ -196,9 +198,9 @@ public sealed class FootprintClaimsGroundTests
         GridPos tile = SomewhereClear(world);
         var beside = new GridPos(tile.X + dx, tile.Y + dy);
 
-        Assert.True(world.Mark(BuildingKind.WoodcutterHut, tile).Allowed);
+        Assert.True(world.Mark(BuildingKind.ForesterHut, tile).Allowed);
 
-        PlacementVerdict second = world.Mark(BuildingKind.WoodcutterHut, beside);
+        PlacementVerdict second = world.Mark(BuildingKind.ForesterHut, beside);
         _output.WriteLine($"{tile} then {beside}: {second.Allowed} {second.Reason}");
 
         Assert.True(second.Allowed, second.Reason);
@@ -222,7 +224,7 @@ public sealed class FootprintClaimsGroundTests
         GridPos tile = SomewhereClear(world);
         Point first = Point.CentreOf(tile) + new Point(Fixed.FromRatio(1, 4), Fixed.Zero);
 
-        Assert.True(world.Mark(BuildingKind.WoodcutterHut, first).Allowed);
+        Assert.True(world.Mark(BuildingKind.ForesterHut, first).Allowed);
 
         // A quarter tile further on: a different tile centre is nearer it, so tile occupancy
         // would have called this free ground — and the two rectangles plainly share space.
@@ -230,7 +232,7 @@ public sealed class FootprintClaimsGroundTests
         Assert.Equal(tile, first.ToTile());
         Assert.NotEqual(tile, second.ToTile());
 
-        PlacementVerdict onTop = world.Mark(BuildingKind.WoodcutterHut, second);
+        PlacementVerdict onTop = world.Mark(BuildingKind.ForesterHut, second);
         _output.WriteLine($"{first} then {second} (tiles {first.ToTile()} and {second.ToTile()}): "
             + $"{onTop.Allowed} {onTop.Reason}");
 
@@ -249,10 +251,10 @@ public sealed class FootprintClaimsGroundTests
                 for (int dx = -radius; dx <= radius; dx++)
                 {
                     var at = new GridPos(site.X + dx, site.Y + dy);
-                    if (world.CanBuildAt(BuildingKind.WoodcutterHut, at).Allowed
-                        && world.CanBuildAt(BuildingKind.WoodcutterHut, new GridPos(at.X + 1, at.Y)).Allowed
-                        && world.CanBuildAt(BuildingKind.WoodcutterHut, new GridPos(at.X, at.Y + 1)).Allowed
-                        && world.CanBuildAt(BuildingKind.WoodcutterHut, new GridPos(at.X + 1, at.Y + 1)).Allowed)
+                    if (world.CanBuildAt(BuildingKind.ForesterHut, at).Allowed
+                        && world.CanBuildAt(BuildingKind.ForesterHut, new GridPos(at.X + 1, at.Y)).Allowed
+                        && world.CanBuildAt(BuildingKind.ForesterHut, new GridPos(at.X, at.Y + 1)).Allowed
+                        && world.CanBuildAt(BuildingKind.ForesterHut, new GridPos(at.X + 1, at.Y + 1)).Allowed)
                     {
                         return at;
                     }

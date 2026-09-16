@@ -286,8 +286,13 @@ public sealed class AgeingTests
         var (loop, sink) = Phase0Fixtures.Build(Config);
         Phase0Fixtures.RunUntilDeath(loop);
 
-        List<string> young = SeasonLinesForYear(sink, 8);
-        List<string> old = SeasonLinesForYear(sink, 42);
+        // ⚠️ A year in youth and a year in old age that HAVE a foraging line (D382): the
+        // season summary is only written for a season with a trip in it, and in Plenty that is
+        // about one a year — which year gets it moves with any change to the walk (the founding's
+        // stores are 2×2 on a tile corner now, and year 42 had none). Years 8 and 42 were the
+        // pins; the first young year from 8 and the last old year to 42 are the same question.
+        List<string> young = FirstYearWithLines(sink, from: 8, to: 14);
+        List<string> old = LastYearWithLines(sink, from: 36, to: 42);
 
         Assert.NotEmpty(young);
         Assert.NotEmpty(old);
@@ -321,6 +326,34 @@ public sealed class AgeingTests
         }
 
         return count;
+    }
+
+    private static List<string> FirstYearWithLines(Bclone.Sim.Logging.InMemoryLogSink sink, int from, int to)
+    {
+        for (int year = from; year <= to; year++)
+        {
+            List<string> lines = SeasonLinesForYear(sink, year);
+            if (lines.Count > 0)
+            {
+                return lines;
+            }
+        }
+
+        return new List<string>();
+    }
+
+    private static List<string> LastYearWithLines(Bclone.Sim.Logging.InMemoryLogSink sink, int from, int to)
+    {
+        for (int year = to; year >= from; year--)
+        {
+            List<string> lines = SeasonLinesForYear(sink, year);
+            if (lines.Count > 0)
+            {
+                return lines;
+            }
+        }
+
+        return new List<string>();
     }
 
     private static List<string> SeasonLinesForYear(Bclone.Sim.Logging.InMemoryLogSink sink, int year)

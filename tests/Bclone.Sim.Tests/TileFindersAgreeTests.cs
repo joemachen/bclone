@@ -244,7 +244,8 @@ public sealed class TileFindersAgreeTests
         // Put something in the way of the TURNED building's far end, which the unturned one
         // never reaches. The anchor itself stays clear, so only the facing decides the answer.
         var inTheWay = new GridPos(anchor.X, anchor.Y + 1);
-        Assert.True(world.Mark(BuildingKind.Granary, inTheWay).Allowed, "nothing was put in the way");
+        // A stockpile: one tile, raised at once (D382 — the granary this posed is 2×2 now).
+        Assert.True(world.Mark(BuildingKind.Pile, inTheWay).Allowed, "nothing was put in the way");
 
         bool flat = world.CanBuildAt(BuildingKind.Longhouse, anchor).Allowed;
         bool onItsSide = world.CanBuildAt(BuildingKind.Longhouse, anchor, facing: turned).Allowed;

@@ -51,6 +51,12 @@ public sealed class KnowledgeAtRiskTests
 
         Villager elder = MakeThemAMaster(world, StepUntilSomebodyIsFrail(loop), skill);
 
+        // ⚠️ Posed as the ONLY master, not left to the fixture's luck (D382): the founders arrive
+        // as a master, a journeyman and two novices (D175), and which elder the years produce
+        // first moves with any change to the village's walks — the day the stores grew to 2×2,
+        // the elder found was not the only master of this skill and the note was rightly null.
+        LeaveOnlyOneMasterOf(world, skill, elder);
+
         string? note = world.KnowledgeAtRiskNote(elder);
         _output.WriteLine(note ?? "(nothing)");
 
@@ -81,6 +87,12 @@ public sealed class KnowledgeAtRiskTests
         SkillRow skill = Config.Skills[0];
 
         Villager elder = MakeThemAMaster(world, StepUntilSomebodyIsFrail(loop), skill);
+
+        // ⚠️ Posed as the ONLY master, not left to the fixture's luck (D382): the founders arrive
+        // as a master, a journeyman and two novices (D175), and which elder the years produce
+        // first moves with any change to the village's walks — the day the stores grew to 2×2,
+        // the elder found was not the only master of this skill and the note was rightly null.
+        LeaveOnlyOneMasterOf(world, skill, elder);
         Assert.NotNull(world.KnowledgeAtRiskNote(elder));
 
         MakeThemAMaster(world, world.Villagers.First(v => v.Alive && v.Id != elder.Id), skill);
@@ -138,6 +150,12 @@ public sealed class KnowledgeAtRiskTests
         SkillRow skill = config.Skills[0];
         Villager elder = MakeThemAMaster(world, StepUntilSomebodyIsFrail(loop), skill);
 
+        // ⚠️ Posed as the ONLY master, not left to the fixture's luck (D382): the founders arrive
+        // as a master, a journeyman and two novices (D175), and which elder the years produce
+        // first moves with any change to the village's walks — the day the stores grew to 2×2,
+        // the elder found was not the only master of this skill and the note was rightly null.
+        LeaveOnlyOneMasterOf(world, skill, elder);
+
         for (int i = 0; i < config.TicksPerYear * 4; i++)
         {
             loop.StepOnce();
@@ -168,6 +186,12 @@ public sealed class KnowledgeAtRiskTests
 
         SkillRow skill = config.Skills[0];
         Villager elder = MakeThemAMaster(world, StepUntilSomebodyIsFrail(loop), skill);
+
+        // ⚠️ Posed as the ONLY master, not left to the fixture's luck (D382): the founders arrive
+        // as a master, a journeyman and two novices (D175), and which elder the years produce
+        // first moves with any change to the village's walks — the day the stores grew to 2×2,
+        // the elder found was not the only master of this skill and the note was rightly null.
+        LeaveOnlyOneMasterOf(world, skill, elder);
         Villager second = MakeThemAMaster(
             world, world.Villagers.First(v => v.Alive && v.Id != elder.Id), skill);
 
