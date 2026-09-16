@@ -287,7 +287,22 @@ public sealed class ZoneMap
             return true;
         }
 
+        bool wasWhole = _residentialCount[tile] == SubTile.PerWholeTile;
         _residentialCount[tile] = (byte)(_residentialCount[tile] + (painted ? 1 : -1));
+
+        // ⭐ THE WHOLE-TILE INDEX, KEPT WHERE THE STATE CHANGES (D381, CLAUDE.md's rule). A home
+        // is sited only on a tile painted in full (D350), and `ChooseSite` used to find those by
+        // scanning a box round the founding — which is how a neighbourhood painted twelve tiles
+        // out was never looked at. Every whole tile is in this set the tick it becomes one.
+        bool isWhole = _residentialCount[tile] == SubTile.PerWholeTile;
+        if (isWhole && !wasWhole)
+        {
+            _wholeResidential.Add(at.Tile);
+        }
+        else if (wasWhole && !isWhole)
+        {
+            _wholeResidential.Remove(at.Tile);
+        }
 
         bool nowPainted = _residentialCount[tile] >= SubTile.HalfATile;
         if (nowPainted != _residential[tile])
@@ -301,6 +316,27 @@ public sealed class ZoneMap
 
     /// <summary>Every painted tile, in a fixed order — for hashing and for drawing.</summary>
     public IReadOnlyList<bool> Residential => _residential;
+
+    /// <summary>
+    /// Every tile painted for housing in FULL (16 of 16), in row order — the only tiles a home
+    /// may be sited on (D350), and the only ones <c>ChooseSite</c> looks at (D381).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ A derived index, never hashed (D335): it restates <see cref="Residential"/>'s count per
+    /// tile. Row order (Y, then X) is the order the old box scan walked, so an exact tie between
+    /// two sites resolves as it always did.
+    /// </remarks>
+    public IReadOnlyCollection<GridPos> WholeResidentialTiles => _wholeResidential;
+
+    private readonly SortedSet<GridPos> _wholeResidential = new(RowOrder.Instance);
+
+    private sealed class RowOrder : IComparer<GridPos>
+    {
+        public static readonly RowOrder Instance = new();
+
+        public int Compare(GridPos a, GridPos b) =>
+            a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X);
+    }
 
     // ---------------------------------------------------------------
     //  Work ground (D86)

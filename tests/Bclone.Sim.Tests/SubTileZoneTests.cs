@@ -253,6 +253,99 @@ public sealed class SubTileZoneTests
     }
 
     /// <summary>Open, standing-free ground the village can walk to, close by.</summary>
+    /// <summary>
+    /// ⛔⛔ A neighbourhood painted far from the founding is still looked at (D381).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe painted housing twelve tiles from the cart at tick 1 and every founder froze in
+    /// Winter Year 1 without a house being marked.</b> `ChooseSite` scanned a box of
+    /// ±`MaxHomeToVillageTiles` round the founding and refused everything outside it, silently
+    /// — the refusal D120 says distance no longer makes, kept as a "search bound". The
+    /// warning he got, every day, was *"paint some land for houses"*.
+    /// </para>
+    /// <para>
+    /// Posed at twice the old bound on a bare reachable tile; red on the box (*"none can take
+    /// one: 1 cut off from the village"* is what the OLD message would have had to say and did
+    /// not — it threw *"every one of them is already built on, cut off from the village, or
+    /// painted only in part"*).
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AHomePaintedFarFromTheFoundingIsStillSited()
+    {
+        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        ZoneMap zones = world.Zones;
+        for (int i = 0; i < zones.Residential.Count; i++)
+        {
+            if (zones.Residential[i])
+            {
+                zones.SetResidential(zones.PositionOf(i), false);
+            }
+        }
+
+        GridPos founding = world.Map.FoundingSite;
+        int oldBound = VillageEconomy.MaxHomeToVillageTiles(world.Config);
+        GridPos far = ABareReachableTileAtLeast(world, founding, oldBound * 2);
+        zones.SetResidential(far, true);
+
+        GridPos chosen = Household.ChooseSite(world, founding);
+        _output.WriteLine($"painted {far}, {far.ManhattanDistanceTo(founding)} tiles from the founding (old bound ±{oldBound}); chosen {chosen}");
+        Assert.Equal(far, chosen);
+    }
+
+    /// <summary>The "nowhere to build" reason counts what is wrong, so the player can act on it (D381).</summary>
+    [Fact]
+    public void TheNowhereToBuildReasonSaysWhy()
+    {
+        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        ZoneMap zones = world.Zones;
+        for (int i = 0; i < zones.Residential.Count; i++)
+        {
+            if (zones.Residential[i])
+            {
+                zones.SetResidential(zones.PositionOf(i), false);
+            }
+        }
+
+        var nothing = Assert.Throws<Household.NoRoomToBuildException>(
+            () => Household.ChooseSite(world, world.Map.FoundingSite));
+        Assert.Contains("nothing is painted", nothing.Message);
+
+        // A tile the store already stands on: painted in full, and built on.
+        GridPos onTheStore = world.StoreBuildings[0].Tile;
+        zones.SetResidential(onTheStore, true);
+        var builtOn = Assert.Throws<Household.NoRoomToBuildException>(
+            () => Household.ChooseSite(world, world.Map.FoundingSite));
+        _output.WriteLine(builtOn.Message);
+        Assert.Contains("1 built on already", builtOn.Message);
+        Assert.DoesNotContain("cut off", builtOn.Message);
+    }
+
+    private static GridPos ABareReachableTileAtLeast(SimWorld world, GridPos site, int tilesAway)
+    {
+        for (int radius = tilesAway; radius < tilesAway + 12; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (at.ManhattanDistanceTo(site) >= tilesAway
+                        && world.Map.Contains(at)
+                        && world.Map.TerrainAt(at) == Terrain.Grass
+                        && !world.SomethingStandsAt(at)
+                        && world.TravelCost.CanReach(site, at))
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"No bare reachable ground {tilesAway} tiles from the founding site.");
+    }
+
     private static GridPos ABareReachableTileNear(SimWorld world, GridPos site)
     {
         for (int radius = 1; radius < 12; radius++)

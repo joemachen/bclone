@@ -41,7 +41,7 @@ four goldens unmoved by D180. Proved by `PerSiteYieldTests` and
 
 | D58's parts | State |
 |---|---|
-| Retire the 7-tile bound **as a fence** | ✅ **Done (D120).** `Household.ChooseSite` uses it as a score term and a search radius. *"A home beyond it is a family the village feeds less well, not one it refuses to house."* |
+| Retire the 7-tile bound **as a fence** | ✅ **Done (D120), and finished in D381.** `Household.ChooseSite` uses it as a score term — ~~and a search radius~~ ⛔ *the search radius was the fence under another name: a neighbourhood painted beyond it was never looked at and the village said "paint some land" (Joe's village froze in Winter Year 1 for it). `ChooseSite` walks the zone map's index of whole-painted tiles now, wherever they are.* *"A home beyond it is a family the village feeds less well, not one it refuses to house."* |
 | Per-site yield for **gathering** | ✅ **Done (D112).** `SimWorld.GatherYieldAt` is `gather_yield × wooded tiles ÷ ring tiles`. A hut in thick wood genuinely pays more. |
 | Per-site yield for **farming** | ⛔ **Not done.** `FieldTilesOneFarmerKeeps` is one number for every farm in the valley. |
 | **"Distant sites pay better"** | ⛔ **Not done, and it is the important half.** Nothing in the sim rewards distance; `VillageEconomy` does not read travel cost at all. |

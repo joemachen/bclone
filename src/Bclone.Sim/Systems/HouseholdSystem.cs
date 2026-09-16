@@ -139,7 +139,7 @@ public sealed class HouseholdSystem : ISimSystem
             // An empty house is a house — the same rule new couples get, and for the same
             // reason: standing among your own empty homes while felling more trees is an
             // absurdity, not a hard decision.
-            Household? standingEmpty = FindAnEmptyHome(world);
+            Household? standingEmpty = FindAnEmptyHome(world, aHouseOnly: true);
             if (standingEmpty is not null)
             {
                 household.HomePosition = standingEmpty.HomePosition;
@@ -170,14 +170,17 @@ public sealed class HouseholdSystem : ISimSystem
                 world.MarkHome(household.Id, Household.ChooseSite(world, world.Map.FoundingSite));
                 world.NeedsMoreResidentialLand = false;
             }
-            catch (Household.NoRoomToBuildException)
+            catch (Household.NoRoomToBuildException noRoom)
             {
+                // ⛔ THE REASON, NOT "PAINT SOME LAND" (D381). This said *"paint some land for
+                // houses"* to a player who had painted a neighbourhood the sim would not look
+                // at; the exception knows why and the warning says it.
                 if (!world.NeedsMoreResidentialLand)
                 {
                     world.NeedsMoreResidentialLand = true;
                     world.Narrate(
-                        $"The {household.Name} household has nowhere to build — "
-                        + "paint some land for houses.", LogCategory.Warning);
+                        $"The {household.Name} household has nowhere to build — {noRoom.Message}. "
+                        + $"{world.Clock.SeasonAndYear()}.", LogCategory.Warning);
                 }
             }
         }
@@ -213,7 +216,7 @@ public sealed class HouseholdSystem : ISimSystem
             // there was no firewood and people froze. A village standing among its own
             // empty houses while it fells more trees to build another is not a hard
             // decision, it is an absurdity.
-            Household? standingEmpty = FindAnEmptyHome(world);
+            Household? standingEmpty = FindAnEmptyHome(world, aHouseOnly: false);
             if (standingEmpty is not null)
             {
                 MoveInTogether(world, seeker, partner, standingEmpty, config);
@@ -308,13 +311,32 @@ public sealed class HouseholdSystem : ISimSystem
     /// <remarks>Lowest id, so which house a couple takes is a fact about the village
     /// rather than about iteration — and it means the oldest empty home fills first,
     /// which is also how a village would actually do it.</remarks>
-    private static Household? FindAnEmptyHome(SimWorld world)
+    /// <summary>A dead household going spare — with a house, or (for a new couple) at all.</summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ A HOUSEHOLD THAT DIED IN THE OPEN LEFT NO HOUSE (D381). For a roofless family this
+    /// returned any dead household: Joe's log has *"moved into the empty house at  —"* (a null
+    /// position, narrated blank) twice in one winter, the family stayed in the open, and it
+    /// <c>continue</c>d past the site-chooser every day it did. A roofless family takes a house.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A new couple still takes over ANY dead household, and that is load-bearing, not
+    /// leniency.</b> The couple inherits the household object — its id, its larder, its site if
+    /// one is being raised — and <c>HouseTheRoofless</c> sites them next day if not. Measured
+    /// when D381 first required a house here too: dead households stopped being reused and
+    /// piled up (22 → 29 in two hundred fixture years, 4 → 13 dead), every per-tick loop over
+    /// households × villagers grew with them, and the suite went 2m28 → 4m01 with nothing
+    /// failing. The reuse is the only thing that ever retires a dead household.
+    /// </para>
+    /// </remarks>
+    private static Household? FindAnEmptyHome(SimWorld world, bool aHouseOnly)
     {
         for (int i = 0; i < world.Households.Count; i++)
         {
-            if (world.LivingMembersOf(world.Households[i]) == 0)
+            Household candidate = world.Households[i];
+            if (world.LivingMembersOf(candidate) == 0 && (candidate.HasHome || !aHouseOnly))
             {
-                return world.Households[i];
+                return candidate;
             }
         }
 

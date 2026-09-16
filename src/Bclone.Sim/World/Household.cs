@@ -135,97 +135,84 @@ public sealed class Household
     {
         ArgumentNullException.ThrowIfNull(world);
 
-        Config.SimConfig config = world.Config;
-
-        // How far out to LOOK, which is the one bound that has to stay. Every tile in the
-        // valley would be correct and would scan nine thousand of them per house; this is
-        // the distance the economy budgets for, so it is the right place to stop looking
-        // even though it is no longer the place to stop building.
-        int search = VillageEconomy.MaxHomeToVillageTiles(config);
-
+        // ⛔⛔ THE PAINT, NOT A BOX (D381). This scanned a square of ±`MaxHomeToVillageTiles`
+        // round the founding site — described as "the one bound that has to stay", a search
+        // bound rather than a refusal. It refused: Joe painted a neighbourhood twelve tiles from
+        // the cart at tick 1, nothing in the valley ever looked at it, and the village told him
+        // to "paint some land for houses" every day until the last founder froze in Winter Year 1.
+        // D120 says distance no longer refuses a home; the box was that refusal under another
+        // name. The zone map keeps the whole-painted tiles as an index now, so this walks the
+        // paint wherever it is — a far home is scored, chosen if it is the best there is, and
+        // costs the food it costs (D120, D43's warning at the brush).
         GridPos best = default;
         int bestScore = int.MaxValue;
         int bestFromVillage = int.MaxValue;
         bool found = false;
+        int builtOn = 0;
+        int cutOff = 0;
 
-        // A fixed scan order, so an exact tie always resolves the same way. An
-        // unordered tie between two equally good sites is a desync waiting to happen.
-        for (int dy = -search; dy <= search; dy++)
+        // Row order (Y then X — the zone map's set is sorted so), which is the order the old box
+        // walked, so an exact tie still resolves the same way. An unordered tie between two
+        // equally good sites is a desync waiting to happen.
+        foreach (GridPos candidate in world.Zones.WholeResidentialTiles)
         {
-            for (int dx = -search; dx <= search; dx++)
+            // ⛔⛔ "INSIDE" MEANS THE WHOLE TILE, NOT HALF OF IT (D350). A tile is residential at
+            // eight of sixteen quarters (D335) — the economy's threshold — and a house is drawn on
+            // the whole tile, so a house on a half-painted edge tile stood 0.4 of a tile past the
+            // line the player drew. Joe, with a screenshot of two sites straddling his border:
+            // *"the houses are building outside of the painted area. that shouldn't happen."*
+            // The brush's ragged rim is a margin nobody builds on — the index holds whole tiles only.
+            if (!world.Map.Contains(candidate) || world.Map.TerrainAt(candidate) == Terrain.Water)
             {
-                var candidate = new GridPos(villageCentre.X + dx, villageCentre.Y + dy);
+                continue;
+            }
 
-                // INSIDE WHAT THE PLAYER PAINTED (D42). The sim still picks the tile —
-                // it knows the walk to work and the walk to the store, and a cursor
-                // does not — but it only looks where it has been told it may.
-                //
-                // ⛔⛔ AND "INSIDE" MEANS THE WHOLE TILE, NOT HALF OF IT (D350). A tile is
-                // residential at eight of sixteen quarters (D335) — the economy's threshold — and
-                // a house is drawn on the whole tile, so a house on a half-painted edge tile
-                // stood 0.4 of a tile past the line the player drew. Joe, with a screenshot of
-                // two sites straddling his border: *"the houses are building outside of the
-                // painted area. that shouldn't happen."* The brush's ragged rim is a margin
-                // nobody builds on. `IsResidential` and its count keep their meaning for
-                // everyone else; only the siting asks the stricter question.
-                if (world.Zones.ResidentialSubTilesOn(candidate) < SubTile.PerWholeTile
-                    || !world.Map.Contains(candidate)
-                    || world.Map.TerrainAt(candidate) == Terrain.Water
-                    || world.SomethingStandsAt(candidate))
-                {
-                    continue;
-                }
+            if (world.SomethingStandsAt(candidate))
+            {
+                builtOn++;
+                continue;
+            }
 
-                // ⭐ THE BOUND IS A BUDGET NOW, NOT A REFUSAL (`forests-and-gathering.md
-                // §3.2`). This used to be `if (toWork > reach) continue;` — ground beyond the
-                // economy's budget was simply not offered, which is the same fence catchment
-                // was, applied to where you may live rather than where you may work.
-                //
-                // It still SCORES, which is what actually shapes a village: the sum below
-                // picks the nearest workable spot every time. What has gone is the cliff at
-                // the edge of the budget. **A home beyond it is allowed, and it costs food** —
-                // the villager really does walk further and really does make fewer trips, and
-                // `MarkResidential` already warns the player in exactly those terms (D43).
-                //
-                // ⚠️ Unreachable is still refused, and that is not the same thing: no walk at
-                // all is a fact about the valley, not a long walk (D111).
-                int toWork = NearestWorkDistance(world, candidate);
-                if (toWork == int.MaxValue)
-                {
-                    continue;
-                }
+            // ⭐ THE BOUND IS A BUDGET NOW, NOT A REFUSAL (`forests-and-gathering.md §3.2`,
+            // D120): distance SCORES, which is what actually shapes a village — the sum below
+            // picks the nearest workable spot every time. **A home beyond the budget is allowed,
+            // and it costs food** — the villager really does walk further and really does make
+            // fewer trips, and `CanPaintResidential` already warns the player in exactly those
+            // terms (D43).
+            //
+            // ⚠️ Unreachable is still refused, and that is not the same thing: no walk at all is
+            // a fact about the valley, not a long walk (D111).
+            int toWork = NearestWorkDistance(world, candidate);
+            if (toWork == int.MaxValue)
+            {
+                cutOff++;
+                continue;
+            }
 
-                // Nearest granary, not "the" granary — a home wants to be near a place
-                // it can fetch food from, and with several the right one is whichever
-                // is closest to this spot.
-                int toStore = NearestStoreDistance(world, candidate, StoreKind.Granary);
-                if (toStore == int.MaxValue)
-                {
-                    continue;
-                }
+            // Nearest granary, not "the" granary — a home wants to be near a place it can fetch
+            // food from, and with several the right one is whichever is closest to this spot.
+            int toStore = NearestStoreDistance(world, candidate, StoreKind.Granary);
+            if (toStore == int.MaxValue)
+            {
+                cutOff++;
+                continue;
+            }
 
-                int score = toWork + toStore;
+            int score = toWork + toStore;
 
-                // TIES GO TO THE TILE NEAREST THE VILLAGE.
-                //
-                // The score is a sum of two distances, so every tile on a shortest
-                // path between the work and the granary scores identically — which is
-                // most of the plausible sites. Left to "whichever the scan reached
-                // first" the winner is real but arbitrary, and it pushed homes out to
-                // whichever end of that path the loop happened to start from.
-                //
-                // Breaking toward the centre keeps the settlement compact, which is
-                // what a village actually does, and it is what makes the market and
-                // the granary worth standing where they stand.
-                int fromVillage = candidate.ManhattanDistanceTo(villageCentre);
+            // TIES GO TO THE TILE NEAREST THE VILLAGE. The score is a sum of two distances, so
+            // every tile on a shortest path between the work and the granary scores identically
+            // — which is most of the plausible sites. Breaking toward the centre keeps the
+            // settlement compact, which is what a village actually does, and it is what makes
+            // the market and the granary worth standing where they stand.
+            int fromVillage = candidate.ManhattanDistanceTo(villageCentre);
 
-                if (score < bestScore || (score == bestScore && fromVillage < bestFromVillage))
-                {
-                    bestScore = score;
-                    bestFromVillage = fromVillage;
-                    best = candidate;
-                    found = true;
-                }
+            if (score < bestScore || (score == bestScore && fromVillage < bestFromVillage))
+            {
+                bestScore = score;
+                bestFromVillage = fromVillage;
+                best = candidate;
+                found = true;
             }
         }
 
@@ -234,22 +221,39 @@ public sealed class Household
             return best;
         }
 
-        // Nowhere left in the painted land. A real and legible constraint, and the one
-        // the brush exists to create: the village has filled the neighbourhood it was
-        // given and needs the player to say where the next one goes (D42).
-        //
-        // ⚠️ IT MEANS SOMETHING NARROWER THAN IT USED TO, so it says something narrower.
-        // With the distance bound demoted to a budget, this is no longer "every spot within
-        // N tiles of work is taken" — distance cannot exclude a tile any more. What is left
-        // is genuinely full or genuinely unreachable, and telling the player to look at a
-        // distance would send them to fix the wrong thing.
+        // Nowhere in the painted land — and SAY WHICH WAY nowhere (D381). The old sentence
+        // ("every one of them is already built on, cut off from the village, or painted only in
+        // part") listed every possible reason and named none; the one the player sees now is
+        // the count of each, which is what they can act on. With the box gone these three are
+        // the only ways a painted tile can fail, so a village that says "none can take one" is
+        // telling the truth.
+        int painted = world.Zones.ResidentialTiles;
+        int whole = world.Zones.WholeResidentialTiles.Count;
+        if (painted == 0)
+        {
+            throw new NoRoomToBuildException("nothing is painted for houses yet");
+        }
+
+        var reasons = new List<string>();
+        if (builtOn > 0)
+        {
+            reasons.Add($"{builtOn} built on already");
+        }
+
+        if (cutOff > 0)
+        {
+            reasons.Add($"{cutOff} cut off from the village");
+        }
+
+        if (painted > whole)
+        {
+            reasons.Add($"{painted - whole} painted only in part (a home needs a whole tile)");
+        }
+
         throw new NoRoomToBuildException(
-            $"no room left in the residential land — {world.Zones.ResidentialTiles} tiles painted, "
-            + "and every one of them is already built on, cut off from the village, or painted "
-            + "only in part (a home needs a whole tile)");
+            $"{painted} tiles are painted for houses and none can take one: {string.Join(", ", reasons)}");
     }
 
-    /// <summary>Distance to the nearest store of a kind, or <c>int.MaxValue</c>.</summary>
     private static int NearestStoreDistance(Core.SimWorld world, GridPos from, StoreKind kind)
     {
         int nearest = int.MaxValue;

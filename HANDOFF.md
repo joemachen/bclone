@@ -1,6 +1,26 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT AND PLAYED TWICE (D376–D380: THE CARDS, ONE PANEL PER STRUCTURE, THE TWO TOP BARS, TWO ROUNDS OF JOE'S NOTES). D378–D380 PUSHED AT JOE'S WORD (2026-09-15, "push!"); D380 ITSELF UNPLAYED. NEXT: FOOTPRINTS PER BUILDING TYPE.**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT (D376–D380, PUSHED); D381 FIXED THE HOUSING BUG THAT KILLED JOE'S VILLAGE (THE SITE-CHOOSER'S BOX), COMMITTED, NOT PUSHED. NEXT: HIS PLAY, THEN FOOTPRINTS PER BUILDING TYPE.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D380.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D381.**
+>
+> **The state:** `main` = D381's commit on `c10b06c` (= `origin/main`, D380 + handoff); **D381 is
+> committed, NOT pushed — Joe pushes.** Working tree clean. **Joe played D380 and his village
+> froze in Winter Year 1 with housing painted at tick 1** — *"Why didnt they build homes?"* —
+> and that is D381: `Household.ChooseSite` scanned a ±8 box round the founding and never looked
+> at paint outside it (his circle was ~12 tiles out), while the warning said *"paint some land"*.
+> It walks `ZoneMap.WholeResidentialTiles` now (a sorted, unhashed index), the warning counts what
+> is wrong, and a dead homeless household is no longer an "empty house" a family moves into (his
+> log: *"moved into the empty house at  —"*, blank, twice). ⚠️ **Sim change — no golden moved — the fixture's fifty-year hash moved under the first cut and is byte-identical again.** Suite
+> **1144 passing, 0 failing, 2 skipped of 1146, 2m41**; probe green; view 0 warnings. Read D381 in §7 before touching `ChooseSite`.
+>
+> **⚠️ For Joe when he plays D381:** paint housing anywhere reachable — near or far — and a house
+> should be marked within a day (4 ticks); a far one costs food, as D120 says, and the brush warns
+> about the walk to food only when a forager's hut exists to measure it. If the village still
+> says *nowhere to build*, the sentence now says how many tiles are built on / cut off / part-
+> painted — that is the thing to quote.
+>
+> *(D380's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-15, AFTER D380.**
 >
 > **The state:** `main` = D380's commit on D379's (`fb9ac1a`) on D378's (`05f8e05`) on `e218419`
 > (D377); **pushed — `main` = `origin/main` = `96ca39d`, Joe: *"push!"*.** Working tree clean. **Joe played D379** (*"grip
@@ -808,6 +828,27 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     Settings was sized 680 → 640 → 600 logical to clear the control bar when centred, and the
     first two misses were the 37 px header left out of the arithmetic. Measure the drawn extent
     off the screenshot (a column scan with PIL takes a minute) before typing a third number.
+69. **⛔⛔ A "SEARCH BOUND" OVER PLAYER-PAINTED GROUND IS A REFUSAL (D381).** `ChooseSite` scanned
+    ±8 round the founding, its comment calling that *"the one bound that has to stay"* and *"no
+    longer the place to stop building"* in the same breath. Paint twelve tiles out was never
+    looked at; the warning said *"paint some land"*; four founders froze. The log records what
+    the chooser CHOSE, never what it never considered — **the way to find a bound like this is to
+    ask the chooser about every tile and draw the answer** (a 25×25 map of `#` and `.` took ten
+    minutes and was the whole diagnosis). Any chooser over painted ground walks the paint's
+    index, never a window round a point.
+70. **⚠️ "MOVED INTO THE EMPTY HOUSE AT  —" IS A NULL IN A SENTENCE (D381).** A blank where a
+    position should be is a bug announcing itself; `FindAnEmptyHome` returned dead households
+    with no house. When a narrated line has a hole in it, the hole is the finding.
+71. **⛔⛔ A RULE THAT LOOKS LIKE LENIENCY MAY BE THE ONLY GARBAGE COLLECTOR (D381).** A new
+    couple taking over *any* dead household — house or not — read as sloppy and was tightened
+    to "a house, or a site being raised". Every guard stayed green; the fixture golden moved;
+    the suite went 2m28 → 4m01–4m55 with every long run roughly doubled. Dead households are
+    never removed from `world.Households`; the couple's take-over is the only thing that reuses
+    one, and without it they accumulated (22 → 29 households, 4 → 13 dead, at 200 fixture
+    years) and every households × villagers loop grew for three hundred years. **Before
+    tightening a reuse rule, ask what retires the thing it reuses** — and read the suite's
+    clock, which was the only instrument that reported this. Diagnosed by counting: the chooser
+    ran 29 times in two hundred years, so it was never the cost.
 57. **⚠️ A TOP-LEVEL CONTROL NEVER SHRINKS ON ITS OWN (D376).** A `PanelContainer` added straight
     to the scene grows to its minimum and keeps that size when its contents shrink — the first
     cards carried the room a hidden people list had taken. Reset `Size` to the width after every

@@ -377,6 +377,41 @@ public sealed class ColdStartTests
     /// use the fixture; this one must not.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// ⛔ A household that died in the open left no house for anyone to move into (D381).
+    /// </summary>
+    /// <remarks>
+    /// Joe's log, Winter Year 1, twice: *"The Thatcher household moved into the empty house at  —"*
+    /// — a blank position. `FindAnEmptyHome` returned any dead household, homed or not, and the
+    /// roofless family "moved into" nothing and stayed in the open. And with nothing painted,
+    /// the warning said *"paint some land for houses"* to a player who had; it says what is
+    /// actually wrong now.
+    /// </remarks>
+    [Fact]
+    public void ADeadHouseholdWithNoHouseIsNotAnEmptyHouse()
+    {
+        SimConfig config = ShippedConfig.Load();
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimWorld world = loop.World;
+
+        Household gone = world.Households[0];
+        Assert.False(gone.HasHome, "A cold start arrives roofless.");
+        foreach (int id in gone.MemberIds)
+        {
+            world.FindVillager(id)!.Alive = false;
+        }
+
+        loop.Step(config.TicksPerDay * 3);
+
+        Assert.DoesNotContain(sink.Entries, e => e.Message.Contains("moved into the empty house"));
+        Assert.True(world.Households.Exists(h => world.LivingMembersOf(h) > 0 && !h.HasHome),
+            "The living household is still roofless — there is no house to take.");
+        LogEntry? warned = sink.Entries.FirstOrDefault(e => e.Message.Contains("nowhere to build"));
+        Assert.NotNull(warned);
+        Assert.Contains("nothing is painted for houses yet", warned.Message);
+    }
+
     [Fact]
     public void JoesOpeningSurvivesOnTheShippedConfig()
     {
