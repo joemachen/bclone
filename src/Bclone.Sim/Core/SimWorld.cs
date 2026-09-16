@@ -4826,6 +4826,56 @@ public sealed class SimWorld
     /// appear on the card either (`storage-and-distribution.md §14.9.3`). <c>null</c> hands the
     /// good back to the derived number.
     /// </remarks>
+    /// <summary>The longest name a player may give a building or a household (D376).</summary>
+    public const int NameLengthLimit = 40;
+
+    /// <summary>Give a building the player's name (D376, Joe: *"the ability to rename the building"*).</summary>
+    /// <remarks>
+    /// Blank hands the name it was born with back; whitespace is trimmed; longer than
+    /// <see cref="NameLengthLimit"/> is refused with the reason. The log says so, because a
+    /// sentence a season later will use the new name and the player should be able to find where
+    /// it came from.
+    /// </remarks>
+    public PlacementVerdict Rename(StoreBuilding store, string? name)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        return Rename(name, store.Name, store.BornAs, store.Rename);
+    }
+
+    /// <inheritdoc cref="Rename(StoreBuilding, string?)"/>
+    public PlacementVerdict Rename(Workplace workplace, string? name)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        return Rename(name, workplace.Name, workplace.BornAs, workplace.Rename);
+    }
+
+    /// <inheritdoc cref="Rename(StoreBuilding, string?)"/>
+    public PlacementVerdict Rename(Household household, string? name)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        return Rename(name, household.Name, household.BornAs, household.Rename);
+    }
+
+    private PlacementVerdict Rename(string? typed, string was, string bornAs, Action<string?> give)
+    {
+        string trimmed = (typed ?? string.Empty).Trim();
+        if (trimmed.Length > NameLengthLimit)
+        {
+            return PlacementVerdict.No($"A name can be {NameLengthLimit} letters at most; that one is {trimmed.Length}.");
+        }
+
+        string? given = trimmed.Length == 0 ? null : trimmed;
+        give(given);
+
+        string now = given ?? bornAs;
+        if (now != was)
+        {
+            Log(Logging.LogLevel.Info, "village", $"{was} is called {now} now. {Clock.SeasonAndYear()}.");
+        }
+
+        return PlacementVerdict.Fine;
+    }
+
     public PlacementVerdict SetMarketLimit(StoreBuilding market, Goods goods, int? limit)
     {
         ArgumentNullException.ThrowIfNull(market);

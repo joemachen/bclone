@@ -64,7 +64,7 @@ public partial class VillageMap : Control
     private static readonly Color Beyond = new("#202625");
     private static readonly Color ValleyEdge = new("#485453");
     private static readonly Color GridLine = new("#343d3d");
-    private static readonly Color HomeColour = new("#b98a52");
+    internal static readonly Color HomeColour = new("#b98a52");
     private static readonly Color GranaryColour = new("#d8c56a");
     private static readonly Color WarehouseColour = new("#8a7a63");
     private static readonly Color BerryColour = new("#5aa04a");
@@ -195,6 +195,20 @@ public partial class VillageMap : Control
     /// doing well at something — and §1.1 wants the player to look, not to panic.
     /// </remarks>
     private static readonly Color FullStoreColour = new("#e8a13c");
+
+    /// <summary>The ring a full store wears, for a card's picture (D376).</summary>
+    internal static Color FullStoreRing => FullStoreColour;
+
+    /// <summary>The ring an idle workplace wears, for a card's picture (D376).</summary>
+    internal static Color IdleWorkplaceRing => IdleWorkplaceColour;
+
+    /// <summary>A store's map colour, for a card's picture (D376).</summary>
+    internal static Color ColourOf(StoreKind kind) => kind switch
+    {
+        StoreKind.Granary => GranaryColour,
+        StoreKind.Warehouse => WarehouseColour,
+        _ => MarketColour,
+    };
 
     /// <summary>The ring round a workplace that cannot do its job (D147).</summary>
     /// <remarks>
@@ -1967,13 +1981,23 @@ public partial class VillageMap : Control
         float heightTiles,
         ushort facing,
         float from = 0f,
+        float to = 1f) => FootprintQuadAt(centre, widthTiles, heightTiles, facing, _pixelsPerTile, from, to);
+
+    /// <summary>The same quad at any scale — a card's picture draws the building with it (D376).</summary>
+    internal static Vector2[] FootprintQuadAt(
+        Vector2 centre,
+        float widthTiles,
+        float heightTiles,
+        ushort facing,
+        float pixelsPerTile,
+        float from = 0f,
         float to = 1f)
     {
         float radians = facing * Mathf.Tau / 65536f;
         float cos = Mathf.Cos(radians);
         float sin = Mathf.Sin(radians);
-        float halfWidth = widthTiles * _pixelsPerTile / 2f;
-        float halfHeight = heightTiles * _pixelsPerTile / 2f;
+        float halfWidth = widthTiles * pixelsPerTile / 2f;
+        float halfHeight = heightTiles * pixelsPerTile / 2f;
 
         float top = Mathf.Lerp(-halfHeight, halfHeight, from);
         float bottom = Mathf.Lerp(-halfHeight, halfHeight, to);

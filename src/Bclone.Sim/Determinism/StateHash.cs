@@ -204,6 +204,7 @@ public static class StateHash
         {
             Household household = world.Households[i];
             hash = MixUInt32(hash, (uint)household.Id);
+            hash = MixGivenName(hash, household.GivenName);
             hash = MixUInt32(hash, (uint)household.LastBirthYear);
 
             // Whether the household is mid-way through topping its larder back up (D372) — a
@@ -259,6 +260,7 @@ public static class StateHash
         {
             Workplace workplace = world.Workplaces[i];
             hash = MixUInt32(hash, (uint)workplace.Id);
+            hash = MixGivenName(hash, workplace.GivenName);
 
             // ⛔⛔ WHERE IT STANDS AND WHICH WAY IT IS TURNED — AND NEITHER WAS HASHED UNTIL D329.
             // **A building could be raised, moved or pulled down and the fingerprint would not
@@ -355,6 +357,7 @@ public static class StateHash
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             hash = MixUInt32(hash, (uint)world.StoreBuildings[i].Id);
+            hash = MixGivenName(hash, world.StoreBuildings[i].GivenName);
 
             // Where it stands and how it is turned (D329) — see the workplace block above for why
             // this was missing, why it cannot be sparse, and why the extent is not here.
@@ -800,6 +803,27 @@ public static class StateHash
     }
 
     /// <summary>Mix eight bytes, low byte first, into the running hash.</summary>
+    /// <summary>
+    /// A name the player typed (D376) — <b>sparse</b>: null mixes nothing, so a village where
+    /// nobody renamed anything hashes as it did before renaming existed; a given name mixes its
+    /// length and every character, so two villages that disagree about a name read differently.
+    /// </summary>
+    private static ulong MixGivenName(ulong hash, string? name)
+    {
+        if (name is null)
+        {
+            return hash;
+        }
+
+        hash = MixUInt32(hash, (uint)name.Length);
+        for (int i = 0; i < name.Length; i++)
+        {
+            hash = MixUInt32(hash, name[i]);
+        }
+
+        return hash;
+    }
+
     public static ulong MixUInt64(ulong hash, ulong value)
     {
         for (int i = 0; i < 8; i++)

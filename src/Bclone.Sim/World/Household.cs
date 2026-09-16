@@ -22,8 +22,26 @@ public sealed class Household
 {
     public required int Id { get; init; }
 
-    /// <summary>A family name, so a household reads as people rather than "Household 3".</summary>
-    public required string Name { get; init; }
+
+    private string _name = string.Empty;
+
+    /// <summary>
+    /// What the village calls it. Born with a place name; the player may give it another
+    /// (D376) — ⛔ only through <c>SimWorld.Rename</c>, which validates and logs.
+    /// </summary>
+    public required string Name
+    {
+        get => _name;
+        init { _name = value; BornAs = value; }
+    }
+
+    /// <summary>The name it was founded with — what a blank rename hands back.</summary>
+    public string BornAs { get; private set; } = string.Empty;
+
+    /// <summary>The player's name for it, or null while it carries the one it was born with — hashed sparsely.</summary>
+    public string? GivenName => _name == BornAs ? null : _name;
+
+    internal void Rename(string? given) => _name = given ?? BornAs;
 
     /// <summary>
     /// Where this family's house stands, or <c>null</c> if they have not got one yet.

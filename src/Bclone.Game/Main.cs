@@ -281,6 +281,7 @@ public partial class Main : Control
 
         ProbePanelWidths("at the founding");
         GD.Print(TheProfessionWarningsAreHonest());
+        GD.Print(TheCardsHoldTheirShape());
 
         // ⭐⭐ THE TWO SELF-SCROLLING PANELS, MEASURED — because they are the two that can hold
         // their content correctly and draw NONE of it. Both were `size 288x0` for the life of
@@ -1648,6 +1649,7 @@ public partial class Main : Control
         RefreshTheTownHallButton(world);
 
         _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
+        RefreshCards(world);
 
         ShowTheFrameCost();
         CentreSettingsIfItJustOpened();
@@ -2140,125 +2142,12 @@ public partial class Main : Control
             return;
         }
 
-        Household household = world.HouseholdOf(villager);
-        Workplace? workplace = world.FindWorkplace(villager.WorkplaceId);
-
-        int hungerPercent = world.Config.HungerMax == 0
-            ? 0
-            : villager.Hunger * 100 / world.Config.HungerMax;
-
-        var lines = new List<string>
-        {
-            $"{villager.Name}, aged {villager.AgeYears}",
-            villager.Alive ? $"Currently: {villager.DescribeState(workplace?.Name)}" : "Dead.",
-            $"Household: the {household.Name} household "
-                + $"({_loop.World.FoodIn(household.Stockpile)} food, " +
-                $"{household.Stockpile.Firewood} firewood, {household.Stockpile.Logs} logs)",
-            $"Hunger: {hungerPercent}%",
-        };
-
-        // Why someone with a job is sitting at home. Before the woodcutter's hut this
-        // never had an interesting answer; now a manned building can be idle for want
-        // of logs, and that has to be readable (D29).
-        if (!string.IsNullOrWhiteSpace(villager.WorkNote))
-        {
-            lines.Add(villager.WorkNote);
-        }
-
-        // ⭐ WHAT THE WALK COSTS THEM, and this panel is where deleting catchment is paid
-        // for (spec §7.1). The fence used to make a ruinous commute impossible; with it gone
-        // the village can quietly thin out because half its hands are on the road, and a
-        // sentence on the person doing the walking is the only thing that makes that fair
-        // rather than merely hard. Empty for an ordinary commute, so it means something when
-        // it is there.
-        if (!string.IsNullOrWhiteSpace(villager.CommuteNote))
-        {
-            lines.Add(villager.CommuteNote);
-        }
-
-        if (villager.Stage != VigourStage.Prime)
-        {
-            lines.Add(villager.Stage == VigourStage.Frail
-                ? $"Vigour: {villager.Vigour}% — frail; every trip brings back less"
-                : $"Vigour: {villager.Vigour}% — past their strongest years");
-        }
-
+        // ⭐ THE PERSON IS THEIR CARD NOW (D376): what they are doing, their age, trade and
+        // household are on it. What stays here is what the card has no room for and the player
+        // must still be able to read — the trades they have learned (D174, Phase 3) — under one
+        // line naming whose settings these are.
+        var lines = new List<string> { $"Settings for {villager.Name} — the card says the rest." };
         DescribeTheirTrades(world, villager, lines);
-
-        // ⭐⭐ AND WHAT GOES WITH THEM IF NOBODY LEARNS IT (`skills-catalog.md §7`, D195).
-        // The village log says this once when it becomes true; the panel says it for as long as
-        // it IS true, because the player who clicked on Mabel is exactly the player who can act
-        // on it. **Both read `SimWorld.KnowledgeAtRiskNote`** — D147's rule for `IdleNote`, and
-        // the reason is that two copies of one condition is how the log and the panel come to
-        // disagree about who is at risk (D142, D148).
-        if (world.KnowledgeAtRiskNote(villager) is string atRisk)
-        {
-            lines.Add(atRisk);
-        }
-
-        if (villager.IsPaired)
-        {
-            Villager? partner = world.FindVillager(villager.PartnerId);
-            if (partner is not null)
-            {
-                lines.Add($"Partner: {partner.Name}");
-            }
-        }
-
-        // ⭐⭐ WHAT THIS PERSON HAS WORKED OUT (Joe, 2026-08-27: *"if a villager has unlocked a
-        // technique, it should be highlighted in their 'inspector' going forward"*).
-        //
-        // ⛔ **The sim knew this all along and had no way to be asked.** `KnowledgeStates` says
-        // what the VILLAGE has and `SkillProgress` says what a PERSON has mastered; nothing
-        // joined them, so the one screen about a particular villager could not say the one thing
-        // that makes them irreplaceable. **A technique was a village-level fact with a person's
-        // name in the log entry and nowhere else** — the sixth instance of a sim feature the view
-        // could not reach, and the first that needed a query rather than a button.
-        //
-        // ⭐ THE AT-RISK HALF IS WHAT MAKES IT ACTIONABLE, not the list. Knowing Mabel understands
-        // coppicing is pleasant; knowing she is the ONLY one is a decision — put somebody beside
-        // her, or build a library — and it is the same claim `KnowledgeAtRiskNote` makes about a
-        // skill, one level up (D195).
-        List<TechniqueRow> carried = world.TechniquesCarriedBy(villager);
-        if (carried.Count > 0)
-        {
-            lines.Add(string.Empty);
-            lines.Add(carried.Count == 1 ? "Knows a technique:" : "Knows techniques:");
-
-            foreach (TechniqueRow technique in carried)
-            {
-                lines.Add(world.IsOnlyCarrierOf(villager, technique)
-                    ? $"  ★ {technique.Name} — and nobody else alive knows it"
-                    : $"  ★ {technique.Name}");
-            }
-
-            // ⚠️ Said once for the person rather than once per technique: a villager holding
-            // three unwritten techniques does not need the remedy three times.
-            bool anyUnwritten = false;
-            foreach (TechniqueRow technique in carried)
-            {
-                if (!world.IsWrittenDown(technique.Id))
-                {
-                    anyUnwritten = true;
-                    break;
-                }
-            }
-
-            if (anyUnwritten)
-            {
-                lines.Add("  Not all of it is written down — a library keeps what a life cannot.");
-            }
-        }
-
-        lines.Add(string.Empty);
-        lines.Add(workplace is null ? "Work: none" : $"Work: {workplace.Name}");
-
-        // The phase's actual deliverable: a straight answer to "why this job?".
-        if (!string.IsNullOrWhiteSpace(villager.JobReason))
-        {
-            lines.Add($"Why: {villager.JobReason}");
-        }
-
         _inspector.Text = string.Join("\n", lines);
     }
 
@@ -2286,6 +2175,13 @@ public partial class Main : Control
         // Clearing the tile is what makes the inspector describe the person rather than
         // the doorstep they are standing on: RefreshInspector reads the tile first.
         _selectedTile = null;
+
+        // ⭐ AND THE PERSON GETS A CARD (D376) — the card is what you read now.
+        if (villagerId != 0 && _loop.World.FindVillager(villagerId) is { Alive: true })
+        {
+            OpenCard(new CardSubject(CardKind.Villager, villagerId));
+        }
+
         RefreshInspector(_loop.World);
     }
 
@@ -2364,7 +2260,24 @@ public partial class Main : Control
         _selectedTile = tile;
         _selectedVillagerId = 0;
         _roster.DeselectAll();
-        RefreshInspector(_loop.World);
+
+        // ⭐ A CARD FOR WHAT WAS CLICKED (D376): a store, a workplace or a home; bare ground still
+        // reads in the Settings panel's line and opens nothing.
+        SimWorld world = _loop.World;
+        if (world.StoreAt(tile) is StoreBuilding store)
+        {
+            OpenCard(new CardSubject(CardKind.Store, store.Id));
+        }
+        else if (world.WorkplaceCovering(tile) is Workplace place)
+        {
+            OpenCard(new CardSubject(CardKind.Workplace, place.Id));
+        }
+        else if (world.HouseholdAt(tile) is Household home)
+        {
+            OpenCard(new CardSubject(CardKind.Household, home.Id));
+        }
+
+        RefreshInspector(world);
     }
 
     // ---------------------------------------------------------------
@@ -2394,6 +2307,10 @@ public partial class Main : Control
     {
         var lines = new List<string>();
 
+        // ⭐ A BUILDING IS ITS CARD NOW (D376). This panel keeps the controls; one line says which
+        // building they are for. Joe: *"such a mess of stacked sentences i dont even know what to
+        // read. Remove text where you can."* Bare ground, the library and the hall still read here.
+
         // ⭐ THE STORE FIRST, THEN WHO WORKS IT (D350). A market is both, and described stall-first
         // its `Holding:` line — the one sentence a store exists to say — came eleventh, below the
         // fold of a panel that gave no sign there was more. Joe: *"the market doesn't tell how many
@@ -2402,7 +2319,7 @@ public partial class Main : Control
         {
             if (store.Footprint.Covers(tile))
             {
-                DescribeStore(world, store, lines);
+                lines.Add($"Settings for {store.Name} — its card says the rest.");
             }
         }
 
@@ -2410,13 +2327,13 @@ public partial class Main : Control
         {
             if (workplace.Footprint.Covers(tile))
             {
-                DescribeWorkplace(world, workplace, lines);
+                lines.Add($"Settings for {workplace.Name} — its card says the rest.");
             }
         }
 
         if (world.HouseholdAt(tile) is Household household)
         {
-            DescribeHome(world, household, lines);
+            lines.Add($"Settings for the {household.Name} household — its card says the rest.");
         }
 
         // ⛔⛔ THE FOURTH LIST, AND LEAVING IT OUT MADE A FINISHED LIBRARY READ AS "OPEN GROUND"
@@ -2474,250 +2391,6 @@ public partial class Main : Control
             3 => $"{number}rd",
             _ => $"{number}th",
         };
-    }
-
-    private static void DescribeWorkplace(SimWorld world, Workplace workplace, List<string> lines)
-    {
-        Separate(lines);
-
-        // A site under construction is a different thing from the building it will
-        // become, and saying "the granary" of a patch of pegged-out ground would be a
-        // small lie the player would have to un-learn.
-        if (workplace.Construction is ConstructionSite site)
-        {
-            lines.Add($"{site.Name} — under construction");
-            // ⭐ EVERY MATERIAL, NAMED BY THE CATALOGUE (D213). This read one good and one
-            // number, so a site short of stone reported all its timber delivered and looked
-            // finished while nothing moved — §1.1 failing in the player's favour, which is
-            // still failing.
-            lines.Add(site.HasMaterials
-                ? $"Materials: all of {site.Recipe.Describe(world.GoodsCatalog)} delivered"
-                : $"Materials: still wants "
-                  + $"{site.DescribeWhatIsMissing(world.GoodsCatalog)} of "
-                  + $"{site.Recipe.Describe(world.GoodsCatalog)}");
-            lines.Add($"Work: {site.WorkDone} of {site.Recipe.WorkTicks} ticks done");
-
-            // ⭐ WHERE IT IS IN THE QUEUE, AND WHAT IS AHEAD OF IT (Joe). A site sitting at
-            // "0 of 30 ticks" with nobody on it is the opaque stall D93 rules out twice: the
-            // player can only act on it — by freeing a hand, or by cancelling something —
-            // if they can see WHAT is in front of it.
-            //
-            // The number is the real order the village works in, not a display convention.
-            List<Workplace> queue = world.BuildQueue();
-            int place = world.QueuePositionOf(workplace);
-            if (place > 0)
-            {
-                lines.Add(place == 1
-                    ? $"Queue: 1st of {queue.Count} — nothing is ahead of it."
-                    : $"Queue: {Ordinal(place)} of {queue.Count} — "
-                        + $"{queue[place - 2].Construction!.Name} is immediately ahead of it.");
-            }
-
-            // And the ground, which is the other thing that can stop it dead (D101).
-            if (!world.GroundIsClearAt(workplace.Tile))
-            {
-                lines.Add("Waiting: the ground it stands on is still being cleared.");
-            }
-
-            // ⭐⭐ AND THE THING THAT ACTUALLY STOPPED JOE'S GRANARY FOR TWENTY-ONE YEARS
-            // (2026-08-27). "Materials: still wants 10 stone" above is true and is not the
-            // answer — it says WHAT is missing, never that the village has no way to get it.
-            // His granary read exactly that line every year from 23 to 44 while nobody ever
-            // went to a seam.
-            //
-            // ⭐ THE SAME METHOD THE VILLAGE LOG USES, so the two cannot disagree — D195's
-            // rule for the at-risk line, and the reason it is one method rather than two
-            // sentences. Narrated once on the edge, shown here for as long as it is true.
-            if (world.SiteWaitingNote(workplace) is string stalled)
-            {
-                lines.Add(stalled);
-            }
-
-            // ⭐ A SITE HAS NOBODY POSTED TO IT ANY MORE (D108), so it must not go on to the
-            // staffing lines below — they would read "Nobody works here. Room for 0", which
-            // is true of a place nobody can ever be posted to and is the wrong answer to the
-            // question the player is asking. What they want to know is whether anybody is
-            // coming, and the honest answer is about the hut.
-            lines.Add(world.HasABuildersHut()
-                ? "Raised by the builders, who walk out to it from their hut — a site is an "
-                    + "errand, not a place anybody is posted to."
-                : "Nobody in the village builds, so nothing will be raised here. A builder's "
-                    + "hut costs nothing but the ground it stands on.");
-
-            return;
-        }
-
-        lines.Add($"{workplace.Name} — a workplace ({Describe(workplace.Kind)})");
-
-        // ⭐⭐ WHO IS HERE, AND — WHEN NOBODY IS, OR WHEN THEY HAVE NOTHING TO DO — WHY
-        // (Joe, 2026-08-30). *"I dont like that because the village 'wants' 0 of a type of work,
-        // the workplace shows as unstaffed, even though it is staffed and the worker is just
-        // idle … show 'X works here, but there is no need for this work at this time because of
-        // X, Y, Z'. They are inconsistent now and i want them to be aligned."*
-        //
-        // ⛔ HE WAS READING TWO TRUE SENTENCES THAT DID NOT ADD UP: this panel said *"Nobody
-        // works here. Room for 2."* while the professions column said *"nobody working of 2 seats
-        // · asked 1 · village wants 0."* **Neither said why**, so the only way to reconcile them
-        // was to already know how the quota works.
-        //
-        // ⭐ The reason comes from `LabourQuota.WhyTheVillageWantsNone` — the same method the
-        // professions row now reads, asked of the same state the decision was made from. *Two
-        // panels explaining one decision in two places is how they come to disagree (D139, D195).*
-        int wanted = LabourQuota.For(world).For(workplace.Kind);
-        string plural = world.JobsCatalog.PluralOf(workplace.Kind);
-        string? why = wanted == 0 ? LabourQuota.WhyTheVillageWantsNone(world, workplace.Kind) : null;
-
-        string noNeed = wanted > 0
-            ? string.Empty
-            : why is null
-                ? $"the village needs no {plural} at the moment"
-                : $"the village needs no {plural} at the moment, because {why}";
-
-        if (workplace.WorkerIds.Count == 0)
-        {
-            lines.Add(noNeed.Length == 0
-                ? $"Nobody works here yet — the village wants {wanted} on this work and has "
-                  + $"nobody to spare. Room for {workplace.Places}."
-                : $"Nobody works here — {noNeed}. Room for {workplace.Places}.");
-        }
-        else
-        {
-            string filled = $"Worked by {WorkerNames(world, workplace)} — "
-                + $"{workplace.WorkerIds.Count} of {workplace.Places} places filled";
-
-            // ⭐ JOE'S SENTENCE, VERBATIM IN SHAPE: *"X works here, but there is no need for this
-            // work at this time because of X, Y, Z."* A staffed building whose trade the village
-            // has no call for is the case that read as a contradiction across two panels.
-            lines.Add(noNeed.Length == 0 ? filled : $"{filled}, though {noNeed}.");
-        }
-
-        // Who decided that number (D51). Said in words rather than shown as a widget
-        // state, because "the village decides" and "you said two" are different facts
-        // about the same building and the player should be able to tell which they are
-        // looking at.
-        //
-        // ⚠️ The "it wants N" half moved into the line above, where it now travels with its
-        // reason. Repeating it here read as a second, quieter opinion about the same number.
-        // ⚠️ BOTH ARMS SAY `Capacity` DELIBERATELY, AND THIS IS THE ONE PLACE IT IS RIGHT.
-        // The line above reports `Places` — the seats in force — and this one is about the
-        // BUILDING: *"you asked for 1; the hut holds 2"* is the sentence that tells the player
-        // their own override is what is binding. Until 2026-09-01 the two lines used the same
-        // word "Room for" for those two different facts, so with an override set the panel
-        // printed two different numbers eight lines apart and neither said which was which.
-        lines.Add(workplace.StaffingOverride is int set
-            ? $"Staffing: you have asked for {set}, and the building holds {workplace.Capacity}."
-            : $"Staffing: left to the village. The building holds {workplace.Capacity}.");
-
-        // ⭐ WHAT THE GROUND IS WORTH, AND THIS IS NOT POLISH (`forests-and-gathering.md`
-        // §7.1). A gatherer's hut whose ring has been felled brings back less and less, and a
-        // village thinning out with nothing on screen saying why is §1.1 failing — the one
-        // uncozy state §0.1 rules out. **The sentence is what makes "no forest, no food"
-        // fair**, exactly as D93 ruled about a stalled construction site, so it ships with the
-        // mechanic rather than after it.
-        if (workplace.GatheringRadius > 0)
-        {
-            int ring = VillageEconomy.TilesInRing(workplace.GatheringRadius);
-            int wooded = world.WoodedTilesAround(workplace);
-            int share = ring <= 0 ? 0 : wooded * 100 / ring;
-
-            lines.Add($"Ground: {wooded} wooded tiles of {ring} within {workplace.GatheringRadius}.");
-            // ⭐ THE WORKERS ARE NAMED BY THE JOBS CATALOGUE, NOT BY A WORD TYPED HERE
-            // (Joe, 2026-08-27: *"forager hut workers still referred to as 'gatherers'"*).
-            // D188 made one place name a trade and this sentence was not asking it — which is
-            // precisely D108's bug, where a naming path ignored the right answer sitting one
-            // call away. **Nothing in the suite can guard a string in the view** (there is no
-            // view test project at all), so the only real defence is not to hold the word here.
-            lines.Add(wooded == 0
-                ? $"Nothing grows here any more — its {world.JobsCatalog.PluralOf(workplace.Kind)} "
-                    + "bring back nothing at all. Plant it, or move the work."
-                : $"A trip brings back {world.GatherYieldAt(workplace)} food — {share}% of what "
-                    + "this hut would yield in full woodland.");
-        }
-
-        // ⭐ THE FIELD (`specs/crops-and-orchards.md`). Same argument as the gatherer's ring
-        // one screen up, and the same reason it ships with the mechanic rather than after it:
-        // *use it or lose it* is only fair if the player can see it coming, so a standing crop
-        // in autumn has to be readable off the panel while it can still be acted on.
-        if (workplace.Kind == JobKind.Farmer)
-        {
-            int ground = world.Zones.WorkGroundTiles(workplace.Id);
-            // Sixteenths in the sim (D369), tiles on the panel — rounded to the nearest tile.
-            int standing = (world.StandingCropSixteenths(workplace) + (SubTile.PerWholeTile / 2)) / SubTile.PerWholeTile;
-
-            // ⭐⭐ WHAT *THIS* FARM COMMITS, NOT WHAT THE DERIVATION GIVES A WELL-SITED ONE
-            // (D194, `per-site-yield.md §4.2a`). This said *"every hand here can keep 13"* on
-            // every farm in the valley — and for a farm ten ticks from a granary that number is
-            // simply false: it can bring in six, and it says so on the panel now. **A number the
-            // building cannot achieve is worse than no number**, because the player reads it and
-            // then watches the farm miss it every autumn with no explanation offered.
-            int keeps = world.FieldTilesThisFarmCommitsPerHand(workplace);
-            int derived = world.TilesOneWorkerKeeps(JobKind.Farmer);
-
-            lines.Add(ground == 0
-                ? "Ground: none. Give it some with the work-ground brush and it will be "
-                    + "ploughed."
-                : $"Ground: {ground} tiles, {standing} of them under crop. Every hand here "
-                    + $"sows {keeps}.");
-
-            // ⭐ AND WHY IT IS LESS, WHICH IS THE HALF THE PLAYER CAN ACT ON. The walk to the
-            // store is the lever — a granary beside the fields and the same farm commits the
-            // whole field — so the sentence names it rather than leaving the number bare.
-            // Silent on a well-sited farm: one considered sentence, not a nag (D42).
-            if (ground > 0 && keeps < derived)
-            {
-                int haul = world.HaulWalkFor(workplace);
-                lines.Add(
-                    $"That is short of the {derived} a farm beside a store keeps — its harvest "
-                    + $"walks {haul} ticks to the nearest one. Build a store near the fields.");
-            }
-
-            // ⭐ AND WHETHER THAT GROUND WAS WORTH GIVING IT (D178). The farm is the one
-            // building whose output soil actually moves — a field on rich ground out-yields a
-            // field on thin by two to one — so "why is this farm slow?" has an answer the panel
-            // was not giving. Averaged over the tiles it holds rather than sampled at the
-            // farmhouse: soil is regional at lattice 8 and a farm's ground can straddle two
-            // regions, so the doorstep tile is not the answer.
-            //
-            // Only once it has ground, because the line above already says what to do about
-            // having none and two instructions are one too many.
-            if (ground > 0)
-            {
-                lines.Add(DescribeSoil(world.FarmGroundShare(workplace)));
-            }
-
-            lines.Add(SeasonRules.IsSowing(world.Clock.Season)
-                ? "Spring: the year's one commitment. A field not sown now is a year missed."
-                : SeasonRules.IsReaping(world.Clock.Season)
-                    ? "Autumn: what is not reaped before winter rots where it stands."
-                    : world.Clock.Season == Season.Summer
-                        ? "Summer: the crop is growing. Its hands are held for the harvest."
-                        : "Winter: stubble. Its farmers are spare hands until spring.");
-        }
-
-        // The buffer at the point of production (D30). Worth showing because it is how
-        // you tell "idle for want of a worker" from "idle for want of logs" (D29).
-        //
-        // ⭐ AND IT HAD NEVER ONCE RENDERED UNTIL THE FARM. `Workplace.Store` has been on the
-        // type since D30 with nothing in the sim writing to it, so this branch could not be
-        // true — `professions.md §4`'s fifth element, *"exists and is dead"*. The farm is where
-        // it wakes up, which is also why the farm is the one that says its capacity: the buffer
-        // filling up is exactly what makes the farmer's walk get longer.
-        if (workplace.Kind == JobKind.Farmer)
-        {
-            lines.Add(workplace.Store.Held > 0
-                ? $"Holding: {DescribeGoods(world, workplace.Store)} — {workplace.Store.Held.Grouped()} of "
-                    + $"{workplace.Store.Capacity.Grouped()}. Past that, the harvest goes to a store."
-                : $"Holding: nothing. It keeps up to {workplace.Store.Capacity.Grouped()} of its own "
-                    + "harvest before the walk gets longer.");
-        }
-        else if (workplace.Store.Held > 0)
-        {
-            lines.Add($"Holding: {DescribeGoods(world, workplace.Store)}");
-        }
-        else if (workplace.Kind == JobKind.Woodcutter)
-        {
-            lines.Add("Holding: nothing — no logs here to split.");
-        }
     }
 
     /// <summary>What a library says when you click it — its shelves, and what is on them.</summary>
@@ -2808,44 +2481,6 @@ public partial class Main : Control
 
         lines.Add(string.Empty);
         lines.Add("The village keeps its records here. There is nothing to read yet.");
-    }
-
-    private static void DescribeStore(SimWorld world, StoreBuilding store, List<string> lines)
-    {
-        Separate(lines);
-
-        lines.Add($"{store.Name} — a {Describe(world, store.Kind)}");
-        lines.Add($"Holding: {DescribeGoods(world, store.Store)}");
-
-        // Capacity is derived rather than typed in (D33), and it is the number that
-        // decides how big the village gets — so it belongs on screen, not just in a
-        // spec.
-        lines.Add(store.Store.IsFull
-            ? $"Full: {store.Store.Held.Grouped()} of {store.Store.Capacity.Grouped()} — nothing more will fit."
-            : $"Space: {store.Store.Held.Grouped()} of {store.Store.Capacity.Grouped()} used, " +
-              $"{store.Store.FreeSpace.Grouped()} free");
-    }
-
-    private static void DescribeHome(SimWorld world, Household household, List<string> lines)
-    {
-        Separate(lines);
-
-        int living = world.LivingMembersOf(household);
-        lines.Add($"The {household.Name} household — a home");
-
-        if (living == 0)
-        {
-            // An empty house is not a ruin: the next couple to pair up moves in rather
-            // than felling thirty logs beside it. Worth saying, because otherwise it
-            // reads as a bug.
-            lines.Add("Nobody lives here now. The next couple to pair up will move in.");
-        }
-        else
-        {
-            lines.Add($"Home to {HouseholdNames(world, household)}");
-        }
-
-        lines.Add($"Larder: {DescribeGoods(world, household.Stockpile)}");
     }
 
     private static void DescribeBareGround(SimWorld world, GridPos tile, List<string> lines)
@@ -4031,7 +3666,11 @@ public partial class Main : Control
         // (D314, so folding still shrinks it), the content is `InspectorHeight` tall whatever is
         // selected, and a description longer than that scrolls with a VISIBLE bar — which is what
         // D350's "a scroll with no visible bar is a cut" forbids, and the probe checks.
-        VBoxContainer body = InColumn(right: true, InspectorHeight, "Who they are, and why");
+        // ⛔ THE DESCRIPTION IS GONE FROM HERE (D376): the CARD says what a thing is and how it is
+        // doing; this panel keeps the per-building CONTROLS for whatever card is selected (the
+        // yellow edge), and one line naming it. Joe: *"such a mess of stacked sentences i dont even
+        // know what to read. Remove text where you can."*
+        VBoxContainer body = InColumn(right: true, InspectorHeight, "Settings for what you clicked");
 
         // ScrollActive so a long reason scrolls rather than being cut off. The one panel
         // whose job is explaining a decision must never truncate the explanation.
