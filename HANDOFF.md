@@ -74,7 +74,9 @@
 > inspector — **played: *"otherwise it plays well. push"* — pushed.** ✅ **D373** (same day): his two
 > notes on it — a villager stands on the hut they clear (and the marketer at the counter) for the
 > tick they load, so the visit is drawn; the *"Nobody will be put on splitting firewood"* line is
-> gone. ⚠️ **Measured on D372, and the number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. ✅ **D374** (same day): H, I, J — Professions warn *"build another"* only for a
+> gone. ⚠️ **Measured on D372, and the number to watch:** eighteen played openings 161 → 145 people and 55 → 72 starved, fetch trips 2.23 → 1.55 per household-year; the fixture's market takes 80 % of loads (was 5 %); the no-seam founding 38 → 24 over six seeds against a control that grew 29 → 43 — no single rule ablated restores it, and it is filed for Joe in the handoff's OPEN list. ✅ **D375** (same day): the food trades' *"needed"* is the shortfall after the store and the
+> rungs above, not mouths ÷ a gatherer — Joe's *"needs 3 foragers? wtf? i have tons of food"*;
+> no golden moved. ✅ **D374** (same day): H, I, J — Professions warn *"build another"* only for a
 > standing building of the trade and the name column is a fixed 110 px (the ⚠ widened it by five
 > pixels); a yard keeps no corner (his *"big square"* was a 3×3 junction whose two-tile sides were
 > `SharpCornerTiles` exactly); §4's milestone map, §5's year-10 nomads note, Phase 5's *"trades
@@ -626,6 +628,15 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     for ever with nobody picking anything up. Approve the load you will actually pick up, from the
     tile it lies on, for the shelf it will actually reach (`HasAShelf`) — and read the LOG when
     a screenshot shows a crowd: the log had no `carrying +` line, which was the whole diagnosis.
+55. **⛔ THE VIEW'S BUILD REPORTS AND DOES NOT FAIL — GREP IT FOR `warning CS`, NOT FOR A COUNT
+    (D375).** D374 shipped two `CS1573` doc-comment warnings on `ZoneOutline.Trace`; the session
+    saw *"2 Warning(s)"*, assumed the generator, and moved on. Joe read them in his terminal.
+    CLAUDE.md says this in bold; it was stepped on anyway. `dotnet build … | grep "warning CS"`
+    must print nothing.
+56. **⚠️ A "NEEDED" THAT IGNORES THE STORE IS A HEADCOUNT (D375).** `toFeedEveryone` is *how many
+    foragers if the village lived on berries alone*; shown as a need beside 2,006 food it read
+    as nonsense, because it was. Any *needed* shown to the player must be what is left after
+    everything that already answers the need.
 52. **⚠️ A NUMBER THAT MEANS "IF SEATS WERE FREE" IS NOT A WARNING (D374).** `LabourQuota.Needed`
     is stamped on five trades whether or not a building stands; shown as *"build another X"* at
     tick 0 it listed everything the village lacked. Gate a warning on the thing that makes it

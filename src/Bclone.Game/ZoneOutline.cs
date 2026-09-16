@@ -725,6 +725,8 @@ internal static class ZoneOutline
     /// deliberately painted.* Joe: *"the selected area for harvest still looks jagged/square."*
     /// </para>
     /// </remarks>
+    /// <param name="tiles">The shape, as the tiles (or cells) it covers.</param>
+    /// <param name="cellsPerTile">How many cells a tile is — 1 for a tile shape, <c>SubTile.PerTile</c> for paint.</param>
     /// <param name="sharpCornerTiles">
     /// A side at least this long, in tiles, keeps its corner — the player drew it (D343). A
     /// <b>yard</b> passes <see cref="float.PositiveInfinity"/>: nobody drew a yard, so no corner of

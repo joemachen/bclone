@@ -262,6 +262,48 @@ public sealed class ProfessionsTests
         Assert.True(wanted > 0, "Nobody was put on it at all, so the bound is not the thing.");
     }
 
+    /// <summary>
+    /// ⭐⭐ A village holding the food it needs NEEDS no more gatherers — and one that does not
+    /// needs only the mouths the other food trades leave (D375).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, with 2,006 food, a farm and eight people: *"the village NEEDs 3 foragers? build another
+    /// one? wtf? i have tons of food."* `Needed(Forager)` was `toFeedEveryone` — mouths divided by
+    /// what one gatherer feeds — stamped regardless of the store, the farm, the lodge or the huts;
+    /// `Needed(Fisher)` the same, so a village with 3,121 meat read *"needs 5, build another
+    /// fishing hut"*. The panel's number now asks what the forager asks before walking to the patch:
+    /// does the village want more food at all, and if so how many mouths are the rungs above still
+    /// leaving. The SEATS are unchanged — this is the sentence, not the staffing.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AFedVillageNeedsNoMoreGatherers()
+    {
+        SimWorld world = Loop(VillageFixtures.Village).World;
+        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+
+        // Well past what the village needs, with room left — the forager's own "nothing to gather
+        // for" line, posed. Then bare.
+        granary.Store.Receive(Goods.Produce, granary.Store.FreeSpace / 2);
+        Assert.False(world.TheVillageWantsMoreFood(), "the pose did not fill the village's larder, so this proves nothing");
+        LabourQuota fed = LabourQuota.For(world);
+
+        granary.Store.TryTake(Goods.Produce, granary.Store[Goods.Produce]);
+        Assert.True(world.TheVillageWantsMoreFood());
+        LabourQuota hungry = LabourQuota.For(world);
+
+        _output.WriteLine(
+            $"fed: foragers needed {fed.Needed(JobKind.Forager)}, fishers {fed.Needed(JobKind.Fisher)}, hunters {fed.Needed(JobKind.Hunter)}; "
+            + $"hungry: {hungry.Needed(JobKind.Forager)} / {hungry.Needed(JobKind.Fisher)} / {hungry.Needed(JobKind.Hunter)}");
+
+        Assert.Equal(0, fed.Needed(JobKind.Forager));
+        Assert.Equal(0, fed.Needed(JobKind.Fisher));
+        Assert.Equal(0, fed.Needed(JobKind.Hunter));
+        Assert.True(hungry.Needed(JobKind.Forager) > 0, "a village with an empty granary needs nobody gathering, so the number is dead (D7)");
+        Assert.True(hungry.Needed(JobKind.Fisher) >= hungry.Needed(JobKind.Forager), "the fisher's rung is above the forager's, so it cannot want fewer");
+    }
+
     /// <summary>Taking everyone off the food or the fuel is allowed — and, since D373, not warned about.</summary>
     /// <remarks>
     /// This asserted D62's shape — *a game that obeys the player's number silently has killed them

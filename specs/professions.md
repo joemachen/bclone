@@ -74,7 +74,11 @@ have typed a number) and *"needs N, build another X"* — **only when a building
 standing and under-seated** (`LabourQuota.TotalCapacityFor(kind) > 0`, sites excluded). Joe, at
 tick 0 with nothing built: *"those alerts should only show if there is an existing building that
 isn't staffed."* `Needed` is what the village would want if seats were free; without a seat it is
-a wish, not a warning. Probe: `professions:`.
+a wish, not a warning. Probe: `professions:`. **And for the food trades (D375) it is the
+shortfall after the store and the rungs above** — zero when `TheVillageWantsMoreFood()` is false,
+else hunter: every mouth, fisher: what the lodges leave, forager: what the lodges and the huts
+leave — never *mouths ÷ one gatherer* (Joe, with 2,006 food: *"needs 3 foragers? wtf?"*). Guard:
+`AFedVillageNeedsNoMoreGatherers`.
 
 | The player does | What happens |
 |---|---|

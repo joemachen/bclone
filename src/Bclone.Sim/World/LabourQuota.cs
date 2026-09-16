@@ -275,7 +275,6 @@ public readonly record struct LabourQuota
         // it is what lets a panel say *"you need another woodcutter's hut"* instead of quietly
         // reporting the two seats as if two were the answer.
         var needed = new int[BuiltIn];
-        needed[(int)JobKind.Forager] = toFeedEveryone;
         needed[(int)JobKind.Woodcutter] = woodcutters;
         needed[(int)JobKind.Forester] = forestersForHuts + forestersForHouses;
         needed[(int)JobKind.Marketer] = marketersWanted;
@@ -290,8 +289,11 @@ public readonly record struct LabourQuota
             SomethingIsMarkedAndNobodyCanRaiseIt(world) ? 1 : buildersWanted;
         needed[(int)JobKind.Farmer] = world.FarmerSeatsWithGroundToWork();
 
-        // A fishery is wanted for exactly the reason a berry patch is: mouths.
-        needed[(int)JobKind.Fisher] = toFeedEveryone;
+        // ⛔⛔ THE FOOD TRADES' "NEEDED" IS STAMPED BELOW, AFTER THE LADDER — NOT `toFeedEveryone`
+        // HERE (D375). It was: a raw *mouths ÷ what one gatherer feeds*, ignoring the food in
+        // store and every other trade that feeds people, so Joe's village with 2,006 food and a
+        // farm read *"needs 3, build another forager's hut"* and, later, *"needs 5, build another
+        // fishing hut"* beside 3,121 meat. *"wtf? i have tons of food."* See the stamps below.
 
         // WHILE THERE IS FOOD TO GATHER AND THE VILLAGE IS SHORT OF IT, EVERY HAND
         // GATHERS. Timber, fuel, building and the market all yield — a marketer most
@@ -472,6 +474,21 @@ public readonly record struct LabourQuota
         {
             stillToFeed = 0;
         }
+
+        // ⭐⭐ WHAT THE FOOD TRADES WOULD WANT IF SEATS WERE FREE — THE SHORTFALL, NOT THE HEADCOUNT
+        // (D375). Nothing, when the village holds the food it needs: the same question the forager
+        // asks before walking to the berry patch (`WhyTheVillageWantsNoMoreFood` — *"the village has
+        // the 760 food it needs — 2,006 held"*), so the panel and the villager agree. Otherwise
+        // each rung wants the mouths the rungs above it have not fed: a hunter every mouth, a
+        // fisher what the lodges leave, a forager what the lodges and the huts leave — the order
+        // the seats are taken in, three lines up. ⚠️ `toFeedEveryone` alone stayed in `Needed`
+        // for the forager and the fisher from D148 to D374 and nobody caught it, because a young
+        // village is always short and a fed one had been told to build another hut so often that
+        // the sentence read as noise (Joe, 2026-09-15). The seats themselves are unchanged.
+        bool wantsMoreFood = world.TheVillageWantsMoreFood();
+        needed[(int)JobKind.Hunter] = wantsMoreFood ? toFeedEveryone : 0;
+        needed[(int)JobKind.Fisher] = wantsMoreFood ? afterHunting : 0;
+        needed[(int)JobKind.Forager] = wantsMoreFood ? stillToFeed : 0;
 
         int seats = world.GatheringSeats();
         int seatable = stillToFeed < seats ? stillToFeed : seats;
