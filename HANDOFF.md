@@ -1,9 +1,9 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT AND PLAYED TWICE (D376–D380: THE CARDS, ONE PANEL PER STRUCTURE, THE TWO TOP BARS, TWO ROUNDS OF JOE'S NOTES). D380 IS UNPLAYED; D378–D380 ARE UNPUSHED. NEXT: HIS "PUSH", THEN FOOTPRINTS PER BUILDING TYPE.**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT AND PLAYED TWICE (D376–D380: THE CARDS, ONE PANEL PER STRUCTURE, THE TWO TOP BARS, TWO ROUNDS OF JOE'S NOTES). D378–D380 PUSHED AT JOE'S WORD (2026-09-15, "push!"); D380 ITSELF UNPLAYED. NEXT: FOOTPRINTS PER BUILDING TYPE.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D380.**
 >
 > **The state:** `main` = D380's commit on D379's (`fb9ac1a`) on D378's (`05f8e05`) on `e218419`
-> (D377); **committed, NOT pushed — Joe pushes.** Working tree clean. **Joe played D379** (*"grip
+> (D377); **pushed — `main` = `origin/main` = `96ca39d`, Joe: *"push!"*.** Working tree clean. **Joe played D379** (*"grip
 > and scale are good. wsad doesnt move the camera now"*) and his second four notes became **D380,
 > unplayed:** ✎ only on a store's or workplace's card (not a person, not a home); a ✕ on every
 > panel's header (*What's here*'s clears the selection; every other's does what its Settings tick
