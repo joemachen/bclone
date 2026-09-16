@@ -1,9 +1,9 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT (D376–D380, PUSHED); D381 FIXED THE HOUSING BUG THAT KILLED JOE'S VILLAGE (THE SITE-CHOOSER'S BOX), COMMITTED, NOT PUSHED. NEXT: HIS PLAY, THEN FOOTPRINTS PER BUILDING TYPE.**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT (D376–D380, PUSHED); D381 FIXED THE HOUSING BUG THAT KILLED JOE'S VILLAGE (THE SITE-CHOOSER'S BOX) — PLAYED ("works!") AND PUSHED 2026-09-16. NEXT: FOOTPRINTS PER BUILDING TYPE.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D381.**
 >
-> **The state:** `main` = D381's commit on `c10b06c` (= `origin/main`, D380 + handoff); **D381 is
-> committed, NOT pushed — Joe pushes.** Working tree clean. **Joe played D380 and his village
+> **The state:** `main` = `origin/main` = D381 (`0496e73`) + this note; **Joe played D381 — *"works!
+> proceed."* — and it is pushed** (2026-09-16). Working tree clean. **Joe played D380 and his village
 > froze in Winter Year 1 with housing painted at tick 1** — *"Why didnt they build homes?"* —
 > and that is D381: `Household.ChooseSite` scanned a ±8 box round the founding and never looked
 > at paint outside it (his circle was ~12 tiles out), while the warning said *"paint some land"*.
