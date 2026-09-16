@@ -1,12 +1,48 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — JOE'S TWO ROUNDS OF NOTES ARE BUILT AND PUSHED (D367–D374: PANELS, YARDS, THE SOWING CAP, ONE "ROOM" PREDICATE, HEAPS, THE MARKET AS A SHOP, THE STAND ON THE HUT, HONEST WARNINGS, THE MILESTONE MAP); NEXT IS THE UI CARDS, MOCKUP FIRST.**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE CARDS ARE BUILT (D376–D377, ONE STRUCTURE ONE PANEL); NEXT IS SLICE 2 OF THE UI PASS: THE TWO TOP BARS, AND THE OVERVIEW PANEL GOES. JOE WILL SAY "GO".**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15.** `main` is pushed through D374
-> (`origin/main` = `main`). D372 the market as a shop is **played** (*"otherwise it plays well"*);
-> D373–D374 are his notes on it, built the same day, unplayed. Suite **1137 passing, 0 failing, 2
-> skipped of 1139, ~2m35**; probe green with two new lines (`professions:`, and `trails:` refusing a
-> square yard). The decision log runs to **D374**; the scarcity question on D372 is **closed by Joe:
-> "leave it"**. ▶️ **NEXT: the UI cards — show him a mockup first** (item 2 below; the market card
-> carries the `Keeps up to:` rows and the rings legend from `the-valley-in-view.md §7`).
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, END OF SESSION.**
+>
+> **The state:** `main` = `origin/main` = `e218419` (D377), everything pushed; working tree clean.
+> Joe **played D372** (the market as a shop — *"otherwise it plays well"*) and his notes on it
+> became D373 (the stand on the hut, no zero-sermon), D374 (honest Professions warnings, round
+> yards, the milestone map), D375 (the food trades' "needed" is the shortfall), D376 (the cards)
+> and D377 (the controls fold onto the card). **D373–D377 are unplayed.** Suite **1141 passing, 0
+> failing, 2 skipped of 1143, ~2m35**; view builds with **0 warnings on `--no-incremental`**;
+> probe green — read every line, `cards: ✅`, `professions: ✅`, `bar height 161`, `done.`. The
+> decision log runs to **D377**. Read `DESIGN.md §0–§5`, §6, then D367–D377 in §7, then
+> `specs/the-cards.md` in full.
+>
+> **▶️ NEXT, WHEN JOE SAYS "GO": slice 2 of the cards — `specs/the-cards.md §5`.** Two top bars
+> over the map, and the Overview panel goes:
+> *(1)* **Resources, two rows** — *food, produce, wheat, fish, meat* / *logs, firewood, stone,
+> tools* — with a `more ▾` for iron, leather, *in homes and huts*, *on the ground*; a number the
+> village is short of in amber (the Overview's `Amount()` cells and its `_onTheGround` /
+> `_foodElsewhere` rows are the source — `Main.cs`, search `Amount()` and `Not here yet`);
+> *(2)* **Villagers beside it** — total, adults, children, elders, laborers — and the clock
+> (`_clockLabel`); *(3)* the Overview's leftovers (the village name, `Not here yet — N more, and
+> why`, the version/seed/config/log lines) go to the Settings panel or the villagers bar; then
+> the Overview panel (`InColumn(right: false, 0, "Overview")` in `Main.cs`) is removed. The mockup Joe approved is
+> the artifact *Fernhollow Cards* (https://claude.ai/artifact/9QfFLkbMXano71VeGTmyLV) — the bars
+> are drawn at its top. ⚠️ Rules that bind: a bar is a `Floating(…, spanWidth: true)` panel or a
+> plain top-docked one — either way **fixed height, `Amount()` cells (D367), and the `panels:`
+> probe line must keep measuring it**; the control bar stays 161; no golden moves (view only).
+> Red-check: a cell without the `Amount()` trio widens the bar when `+12,345` is posed.
+>
+> **⚠️ For Joe when he plays D376–D377:** click any building or person → a card; ⌖ pins, ✕
+> closes, drag by the head, ✎ renames; `Settings ▸` at the bottom of a card opens its controls;
+> the docked *What's here* only appears for bare ground / library / town hall. Two things worth
+> his eye: **which three numbers are the wrong three** on each kind of card, and whether the
+> status sentence ever lies (`Main.Cards.cs` → `ShowStore/ShowWorkplace/ShowHousehold/ShowVillager`).
+> The library and the town hall have no card yet — a later slice, same shape.
+>
+> **How this session worked, so the next one does not relearn it:** every script that edits a
+> file is written with the **Write tool into the scratchpad** and run with `python` — a Bash
+> heredoc turns `\n` in Python source into a real newline (traps 54, stepped on twice more). Files
+> are LF in the repo; a Python `open(p,'w')` on Windows writes CRLF — normalise (`b.replace(b'\r\n',
+> b'\n')`) before committing. Godot is
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64.exe`; the
+> temporary `BCLONE_SHOT` hook in `_Process` (trap 39) takes a windowed screenshot — it is not in
+> the tree, re-add it for a look and remove it before the commit.
 >
 > *(The banner below is the 2026-09-13 one, kept for its detail.)*
 >
