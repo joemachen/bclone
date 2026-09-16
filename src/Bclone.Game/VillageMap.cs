@@ -496,8 +496,18 @@ public partial class VillageMap : Control
         }
 
         // Polled rather than event-driven: held keys have to pan smoothly, and key
-        // events only fire on press and repeat. Polling globally is safe here because
-        // the UI has no text fields for WASD to be typed into.
+        // events only fire on press and repeat.
+        // ⛔ AND NOT WHILE SOMEBODY IS TYPING (D379). This used to say polling globally was safe
+        // *"because the UI has no text fields for WASD to be typed into"* — true until a card
+        // grew a rename box (D376). Joe, naming a building: *"typing wsad as part of a building
+        // name moves the game camera too."* A focused LineEdit consumes the key EVENTS, so the
+        // bound keys already stay out of it; the poll does not go through events, so it has to
+        // ask. A SpinBox's editor is a LineEdit as well, so the stock-limit boxes are covered.
+        if (GetViewport().GuiGetFocusOwner() is LineEdit)
+        {
+            return;
+        }
+
         var direction = Vector2.Zero;
         if (Input.IsPhysicalKeyPressed(Key.W)) { direction.Y -= 1f; }
         if (Input.IsPhysicalKeyPressed(Key.S)) { direction.Y += 1f; }

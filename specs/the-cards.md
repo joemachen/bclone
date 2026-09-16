@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
-**Decisions:** D376 (this document), D377, D378. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone.** Unplayed by Joe as of D378. Owner: Joe + Claude Code.
+**Decisions:** D376 (this document), D377, D378, D379. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
+**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379.** D379 unplayed. Owner: Joe + Claude Code.
 
 ---
 
@@ -36,6 +36,13 @@ the title clips with an ellipsis, the status wraps), built once and rewritten ev
 | **Three numbers** | store: the three biggest heaps · workplace: held / capacity, tiles of ground, seats · site: logs, work, sites queued · home: food/target, firewood/target, people · person: age, trade, household | — |
 | **People** (homes) | *Name, age — trade* per living member, four rows tall, scrolling past four | `Household.MemberIds` |
 | **Picture** | `BuildingPortrait`: the footprint quad in the map's own colour, turned as it is turned, with its ring when the map would draw one; a caption — the workers, or the reason for the job | `VillageMap.FootprintQuadAt`, `VillageMap.ColourOf` |
+
+**Drawn at the UI scale, like every panel** (D379 — Joe: *"the scale is larger than the rest of the
+UI panels"*; a card is added straight to the scene and was never among the floaters `FitFloaters`
+scales). The grip shows the move cursor, as the panels' grips do. **While a rename box has focus the
+camera holds still** — the WASD pan is polled every frame, not read from key events, so
+`VillageMap._Process` asks whether a `LineEdit` owns the focus before it moves (Joe: *"typing wsad as
+part of a building name moves the game camera too"*).
 
 **Open, pin, replace.** `OpenCard(subject)`: an existing card for the subject is selected; else
 the one unpinned card is retargeted; else a new card is made beside the left column, stepped down

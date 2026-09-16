@@ -216,8 +216,11 @@ public partial class Main
         head.AddThemeConstantOverride("separation", 6);
         column.AddChild(head);
 
+        // The same cursor the panels' grip shows (`Dress`), so the handle says what it does
+        // before it is tried (D379, Joe: *"it does for the static panels"*).
         Label grip = Muted("⋮⋮");
         grip.MouseFilter = MouseFilterEnum.Stop;
+        grip.MouseDefaultCursorShape = CursorShape.Move;
         head.AddChild(grip);
 
         Label title = Body(string.Empty);
@@ -447,6 +450,15 @@ public partial class Main
             // ⚠️ A top-level Control grows to its minimum and never shrinks back; a card whose
             // people list just hid would keep the room. Reset to the width and let it find its height.
             card.Panel.Size = new Vector2(CardWidth, 0f);
+
+            // At the UI scale, like every panel (D379, Joe: *"the scale is larger than the rest
+            // of the UI panels"*). A card is added straight to the scene and was never in the
+            // floaters `FitFloaters` scales, so it drew at full size beside panels at three
+            // quarters. Set here rather than by registering it: cards close, and a freed node in
+            // a persistent list is a crash waiting for the next frame. About its own corner, so
+            // it stays where it was put and where it was dragged.
+            card.Panel.PivotOffset = Vector2.Zero;
+            card.Panel.Scale = new Vector2(_uiScale, _uiScale);
         }
     }
 

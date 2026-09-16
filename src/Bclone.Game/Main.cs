@@ -260,7 +260,6 @@ public partial class Main : Control
             $"[widths] window {Size.X:F0} x {Size.Y:F0}, drawn at {_uiScale * 100f:F0}%");
 
         ProbePanelWidths("at the founding");
-        GD.Print(TheProfessionWarningsAreHonest());
         GD.Print(TheCardsHoldTheirShape());
         GD.Print(TheBarsHoldTheirShape());
 
@@ -1752,55 +1751,17 @@ public partial class Main : Control
                 row += $" · {working} working of {wanted} asked";
             }
 
-            // ⭐⭐ AND WHY IT WANTS NONE, WHEN THE PLAYER HAS ASKED FOR SOME (Joe, 2026-08-30).
-            // **That is the one combination that reads as a contradiction** — *"asked 1 · village
-            // wants 0"* — and it is the row he was looking at. Every other row is short because
-            // there is nothing to reconcile: a village that wants none and was asked for none is
-            // simply agreeing with itself.
-            //
-            // ⚠️ Same method as the inspector, so the two panels cannot drift apart, which was
-            // the actual complaint. The label wraps (D113), so the extra clause costs a line
-            // rather than running off the edge of the column.
-            if (quota.For(kind) == 0 && asked is int some && some > 0
-                && LabourQuota.WhyTheVillageWantsNone(world, kind) is string reason)
-            {
-                row += $"⚠ {reason}";
-            }
-
-            // ⭐⭐ AND WHEN THE VILLAGE NEEDS MORE THAN IT HAS ROOM FOR, IT SAYS SO (Joe,
-            // 2026-09-01). *"I want 2 seats at a woodcutter. Players have to build another
-            // building if they want more woodcutters."* ⛔ **That answer only works if the player
-            // is told**, and this row could not tell them: `quota.For` is capped by the seats
-            // that exist, so a village needing three woodcutters and holding two reported
-            // *"village wants 2"* — true, and it hides the one fact worth acting on.
-            //
-            // ⚠️ This is the sentence that does for every trade what competing rings (D260) did
-            // for the forager: **it is what stops a seat cap being a silent shortage.**
-            //
-            // ⛔ ONLY WHEN A BUILDING OF THE TRADE IS STANDING (D374, Joe at tick 0: *"why is it
-            // calling for a fishing hut and not a hunters lodge? why does forager need 2 before ive
-            // built anything? those alerts should only show if there is an existing building that
-            // isn't staffed"*). `Needed` is what the village would want if seats were free, stamped
-            // on five trades regardless of what exists; a fresh founding read four warnings. A
-            // standing building with too few seats is the one case where "build another" is
-            // advice rather than a list of everything the village lacks.
-            if (quota.Needed(kind) > seats
-                && LabourQuota.TotalCapacityFor(world, kind) > 0
-                && world.JobsCatalog.WorksAt(kind) is BuildingKind at)
-            {
-                row += (row.Length > 0 ? "  " : string.Empty)
-                    + $"⚠ needs {quota.Needed(kind)}, build another "
-                    + $"{world.BuildingsCatalog[at]?.Name ?? "one"}";
-            }
-
-            // ⛔⛔ THE NOTES COLUMN IS GONE (D367, Joe: *"professions is too wide. i dont need the
-            // notes column"*). The sentence still exists — it is D147's *why* — but it lives on
-            // the trade's name as a tooltip, and the name carries a fixed-width cue while a
-            // warning stands, so the table's width and height never move with the wording.
-            string trade = ProfessionName(world, kind);
-            bool warning = row.Contains('⚠');
-            name.Text = warning ? $"{trade} ⚠" : trade;
-            name.Modulate = warning ? ColourOf(LogCategory.Warning) : Colors.White;
+            // ⛔⛔ NO ALERTS ON THIS PANEL (D379, Joe: *"the alert is on again and it doesn't make
+            // sense. remove professions panels alerts altogether."*). Two clauses used to follow —
+            // *"⚠ {why the village wants none}"* (D147's why, when the player asked for hands the
+            // village would not use) and *"⚠ needs N, build another X"* (D274's seat-cap
+            // shortage, gated by D374, re-based by D375) — with a ⚠ on the trade's name while
+            // either stood. He read *"needs 3, build another forager's hut"* beside 1,875 food a
+            // third time and the words were true by the quota and wrong to him, which is the
+            // test. The row is what he asked for and what turned up; the sentence stays as the
+            // name's tooltip, plain. The numbers behind the deleted clauses are still the sim's
+            // (`LabourQuota.Needed`, `WhyTheVillageWantsNone`) and still guarded there.
+            name.Text = ProfessionName(world, kind);
             name.TooltipText = row;
         }
 
@@ -5448,59 +5409,6 @@ public partial class Main : Control
     /// <summary>The trade name's column, wide enough for "Woodcutter ⚠" and no wider for anything (D374).</summary>
     private const float ProfessionNameWidth = 110f;
 
-    /// <summary>
-    /// The Professions warnings are honest and cannot widen the panel — <b>a probe line</b> (D374).
-    /// </summary>
-    /// <remarks>
-    /// Two claims. At the founding nothing of any trade stands, so no row may say *"build
-    /// another"*; and with a ⚠ posed on every row the panel's minimum width must not move.
-    /// </remarks>
-    private string TheProfessionWarningsAreHonest()
-    {
-        SimWorld world = _loop.World;
-        Refresh();
-
-        // Unfolded, or the contents count for nothing (D367's lesson).
-        var wereOpen = new List<bool>(_headers.Count);
-        foreach (Button header in _headers)
-        {
-            wereOpen.Add(header.ButtonPressed);
-            header.ButtonPressed = true;
-        }
-
-        int standing = 0;
-        int warned = 0;
-        for (int i = 0; i < _professionReadouts.Count; i++)
-        {
-            (JobKind kind, Label _, Label name) = _professionReadouts[i];
-            standing += LabourQuota.TotalCapacityFor(world, kind) > 0 ? 1 : 0;
-            warned += name.TooltipText.Contains("build another") ? 1 : 0;
-        }
-
-        ForceUpdateTransform();
-        float before = _professionsPanel!.GetCombinedMinimumSize().X;
-        foreach ((JobKind _, Label _, Label name) in _professionReadouts)
-        {
-            name.Text = $"{name.Text} ⚠";
-        }
-
-        ForceUpdateTransform();
-        float after = _professionsPanel.GetCombinedMinimumSize().X;
-        Refresh();
-        for (int i = 0; i < _headers.Count; i++)
-        {
-            _headers[i].ButtonPressed = wereOpen[i];
-        }
-
-        if (standing == 0 && warned > 0)
-        {
-            return $"[widths] professions: ⛔ {warned} rows say \"build another\" with no building of the trade standing";
-        }
-
-        return after <= before + 0.5f
-            ? $"[widths] professions: ✅ {warned} \"build another\" warnings with {standing} trades standing; a ⚠ on every row leaves the panel at {after:F0}px"
-            : $"[widths] professions: ⛔ a ⚠ on every row widens the panel {before:F0} → {after:F0}px";
-    }
     private Label _laborerReadout = null!;
 
     /// <summary>How many people are actually on this kind of work right now.</summary>

@@ -1,11 +1,32 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT THROUGH SLICE 2 (D376–D378: THE CARDS, ONE PANEL PER STRUCTURE, THE TWO TOP BARS). D373–D378 ARE UNPLAYED. NEXT IS JOE'S PLAY, THEN FOOTPRINTS PER BUILDING TYPE.**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT AND PLAYED ONCE (D376–D379: THE CARDS, ONE PANEL PER STRUCTURE, THE TWO TOP BARS, JOE'S FOUR NOTES). D379 IS UNPLAYED AND UNPUSHED. NEXT: HIS "PUSH", THEN FOOTPRINTS PER BUILDING TYPE.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D378.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D379.**
+>
+> **The state:** `main` = D379's commit on D378's (`05f8e05`) on `e218419` (D377); **committed, NOT
+> pushed — Joe pushes.** Working tree clean. **Joe played D373–D378** (*"everything else looks good
+> for now. good work!"*) and his four notes became D379, which is **unplayed**: no alerts on the
+> Professions panel (the ⚠ clauses and the `professions:` probe line are gone), the cards drawn at
+> the UI scale, the card's grip with the move cursor, and the WASD pan held while a rename box has
+> focus. Suite **1141 passing, 0 failing, 2 skipped of 1143, 2m36**; view builds with **0 warnings on `--no-incremental`**; probe green — read
+> every line: `panel top` ×2, `panels: ✅` ×2, `bars: ✅`, `cards: ✅`, `bar height 161`, `tile
+> centres ✅`, `done.` (⚠️ the process closes stdout a few seconds before it exits — `tasklist`
+> once more before calling it a hang). The decision log runs to **D379**. Read `DESIGN.md §0–§5`,
+> §6, then D367–D379 in §7, then `specs/the-cards.md` in full.
+>
+> **⚠️ For Joe when he plays D379:** type `wasd` into a building's name and the camera should not
+> move; the card's text should be the roster's size; the ⋮⋮ grip should show the move cross. ⛔
+> **The Professions panel now carries NO warning of any kind** — the tooltip on a trade's name is
+> *Wants: N* and, when they differ, *X working of Y asked*; nothing says "build another". The bar's
+> amber (food/logs/firewood by the trade's quota) is unchanged — he saw it and passed it.
+>
+> *(D378's banner, kept below for its detail.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-15, AFTER D378.**
 >
 > **The state:** `main` = D378's commit, on top of `e218419` (D377); **committed, NOT pushed — Joe
 > pushes** after he plays. Working tree clean. **D373–D378 are unplayed.** Suite **1141 passing, 0 failing, 2 skipped of 1143, 2m25**;
 > view builds with **0 warnings on `--no-incremental`**; probe green — read every line: `panel top`
-> ×2, `panels: ✅` ×2, **`bars: ✅`**, `cards: ✅`, `professions: ✅`, `bar height 161`, `tile centres
+> ×2, `panels: ✅` ×2, **`bars: ✅`**, `cards: ✅`, ~~`professions: ✅`~~ *(retired, D379)*, `bar height 161`, `tile centres
 > ✅`, `done.`. The decision log runs to **D378**. Read `DESIGN.md §0–§5`, §6, then D367–D378 in
 > §7, then `specs/the-cards.md` in full — its §5 is the bars.
 >
@@ -740,6 +761,20 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     scaled by `FitFloaters`; a popup child of a button is drawn by the viewport at its own size
     and told `ContentScaleFactor = _uiScale` each time it opens. If the popup ever reads the wrong
     size, that line is where.
+64. **⛔ ANYTHING ADDED STRAIGHT TO THE SCENE IS DRAWN AT 100 % (D379).** `FitFloaters` scales the
+    list `Floating` builds and nothing else; the cards were `AddChild(panel)` and sat at full size
+    beside panels at three quarters for three decisions until Joe said so. A new top-level Control
+    either goes through `Floating` or sets its own `Scale = _uiScale` — the card does the second,
+    every refresh, because cards close and `_floaters` never forgets a node.
+65. **⛔ A POLL DOES NOT GO THROUGH THE FOCUS (D379).** A focused `LineEdit` consumes key EVENTS, so
+    `_UnhandledKeyInput`'s bindings never leaked into a name; `Input.IsPhysicalKeyPressed` asks the
+    keyboard, not the event queue, and panned the camera on every `w` typed. Any polled key must
+    ask `GuiGetFocusOwner()` first. *And the comment that said polling was safe "because the UI has
+    no text fields" was a guard with no test — nothing failed the day a text field was built.*
+66. **⚠️ A WARNING THE PLAYER HAS READ AS NONSENSE THREE TIMES IS NOT A WORDING PROBLEM (D379).**
+    *"needs N, build another X"* was gated (D374), re-based (D375) and still read wrong beside
+    1,875 food, because `Needed` is a seats constant the player cannot see the cause of. It is
+    gone from the panel; the sim keeps the number. Do not bring it back with a fourth wording.
 57. **⚠️ A TOP-LEVEL CONTROL NEVER SHRINKS ON ITS OWN (D376).** A `PanelContainer` added straight
     to the scene grows to its minimum and keeps that size when its contents shrink — the first
     cards carried the room a hidden people list had taken. Reset `Size` to the width after every
