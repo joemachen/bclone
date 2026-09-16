@@ -1,6 +1,28 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT AND PLAYED ONCE (D376–D379: THE CARDS, ONE PANEL PER STRUCTURE, THE TWO TOP BARS, JOE'S FOUR NOTES). D379 IS UNPLAYED AND UNPUSHED. NEXT: HIS "PUSH", THEN FOOTPRINTS PER BUILDING TYPE.**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT AND PLAYED TWICE (D376–D380: THE CARDS, ONE PANEL PER STRUCTURE, THE TWO TOP BARS, TWO ROUNDS OF JOE'S NOTES). D380 IS UNPLAYED; D378–D380 ARE UNPUSHED. NEXT: HIS "PUSH", THEN FOOTPRINTS PER BUILDING TYPE.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D379.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D380.**
+>
+> **The state:** `main` = D380's commit on D379's (`fb9ac1a`) on D378's (`05f8e05`) on `e218419`
+> (D377); **committed, NOT pushed — Joe pushes.** Working tree clean. **Joe played D379** (*"grip
+> and scale are good. wsad doesnt move the camera now"*) and his second four notes became **D380,
+> unplayed:** ✎ only on a store's or workplace's card (not a person, not a home); a ✕ on every
+> panel's header (*What's here*'s clears the selection; every other's does what its Settings tick
+> does); the Settings *Windows* ticks read a `Wanted` state every frame (they were written `true`
+> once and never read — *Stock limits* showed ticked while hidden); Settings tidied into five
+> headings and scrolling at 600 logical so it clears the control bar. Suite **1141 passing, 0 failing, 2 skipped of 1143, 2m38**; view 0
+> warnings on `--no-incremental`; probe green — read every line: `panel top` ×2, `panels: ✅` ×2,
+> `bars: ✅`, `cards: ✅` (with the ✎ rule), **`windows: ✅`**, `map toggles: ✅`, `bar height 161`,
+> `tile centres ✅`, `done.`. The decision log runs to **D380**.
+>
+> **⚠️ For Joe when he plays D380:** press ✕ on *What's here* — it should go, and come back on
+> the next bare-ground click; press ✕ on the roster — it should go, and its tick in Settings
+> should read off; open Settings — *Stock limits* should read unticked, the panel should sit
+> clear of the control bar and scroll. ⛔ **Every ✕ but *What's here*'s is the Settings tick** —
+> a closed roster comes back from Settings, not from a click.
+>
+> *(D379's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-15, AFTER D379.**
 >
 > **The state:** `main` = D379's commit on D378's (`05f8e05`) on `e218419` (D377); **committed, NOT
 > pushed — Joe pushes.** Working tree clean. **Joe played D373–D378** (*"everything else looks good
@@ -775,6 +797,17 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     *"needs N, build another X"* was gated (D374), re-based (D375) and still read wrong beside
     1,875 food, because `Needed` is a seats constant the player cannot see the cause of. It is
     gone from the panel; the sim keeps the number. Do not bring it back with a fourth wording.
+67. **⛔⛔ A TICK WRITTEN ONCE AT BUILD IS A SNAPSHOT, NOT A CONTROL (D380).** The Settings
+    *Windows* ticks were `ButtonPressed = true` at construction and read by nothing afterwards:
+    *Stock limits* starts hidden and showed ticked from the founding; *What's here*'s untick held
+    one frame before the selection rewrote its visibility. `ShellWindow.Wanted` is the state, the
+    tick reads it every `Refresh`, and the `windows:` probe line compares the two. **Any control
+    that shows a state must read that state, every frame, or not exist** — the map toggles had
+    this rule and a probe since D340; the windows did not, three panels away.
+68. **⚠️ A PANEL'S HEIGHT IS ITS CONTENTS PLUS ITS HEADER, AND THE SHOT IS THE RULER (D380).**
+    Settings was sized 680 → 640 → 600 logical to clear the control bar when centred, and the
+    first two misses were the 37 px header left out of the arithmetic. Measure the drawn extent
+    off the screenshot (a column scan with PIL takes a minute) before typing a third number.
 57. **⚠️ A TOP-LEVEL CONTROL NEVER SHRINKS ON ITS OWN (D376).** A `PanelContainer` added straight
     to the scene grows to its minimum and keeps that size when its contents shrink — the first
     cards carried the room a hidden people list had taken. Reset `Size` to the width after every

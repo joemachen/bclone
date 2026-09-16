@@ -285,6 +285,7 @@ public partial class Main : Control
         GD.Print(ValleyTexture.SelfCheck(_loop.World));
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
+        GD.Print(EveryWindowTickSaysWhatTheWindowIsDoing());
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
         GD.Print(_map.TheDepositsAreScatteredAndOverhang());
         GD.Print(_map.TheSceneryIsMeshed());
@@ -1613,6 +1614,13 @@ public partial class Main : Control
         _clockLabel.Text = $"{world.Name}   ·   {world.Clock}   ·   {LivingHouseholds(world)} households";
         _seedLabel.Text = TheRunLine(world);
 
+        // The Settings ticks read the windows' state rather than remembering what they were set
+        // to (D380): a ✕ on a panel writes `Wanted`, and the tick follows next frame.
+        for (int i = 0; i < _windows.Count; i++)
+        {
+            _windows[i].Tick?.SetPressedNoSignal(_windows[i].Wanted);
+        }
+
         // WHAT IS IN THE STORES, one cell per good (D83). Totals across every granary and
         // warehouse, not the first of each (D38) — a village that has built a second one should
         // see what is in it.
@@ -1855,7 +1863,11 @@ public partial class Main : Control
         bool carded = _selectedVillagerId != 0
             || (_selectedTile is GridPos at
                 && (world.StoreAt(at) is not null || world.WorkplaceCovering(at) is not null || world.HouseholdAt(at) is not null));
-        _whatsHerePanel.Visible = !carded && (_selectedTile is not null);
+        // ⚠️ And only while the player wants the window at all (its Settings tick, D380) and the
+        // furniture is shown (`h`) — this line used to override both every frame.
+        _whatsHerePanel.Visible = _furnitureShown
+            && (WindowOf(_whatsHerePanel)?.Wanted ?? true)
+            && !carded && (_selectedTile is not null);
 
         if (_selectedTile is GridPos tile)
         {
@@ -3671,6 +3683,7 @@ public partial class Main : Control
         _docked.Add((_panels[^1], false));
         _stockLimitsPanel = _panels[^1];
         _stockLimitsPanel.Visible = false;
+        _windows[^1].Wanted = false;
 
         body.AddChild(Caption("How much to keep before the work stops."));
         body.AddChild(BuildStockLimitTable());
@@ -4672,6 +4685,13 @@ public partial class Main : Control
             header.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             handle.AddChild(header);
 
+            // ✕, the card's own glyph, at the far right where the card keeps it (D380).
+            var close = new Button { Text = "✕", Flat = true, TooltipText = "Close this window" };
+            close.AddThemeFontSizeOverride("font_size", 12);
+            close.Modulate = new Color(1, 1, 1, 0.55f);
+            close.Pressed += () => CloseTheWindow(panel);
+            handle.AddChild(close);
+
             body.AddChild(handle);
             _headers.Add(header);
         }
@@ -4686,7 +4706,7 @@ public partial class Main : Control
         // menu the day it is written instead of the day somebody remembers.
         if (title is not null)
         {
-            _windows.Add((title, panel));
+            _windows.Add(new ShellWindow { Name = title, Panel = panel });
         }
 
         // ⚠️ THE PANEL YOU CLICKED ON WINS THE CLICK. Panels are siblings, so the one added
@@ -4743,7 +4763,58 @@ public partial class Main : Control
     private readonly List<Button> _headers = new();
 
     /// <summary>Every information window the player may switch off, by name.</summary>
-    private readonly List<(string Name, PanelContainer Panel)> _windows = new();
+    private readonly List<ShellWindow> _windows = new();
+
+    /// <summary>
+    /// An information window: its panel, whether the player wants it on screen, and the tick in
+    /// Settings that says so (D380).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b><c>Wanted</c> is the state; <c>Panel.Visible</c> is a consequence of it</b> — and of
+    /// the selection, for *What's here*, and of <c>h</c>. The Settings ticks used to be written
+    /// <c>true</c> once at build and never read: *Stock limits* showed ticked while hidden from
+    /// the founding, and *What's here*'s tick held for one frame before the selection rewrote
+    /// its visibility. The tick reads <c>Wanted</c> every refresh now, and the ✕ on a panel
+    /// writes the same state the tick does.
+    /// </remarks>
+    private sealed class ShellWindow
+    {
+        public required string Name { get; init; }
+        public required PanelContainer Panel { get; init; }
+        public bool Wanted { get; set; } = true;
+        public CheckBox? Tick { get; set; }
+    }
+
+    /// <summary>The window a panel belongs to, or null for the two that are not windows (Settings, the bars).</summary>
+    private ShellWindow? WindowOf(PanelContainer panel) => _windows.Find(w => w.Panel == panel);
+
+    /// <summary>
+    /// The ✕ on a panel's header (D380, Joe: *"add an X to close on to all panels — otherwise i
+    /// cant figure out how to close the 'what's here' pane"*).
+    /// </summary>
+    /// <remarks>
+    /// One rule: it does what unticking the window in Settings does, so the tick follows.
+    /// ⭐ <b>*What's here* is the exception, deliberately:</b> it is about what you clicked, like a
+    /// card, so its ✕ clears the selection and it returns on the next bare-ground click; its
+    /// Settings tick remains the permanent switch. Settings itself is not a window and simply hides.
+    /// </remarks>
+    private void CloseTheWindow(PanelContainer panel)
+    {
+        if (panel == _whatsHerePanel)
+        {
+            _selectedTile = null;
+            _selectedVillagerId = 0;
+            RefreshInspector(_loop.World);
+            return;
+        }
+
+        if (WindowOf(panel) is ShellWindow window)
+        {
+            window.Wanted = false;
+        }
+
+        panel.Visible = false;
+    }
 
     /// <summary>The settings panel itself, which is the one window not in that list.</summary>
     private PanelContainer _professionsPanel = null!;
@@ -4751,6 +4822,9 @@ public partial class Main : Control
     private PanelContainer _stockLimitsPanel = null!;
 
     private PanelContainer _settingsPanel = null!;
+
+    /// <summary>How tall Settings stands before it scrolls — on screen at the default scale, centred.</summary>
+    private const float SettingsHeight = 600f;
 
     /// <summary>
     /// ⭐ Open Settings in the middle of the screen — <b>where the player is looking</b>
@@ -4839,7 +4913,11 @@ public partial class Main : Control
     /// </remarks>
     private void BuildSettingsPanel()
     {
-        VBoxContainer body = InColumn(right: true, 0, "Settings");
+        // ⭐ SCROLLS (D380): opened centred, the panel ran off the bottom under the control bar and
+        // *About this run* was behind it — in Joe's screenshot and in the probe's shot both.
+        // 600 logical plus the header draws at 478 of an 800-logical window at the default 75 %, which clears
+        // the bar (161 × 0.75 + the edge) when centred.
+        VBoxContainer body = InColumn(right: true, SettingsHeight, "Settings");
         _settingsPanel = _panels[^1];
         _settingsPanel.Visible = false;
 
@@ -4848,15 +4926,39 @@ public partial class Main : Control
         _windows.RemoveAt(_windows.Count - 1);
         _headers.RemoveAt(_headers.Count - 1);
 
-        // ⭐ THE ONE DIAL JOE ASKED FOR: *"smaller please. give me more room to see the game
-        // map."* It reaches every panel and the control bar, so the whole furniture shrinks
-        // together rather than four font sizes drifting apart.
-        body.AddChild(Muted("How big the furniture is"));
+        // ⭐ TIDIED (D380, Joe: *"review the settings panel and clean up the UI to be more aligned
+        // with what we're doing"*): five groups under one style of heading — Windows, Size, On
+        // the map, How the village runs, About this run — the same controls, less prose. The
+        // hint line the control bar already carries is not repeated here.
+        body.AddChild(Muted("Windows"));
 
-        var reset = new Button { Text = "Reset window positions", Flat = true };
+        // ⛔ THE TICK READS THE STATE; IT DOES NOT ONLY WRITE IT (D380). These were `ButtonPressed
+        // = true` once at build: *Stock limits* read ticked while hidden from the founding, and
+        // *What's here* untick held for a frame. `Refresh` syncs every tick from `Wanted`.
+        foreach (ShellWindow window in _windows)
+        {
+            var shown = new CheckBox { Text = window.Name, ButtonPressed = window.Wanted };
+            shown.AddThemeFontSizeOverride("font_size", 12);
+            shown.Toggled += on =>
+            {
+                window.Wanted = on;
+                window.Panel.Visible = on;
+            };
+            window.Tick = shown;
+            body.AddChild(shown);
+        }
+
+        // ⭐ Joe: *"'reset all panels' could maybe be a settings button."* Under Windows, because
+        // it is about windows; run once after the first layout pass and then never automatically.
+        var reset = new Button { Text = "Reset window positions", Flat = true, Alignment = HorizontalAlignment.Left };
         reset.AddThemeFontSizeOverride("font_size", 12);
         reset.Pressed += ArrangeDefaults;
         body.AddChild(reset);
+
+        // ⭐ THE ONE DIAL JOE ASKED FOR: *"smaller please. give me more room to see the game
+        // map."* It reaches every panel, every card and the control bar, so the whole furniture
+        // shrinks together rather than four font sizes drifting apart.
+        body.AddChild(Muted("Size"));
 
         var sizing = new HBoxContainer();
         sizing.AddThemeConstantOverride("separation", 4);
@@ -4892,18 +4994,6 @@ public partial class Main : Control
         body.AddChild(sizing);
         ShowScale();
 
-        body.AddChild(Caption("Windows — what is on screen"));
-
-        foreach ((string name, PanelContainer panel) in _windows)
-        {
-            var shown = new CheckBox { Text = name, ButtonPressed = true };
-            shown.AddThemeFontSizeOverride("font_size", 12);
-            shown.Toggled += on => panel.Visible = on;
-            body.AddChild(shown);
-        }
-
-        body.AddChild(Caption("c folds every panel · h hides the lot"));
-
         // ⭐ THE GLOBAL HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which should
         // be able to be disabled by building or globally."* The per-building half lives on the
         // building's own panel, which is where you are already standing when one store is the
@@ -4916,7 +5006,7 @@ public partial class Main : Control
         // ⚠️ Buttons, not checkboxes, and deliberately: Routes cycles through three detail
         // levels and Ground carries its own state in its label. **A checkbox that cycles is a
         // control that lies about what it will do next.**
-        _detailButton = new Button { CustomMinimumSize = new Vector2(140, 0) };
+        _detailButton = new Button { Flat = true, Alignment = HorizontalAlignment.Left };
         _detailButton.AddThemeFontSizeOverride("font_size", 12);
         _detailButton.Pressed += CycleDetail;
         body.AddChild(_detailButton);
@@ -4926,7 +5016,7 @@ public partial class Main : Control
         // what §1.1 refuses in general. Off by default: it answers a question the player asks
         // occasionally, and a permanent wash over the valley is D42's standing alert in
         // another medium.
-        _soilButton = new Button { CustomMinimumSize = new Vector2(110, 0) };
+        _soilButton = new Button { Flat = true, Alignment = HorizontalAlignment.Left };
         _soilButton.AddThemeFontSizeOverride("font_size", 12);
         _soilButton.Pressed += ToggleSoil;
         body.AddChild(_soilButton);
@@ -4936,7 +5026,7 @@ public partial class Main : Control
         // shows every trodden tile on its way to becoming one — the diagnostic §2.6 needs for its
         // own tuning (*lock-in* or *no paths*) and the only heatmap the game allows, because a
         // tile's wear is sim state and hashed (D357). Off by default, like Ground, for the same reason.
-        _wearButton = new Button { CustomMinimumSize = new Vector2(110, 0) };
+        _wearButton = new Button { Flat = true, Alignment = HorizontalAlignment.Left };
         _wearButton.AddThemeFontSizeOverride("font_size", 12);
         _wearButton.Pressed += ToggleWear;
         body.AddChild(_wearButton);
@@ -4977,9 +5067,7 @@ public partial class Main : Control
         // ⚠️ This caption used to promise that the ghost shows the tiles a building will
         // claim when snap is off. **The code never did that** — it showed them always, and
         // since D345 it shows them only while the grid is drawn.
-        body.AddChild(Caption(
-            "On, a building lands on the nearest tile centre. With the grid drawn, the ghost "
-            + "also shows the tiles it will claim."));
+        body.AddChild(Caption("With the grid drawn, the ghost also shows the tiles it will claim."));
 
         // ⭐⭐ THE GRID LINES (D332, Joe: *"if the game is gridless, then why is everything still in
         // a grid?"*). **They were always on above 6px/tile with no way to turn them off**, and they
@@ -6244,6 +6332,45 @@ public partial class Main : Control
         return wrong.Count == 0
             ? $"[widths] map toggles: ✅ all {_mapToggles.Count} ticks match the map"
             : "[widths] map toggles: ⛔ " + string.Join("; ", wrong);
+    }
+
+    /// <summary>
+    /// Every Settings window tick equals its window's state, and a window that starts hidden
+    /// starts unticked — <b>a probe line</b> (D380).
+    /// </summary>
+    /// <remarks>
+    /// Red on the code it replaced: the ticks were written <c>true</c> once at build, so *Stock
+    /// limits* read *"the tick says True, the window is hidden"* from the first frame.
+    /// </remarks>
+    private string EveryWindowTickSaysWhatTheWindowIsDoing()
+    {
+        Refresh();
+        var wrong = new List<string>();
+        for (int i = 0; i < _windows.Count; i++)
+        {
+            ShellWindow window = _windows[i];
+            bool ticked = window.Tick?.ButtonPressed ?? window.Wanted;
+            if (ticked != window.Wanted)
+            {
+                wrong.Add($"{window.Name}: the tick says {ticked}, the window is {(window.Wanted ? "wanted" : "not wanted")}");
+            }
+
+            // What's here also answers to the selection, so only the others are held to it.
+            if (window.Panel != _whatsHerePanel && window.Panel.Visible != window.Wanted)
+            {
+                wrong.Add($"{window.Name}: the tick says {ticked}, the window is {(window.Panel.Visible ? "shown" : "hidden")}");
+            }
+        }
+
+        bool limitsStartHidden = _windows.Exists(w => w.Panel == _stockLimitsPanel && !w.Wanted && !w.Panel.Visible);
+        if (!limitsStartHidden)
+        {
+            wrong.Add("Stock limits should start hidden and unticked");
+        }
+
+        return wrong.Count == 0
+            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits starts hidden and unticked"
+            : "[widths] windows: ⛔ " + string.Join("; ", wrong);
     }
 
     /// <summary>Each map toggle, its tick, and what the map itself believes — for the probe.</summary>

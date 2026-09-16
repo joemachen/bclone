@@ -45,6 +45,7 @@ public partial class Main
         public bool Pinned { get; set; }
         public required Label Title { get; init; }
         public required LineEdit Rename { get; init; }
+        public required Button Edit { get; init; }
         public required Button Pin { get; init; }
         public required ColorRect Light { get; init; }
         public required Label Status { get; init; }
@@ -336,6 +337,7 @@ public partial class Main
             Subject = subject,
             Title = title,
             Rename = rename,
+            Edit = edit,
             Pin = pin,
             Light = light,
             Status = status,
@@ -401,8 +403,7 @@ public partial class Main
         {
             CardKind.Store when StoreOf(card) is StoreBuilding store => world.Rename(store, typed),
             CardKind.Workplace when world.FindWorkplace(card.Subject.Id) is Workplace place => world.Rename(place, typed),
-            CardKind.Household when world.FindHousehold(card.Subject.Id) is Household home => world.Rename(home, typed),
-            _ => PlacementVerdict.No("Only a building or a household can be renamed."),
+            _ => PlacementVerdict.No("Only a building can be renamed."),
         };
 
         if (!verdict.Allowed)
@@ -481,6 +482,10 @@ public partial class Main
 
         if (shown)
         {
+            // ⛔ ONLY A BUILDING CAN BE RENAMED (D380, Joe: *"villager names have the edit function
+            // (it doesn't save) — let's remove that. only buildings should be renamable (excluding
+            // homes)"*). Per refresh, because a retargeted card changes kind.
+            card.Edit.Visible = card.Subject.Kind is CardKind.Store or CardKind.Workplace;
             ShowSettings(world, card);
         }
 
@@ -1027,11 +1032,22 @@ public partial class Main
             faults.Add($"a store card is {width:F0} wide, not {CardWidth:F0}");
         }
 
+        // Only a building can be renamed (D380): a store's card offers ✎, a home's and a person's do not.
+        if (!first.Edit.Visible)
+        {
+            faults.Add("a store card offers no ✎");
+        }
+
         // Unpinned: the next click replaces it. Pinned: the next click opens a second.
         OpenCard(new CardSubject(CardKind.Household, home.Id));
         if (_cards.Count != 1 || _cards[0].Subject.Kind != CardKind.Household)
         {
             faults.Add($"a second click left {_cards.Count} cards open instead of replacing the unpinned one");
+        }
+
+        if (_cards[0].Edit.Visible)
+        {
+            faults.Add("a household card offers ✎");
         }
 
         _cards[0].Pin.ButtonPressed = true;
@@ -1040,6 +1056,11 @@ public partial class Main
         if (_cards.Count != 2)
         {
             faults.Add($"a click beside a pinned card left {_cards.Count} cards, not 2");
+        }
+
+        if (_selectedCard!.Edit.Visible)
+        {
+            faults.Add("a villager card offers ✎");
         }
 
         if (place is not null)

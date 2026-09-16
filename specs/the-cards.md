@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
-**Decisions:** D376 (this document), D377, D378, D379. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379.** D379 unplayed. Owner: Joe + Claude Code.
+**Decisions:** D376 (this document), D377, D378, D379, D380. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
+**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** D380 unplayed. Owner: Joe + Claude Code.
 
 ---
 
@@ -30,7 +30,7 @@ the title clips with an ellipsis, the status wraps), built once and rewritten ev
 
 | Part | What it says | Where it comes from |
 |---|---|---|
-| **Title** | the name; ✎ opens a `LineEdit` in place, Enter or focus-out commits; ⌖ pins; ✕ closes | `Name` (§3) |
+| **Title** | the name; ✎ (**a building's card only** — not a person's, not a home's, D380) opens a `LineEdit` in place, Enter or focus-out commits; ⌖ pins; ✕ closes | `Name` (§3) |
 | **Status** | one sentence; a green light for *working*, amber and the sentence for the one reason it is not | `SimWorld.IdleNote` (workplace); full / emptying / *N of cap used* (store); the larder's share against `restock_emergency_percent` and cold (home); `Villager.WorkNote` else `DescribeState` (person) |
 | **Workers** | *N / seats* with − and + — the same number the Professions panel edits from the other end (D109) | `SimWorld.SetStaffing` |
 | **Three numbers** | store: the three biggest heaps · workplace: held / capacity, tiles of ground, seats · site: logs, work, sites queued · home: food/target, firewood/target, people · person: age, trade, household | — |
@@ -58,14 +58,18 @@ villager's *Kept on:* and the trades they have learned. Every row wraps (`HFlowC
 card stays 268 wide with all of them open. Each control selects its card first and then calls the
 same "selected" handler the docked panel called — one rule, not two. **The docked panel is
 *What's here*, for what has no card yet** (bare ground, the library, the town hall) and hides the
-moment the selection has a card.
+moment the selection has a card. Its ✕ clears the selection — it is about what you clicked, like a
+card — and it returns on the next bare-ground click; every other panel's ✕ does what unticking it in
+Settings does, and the tick reads the window's state every frame (D380).
 
 ⛔ **Not in the card:** a fourth number, a second sentence, a control that belongs to the Settings
 panel. If a card wants more, the building is asking for a second card, not a longer one.
 
 ## 3. Renaming — `SimWorld.Rename`
 
-`Workplace`, `StoreBuilding` and `Household` carry `Name` (what the village calls it), `BornAs` (the
+⚠️ **The view offers ✎ on a store's and a workplace's card only** (D380, Joe: *"only buildings should be
+renamable (excluding homes)"*); the sim's household rename below stays as machinery, guarded and
+hashed sparsely, offered by nothing. `Workplace`, `StoreBuilding` and `Household` carry `Name` (what the village calls it), `BornAs` (the
 place name it was founded with) and `GivenName` (the player's, or null). `SimWorld.Rename(thing,
 text)` trims, refuses past `NameLengthLimit` (40) with the reason, hands the born name back on a
 blank, and logs *"X is called Y now"*. **Hashed sparsely**: a given name mixes its length and every
