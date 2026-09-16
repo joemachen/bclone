@@ -307,9 +307,9 @@ public partial class VillageMap : Control
     private static readonly Color GhostFine = new("#7fd48a");
     private static readonly Color GhostWarned = new("#e0b755");
     private static readonly Color GhostRefused = new("#d4685f");
-    private static readonly Color AdultColour = new("#e8e2d4");
-    private static readonly Color ChildColour = new("#8fc7e8");
-    private static readonly Color ElderColour = new("#d9a05b");
+    internal static readonly Color AdultColour = new("#e8e2d4");
+    internal static readonly Color ChildColour = new("#8fc7e8");
+    internal static readonly Color ElderColour = new("#d9a05b");
     private static readonly Color SelectedRing = new("#f2c14e");
 
     /// <summary>Closest the camera will get, in pixels per tile.</summary>

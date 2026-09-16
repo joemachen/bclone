@@ -1,4 +1,50 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — THE CARDS ARE BUILT (D376–D377, ONE STRUCTURE ONE PANEL); NEXT IS SLICE 2 OF THE UI PASS: THE TWO TOP BARS, AND THE OVERVIEW PANEL GOES. JOE WILL SAY "GO".**
+# Handoff — bclone: **▶️ PHASE 4.5 — THE UI PASS IS BUILT THROUGH SLICE 2 (D376–D378: THE CARDS, ONE PANEL PER STRUCTURE, THE TWO TOP BARS). D373–D378 ARE UNPLAYED. NEXT IS JOE'S PLAY, THEN FOOTPRINTS PER BUILDING TYPE.**
+
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, LATE — AFTER D378.**
+>
+> **The state:** `main` = D378's commit, on top of `e218419` (D377); **committed, NOT pushed — Joe
+> pushes** after he plays. Working tree clean. **D373–D378 are unplayed.** Suite **1141 passing, 0 failing, 2 skipped of 1143, 2m25**;
+> view builds with **0 warnings on `--no-incremental`**; probe green — read every line: `panel top`
+> ×2, `panels: ✅` ×2, **`bars: ✅`**, `cards: ✅`, `professions: ✅`, `bar height 161`, `tile centres
+> ✅`, `done.`. The decision log runs to **D378**. Read `DESIGN.md §0–§5`, §6, then D367–D378 in
+> §7, then `specs/the-cards.md` in full — its §5 is the bars.
+>
+> **✅ D378 — SLICE 2 OF THE CARDS: THE TWO TOP BARS, AND THE OVERVIEW PANEL IS GONE.** One
+> untitled floater at the top-left holding two boxes (`Main.cs` → `BuildTopBars`): **resources**
+> in two rows — *food* (the umbrella), produce, wheat, fish, meat / logs, firewood, stone, tools —
+> with `more ▾` opening a **popup** (not a fold: a fold measured the bar 58 → 140 tall) for iron,
+> leather, *in homes and huts* and *on the ground*; **villagers** — total, adults, children,
+> elders, laborers — over *Fernhollow · Day 3, Summer, Year 17 · 2 households*. ⭐ **Amber = the
+> village is short of it by the trade's own quota** (food ← `TheVillageWantsMoreFood`, firewood ←
+> `WoodcuttersWanted > 0`, logs ← `ForestersWanted > 0`); a stock limit is a ceiling, not a
+> shortage, so stone and tools never go amber — **this is a decision (D378), his to move.** The
+> seed/tick/log line and the *Not here yet* fold are in Settings under *About this run*. The left
+> column, a new card and the passing banner start below the bar (`TopOfTheLeftColumn`). Probe:
+> `bars:` poses eighteen cells at `+12,345`; red-checked (a plain `Body()` cell: 791 → 1149); one
+> zero written down (rows on the bar instead of the popup — `Amount()` cells are stable wherever
+> they sit). View only, no golden moved.
+>
+> **⚠️ For Joe when he plays D378, in the order he will meet them:** *(1)* the bar opens with
+> **food and logs amber and firewood not** — that is the quota (no home, so no winter to burn),
+> not a bug; say if amber fires when he would not expect it, or fails to; *(2)* **the bar is
+> 1069 logical wide and ends at 816 px against the right column's 966 at the default 75 %** — it
+> clears to about 89 % UI size and runs under the minimap past that (the minimap is the draggable
+> one); *(3)* `more ▾`'s popup is told the UI scale when it opens — check it lands under the
+> button at his size; *(4)* the dead-village / passing banner now drops below the bar; the moment
+> panel (the one with *Good*) is unchanged. ⚠️ **He named the order *food, produce, wheat, fish,
+> meat*; the bar keeps it by a hand list (`BarRows`) — a modded good goes behind `more`.**
+>
+> **▶️ NEXT, after his play:** item 3 of his 2026-09-12 list — **footprints per building type**
+> (numbers into the catalogue, placement rules, the paint's edge; `Footprint` already carries
+> width × height, D331). Cards for the library and the town hall are a later slice, same shape.
+>
+> **How this session worked (the same as the last one, and it still bit):** scripts that edit a
+> file are written with the **Write tool into the scratchpad** and run with `python` — a Bash
+> heredoc mangled a **bytes literal with an emoji in it** this time (`⛔` became `\u26d4`,
+> *"bytes can only contain ASCII"*), the fourth spelling of trap 54. Splicing by line number is
+> off-by-one at the seams twice in three splices — check both seams with `sed -n` before building.
+>
+> *(The banner below is the 2026-09-15 end-of-session one, kept for its detail.)*
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-15, END OF SESSION.**
 >
@@ -487,8 +533,9 @@ stood idle with 130 logs.
    name, yards always round, the milestone map (`DESIGN.md §4`), the year-10 nomads note (§5),
    *"trades visibly work"* (Phase 5), the rings legend (`the-valley-in-view.md §7`).
 2. **The UI pass** — ✅ mockup shown and called; ✅ **slice 1, the cards (D376,
-   `specs/the-cards.md`)**; ⏸ **slice 2: the two-row resources top bar and the villagers top
-   bar, then the Overview panel goes** (`the-cards.md §5`).
+   `specs/the-cards.md`)**; ✅ **slice 2: the two-row resources top bar and the villagers top
+   bar, the Overview panel gone (D378, `the-cards.md §5`)** — unplayed; the library and the
+   town hall still have no card.
 3. **Footprints per building type** — numbers into the catalogue, placement rules, the paint's edge.
 4. **Phase 5:** trampled fields + fences; mature trees; the steading as tending; then the shell's
    remaining pieces (per-stage RNG seeds → new-game screen → settings → save/load → title).
@@ -678,6 +725,21 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 60. **⛔ `dotnet build` INCREMENTAL HIDES DEAD-CODE WARNINGS (D377).** After deleting callers, the
     incremental build of the view said *0 Warning(s)*; `dotnet build --no-incremental` said four
     `IDE0051`. When you delete code, rebuild the view with `--no-incremental` and grep for `warning`.
+61. **⚠️ A WIDTH PROBE CANNOT TELL A POPUP FROM A FOLD (D378).** The `bars:` line reddened on a
+    cell without `Amount()`'s trio and scored **zero** with the `more ▾` rows laid on the bar instead
+    of in a popup — the cells are stable wherever they sit, so nothing widens; the bar was simply
+    82 px taller and the roster started lower, and both are numbers the probe *prints*, not
+    verdicts. **A red check for "which container did you choose" is a measurement you write
+    down** (58 vs 140), and the guard is the one line that reads the height between two passes.
+62. **⚠️ A CENTRED BANNER AND A LEFT-ANCHORED BAR MEET IN THE MIDDLE (D378).** The passing banner
+    is 460 wide, centred at the top; the bar is content-sized from the left. At 1280 logical they
+    overlapped by half a box, and only the second windowed shot (twelve years in, a death to
+    announce) showed it — the founding shot had nothing to announce. **Pose the state that draws
+    the thing** before believing a screenshot of the state that does not.
+63. **⚠️ A `PopupPanel` IS A `Window`, NOT A CONTROL IN THE SCALED TREE (D378).** Floaters are
+    scaled by `FitFloaters`; a popup child of a button is drawn by the viewport at its own size
+    and told `ContentScaleFactor = _uiScale` each time it opens. If the popup ever reads the wrong
+    size, that line is where.
 57. **⚠️ A TOP-LEVEL CONTROL NEVER SHRINKS ON ITS OWN (D376).** A `PanelContainer` added straight
     to the scene grows to its minimum and keeps that size when its contents shrink — the first
     cards carried the room a hidden people list had taken. Reset `Size` to the width after every

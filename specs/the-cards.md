@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
-**Decisions:** D376 (this document). Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376) and the controls folded onto the card the same day (D377): one structure, one panel.** ⏸️ Slice 2 (the two top bars) not started. Owner: Joe + Claude Code.
+**Decisions:** D376 (this document), D377, D378. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
+**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone.** Unplayed by Joe as of D378. Owner: Joe + Claude Code.
 
 ---
 
@@ -78,9 +78,47 @@ character; a village where nobody renamed anything hashes as it did before renam
 - **`RenameTests`** — given, blank, too long; the hash sees a given name and not a born one.
 - A windowed `BCLONE_SHOT` of four cards (handoff trap 39) looked at once; the shot hook is not in the tree.
 
-## 5. Slice 2 — the two top bars (not started)
+## 5. Slice 2 — the two top bars, and the Overview panel goes (✅ built, D378)
 
-Resources in **two rows** — *food, produce, wheat, fish, meat* / *logs, firewood, stone, tools* —
-with *more ▾* for iron, leather, *in homes and huts*, *on the ground*; amber on a number the
-village is short of; **villagers beside it**: total, adults, children, elders, laborers, and the
-clock. Then the Overview panel goes. The probe's `panels:` line measures the bars like any panel.
+The Overview — a dozen rows in a window at the top-left — is **two boxes on one bar** along the
+map's top edge, where the eye already is, and everything it held that is not a number the player
+glances at went to Settings. `Main.cs`, `BuildTopBars`.
+
+| Box | What it says | Where it comes from |
+|---|---|---|
+| **Resources** | two rows: **food** *(the umbrella, first)*, produce, wheat, fish, meat / logs, firewood, stone, tools — a chip, a number, a name; then `more ▾` | `FoodInGranaries` for food; `InStores(g)` per good; `BarRows` fixes the eight in Joe's order, **every other catalogue good is behind `more`** in catalogue order (iron, leather today; a modded good lands there the day it exists — D210's rule kept) |
+| **`more ▾`** | a popup: the leftover goods, then the two permanent rows *in homes and huts* `+N`/`—` and *on the ground* `+N`/`—` (its tooltip the per-good reason, D134) | `TotalFood − FoodInGranaries`; `OnTheGround(g)` summed, `WhyItIsOnTheGround` |
+| **Villagers** | `N villagers · N adults · N children · N elders · N laborers` (dots in the map's own villager colours) over `Fernhollow · Day 3, Summer, Year 17 · 2 households` | `Population`, the life-stage count, `Laborers`, `Name`, `Clock`, `LivingHouseholds` |
+
+**Amber on a number = the village is short of it, by the sim's own reckoning** — the predicates that
+staff the trades, so the bar and the Professions panel cannot disagree: food while
+`TheVillageWantsMoreFood()`, firewood while `LabourQuota.WoodcuttersWanted > 0`, logs while
+`LabourQuota.ForestersWanted > 0`; the tooltip says the number behind it. Nothing else has a demand
+function today, so nothing else goes amber — ⛔ a stock limit is not one: a limit is a ceiling, and
+holding less than a ceiling is not a shortage. A founding village opens with food and logs amber
+and firewood not (no home yet, so the woodcutter quota wants nothing), which is honest.
+
+**Rules that bind it.** The bar has no title — not foldable, not draggable, not in Settings'
+window list, exactly like the control bar; `h` still hides it. **Fixed width and height by
+construction:** every number is an `Amount()` cell (D367; 48 px for a good, 34 for a headcount),
+the names are static, and `more ▾` is a popup rather than a fold — a fold would grow the bar and
+push the roster under it (measured: 58 → 140 logical px tall with the rows laid on the bar). The
+left column, a new card and the passing banner start below it (`TopOfTheLeftColumn`); the right
+column does not move — the minimap stays top-right. The tick left the bar for the seed line in
+Settings (*About this run*: build · seed · tick · config · log), where the *Not here yet* roadmap
+fold went too.
+
+⚠️ **Measured at the 1280-logical layout:** the bar is 1069×58 logical, ends at 816 px at the
+default 75 % scale against a right column beginning at 966 — it clears until about 89 %; past
+that it runs under the minimap, and the minimap is the one that is draggable.
+
+**How it is tested.** The probe's `panels:` line prints the bar (`panel top`) on both passes and
+⛔ if its minimum moved between the founding and twelve years in; the **`bars:`** line poses every
+cell — the eighteen on the bar and in the popup — at `+12,345` and the clock line at a four-digit
+year with two-digit households, and ⛔ if the bar or the popup moved, or if the bar's end crosses the
+right column. Red-checked: one cell built without the trio → *"⛔ posing every cell at +12,345 moves
+the bar 791x58 → 1149x58"* and `panels:` red on the second pass. **One zero, recorded:** the rows on
+the bar instead of the popup scores nothing on either line, because `Amount()` cells are stable
+whatever they sit in — that check is the 58 → 140 measurement above, not a guard. Two windowed
+`BCLONE_SHOT`s (handoff trap 39) looked at: the founding with `more ▾` open, and a card twelve
+years in; the hook is not in the tree.

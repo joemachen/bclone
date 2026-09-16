@@ -134,10 +134,10 @@ public partial class Main
 
     private void PlaceNewCard(Card card)
     {
-        // Beside the left column, stepping down a little for each card already open, so a
-        // second card never lands exactly on the first.
+        // Beside the left column and under the top bars (D378), stepping down a little for
+        // each card already open, so a second card never lands exactly on the first.
         float x = Edge + DefaultPanelWidth + 16f;
-        float y = Edge + 40f + (24f * (_cards.Count - 1));
+        float y = TopOfTheLeftColumn() + 26f + (24f * (_cards.Count - 1));
         card.Panel.Position = new Vector2(x, y);
     }
 

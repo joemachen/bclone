@@ -97,7 +97,7 @@ a fail. The whole claim of this phase is that the game explains itself.
 | 20 | A full store is marked on the map, and the marker can be switched off per building and globally | |
 | 21 | A store set to logs-only **actually refuses** firewood — watch a villager put it down rather than in | |
 | 22 | Goods refused by a full store become a visible heap, and somebody eventually fetches it | |
-| 23 | The Overview's food figure and what you can see in the buildings agree | |
+| 23 | The resources bar's food figure (the Overview's, until D378) and what you can see in the buildings agree | |
 | 24 | Switching the market off costs convenience and not lives | |
 
 > **⚠️ Check 21 is D144 and check 22 is D96**, and both shipped as *predicates that were never

@@ -63,7 +63,6 @@ public partial class Main : Control
     }
 
     private Label _clockLabel = null!;
-    private Label _villageLabel = null!;
     private Label _seedLabel = null!;
     private Label _speedLabel = null!;
     private ItemList _roster = null!;
@@ -263,6 +262,7 @@ public partial class Main : Control
         ProbePanelWidths("at the founding");
         GD.Print(TheProfessionWarningsAreHonest());
         GD.Print(TheCardsHoldTheirShape());
+        GD.Print(TheBarsHoldTheirShape());
 
         // ⭐⭐ THE TWO SELF-SCROLLING PANELS, MEASURED — because they are the two that can hold
         // their content correctly and draw NONE of it. Both were `size 288x0` for the life of
@@ -300,8 +300,8 @@ public partial class Main : Control
 
         // ⛔ AND THE PANELS AGAIN, TWELVE YEARS IN (D367). At the founding there are no heaps and
         // the larders are empty, so the first measurement cannot see the strings that used to
-        // widen the Overview; this one can. The rows are posed as well, in case the run happens
-        // to have nothing on the ground.
+        // widen the Overview; this one can. The two rows under `more ▾` are posed as well, in
+        // case the run happens to have nothing on the ground.
         Refresh();
         _onTheGround.Text = "+1,234";
         _foodElsewhere.Text = "+12,345";
@@ -419,9 +419,87 @@ public partial class Main : Control
             _headers[i].ButtonPressed = wereOpen[i];
         }
 
+        // ⭐ AND THE TOP BAR (D378), which is content-sized rather than given a width, so the
+        // question for it is not "did it outgrow its box" but "did it move between the two
+        // passes" — the founding against twelve years of heaps, larders and a grown village.
+        Vector2 bar = _topBar.GetCombinedMinimumSize();
+        bool moved = _barMeasured is Vector2 first && !first.IsEqualApprox(bar);
+        widened += moved ? 1 : 0;
+        GD.Print(
+            $"[widths] panel top   at ({_topBar.Position.X:F0}, {_topBar.Position.Y:F0}) "
+            + $"size {_topBar.Size.X:F0}x{_topBar.Size.Y:F0}, wants {bar.X:F0}x{bar.Y:F0}"
+            + (moved ? $"  ⛔ moved from {_barMeasured!.Value.X:F0}x{_barMeasured.Value.Y:F0} at the founding" : string.Empty));
+        _barMeasured ??= bar;
+
         GD.Print(widened == 0
             ? $"[widths] panels: ✅ none wider than it was given, {when}"
             : $"[widths] panels: ⛔ {widened} widened past the width they were given, {when}");
+    }
+
+    /// <summary>The top bar's minimum at the founding, so the second pass can say whether it moved.</summary>
+    private Vector2? _barMeasured;
+
+    /// <summary>
+    /// The top bars at their longest: every number posed at six figures and a sign, the clock
+    /// line at a long date — and the bar must not move (D378).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The founding's numbers are one and two digits, so a bar measured there proves nothing
+    /// about a cell without <see cref="Amount"/>'s trio — the same zero the first cards probe
+    /// scored until a long name was posed (handoff trap 58). Posed instead: <c>+12,345</c> in
+    /// every cell on the bar and in the popup, and a four-digit year with two-digit households.
+    /// </para>
+    /// <para>
+    /// Also says where the bar ends against where the right column begins at the 1280 layout
+    /// width, because a bar that runs under the minimap is a bar nobody can read.
+    /// </para>
+    /// </remarks>
+    private string TheBarsHoldTheirShape()
+    {
+        Refresh();
+        ForceUpdateTransform();
+        Vector2 before = _topBar.GetCombinedMinimumSize();
+        Vector2 popupBefore = _morePopup.GetContentsMinimumSize();
+
+        var cells = new List<Label> { _foodTotal, _populationCell, _adultsCell, _childrenCell, _eldersCell, _laborersCell, _foodElsewhere, _onTheGround };
+        foreach ((Goods _, Label held) in _goodsReadouts)
+        {
+            cells.Add(held);
+        }
+
+        foreach (Label cell in cells)
+        {
+            cell.Text = "+12,345";
+        }
+
+        string clockWas = _clockLabel.Text;
+        _clockLabel.Text = $"{_loop.World.Name}   ·   Day 30, Autumn, Year 1234   ·   99 households";
+
+        ForceUpdateTransform();
+        Vector2 after = _topBar.GetCombinedMinimumSize();
+        Vector2 popupAfter = _morePopup.GetContentsMinimumSize();
+
+        _clockLabel.Text = clockWas;
+        Refresh();
+
+        float barEnds = Edge + (after.X * _uiScale);
+        float columnBegins = 1280f - Edge - DefaultPanelWidth;
+        string where = $"the bar ends at {barEnds:F0}px and the right column begins at {columnBegins:F0}px at {_uiScale * 100f:F0}%";
+
+        if (!before.IsEqualApprox(after))
+        {
+            return $"[widths] bars: ⛔ posing every cell at +12,345 moves the bar {before.X:F0}x{before.Y:F0} → {after.X:F0}x{after.Y:F0}";
+        }
+
+        if (!popupBefore.IsEqualApprox(popupAfter))
+        {
+            return $"[widths] bars: ⛔ posing the popup's rows moves it {popupBefore.X:F0}x{popupBefore.Y:F0} → {popupAfter.X:F0}x{popupAfter.Y:F0}";
+        }
+
+        return barEnds < columnBegins
+            ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}"
+            : $"[widths] bars: ⛔ {where} — the bar runs under the right column";
     }
 
     /// <summary>
@@ -1498,18 +1576,17 @@ public partial class Main : Control
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
 
-        _clockLabel.Text = $"{world.Clock}   ·   tick {world.Tick}";
         RefreshCards(world);
 
         ShowTheFrameCost();
         CentreSettingsIfItJustOpened();
 
-        // WHO IS HERE, BROKEN DOWN BY LIFE STAGE (Joe's area 1). "17 villagers" is the
-        // number; "11 adults and 4 children" is the one that tells you whether the village
-        // is growing or ageing out, which is the question a generational game is about.
-        // Counted here rather than on the world: the roster already walks this list every
-        // frame, a village is tens of people, and a sim reader would be a second way of
-        // asking the same question.
+        // WHO IS HERE, BROKEN DOWN BY LIFE STAGE (Joe's area 1, on the villagers bar since D378).
+        // "17 villagers" is the number; "11 adults and 4 children" is the one that tells you
+        // whether the village is growing or ageing out, which is the question a generational
+        // game is about. Counted here rather than on the world: the roster already walks this
+        // list every frame, a village is tens of people, and a sim reader would be a second way
+        // of asking the same question.
         int adults = 0;
         int children = 0;
         int elders = 0;
@@ -1529,21 +1606,17 @@ public partial class Main : Control
             }
         }
 
-        // Two short lines rather than one long one: at this column width a single sentence
-        // wrapped mid-clause, which reads as an accident rather than as a layout.
-        _villageLabel.Text =
-            $"{world.Population} villagers in {LivingHouseholds(world)} households\n" +
-            $"{adults} adults · {children} children · {elders} elders";
+        _populationCell.Text = world.Population.ToString();
+        _adultsCell.Text = adults.ToString();
+        _childrenCell.Text = children.ToString();
+        _eldersCell.Text = elders.ToString();
+        _laborersCell.Text = world.Laborers.ToString();
+        _clockLabel.Text = $"{world.Name}   ·   {world.Clock}   ·   {LivingHouseholds(world)} households";
+        _seedLabel.Text = TheRunLine(world);
 
-        // WHAT IS IN THE STORES, one row per good (D83). Totals across every granary and
+        // WHAT IS IN THE STORES, one cell per good (D83). Totals across every granary and
         // warehouse, not the first of each (D38) — a village that has built a second one should
         // see what is in it.
-        //
-        // Food carries what is NOT in the stores in the same row rather than in a sentence
-        // of its own. The two numbers do not overlap, and showing them apart is how the old
-        // line read as a total and its largest part when it was neither. "Homes and huts"
-        // rather than "larders", because a workplace buffer is neither a store nor a larder
-        // and calling it one would be the kind of near-enough label D76 keeps punishing.
         int onTheGround = 0;
         var whyOnTheGround = new List<string>();
         for (int i = 0; i < _goodsReadouts.Count; i++)
@@ -1570,7 +1643,7 @@ public partial class Main : Control
             // the parenthetical — `132  (+4 on the ground — still to be carried in)` — and a
             // Label's minimum width is its text, so the whole panel grew and shrank as heaps came
             // and went. Joe: *"I hate how the size of the panels change when information
-            // updates."* The heaps go to the permanent row below; the sentence is its tooltip.
+            // updates."* The heaps go to the permanent row under `more ▾`; the sentence is its tooltip.
             int inHeaps = world.OnTheGround(goods);
             held.Text = inStores.Grouped();
             if (inHeaps > 0)
@@ -1578,14 +1651,33 @@ public partial class Main : Control
                 onTheGround += inHeaps;
                 whyOnTheGround.Add($"{inHeaps.Grouped()} {GoodsName(world, goods)} — {WhyItIsOnTheGround(world, goods)}");
             }
+
+            // ⭐ AMBER WHILE THE VILLAGE IS SHORT OF IT (D378) — by the trade's own reckoning, so
+            // the bar says what the Professions panel is about to staff for.
+            switch (goods)
+            {
+                case Goods.Firewood:
+                    int woodcutters = LabourQuota.WoodcuttersWanted(world);
+                    ShowShortfall(held, woodcutters > 0,
+                        $"the village is short of firewood — {woodcutters} on splitting it would cover the winter");
+                    break;
+                case Goods.Logs:
+                    int foresters = LabourQuota.ForestersWanted(world);
+                    ShowShortfall(held, foresters > 0,
+                        $"the village is short of logs — {foresters} on felling would cover what is waiting to be built");
+                    break;
+            }
         }
 
         // The umbrella, split the way the old Food row was: what the stores hold, and what is out
-        // in the larders behind it — on its OWN row now, always present, so the panel's width and
+        // in the larders behind it — on its OWN row now, always present, so the popup's width and
         // height are the same whether the larders are full or empty (D367).
         int foodInStores = world.FoodInGranaries();
         int foodElsewhere = world.TotalFood() - foodInStores;
         _foodTotal.Text = foodInStores.Grouped();
+        ShowShortfall(_foodTotal, world.TheVillageWantsMoreFood(),
+            $"the village is short of food — it holds {world.FoodTheVillageHolds().Grouped()} and wants "
+            + $"{(world.StockLimits.For(Goods.Produce) ?? world.TargetFoodForTheGranary()).Grouped()}");
         _foodElsewhere.Text = foodElsewhere > 0 ? $"+{foodElsewhere.Grouped()}" : "—";
         _onTheGround.Text = onTheGround > 0 ? $"+{onTheGround.Grouped()}" : "—";
         _onTheGround.TooltipText = string.Join("\n", whyOnTheGround);
@@ -2594,7 +2686,7 @@ public partial class Main : Control
         // **A column makes overlap impossible by construction** instead of by choosing sizes
         // carefully, which is the only kind of fix that survives adding a seventh panel.
 
-        BuildStatusPanel();
+        BuildTopBars();
         // ⭐ THE ROSTER FIRST, SO PROFESSIONS STACKS BELOW IT (D326, Joe). `_docked` order IS the
         // default stacking order, so "immediately below The village" is a build-order fact rather
         // than a coordinate — which is what keeps it true when a panel above them changes height.
@@ -2646,170 +2738,185 @@ public partial class Main : Control
     private const int ListHeight = 190;
 
     /// <summary>
-    /// What the village is: the date, what it holds, and anything it is asking for.
+    /// The village at a glance, along the map's top edge: what it holds, and who is here (D378).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Joe's area 1, rebuilt from his Banished notes.</b> It used to be two run-on
-    /// sentences — the date, then every total the village had, comma-separated. Reading
-    /// <em>how much firewood is there?</em> off that meant reading the whole line, which is
-    /// how a panel ends up "HUGE" (D113) without holding much.
+    /// <b>Joe's UI pass, slice 2</b> (`specs/the-cards.md §5`): the Overview panel — a dozen
+    /// rows in a window — becomes two bars where the eye already is. *"Remove text where you
+    /// can."* The resources box is two rows of eight goods with a <c>more ▾</c> for the rest; the
+    /// villagers box is the four counts he looks at most, a laborer count beside them, and the
+    /// clock. Everything the Overview held that is not a number the player glances at — the
+    /// seed, the log path, the build, the roadmap of goods that do not exist yet — went to
+    /// Settings, where a thing consulted once belongs.
     /// </para>
     /// <para>
-    /// <b>⭐ The goods are driven off the <see cref="Goods"/> enum, not listed by hand</b>,
-    /// which is the point of the slice rather than tidiness: a good appears here the day it
-    /// is added to the sim, not the day somebody remembers this method. Stone, tools and iron
-    /// have been in the enum since D82 and were in no panel until now, which is exactly the
-    /// failure being designed out.
+    /// <b>⛔ Fixed height and fixed width, by construction.</b> Every number is an
+    /// <see cref="Amount"/> cell (D367), so a heap of 12,345 cannot widen the bar; the names
+    /// are static; <c>more ▾</c> opens a popup rather than a fold, because a fold would grow the
+    /// bar and push the roster under it. The probe's <c>bars:</c> line poses every cell at its
+    /// longest and refuses a bar that moved.
+    /// </para>
+    /// <para>
+    /// <b>One floater, two boxes.</b> The outer panel has no skin and no title — so it is not
+    /// foldable, not draggable and not in Settings' window list, exactly like the control bar —
+    /// and the two skinned boxes inside it are what the player sees. One node to position, one
+    /// to measure, and the left column starts below it (<see cref="TopOfTheLeftColumn"/>).
     /// </para>
     /// </remarks>
-    private void BuildStatusPanel()
+    private void BuildTopBars()
     {
-        // Titled, so it can be folded and switched off like everything else. It is Joe's
-        // area 1 and the panel he calls the Overview, so it is called that.
-        VBoxContainer body = InColumn(right: false, 0, "Overview");
+        VBoxContainer body = Floating(Edge, Edge, 0, 0, Corner.TopLeft);
+        _topBar = _panels[^1];
+        _topBar.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
 
-        // ⭐ THE VALLEY HAS A NAME NOW, and it is the heading rather than a line in the
-        // middle: this is the one word that says which run you are watching. Derived from
-        // the seed and not drawn from it — see `SimWorld.Name` for why that distinction is
-        // load-bearing rather than pedantic.
-        body.AddChild(Heading(_loop.World.Name));
+        var boxes = new HBoxContainer();
+        boxes.AddThemeConstantOverride("separation", 10);
+        body.AddChild(boxes);
 
-        _clockLabel = Body(string.Empty);
-        body.AddChild(_clockLabel);
-
-        _villageLabel = Wrapped(Body(string.Empty));
-        body.AddChild(_villageLabel);
-
-        body.AddChild(BuildGoodsTable());
-        body.AddChild(BuildGoodsRoadmap());
-
-        // ⭐ THE STANDING ALERTS HAVE LEFT THIS PANEL AND GONE TO THE LOG (Joe, 2026-08-10,
-        // pointing at them in a screenshot: *"I don't want to see the part in the UI I've
-        // outlined… those should be in the village log window."*)
-        //
-        // **This reverses D42/D47's reasoning, and it is worth saying which part.** They were
-        // put here because both are STATES rather than events — *a couple is waiting right
-        // now, a workplace is empty right now* — on the argument that "a line that scrolls
-        // away is a problem the player never learns they have". That argument was made when
-        // the log was the only alternative and the overview was three lines long.
-        //
-        // What changed is the panel around them: the overview is now a dozen rows the player
-        // reads at a glance, and two wrapped amber paragraphs in the middle of it were the
-        // tallest and loudest thing on screen — permanently, because a state that is true
-        // stays true. **An alert that is always on is an alert nobody reads**, which is the
-        // nag D42 refuses in its own words.
-        //
-        // The state is not lost: both now narrate on the EDGE, when they begin and when they
-        // clear, so the log answers *"is that still going on?"* without a panel sitting there
-        // saying so. See `HouseholdSystem` for the first and `LabourSystem` for the second.
-
-        // The seed and the audit log together, because they are the two things you need
-        // to reproduce and explain a run: the seed says which world, the log says what
-        // happened in it.
-        //
-        // ⭐ AND THE BUILD, which is the third (METHODOLOGY §5). `VERSION` has been the
-        // "single source of version truth" since Phase 0 with **nothing reading it**; it
-        // reaches every assembly now, and putting it here is what makes that checkable
-        // rather than merely true — a bug report quoting a seed and a log is worth much
-        // less if nobody can say which build produced them.
-        _seedLabel = Wrapped(Muted(
-            $"bclone {BuildVersion}   ·   seed {_loop.World.Seed}   ·   "
-            + $"config: {_configSource}   ·   log: {_logPath}"));
-        body.AddChild(_seedLabel);
+        boxes.AddChild(BuildResourcesBox());
+        boxes.AddChild(BuildVillagersBox());
     }
 
+    /// <summary>The bar itself, for the probe and for whatever has to sit below it.</summary>
+    private PanelContainer _topBar = null!;
+
     /// <summary>
-    /// What the village holds, one line per good — and one greyed line per good it has not
-    /// invented yet.
+    /// The eight goods on the bar, in Joe's order, two rows. <b>Every other good the catalogue
+    /// has goes behind <c>more ▾</c></b>, in catalogue order.
+    /// </summary>
+    /// <remarks>
+    /// A short hand list rather than the catalogue walk the Overview did, because the rows are
+    /// his (*"food, produce, wheat, fish, meat / logs, firewood, stone, tools"*) and the
+    /// catalogue's order is not (fish and meat sit before wheat there). ⚠️ The catalogue is
+    /// still what decides <em>whether</em> a good exists: a modded good lands in the popup the
+    /// day it is added, which is D210's rule kept — the bar never hides a good, it only
+    /// decides which eight are on the front. *"Customisable which goods show"* is Joe's later.
+    /// </remarks>
+    private static readonly Goods[][] BarRows =
+    {
+        new[] { Goods.Produce, Goods.Wheat, Goods.Fish, Goods.Meat },
+        new[] { Goods.Logs, Goods.Firewood, Goods.Stone, Goods.Tools },
+    };
+
+    private PanelContainer BuildResourcesBox()
+    {
+        SimWorld world = _loop.World;
+        var box = new PanelContainer();
+        box.AddThemeStyleboxOverride("panel", PanelSkin(0.94f));
+
+        var rows = new VBoxContainer();
+        rows.AddThemeConstantOverride("separation", 3);
+        box.AddChild(rows);
+
+        // ⭐⭐ FOOD IS AN UMBRELLA (Joe, 2026-09-05) AND IT COMES FIRST. `FoodTheVillageHolds` is
+        // what the birth gate, the food limit and the labour quota all read, so the first number
+        // on the bar is the number the village actually decides on; the four foods after it are
+        // its parts. The umbrella's chip is produce's, as the Overview's was.
+        HBoxContainer first = BarRow();
+        rows.AddChild(first);
+        _foodTotal = AddBarCell(first, ChipColour(Goods.Produce), "food");
+        foreach (Goods goods in BarRows[0])
+        {
+            AddGoodsCell(first, world, goods);
+        }
+
+        HBoxContainer second = BarRow();
+        rows.AddChild(second);
+        foreach (Goods goods in BarRows[1])
+        {
+            AddGoodsCell(second, world, goods);
+        }
+
+        second.AddChild(BuildTheMoreButton(world));
+        return box;
+    }
+
+    private static HBoxContainer BarRow()
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 9);
+        return row;
+    }
+
+    /// <summary>A chip, a number that cannot widen, and a name — one cell of a bar.</summary>
+    private static Label AddBarCell(HBoxContainer row, Color? chip, string name, float width = BarAmountWidth)
+    {
+        var cell = new HBoxContainer();
+        cell.AddThemeConstantOverride("separation", 5);
+        if (chip is Color colour)
+        {
+            cell.AddChild(Chip(colour));
+        }
+
+        // ⚠️ `Fill`, not the `ExpandFill` the Overview's cells had: in a row of cells an
+        // expanding one takes the slack and the bar's width stops being its contents'.
+        Label number = Amount(width);
+        number.SizeFlagsHorizontal = SizeFlags.Fill;
+        cell.AddChild(number);
+        cell.AddChild(Muted(name));
+        row.AddChild(cell);
+        return number;
+    }
+
+    private void AddGoodsCell(HBoxContainer row, SimWorld world, Goods goods)
+    {
+        Label held = AddBarCell(row, ChipColour(goods), world.GoodsCatalog.NameOf(goods));
+        _goodsReadouts.Add((goods, held));
+    }
+
+    /// <summary>Room for "123,456" at <see cref="RowSize"/> — a bar's cell, narrower than a panel's.</summary>
+    private const float BarAmountWidth = 48f;
+
+    /// <summary>
+    /// <c>more ▾</c>: the goods not on the front of the bar, and the two things that are not
+    /// in the stores — in a popup, so the bar's height never moves.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⚠️ A greyed row says WHY it is empty rather than showing a zero</b>, which is D98's
-    /// rule — <em>a number that is always zero is a lie waiting to be found</em> — applied to
-    /// a panel instead of a config key. "Coal 0" tells the player their village has run out
-    /// of something; "Coal — no mine to dig it" tells them the truth, which is that the game
-    /// has not got there yet. Joe asked for the overview to double as a roadmap, and that
-    /// only works if the roadmap is honest about which half is which.
+    /// The two permanent rows are D367's: food out in the larders and buffers, and goods lying
+    /// in the yard, <c>—</c> when there is nothing and <c>+N</c> when there is. The per-good
+    /// reason a heap is on the ground (D134's three states) is the ground row's tooltip.
     /// </para>
     /// <para>
-    /// <b>The greyed list is hand-written and is meant to be deleted, a row at a time.</b>
-    /// It cannot be driven off anything, because the whole point of a row here is that the
-    /// thing it names does not exist — there is no enum value to read. Each row's reason
-    /// therefore names what would have to be built, so the row deletes itself the day that
-    /// lands rather than sitting here going quietly stale.
-    /// </para>
-    /// <para>
-    /// Coloured chips rather than icons: the project ships no image assets (D26), and an
-    /// emoji glyph is at the mercy of whatever the default font happens to cover. A
-    /// <c>ColorRect</c> draws the same on every machine.
+    /// ⚠️ A <see cref="PopupPanel"/> is a <see cref="Window"/>, not a child in the scaled tree, so
+    /// it is told the UI scale each time it opens rather than inheriting it.
     /// </para>
     /// </remarks>
-    private GridContainer BuildGoodsTable()
+    private Button BuildTheMoreButton(SimWorld world)
     {
+        var more = new Button
+        {
+            Text = "more ▾",
+            Flat = true,
+            TooltipText = "The rest of the goods · in homes and huts · on the ground",
+        };
+        more.AddThemeFontSizeOverride("font_size", 12);
+
+        _morePopup = new PopupPanel { WrapControls = true };
+        _morePopup.AddThemeStyleboxOverride("panel", PanelSkin());
+        more.AddChild(_morePopup);
+
         var table = new GridContainer { Columns = 3 };
         table.AddThemeConstantOverride("h_separation", 10);
         table.AddThemeConstantOverride("v_separation", 2);
+        _morePopup.AddChild(table);
 
-        // ⛔ THE CATALOGUE, NOT THE ENUM. `Stockpile` warns against exactly this loop bound:
-        // *"iterating 0..Kinds over a village that has more goods than the enum silently
-        // ignores every good above the sixth"* — so a mod-added good had a working slot in the
-        // sim, a stock limit, a place in the hash, and no row on screen.
-        // ⭐⭐ FOOD IS AN UMBRELLA (Joe, 2026-09-05), AND THE PANEL USED TO CONTRADICT THE ONE
-        // BELOW IT. This row read `InStores(Goods.Produce)` — one good — so it said **Food 0** while
-        // the stock-limits table said **have 3,043** from `FoodTheVillageHolds()`. Two panels, one
-        // screen, two different answers to the same question, and this was the wrong one.
-        //
-        // ⚠️ The total comes from the sim rather than being re-added here: `FoodTheVillageHolds`
-        // is what the birth gate, the food limit and the labour quota all read, so the number on
-        // screen is now the number the village actually decides on.
-        table.AddChild(Chip(ChipColour(Goods.Produce)));
-        table.AddChild(Body("Food"));
-
-        _foodTotal = Amount();
-        table.AddChild(_foodTotal);
-
-        // ⛔ THE FOODS COME FIRST, TOGETHER, AND THAT IS NOT COSMETIC. The first cut indented
-        // every edible where it already stood in catalogue order — which put Fish (6) and Meat
-        // (7) below Iron (5), so the panel read as though **iron had two kinds of food indented
-        // under it**. Joe, immediately: *"why are fish and meat indented under iron?"*
-        //
-        // ⚠️ An indent is a claim about WHAT OWNS WHAT, so the rows have to be arranged to match
-        // it. Catalogue order still decides the order WITHIN each group, so a modder's good lands
-        // somewhere predictable rather than wherever the loop happened to reach it.
-        for (int pass = 0; pass < 2; pass++)
+        for (int id = 0; id < world.GoodsCatalog.Count; id++)
         {
-            bool foods = pass == 0;
-
-            for (int id = 0; id < _loop.World.GoodsCatalog.Count; id++)
+            var goods = (Goods)id;
+            if (OnTheFrontOfTheBar(goods))
             {
-                var goods = (Goods)id;
-                if (_loop.World.GoodsCatalog.Edible(goods) != foods)
-                {
-                    continue;
-                }
-
-                table.AddChild(Chip(ChipColour(goods)));
-
-                // ⭐ Every food sits UNDER the total, which is what makes the sum read as a sum.
-                // Once Joe's subtypes land — venison, trout, wheat — they fall in here for free.
-                table.AddChild(Body(foods
-                    ? $"    {GoodsName(_loop.World, goods)}"
-                    : GoodsName(_loop.World, goods)));
-
-                Label held = Amount();
-                table.AddChild(held);
-
-                _goodsReadouts.Add((goods, held));
+                continue;
             }
+
+            table.AddChild(Chip(ChipColour(goods)));
+            table.AddChild(Muted(world.GoodsCatalog.NameOf(goods)));
+            Label held = Amount();
+            table.AddChild(held);
+            _goodsReadouts.Add((goods, held));
         }
 
-        // ⭐⭐ THE TWO THINGS THAT ARE NOT IN THE STORES, ON TWO ROWS THAT ARE ALWAYS THERE (D367).
-        // Food out in the larders and buffers, and goods lying in the yard, used to ride inside
-        // the amount cells as parentheticals — and appear and vanish, taking the panel's width
-        // with them. Two permanent rows: `—` when there is nothing, a `+N` when there is, so the
-        // panel never moves. The per-good reason a heap is on the ground (D134's three states)
-        // is the ground row's tooltip, not its text.
         table.AddChild(new Control());
         table.AddChild(Muted("in homes and huts"));
         _foodElsewhere = Amount();
@@ -2823,12 +2930,82 @@ public partial class Main : Control
         _onTheGround.MouseFilter = MouseFilterEnum.Pass;
         table.AddChild(_onTheGround);
 
-        return table;
+        more.Pressed += () =>
+        {
+            Rect2 at = more.GetGlobalRect();
+            _morePopup.ContentScaleFactor = _uiScale;
+            _morePopup.Popup(new Rect2I((int)at.Position.X, (int)at.End.Y + 2, 0, 0));
+        };
+
+        return more;
     }
 
+    private static bool OnTheFrontOfTheBar(Goods goods)
+    {
+        foreach (Goods[] row in BarRows)
+        {
+            if (System.Array.IndexOf(row, goods) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private PopupPanel _morePopup = null!;
     private Label _foodElsewhere = null!;
     private Label _onTheGround = null!;
     private Label _onTheGroundLabel = null!;
+
+    /// <summary>
+    /// Who is here — total, adults, children, elders, laborers — and the clock.
+    /// </summary>
+    /// <remarks>
+    /// *"17 villagers"* is the number; *"11 adults and 4 children"* is the one that tells you
+    /// whether the village is growing or ageing out, which is the question a generational game
+    /// is about. The laborer count is the Professions panel's, put where it is read: a limit is
+    /// what creates laborers (D63), and this is where the player sees the limit bite. The dots
+    /// are the map's own villager colours, so a child on the bar and a child in the valley are
+    /// one fact.
+    /// </remarks>
+    private PanelContainer BuildVillagersBox()
+    {
+        var box = new PanelContainer();
+        box.AddThemeStyleboxOverride("panel", PanelSkin(0.94f));
+
+        var lines = new VBoxContainer();
+        lines.AddThemeConstantOverride("separation", 3);
+        box.AddChild(lines);
+
+        HBoxContainer counts = BarRow();
+        lines.AddChild(counts);
+        _populationCell = AddBarCell(counts, VillageMap.AdultColour, "villagers", HeadcountWidth);
+        _adultsCell = AddBarCell(counts, null, "adults", HeadcountWidth);
+        _childrenCell = AddBarCell(counts, VillageMap.ChildColour, "children", HeadcountWidth);
+        _eldersCell = AddBarCell(counts, VillageMap.ElderColour, "elders", HeadcountWidth);
+        _laborersCell = AddBarCell(counts, null, "laborers", HeadcountWidth);
+
+        // The valley's name is the one word that says which run you are watching — derived
+        // from the seed, not drawn from it (`SimWorld.Name`). The tick left this line for the
+        // seed line in Settings: it is a bug report's number, not a player's.
+        _clockLabel = Muted(string.Empty);
+        lines.AddChild(_clockLabel);
+
+        return box;
+    }
+
+    /// <summary>
+    /// Room for "1,234" — a headcount, which is never six figures. Narrower than a goods cell so
+    /// the whole bar clears the right-hand column at the default scale (the probe says where it ends).
+    /// </summary>
+    private const float HeadcountWidth = 34f;
+
+    private Label _populationCell = null!;
+    private Label _adultsCell = null!;
+    private Label _childrenCell = null!;
+    private Label _eldersCell = null!;
+    private Label _laborersCell = null!;
 
     /// <summary>
     /// A right-aligned number cell that <b>cannot widen its column</b> (D367).
@@ -2840,7 +3017,7 @@ public partial class Main : Control
     /// fixed minimum is what keeps the numbers aligned; the ellipsis is the honest failure if a
     /// number ever outgrows it.
     /// </remarks>
-    private static Label Amount()
+    private static Label Amount(float width = AmountWidth)
     {
         Label label = Body(string.Empty);
         label.HorizontalAlignment = HorizontalAlignment.Right;
@@ -2851,8 +3028,39 @@ public partial class Main : Control
         // check with only it reverted scored zero). Both, so the intent is legible.
         label.ClipText = true;
         label.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-        label.CustomMinimumSize = new Vector2(AmountWidth, 0f);
+        label.CustomMinimumSize = new Vector2(width, 0f);
         return label;
+    }
+
+    /// <summary>
+    /// Amber on a bar's number: <b>the village is short of it</b>, by the sim's own reckoning.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>The same predicates that staff the trades, so the bar and the Professions panel
+    /// cannot disagree</b> (D378): food while <see cref="SimWorld.TheVillageWantsMoreFood"/>,
+    /// firewood while <see cref="LabourQuota.WoodcuttersWanted"/> wants hands, logs while
+    /// <see cref="LabourQuota.ForestersWanted"/> does. Nothing else has a demand function today,
+    /// so nothing else goes amber — and a stock limit is deliberately not one: a limit is a
+    /// ceiling, and holding less than a ceiling is not a shortage.
+    /// </para>
+    /// <para>
+    /// A founding village is short of all three, so the bar opens amber. That is honest: it is.
+    /// </para>
+    /// </remarks>
+    private static void ShowShortfall(Label number, bool wanting, string why)
+    {
+        if (wanting)
+        {
+            number.AddThemeColorOverride("font_color", LightStopped);
+            number.TooltipText = why;
+            number.MouseFilter = MouseFilterEnum.Pass;
+        }
+        else
+        {
+            number.RemoveThemeColorOverride("font_color");
+            number.TooltipText = string.Empty;
+        }
     }
 
     /// <summary>Room for "1,269,000" at <see cref="RowSize"/>.</summary>
@@ -4070,8 +4278,24 @@ public partial class Main : Control
     /// </remarks>
     private void ArrangeDefaults()
     {
-        float leftY = Edge;
+        // ⭐ THE LEFT COLUMN STARTS UNDER THE TOP BARS (D378); the right one still starts at the
+        // top, because the minimap is top-right and the bar is content-sized on the left. The
+        // debug frame counter sits in the gap under the bar, where it can actually be read — it
+        // used to sit at the corner, under the Overview.
+        float leftY = TopOfTheLeftColumn();
         float rightY = Edge;
+
+        if (_frameCounter is not null)
+        {
+            _frameCounter.Position = new Vector2(Edge, leftY - Edge);
+        }
+
+        // The passing banner is centred at the top and 460 wide, which now runs under the
+        // villagers box; it drops below the bar with the column.
+        if (_passingPanel is not null)
+        {
+            _passingPanel.OffsetTop = leftY;
+        }
 
         for (int i = 0; i < _docked.Count; i++)
         {
@@ -4121,6 +4345,27 @@ public partial class Main : Control
     }
 
     private bool _arranged;
+
+    /// <summary>
+    /// Where the left-hand stack — and a new card — may begin: just under the top bars, in
+    /// screen pixels (D378).
+    /// </summary>
+    /// <remarks>
+    /// The bar is laid out in logical units and drawn at <see cref="_uiScale"/>, so its drawn
+    /// height is its size times the scale — the same conversion <see cref="ArrangeDefaults"/>
+    /// makes for every panel it stacks. Asked of the bar's minimum as well as its size, because
+    /// a panel that has not settled reports a size of nothing.
+    /// </remarks>
+    private float TopOfTheLeftColumn()
+    {
+        if (_topBar is null || !_topBar.Visible)
+        {
+            return Edge;
+        }
+
+        float tall = Mathf.Max(_topBar.Size.Y, _topBar.GetCombinedMinimumSize().Y) * _uiScale;
+        return Edge + tall + Edge;
+    }
 
     private int _settling;
 
@@ -4859,7 +5104,24 @@ public partial class Main : Control
         body.AddChild(Caption(
             "Off: nobody is moved between jobs unless you change a professions number. "
             + "Empty seats are still filled and a death is still answered."));
+
+        // ⭐ THE OVERVIEW'S LEFTOVERS (D378). The seed and the audit log together, because they
+        // are the two things you need to reproduce and explain a run: the seed says which world,
+        // the log says what happened in it — and the build, which is the third (METHODOLOGY §5):
+        // a bug report quoting a seed and a log is worth much less if nobody can say which build
+        // produced them. The tick joined them here when it left the villagers bar. And the
+        // roadmap of goods that do not exist yet, which is consulted once and then known —
+        // which is why neither belongs on a bar the player reads every minute.
+        body.AddChild(Muted("About this run"));
+        _seedLabel = Wrapped(Muted(TheRunLine(_loop.World)));
+        body.AddChild(_seedLabel);
+        body.AddChild(BuildGoodsRoadmap());
     }
+
+    /// <summary>Build, seed, tick, config and log — the line a bug report quotes.</summary>
+    private string TheRunLine(SimWorld world) =>
+        $"bclone {BuildVersion}   ·   seed {world.Seed}   ·   tick {world.Tick}   ·   "
+        + $"config: {_configSource}   ·   log: {_logPath}";
 
     /// <summary>
     /// Hide the furniture entirely, so the valley is the only thing on screen.
