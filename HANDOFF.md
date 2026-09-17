@@ -1,16 +1,23 @@
-# Handoff — bclone: **▶️ PHASE 5 — TRADES VISIBLY WORK (D384) IS IN PROGRESS: PART 1, THE WOODCUTTER'S STINT, IS COMMITTED AND UNPLAYED; PARTS 2 AND 3 (FORAGER IN THE RING, HUNTER IN THE WOODS) ARE NEXT.**
+# Handoff — bclone: **▶️ PHASE 5 — TRADES VISIBLY WORK (D384) IS IN PROGRESS: PARTS 1 AND 2 (THE WOODCUTTER'S STINT, THE FORAGER IN THE RING) ARE COMMITTED AND UNPLAYED; PART 3 (THE HUNTER IN THE WOODS) IS NEXT.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D384 PART 1.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D384 PART 2.**
 >
-> **The state:** `main` = D384 part 1 on `101d05c` (= `origin/main`); **committed, NOT pushed —
-> Joe pushes after he plays.** Working tree clean. Suite **1168 passing, 0 failing, 2 skipped of
-> 1170, 4m35** (was 3m07 — measured, not a per-tick regression: villages that froze under a
+> **The state:** `main` = D384 parts 1–2 on `101d05c` (= `origin/main`); **committed, NOT
+> pushed — Joe pushes after he plays.** Working tree clean. Suite **1169 passing, 0 failing, 2
+> skipped of 1171, 4m51** (was 3m07 — measured, not a per-tick regression: villages that froze under a
 > starved fuel chain now live through their runs, the shipped-build guard's village lives a
 > century, and the capacity guard's pose is bigger; the fixture's fifty years cost the same in
 > isolation); view 0 warnings; probe green. The decision log runs to **D384** (part 1). Read
 > `DESIGN.md §0–§5`, §6, D383–D384 in §7, then `specs/trades-visibly-work.md` in full — its §1
 > table is what each trade actually did before this slice, traced, and it is not what Joe's note
 > assumed (the forester was already in its ground; the hunter never left the lodge).
+>
+> **✅ D384 PART 2 — THE FORAGER GATHERS IN THE RING.** A trip goes to a wooded tile within
+> `gather_walk_tiles` (3) of the hut, picked by a hash of the villager and their trip count
+> (never the `Rng`); the hut on a bald ring. The walk is priced in `RoundTripTicks` (15 → 12
+> trips a year) and `gather_yield` derived 90 → 112 for the same target; the rigs' rungs held
+> (1.6× / 1.9×), so fish and meat stay. Twelve seeds: 161 / 210 / 34. Four fixture-premise
+> guards re-posed (traps 89–91).
 >
 > **✅ D384 PART 1 — THE WOODCUTTER'S STINT.** A woodcutter splits a day's four at the block
 > before walking home, while the yard holds a batch and the sheds hold less than the homes want;
@@ -19,10 +26,12 @@
 > derive from the logs the homes burn. Twelve seeds: 155 / 202 / 42 against 154 / 202 / 36.
 >
 > **▶️ NEXT:** the plan in `C:\Users\joema\.claude\plans\review-handoff-md-and-go-delegated-bonbon.md`
-> and the spec — **part 2, the forager gathers in the ring** (`gather_walk_tiles` 3, the nearest
-> wooded ring tiles rotated by a hash, never an `Rng` draw; `RoundTripTicks` gains the walk;
-> `gather_yield` re-derives; the rigs re-read), then **part 3, the hunter in the woods**
-> (`hunt_walk_tiles` 6; `meat_yield` by the rig only). Then Joe plays all three.
+> and the spec §4 — **part 3, the hunter in the woods**: lodge → a forest tile within
+> `hunt_walk_tiles` (6) of the lodge → `hunt_ticks` there → back to the lodge with the meat (one
+> visible tick on it) → the next hunt or home when the lodge is full; `meat_yield` by the rig
+> and only by the rig (`hunting.md §7`); a guard red-checked with the walk off. Then a windowed
+> shot of a forager in the ring and a hunter in the woods, looked at once, and Joe plays all
+> three.
 >
 > *(D383's banner, kept below.)*
 >
@@ -1026,6 +1035,20 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     tick a load of stone landed. A one-tick timing change flipped both. When a guard fails on a
     change that could not have caused it, measure it on the previous commit before touching the
     sim.
+89. **⚠️ A SITE FOUND FOR ONE FOOTPRINT IS NOT A SITE FOR ANOTHER (D384).** Four town-hall
+    guards scanned for the first tile a GRANARY fit and marked a 3×2 hall on it; it held for as
+    long as the 150-year village happened to lie the same way, and the day the foragers walked
+    into the ring it marked a hall on a granary-sized gap (*"Something already stands there"*).
+    Ask `CanBuildAt` of the building being marked.
+90. **⚠️ A LIMIT THAT READS THE SHELVES OVERSHOOTS BY THE LOADS IN ARMS (D384).** "At most one
+    tile over" was the seam guard's claim; the rule is that every hand on a seam finishes it and
+    a hand carrying a load the shelves have not seen may start one more — two tiles a hand at the
+    seams, and with more hands free it read 48 against 24. That is `stock-limits-and-laborers.md
+    §4.1`'s stated reading (D29), not a bug; count the hands before asserting the overshoot.
+91. **⚠️ A GUARD ABOUT ONE HAND'S WORK MUST HOLD THE HAND (D384).** The farm-derivation guard
+    set one seat and measured four autumns; the day the foragers' trips lengthened, the food
+    quota took the hand for an autumn and the farm reaped 45 for 59. `SetPinnedTrade` is how a
+    guard says "this seat is the premise".
 88. **⚠️ THE SUITE'S CLOCK MOVES WHEN VILLAGES STOP DYING (D384).** 3m07 → 4m35 with the fixture's
     fifty years costing the same in isolation: villages that froze under a starved fuel chain now
     live through eighty-year runs (the shelter guards 16 s → 71 s), and a longer-lived village is

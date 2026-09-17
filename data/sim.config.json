@@ -212,7 +212,11 @@
   // carries a tile for going round them (VillageEconomy.ObstacleDetourTiles),
   // so the same target -- a gatherer feeds themselves and one dependant --
   // needs 90. The scarcity is unchanged; the walk got longer.
-  "gather_yield": 90,
+  // 90 -> 112 (D384): a forager gathers at a wooded tile up to
+  // gather_walk_tiles (3) from the hut instead of standing on it, so the
+  // trip is six tiles longer and a year holds 12 trips, not 15. Same
+  // target, same scarcity; the trip is the one people are seen making.
+  "gather_yield": 112,
   // THE COPSE THINS UNDER USE (D257, Joe: "the copse of wood isnt infinite").
   // Every N completed gathers sets the nearest mature tree in the hut's ring
   // back to a sapling; regrowth grows it up again on its own sweep. So a hut
@@ -232,6 +236,10 @@
   "gathers_per_thinned_tile": 0,
 
   "gather_ticks": 3,
+  // A forager gathers at a wooded tile within this many tiles of the hut
+  // (D384) rather than standing on the hut. Read by RoundTripTicks, so it
+  // re-derives gather_yield below.
+  "gather_walk_tiles": 3,
   "travel_ticks_per_unit": 1,
 
   // DESIRE PATHS (DESIGN.md 2.6, D358, specs/desire-paths.md). Every step a

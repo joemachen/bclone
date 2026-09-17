@@ -110,8 +110,11 @@ public sealed class VillagerPointTests
     // lanes, so the founder's home stands in the lane north of the founding site and the walk
     // to the hut goes ROUND the warehouse — nine route tiles where the straight line through it
     // was seven — and the first errand to the granary is a tile and a half. Were 11 / 32.
-    private const int FirstGatherAtPace1 = 14;
-    private const int FirstGatherAtPace3 = 39;
+    // ⚠️ RE-PINNED (D384), not for the clock: the forager gathers at a wooded tile up to three
+    // tiles past the hut, so the walk is that much longer at both paces (the walk between them
+    // 25 → 34). Were 14 / 39.
+    private const int FirstGatherAtPace1 = 18;
+    private const int FirstGatherAtPace3 = 52;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -179,6 +182,11 @@ public sealed class VillagerPointTests
     /// at the block, so the fuel chain wants fewer hands and the labour pass seats more
     /// gatherers — **70** trips, the 1st/10th/50th at **20/144/1,450**; the first unchanged.
     /// </para>
+    /// <para>
+    /// **Re-pinned a tenth time (D384 part 2), not for the clock:** the forager gathers in the
+    /// ring, up to three tiles past the hut, so every trip is longer and there are fewer of them
+    /// — **57** trips, the 1st/10th/50th at **22/220/1,720**.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -209,8 +217,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(70, entries);
-        Assert.Equal(new ulong[] { 20, 144, 1450 }, at);
+        Assert.Equal(57, entries);
+        Assert.Equal(new ulong[] { 22, 220, 1720 }, at);
     }
 
     /// <summary>

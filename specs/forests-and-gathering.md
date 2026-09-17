@@ -134,16 +134,19 @@ Three things recommend it:
 **That is D58's settled mechanism arriving at last:** distance stops being a restriction and
 becomes a consequence.
 
-### 3.3 Gatherers work at the hut
+### 3.3 Gatherers work the ring near the hut
 
-**Recommended: a gatherer's job position is the hut, and density scales the yield** — they do not
-walk to individual trees.
+**Until D384: a gatherer's job position was the hut, and density scaled the yield** — they did not
+walk to individual trees. It satisfied Joe's rule exactly (nothing outside the ring contributes
+anything) while reusing the forager behaviour whole, and this section said *"walking to individual
+tiles stays on the board as a later change if the hut reads flat; it is a behaviour change, not a
+model change."*
 
-It satisfies Joe's rule exactly (nothing outside the ring contributes anything) while reusing the
-existing forager behaviour whole, so the slice stays small. The drawn ring and the panel sentence
-carry the legibility. **Walking to individual tiles stays on the board** as a later change if the
-hut reads flat; it is a behaviour change, not a model change, so it can be made without touching
-any of this.
+✅ **Since D384 (`trades-visibly-work.md §3`) the hut read flat and the change was made:** a trip
+gathers at a wooded tile within `gather_walk_tiles` (3) of the hut, picked by a hash of the
+villager and their trip count, never by the `Rng`. **The model is unchanged** — the yield is still
+the ring's density (`GatherYieldAt`), the drawn ring is still the catchment — and the walk into
+the ring is priced in `RoundTripTicks`, which re-derived `gather_yield` 90 → 112.
 
 ---
 

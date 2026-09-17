@@ -1,7 +1,7 @@
 # Spec: Trades visibly work — a woodcutter's stint, a forager in the ring, a hunter in the woods
 
 **Decisions:** D384 (this document). Neighbours: D282 (`fish_ticks` 3 → 10, a pacing change measured on the rig), D288/D293 (the yield rigs), D355 (the steading, the look only), D361/D363 (the food ladder and its floor), D373 (a building visit lasts a tick), D383 (obstacles).
-**Status:** ⏳ **in progress (2026-09-16)** — §2 the woodcutter's stint: ✅ built (D384 part 1, unplayed). §3 the forager in the ring: not started. §4 the hunter in the woods: not started. Owner: Joe + Claude Code.
+**Status:** ⏳ **in progress (2026-09-16)** — §2 the woodcutter's stint: ✅ built (D384 part 1, unplayed). §3 the forager in the ring: ✅ built (D384 part 2, unplayed). §4 the hunter in the woods: not started. Owner: Joe + Claude Code.
 
 ---
 
@@ -71,11 +71,37 @@ limit, a run of splitting lasts at least two splits' ticks and no more than a da
 arrival tick and two meals. ⛔ Red with the re-arm off (five ticks against eight — the first draft's
 "more than one split" went green on the arrival tick, and the red check caught it). Existing: the fuel target, `AWinterBurnsExactlyWhatTheEconomyBudgets`, the firewood conservation guard.
 
-## 3. The forager gathers in the ring (§2 of the slice) — not started
+## 3. The forager gathers in the ring (§2 of the slice)
 
-Home → a wooded tile of the hut's ring within `gather_walk_tiles` (3) of the hut, nearest first and
-rotated by a hash of (villager, trips) — ⛔ never an `Rng` draw — → `gather_ticks` there → home or
-the granary. `RoundTripTicks` gains the ring walk; `gather_yield` re-derives up; the rigs re-read.
+**Rule.** A trip goes home → **a wooded tile of the hut's ring within `gather_walk_tiles` (3) of
+the hut** → `gather_ticks` there → home or the granary. `SimWorld.AGatheringTileFor(hut, villager)`
+lists the forest tiles of that diamond in row order that nothing stands on, and takes the one a
+hash of (villager id, trip count) points at — so one forager spreads over the near ring trip by
+trip and two at one hut do not walk in step — passing over a candidate nobody can walk to for the
+next in order. ⛔ Never an `Rng` draw: a look must not reshuffle every seed. The hut itself when
+the near ring is bald (a bald ring yields nothing anyway), and then the forager still stands on
+the hut's own point (D354). The tile is remembered as the errand so the leg is not re-decided
+mid-walk (a forester's rule). The yield is still the ring's (`GatherYieldAt`): the tile is where
+the forager is seen, not a per-tile larder.
+
+**What it costs, and where it is derived.** `RoundTripTicks` prices the walk into the ring:
+(`WalkBudgetTiles` + `gather_walk_tiles`) × 2 + `gather_ticks` = 27 ticks, was 21, so a year holds
+12 trips, not 15, and the same target — a gatherer feeds themselves and one dependant — derives
+**`gather_yield` 90 → 112** (the fixture derives its own; the shipped file is written at the
+derived number). The rigs re-read: forager 649 / fisher 1,034 / hunter 2,010 per hundred ticks
+worked against D383's 527 / 820–898 / 1,785 — the rungs 1.6× and 1.9× either side, so `fish_yield`
+and `meat_yield` are untouched (trap 30: the ratios are the target).
+
+**Three, not eight.** The ring is eight; a walk to its far edge doubles the trip and re-bases the
+floor hard. The key is Joe's to widen.
+
+**Legibility.** *"walking out to the woods near forager's hut 1"*, *"gathering berries in the
+woods"*.
+
+**Guard.** `AForagerGathersInTheRingNotOnTheHut` (`TradesVisiblyWorkTests`): over three fixture
+years every gathering tick stands on a forest tile within `gather_walk_tiles` of the hut, more of
+them off the hut than on it, and on more than one tile (124 ticks on 15 tiles). ⛔ Red with the
+walk off: 140 ticks, all on the hut.
 
 ## 4. The hunter hunts in the woods (§3 of the slice) — not started
 
@@ -100,6 +126,7 @@ re-read after §3 and §4; the pins re-pinned with the reason. Filled in per com
 |---|---|---|---|---|
 | D383 | 154 | 202 | 36 | |
 | §2 woodcutter stint | 155 | 202 | 42 | the stint alone read 158 / 204 / 25; ending it at the shortfall (the honest rule) 155 / 202 / 42 — ±10 across twelve seeds is the noise band trap 51 records |
+| §3 forager in the ring | 161 | 210 | 34 | the yield derived for the longer trip keeps the floor; the rigs' rungs held (1.6× / 1.9×) |
 
 ## 7. Definition of Done
 

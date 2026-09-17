@@ -102,7 +102,11 @@ public static class VillageEconomy
         // layout gave it. Household.ChooseSite now refuses to build further out than
         // this, so the budget is something the village keeps rather than something it
         // discovers.
-        int travel = WalkBudgetTiles(config) * config.TravelTicksPerUnit;
+        // ⭐ AND THE WALK INTO THE RING (D384): a forager gathers at a wooded tile up to
+        // `gather_walk_tiles` from the hut, not on the hut, so the trip is that much longer each
+        // way. Priced here so `gather_yield` derives from the walk people actually make.
+        int walk = WalkBudgetTiles(config) + (config.GatherWalkTiles < 0 ? 0 : config.GatherWalkTiles);
+        int travel = walk * config.TravelTicksPerUnit;
         return (travel * 2) + config.GatherTicks;
     }
 

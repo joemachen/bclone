@@ -320,7 +320,10 @@ public sealed class BehaviorSystem : ISimSystem
                 // — and **silently redirected a fisher into a berry patch** the day fishing
                 // shipped: posted, walking, arriving, and gathering nothing because a fishery has
                 // no ring. *Two trades share this leg now; the arrival state has to ask which.*
-                Travel(world, villager, WorkplaceOf(world, villager)!.Position, VillagerState.Gathering);
+                // ⭐ To the ring tile the trip set off for (D384), remembered in the errand as a
+                // forester's is — this leg is entered only from the forager's branch of `Decide`,
+                // which set it.
+                TravelToThePatch(world, villager, WorkplaceOf(world, villager)!, new GridPos(villager.ErrandX, villager.ErrandY));
                 return;
 
             case VillagerState.TravelingToGame:
@@ -2431,14 +2434,21 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (needsFood && canForage)
         {
-            if (villager.Tile == job!.Tile)
+            // ⭐ INTO THE RING, NOT ONTO THE HUT (D384). Joe: *"im not sure that … foragers spend
+            // any time … in the forest."* They gathered standing on the hut; now each trip goes
+            // to a wooded tile near it (`AGatheringTileFor`), remembered as the errand so the
+            // walk is not re-decided mid-leg. The hut itself when the near ring is bald.
+            GridPos patch = world.AGatheringTileFor(job!, villager);
+            villager.ErrandX = patch.X;
+            villager.ErrandY = patch.Y;
+            if (villager.Tile == patch)
             {
                 BeginGathering(world, villager, config);
             }
             else
             {
                 villager.State = VillagerState.TravelingToFood;
-                Travel(world, villager, job.Position, VillagerState.Gathering);
+                TravelToThePatch(world, villager, job!, patch);
             }
 
             return;
@@ -4113,6 +4123,22 @@ public sealed class BehaviorSystem : ISimSystem
         villager.State = VillagerState.MakingFirewood;
         villager.ActionTicksRemaining =
             world.WorkTicksFor(villager, JobKind.Woodcutter, world.Config.SplitTicks);
+    }
+
+    /// <summary>
+    /// Walk to this trip's gathering tile — or to the hut's own point when the tile IS the hut,
+    /// so a forager on a bald ring still stands on the building (D354).
+    /// </summary>
+    private static void TravelToThePatch(SimWorld world, Villager villager, Workplace hut, GridPos patch)
+    {
+        if (patch == hut.Tile)
+        {
+            Travel(world, villager, hut.Position, VillagerState.Gathering);
+        }
+        else
+        {
+            Travel(world, villager, patch, VillagerState.Gathering);
+        }
     }
 
     private static void BeginGathering(SimWorld world, Villager villager, SimConfig config)

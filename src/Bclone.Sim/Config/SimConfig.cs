@@ -240,6 +240,19 @@ public sealed record SimConfig
     [JsonPropertyName("gather_ticks")]
     public int GatherTicks { get; init; } = 3;
 
+    /// <summary>
+    /// How far into the ring a forager walks to gather — a wooded tile within this many tiles of
+    /// the hut (D384, `specs/trades-visibly-work.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"im not sure that … foragers spend any time … in the forest."* They stood on the
+    /// hut. Three, not the ring's eight: a walk to the ring's far edge doubles the trip and
+    /// re-bases the food floor hard. ⛔ Read by <c>VillageEconomy.RoundTripTicks</c>: the walk
+    /// into the ring is priced, so this re-derives <c>gather_yield</c>.
+    /// </remarks>
+    [JsonPropertyName("gather_walk_tiles")]
+    public int GatherWalkTiles { get; init; } = 3;
+
     /// <summary>Ticks to cross one unit of distance.</summary>
     [JsonPropertyName("travel_ticks_per_unit")]
     public int TravelTicksPerUnit { get; init; } = 1;

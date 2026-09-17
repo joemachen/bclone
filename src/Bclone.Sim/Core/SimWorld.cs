@@ -1335,6 +1335,72 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
+    /// Where a forager gathers this trip: a wooded tile of the hut's ring within
+    /// <see cref="SimConfig.GatherWalkTiles"/> of the hut, or the hut itself when the near ring is
+    /// bald (D384, `specs/trades-visibly-work.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The candidates are the forest tiles of the diamond, in row order, that nothing stands on;
+    /// the one taken is picked by a hash of the villager and their trip count, so the same
+    /// forager spreads over the near ring trip by trip and two foragers at one hut do not walk
+    /// in step. ⛔ Never an <c>Rng</c> draw: a look must not reshuffle every seed (D355's rule
+    /// for plots). A candidate nobody can walk to (a pocket, a bank) is passed over for the
+    /// next in order — one cached field a candidate, and the ring's fields outlive the trip.
+    /// </para>
+    /// <para>
+    /// The yield is still the ring's (<see cref="GatherYieldAt"/>): the tile is where the
+    /// forager is seen, not a per-tile larder.
+    /// </para>
+    /// </remarks>
+    public GridPos AGatheringTileFor(Workplace hut, Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(hut);
+        ArgumentNullException.ThrowIfNull(villager);
+
+        int reach = Math.Min(Config.GatherWalkTiles, hut.GatheringRadius);
+        if (reach <= 0)
+        {
+            return hut.Tile;
+        }
+
+        var candidates = new List<GridPos>();
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            int span = reach - Math.Abs(dy);
+            for (int dx = -span; dx <= span; dx++)
+            {
+                var at = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
+                if (Map.Contains(at) && Map.TerrainAt(at) == Terrain.Forest && !StandsOn(at))
+                {
+                    candidates.Add(at);
+                }
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            return hut.Tile;
+        }
+
+        uint mix = unchecked(((uint)villager.Id * 2654435761u) ^ ((uint)villager.TotalGathers * 2246822519u));
+        mix ^= mix >> 15;
+        mix = unchecked(mix * 2654435761u);
+        mix ^= mix >> 13;
+        int first = (int)(mix % (uint)candidates.Count);
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            GridPos pick = candidates[(first + i) % candidates.Count];
+            if (TravelCost.CanReach(hut.Tile, pick))
+            {
+                return pick;
+            }
+        }
+
+        return hut.Tile;
+    }
+
+    /// <summary>
     /// What one gathering trip at this place is worth, before vigour.
     /// </summary>
     /// <remarks>

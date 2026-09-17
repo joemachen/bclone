@@ -638,8 +638,8 @@ public sealed class Villager
         return State switch
         {
             VillagerState.Idle => "standing idle",
-            VillagerState.TravelingToFood => $"walking to {where}",
-            VillagerState.Gathering => "gathering berries",
+            VillagerState.TravelingToFood => $"walking out to the woods near {where}",
+            VillagerState.Gathering => "gathering berries in the woods",
         VillagerState.Fishing => "fishing",
         VillagerState.TravelingToWater => "walking to the water",
         VillagerState.TravelingToGame => "walking out to the woods",

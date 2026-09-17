@@ -352,7 +352,7 @@ public sealed class StockLimitTests
     // RE-TAKEN (D371) — a heap is fetched only for a good with a reachable shelf, one walker a heap. Was 13283593437676098010.
     // RE-TAKEN (D372) — the market is a shop: no deliveries, half a larder then back to target, one fetcher at a time, the counter first. Was 4452624815348043747.
     // RE-TAKEN (D373) — a villager stands on the hut for the tick they clear it. Was 6063056430692497952.
-    private const ulong FixtureFiftyYearHash = 17662436023996850711UL;
+    private const ulong FixtureFiftyYearHash = 16399189810222775008UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -437,7 +437,7 @@ public sealed class StockLimitTests
     //     household fetches at half a larder and tops up to target, one fetcher at a time, and a
     //     villager carrying the firewood home is not sent back for more.
     //   before a villager stood on the hut for the tick they cleared it (D373): 7258003421251289401.
-    private const ulong ShippedFiftyYearHash = 1055821470252548650UL;
+    private const ulong ShippedFiftyYearHash = 15115435385970195493UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

@@ -732,6 +732,24 @@ public sealed class FarmTests
         int painted = FarmFixtures.GiveItGround(world, farm, reach: 2);
         Assert.True(painted >= promised, $"Could not paint {promised} tiles; only got {painted}.");
 
+        // ⚠️ AND ONE HAND KEPT ON IT (D384). The claim is about what a farmer reaps in a season,
+        // and the day the foragers' trips lengthened the allocator left the seat empty for a
+        // whole autumn (food first) — 59 tiles over four years became 45, three autumns of
+        // fourteen. The seat is the measurement's premise, not its subject; a pinned hand
+        // holds it (`SetPinnedTrade`).
+        Villager? farmhand = null;
+        foreach (Villager candidate in world.Villagers)
+        {
+            if (candidate.CanWork)
+            {
+                farmhand = candidate;
+                break;
+            }
+        }
+
+        Assert.NotNull(farmhand);
+        world.SetPinnedTrade(farmhand!, JobKind.Farmer);
+
         const int Years = 4;
         int reaped = 0;
         for (int i = 0; i < config.TicksPerYear * Years; i++)

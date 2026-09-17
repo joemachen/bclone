@@ -414,7 +414,7 @@ public sealed class TownHallTests
         Assert.False(world.ATownHallIsOwed);
 
         // And the second one costs what a town hall costs.
-        GridPos again = SomewhereBuildableOtherThan(world, spot);
+        GridPos again = SomewhereBuildableOtherThan(world, spot, BuildingKind.TownHall);
         Assert.True(world.Mark(BuildingKind.TownHall, again).Allowed);
         Workplace raising = FindSiteAt(world, again);
         Assert.True(
@@ -630,11 +630,18 @@ public sealed class TownHallTests
     }
 
     /// <summary>A tile the village may build on, found rather than assumed.</summary>
+    /// <summary>Somewhere the HALL itself may stand — asked of its own 3×2 footprint, not a granary's (D384).</summary>
     private static GridPos SomewhereBuildable(SimWorld world) =>
-        SomewhereBuildableOtherThan(world, new GridPos(int.MinValue, int.MinValue));
+        SomewhereBuildableOtherThan(world, new GridPos(int.MinValue, int.MinValue), BuildingKind.TownHall);
 
-    private static GridPos SomewhereBuildableOtherThan(SimWorld world, GridPos avoid)
+    private static GridPos SomewhereBuildableOtherThan(SimWorld world, GridPos avoid) =>
+        SomewhereBuildableOtherThan(world, avoid, BuildingKind.Granary);
+
+    private static GridPos SomewhereBuildableOtherThan(SimWorld world, GridPos avoid, BuildingKind kind)
     {
+        // ⚠️ The first tile a GRANARY fits is not always one a 3×2 hall fits — the day the
+        // foragers walked into the ring the 150-year village lay differently and four hall
+        // guards marked a hall on a granary-sized gap. Ask of the building being marked.
         for (int y = 0; y < world.Map.Height; y++)
         {
             for (int x = 0; x < world.Map.Width; x++)
@@ -642,7 +649,7 @@ public sealed class TownHallTests
                 var at = new GridPos(x, y);
                 if (at != avoid
                     && world.Map.TerrainAt(at) == Terrain.Grass
-                    && world.CanBuildAt(BuildingKind.Granary, at).Allowed)
+                    && world.CanBuildAt(kind, at).Allowed)
                 {
                     return at;
                 }
