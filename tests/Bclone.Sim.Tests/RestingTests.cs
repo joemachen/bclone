@@ -117,6 +117,15 @@ public sealed class RestingTests
 
         loop.Step(config.TicksPerYear * 10);
 
+        // ⚠️ A VILLAGE THAT RUNS OUT OF WORK, POSED (D385). A spell begins when somebody has
+        // nothing to do; with every gather pooled in the granary the fixture grows past the point
+        // where it ever has enough food (the target is a larder a head, and the heads keep
+        // coming), so its foragers never run out of work and its job-holders' `Resting` ticks are
+        // all the one-tick arrival home between trips — 5 % in a spell, against 56 % before.
+        // A food limit at what the granary holds gives the foragers a season off, which is the
+        // state this guard is about.
+        Assert.True(world.SetStockLimit(Goods.Produce, world.FoodInGranaries()).Allowed);
+
         // ⛔⛔ A COUNTDOWN, NOT A RUN OF TICKS — AND THE RED CHECK IS WHAT TAUGHT ME THAT.
         //
         // The first draft counted consecutive ticks in `Resting`, and **it passed with the change
@@ -132,6 +141,15 @@ public sealed class RestingTests
 
         for (int tick = 0; tick < config.TicksPerYear * 3; tick++)
         {
+            foreach (Household household in world.Households)
+            {
+                int wanting = world.TargetFoodFor(household) - world.FoodIn(household.Stockpile);
+                if (wanting > 0)
+                {
+                    household.Stockpile.Add(Goods.Produce, wanting);
+                }
+            }
+
             loop.StepOnce();
 
             foreach (Villager villager in world.Villagers)

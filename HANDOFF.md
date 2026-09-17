@@ -1,6 +1,43 @@
-# Handoff — bclone: **▶️ PHASE 5 — TRADES VISIBLY WORK (D384) IS BUILT IN THREE COMMITS: THE WOODCUTTER'S STINT, THE FORAGER IN THE RING, THE HUNTER IN THE WOODS. COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS; THEN MATURE TREES OR THE SHELL.**
+# Handoff — bclone: **▶️ PHASE 5 — D385 (EVERY LOAD TO A STORE, JOE'S CALL (b)) ON D384 (TRADES VISIBLY WORK). BOTH COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS; THEN HIS CALL ON §12.3'S PROPORTIONAL BIRTH GATE, MATURE TREES OR THE SHELL.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D384.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D385.**
+>
+> **The state:** `main` = D385 (one commit) on D384 (three commits, `fdaf828`, `02f8b62`,
+> `29e7e3a`) on `101d05c` = `origin/main`; **four commits committed, NOT pushed — Joe pushes
+> after he plays.** Working tree clean. Suite **1171 passing, 0 failing, 2 skipped of 1173,
+> 3m21**; view 0 warnings on `--no-incremental`; probe green. The decision log runs to **D385**.
+> Read `DESIGN.md §0–§5`, §6, D384–D385 in §7, then `storage-and-distribution.md §14.10` and
+> `§12` (the wave it predicted in July is back, and §14.10 says why).
+>
+> **✅ D385 — EVERY LOAD TO A STORE, NEVER HOME.** Joe: *"let's evaluate if foragers should
+> carry it home when their larder is below target or straight to storage no matter what"* →
+> *"Go with (b)."* A forager's gather and a fisher's or hunter's overflow go to the nearest store
+> with room; the producer's household shops like every other (D32: inequality is distance and
+> hands, not whose larder it is — of 34 starved over twelve seeds none lived with a forager). Two
+> rules the pooling exposed: **the spare hand fetches first** (a farmer stays in the field when a
+> jobless housemate can go), and **`GoHome` at home is a rest spell** (the flicker guard read 0 %
+> without it). The larder-short reason to forage stays (one reason: 155 / 207 / 44 against
+> 244 / 270 / 24). ⭐⭐ **The finding:** the food that sat in larders now sits where the birth gate
+> reads, so the unattended fixture grows further and then **booms and famines** — §12's wave,
+> the granary's 2,500 opening the gate past what two forager seats feed. **`birth_food_percent`
+> 60 → 100** (the default; the json has no key), re-based not re-tuned: peak 22, 18 starved
+> against 31 of old age. Twelve seeds × fifty years **259 / 278 / 12** (D384: 161 / 210 / 34).
+> ⛔ `TheVillageSurvivesWithTheMarketSwitchedOff` re-posed to D143's shape — 150 years, growth,
+> old age the majority — because without a stall the fixture now ages out at 165 and D143 says an
+> unattended village should; it reads 24 / 21 starved / 27 of old age, **thin**. Some fifteen
+> fixture-premise guards re-posed for counting food where the old rule put it; six goldens moved
+> once. Trap 94.
+>
+> **⚠️ For Joe when he plays D385:** the granary fills and the village grows on it; watch for the
+> famine that follows a full granary in a village with one gathering hut — that is the boom-bust,
+> and the ask is whether it reads as *pressure to build the second hut* (D155's *"hunger feels
+> like pressure"*) or as the game breaking. If the latter, §12.3's proportional gate — births
+> read against what the village *produces*, not what it holds — is the design answer, and it is
+> a new mechanism, yours to call.
+>
+> *(D384's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-16 — AFTER D384.**
 >
 > **The state:** `main` = D384 parts 1–3 on `101d05c` (= `origin/main`); **committed, NOT
 > pushed — Joe pushes after he plays.** Working tree clean. Suite **1170 passing, 0 failing, 2
@@ -39,7 +76,8 @@
 > derivations were leaning on the old timing (loggers sized from woodcutter *capacity*) and now
 > derive from the logs the homes burn. Twelve seeds: 155 / 202 / 42 against 154 / 202 / 36.
 >
-> **▶️ NEXT, after his play:** his call between **mature trees** (a view slice; his "scale and
+> **▶️ NEXT, after his play:** his call on §12.3's proportional birth gate (above), and between
+> **mature trees** (a view slice; his "scale and
 > depth" question), **the shell** (per-stage RNG seeds → new-game screen → settings persistence →
 > save/load → title) and **organic housing — plots and lanes** (Phase 5's first bullet, unblocked
 > by D383). Trampled fields and fences are pushed to a later phase by his call (2026-09-16);
@@ -1235,6 +1273,20 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     into the market (D199's dumping ground by the side door). `StoreForTheLoad` now caps a trader's
     market drop at `MarketStockWanted`. **Any rule keyed on "what job are you" is a rule keyed on
     "what job are you THIS tick."**
+
+94. **⛔⛔ FOOD PUT WHERE NO COUNT READS IT HIDES THE COUNT'S OWN BUG (D385).** For eleven months a
+    forager carried the load home while their own larder was short, and every count the village
+    runs on — the birth gate, the quota, the food limit, the market — reads the *stores*. The day
+    every load went to a store (Joe's call (b)) the gate saw the food for the first time, opened
+    past what two forager seats feed, and §12's boom-and-famine wave walked straight back in: the
+    fixture bred to 24 and starved 28 against 27 of old age at the old 60 %. The bar was re-based
+    to 100 and the guards re-posed, **but the gate is still a thermostat reading a stock, not a
+    rate** — §12.3's proportional gate is still the real answer and still Joe's. *Two lessons:*
+    when a rule moves goods from one shelf to another, list every reader of both shelves before
+    running the suite (some fifteen guards had a larder premise baked in, and each went red for
+    a reason that was not the rule); and a 300-year headcount that survived D143's sweep had
+    only survived because larders hid the food — an old guard that never went red is a guard
+    whose premise nobody has checked.
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

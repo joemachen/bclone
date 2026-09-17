@@ -165,4 +165,56 @@ public sealed class TradesVisiblyWorkTests
         Assert.True(risesSeenFromTheLodge > 0, "the lodge's store never rose with a hunter standing on it");
         Assert.True(risesSeenElsewhere == 0, $"the lodge's store rose {risesSeenElsewhere} times with nobody on it");
     }
+
+    /// <summary>
+    /// ⛔ Every load a forager gathers goes to a store, never home (D385, Joe: <i>"go with (b)"</i>).
+    /// </summary>
+    /// <remarks>
+    /// Until D385 a forager brought the day's food home while their larder was below target —
+    /// the inequality D32 said the game must not be made of (*whose larder it is*), and food the
+    /// village cannot see. Posed with the founders' larders emptied so home would have wanted
+    /// every load; red with the old rule: the first load walks home.
+    /// </remarks>
+    [Fact]
+    public void AForagerTakesEveryLoadToAStore()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.TakeAll(Goods.Produce);
+        }
+
+        int gathers = 0;
+        int wentHome = 0;
+        int wentToAStore = 0;
+        var was = new Dictionary<int, VillagerState>();
+        for (int tick = 0; tick < Config.TicksPerYear && gathers < 12; tick++)
+        {
+            foreach (Household household in world.Households)
+            {
+                household.Stockpile.TakeAll(Goods.Produce);
+            }
+
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                VillagerState before = was.GetValueOrDefault(villager.Id, VillagerState.Idle);
+                if (before == VillagerState.Gathering && villager.State != VillagerState.Gathering
+                    && villager.Carried[Goods.Produce] > 0)
+                {
+                    gathers++;
+                    if (villager.State == VillagerState.TravelingHome) { wentHome++; }
+                    if (villager.State == VillagerState.HaulingToStore) { wentToAStore++; }
+                }
+
+                was[villager.Id] = villager.State;
+            }
+        }
+
+        _output.WriteLine($"{gathers} gathers with empty larders at home: {wentToAStore} set off for a store, {wentHome} for home");
+        Assert.True(gathers > 0, "Nobody ever gathered, so this guard watched nothing (D7).");
+        Assert.True(wentHome == 0, $"{wentHome} loads walked home");
+        Assert.Equal(gathers, wentToAStore);
+    }
 }

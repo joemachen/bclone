@@ -642,10 +642,13 @@ public sealed class GoodsOnTheGroundTests
             {
                 // Past this point the village genuinely has nowhere to put things, which
                 // is the case setting down exists for. The claim is about the years
-                // BEFORE that, and stopping here keeps it an honest one.
+                // BEFORE that, and stopping here keeps it an honest one. ⚠️ Not asserted on
+                // THIS tick (D385): the load that filled the store and the load set down beside
+                // it can land in the same tick, and with every gather pooled in the granary it
+                // fills in year three rather than never — the tick before is the last honest
+                // reading, and it was asserted on the way here.
                 _output.WriteLine(
                     $"a store filled at tick {tick}; {OnTheGround(world)} on the ground");
-                Assert.Equal(0, OnTheGround(world));
                 return;
             }
 

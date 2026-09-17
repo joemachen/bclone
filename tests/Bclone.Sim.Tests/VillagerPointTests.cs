@@ -187,6 +187,12 @@ public sealed class VillagerPointTests
     /// ring, up to three tiles past the hut, so every trip is longer and there are fewer of them
     /// — **57** trips, the 1st/10th/50th at **22/220/1,720**.
     /// </para>
+    /// <para>
+    /// **Re-pinned an eleventh time (D385), not for the clock:** every load goes to a store, the
+    /// forager's household shops like every other, and the birth gate reads the stores net of
+    /// what the larders are owed — a village with more mouths sooner and foragers who are
+    /// never done: **105** trips, the 1st/10th/50th at **22/157/976**.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -217,8 +223,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(57, entries);
-        Assert.Equal(new ulong[] { 22, 220, 1720 }, at);
+        Assert.Equal(105, entries);
+        Assert.Equal(new ulong[] { 22, 157, 976 }, at);
     }
 
     /// <summary>

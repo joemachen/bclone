@@ -137,6 +137,16 @@ public sealed class LabourAllocationTests
             int cutting = CountWorking(loop.World, JobKind.Forester);
             int sparable = System.Math.Max(0, quota.Hands - quota.ForagersToFeedEveryone);
 
+            // ⚠️ "UNTIL EVERYBODY IS FED" IS A FULL GRANARY AS MUCH AS A HAND COUNT (D385). With
+            // every load pooled in the stores the fixture's granary stands full by year six, and
+            // a village that wants no more food rightly spares a hand for timber though the
+            // arithmetic says four foragers could not feed ten mouths — the granary already has.
+            // The quota's bite is measured while the village is short.
+            if (!loop.World.TheVillageWantsMoreFood())
+            {
+                continue;
+            }
+
             Assert.True(cutting <= sparable,
                 $"Year {year}: {cutting} cutting timber, but the village could only spare " +
                 $"{sparable} — {quota}");

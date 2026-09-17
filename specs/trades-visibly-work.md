@@ -74,7 +74,8 @@ arrival tick and two meals. ⛔ Red with the re-arm off (five ticks against eigh
 ## 3. The forager gathers in the ring (§2 of the slice)
 
 **Rule.** A trip goes home → **a wooded tile of the hut's ring within `gather_walk_tiles` (3) of
-the hut** → `gather_ticks` there → home or the granary. `SimWorld.AGatheringTileFor(hut, villager)`
+the hut** → `gather_ticks` there → ~~home or the granary~~ **the nearest store with room (D385:
+every load to a store, never home — `storage-and-distribution.md §14.10`)**. `SimWorld.AGatheringTileFor(hut, villager)`
 lists the forest tiles of that diamond in row order that nothing stands on, and takes the one a
 hash of (villager id, trip count) points at — so one forager spreads over the near ring trip by
 trip and two at one hut do not walk in step — passing over a candidate nobody can walk to for the
@@ -108,8 +109,9 @@ walk off: 140 ticks, all on the hut.
 **Rule.** A hunt goes lodge → **a forest tile of the range within `hunt_walk_tiles` (6, half the
 range) of the lodge** → `hunt_ticks` there → back to the lodge with the meat and the hide in the
 hunter's arms → the meat into the lodge's store, one visible tick on the building (D373) → the
-next hunt, or clearing the lodge when it is full (D370, unchanged), or home when the larder
-wants what the lodge would not take. `SimWorld.AGameTileFor(lodge, villager)` is the forager's
+next hunt, or clearing the lodge when it is full (D370, unchanged), or ~~home when the larder
+wants what the lodge would not take~~ **a store with what the lodge would not take (D385)**.
+`SimWorld.AGameTileFor(lodge, villager)` is the forager's
 rule one trade over — the range's forest tiles in row order, the one taken picked by a hash of
 the villager and the tick the hunt is decided, ⛔ never an `Rng` draw; the lodge itself when no
 woods are in reach. The carry-back reuses `HaulingToFarm` (*carrying a load to my own
@@ -150,6 +152,7 @@ re-read after §3 and §4; the pins re-pinned with the reason. Filled in per com
 | §2 woodcutter stint | 155 | 202 | 42 | the stint alone read 158 / 204 / 25; ending it at the shortfall (the honest rule) 155 / 202 / 42 — ±10 across twelve seeds is the noise band trap 51 records |
 | §3 forager in the ring | 161 | 210 | 34 | the yield derived for the longer trip keeps the floor; the rigs' rungs held (1.6× / 1.9×) |
 | §4 hunter in the woods | 161 | 210 | 34 | the fixture has no lodge; the rig read 2.07× the fisher (1.99× at D383) |
+| D385 every load to a store (`storage-and-distribution.md §14.10`) | 259 | 278 | 12 | (b) alone 244 / 270 / 24; `birth_food_percent` 60 → 100 re-based on the pooled stores; the fixture booms and famines unattended (§14.10) |
 
 ## 7. Definition of Done
 

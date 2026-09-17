@@ -1011,6 +1011,27 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool Carrying(SimWorld world, Villager villager, Goods goods) =>
         goods == Goods.Produce ? world.FoodIn(villager.Carried) > 0 : villager.Carried[goods] > 0;
 
+    /// <summary>A living, working-age housemate with no seat — the one to send for an armful (D385).</summary>
+    private static bool SomebodySpareCouldFetch(SimWorld world, Household household, Villager villager)
+    {
+        for (int i = 0; i < household.MemberIds.Count; i++)
+        {
+            int id = household.MemberIds[i];
+            if (id == villager.Id)
+            {
+                continue;
+            }
+
+            Villager? housemate = world.FindVillager(id);
+            if (housemate is { Alive: true, CanWork: true, HasJob: false })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool SomebodyElseIsFetching(
         SimWorld world, Household household, Villager villager)
     {
@@ -1149,6 +1170,19 @@ public sealed class BehaviorSystem : ISimSystem
         // armful the same tick and came home with 120; with the top-up flag that is three trips
         // where one would do. The one already out re-plans as before.
         if (villager.State != VillagerState.FetchingFromStore && SomebodyElseIsFetching(world, household, villager))
+        {
+            return null;
+        }
+
+        // ⭐ THE SPARE HAND GOES FIRST (D385). With every gather pooled in the granary the
+        // forager's own household shops like every other, and a household's fetch is planned
+        // by whichever member decides first — a farmer in autumn as readily as the daughter
+        // with no seat. D32's inequality is *hands to send*: a household with somebody spare
+        // sends them, and its farmer stays in the field (the farm guards read 58–70 % reaped
+        // with the farmer fetching armfuls in autumn). Nobody spare, and the job-holder goes.
+        if (villager.State != VillagerState.FetchingFromStore
+            && villager.HasJob
+            && SomebodySpareCouldFetch(world, household, villager))
         {
             return null;
         }
@@ -2050,6 +2084,20 @@ public sealed class BehaviorSystem : ISimSystem
 
     private static void GoHome(SimWorld world, Villager villager)
     {
+        // ⛔ ALREADY HOME WITH NOTHING TO DO IS A REST SPELL, NOT A FLICKER (D385). A trade
+        // branch that finds no work says `GoHome`, and a villager already at their door arrived
+        // in the same tick as a spell-less `Resting`, re-asked on the next, found nothing again,
+        // and so on every tick — the flicker `SomebodyWhoHoldsAJobRestsInSpellsToo` exists to
+        // catch, hidden while foragers fed their own larders and rarely ran out of work. Every
+        // load to a store (D385) left the fixture's foragers idle under a met limit and the
+        // guard read 0 % in a spell. The spell is `Decide`'s own (`rest_ticks`).
+        if (villager.Tile == world.RestingPlaceOf(villager))
+        {
+            villager.State = VillagerState.Resting;
+            villager.ActionTicksRemaining = world.Config.RestTicks;
+            return;
+        }
+
         villager.ActionTicksRemaining = 0;
         villager.State = VillagerState.TravelingHome;
         Travel(world, villager, world.RestingPoint(villager), VillagerState.Idle);
@@ -2263,6 +2311,15 @@ public sealed class BehaviorSystem : ISimSystem
         // second, a forager stops the moment their own larder is full, the granary
         // never fills, and a household with nobody foraging starves beside neighbours
         // who are resting on three hundred food.
+        //
+        // ⚠️ THE FIRST STAYS UNDER D385, AND IT WAS MEASURED (2026-09-16). Every load goes to a
+        // store now, so "my family is short" no longer sends a forager home with the load — it
+        // sends them to the granary their family will fetch from. Read as one reason only (the
+        // village's want, with the larders' shortfall folded into it) the fixture's foragers
+        // stopped at the target, the fetches drew it down as fast as they filled it, and the
+        // birth gate — read from the stores — barely opened: twelve seeds read 155 / 207 / 44
+        // against 244 / 270 / 24 with both reasons. A family's short larder is the reason the
+        // village's food keeps coming.
         //
         // The village's half is measured against what the village has ROOM for, not
         // against what everyone alive would ideally have stored. Past the point where
@@ -4180,8 +4237,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// <summary>
     /// Back at the lodge with the catch (D384): the meat into its store, and the hunter decides
     /// again — the next hunt, or clearing the lodge when it is full. What the lodge will not take
-    /// goes home if the larder wants it, else to a store, as it always did; the hide stays in
-    /// their arms until they pass a store.
+    /// goes to a store (D385, never home); the hide stays in their arms until they pass a store.
     /// </summary>
     private static void PutTheCatchInTheLodge(SimWorld world, Villager villager)
     {
@@ -4192,9 +4248,8 @@ public sealed class BehaviorSystem : ISimSystem
             villager.Carried.TryTake(Goods.Meat, intoTheLodge);
             if (villager.Carried[Goods.Meat] > 0)
             {
-                Household home = world.HouseholdOf(villager);
-                bool wantedAtHome = world.FoodIn(home.Stockpile) < world.TargetFoodFor(home);
-                villager.State = wantedAtHome ? VillagerState.TravelingHome : VillagerState.HaulingToStore;
+                // To a store, never home (D385) — the forager's rule, one trade over.
+                villager.State = VillagerState.HaulingToStore;
                 world.Log(LogLevel.Debug, "behavior",
                     $"{villager.Name} put {intoTheLodge} meat down at {lodge.Name}, "
                     + $"{villager.Carried[Goods.Meat]} carried on — {world.Clock}.");
@@ -4490,16 +4545,12 @@ public sealed class BehaviorSystem : ISimSystem
                 // harvest their buffer could not take.
                 villager.Carried.Receive(Goods.Fish, leftOver);
 
-                Household hearth = world.HouseholdOf(villager);
-                bool wantedAtHome =
-                    world.FoodIn(hearth.Stockpile) < world.TargetFoodFor(hearth);
-                villager.State = wantedAtHome
-                    ? VillagerState.TravelingHome
-                    : VillagerState.HaulingToStore;
+                // To a store, never home (D385) — the forager's rule, one trade over.
+                villager.State = VillagerState.HaulingToStore;
 
                 world.Log(LogLevel.Debug, "behavior",
                     $"Caught {caught} fish, {intoTheHut} put down and {leftOver} bound for "
-                    + $"{(wantedAtHome ? "home" : StoreForTheLoad(world, villager)?.Name ?? "the ground")}"
+                    + $"{StoreForTheLoad(world, villager)?.Name ?? "the ground"}"
                     + $" — {world.Clock}.");
                 return;
             }
@@ -4588,13 +4639,17 @@ public sealed class BehaviorSystem : ISimSystem
                     yield = 1;
                 }
 
-                // Their own larder first, the granary with the rest.
-                //
-                // A forager brings the day's food home if home needs it, and takes it
-                // to the granary if it does not. That keeps the working case working —
-                // a household with a forager in it feeds itself directly, no round
-                // trip through a building — while surplus ends up somewhere the whole
-                // village can draw on. It is also just what a person would do.
+                // ⛔ EVERY LOAD TO A STORE, NEVER HOME (D385, Joe: *"go with (b)"*). Until D385
+                // a forager brought the day's food home while their larder was below target and
+                // to the granary only after — *"what a person would do"* — and it was exactly
+                // the inequality D32 said the game must not be made of: *whose larder it is, an
+                // accident of which house a forager was born in.* Measured over twelve seeds and
+                // fifty years: 34 starved, not one of them in a household holding a forager's
+                // seat. Food in a larder is invisible to the village besides — the birth gate,
+                // the quota, the market and the food limit all read the stores — so two foragers
+                // keeping their own families full read as a hungry village with an empty
+                // granary. The forager's household shops like every other now, at half a larder
+                // (D372), and inequality is distance and hands, as D32 asked.
                 villager.Carried.Receive(Goods.Produce, yield);
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
@@ -4615,10 +4670,7 @@ public sealed class BehaviorSystem : ISimSystem
                     world.ThinTheRingOf(patch);
                 }
 
-                Household home = world.HouseholdOf(villager);
-                bool homeNeedsIt = world.FoodIn(home.Stockpile) < world.TargetFoodFor(home);
-
-                villager.State = homeNeedsIt ? VillagerState.TravelingHome : VillagerState.HaulingToStore;
+                villager.State = VillagerState.HaulingToStore;
 
                 // Individual gathers are DEBUG, not life log. A fifty-year life is
                 // some six hundred foraging trips, and narrating each one buries the
@@ -4627,7 +4679,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // up per season instead.
                 world.Log(LogLevel.Debug, "behavior",
                     $"Gathered {yield} food, bound for " +
-                    $"{(homeNeedsIt ? "home" : StoreForTheLoad(world, villager)?.Name ?? "the ground")}" +
+                    $"{StoreForTheLoad(world, villager)?.Name ?? "the ground"}" +
                     $" — {world.Clock}.");
                 return;
 

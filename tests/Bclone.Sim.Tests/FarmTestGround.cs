@@ -108,11 +108,28 @@ internal static class FarmTestGround
         Workplace farm = SiteAFarm(world, walkAway, out walk);
         FarmFixtures.GiveItGround(world, farm, reach: 3);
 
+        // ⚠️ ONE HAND, STATED (D385). The claim is that a farm's sowing honours its own haul,
+        // and the memory learns per hand; the fixture staffed this farm with one until every
+        // gather was pooled in the granary and the allocator had hands to spare — two hands
+        // sowed twice the ground and shared one buffer ten ticks from the store, and reaped
+        // 55 % of it. The unit of the claim is one pair of hands.
+        world.SetStaffing(farm, 1);
+
         int sown = 0;
         int reaped = 0;
 
         for (int i = 0; i < config.TicksPerYear * 10; i++)
         {
+            // ⚠️ AND NOTHING IN THE STORES EVERY SPRING (D385). With every gather pooled in the
+            // granary the fixture fills its one granary by year three, and a farm ten ticks from
+            // a FULL store hauls every tile past it to wherever has room — 54 % brought in where
+            // the subject is the walk, not the village's storage. The village needing what the
+            // farm grows was the premise; a village with somewhere to put it is the other half.
+            if (i % config.TicksPerYear == 0)
+            {
+                FarmFixtures.WithNothingInTheStores(loop);
+            }
+
             loop.StepOnce();
             foreach (Villager villager in world.Villagers)
             {

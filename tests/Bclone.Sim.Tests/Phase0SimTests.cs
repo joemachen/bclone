@@ -224,7 +224,11 @@ public sealed class Phase0SimTests
         // the season turns — otherwise the life log announces "Foraging stops" and
         // then reports a gather on the next line.
         int gathersAtWinterStart = loop.World.Villager.TotalGathers;
-        int atWinterStart = loop.World.Stockpile[Goods.Produce];
+
+        // The village's food, larder and stores together: since D385 a forager takes every load
+        // to a store and the larder is what they fetch back to eat from, so the larder alone can
+        // RISE over a winter while the village as a whole drains.
+        int atWinterStart = loop.World.Stockpile[Goods.Produce] + loop.World.FoodInGranaries();
 
         while (loop.World.Clock.IsWinter)
         {
@@ -239,7 +243,9 @@ public sealed class Phase0SimTests
         }
 
         Assert.Equal(gathersAtWinterStart, loop.World.Villager.TotalGathers);
-        Assert.True(loop.World.Stockpile[Goods.Produce] < atWinterStart, "Winter should drain the store.");
+        Assert.True(
+            loop.World.Stockpile[Goods.Produce] + loop.World.FoodInGranaries() < atWinterStart,
+            "Winter should drain the village's food.");
     }
 
     [Fact]

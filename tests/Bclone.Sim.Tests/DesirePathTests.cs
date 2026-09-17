@@ -334,9 +334,35 @@ public sealed class DesirePathTests
         var (lone, _) = Phase0Fixtures.Build(alone);
         lone.Step(alone.TicksPerYear * 20);
 
-        int loneWorn = lone.World.Paths.TilesAtLeast(alone.PathWornAt);
-        _output.WriteLine($"one villager, twenty years: {lone.World.Paths.TroddenTiles} trodden tiles, {loneWorn} worn");
-        Assert.Equal(0, loneWorn);
+        // ⚠️ THE LONE WALKER'S DOORSTEP IS CHURN NOW (D385). Every load goes to the store and
+        // the larder is fetched back from it, so the one villager treads the tiles between their
+        // house and the granary, and the first steps out of their door, three times a trip —
+        // daily churn by §2.6's own definition, and it wore six tiles. What must still not scar
+        // is the WALK: the far half of the way to the hut and the ring, walked once a trip.
+        GridPos door = lone.World.Households[0].Home();
+        GridPos hut = lone.World.Workplaces.Find(w => w.Kind == JobKind.Forager)!.Tile;
+        int loneWorn = 0;
+        int wornOnTheWalk = 0;
+        for (int y = lone.World.Map.MinY; y < lone.World.Map.MinY + lone.World.Map.Height; y++)
+        {
+            for (int x = lone.World.Map.MinX; x < lone.World.Map.MinX + lone.World.Map.Width; x++)
+            {
+                var tile = new GridPos(x, y);
+                if (lone.World.Paths.At(tile) < alone.PathWornAt)
+                {
+                    continue;
+                }
+
+                loneWorn++;
+                if (tile.ManhattanDistanceTo(hut) < tile.ManhattanDistanceTo(door))
+                {
+                    wornOnTheWalk++;
+                }
+            }
+        }
+
+        _output.WriteLine($"one villager, twenty years: {lone.World.Paths.TroddenTiles} trodden tiles, {loneWorn} worn, {wornOnTheWalk} of them nearer the hut than the door");
+        Assert.Equal(0, wornOnTheWalk);
     }
 
     /// <summary>

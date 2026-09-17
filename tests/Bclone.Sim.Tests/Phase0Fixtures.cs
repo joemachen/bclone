@@ -127,8 +127,15 @@ public static class Phase0Fixtures
 
     public static (SimLoop Loop, InMemoryLogSink Log) Build(SimConfig config, ulong? seed = null)
     {
+        // ⚠️ ONE ARMFUL IN THE CART, NOT FOUR HUNDRED (D385) — for the village of ONE that this
+        // builds, never for `VillageFixtures.Village`, which derives from `Plenty` and stocks
+        // its founding the shipped way. A villager takes every load to a store and gathers only
+        // while the village is short; the founding's four hundred against a target of sixty
+        // left the village of one with *"nothing to gather for"* until spring was half gone.
+        // Forty is the first fetch — the errand the pins begin with — and then the village is
+        // short and the villager gathers from its first morning, which is Phase 0.
         var sink = new InMemoryLogSink();
-        return (SimFactory.CreatePhase0(config, sink, seed), sink);
+        return (SimFactory.CreatePhase0(config with { CartFood = 40 }, sink, seed), sink);
     }
 
     /// <summary>Run until the villager dies, or give up after <paramref name="maxTicks"/>.</summary>

@@ -146,7 +146,10 @@ model change."*
 gathers at a wooded tile within `gather_walk_tiles` (3) of the hut, picked by a hash of the
 villager and their trip count, never by the `Rng`. **The model is unchanged** — the yield is still
 the ring's density (`GatherYieldAt`), the drawn ring is still the catchment — and the walk into
-the ring is priced in `RoundTripTicks`, which re-derived `gather_yield` 90 → 112.
+the ring is priced in `RoundTripTicks`, which re-derived `gather_yield` 90 → 112. **And since D385
+the load goes to a store, never home** (`storage-and-distribution.md §14.10`, Joe's call (b)): a
+forager's family shops from the granary like every other, and food in a larder is not the
+village's.
 
 ---
 

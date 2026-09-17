@@ -421,7 +421,10 @@ public sealed class ShippedConfigTests
             bool anyoneStrandedNow = false;
             foreach (Household household in world.Households)
             {
-                if (world.LivingMembersOf(household) == 0 || household.Stockpile[Goods.Produce] > 0)
+                // A roofless family (a new couple whose house is not up yet) has no door to
+                // walk from; since D385 its larder starts empty and is filled by a fetch, so
+                // it is met here, and `Home()` throws for it.
+                if (world.LivingMembersOf(household) == 0 || household.Stockpile[Goods.Produce] > 0 || !household.HasHome)
                 {
                     continue;
                 }

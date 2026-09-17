@@ -526,7 +526,11 @@ public sealed class StorageTests
             loop.StepOnce();
         }
 
-        Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
+        // The one the household would send (D385): its spare hand if it has one, else anybody.
+        // A job-holder with a spare housemate leaves the fetch to them, so asking the job-holder
+        // reads "nobody goes" when the answer is "somebody else does".
+        Villager villager = world.Villagers.FirstOrDefault(v => v.Alive && v.CanWork && !v.HasJob)
+            ?? world.Villagers.First(v => v.Alive && v.CanWork);
         Household home = world.HouseholdOf(villager);
         StoreBuilding warehouse = world.AnyStoreOf(StoreKind.Warehouse);
         warehouse.Store.Receive(Goods.Firewood, 500);

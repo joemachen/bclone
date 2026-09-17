@@ -3100,8 +3100,17 @@ public sealed record SimConfig
     /// avoid rather than to tune toward.
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// <b>⭐ 60 → 100 (D385), re-based, not re-tuned.</b> Every load goes to a store now and a
+    /// larder is filled from it, so the stores hold what the larders used to be filled with
+    /// directly — the same food, read in one place. At 60 the fixture bred to 24 and starved 28
+    /// against 27 of old age; at 100, by Joe's D155 criterion (growth arrives, starvation a
+    /// minority of deaths), it peaks at 22 with 18 starved against 31 of old age, and twelve
+    /// seeds over fifty years read 259 alive / 278 peak / 12 starved against D384's 161 / 210 /
+    /// 34. `PopulationCeiling` moves with it by the same arithmetic.
+    /// </remarks>
     [JsonPropertyName("birth_food_percent")]
-    public int BirthFoodPercent { get; init; } = 60;
+    public int BirthFoodPercent { get; init; } = 100;
 
     /// <summary>Most people one household will hold before it stops growing.</summary>
     [JsonPropertyName("max_household_size")]

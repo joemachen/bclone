@@ -986,11 +986,21 @@ public sealed class FarmTests
         Workplace farm = FarmFixtures.RaiseAFarm(world, best);
         FarmFixtures.GiveItGround(world, farm, reach: 3);
 
+        // One hand, and the stores emptied every spring — `FarmTestGround.TilesReapedOverTenYears`
+        // says why (D385): the claim is one pair of hands against its own haul, not the
+        // allocator's staffing or the village's storage.
+        world.SetStaffing(farm, 1);
+
         int sown = 0;
         int reaped = 0;
 
         for (int i = 0; i < config.TicksPerYear * 10; i++)
         {
+            if (i % config.TicksPerYear == 0)
+            {
+                FarmFixtures.WithNothingInTheStores(loop);
+            }
+
             loop.StepOnce();
             foreach (Villager villager in world.Villagers)
             {

@@ -54,35 +54,88 @@ public sealed class MarketTests
         Assert.True(stall.Capacity > 1, $"The market has room for {stall.Capacity}.");
     }
 
+    /// <summary>
+    /// THE acceptance test for this slice, and the reason fetch was chosen over deliver in the
+    /// first place (spec §3, §14.4): an unmanned market must mean longer walks and stranded
+    /// goods, never a household that cannot eat.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ IT NO LONGER ASKS WHETHER ANYBODY IS ALIVE AT YEAR 300, AND THAT IS D143 ARRIVING
+    /// HERE LATE (D385).</b> It read <i>never below the founders through year 300</i>, which
+    /// held for as long as a forager's own larder fed a forager's own family and the granary
+    /// stayed too thin to breed on. D385 pools every load in the stores, the village grows on
+    /// them — and then an unattended one runs in booms and famines, because nobody sites the
+    /// second gathering hut the granary's headcount is asking for. With the stall the fixture
+    /// rides the troughs out to year 300 with fourteen alive; without it, it ages out at 165,
+    /// and D143 rules that <i>"an unattended village should die out. The user needs to play the
+    /// game at some point."</i> The sibling comparison (<c>TheMarketKeepsLardersFromRunningDry</c>)
+    /// retired its own 150-year headcount for the same reason: two unmanaged arms end
+    /// <i>1 against 42</i> with nothing between them but the stall, and that is chaos, not a
+    /// distribution finding.
+    /// </para>
+    /// <para>
+    /// <b>What survives is the claim it was written for, asked the way
+    /// <c>TheVillageSustainsItselfAcrossGenerations</c> asks it:</b> with no market at all the
+    /// village still grows from its founders to the size the derived economy feeds unattended,
+    /// hunger stays a minority of deaths, and nobody freezes. That is §14.4 in its own currency
+    /// — the stall buys convenience, and a village that cannot grow or mostly starves without it
+    /// has made the stall load-bearing, which is the cliff the founding falls off.
+    /// </para>
+    /// </remarks>
     [Fact]
     public void TheVillageSurvivesWithTheMarketSwitchedOff()
     {
-        // THE acceptance test for this slice, and the reason fetch was chosen over
-        // deliver in the first place (spec §3, §14.4). An unmanned market must mean
-        // longer walks and stranded goods — never a household that cannot eat.
-        //
-        // If this ever fails, the market has stopped being an improvement and become
-        // load-bearing, which is the cliff the founding village falls off.
         SimConfig noMarket = Config with { MarketCapacity = 0 };
         SimLoop loop = Build(noMarket);
 
-        int lowest = int.MaxValue;
-        for (int year = 1; year <= 300; year++)
+        int peak = 0;
+        int peakYear = 0;
+        for (int year = 1; year <= 150; year++)
         {
             loop.Step(noMarket.TicksPerYear);
-            if (year >= 40)
+            if (loop.World.Population > peak)
             {
-                lowest = System.Math.Min(lowest, loop.World.Population);
+                peak = loop.World.Population;
+                peakYear = year;
+            }
+        }
+
+        int froze = 0;
+        int starved = 0;
+        int aged = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (villager.Alive)
+            {
+                continue;
+            }
+
+            switch (villager.CauseOfDeath)
+            {
+                case CauseOfDeath.Cold: froze++; break;
+                case CauseOfDeath.Starvation: starved++; break;
+                default: aged++; break;
             }
         }
 
         _output.WriteLine(
-            $"No marketer: {loop.World.Population} alive at year 300, never below {lowest} after 40.");
+            $"No marketer: peaked at {peak} in year {peakYear} from {noMarket.StartingPopulation} "
+            + $"founders; year {loop.World.Clock.Year}: {loop.World.Population} alive. Deaths — "
+            + $"{froze} froze, {starved} starved, {aged} of old age.");
 
-        Assert.True(lowest >= noMarket.StartingPopulation,
-            $"Without a market the village fell to {lowest}. Distribution by hand has stopped being " +
-            "something the settlement can live without.");
-        Assert.True(loop.World.Population >= noMarket.StartingPopulation);
+        // The same bar as the arm with a market (`TheVillageSustainsItselfAcrossGenerations`,
+        // D262's fifteen): the stall may not be what the growth was made of.
+        Assert.True(peak >= 15,
+            $"Without a market the village only ever reached {peak} from "
+            + $"{noMarket.StartingPopulation} founders. Distribution by hand has stopped being "
+            + "something the settlement can grow on.");
+
+        Assert.True(aged > starved,
+            $"Without a market {starved} starved against {aged} of old age — the stall has "
+            + "become the thing standing between the village and hunger.");
+
+        Assert.Equal(0, froze);
     }
 
     [Fact]

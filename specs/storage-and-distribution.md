@@ -92,7 +92,7 @@ It is also the honest division. A granary and a woodpile are different buildings
 
 Every movement is a **trip somebody makes**. There is no teleporting, and no policy that moves goods from nowhere.
 
-- **Producing.** A forager, logger or woodcutter finishes a batch and carries it to the nearest store that will take it — their own workplace buffer first, then the warehouse, then the market. Today they carry it home, which is the bug.
+- **Producing.** A forager, logger or woodcutter finishes a batch and carries it to the nearest store that will take it — their own workplace buffer first, then the warehouse, then the market. Today they carry it home, which is the bug. ✅ **As written since D385 (2026-09-16, §14.10):** for eleven months a forager carried the load *home* while their own larder was below target, and the fisher's and hunter's overflow did the same; every load goes to a store now.
 - **Fetching.** A household below its larder target sends an idle member — or a member on their way home — to the nearest store holding what they need. Home, then market, then warehouse, in ascending travel cost.
 - **Stocking the market.** The market's worker moves goods from the warehouse to the market. That is the whole job, and it is what makes the market a *workplace* rather than a rule.
 
@@ -255,6 +255,8 @@ The "in" direction is the whole of Joe's point 2. A house whose family has died 
 **Fetching stays exactly as it is.** §3 rejected delivery-instead-of-fetch because an unmanned market means nobody eats — *"a cliff, not a gradient, and one the founding village falls off immediately."* That argument still holds. Delivery is **additive**: a market with nobody in it means no deliveries and no unsticking, never a household that cannot eat. The founding village has no marketer and must be entirely unaffected.
 
 This is the acceptance test for the slice, and it is a stronger claim than "the market works": **switch the market off and the village must survive exactly as it does today.**
+
+⚠️ *"Survive"* is asked in D143's currency since D385 (§14.10): an unattended village is supposed to die out, so the guard asks that the village without a market **grows from its founders, most of its dead die of old age, and nobody freezes** over 150 years — the same bar as `TheVillageSustainsItselfAcrossGenerations` — not that anybody is alive at year 300.
 
 ### 14.5 Shape
 
@@ -479,7 +481,8 @@ player sets on THAT market, per good** — the same shape as the village stock l
 #### 14.9.5 How it is tested
 
 - **`MarketTests.TheVillageSurvivesWithTheMarketSwitchedOff`** (300 years) — unchanged, the
-  acceptance test.
+  acceptance test. *(Re-posed by D385 to D143's shape, §14.10 — 150 years, peak ≥ 15, old age
+  the majority death, nobody frozen.)*
 - **`TheMarketKeepsLardersFromRunningDry` re-aimed:** the market keeps larders from running dry
   by being *near and stocked*, not by delivering — pose a stocked market beside the homes and a
   granary far away; assert the dry-larder rate (D363's bar, ≤ 1 per 10,000) and that no villager
@@ -502,7 +505,7 @@ player sets on THAT market, per good** — the same shape as the village stock l
 
 1. ✅ The two changes in §14.9.2 built, the limits in §14.9.3 as hashed state with the derived
    default; the control is a `Keeps up to:` row on the market's inspector until the cards carry it.
-2. ✅ The tests in §14.9.5 green (`MarketShopTests`); the 300-year market-off guard untouched.
+2. ✅ The tests in §14.9.5 green (`MarketShopTests`); the 300-year market-off guard untouched *(until D385, §14.10)*.
 3. ✅ The measurements in §14.9.5 quoted in D372, with the trip count.
 4. ✅ D14, D36, D171 annotated in `DESIGN.md §7`; this section's status line true.
 
@@ -574,6 +577,73 @@ player sets on THAT market, per good** — the same shape as the village stock l
   number stood partly on the emergency bounce); the starved count follows the trigger. **In a
   village living on the edge the safety buffer now sits in the granary, where the household that
   fetches first eats it** — filed for Joe and closed by him the same day: *"leave it"* (D32's inequality is the game).
+
+### 14.10 ✅ EVERY LOAD TO A STORE, NEVER HOME — Joe's call (b), 2026-09-16 (D385)
+
+Joe: *"let's evaluate if foragers should carry it home when their larder is below target or
+straight to storage no matter what."* Three candidates were written up — *(a)* today's rule, home
+while the larder is below target; *(b)* every load to a store; *(c)* home only below the fetch line
+(§14.9's 50 %) — and he chose **(b)**: *"Go with (b)."*
+
+**The rule.** A forager's gather, a fisher's overflow and a hunter's overflow all go to the nearest
+store with room (`HaulingToStore`, `HaulOrSetDown` when there is none) — the farmer's rule since the
+farm, and §5's *Producing* line as it was written in July. Nothing goes home in a producer's arms;
+the producer's household shops like every other, at half a larder (§14.9). **Why:** *(1)* D32's
+ruling that inequality is made of *distance and hands* and never of *"whose larder it is, which is
+an accident of which house a forager was born in"* — and home-first was exactly that: over twelve
+seeds and fifty years 34 starved, **not one in a household holding a forager's seat**. *(2)* Food
+in a larder is invisible to every count the village runs on — the birth gate, the food quota, the
+market's stocking and the food limit all read the stores (`AHouseholdLarderIsNotVillageFood`) — so
+two foragers keeping their own families full read as a hungry village beside an empty granary.
+*(3)* One rule for every producer.
+
+**Two rules the pooling exposed, and one measurement that kept a third.**
+- **The spare hand goes first.** A household's fetch is planned by whichever member decides first,
+  and with the forager's family shopping too a farmer in autumn went for the armful as readily as
+  the daughter with no seat — the farm guards read 58–70 % reaped with the farmer fetching. A
+  job-holder leaves the trip to a living, working-age housemate without a seat when there is one
+  (`SomebodySpareCouldFetch`); nobody spare, and the job-holder goes.
+- **Already home with nothing to do is a rest spell.** A trade branch that finds no work says
+  `GoHome`, and a villager already at their door arrived in the same tick as a spell-less
+  `Resting`, re-asked the next tick, and flickered — hidden while foragers fed their own larders
+  and rarely ran out of work; `SomebodyWhoHoldsAJobRestsInSpellsToo` read 0 % in a spell under (b).
+  `GoHome` at home is `rest_ticks` of rest.
+- **A family's short larder stays a reason to forage.** The food trades work while the larder is
+  short OR the village wants more. Read as one reason (the village's want, the larders' shortfall
+  folded in) the foragers stopped at the target, the fetches drew it down as fast as they filled
+  it, and the gate barely opened: **155 / 207 / 44** against **244 / 270 / 24**. Kept as two.
+
+**⭐ The finding: the granary's headcount now opens the birth gate, and §12's wave is back.** The
+food that used to sit in larders sits in the stores, which is where the gate reads
+(`FoodTheVillageHolds() ≥ TargetFoodForTheGranary() × birth_food_percent`), so the fixture village
+grows further and then runs in **booms and famines**: the granary (2,500) fills, the gate opens
+past what two forager seats feed, and a famine follows, because nobody unattended sites the second
+hut the headcount is asking for. §12.3's ceiling — `C ÷ (stockpile_target × birth_food_percent)`,
+26 at 100 % — is where it arrives. **`birth_food_percent` 60 → 100, re-based, not re-tuned:** at 60
+the fixture bred to 24 and starved 28 against 27 of old age; at 100, by D155's criterion (growth
+arrives, starvation a minority of deaths), it peaks at 22 with 18 starved against 31 of old age.
+Two gate formulas that subtract what the larders are owed were built and measured and neither
+moved the fifty-year village a soul (259 / 278 / 12 either way); the bar did. `PopulationCeiling`
+moves by the same arithmetic. ⚠️ *A proportional (production-aware) birth gate is still §12.3's
+"real answer", still not built, and still Joe's to call.*
+
+**Measured, twelve fixture seeds × fifty years (alive / peak / starved):** D384 **161 / 210 / 34**
+→ (b) alone **244 / 270 / 24** → (b) with the bar at 100 **259 / 278 / 12**. The fixture 150 years:
+peak 22, 18 starved, 31 of old age, 16 alive.
+
+**Guards.** `TradesVisiblyWorkTests.AForagerTakesEveryLoadToAStore` (red with home-first: a load
+walked home). **`TheVillageSurvivesWithTheMarketSwitchedOff` re-posed to D143's shape** — it read
+*never below the founders through year 300*, which held only while larders hid the food; with the
+stall the fixture rides the troughs out to year 300 with fourteen alive and without it ages out at
+165, and D143 rules that an unattended village *should*. It asks now what
+`TheVillageSustainsItselfAcrossGenerations` asks: 150 years, peak ≥ 15 from four founders, old age
+the majority death, nobody frozen — measured **24 / 21 starved / 27 of old age** without a stall
+against 22 / 18 / 31 with one. Some fifteen fixture-premise guards re-posed because they counted food
+where the old rule put it (the winter drain reads larder + granaries; the food limit tracks trips
+in flight by name; the farm grounds start each spring with nothing in the stores and one hand,
+because the granary now feeds the fetches that used to come from the larder; the lone walker's
+worn tiles; the no-seam bar; the valley pin). Six goldens moved once (the seam pair, the fifty-year
+pair, the two skill hashes).
 
 ---
 

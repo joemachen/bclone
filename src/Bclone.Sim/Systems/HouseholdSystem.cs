@@ -620,7 +620,17 @@ public sealed class HouseholdSystem : ISimSystem
         // were the same number until the farm's local store landed; a village whose harvest
         // sat at the farm would have read zero here and stopped having children, which is
         // D155's symptom arriving from a new direction. See SimWorld.FoodTheVillageHolds.
-        if (world.FoodTheVillageHolds() < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
+        // ⚠️ READ AGAINST A BAR RE-BASED FOR D385. Every load goes to a store now and a larder is
+        // filled from it, so the stores hold what the larders used to be filled with directly —
+        // D153's own sentence at full strength: *"every larder is topped up from the village
+        // store, so the gate reads comfortable right up until the moment the store runs dry."*
+        // At the old 60 % the fixture bred to 24 and starved 28 against 27 of old age. Two
+        // formulas that subtract what the larders are owed were measured and neither moved the
+        // fifty-year village a soul (259 / 278 / 12 either way); the bar did — `birth_food_percent`
+        // 60 → 100 by Joe's D155 criterion, *growth arrives and starvation is still a minority
+        // of deaths*: peak 22, 18 starved, 31 of old age.
+        int surplus = world.FoodTheVillageHolds();
+        if (surplus < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
         {
             return false;
         }
