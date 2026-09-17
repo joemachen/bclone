@@ -738,6 +738,10 @@ public static class StateHash
         // a good that is not hashed is a good two runs can disagree about while reading
         // identical, and a villager can carry stone now.
         hash = MixStore(hash, villager.Carried);
+
+        // The stint (D384): how many splits into the day a woodcutter is decides whether the
+        // next completion re-arms or walks home. Appended at the end, per the note at the top.
+        hash = MixUInt32(hash, (uint)villager.SplitsThisStint);
         hash = MixUInt32(hash, (uint)villager.ErrandX);
         hash = MixUInt32(hash, (uint)villager.ErrandY);
 

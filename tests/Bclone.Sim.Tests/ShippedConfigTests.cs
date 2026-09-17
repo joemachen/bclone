@@ -128,7 +128,11 @@ public sealed class ShippedConfigTests
     [Fact]
     public void TheShippedBuildingsAreBigEnoughForTheEconomyTheyServe()
     {
-        SimConfig shipped = Shipped;
+        // ⚠️ ONE SEAT, POSED. The shipped hut holds two and the horizon village needed three
+        // until the woodcutter's stint (D384) made one hand split a day at the block — it needs
+        // two now, so the shortfall the legibility claim below rests on is posed with a one-seat
+        // hut rather than left to a village that never sees it.
+        SimConfig shipped = Shipped with { WoodcutterHutCapacity = 1 };
 
         int woodcutterSeats = VillageEconomy.RequiredWoodcutterSeats(shipped);
         int foresterSeats = VillageEconomy.RequiredForesterSeats(shipped);
@@ -460,6 +464,15 @@ public sealed class ShippedConfigTests
 
         SimWorld world = loop.World;
         GridPos home = world.Households[0].Home();
+
+        // ⚠️ WITH A SEAM PAINTED, SO THE FOUR CAN BE PAID FOR (D384). Every one of these costs
+        // stone (D214), and a village that has painted no seam parks three of its twelve hands
+        // in the builder's hut for a century waiting on it — the sites sat at 0 work, "missing
+        // 10 stone", from year 15 to year 115, and the village dwindled 13 → 4 on both D383's
+        // code and this. This guard had been passing at exactly its bar. The builders idling on
+        // sites nobody can pay for is filed for Joe (`handoff.md`, OPEN); what is guarded here
+        // is the claim in the comment above, which needs the buildings to be buildable.
+        ColdStartTests.PaintTheNearestSeam(world);
 
         int marked = 0;
         foreach (BuildingKind kind in new[]

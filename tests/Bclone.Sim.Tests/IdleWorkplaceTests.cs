@@ -485,7 +485,10 @@ public sealed class IdleWorkplaceTests
         // actually grows** — the 3 seats the horizon needs belong to a twenty-household
         // settlement nobody reaches. Measured: a sixteen-person village needed 0 all year.
         // Cheap splits make the same shortfall cost more hands, which is the state being posed.
-        SimConfig config = Config with { WoodcutterHutCapacity = 1, FirewoodPerSplit = 4 };
+        // ⚠️ Four per split was cheap enough until the woodcutter's stint (D384) made one hand
+        // split 2.7× as much a year and one seat covered thirteen people at four; one per split
+        // poses it again.
+        SimConfig config = Config with { WoodcutterHutCapacity = 1, FirewoodPerSplit = 1 };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 

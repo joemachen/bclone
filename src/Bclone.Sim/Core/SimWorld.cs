@@ -8732,7 +8732,7 @@ public sealed class SimWorld : IObstacles
     /// nothing moves, which is what keeps the goldens where D382 left them.
     /// </para>
     /// <para>
-    /// ⚠️ The woodcutter's hut offset feeds <c>FirewoodRoundTripTicks</c>; a seed whose hut has
+    /// ⚠️ The woodcutter's hut offset feeds <c>FirewoodStintTicks</c>; a seed whose hut has
     /// to move is a seed whose fuel budget is a little off its derivation — a founding on a
     /// cramped bank, said out loud rather than a crash.
     /// </para>

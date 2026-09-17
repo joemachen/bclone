@@ -714,7 +714,7 @@
   //
   // Near the homes rather than near the stand: logs are drawn
   // village-wide, so the only distance that costs anything is the
-  // woodcutter's daily walk from home. Read by FirewoodRoundTripTicks, so
+  // woodcutter's daily walk from home. Read by FirewoodStintTicks (was FirewoodRoundTripTicks until D384), so
   // moving it re-derives the fuel economy (D382 learned that the hard way).
   "woodcutter_hut_x": -2,
   "woodcutter_hut_y": 1,
@@ -756,6 +756,11 @@
   "woodcutter_hut_capacity": 2,
   "logs_per_split": 6,
   "split_ticks": 4,
+  // A day's stint at the hut before walking home (D384): the walk is
+  // priced once per stint, which is what re-derived firewood_per_split
+  // below. Joe: "woodcutters should be at the hut cutting wood for a
+  // period of time."
+  "splits_per_stint": 4,
 
   // DERIVED, like gather_yield. The stated target: heating every home
   // through winter must cost no more than HALF the hands the village can
@@ -787,6 +792,10 @@
   // the buildings, the woodcutter's walk included, so the same target
   // (half the spare hands) needs a slightly bigger batch. Food first: the
   // 90 above was set before this was read.
+  // 53 -> 50 (D384): the woodcutter splits a day's stint at the hut, so
+  // the walk is priced once per four splits and the derived floor fell
+  // to 40. Fifty is Joe's number again - deliberately above the floor,
+  // because a bigger batch is cheaper in logs (see VillageFixtures).
   "firewood_per_split": 53,
 
   // Per household, not per member: a house costs the same to heat

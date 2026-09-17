@@ -305,8 +305,8 @@ public sealed class SkillTests
     // 9581975549518549333 (fixture) and 16825462083917521948 (shipped).
     // RE-TAKEN (D373) — the stand on the hut (see `StockLimitTests.ShippedFiftyYearHash`). Were
     // 8507353748120440426 (fixture) and 10601455184816149374 (shipped).
-    [InlineData(false, 13308645267262074309UL)]
-    [InlineData(true, 14980240143520032893UL)]
+    [InlineData(false, 2535839095147187774UL)]
+    [InlineData(true, 9592025604371094026UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

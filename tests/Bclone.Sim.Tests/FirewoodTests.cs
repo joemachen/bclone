@@ -69,6 +69,55 @@ public sealed class FirewoodTests
             "More logs were split than were ever felled or arrived with the founding.");
     }
 
+    /// <summary>
+    /// ⛔ A woodcutter splits a stint at the hut before walking home — <b>a run of splitting
+    /// longer than one split, and never longer than the day's four</b> (D384,
+    /// `specs/trades-visibly-work.md §2`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"woodcutters should be at the hut cutting wood for a period of time."* Before this a
+    /// woodcutter split once (four ticks) and walked home every time. Posed with a yard that is
+    /// topped up every tick and no firewood limit. Red with the re-arm off: the longest run is
+    /// one split and its arrival tick (five against the eight two splits need).
+    /// </remarks>
+    [Fact]
+    public void AWoodcutterSplitsAStintBeforeWalkingHome()
+    {
+        SimLoop loop = Build(Config);
+        SimWorld world = loop.World;
+        int longest = 0;
+        var run = new Dictionary<int, int>();
+
+        for (int i = 0; i < Config.TicksPerYear * 3; i++)
+        {
+            StoreBuilding yard = world.AnyStoreOf(StoreKind.Warehouse);
+            yard.Store.Add(Goods.Logs, Config.LogsPerSplit * 4);
+            yard.Store.TakeAll(Goods.Firewood);
+            loop.StepOnce();
+
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.State == VillagerState.MakingFirewood)
+                {
+                    run[villager.Id] = run.GetValueOrDefault(villager.Id) + 1;
+                    longest = Math.Max(longest, run[villager.Id]);
+                }
+                else
+                {
+                    run[villager.Id] = 0;
+                }
+            }
+        }
+
+        _output.WriteLine($"the longest run of splitting: {longest} ticks (one split is {Config.SplitTicks}, a stint {Config.SplitsPerStint})");
+        // Two splits' worth at least — one split plus the arrival tick is five, and the first
+        // draft's "more than one split" went green on that (the red check caught it).
+        Assert.True(longest >= 2 * Config.SplitTicks, $"the longest run of splitting was {longest} ticks — one split, then home");
+        // A stint's ticks, plus the arrival tick that sets the state and up to two meals eaten
+        // at the block (a meal holds the state and loses the tick, every eleven ticks).
+        Assert.True(longest <= (Config.SplitsPerStint * Config.SplitTicks) + 3, $"a run of {longest} ticks is longer than a stint");
+    }
+
     [Fact]
     public void AWoodcutterWithNoLogsSaysSo()
     {

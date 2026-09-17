@@ -1,6 +1,32 @@
-# Handoff — bclone: **▶️ PHASE 4.5 — D382 (FOOTPRINTS) AND D383 (BUILDINGS ARE OBSTACLES) ARE PLAYED AND PUSHED. NEXT: PHASE 5 — TRAMPLED FIELDS AND FENCES.**
+# Handoff — bclone: **▶️ PHASE 5 — TRADES VISIBLY WORK (D384) IS IN PROGRESS: PART 1, THE WOODCUTTER'S STINT, IS COMMITTED AND UNPLAYED; PARTS 2 AND 3 (FORAGER IN THE RING, HUNTER IN THE WOODS) ARE NEXT.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D383.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D384 PART 1.**
+>
+> **The state:** `main` = D384 part 1 on `101d05c` (= `origin/main`); **committed, NOT pushed —
+> Joe pushes after he plays.** Working tree clean. Suite **1168 passing, 0 failing, 2 skipped of
+> 1170, 4m35** (was 3m07 — measured, not a per-tick regression: villages that froze under a
+> starved fuel chain now live through their runs, the shipped-build guard's village lives a
+> century, and the capacity guard's pose is bigger; the fixture's fifty years cost the same in
+> isolation); view 0 warnings; probe green. The decision log runs to **D384** (part 1). Read
+> `DESIGN.md §0–§5`, §6, D383–D384 in §7, then `specs/trades-visibly-work.md` in full — its §1
+> table is what each trade actually did before this slice, traced, and it is not what Joe's note
+> assumed (the forester was already in its ground; the hunter never left the lodge).
+>
+> **✅ D384 PART 1 — THE WOODCUTTER'S STINT.** A woodcutter splits a day's four at the block
+> before walking home, while the yard holds a batch and the sheds hold less than the homes want;
+> the walk is priced once per stint; the fuel floor fell 53 → 40 (shipped 53 kept). ⛔ Two fuel
+> derivations were leaning on the old timing (loggers sized from woodcutter *capacity*) and now
+> derive from the logs the homes burn. Twelve seeds: 155 / 202 / 42 against 154 / 202 / 36.
+>
+> **▶️ NEXT:** the plan in `C:\Users\joema\.claude\plans\review-handoff-md-and-go-delegated-bonbon.md`
+> and the spec — **part 2, the forager gathers in the ring** (`gather_walk_tiles` 3, the nearest
+> wooded ring tiles rotated by a hash, never an `Rng` draw; `RoundTripTicks` gains the walk;
+> `gather_yield` re-derives; the rigs re-read), then **part 3, the hunter in the woods**
+> (`hunt_walk_tiles` 6; `meat_yield` by the rig only). Then Joe plays all three.
+>
+> *(D383's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-16 — AFTER D383.**
 >
 > **The state:** `main` = `origin/main` = D383 (`00ea445`) on D382 (`ccd10e5`) + this note;
 > **Joe played both, 2026-09-16 — *"ive played, we are good to commit, push, etc."* — and they
@@ -981,6 +1007,31 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     route home asked the way home again in the same tick, forever, and the suite died of a stack
     overflow with no test named. Any "fall back to home" branch needs a "home is where I cannot
     go" exit.
+85. **⛔⛔ A CAPACITY THAT HAPPENED TO EQUAL DEMAND IS A DEMAND NOBODY DERIVED (D384).**
+    `RequiredForesterSeats`, `HandsNeededForFuel` and the live `LoggersToFeedTheHuts` sized the
+    loggers from *woodcutter seats × logs one woodcutter could eat in a year* — right only while
+    one woodcutter's year was about one seat's worth of heat. Make a woodcutter 2.7× as
+    productive and the same formula asks for loggers to feed firewood nobody will burn: the
+    founding forester's hut claimed every wooded tile near the founding and four guards found
+    no woodland. **When a rate changes, grep for every derivation that multiplies by it and ask
+    whether it was ever demand.**
+86. **⛔ A FASTER HAND NEEDS A STOP THE SLOW HAND NEVER NEEDED (D384).** One split and home
+    throttled the woodcutter by the walk; four splits in a row turned the village's logs into
+    firewood nobody asked for, and the builders waited on timber (trap 29 again). Any "keep
+    working where you stand" loop must ask whether the village still wants the product, not
+    only whether the player set a limit.
+87. **⚠️ A GUARD THAT PASSES BY EXACTLY ITS BAR IS ALREADY RED (D384).** The shipped-build
+    guard's village finished at 4 against a bar of 4 on D383's code, three of its hands parked
+    for a century on stone nobody quarried; the queue-promotion guard's race was decided by the
+    tick a load of stone landed. A one-tick timing change flipped both. When a guard fails on a
+    change that could not have caused it, measure it on the previous commit before touching the
+    sim.
+88. **⚠️ THE SUITE'S CLOCK MOVES WHEN VILLAGES STOP DYING (D384).** 3m07 → 4m35 with the fixture's
+    fifty years costing the same in isolation: villages that froze under a starved fuel chain now
+    live through eighty-year runs (the shelter guards 16 s → 71 s), and a longer-lived village is
+    a bigger one. Read the per-class sums before hunting a per-tick regression — and `Passed [N s]`
+    under xunit's parallelism is contention as much as cost (the seed survey read 100 s in one
+    full run and 142 s in isolation).
 71. **⛔⛔ A RULE THAT LOOKS LIKE LENIENCY MAY BE THE ONLY GARBAGE COLLECTOR (D381).** A new
     couple taking over *any* dead household — house or not — read as sloppy and was tightened
     to "a house, or a site being raised". Every guard stayed green; the fixture golden moved;
@@ -1161,6 +1212,16 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⭐ **THREE OF TWELVE HANDS WAIT A CENTURY ON STONE NOBODY QUARRIES (found D384, 2026-09-16).**
+  The shipped established village, asked to build a granary, a warehouse, a market and a
+  woodcutter's hut with no seam painted, keeps three builders in the hut from year 15 to year
+  115 — every site at *"0 work, missing 10 stone"* — and dwindles 13 → 4 (on D383's code as
+  well; the guard had been passing at exactly its bar). `BuildersWanted` is *"every seat when
+  anything is marked"* (D322, the player's intent counted). Two ways to call it: *(a)* a site
+  whose next material is nowhere in the valley and not being quarried does not count as work,
+  so the hands go back to the pool and the panel says *"waiting on stone nobody is cutting"*;
+  *(b)* it is the player's mark and the player's cost — leave it, and make the Professions panel
+  say why the builders idle. The guard poses a seam for now.
 - ~~⭐⭐ **THE HALF-A-LARDER RULE AND A VILLAGE ON THE EDGE (D372, 2026-09-15).**~~ ✅ **CLOSED BY JOE, 2026-09-15: *"leave it"* — option (a), it is D32's inequality and the game. Do not re-open.** The market is a
   shop as Joe asked, and a fed village likes it (the fixture's control grew 29 → 43 over six seeds;
   80 % of loads taken at the counter). But a village that cannot build a hut — two foragers for ten

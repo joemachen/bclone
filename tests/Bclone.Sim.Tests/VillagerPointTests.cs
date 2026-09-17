@@ -174,6 +174,11 @@ public sealed class VillagerPointTests
     /// at **20/146/1,538**. (The economy carries a tile a leg for it and the village peaks
     /// higher for it; the first two years are leaner.)
     /// </para>
+    /// <para>
+    /// **Re-pinned a ninth time (D384), not for the clock:** the woodcutter splits a day's stint
+    /// at the block, so the fuel chain wants fewer hands and the labour pass seats more
+    /// gatherers — **70** trips, the 1st/10th/50th at **20/144/1,450**; the first unchanged.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -204,8 +209,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(63, entries);
-        Assert.Equal(new ulong[] { 20, 146, 1538 }, at);
+        Assert.Equal(70, entries);
+        Assert.Equal(new ulong[] { 20, 144, 1450 }, at);
     }
 
     /// <summary>

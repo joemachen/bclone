@@ -2541,9 +2541,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             if (villager.Tile == job.Tile)
             {
-                villager.State = VillagerState.MakingFirewood;
-                villager.ActionTicksRemaining =
-                    world.WorkTicksFor(villager, JobKind.Woodcutter, config.SplitTicks);
+                BeginSplitting(world, villager);
             }
             else
             {
@@ -4017,9 +4015,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (onArrival == VillagerState.MakingFirewood)
         {
-            villager.State = VillagerState.MakingFirewood;
-            villager.ActionTicksRemaining =
-                world.WorkTicksFor(villager, JobKind.Woodcutter, world.Config.SplitTicks);
+            BeginSplitting(world, villager);
             return;
         }
 
@@ -4108,6 +4104,15 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         villager.State = onArrival == VillagerState.Idle ? VillagerState.Resting : onArrival;
+    }
+
+    /// <summary>The first split of a stint at the block (D384).</summary>
+    private static void BeginSplitting(SimWorld world, Villager villager)
+    {
+        villager.SplitsThisStint = 0;
+        villager.State = VillagerState.MakingFirewood;
+        villager.ActionTicksRemaining =
+            world.WorkTicksFor(villager, JobKind.Woodcutter, world.Config.SplitTicks);
     }
 
     private static void BeginGathering(SimWorld world, Villager villager, SimConfig config)
@@ -4790,6 +4795,7 @@ public sealed class BehaviorSystem : ISimSystem
                 {
                     // The yard emptied while they were working. Not an error: another
                     // woodcutter, or a house being raised, got there first.
+                    villager.SplitsThisStint = 0;
                     villager.State = VillagerState.TravelingHome;
                     return;
                 }
@@ -4854,6 +4860,29 @@ public sealed class BehaviorSystem : ISimSystem
                         + $" — {world.Clock}.");
                 }
 
+                // ⭐ A STINT, NOT A SPLIT (D384). Joe: *"woodcutters should be at the hut cutting
+                // wood for a period of time."* One split and home was the rule, so a woodcutter
+                // was seen at the block four ticks in every trip; now they split again where they
+                // stand while the yard holds a batch and the village still wants firewood, up to
+                // a day's four — the fisher's and the hunter's shape. Hunger still pre-empts.
+                // ⛔ The walk is priced once per stint in `VillageEconomy.FirewoodStintTicks`.
+                // ⛔ AND THE STINT ENDS WHEN THE SHEDS HOLD WHAT THE HOMES WANT, not only at the
+                // player's limit: a hand that splits four times as fast turns the village's logs
+                // into firewood nobody asked for, and the warehouse fills with it while the
+                // builders wait for timber (trap 29's shape) — the no-seam founding fell 24 → 16
+                // and the market-off village to one soul before this line.
+                villager.SplitsThisStint++;
+                if (villager.SplitsThisStint < world.Config.SplitsPerStint
+                    && !world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInWarehouses())
+                    && LabourQuota.FirewoodShortfall(world) > 0
+                    && NearestStoreWithLogs(world, villager.Tile, world.Config.LogsPerSplit) is not null)
+                {
+                    villager.ActionTicksRemaining =
+                        world.WorkTicksFor(villager, JobKind.Woodcutter, world.Config.SplitTicks);
+                    return;
+                }
+
+                villager.SplitsThisStint = 0;
                 villager.State = VillagerState.TravelingHome;
                 return;
 

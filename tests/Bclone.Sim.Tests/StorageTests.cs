@@ -278,7 +278,14 @@ public sealed class StorageTests
         // clear of every other ring ends up too far out to feed anybody. Nothing ships above one,
         // so that is a note rather than a bug report, but it is worth knowing before anybody
         // raises the key.
-        SimConfig bounded = Config with { GathererHutCapacity = 8 };
+        //
+        // ⚠️ **A FOURTH TIME (D384).** At eight seats both arms read 18–53 the day the
+        // woodcutter's stint freed hands from fuel — the starter diamond's paint and the eight
+        // seats both ran out before the granary did, and the guard had been passing by one
+        // person since D383. Twelve seats and a six-tile diamond give the village room to reach
+        // the granary: **18–60 bounded against 18–79 unbounded** (sixteen and eight read 18–67
+        // against 18–92 and cost the suite a minute more).
+        SimConfig bounded = Config with { GathererHutCapacity = 12, StartingResidentialRadius = 6 };
         SimConfig unbounded = bounded with { GranaryCapacity = 100_000_000 };
 
         (int Low, int High) boundedBand = Band(bounded);

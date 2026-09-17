@@ -264,7 +264,7 @@ public readonly record struct LabourQuota
         // than each workplace guessing at its own, which is the same lesson the
         // forager quota is a record of, one link further along.
         int woodcutters = WoodcuttersWanted(world);
-        int forestersForHuts = LoggersToFeedTheHuts(world, woodcutters);
+        int forestersForHuts = LoggersToFeedTheHuts(world);
         int forestersForHouses = ForestersWanted(world);
         int marketersWanted = MarketersWanted(world);
         int buildersWanted = BuildersWanted(world);
@@ -1060,7 +1060,8 @@ public readonly record struct LabourQuota
     /// deleted by D30 and the reading it justified outlived it by several slices.
     /// </para>
     /// </remarks>
-    public static int WoodcuttersWanted(SimWorld world)
+    /// <summary>The firewood the homes want and the sheds do not hold — what the chain works back from.</summary>
+    public static int FirewoodShortfall(SimWorld world)
     {
         ArgumentNullException.ThrowIfNull(world);
 
@@ -1128,13 +1129,11 @@ public readonly record struct LabourQuota
         // already had the moment somebody built a second warehouse — the same shape as the
         // bug where this counted firewood stranded in homes.
         int shortfall = demand - world.FirewoodInWarehouses();
-        if (shortfall <= 0)
-        {
-            return 0;
-        }
-
-        return CeilingDivide(shortfall, VillageEconomy.FirewoodMadePerYearAtWorst(world.Config));
+        return shortfall <= 0 ? 0 : shortfall;
     }
+
+    public static int WoodcuttersWanted(SimWorld world) =>
+        CeilingDivide(FirewoodShortfall(world), VillageEconomy.FirewoodMadePerYearAtWorst(world.Config));
 
     /// <summary>
     /// Extra foresters needed to keep the huts in logs.
@@ -1144,15 +1143,24 @@ public readonly record struct LabourQuota
     /// through the woodpile that was cut for houses, and then both stop — the chain
     /// starving in the middle, which is the failure mode processing introduces.
     /// </remarks>
-    private static int LoggersToFeedTheHuts(SimWorld world, int woodcutters)
+    private static int LoggersToFeedTheHuts(SimWorld world)
     {
-        if (woodcutters <= 0)
+        // ⛔ THE LOGS THE SHORTFALL TAKES, NOT THE LOGS THE WOODCUTTERS COULD EAT (D384). This
+        // was `woodcutters × LogsConsumedPerYearAtWorst` — a capacity, and one woodcutter's
+        // year was about the shortfall while a split cost a walk home. With the stint at the
+        // block one woodcutter splits 2.7× as much, so a hut wanting one hand would have asked
+        // for three loggers to feed it. `VillageEconomy.RequiredForesterSeats` made the same
+        // correction.
+        int shortfall = FirewoodShortfall(world);
+        if (shortfall <= 0)
         {
             return 0;
         }
 
-        int logsEaten = woodcutters * VillageEconomy.LogsConsumedPerYearAtWorst(world.Config);
-        return CeilingDivide(logsEaten, VillageEconomy.WoodCutPerYearAtWorst(world.Config));
+        Config.SimConfig config = world.Config;
+        int perFirewood = config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit;
+        int logs = CeilingDivide(shortfall * config.LogsPerSplit, perFirewood);
+        return CeilingDivide(logs, VillageEconomy.WoodCutPerYearAtWorst(config));
     }
 
     /// <summary>

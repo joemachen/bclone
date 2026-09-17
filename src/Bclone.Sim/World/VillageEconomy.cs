@@ -334,19 +334,25 @@ public static class VillageEconomy
         return FirewoodPerHouseholdPerWinter(config) * config.WinterBufferPercent / 100;
     }
 
-    /// <summary>Ticks for one round trip to the woodcutter's hut and back.</summary>
-    public static int FirewoodRoundTripTicks(SimConfig config)
+    /// <summary>
+    /// Ticks for one stint at the woodcutter's hut: the walk there and back, and
+    /// <see cref="SimConfig.SplitsPerStint"/> splits (D384).
+    /// </summary>
+    /// <remarks>
+    /// Was <c>FirewoodRoundTripTicks</c> — one walk per split — until the woodcutter stayed at
+    /// the block for a day (`specs/trades-visibly-work.md §2`). The walk is the budget's worst
+    /// home to the hut and back, round what stands in the way (D383).
+    /// </remarks>
+    public static int FirewoodStintTicks(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
         var hut = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY);
-
-        // The furthest home the village will build, walking to the hut and back — round what
-        // stands in the way (D383).
         var worstHome = new GridPos(MaxHomeToVillageTiles(config), 0);
         int worst = worstHome.ManhattanDistanceTo(hut) + ObstacleDetourTiles;
+        int splits = config.SplitsPerStint < 1 ? 1 : config.SplitsPerStint;
 
-        return (worst * config.TravelTicksPerUnit * 2) + config.SplitTicks;
+        return (worst * config.TravelTicksPerUnit * 2) + (splits * config.SplitTicks);
     }
 
     /// <summary>Firewood one woodcutter makes in a year, at their weakest.</summary>
@@ -356,20 +362,12 @@ public static class VillageEconomy
         ArgumentNullException.ThrowIfNull(config);
 
         int available = config.TicksPerYear - MealsPerYear(config);
-        int trip = FirewoodRoundTripTicks(config);
-        int trips = available <= 0 || trip <= 0 ? 0 : available / trip;
+        int stint = FirewoodStintTicks(config);
+        int stints = available <= 0 || stint <= 0 ? 0 : available / stint;
+        int splits = stints * (config.SplitsPerStint < 1 ? 1 : config.SplitsPerStint);
 
-        int firewood = trips * config.FirewoodPerSplit * config.VigourMinPercent / 100;
+        int firewood = splits * config.FirewoodPerSplit * config.VigourMinPercent / 100;
         return firewood < 1 ? 1 : firewood;
-    }
-
-    /// <summary>Logs one woodcutter consumes in a year, at their weakest.</summary>
-    public static int LogsConsumedPerYearAtWorst(SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        int perFirewood = config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit;
-        return FirewoodMadePerYearAtWorst(config) * config.LogsPerSplit / perFirewood;
     }
 
     /// <summary>
@@ -398,7 +396,10 @@ public static class VillageEconomy
         int firewoodNeeded = households * FirewoodStoreWantedPerHousehold(config);
         int woodcutters = CeilingDivide(firewoodNeeded, FirewoodMadePerYearAtWorst(config));
 
-        int logsNeeded = woodcutters * LogsConsumedPerYearAtWorst(config);
+        // The logs that firewood takes — the demand, not the woodcutters' capacity (D384; see
+        // `RequiredForesterSeats`).
+        int perFirewood = config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit;
+        int logsNeeded = CeilingDivide(firewoodNeeded * config.LogsPerSplit, perFirewood);
         int foresters = CeilingDivide(logsNeeded, WoodCutPerYearAtWorst(config));
 
         return woodcutters + foresters;
@@ -662,7 +663,19 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int logs = RequiredWoodcutterSeats(config) * LogsConsumedPerYearAtWorst(config);
+        // ⛔ THE LOGS THE VILLAGE BURNS, NOT THE LOGS ITS WOODCUTTERS COULD SPLIT (D384). This
+        // was `RequiredWoodcutterSeats × LogsConsumedPerYearAtWorst` — a capacity — and it read
+        // as demand only while one woodcutter's year was about one seat's worth of heat. The
+        // stint at the block (`specs/trades-visibly-work.md §2`) made a woodcutter 2.7× as
+        // productive, two seats of capacity became three thousand firewood against a horizon
+        // village's seven hundred, and the founding forester's hut was sized for logs nobody
+        // would ever burn: it claimed every wooded tile near the founding and four guards found
+        // no woodland left to give a second hut. The demand is what the homes burn and keep.
+        int households = config.EconomyHorizonHouseholds;
+        int firewood = households * (FirewoodStoreWantedPerHousehold(config)
+            + FirewoodPerHouseholdPerWinter(config));
+        int perFirewood = config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit;
+        int logs = CeilingDivide(firewood * config.LogsPerSplit, perFirewood);
         int forHuts = CeilingDivide(logs, WoodCutPerYearAtWorst(config));
 
         // Plus a hand for building, or the village heats itself and never grows.

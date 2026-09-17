@@ -89,6 +89,9 @@ The person at the tree stand becomes a **logger**; the **woodcutter** is the one
 The genuinely new mechanic. A woodcutter's hut differs from every workplace so far in that **it can be idle for want of an input**, not just for want of a worker.
 
 - It consumes `logs_per_firewood` logs and produces `firewood_per_batch`, taking `convert_ticks`.
+  ✅ **And since D384 a woodcutter splits a day's stint at the block** (`splits_per_stint`, 4)
+  before walking home, while the yard holds a batch and the sheds hold less than the homes want
+  (`trades-visibly-work.md §2`); the walk is priced once per stint.
 - Logs are drawn **village-wide**, in household-id order, exactly as building already does.
 - **A woodcutter with no logs to cut must say so.** This is a new refusal reason and it belongs with the others: a villager standing idle at a hut is only legible if the game says *"no logs to work — the village has none felled"*. Without it the player sees a manned building doing nothing.
 - Which in turn means the **labour quota becomes two-stage**: loggers are wanted because woodcutters need logs, and woodcutters are wanted because homes need heating. Demand propagates back down the chain. That is the shape every future processing chain will use, so it is worth building deliberately rather than special-casing firewood.

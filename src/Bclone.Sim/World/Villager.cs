@@ -473,6 +473,12 @@ public sealed class Villager
     public int GathersThisSeason { get; set; }
 
     /// <summary>
+    /// Splits made at the hut since this woodcutter last walked to it — the stint (D384). Zero
+    /// when they are not at the block.
+    /// </summary>
+    public int SplitsThisStint { get; set; }
+
+    /// <summary>
     /// Ticks this villager still has to wait before their working life begins — <b>a seeded
     /// personal rhythm, drawn once at birth</b> (`skills-catalog.md §3.5`, D28).
     /// </summary>
@@ -642,7 +648,9 @@ public sealed class Villager
             VillagerState.TravelingToTrees => $"walking to {where}",
             VillagerState.Cutting => "felling trees",
             VillagerState.TravelingToHut => $"walking to {where}",
-            VillagerState.MakingFirewood => "splitting logs into firewood",
+            VillagerState.MakingFirewood => SplitsThisStint > 0
+            ? $"splitting logs into firewood, the {SplitsThisStint + 1}{(SplitsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} split of the day"
+            : "splitting logs into firewood",
             VillagerState.Resting => "resting at home",
             VillagerState.Dead => "dead",
             VillagerState.HaulingToStore => "carrying a load to the store",

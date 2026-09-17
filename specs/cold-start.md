@@ -122,7 +122,7 @@ stated behaviour rather than a crash:
 | Reader | Reads | With nothing built |
 |---|---|---|
 | `VillageEconomy.CutRoundTripTicks` | `StorageWarehouseX/Y` | Budget against the **founding site**, which is where goods go until a warehouse exists. |
-| `VillageEconomy.FirewoodRoundTripTicks` | `WoodcutterHutX/Y` | Same. |
+| `VillageEconomy.FirewoodStintTicks` (was `FirewoodRoundTripTicks`, D384) | `WoodcutterHutX/Y` | Same. |
 | `Household.ChooseSite` | nearest granary | Fall back to the founding site — the cart is the store. |
 
 **These are the steady-state economy's inputs and they must not move**, or every derived

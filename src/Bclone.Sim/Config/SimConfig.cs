@@ -1016,7 +1016,7 @@ public sealed record SimConfig
 
     /// <summary>Where logs are split into firewood.</summary>
     [JsonPropertyName("woodcutter_hut_y")]
-    // ⛔ READ BY `VillageEconomy.FirewoodRoundTripTicks` — moving this hut re-derives the fuel
+    // ⛔ READ BY `VillageEconomy.FirewoodStintTicks` — moving this hut re-derives the fuel
     // economy (D382 tried (−2, 2) and the shipped file stopped meeting its fuel target).
     public int WoodcutterHutY { get; init; } = 1;
 
@@ -1041,6 +1041,19 @@ public sealed record SimConfig
     /// <summary>Ticks spent splitting once at the hut.</summary>
     [JsonPropertyName("split_ticks")]
     public int SplitTicks { get; init; } = 4;
+
+    /// <summary>
+    /// Splits a woodcutter makes at the hut before walking home — a day's stint (D384,
+    /// `specs/trades-visibly-work.md §2`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"woodcutters should be at the hut cutting wood for a period of time."* One split
+    /// and home was the rule before; four is a day at four ticks a day. ⛔ Read by
+    /// <c>VillageEconomy.FirewoodStintTicks</c>: the walk is priced once per stint, so this
+    /// re-derives <c>firewood_per_split</c>.
+    /// </remarks>
+    [JsonPropertyName("splits_per_stint")]
+    public int SplitsPerStint { get; init; } = 4;
 
     // ---------------------------------------------------------------
     //  Storage (D30, D32)

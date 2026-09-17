@@ -429,6 +429,14 @@ public sealed class HousesAreBuiltTests
             // village can afford either.
             SeamFixtures.PaintStoneForBuilding(world);
 
+            // ⚠️ AND THE STONE IN THE STORE FROM THE START (D384). The quarry's trickle was
+            // deciding the race: the promoted warehouse had its logs and waited on eight stone
+            // while the first eight quarried went to the granary, because a builder's errand
+            // commits to a site when it sets off and the stone landed while they walked. The
+            // woodcutter's stint moved that timing by a few ticks and the promoted arm read
+            // "granary first". Whether the village can afford either is `StoneCostsTests`' question.
+            world.AnyStoreOf(StoreKind.Warehouse).Store.Add(Goods.Stone, 40);
+
             if (promote)
             {
                 while (world.QueuePositionOf(warehouse) > 1)
