@@ -1,7 +1,7 @@
 # Spec: Trades visibly work — a woodcutter's stint, a forager in the ring, a hunter in the woods
 
 **Decisions:** D384 (this document). Neighbours: D282 (`fish_ticks` 3 → 10, a pacing change measured on the rig), D288/D293 (the yield rigs), D355 (the steading, the look only), D361/D363 (the food ladder and its floor), D373 (a building visit lasts a tick), D383 (obstacles).
-**Status:** ✅ **built (2026-09-16, D384, three commits)** — §2 the woodcutter's stint, §3 the forager in the ring, §4 the hunter in the woods; suite 1170 passing, 0 failing, 2 skipped of 1172. **Unplayed by Joe as of this line.** Owner: Joe + Claude Code.
+**Status:** ✅ **built (2026-09-16, D384, three commits)** — §2 the woodcutter's stint, §3 the forager in the ring, §4 the hunter in the woods; suite 1170 passing, 0 failing, 2 skipped of 1172. Played by Joe 2026-09-17 — *"i played - it all feels fine"* — and pushed. Owner: Joe + Claude Code.
 
 ---
 

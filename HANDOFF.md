@@ -1,10 +1,11 @@
-# Handoff — bclone: **▶️ PHASE 5 — D385 (EVERY LOAD TO A STORE, JOE'S CALL (b)) ON D384 (TRADES VISIBLY WORK). BOTH COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS; THEN HIS CALL ON §12.3'S PROPORTIONAL BIRTH GATE, MATURE TREES OR THE SHELL.**
+# Handoff — bclone: **▶️ PHASE 5 — D384 (TRADES VISIBLY WORK) AND D385 (EVERY LOAD TO A STORE) PLAYED BY JOE AND PUSHED. NEXT: HIS CALL BETWEEN MATURE TREES, THE SHELL, AND ORGANIC HOUSING.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D385.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-17 — AFTER D385, PLAYED.**
 >
-> **The state:** `main` = D385 (one commit) on D384 (three commits, `fdaf828`, `02f8b62`,
-> `29e7e3a`) on `101d05c` = `origin/main`; **four commits committed, NOT pushed — Joe pushes
-> after he plays.** Working tree clean. Suite **1171 passing, 0 failing, 2 skipped of 1173,
+> **The state:** `main` = `origin/main` = D385 (`2921d38`) on D384 (`fdaf828`, `02f8b62`,
+> `29e7e3a`) + this note; **Joe played both, 2026-09-17 — *"i played - it all feels fine"* —
+> and they are pushed.** The boom-bust after a full granary reads as pressure, not breakage, so
+> §12.3's proportional birth gate stays filed, not scheduled. Working tree clean. Suite **1171 passing, 0 failing, 2 skipped of 1173,
 > 3m21**; view 0 warnings on `--no-incremental`; probe green. The decision log runs to **D385**.
 > Read `DESIGN.md §0–§5`, §6, D384–D385 in §7, then `storage-and-distribution.md §14.10` and
 > `§12` (the wave it predicted in July is back, and §14.10 says why).
@@ -28,12 +29,11 @@
 > fixture-premise guards re-posed for counting food where the old rule put it; six goldens moved
 > once. Trap 94.
 >
-> **⚠️ For Joe when he plays D385:** the granary fills and the village grows on it; watch for the
-> famine that follows a full granary in a village with one gathering hut — that is the boom-bust,
-> and the ask is whether it reads as *pressure to build the second hut* (D155's *"hunger feels
-> like pressure"*) or as the game breaking. If the latter, §12.3's proportional gate — births
-> read against what the village *produces*, not what it holds — is the design answer, and it is
-> a new mechanism, yours to call.
+> **✅ Joe's verdict on the boom-bust (2026-09-17):** asked whether the famine that follows a full
+> granary in a one-hut village reads as *pressure to build the second hut* or as the game
+> breaking — *"it all feels fine."* Pressure (D155's verdict again). §12.3's proportional gate —
+> births read against what the village *produces*, not what it holds — stays the design answer
+> if that ever changes; a new mechanism, not scheduled.
 >
 > *(D384's banner, kept below.)*
 >
@@ -76,7 +76,7 @@
 > derivations were leaning on the old timing (loggers sized from woodcutter *capacity*) and now
 > derive from the logs the homes burn. Twelve seeds: 155 / 202 / 42 against 154 / 202 / 36.
 >
-> **▶️ NEXT, after his play:** his call on §12.3's proportional birth gate (above), and between
+> **▶️ NEXT:** his call between
 > **mature trees** (a view slice; his "scale and
 > depth" question), **the shell** (per-stage RNG seeds → new-game screen → settings persistence →
 > save/load → title) and **organic housing — plots and lanes** (Phase 5's first bullet, unblocked

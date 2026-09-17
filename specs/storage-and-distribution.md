@@ -625,7 +625,7 @@ arrives, starvation a minority of deaths), it peaks at 22 with 18 starved agains
 Two gate formulas that subtract what the larders are owed were built and measured and neither
 moved the fifty-year village a soul (259 / 278 / 12 either way); the bar did. `PopulationCeiling`
 moves by the same arithmetic. ⚠️ *A proportional (production-aware) birth gate is still §12.3's
-"real answer", still not built, and still Joe's to call.*
+"real answer" and still not built — Joe played the boom-bust 2026-09-17: *"it all feels fine"*, so it reads as pressure (D155) and the gate stays filed, not scheduled.*
 
 **Measured, twelve fixture seeds × fifty years (alive / peak / starved):** D384 **161 / 210 / 34**
 → (b) alone **244 / 270 / 24** → (b) with the bar at 100 **259 / 278 / 12**. The fixture 150 years:
