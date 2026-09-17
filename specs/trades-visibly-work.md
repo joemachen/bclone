@@ -1,7 +1,7 @@
 # Spec: Trades visibly work — a woodcutter's stint, a forager in the ring, a hunter in the woods
 
 **Decisions:** D384 (this document). Neighbours: D282 (`fish_ticks` 3 → 10, a pacing change measured on the rig), D288/D293 (the yield rigs), D355 (the steading, the look only), D361/D363 (the food ladder and its floor), D373 (a building visit lasts a tick), D383 (obstacles).
-**Status:** ⏳ **in progress (2026-09-16)** — §2 the woodcutter's stint: ✅ built (D384 part 1, unplayed). §3 the forager in the ring: ✅ built (D384 part 2, unplayed). §4 the hunter in the woods: not started. Owner: Joe + Claude Code.
+**Status:** ✅ **built (2026-09-16, D384, three commits)** — §2 the woodcutter's stint, §3 the forager in the ring, §4 the hunter in the woods; suite 1170 passing, 0 failing, 2 skipped of 1172. **Unplayed by Joe as of this line.** Owner: Joe + Claude Code.
 
 ---
 
@@ -103,11 +103,33 @@ years every gathering tick stands on a forest tile within `gather_walk_tiles` of
 them off the hut than on it, and on more than one tile (124 ticks on 15 tiles). ⛔ Red with the
 walk off: 140 ticks, all on the hut.
 
-## 4. The hunter hunts in the woods (§3 of the slice) — not started
+## 4. The hunter hunts in the woods (§3 of the slice)
 
-Lodge → a forest tile within `hunt_walk_tiles` (6) of the lodge → `hunt_ticks` there → back to the
-lodge with the meat (one visible tick on it) → the next hunt, or home when the lodge is full.
-`meat_yield` set by the rig and only by the rig (`hunting.md §7`).
+**Rule.** A hunt goes lodge → **a forest tile of the range within `hunt_walk_tiles` (6, half the
+range) of the lodge** → `hunt_ticks` there → back to the lodge with the meat and the hide in the
+hunter's arms → the meat into the lodge's store, one visible tick on the building (D373) → the
+next hunt, or clearing the lodge when it is full (D370, unchanged), or home when the larder
+wants what the lodge would not take. `SimWorld.AGameTileFor(lodge, villager)` is the forager's
+rule one trade over — the range's forest tiles in row order, the one taken picked by a hash of
+the villager and the tick the hunt is decided, ⛔ never an `Rng` draw; the lodge itself when no
+woods are in reach. The carry-back reuses `HaulingToFarm` (*carrying a load to my own
+workplace's buffer*), dispatched by the workplace's kind on arrival; the hide stays in the arms
+until they pass a store, as it always did. The yield is still the range's (`HuntYieldAt`).
+
+**What it costs, and where it is measured.** The hunter is priced by the rig and only by the
+rig (`hunting.md §7`); the rig's on-the-job ticks count the carry-back. Re-read: hunter 1,975 per
+hundred ticks worked against the fisher's 956 — 2.07× (D383: 1.99×) — so `meat_yield` stays.
+A hunter is seen hunting 66 ticks in two years where the re-arm on the lodge gave 185: the walk
+out and back is the look.
+
+**Legibility.** *"walking out to the woods"*, *"hunting in the woods"*, *"carrying the meat back
+to hunter's lodge 1"*.
+
+**Guard.** `AHunterHuntsAtAForestTileAndBringsTheMeatToTheLodge` (`TradesVisiblyWorkTests`): over
+two years every hunting tick stands on a forest tile within `hunt_walk_tiles` of the lodge, none
+on it, on more than one tile, and the lodge's store rises only with a hunter standing on it.
+⛔ Red with the walk off: 185 ticks, all on the lodge, and the store rising four times with nobody
+there.
 
 ## 5. Stated, not built
 
@@ -127,11 +149,14 @@ re-read after §3 and §4; the pins re-pinned with the reason. Filled in per com
 | D383 | 154 | 202 | 36 | |
 | §2 woodcutter stint | 155 | 202 | 42 | the stint alone read 158 / 204 / 25; ending it at the shortfall (the honest rule) 155 / 202 / 42 — ±10 across twelve seeds is the noise band trap 51 records |
 | §3 forager in the ring | 161 | 210 | 34 | the yield derived for the longer trip keeps the floor; the rigs' rungs held (1.6× / 1.9×) |
+| §4 hunter in the woods | 161 | 210 | 34 | the fixture has no lodge; the rig read 2.07× the fisher (1.99× at D383) |
 
 ## 7. Definition of Done
 
 Each trade: its rule in `BehaviorSystem`, its derivation moved in `VillageEconomy` with the shipped
 number it moves, its guard red-checked, its card sentence, its measurement in §6, and the docs
 (`forests-and-gathering.md §3.3`, `hunting.md §6–7`, `wood-fuel-and-tools.md §5`, `DESIGN.md §4/§6/§7`,
-handoff) in the same commit. A windowed shot of a forager in the ring and a hunter in the woods,
-looked at once; Joe plays and calls the look and the ladder.
+handoff) in the same commit. ✅ All three built. ⚠️ **The windowed shot was not had:** the only
+warm village the game can open is the shipped config forced warm, and it seats nobody (the
+loose thread from D383 — four laborers at their homes on Day 8 of Summer); the look is Joe's to
+see in play, where he raises the huts himself.

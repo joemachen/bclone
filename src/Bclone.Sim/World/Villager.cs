@@ -643,7 +643,7 @@ public sealed class Villager
         VillagerState.Fishing => "fishing",
         VillagerState.TravelingToWater => "walking to the water",
         VillagerState.TravelingToGame => "walking out to the woods",
-        VillagerState.Hunting => "hunting",
+        VillagerState.Hunting => "hunting in the woods",
             VillagerState.TravelingHome => "walking home",
             VillagerState.TravelingToTrees => $"walking to {where}",
             VillagerState.Cutting => "felling trees",
@@ -666,7 +666,9 @@ public sealed class Villager
             VillagerState.TravelingToField => $"walking out to the fields at {where}",
             VillagerState.Sowing => "sowing a field",
             VillagerState.Reaping => "reaping the harvest",
-            VillagerState.HaulingToFarm => "carrying the harvest to the farm",
+            VillagerState.HaulingToFarm => Carried[Goods.Meat] > 0
+                ? $"carrying the meat back to {where}"
+                : "carrying the harvest to the farm",
             VillagerState.StockingTheMarket => "carrying goods to the market",
             _ => State.ToString(),
         };

@@ -112,6 +112,10 @@ the mechanism, then the content.*
 - **Hunter's lodge, 3 seats** (Joe). Placement: must have forest within its reach.
 - **A hunt takes longer than a cast** — `hunt_ticks` above `fish_ticks` (10). It is *"not
   instantaneous"* by design.
+- ✅ **And it happens in the woods (D384, `trades-visibly-work.md §4`):** the hunter walks to a
+  forest tile within `hunt_walk_tiles` (6) of the lodge, hunts there, and carries the catch back
+  to the lodge; until D384 they hunted standing on the lodge and re-armed in place. The rig's
+  on-the-job ticks count the walk and the carry-back; `meat_yield` is still the rig's alone.
 - **Year-round.** ⛔ Not season-gated. `IsForaging` must **not** include hunting, or winter will
   march the hunter home — *this is D281 exactly, and it will happen again if a state is reused.*
 - The lodge holds a local buffer a marketer runs dry, exactly as the farm and the fishery do — and the hunter drains it themselves when it cannot take another kill (D370; `fishing.md` has the rule). **And whoever clears it stands on the lodge for the tick they load** (D373): the load and the first step of the haul used to happen in one tick, so nobody was ever drawn at the lodge — Joe: *"they stop a few pixels before actually going to it and then turn around."* Guard: `AHunterClearingTheLodgeIsSeenStandingOnIt`.

@@ -2846,6 +2846,66 @@ public sealed class SimWorld : IObstacles
     };
 
     /// <summary>
+    /// Where a hunter hunts this trip: a forest tile of the lodge's range within
+    /// <see cref="SimConfig.HuntWalkTiles"/> of the lodge, or the lodge itself when there is none
+    /// (D384, `specs/trades-visibly-work.md §4`).
+    /// </summary>
+    /// <remarks>
+    /// The forager's rule one trade over (<see cref="AGatheringTileFor"/>): the forest tiles of
+    /// the diamond in row order, nothing standing on them, the one taken picked by a hash of the
+    /// villager and the tick the trip is decided, a tile nobody can walk to passed over for the
+    /// next. ⛔ Never an <c>Rng</c> draw. The yield is still the range's
+    /// (<see cref="HuntYieldAt"/>): the tile is where the hunter is seen.
+    /// </remarks>
+    public GridPos AGameTileFor(Workplace lodge, Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(lodge);
+        ArgumentNullException.ThrowIfNull(villager);
+
+        int range = BuildingsCatalog[BuildingKind.HunterLodge]?.HuntingRadius ?? 0;
+        int reach = Math.Min(Config.HuntWalkTiles, range);
+        if (reach <= 0)
+        {
+            return lodge.Tile;
+        }
+
+        var candidates = new List<GridPos>();
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            int span = reach - Math.Abs(dy);
+            for (int dx = -span; dx <= span; dx++)
+            {
+                var at = new GridPos(lodge.Tile.X + dx, lodge.Tile.Y + dy);
+                if (Map.Contains(at) && Map.TerrainAt(at) == Terrain.Forest && !StandsOn(at))
+                {
+                    candidates.Add(at);
+                }
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            return lodge.Tile;
+        }
+
+        uint mix = unchecked(((uint)villager.Id * 2654435761u) ^ ((uint)Tick * 2246822519u));
+        mix ^= mix >> 15;
+        mix = unchecked(mix * 2654435761u);
+        mix ^= mix >> 13;
+        int first = (int)(mix % (uint)candidates.Count);
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            GridPos pick = candidates[(first + i) % candidates.Count];
+            if (TravelCost.CanReach(lodge.Tile, pick))
+            {
+                return pick;
+            }
+        }
+
+        return lodge.Tile;
+    }
+
+    /// <summary>
     /// What one hunt is worth at this lodge — <b>the yield, thinned by how wooded the range is</b>.
     /// </summary>
     /// <remarks>

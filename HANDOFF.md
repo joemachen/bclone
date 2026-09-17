@@ -1,16 +1,30 @@
-# Handoff — bclone: **▶️ PHASE 5 — TRADES VISIBLY WORK (D384) IS IN PROGRESS: PARTS 1 AND 2 (THE WOODCUTTER'S STINT, THE FORAGER IN THE RING) ARE COMMITTED AND UNPLAYED; PART 3 (THE HUNTER IN THE WOODS) IS NEXT.**
+# Handoff — bclone: **▶️ PHASE 5 — TRADES VISIBLY WORK (D384) IS BUILT IN THREE COMMITS: THE WOODCUTTER'S STINT, THE FORAGER IN THE RING, THE HUNTER IN THE WOODS. COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS; THEN MATURE TREES OR THE SHELL.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D384 PART 2.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-16 — AFTER D384.**
 >
-> **The state:** `main` = D384 parts 1–2 on `101d05c` (= `origin/main`); **committed, NOT
-> pushed — Joe pushes after he plays.** Working tree clean. Suite **1169 passing, 0 failing, 2
-> skipped of 1171, 4m51** (was 3m07 — measured, not a per-tick regression: villages that froze under a
+> **The state:** `main` = D384 parts 1–3 on `101d05c` (= `origin/main`); **committed, NOT
+> pushed — Joe pushes after he plays.** Working tree clean. Suite **1170 passing, 0 failing, 2
+> skipped of 1172, 3m17** (two runs mid-slice read 4m35 and 4m51 and the third 3m17 on the same
+> machine; the per-test sums say villages that froze now live through their runs, and the rest
+> was contention — read trap 88 before chasing it) (was 3m07 — measured, not a per-tick regression: villages that froze under a
 > starved fuel chain now live through their runs, the shipped-build guard's village lives a
 > century, and the capacity guard's pose is bigger; the fixture's fifty years cost the same in
 > isolation); view 0 warnings; probe green. The decision log runs to **D384** (part 1). Read
 > `DESIGN.md §0–§5`, §6, D383–D384 in §7, then `specs/trades-visibly-work.md` in full — its §1
 > table is what each trade actually did before this slice, traced, and it is not what Joe's note
 > assumed (the forester was already in its ground; the hunter never left the lodge).
+>
+> **✅ D384 PART 3 — THE HUNTER HUNTS IN THE WOODS.** A hunt walks to a forest tile within
+> `hunt_walk_tiles` (6) of the lodge, hunts there, and carries the catch back to the lodge (one
+> visible tick on it; the carry-back reuses `HaulingToFarm`, dispatched by workplace kind). The
+> rig, now counting the carry-back, reads 2.07× the fisher (1.99× before), so `meat_yield`
+> stays. No golden moved. ⚠️ **For Joe:** the windowed shot could not be had (the forced-warm
+> shipped village seats nobody — D383's loose thread), so the look is his to see: raise a
+> forager's hut and a lodge, watch a forager walk into the woods and back, a hunter go out and
+> return with meat, a woodcutter stay at the block for a day. Three keys are his to widen:
+> `gather_walk_tiles` 3, `hunt_walk_tiles` 6, `splits_per_stint` 4. And the three shipped
+> numbers that moved: `gather_yield` 90 → 112 (the walk priced), `firewood_per_split` kept at
+> 53 above a floor that fell to 40.
 >
 > **✅ D384 PART 2 — THE FORAGER GATHERS IN THE RING.** A trip goes to a wooded tile within
 > `gather_walk_tiles` (3) of the hut, picked by a hash of the villager and their trip count
@@ -25,13 +39,12 @@
 > derivations were leaning on the old timing (loggers sized from woodcutter *capacity*) and now
 > derive from the logs the homes burn. Twelve seeds: 155 / 202 / 42 against 154 / 202 / 36.
 >
-> **▶️ NEXT:** the plan in `C:\Users\joema\.claude\plans\review-handoff-md-and-go-delegated-bonbon.md`
-> and the spec §4 — **part 3, the hunter in the woods**: lodge → a forest tile within
-> `hunt_walk_tiles` (6) of the lodge → `hunt_ticks` there → back to the lodge with the meat (one
-> visible tick on it) → the next hunt or home when the lodge is full; `meat_yield` by the rig
-> and only by the rig (`hunting.md §7`); a guard red-checked with the walk off. Then a windowed
-> shot of a forager in the ring and a hunter in the woods, looked at once, and Joe plays all
-> three.
+> **▶️ NEXT, after his play:** his call between **mature trees** (a view slice; his "scale and
+> depth" question), **the shell** (per-stage RNG seeds → new-game screen → settings persistence →
+> save/load → title) and **organic housing — plots and lanes** (Phase 5's first bullet, unblocked
+> by D383). Trampled fields and fences are pushed to a later phase by his call (2026-09-16);
+> when they come, a fence is a wall the one cost field routes around and belongs in
+> `tech-tree.md §9.6` under *Timber frame*, unlocked by CRISIS (a trampled field) or DOING.
 >
 > *(D383's banner, kept below.)*
 >
@@ -1045,6 +1058,15 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     a hand carrying a load the shelves have not seen may start one more — two tiles a hand at the
     seams, and with more hands free it read 48 against 24. That is `stock-limits-and-laborers.md
     §4.1`'s stated reading (D29), not a bug; count the hands before asserting the overshoot.
+92. **⚠️ A RIG COUNTS EVERY TICK OF THE TRADE, OR THE LOOK INFLATES THE NUMBER (D384).** The
+    hunter's rig counted `Hunting`, `TravelingToGame` and `HaulingToStore`; the catch comes back
+    to the lodge as `HaulingToFarm` now, and left out of `OnTheJob` the hunter would have read
+    richer for walking more. When a trade gains a leg, the rig gains the state.
+93. **⚠️ A BUFFER GUARD READ AT THE SHELVES MISSES WHAT IS IN ARMS AND WHAT WAS EATEN (D384).**
+    The full-lodge guard measured the stores' rise; with the catch carried, a load is always on
+    its way and a hungry carrier eats from one (244 on the shelves, 40 in arms, 36 eaten of 320
+    that left). Read the bar where the loads leave — an under-count while producers add to it —
+    and ask a fraction to have arrived.
 91. **⚠️ A GUARD ABOUT ONE HAND'S WORK MUST HOLD THE HAND (D384).** The farm-derivation guard
     set one seat and measured four autumns; the day the foragers' trips lengthened, the food
     quota took the hand for an autumn and the farm reaped 45 for 59. `SetPinnedTrade` is how a

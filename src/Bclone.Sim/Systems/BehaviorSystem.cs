@@ -327,9 +327,9 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.TravelingToGame:
-                Travel(
-                    world, villager, WorkplaceOf(world, villager)!.Tile,
-                    VillagerState.Hunting);
+                // To the forest tile the hunt set off for (D384), remembered in the errand —
+                // this leg is entered only from the hunter's branch of `Decide`, which set it.
+                TravelToTheGame(world, villager, WorkplaceOf(world, villager)!, new GridPos(villager.ErrandX, villager.ErrandY));
                 return;
 
             case VillagerState.TravelingToWater:
@@ -2370,16 +2370,22 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (needsFood && canHunt)
         {
-            if (villager.Tile == job!.Tile)
+            // ⭐ INTO THE WOODS, NOT ONTO THE LODGE (D384). Joe: *"im not sure that hunters
+            // spend any time at the hunting lodge or in the forest actually 'hunting'."* They
+            // hunted standing on the lodge and re-armed in place; now each hunt walks to a
+            // forest tile of the range (`AGameTileFor`), hunts there, and carries the meat back
+            // to the lodge. The errand remembers the tile; the lodge itself when there is none.
+            GridPos game = world.AGameTileFor(job!, villager);
+            villager.ErrandX = game.X;
+            villager.ErrandY = game.Y;
+            if (villager.Tile == game)
             {
-                villager.State = VillagerState.Hunting;
-                villager.ActionTicksRemaining =
-                    world.WorkTicksFor(villager, JobKind.Hunter, config.HuntTicks);
+                BeginHunting(world, villager);
             }
             else
             {
                 villager.State = VillagerState.TravelingToGame;
-                Travel(world, villager, job.Position, VillagerState.Hunting);
+                TravelToTheGame(world, villager, job!, game);
             }
 
             return;
@@ -3862,9 +3868,7 @@ public sealed class BehaviorSystem : ISimSystem
         // written out here rather than trusted to be remembered.
         if (onArrival == VillagerState.Hunting)
         {
-            villager.State = VillagerState.Hunting;
-            villager.ActionTicksRemaining =
-                world.WorkTicksFor(villager, JobKind.Hunter, world.Config.HuntTicks);
+            BeginHunting(world, villager);
             return;
         }
 
@@ -4037,7 +4041,15 @@ public sealed class BehaviorSystem : ISimSystem
 
         if (onArrival == VillagerState.HaulingToFarm)
         {
-            PutTheHarvestInTheFarm(world, villager);
+            if (WorkplaceOf(world, villager) is { Kind: JobKind.Hunter })
+            {
+                PutTheCatchInTheLodge(world, villager);
+            }
+            else
+            {
+                PutTheHarvestInTheFarm(world, villager);
+            }
+
             return;
         }
 
@@ -4139,6 +4151,58 @@ public sealed class BehaviorSystem : ISimSystem
         {
             Travel(world, villager, patch, VillagerState.Gathering);
         }
+    }
+
+    /// <summary>The start of a hunt where they stand (D384).</summary>
+    private static void BeginHunting(SimWorld world, Villager villager)
+    {
+        villager.State = VillagerState.Hunting;
+        villager.ActionTicksRemaining =
+            world.WorkTicksFor(villager, JobKind.Hunter, world.Config.HuntTicks);
+    }
+
+    /// <summary>
+    /// Walk to this hunt's forest tile — or to the lodge's own point when the tile IS the lodge,
+    /// so a hunter with no woods in reach still stands on the building (D354).
+    /// </summary>
+    private static void TravelToTheGame(SimWorld world, Villager villager, Workplace lodge, GridPos game)
+    {
+        if (game == lodge.Tile)
+        {
+            Travel(world, villager, lodge.Position, VillagerState.Hunting);
+        }
+        else
+        {
+            Travel(world, villager, game, VillagerState.Hunting);
+        }
+    }
+
+    /// <summary>
+    /// Back at the lodge with the catch (D384): the meat into its store, and the hunter decides
+    /// again — the next hunt, or clearing the lodge when it is full. What the lodge will not take
+    /// goes home if the larder wants it, else to a store, as it always did; the hide stays in
+    /// their arms until they pass a store.
+    /// </summary>
+    private static void PutTheCatchInTheLodge(SimWorld world, Villager villager)
+    {
+        if (WorkplaceOf(world, villager) is Workplace lodge)
+        {
+            int carried = villager.Carried[Goods.Meat];
+            int intoTheLodge = lodge.Store.Add(Goods.Meat, carried);
+            villager.Carried.TryTake(Goods.Meat, intoTheLodge);
+            if (villager.Carried[Goods.Meat] > 0)
+            {
+                Household home = world.HouseholdOf(villager);
+                bool wantedAtHome = world.FoodIn(home.Stockpile) < world.TargetFoodFor(home);
+                villager.State = wantedAtHome ? VillagerState.TravelingHome : VillagerState.HaulingToStore;
+                world.Log(LogLevel.Debug, "behavior",
+                    $"{villager.Name} put {intoTheLodge} meat down at {lodge.Name}, "
+                    + $"{villager.Carried[Goods.Meat]} carried on — {world.Clock}.");
+                return;
+            }
+        }
+
+        Decide(world, villager);
     }
 
     private static void BeginGathering(SimWorld world, Villager villager, SimConfig config)
@@ -4473,33 +4537,25 @@ public sealed class BehaviorSystem : ISimSystem
                 // ⚠️ THE MEAT DECIDES WHETHER THEY STAY, NOT THE HIDE. Leather is a tenth of the
                 // load and a granary will not take it at all, so letting it drive the errand would
                 // send a hunter home over a scrap while the meat sat in a full lodge.
-                int intoTheLodge = lodge is null ? 0 : lodge.Store.Add(Goods.Meat, meat);
-                int leftOver = meat - intoTheLodge;
-
+                // ⭐ THE CATCH COMES BACK TO THE LODGE IN THE HUNTER'S ARMS (D384). The hunt
+                // happens out in the woods now, so the meat is carried, and the lodge is where
+                // it is put down — one visible tick on the building (D373) — before the next
+                // hunt, or home when the lodge is full. The hide stays in their arms until they
+                // pass a store, as it always did.
                 villager.Carried.Receive(Goods.Leather, hide);
+                villager.Carried.Receive(Goods.Meat, meat);
 
-                if (leftOver <= 0)
+                if (lodge is null)
                 {
-                    villager.ActionTicksRemaining =
-                        world.WorkTicksFor(villager, JobKind.Hunter, world.Config.HuntTicks);
-
-                    world.Log(LogLevel.Debug, "behavior",
-                        $"Took {meat} meat and {hide} leather, meat put down at {lodge!.Name} "
-                        + $"— {world.Clock}.");
+                    HaulOrSetDown(world, villager);
                     return;
                 }
 
-                villager.Carried.Receive(Goods.Meat, leftOver);
-
-                Household lodgeHome = world.HouseholdOf(villager);
-                bool wantedAtHome = world.FoodIn(lodgeHome.Stockpile) < world.TargetFoodFor(lodgeHome);
-                villager.State = wantedAtHome
-                    ? VillagerState.TravelingHome
-                    : VillagerState.HaulingToStore;
-
                 world.Log(LogLevel.Debug, "behavior",
-                    $"Took {meat} meat and {hide} leather, {intoTheLodge} put down and "
-                    + $"{leftOver} carried — {world.Clock}.");
+                    $"Took {meat} meat and {hide} leather in the woods, bound for {lodge.Name} "
+                    + $"— {world.Clock}.");
+                villager.State = VillagerState.HaulingToFarm;
+                Travel(world, villager, lodge.Position, VillagerState.HaulingToFarm);
                 return;
             }
 

@@ -114,6 +114,9 @@ public sealed class HuntingTests
         Assert.True(standing > 0, "the meat left the lodge without anybody ever standing on it — the load and the first step of the haul happen in one tick");
     }
 
+    /// <summary>A lodge raised and finished in the fixture's woods — shared with <c>TradesVisiblyWorkTests</c> (D384).</summary>
+    internal static Workplace RaiseALodgeFor(SimWorld world) => RaiseALodge(world);
+
     private static Workplace RaiseALodge(SimWorld world)
     {
         world.Mark(BuildingKind.HunterLodge, AWoodedTile(world));
@@ -483,6 +486,7 @@ public sealed class HuntingTests
     private static bool OnTheJob(VillagerState state) =>
         state is VillagerState.Hunting
             or VillagerState.TravelingToGame
+            or VillagerState.HaulingToFarm // the catch carried back to the lodge (D384)
             or VillagerState.Fishing
             or VillagerState.TravelingToWater
             or VillagerState.HaulingToStore;
@@ -707,15 +711,33 @@ public sealed class HuntingTests
 
         int left = lodge.Store[Goods.Meat];
         int inStores = world.FoodInGranaries();
-        _output.WriteLine($"a season on: {meat} meat in the lodge became {left}; the stores went {inStoresBefore} → {inStores}; {world.Villagers.Count(v => v.Alive)} alive");
+        int inArms = 0;
+        foreach (Villager villager in world.Villagers)
+        {
+            inArms += villager.Carried[Goods.Meat];
+        }
+
+        _output.WriteLine($"a season on: {meat} meat in the lodge became {left}; the stores went {inStoresBefore} → {inStores}, {inArms} in arms; {world.Villagers.Count(v => v.Alive)} alive");
 
         // The hunters keep hunting into it (the granaries ARE thin), so the bar is what left the
-        // lodge for a store: at least eight armfuls in a season, from four people who also eat.
-        int carried = inStores - inStoresBefore;
+        // lodge: at least eight armfuls in a season, from four people who also eat — read at
+        // the lodge, where the hunters' own catches make the drop an UNDER-count, so the bar is
+        // conservative. ⚠️ It used to be read at the stores (D384): a hunt happens out in the
+        // woods now and the catch comes home in the hunter's arms, so at the season's end a
+        // load is on its way and a hungry carrier has eaten from another — 244 in the stores
+        // and 40 in arms read as seven armfuls when eight had left the lodge. Half of it must
+        // still have reached a shelf within the season, or the carrying is not where it can be
+        // eaten.
+        int leftTheLodge = meat - left;
+        int reachedAShelf = inStores - inStoresBefore;
         Assert.True(
-            carried >= 8 * config.CarryCapacity,
-            $"a season passed and only {carried} meat reached a store from a lodge holding {meat} — "
+            leftTheLodge >= 8 * config.CarryCapacity,
+            $"a season passed and only {leftTheLodge} meat left a lodge holding {meat} — "
             + "nobody is carrying it where it can be eaten");
+        Assert.True(
+            reachedAShelf >= 4 * config.CarryCapacity,
+            $"a season passed and only {reachedAShelf} meat reached a store ({inArms} in arms) — "
+            + "it leaves the lodge and does not arrive");
         Assert.DoesNotContain(world.Villagers, v => v.CauseOfDeath == CauseOfDeath.Starvation);
     }
 }

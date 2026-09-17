@@ -736,6 +736,19 @@ public sealed record SimConfig
     public int HuntTicks { get; init; } = 15;
 
     /// <summary>
+    /// How far into the range a hunter walks to hunt — a forest tile within this many tiles of
+    /// the lodge (D384, `specs/trades-visibly-work.md §4`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"im not sure that hunters spend any time at the hunting lodge or in the forest
+    /// actually 'hunting'."* They hunted standing on the lodge. Six, half the range: the hunter
+    /// is priced by the rig and only by the rig (`hunting.md §7`), and the walk out and back
+    /// is in the ticks the rig counts.
+    /// </remarks>
+    [JsonPropertyName("hunt_walk_tiles")]
+    public int HuntWalkTiles { get; init; } = 6;
+
+    /// <summary>
     /// Meat off one animal at a fully wooded range, before vigour.
     /// </summary>
     /// <remarks>
