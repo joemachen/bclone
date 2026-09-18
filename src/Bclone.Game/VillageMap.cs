@@ -1436,7 +1436,8 @@ public partial class VillageMap : Control
                 return;
             }
 
-            store.Emptying = !store.Emptying;
+            // The same control as the card's (D389): Emptying, or Open again on a second click.
+            _world.SetStocking(store, store.Emptying ? Stocking.Open : Stocking.Emptying);
             PlacementMessageChanged?.Invoke(store.Emptying
                 ? $"{store.Name} is being cleared out — its {store.Store.Held} goods will be "
                     + "carried to the other stores."

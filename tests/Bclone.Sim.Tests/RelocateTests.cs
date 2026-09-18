@@ -177,7 +177,7 @@ public sealed class RelocateTests
         full.Store.Receive(Goods.Produce, 120);
         Assert.False(world.MarkRelocation(from, Buildable(world, from)).Allowed);
 
-        full.Emptying = true;
+        full.Stocking = Stocking.Emptying;
         loop.Step(Config.TicksPerYear * 3);
 
         _output.WriteLine($"{full.Name} holds {full.Store.Held} after three years of clearing");
@@ -193,6 +193,78 @@ public sealed class RelocateTests
     /// <b>The refusal IS the mechanism, not a side effect.</b> A store that still accepted goods
     /// would be refilled by the same errands emptying it, and the two would race for ever.
     /// </remarks>
+    /// <summary>
+    /// ⭐ An emptied store opens itself again (D389). Joe: *"once it is empty, it should
+    /// automatically go back to being able to be stocked. presently the user has to click 'empty'
+    /// again in the menu — which isnt intuitive."* Red without the reopening: the store drains to
+    /// zero and stays shut.
+    /// </summary>
+    [Fact]
+    public void AnEmptiedStoreOpensItselfAgain()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        StoreBuilding full = StandAGranary(world, out GridPos _);
+        StandAGranary(world, out GridPos _);
+        full.Store.Receive(Goods.Produce, 120);
+
+        Assert.True(world.SetStocking(full, Stocking.Emptying).Allowed);
+        Assert.Equal(Stocking.Emptying, full.Stocking);
+        Assert.False(full.Accepts(Goods.Produce));
+
+        loop.Step(Config.TicksPerYear * 3);
+        _output.WriteLine($"{full.Name} holds {full.Store.Held} and is {full.Stocking}");
+
+        Assert.Equal(0, full.Store.Held);
+        Assert.Equal(Stocking.Open, full.Stocking);
+        Assert.True(full.Accepts(Goods.Produce), "the emptied store still refuses deliveries");
+    }
+
+    /// <summary>
+    /// ⭐ A closed store takes no deliveries and nobody carries it out (D389) — the player's,
+    /// until they say otherwise; households still fetch from it, which is what a shelf is for;
+    /// and it is in the hash.
+    /// </summary>
+    [Fact]
+    public void AClosedStoreTakesNothingAndKeepsWhatItHas()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+
+        StoreBuilding shut = StandAGranary(world, out GridPos _);
+        StandAGranary(world, out GridPos _);
+        shut.Store.Receive(Goods.Produce, 120);
+
+        ulong open = Determinism.StateHash.Compute(world);
+        Assert.True(world.SetStocking(shut, Stocking.Closed).Allowed);
+        Assert.NotEqual(open, Determinism.StateHash.Compute(world));
+        Assert.False(shut.Accepts(Goods.Produce));
+        Assert.False(shut.Emptying);
+
+        int cleared = 0;
+        for (int tick = 0; tick < Config.TicksPerYear; tick++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Alive && villager.State == VillagerState.ClearingAStore)
+                {
+                    cleared++;
+                }
+            }
+        }
+
+        _output.WriteLine($"{shut.Name} holds {shut.Store[Goods.Produce]} a year on, {cleared} clearing ticks");
+        Assert.Equal(Stocking.Closed, shut.Stocking);
+        Assert.Equal(0, cleared);
+
+        // Emptying an empty store is being open (nothing to carry out).
+        shut.Store.TakeAll(Goods.Produce);
+        Assert.True(world.SetStocking(shut, Stocking.Emptying).Allowed);
+        Assert.Equal(Stocking.Open, shut.Stocking);
+    }
+
     [Fact]
     public void AStoreBeingEmptiedRefusesEverything()
     {
@@ -201,11 +273,11 @@ public sealed class RelocateTests
 
         Assert.True(granary.Accepts(Goods.Produce));
 
-        granary.Emptying = true;
+        granary.Stocking = Stocking.Emptying;
         Assert.False(granary.Accepts(Goods.Produce));
 
         // ⭐ And clearing the request puts it straight back to work.
-        granary.Emptying = false;
+        granary.Stocking = Stocking.Open;
         Assert.True(granary.Accepts(Goods.Produce));
     }
 
@@ -232,7 +304,7 @@ public sealed class RelocateTests
         }
 
         only.Store.Receive(Goods.Produce, 90);
-        only.Emptying = true;
+        only.Stocking = Stocking.Emptying;
         loop.Step(Config.TicksPerYear);
 
         Assert.Equal(90, only.Store.Held);

@@ -119,6 +119,19 @@ public enum StoreKind
 /// hold it.
 /// </para>
 /// </remarks>
+/// <summary>How a store takes deliveries (D389): the one control on every store's card.</summary>
+public enum Stocking
+{
+    /// <summary>Takes what its <i>Takes:</i> row allows.</summary>
+    Open,
+
+    /// <summary>Takes nothing and keeps what it has — the player's, until they say otherwise.</summary>
+    Closed,
+
+    /// <summary>Takes nothing and is carried out to the other stores; <see cref="Open"/> again once empty.</summary>
+    Emptying,
+}
+
 public sealed class StoreBuilding
 {
     public required int Id { get; init; }
@@ -274,7 +287,7 @@ public sealed class StoreBuilding
     /// player has said (D141). Deliberately a plain question rather than a set of flags: a
     /// modder adding a good should be able to see at a glance where it can go.
     /// </remarks>
-    public bool Accepts(Goods goods) => !Emptying && PlayerAllows(goods) && KindAccepts(goods);
+    public bool Accepts(Goods goods) => Stocking == Stocking.Open && PlayerAllows(goods) && KindAccepts(goods);
 
     /// <summary>Whether this store will take a load of <paramref name="goods"/> — accepts it, and has room by <see cref="RoomFor"/>.</summary>
     public bool HasRoomFor(Goods goods) => Accepts(goods) && RoomFor(goods) > 0;
@@ -362,7 +375,8 @@ public sealed class StoreBuilding
     }
 
     /// <summary>
-    /// Whether the village is clearing this store out so it can be moved or pulled down.
+    /// Whether this store takes deliveries, keeps what it has, or is being carried out (D389,
+    /// `storage-and-distribution.md §14.11`) — <b>one control, three exclusive states</b>.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -372,17 +386,23 @@ public sealed class StoreBuilding
     /// his call), so without this the only way to move a store was to throw away its contents.
     /// </para>
     /// <para>
-    /// <b>⛔ IT REFUSES EVERYTHING WHILE IT IS SET</b>, which is the whole mechanism and not a
-    /// side effect: a store that still accepted goods would be filled by the same errands that
-    /// were emptying it, and the two would race for ever. *Refusing is what makes the drain
-    /// monotonic.*
+    /// <b>⛔ AN EMPTYING STORE REFUSES EVERYTHING</b>, which is the whole mechanism and not a side
+    /// effect: a store that still accepted goods would be filled by the same errands that were
+    /// emptying it, and the two would race for ever. *Refusing is what makes the drain monotonic.*
+    /// A closed store refuses too, and keeps what it has.
     /// </para>
     /// <para>
-    /// ⚠️ <b>It is a request, not a state the sim reaches by itself</b> — nothing sets it but the
-    /// player, and clearing it puts the store straight back to work with whatever is still inside.
+    /// ⭐ <b>Emptying ends itself (D389).</b> Joe: *"once it is empty, it should automatically go
+    /// back to being able to be stocked. presently the user has to click 'empty' again."* The
+    /// errand that carries the last armful out sets the store <see cref="Stocking.Open"/> and says
+    /// so. Closed is the player's and stays until they say otherwise. ⛔ Hashed, sparsely: an open
+    /// store — every store in every village that never used the control — mixes nothing.
     /// </para>
     /// </remarks>
-    public bool Emptying { get; set; }
+    public Stocking Stocking { get; set; }
+
+    /// <summary>Whether the village is carrying this store out (see <see cref="Stocking"/>).</summary>
+    public bool Emptying => Stocking == Stocking.Emptying;
 
     /// <summary>
     /// What this kind of building can hold at all, before the player narrows it (D141).

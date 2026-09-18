@@ -2715,9 +2715,15 @@ public sealed record SimConfig
     /// capacity"* among the things it deliberately refuses to invent, and the standing rule is that
     /// a number in a document comes from a run. This one has not had one.
     /// </para>
+    /// <para>
+    /// <b>⭐ THREE → FIVE (D389, Joe playing: *"update library shelves from 3 to 5"*).</b> A run
+    /// argued with it. The ratio note above stands as the thing to watch: with four techniques
+    /// today a library holds everything, and the shelf is a decision again the day the tree
+    /// passes five — the full-library guard poses three shelves for itself.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("library_shelves")]
-    public int LibraryShelves { get; init; } = 3;
+    public int LibraryShelves { get; init; } = 5;
 
     /// <summary>Logs a town hall takes to build.</summary>
     /// <remarks>

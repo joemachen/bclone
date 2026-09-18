@@ -699,6 +699,34 @@ because the granary now feeds the fetches that used to come from the larder; the
 worn tiles; the no-seam bar; the valley pin). Six goldens moved once (the seam pair, the fifty-year
 pair, the two skill hashes).
 
+### 14.11 ✅ STOCKING IS ONE CONTROL: OPEN / CLOSED / EMPTYING (D389, 2026-09-18)
+
+Joe, playing D386: *"when emptying a storage building, once it is empty, it should automatically go
+back to being able to be stocked. presently the user has to click 'empty' again in the menu — which
+isnt intuitive."* And: *"should there be an open/closed toggle in all storage building details
+windows?"* His call: one three-state control.
+
+**The rule.** `StoreBuilding.Stocking` is one of **Open** (takes what its *Takes:* row allows),
+**Closed** (takes no deliveries; households still fetch from it, which is what a shelf is for; the
+player's until they say otherwise) or **Emptying** (closed, and carried out to the other stores by
+whoever has free hands — the errand of 2026-08-26 unchanged — **until the last armful leaves, when
+the store sets itself Open and says so**: *"The granary is empty and takes deliveries again."*).
+Telling an empty store to empty is telling it to open. `SimWorld.SetStocking` is the verb (the
+card's row and the Removal tab's *Empty* tool both call it; the tool toggles Emptying / Open as it
+did). ⛔ Hashed, sparsely — an open store, which is every store nobody has touched, mixes nothing;
+⚠️ the old `Emptying` bool was never hashed at all.
+
+**Why one control and not a switch beside *Empty*:** the states are exclusive — a store that is
+closed and emptying, or open and emptying, is not a thing — and two switches whose meanings overlap
+is the D139 shape (*a control with two ways to say the same thing grows a state where neither is
+true*). The per-good *Takes:* row stays: it is *what kinds*; the control is *whether* — and the row
+reads `PlayerAllows` now, not `Accepts`, so it stops showing every good off while the store is
+closed.
+
+**Guards** (`RelocateTests`): `AnEmptiedStoreOpensItselfAgain` (red without the reopening — the
+store drains to zero and stays shut); `AClosedStoreTakesNothingAndKeepsWhatItHas` (no deliveries,
+nobody sent to clear it, in the hash; emptying an empty store is opening it).
+
 ---
 
 ## 13. What actually happened (measured after building it, 2026-07-27)

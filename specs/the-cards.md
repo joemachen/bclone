@@ -52,7 +52,8 @@ building, a death) closes itself on refresh.
 **The controls are on the card, under `Settings ▸`** (D377 — Joe, at a stockpile with its card
 and the docked panel both open: *"shouldn't all of this be in the same panel? why 2 panels for one
 structure?"*). Folded by default so the five parts stay what you read; open, it holds every
-control the docked panel used to: a store's *When full: Marker*, *Takes:* and (a market's) *Keeps
+control the docked panel used to: a store's *Stocking: Open / Closed / Emptying* (D389 — one
+three-state control; Emptying turns itself back to Open when the last armful leaves), *When full: Marker*, *Takes:* and (a market's) *Keeps
 up to:*; a workplace's idle marker, ground brush and felling mode, a site's build queue; a
 villager's *Kept on:* and the trades they have learned. Every row wraps (`HFlowContainer`), so the
 card stays 268 wide with all of them open. Each control selects its card first and then calls the

@@ -70,6 +70,11 @@ public partial class Main
         public VBoxContainer? FullRow { get; set; }
         public Button? FullMarker { get; set; }
         public VBoxContainer? TakesRow { get; set; }
+
+        /// <summary>The one stocking control (D389): Open / Closed / Emptying.</summary>
+        public VBoxContainer? StockingRow { get; set; }
+
+        public List<(Stocking State, Button Button)> StockingButtons { get; } = new();
         public List<(Goods Goods, Button Button)> Takes { get; } = new();
         public VBoxContainer? LimitRow { get; set; }
         public List<(Goods Goods, Control Cell, SpinBox Amount, Button Clear)> Limits { get; } = new();
@@ -524,6 +529,21 @@ public partial class Main
                 c.FullMarker.Pressed += () => Act(card, ToggleSelectedFullMarker);
                 fullControls.AddChild(c.FullMarker);
 
+                // ⭐ ONE CONTROL FOR WHETHER IT TAKES DELIVERIES (Joe, D389): Open takes what the
+                // Takes row allows; Closed takes nothing and keeps what it has; Emptying is closed
+                // and carried out, and turns itself back to Open when the last armful leaves. Three
+                // exclusive states rather than a switch beside Empty — two switches whose meanings
+                // overlap (closed-and-emptying?) is the D139 shape.
+                (c.StockingRow, HFlowContainer stockingControls) = InspectorRow(body, Muted("Stocking:"));
+                foreach (Stocking state in new[] { Stocking.Open, Stocking.Closed, Stocking.Emptying })
+                {
+                    Stocking chosen = state;
+                    var button = new Button { Text = chosen.ToString(), ToggleMode = true };
+                    button.Pressed += () => Act(card, () => SetSelectedStocking(chosen));
+                    stockingControls.AddChild(button);
+                    c.StockingButtons.Add((chosen, button));
+                }
+
                 // What this building will take (Joe, D141) — one toggle per good the KIND can hold.
                 (c.TakesRow, HFlowContainer takesControls) = InspectorRow(body, Muted("Takes:"));
                 for (int g = 0; g < world.GoodsCatalog.Count; g++)
@@ -649,11 +669,19 @@ public partial class Main
             case CardKind.Store when StoreOf(card) is StoreBuilding store:
                 c.FullRow!.Visible = true;
                 c.FullMarker!.Text = _map.FullMarkerShownFor(store.Id) ? "Marker: ON" : "Marker: off";
+                c.StockingRow!.Visible = true;
+                foreach ((Stocking state, Button button) in c.StockingButtons)
+                {
+                    button.ButtonPressed = store.Stocking == state;
+                }
+
+                // ⚠️ `PlayerAllows`, not `Accepts` (D389): the Takes row is WHAT KINDS, and it read as
+                // all-off while the store was emptying because `Accepts` folds the stocking in.
                 c.TakesRow!.Visible = true;
                 foreach ((Goods goods, Button button) in c.Takes)
                 {
                     button.Visible = store.CanEverHold(goods);
-                    button.ButtonPressed = store.Accepts(goods);
+                    button.ButtonPressed = store.PlayerAllows(goods) && store.CanEverHold(goods);
                 }
 
                 c.LimitRow!.Visible = store.Kind == StoreKind.Market;
@@ -745,7 +773,11 @@ public partial class Main
         int used = store.Store.Capacity - store.Store.FreeSpace;
         if (store.Emptying)
         {
-            Status(card, working: false, $"Being emptied — {used} left to carry out.");
+            Status(card, working: false, $"Being emptied — {used} left to carry out; open again when it is.");
+        }
+        else if (store.Stocking == Stocking.Closed)
+        {
+            Status(card, working: false, $"Closed to deliveries — holds {used}; households still fetch from it.");
         }
         else if (store.Store.IsFull)
         {

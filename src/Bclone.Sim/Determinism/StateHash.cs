@@ -406,6 +406,14 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)(allowed >> 32));
             }
 
+            // And whether it is closed or being emptied (D389) — the player's, and it decides
+            // what every errand may put here. ⚠️ Not hashed at all before D389, as a bare bool.
+            // Sparse in the same shape: open is every store nobody has touched.
+            if (world.StoreBuildings[i].Stocking != Stocking.Open)
+            {
+                hash = MixByte(hash, (byte)world.StoreBuildings[i].Stocking);
+            }
+
             // And the player's limits at this counter (D372) — the village stock limits' shape
             // exactly: sparse, null and zero diverging, silent for every market nobody has typed
             // at. A market's stock is what the marketer keeps there, so the number that says how

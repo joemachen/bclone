@@ -4019,6 +4019,10 @@ public sealed class BehaviorSystem : ISimSystem
             if (world.StoreAt(villager.Tile) is StoreBuilding clearing && clearing.Emptying)
             {
                 TakeALoadOutOf(world, villager, clearing);
+
+                // The last armful reopens the store (D389) — the player asked for it to be
+                // emptied, not for it to stay shut.
+                world.ReopenTheEmptiedStore(clearing);
             }
 
             HaulOrSetDown(world, villager);

@@ -745,7 +745,10 @@ public sealed class TechniqueTests
     public void AFullLibraryRefusesTheRecordAndSaysSo()
     {
         var sink = new InMemoryLogSink();
-        SimLoop loop = Loop(VillageFixtures.Village, sink);
+        // Posed at three shelves (D389 shipped five, and four techniques fit five): the guard is
+        // the refusal, not the number.
+        SimConfig threeShelves = VillageFixtures.Village with { LibraryShelves = 3 };
+        SimLoop loop = Loop(threeShelves, sink);
         SimWorld world = loop.World;
 
         Library library = GiveThemALibrary(world);
@@ -955,7 +958,8 @@ public sealed class TechniqueTests
     [Fact]
     public void ASecondLibraryTakesWhatTheFirstCouldNotHold()
     {
-        SimLoop loop = Loop(VillageFixtures.Village, new InMemoryLogSink());
+        // Posed at three shelves (D389 shipped five): the first library has to fill.
+        SimLoop loop = Loop(VillageFixtures.Village with { LibraryShelves = 3 }, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         GiveThemALibrary(world);

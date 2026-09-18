@@ -4991,6 +4991,48 @@ public sealed class SimWorld : IObstacles
     /// says why, instead of producing a granary full of timber.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Open, close or empty a store (D389) — the one control on a store's card, and the
+    /// Removal tab's <i>Empty</i> tool. A store told to empty with nothing in it is simply open.
+    /// </summary>
+    public PlacementVerdict SetStocking(StoreBuilding store, Stocking state)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        if (state == Stocking.Emptying && store.Store.Held <= 0)
+        {
+            state = Stocking.Open;
+        }
+
+        if (store.Stocking == state)
+        {
+            return PlacementVerdict.Fine;
+        }
+
+        store.Stocking = state;
+        Narrate(state switch
+        {
+            Stocking.Emptying => $"{store.Name} is being cleared out — its {store.Store.Held} goods will be carried to the other stores. {Clock.SeasonAndYear()}.",
+            Stocking.Closed => $"{store.Name} is closed to deliveries — it holds {store.Store.Held}, and households still fetch from it. {Clock.SeasonAndYear()}.",
+            _ => $"{store.Name} takes deliveries again. {Clock.SeasonAndYear()}.",
+        }, LogCategory.Building);
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>
+    /// The last armful has left a store being emptied (D389): it takes deliveries again, and says
+    /// so once. Called from the one errand that carries a store out.
+    /// </summary>
+    internal void ReopenTheEmptiedStore(StoreBuilding store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        if (store.Stocking == Stocking.Emptying && store.Store.Held <= 0)
+        {
+            store.Stocking = Stocking.Open;
+            Narrate($"{store.Name} is empty and takes deliveries again. {Clock.SeasonAndYear()}.", LogCategory.Building);
+        }
+    }
+
     public PlacementVerdict SetStoreAccepts(StoreBuilding store, Goods goods, bool accepted)
     {
         ArgumentNullException.ThrowIfNull(store);

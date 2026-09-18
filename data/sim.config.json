@@ -1015,6 +1015,12 @@
   // those two ever differed, which is a food drift this change made visible.
   "granary_capacity": 2500,
 
+  // ---- The library (tech-tree.md) -------------------------------
+  // Shelves in a library, 3 -> 5 (D389, Joe playing). Four techniques exist
+  // today, so a library holds them all; the shelf is a decision again the day
+  // the tree passes five (SimConfig.LibraryShelves).
+  "library_shelves": 5,
+
   // ---- The market (D14, D36) ---------------------------------
   // Among the homes, which is the whole of its value: it is the
   // short walk. The one building that is both a store and a

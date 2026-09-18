@@ -3510,6 +3510,17 @@ public partial class Main : Control
 
 
     /// <summary>Turn one kind of goods on or off for the selected store.</summary>
+    private void SetSelectedStocking(Stocking state)
+    {
+        if (SelectedStore() is not StoreBuilding store)
+        {
+            return;
+        }
+
+        Warn(_loop.World.SetStocking(store, state));
+        RefreshInspector(_loop.World);
+    }
+
     private void ToggleSelectedAccepts(Goods goods)
     {
         if (SelectedStore() is not StoreBuilding store)
