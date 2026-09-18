@@ -1,16 +1,24 @@
 # Handoff — bclone: **▶️ PHASE 5 — THE FIRST PRODUCTION CHAIN IS BUILT: D391, TOOLS THAT WEAR AND THE SMITH'S HUT. SEVEN COMMITS ON `origin/main`, NOT PUSHED; D388–D391 UNPLAYED. NEXT: JOE PLAYS; THEN HIS CALL ON THE SECOND CHAIN (BREAD, THE QUARRY, THE WORKSHOP) OR FENCES AS WALLS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 (EVENING) — AFTER D391 AND D392.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 (EVENING) — AFTER D391, D392 AND D393.**
 >
-> **The state:** eight commits sit on `2921d38` = `origin/main` (⚠️ the banner below says
+> **The state:** nine commits sit on `2921d38` = `origin/main` (⚠️ the banner below says
 > `0b1124b` is origin; it is one further back — `0b1124b` is the D385-played handoff and it is
 > unpushed too), **committed, NOT pushed — Joe pushes after he plays:** `0b1124b`, D386 + D387
 > (`63b859d`), D388 (`9270c3e`), D389 (`4396354`), D390 (`afab577`), the D390 handoff (`603f43d`),
-> **D391** (`22b9fd8`) and **D392** (this commit). **D388–D392 are unplayed.** Working tree clean.
+> **D391** (`22b9fd8`), **D392** (`e7d4554`) and **D393** (this commit). **Joe has started playing
+> D391** — his first note became D393. **D388–D393 are otherwise unplayed.** Working tree clean.
+>
+> **✅ D393 — A STORE'S CARD LISTS EVERY GOOD IT CAN HOLD.** Joe at warehouse 1: *"I'm not sure
+> where the iron is being stored"* — it was there; the card showed the three biggest heaps of
+> five. Now one row per good the store can hold (chip · name · amount · ✓/✕ take toggle on the
+> row, Foundation's shape), in place of the three numbers; the *Takes:* row under Settings is
+> gone. View only, no golden moved; `the-cards.md §2`. ⚠️ **For Joe:** open warehouse 1 — iron
+> and tools on their own lines, the rows adding up to *N of M used*; click a ✕ and the row dims.
 > Suite **1201 passing, 0 failing, 2 skipped of 1203** (~3m45 — was 3m12 before D391: the fixture
 > carries 8 % more people and every hand fetches a tool; read trap 88 and the per-test list in
 > trap 106 before chasing it); view 0 warnings on `--no-incremental`; probe green. The decision
-> log runs to **D392**. Read `DESIGN.md §0–§5`, §6, D386–D392 in §7, then
+> log runs to **D393**. Read `DESIGN.md §0–§5`, §6, D386–D393 in §7, then
 > `specs/tools-and-the-smith.md` in full and `skills-catalog.md §3.2c`'s new paragraph.
 >
 > **✅ D392 — THE FOUNDING DEALS ITS TRADES FROM A STATED LIST.** Joe: *"(a) now, rows later."*

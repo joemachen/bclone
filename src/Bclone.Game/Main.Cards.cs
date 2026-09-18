@@ -54,6 +54,13 @@ public partial class Main
         public required Label WorkersLabel { get; init; }
         public required Label[] Values { get; init; }
         public required Label[] Keys { get; init; }
+        public required HBoxContainer Numbers { get; init; }
+
+        /// <summary>
+        /// A store's storage list (D393): one row per good the store can hold — chip, name,
+        /// amount, take/refuse — in place of the three numbers. Hidden on every other kind.
+        /// </summary>
+        public required VBoxContainer Storage { get; init; }
         public required ScrollContainer PeopleScroll { get; init; }
         public required VBoxContainer People { get; init; }
         public required BuildingPortrait Portrait { get; init; }
@@ -69,13 +76,12 @@ public partial class Main
     {
         public VBoxContainer? FullRow { get; set; }
         public Button? FullMarker { get; set; }
-        public VBoxContainer? TakesRow { get; set; }
+        public List<(Goods Goods, HBoxContainer Row, Label Name, Label Amount, Button Take)> Storage { get; } = new();
 
         /// <summary>The one stocking control (D389): Open / Closed / Emptying.</summary>
         public VBoxContainer? StockingRow { get; set; }
 
         public List<(Stocking State, Button Button)> StockingButtons { get; } = new();
-        public List<(Goods Goods, Button Button)> Takes { get; } = new();
         public VBoxContainer? LimitRow { get; set; }
         public List<(Goods Goods, Control Cell, SpinBox Amount, Button Clear)> Limits { get; } = new();
         public VBoxContainer? IdleRow { get; set; }
@@ -304,6 +310,14 @@ public partial class Main
             numbers.AddChild(cell);
         }
 
+        // ---- the storage list (stores, D393) ----
+        // Foundation's warehouse card, by Joe's call: a line per good the store can hold, with
+        // the amount and that good's own take/refuse on the line. Rows are built per kind with
+        // the settings (`BuildSettings`), because a retargeted card changes kind.
+        var storage = new VBoxContainer { Visible = false };
+        storage.AddThemeConstantOverride("separation", 2);
+        column.AddChild(storage);
+
         // ---- the people (homes) ----
         var peopleScroll = new ScrollContainer
         {
@@ -351,6 +365,8 @@ public partial class Main
             WorkersLabel = workersLabel,
             Values = values,
             Keys = keys,
+            Numbers = numbers,
+            Storage = storage,
             PeopleScroll = peopleScroll,
             People = people,
             Portrait = portrait,
@@ -478,7 +494,7 @@ public partial class Main
 
         bool shown = card.Subject.Kind switch
         {
-            CardKind.Store => StoreOf(card) is StoreBuilding store && ShowStore(world, card, store),
+            CardKind.Store => StoreOf(card) is StoreBuilding store && ShowStore(card, store),
             CardKind.Workplace => world.FindWorkplace(card.Subject.Id) is Workplace place && ShowWorkplace(world, card, place),
             CardKind.Household => world.FindHousehold(card.Subject.Id) is Household home && ShowHousehold(world, card, home),
             CardKind.Villager => world.FindVillager(card.Subject.Id) is Villager villager && ShowVillager(world, card, villager),
@@ -514,6 +530,13 @@ public partial class Main
             child.QueueFree();
         }
 
+        while (card.Storage.GetChildCount() > 0)
+        {
+            Node child = card.Storage.GetChild(0);
+            card.Storage.RemoveChild(child);
+            child.QueueFree();
+        }
+
         var c = new CardControls();
         card.Controls = c;
         card.SettingsBuiltFor = card.Subject.Kind;
@@ -544,15 +567,32 @@ public partial class Main
                     c.StockingButtons.Add((chosen, button));
                 }
 
-                // What this building will take (Joe, D141) — one toggle per good the KIND can hold.
-                (c.TakesRow, HFlowContainer takesControls) = InspectorRow(body, Muted("Takes:"));
+                // ⭐ THE STORAGE LIST (D393, Joe with Foundation's warehouse card: *"add a new
+                // line for each item that can go in a warehouse/granary/etc."*). One row per good
+                // the kind can hold — chip · name · amount · take/refuse — and the take toggle
+                // (Joe, D141) lives ON the row rather than in a Takes: row here, so a good is
+                // described in one place (D139: two rows for one good is two ways to say one thing).
+                // Every row is the same width whatever it holds: the amount is an `Amount()` cell
+                // (D367), so `+12,345` and `—` measure alike.
                 for (int g = 0; g < world.GoodsCatalog.Count; g++)
                 {
                     var goods = (Goods)g;
-                    var button = new Button { Text = GoodsName(world, goods), ToggleMode = true };
-                    button.Pressed += () => Act(card, () => ToggleSelectedAccepts(goods));
-                    takesControls.AddChild(button);
-                    c.Takes.Add((goods, button));
+                    var row = new HBoxContainer { Visible = false };
+                    row.AddThemeConstantOverride("separation", 6);
+                    row.AddChild(Chip(ChipColour(goods)));
+                    Label name = Body(GoodsName(world, goods));
+                    name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+                    name.ClipText = true;
+                    name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+                    row.AddChild(name);
+                    Label amount = Amount();
+                    amount.SizeFlagsHorizontal = SizeFlags.ShrinkEnd;
+                    row.AddChild(amount);
+                    var take = new Button { Text = "✓", ToggleMode = true, CustomMinimumSize = new Vector2(30, 0) };
+                    take.Pressed += () => Act(card, () => ToggleSelectedAccepts(goods));
+                    row.AddChild(take);
+                    card.Storage.AddChild(row);
+                    c.Storage.Add((goods, row, name, amount, take));
                 }
 
                 // How much this counter keeps, per good (Joe, D372) — markets only.
@@ -675,13 +715,28 @@ public partial class Main
                     button.ButtonPressed = store.Stocking == state;
                 }
 
-                // ⚠️ `PlayerAllows`, not `Accepts` (D389): the Takes row is WHAT KINDS, and it read as
-                // all-off while the store was emptying because `Accepts` folds the stocking in.
-                c.TakesRow!.Visible = true;
-                foreach ((Goods goods, Button button) in c.Takes)
+                // ⚠️ `PlayerAllows`, not `Accepts` (D389): the take toggle is WHAT KINDS, and it read
+                // as all-off while the store was emptying because `Accepts` folds the stocking in.
+                // A refused good is dimmed and its amount still shown — a store holding what it no
+                // longer takes is exactly the state the player wants to see.
+                foreach ((Goods goods, HBoxContainer row, Label name, Label amount, Button take) in c.Storage)
                 {
-                    button.Visible = store.CanEverHold(goods);
-                    button.ButtonPressed = store.PlayerAllows(goods) && store.CanEverHold(goods);
+                    bool holdable = store.CanEverHold(goods);
+                    row.Visible = holdable;
+                    if (!holdable)
+                    {
+                        continue;
+                    }
+
+                    bool allowed = store.PlayerAllows(goods);
+                    int held = store.Store[goods];
+                    amount.Text = held > 0 ? held.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) : "—";
+                    take.ButtonPressed = allowed;
+                    take.Text = allowed ? "✓" : "✕";
+                    take.TooltipText = allowed ? $"takes {GoodsName(world, goods)} — click to refuse" : $"refuses {GoodsName(world, goods)} — click to take";
+                    Color tone = allowed && held > 0 ? Colors.White : new Color(1, 1, 1, 0.55f);
+                    name.Modulate = tone;
+                    amount.Modulate = tone;
                 }
 
                 c.LimitRow!.Visible = store.Kind == StoreKind.Market;
@@ -766,7 +821,7 @@ public partial class Main
         }
     }
 
-    private bool ShowStore(SimWorld world, Card card, StoreBuilding store)
+    private bool ShowStore(Card card, StoreBuilding store)
     {
         Title(card, store.Name, renamable: true);
 
@@ -791,29 +846,12 @@ public partial class Main
         card.WorkersRow.Visible = false;
         card.PeopleScroll.Visible = false;
 
-        // The three biggest heaps it holds.
-        var held = new List<(Goods Goods, int Amount)>();
-        for (int g = 0; g < world.GoodsCatalog.Count; g++)
-        {
-            int amount = store.Store[(Goods)g];
-            if (amount > 0)
-            {
-                held.Add(((Goods)g, amount));
-            }
-        }
-
-        held.Sort((a, b) => b.Amount.CompareTo(a.Amount));
-        for (int i = 0; i < 3; i++)
-        {
-            if (i < held.Count)
-            {
-                Number(card, i, $"{held[i].Amount:N0}", GoodsName(world, held[i].Goods));
-            }
-            else
-            {
-                Number(card, i, "—", i == 0 ? "empty" : string.Empty);
-            }
-        }
+        // ⭐ EVERY GOOD IT CAN HOLD, ON ITS OWN LINE (D393) — in place of the three biggest heaps.
+        // Joe, at a warehouse reading *714 used* over three numbers that summed to 660: *"I'm not
+        // sure where the iron is being stored."* It was there; the card named three of five. The
+        // rows are filled with the settings (`ShowSettings`), because the take toggle is theirs.
+        card.Numbers.Visible = false;
+        card.Storage.Visible = true;
 
         card.Portrait.Show(
             VillageMap.ColourOf(store.Kind), store.ExtentWidth * 0.8f, store.ExtentHeight * 0.8f, store.Facing.Raw,
@@ -825,6 +863,8 @@ public partial class Main
     private bool ShowWorkplace(SimWorld world, Card card, Workplace place)
     {
         Title(card, place.Name, renamable: true);
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
 
         if (place.Construction is { IsFinished: false } site)
         {
@@ -887,6 +927,8 @@ public partial class Main
 
     private bool ShowHousehold(SimWorld world, Card card, Household home)
     {
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
         Title(card, $"The {home.Name} household", renamable: true);
 
         int living = world.LivingMembersOf(home);
@@ -975,6 +1017,8 @@ public partial class Main
         }
 
         Title(card, villager.Name, renamable: false);
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
 
         Workplace? job = world.FindWorkplace(villager.WorkplaceId);
         bool hungry = villager.Hunger >= world.Config.EatThreshold;
@@ -1145,7 +1189,17 @@ public partial class Main
             if (c.GroundNote is not null) { c.GroundNote.Text = "The south-western farmhouse 2 is 128 tiles of field and 2 pairs of hands can sow 26 of them. The other 102 will lie fallow — put another farmer on, or paint a smaller field."; c.GroundNote.Visible = true; c.GroundRow!.Visible = true; }
             if (c.IdleLabel is not null) c.IdleLabel.Text = "Nothing to sow at the south-western farmhouse 2 — you asked the village to keep 2000 food and it has 1834.";
             if (c.QueueLabel is not null) { c.QueueLabel.Text = "3rd in the queue, after a granary and a stockpile:"; c.QueueRow!.Visible = true; }
-            if (c.TakesRow is not null) foreach ((Goods _, Button b) in c.Takes) b.Visible = true;
+            // ⚠️ The storage rows (D393) posed at their widest. Red-checked with a plain label for
+            // the amount: ZERO — the name label expands to take what the amount gives up, so a row
+            // cannot widen a 268 card whatever the amount reads. Kept as a pose, not as proof; the
+            // `Amount()` cell is there so the rows line up, not to hold the width.
+            foreach ((Goods _, HBoxContainer row, Label _, Label amount, Button take) in c.Storage)
+            {
+                row.Visible = true;
+                amount.Text = "+12,345";
+                take.ButtonPressed = true;
+            }
+
             if (c.LimitRow is not null) c.LimitRow.Visible = true;
         }
 

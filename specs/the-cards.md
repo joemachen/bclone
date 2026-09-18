@@ -33,7 +33,8 @@ the title clips with an ellipsis, the status wraps), built once and rewritten ev
 | **Title** | the name; ✎ (**a building's card only** — not a person's, not a home's, D380) opens a `LineEdit` in place, Enter or focus-out commits; ⌖ pins; ✕ closes | `Name` (§3) |
 | **Status** | one sentence; a green light for *working*, amber and the sentence for the one reason it is not | `SimWorld.IdleNote` (workplace); full / emptying / *N of cap used* (store); the larder's share against `restock_emergency_percent` and cold (home); `Villager.WorkNote` else `DescribeState` (person) |
 | **Workers** | *N / seats* with − and + — the same number the Professions panel edits from the other end (D109) | `SimWorld.SetStaffing` |
-| **Three numbers** | store: the three biggest heaps · workplace: held / capacity, tiles of ground, seats · site: logs, work, sites queued · home: food/target, firewood/target, people · person: age, trade, household | — |
+| **Three numbers** | workplace: held / capacity, tiles of ground, seats · site: logs, work, sites queued · home: food/target, firewood/target, people · person: age, trade, household. ⛔ **A store has no three numbers since D393** — it has the storage list below | — |
+| **Storage list** (stores, D393) | one row per good the store can hold, in catalogue order: chip · name · amount (*—* and dimmed when none) · **✓/✕ take toggle on the row** (`PlayerAllows`, D389). Every row adds up to the status line's *N of M used*. Joe, at a warehouse reading *714 used* over three numbers summing to 660 — the iron and tools were the missing 54: *"add a new line for each item that can go in a warehouse/granary/etc."*, with Foundation's warehouse card as the model. The *Takes:* row under Settings went with it — a good is described in one place (D139) | `StoreBuilding.CanEverHold`, `PlayerAllows`, `ToggleSelectedAccepts` |
 | **People** (homes) | *Name, age — trade* per living member, four rows tall, scrolling past four | `Household.MemberIds` |
 | **Picture** | `BuildingPortrait`: the footprint quad in the map's own colour, turned as it is turned, with its ring when the map would draw one; a caption — the workers, or the reason for the job | `VillageMap.FootprintQuadAt`, `VillageMap.ColourOf` |
 
@@ -53,8 +54,8 @@ building, a death) closes itself on refresh.
 and the docked panel both open: *"shouldn't all of this be in the same panel? why 2 panels for one
 structure?"*). Folded by default so the five parts stay what you read; open, it holds every
 control the docked panel used to: a store's *Stocking: Open / Closed / Emptying* (D389 — one
-three-state control; Emptying turns itself back to Open when the last armful leaves), *When full: Marker*, *Takes:* and (a market's) *Keeps
-up to:*; a workplace's idle marker, ground brush and felling mode, a site's build queue; a
+three-state control; Emptying turns itself back to Open when the last armful leaves), *When full: Marker* and (a market's) *Keeps
+up to:* (*Takes:* moved onto the storage rows, D393); a workplace's idle marker, ground brush and felling mode, a site's build queue; a
 villager's *Kept on:* and the trades they have learned. Every row wraps (`HFlowContainer`), so the
 card stays 268 wide with all of them open. Each control selects its card first and then calls the
 same "selected" handler the docked panel called — one rule, not two. **The docked panel is
@@ -69,7 +70,9 @@ cancel keeps its place); the brush's right-click take-back and a tool's right-cl
 unchanged. And **a heap on the tile is listed**: *"On the ground: 40 logs — still to be carried in."*
 
 ⛔ **Not in the card:** a fourth number, a second sentence, a control that belongs to the Settings
-panel. If a card wants more, the building is asking for a second card, not a longer one.
+panel. If a card wants more, the building is asking for a second card, not a longer one. ⚠️ **A
+store's storage list is not a fourth number** — it *replaces* the three (D393, Joe's call): a
+store's whole job is what it holds, and three of five was a card that lied.
 
 ## 3. Renaming — `SimWorld.Rename`
 
