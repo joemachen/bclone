@@ -61,7 +61,12 @@ same "selected" handler the docked panel called — one rule, not two. **The doc
 *What's here*, for what has no card yet** (bare ground, the library, the town hall) and hides the
 moment the selection has a card. Its ✕ clears the selection — it is about what you clicked, like a
 card — and it returns on the next bare-ground click; every other panel's ✕ does what unticking it in
-Settings does, and the tick reads the window's state every frame (D380).
+Settings does, and the tick reads the window's state every frame (D380). ✅ **Since D390 (Joe's play
+notes, 2026-09-18): a bare right-click opens *What's here* for the tile under the point** (resolved
+as a left-click resolves it, so a building opens its card), a second right-click on the same tile
+closes it, and **Esc closes it** when nothing is in hand (a tool in hand goes down first — D327's
+cancel keeps its place); the brush's right-click take-back and a tool's right-click cancel are
+unchanged. And **a heap on the tile is listed**: *"On the ground: 40 logs — still to be carried in."*
 
 ⛔ **Not in the card:** a fourth number, a second sentence, a control that belongs to the Settings
 panel. If a card wants more, the building is asking for a second card, not a longer one.

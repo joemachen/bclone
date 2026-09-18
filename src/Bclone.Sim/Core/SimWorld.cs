@@ -3845,6 +3845,21 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>How much of one good is lying on a tile.</summary>
+    /// <summary>Every heap on a tile, in the order they were set down (D390: a heap is clickable, and the *what's here* window lists it).</summary>
+    public List<GroundStack> GroundStacksAt(GridPos position)
+    {
+        var here = new List<GroundStack>();
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            if (GroundStacks[i].Position == position && GroundStacks[i].Amount > 0)
+            {
+                here.Add(GroundStacks[i]);
+            }
+        }
+
+        return here;
+    }
+
     public int GroundStackAt(GridPos position, Goods goods)
     {
         for (int i = 0; i < GroundStacks.Count; i++)

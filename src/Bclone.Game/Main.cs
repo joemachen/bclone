@@ -1024,7 +1024,20 @@ public partial class Main : Control
             // player cannot put down**, so this is not a convenience.
             // ⚠️ Correctly shadowed while a moment panel is up: that branch early-returns above
             // this switch, and Esc there means "dismiss", which is the nearer meaning.
-            case Key.Escape: _map.PutTheToolDown(); break;
+            // ⭐ AND WITH NOTHING IN HAND, ESC CLOSES *WHAT'S HERE* (D390, Joe: *"the what's here
+            // window should disappear with the esc button"*) — the ✕'s own path, so the selection
+            // clears with it. A tool in hand goes down first; the next Esc closes the window.
+            case Key.Escape:
+                if (_map.IsPlacing)
+                {
+                    _map.PutTheToolDown();
+                }
+                else if (_whatsHerePanel.Visible)
+                {
+                    CloseTheWindow(_whatsHerePanel);
+                }
+
+                break;
 
             // The brush's shape, beside its own tools rather than in Settings (Joe's call). The
             // button on the filter row says the same thing; a key is there because sizing with
@@ -1963,6 +1976,18 @@ public partial class Main : Control
         RefreshInspector(_loop.World);
     }
 
+    /// <summary>A bare right-click (D390): <i>What's here</i> for the tile, or closed again on the same tile.</summary>
+    private void OnWhatsHereAsked(GridPos tile)
+    {
+        if (_selectedTile == tile && _whatsHerePanel.Visible)
+        {
+            CloseTheWindow(_whatsHerePanel);
+            return;
+        }
+
+        OnBuildingClicked(tile);
+    }
+
     private void OnBuildingClicked(GridPos tile)
     {
         _selectedTile = tile;
@@ -2076,6 +2101,15 @@ public partial class Main : Control
         if (lines.Count == 0)
         {
             DescribeBareGround(world, tile, lines);
+        }
+
+        // ⭐ A HEAP IS SOMETHING HERE (D390, Joe: *"piles of resources on the ground should be
+        // clickable and show in the 'what's here' window"*). What was set down on this tile and
+        // why it is still here — the reason the overview bar gives, per good.
+        foreach (GroundStack heap in world.GroundStacksAt(tile))
+        {
+            lines.Add($"On the ground: {heap.Amount.Grouped()} {GoodsName(world, heap.Goods)} — "
+                + $"{WhyItIsOnTheGround(world, heap.Goods)}.");
         }
 
         lines.Add(string.Empty);
@@ -2645,6 +2679,7 @@ public partial class Main : Control
         _map = new VillageMap { ClipContents = true };
         _map.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         _map.BuildingClicked += OnBuildingClicked;
+        _map.WhatsHereAsked += OnWhatsHereAsked;
         _map.VillagerClicked += OnVillagerClicked;
         AddChild(_map);
 

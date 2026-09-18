@@ -382,6 +382,14 @@ public partial class VillageMap : Control
     public event System.Action<GridPos>? BuildingClicked;
 
     /// <summary>
+    /// The player right-clicked the ground with nothing in hand (D390, Joe: *"consider having the
+    /// 'what's here' window show on right-click by default — its a bit annoying, but its
+    /// useful"*). The tile under the point, resolved as a left-click resolves it; the shell opens
+    /// <i>What's here</i> for it, or closes it on the same tile twice.
+    /// </summary>
+    public event System.Action<GridPos>? WhatsHereAsked;
+
+    /// <summary>
     /// The player clicked on a person rather than on the ground (Joe, 2026-08-09).
     /// </summary>
     /// <remarks>
@@ -1136,6 +1144,21 @@ public partial class VillageMap : Control
         if (IsPlacing && click.ButtonIndex == MouseButton.Right)
         {
             PutTheToolDown();
+            AcceptEvent();
+            return;
+        }
+
+        // ⭐ A BARE RIGHT-CLICK ASKS WHAT IS HERE (D390). The brush's take-back and the tool's
+        // cancel keep the button while they are in hand (above); with nothing in hand it was
+        // unbound, and Joe wanted the window on it. Resolved as a left-click on the ground is
+        // (the building under the point first, the tile second — D338), so a store or a house
+        // opens its card and bare ground, a library, a heap, the hall read in the window.
+        if (click.ButtonIndex == MouseButton.Right)
+        {
+            Vector2 under = ToTile(click.Position);
+            GridPos asked = _world!.WhatStandsUnder(PointUnderTheCursor(click.Position))
+                ?? new GridPos(Mathf.RoundToInt(under.X), Mathf.RoundToInt(under.Y));
+            WhatsHereAsked?.Invoke(asked);
             AcceptEvent();
             return;
         }

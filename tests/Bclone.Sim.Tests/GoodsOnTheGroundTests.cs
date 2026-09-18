@@ -79,6 +79,27 @@ public sealed class GoodsOnTheGroundTests
     /// move both goldens for a feature nobody used. This is the assertion that says the
     /// hashing is invisible when unused; <c>StockLimitTests</c>' goldens are the other half.
     /// </remarks>
+    /// <summary>The heaps on a tile, for the window that says what is here (D390): every good set down there, none from elsewhere, nothing that was picked up.</summary>
+    [Fact]
+    public void TheHeapsOnATileAreWhatWasSetDownThere()
+    {
+        SimWorld world = Loop(VillageFixtures.Village).World;
+        GridPos here = world.Map.FoundingSite;
+        var there = new GridPos(here.X + 1, here.Y);
+
+        Assert.Empty(world.GroundStacksAt(here));
+
+        world.SetDown(here, Goods.Logs, 40);
+        world.SetDown(here, Goods.Produce, 12);
+        world.SetDown(there, Goods.Stone, 5);
+
+        System.Collections.Generic.List<GroundStack> heaps = world.GroundStacksAt(here);
+        Assert.Equal(2, heaps.Count);
+        Assert.Contains(heaps, h => h.Goods == Goods.Logs && h.Amount == 40);
+        Assert.Contains(heaps, h => h.Goods == Goods.Produce && h.Amount == 12);
+        Assert.DoesNotContain(heaps, h => h.Goods == Goods.Stone);
+    }
+
     [Fact]
     public void AVillageThatDroppedNothingIsHashedAsThoughTheGroundDidNotExist()
     {

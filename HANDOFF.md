@@ -1,8 +1,8 @@
-# Handoff — bclone: **▶️ PHASE 5 — JOE'S PLAY NOTES: D388 (THE LANE PICKS THE DOOR; THE FENCE IS BUILT) AND D389 (STOCKING IS ONE CONTROL; SHELVES 5) ARE COMMITTED; D390 (WHAT'S HERE) FOLLOWS. NOT PUSHED, UNPLAYED. THEN THE PROFESSIONS.**
+# Handoff — bclone: **▶️ PHASE 5 — JOE'S SEVEN PLAY NOTES ON D386/D387 ARE BUILT: D388 (THE LANE PICKS THE DOOR; THE FENCE IS BUILT), D389 (STOCKING IS ONE CONTROL; SHELVES 5), D390 (WHAT'S HERE). THREE COMMITS, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS; THEN THE PROFESSIONS AND THEIR BUILDINGS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 — AFTER D389.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 — AFTER D390.**
 >
-> **The state:** `main` = D389 on D388 on D386 + D387 (`63b859d`) on `0b1124b` = `origin/main`;
+> **The state:** `main` = D390 on D389 on D388 on D386 + D387 (`63b859d`) on `0b1124b` = `origin/main`;
 > **committed, NOT pushed — Joe pushes after he plays.** Joe played D386/D387 on 2026-09-18 and
 > sent seven notes (D388's are the plots'; D389 and D390 are the storage control, the library's
 > shelves and the *what's here* window — read `DESIGN.md §7` D388 onward). Working tree clean.
@@ -23,6 +23,17 @@
 > still fetch. The *Takes:* row reads `PlayerAllows` (it showed every good off while emptying). ⚠️
 > The old `Emptying` bool was never hashed; the state is, sparsely. `library_shelves` 3 → 5 (the
 > two full-library guards pose three for themselves).
+>
+> **✅ D390 — WHAT'S HERE.** A heap on a tile is listed with why it is there; Esc closes the
+> window when nothing is in hand; a bare right-click opens it for the tile under the point (a
+> building's card, bare ground's window), and closes it on the same tile twice. The brush's
+> right-click take-back and a tool's cancel are unchanged.
+>
+> **⚠️ For Joe when he plays D388–D390:** paint a blob and watch the doors — houses on one lane
+> should now face it from both sides and corner plots vary; a house's card says *facing the lane*
+> or *facing a lane of its own*. Unpaint a yard tile: the fence stays. Mark a house: the site says
+> *"a house and 4 tiles of fence"* and costs the logs. Empty a granary and watch it reopen itself;
+> the card's *Stocking:* row has Open / Closed / Emptying. Right-click a heap. Esc.
 >
 > *(D386 + D387's banner, kept below.)*
 >

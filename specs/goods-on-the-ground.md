@@ -219,6 +219,14 @@ list rather than a grid, so the guard is `GroundStacks.Count == 0` and the scan 
 heaps rather than over 9,600 tiles — cheaper than the thing that nearly cost us the suite, and
 guarded anyway.
 
+### 4.4b A heap is something here (D390)
+
+Joe, playing: *"piles of resources on the ground should be clickable and show in the 'what's here'
+window."* `SimWorld.GroundStacksAt(tile)` lists every heap on a tile, and *What's here* says each
+with the reason the overview bar gives per good (*still to be carried in* / *no store will take
+it*). A heap is not selectable as a thing of its own — it is not a building (§4.1) — the tile is,
+and the window says what lies on it. Guard: `TheHeapsOnATileAreWhatWasSetDownThere`.
+
 ### 4.5 Hashing
 
 **Sparse and countless, exactly like the harvest layer** (D87): each stack mixes its position,
