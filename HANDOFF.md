@@ -2,10 +2,22 @@
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 — AFTER D390.**
 >
-> **The state:** `main` = D390 on D389 on D388 on D386 + D387 (`63b859d`) on `0b1124b` = `origin/main`;
-> **committed, NOT pushed — Joe pushes after he plays.** Joe played D386/D387 on 2026-09-18 and
-> sent seven notes (D388's are the plots'; D389 and D390 are the storage control, the library's
-> shelves and the *what's here* window — read `DESIGN.md §7` D388 onward). Working tree clean.
+> **The state:** four commits sit on `0b1124b` = `origin/main`, **committed, NOT pushed — Joe
+> pushes after he plays:** D386 + D387 (`63b859d`), D388 (`9270c3e`), D389 (`4396354`), D390
+> (`afab577`). Joe played D386/D387 on 2026-09-18 and sent seven notes; D388–D390 are those notes
+> built, and **none of the three is played yet.** Working tree clean. Suite **1187 passing, 0
+> failing, 2 skipped of 1189, 3m12**; view 0 warnings on `--no-incremental`; probe green. The
+> decision log runs to **D390**. Read `DESIGN.md §0–§5`, §6, D386–D390 in §7, then
+> `specs/organic-housing.md` in full (§3.3 and §3.5 are D388's), `storage-and-distribution.md
+> §12.4` (the harvest gate) and `§14.11` (stocking).
+>
+> **▶️ NEXT, after his play and push:** *"the professions and their buildings"* (Joe, 2026-09-17)
+> — Phase 5's production chains, `DESIGN.md §4` *Phase 5* (tools that wear, the workshop, the
+> smith's chain from `TECH-EXAMPLE.md`, condition and maintenance, clothing) against
+> `specs/professions.md`, `specs/buildings-plan.md §4` (the tier catalogue) and
+> `specs/jobs-catalog.md`. Spec first (METHODOLOGY §2): the first move is a spec that says which
+> chain comes first and why, with Joe's call on it. ⏸️ **Fences as walls with an open gate** is
+> filed for after that (below, and `organic-housing.md §3.5`).
 >
 > **✅ D388 — THE LANE PICKS THE DOOR; THE FENCE IS BUILT WITH THE HOUSE.** Joe: *"this isn't
 > supposed to be suburbs"* — the walk scores the plot from its own tile and the facing is the
@@ -35,7 +47,8 @@
 > *"a house and 4 tiles of fence"* and costs the logs. Empty a granary and watch it reopen itself;
 > the card's *Stocking:* row has Open / Closed / Emptying. Right-click a heap. Esc.
 >
-> *(D386 + D387's banner, kept below.)*
+> *(D386 + D387's banner, kept below. ⚠️ One line of it is superseded: D386 drew the fence as
+> owner ∩ paint; since D388 the fence is what was built — `Household.FencedTiles`.)*
 >
 > **⭐⭐ WHERE THINGS WERE, 2026-09-17 — AFTER D386 + D387.**
 >
@@ -1411,6 +1424,34 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     held. The measurement that told them apart each time was the fixture at 150 years and the
     shipped established village at 110 — run both before believing a gate.
 
+100. **⛔ A SCORE READ FROM THE DOOR IS A SCORE FOR FACING THE GRANARY (D388).** D386 scored a
+    plot's walks from its door tile, so the door always landed on the granary's side, and its
+    tie-break was the facings' fixed order — north first. Every house on a street faced one way and
+    Joe called it a suburb. Any term in a placement score that depends on orientation *is* the
+    orientation rule; keep the walk facing-neutral and let something legible (the lane) pick the
+    door. The guard for it scored zero on its first pose (*at least one pair faces across a lane*
+    — six hash facings pair up by chance) and had to be re-posed as the rule itself: *every plot
+    that could front a neighbour's lane does*. A guard that asserts a symptom of a rule is a coin
+    flip; assert the rule.
+
+101. **⛔ ANYTHING THE PLAYER CAN MOVE FOR FREE READS AS PAINT, WHATEVER IT IS DRAWN AS (D388).** The
+    D386 fence was `owner ∩ paint` at draw time — a fence that followed the brush instantly. Joe:
+    *"it feels too malleable."* A built thing has a build day, a cost and a demolition; if the sim
+    has none of those for it, the picture is lying about what it is. `Household.FencedTiles` is
+    what was built, fixed at the marking, on the recipe, refunded with the house.
+
+102. **⛔ A MODE THE PLAYER SWITCHES ON MUST SWITCH ITSELF OFF WHEN ITS JOB IS DONE (D389).** *Empty*
+    drained a store to zero and left it refusing deliveries until the player noticed and clicked
+    again — the player was the machine's clock. The errand that does the last of the work is the
+    place to end the mode (`ReopenTheEmptiedStore`, from the one arrival that carries a store
+    out). And ⚠️ the old `Emptying` bool was never in the hash: a player-set flag that decides what
+    every errand may do is state, however small.
+
+103. **⚠️ A BASH HEREDOC THAT ENDS IN "unexpected EOF" IS THE SCRIPT'S APOSTROPHES (this session, three
+    times).** Python scripts with doc prose (*it's*, *Joe's*) piped through `python - <<'PY'`
+    failed to parse at the *shell* — write them to the scratchpad with the Write tool and run the
+    file. Trap 39's habit, restated because it cost three round trips today.
+
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
 **The roster and the village log were both `288x0` for two commits** (D311). Joe sent a screenshot
@@ -1431,6 +1472,12 @@ not need it.*
 four founders froze in Winter Year 1 and every line saying so rendered into nothing.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **THE PROFESSIONS AND THEIR BUILDINGS — WHICH CHAIN FIRST (Joe, 2026-09-17: *"then i think i
+  want to go back to building out the professions and their buildings"*).** `DESIGN.md §4` Phase 5
+  lists tools-that-wear + the workshop + the smith's chain, condition and maintenance (the D65
+  reversal), clothing (blocked on trade for wool), soil depletion. The order is his; the first
+  spec should pose the candidates against `buildings-plan.md §4`'s tiers and ask.
 
 - ⏸️ **FENCES AS WALLS WITH AN OPEN GATE (Joe's yes, 2026-09-18; after the professions).** A fence
   runs on tile *edges*; the one cost field is tile-based. The slice: a per-tile edge mask in
