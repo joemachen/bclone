@@ -240,7 +240,8 @@ market's business; §3.5 stands.
   food-limit guards went red for a village that had never seen a tool. D344's trap one catalogue
   over. **The smith has no skill row**, like the fisher and the hunter (found to be rowless the
   same way); a skill for the three wants the founding's draw made from a stated list first.
-  Filed in `handoff.md`.
+  ✅ **The list is D392** (`founding_trades`, the same day); the three rows are the measured
+  slice still filed in `handoff.md` — mastery would halve a cast and a hunt.
 
 ## 7. How it is tested — `tests/Bclone.Sim.Tests/ToolsTests.cs`
 

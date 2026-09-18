@@ -1,16 +1,24 @@
 # Handoff — bclone: **▶️ PHASE 5 — THE FIRST PRODUCTION CHAIN IS BUILT: D391, TOOLS THAT WEAR AND THE SMITH'S HUT. SEVEN COMMITS ON `origin/main`, NOT PUSHED; D388–D391 UNPLAYED. NEXT: JOE PLAYS; THEN HIS CALL ON THE SECOND CHAIN (BREAD, THE QUARRY, THE WORKSHOP) OR FENCES AS WALLS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 (EVENING) — AFTER D391.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 (EVENING) — AFTER D391 AND D392.**
 >
-> **The state:** seven commits sit on `2921d38` = `origin/main` (⚠️ the banner below says
+> **The state:** eight commits sit on `2921d38` = `origin/main` (⚠️ the banner below says
 > `0b1124b` is origin; it is one further back — `0b1124b` is the D385-played handoff and it is
 > unpushed too), **committed, NOT pushed — Joe pushes after he plays:** `0b1124b`, D386 + D387
 > (`63b859d`), D388 (`9270c3e`), D389 (`4396354`), D390 (`afab577`), the D390 handoff (`603f43d`),
-> and **D391** (this commit). **D388–D391 are unplayed.** Working tree clean. Suite **1198
-> passing, 0 failing, 2 skipped of 1200, 3m45** (was 3m12 — the fixture carries 8 % more people
-> and every hand fetches a tool; read trap 88 and the per-test note in trap 106 before chasing
-> it); view 0 warnings on `--no-incremental`; probe green. The decision log runs to **D391**.
-> Read `DESIGN.md §0–§5`, §6, D386–D391 in §7, then `specs/tools-and-the-smith.md` in full.
+> **D391** (`22b9fd8`) and **D392** (this commit). **D388–D392 are unplayed.** Working tree clean.
+> Suite **1201 passing, 0 failing, 2 skipped of 1203** (~3m45 — was 3m12 before D391: the fixture
+> carries 8 % more people and every hand fetches a tool; read trap 88 and the per-test list in
+> trap 106 before chasing it); view 0 warnings on `--no-incremental`; probe green. The decision
+> log runs to **D392**. Read `DESIGN.md §0–§5`, §6, D386–D392 in §7, then
+> `specs/tools-and-the-smith.md` in full and `skills-catalog.md §3.2c`'s new paragraph.
+>
+> **✅ D392 — THE FOUNDING DEALS ITS TRADES FROM A STATED LIST.** Joe: *"(a) now, rows later."*
+> `founding_trades` in the json (today's six, today's order) is what the founders' master and
+> journeyman are drawn from — not `skills`, whose length had been a seed contract (the smith's
+> row reshuffled every founding this morning). Byte-identical draw, **no golden moved**, three
+> guards, the list guard red-checked. The fisher/hunter/smith skill rows stay filed (OPEN list):
+> mastery halves a cast and a hunt, so the rigs are re-read first.
 >
 > **✅ D391 — TOOLS THAT WEAR, AND THE SMITH'S HUT.** Joe's calls, asked directly: *"Tools — the
 > smith"* over bread / a quarry / the workshop, and *"One building"* over the full smelter chain.
@@ -1518,6 +1526,14 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     Nothing had: the numbers in every D3xx entry are `VillageFixtures.Village`, seeds 1–12, fifty
     years, nobody playing. The shipped opening is a different (and honest) second column.
 
+107. **⛔ A LIST CONTENT CAN GROW IS NOT A LIST A DRAW MAY RANGE OVER (D392).** `NextInt(0,
+    catalogue.Count)` is a seed contract: every row a modder or a slice adds re-deals every
+    founding. State the range as its own list (`founding_trades`), validate it against the
+    catalogue, and guard it with the failure that found it (a plus-one-row fixture hashing
+    byte-identically). ⭐ *Grep for `NextInt(0, .*Count)` over anything that is content before
+    adding a row to it* — `household_names` and `town_names` index arithmetically by the seed for
+    this exact reason and say so.
+
 106. **⚠️ THE SUITE'S CLOCK MOVED 3m12 → 3m45 ON D391, AND HERE IS WHERE.** Tools put 8 % more
     people in every fixture village and a fetch walk on every hand; nothing new is per tick.
     The per-test top ten from the trx (`dotnet test --logger trx`), 1,883 s of test time over
@@ -1561,15 +1577,14 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
   helps one trade by an accident of duration is the illegible outcome. His words were *"slower
   without"*. If he wants ticks, it is one seam (`WorkTicksFor` beside the mastery bonus) and the
   number would have to be re-measured per trade; the card's sentence can say *slower* either way.
-- ⚠️ **THE FISHER, THE HUNTER AND THE SMITH HAVE NO SKILL ROW — AND ADDING ONE RESHUFFLES EVERY
-  FOUNDING (found D391).** `SimWorld` draws the founders' mastered trades from the skills
-  catalogue with the run's `Rng` (`NextInt(0, available.Count)`), so a seventh row moved every
-  seed's founders and three food-limit guards went red for a village that had never seen a tool.
-  The fisher and hunter shipped rowless a fortnight ago with nothing recording it; nobody masters
-  fishing, hunting or smithing today. Two ways to call it: *(a)* draw the founders' trades from a
-  stated founding list (the trades a cold start can hold) so the catalogue can grow; *(b)* a
-  per-stage seed for the founding (D344's shape). Either way one commit moves every golden once,
-  and three skill rows land with it.
+- ⚠️ **THE FISHER, THE HUNTER AND THE SMITH HAVE NO SKILL ROW (found D391; the reshuffle it
+  caused is closed by D392).** Nobody masters fishing, hunting or smithing today. ✅ Adding a row
+  no longer touches the founding — `founding_trades` (D392) is what the draw reads. What remains
+  is the rows themselves, **and they are not free:** mastery halves a ten-tick cast and a
+  fifteen-tick hunt, so the rigs (forager / fisher / hunter per hundred ticks worked, trap 30) and
+  the ladder's rungs are re-read before the rows are typed. Joe's order: after he plays D391.
+  When the rows land, whether a founder may arrive a master of them is a second call — put the
+  name on `founding_trades` or not.
 - ⚠️ **A TOOL'S QUARTER MAKES A TEN-TICK FARM HAULING-BOUND (found D391).** With a quarter more
   crop a tile, the shipped farm ten ticks out at the derived thirteen a hand brings everything in
   with no autumn to spare and never probes a fourteenth; `AFarmWithAutumnToSpare…` is posed

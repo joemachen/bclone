@@ -778,6 +778,13 @@
   // period of time."
   "splits_per_stint": 4,
 
+  // The trades an exile can arrive knowing (D392): the founding deals one master
+  // and one journeyman from THIS list, never from the skills catalogue -- a draw
+  // whose range is a content count reshuffles every seed the day a row is added
+  // (found D391). Today's six in today's order, so nothing moved. Add a trade
+  // here on purpose when its row exists and a founder may know it.
+  "founding_trades": ["foraging", "forestry", "woodcutting", "farming", "building", "trading"],
+
   // ---------------------------------------------------------------
   //  Tools, and the smith who makes them (D391, specs/tools-and-the-smith.md)
   // ---------------------------------------------------------------

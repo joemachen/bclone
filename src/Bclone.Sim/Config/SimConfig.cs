@@ -3144,6 +3144,32 @@ public sealed record SimConfig
     public int FoundingJourneymen { get; init; } = 1;
 
     /// <summary>
+    /// The trades an exile can arrive knowing — the skills, by name, the founding draws from
+    /// (D392). <b>Order is part of the contract.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ A DRAW WHOSE RANGE IS A CONTENT COUNT IS A SEED CONTRACT (found D391).</b> The founding
+    /// drew from <see cref="Skills"/> itself — <c>Rng.NextInt(0, Skills.Count)</c> — so adding a
+    /// seventh row (the smith's) moved every seed's founders, every fixture village diverged
+    /// from tick 1, and three food-limit guards went red on a village that had never held a
+    /// tool. D344's trap, one catalogue over. The draw ranges over THIS list now: a new skill
+    /// row leaves the founding alone unless it is put here on purpose.
+    /// </para>
+    /// <para>
+    /// <b>Today's six, in today's order, so the draw is byte-identical</b> — no golden moved
+    /// for this key, and `TheShippedFoundingListIsTodaysSix` says the shipped file keeps it that
+    /// way. It is also the legible answer to <em>"can an exile arrive a master smith with no
+    /// smithy in the valley?"</em> — not unless this list says so.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("founding_trades")]
+    public IReadOnlyList<string> FoundingTrades { get; init; } = new[]
+    {
+        "foraging", "forestry", "woodcutting", "farming", "building", "trading",
+    };
+
+    /// <summary>
     /// Whether every villager is drawn a personal rhythm at birth (`skills-catalog.md §3.5`).
     /// </summary>
     /// <remarks>
@@ -4299,6 +4325,72 @@ public sealed record SimConfig
         }
     }
 
+    /// <summary>The skill rows the founding draws from, in the list's order (D392).</summary>
+    /// <remarks>
+    /// Resolved by name once here rather than per founding, and validated with the skills
+    /// because a name that is not a row is a party thinner than <c>founding_masters</c> promised.
+    /// </remarks>
+    public IReadOnlyList<SkillRow> FoundingSkills()
+    {
+        var rows = new List<SkillRow>(FoundingTrades.Count);
+        for (int i = 0; i < FoundingTrades.Count; i++)
+        {
+            rows.Add(SkillNamed(FoundingTrades[i])
+                ?? throw new SimConfigException($"founding_trades[{i}] names no skill: \"{FoundingTrades[i]}\"."));
+        }
+
+        return rows;
+    }
+
+    private SkillRow? SkillNamed(string name)
+    {
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            if (string.Equals(Skills[i].Name, name, StringComparison.Ordinal))
+            {
+                return Skills[i];
+            }
+        }
+
+        return null;
+    }
+
+    private void ValidateFoundingTrades()
+    {
+        if (FoundingTrades is null)
+        {
+            throw new SimConfigException("founding_trades must be a list, not null.");
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (int i = 0; i < FoundingTrades.Count; i++)
+        {
+            string name = FoundingTrades[i];
+            if (SkillNamed(name) is null)
+            {
+                throw new SimConfigException(
+                    $"founding_trades[{i}] names no skill: \"{name}\". Every entry must be the name "
+                    + "of a row in skills — the founding deals its trades from this list.");
+            }
+
+            if (!seen.Add(name))
+            {
+                throw new SimConfigException(
+                    $"founding_trades repeats \"{name}\" — one draw each, never the same trade twice.");
+            }
+        }
+
+        // Fewer trades than the party asks for is a founder who arrives a novice where the
+        // shape promised a master — quietly. Loud, here, instead.
+        int dealt = FoundingMasters + FoundingJourneymen;
+        if (FoundingTrades.Count < dealt)
+        {
+            throw new SimConfigException(
+                $"founding_trades lists {FoundingTrades.Count} trades and the founding deals {dealt} "
+                + $"(founding_masters {FoundingMasters} + founding_journeymen {FoundingJourneymen}).");
+        }
+    }
+
     private void ValidateSkills()
     {
         if (Skills is null)
@@ -4336,6 +4428,8 @@ public sealed record SimConfig
             throw new SimConfigException(
                 $"mastery_years must be greater than zero (got {MasteryYears}).");
         }
+
+        ValidateFoundingTrades();
 
         if (SkillWorkPerIdleTick <= 0)
         {

@@ -234,6 +234,18 @@ with.
    forms. Combined with §3.5's seeded rhythm, **no two founders run the same program from tick
    0** — which is what D28 asked for and what four sessions of watching at 4× kept noticing.
 
+#### ⛔ Where the draw reads from — a stated list, never the catalogue (D392, 2026-09-18)
+
+The founding deals its master and its journeyman from **`founding_trades`** — a list of skill
+names in `data/sim.config.json`, today's six in today's order — and **not from `skills`
+itself.** It did, until D391 added the smith's row and every seed's founders reshuffled: the draw
+was `Rng.NextInt(0, Skills.Count)`, so *the catalogue's length was a seed contract* (D344's trap,
+one catalogue over). Adding a row now leaves every founding where it was unless the row is put on
+the list on purpose — which is also the answer to *"can an exile arrive a master smith with no
+smithy in the valley?"*: not unless the list says so. Validated at load (every name a row, no
+repeats, at least masters + journeymen of them); the guard is
+`TheFoundingDrawsFromTheStatedListNotTheCatalogue`.
+
 #### The tiers, because the player reads words and not numbers
 
 Joe's own vocabulary — *"masters, mids, novices"*, *"apprentice forester"* — is already tiered,

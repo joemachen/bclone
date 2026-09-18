@@ -9547,7 +9547,13 @@ public sealed class SimWorld : IObstacles
 
         // The trades on offer, one draw each and never the same twice: a master and a
         // journeyman of the same trade is a narrower party than the shape asks for.
-        var available = new List<SkillRow>(config.Skills);
+        //
+        // ⛔ FROM THE STATED LIST, IN ITS ORDER — NOT FROM THE CATALOGUE (D392). This was
+        // `new List<SkillRow>(config.Skills)`, so the draw's range was the catalogue's length and
+        // a seventh skill row reshuffled every seed's founders (found D391 by adding one). The
+        // list's order is the contract: `founding_trades` today's six in today's order is the
+        // same draw to the byte.
+        var available = new List<SkillRow>(config.FoundingSkills());
 
         int masters = config.FoundingMasters;
         int journeymen = config.FoundingJourneymen;

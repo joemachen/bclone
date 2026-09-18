@@ -1323,6 +1323,78 @@ public sealed class SkillTests
     }
 
     /// <summary>
+    /// ⛔ The founding deals its trades from the stated list, not from the skills catalogue — so
+    /// a new skill row leaves every founding exactly where it was (D392).
+    /// </summary>
+    /// <remarks>
+    /// <b>The failure D391 hit, as a guard.</b> The draw was <c>Rng.NextInt(0, Skills.Count)</c>,
+    /// so the smith's row moved every seed's founders and three food-limit guards went red on a
+    /// village that had never held a tool. Posed as the sparse-hash guard is posed
+    /// (`AGoodNobodyHoldsDoesNotChangeTheHash`): the fixture's own catalogue plus one row, and
+    /// four years hashed against the plain fixture. Red with the draw pointed back at the
+    /// catalogue.
+    /// </remarks>
+    [Fact]
+    public void TheFoundingDrawsFromTheStatedListNotTheCatalogue()
+    {
+        SimConfig plain = VillageFixtures.Village;
+
+        var grown = new SkillRow[plain.Skills.Count + 1];
+        for (int i = 0; i < plain.Skills.Count; i++)
+        {
+            grown[i] = plain.Skills[i];
+        }
+
+        grown[^1] = new SkillRow
+        {
+            Id = 99,
+            Name = "smithing",
+            GrownBy = JobKind.Smith,
+            YearsPhrase = "as a smith",
+            MasteryLine = "{0} has worked iron for {1} years.",
+        };
+
+        SimConfig withSmithing = plain with { Skills = grown };
+        Assert.Equal(plain.FoundingTrades, withSmithing.FoundingTrades);
+
+        SimLoop a = SimFactory.CreatePhase0(plain, new InMemoryLogSink());
+        SimLoop b = SimFactory.CreatePhase0(withSmithing, new InMemoryLogSink());
+        a.Step(plain.TicksPerYear * 4);
+        b.Step(plain.TicksPerYear * 4);
+
+        _output.WriteLine($"{StateHash.Compute(a.World):X16} against {StateHash.Compute(b.World):X16} with a seventh skill row");
+        Assert.Equal(StateHash.Compute(a.World), StateHash.Compute(b.World));
+    }
+
+    /// <summary>The shipped list is today's six in today's order — what makes "no golden moved" a claim.</summary>
+    [Fact]
+    public void TheShippedFoundingListIsTodaysSix()
+    {
+        Assert.Equal(
+            new[] { "foraging", "forestry", "woodcutting", "farming", "building", "trading" },
+            ShippedConfig.Load().FoundingTrades);
+    }
+
+    /// <summary>A founding trade must be a skill, listed once, and there must be enough of them for the party.</summary>
+    [Fact]
+    public void AFoundingTradeMustBeASkill()
+    {
+        SimConfig plain = VillageFixtures.Village;
+
+        var noSuchRow = Assert.Throws<SimConfigException>(
+            () => (plain with { FoundingTrades = new[] { "foraging", "smithing" } }).Validate());
+        Assert.Contains("smithing", noSuchRow.Message, StringComparison.Ordinal);
+
+        Assert.Throws<SimConfigException>(
+            () => (plain with { FoundingTrades = new[] { "foraging", "foraging" } }).Validate());
+
+        Assert.Throws<SimConfigException>(
+            () => (plain with { FoundingTrades = new[] { "foraging" }, FoundingMasters = 1, FoundingJourneymen = 1 }).Validate());
+
+        _output.WriteLine(noSuchRow.Message);
+    }
+
+    /// <summary>
     /// ⭐ Every seed gets the same <b>shape</b> of party — <b>and no seed gets one that cannot
     /// live</b>.
     /// </summary>
