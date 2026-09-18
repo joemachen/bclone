@@ -1,6 +1,56 @@
-# Handoff — bclone: **▶️ PHASE 5 — JOE'S SEVEN PLAY NOTES ON D386/D387 ARE BUILT: D388 (THE LANE PICKS THE DOOR; THE FENCE IS BUILT), D389 (STOCKING IS ONE CONTROL; SHELVES 5), D390 (WHAT'S HERE). THREE COMMITS, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS; THEN THE PROFESSIONS AND THEIR BUILDINGS.**
+# Handoff — bclone: **▶️ PHASE 5 — THE FIRST PRODUCTION CHAIN IS BUILT: D391, TOOLS THAT WEAR AND THE SMITH'S HUT. SEVEN COMMITS ON `origin/main`, NOT PUSHED; D388–D391 UNPLAYED. NEXT: JOE PLAYS; THEN HIS CALL ON THE SECOND CHAIN (BREAD, THE QUARRY, THE WORKSHOP) OR FENCES AS WALLS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 — AFTER D390.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 (EVENING) — AFTER D391.**
+>
+> **The state:** seven commits sit on `2921d38` = `origin/main` (⚠️ the banner below says
+> `0b1124b` is origin; it is one further back — `0b1124b` is the D385-played handoff and it is
+> unpushed too), **committed, NOT pushed — Joe pushes after he plays:** `0b1124b`, D386 + D387
+> (`63b859d`), D388 (`9270c3e`), D389 (`4396354`), D390 (`afab577`), the D390 handoff (`603f43d`),
+> and **D391** (this commit). **D388–D391 are unplayed.** Working tree clean. Suite **1198
+> passing, 0 failing, 2 skipped of 1200, 3m45** (was 3m12 — the fixture carries 8 % more people
+> and every hand fetches a tool; read trap 88 and the per-test note in trap 106 before chasing
+> it); view 0 warnings on `--no-incremental`; probe green. The decision log runs to **D391**.
+> Read `DESIGN.md §0–§5`, §6, D386–D391 in §7, then `specs/tools-and-the-smith.md` in full.
+>
+> **✅ D391 — TOOLS THAT WEAR, AND THE SMITH'S HUT.** Joe's calls, asked directly: *"Tools — the
+> smith"* over bread / a quarry / the workshop, and *"One building"* over the full smelter chain.
+> A tool hangs off the villager (`ToolUses`), wears one use per action begun (`SimWorld.BeginWork`,
+> the one seam), adds 25 % to what an action brings in (`YieldFor` / `WithTool` — ⭐ **on yield,
+> not ticks**, because a percentage off a three-tick gather rounds to nothing while the same off a
+> fifteen-tick hunt is half again; Joe's *"slower without"* is the card's sentence and **his to
+> overrule**); a worker without one works at today's number to the unit and the floor never moves.
+> A hand with a job in a tool trade fetches one from the nearest store (`FetchingATool`). The
+> smithy (`Smithy` 15 / `Smith` 8, 25 logs + 12 stone, two seats): iron + firewood → tools at the
+> woodcutter's stint, ⛔ never firewood the homes still want; one copy of its reasons
+> (`SimWorld.WhyTheForgeIsCold`) for the smith and the card. `SmithsWanted` by the tools
+> shortfall; tools go amber on the bar by it. Measured: `tool_uses` 150 (~55 actions a hand-year
+> in the fixture, so a tool is about three years of one pair of hands); twelve fixture seeds × fifty
+> years **201 / 222 / 0 → 218 / 238 / 0**. Six goldens moved once; the pace pins re-pinned (the
+> founder fetches a tool first). Eleven guards, six red-checked, two zeros written down.
+>
+> **⛔ Two things found on the way, both in D391's entry:** a warm start never put the founders'
+> tools anywhere (fixed — the warehouse); and **a skill row for the smith reshuffled every
+> founding** — the founders' mastered trades are drawn from the skills catalogue with the `Rng` —
+> so the smith has no skill row, like the fisher and the hunter (rowless, unrecorded, found the
+> same way). ⏸️ Filed below for Joe.
+>
+> **⚠️ For Joe when he plays D391:** click a founder — the caption says *a tool in hand, 137
+> uses left*; watch it fall as they work and the *tools* chip on the bar go amber when the hands
+> outnumber the tools; paint a seam of iron and let a laborer clear it, build a smithy under
+> *Works* beside the builder's, staff it, and watch a smith walk to the warehouse for iron and
+> firewood and back to the anvil four times a day; empty the firewood and the card says *"the
+> village needs its firewood for the winter"*. **Three numbers are his:** `tool_uses` (150),
+> `tool_yield_bonus_percent` (25), `firewood_per_tool` (4). And **one call:** yield or ticks.
+>
+> **▶️ NEXT, after his play and push:** his call between **the second chain** — bread (mill and
+> bakery; waiting on the diet derivation, `DESIGN.md §4` *the food chain*), **the quarry**
+> (three builders idle a century on stone nobody quarries, the OPEN list), or **the workshop**
+> (maintenance, the D65 reversal, the builder's hammer) — and **fences as walls with an open
+> gate** (`organic-housing.md §3.5`), which he ordered after the professions.
+>
+> *(D390's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-18 — AFTER D390.**
 >
 > **The state:** four commits sit on `0b1124b` = `origin/main`, **committed, NOT pushed — Joe
 > pushes after he plays:** D386 + D387 (`63b859d`), D388 (`9270c3e`), D389 (`4396354`), D390
@@ -1452,6 +1502,33 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     failed to parse at the *shell* — write them to the scratchpad with the Write tool and run the
     file. Trap 39's habit, restated because it cost three round trips today.
 
+104. **⛔⛔ A CATALOGUE WHOSE LENGTH IS A DRAW'S RANGE IS A SEED CONTRACT (D391).** A skill row for
+    the smith — content, harmless-looking — moved every founding in every seed, because the
+    founders' mastered trades are `Rng.NextInt(0, Skills.Count)`. It showed as three food-limit
+    guards red in a village posed *without* tools, and cost an hour of bisecting the wrong
+    suspects (the fetch, the quota, the json, the warm-start warehouse) before the worktree at
+    HEAD said the village itself had changed. ⭐ *When a change that should be inert moves a
+    no-feature village, diff the founding, not the feature — and `git worktree add ../x HEAD` is
+    the ten-second control.* D344's trap one catalogue over; the fisher and hunter's rowlessness
+    was the same trap avoided by accident.
+
+105. **⚠️ "MEASURED ON THE TWELVE SEEDS" MEANS THE FIXTURE, WARM, UNPLAYED — NOT THE SHIPPED
+    OPENING (D391).** The first probe ran `ShippedConfig.Load()` + `PlayTheOpening` and read
+    78 / 116 / 31 against the handoff's 199 / 221 / 0, and half an hour went on what had changed.
+    Nothing had: the numbers in every D3xx entry are `VillageFixtures.Village`, seeds 1–12, fifty
+    years, nobody playing. The shipped opening is a different (and honest) second column.
+
+106. **⚠️ THE SUITE'S CLOCK MOVED 3m12 → 3m45 ON D391, AND HERE IS WHERE.** Tools put 8 % more
+    people in every fixture village and a fetch walk on every hand; nothing new is per tick.
+    The per-test top ten from the trx (`dotnet test --logger trx`), 1,883 s of test time over
+    1,200 tests: `MostSeedsProduceAValleyAVillageCanLiveIn` 102 s · `CapacityIsWhatHoldsThePopulationFlat`
+    87 · `AFoundingThatPaintsNoSeamStillLives` 79 · `NothingIsEverBuiltOnWater` 59 ·
+    `SameSeed_StaysIdenticalAtEveryTick` 43 · `ADeadFamilysLarderDoesNotStayStranded` 42 ·
+    `NoHouseholdEverHoldsLogs` 39 · `TheFuelChainWarmsAGrowingVillageAndFreezesNobody` 36 ·
+    `TimberGatesGrowthWithoutStoppingIt` 27 · `NobodyIsPutOnTheStandWhenNoOneWantsTheTimber` 23.
+    All long-horizon villages; none new. If the next slice moves the clock again, compare
+    against this list before attributing it.
+
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
 **The roster and the village log were both `288x0` for two commits** (D311). Joe sent a screenshot
@@ -1473,11 +1550,34 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐ **THE PROFESSIONS AND THEIR BUILDINGS — WHICH CHAIN FIRST (Joe, 2026-09-17: *"then i think i
-  want to go back to building out the professions and their buildings"*).** `DESIGN.md §4` Phase 5
-  lists tools-that-wear + the workshop + the smith's chain, condition and maintenance (the D65
-  reversal), clothing (blocked on trade for wool), soil depletion. The order is his; the first
-  spec should pose the candidates against `buildings-plan.md §4`'s tiers and ask.
+- ⭐ **THE SECOND CHAIN (after D391's tools).** Bread — mill and bakery, `food-catalog.md §6`,
+  waiting on *deriving a diet* (the survival floor is solved against ONE food); the quarry — the
+  OPEN item below about stone nobody quarries, and the mason's yard that gates the stone cottage;
+  the workshop — condition and maintenance, the D65 reversal, and the builder's hammer (D391 left
+  the builder without a tool because a builder's bonus would fall on a site's ticks, a second
+  seam). The order is his; a spec that poses them is the first move, as D391's was.
+- ⭐ **THE TOOL'S BONUS: YIELD OR TICKS (D391).** Built on yield — a percentage off a three-tick
+  gather rounds to nothing while the same off a fifteen-tick hunt is half again, and a tool that
+  helps one trade by an accident of duration is the illegible outcome. His words were *"slower
+  without"*. If he wants ticks, it is one seam (`WorkTicksFor` beside the mastery bonus) and the
+  number would have to be re-measured per trade; the card's sentence can say *slower* either way.
+- ⚠️ **THE FISHER, THE HUNTER AND THE SMITH HAVE NO SKILL ROW — AND ADDING ONE RESHUFFLES EVERY
+  FOUNDING (found D391).** `SimWorld` draws the founders' mastered trades from the skills
+  catalogue with the run's `Rng` (`NextInt(0, available.Count)`), so a seventh row moved every
+  seed's founders and three food-limit guards went red for a village that had never seen a tool.
+  The fisher and hunter shipped rowless a fortnight ago with nothing recording it; nobody masters
+  fishing, hunting or smithing today. Two ways to call it: *(a)* draw the founders' trades from a
+  stated founding list (the trades a cold start can hold) so the catalogue can grow; *(b)* a
+  per-stage seed for the founding (D344's shape). Either way one commit moves every golden once,
+  and three skill rows land with it.
+- ⚠️ **A TOOL'S QUARTER MAKES A TEN-TICK FARM HAULING-BOUND (found D391).** With a quarter more
+  crop a tile, the shipped farm ten ticks out at the derived thirteen a hand brings everything in
+  with no autumn to spare and never probes a fourteenth; `AFarmWithAutumnToSpare…` is posed
+  without tools for it. The cap is honest — the walk is the cost — but it means tools do not
+  raise a far farm's harvest, only a near one's. Sits beside the over-painted-farm item below.
+- ⚠️ **THE SUITE'S CLOCK 3m12 → 3m45 (D391).** The fixture carries 8 % more people and every
+  hand walks for a tool once in three years; the per-test top ten is in trap 106. Not chased —
+  named so the next session does not attribute it to its own change.
 
 - ⏸️ **FENCES AS WALLS WITH AN OPEN GATE (Joe's yes, 2026-09-18; after the professions).** A fence
   runs on tile *edges*; the one cost field is tile-based. The slice: a per-tile edge mask in

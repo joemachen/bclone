@@ -269,6 +269,17 @@ public enum BuildingKind
     /// </para>
     /// </remarks>
     Longhouse = 14,
+
+    /// <summary>
+    /// The smith's hut — iron and firewood into tools (D391, `specs/tools-and-the-smith.md`).
+    /// </summary>
+    /// <remarks>
+    /// Phase 5's first production chain, and the first whose input is neither food nor wood: the
+    /// iron the laborers clear off a seam becomes the tools every trade wears. One building by
+    /// Joe's call; the smelter and the charcoal burner are later nodes of `tech-tree.md §9.4`.
+    /// <b>Appended at 15, never renumbered</b> — hashed by position like every kind above.
+    /// </remarks>
+    Smithy = 15,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

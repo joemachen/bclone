@@ -70,6 +70,9 @@ public sealed partial class TradeGlyph : Control
         JobKind.Woodcutter => new Color(0.88f, 0.55f, 0.24f),
         JobKind.Builder => new Color(0.72f, 0.76f, 0.82f),
 
+        // The smith takes the iron's dark grey (D391) — a shade the builder's pale tools are not.
+        JobKind.Smith => new Color(0.42f, 0.44f, 0.50f),
+
         // ⚠️ A MODDER'S TRADE GETS A MARK RATHER THAN A CRASH, and it is deliberately drab — the
         // same answer `GoodsPalette` gives a good nobody has chosen a colour for.
         _ => new Color(0.70f, 0.70f, 0.70f),
@@ -156,6 +159,14 @@ public sealed partial class TradeGlyph : Control
                         new Vector2(s * 0.94f, s * 0.30f),
                         new Vector2(s * 0.94f, s * 0.70f),
                     }, ink);
+                break;
+
+            // A hammer over an anvil (D391): the anvil's block and horn, the hammer raised.
+            case JobKind.Smith:
+                DrawRect(new Rect2(s * 0.18f, s * 0.60f, s * 0.64f, s * 0.16f), ink);
+                DrawRect(new Rect2(s * 0.34f, s * 0.76f, s * 0.32f, s * 0.10f), ink);
+                DrawLine(new Vector2(s * 0.62f, s * 0.54f), new Vector2(s * 0.40f, s * 0.20f), ink, 1.8f);
+                DrawRect(new Rect2(s * 0.30f, s * 0.10f, s * 0.22f, s * 0.14f), ink);
                 break;
 
             // A bow, drawn: the stave and the string.

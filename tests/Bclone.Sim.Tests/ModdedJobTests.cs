@@ -34,7 +34,7 @@ public sealed class ModdedJobTests
     /// </remarks>
     // ⚠️ 8, not 7 — `JobKind.Hunter` took 7 when hunting shipped. The modder's trade has to
     // sit ABOVE every built-in or it is not testing what this file claims to test.
-    private static JobKind Boatman => (JobKind)8;
+    private static JobKind Boatman => (JobKind)9;
 
     /// <summary>
     /// A catalogue with a seventh trade, written the way a modder would write it.
@@ -56,15 +56,17 @@ public sealed class ModdedJobTests
         { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Produce" },
 
         { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing",            "works_at": "FishingHut",    "limited_by": "Fish" },
-        { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting",            "works_at": "HunterLodge",   "limited_by": "Meat" },
+        { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting",            "works_at": "HunterLodge",   "limited_by": "Meat", "uses_tool": true },
+        { "id": 8, "name": "smith",      "plural": "smiths",      "doing": "forging tools",      "works_at": "Smithy",        "limited_by": "Tools", "uses_tool": true },
 
         // The modder's own trade. Nothing in the sim has ever heard of it.
         //
-        // ⚠️ IT MOVED 6 → 7 WHEN FISHING SHIPPED (2026-09-02), and that is the point rather than
-        // an inconvenience: this row exists to be an id the enum cannot name, and 6 stopped being
-        // one the day `JobKind.Boatman` existed. **The example mod was a fisherman; the game grew
-        // one.** Renamed too — two trades called "fisher" is a failure message nobody can read.
-        { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "limited_by": "Produce" }
+        // ⚠️ IT MOVED 6 → 7 WHEN FISHING SHIPPED (2026-09-02) AND 8 → 9 WHEN THE SMITH DID
+        // (2026-09-18, D391), and that is the point rather than an inconvenience: this row exists
+        // to be an id the enum cannot name, and 6 stopped being one the day `JobKind.Boatman`
+        // existed. **The example mod was a fisherman; the game grew one.** Renamed too — two
+        // trades called "fisher" is a failure message nobody can read.
+        { "id": 9, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "limited_by": "Produce" }
       ]
     }
     """;
@@ -79,8 +81,8 @@ public sealed class ModdedJobTests
     {
         var catalog = new JobsCatalog(ConfigWithBoatman().JobsCatalog);
 
-        // 7 → 8 when the built-in fisher shipped (2026-09-02).
-        Assert.Equal(9, catalog.Count);
+        // 7 → 8 when the built-in fisher shipped (2026-09-02); 9 → 10 for the smith (D391).
+        Assert.Equal(10, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a trade no switch has
         // ever named.
@@ -146,7 +148,8 @@ public sealed class ModdedJobTests
           "jobs": [
             { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing", "works_at": "FishingHut", "limited_by": "Fish" },
             { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting", "works_at": "HunterLodge", "limited_by": "Meat" },
-            { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water" },
+            { "id": 9, "name": "boatman",    "plural": "boatmen",     "doing": "at the water" },
+            { "id": 8, "name": "smith",      "plural": "smiths",      "doing": "forging tools", "works_at": "Smithy", "limited_by": "Tools" },
             { "id": 5, "name": "farmer",     "plural": "farmers",     "doing": "farming",            "works_at": "Farmhouse",     "limited_by": "Produce" },
             { "id": 4, "name": "builder",    "plural": "builders",    "doing": "building",           "works_at": "BuilderHut" },
             { "id": 3, "name": "marketer",   "plural": "traders",     "doing": "the market",         "works_at": "Market" },
@@ -187,7 +190,7 @@ public sealed class ModdedJobTests
             foragers: 2, foresters: 1, woodcutters: 1, marketers: 1, builders: 1, farmers: 2,
             slots: 7);
 
-        Assert.Equal(8, quota.Slots);
+        Assert.Equal(9, quota.Slots);
 
         // The built-ins still read exactly as they did, through the named readers.
         Assert.Equal(2, quota.Foragers);

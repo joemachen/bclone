@@ -479,6 +479,29 @@ public sealed class Villager
     public int SplitsThisStint { get; set; }
 
     /// <summary>
+    /// The uses left in the tool in their hands — <b>zero is no tool</b> (D391,
+    /// `specs/tools-and-the-smith.md §3.1`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>On the villager, not the household</b>, as `wood-fuel-and-tools.md §7` asked when it
+    /// deferred tools: so §2.1 can say <em>"a skilled worker with a good tool"</em> without a
+    /// migration. Worn by one where an action begins (<c>SimWorld.BeginWork</c>); filled from a
+    /// store's count and never conjured; hashed sparsely, so a village with no tools hashes as it
+    /// did before tools existed.
+    /// </para>
+    /// <para>
+    /// <b>Zero is today's number to the unit.</b> A worker without a tool is the baseline the
+    /// survival floor is solved for; the tool is the bonus (D353). There is no cliff here — the
+    /// founders' twenty fade one use at a time, and the card says how many are left.
+    /// </para>
+    /// </remarks>
+    public int ToolUses { get; set; }
+
+    /// <summary>Forges made at the smithy since this smith last walked to it — the stint (D391).</summary>
+    public int ForgesThisStint { get; set; }
+
+    /// <summary>
     /// Ticks this villager still has to wait before their working life begins — <b>a seeded
     /// personal rhythm, drawn once at birth</b> (`skills-catalog.md §3.5`, D28).
     /// </summary>
@@ -670,6 +693,11 @@ public sealed class Villager
                 ? $"carrying the meat back to {where}"
                 : "carrying the harvest to the farm",
             VillagerState.StockingTheMarket => "carrying goods to the market",
+            VillagerState.FetchingATool => "fetching a tool from a store",
+            VillagerState.TravelingToSmithy => $"walking to {where}",
+            VillagerState.Forging => ForgesThisStint > 0
+                ? $"forging tools, the {ForgesThisStint + 1}{(ForgesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
+                : "forging tools at the anvil",
             _ => State.ToString(),
         };
     }

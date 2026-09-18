@@ -204,8 +204,10 @@ public sealed class Phase0SimTests
         Workplace hut = loop.World.Workplaces.Single(
             place => place.Kind == JobKind.Forager && !place.IsSite);
 
+        // ⭐ In THIS villager's hands (D391): the founder takes a tool from the cart before the
+        // first trip, and a tool adds its quarter to what the hut is worth.
         Assert.Equal(
-            loop.World.GatherYieldAt(hut),
+            loop.World.WithTool(loop.World.Villager, JobKind.Forager, loop.World.GatherYieldAt(hut)),
             loop.World.Villager.CarriedProduce + loop.World.Stockpile[Goods.Produce] - before);
     }
 

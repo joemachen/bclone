@@ -778,6 +778,37 @@
   // period of time."
   "splits_per_stint": 4,
 
+  // ---------------------------------------------------------------
+  //  Tools, and the smith who makes them (D391, specs/tools-and-the-smith.md)
+  // ---------------------------------------------------------------
+  //
+  // A tool hangs off the villager, wears one use per work action (a gather,
+  // a fell, a split, a cast, a hunt, a tile sown or reaped), and adds to what
+  // the action brings in. A worker WITHOUT one works at today's number to the
+  // unit -- the survival floor never counts a tool (D353) -- so the founders'
+  // cart_tools are a gift that fades, never a break year.
+  //
+  // tool_uses: MEASURED, not typed -- see the spec's section 6 for the run.
+  // tool_yield_bonus_percent: on YIELD, not ticks; at three ticks a gather a
+  // percentage off the ticks is a step that helps a hunter and not a forager.
+  "tool_uses": 150,
+  "tool_yield_bonus_percent": 25,
+
+  // The smithy: a hut's timber and a forge's worth of stone; two seats
+  // (TECH-EXAMPLE's forge). One forge takes half a seam tile of iron and a
+  // batch of firewood -- and NEVER firewood the homes still want: a forge runs
+  // only while the sheds hold the winter's share (LabourQuota.FirewoodShortfall
+  // reads zero). A stint is a day's four forges, as the woodcutter's split is.
+  "smithy_logs": 25,
+  "smithy_stone": 12,
+  "smithy_work_ticks": 40,
+  "smithy_capacity": 2,
+  "iron_per_tool": 4,
+  "firewood_per_tool": 4,
+  "forge_ticks": 4,
+  "tools_per_forge": 1,
+  "forges_per_stint": 4,
+
   // DERIVED, like gather_yield. The stated target: heating every home
   // through winter must cost no more than HALF the hands the village can
   // spare once everyone is fed. The half is the margin, and it is the
@@ -1205,9 +1236,10 @@
   // unlike every other store, so its size rather than its rules is the only
   // thing stopping it being the granary and the warehouse at once.
   //
-  // The tools are NOT a dial and cannot be one yet: nothing in the game makes
-  // or spends them, so they are a stock the player can see and cannot use. The
-  // founders brought them; a workshop to replace them is D17's, still parked.
+  // The tools were not a dial until D391: nothing made or spent them. A smithy
+  // makes them now and every trade wears them (tool_uses above), so this is the
+  // gift the founders arrive with -- one in each pair of hands and a spare a
+  // hand after a year, at 150 uses a tool. D17's workshop, unparked.
   //
   // `cart_logs` is gone rather than sitting at 0 (D90 step 4): the cart REFUSES
   // timber now, so a key holding a number the wagon would not accept is a lie

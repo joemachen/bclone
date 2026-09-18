@@ -147,7 +147,7 @@ Requires scale, accumulated knowledge, or both.
 | **Creamery** | Placed | By knowledge | ✓ | Milk → butter, cheese. The point of cheese is that it keeps. |
 | **Iron mine** | Placed | Civic | — | Ore. Effort-limited; consumes props. |
 | **Smelter** | Placed | By knowledge | ✓ | Ore + charcoal → iron. |
-| **Blacksmith** | Placed | By knowledge | ✓ | Iron + wood → **tools**, and fittings for better buildings. Tools raise yields, which is §2.1's hook. |
+| **Blacksmith** | Placed | By knowledge | ✓ | Iron + wood → **tools**, and fittings for better buildings. Tools raise yields, which is §2.1's hook. ✅ **BUILT as the smithy (D391, `tools-and-the-smith.md`) — iron + firewood → tools, ungated, T0 by Joe's call (*one building*); the smelter and charcoal burner above it stay nodes.** |
 | **Tool warehouse** | Placed | Civic | — | Tools are real, stockpiled, auto-distributed. Reconcile with the existing store set. |
 | **Scriptorium** | Placed | By knowledge | ✓ | **Writes knowledge down.** See §5 — this is load-bearing. |
 | **School** | Placed | Civic | ✓ | ⭐ **Specified 2026-08-24 (D209), and it is the first T2 building with a full design behind it.** A **teacher** works it; **children attend 12–16** if there are open slots, and **another school is built when there are not**; graduates enter work **more proficient**. ⛔ **It is not free** — `adult_age` is 12, so every year at school is a working year the village gives up. `specs/school-and-education.md` |

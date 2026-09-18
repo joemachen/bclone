@@ -42,7 +42,7 @@ public sealed class ModdedBuildingTests
     /// can read.
     /// </remarks>
     // ⚠️ 8, not 7 — `JobKind.Hunter` took 7 when hunting shipped.
-    private static JobKind Boatman => (JobKind)8;
+    private static JobKind Boatman => (JobKind)9;
 
     /// <summary>
     /// A catalogue with an eleventh building and a seventh trade that staffs it.
@@ -85,7 +85,8 @@ public sealed class ModdedBuildingTests
         // the game grew one.** Renamed too, so two trades called "fisher" cannot be confused for
         // each other in a failure message.
         { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting",            "works_at": "HunterLodge",   "limited_by": "Meat" },
-        { "id": 8, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Produce" }
+        { "id": 8, "name": "smith",      "plural": "smiths",      "doing": "forging tools",      "works_at": "Smithy",        "limited_by": "Tools" },
+        { "id": 9, "name": "boatman",    "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Produce" }
       ],
 
       "buildings": [
@@ -118,7 +119,8 @@ public sealed class ModdedBuildingTests
         // claim this file exists to make, applied to the newest kind of placement rule.
         { "id": 12, "name": "fishing hut", "seats": 4, "must_touch": "Water", "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ]},
         { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 }, { "goods": "Stone", "amount": 12 } ] },
-        { "id": 14, "name": "longhouse", "stores": "Warehouse", "store_capacity": 900, "extent_width": 3, "extent_height": 1, "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] }
+        { "id": 14, "name": "longhouse", "stores": "Warehouse", "store_capacity": 900, "extent_width": 3, "extent_height": 1, "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+        { "id": 15, "name": "smithy", "seats": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 12 } ] }
       ]
     }
     """;
@@ -174,8 +176,9 @@ public sealed class ModdedBuildingTests
 
         // 12 → 13 when the fishing hut shipped (2026-09-02); → 14 with the hunter's lodge
         // (2026-09-03); → 15 with the longhouse, the first building that is not one tile
-        // (2026-09-06, D320). The modder's boathouse is the sixteenth.
-        Assert.Equal(15, catalog.Count);
+        // (2026-09-06, D320); → 16 with the smithy (2026-09-18, D391). The modder's boathouse
+        // sits inside the range, at the library's id, on purpose.
+        Assert.Equal(16, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -306,6 +309,7 @@ public sealed class ModdedBuildingTests
             { "id": 12, "name": "fishing hut",     "seats": 4, "must_touch": "Water",            "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12,             "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 } ] },
             { "id": 14, "name": "longhouse",      "stores": "Warehouse", "store_capacity": 900, "extent_width": 3, "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+            { "id": 15, "name": "smithy",         "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },

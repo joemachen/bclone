@@ -120,6 +120,9 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.Clearing => "clearing painted ground",
         VillagerState.TidyingGround => "fetching a load off the ground",
         VillagerState.ClearingABuffer => "carrying food out of a hut",
+        VillagerState.FetchingATool => "fetching a tool from a store",
+        VillagerState.TravelingToSmithy => "walking to the smithy",
+        VillagerState.Forging => "forging tools",
         VillagerState.TravelingToField => "walking out to the field",
         VillagerState.Sowing => "sowing",
         VillagerState.Reaping => "reaping",
@@ -386,6 +389,22 @@ public sealed class BehaviorSystem : ISimSystem
                     VillagerState.ClearingABuffer);
                 return;
 
+            case VillagerState.FetchingATool:
+                // To the store they set off for (D391) — fixed at departure, same rule.
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    VillagerState.FetchingATool);
+                return;
+
+            case VillagerState.TravelingToSmithy:
+                if (WorkplaceOf(world, villager) is not Workplace forge)
+                {
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, forge.Position, VillagerState.Forging);
+                return;
+
             case VillagerState.FetchingMaterials:
             case VillagerState.Building:
                 // To the spot they set off for, not to whatever looks best from this
@@ -488,6 +507,9 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsSplitting(VillagerState state) =>
         state is VillagerState.TravelingToHut or VillagerState.MakingFirewood;
 
+    private static bool IsForging(VillagerState state) =>
+        state is VillagerState.TravelingToSmithy or VillagerState.Forging;
+
     private static bool IsTrading(VillagerState state) =>
         state is VillagerState.CollectingForMarket
             or VillagerState.StockingTheMarket;
@@ -501,7 +523,8 @@ public sealed class BehaviorSystem : ISimSystem
 
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
-        || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state);
+        || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
+        || IsForging(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -551,6 +574,11 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsFarming(state))
         {
             return JobKind.Farmer;
+        }
+
+        if (IsForging(state))
+        {
+            return JobKind.Smith;
         }
 
         return IsSplitting(state) ? JobKind.Woodcutter : null;
@@ -2396,6 +2424,48 @@ public sealed class BehaviorSystem : ISimSystem
 
         Workplace? job = WorkplaceOf(world, villager);
 
+        // ⭐ A HAND WITH A JOB KEEPS A TOOL (D391, `tools-and-the-smith.md §3.5`). Before any
+        // trade's own branch, so the rule is one line rather than one per trade: somebody holding
+        // a job in a tool trade with nothing in their hands walks to the nearest store that has
+        // one, whether or not the trade has work today. A tool is fetched once in `tool_uses`
+        // actions, not once a half-larder, which is why it is not the household's errand and the
+        // market does not stock it.
+        if (job is not null && TryFetchATool(world, villager, job))
+        {
+            return;
+        }
+
+        // ⭐ THE SMITH (D391) — the woodcutter's shape, one good over: a stint at the forge while
+        // a store within reach holds a forge's iron and firewood, the tools limit is not met, and
+        // ⛔ the sheds hold what the homes want, because a forge that burns the winter's firewood
+        // is a smith who freezes a household. Every reason it does not run names its store.
+        if (villager.CanWork && job?.Kind == JobKind.Smith)
+        {
+            if (world.WhyTheForgeIsCold(job) is string cold)
+            {
+                villager.WorkNote = cold;
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
+                return;
+            }
+
+            villager.WorkNote = string.Empty;
+            if (villager.Tile == job.Tile)
+            {
+                BeginForging(world, villager);
+            }
+            else
+            {
+                villager.State = VillagerState.TravelingToSmithy;
+                Travel(world, villager, job.Position, VillagerState.Forging);
+            }
+
+            return;
+        }
+
         // ⭐⭐ FISHING, AND IT SITS ABOVE FORAGING BECAUSE IT IS THE BETTER SOURCE (Joe,
         // 2026-09-02): *"fishing provides a consistent source of food that does not run out … a
         // step up from foraging in terms of food per worker. **Foraging is bottom of the totem
@@ -2470,7 +2540,7 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 villager.State = VillagerState.Fishing;
                 villager.ActionTicksRemaining =
-                    world.WorkTicksFor(villager, JobKind.Fisher, config.FishTicks);
+                    world.BeginWork(villager, JobKind.Fisher, config.FishTicks);
             }
             else
             {
@@ -2785,7 +2855,7 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 villager.State = VillagerState.Cutting;
                 villager.ActionTicksRemaining =
-                    world.WorkTicksFor(villager, JobKind.Forester, config.CutTicks);
+                    world.BeginWork(villager, JobKind.Forester, config.CutTicks);
             }
             else
             {
@@ -3916,7 +3986,7 @@ public sealed class BehaviorSystem : ISimSystem
         {
             villager.State = VillagerState.Fishing;
             villager.ActionTicksRemaining =
-                world.WorkTicksFor(villager, JobKind.Fisher, world.Config.FishTicks);
+                world.BeginWork(villager, JobKind.Fisher, world.Config.FishTicks);
             return;
         }
 
@@ -4049,7 +4119,7 @@ public sealed class BehaviorSystem : ISimSystem
 
             villager.State = VillagerState.Clearing;
             villager.ActionTicksRemaining =
-                world.WorkTicksFor(villager, JobKind.Forester, world.Config.CutTicks);
+                world.BeginWork(villager, JobKind.Forester, world.Config.CutTicks);
             return;
         }
 
@@ -4062,6 +4132,18 @@ public sealed class BehaviorSystem : ISimSystem
         if (onArrival == VillagerState.ClearingABuffer)
         {
             TakeFromTheBuffer(world, villager);
+            return;
+        }
+
+        if (onArrival == VillagerState.FetchingATool)
+        {
+            TakeATool(world, villager);
+            return;
+        }
+
+        if (onArrival == VillagerState.Forging)
+        {
+            BeginForging(world, villager);
             return;
         }
 
@@ -4131,7 +4213,7 @@ public sealed class BehaviorSystem : ISimSystem
             // could see it because the villager still walked to a tree and came back with
             // logs. `IsPlantingErrand` is the one place that decides, so the duration and
             // the outcome cannot disagree about which job is being done.
-            villager.ActionTicksRemaining = world.WorkTicksFor(
+            villager.ActionTicksRemaining = world.BeginWork(
                 villager,
                 JobKind.Forester,
                 IsPlantingErrand(world, villager)
@@ -4196,7 +4278,70 @@ public sealed class BehaviorSystem : ISimSystem
         villager.SplitsThisStint = 0;
         villager.State = VillagerState.MakingFirewood;
         villager.ActionTicksRemaining =
-            world.WorkTicksFor(villager, JobKind.Woodcutter, world.Config.SplitTicks);
+            world.BeginWork(villager, JobKind.Woodcutter, world.Config.SplitTicks);
+    }
+
+    /// <summary>The first forge of a stint at the smithy (D391).</summary>
+    private static void BeginForging(SimWorld world, Villager villager)
+    {
+        villager.ForgesThisStint = 0;
+        villager.State = VillagerState.Forging;
+        villager.ActionTicksRemaining =
+            world.BeginWork(villager, JobKind.Smith, world.Config.ForgeTicks);
+    }
+
+    /// <summary>
+    /// Walk to the nearest store holding a tool, when this villager's trade wants one and their
+    /// hands are empty (D391, `tools-and-the-smith.md §3.5`). False when there is nothing to fetch
+    /// or nowhere to fetch it from — and then the note says so.
+    /// </summary>
+    private static bool TryFetchATool(SimWorld world, Villager villager, Workplace job)
+    {
+        if (!villager.CanWork || villager.ToolUses > 0 || villager.IsCarrying
+            || !world.JobsCatalog.UsesTool(job.Kind))
+        {
+            return false;
+        }
+
+        StoreBuilding? source = NearestStoreHolding(world, villager.Tile, Goods.Tools);
+        if (source is null)
+        {
+            villager.WorkNote = "Working without a tool — none in any store.";
+            return false;
+        }
+
+        villager.WorkNote = string.Empty;
+        villager.ErrandX = source.Tile.X;
+        villager.ErrandY = source.Tile.Y;
+        villager.State = VillagerState.FetchingATool;
+        Travel(world, villager, source.Position, VillagerState.FetchingATool);
+        return true;
+    }
+
+    /// <summary>A tool out of the store's count and into their hands, then decide again.</summary>
+    /// <remarks>
+    /// ⛔ <b>The return of <c>TryTake</c> is read</b> (D96, D144): a store emptied between
+    /// departure and arrival hands over nothing, and the villager decides again with empty
+    /// hands rather than with a tool that came from nowhere.
+    /// </remarks>
+    private static void TakeATool(SimWorld world, Villager villager)
+    {
+        StoreBuilding? store = world.StoreAt(new GridPos(villager.ErrandX, villager.ErrandY));
+        villager.ErrandX = 0;
+        villager.ErrandY = 0;
+        if (store is not null && store.Store.TryTake(Goods.Tools, 1))
+        {
+            villager.ToolUses = world.Config.ToolUses;
+            world.ToolsEverTaken++;
+            if (world.Logs(LogLevel.Debug))
+            {
+                world.Log(LogLevel.Debug, "behavior",
+                    $"{villager.Name} took a tool from {store.Name} — {world.Clock}.");
+            }
+        }
+
+        villager.State = VillagerState.Idle;
+        Decide(world, villager);
     }
 
     /// <summary>
@@ -4220,7 +4365,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         villager.State = VillagerState.Hunting;
         villager.ActionTicksRemaining =
-            world.WorkTicksFor(villager, JobKind.Hunter, world.Config.HuntTicks);
+            world.BeginWork(villager, JobKind.Hunter, world.Config.HuntTicks);
     }
 
     /// <summary>
@@ -4273,7 +4418,7 @@ public sealed class BehaviorSystem : ISimSystem
     {
         villager.State = VillagerState.Gathering;
         villager.ActionTicksRemaining =
-            world.WorkTicksFor(villager, JobKind.Forager, config.GatherTicks);
+            world.BeginWork(villager, JobKind.Forager, config.GatherTicks);
     }
 
     // ---------------------------------------------------------------
@@ -4318,7 +4463,7 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         villager.State = work;
-        villager.ActionTicksRemaining = world.WorkTicksFor(villager, JobKind.Farmer, ticks);
+        villager.ActionTicksRemaining = world.BeginWork(villager, JobKind.Farmer, ticks);
     }
 
     /// <summary>
@@ -4520,7 +4665,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // second condition here the way a bald ring is for a gatherer, because a river is
                 // never bald.
                 int caught = world.Config.FishYield * villager.Vigour / 100;
-                caught = world.YieldWithTechnique(JobKind.Fisher, caught);
+                caught = world.YieldFor(villager, JobKind.Fisher, caught);
 
                 caught = caught < 1 ? 1 : caught;
 
@@ -4544,7 +4689,7 @@ public sealed class BehaviorSystem : ISimSystem
                     // and sends them back here — which works, but says nothing in the log and
                     // reads as a villager frozen mid-action to anybody watching the panel.
                     villager.ActionTicksRemaining =
-                        world.WorkTicksFor(villager, JobKind.Fisher, world.Config.FishTicks);
+                        world.BeginWork(villager, JobKind.Fisher, world.Config.FishTicks);
 
                     world.Log(LogLevel.Debug, "behavior",
                         $"Caught {caught} fish, put down at {at!.Name} — {world.Clock}.");
@@ -4580,7 +4725,7 @@ public sealed class BehaviorSystem : ISimSystem
                 Workplace? lodge = WorkplaceOf(world, villager);
                 int meat = lodge is null ? 0 : world.HuntYieldAt(lodge);
                 meat = meat * villager.Vigour / 100;
-                meat = world.YieldWithTechnique(JobKind.Hunter, meat);
+                meat = world.YieldFor(villager, JobKind.Hunter, meat);
                 meat = meat < 1 ? 1 : meat;
 
                 // ⭐ THE FIRST ACTION IN THE GAME THAT MAKES TWO GOODS, and the hide is why hunting
@@ -4637,6 +4782,10 @@ public sealed class BehaviorSystem : ISimSystem
                 // field — and paying them for it would be the last of the free food.
                 Workplace? patch = WorkplaceOf(world, villager);
                 int perTrip = patch is null ? 0 : world.GatherYieldAt(patch);
+
+                // ⭐ And the tool in their hands (D391) — on the hut's number, which the card
+                // quotes and which already counts the village's technique.
+                perTrip = world.WithTool(villager, JobKind.Forager, perTrip);
 
                 int yield = perTrip * villager.Vigour / 100;
 
@@ -4723,7 +4872,7 @@ public sealed class BehaviorSystem : ISimSystem
                         return;
                     }
 
-                    (Goods felled, int fromTheTile) = world.Harvest(tile);
+                    (Goods felled, int fromTheTile) = world.Harvest(tile, villager);
                     if (fromTheTile > 0)
                     {
                         // Vigour scales what they carry home in one go — the same way it
@@ -4825,7 +4974,8 @@ public sealed class BehaviorSystem : ISimSystem
                 // hut worth what the trees around it are worth since D112. **Asked of the tile
                 // that was reaped, not of the farm**, because a field can span better and worse
                 // ground and the player should be able to see that on the map.
-                int crop = world.CropYieldAt(reaped) * villager.Vigour / 100;
+                int crop = world.WithTool(villager, JobKind.Farmer, world.CropYieldAt(reaped))
+                    * villager.Vigour / 100;
 
                 // ⭐ AND THE PAINT SCALES IT (D352). A farm works every tile it has any paint on
                 // — Joe: *"I want a fully round plot the same radius as the paintbrush"* — so a
@@ -4865,7 +5015,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // way it scales berries and timber: the same day's work brings back
                 // less as somebody ages.
                 var cleared = new GridPos(villager.ErrandX, villager.ErrandY);
-                (Goods goods, int amount) = world.Harvest(cleared);
+                (Goods goods, int amount) = world.Harvest(cleared, villager);
                 villager.ErrandX = 0;
                 villager.ErrandY = 0;
 
@@ -4953,8 +5103,8 @@ public sealed class BehaviorSystem : ISimSystem
                 // works out splitting lumber in a way that gives more cords."* The same log gives
                 // more firewood once anybody alive has worked it out — and the whole village's
                 // woodpile thins again when the last of them dies.
-                int firewood = world.YieldWithTechnique(
-                    JobKind.Woodcutter, world.Config.FirewoodPerSplit) * villager.Vigour / 100;
+                int firewood = world.YieldFor(
+                    villager, JobKind.Woodcutter, world.Config.FirewoodPerSplit) * villager.Vigour / 100;
                 if (firewood < 1)
                 {
                     firewood = 1;
@@ -5025,11 +5175,80 @@ public sealed class BehaviorSystem : ISimSystem
                     && NearestStoreWithLogs(world, villager.Tile, world.Config.LogsPerSplit) is not null)
                 {
                     villager.ActionTicksRemaining =
-                        world.WorkTicksFor(villager, JobKind.Woodcutter, world.Config.SplitTicks);
+                        world.BeginWork(villager, JobKind.Woodcutter, world.Config.SplitTicks);
                     return;
                 }
 
                 villager.SplitsThisStint = 0;
+                villager.State = VillagerState.TravelingHome;
+                return;
+
+            case VillagerState.Forging:
+                // The woodcutter's arm, one good over (D391): the iron and the firewood out of
+                // the one store that holds both, the tools into the nearest store that takes
+                // them, the rest on the ground; then again while the reason to forge holds, up
+                // to a day's stint. `WhyTheForgeIsCold` is the one place the reasons live, so a
+                // stint ends for exactly the reasons it would not have started.
+                if (WorkplaceOf(world, villager) is not Workplace smithy
+                    || world.WhyTheForgeIsCold(smithy) is not null)
+                {
+                    villager.ForgesThisStint = 0;
+                    villager.State = VillagerState.TravelingHome;
+                    return;
+                }
+
+                StoreBuilding? ironmonger = world.NearestStoreForTheForge(villager.Tile);
+                if (ironmonger is null
+                    || !ironmonger.Store.TryTake(Goods.Iron, world.Config.IronPerTool)
+                    || (world.Config.FirewoodPerTool > 0
+                        && !ironmonger.Store.TryTake(Goods.Firewood, world.Config.FirewoodPerTool)))
+                {
+                    // Unreachable in practice — `WhyTheForgeIsCold` just re-found the store, and
+                    // nothing moves between that line and this one — but the returns are read
+                    // (D96, D144) rather than trusted, and a forge that could not take its input
+                    // is a stint that ends, not a tool from nowhere.
+                    villager.ForgesThisStint = 0;
+                    villager.State = VillagerState.TravelingHome;
+                    return;
+                }
+
+                int tools = world.YieldFor(villager, JobKind.Smith, world.Config.ToolsPerForge);
+                if (tools < 1)
+                {
+                    tools = 1;
+                }
+
+                StoreBuilding? rack = ironmonger.HasRoomFor(Goods.Tools) && ironmonger.Accepts(Goods.Tools)
+                    ? ironmonger
+                    : world.NearestStoreAccepting(
+                        villager.Tile, Goods.Tools, static store => store.HasRoomFor(Goods.Tools));
+                int racked = rack?.Put(Goods.Tools, tools) ?? 0;
+                if (racked < tools)
+                {
+                    world.SetDown(villager.Tile, Goods.Tools, tools - racked);
+                }
+
+                world.ToolsEverForged += tools;
+
+                if (world.Logs(LogLevel.Debug))
+                {
+                    world.Log(LogLevel.Debug, "behavior",
+                        $"{villager.Name} forged {tools} tools — "
+                        + (racked > 0 ? $"{racked} into {rack!.Name}" : "no store would take them")
+                        + (racked < tools ? $", {tools - racked} set down" : string.Empty)
+                        + $" — {world.Clock}.");
+                }
+
+                villager.ForgesThisStint++;
+                if (villager.ForgesThisStint < world.Config.ForgesPerStint
+                    && world.WhyTheForgeIsCold(smithy) is null)
+                {
+                    villager.ActionTicksRemaining =
+                        world.BeginWork(villager, JobKind.Smith, world.Config.ForgeTicks);
+                    return;
+                }
+
+                villager.ForgesThisStint = 0;
                 villager.State = VillagerState.TravelingHome;
                 return;
 

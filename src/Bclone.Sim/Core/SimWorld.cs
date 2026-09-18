@@ -1391,16 +1391,27 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     private void StockTheFoundingStores(SimConfig config)
     {
-        for (int i = 0; i < StoreBuildings.Count; i++)
+        bool food = false;
+        bool tools = false;
+        for (int i = 0; i < StoreBuildings.Count && !(food && tools); i++)
         {
             StoreBuilding store = StoreBuildings[i];
-            if (store.Kind != StoreKind.Granary)
+            if (!food && store.Kind == StoreKind.Granary)
             {
-                continue;
+                store.Store.Receive(Goods.Produce, config.CartFood);
+                food = true;
             }
 
-            store.Store.Receive(Goods.Produce, config.CartFood);
-            return;
+            // ⛔ THE TOOLS WERE NEVER PUT ANYWHERE (found D391). The remark above said *food and
+            // tools* and the loop stopped at the granary, which holds no tools — harmless for as
+            // long as nothing spent one, and the day a tool meant something every warm village
+            // would have started without the twenty the cold one gets. Into the warehouse, which
+            // is where the cart's tools go once there is one.
+            if (!tools && store.Kind == StoreKind.Warehouse)
+            {
+                store.Store.Receive(Goods.Tools, config.CartTools);
+                tools = true;
+            }
         }
     }
 
@@ -1944,6 +1955,7 @@ public sealed class SimWorld : IObstacles
         {
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
+            JobKind.Smith => SmithyIdleNote(workplace),
             JobKind.Forager => ForagerIdleNote(workplace),
             JobKind.Farmer => FarmIdleNote(workplace),
 
@@ -2570,6 +2582,98 @@ public sealed class SimWorld : IObstacles
 
         return ticks < 1 ? 1 : ticks;
     }
+
+    /// <summary>
+    /// Begin one work action: wear the tool in this villager's hands by a use, and say how many
+    /// ticks the action takes (D391, `specs/tools-and-the-smith.md §3.3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE ONE PLACE A TOOL WEARS, AND IT IS WHERE EVERY ACTION BEGINS.</b> The ten sites
+    /// that used to call <see cref="WorkTicksFor"/> call this: a gather, a fell or a planting, a
+    /// split, a cast, a hunt, a tile sown or reaped, a forge. <see cref="WorkTicksFor"/> stays the
+    /// pure reader its name says it is; the wear is the one thing this adds.
+    /// </para>
+    /// <para>
+    /// <b>The tool in hand and the action's trade, not the job held.</b> A forager who helps clear
+    /// painted ground swings the axe in their hands and wears it — the work in hand is what wears
+    /// a tool. A trade whose row says no tool (the marketer, the builder for now) wears nothing.
+    /// </para>
+    /// <para>
+    /// When the last use goes the log says so, and the villager works on at today's number: the
+    /// slide back to the baseline is one use at a time and visible on the card (D353, no cliff).
+    /// </para>
+    /// </remarks>
+    public int BeginWork(Villager villager, JobKind trade, int baseTicks)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+
+        if (WorkActionsBegun.Length < JobsCatalog.Count)
+        {
+            WorkActionsBegun = new int[JobsCatalog.Count];
+        }
+
+        WorkActionsBegun[(int)trade]++;
+
+        if (villager.ToolUses > 0 && JobsCatalog.UsesTool(trade))
+        {
+            villager.ToolUses--;
+            if (villager.ToolUses == 0 && Logs(LogLevel.Debug))
+            {
+                Log(LogLevel.Debug, "behavior", $"{villager.Name}'s tool is worn out — {Clock}.");
+            }
+        }
+
+        return WorkTicksFor(villager, trade, baseTicks);
+    }
+
+    /// <summary>
+    /// What one action brings in for this villager — the village's technique, then the tool in
+    /// their hands (D391, `specs/tools-and-the-smith.md §3.4`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The sibling of <see cref="YieldWithTechnique"/>, one villager closer.</b> A technique is
+    /// the village's and takes no villager; a tool is in one pair of hands. Both are percentages
+    /// on today's number, integer and rounded down (D2), so neither invents a unit. Called where
+    /// the action completes — the forager's trip, the farm's reaped tile, the forester's fell, the
+    /// fisher's cast, the hunter's kill, the woodcutter's split, the smith's forge.
+    /// </para>
+    /// <para>
+    /// <b>⛔ On yield, not on ticks, and the rounding is why.</b> At three ticks a gather and
+    /// fifteen a hunt a percentage off the ticks is a step that helps one trade and not another by
+    /// an accident of duration (<see cref="WorkTicksFor"/>'s own remark); a percentage on yield is
+    /// the same bonus in every trade. Joe's *"slower without"* is the card's sentence, not the
+    /// arithmetic — his to overrule.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Nothing here reaches <see cref="VillageEconomy"/>.</b> No tool is today's number to
+    /// the unit; a tool is upside above the floor, as a technique is. A null villager — the
+    /// harvest brush asking what a tile is worth — gets the technique alone.
+    /// </para>
+    /// </remarks>
+    public int YieldFor(Villager? villager, JobKind trade, int baseAmount) =>
+        WithTool(villager, trade, YieldWithTechnique(trade, baseAmount));
+
+    /// <summary>
+    /// The tool's share alone, on an amount the technique is already counted in — for the two
+    /// sites whose base number folds the technique in before the villager is known
+    /// (<see cref="GatherYieldAt"/>, <see cref="CropYieldAt"/>, which the panels quote).
+    /// </summary>
+    /// <remarks>
+    /// So the tool is a percentage of what the action brings in <em>with</em> the village's
+    /// technique everywhere — one rule, whichever way a site happens to be written.
+    /// </remarks>
+    public int WithTool(Villager? villager, JobKind trade, int amount)
+    {
+        if (amount <= 0 || villager is null || villager.ToolUses <= 0 || !JobsCatalog.UsesTool(trade))
+        {
+            return amount;
+        }
+
+        int bonus = Config.ToolYieldBonusPercent;
+        return bonus <= 0 ? amount : amount + (amount * bonus / 100);
+    }
     /// <summary>Remember who holds a technique, so the village can name them when it is lost.</summary>
     internal void RememberKnowerOf(int techniqueId, Villager knower)
     {
@@ -3071,6 +3175,57 @@ public sealed class SimWorld : IObstacles
                 + $"{Config.LogsPerSplit} a batch needs."
             : null;
     }
+
+    private string? SmithyIdleNote(Workplace smithy) =>
+        WhyTheForgeIsCold(smithy) is string cold ? $"{smithy.Name}: {cold}" : null;
+
+    /// <summary>
+    /// Why the forge is not running, in a sentence naming the store — or null when it can run
+    /// (D391, `tools-and-the-smith.md §3.7`).
+    /// </summary>
+    /// <remarks>
+    /// <b>One copy, read by the smith before the walk and after every forge, and by the card</b>
+    /// — so a stint ends for exactly the reasons it would not have started, and the card says
+    /// the same thing (D76's lesson: two copies of a rule is how they come to disagree). The
+    /// three reasons in the order they are cheapest to say: the player's limit, the winter's
+    /// firewood, the input.
+    /// </remarks>
+    public string? WhyTheForgeIsCold(Workplace smithy)
+    {
+        ArgumentNullException.ThrowIfNull(smithy);
+
+        int held = InStores(Goods.Tools);
+        if (StockLimits.IsMet(Goods.Tools, held))
+        {
+            return $"Nothing to forge — you asked the village to keep "
+                + $"{StockLimits.For(Goods.Tools)} tools and it has {held}.";
+        }
+
+        if (Config.FirewoodPerTool > 0 && LabourQuota.FirewoodShortfall(this) > 0)
+        {
+            return "Nothing to forge — the village needs its firewood for the winter.";
+        }
+
+        if (NearestStoreForTheForge(smithy.Tile) is null)
+        {
+            return $"Nothing to forge — no store within reach of {smithy.Name} has the "
+                + $"{Config.IronPerTool} iron and {Config.FirewoodPerTool} firewood a tool takes.";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The nearest store holding a forge's iron and its firewood both — the woodyard's question
+    /// asked of two goods at once, because a forge that found its iron in one store and its
+    /// firewood in another would be two walks the stint does not price.
+    /// </summary>
+    public StoreBuilding? NearestStoreForTheForge(GridPos from) =>
+        NearestStoreAccepting(
+            from,
+            Goods.Iron,
+            store => store.Store[Goods.Iron] >= Config.IronPerTool
+                && store.Store[Goods.Firewood] >= Config.FirewoodPerTool);
 
     private string? ForagerIdleNote(Workplace hut)
     {
@@ -4932,7 +5087,7 @@ public sealed class SimWorld : IObstacles
     /// player wants, and the village keeps doing it until told otherwise.
     /// </para>
     /// </remarks>
-    public (Goods Goods, int Amount) Harvest(GridPos tile)
+    public (Goods Goods, int Amount) Harvest(GridPos tile, Villager? by = null)
     {
         Goods? yields = TerrainRules.Yields(Map.TerrainAt(tile));
         if (yields is null)
@@ -4957,7 +5112,9 @@ public sealed class SimWorld : IObstacles
         // standing in.
         if (yields.Value == Goods.Logs)
         {
-            amount = YieldWithTechnique(JobKind.Forester, amount);
+            // ⭐ And the tool in the feller's hands (D391) — applied here, before the count at the
+            // stump, so `LogsEverFelled` is what actually came off the tile.
+            amount = YieldFor(by, JobKind.Forester, amount);
 
             // Counted at the stump — the whole tile's timber, whether it is carried off or set
             // down beside it (D382; see `LogsEverFelled`).
@@ -8646,6 +8803,18 @@ public sealed class SimWorld : IObstacles
 
     /// <summary>Logs ever taken from a yard to be split — counted at the block (D382).</summary>
     public int LogsEverSplit { get; internal set; }
+
+    /// <summary>Tools ever forged at a smithy — counted at the anvil (D391). A statistic, not hashed.</summary>
+    public int ToolsEverForged { get; internal set; }
+
+    /// <summary>Tools ever taken out of a store into somebody's hands (D391). A statistic, not hashed.</summary>
+    public int ToolsEverTaken { get; internal set; }
+
+    /// <summary>
+    /// Work actions ever begun, by trade — what <c>tool_uses</c> is measured against (D391,
+    /// `tools-and-the-smith.md §6`). A statistic, not hashed; sized to the jobs catalogue.
+    /// </summary>
+    public int[] WorkActionsBegun { get; private set; } = System.Array.Empty<int>();
 
     /// <summary>Logs ever felled, wherever they ended up.</summary>
     public int LifetimeLogsFelled()

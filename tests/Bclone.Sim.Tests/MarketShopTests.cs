@@ -441,8 +441,10 @@ public sealed class MarketShopTests
         // lane priced into the walk (D386) took the yield past it and a single day's gathering
         // read as *armfuls piled on armfuls*. The claim is about loads on loads — a fetch on top
         // of a haul — so the bar is the bigger of two armfuls and the biggest single load a
-        // trade puts in somebody's arms.
-        int oneLoad = System.Math.Max(config.CarryCapacity * 2, config.GatherYield);
+        // trade puts in somebody's arms — and a tool in the hand makes that load a quarter
+        // bigger (D391), so the bar is the gather with the tool counted.
+        int biggestGather = config.GatherYield + (config.GatherYield * config.ToolYieldBonusPercent / 100);
+        int oneLoad = System.Math.Max(config.CarryCapacity * 2, biggestGather);
         Assert.True(most <= oneLoad, $"somebody carried {most} — armfuls piled on armfuls");
         Assert.True(mostInALarder <= wanted + config.CarryCapacity, $"a larder wanting {wanted} firewood held {mostInALarder}");
     }

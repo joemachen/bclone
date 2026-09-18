@@ -376,6 +376,41 @@ public static class VillageEconomy
         return (worst * config.TravelTicksPerUnit * 2) + (splits * config.SplitTicks);
     }
 
+    /// <summary>
+    /// Ticks for one stint at the smithy: the walk there and back, and
+    /// <see cref="SimConfig.ForgesPerStint"/> forges (D391).
+    /// </summary>
+    /// <remarks>
+    /// The smithy has no founding position, so the walk is the budget's worst home to the
+    /// village's middle and back — the woodcutter's walk without the hut's own offset.
+    /// </remarks>
+    public static int ForgeStintTicks(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int worst = MaxHomeToVillageTiles(config) + ObstacleDetourTiles + PlotLaneTiles;
+        int forges = config.ForgesPerStint < 1 ? 1 : config.ForgesPerStint;
+
+        return (worst * config.TravelTicksPerUnit * 2) + (forges * config.ForgeTicks);
+    }
+
+    /// <summary>Tools one smith forges in a year, working every stint the year allows (D391).</summary>
+    /// <remarks>
+    /// <b>Not scaled by vigour</b>, unlike firewood: a forge makes whole tools, and the weakest
+    /// smith makes the same one — what ageing costs a smith is the walk, which is priced. Year-round
+    /// work, like splitting.
+    /// </remarks>
+    public static int ToolsForgedPerYearAtWorst(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int available = config.TicksPerYear - MealsPerYear(config);
+        int stint = ForgeStintTicks(config);
+        int stints = available <= 0 || stint <= 0 ? 0 : available / stint;
+        int tools = stints * (config.ForgesPerStint < 1 ? 1 : config.ForgesPerStint) * config.ToolsPerForge;
+        return tools < 1 ? 1 : tools;
+    }
+
     /// <summary>Firewood one woodcutter makes in a year, at their weakest.</summary>
     /// <remarks>Year-round work, like felling — a hut does not care what season it is.</remarks>
     public static int FirewoodMadePerYearAtWorst(SimConfig config)
@@ -1505,11 +1540,18 @@ public static class VillageEconomy
                 return forFirewood + config.LogsPerHouse;
 
             case Goods.Stone:
-            case Goods.Tools:
-                // No floor, because nothing spends them yet — a survival floor is
-                // derived from consumption, and neither has any. Named rather than left
+                // No floor, because nothing spends it yet — a survival floor is
+                // derived from consumption, and stone has none. Named rather than left
                 // to the default so that the day stone becomes what a building costs,
                 // this is the line that is obviously wrong instead of quietly right.
+                return 0;
+
+            case Goods.Tools:
+                // ⭐ No floor, AND THAT IS THE DESIGN rather than a gap (D391,
+                // `tools-and-the-smith.md §3.9`): a worker without a tool works at today's
+                // number and the tool is the bonus, so nothing about survival depends on
+                // holding one. The quota asks for smiths when tools run short
+                // (`LabourQuota.SmithsWanted`); the floor stays where the village can live.
                 return 0;
 
             default:

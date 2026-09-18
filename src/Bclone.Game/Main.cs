@@ -1686,6 +1686,14 @@ public partial class Main : Control
                     ShowShortfall(held, foresters > 0,
                         $"the village is short of logs — {foresters} on felling would cover what is waiting to be built");
                     break;
+                case Goods.Tools:
+                    // ⭐ Tools have a quota since D391 (they had none when D378 ruled *"stone and
+                    // tools never go amber"*): short when the hands that use one, and a spare
+                    // each, outnumber what the stores and the hands hold.
+                    int smiths = LabourQuota.SmithsWanted(world);
+                    ShowShortfall(held, smiths > 0,
+                        $"the village is short of tools — {smiths} at a forge would cover the hands that use them");
+                    break;
             }
         }
 
@@ -3048,9 +3056,10 @@ public partial class Main : Control
     /// ⭐ <b>The same predicates that staff the trades, so the bar and the Professions panel
     /// cannot disagree</b> (D378): food while <see cref="SimWorld.TheVillageWantsMoreFood"/>,
     /// firewood while <see cref="LabourQuota.WoodcuttersWanted"/> wants hands, logs while
-    /// <see cref="LabourQuota.ForestersWanted"/> does. Nothing else has a demand function today,
-    /// so nothing else goes amber — and a stock limit is deliberately not one: a limit is a
-    /// ceiling, and holding less than a ceiling is not a shortage.
+    /// <see cref="LabourQuota.ForestersWanted"/> does, tools while
+    /// <see cref="LabourQuota.SmithsWanted"/> does (D391). Nothing else has a demand function
+    /// today, so nothing else goes amber — and a stock limit is deliberately not one: a limit is
+    /// a ceiling, and holding less than a ceiling is not a shortage.
     /// </para>
     /// <para>
     /// A founding village is short of all three, so the bar opens amber. That is honest: it is.
@@ -6113,6 +6122,9 @@ public partial class Main : Control
             // strip is ever raised without a builder's hut. The group will hold roads, bridges
             // and fences when the builder gets them (`professions.md §4`).
             BuildingKind.BuilderHut => BuildCategory.Works,
+
+            // The smithy beside it (D391): the second building whose product is for every trade.
+            BuildingKind.Smithy => BuildCategory.Works,
 
             BuildingKind.GathererHut or BuildingKind.Farmhouse
                 or BuildingKind.FishingHut or BuildingKind.HunterLodge => BuildCategory.Food,

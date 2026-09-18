@@ -1082,6 +1082,86 @@ public sealed record SimConfig
     public int SplitsPerStint { get; init; } = 4;
 
     // ---------------------------------------------------------------
+    //  Tools, and the smith who makes them (D391, `specs/tools-and-the-smith.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Work actions one tool lasts — a gather, a fell, a split, a cast, a hunt, a tile sown or reaped.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ WEAR PER USE, NEVER A BREAK YEAR (D353).</b> A village that works harder wears its
+    /// tools faster, and the founders' twenty (<c>cart_tools</c>) fade one use at a time rather
+    /// than breaking on a date — the cliff a Year-4 break would have put on D122's floor.
+    /// </para>
+    /// <para>
+    /// <b>Measured before typed</b> (`tools-and-the-smith.md §6`): the fixture's hands begin
+    /// about 55 actions a hand-year, so at 150 uses a tool is about three years of one pair of
+    /// hands, and the founders' twenty are all in hands or worn out by the middle of the first
+    /// fifty years — a gift that lasts a generation, not a run.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("tool_uses")]
+    public int ToolUses { get; init; } = 150;
+
+    /// <summary>What a tool adds to an action's yield, as a percentage of today's number.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ ON YIELD, NOT ON TICKS, AND THE ROUNDING IS WHY</b> (`tools-and-the-smith.md §3.4`).
+    /// A gather is three ticks and a hunt fifteen, so a percentage off the ticks buys a forager
+    /// nothing and a hunter half again — a tool that helps one trade by an accident of duration is
+    /// the illegible outcome §1.1 forbids. <see cref="TechniqueRow.YieldBonusPercent"/> already
+    /// applies an even percentage to what an action brings in; the tool stands beside it.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Nothing here reaches <c>VillageEconomy</c>.</b> A worker without a tool works at
+    /// today's number to the unit; the tool is upside above the floor, exactly as a technique is.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("tool_yield_bonus_percent")]
+    public int ToolYieldBonusPercent { get; init; } = 25;
+
+    /// <summary>Logs a smithy takes to raise — a hut's.</summary>
+    [JsonPropertyName("smithy_logs")]
+    public int SmithyLogs { get; init; } = 25;
+
+    /// <summary>Stone in a smithy — a forge is a hearth of stone, so more than a hut's three.</summary>
+    [JsonPropertyName("smithy_stone")]
+    public int SmithyStone { get; init; } = 12;
+
+    /// <summary>Ticks of a builder's work a smithy takes.</summary>
+    [JsonPropertyName("smithy_work_ticks")]
+    public int SmithyWorkTicks { get; init; } = 40;
+
+    /// <summary>How many smiths a smithy seats — <b>two</b>, `TECH-EXAMPLE.md`'s forge.</summary>
+    /// <remarks>Stated, not derived, for D274's reason: the player builds another rather than crowding one.</remarks>
+    [JsonPropertyName("smithy_capacity")]
+    public int SmithyCapacity { get; init; } = 2;
+
+    /// <summary>Iron one forge takes.</summary>
+    /// <remarks>A seam tile is eight iron (`goods-catalog`), so a tile is two tools' worth of ore.</remarks>
+    [JsonPropertyName("iron_per_tool")]
+    public int IronPerTool { get; init; } = 4;
+
+    /// <summary>Firewood one forge burns.</summary>
+    /// <remarks>
+    /// ⛔ <b>Never the winter's</b>: a forge runs only while <c>LabourQuota.FirewoodShortfall</c>
+    /// reads zero, so this is spent from the sheds' surplus and never from a hearth's share.
+    /// </remarks>
+    [JsonPropertyName("firewood_per_tool")]
+    public int FirewoodPerTool { get; init; } = 4;
+
+    /// <summary>Ticks one forge takes at the smithy — a day, the woodcutter's split.</summary>
+    [JsonPropertyName("forge_ticks")]
+    public int ForgeTicks { get; init; } = 4;
+
+    /// <summary>Tools one forge makes.</summary>
+    [JsonPropertyName("tools_per_forge")]
+    public int ToolsPerForge { get; init; } = 1;
+
+    /// <summary>Forges a smith makes at the hut before walking home — the stint, as <see cref="SplitsPerStint"/>.</summary>
+    [JsonPropertyName("forges_per_stint")]
+    public int ForgesPerStint { get; init; } = 4;
+
+    // ---------------------------------------------------------------
     //  Storage (D30, D32)
     // ---------------------------------------------------------------
 
@@ -2132,6 +2212,7 @@ public sealed record SimConfig
             // ⛔ No limit. Food is gathered as well as farmed, and standing the gatherers down on
             // a full granary is a decision nobody has taken.
             LimitedBy = null,
+            UsesTool = true,
         },
         new JobRow
         {
@@ -2141,6 +2222,7 @@ public sealed record SimConfig
             Doing = "felling timber",
             WorksAt = BuildingKind.ForesterHut,
             LimitedBy = World.Goods.Logs,
+            UsesTool = true,
         },
         new JobRow
         {
@@ -2150,6 +2232,7 @@ public sealed record SimConfig
             Doing = "splitting firewood",
             WorksAt = BuildingKind.WoodcutterHut,
             LimitedBy = World.Goods.Firewood,
+            UsesTool = true,
         },
         new JobRow
         {
@@ -2185,6 +2268,7 @@ public sealed record SimConfig
             // good a limit on THIS TRADE reads, and the trade makes wheat. The food umbrella still
             // gates the reap itself (D300); this is what a limit on the wheat row alone does.
             LimitedBy = World.Goods.Wheat,
+            UsesTool = true,
         },
         new JobRow
         {
@@ -2198,6 +2282,7 @@ public sealed record SimConfig
             // food chain through `FoodTheVillageHolds`, which counts fish since D277; this column
             // is the good a limit on THIS TRADE reads, and the trade makes fish.
             LimitedBy = World.Goods.Fish,
+            UsesTool = true,
         },
         new JobRow
         {
@@ -2211,6 +2296,20 @@ public sealed record SimConfig
             // good a limit on THIS TRADE reads, and the trade makes meat. The leather is a
             // by-product and nothing caps it, because nothing spends it yet.
             LimitedBy = World.Goods.Meat,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Smith,
+            Name = "smith",
+            Plural = "smiths",
+            Doing = "forging tools",
+            WorksAt = BuildingKind.Smithy,
+
+            // The good the trade makes, as the woodcutter's is firewood: a met tools limit stops
+            // the forge (D139).
+            LimitedBy = World.Goods.Tools,
+            UsesTool = true,
         },
     };
 
@@ -2545,6 +2644,22 @@ public sealed record SimConfig
             ExtentWidth = 2,
             ExtentHeight = 1,
         },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Smithy,
+            Name = "smithy",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, SmithyLogs),
+                new MaterialCost(World.Goods.Stone, SmithyStone),
+            },
+            WorkTicks = SmithyWorkTicks,
+            Seats = SmithyCapacity,
+
+            // The footprint (D382, `specs/footprints.md §2`): a hut's, 2 across, 1 deep.
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
 
         // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).
         // Three tiles by one, and it exists so that extent and facing are content the player can
@@ -2640,6 +2755,15 @@ public sealed record SimConfig
             MasteryLine = "{0} has carried the village's goods for {1} years. "
                 + "Every door and every shortcut is known ground.",
         },
+
+        // ⛔ NO ROW FOR THE SMITH — NOR FOR THE FISHER OR THE HUNTER — AND THE REASON IS
+        // MEASURED (D391). The founders' trades are drawn from THIS list with the run's `Rng`
+        // (`SimWorld.GiveTheFoundersTheirTrades`: `NextInt(0, available.Count)`), so a seventh
+        // row reshuffles which trade every founder in every seed has mastered — the fixture's
+        // stores read full where they had read 2,424 held, and three food-limit guards went red
+        // for a village that had never seen a tool. D344's trap, one catalogue over: a draw
+        // whose range is a content count is a seed contract. A skill for the three trades
+        // wants the founding's trades drawn from a stated list, or a per-stage seed, first.
     };
 
     /// <summary>
@@ -3439,6 +3563,29 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"woodcutter_hut_capacity must be greater than zero (got {WoodcutterHutCapacity}).");
+        }
+
+        if (SmithyCapacity <= 0)
+        {
+            throw new SimConfigException(
+                $"smithy_capacity must be greater than zero (got {SmithyCapacity}).");
+        }
+
+        // A tool that lasts no uses is a tool that is worn out the moment it is picked up, which
+        // reads as a fetch loop rather than as "no tools"; a bonus outside 0–100 is a typo.
+        if (ToolUses <= 0 || ToolYieldBonusPercent < 0 || ToolYieldBonusPercent > 100)
+        {
+            throw new SimConfigException(
+                $"tool_uses must be greater than zero and tool_yield_bonus_percent 0–100 "
+                + $"(got {ToolUses}, {ToolYieldBonusPercent}).");
+        }
+
+        if (IronPerTool <= 0 || FirewoodPerTool < 0 || ForgeTicks <= 0 || ToolsPerForge <= 0 || ForgesPerStint <= 0)
+        {
+            throw new SimConfigException(
+                "iron_per_tool, forge_ticks, tools_per_forge and forges_per_stint must be greater "
+                + $"than zero and firewood_per_tool at least zero (got {IronPerTool}, {FirewoodPerTool}, "
+                + $"{ForgeTicks}, {ToolsPerForge}, {ForgesPerStint}).");
         }
 
         if (SowTicks <= 0 || ReapTicks <= 0 || CropYieldPerTile <= 0)

@@ -170,7 +170,13 @@ public sealed class FarmMemoryTests
     [Fact]
     public void AFarmWithAutumnToSpareTriesOneMoreFieldAndStepsBackIfItRots()
     {
-        SimLoop loop = Loop(Config);
+        // ⚠️ POSED WITHOUT THE FOUNDERS' TOOLS (D391). A tool adds a quarter to every reaped tile,
+        // and a quarter more crop is a quarter more armfuls to haul ten ticks each way — so the
+        // farm at the derived thirteen a hand brings everything in with no autumn to spare, and
+        // never probes in twelve years. That is the cap being hauling-bound, not the probe being
+        // broken (filed in `handoff.md` beside the over-painted farm); the claim here is the
+        // probe's shape, so the tools stay in the cart.
+        SimLoop loop = Loop(Config with { CartTools = 0 });
         SimWorld world = loop.World;
         Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 10, out int walk);
         Assert.True(FarmFixtures.GiveItGround(world, farm, reach: 3) > 13);

@@ -74,6 +74,7 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Farmhouse => TradeGlyph.ColourOf(JobKind.Farmer),
         BuildingKind.FishingHut => TradeGlyph.ColourOf(JobKind.Fisher),
         BuildingKind.HunterLodge => TradeGlyph.ColourOf(JobKind.Hunter),
+        BuildingKind.Smithy => TradeGlyph.ColourOf(JobKind.Smith),
 
         _ => Unchosen,
     };
@@ -176,6 +177,13 @@ public sealed partial class BuildingGlyph : Control
                 DrawRect(new Rect2(s * 0.28f, s * 0.60f, s * 0.08f, s * 0.18f), ink);
                 DrawRect(new Rect2(s * 0.64f, s * 0.60f, s * 0.08f, s * 0.18f), ink);
                 DrawRect(new Rect2(s * 0.06f, s * 0.80f, s * 0.88f, s * 0.10f), VillageMap.WaterTone);
+                break;
+
+            // A hut with a chimney and the glow of a forge at its door (D391).
+            case BuildingKind.Smithy:
+                Hut(ink);
+                DrawRect(new Rect2(s * 0.64f, s * 0.12f, s * 0.12f, s * 0.26f), ink);
+                DrawRect(new Rect2(s * 0.40f, s * 0.66f, s * 0.20f, s * 0.20f), new Color(0.95f, 0.55f, 0.20f));
                 break;
 
             // A low lodge under a drawn bow.

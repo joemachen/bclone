@@ -134,6 +134,16 @@ public enum JobKind
     /// </para>
     /// </remarks>
     Hunter = 7,
+
+    /// <summary>
+    /// Forge tools from iron and firewood at the smithy (D391) — the woodcutter's shape, one good
+    /// over: an input taken from a store, a stint at the hut, an output to a store.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>THE VALUE IS 8 AND IT IS APPENDED, NEVER INSERTED</b>, for the reason
+    /// <see cref="Hunter"/> and <see cref="Forester"/> both carry.
+    /// </remarks>
+    Smith = 8,
 }
 
 /// <summary>

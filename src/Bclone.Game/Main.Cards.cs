@@ -997,8 +997,15 @@ public partial class Main
         if (job is not null)
         {
             card.Portrait.Show(TradeGlyph.ColourOf(job.Kind), job.ExtentWidth * 0.8f, job.ExtentHeight * 0.8f, job.Facing.Raw, null);
-            card.Caption.Text = string.IsNullOrWhiteSpace(villager.JobReason) ? $"works at {job.Name}" : villager.JobReason;
-            card.Caption.TooltipText = villager.JobReason;
+            string reason = string.IsNullOrWhiteSpace(villager.JobReason) ? $"works at {job.Name}" : villager.JobReason;
+
+            // ⭐ The tool in their hands (D391): a trade that carries one says how much is left
+            // of it, and says when there is none — the fade the founders' twenty are on.
+            string tool = !world.JobsCatalog.UsesTool(job.Kind) ? string.Empty
+                : villager.ToolUses > 0 ? $" · a tool in hand, {villager.ToolUses} uses left"
+                : " · no tool";
+            card.Caption.Text = reason + tool;
+            card.Caption.TooltipText = villager.JobReason + tool;
         }
         else
         {

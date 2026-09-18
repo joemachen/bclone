@@ -2,8 +2,10 @@
 
 **Decisions:** **D107** (this document), and the ones it settles. Neighbours: D14, D29, D30,
 D43, D51, D62, D63, D64, D66, D84, D86, D87, D102–D106.
-**Status:** ⚠️ **Alignment document. STALE IN PLACES — corrected 2026-08-28.** The table below still calls the **Gatherer** "blocked" on a dependency that shipped: forage sites were retired in step C (D112–D130), the forager's hut is built, and the 7-tile fence came down in D120. §6.2 beside it *is* correctly struck through; §6.1 was missed. Nothing else here is built except where the
-table says so.**
+**Status:** ⚠️ **Alignment document; the table in §4 is current as of 2026-09-18 (D391).** It had
+called the fisher and the hunter *"new"* for a fortnight after both shipped (D288, D291) — the
+D159 lie, caught while the smith's row was added. §6.1's *"blocked"* was corrected 2026-08-28.
+Nothing else here is built except where the table says so.
 
 ---
 
@@ -149,8 +151,9 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 | **Forester** | forester's hut | owned ground | logs → warehouse | 50 logs | ⚠️ job exists (D96 rename); hut, ground and worker-pricing built and waiting (D86, C3c) |
 | **Woodcutter** | woodcutter's hut | — | firewood → warehouse | 50 firewood | ✅ built. Local store new. |
 | **Forager** | forager's hut | forest nearby | food → granary | 100 food | ✅ **BUILT** (D112–D130). Forage sites retired; named "forager" since D188/D240. §6.1 below is spent |
-| **Fisherman** | fishing hut | **beside water** | food → granary | 100 food | ❌ new |
-| **Hunter** | hunter's lodge | **in forest** | food → granary; leather → warehouse | 50 + 50 | ❌ new |
+| **Fisher** | fishing hut | **beside water** | fish → granary | 840 (three casts) | ✅ **BUILT** (D282–D288, `fishing.md`) |
+| **Hunter** | hunter's lodge | **woods within reach** | meat → granary; leather → warehouse | 2,700 | ✅ **BUILT** (D291–D293, `hunting.md`; in the woods since D384) |
+| **Smith** | smithy | — | iron + firewood → tools → warehouse | — | ✅ **BUILT** (D391, `tools-and-the-smith.md`) — and every trade above but the marketer and the builder wears the tools |
 | **Tailor** | tailor's | — | clothing → warehouse | 50 clothing | ❌ new; `clothing.md` blocked on its input |
 | **Market worker** | market | — | moves goods to homes | large | ✅ built (D14, D36) |
 

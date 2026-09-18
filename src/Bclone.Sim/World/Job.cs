@@ -100,6 +100,20 @@ public sealed record JobRow
     /// </remarks>
     [JsonPropertyName("limited_by")]
     public Goods? LimitedBy { get; init; }
+
+    /// <summary>
+    /// Whether a hand in this trade carries a tool that wears with the work and adds to what it
+    /// brings in (D391, `specs/tools-and-the-smith.md §3.2`).
+    /// </summary>
+    /// <remarks>
+    /// <b>A column, not a switch on the kind</b> — the rule this record is pinned by. Built in: the
+    /// forester, woodcutter, farmer, fisher, hunter, forager and smith; not the marketer, who makes
+    /// nothing; and <b>not the builder in this slice</b> — a builder's bonus would fall on a
+    /// site's work ticks, a second seam, and waits for the workshop. Written down rather than
+    /// omitted.
+    /// </remarks>
+    [JsonPropertyName("uses_tool")]
+    public bool UsesTool { get; init; }
 }
 
 /// <summary>
@@ -166,4 +180,7 @@ public sealed class JobsCatalog
 
     /// <summary>Whose stock limit stands this trade down, or null.</summary>
     public Goods? LimitedBy(JobKind kind) => _rows[(int)kind].LimitedBy;
+
+    /// <summary>Whether a hand in this trade carries a tool (D391).</summary>
+    public bool UsesTool(JobKind kind) => _rows[(int)kind].UsesTool;
 }

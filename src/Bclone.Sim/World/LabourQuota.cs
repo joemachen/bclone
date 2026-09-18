@@ -45,7 +45,8 @@ public readonly record struct LabourQuota
         int slots = 0,
         int[]? needed = null,
         int fishers = 0,
-        int hunters = 0)
+        int hunters = 0,
+        int smiths = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -64,6 +65,7 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Farmer] = farmers;
         _byJob[(int)JobKind.Fisher] = fishers;
         _byJob[(int)JobKind.Hunter] = hunters;
+        _byJob[(int)JobKind.Smith] = smiths;
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -147,6 +149,9 @@ public readonly record struct LabourQuota
 
     /// <summary>Hands the village wants working the market (D14).</summary>
     public int Marketers => _byJob[(int)JobKind.Marketer];
+
+    /// <summary>Hands the village wants forging tools (D391).</summary>
+    public int Smiths => _byJob[(int)JobKind.Smith];
 
     /// <summary>Hands the village wants raising what the player marked out (D43).</summary>
     public int Builders => _byJob[(int)JobKind.Builder];
@@ -268,6 +273,7 @@ public readonly record struct LabourQuota
         int forestersForHouses = ForestersWanted(world);
         int marketersWanted = MarketersWanted(world);
         int buildersWanted = BuildersWanted(world);
+        int smithsWanted = SmithsWanted(world);
 
         // ⭐ SNAPSHOT OF WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE, taken here because
         // here is the last moment it is unqualified — before the food floor zeroes four trades
@@ -278,6 +284,7 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Woodcutter] = woodcutters;
         needed[(int)JobKind.Forester] = forestersForHuts + forestersForHouses;
         needed[(int)JobKind.Marketer] = marketersWanted;
+        needed[(int)JobKind.Smith] = smithsWanted;
         // ⛔⛔ THE UNCAPPED WANT, NOT THE SEAT-CAPPED ONE (D322). This was `buildersWanted`, which
         // is `anythingToBuild ? seats : 0` — so with no builder's hut it is 0, so `Needed > seats`
         // is `0 > 0`, so **the "⚠ needs 1, build a builder's hut" line could never fire.** It was
@@ -328,6 +335,7 @@ public readonly record struct LabourQuota
             forestersForHouses = 0;
             marketersWanted = 0;
             buildersWanted = 0;
+            smithsWanted = 0;
         }
 
         // ---- Survival first, in the order things kill you -------------
@@ -526,6 +534,11 @@ public readonly record struct LabourQuota
         // build. This is the one that yields when times are hard.
         foresters += Take(ref free, Cap(forestersForHouses, TotalCapacityFor(world, JobKind.Forester) - foresters));
 
+        // Tools, after the fuel chain and before building (D391): a tool is upside on every
+        // trade, so it is discretionary like the market — but it feeds the food and fuel hands
+        // above, which is why it is asked before the builders and the stall.
+        int smiths = Take(ref free, Cap(smithsWanted, TotalCapacityFor(world, JobKind.Smith)));
+
         // And the market, last of all, out of hands nobody else needs (D14).
         //
         // Deliberately the LOWEST priority of every job, which is the mechanical form
@@ -672,6 +685,7 @@ public readonly record struct LabourQuota
         farmers = Asked(world, JobKind.Farmer, farmers, hands);
         fishers = Asked(world, JobKind.Fisher, fishers, hands);
         hunters = Asked(world, JobKind.Hunter, hunters, hands);
+        smiths = Asked(world, JobKind.Smith, smiths, hands);
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -692,10 +706,11 @@ public readonly record struct LabourQuota
         farmers = AtLeastPinned(world, JobKind.Farmer, farmers);
         fishers = AtLeastPinned(world, JobKind.Fisher, fishers);
         hunters = AtLeastPinned(world, JobKind.Hunter, hunters);
+        smiths = AtLeastPinned(world, JobKind.Smith, smiths);
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
-            farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters);
+            farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
@@ -1134,6 +1149,54 @@ public readonly record struct LabourQuota
 
     public static int WoodcuttersWanted(SimWorld world) =>
         CeilingDivide(FirewoodShortfall(world), VillageEconomy.FirewoodMadePerYearAtWorst(world.Config));
+
+    /// <summary>
+    /// Tools the village is short of: one in every working pair of hands that uses one, and one
+    /// on the shelf for each against the year's wear, less what the stores and the hands hold
+    /// (D391, `tools-and-the-smith.md §3.8`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One on the shelf per hand is the year's wear stated in the tool's own unit</b>:
+    /// <c>tool_uses</c> is sized to about a year of one pair of hands (§6's run), so a spare a
+    /// hand is a year's cover — the woodpile's *winter and a bit ahead* (`WinterBufferPercent`),
+    /// one good over, without a second percentage to tune.
+    /// </para>
+    /// <para>
+    /// <b>The hands count, not the seats</b>: a seat nobody sits in wears nothing. And a tool in
+    /// somebody's hands is held, whatever is left in it — a hand with a tool will not fetch one.
+    /// </para>
+    /// </remarks>
+    public static int ToolShortfall(SimWorld world)
+    {
+        int hands = 0;
+        int inHands = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive || !villager.CanWork)
+            {
+                continue;
+            }
+
+            if (world.FindWorkplace(villager.WorkplaceId) is Workplace job
+                && world.JobsCatalog.UsesTool(job.Kind))
+            {
+                hands++;
+            }
+
+            if (villager.ToolUses > 0)
+            {
+                inHands++;
+            }
+        }
+
+        int shortfall = (hands * 2) - world.InStores(Goods.Tools) - inHands;
+        return shortfall <= 0 ? 0 : shortfall;
+    }
+
+    public static int SmithsWanted(SimWorld world) =>
+        CeilingDivide(ToolShortfall(world), VillageEconomy.ToolsForgedPerYearAtWorst(world.Config));
 
     /// <summary>
     /// Extra foresters needed to keep the huts in logs.

@@ -808,6 +808,23 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)pinned + 1u);
         }
 
+        // The tool in their hands and the forge stint (D391) — both decide what they do next.
+        // Sparse, like the pin above and for the same reason: a village with no tools and no
+        // smithy hashes as it did before either existed (`AVillageWithNoToolsAndNoSmithHashesAsBefore`).
+        // A tag goes in with each value so that a tool of five and a stint of five cannot read
+        // the same (D291's index, one villager deep).
+        if (villager.ToolUses != 0)
+        {
+            hash = MixUInt32(hash, 1u);
+            hash = MixUInt32(hash, (uint)villager.ToolUses);
+        }
+
+        if (villager.ForgesThisStint != 0)
+        {
+            hash = MixUInt32(hash, 2u);
+            hash = MixUInt32(hash, (uint)villager.ForgesThisStint);
+        }
+
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
         // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
         // mixes nothing for a villager who has never held a job and cannot depend on the

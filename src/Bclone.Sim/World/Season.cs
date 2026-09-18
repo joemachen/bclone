@@ -207,6 +207,26 @@ public enum VillagerState
     /// marketer ever carried from a buffer, forty an armful.
     /// </remarks>
     ClearingABuffer,
+
+    /// <summary>
+    /// Walking to a store for a tool (D391) — a hand with a job in a tool trade and nothing in it.
+    /// </summary>
+    /// <remarks>
+    /// Nobody's trade, like <see cref="ClearingABuffer"/>: not a work errand, so the recall for a
+    /// job no longer held leaves it alone, and the errand's tile is fixed at departure.
+    /// </remarks>
+    FetchingATool,
+
+    /// <summary>Walking to the smithy to forge (D391).</summary>
+    /// <remarks>
+    /// ⛔ Its own state rather than <see cref="TravelingToHut"/> reused — that one is read as a
+    /// woodcutter's by <c>ErrandKind</c>, and a smith classified as a woodcutter is recalled home
+    /// every tick for ever (D281's lesson, a third time).
+    /// </remarks>
+    TravelingToSmithy,
+
+    /// <summary>At the forge, one tool at a time — the stint (D391).</summary>
+    Forging,
 }
 
 /// <summary>

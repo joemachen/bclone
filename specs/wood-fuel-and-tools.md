@@ -143,7 +143,7 @@ From which: firewood burned per household per winter → village winter firewood
 
 ## 7. Deferred, deliberately
 
-- **Tools** → until there is a workshop to make them at. *(Joe's call, confirming the recommendation.)* A tool materialising out of a household's woodpile according to a policy is the same abstraction as the food-stall slider D14 exists to replace and the worker-slot §2.2 exists to delete — a third costume on a pattern this project keeps removing. When they land, they hang off the **villager**, not the household, so §2.1 can later say "a skilled worker with a good tool" without a migration.
+- ~~**Tools** → until there is a workshop to make them at.~~ ✅ **SPENT (D391, 2026-09-18, `specs/tools-and-the-smith.md`).** The workshop is the smithy (iron + firewood → tools), a tool hangs off the **villager** exactly as this bullet asked, wears one use per action, and is the bonus above today's number — never the floor. *The original reasoning, kept:* a tool materialising out of a household's woodpile according to a policy is the same abstraction as the food-stall slider D14 exists to replace and the worker-slot §2.2 exists to delete — a third costume on a pattern this project keeps removing. When they land, they hang off the **villager**, not the household, so §2.1 can later say "a skilled worker with a good tool" without a migration.
 - **Firewood at the trading post** (§2.4) → whenever trade lands. Recorded now because it is a reason to keep firewood a first-class resource rather than a household counter.
 - **Firewood distributed by the market** (D14) → with the market. The seasonal sharing policy in this spec is the *same placeholder* the food sharing is, and should be deleted by the same building.
 

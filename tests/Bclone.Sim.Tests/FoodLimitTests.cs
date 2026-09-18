@@ -190,7 +190,12 @@ public sealed class FoodLimitTests
     [Fact]
     public void AMetFoodLimitStopsTheGatheringAndLeavesTheTrade()
     {
-        SimConfig config = VillageFixtures.Village;
+        // ⚠️ POSED WITHOUT THE FOUNDERS' TOOLS (D391). A tool adds a quarter to every gather,
+        // and with them this village's stores are full to the brim by year ten (2,452 held) —
+        // where the foragers are stood down for want of ROOM, a different rule from the limit
+        // this guard is about, and "foragers held their trade" reads zero for a reason that is
+        // not the one being tested. The claim is the limit's alone, so the tools stay in the cart.
+        SimConfig config = VillageFixtures.Village with { CartTools = 0 };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 

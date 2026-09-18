@@ -352,7 +352,10 @@ public sealed class StockLimitTests
     // RE-TAKEN (D371) — a heap is fetched only for a good with a reachable shelf, one walker a heap. Was 13283593437676098010.
     // RE-TAKEN (D372) — the market is a shop: no deliveries, half a larder then back to target, one fetcher at a time, the counter first. Was 4452624815348043747.
     // RE-TAKEN (D373) — a villager stands on the hut for the tick they clear it. Was 6063056430692497952.
-    private const ulong FixtureFiftyYearHash = 9897404666935308282UL;
+    // RE-TAKEN (D391) — tools: the founders' twenty in the warehouse, fetched and worn, a quarter
+    // more on every gather with one; twelve fixture seeds × fifty years 201 / 222 / 0 → 218 / 238 / 0.
+    // Was 9897404666935308282.
+    private const ulong FixtureFiftyYearHash = 1405808184657301407UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -437,7 +440,10 @@ public sealed class StockLimitTests
     //     household fetches at half a larder and tops up to target, one fetcher at a time, and a
     //     villager carrying the firewood home is not sent back for more.
     //   before a villager stood on the hut for the tick they cleared it (D373): 7258003421251289401.
-    private const ulong ShippedFiftyYearHash = 12408667623076758325UL;
+    //   before tools wore and the smith existed (D391): 12408667623076758325 — the cart's twenty
+    //     are taken into hands, wear one use an action, and add a quarter to what an action
+    //     brings in; the shipped opening read 78 / 116 / 31 without tools and 98 / 133 / 19 with.
+    private const ulong ShippedFiftyYearHash = 7275135838661862946UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -1019,7 +1025,11 @@ public sealed class StockLimitTests
     [Fact]
     public void AFoodLimitStopsAGathererThePlayerPosted()
     {
-        SimConfig config = VillageFixtures.Village;
+        // ⚠️ POSED WITHOUT THE FOUNDERS' TOOLS (D391): with a quarter more on every gather the
+        // uncapped village sits at the granary's brim (2,698 against a limit set at 2,700), so
+        // the limit binds nothing and the guard's own anti-vacuity fires. The claim is the
+        // limit's, not the tool's — the tools stay in the cart here.
+        SimConfig config = VillageFixtures.Village with { CartTools = 0 };
         int settle = config.TicksPerYear * 20;
         int after = config.TicksPerYear * 10;
 

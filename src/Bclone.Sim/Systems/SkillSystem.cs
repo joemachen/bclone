@@ -259,6 +259,14 @@ public sealed class SkillSystem : ISimSystem
         // Stocking the market is a marketer out on their round like any other leg (§14.8).
         VillagerState.StockingTheMarket => true,
 
+        // Fetching a tool is the household fetch's cousin (D391): a walk for something to work
+        // with, not the work — it grows no trade, like `FetchingFromStore`.
+        VillagerState.FetchingATool => false,
+
+        // The forge, and the walk to it, is a smith out on their trade (D391).
+        VillagerState.TravelingToSmithy => true,
+        VillagerState.Forging => true,
+
         // Only reachable by casting an integer that is not a state at all. Loud rather than
         // swallowed (METHODOLOGY §4), and the walking test above is what catches a real new
         // state long before this could.

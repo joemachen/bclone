@@ -117,8 +117,11 @@ public sealed class VillagerPointTests
     // lane, and the founder's door is a tile further from the hut at pace 3. Was 52.
     // ⚠️ RE-PINNED (D388), not for the clock: the lane picks the door now and the founder's
     // house faces by hash, so the first walk to the hut leaves from a different side. Were 18 / 54.
-    private const int FirstGatherAtPace1 = 21;
-    private const int FirstGatherAtPace3 = 53;
+    // ⚠️ RE-PINNED (D391), not for the clock: the founder walks to the cart for a tool before
+    // the first trip — a walk of its own, which is why the gap between the paces grew (32 → 44:
+    // the fetch is priced at the pace too). Were 21 / 53.
+    private const int FirstGatherAtPace1 = 26;
+    private const int FirstGatherAtPace3 = 70;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -203,6 +206,12 @@ public sealed class VillagerPointTests
     /// priced into the yield, and the birth gate reads the harvest — **114** trips, the
     /// 1st/10th/50th at **19/158/967**.
     /// </para>
+    /// <para>
+    /// **Re-pinned a thirteenth time (D391), not for the clock:** the founders fetch tools from
+    /// the warehouse before their first trips and every gather with one brings a quarter more,
+    /// so the stores fill on fewer trips — **112** trips, the 1st/10th/50th at **19/171/988**;
+    /// the first unchanged.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -233,8 +242,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(114, entries);
-        Assert.Equal(new ulong[] { 19, 158, 967 }, at);
+        Assert.Equal(112, entries);
+        Assert.Equal(new ulong[] { 19, 171, 988 }, at);
     }
 
     /// <summary>
